@@ -1649,75 +1649,6 @@
     }
   });
 
-  // lib/native-surface-diagnostics.ts
-  function isTransparent(color2) {
-    if (!color2 || color2 === "transparent") return true;
-    const alpha2 = /^rgba?\([^)]*,\s*([\d.]+)\s*\)$/.exec(color2);
-    return alpha2 ? Number(alpha2[1]) === 0 : false;
-  }
-  function paints(style2) {
-    return !isTransparent(style2.backgroundColor || "") || (style2.backgroundImage || "none") !== "none";
-  }
-  function label(el, style2) {
-    const id4 = el.id ? `#${el.id}` : "";
-    const cls = (el.getAttribute("class") || "").trim().split(/\s+/).filter(Boolean).slice(0, 3).map((c) => `.${c}`).join("");
-    const bg = isTransparent(style2.backgroundColor || "") ? "-" : (style2.backgroundColor || "").replace(/\s+/g, "");
-    const img = (style2.backgroundImage || "none") !== "none" ? "img" : "-";
-    return `${el.tagName.toLowerCase()}${id4}${cls}(${bg}|${img}|${style2.position || "-"}|${style2.zIndex || "-"})`;
-  }
-  function describeOpaqueChain(el) {
-    const out = [];
-    try {
-      let node = el;
-      while (node) {
-        const style2 = getComputedStyle(node);
-        if (paints(style2)) out.push(label(node, style2));
-        node = node.parentElement;
-      }
-    } catch {
-    }
-    return out.join(" < ");
-  }
-  function describeCoverAt(x, y) {
-    const out = [];
-    try {
-      const stack = document.elementsFromPoint?.(x, y) ?? [];
-      for (const el of stack) {
-        const style2 = getComputedStyle(el);
-        if (paints(style2)) out.push(label(el, style2));
-        if (el.matches?.('[data-testid="mv-tile"],[data-live-tv-tv-root]')) break;
-      }
-    } catch {
-    }
-    return out.join(" > ");
-  }
-  function reportNativeSurfaceDom(getRect) {
-    if (typeof document === "undefined" || typeof setTimeout !== "function") return;
-    setTimeout(() => {
-      try {
-        if (typeof getComputedStyle !== "function" || typeof fetch !== "function") return;
-        const rect = getRect();
-        const anchor = rect && document.elementFromPoint?.(rect.left + rect.width / 2, rect.top + rect.height / 2) || document.querySelector("[data-live-tv-tv-root]") || document.body;
-        const parts = [`chain=${describeOpaqueChain(anchor)}`];
-        if (rect) {
-          parts.push(`rect=${Math.round(rect.left)},${Math.round(rect.top)},${Math.round(rect.width)}x${Math.round(rect.height)}`);
-          parts.push(`over=${describeCoverAt(rect.left + rect.width / 2, rect.top + rect.height / 2)}`);
-        }
-        const msg = `[native-surface-dom] ${parts.join(" ")}`.slice(0, MAX_MESSAGE);
-        void fetch(`/api/debug-log?msg=${encodeURIComponent(msg)}`).catch(() => {
-        });
-      } catch {
-      }
-    }, 0);
-  }
-  var MAX_MESSAGE;
-  var init_native_surface_diagnostics = __esm({
-    "lib/native-surface-diagnostics.ts"() {
-      "use strict";
-      MAX_MESSAGE = 900;
-    }
-  });
-
   // lib/video-surfaces.ts
   var video_surfaces_exports = {};
   __export(video_surfaces_exports, {
@@ -1763,11 +1694,9 @@
     const backend = engine.create(id4);
     const holdsTransparency = isNativeEngine(kind);
     let releaseTransparency = null;
-    let lastRect = null;
     const holdTransparentWebview = () => {
       if (!holdsTransparency || releaseTransparency) return;
       releaseTransparency = acquireTransparentWebview();
-      reportNativeSurfaceDom(() => lastRect);
     };
     const dropTransparentWebview = () => {
       const release = releaseTransparency;
@@ -1792,10 +1721,7 @@
           dropTransparentWebview();
         }
       },
-      setBounds: (r) => {
-        lastRect = r;
-        backend.setBounds(r);
-      },
+      setBounds: (r) => backend.setBounds(r),
       setMuted: (m2) => backend.setMuted(m2),
       setPaused: (p) => backend.setPaused(p),
       captureFrame: (k) => backend.captureFrame(k),
@@ -1833,7 +1759,6 @@
       init_video_surfaces_mpv();
       init_video_surfaces_droid();
       init_transparent_webview();
-      init_native_surface_diagnostics();
       engineOverride = null;
       engineCache = null;
       live = /* @__PURE__ */ new Map();
@@ -2656,6 +2581,7 @@
           settingsDetailsEyebrow: "Details page",
           sideMenuTitle: "Side menu",
           sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
+          sideMenuLockedByPill: "Turned off while the menu pill is on \u2014 the pill is the menu then.",
           sideMenuOn: "Side menu",
           menuChipTitle: "Menu pill (TV style)",
           menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
@@ -3603,6 +3529,16 @@
           cpTemplate_collection: "Collection (TMDb id)",
           cpTemplate_trakt: "Trakt list (id)",
           cpPagesEyebrow: "PAGES",
+          cpPageName: "Page name",
+          cpAddFilter: "+ Add filter",
+          cpRemoveFilter: "Remove filter",
+          cpNoFilters: "No filters \u2014 the row is the widest question there is.",
+          cpAllFiltersSet: "Every filter is already set.",
+          cpRemovePage: "Remove page",
+          cpRemovePageBody: "The page and its rows are deleted. Rows on other pages that opened it fall back to the results grid.",
+          cpRowActive: "Row active",
+          cpTemplatesEyebrow: "TEMPLATES",
+          cpTemplateNeedsTheme: "Needs a theme",
           cpPagesTitle: "Your pages",
           cpNoPages: "No pages yet. Write a theme above and generate one.",
           cpNoRows: "This page has no rows yet.",
@@ -3659,6 +3595,7 @@
           cpEmptyVotes: "No hits \u2014 the vote floor is too high for this narrow a filter. Remove the Votes chip.",
           cpPreviewEmpty: "No hits. Loosen a filter, or check that the keyword is a real TMDb keyword.",
           cpPin: "Pin to the front",
+          cpUnpin: "Unpin",
           cpExclude: "Leave out of the row",
           cpInclude: "Put back in the row",
           cpOnlyMovies: "People and age rating only exist for films, so the row shows films.",
@@ -3681,6 +3618,7 @@
           cpFieldProviders: "Service",
           cpFieldCertCountry: "Country",
           cpShowAllGrid: "The results grid",
+          cpShowAllNone: "No link",
           cpTypeAll: "Film & series",
           cpTypeMovie: "Film",
           cpTypeSeries: "Series",
@@ -4876,6 +4814,23 @@
           hpTopButtonsTitle: "Top buttons",
           hpTopButtonsHint: "Choose which buttons appear in the top row next to the profile picker, and in what order. Applies to the menu row layout \u2014 the menu pill has its own panel.",
           hpTopButtonsPillNote: "The menu pill is on, and it replaces the top row \u2014 these buttons are not shown.",
+          hpMenuOrderGlassNote: "The glass card draws its rows and tiles in fixed groups, so order and the divider have no effect on phones. Switch to the side menu under Display to arrange them.",
+          rowViewNext: "View next",
+          schedulePanelTitle: "Your schedule",
+          scheduleTabMenu: "Menu",
+          scheduleTabSchedule: "Schedule",
+          scheduleOnlyAiringDays: "Only days with episodes are shown.",
+          scheduleYear: "Year",
+          scheduleMonth: "Month",
+          scheduleSummary: "{days} airing days \xB7 {episodes} episodes",
+          scheduleEpisodeCount: "{count} episodes",
+          scheduleEpisodeCountOne: "1 episode",
+          scheduleEmptyMonth: "Nothing airs this month from the series you follow.",
+          scheduleEmptyWatchlist: "Follow a series and its episodes show up here.",
+          scheduleFailed: "Could not fetch the schedule.",
+          scheduleRetry: "Try again",
+          scheduleSettingTitle: "Schedule panel",
+          scheduleSettingDesc: "A second column beside the menu with upcoming episodes from the series you follow.",
           hpMenuDividerRow: "Divider",
           mobileMenuDesignTitle: "Menu design on phones",
           mobileMenuDesignDesc: "The same pill opens the menu either way \u2014 this chooses how it is drawn.",
@@ -5463,6 +5418,7 @@
           settingsDetailsEyebrow: "Detaljsidan",
           sideMenuTitle: "Sidomeny",
           sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
+          sideMenuLockedByPill: "Avst\xE4ngt s\xE5 l\xE4nge menypillret \xE4r p\xE5 \u2014 d\xE5 \xE4r pillret menyn.",
           sideMenuOn: "Sidomeny",
           menuChipTitle: "Menypill (TV-stil)",
           menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
@@ -6405,6 +6361,16 @@
           cpTemplate_collection: "Samling (TMDb-id)",
           cpTemplate_trakt: "Trakt-lista (id)",
           cpPagesEyebrow: "SIDOR",
+          cpPageName: "Sidans namn",
+          cpAddFilter: "+ L\xE4gg till filter",
+          cpRemoveFilter: "Ta bort filtret",
+          cpNoFilters: "Inga filter \u2014 raden \xE4r den bredaste fr\xE5gan som finns.",
+          cpAllFiltersSet: "Alla filter \xE4r redan satta.",
+          cpRemovePage: "Ta bort sidan",
+          cpRemovePageBody: "Sidan och dess rader raderas. Rader p\xE5 andra sidor som \xF6ppnade den faller tillbaka p\xE5 tr\xE4ffrutn\xE4tet.",
+          cpRowActive: "Raden aktiv",
+          cpTemplatesEyebrow: "MALLAR",
+          cpTemplateNeedsTheme: "Kr\xE4ver ett tema",
           cpPagesTitle: "Dina sidor",
           cpNoPages: "Inga sidor \xE4n. Skriv ett tema ovan och generera en.",
           cpNoRows: "Den h\xE4r sidan har inga rader \xE4n.",
@@ -6461,6 +6427,7 @@
           cpEmptyVotes: "Inga tr\xE4ffar \u2014 r\xF6stgolvet \xE4r f\xF6r h\xF6gt f\xF6r ett s\xE5 smalt filter. Ta bort Votes-chipet.",
           cpPreviewEmpty: "Inga tr\xE4ffar. L\xE4tta p\xE5 ett filter, eller kolla att nyckelordet \xE4r ett riktigt TMDb-nyckelord.",
           cpPin: "F\xE4st \xF6verst",
+          cpUnpin: "Lossa",
           cpExclude: "Utanf\xF6r raden",
           cpInclude: "Tillbaka i raden",
           cpOnlyMovies: "Person och \xE5ldersgr\xE4ns finns bara f\xF6r film, s\xE5 raden visar filmer.",
@@ -6483,6 +6450,7 @@
           cpFieldProviders: "Tj\xE4nst",
           cpFieldCertCountry: "Land",
           cpShowAllGrid: "Tr\xE4ffrutn\xE4tet",
+          cpShowAllNone: "Ingen l\xE4nk",
           cpTypeAll: "Film & serier",
           cpTypeMovie: "Film",
           cpTypeSeries: "Serier",
@@ -7660,6 +7628,23 @@
           hpTopButtonsTitle: "Topp-knappar",
           hpTopButtonsHint: "V\xE4lj vilka knappar som visas i toppraden bredvid profilv\xE4ljaren, och i vilken ordning. G\xE4ller menyradsl\xE4get \u2014 menypillret har en egen panel.",
           hpTopButtonsPillNote: "Menypillret \xE4r p\xE5 och ers\xE4tter toppraden \u2014 de h\xE4r knapparna visas inte.",
+          hpMenuOrderGlassNote: "Glaskortet ritar sina rader och brickor i fasta grupper, s\xE5 ordningen och skiljelinjen har ingen verkan p\xE5 telefon. Byt till sidomenyn under Utseende f\xF6r att ordna dem.",
+          rowViewNext: "Visa n\xE4sta",
+          schedulePanelTitle: "Ditt schema",
+          scheduleTabMenu: "Meny",
+          scheduleTabSchedule: "Schema",
+          scheduleOnlyAiringDays: "Bara dagar med avsnitt visas.",
+          scheduleYear: "\xC5r",
+          scheduleMonth: "M\xE5nad",
+          scheduleSummary: "{days} s\xE4ndningsdagar \xB7 {episodes} avsnitt",
+          scheduleEpisodeCount: "{count} avsnitt",
+          scheduleEpisodeCountOne: "1 avsnitt",
+          scheduleEmptyMonth: "Inget s\xE4nds den h\xE4r m\xE5naden av serierna du f\xF6ljer.",
+          scheduleEmptyWatchlist: "F\xF6lj en serie s\xE5 dyker dess avsnitt upp h\xE4r.",
+          scheduleFailed: "Schemat gick inte att h\xE4mta.",
+          scheduleRetry: "F\xF6rs\xF6k igen",
+          scheduleSettingTitle: "Schemapanel",
+          scheduleSettingDesc: "En andra kolumn bredvid menyn med kommande avsnitt ur serierna du f\xF6ljer.",
           hpMenuDividerRow: "Avdelare",
           mobileMenuDesignTitle: "Menyns utseende p\xE5 telefon",
           mobileMenuDesignDesc: "Samma pill \xF6ppnar menyn i b\xE5da fallen \u2014 det h\xE4r v\xE4ljer hur den ritas.",
@@ -11791,10 +11776,10 @@
   function createLanguageOption(input) {
     const { code, englishLabel, nativeLabel } = input;
     const englishDisplayName = getEnglishLanguageDisplayName(code);
-    const label2 = englishLabel || englishDisplayName || nativeLabel || code;
+    const label = englishLabel || englishDisplayName || nativeLabel || code;
     return {
       code,
-      label: label2.charAt(0).toUpperCase() + label2.slice(1),
+      label: label.charAt(0).toUpperCase() + label.slice(1),
       englishLabel: englishLabel || null,
       nativeLabel: nativeLabel || null
     };
@@ -12764,13 +12749,13 @@
         }
         return false;
       };
-      var isLabelPosition = (label2) => label2 === "position" || label2 === "percentage";
-      var isLabelImage = (label2) => label2 === "image" || label2 === "url";
-      var isLabelSize = (label2) => label2 === "length" || label2 === "size" || label2 === "bg-size";
-      var isLabelLength = (label2) => label2 === "length";
-      var isLabelNumber = (label2) => label2 === "number";
-      var isLabelFamilyName = (label2) => label2 === "family-name";
-      var isLabelShadow = (label2) => label2 === "shadow";
+      var isLabelPosition = (label) => label === "position" || label === "percentage";
+      var isLabelImage = (label) => label === "image" || label === "url";
+      var isLabelSize = (label) => label === "length" || label === "size" || label === "bg-size";
+      var isLabelLength = (label) => label === "length";
+      var isLabelNumber = (label) => label === "number";
+      var isLabelFamilyName = (label) => label === "family-name";
+      var isLabelShadow = (label) => label === "shadow";
       var validators = /* @__PURE__ */ Object.defineProperty({
         __proto__: null,
         isAny,
@@ -39501,9 +39486,9 @@
       }
       $parcel$export(module.exports, "useLabels", () => $6ec78bde395c477d$export$d6875122194c7b44);
       function $6ec78bde395c477d$export$d6875122194c7b44(props, defaultLabel) {
-        let { id: id4, "aria-label": label2, "aria-labelledby": labelledBy } = props;
+        let { id: id4, "aria-label": label, "aria-labelledby": labelledBy } = props;
         id4 = (0, $8c61827343eed941$exports.useId)(id4);
-        if (labelledBy && label2) {
+        if (labelledBy && label) {
           let ids = /* @__PURE__ */ new Set([
             id4,
             ...labelledBy.trim().split(/\s+/)
@@ -39512,10 +39497,10 @@
             ...ids
           ].join(" ");
         } else if (labelledBy) labelledBy = labelledBy.trim().split(/\s+/).join(" ");
-        if (!label2 && !labelledBy && defaultLabel) label2 = defaultLabel;
+        if (!label && !labelledBy && defaultLabel) label = defaultLabel;
         return {
           id: id4,
-          "aria-label": label2,
+          "aria-label": label,
           "aria-labelledby": labelledBy
         };
       }
@@ -50047,8 +50032,8 @@
           max: resolvePointElastic2(dragElastic, maxLabel)
         };
       }
-      function resolvePointElastic2(dragElastic, label2) {
-        return typeof dragElastic === "number" ? dragElastic : dragElastic[label2] || 0;
+      function resolvePointElastic2(dragElastic, label) {
+        return typeof dragElastic === "number" ? dragElastic : dragElastic[label] || 0;
       }
       var elementDragControls2 = /* @__PURE__ */ new WeakMap();
       var VisualElementDragControls2 = class {
@@ -94869,8 +94854,8 @@
       max: resolvePointElastic(dragElastic, maxLabel)
     };
   }
-  function resolvePointElastic(dragElastic, label2) {
-    return typeof dragElastic === "number" ? dragElastic : dragElastic[label2] || 0;
+  function resolvePointElastic(dragElastic, label) {
+    return typeof dragElastic === "number" ? dragElastic : dragElastic[label] || 0;
   }
   var defaultElastic;
   var init_constraints = __esm({
@@ -100156,13 +100141,13 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const label2 = labelProp || children;
+        const label = labelProp || children;
         const ariaLabel = (0, import_react165.useMemo)(() => {
-          if (label2 && typeof label2 === "string") {
-            return label2;
+          if (label && typeof label === "string") {
+            return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
-        }, [children, label2, otherProps["aria-label"]]);
+        }, [children, label, otherProps["aria-label"]]);
         const getSpinnerProps = (0, import_react165.useCallback)(
           () => ({
             "aria-label": ariaLabel,
@@ -100173,12 +100158,12 @@
           }),
           [ariaLabel, slots, baseStyles, otherProps]
         );
-        return { label: label2, slots, classNames, variant, getSpinnerProps };
+        return { label, slots, classNames, variant, getSpinnerProps };
       }
       var import_system_rsc2 = require_dist14();
       var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spinner = (0, import_system_rsc2.forwardRef)((props, ref) => {
-        const { slots, classNames, label: label2, variant, getSpinnerProps } = useSpinner({ ...props });
+        const { slots, classNames, label, variant, getSpinnerProps } = useSpinner({ ...props });
         if (variant === "wave" || variant === "dots") {
           return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ref, ...getSpinnerProps(), children: [
             /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
@@ -100191,7 +100176,7 @@
               },
               `dot-${index3}`
             )) }),
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+            label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "simple") {
@@ -100225,7 +100210,7 @@
                 ]
               }
             ),
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+            label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "spinner") {
@@ -100240,7 +100225,7 @@
               },
               `star-${index3}`
             )) }),
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+            label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ref, ...getSpinnerProps(), children: [
@@ -100248,7 +100233,7 @@
             /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
             /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
           ] }),
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+          label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
         ] });
       });
       Spinner.displayName = "HeroUI.Spinner";
@@ -104867,9 +104852,9 @@
         return $3f0180db35edfbf7$export$d6875122194c7b44;
       });
       function $3f0180db35edfbf7$export$d6875122194c7b44(props, defaultLabel) {
-        let { id: id4, "aria-label": label2, "aria-labelledby": labelledBy } = props;
+        let { id: id4, "aria-label": label, "aria-labelledby": labelledBy } = props;
         id4 = (0, $7ac82d1fee77eb8a$exports.useId)(id4);
-        if (labelledBy && label2) {
+        if (labelledBy && label) {
           let ids = /* @__PURE__ */ new Set([
             id4,
             ...labelledBy.trim().split(/\s+/)
@@ -104878,10 +104863,10 @@
             ...ids
           ].join(" ");
         } else if (labelledBy) labelledBy = labelledBy.trim().split(/\s+/).join(" ");
-        if (!label2 && !labelledBy && defaultLabel) label2 = defaultLabel;
+        if (!label && !labelledBy && defaultLabel) label = defaultLabel;
         return {
           id: id4,
-          "aria-label": label2,
+          "aria-label": label,
           "aria-labelledby": labelledBy
         };
       }
@@ -104900,11 +104885,11 @@
         return $ec895d26f03379ea$export$8467354a121f1b9f;
       });
       function $ec895d26f03379ea$export$8467354a121f1b9f(props) {
-        let { id: id4, label: label2, "aria-labelledby": ariaLabelledby, "aria-label": ariaLabel, labelElementType = "label" } = props;
+        let { id: id4, label, "aria-labelledby": ariaLabelledby, "aria-label": ariaLabel, labelElementType = "label" } = props;
         id4 = (0, $7ac82d1fee77eb8a$exports.useId)(id4);
         let labelId = (0, $7ac82d1fee77eb8a$exports.useId)();
         let labelProps = {};
-        if (label2) {
+        if (label) {
           ariaLabelledby = ariaLabelledby ? `${labelId} ${ariaLabelledby}` : labelId;
           labelProps = {
             id: labelId,
@@ -118230,7 +118215,7 @@
           ref,
           classNames,
           children,
-          label: label2,
+          label,
           radius,
           value,
           name,
@@ -118260,7 +118245,7 @@
             ...otherProps,
             value,
             name,
-            "aria-label": (0, import_shared_utils2.safeAriaLabel)(otherProps["aria-label"], label2),
+            "aria-label": (0, import_shared_utils2.safeAriaLabel)(otherProps["aria-label"], label),
             defaultValue,
             isRequired,
             isReadOnly,
@@ -118272,7 +118257,7 @@
         }, [
           value,
           name,
-          label2,
+          label,
           defaultValue,
           isRequired,
           isReadOnly,
@@ -118373,7 +118358,7 @@
         return {
           Component: Component2,
           children,
-          label: label2,
+          label,
           context,
           description,
           isInvalid: groupState.isInvalid,
@@ -118390,7 +118375,7 @@
         const {
           children,
           context,
-          label: label2,
+          label,
           description,
           isInvalid,
           errorMessage,
@@ -118401,7 +118386,7 @@
           getErrorMessageProps
         } = useCheckboxGroup({ ...props, ref });
         return /* @__PURE__ */ (0, import_jsx_runtime310.jsxs)("div", { ...getGroupProps(), children: [
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("span", { ...getLabelProps(), children: label2 }),
+          label && /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("span", { ...getLabelProps(), children: label }),
           /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("div", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime310.jsx)(CheckboxGroupProvider, { value: context, children }) }),
           isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("div", { ...getDescriptionProps(), children: description }) : null
         ] });
@@ -123093,7 +123078,7 @@
           ref,
           classNames,
           children,
-          label: label2,
+          label,
           value,
           name,
           isInvalid: isInvalidProp,
@@ -123121,7 +123106,7 @@
             ...otherProps,
             value,
             name,
-            "aria-label": (0, import_shared_utils2.safeAriaLabel)(otherProps["aria-label"], label2),
+            "aria-label": (0, import_shared_utils2.safeAriaLabel)(otherProps["aria-label"], label),
             isRequired,
             isReadOnly,
             isInvalid: validationState === "invalid" || isInvalidProp,
@@ -123133,7 +123118,7 @@
           otherProps,
           value,
           name,
-          label2,
+          label,
           isRequired,
           isReadOnly,
           isInvalidProp,
@@ -123233,7 +123218,7 @@
         return {
           Component: Component2,
           children,
-          label: label2,
+          label,
           context,
           description,
           isInvalid,
@@ -123250,7 +123235,7 @@
         const {
           Component: Component2,
           children,
-          label: label2,
+          label,
           context,
           description,
           isInvalid,
@@ -123262,7 +123247,7 @@
           getErrorMessageProps
         } = useRadioGroup({ ...props, ref });
         return /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)(Component2, { ...getGroupProps(), children: [
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { ...getLabelProps(), children: label2 }),
+          label && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { ...getLabelProps(), children: label }),
           /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime210.jsx)(RadioGroupProvider, { value: context, children }) }),
           isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getDescriptionProps(), children: description }) : null
         ] });
@@ -127856,7 +127841,7 @@
           id: id4,
           className,
           classNames,
-          label: label2,
+          label,
           valueLabel,
           value = 0,
           minValue = 0,
@@ -127878,7 +127863,7 @@
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const { progressBarProps, labelProps } = (0, import_progress3.useProgressBar)({
           id: id4,
-          label: label2,
+          label,
           value,
           minValue,
           maxValue,
@@ -127930,7 +127915,7 @@
           domRef,
           slots,
           classNames,
-          label: label2,
+          label,
           percentage,
           showValueLabel,
           getProgressBarProps,
@@ -127943,17 +127928,17 @@
           Component: Component2,
           slots,
           classNames,
-          label: label2,
+          label,
           percentage,
           showValueLabel,
           getProgressBarProps,
           getLabelProps
         } = useProgress({ ...props, ref });
         const progressBarProps = getProgressBarProps();
-        const shouldShowLabelWrapper = label2 || showValueLabel;
+        const shouldShowLabelWrapper = label || showValueLabel;
         return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...progressBarProps, children: [
           shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getLabelProps(), children: label2 }),
+            label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getLabelProps(), children: label }),
             showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }) : null,
           /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
@@ -127987,7 +127972,7 @@
           id: id4,
           className,
           classNames,
-          label: label2,
+          label,
           valueLabel,
           value = void 0,
           minValue = 0,
@@ -128010,7 +127995,7 @@
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const { progressBarProps, labelProps } = (0, import_progress22.useProgressBar)({
           id: id4,
-          label: label2,
+          label,
           value,
           minValue,
           maxValue,
@@ -128113,7 +128098,7 @@
           domRef,
           slots,
           classNames,
-          label: label2,
+          label,
           showValueLabel,
           getProgressBarProps,
           getLabelProps,
@@ -128128,7 +128113,7 @@
           Component: Component2,
           slots,
           classNames,
-          label: label2,
+          label,
           showValueLabel,
           getProgressBarProps,
           getLabelProps,
@@ -128145,7 +128130,7 @@
             ] }),
             showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }),
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { ...getLabelProps(), children: label2 })
+          label && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { ...getLabelProps(), children: label })
         ] });
       });
       CircularProgress.displayName = "HeroUI.CircularProgress";
@@ -128942,7 +128927,7 @@
           ref,
           as,
           type,
-          label: label2,
+          label,
           baseRef,
           wrapperRef,
           description,
@@ -129043,13 +129028,13 @@
         const isInvalid = validationState === "invalid" || isAriaInvalid;
         const labelPlacement = (0, import_system.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const isClearable = !!onClear || originalProps.isClearable;
-        const hasElements = !!label2 || !!description || !!errorMessage;
+        const hasElements = !!label || !!description || !!errorMessage;
         const hasPlaceholder = !!props.placeholder;
-        const hasLabel = !!label2;
+        const hasLabel = !!label;
         const hasHelper = !!description || !!errorMessage;
         const isOutsideLeft = labelPlacement === "outside-left";
         const isOutsideTop = labelPlacement === "outside-top";
@@ -129321,7 +129306,7 @@
           Component: Component2,
           classNames,
           domRef,
-          label: label2,
+          label,
           description,
           startContent,
           endContent,
@@ -129354,7 +129339,7 @@
       var Input = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
-          label: label2,
+          label,
           description,
           isClearable,
           startContent,
@@ -129377,7 +129362,7 @@
           getErrorMessageProps,
           getClearButtonProps
         } = useInput({ ...props, ref });
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
             return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.CloseFilledIcon, {}) });
@@ -129460,7 +129445,7 @@
         }, ref) => {
           const {
             Component: Component2,
-            label: label2,
+            label,
             description,
             startContent,
             endContent,
@@ -129482,7 +129467,7 @@
           } = useInput({ ...otherProps, ref, isMultiline: true });
           const [hasMultipleRows, setIsHasMultipleRows] = (0, import_react310.useState)(minRows > 1);
           const [isLimitReached, setIsLimitReached] = (0, import_react310.useState)(false);
-          const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
+          const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label }) : null;
           const inputProps = getInputProps();
           const handleHeightChange = (height, meta) => {
             if (minRows === 1) {
@@ -149192,11 +149177,11 @@
       }
       $parcel$export(module.exports, "useLabel", () => $ce7359c25a7dec1c$export$8467354a121f1b9f);
       function $ce7359c25a7dec1c$export$8467354a121f1b9f(props) {
-        let { id: id4, label: label2, "aria-labelledby": ariaLabelledby, "aria-label": ariaLabel, labelElementType = "label" } = props;
+        let { id: id4, label, "aria-labelledby": ariaLabelledby, "aria-label": ariaLabel, labelElementType = "label" } = props;
         id4 = (0, $eXjoL$reactariautils.useId)(id4);
         let labelId = (0, $eXjoL$reactariautils.useId)();
         let labelProps = {};
-        if (label2) {
+        if (label) {
           ariaLabelledby = ariaLabelledby ? `${labelId} ${ariaLabelledby}` : labelId;
           labelProps = {
             id: labelId,
@@ -150927,7 +150912,7 @@
         const {
           ref,
           as,
-          label: label2,
+          label,
           name,
           isLoading,
           selectorIcon,
@@ -151072,7 +151057,7 @@
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled: originalProps.isDisabled });
         const labelPlacement = (0, import_system.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const hasPlaceholder = !!placeholder;
         const shouldLabelBeOutside = labelPlacement === "outside-left" || labelPlacement === "outside" || labelPlacement === "outside-top";
@@ -151081,7 +151066,7 @@
         const isClearable = originalProps.isClearable;
         const isFilled = state.isOpen || hasPlaceholder || !!((_e = state.selectedItems) == null ? void 0 : _e.length) || !!startContent || !!endContent || !!originalProps.isMultiline;
         const hasValue = !!((_f = state.selectedItems) == null ? void 0 : _f.length);
-        const hasLabel = !!label2;
+        const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const slots = (0, import_react165.useMemo)(
@@ -151423,7 +151408,7 @@
           Component: Component2,
           domRef,
           state,
-          label: label2,
+          label,
           name,
           triggerRef,
           isLoading,
@@ -151519,11 +151504,11 @@
       }
       function HiddenSelect(props) {
         var _a;
-        let { state, triggerRef, selectRef, label: label2, name, isDisabled, form } = props;
+        let { state, triggerRef, selectRef, label, name, isDisabled, form } = props;
         let { containerProps, selectProps } = useHiddenSelect({ ...props, selectRef }, state, triggerRef);
         if (state.collection.size <= 300) {
           return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("label", { children: [
-            label2,
+            label,
             /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("select", { ...selectProps, ref: selectRef, children: [
               /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("option", {}),
               [...state.collection.getKeys()].map((key) => {
@@ -151555,7 +151540,7 @@
         const {
           Component: Component2,
           state,
-          label: label2,
+          label,
           hasHelper,
           isLoading,
           triggerRef,
@@ -151589,7 +151574,7 @@
           getEndWrapperProps,
           getEndContentProps
         } = useSelect({ ...props, ref });
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const clonedIcon = (0, import_react310.cloneElement)(selectorIcon, getSelectorIconProps());
         const clearButton = (0, import_react210.useMemo)(() => {
           var _a2;
@@ -152370,7 +152355,7 @@
           ref,
           as,
           name,
-          label: label2,
+          label,
           formatOptions,
           value: valueProp,
           maxValue = 100,
@@ -152496,7 +152481,7 @@
           return {
             "data-slot": "label",
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
-            children: label2,
+            children: label,
             ...labelProps,
             ...props2
           };
@@ -152629,7 +152614,7 @@
           state,
           value,
           domRef,
-          label: label2,
+          label,
           steps: steps2,
           marks: marks2,
           startContent,
@@ -152656,7 +152641,7 @@
         const {
           Component: Component2,
           state,
-          label: label2,
+          label,
           steps: steps2,
           marks: marks2,
           startContent,
@@ -152677,7 +152662,7 @@
           getEndContentProps
         } = useSlider({ ...props, ref });
         return /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)(Component2, { ...getBaseProps(), children: [
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)("div", { ...getLabelWrapperProps(), children: [
+          label && /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)("div", { ...getLabelWrapperProps(), children: [
             (0, import_react_utils4.renderFn)({
               Component: "label",
               props: getLabelProps(),
@@ -157501,7 +157486,7 @@
         const {
           ref,
           as,
-          label: label2,
+          label,
           isLoading,
           menuTrigger = "focus",
           filterOptions = {
@@ -157604,7 +157589,7 @@
         const slotsProps = {
           inputProps: (0, import_shared_utils.mergeProps)(
             {
-              label: label2,
+              label,
               ref: inputRef,
               wrapperRef: inputWrapperRef,
               onClick: () => {
@@ -157866,7 +157851,7 @@
         return {
           Component: Component2,
           inputRef,
-          label: label2,
+          label,
           state,
           slots,
           classNames,
@@ -159120,21 +159105,21 @@
           state.timeZone
         ]);
         let isDateToday = (0, $cuS6T$internationalizeddate.isToday)(date, state.timeZone);
-        let label2 = (0, $cuS6T$react.useMemo)(() => {
-          let label3 = "";
-          if ("highlightedRange" in state && state.value && !state.anchorDate && ((0, $cuS6T$internationalizeddate.isSameDay)(date, state.value.start) || (0, $cuS6T$internationalizeddate.isSameDay)(date, state.value.end))) label3 = selectedDateDescription + ", ";
-          label3 += dateFormatter.format(nativeDate);
+        let label = (0, $cuS6T$react.useMemo)(() => {
+          let label2 = "";
+          if ("highlightedRange" in state && state.value && !state.anchorDate && ((0, $cuS6T$internationalizeddate.isSameDay)(date, state.value.start) || (0, $cuS6T$internationalizeddate.isSameDay)(date, state.value.end))) label2 = selectedDateDescription + ", ";
+          label2 += dateFormatter.format(nativeDate);
           if (isDateToday)
-            label3 = stringFormatter.format(isSelected ? "todayDateSelected" : "todayDate", {
-              date: label3
+            label2 = stringFormatter.format(isSelected ? "todayDateSelected" : "todayDate", {
+              date: label2
             });
           else if (isSelected)
-            label3 = stringFormatter.format("dateSelected", {
-              date: label3
+            label2 = stringFormatter.format("dateSelected", {
+              date: label2
             });
-          if (state.minValue && (0, $cuS6T$internationalizeddate.isSameDay)(date, state.minValue)) label3 += ", " + stringFormatter.format("minimumDate");
-          else if (state.maxValue && (0, $cuS6T$internationalizeddate.isSameDay)(date, state.maxValue)) label3 += ", " + stringFormatter.format("maximumDate");
-          return label3;
+          if (state.minValue && (0, $cuS6T$internationalizeddate.isSameDay)(date, state.minValue)) label2 += ", " + stringFormatter.format("minimumDate");
+          else if (state.maxValue && (0, $cuS6T$internationalizeddate.isSameDay)(date, state.maxValue)) label2 += ", " + stringFormatter.format("maximumDate");
+          return label2;
         }, [
           dateFormatter,
           nativeDate,
@@ -159282,7 +159267,7 @@
             tabIndex,
             role: "button",
             "aria-disabled": !isSelectable || void 0,
-            "aria-label": label2,
+            "aria-label": label,
             "aria-invalid": isInvalid || void 0,
             "aria-describedby": [
               isInvalid ? errorMessageId : void 0,
@@ -168542,7 +168527,7 @@
         const {
           ref,
           as,
-          label: label2,
+          label,
           inputRef: inputRefProp,
           description,
           startContent,
@@ -168569,7 +168554,7 @@
         const disableAnimation = (_g = originalProps.disableAnimation) != null ? _g : globalContext == null ? void 0 : globalContext.disableAnimation;
         const state = (0, import_datepicker2.useDateFieldState)({
           ...originalProps,
-          label: label2,
+          label,
           locale,
           minValue,
           maxValue,
@@ -168586,12 +168571,12 @@
           descriptionProps,
           errorMessageProps,
           isInvalid: ariaIsInvalid
-        } = (0, import_datepicker.useDateField)({ ...originalProps, label: label2, validationBehavior, inputRef }, state, domRef);
+        } = (0, import_datepicker.useDateField)({ ...originalProps, label, validationBehavior, inputRef }, state, domRef);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const isInvalid = isInvalidProp || ariaIsInvalid;
         const labelPlacement = (0, import_system.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
         const slots = (0, import_react165.useMemo)(
@@ -168675,7 +168660,7 @@
         const getBaseGroupProps = () => {
           return {
             as,
-            label: label2,
+            label,
             description,
             endContent,
             errorMessage,
@@ -168718,7 +168703,7 @@
       var DateInputGroup = (0, import_system3.forwardRef)((props, ref) => {
         const {
           as,
-          label: label2,
+          label,
           children,
           description,
           startContent,
@@ -168737,7 +168722,7 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...labelProps, children: label2 }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...labelProps, children: label }) : null;
         const errorMessage = typeof errorMessageProp === "function" ? errorMessageProp({
           isInvalid,
           validationErrors,
@@ -168857,7 +168842,7 @@
         const {
           ref,
           as,
-          label: label2,
+          label,
           inputRef: inputRefProp,
           description,
           startContent,
@@ -168882,7 +168867,7 @@
         const disableAnimation = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation;
         const state = (0, import_datepicker5.useTimeFieldState)({
           ...originalProps,
-          label: label2,
+          label,
           locale,
           minValue,
           maxValue,
@@ -168899,11 +168884,11 @@
           descriptionProps,
           errorMessageProps,
           isInvalid
-        } = (0, import_datepicker4.useTimeField)({ ...originalProps, label: label2, validationBehavior, inputRef }, state, domRef);
+        } = (0, import_datepicker4.useTimeField)({ ...originalProps, label, validationBehavior, inputRef }, state, domRef);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const labelPlacement = (0, import_system5.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
         const slots = (0, import_react510.useMemo)(
@@ -168986,7 +168971,7 @@
         const getBaseGroupProps = () => {
           return {
             as,
-            label: label2,
+            label,
             description,
             endContent,
             errorMessage,
@@ -169276,7 +169261,7 @@
         const {
           as,
           ref,
-          label: label2,
+          label,
           endContent,
           selectorIcon,
           inputRef,
@@ -169361,7 +169346,7 @@
         };
         const dateInputProps = {
           as,
-          label: label2,
+          label,
           ref: domRef,
           inputRef,
           description,
@@ -169721,7 +169706,7 @@
       var import_form2 = require_dist33();
       function useDateRangePicker({
         as,
-        label: label2,
+        label,
         isInvalid: isInvalidProp,
         description,
         startContent,
@@ -169791,7 +169776,7 @@
         const showTimeField = !!timeGranularity;
         const labelPlacement = (0, import_system4.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
         const getStartTimeInputProps = () => {
@@ -170001,7 +169986,7 @@
         const getDateInputGroupProps = () => {
           return {
             as,
-            label: label2,
+            label,
             description,
             endContent,
             errorMessage,
@@ -170028,7 +170013,7 @@
         };
         return {
           state,
-          label: label2,
+          label,
           slots,
           classNames,
           startContent,
@@ -171696,7 +171681,7 @@
       }
       $parcel$export(module.exports, "useNumberField", () => $fa863e9b015ae839$export$23f548e970bdf099);
       function $fa863e9b015ae839$export$23f548e970bdf099(props, state, inputRef) {
-        let { id: id4, decrementAriaLabel, incrementAriaLabel, isDisabled, isReadOnly, isRequired, minValue, maxValue, autoFocus, label: label2, formatOptions, onBlur = () => {
+        let { id: id4, decrementAriaLabel, incrementAriaLabel, isDisabled, isReadOnly, isRequired, minValue, maxValue, autoFocus, label, formatOptions, onBlur = () => {
         }, onFocus, onFocusChange, onKeyDown, onKeyUp, description, errorMessage, isWheelDisabled, ...otherProps } = props;
         let { increment, incrementToMax, decrement, decrementToMin, numberValue, inputValue, commit, commitValidation } = state;
         const stringFormatter = (0, $9WaOX$reactariai18n.useLocalizedStringFormatter)((0, $parcel$interopDefault($4932e21065cdc2cd$exports)), "@react-aria/numberfield");
@@ -171806,7 +171791,7 @@
           // These props are added to a hidden input rather than the formatted textfield.
           name: void 0,
           form: void 0,
-          label: label2,
+          label,
           autoFocus,
           isDisabled,
           isReadOnly,
@@ -171969,7 +171954,7 @@
           ref,
           as,
           type,
-          label: label2,
+          label,
           baseRef,
           wrapperRef,
           description,
@@ -172044,13 +172029,13 @@
         });
         const labelPlacement = (0, import_system.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const isClearable = !!onClear || originalProps.isClearable;
-        const hasElements = !!label2 || !!description || !!errorMessage;
+        const hasElements = !!label || !!description || !!errorMessage;
         const hasPlaceholder = !!props.placeholder;
-        const hasLabel = !!label2;
+        const hasLabel = !!label;
         const hasHelper = !!description || !!errorMessage;
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
         const shouldLabelBeInside = labelPlacement === "inside";
@@ -172380,7 +172365,7 @@
           classNames,
           type,
           domRef,
-          label: label2,
+          label,
           description,
           startContent,
           endContent,
@@ -172428,7 +172413,7 @@
       var NumberInput = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
-          label: label2,
+          label,
           description,
           isClearable,
           startContent,
@@ -172456,7 +172441,7 @@
           getStepperDecreaseButtonProps,
           getStepperWrapperProps
         } = useNumberInput({ ...props, ref });
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
             return /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)(import_jsx_runtime210.Fragment, { children: [
@@ -173324,10 +173309,10 @@
                 ...landmarksWithRole
               ].map((landmark) => landmark.label);
               let duplicateLabels = labels.filter((item, index3) => labels.indexOf(item) !== index3);
-              duplicateLabels.forEach((label2) => {
-                console.warn(`Page contains more than one landmark with the '${role}' role and '${label2}' label. If two or more landmarks on a page share the same role, they must have unique labels: `, [
+              duplicateLabels.forEach((label) => {
+                console.warn(`Page contains more than one landmark with the '${role}' role and '${label}' label. If two or more landmarks on a page share the same role, they must have unique labels: `, [
                   ...landmarksWithRole
-                ].filter((landmark) => landmark.label === label2).map((landmark) => landmark.ref.current));
+                ].filter((landmark) => landmark.label === label).map((landmark) => landmark.ref.current));
               });
             }
           }
@@ -173521,7 +173506,7 @@
       function $e7d6db9a26301a97$export$4cc632584fd87fae(props, ref) {
         const { role, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledby, focus } = props;
         let manager = $e7d6db9a26301a97$var$useLandmarkManager();
-        let label2 = ariaLabel || ariaLabelledby;
+        let label = ariaLabel || ariaLabelledby;
         let [isLandmarkFocused, setIsLandmarkFocused] = (0, $kT6Sh$react.useState)(false);
         let defaultFocus = (0, $kT6Sh$react.useCallback)(() => {
           setIsLandmarkFocused(true);
@@ -173536,14 +173521,14 @@
         (0, $429333cab433657c$exports.useLayoutEffect)(() => {
           if (manager) return manager.registerLandmark({
             ref,
-            label: label2,
+            label,
             role,
             focus: focus || defaultFocus,
             blur
           });
         }, [
           manager,
-          label2,
+          label,
           ref,
           role,
           focus,
@@ -176069,16 +176054,16 @@
          * @param label The unique window label. Must be alphanumeric: `a-zA-Z-/:_`.
          * @returns The {@link Window} instance to communicate with the window.
          */
-        constructor(label2, options = {}) {
+        constructor(label, options = {}) {
           var _a;
-          this.label = label2;
+          this.label = label;
           this.listeners = /* @__PURE__ */ Object.create(null);
           if (!(options === null || options === void 0 ? void 0 : options.skip)) {
             core.invoke("plugin:window|create", {
               options: {
                 ...options,
                 parent: typeof options.parent === "string" ? options.parent : (_a = options.parent) === null || _a === void 0 ? void 0 : _a.label,
-                label: label2
+                label
               }
             }).then(async () => this.emit("tauri://created")).catch(async (e) => this.emit("tauri://error", e));
           }
@@ -176094,9 +176079,9 @@
          * @param label The window label.
          * @returns The Window instance to communicate with the window or null if the window doesn't exist.
          */
-        static async getByLabel(label2) {
+        static async getByLabel(label) {
           var _a;
-          return (_a = (await getAllWindows()).find((w) => w.label === label2)) !== null && _a !== void 0 ? _a : null;
+          return (_a = (await getAllWindows()).find((w) => w.label === label)) !== null && _a !== void 0 ? _a : null;
         }
         /**
          * Get an instance of `Window` for the current window.
@@ -177357,10 +177342,10 @@
          * @param label The badge label. Use `undefined` to remove the badge.
          * @return A promise indicating the success or failure of the operation.
          */
-        async setBadgeLabel(label2) {
+        async setBadgeLabel(label) {
           return core.invoke("plugin:window|set_badge_label", {
             label: this.label,
-            value: label2
+            value: label
           });
         }
         /**
@@ -185629,7 +185614,7 @@ ${cue.text}`).join("\n\n")}
       setSubtitleLoadError(null);
       try {
         const bytes = new Uint8Array(await file.arrayBuffer());
-        const decode = (label2, fatal) => new TextDecoder(label2, { fatal }).decode(bytes);
+        const decode = (label, fatal) => new TextDecoder(label, { fatal }).decode(bytes);
         let content2;
         if (bytes[0] === 255 && bytes[1] === 254 || bytes[0] === 254 && bytes[1] === 255) {
           content2 = decode(bytes[0] === 255 ? "utf-16le" : "utf-16be", false);
@@ -185921,8 +185906,8 @@ ${cue.text}`).join("\n\n")}
     const dtMoreIconClass = newChrome ? "h-[18px] w-[18px] flex-none text-slate-300" : "h-5 w-5 flex-none text-slate-200";
     const dtMoreTextClass = newChrome ? portraitChrome ? "text-[15px] leading-tight" : "text-sm leading-tight" : "text-[15px] leading-tight";
     const pickerStyle = (trigger, width) => portraitChrome ? { position: "fixed", left: 12, right: 12, bottom: 172, maxHeight: "55vh", overflowY: "auto" } : { ...getAnchoredMenuStyle(trigger, newChrome ? width : 0), width: newChrome ? width : void 0 };
-    const pickerHeading = (label2) => portraitChrome ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3 px-3 pb-1.5 pt-2", children: [
-      /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label2 }),
+    const pickerHeading = (label) => portraitChrome ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3 px-3 pb-1.5 pt-2", children: [
+      /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label }),
       /* @__PURE__ */ jsx(
         "button",
         {
@@ -185933,7 +185918,7 @@ ${cue.text}`).join("\n\n")}
           children: /* @__PURE__ */ jsx("svg", { className: "h-3 w-3", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
         }
       )
-    ] }) : /* @__PURE__ */ jsx("div", { className: dtMenuHeadingClass, children: label2 });
+    ] }) : /* @__PURE__ */ jsx("div", { className: dtMenuHeadingClass, children: label });
     const portraitPickerOpen = portraitChrome && (openSurface === "subs" || openSurface === "audio" || openSurface === "aspect" || openSurface === "zoom" || openSurface === "cast" || openSurface === "more");
     const dtActiveTextClass = newChrome ? "text-[rgb(var(--player-accent))]" : "text-aurora-300";
     const dtMenuDotClass = newChrome ? "ml-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white" : "ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400";
@@ -187796,8 +187781,8 @@ ${cue.text}`).join("\n\n")}
                           { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-180, Math.round((v - 0.1) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(180, Math.round((v + 0.1) * 10) / 10)) },
                           { label: t("size"), value: subSize, unit: "%", dec: () => setSubSize((v) => Math.max(50, v - 10)), inc: () => setSubSize((v) => Math.min(200, v + 10)) },
                           { label: t("verticalPosition"), value: subVerticalPos, unit: "%", dec: () => setSubVerticalPos((v) => Math.max(0, v - 5)), inc: () => setSubVerticalPos((v) => Math.min(90, v + 5)) }
-                        ].map(({ label: label2, value, unit, dec, inc }) => /* @__PURE__ */ jsxs("div", { className: "px-4 py-2", children: [
-                          /* @__PURE__ */ jsx("div", { className: "mb-1.5 text-xs text-slate-400", children: label2 }),
+                        ].map(({ label, value, unit, dec, inc }) => /* @__PURE__ */ jsxs("div", { className: "px-4 py-2", children: [
+                          /* @__PURE__ */ jsx("div", { className: "mb-1.5 text-xs text-slate-400", children: label }),
                           /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
                             /* @__PURE__ */ jsx(
                               "button",
@@ -187824,7 +187809,7 @@ ${cue.text}`).join("\n\n")}
                               }
                             )
                           ] })
-                        ] }, label2))
+                        ] }, label))
                       ] })
                     ]
                   }
@@ -188331,7 +188316,7 @@ ${cue.text}`).join("\n\n")}
                             pickerHeading(t("audio")),
                             audioTracks.map((track) => {
                               const isActive = activeAudioTrack === track.index || activeAudioTrack === null && track === audioTracks[0];
-                              const label2 = toAudioLangGroup(track.language)?.toUpperCase() ?? `Track ${track.index}`;
+                              const label = toAudioLangGroup(track.language)?.toUpperCase() ?? `Track ${track.index}`;
                               return /* @__PURE__ */ jsxs(
                                 "button",
                                 {
@@ -188341,7 +188326,7 @@ ${cue.text}`).join("\n\n")}
                                   onClick: () => switchAudioTrack(track),
                                   className: dtMenuRowClass(isActive),
                                   children: [
-                                    /* @__PURE__ */ jsx("span", { className: "text-left", children: label2 }),
+                                    /* @__PURE__ */ jsx("span", { className: "text-left", children: label }),
                                     isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
                                   ]
                                 },
@@ -189983,9 +189968,9 @@ ${cue.text}`).join("\n\n")}
 
   // lib/tv-tab-heading.tsx
   function useRepeatsTvTabHeading(text) {
-    const label2 = useContext(TvTabHeadingContext);
-    if (!label2 || typeof text !== "string") return false;
-    return normalize(text) === normalize(label2);
+    const label = useContext(TvTabHeadingContext);
+    if (!label || typeof text !== "string") return false;
+    return normalize(text) === normalize(label);
   }
   var TvTabHeadingContext, normalize;
   var init_tv_tab_heading = __esm({
@@ -190047,7 +190032,7 @@ ${cue.text}`).join("\n\n")}
     checked,
     onChange,
     disabled,
-    label: label2,
+    label,
     hint,
     right
   }) {
@@ -190091,8 +190076,8 @@ ${cue.text}`).join("\n\n")}
                     children: checked ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 14, color: TOKENS.surface0 }) : null
                   }
                 ),
-                label2 ? /* @__PURE__ */ jsxs("span", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
-                  /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.body, color: TOKENS.text, fontWeight: 500 }, children: label2 }),
+                label ? /* @__PURE__ */ jsxs("span", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
+                  /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.body, color: TOKENS.text, fontWeight: 500 }, children: label }),
                   hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.small, color: TOKENS.textMute, lineHeight: 1.4 }, children: hint }) : null
                 ] }) : null
               ]
@@ -190201,7 +190186,7 @@ ${cue.text}`).join("\n\n")}
       (o) => typeof o === "object" ? o : { value: o, label: String(o) }
     );
     const current2 = normalized.find((o) => o.value === value);
-    const label2 = current2 ? current2.label : placeholder ?? String(value);
+    const label = current2 ? current2.label : placeholder ?? String(value);
     return /* @__PURE__ */ jsxs("div", { ref, style: { position: "relative", width: width || "100%" }, children: [
       /* @__PURE__ */ jsxs(
         "button",
@@ -190226,7 +190211,7 @@ ${cue.text}`).join("\n\n")}
             transition: "border-color .14s"
           },
           children: [
-            /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: label2 }),
+            /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: label }),
             /* @__PURE__ */ jsx(
               Icon,
               {
@@ -190443,7 +190428,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   function Metric({
-    label: label2,
+    label,
     value,
     sub
   }) {
@@ -190458,7 +190443,7 @@ ${cue.text}`).join("\n\n")}
             innehåll, och `text-overflow` får aldrig något att klippa.
           */
       /* @__PURE__ */ jsxs(Card, { padding: 16, children: [
-        /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 8 }, children: label2 }),
+        /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 8 }, children: label }),
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }, children: [
           /* @__PURE__ */ jsx(
             "div",
@@ -190484,11 +190469,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
   function FieldGroup({
-    label: label2,
+    label,
     children
   }) {
     return /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: label2 }),
+      /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: label }),
       children
     ] });
   }
@@ -190961,7 +190946,7 @@ ${cue.text}`).join("\n\n")}
       aside ? /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }, children: aside }) : null
     ] }) });
   }
-  function Key({ label: label2, onSelect, primary, active: active2, init }) {
+  function Key({ label, onSelect, primary, active: active2, init }) {
     const [focused, setFocused] = useState(false);
     return /* @__PURE__ */ jsx(
       "div",
@@ -190999,7 +190984,7 @@ ${cue.text}`).join("\n\n")}
           color: primary ? TV.accent100 : TV.text,
           background: focused ? TV.accent900 : primary ? TV.accent800 : active2 ? TV.accent900 : TV.neutral900
         },
-        children: label2
+        children: label
       }
     );
   }
@@ -191575,10 +191560,10 @@ ${cue.text}`).join("\n\n")}
                 [t("gender"), person.gender],
                 [t("birth"), person.birthday ? `${person.birthday}${personAge != null ? ` (${personAge})` : ""}` : null],
                 [t("bornIn"), person.placeOfBirth]
-              ].filter(([, value]) => value).map(([label2, value]) => /* @__PURE__ */ jsxs("div", { children: [
-                /* @__PURE__ */ jsx("p", { className: "text-[13px] uppercase tracking-[0.2em] text-slate-500", children: label2 }),
+              ].filter(([, value]) => value).map(([label, value]) => /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsx("p", { className: "text-[13px] uppercase tracking-[0.2em] text-slate-500", children: label }),
                 /* @__PURE__ */ jsx("p", { className: `text-slate-200 ${isTv ? "text-base sm:text-xl" : "text-sm"}`, children: value })
-              ] }, label2)) })
+              ] }, label)) })
             ] }),
             /* @__PURE__ */ jsxs("div", { className: "hidden min-w-0 flex-col gap-5 sm:flex lg:gap-6", children: [
               /* @__PURE__ */ jsx("div", { className: "flex flex-col gap-1.5", children: /* @__PURE__ */ jsx("h1", { className: `font-semibold text-slate-50 ${isTv ? "text-3xl sm:text-5xl" : "text-2xl sm:text-3xl"}`, children: person.name }) }),
@@ -193898,6 +193883,8 @@ ${cue.text}`).join("\n\n")}
         epgSourceStats: "{channels} channels \xB7 {programmes} programmes",
         epgNeverFetched: "Never fetched",
         epgRefresh: "Refetch EPG",
+        epgFromPlaylist: "From the playlist",
+        epgAutoOff: "Turn off",
         epgRefreshing: "Fetching EPG\u2026",
         xtreamAccount: "Xtream account",
         xtreamExpires: "expires {date}",
@@ -194225,6 +194212,8 @@ ${cue.text}`).join("\n\n")}
         epgSourceStats: "{channels} kanaler \xB7 {programmes} program",
         epgNeverFetched: "Aldrig h\xE4mtad",
         epgRefresh: "H\xE4mta om EPG",
+        epgFromPlaylist: "Fr\xE5n spellistan",
+        epgAutoOff: "St\xE4ng av",
         epgRefreshing: "H\xE4mtar EPG\u2026",
         xtreamAccount: "Xtream-konto",
         xtreamExpires: "giltigt till {date}",
@@ -195462,10 +195451,10 @@ ${cue.text}`).join("\n\n")}
     const look = variant === "accent" ? { background: LT.accentSoft, color: LT.accentText } : variant === "live" ? { background: LT.liveSoft, color: "#fecdd3", fontWeight: 600, letterSpacing: "0.12em", fontSize: 10, textTransform: "uppercase" } : variant === "outline" ? { border: `1px solid ${LT.accentLine}`, color: LT.accentText, padding: "2px 9px" } : { background: LT.neutral, color: LT.muted };
     return /* @__PURE__ */ jsx("span", { style: { ...base, ...look, ...style2 }, children });
   }
-  function LiveTag({ label: label2 }) {
+  function LiveTag({ label }) {
     return /* @__PURE__ */ jsxs(Tag, { variant: "live", children: [
       /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: LT.live } }),
-      label2
+      label
     ] });
   }
   function Btn({
@@ -196919,16 +196908,16 @@ ${cue.text}`).join("\n\n")}
   });
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
-  function Round({ size, label: label2, onPress, background = "rgba(0,0,0,0.55)", children }) {
-    return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label2 }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
+  function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
+    return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
-  function Pill({ label: label2, onPress, disabled = false }) {
+  function Pill({ label, onPress, disabled = false }) {
     const shared = { height: 44, minHeight: 44, padding: "0 16px", borderRadius: 999, background: MT.s10, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", boxSizing: "border-box", flexShrink: 0 };
-    if (disabled || !onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: label2 });
-    return /* @__PURE__ */ jsx("div", { ...station(onPress), style: { ...shared, color: MT.text, cursor: "pointer" }, children: label2 });
+    if (disabled || !onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: label });
+    return /* @__PURE__ */ jsx("div", { ...station(onPress), style: { ...shared, color: MT.text, cursor: "pointer" }, children: label });
   }
-  function LiveTag2({ label: label2 }) {
-    return /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", padding: "3px 7px", borderRadius: 7, background: MT.liveSoft, color: MT.liveText, flexShrink: 0 }, children: label2 });
+  function LiveTag2({ label }) {
+    return /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", padding: "3px 7px", borderRadius: 7, background: MT.liveSoft, color: MT.liveText, flexShrink: 0 }, children: label });
   }
   function ProgressBar2({ value, height }) {
     return /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, height, borderRadius: height, background: "rgba(252,252,255,0.22)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`, height: "100%", background: MT.acc } }) });
@@ -197103,10 +197092,10 @@ ${cue.text}`).join("\n\n")}
       sheetNode
     ] });
   }
-  function GridBtn({ label: label2, onPress }) {
+  function GridBtn({ label, onPress }) {
     const shared = { minHeight: 46, padding: "0 12px", borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, boxSizing: "border-box" };
-    if (!onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label2 }) });
-    return /* @__PURE__ */ jsx("div", { ...station(onPress), style: { ...shared, color: MT.text, cursor: "pointer" }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label2 }) });
+    if (!onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }) });
+    return /* @__PURE__ */ jsx("div", { ...station(onPress), style: { ...shared, color: MT.text, cursor: "pointer" }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }) });
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
@@ -199499,7 +199488,7 @@ ${cue.text}`).join("\n\n")}
     }
     const needle = query.trim().toLowerCase();
     const filtered = (categories ?? []).filter((category) => !needle || category.name.toLowerCase().includes(needle));
-    const row = (checked, onChange, label2) => /* @__PURE__ */ jsx("div", { style: { padding: "6px 0" }, children: /* @__PURE__ */ jsx(Checkbox, { checked, onChange, label: /* @__PURE__ */ jsx("span", { style: { fontSize: 13 }, children: label2 }) }) });
+    const row = (checked, onChange, label) => /* @__PURE__ */ jsx("div", { style: { padding: "6px 0" }, children: /* @__PURE__ */ jsx(Checkbox, { checked, onChange, label: /* @__PURE__ */ jsx("span", { style: { fontSize: 13 }, children: label }) }) });
     return /* @__PURE__ */ jsxs("div", { style: { padding: "12px 14px", borderRadius: 12, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }, children: [
         /* @__PURE__ */ jsxs("div", { "data-testid": `xtream-account-${login.id}`, style: { minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
@@ -202043,13 +202032,13 @@ ${cue.text}`).join("\n\n")}
     return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
   function Card2({
-    label: label2,
+    label,
     programme,
     withProgress = false
   }) {
     if (!programme) {
       return /* @__PURE__ */ jsxs("div", { className: "flex-1 rounded-2xl border border-white/5 bg-black/40 px-4 py-3 opacity-40", children: [
-        /* @__PURE__ */ jsx("div", { className: "text-[10px] uppercase tracking-wider text-white/40", children: label2 }),
+        /* @__PURE__ */ jsx("div", { className: "text-[10px] uppercase tracking-wider text-white/40", children: label }),
         /* @__PURE__ */ jsx("div", { className: "mt-1 text-sm text-white/60", children: "\u2014" })
       ] });
     }
@@ -202067,7 +202056,7 @@ ${cue.text}`).join("\n\n")}
               "div",
               {
                 className: `text-[10px] uppercase tracking-wider ${withProgress ? "text-emerald-300" : "text-white/40"}`,
-                children: label2
+                children: label
               }
             ),
             /* @__PURE__ */ jsx("div", { className: "text-[11px] text-white/70", children: formatTime(programme.start) })
@@ -203129,7 +203118,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileChips({ items, value, onChange, testId, emphasisKey, dimKeys }) {
-    return /* @__PURE__ */ jsx("div", { "data-testid": testId, "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: items.map(({ key, label: label2, id: id4 }) => {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: items.map(({ key, label, id: id4 }) => {
       const active2 = key === value;
       const emphasis = emphasisKey !== void 0 && key === emphasisKey;
       const dim = dimKeys?.includes(key) ?? false;
@@ -203166,7 +203155,7 @@ ${cue.text}`).join("\n\n")}
             opacity: dim ? 0.65 : void 0,
             cursor: "pointer"
           },
-          children: label2
+          children: label
         },
         id4
       );
@@ -203879,7 +203868,7 @@ ${cue.text}`).join("\n\n")}
   // `minHeight` speglar alltid `height`: rutan är en station (`role="button"`)
   // och får inte klämmas ihop av en flex-förälder under sin uttalade höjd.
   init_jsx_runtime_shim();
-  function TvPreview({ channel, enabled, live: live2, width, height, label: label2, onOk, extra }) {
+  function TvPreview({ channel, enabled, live: live2, width, height, label, onOk, extra }) {
     const ref = useRef(null);
     const surface = useVideoSurface(ref, channel && enabled ? { channel, url: channel.url } : null, { muted: true, audio: false, enabled });
     const showsVideo = enabled && surface.live && !surface.failed;
@@ -203891,7 +203880,7 @@ ${cue.text}`).join("\n\n")}
         style: { width, height, minHeight: height, borderRadius: dp(14), border: `1px solid ${TV2.lineCard}`, position: "relative", overflow: "hidden", background: showsVideo ? "transparent" : "#05070d", flexShrink: 0, cursor: "pointer" },
         children: [
           channel && !showsVideo ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { position: "absolute", inset: 0, borderRadius: 0 } }) : null,
-          /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(12), left: dp(14), fontFamily: TV2.mono, fontSize: dp(12), letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(243,244,248,0.55)" }, children: label2 }),
+          /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(12), left: dp(14), fontFamily: TV2.mono, fontSize: dp(12), letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(243,244,248,0.55)" }, children: label }),
           live2 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: dp(14), bottom: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "live", children: "LIVE" }) }) : null
         ]
       }
@@ -203961,7 +203950,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileSegment({ options, value, onChange, height = 36, testId }) {
-    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { display: "flex", padding: 3, borderRadius: 999, background: MT.s08 }, children: options.map(({ key, label: label2 }) => {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { display: "flex", padding: 3, borderRadius: 999, background: MT.s08 }, children: options.map(({ key, label }) => {
       const active2 = key === value;
       return /* @__PURE__ */ jsx(
         "div",
@@ -203981,7 +203970,7 @@ ${cue.text}`).join("\n\n")}
             color: active2 ? MT.text : MT.muted,
             cursor: "pointer"
           },
-          children: label2
+          children: label
         },
         key
       );
@@ -204221,7 +204210,7 @@ ${cue.text}`).join("\n\n")}
       toggleReminder(selected, programme, model.nowMs);
       bump((n) => n + 1);
     };
-    const card2 = (label2, programme, kind) => {
+    const card2 = (label, programme, kind) => {
       if (!programme) return null;
       const isNow = kind === "now";
       const reminded = !isNow && selected ? isReminded(selected, programme) : false;
@@ -204233,7 +204222,7 @@ ${cue.text}`).join("\n\n")}
           style: { padding: `${dp(14)}px ${dp(18)}px`, borderRadius: dp(14), background: isNow ? TV2.accMix(14) : TV2.s06, border: `1px solid ${isNow ? TV2.accMix(45) : TV2.line}`, display: "flex", flexDirection: "column", gap: dp(6), cursor: "pointer" },
           children: [
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", fontSize: dp(14), letterSpacing: "0.1em", textTransform: "uppercase", color: isNow ? TV2.accText : "rgba(243,244,248,0.5)" }, children: [
-              /* @__PURE__ */ jsx("span", { children: label2 }),
+              /* @__PURE__ */ jsx("span", { children: label }),
               /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), letterSpacing: 0, textTransform: "none" }, children: isNow ? `${formatClock(programme.start, locale)}\u2013${formatClock(programme.stop, locale)}` : formatClock(programme.start, locale) })
             ] }),
             /* @__PURE__ */ jsx("div", { style: { fontSize: isNow ? dp(24) : dp(20), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: programme.title }),
@@ -204244,8 +204233,8 @@ ${cue.text}`).join("\n\n")}
       );
     };
     const noRows = rows.length === 0;
-    const colItem = (key, active2, label2, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active2 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label2 }),
+    const colItem = (key, active2, label, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active2 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.45)" }, children: count })
     ] }, key);
     return /* @__PURE__ */ jsxs("div", { "data-testid": "playlists-view-root", style: { flex: 1, minHeight: 0, display: "flex" }, children: [
@@ -204645,7 +204634,7 @@ ${cue.text}`).join("\n\n")}
       { key: "grid", label: tt("modeGrid") },
       { key: "playlists", label: tt("modePlaylists") }
     ];
-    const dayChip = (offset, label2) => /* @__PURE__ */ jsx(Chip, { active: dayOffset === offset, ...station(() => setDayOffset(offset), void 0, { "data-testid": `grid-day-${offset}` }), children: label2 });
+    const dayChip = (offset, label) => /* @__PURE__ */ jsx(Chip, { active: dayOffset === offset, ...station(() => setDayOffset(offset), void 0, { "data-testid": `grid-day-${offset}` }), children: label });
     const selectedReminded = selected ? isReminded(selected.channel, selected.programme) : false;
     return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { padding: `${dp(28)}px ${dp(48)}px ${dp(16)}px`, display: "flex", alignItems: "center", gap: dp(12), flexShrink: 0 }, children: [
@@ -204877,9 +204866,9 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function Check({ on, label: label2 }) {
+  function Check({ on, label }) {
     if (!on) return /* @__PURE__ */ jsx("span", { style: { width: dp(28), flexShrink: 0 } });
-    return /* @__PURE__ */ jsx("span", { "data-testid": `picker-check-${label2}`, style: { width: dp(28), flexShrink: 0, color: TV2.acc, fontSize: dp(22), textAlign: "center" }, children: "\u2713" });
+    return /* @__PURE__ */ jsx("span", { "data-testid": `picker-check-${label}`, style: { width: dp(28), flexShrink: 0, color: TV2.acc, fontSize: dp(22), textAlign: "center" }, children: "\u2713" });
   }
   function TvListPicker({ model, nav, title, selected, onToggle, onClose }) {
     const { tt } = useTvText();
@@ -204997,9 +204986,9 @@ ${cue.text}`).join("\n\n")}
   var DROPDOWN = { height: gp(34), minHeight: gp(34), padding: `0 ${gp(12)}px`, borderRadius: gp(10), background: TV2.s08, border: `1px solid ${TV2.line}`, display: "inline-flex", alignItems: "center", gap: gp(8), maxWidth: gp(230), cursor: "pointer", flexShrink: 1, minWidth: 0 };
   var SEGMENT = { display: "inline-flex", padding: gp(3), borderRadius: 999, background: TV2.s07, flexShrink: 0, whiteSpace: "nowrap" };
   var SEGMENT_BTN = { height: gp(28), minHeight: gp(28), padding: `0 ${gp(16)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: gp(13), whiteSpace: "nowrap", cursor: "pointer" };
-  function Dropdown({ label: label2, count, onOpen, testId }) {
-    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOpen), style: DROPDOWN, title: label2, children: [
-      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }, children: label2 }),
+  function Dropdown({ label, count, onOpen, testId }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOpen), style: DROPDOWN, title: label, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }, children: label }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), color: TV2.faint, flexShrink: 0 }, children: count }),
       /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { color: TV2.faint, fontSize: gp(10), flexShrink: 0 }, children: "\u25BE" })
     ] });
@@ -206429,10 +206418,10 @@ ${cue.text}`).join("\n\n")}
       [tt("quality"), qualityFromName(channel.name) ?? "\u2013"],
       [tt("source"), model.listFor(channel)?.name ?? "\u2013"],
       [tt("replayDays"), channel.archive ? tt("daysCount", { days: channel.archive.days }) : tt("noArchive")]
-    ].map(([label2, value]) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", padding: "4px 0" }, children: [
-      /* @__PURE__ */ jsx("span", { children: label2 }),
+    ].map(([label, value]) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", padding: "4px 0" }, children: [
+      /* @__PURE__ */ jsx("span", { children: label }),
       /* @__PURE__ */ jsx("span", { children: value })
-    ] }, label2)) });
+    ] }, label)) });
     const sheetKind = sheetProgramme ? kindOf(sheetProgramme, model.nowMs) : null;
     const sheetCanReplay = sheetProgramme ? catchUpByStart.has(sheetProgramme.start) : false;
     const sheetReminded = sheetProgramme && sheetKind === "future" ? isReminded(channel, sheetProgramme) : false;
@@ -206637,10 +206626,10 @@ ${cue.text}`).join("\n\n")}
       ] }),
       /* @__PURE__ */ jsx("div", { "data-testid": "day-picker", style: dayPickerStyle, children: DAY_OFFSETS.map((offset) => {
         const active2 = offset === dayOffset;
-        const label2 = dayLabel(offset);
+        const label = dayLabel(offset);
         return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active2 ? "#f3f4f8" : "transparent", color: active2 ? "#111" : offset > 0 ? TV2.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: label2.top }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.75 }, children: label2.bottom })
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: label.top }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.75 }, children: label.bottom })
         ] }) }, offset);
       }) }),
       /* @__PURE__ */ jsxs("div", { "data-testid": "detail", style: detailStyle, children: [
@@ -206666,10 +206655,10 @@ ${cue.text}`).join("\n\n")}
             [tt("quality"), qualityFromName(channel.name) ?? "\u2013"],
             [tt("source"), model.listFor(channel)?.name ?? "\u2013"],
             [tt("replayDays"), channel.archive ? tt("daysCount", { days: channel.archive.days }) : tt("noArchive")]
-          ].map(([label2, value]) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", fontSize: dp(17) }, children: [
-            /* @__PURE__ */ jsx("span", { style: { color: TV2.muted }, children: label2 }),
+          ].map(([label, value]) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", fontSize: dp(17) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { color: TV2.muted }, children: label }),
             /* @__PURE__ */ jsx("span", { children: value })
-          ] }, label2)),
+          ] }, label)),
           lockAvailable ? /* @__PURE__ */ jsxs("div", { ...station(requestLockToggle), style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: dp(17), paddingTop: dp(10), borderTop: `1px solid ${TV2.line}`, cursor: "pointer" }, children: [
             /* @__PURE__ */ jsx("span", { children: tt("lockWithPin") }),
             /* @__PURE__ */ jsx(Toggle, { on: locked })
@@ -206721,14 +206710,14 @@ ${cue.text}`).join("\n\n")}
     const { tt } = useTvText();
     const [symbols, setSymbols] = useState(false);
     const rows = symbols ? SYMBOLS : LETTERS;
-    const key = (label2, onOk, opts) => /* @__PURE__ */ jsx(
+    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
       "div",
       {
         ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
         style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV2.acc : TV2.s10, color: opts?.accent ? TV2.onAcc : TV2.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
-        children: label2
+        children: label
       },
-      label2
+      label
     );
     return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
       rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
@@ -207119,14 +207108,14 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx(TvTextField, { value: query, onChange: setQuery, onSubmit: focusFirstResult, placeholder: tt("searchPlaceholder"), autoFocus: true })
       ] }),
       /* @__PURE__ */ jsxs("div", { "data-live-tv-search-results": "", "data-scroll": "", style: resultsStyle, children: [
-        vodHidden ? null : /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(10) }, children: [["all", tt("scopeAll")], ["ch", tt("scopeChannels")], ["vod", tt("scopeVod")]].map(([key, label2]) => /* @__PURE__ */ jsx(
+        vodHidden ? null : /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(10) }, children: [["all", tt("scopeAll")], ["ch", tt("scopeChannels")], ["vod", tt("scopeVod")]].map(([key, label]) => /* @__PURE__ */ jsx(
           "div",
           {
             "data-testid": `search-scope-${key}`,
             "data-active": key === scope ? "" : void 0,
             ...station(() => setScope(key)),
             style: { height: dp(44), padding: `0 ${dp(20)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(18), cursor: "pointer", background: key === scope ? TV2.s16 : TV2.s06, color: key === scope ? "#fff" : "rgba(243,244,248,0.6)" },
-            children: label2
+            children: label
           },
           key
         )) }),
@@ -207617,7 +207606,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function KindTag({ kind, label: label2 }) {
+  function KindTag({ kind, label }) {
     return /* @__PURE__ */ jsx(
       "span",
       {
@@ -207633,7 +207622,7 @@ ${cue.text}`).join("\n\n")}
           color: "rgba(255,255,255,0.75)"
         },
         "data-vod-kind": kind,
-        children: label2
+        children: label
       }
     );
   }
@@ -208490,15 +208479,15 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_jsx_runtime_shim();
-  function Row({ label: label2, right, onOk, testId, phone = false }) {
+  function Row({ label, right, onOk, testId, phone = false }) {
     if (phone) {
       return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 52, padding: "10px 14px", borderRadius: 0, background: "transparent", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
-        /* @__PURE__ */ jsx("span", { style: ellipsis, children: label2 }),
+        /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }),
         /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: MT.muted, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14 }, children: right })
       ] });
     }
     return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19), cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label2 }),
+      /* @__PURE__ */ jsx("span", { style: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label }),
       /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: "rgba(243,244,248,0.6)", display: "inline-flex", alignItems: "center", gap: dp(10) }, children: right })
     ] });
   }
@@ -208535,7 +208524,7 @@ ${cue.text}`).join("\n\n")}
     if (progress3.state === "writing") return tt("importWriting");
     return progress3.total ? tt("importProgress", { received: progress3.received.toLocaleString(locale), total: progress3.total.toLocaleString(locale) }) : tt("importProgressUnknown");
   }
-  function Action({ label: label2, onOk, testId, disabled, phone = false }) {
+  function Action({ label, onOk, testId, disabled, phone = false }) {
     return /* @__PURE__ */ jsx(
       "div",
       {
@@ -208545,7 +208534,7 @@ ${cue.text}`).join("\n\n")}
           if (!disabled) onOk();
         }),
         style: phone ? { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", fontSize: 14, whiteSpace: "nowrap", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 } : { height: dp(48), minHeight: dp(48), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(17), whiteSpace: "nowrap", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 },
-        children: label2
+        children: label
       }
     );
   }
@@ -209080,14 +209069,26 @@ ${cue.text}`).join("\n\n")}
   function EpgTab({ lists, nav, tt, locale, phone = false }) {
     const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
     const { status, urls: statusUrls, refreshing, refresh } = useEpgStatus();
-    const urls = useMemo(() => lists.flatMap((list) => list.epgUrls.map((url) => ({ listId: list.id, url }))), [lists]);
+    const urls = useMemo(() => lists.flatMap((list) => [
+      ...list.urlTvg && !list.autoEpgDisabled ? [{ listId: list.id, url: list.urlTvg, fromPlaylist: true }] : [],
+      ...list.epgUrls.map((url) => ({ listId: list.id, url, fromPlaylist: false }))
+    ]), [lists]);
     const sectionGap = phone ? 0 : dp(10);
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: sectionGap }, children: [
         /* @__PURE__ */ jsx(Heading, { phone, children: tt("tabEpg") }),
-        urls.map(({ listId, url }) => {
+        urls.map(({ listId, url, fromPlaylist }) => {
           const list = lists.find((l) => l.id === listId);
-          return /* @__PURE__ */ jsx(Row, { phone, label: url, right: tt("remove"), onOk: () => updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) }) }, `${listId}:${url}`);
+          return /* @__PURE__ */ jsx(
+            Row,
+            {
+              phone,
+              label: fromPlaylist ? `${url}  \xB7  ${tt("epgFromPlaylist")}` : url,
+              right: fromPlaylist ? tt("epgAutoOff") : tt("remove"),
+              onOk: () => fromPlaylist ? updateLiveTvListEpg(listId, { autoEpgDisabled: true }) : updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) })
+            },
+            `${listId}:${url}`
+          );
         }),
         keyboard.available && lists[0] ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addEpgUrl"), right: phone ? /* @__PURE__ */ jsx(PhoneCaret, {}) : "+", onOk: () => keyboard.ask(tt("addEpgUrl"), "", (value) => {
           const url = value.trim();
@@ -209201,9 +209202,9 @@ ${cue.text}`).join("\n\n")}
       children
     ] });
   }
-  function Section2({ label: label2, children }) {
+  function Section2({ label, children }) {
     return /* @__PURE__ */ jsxs("section", { style: { flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }, children: [
-      /* @__PURE__ */ jsx("div", { style: sectionLabel, children: label2 }),
+      /* @__PURE__ */ jsx("div", { style: sectionLabel, children: label }),
       children
     ] });
   }
@@ -209218,15 +209219,15 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx("div", { style: { flexShrink: 0, borderRadius: 14, background: MT.s06, border: `1px solid ${MT.line08}`, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { marginBottom: -1 }, children }) })
     );
   }
-  function ToggleRow({ label: label2, on, onOk, testId }) {
+  function ToggleRow({ label, on, onOk, testId }) {
     return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 56, padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { minWidth: 0 }, children: label2 }),
+      /* @__PURE__ */ jsx("span", { style: { minWidth: 0 }, children: label }),
       /* @__PURE__ */ jsx(MobileToggle, { on })
     ] });
   }
-  function NavRow({ label: label2, onOk, testId }) {
+  function NavRow({ label, onOk, testId }) {
     return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 52, padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsx("span", { style: ellipsis, children: label2 }),
+      /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }),
       /* @__PURE__ */ jsx(PhoneCaret, {})
     ] });
   }
@@ -209358,13 +209359,13 @@ ${cue.text}`).join("\n\n")}
           WebkitBackdropFilter: "blur(18px)",
           display: "flex"
         },
-        children: tabs.map(({ key, icon: Icon2, label: label2 }) => {
+        children: tabs.map(({ key, icon: Icon2, label }) => {
           const isActive = key === active2;
           return /* @__PURE__ */ jsxs(
             "div",
             {
               "data-testid": `tab-${key}`,
-              ...station(() => key === "more" ? onMore() : onGo(key), void 0, { ...isActive ? { "aria-current": "page" } : {}, "aria-label": tt(label2) }),
+              ...station(() => key === "more" ? onMore() : onGo(key), void 0, { ...isActive ? { "aria-current": "page" } : {}, "aria-label": tt(label) }),
               style: {
                 flex: 1,
                 minHeight: MT.TAB_BAR,
@@ -209380,7 +209381,7 @@ ${cue.text}`).join("\n\n")}
               },
               children: [
                 /* @__PURE__ */ jsx(Icon2, { size: 22 }),
-                /* @__PURE__ */ jsx("span", { children: tt(label2) })
+                /* @__PURE__ */ jsx("span", { children: tt(label) })
               ]
             },
             key

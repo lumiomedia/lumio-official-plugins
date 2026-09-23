@@ -164252,13 +164252,6 @@
     }
   });
 
-  // lib/native-surface-diagnostics.ts
-  var init_native_surface_diagnostics = __esm({
-    "lib/native-surface-diagnostics.ts"() {
-      "use strict";
-    }
-  });
-
   // lib/video-surfaces.ts
   var init_video_surfaces = __esm({
     "lib/video-surfaces.ts"() {
@@ -164269,7 +164262,6 @@
       init_video_surfaces_mpv();
       init_video_surfaces_droid();
       init_transparent_webview();
-      init_native_surface_diagnostics();
     }
   });
 
@@ -166717,6 +166709,7 @@
       settingsDetailsEyebrow: "Details page",
       sideMenuTitle: "Side menu",
       sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
+      sideMenuLockedByPill: "Turned off while the menu pill is on \u2014 the pill is the menu then.",
       sideMenuOn: "Side menu",
       menuChipTitle: "Menu pill (TV style)",
       menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
@@ -167664,6 +167657,16 @@
       cpTemplate_collection: "Collection (TMDb id)",
       cpTemplate_trakt: "Trakt list (id)",
       cpPagesEyebrow: "PAGES",
+      cpPageName: "Page name",
+      cpAddFilter: "+ Add filter",
+      cpRemoveFilter: "Remove filter",
+      cpNoFilters: "No filters \u2014 the row is the widest question there is.",
+      cpAllFiltersSet: "Every filter is already set.",
+      cpRemovePage: "Remove page",
+      cpRemovePageBody: "The page and its rows are deleted. Rows on other pages that opened it fall back to the results grid.",
+      cpRowActive: "Row active",
+      cpTemplatesEyebrow: "TEMPLATES",
+      cpTemplateNeedsTheme: "Needs a theme",
       cpPagesTitle: "Your pages",
       cpNoPages: "No pages yet. Write a theme above and generate one.",
       cpNoRows: "This page has no rows yet.",
@@ -167720,6 +167723,7 @@
       cpEmptyVotes: "No hits \u2014 the vote floor is too high for this narrow a filter. Remove the Votes chip.",
       cpPreviewEmpty: "No hits. Loosen a filter, or check that the keyword is a real TMDb keyword.",
       cpPin: "Pin to the front",
+      cpUnpin: "Unpin",
       cpExclude: "Leave out of the row",
       cpInclude: "Put back in the row",
       cpOnlyMovies: "People and age rating only exist for films, so the row shows films.",
@@ -167742,6 +167746,7 @@
       cpFieldProviders: "Service",
       cpFieldCertCountry: "Country",
       cpShowAllGrid: "The results grid",
+      cpShowAllNone: "No link",
       cpTypeAll: "Film & series",
       cpTypeMovie: "Film",
       cpTypeSeries: "Series",
@@ -168937,6 +168942,23 @@
       hpTopButtonsTitle: "Top buttons",
       hpTopButtonsHint: "Choose which buttons appear in the top row next to the profile picker, and in what order. Applies to the menu row layout \u2014 the menu pill has its own panel.",
       hpTopButtonsPillNote: "The menu pill is on, and it replaces the top row \u2014 these buttons are not shown.",
+      hpMenuOrderGlassNote: "The glass card draws its rows and tiles in fixed groups, so order and the divider have no effect on phones. Switch to the side menu under Display to arrange them.",
+      rowViewNext: "View next",
+      schedulePanelTitle: "Your schedule",
+      scheduleTabMenu: "Menu",
+      scheduleTabSchedule: "Schedule",
+      scheduleOnlyAiringDays: "Only days with episodes are shown.",
+      scheduleYear: "Year",
+      scheduleMonth: "Month",
+      scheduleSummary: "{days} airing days \xB7 {episodes} episodes",
+      scheduleEpisodeCount: "{count} episodes",
+      scheduleEpisodeCountOne: "1 episode",
+      scheduleEmptyMonth: "Nothing airs this month from the series you follow.",
+      scheduleEmptyWatchlist: "Follow a series and its episodes show up here.",
+      scheduleFailed: "Could not fetch the schedule.",
+      scheduleRetry: "Try again",
+      scheduleSettingTitle: "Schedule panel",
+      scheduleSettingDesc: "A second column beside the menu with upcoming episodes from the series you follow.",
       hpMenuDividerRow: "Divider",
       mobileMenuDesignTitle: "Menu design on phones",
       mobileMenuDesignDesc: "The same pill opens the menu either way \u2014 this chooses how it is drawn.",
@@ -169524,6 +169546,7 @@
       settingsDetailsEyebrow: "Detaljsidan",
       sideMenuTitle: "Sidomeny",
       sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
+      sideMenuLockedByPill: "Avst\xE4ngt s\xE5 l\xE4nge menypillret \xE4r p\xE5 \u2014 d\xE5 \xE4r pillret menyn.",
       sideMenuOn: "Sidomeny",
       menuChipTitle: "Menypill (TV-stil)",
       menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
@@ -170466,6 +170489,16 @@
       cpTemplate_collection: "Samling (TMDb-id)",
       cpTemplate_trakt: "Trakt-lista (id)",
       cpPagesEyebrow: "SIDOR",
+      cpPageName: "Sidans namn",
+      cpAddFilter: "+ L\xE4gg till filter",
+      cpRemoveFilter: "Ta bort filtret",
+      cpNoFilters: "Inga filter \u2014 raden \xE4r den bredaste fr\xE5gan som finns.",
+      cpAllFiltersSet: "Alla filter \xE4r redan satta.",
+      cpRemovePage: "Ta bort sidan",
+      cpRemovePageBody: "Sidan och dess rader raderas. Rader p\xE5 andra sidor som \xF6ppnade den faller tillbaka p\xE5 tr\xE4ffrutn\xE4tet.",
+      cpRowActive: "Raden aktiv",
+      cpTemplatesEyebrow: "MALLAR",
+      cpTemplateNeedsTheme: "Kr\xE4ver ett tema",
       cpPagesTitle: "Dina sidor",
       cpNoPages: "Inga sidor \xE4n. Skriv ett tema ovan och generera en.",
       cpNoRows: "Den h\xE4r sidan har inga rader \xE4n.",
@@ -170522,6 +170555,7 @@
       cpEmptyVotes: "Inga tr\xE4ffar \u2014 r\xF6stgolvet \xE4r f\xF6r h\xF6gt f\xF6r ett s\xE5 smalt filter. Ta bort Votes-chipet.",
       cpPreviewEmpty: "Inga tr\xE4ffar. L\xE4tta p\xE5 ett filter, eller kolla att nyckelordet \xE4r ett riktigt TMDb-nyckelord.",
       cpPin: "F\xE4st \xF6verst",
+      cpUnpin: "Lossa",
       cpExclude: "Utanf\xF6r raden",
       cpInclude: "Tillbaka i raden",
       cpOnlyMovies: "Person och \xE5ldersgr\xE4ns finns bara f\xF6r film, s\xE5 raden visar filmer.",
@@ -170544,6 +170578,7 @@
       cpFieldProviders: "Tj\xE4nst",
       cpFieldCertCountry: "Land",
       cpShowAllGrid: "Tr\xE4ffrutn\xE4tet",
+      cpShowAllNone: "Ingen l\xE4nk",
       cpTypeAll: "Film & serier",
       cpTypeMovie: "Film",
       cpTypeSeries: "Serier",
@@ -171721,6 +171756,23 @@
       hpTopButtonsTitle: "Topp-knappar",
       hpTopButtonsHint: "V\xE4lj vilka knappar som visas i toppraden bredvid profilv\xE4ljaren, och i vilken ordning. G\xE4ller menyradsl\xE4get \u2014 menypillret har en egen panel.",
       hpTopButtonsPillNote: "Menypillret \xE4r p\xE5 och ers\xE4tter toppraden \u2014 de h\xE4r knapparna visas inte.",
+      hpMenuOrderGlassNote: "Glaskortet ritar sina rader och brickor i fasta grupper, s\xE5 ordningen och skiljelinjen har ingen verkan p\xE5 telefon. Byt till sidomenyn under Utseende f\xF6r att ordna dem.",
+      rowViewNext: "Visa n\xE4sta",
+      schedulePanelTitle: "Ditt schema",
+      scheduleTabMenu: "Meny",
+      scheduleTabSchedule: "Schema",
+      scheduleOnlyAiringDays: "Bara dagar med avsnitt visas.",
+      scheduleYear: "\xC5r",
+      scheduleMonth: "M\xE5nad",
+      scheduleSummary: "{days} s\xE4ndningsdagar \xB7 {episodes} avsnitt",
+      scheduleEpisodeCount: "{count} avsnitt",
+      scheduleEpisodeCountOne: "1 avsnitt",
+      scheduleEmptyMonth: "Inget s\xE4nds den h\xE4r m\xE5naden av serierna du f\xF6ljer.",
+      scheduleEmptyWatchlist: "F\xF6lj en serie s\xE5 dyker dess avsnitt upp h\xE4r.",
+      scheduleFailed: "Schemat gick inte att h\xE4mta.",
+      scheduleRetry: "F\xF6rs\xF6k igen",
+      scheduleSettingTitle: "Schemapanel",
+      scheduleSettingDesc: "En andra kolumn bredvid menyn med kommande avsnitt ur serierna du f\xF6ljer.",
       hpMenuDividerRow: "Avdelare",
       mobileMenuDesignTitle: "Menyns utseende p\xE5 telefon",
       mobileMenuDesignDesc: "Samma pill \xF6ppnar menyn i b\xE5da fallen \u2014 det h\xE4r v\xE4ljer hur den ritas.",

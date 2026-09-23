@@ -887,16 +887,45 @@ function VodLibrarySection({ tt, phone }: { tt: TT; phone: boolean }) {
 export function EpgTab({ lists, nav, tt, locale, phone = false }: { lists: LiveTvList[]; nav: TvNav; tt: TT; locale: string; phone?: boolean }) {
   const keyboard = useTextPrompt({ pushLayer: nav.pushLayer })
   const { status, urls: statusUrls, refreshing, refresh } = useEpgStatus()
-  const urls = useMemo(() => lists.flatMap((list) => list.epgUrls.map((url) => ({ listId: list.id, url }))), [lists])
+  /* SPELLISTANS EGEN ADRESS VISAS OCKSÅ (Jerry 2026-09-22: "klickade på epg
+     source ... men den är tom").
+
+     En Xtream-inloggning sätter listans `urlTvg` — panelens xmltv.php ur
+     M3U-huvudet — och rör aldrig `epgUrls`. Hämtningen känner till den
+     (getAllLiveTvEpgUrls tar BÅDA, se live-tv-data.ts), men den här listan
+     visade bara `epgUrls`. Sidan blev alltså helt tom efter en inloggning
+     trots att adressen fanns, och statusdelen nedan ritas först när en
+     hämtning lyckats — så det fanns inte ens en Hämta om-knapp att trycka på.
+
+     Panelens adress kan inte tas bort som en tillagd kan (den kommer ur
+     spellistan och skulle komma tillbaka vid nästa import); den stängs i
+     stället av med `autoEpgDisabled`, flaggan som redan styr om hämtningen
+     använder den. */
+  const urls = useMemo(() => lists.flatMap((list) => [
+    ...(list.urlTvg && !list.autoEpgDisabled
+      ? [{ listId: list.id, url: list.urlTvg, fromPlaylist: true }]
+      : []),
+    ...list.epgUrls.map((url) => ({ listId: list.id, url, fromPlaylist: false })),
+  ]), [lists])
   // Telefonen: raderna ligger kant i kant i ett kort (ingen luft mellan).
   const sectionGap = phone ? 0 : dp(10)
   return (
     <>
       <section style={{ display: 'flex', flexDirection: 'column', gap: sectionGap }}>
         <Heading phone={phone}>{tt('tabEpg')}</Heading>
-        {urls.map(({ listId, url }) => {
+        {urls.map(({ listId, url, fromPlaylist }) => {
           const list = lists.find((l) => l.id === listId)!
-          return <Row phone={phone} key={`${listId}:${url}`} label={url} right={tt('remove')} onOk={() => updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) })} />
+          return (
+            <Row
+              phone={phone}
+              key={`${listId}:${url}`}
+              label={fromPlaylist ? `${url}  ·  ${tt('epgFromPlaylist')}` : url}
+              right={fromPlaylist ? tt('epgAutoOff') : tt('remove')}
+              onOk={() => fromPlaylist
+                ? updateLiveTvListEpg(listId, { autoEpgDisabled: true })
+                : updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) })}
+            />
+          )
         })}
         {keyboard.available && lists[0] ? <Row phone={phone} label={tt('addEpgUrl')} right={phone ? <PhoneCaret /> : '+'} onOk={() => keyboard.ask(tt('addEpgUrl'), '', (value) => { const url = value.trim(); if (url) updateLiveTvListEpg(lists[0].id, { epgUrls: [...lists[0].epgUrls, url] }) }, 'url')} /> : null}
         {keyboard.node}

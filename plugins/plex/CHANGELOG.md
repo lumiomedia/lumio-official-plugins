@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.31
+
+- Library provider: a full or delta scan feeds the core index, and playback resolves through the server.
+- Index panel in settings, and removing an index drops only that source from library mode.
+- The menu entry opens the host library view.
+- Playback progress is reported back to the server.
+- The settings section is drawn on the app primitives.
+
 ## 1.0.30
 
 - No player controls over an empty library.

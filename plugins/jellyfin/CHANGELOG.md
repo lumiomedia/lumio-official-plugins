@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0
 
 - Trickplay: when the server has generated scrubbing images for a file, Lumio shows them in the player's seek bubble.
 - Incremental sync now picks up new episodes in series that are already indexed. A new episode does not change the series itself in Jellyfin, so the series stayed without the episode until the daily full scan.

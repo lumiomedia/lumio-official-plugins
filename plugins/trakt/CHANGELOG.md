@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+
+- The settings section is drawn on the app primitives.
+
 ## 0.2.4
 
 - Settings for automatic watchlist cleanup.

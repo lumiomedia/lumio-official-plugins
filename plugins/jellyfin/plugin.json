@@ -6,6 +6,7 @@
     "sv": "Jellyfin"
   },
   "version": "0.1.0",
+  "minAppVersion": "0.1.603",
   "description": {
     "en": "Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.",
     "sv": "Indexera din Jellyfin-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."

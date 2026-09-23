@@ -12,7 +12,7 @@
         "en": "Plex",
         "sv": "Plex"
       },
-      "version": "1.0.30",
+      "version": "1.0.31",
       "description": {
         "en": "Browse and play media from your Plex Media Server.",
         "sv": "Bläddra i och spela upp media från din Plex Media Server."
@@ -24,7 +24,8 @@
       "official": true,
       "bundled": true,
       "removable": true,
-      "repoPath": "plugins/plex"
+      "repoPath": "plugins/plex",
+      "minAppVersion": "0.1.603"
     },
     {
       "id": "com.lumio.jellyfin",
@@ -45,7 +46,8 @@
       "official": true,
       "bundled": true,
       "removable": true,
-      "repoPath": "plugins/jellyfin"
+      "repoPath": "plugins/jellyfin",
+      "minAppVersion": "0.1.603"
     },
     {
       "id": "com.lumio.live-tv",
@@ -55,7 +57,7 @@
         "sv": "Live TV"
       },
       "version": "0.10.0",
-      "minAppVersion": "0.1.597",
+      "minAppVersion": "0.1.600",
       "description": {
         "en": "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
         "sv": "Hantera M3U-källor, bläddra bland live-TV-kanaler och se EPG (nu/härnäst) i Lumio."
@@ -76,7 +78,7 @@
         "en": "HomeKit",
         "sv": "HomeKit"
       },
-      "version": "0.2.4",
+      "version": "0.2.5",
       "description": {
         "en": "Connect Lumio playback events to HomeKit scenes and automations.",
         "sv": "Koppla Lumios uppspelningshändelser till HomeKit-scener och automationer."
@@ -97,7 +99,7 @@
         "en": "Trakt",
         "sv": "Trakt"
       },
-      "version": "0.2.4",
+      "version": "0.2.5",
       "description": {
         "en": "Sync watched history, watchlists and collection data with Trakt.",
         "sv": "Synka visningshistorik, listor och samlingsdata med Trakt."
@@ -134,7 +136,8 @@
         "managedProviderId": "twitch",
         "supportsPersonalOverride": false
       },
-      "repoPath": "plugins/twitch"
+      "repoPath": "plugins/twitch",
+      "minAppVersion": "0.1.603"
     }
   ]
 }

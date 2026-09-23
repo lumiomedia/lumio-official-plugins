@@ -1627,75 +1627,6 @@
     }
   });
 
-  // lib/native-surface-diagnostics.ts
-  function isTransparent(color2) {
-    if (!color2 || color2 === "transparent") return true;
-    const alpha2 = /^rgba?\([^)]*,\s*([\d.]+)\s*\)$/.exec(color2);
-    return alpha2 ? Number(alpha2[1]) === 0 : false;
-  }
-  function paints(style2) {
-    return !isTransparent(style2.backgroundColor || "") || (style2.backgroundImage || "none") !== "none";
-  }
-  function label(el, style2) {
-    const id4 = el.id ? `#${el.id}` : "";
-    const cls = (el.getAttribute("class") || "").trim().split(/\s+/).filter(Boolean).slice(0, 3).map((c) => `.${c}`).join("");
-    const bg = isTransparent(style2.backgroundColor || "") ? "-" : (style2.backgroundColor || "").replace(/\s+/g, "");
-    const img = (style2.backgroundImage || "none") !== "none" ? "img" : "-";
-    return `${el.tagName.toLowerCase()}${id4}${cls}(${bg}|${img}|${style2.position || "-"}|${style2.zIndex || "-"})`;
-  }
-  function describeOpaqueChain(el) {
-    const out = [];
-    try {
-      let node = el;
-      while (node) {
-        const style2 = getComputedStyle(node);
-        if (paints(style2)) out.push(label(node, style2));
-        node = node.parentElement;
-      }
-    } catch {
-    }
-    return out.join(" < ");
-  }
-  function describeCoverAt(x, y) {
-    const out = [];
-    try {
-      const stack = document.elementsFromPoint?.(x, y) ?? [];
-      for (const el of stack) {
-        const style2 = getComputedStyle(el);
-        if (paints(style2)) out.push(label(el, style2));
-        if (el.matches?.('[data-testid="mv-tile"],[data-live-tv-tv-root]')) break;
-      }
-    } catch {
-    }
-    return out.join(" > ");
-  }
-  function reportNativeSurfaceDom(getRect) {
-    if (typeof document === "undefined" || typeof setTimeout !== "function") return;
-    setTimeout(() => {
-      try {
-        if (typeof getComputedStyle !== "function" || typeof fetch !== "function") return;
-        const rect = getRect();
-        const anchor = rect && document.elementFromPoint?.(rect.left + rect.width / 2, rect.top + rect.height / 2) || document.querySelector("[data-live-tv-tv-root]") || document.body;
-        const parts = [`chain=${describeOpaqueChain(anchor)}`];
-        if (rect) {
-          parts.push(`rect=${Math.round(rect.left)},${Math.round(rect.top)},${Math.round(rect.width)}x${Math.round(rect.height)}`);
-          parts.push(`over=${describeCoverAt(rect.left + rect.width / 2, rect.top + rect.height / 2)}`);
-        }
-        const msg = `[native-surface-dom] ${parts.join(" ")}`.slice(0, MAX_MESSAGE);
-        void fetch(`/api/debug-log?msg=${encodeURIComponent(msg)}`).catch(() => {
-        });
-      } catch {
-      }
-    }, 0);
-  }
-  var MAX_MESSAGE;
-  var init_native_surface_diagnostics = __esm({
-    "lib/native-surface-diagnostics.ts"() {
-      "use strict";
-      MAX_MESSAGE = 900;
-    }
-  });
-
   // lib/video-surfaces.ts
   var video_surfaces_exports = {};
   __export(video_surfaces_exports, {
@@ -1741,11 +1672,9 @@
     const backend = engine.create(id4);
     const holdsTransparency = isNativeEngine(kind);
     let releaseTransparency = null;
-    let lastRect = null;
     const holdTransparentWebview = () => {
       if (!holdsTransparency || releaseTransparency) return;
       releaseTransparency = acquireTransparentWebview();
-      reportNativeSurfaceDom(() => lastRect);
     };
     const dropTransparentWebview = () => {
       const release = releaseTransparency;
@@ -1770,10 +1699,7 @@
           dropTransparentWebview();
         }
       },
-      setBounds: (r) => {
-        lastRect = r;
-        backend.setBounds(r);
-      },
+      setBounds: (r) => backend.setBounds(r),
       setMuted: (m2) => backend.setMuted(m2),
       setPaused: (p) => backend.setPaused(p),
       captureFrame: (k) => backend.captureFrame(k),
@@ -1811,7 +1737,6 @@
       init_video_surfaces_mpv();
       init_video_surfaces_droid();
       init_transparent_webview();
-      init_native_surface_diagnostics();
       engineOverride = null;
       engineCache = null;
       live = /* @__PURE__ */ new Map();
@@ -3036,13 +2961,13 @@
         }
         return false;
       };
-      var isLabelPosition = (label2) => label2 === "position" || label2 === "percentage";
-      var isLabelImage = (label2) => label2 === "image" || label2 === "url";
-      var isLabelSize = (label2) => label2 === "length" || label2 === "size" || label2 === "bg-size";
-      var isLabelLength = (label2) => label2 === "length";
-      var isLabelNumber = (label2) => label2 === "number";
-      var isLabelFamilyName = (label2) => label2 === "family-name";
-      var isLabelShadow = (label2) => label2 === "shadow";
+      var isLabelPosition = (label) => label === "position" || label === "percentage";
+      var isLabelImage = (label) => label === "image" || label === "url";
+      var isLabelSize = (label) => label === "length" || label === "size" || label === "bg-size";
+      var isLabelLength = (label) => label === "length";
+      var isLabelNumber = (label) => label === "number";
+      var isLabelFamilyName = (label) => label === "family-name";
+      var isLabelShadow = (label) => label === "shadow";
       var validators = /* @__PURE__ */ Object.defineProperty({
         __proto__: null,
         isAny,
@@ -29773,9 +29698,9 @@
       }
       $parcel$export(module.exports, "useLabels", () => $6ec78bde395c477d$export$d6875122194c7b44);
       function $6ec78bde395c477d$export$d6875122194c7b44(props, defaultLabel) {
-        let { id: id4, "aria-label": label2, "aria-labelledby": labelledBy } = props;
+        let { id: id4, "aria-label": label, "aria-labelledby": labelledBy } = props;
         id4 = (0, $8c61827343eed941$exports.useId)(id4);
-        if (labelledBy && label2) {
+        if (labelledBy && label) {
           let ids = /* @__PURE__ */ new Set([
             id4,
             ...labelledBy.trim().split(/\s+/)
@@ -29784,10 +29709,10 @@
             ...ids
           ].join(" ");
         } else if (labelledBy) labelledBy = labelledBy.trim().split(/\s+/).join(" ");
-        if (!label2 && !labelledBy && defaultLabel) label2 = defaultLabel;
+        if (!label && !labelledBy && defaultLabel) label = defaultLabel;
         return {
           id: id4,
-          "aria-label": label2,
+          "aria-label": label,
           "aria-labelledby": labelledBy
         };
       }
@@ -40319,8 +40244,8 @@
           max: resolvePointElastic2(dragElastic, maxLabel)
         };
       }
-      function resolvePointElastic2(dragElastic, label2) {
-        return typeof dragElastic === "number" ? dragElastic : dragElastic[label2] || 0;
+      function resolvePointElastic2(dragElastic, label) {
+        return typeof dragElastic === "number" ? dragElastic : dragElastic[label] || 0;
       }
       var elementDragControls2 = /* @__PURE__ */ new WeakMap();
       var VisualElementDragControls2 = class {
@@ -85141,8 +85066,8 @@
       max: resolvePointElastic(dragElastic, maxLabel)
     };
   }
-  function resolvePointElastic(dragElastic, label2) {
-    return typeof dragElastic === "number" ? dragElastic : dragElastic[label2] || 0;
+  function resolvePointElastic(dragElastic, label) {
+    return typeof dragElastic === "number" ? dragElastic : dragElastic[label] || 0;
   }
   var defaultElastic;
   var init_constraints = __esm({
@@ -90428,13 +90353,13 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const label2 = labelProp || children;
+        const label = labelProp || children;
         const ariaLabel = (0, import_react87.useMemo)(() => {
-          if (label2 && typeof label2 === "string") {
-            return label2;
+          if (label && typeof label === "string") {
+            return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
-        }, [children, label2, otherProps["aria-label"]]);
+        }, [children, label, otherProps["aria-label"]]);
         const getSpinnerProps = (0, import_react87.useCallback)(
           () => ({
             "aria-label": ariaLabel,
@@ -90445,12 +90370,12 @@
           }),
           [ariaLabel, slots, baseStyles, otherProps]
         );
-        return { label: label2, slots, classNames, variant, getSpinnerProps };
+        return { label, slots, classNames, variant, getSpinnerProps };
       }
       var import_system_rsc2 = require_dist14();
       var import_jsx_runtime41 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spinner = (0, import_system_rsc2.forwardRef)((props, ref) => {
-        const { slots, classNames, label: label2, variant, getSpinnerProps } = useSpinner({ ...props });
+        const { slots, classNames, label, variant, getSpinnerProps } = useSpinner({ ...props });
         if (variant === "wave" || variant === "dots") {
           return /* @__PURE__ */ (0, import_jsx_runtime41.jsxs)("div", { ref, ...getSpinnerProps(), children: [
             /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime41.jsx)(
@@ -90463,7 +90388,7 @@
               },
               `dot-${index3}`
             )) }),
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+            label && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "simple") {
@@ -90497,7 +90422,7 @@
                 ]
               }
             ),
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+            label && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "spinner") {
@@ -90512,7 +90437,7 @@
               },
               `star-${index3}`
             )) }),
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+            label && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         return /* @__PURE__ */ (0, import_jsx_runtime41.jsxs)("div", { ref, ...getSpinnerProps(), children: [
@@ -90520,7 +90445,7 @@
             /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
             /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
           ] }),
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label2 })
+          label && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
         ] });
       });
       Spinner.displayName = "HeroUI.Spinner";
@@ -95139,9 +95064,9 @@
         return $3f0180db35edfbf7$export$d6875122194c7b44;
       });
       function $3f0180db35edfbf7$export$d6875122194c7b44(props, defaultLabel) {
-        let { id: id4, "aria-label": label2, "aria-labelledby": labelledBy } = props;
+        let { id: id4, "aria-label": label, "aria-labelledby": labelledBy } = props;
         id4 = (0, $7ac82d1fee77eb8a$exports.useId)(id4);
-        if (labelledBy && label2) {
+        if (labelledBy && label) {
           let ids = /* @__PURE__ */ new Set([
             id4,
             ...labelledBy.trim().split(/\s+/)
@@ -95150,10 +95075,10 @@
             ...ids
           ].join(" ");
         } else if (labelledBy) labelledBy = labelledBy.trim().split(/\s+/).join(" ");
-        if (!label2 && !labelledBy && defaultLabel) label2 = defaultLabel;
+        if (!label && !labelledBy && defaultLabel) label = defaultLabel;
         return {
           id: id4,
-          "aria-label": label2,
+          "aria-label": label,
           "aria-labelledby": labelledBy
         };
       }
@@ -95172,11 +95097,11 @@
         return $ec895d26f03379ea$export$8467354a121f1b9f;
       });
       function $ec895d26f03379ea$export$8467354a121f1b9f(props) {
-        let { id: id4, label: label2, "aria-labelledby": ariaLabelledby, "aria-label": ariaLabel, labelElementType = "label" } = props;
+        let { id: id4, label, "aria-labelledby": ariaLabelledby, "aria-label": ariaLabel, labelElementType = "label" } = props;
         id4 = (0, $7ac82d1fee77eb8a$exports.useId)(id4);
         let labelId = (0, $7ac82d1fee77eb8a$exports.useId)();
         let labelProps = {};
-        if (label2) {
+        if (label) {
           ariaLabelledby = ariaLabelledby ? `${labelId} ${ariaLabelledby}` : labelId;
           labelProps = {
             id: labelId,
@@ -108502,7 +108427,7 @@
           ref,
           classNames,
           children,
-          label: label2,
+          label,
           radius,
           value,
           name,
@@ -108532,7 +108457,7 @@
             ...otherProps,
             value,
             name,
-            "aria-label": (0, import_shared_utils2.safeAriaLabel)(otherProps["aria-label"], label2),
+            "aria-label": (0, import_shared_utils2.safeAriaLabel)(otherProps["aria-label"], label),
             defaultValue,
             isRequired,
             isReadOnly,
@@ -108544,7 +108469,7 @@
         }, [
           value,
           name,
-          label2,
+          label,
           defaultValue,
           isRequired,
           isReadOnly,
@@ -108645,7 +108570,7 @@
         return {
           Component: Component2,
           children,
-          label: label2,
+          label,
           context,
           description,
           isInvalid: groupState.isInvalid,
@@ -108662,7 +108587,7 @@
         const {
           children,
           context,
-          label: label2,
+          label,
           description,
           isInvalid,
           errorMessage,
@@ -108673,7 +108598,7 @@
           getErrorMessageProps
         } = useCheckboxGroup({ ...props, ref });
         return /* @__PURE__ */ (0, import_jsx_runtime310.jsxs)("div", { ...getGroupProps(), children: [
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("span", { ...getLabelProps(), children: label2 }),
+          label && /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("span", { ...getLabelProps(), children: label }),
           /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("div", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime310.jsx)(CheckboxGroupProvider, { value: context, children }) }),
           isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime310.jsx)("div", { ...getDescriptionProps(), children: description }) : null
         ] });
@@ -113365,7 +113290,7 @@
           ref,
           classNames,
           children,
-          label: label2,
+          label,
           value,
           name,
           isInvalid: isInvalidProp,
@@ -113393,7 +113318,7 @@
             ...otherProps,
             value,
             name,
-            "aria-label": (0, import_shared_utils2.safeAriaLabel)(otherProps["aria-label"], label2),
+            "aria-label": (0, import_shared_utils2.safeAriaLabel)(otherProps["aria-label"], label),
             isRequired,
             isReadOnly,
             isInvalid: validationState === "invalid" || isInvalidProp,
@@ -113405,7 +113330,7 @@
           otherProps,
           value,
           name,
-          label2,
+          label,
           isRequired,
           isReadOnly,
           isInvalidProp,
@@ -113505,7 +113430,7 @@
         return {
           Component: Component2,
           children,
-          label: label2,
+          label,
           context,
           description,
           isInvalid,
@@ -113522,7 +113447,7 @@
         const {
           Component: Component2,
           children,
-          label: label2,
+          label,
           context,
           description,
           isInvalid,
@@ -113534,7 +113459,7 @@
           getErrorMessageProps
         } = useRadioGroup({ ...props, ref });
         return /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)(Component2, { ...getGroupProps(), children: [
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { ...getLabelProps(), children: label2 }),
+          label && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { ...getLabelProps(), children: label }),
           /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime210.jsx)(RadioGroupProvider, { value: context, children }) }),
           isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("div", { ...getDescriptionProps(), children: description }) : null
         ] });
@@ -118128,7 +118053,7 @@
           id: id4,
           className,
           classNames,
-          label: label2,
+          label,
           valueLabel,
           value = 0,
           minValue = 0,
@@ -118150,7 +118075,7 @@
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const { progressBarProps, labelProps } = (0, import_progress3.useProgressBar)({
           id: id4,
-          label: label2,
+          label,
           value,
           minValue,
           maxValue,
@@ -118202,7 +118127,7 @@
           domRef,
           slots,
           classNames,
-          label: label2,
+          label,
           percentage,
           showValueLabel,
           getProgressBarProps,
@@ -118215,17 +118140,17 @@
           Component: Component2,
           slots,
           classNames,
-          label: label2,
+          label,
           percentage,
           showValueLabel,
           getProgressBarProps,
           getLabelProps
         } = useProgress({ ...props, ref });
         const progressBarProps = getProgressBarProps();
-        const shouldShowLabelWrapper = label2 || showValueLabel;
+        const shouldShowLabelWrapper = label || showValueLabel;
         return /* @__PURE__ */ (0, import_jsx_runtime41.jsxs)(Component2, { ...progressBarProps, children: [
           shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime41.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
-            label2 && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { ...getLabelProps(), children: label2 }),
+            label && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { ...getLabelProps(), children: label }),
             showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }) : null,
           /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime41.jsx)(
@@ -118259,7 +118184,7 @@
           id: id4,
           className,
           classNames,
-          label: label2,
+          label,
           valueLabel,
           value = void 0,
           minValue = 0,
@@ -118282,7 +118207,7 @@
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const { progressBarProps, labelProps } = (0, import_progress22.useProgressBar)({
           id: id4,
-          label: label2,
+          label,
           value,
           minValue,
           maxValue,
@@ -118385,7 +118310,7 @@
           domRef,
           slots,
           classNames,
-          label: label2,
+          label,
           showValueLabel,
           getProgressBarProps,
           getLabelProps,
@@ -118400,7 +118325,7 @@
           Component: Component2,
           slots,
           classNames,
-          label: label2,
+          label,
           showValueLabel,
           getProgressBarProps,
           getLabelProps,
@@ -118417,7 +118342,7 @@
             ] }),
             showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }),
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { ...getLabelProps(), children: label2 })
+          label && /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("span", { ...getLabelProps(), children: label })
         ] });
       });
       CircularProgress.displayName = "HeroUI.CircularProgress";
@@ -119214,7 +119139,7 @@
           ref,
           as,
           type,
-          label: label2,
+          label,
           baseRef,
           wrapperRef,
           description,
@@ -119315,13 +119240,13 @@
         const isInvalid = validationState === "invalid" || isAriaInvalid;
         const labelPlacement = (0, import_system.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const isClearable = !!onClear || originalProps.isClearable;
-        const hasElements = !!label2 || !!description || !!errorMessage;
+        const hasElements = !!label || !!description || !!errorMessage;
         const hasPlaceholder = !!props.placeholder;
-        const hasLabel = !!label2;
+        const hasLabel = !!label;
         const hasHelper = !!description || !!errorMessage;
         const isOutsideLeft = labelPlacement === "outside-left";
         const isOutsideTop = labelPlacement === "outside-top";
@@ -119593,7 +119518,7 @@
           Component: Component2,
           classNames,
           domRef,
-          label: label2,
+          label,
           description,
           startContent,
           endContent,
@@ -119626,7 +119551,7 @@
       var Input = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
-          label: label2,
+          label,
           description,
           isClearable,
           startContent,
@@ -119649,7 +119574,7 @@
           getErrorMessageProps,
           getClearButtonProps
         } = useInput({ ...props, ref });
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
             return /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime41.jsx)(import_shared_icons.CloseFilledIcon, {}) });
@@ -119732,7 +119657,7 @@
         }, ref) => {
           const {
             Component: Component2,
-            label: label2,
+            label,
             description,
             startContent,
             endContent,
@@ -119754,7 +119679,7 @@
           } = useInput({ ...otherProps, ref, isMultiline: true });
           const [hasMultipleRows, setIsHasMultipleRows] = (0, import_react310.useState)(minRows > 1);
           const [isLimitReached, setIsLimitReached] = (0, import_react310.useState)(false);
-          const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
+          const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label }) : null;
           const inputProps = getInputProps();
           const handleHeightChange = (height, meta) => {
             if (minRows === 1) {
@@ -139464,11 +139389,11 @@
       }
       $parcel$export(module.exports, "useLabel", () => $ce7359c25a7dec1c$export$8467354a121f1b9f);
       function $ce7359c25a7dec1c$export$8467354a121f1b9f(props) {
-        let { id: id4, label: label2, "aria-labelledby": ariaLabelledby, "aria-label": ariaLabel, labelElementType = "label" } = props;
+        let { id: id4, label, "aria-labelledby": ariaLabelledby, "aria-label": ariaLabel, labelElementType = "label" } = props;
         id4 = (0, $eXjoL$reactariautils.useId)(id4);
         let labelId = (0, $eXjoL$reactariautils.useId)();
         let labelProps = {};
-        if (label2) {
+        if (label) {
           ariaLabelledby = ariaLabelledby ? `${labelId} ${ariaLabelledby}` : labelId;
           labelProps = {
             id: labelId,
@@ -141199,7 +141124,7 @@
         const {
           ref,
           as,
-          label: label2,
+          label,
           name,
           isLoading,
           selectorIcon,
@@ -141344,7 +141269,7 @@
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled: originalProps.isDisabled });
         const labelPlacement = (0, import_system.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const hasPlaceholder = !!placeholder;
         const shouldLabelBeOutside = labelPlacement === "outside-left" || labelPlacement === "outside" || labelPlacement === "outside-top";
@@ -141353,7 +141278,7 @@
         const isClearable = originalProps.isClearable;
         const isFilled = state.isOpen || hasPlaceholder || !!((_e = state.selectedItems) == null ? void 0 : _e.length) || !!startContent || !!endContent || !!originalProps.isMultiline;
         const hasValue = !!((_f = state.selectedItems) == null ? void 0 : _f.length);
-        const hasLabel = !!label2;
+        const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const slots = (0, import_react87.useMemo)(
@@ -141695,7 +141620,7 @@
           Component: Component2,
           domRef,
           state,
-          label: label2,
+          label,
           name,
           triggerRef,
           isLoading,
@@ -141791,11 +141716,11 @@
       }
       function HiddenSelect(props) {
         var _a;
-        let { state, triggerRef, selectRef, label: label2, name, isDisabled, form } = props;
+        let { state, triggerRef, selectRef, label, name, isDisabled, form } = props;
         let { containerProps, selectProps } = useHiddenSelect({ ...props, selectRef }, state, triggerRef);
         if (state.collection.size <= 300) {
           return /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime41.jsxs)("label", { children: [
-            label2,
+            label,
             /* @__PURE__ */ (0, import_jsx_runtime41.jsxs)("select", { ...selectProps, ref: selectRef, children: [
               /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("option", {}),
               [...state.collection.getKeys()].map((key) => {
@@ -141827,7 +141752,7 @@
         const {
           Component: Component2,
           state,
-          label: label2,
+          label,
           hasHelper,
           isLoading,
           triggerRef,
@@ -141861,7 +141786,7 @@
           getEndWrapperProps,
           getEndContentProps
         } = useSelect({ ...props, ref });
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const clonedIcon = (0, import_react310.cloneElement)(selectorIcon, getSelectorIconProps());
         const clearButton = (0, import_react210.useMemo)(() => {
           var _a2;
@@ -142642,7 +142567,7 @@
           ref,
           as,
           name,
-          label: label2,
+          label,
           formatOptions,
           value: valueProp,
           maxValue = 100,
@@ -142768,7 +142693,7 @@
           return {
             "data-slot": "label",
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
-            children: label2,
+            children: label,
             ...labelProps,
             ...props2
           };
@@ -142901,7 +142826,7 @@
           state,
           value,
           domRef,
-          label: label2,
+          label,
           steps: steps2,
           marks: marks2,
           startContent,
@@ -142928,7 +142853,7 @@
         const {
           Component: Component2,
           state,
-          label: label2,
+          label,
           steps: steps2,
           marks: marks2,
           startContent,
@@ -142949,7 +142874,7 @@
           getEndContentProps
         } = useSlider({ ...props, ref });
         return /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)(Component2, { ...getBaseProps(), children: [
-          label2 && /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)("div", { ...getLabelWrapperProps(), children: [
+          label && /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)("div", { ...getLabelWrapperProps(), children: [
             (0, import_react_utils4.renderFn)({
               Component: "label",
               props: getLabelProps(),
@@ -147773,7 +147698,7 @@
         const {
           ref,
           as,
-          label: label2,
+          label,
           isLoading,
           menuTrigger = "focus",
           filterOptions = {
@@ -147876,7 +147801,7 @@
         const slotsProps = {
           inputProps: (0, import_shared_utils.mergeProps)(
             {
-              label: label2,
+              label,
               ref: inputRef,
               wrapperRef: inputWrapperRef,
               onClick: () => {
@@ -148138,7 +148063,7 @@
         return {
           Component: Component2,
           inputRef,
-          label: label2,
+          label,
           state,
           slots,
           classNames,
@@ -149392,21 +149317,21 @@
           state.timeZone
         ]);
         let isDateToday = (0, $cuS6T$internationalizeddate.isToday)(date, state.timeZone);
-        let label2 = (0, $cuS6T$react.useMemo)(() => {
-          let label3 = "";
-          if ("highlightedRange" in state && state.value && !state.anchorDate && ((0, $cuS6T$internationalizeddate.isSameDay)(date, state.value.start) || (0, $cuS6T$internationalizeddate.isSameDay)(date, state.value.end))) label3 = selectedDateDescription + ", ";
-          label3 += dateFormatter.format(nativeDate);
+        let label = (0, $cuS6T$react.useMemo)(() => {
+          let label2 = "";
+          if ("highlightedRange" in state && state.value && !state.anchorDate && ((0, $cuS6T$internationalizeddate.isSameDay)(date, state.value.start) || (0, $cuS6T$internationalizeddate.isSameDay)(date, state.value.end))) label2 = selectedDateDescription + ", ";
+          label2 += dateFormatter.format(nativeDate);
           if (isDateToday)
-            label3 = stringFormatter.format(isSelected ? "todayDateSelected" : "todayDate", {
-              date: label3
+            label2 = stringFormatter.format(isSelected ? "todayDateSelected" : "todayDate", {
+              date: label2
             });
           else if (isSelected)
-            label3 = stringFormatter.format("dateSelected", {
-              date: label3
+            label2 = stringFormatter.format("dateSelected", {
+              date: label2
             });
-          if (state.minValue && (0, $cuS6T$internationalizeddate.isSameDay)(date, state.minValue)) label3 += ", " + stringFormatter.format("minimumDate");
-          else if (state.maxValue && (0, $cuS6T$internationalizeddate.isSameDay)(date, state.maxValue)) label3 += ", " + stringFormatter.format("maximumDate");
-          return label3;
+          if (state.minValue && (0, $cuS6T$internationalizeddate.isSameDay)(date, state.minValue)) label2 += ", " + stringFormatter.format("minimumDate");
+          else if (state.maxValue && (0, $cuS6T$internationalizeddate.isSameDay)(date, state.maxValue)) label2 += ", " + stringFormatter.format("maximumDate");
+          return label2;
         }, [
           dateFormatter,
           nativeDate,
@@ -149554,7 +149479,7 @@
             tabIndex,
             role: "button",
             "aria-disabled": !isSelectable || void 0,
-            "aria-label": label2,
+            "aria-label": label,
             "aria-invalid": isInvalid || void 0,
             "aria-describedby": [
               isInvalid ? errorMessageId : void 0,
@@ -158814,7 +158739,7 @@
         const {
           ref,
           as,
-          label: label2,
+          label,
           inputRef: inputRefProp,
           description,
           startContent,
@@ -158841,7 +158766,7 @@
         const disableAnimation = (_g = originalProps.disableAnimation) != null ? _g : globalContext == null ? void 0 : globalContext.disableAnimation;
         const state = (0, import_datepicker2.useDateFieldState)({
           ...originalProps,
-          label: label2,
+          label,
           locale,
           minValue,
           maxValue,
@@ -158858,12 +158783,12 @@
           descriptionProps,
           errorMessageProps,
           isInvalid: ariaIsInvalid
-        } = (0, import_datepicker.useDateField)({ ...originalProps, label: label2, validationBehavior, inputRef }, state, domRef);
+        } = (0, import_datepicker.useDateField)({ ...originalProps, label, validationBehavior, inputRef }, state, domRef);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const isInvalid = isInvalidProp || ariaIsInvalid;
         const labelPlacement = (0, import_system.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
         const slots = (0, import_react87.useMemo)(
@@ -158947,7 +158872,7 @@
         const getBaseGroupProps = () => {
           return {
             as,
-            label: label2,
+            label,
             description,
             endContent,
             errorMessage,
@@ -158990,7 +158915,7 @@
       var DateInputGroup = (0, import_system3.forwardRef)((props, ref) => {
         const {
           as,
-          label: label2,
+          label,
           children,
           description,
           startContent,
@@ -159009,7 +158934,7 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { ...labelProps, children: label2 }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime41.jsx)("span", { ...labelProps, children: label }) : null;
         const errorMessage = typeof errorMessageProp === "function" ? errorMessageProp({
           isInvalid,
           validationErrors,
@@ -159129,7 +159054,7 @@
         const {
           ref,
           as,
-          label: label2,
+          label,
           inputRef: inputRefProp,
           description,
           startContent,
@@ -159154,7 +159079,7 @@
         const disableAnimation = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation;
         const state = (0, import_datepicker5.useTimeFieldState)({
           ...originalProps,
-          label: label2,
+          label,
           locale,
           minValue,
           maxValue,
@@ -159171,11 +159096,11 @@
           descriptionProps,
           errorMessageProps,
           isInvalid
-        } = (0, import_datepicker4.useTimeField)({ ...originalProps, label: label2, validationBehavior, inputRef }, state, domRef);
+        } = (0, import_datepicker4.useTimeField)({ ...originalProps, label, validationBehavior, inputRef }, state, domRef);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const labelPlacement = (0, import_system5.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
         const slots = (0, import_react510.useMemo)(
@@ -159258,7 +159183,7 @@
         const getBaseGroupProps = () => {
           return {
             as,
-            label: label2,
+            label,
             description,
             endContent,
             errorMessage,
@@ -159548,7 +159473,7 @@
         const {
           as,
           ref,
-          label: label2,
+          label,
           endContent,
           selectorIcon,
           inputRef,
@@ -159633,7 +159558,7 @@
         };
         const dateInputProps = {
           as,
-          label: label2,
+          label,
           ref: domRef,
           inputRef,
           description,
@@ -159993,7 +159918,7 @@
       var import_form2 = require_dist33();
       function useDateRangePicker({
         as,
-        label: label2,
+        label,
         isInvalid: isInvalidProp,
         description,
         startContent,
@@ -160063,7 +159988,7 @@
         const showTimeField = !!timeGranularity;
         const labelPlacement = (0, import_system4.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
         const getStartTimeInputProps = () => {
@@ -160273,7 +160198,7 @@
         const getDateInputGroupProps = () => {
           return {
             as,
-            label: label2,
+            label,
             description,
             endContent,
             errorMessage,
@@ -160300,7 +160225,7 @@
         };
         return {
           state,
-          label: label2,
+          label,
           slots,
           classNames,
           startContent,
@@ -161968,7 +161893,7 @@
       }
       $parcel$export(module.exports, "useNumberField", () => $fa863e9b015ae839$export$23f548e970bdf099);
       function $fa863e9b015ae839$export$23f548e970bdf099(props, state, inputRef) {
-        let { id: id4, decrementAriaLabel, incrementAriaLabel, isDisabled, isReadOnly, isRequired, minValue, maxValue, autoFocus, label: label2, formatOptions, onBlur = () => {
+        let { id: id4, decrementAriaLabel, incrementAriaLabel, isDisabled, isReadOnly, isRequired, minValue, maxValue, autoFocus, label, formatOptions, onBlur = () => {
         }, onFocus, onFocusChange, onKeyDown, onKeyUp, description, errorMessage, isWheelDisabled, ...otherProps } = props;
         let { increment, incrementToMax, decrement, decrementToMin, numberValue, inputValue, commit, commitValidation } = state;
         const stringFormatter = (0, $9WaOX$reactariai18n.useLocalizedStringFormatter)((0, $parcel$interopDefault($4932e21065cdc2cd$exports)), "@react-aria/numberfield");
@@ -162078,7 +162003,7 @@
           // These props are added to a hidden input rather than the formatted textfield.
           name: void 0,
           form: void 0,
-          label: label2,
+          label,
           autoFocus,
           isDisabled,
           isReadOnly,
@@ -162241,7 +162166,7 @@
           ref,
           as,
           type,
-          label: label2,
+          label,
           baseRef,
           wrapperRef,
           description,
@@ -162316,13 +162241,13 @@
         });
         const labelPlacement = (0, import_system.useLabelPlacement)({
           labelPlacement: originalProps.labelPlacement,
-          label: label2
+          label
         });
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const isClearable = !!onClear || originalProps.isClearable;
-        const hasElements = !!label2 || !!description || !!errorMessage;
+        const hasElements = !!label || !!description || !!errorMessage;
         const hasPlaceholder = !!props.placeholder;
-        const hasLabel = !!label2;
+        const hasLabel = !!label;
         const hasHelper = !!description || !!errorMessage;
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
         const shouldLabelBeInside = labelPlacement === "inside";
@@ -162652,7 +162577,7 @@
           classNames,
           type,
           domRef,
-          label: label2,
+          label,
           description,
           startContent,
           endContent,
@@ -162700,7 +162625,7 @@
       var NumberInput = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
-          label: label2,
+          label,
           description,
           isClearable,
           startContent,
@@ -162728,7 +162653,7 @@
           getStepperDecreaseButtonProps,
           getStepperWrapperProps
         } = useNumberInput({ ...props, ref });
-        const labelContent = label2 ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label2 }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime210.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
             return /* @__PURE__ */ (0, import_jsx_runtime210.jsxs)(import_jsx_runtime210.Fragment, { children: [
@@ -163596,10 +163521,10 @@
                 ...landmarksWithRole
               ].map((landmark) => landmark.label);
               let duplicateLabels = labels.filter((item, index3) => labels.indexOf(item) !== index3);
-              duplicateLabels.forEach((label2) => {
-                console.warn(`Page contains more than one landmark with the '${role}' role and '${label2}' label. If two or more landmarks on a page share the same role, they must have unique labels: `, [
+              duplicateLabels.forEach((label) => {
+                console.warn(`Page contains more than one landmark with the '${role}' role and '${label}' label. If two or more landmarks on a page share the same role, they must have unique labels: `, [
                   ...landmarksWithRole
-                ].filter((landmark) => landmark.label === label2).map((landmark) => landmark.ref.current));
+                ].filter((landmark) => landmark.label === label).map((landmark) => landmark.ref.current));
               });
             }
           }
@@ -163793,7 +163718,7 @@
       function $e7d6db9a26301a97$export$4cc632584fd87fae(props, ref) {
         const { role, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledby, focus } = props;
         let manager = $e7d6db9a26301a97$var$useLandmarkManager();
-        let label2 = ariaLabel || ariaLabelledby;
+        let label = ariaLabel || ariaLabelledby;
         let [isLandmarkFocused, setIsLandmarkFocused] = (0, $kT6Sh$react.useState)(false);
         let defaultFocus = (0, $kT6Sh$react.useCallback)(() => {
           setIsLandmarkFocused(true);
@@ -163808,14 +163733,14 @@
         (0, $429333cab433657c$exports.useLayoutEffect)(() => {
           if (manager) return manager.registerLandmark({
             ref,
-            label: label2,
+            label,
             role,
             focus: focus || defaultFocus,
             blur
           });
         }, [
           manager,
-          label2,
+          label,
           ref,
           role,
           focus,
@@ -165940,16 +165865,16 @@
          * @param label The unique window label. Must be alphanumeric: `a-zA-Z-/:_`.
          * @returns The {@link Window} instance to communicate with the window.
          */
-        constructor(label2, options = {}) {
+        constructor(label, options = {}) {
           var _a;
-          this.label = label2;
+          this.label = label;
           this.listeners = /* @__PURE__ */ Object.create(null);
           if (!(options === null || options === void 0 ? void 0 : options.skip)) {
             core.invoke("plugin:window|create", {
               options: {
                 ...options,
                 parent: typeof options.parent === "string" ? options.parent : (_a = options.parent) === null || _a === void 0 ? void 0 : _a.label,
-                label: label2
+                label
               }
             }).then(async () => this.emit("tauri://created")).catch(async (e) => this.emit("tauri://error", e));
           }
@@ -165965,9 +165890,9 @@
          * @param label The window label.
          * @returns The Window instance to communicate with the window or null if the window doesn't exist.
          */
-        static async getByLabel(label2) {
+        static async getByLabel(label) {
           var _a;
-          return (_a = (await getAllWindows()).find((w) => w.label === label2)) !== null && _a !== void 0 ? _a : null;
+          return (_a = (await getAllWindows()).find((w) => w.label === label)) !== null && _a !== void 0 ? _a : null;
         }
         /**
          * Get an instance of `Window` for the current window.
@@ -167228,10 +167153,10 @@
          * @param label The badge label. Use `undefined` to remove the badge.
          * @return A promise indicating the success or failure of the operation.
          */
-        async setBadgeLabel(label2) {
+        async setBadgeLabel(label) {
           return core.invoke("plugin:window|set_badge_label", {
             label: this.label,
-            value: label2
+            value: label
           });
         }
         /**
@@ -168014,6 +167939,7 @@
       settingsDetailsEyebrow: "Details page",
       sideMenuTitle: "Side menu",
       sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
+      sideMenuLockedByPill: "Turned off while the menu pill is on \u2014 the pill is the menu then.",
       sideMenuOn: "Side menu",
       menuChipTitle: "Menu pill (TV style)",
       menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
@@ -168961,6 +168887,16 @@
       cpTemplate_collection: "Collection (TMDb id)",
       cpTemplate_trakt: "Trakt list (id)",
       cpPagesEyebrow: "PAGES",
+      cpPageName: "Page name",
+      cpAddFilter: "+ Add filter",
+      cpRemoveFilter: "Remove filter",
+      cpNoFilters: "No filters \u2014 the row is the widest question there is.",
+      cpAllFiltersSet: "Every filter is already set.",
+      cpRemovePage: "Remove page",
+      cpRemovePageBody: "The page and its rows are deleted. Rows on other pages that opened it fall back to the results grid.",
+      cpRowActive: "Row active",
+      cpTemplatesEyebrow: "TEMPLATES",
+      cpTemplateNeedsTheme: "Needs a theme",
       cpPagesTitle: "Your pages",
       cpNoPages: "No pages yet. Write a theme above and generate one.",
       cpNoRows: "This page has no rows yet.",
@@ -169017,6 +168953,7 @@
       cpEmptyVotes: "No hits \u2014 the vote floor is too high for this narrow a filter. Remove the Votes chip.",
       cpPreviewEmpty: "No hits. Loosen a filter, or check that the keyword is a real TMDb keyword.",
       cpPin: "Pin to the front",
+      cpUnpin: "Unpin",
       cpExclude: "Leave out of the row",
       cpInclude: "Put back in the row",
       cpOnlyMovies: "People and age rating only exist for films, so the row shows films.",
@@ -169039,6 +168976,7 @@
       cpFieldProviders: "Service",
       cpFieldCertCountry: "Country",
       cpShowAllGrid: "The results grid",
+      cpShowAllNone: "No link",
       cpTypeAll: "Film & series",
       cpTypeMovie: "Film",
       cpTypeSeries: "Series",
@@ -170234,6 +170172,23 @@
       hpTopButtonsTitle: "Top buttons",
       hpTopButtonsHint: "Choose which buttons appear in the top row next to the profile picker, and in what order. Applies to the menu row layout \u2014 the menu pill has its own panel.",
       hpTopButtonsPillNote: "The menu pill is on, and it replaces the top row \u2014 these buttons are not shown.",
+      hpMenuOrderGlassNote: "The glass card draws its rows and tiles in fixed groups, so order and the divider have no effect on phones. Switch to the side menu under Display to arrange them.",
+      rowViewNext: "View next",
+      schedulePanelTitle: "Your schedule",
+      scheduleTabMenu: "Menu",
+      scheduleTabSchedule: "Schedule",
+      scheduleOnlyAiringDays: "Only days with episodes are shown.",
+      scheduleYear: "Year",
+      scheduleMonth: "Month",
+      scheduleSummary: "{days} airing days \xB7 {episodes} episodes",
+      scheduleEpisodeCount: "{count} episodes",
+      scheduleEpisodeCountOne: "1 episode",
+      scheduleEmptyMonth: "Nothing airs this month from the series you follow.",
+      scheduleEmptyWatchlist: "Follow a series and its episodes show up here.",
+      scheduleFailed: "Could not fetch the schedule.",
+      scheduleRetry: "Try again",
+      scheduleSettingTitle: "Schedule panel",
+      scheduleSettingDesc: "A second column beside the menu with upcoming episodes from the series you follow.",
       hpMenuDividerRow: "Divider",
       mobileMenuDesignTitle: "Menu design on phones",
       mobileMenuDesignDesc: "The same pill opens the menu either way \u2014 this chooses how it is drawn.",
@@ -170821,6 +170776,7 @@
       settingsDetailsEyebrow: "Detaljsidan",
       sideMenuTitle: "Sidomeny",
       sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
+      sideMenuLockedByPill: "Avst\xE4ngt s\xE5 l\xE4nge menypillret \xE4r p\xE5 \u2014 d\xE5 \xE4r pillret menyn.",
       sideMenuOn: "Sidomeny",
       menuChipTitle: "Menypill (TV-stil)",
       menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
@@ -171763,6 +171719,16 @@
       cpTemplate_collection: "Samling (TMDb-id)",
       cpTemplate_trakt: "Trakt-lista (id)",
       cpPagesEyebrow: "SIDOR",
+      cpPageName: "Sidans namn",
+      cpAddFilter: "+ L\xE4gg till filter",
+      cpRemoveFilter: "Ta bort filtret",
+      cpNoFilters: "Inga filter \u2014 raden \xE4r den bredaste fr\xE5gan som finns.",
+      cpAllFiltersSet: "Alla filter \xE4r redan satta.",
+      cpRemovePage: "Ta bort sidan",
+      cpRemovePageBody: "Sidan och dess rader raderas. Rader p\xE5 andra sidor som \xF6ppnade den faller tillbaka p\xE5 tr\xE4ffrutn\xE4tet.",
+      cpRowActive: "Raden aktiv",
+      cpTemplatesEyebrow: "MALLAR",
+      cpTemplateNeedsTheme: "Kr\xE4ver ett tema",
       cpPagesTitle: "Dina sidor",
       cpNoPages: "Inga sidor \xE4n. Skriv ett tema ovan och generera en.",
       cpNoRows: "Den h\xE4r sidan har inga rader \xE4n.",
@@ -171819,6 +171785,7 @@
       cpEmptyVotes: "Inga tr\xE4ffar \u2014 r\xF6stgolvet \xE4r f\xF6r h\xF6gt f\xF6r ett s\xE5 smalt filter. Ta bort Votes-chipet.",
       cpPreviewEmpty: "Inga tr\xE4ffar. L\xE4tta p\xE5 ett filter, eller kolla att nyckelordet \xE4r ett riktigt TMDb-nyckelord.",
       cpPin: "F\xE4st \xF6verst",
+      cpUnpin: "Lossa",
       cpExclude: "Utanf\xF6r raden",
       cpInclude: "Tillbaka i raden",
       cpOnlyMovies: "Person och \xE5ldersgr\xE4ns finns bara f\xF6r film, s\xE5 raden visar filmer.",
@@ -171841,6 +171808,7 @@
       cpFieldProviders: "Tj\xE4nst",
       cpFieldCertCountry: "Land",
       cpShowAllGrid: "Tr\xE4ffrutn\xE4tet",
+      cpShowAllNone: "Ingen l\xE4nk",
       cpTypeAll: "Film & serier",
       cpTypeMovie: "Film",
       cpTypeSeries: "Serier",
@@ -173018,6 +172986,23 @@
       hpTopButtonsTitle: "Topp-knappar",
       hpTopButtonsHint: "V\xE4lj vilka knappar som visas i toppraden bredvid profilv\xE4ljaren, och i vilken ordning. G\xE4ller menyradsl\xE4get \u2014 menypillret har en egen panel.",
       hpTopButtonsPillNote: "Menypillret \xE4r p\xE5 och ers\xE4tter toppraden \u2014 de h\xE4r knapparna visas inte.",
+      hpMenuOrderGlassNote: "Glaskortet ritar sina rader och brickor i fasta grupper, s\xE5 ordningen och skiljelinjen har ingen verkan p\xE5 telefon. Byt till sidomenyn under Utseende f\xF6r att ordna dem.",
+      rowViewNext: "Visa n\xE4sta",
+      schedulePanelTitle: "Ditt schema",
+      scheduleTabMenu: "Meny",
+      scheduleTabSchedule: "Schema",
+      scheduleOnlyAiringDays: "Bara dagar med avsnitt visas.",
+      scheduleYear: "\xC5r",
+      scheduleMonth: "M\xE5nad",
+      scheduleSummary: "{days} s\xE4ndningsdagar \xB7 {episodes} avsnitt",
+      scheduleEpisodeCount: "{count} avsnitt",
+      scheduleEpisodeCountOne: "1 avsnitt",
+      scheduleEmptyMonth: "Inget s\xE4nds den h\xE4r m\xE5naden av serierna du f\xF6ljer.",
+      scheduleEmptyWatchlist: "F\xF6lj en serie s\xE5 dyker dess avsnitt upp h\xE4r.",
+      scheduleFailed: "Schemat gick inte att h\xE4mta.",
+      scheduleRetry: "F\xF6rs\xF6k igen",
+      scheduleSettingTitle: "Schemapanel",
+      scheduleSettingDesc: "En andra kolumn bredvid menyn med kommande avsnitt ur serierna du f\xF6ljer.",
       hpMenuDividerRow: "Avdelare",
       mobileMenuDesignTitle: "Menyns utseende p\xE5 telefon",
       mobileMenuDesignDesc: "Samma pill \xF6ppnar menyn i b\xE5da fallen \u2014 det h\xE4r v\xE4ljer hur den ritas.",
@@ -174629,10 +174614,10 @@
   function createLanguageOption(input) {
     const { code, englishLabel, nativeLabel } = input;
     const englishDisplayName = getEnglishLanguageDisplayName(code);
-    const label2 = englishLabel || englishDisplayName || nativeLabel || code;
+    const label = englishLabel || englishDisplayName || nativeLabel || code;
     return {
       code,
-      label: label2.charAt(0).toUpperCase() + label2.slice(1),
+      label: label.charAt(0).toUpperCase() + label.slice(1),
       englishLabel: englishLabel || null,
       nativeLabel: nativeLabel || null
     };
@@ -182564,7 +182549,7 @@ ${cue.text}`).join("\n\n")}
       setSubtitleLoadError(null);
       try {
         const bytes = new Uint8Array(await file.arrayBuffer());
-        const decode = (label2, fatal) => new TextDecoder(label2, { fatal }).decode(bytes);
+        const decode = (label, fatal) => new TextDecoder(label, { fatal }).decode(bytes);
         let content2;
         if (bytes[0] === 255 && bytes[1] === 254 || bytes[0] === 254 && bytes[1] === 255) {
           content2 = decode(bytes[0] === 255 ? "utf-16le" : "utf-16be", false);
@@ -182856,8 +182841,8 @@ ${cue.text}`).join("\n\n")}
     const dtMoreIconClass = newChrome ? "h-[18px] w-[18px] flex-none text-slate-300" : "h-5 w-5 flex-none text-slate-200";
     const dtMoreTextClass = newChrome ? portraitChrome ? "text-[15px] leading-tight" : "text-sm leading-tight" : "text-[15px] leading-tight";
     const pickerStyle = (trigger, width) => portraitChrome ? { position: "fixed", left: 12, right: 12, bottom: 172, maxHeight: "55vh", overflowY: "auto" } : { ...getAnchoredMenuStyle(trigger, newChrome ? width : 0), width: newChrome ? width : void 0 };
-    const pickerHeading = (label2) => portraitChrome ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3 px-3 pb-1.5 pt-2", children: [
-      /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label2 }),
+    const pickerHeading = (label) => portraitChrome ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3 px-3 pb-1.5 pt-2", children: [
+      /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label }),
       /* @__PURE__ */ jsx(
         "button",
         {
@@ -182868,7 +182853,7 @@ ${cue.text}`).join("\n\n")}
           children: /* @__PURE__ */ jsx("svg", { className: "h-3 w-3", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
         }
       )
-    ] }) : /* @__PURE__ */ jsx("div", { className: dtMenuHeadingClass, children: label2 });
+    ] }) : /* @__PURE__ */ jsx("div", { className: dtMenuHeadingClass, children: label });
     const portraitPickerOpen = portraitChrome && (openSurface === "subs" || openSurface === "audio" || openSurface === "aspect" || openSurface === "zoom" || openSurface === "cast" || openSurface === "more");
     const dtActiveTextClass = newChrome ? "text-[rgb(var(--player-accent))]" : "text-aurora-300";
     const dtMenuDotClass = newChrome ? "ml-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white" : "ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400";
@@ -184731,8 +184716,8 @@ ${cue.text}`).join("\n\n")}
                           { label: t("delay"), value: subDelay, unit: "s", dec: () => setSubDelay((v) => Math.max(-180, Math.round((v - 0.1) * 10) / 10)), inc: () => setSubDelay((v) => Math.min(180, Math.round((v + 0.1) * 10) / 10)) },
                           { label: t("size"), value: subSize, unit: "%", dec: () => setSubSize((v) => Math.max(50, v - 10)), inc: () => setSubSize((v) => Math.min(200, v + 10)) },
                           { label: t("verticalPosition"), value: subVerticalPos, unit: "%", dec: () => setSubVerticalPos((v) => Math.max(0, v - 5)), inc: () => setSubVerticalPos((v) => Math.min(90, v + 5)) }
-                        ].map(({ label: label2, value, unit, dec, inc }) => /* @__PURE__ */ jsxs("div", { className: "px-4 py-2", children: [
-                          /* @__PURE__ */ jsx("div", { className: "mb-1.5 text-xs text-slate-400", children: label2 }),
+                        ].map(({ label, value, unit, dec, inc }) => /* @__PURE__ */ jsxs("div", { className: "px-4 py-2", children: [
+                          /* @__PURE__ */ jsx("div", { className: "mb-1.5 text-xs text-slate-400", children: label }),
                           /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
                             /* @__PURE__ */ jsx(
                               "button",
@@ -184759,7 +184744,7 @@ ${cue.text}`).join("\n\n")}
                               }
                             )
                           ] })
-                        ] }, label2))
+                        ] }, label))
                       ] })
                     ]
                   }
@@ -185266,7 +185251,7 @@ ${cue.text}`).join("\n\n")}
                             pickerHeading(t("audio")),
                             audioTracks.map((track) => {
                               const isActive = activeAudioTrack === track.index || activeAudioTrack === null && track === audioTracks[0];
-                              const label2 = toAudioLangGroup(track.language)?.toUpperCase() ?? `Track ${track.index}`;
+                              const label = toAudioLangGroup(track.language)?.toUpperCase() ?? `Track ${track.index}`;
                               return /* @__PURE__ */ jsxs(
                                 "button",
                                 {
@@ -185276,7 +185261,7 @@ ${cue.text}`).join("\n\n")}
                                   onClick: () => switchAudioTrack(track),
                                   className: dtMenuRowClass(isActive),
                                   children: [
-                                    /* @__PURE__ */ jsx("span", { className: "text-left", children: label2 }),
+                                    /* @__PURE__ */ jsx("span", { className: "text-left", children: label }),
                                     isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
                                   ]
                                 },
@@ -187019,7 +187004,7 @@ ${cue.text}`).join("\n\n")}
     checked,
     onChange,
     disabled,
-    label: label2,
+    label,
     hint,
     right
   }) {
@@ -187063,8 +187048,8 @@ ${cue.text}`).join("\n\n")}
                     children: checked ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 14, color: TOKENS.surface0 }) : null
                   }
                 ),
-                label2 ? /* @__PURE__ */ jsxs("span", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
-                  /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.body, color: TOKENS.text, fontWeight: 500 }, children: label2 }),
+                label ? /* @__PURE__ */ jsxs("span", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
+                  /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.body, color: TOKENS.text, fontWeight: 500 }, children: label }),
                   hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: TYPE.small, color: TOKENS.textMute, lineHeight: 1.4 }, children: hint }) : null
                 ] }) : null
               ]
@@ -187132,7 +187117,7 @@ ${cue.text}`).join("\n\n")}
       (o) => typeof o === "object" ? o : { value: o, label: String(o) }
     );
     const current2 = normalized.find((o) => o.value === value);
-    const label2 = current2 ? current2.label : placeholder ?? String(value);
+    const label = current2 ? current2.label : placeholder ?? String(value);
     return /* @__PURE__ */ jsxs("div", { ref, style: { position: "relative", width: width || "100%" }, children: [
       /* @__PURE__ */ jsxs(
         "button",
@@ -187157,7 +187142,7 @@ ${cue.text}`).join("\n\n")}
             transition: "border-color .14s"
           },
           children: [
-            /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: label2 }),
+            /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: label }),
             /* @__PURE__ */ jsx(
               Icon,
               {
