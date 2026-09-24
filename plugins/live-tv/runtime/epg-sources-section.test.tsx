@@ -39,7 +39,7 @@ describe('EpgSourcesSection', () => {
       />,
     )
     expect(screen.getByText('https://example.com/guide.xml')).toBeInTheDocument()
-    expect(screen.getByText('Auto')).toBeInTheDocument()
+    expect(screen.getByText('AUTO')).toBeInTheDocument()
   })
 
   it('lists every manual url with a remove button', () => {
@@ -91,7 +91,7 @@ describe('EpgSourcesSection', () => {
     render(
       <EpgSourcesSection autoUrl={null} manualUrls={[]} onChangeManual={() => {}} />,
     )
-    expect(screen.getByText(/no epg sources yet/i)).toBeInTheDocument()
+    expect(screen.getByText('No EPG source for this playlist yet.')).toBeInTheDocument()
   })
 
   it('does not fetch any diagnostics itself — the status card owns that', () => {

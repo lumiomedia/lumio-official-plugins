@@ -1,9 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import type * as React from 'react'
-import { Card, TOKENS, eyebrowStyle, inputStyle, useLang, useTvMode } from '@/lib/plugin-sdk'
-import { Pill as PillBtn, TextField } from './tv-aware-controls'
+import { useRef, useState, type ReactNode } from 'react'
+import { LtAutoBadge, LtBtn, LtCard, LtEyebrow, LtInput, LtMono, LtNote, LtSection, UI, fmtInt, useToast } from './settings-ui'
 import { useHubText } from './hub-strings'
 import { useEpgStatus } from './hooks/useEpgStatus'
 
@@ -14,6 +12,7 @@ interface Props {
   /** Av-läget för den härledda källan. Se LiveTvList.autoEpgDisabled. */
   autoDisabled?: boolean
   onToggleAuto?: (disabled: boolean) => void
+  testId?: string
 }
 
 function formatRelative(ms: number | null, locale: string): string | null {
@@ -26,159 +25,128 @@ function formatRelative(ms: number | null, locale: string): string | null {
     : then.toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-function sourceRow(url: string, meta: React.ReactNode, right: React.ReactNode, dimmed = false) {
+/** EPG-raden (§6): grund `rgba(0,0,0,0.25)`, radie 8, adressen i mono 12 px. */
+function SourceRow({ url, auto = false, dimmed = false, right }: { url: string; auto?: boolean; dimmed?: boolean; right: ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 12px', borderRadius: 10, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
-      <span style={{ minWidth: 0, opacity: dimmed ? 0.45 : 1 }}>
-        <span style={{ display: 'block', fontSize: 'var(--st-small)', color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
-        {meta}
-      </span>
-      <span style={{ display: 'flex', flex: 'none', alignItems: 'center', gap: 8 }}>{right}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderRadius: 8, background: UI.dark, padding: '8px 10px', opacity: dimmed ? 0.55 : 1 }}>
+      <LtMono>{url}</LtMono>
+      {auto ? <LtAutoBadge /> : null}
+      {right}
     </div>
   )
 }
 
 /**
- * Tablåns tillstånd — EN gång för hela sidan, inte per spellista.
- *
- * Fram till v2 höll pluginet en EGEN XMLTV-cache (`epg/cache.ts`) bara för att
- * kunna skriva "3 kanaler · 812 program" under varje adress: så länge
- * inställningarna var öppna laddade webviewn ner hela tablån en gång till,
- * parallellt med appens hämtning. Siffrorna kommer nu ur appens butik
- * (`/api/live-tv/epg/status`), som ändå är den vyerna får sin tablå ifrån.
- *
- * Butiken är GLOBAL (ett lager för alla list-id, P3). Därför ligger det här
- * blocket ÖVER listkorten i stället för i varje kort: renderat per lista blev
- * det N statusläsningar av samma sak och N "Hämta om EPG"-knappar som alla
- * gjorde exakt samma globala omhämtning — men med var sitt `refreshing`, så
- * de andra knapparna såg overksamma ut medan en av dem arbetade.
- *
- * Datadelen (läsning/omhämtning) är ren utbrytning i `hooks/useEpgStatus.ts`,
- * delad med TV-inställningarnas EPG-flik (P7) — den här komponenten äger
- * bara renderingen.
+ * Tablåns tillstånd — EN gång för hela sidan, inte per spellista (butiken är
+ * global, `/api/live-tv/epg/status`). Blocket PROGRAMME GUIDE STATUS i
+ * handoffen §3: rubrik + note, guidekortet med adressen i mono, statistiken
+ * i grönt och raden "Guide fetched 12:37 · 66,111 programmes" + Refetch EPG.
+ * Datadelen ligger i `hooks/useEpgStatus.ts`, delad med TV-inställningarna.
  */
 export function EpgStatusCard() {
   const { h, locale } = useHubText()
   const { status, urls, refreshing, refresh } = useEpgStatus()
+  const toast = useToast()
+  const statusRef = useRef(status)
+  statusRef.current = status
 
   if (urls.length === 0) return null
 
   const overallFetched = formatRelative(status?.fetchedAt ?? null, locale)
+  const doRefresh = async () => {
+    await refresh()
+    toast(h('guideFetchedToast', { programmes: fmtInt(statusRef.current?.programmes ?? 0, locale) }))
+  }
   return (
-    <Card>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ ...eyebrowStyle }}>{h('epgStatusTitle')}</div>
-        <p style={{ margin: 0, fontSize: 'var(--st-small)', color: TOKENS.textMute, lineHeight: 1.45 }}>{h('epgStatusAllLists')}</p>
+    <div>
+      <LtSection eyebrow={h('epgStatusTitle')} hint={h('epgStatusAllLists')} />
+      <LtCard gap={12} testId="epg-status-card">
         {urls.map((url) => {
           const stat = status?.urls.find((item) => item.url === url)
           const fetched = formatRelative(stat?.fetchedAt || null, locale)
-          const meta = !stat
-            ? null
-            : stat.error
-              ? <span style={{ display: 'block', marginTop: 3, fontSize: 'var(--st-micro)', color: '#fca5a5' }}>{stat.error}</span>
-              : (
-                <span style={{ display: 'block', marginTop: 3, fontSize: 'var(--st-micro)', color: 'rgba(110,231,183,0.75)' }}>
-                  {h('epgSourceStats', { channels: stat.channels, programmes: stat.programmes })}
+          return (
+            <div key={url} style={{ borderRadius: 8, background: UI.dark, padding: '10px 12px' }}>
+              <LtMono style={{ display: 'block', flex: 'none' }}>{url}</LtMono>
+              {!stat ? null : stat.error ? (
+                <p style={{ margin: '5px 0 0', fontSize: 12, color: UI.danger }}>{stat.error}</p>
+              ) : (
+                <p style={{ margin: '5px 0 0', fontSize: 12, color: UI.green }}>
+                  {h('epgSourceStats', { channels: fmtInt(stat.channels, locale), programmes: fmtInt(stat.programmes, locale) })}
                   {fetched ? ` · ${h('epgSourceFetched', { time: fetched })}` : ''}
-                </span>
-              )
-          return <div key={url}>{sourceRow(url, meta, null)}</div>
+                </p>
+              )}
+            </div>
+          )
         })}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 'var(--st-small)', color: status?.failedAt && !status.fetchedAt ? '#fca5a5' : TOKENS.textMute }}>
-            {overallFetched
-              ? h('epgFetchedAt', { time: overallFetched, programmes: status?.programmes ?? 0 })
-              : h('epgNeverFetched')}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <span style={{ fontSize: 12.5, color: status?.failedAt && !status.fetchedAt ? UI.danger : UI.muted }}>
+            {refreshing
+              ? h('fetchingGuide')
+              : overallFetched
+                ? h('epgFetchedAt', { time: overallFetched, programmes: fmtInt(status?.programmes ?? 0, locale) })
+                : h('epgNeverFetched')}
           </span>
-          <PillBtn size="sm" onClick={() => void refresh()} disabled={refreshing}>
+          <LtBtn onClick={() => void doRefresh()} disabled={refreshing}>
             {refreshing ? h('epgRefreshing') : h('epgRefresh')}
-          </PillBtn>
+          </LtBtn>
         </div>
-      </div>
-    </Card>
+      </LtCard>
+    </div>
   )
 }
 
 /**
- * EPG-källorna FÖR EN LISTA: lägg till, ta bort, stäng av den härledda.
- * Diagnostiken (kanaler/program/fel per adress) ligger i `EpgStatusCard`
- * ovanför listkorten — se motiveringen där.
+ * EPG-källorna FÖR EN LISTA, inne i spellistans kort (§3.1): eyebrow, en rad
+ * per källa (AUTO-bricka på den härledda), noten när ingen finns, fältet +
+ * Add. Ett tomt Add toastar i stället för att tyst göra ingenting.
+ * Diagnostiken (kanaler/program per adress) ligger i `EpgStatusCard`.
  */
-export function EpgSourcesSection({
-  autoUrl,
-  manualUrls,
-  onChangeManual,
-  autoDisabled = false,
-  onToggleAuto,
-}: Props) {
-  const isTv = useTvMode()
-  const { t } = useLang()
+export function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, autoDisabled = false, onToggleAuto, testId }: Props) {
+  const { h } = useHubText()
+  const toast = useToast()
   const [draft, setDraft] = useState('')
   const addUrl = () => {
     const trimmed = draft.trim()
-    if (!trimmed) return
+    if (!trimmed) {
+      toast(h('pasteXmltvFirst'))
+      return
+    }
     onChangeManual([...manualUrls, trimmed])
     setDraft('')
+    toast(h('epgSourceAdded'))
   }
-  const removeUrl = (index: number) => onChangeManual(manualUrls.filter((_, j) => j !== index))
+  const removeUrl = (index: number) => {
+    onChangeManual(manualUrls.filter((_, j) => j !== index))
+    toast(h('epgSourceRemoved'))
+  }
   const hasAny = (autoUrl !== null && !autoDisabled) || manualUrls.length > 0
+  const removeStyle = { padding: '5px 10px' } as const
 
   return (
-    <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ ...eyebrowStyle }}>{t('liveTvEpgSources')}</div>
-      {autoUrl
-        ? sourceRow(
-            autoUrl,
-            null,
-            <>
-              <span style={{ fontSize: 'var(--st-micro)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: autoDisabled ? TOKENS.surface2 : 'rgba(60,214,163,0.18)', color: autoDisabled ? TOKENS.textMute : TOKENS.mint }}>
-                {autoDisabled ? `Auto · ${t('off')}` : 'Auto'}
-              </span>
-              {/* Härledd källa: den går att STÄNGA AV, inte radera. En radering
-                  hade kommit tillbaka vid nästa M3U-hämtning, och användaren
-                  hade inte haft någon väg att få den igen. */}
-              {onToggleAuto ? (
-                <PillBtn size="sm" variant={autoDisabled ? 'accent' : 'danger'} onClick={() => onToggleAuto(!autoDisabled)}>
-                  {autoDisabled ? t('on') : t('remove')}
-                </PillBtn>
-              ) : null}
-            </>,
-            autoDisabled,
-          )
-        : null}
+    <div data-testid={testId} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <LtEyebrow>{h('epgSources')}</LtEyebrow>
+      {autoUrl ? (
+        <SourceRow
+          url={autoUrl}
+          auto
+          dimmed={autoDisabled}
+          right={onToggleAuto
+            // Härledd källa: den STÄNGS AV, inte raderas — nästa import hade
+            // skrivit tillbaka den, och då hade den inte gått att bli av med.
+            ? (autoDisabled
+                ? <LtBtn variant="accent" style={removeStyle} onClick={() => onToggleAuto(false)}>{h('on')}</LtBtn>
+                : <LtBtn variant="danger" style={removeStyle} onClick={() => { onToggleAuto(true); toast(h('epgSourceRemoved')) }}>{h('remove')}</LtBtn>)
+            : null}
+        />
+      ) : null}
       {manualUrls.map((url, i) => (
-        <div key={`${url}-${i}`}>
-          {sourceRow(url, null, <PillBtn size="sm" variant="danger" onClick={() => removeUrl(i)}>{t('remove')}</PillBtn>)}
-        </div>
+        <SourceRow key={`${url}-${i}`} url={url} right={<LtBtn variant="danger" style={removeStyle} onClick={() => removeUrl(i)}>{h('remove')}</LtBtn>} />
       ))}
+      {!hasAny ? <LtNote>{h('noEpgSourceYet')}</LtNote> : null}
       <div style={{ display: 'flex', gap: 8 }}>
-        {isTv ? (
-          <TextField
-            title={t('liveTvEpgUrlPlaceholder')}
-            placeholder={t('liveTvEpgUrlPlaceholder')}
-            value={draft}
-            onChange={setDraft}
-            style={{ flex: 1, minWidth: 0 }}
-          />
-        ) : (
-          <input
-            type="url"
-            placeholder={t('liveTvEpgUrlPlaceholder')}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                addUrl()
-              }
-            }}
-            style={{ ...inputStyle, flex: 1 }}
-          />
-        )}
-        <PillBtn variant="accent" onClick={addUrl} style={{ minHeight: 44 }}>{t('add')}</PillBtn>
+        <LtInput title={h('xmltvPlaceholder')} placeholder={h('xmltvPlaceholder')} value={draft} onChange={setDraft} onEnter={addUrl} style={{ flex: 1, fontSize: 12.5 }} />
+        <LtBtn variant="accent" style={{ padding: '6px 13px' }} onClick={addUrl}>{h('add')}</LtBtn>
       </div>
-      {!hasAny ? <p style={{ margin: 0, fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{t('liveTvNoEpgSourcesPrefix')}</p> : null}
-    </section>
+    </div>
   )
-
 }

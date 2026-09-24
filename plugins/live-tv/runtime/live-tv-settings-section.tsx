@@ -1,10 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { Card, TOKENS, eyebrowStyle, inputStyle } from '@/lib/plugin-sdk'
-// TV-medvetna varianter under primitivernas namn: stationer på TV, identiska på skrivbordet.
-import { Pill as PillBtn, TvCheck as Checkbox } from './tv-aware-controls'
-import { useLinearTvNav } from './tv-linear-nav'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import {
   disableHomeOverridePlugin,
   getHomeOverridePluginId,
@@ -13,29 +9,26 @@ import {
   tryEnableHomeOverridePlugin,
   useLang,
 } from '@/lib/plugin-sdk'
+import { LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useToast } from './settings-ui'
 import {
   applyM3uUrls,
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
   deleteLiveTvList,
+  deleteXtreamLoginAndData,
   ensureM3uList,
   getLiveTvLists,
   getLiveTvUrlsKey,
   getM3uUrls,
   importList,
   getM3uDraftUrls,
-  isLogoFallbackEnabled,
   onLiveTvListsChanged,
-  setLogoFallbackEnabled,
   setM3uDraftUrls,
-  updateLiveTvListEpg,
   type LiveTvList,
   getLiveTvHideHero,
   setLiveTvHideHero,
-  getXtreamLogins,
   parseXtreamSource,
 } from './live-tv-data'
-import { completeLogos } from './index-client'
 import type { ImportStatus } from './index-client'
 import { recordListImportOutcome } from './list-import-flags'
 import {
@@ -45,50 +38,46 @@ import {
   subscribeM3uFetch,
 } from './m3u-fetch-progress'
 import { useHubText } from './hub-strings'
-import { EpgSourcesSection, EpgStatusCard } from './epg-sources-section'
+import { EpgStatusCard } from './epg-sources-section'
 import { XtreamLoginSection, prefillXtreamLogin } from './xtream-login-section'
 import { VodLibraryCard } from './vod-library-card'
 import { CategoryCurationPanel } from './category-curation-panel'
+import { PlaylistCard, playlistHost } from './playlist-card'
 
-
-const settingsActionButtonClass =
-  'rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-50'
 const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.live-tv'
 
-function hostOf(url: string): string {
-  try { return new URL(url).hostname || url } catch { return url }
+/** Adressfältet är en rad: flera adresser skiljs med blanksteg eller komma. */
+function splitUrls(text: string): string[] {
+  return text.split(/[\s,]+/).map((u) => u.trim()).filter(Boolean)
 }
 
 /**
- * Kvittots tidsstämpel. Idag räcker klockslaget; är hämtningen äldre säger
- * bara "09:41" inget alls om huruvida listan är färsk, så då kommer datumet
- * med.
+ * LIVE TV:S INSTÄLLNINGSSIDA (handoff 2026-09-24 §3), blocken i ordning:
+ * 1) de två växlarna, 2) PLAYLISTS med ett kort per spellista, 3) M3U,
+ * 4) XTREAM LOGIN, 5) PROGRAMME GUIDE STATUS, 6) USE AS LIBRARY. Toaster och
+ * dialoger lever i `ToastHost`/`LtDialog` (settings-ui.tsx).
  */
-function formatFetchedAt(iso: string, locale: string): string {
-  const then = new Date(iso)
-  if (Number.isNaN(then.getTime())) return iso
-  const now = new Date()
-  const sameDay = then.toDateString() === now.toDateString()
-  return sameDay
-    ? then.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
-    : then.toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+export function LiveTvSettingsSection() {
+  return (
+    <ToastHost>
+      <SettingsPage />
+    </ToastHost>
+  )
 }
 
-export function LiveTvSettingsSection() {
-  const { t, lang } = useLang()
+function SettingsPage() {
+  const { t } = useLang()
   const { h, locale } = useHubText()
+  const toast = useToast()
   const fetchProgress = useSyncExternalStore(subscribeM3uFetch, getM3uFetchProgress, getM3uFetchProgress)
   const [hideHero, setHideHero] = useState<boolean>(() => getLiveTvHideHero())
   const [m3uText, setM3uText] = useState('')
   const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
   const [homeOverrideError, setHomeOverrideError] = useState('')
   const [lists, setLists] = useState<LiveTvList[]>([])
-  // Rad-för-rad-navigering med fjärrkontroll i TV-läge (se tv-linear-nav.tsx).
-  const sectionRef = useRef<HTMLDivElement | null>(null)
-  useLinearTvNav(sectionRef)
   /**
-   * Kategoripanelen (spec 2026-09-24). Öppnas från kortets knapp eller
-   * automatiskt EN gång efter en NY listas första import (m3u och Xtream).
+   * Kategoripanelen. Öppnas från kortet eller automatiskt EN gång efter en NY
+   * listas första import (m3u och Xtream).
    */
   const [curationList, setCurationList] = useState<{ list: LiveTvList; mode: 'settings' | 'after-import' } | null>(null)
   /** Bara listor som aldrig visat panelen — en omhämtning öppnar inget. */
@@ -96,17 +85,9 @@ export function LiveTvSettingsSection() {
     const fresh = getLiveTvLists().find((entry) => entry.id === listId)
     if (fresh && fresh.curationSeen !== true) setCurationList({ list: fresh, mode: 'after-import' })
   }
-  // Omhämtning av EN lista (kortets egen knapp) — skild från M3U-fältets kö
-  // ovan, som hämtar hela uppsättningen adresser.
+  // Omhämtning av EN lista (kortets egen knapp) — skild från M3U-fältets kö,
+  // som hämtar hela uppsättningen adresser.
   const [listProgress, setListProgress] = useState<{ listId: string; state: ImportStatus['state']; received: number; total: number | null } | null>(null)
-  // Komplettera-knappens eget tillstånd, per lista — samma mönster som
-  // `listProgress`: en enda useState nyckelad på list-id, ingen global.
-  const [logoComplete, setLogoComplete] = useState<
-    | { listId: string; status: 'running' }
-    | { listId: string; status: 'done'; matched: number; total: number }
-    | { listId: string; status: 'error'; error: string }
-    | null
-  >(null)
 
   useEffect(() => {
     const sync = () => setLists(getLiveTvLists())
@@ -115,7 +96,7 @@ export function LiveTvSettingsSection() {
   }, [])
 
   useEffect(() => {
-    const sync = () => setM3uText(getM3uDraftUrls().join('\n'))
+    const sync = () => setM3uText(getM3uDraftUrls().join(' '))
     sync()
     return onProfileChanged(sync)
   }, [])
@@ -130,7 +111,7 @@ export function LiveTvSettingsSection() {
   }, [])
 
   async function handleFetchM3uList() {
-    const urls = m3uText.split('\n').map((u) => u.trim()).filter(Boolean)
+    const urls = splitUrls(m3uText)
     if (urls.length === 0) return
 
     setM3uDraftUrls(urls)
@@ -142,10 +123,8 @@ export function LiveTvSettingsSection() {
     // kommer tillbaka, och ett tillstånd som dog med komponenten var precis
     // det som fick en betatestare att starta hämtningen en andra gång.
     const ok = await runM3uFetch(urls, async (url) => {
-      // Fanns listan redan (samma källa importerad tidigare)? Om INTE, och
-      // importen misslyckas, ska den nyskapade, tomma listposten inte lämnas
-      // kvar som en orphan (spec §5) — bara knappens "hämta" ska kunna
-      // skapa en riktig, importerad lista.
+      // Fanns listan redan? Om INTE, och importen misslyckas, ska den
+      // nyskapade, tomma listposten inte lämnas kvar som en orphan (spec §5).
       const source = getLiveTvUrlsKey([url])
       const existedBefore = getLiveTvLists().some((entry) => entry.source === source)
       const list = ensureM3uList(url)
@@ -159,26 +138,28 @@ export function LiveTvSettingsSection() {
       return status.result?.total ?? 0
     })
 
-    // Bara en hel omgång får skriva om de aktiva adresserna. Föll en av dem
-    // står den gamla uppsättningen kvar, i stället för att halva bytet blir
-    // det nya normalläget.
+    // Bara en hel omgång får skriva om de aktiva adresserna.
     if (ok) applyM3uUrls(urls)
   }
 
   /**
-   * Ta bort en lista helt: raden i inställningarna, kanalerna, cachen OCH
-   * M3U-adressen den kom ifrån (både aktiv och i utkastet) — annars kom
-   * feeden tillbaka vid nästa hämtning, och det gick inte att bli av med
-   * en gammal spellista när man bara ville ha kvar Xtream-inloggningen.
-   * Xtream-poster har sin egen Ta bort-knapp och rörs inte här.
+   * Ta bort en spellista helt (bekräftad i kortet): posten, kanalerna i
+   * indexet, biblioteket, kategorierna och EPG-källorna — och för M3U även
+   * adressen den kom ifrån (annars kom feeden tillbaka vid nästa hämtning).
+   * Xtream-listor går via inloggningen, så kontot följer med.
    */
   function handleRemoveList(list: LiveTvList) {
-    const remaining = getM3uUrls().filter((url) => !url.startsWith('xtream://') && hostOf(url) !== list.name)
-    applyM3uUrls(remaining)
-    setM3uText(remaining.join('\n'))
-    deleteLiveTvList(list.id)
+    if (list.kind === 'xtream' && list.xtreamLoginId) {
+      deleteXtreamLoginAndData(list.xtreamLoginId)
+    } else {
+      const remaining = getM3uUrls().filter((url) => !url.startsWith('xtream://') && hostOf(url) !== list.name && url !== list.url)
+      applyM3uUrls(remaining)
+      setM3uText(remaining.join(' '))
+      deleteLiveTvList(list.id)
+    }
     clearLiveTvMemoryCache()
     clearStoredLiveTvChannels()
+    toast(h('hostRemoved', { host: playlistHost(list) }))
   }
 
   /**
@@ -191,6 +172,7 @@ export function LiveTvSettingsSection() {
     try {
       const status = await importList(list, (s) => setListProgress({ listId: list.id, state: s.state, received: s.received, total: s.total ?? null }))
       recordListImportOutcome(list.id, status.state === 'error' ? (status.error ?? 'import failed') : undefined)
+      if (status.state !== 'error') toast(h('hostUpdated', { host: playlistHost(list) }))
     } catch (err) {
       recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err))
     } finally {
@@ -198,19 +180,9 @@ export function LiveTvSettingsSection() {
     }
   }
 
-  /**
-   * Kompletterar en listas logotyper mot iptv-org. `completeLogos` sänder
-   * `emitIndexChanged()` själv vid ett lyckat svar (se `index-client.ts`) —
-   * den ropas INTE här igen, det hade blivit en dubbelsändning.
-   */
-  async function handleCompleteLogos(list: LiveTvList) {
-    setLogoComplete({ listId: list.id, status: 'running' })
-    try {
-      const result = await completeLogos(list.source)
-      setLogoComplete({ listId: list.id, status: 'done', matched: result.matched, total: result.total })
-    } catch (err) {
-      setLogoComplete({ listId: list.id, status: 'error', error: err instanceof Error ? err.message : String(err) })
-    }
+  function handleRelogin(list: LiveTvList) {
+    const xtreamSource = parseXtreamSource(list.source)
+    prefillXtreamLogin({ server: xtreamSource ? `http://${xtreamSource.host}` : '', loginId: xtreamSource?.loginId })
   }
 
   function handleHomeOverrideToggle(checked: boolean) {
@@ -220,244 +192,111 @@ export function LiveTvSettingsSection() {
       return
     }
     const result = tryEnableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID)
-    if (!result.ok) {
-      setHomeOverrideError(t('homeOverrideAlreadySet'))
-    }
+    if (!result.ok) setHomeOverrideError(t('homeOverrideAlreadySet'))
   }
 
+  const fetchLabel = fetchProgress.status === 'fetching' ? h('fetching') : h('fetchList')
+
   return (
-    <div ref={sectionRef} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <Card>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Checkbox checked={homeOverrideEnabled} onChange={(value) => handleHomeOverrideToggle(value)} label={t('homeOverrideUseAsHome')} hint={t('liveTvHomeOverrideDesc')} />
-          {homeOverrideError ? <p style={{ margin: 0, fontSize: 'var(--st-small)', color: TOKENS.red }}>{homeOverrideError}</p> : null}
-          <Checkbox
-            checked={hideHero}
-            onChange={(value) => {
-              setLiveTvHideHero(value)
-              setHideHero(value)
-            }}
-            label={lang === 'sv' ? 'Dölj filmhjälten på Live TV-sidan' : 'Hide the movie hero on the Live TV page'}
-            hint={lang === 'sv'
-              ? 'Live TV börjar då direkt med hubben i stället för under appens hjältekarusell.'
-              : 'Live TV then starts with the hub instead of below the app’s hero carousel.'}
-          />
-        </div>
-      </Card>
-
-      <VodLibraryCard />
-
-      <Card>
-        <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
-        <div style={{ ...eyebrowStyle, marginBottom: 6 }}>M3U</div>
-        <textarea
-          value={m3uText}
-          onChange={(event) => setM3uText(event.target.value)}
-          placeholder={t('m3uUrlsPlaceholder')}
-          rows={3}
-          style={{ ...inputStyle, minHeight: 88, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, color: UI.text }}>
+      <LtRows>
+        <LtToggleRow first label={h('useAsHome')} desc={h('useAsHomeDesc')} checked={homeOverrideEnabled} onChange={handleHomeOverrideToggle} error={homeOverrideError || null} />
+        <LtToggleRow
+          first={false}
+          label={h('hideHero')}
+          desc={h('hideHeroDesc')}
+          checked={hideHero}
+          onChange={(value) => { setLiveTvHideHero(value); setHideHero(value) }}
         />
-        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-          <PillBtn variant="accent" onClick={() => void handleFetchM3uList()} disabled={fetchProgress.status === 'fetching'}>
-            {fetchProgress.status === 'fetching'
-              ? t('m3uLoading')
-              : fetchProgress.status === 'done'
-                ? t('m3uFetchListDone')
-                : fetchProgress.status === 'error'
-                  ? t('m3uFetchListError')
-                  : t('m3uFetchList')}
-          </PillBtn>
+      </LtRows>
+
+      <div>
+        <LtSection eyebrow={h('playlists')} title={h('yourPlaylists')} hint={h('playlistsHint')} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {lists.length === 0 ? <LtNote>{h('noPlaylistsYet')}</LtNote> : null}
+          {lists.map((list) => (
+            <PlaylistCard
+              key={list.id}
+              list={list}
+              busy={listProgress?.listId === list.id}
+              onCategories={() => setCurationList({ list, mode: 'settings' })}
+              onUpdate={() => void handleRefetchList(list)}
+              onRemove={() => handleRemoveList(list)}
+              onRelogin={() => handleRelogin(list)}
+            />
+          ))}
         </div>
+      </div>
+
+      <div>
+        <LtSection eyebrow={h('kindM3u')} title={h('m3uTitle')} hint={h('m3uHint')} />
+        <LtRows>
+          <LtTextRow
+            first
+            label={h('playlistUrl')}
+            value={m3uText}
+            onChange={setM3uText}
+            placeholder={t('m3uUrlsPlaceholder')}
+            fieldWidth={260}
+            button={fetchLabel}
+            onButton={() => void handleFetchM3uList()}
+            buttonDisabled={fetchProgress.status === 'fetching'}
+          />
+        </LtRows>
         {/*
-          Hämtningen syns som EGET block, inte bara som knapptext.
-          Knapptexten var hela återkopplingen förut, och den räckte inte: en
-          stor spellista tar tiotals sekunder, klartexten nollades av en timer
-          efter 1,8 s, och tillståndet dog när sektionen monterades om. Blocket
-          här ligger kvar tills nästa hämtning startar och läser tillståndet
-          ur modulen, så det är sant även för den som kommer tillbaka efteråt.
+          Hämtningen syns som EGET block, inte bara som knapptext: en stor
+          spellista tar tiotals sekunder, och blocket ligger kvar tills nästa
+          hämtning startar — det läser tillståndet ur modulen, så det är sant
+          även för den som kommer tillbaka efteråt.
         */}
         {fetchProgress.status !== 'idle' && (
-          <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
+          <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
+            <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
             {fetchProgress.status === 'fetching' && (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--st-body)', color: TOKENS.text }}>
-                  <span
-                    aria-hidden
-                    style={{
-                      width: 14,
-                      height: 14,
-                      flex: 'none',
-                      borderRadius: '50%',
-                      border: '2px solid rgba(255,255,255,0.25)',
-                      borderTopColor: 'rgba(255,255,255,0.9)',
-                      animation: 'lumio-livetv-spin 0.7s linear infinite',
-                    }}
-                  />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: UI.text }}>
+                  <span aria-hidden style={{ width: 12, height: 12, flex: 'none', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: 'rgba(255,255,255,0.9)', animation: 'lumio-livetv-spin 0.7s linear infinite' }} />
                   <span>{h('m3uFetchProgress', { current: fetchProgress.current, total: fetchProgress.total })}</span>
-                  {/* Jobbets EGET förlopp: en enda adress kan vara 17 000
-                      kanaler, och "Hämtar lista 1 av 1…" stod still i en
-                      minut utan den här raden. */}
+                  {/* Jobbets EGET förlopp: en adress kan vara 17 000 kanaler. */}
                   {fetchProgress.jobProgress ? (
-                    <span style={{ color: TOKENS.textMute }}>
+                    <span style={{ color: UI.muted }}>
                       {fetchProgress.jobProgress.total
-                        ? h('listImportProgress', {
-                            received: fetchProgress.jobProgress.received.toLocaleString(locale),
-                            total: fetchProgress.jobProgress.total.toLocaleString(locale),
-                          })
+                        ? h('listImportProgress', { received: fmtInt(fetchProgress.jobProgress.received, locale), total: fmtInt(fetchProgress.jobProgress.total, locale) })
                         : h('listImportProgressUnknown')}
                     </span>
                   ) : null}
                 </div>
-                <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, lineHeight: 1.45 }}>{h('m3uFetchKeepOpen')}</div>
+                <LtNote>{h('m3uFetchKeepOpen')}</LtNote>
               </>
             )}
             {fetchProgress.results.map((result) => (
-              <div key={result.url} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 'var(--st-small)', color: TOKENS.textMute, minWidth: 0 }}>
-                <span aria-hidden style={{ color: '#4ade80', flex: 'none' }}>✓</span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: TOKENS.text }}>{hostOf(result.url)}</span>
-                <span style={{ flex: 'none' }}>{h('channelsCount', { count: result.channels })}</span>
+              <div key={result.url} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 12.5, color: UI.muted, minWidth: 0 }}>
+                <span aria-hidden style={{ color: UI.green, flex: 'none' }}>✓</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: UI.text }}>{hostOf(result.url)}</span>
+                <span style={{ flex: 'none' }}>{h('channelsCount', { count: fmtInt(result.channels, locale) })}</span>
               </div>
             ))}
             {fetchProgress.status === 'error' && (
-              <div role="alert" style={{ fontSize: 'var(--st-small)', color: '#fca5a5', lineHeight: 1.45 }}>
+              <div role="alert" style={{ fontSize: 12.5, color: UI.danger, lineHeight: 1.45 }}>
                 {h('m3uFetchFailedOn', { host: hostOf(fetchProgress.url ?? ''), error: fetchProgress.error ?? '' })}
               </div>
             )}
           </div>
         )}
-      </Card>
+      </div>
 
-      <XtreamLoginSection onImported={(listId, existedBefore) => { if (!existedBefore) maybeOpenCurationAfterImport(listId) }} />
+      <div>
+        <LtSection eyebrow={h('xtreamLogin')} title={h('xtreamLogin')} hint={h('xtreamHint')} />
+        <XtreamLoginSection onImported={(listId, existedBefore) => { if (!existedBefore) maybeOpenCurationAfterImport(listId) }} />
+      </div>
 
       <EpgStatusCard />
 
-      {lists.map((list) => {
-        const busy = listProgress?.listId === list.id ? listProgress : null
-        const importable = list.kind === 'm3u' || list.kind === 'xtream'
-        // Enhetsöverföringen speglar `lists` men inte `xtream_logins`
-        // (lösenord), så en överförd Xtream-lista har en källa som ingen
-        // inloggning svarar mot — `importList` kastar, och listan står tom
-        // utan att säga varför.
-        const xtreamSource = list.kind === 'xtream' ? parseXtreamSource(list.source) : null
-        const needsLogin = list.kind === 'xtream' && !getXtreamLogins().some((login) => login.id === list.xtreamLoginId)
-        return (
-        <Card key={list.id}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                <span style={{ fontSize: 'var(--st-body)', fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</span>
-                {list.needsReimport ? (
-                  <span style={{ flex: 'none', fontSize: 'var(--st-micro)', fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: 'rgba(244,132,95,0.18)', color: '#f4845f' }}>{h('listNeedsReimport')}</span>
-                ) : null}
-              </div>
-              <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, marginTop: 2 }}>
-                {(list.channelCount ?? 0).toLocaleString(locale)} {t('m3uChannels')}
-                {' · '}
-                {list.fetchedAt
-                  ? h('m3uFetchedAt', { time: formatFetchedAt(list.fetchedAt, locale) })
-                  : h('m3uNeverFetched')}
-              </div>
-              {busy ? (
-                <div style={{ fontSize: 'var(--st-small)', color: TOKENS.text, marginTop: 4 }}>
-                  {busy.state === 'parsing'
-                    ? h('listImportParsing')
-                    : busy.state === 'writing'
-                      ? h('listImportWriting')
-                      : busy.total
-                        ? h('listImportProgress', { received: busy.received.toLocaleString(locale), total: busy.total.toLocaleString(locale) })
-                        : h('listImportProgressUnknown')}
-                </div>
-              ) : null}
-              {!busy && needsLogin ? (
-                <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, marginTop: 4 }}>{h('xtreamNeedsLogin')}</div>
-              ) : null}
-              {/* Kapad spellista: jobbet svarade `done`, så utan den här raden
-                  ser en HALV lista ut som en hel. */}
-              {list.truncated ? (
-                <div data-testid={`list-truncated-${list.id}`} role="alert" style={{ fontSize: 'var(--st-small)', color: '#fbbf24', marginTop: 4 }}>{h('listTruncated')}</div>
-              ) : null}
-              {!busy && list.lastImportError ? (
-                <div role="alert" style={{ fontSize: 'var(--st-small)', color: '#fca5a5', marginTop: 4 }}>{h('listImportFailed', { error: list.lastImportError })}</div>
-              ) : null}
-            </div>
-            <div style={{ display: 'flex', flex: 'none', alignItems: 'center', gap: 8 }}>
-              {needsLogin ? (
-                <PillBtn size="sm" variant="accent" onClick={() => prefillXtreamLogin({ server: xtreamSource ? `http://${xtreamSource.host}` : '', loginId: xtreamSource?.loginId })}>
-                  {h('xtreamRelogin')}
-                </PillBtn>
-              ) : importable ? (
-                <PillBtn size="sm" onClick={() => void handleRefetchList(list)} disabled={busy !== null}>
-                  {busy ? h('listRefetching') : h('listRefetch')}
-                </PillBtn>
-              ) : null}
-              {importable ? (
-                <PillBtn size="sm" onClick={() => setCurationList({ list, mode: 'settings' })}>{h('categories')}</PillBtn>
-              ) : null}
-              <PillBtn size="sm" variant="danger" onClick={() => handleRemoveList(list)}>{t('liveTvXtreamRemove')}</PillBtn>
-            </div>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <EpgSourcesSection
-              autoUrl={list.urlTvg}
-              manualUrls={list.epgUrls}
-              onChangeManual={(epgUrls) => updateLiveTvListEpg(list.id, { epgUrls })}
-              autoDisabled={list.autoEpgDisabled}
-              onToggleAuto={(disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })}
-            />
-          </div>
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {/* data-testid sitter på en vanlig div, inte på primitiven — Checkbox
-                tar bara { checked, onChange, disabled, label, hint, right }, och
-                appens riktiga primitiv (dist-bygget löser @/lib/plugin-sdk mot
-                den) fäller TypeScripts excess-property-check annars. Samma
-                mönster som `list-truncated-${list.id}` ovan. */}
-            {/* Egna listors kanaler renderas via `withIndexTwins` (tvillingen bär
-                URSPRUNGSLISTANS switch-tillstånd) — den egna listans switch
-                filtrerar ingenting. Spärrad av samma skäl som Komplettera
-                nedan: en kontroll som inte gör något får inte visas som om
-                den gjorde det. */}
-            <div data-testid={`logo-fallback-toggle-${list.id}`}>
-              <Checkbox
-                checked={isLogoFallbackEnabled(list)}
-                onChange={(value) => setLogoFallbackEnabled(list.id, value)}
-                disabled={list.kind === 'custom'}
-                label={h('logoFallbackToggle')}
-                hint={h('logoFallbackHint')}
-              />
-            </div>
-            {/* Egen rad, med en synlig avdelare ovanför: switchen ÄR
-                inställningen (styr OM reserven får användas), knappen är en
-                HANDLING (hämtar matchningarna nu) — de ska inte läsas som en
-                enda kontroll bara för att de står i samma kort (Jerrys ord
-                efter test: "bara en checkbox, finns en complete-knapp men
-                borde vara en separat inställning"). */}
-            <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span data-testid={`logo-complete-${list.id}`}>
-                <PillBtn
-                  size="sm"
-                  onClick={() => void handleCompleteLogos(list)}
-                  disabled={!isLogoFallbackEnabled(list) || list.kind === 'custom' || (logoComplete?.listId === list.id && logoComplete.status === 'running')}
-                >
-                  {logoComplete?.listId === list.id && logoComplete.status === 'running' ? h('logoCompleteRunning') : h('logoComplete')}
-                </PillBtn>
-              </span>
-              {logoComplete?.listId === list.id && logoComplete.status === 'done' ? (
-                <span style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>
-                  {h('logoCompleteResult', { matched: logoComplete.matched, total: logoComplete.total })}
-                </span>
-              ) : null}
-              {logoComplete?.listId === list.id && logoComplete.status === 'error' ? (
-                <span role="alert" style={{ fontSize: 'var(--st-small)', color: '#fca5a5' }}>{logoComplete.error}</span>
-              ) : null}
-            </div>
-          </div>
-        </Card>
-        )
-      })}
+      <VodLibraryCard />
+
       {curationList ? (
         <CategoryCurationPanel list={curationList.list} mode={curationList.mode} onClose={() => setCurationList(null)} />
       ) : null}
     </div>
   )
-
 }

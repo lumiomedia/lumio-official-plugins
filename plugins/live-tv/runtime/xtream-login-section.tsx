@@ -1,36 +1,24 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Card, TOKENS, inputStyle, useLang, useTvMode, getTvKeyboardPanel } from '@/lib/plugin-sdk'
-import { Pill as PillBtn, TvCheck as Checkbox } from './tv-aware-controls'
+import { LtNote, LtRows, LtTextRow, UI, fmtInt } from './settings-ui'
 import {
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
   deleteLiveTvList,
-  deleteXtreamLoginAndData,
   ensureXtreamList,
   fetchXtreamAccount,
-  fetchXtreamCategories,
   getLiveTvLists,
   getXtreamLogins,
   importList,
   normalizeXtreamBase,
-  onXtreamLoginsChanged,
   saveXtreamLogin,
   xtreamPseudoUrl,
   type XtreamAccount,
-  type XtreamCategory,
   type XtreamLogin,
 } from './live-tv-data'
 import { useHubText } from './hub-strings'
 import { recordListImportOutcome } from './list-import-flags'
-
-const inputClass =
-  'w-full rounded-[1.1rem] border border-white/10 bg-white/8 px-3.5 py-2 text-sm text-slate-50 outline-none transition placeholder:text-slate-500 focus:bg-white/10'
-const actionButtonClass =
-  'rounded-full border border-white/10 px-4 py-2 text-xs uppercase tracking-[0.22em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:opacity-50'
-const smallButtonClass =
-  'rounded bg-white/10 px-3 py-1.5 text-xs text-slate-200 transition hover:bg-white/15 disabled:opacity-50'
 
 /** Utgångsdatumet ur Xtream-panelen (unix-sekunder). Samma format som TV:s kontokort. */
 function formatXtreamExpiry(expDate: number | null, locale: string): string | null {
@@ -41,7 +29,43 @@ function formatXtreamExpiry(expDate: number | null, locale: string): string | nu
 }
 
 /**
- * "Logga in på nytt"-bryggan från listkorten (`live-tv-settings-section.tsx`).
+ * Kontoraden på spellistans kort (§3.1: `Active · expires 16 Dec 2026`):
+ * status, utgång och max anslutningar ur panelen. `fetchXtreamAccount`
+ * cachar 5 minuter per bas+användare, så det här kör högst en riktig
+ * hämtning per montering. `null` när listan inte är en Xtream-lista.
+ */
+export function useXtreamAccountMeta(login: XtreamLogin | null): { text: string; failed: boolean } | null {
+  const { h, locale } = useHubText()
+  const [account, setAccount] = useState<XtreamAccount | null>(null)
+  const [failed, setFailed] = useState(false)
+  const base = login?.base ?? null
+  const username = login?.username ?? null
+  const password = login?.password ?? null
+  useEffect(() => {
+    if (!base || !username || password === null) return
+    let cancelled = false
+    setFailed(false)
+    void fetchXtreamAccount({ base, username, password })
+      .then((next) => { if (!cancelled) setAccount(next) })
+      .catch(() => { if (!cancelled) setFailed(true) })
+    return () => { cancelled = true }
+  }, [base, username, password])
+  if (!login) return null
+  if (failed) return { text: h('xtreamAccountUnavailable'), failed: true }
+  if (!account) return { text: h('listRefetching'), failed: false }
+  const expiry = formatXtreamExpiry(account.expDate, locale)
+  return {
+    failed: false,
+    text: [
+      account.status,
+      expiry ? h('xtreamExpires', { date: expiry }) : h('xtreamNoExpiry'),
+      account.maxConnections ? h('xtreamMaxConnections', { count: account.maxConnections }) : null,
+    ].filter((part): part is string => Boolean(part)).join(' · '),
+  }
+}
+
+/**
+ * "Logga in på nytt"-bryggan från listkorten (`playlist-card.tsx`).
  *
  * En Xtream-lista som kommit hit via enhetsöverföringen har kvar sin källa
  * (`xtream://<host>/<loginId>`) men INTE inloggningen — lösenord speglas inte
@@ -68,16 +92,17 @@ function onXtreamPrefill(listener: (prefill: XtreamPrefill) => void): () => void
 }
 
 /**
- * Xtream Codes-inloggning: server + användarnamn + lösenord i stället för
- * M3U-länk. Behövs på riktigt — det finns leverantörer där get.php är helt
- * avstängd (tomma svar med hittepå-statuskoder) medan player_api.php svarar
- * korrekt, så en M3U-länk kan aldrig fungera hos dem. Kanalerna syntetiseras
- * ur API:t och landar i samma listflöde som M3U-hämtningarna.
+ * XTREAM LOGIN (handoff §3 block 4): tre rader — Server URL, Username,
+ * Password — och knappen Log in & fetch på lösenordsraden. Kontot och dess
+ * kanaler blir en spellista med eget kort under PLAYLISTS; kortet äger
+ * kontostatusen (`useXtreamAccountMeta`), uppdateringen och borttagningen.
+ *
+ * Behövs på riktigt — det finns leverantörer där get.php är helt avstängd
+ * medan player_api.php svarar korrekt, så en M3U-länk kan aldrig fungera hos
+ * dem. Kanalerna syntetiseras ur API:t och landar i samma listflöde.
  */
 export function XtreamLoginSection({ onImported }: { onImported?: (listId: string, existedBefore: boolean) => void } = {}) {
-  const { t } = useLang()
   const { h, locale } = useHubText()
-  const [logins, setLogins] = useState<XtreamLogin[]>([])
   const [server, setServer] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -87,44 +112,12 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
   const [importProgress, setImportProgress] = useState<{ received: number; total: number | null } | null>(null)
   /**
    * Sätts av "Logga in på nytt" på ett listkort (se prefillXtreamLogin ovan).
-   *
    * Den är KNUTEN till serveradressen förifyllningen kom med: skriver man om
-   * fältet till en annan panel är det inte längre samma lista man lagar, och
-   * då hade ett kvarhängande id gjort att den NYA inloggningen tog över den
-   * gamla listans källa i indexet.
+   * fältet till en annan panel är det inte längre samma lista man lagar.
    */
   const [reuse, setReuse] = useState<{ loginId: string; server: string } | null>(null)
   const reuseLoginId = reuse && reuse.server === server ? reuse.loginId : null
-  const cardRef = useRef<HTMLDivElement | null>(null)
-  /**
-   * TV: fälten är knappar som öppnar värdens tangentbordspanel på OK. Ett
-   * vanligt <input> fick fokus av fjärrens navigering och drog upp systemets
-   * tangentbord bara av att man passerade fältet — och "Nästa" i det
-   * tangentbordet hoppade vidare till nästa fält (testarrapport 2026-09-06).
-   * Här skrivs ett fält i taget, och inget tangentbord öppnas förrän man valt.
-   */
-  const isTv = useTvMode()
-  const TvKeyboardPanel = isTv ? getTvKeyboardPanel() : null
-  const [tvField, setTvField] = useState<'server' | 'username' | 'password' | null>(null)
-  const tvFieldButton = (field: 'server' | 'username' | 'password', value: string, placeholder: string, secret = false) => (
-    <button
-      type="button"
-      data-f=""
-      // Nedåt från ett VÄNSTERSTÄLLT fält landade geometriskt långt ned på
-      // sidan (knapparna i korten är högerställda) — styr till Log in & fetch.
-      data-f-down='[data-tv-id="xtream-connect"]'
-      onClick={() => setTvField(field)}
-      style={{ ...inputStyle, textAlign: 'left', cursor: 'pointer', color: value ? TOKENS.text : TOKENS.textMute, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-    >
-      {value ? (secret ? '•'.repeat(Math.min(value.length, 24)) : value) : placeholder}
-    </button>
-  )
-
-  useEffect(() => {
-    const sync = () => setLogins(getXtreamLogins())
-    sync()
-    return onXtreamLoginsChanged(sync)
-  }, [])
+  const rootRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => onXtreamPrefill((prefill) => {
     setServer(prefill.server)
@@ -132,34 +125,26 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
     setPassword('')
     setReuse(prefill.loginId ? { loginId: prefill.loginId, server: prefill.server } : null)
     setState('idle')
-    cardRef.current?.scrollIntoView({ block: 'center' })
+    rootRef.current?.scrollIntoView?.({ block: 'center' })
   }), [])
 
   async function refreshChannels(login: XtreamLogin): Promise<void> {
     const source = xtreamPseudoUrl(login)
-    // Om importen misslyckas för en HELT NY lista (den fanns inte innan det
-    // här anropet) ska den inte lämnas kvar som en tom, orimporterad post —
-    // spec §5. En redan befintlig lista (t.ex. "uppdatera kategorier" på en
-    // panel som redan importerats en gång) rörs inte vid ett fel.
+    // Om importen misslyckas för en HELT NY lista ska den inte lämnas kvar
+    // som en tom, orimporterad post — spec §5. En redan befintlig lista rörs
+    // inte vid ett fel.
     const existedBefore = getLiveTvLists().some((entry) => entry.source === source)
     const list = ensureXtreamList(login)
     setImportProgress({ received: 0, total: null })
     try {
       const status = await importList(list, (s) => setImportProgress({ received: s.received, total: s.total ?? null }))
-      // Rensar bara ev. kvarvarande rester av den GAMLA lagringsvägen (se
-      // dokumentationen på clearLiveTvMemoryCache/clearStoredLiveTvChannels) —
-      // indexet självt uppdateras av importList/emitIndexChanged.
       clearLiveTvMemoryCache()
       clearStoredLiveTvChannels()
       if (status.state === 'error') {
         if (!existedBefore) deleteLiveTvList(list.id)
-        // Felet bokförs på listan i catch nedan — samma väg som ett kastat
-        // nätfel, så det bara finns ETT ställe som skriver flaggorna.
         throw new Error(status.error ?? 'xtream import failed')
       }
-      // Ominloggningen ÄR fixen på "behöver hämtas om": utan den här raden
-      // stod märket och det gamla felet kvar på kortet tills appen startades
-      // om, trots att kanalerna just hämtats.
+      // Ominloggningen ÄR fixen på "behöver hämtas om".
       recordListImportOutcome(list.id)
       onImported?.(list.id, existedBefore)
     } catch (err) {
@@ -185,8 +170,8 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
         setState('authError')
         return
       }
-      // Samma panel + användare igen = uppdatera inloggningen (nytt lösenord,
-      // förnyat konto) i stället för att skapa en dubblettlista.
+      // Samma panel + användare igen = uppdatera inloggningen i stället för
+      // att skapa en dubblettlista.
       const existing = getXtreamLogins().find((entry) => entry.base === base && entry.username === user)
       const login: XtreamLogin = {
         id: existing?.id ?? reuseLoginId ?? crypto.randomUUID(),
@@ -206,213 +191,34 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
     }
   }
 
-  function handleRemove(login: XtreamLogin) {
-    // Samma väg som TV-inställningarna: listan hittas på `xtreamLoginId`, inte
-    // på källans pseudo-URL — en lista vars källa bär ett annat login-id (äldre
-    // import, ominloggning) missades annars och 2 000 kanaler låg kvar i
-    // indexet utan konto (Jerry 2026-09-24). Finns ingen lista töms källan ändå.
-    deleteXtreamLoginAndData(login.id)
-    clearLiveTvMemoryCache()
-    clearStoredLiveTvChannels()
-  }
+  const buttonLabel = state === 'working' ? h('loggingIn') : state === 'done' ? h('loginFetched') : h('loginAndFetch')
 
   return (
-    <Card>
-      <div ref={cardRef} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 'var(--st-body)', fontWeight: 600, color: TOKENS.text }}>{t('liveTvXtreamTitle')}</div>
-          <p style={{ margin: '4px 0 0', fontSize: 'var(--st-small)', lineHeight: 1.5, color: TOKENS.textMute }}>{t('liveTvXtreamDesc')}</p>
-        </div>
-        {TvKeyboardPanel ? tvFieldButton('server', server, `${t('liveTvXtreamServer')} — http://host:8080`) : (
-          <input
-            type="url"
-            value={server}
-            onChange={(event) => setServer(event.target.value)}
-            placeholder={`${t('liveTvXtreamServer')} — http://host:8080`}
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            style={inputStyle}
-          />
-        )}
-        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-          {TvKeyboardPanel ? tvFieldButton('username', username, t('liveTvXtreamUsername')) : (
-            <input
-              type="text"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder={t('liveTvXtreamUsername')}
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              style={inputStyle}
-            />
-          )}
-          {TvKeyboardPanel ? tvFieldButton('password', password, t('liveTvXtreamPassword'), true) : (
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder={t('liveTvXtreamPassword')}
-              autoComplete="off"
-              style={inputStyle}
-            />
-          )}
-        </div>
-        {TvKeyboardPanel && tvField ? (
-          <TvKeyboardPanel
-            title={tvField === 'server' ? t('liveTvXtreamServer') : tvField === 'username' ? t('liveTvXtreamUsername') : t('liveTvXtreamPassword')}
-            placeholder={tvField === 'server' ? 'http://host:8080' : ''}
-            initial={tvField === 'server' ? server : tvField === 'username' ? username : password}
-            onDone={(value) => {
-              if (tvField === 'server') setServer(value)
-              else if (tvField === 'username') setUsername(value)
-              else setPassword(value)
-              setTvField(null)
-            }}
-            onClose={() => setTvField(null)}
-          />
-        ) : null}
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-          {state === 'authError' ? <span style={{ marginRight: 'auto', fontSize: 'var(--st-small)', color: TOKENS.red }}>{t('liveTvXtreamAuthFailed')}</span> : null}
-          {state === 'netError' ? <span style={{ marginRight: 'auto', fontSize: 'var(--st-small)', color: TOKENS.red }}>{t('liveTvXtreamError')}</span> : null}
-          <PillBtn variant="accent" onClick={() => void handleConnect()} disabled={state === 'working'} tvId="xtream-connect">
-            {state === 'working' ? t('liveTvXtreamConnecting') : state === 'done' ? t('liveTvXtreamDone') : t('liveTvXtreamConnect')}
-          </PillBtn>
-        </div>
-        {importProgress ? (
-          <p style={{ margin: 0, fontSize: 'var(--st-small)', color: TOKENS.textMute }}>
-            {importProgress.total
-              ? h('listImportProgress', { received: importProgress.received.toLocaleString(locale), total: importProgress.total.toLocaleString(locale) })
-              : h('listImportProgressUnknown')}
-          </p>
-        ) : null}
-        {logins.map((login) => (
-          <XtreamLoginCard key={login.id} login={login} onRefresh={refreshChannels} onRemove={handleRemove} />
-        ))}
-      </div>
-    </Card>
-  )
-}
-
-function XtreamLoginCard({
-  login,
-  onRefresh,
-  onRemove,
-}: {
-  login: XtreamLogin
-  onRefresh: (login: XtreamLogin) => Promise<void>
-  onRemove: (login: XtreamLogin) => void
-}) {
-  const { t } = useLang()
-  const { h, locale } = useHubText()
-  const [open, setOpen] = useState(false)
-  const [categories, setCategories] = useState<XtreamCategory[] | null>(null)
-  const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(login.categoryIds))
-  const [busy, setBusy] = useState(false)
-  const [account, setAccount] = useState<XtreamAccount | null>(null)
-  const [accountFailed, setAccountFailed] = useState(false)
-
-  // Kontoinfo (status/utgång/max anslutningar) — spec 4.4 punkt 3, samma fält
-  // som TV:s XtreamAccountCard. `fetchXtreamAccount` cachar redan 5 minuter
-  // per bas+användare, så det här kör högst en riktig hämtning per montering.
-  useEffect(() => {
-    let cancelled = false
-    setAccountFailed(false)
-    void fetchXtreamAccount(login)
-      .then((next) => { if (!cancelled) setAccount(next) })
-      .catch(() => { if (!cancelled) setAccountFailed(true) })
-    return () => { cancelled = true }
-  }, [login.base, login.username, login.password])
-
-  let host = login.base
-  try {
-    host = new URL(login.base).host
-  } catch { /* behåll basen */ }
-
-  const expiry = account ? formatXtreamExpiry(account.expDate, locale) : null
-  const accountMeta = accountFailed
-    ? h('xtreamAccountUnavailable')
-    : account
-      ? [
-          account.status,
-          expiry ? h('xtreamExpires', { date: expiry }) : h('xtreamNoExpiry'),
-          account.maxConnections ? h('xtreamMaxConnections', { count: account.maxConnections }) : null,
-        ].filter((part): part is string => Boolean(part)).join(' · ')
-      : h('listRefetching')
-
-  async function handleToggleOpen() {
-    const next = !open
-    setOpen(next)
-    if (next && categories === null) {
-      setCategories(await fetchXtreamCategories(login).catch(() => []))
-    }
-  }
-
-  function toggleCategory(id: string) {
-    setSelected((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  async function handleApply(categoryIds: string[]) {
-    setBusy(true)
-    try {
-      const next = { ...login, categoryIds }
-      saveXtreamLogin(next)
-      setSelected(new Set(categoryIds))
-      await onRefresh(next)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const needle = query.trim().toLowerCase()
-  const filtered = (categories ?? []).filter((category) => !needle || category.name.toLowerCase().includes(needle))
-
-  const row = (checked: boolean, onChange: () => void, label: string) => (
-    <div style={{ padding: '6px 0' }}>
-      <Checkbox checked={checked} onChange={onChange} label={<span style={{ fontSize: 'var(--st-body)' }}>{label}</span>} />
-    </div>
-  )
-
-  return (
-    <div style={{ padding: '12px 14px', borderRadius: 12, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <div data-testid={`xtream-account-${login.id}`} style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 'var(--st-body)', fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</span>
-          <span style={{ fontSize: 'var(--st-small)', color: accountFailed ? TOKENS.red : TOKENS.textMute, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{accountMeta}</span>
-        </div>
-        <PillBtn size="sm" onClick={() => void handleToggleOpen()}>
-          {t('liveTvXtreamCategories')}{login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ''}
-        </PillBtn>
-        <PillBtn size="sm" variant="accent" onClick={() => void handleApply([...selected]).catch(() => {})} disabled={busy}>
-          {t('liveTvXtreamApplyCategories')}
-        </PillBtn>
-        <PillBtn size="sm" variant="danger" onClick={() => onRemove(login)}>{t('liveTvXtreamRemove')}</PillBtn>
-      </div>
-      {open ? (
-        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <input
-            type="text"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t('liveTvXtreamSearchCategories')}
-            style={inputStyle}
-          />
-          <div style={{ maxHeight: 224, overflowY: 'auto', paddingRight: 4 }}>
-            {row(selected.size === 0, () => setSelected(new Set()), t('liveTvXtreamAllCategories'))}
-            {(categories === null ? [] : filtered).map((category) => (
-              <div key={category.id}>{row(selected.has(category.id), () => toggleCategory(category.id), category.name)}</div>
-            ))}
-          </div>
-        </div>
+    <div ref={rootRef} data-testid="xtream-login">
+      <LtRows>
+        <LtTextRow first label={h('serverUrl')} value={server} onChange={setServer} placeholder="http://host:8080" fieldWidth={240} onEnter={() => void handleConnect()} />
+        <LtTextRow label={h('username')} value={username} onChange={setUsername} placeholder={h('username')} fieldWidth={180} onEnter={() => void handleConnect()} />
+        <LtTextRow
+          label={h('password')}
+          value={password}
+          onChange={setPassword}
+          placeholder={h('password')}
+          fieldWidth={180}
+          secret
+          button={buttonLabel}
+          onButton={() => void handleConnect()}
+          buttonDisabled={state === 'working'}
+        />
+      </LtRows>
+      {state === 'authError' ? <p role="alert" style={{ margin: '8px 0 0', fontSize: 12.5, color: UI.danger }}>{h('loginRejected')}</p> : null}
+      {state === 'netError' ? <p role="alert" style={{ margin: '8px 0 0', fontSize: 12.5, color: UI.danger }}>{h('loginUnreachable')}</p> : null}
+      {importProgress ? (
+        <LtNote style={{ marginTop: 8 }}>
+          {importProgress.total
+            ? h('listImportProgress', { received: fmtInt(importProgress.received, locale), total: fmtInt(importProgress.total, locale) })
+            : h('listImportProgressUnknown')}
+        </LtNote>
       ) : null}
     </div>
   )
-
 }
