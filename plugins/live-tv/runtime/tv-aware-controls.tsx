@@ -23,6 +23,24 @@ import { Checkbox, PillBtn, TOKENS, getTvKeyboardPanel, inputStyle, useTvMode } 
 
 type PillVariant = 'ghost' | 'primary' | 'accent' | 'danger'
 type PillSize = 'sm' | 'md' | 'lg'
+/** Riktningsstyrning för fokusmotorn: CSS-väljare per riktning (`data-f-up/-down/-left/-right`). */
+export type TvNav = Partial<Record<'up' | 'down' | 'left' | 'right', string>>
+
+/**
+ * Attribut fokusmotorn läser: `data-tv-id` gör kontrollen adresserbar från en
+ * annan kontrolls `tvNav`, och `data-f-<riktning>` överstyr geometrin. Bara
+ * när layouten ger ett svar som är riktigt men fel — t.ex. vänsterställda
+ * fält över högerställda knappar, där "nedåt" annars hoppar förbi hela kortet.
+ */
+function tvAttrs(tvId?: string, tvNav?: TvNav): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (tvId) out['data-tv-id'] = tvId
+  for (const dir of ['up', 'down', 'left', 'right'] as const) {
+    const selector = tvNav?.[dir]
+    if (selector) out[`data-f-${dir}`] = selector
+  }
+  return out
+}
 
 const TV_FONT = { small: 'var(--st-small)', body: 'var(--st-body)', label: 'var(--st-label)' } as const
 
@@ -38,7 +56,7 @@ const pillSizes: Record<PillSize, CSSProperties> = {
   lg: { padding: '13px 22px', fontSize: TV_FONT.body },
 }
 
-export function Pill({ children, onClick, variant = 'ghost', size = 'md', disabled, type, style, title }: {
+export function Pill({ children, onClick, variant = 'ghost', size = 'md', disabled, type, style, title, tvId, tvNav }: {
   children: ReactNode
   onClick?: () => void
   variant?: PillVariant
@@ -47,6 +65,8 @@ export function Pill({ children, onClick, variant = 'ghost', size = 'md', disabl
   type?: 'button' | 'submit'
   style?: CSSProperties
   title?: string
+  tvId?: string
+  tvNav?: TvNav
 }) {
   const isTv = useTvMode()
   if (!isTv) {
@@ -56,6 +76,7 @@ export function Pill({ children, onClick, variant = 'ghost', size = 'md', disabl
     <button
       type={type ?? 'button'}
       data-f=""
+      {...tvAttrs(tvId, tvNav)}
       onClick={onClick}
       disabled={disabled}
       title={title}
@@ -79,13 +100,15 @@ export function Pill({ children, onClick, variant = 'ghost', size = 'md', disabl
   )
 }
 
-export function TvCheck({ checked, onChange, disabled, label, hint, right }: {
+export function TvCheck({ checked, onChange, disabled, label, hint, right, tvId, tvNav }: {
   checked: boolean
   onChange?: (value: boolean) => void
   disabled?: boolean
   label?: ReactNode
   hint?: ReactNode
   right?: ReactNode
+  tvId?: string
+  tvNav?: TvNav
 }) {
   const isTv = useTvMode()
   if (!isTv) return <Checkbox checked={checked} onChange={onChange} disabled={disabled} label={label} hint={hint} right={right} />
@@ -94,6 +117,7 @@ export function TvCheck({ checked, onChange, disabled, label, hint, right }: {
       <button
         type="button"
         data-f=""
+        {...tvAttrs(tvId, tvNav)}
         disabled={disabled}
         onClick={() => { if (!disabled) onChange?.(!checked) }}
         style={{
@@ -147,13 +171,15 @@ export function TvCheck({ checked, onChange, disabled, label, hint, right }: {
  * Textfält: <input> på skrivbord/telefon; på TV en station som öppnar
  * tangentbordspanelen. `title` är panelens rubrik och fältets aria-label.
  */
-export function TextField({ value, onChange, placeholder, title, style, testId }: {
+export function TextField({ value, onChange, placeholder, title, style, testId, tvId, tvNav }: {
   value: string
   onChange: (value: string) => void
   placeholder?: string
   title: string
   style?: CSSProperties
   testId?: string
+  tvId?: string
+  tvNav?: TvNav
 }) {
   const isTv = useTvMode()
   const TvKeyboardPanel = isTv ? getTvKeyboardPanel() : null
@@ -175,6 +201,7 @@ export function TextField({ value, onChange, placeholder, title, style, testId }
       <button
         type="button"
         data-f=""
+        {...tvAttrs(tvId, tvNav)}
         data-testid={testId}
         aria-label={title}
         onClick={() => setOpen(true)}

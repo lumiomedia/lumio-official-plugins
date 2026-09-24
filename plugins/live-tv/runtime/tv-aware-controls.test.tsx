@@ -43,6 +43,17 @@ describe('TV-medvetna kontroller', () => {
     expect(onChange).toHaveBeenCalledWith('Mix')
     expect(screen.queryByTestId('tv-keyboard-panel')).toBeNull()
   })
+  it('på TV bär kontrollerna identitet och riktningsstyrning för fokusmotorn', () => {
+    __setTvModeForTests(true)
+    render(
+      <>
+        <TextField value="" onChange={() => {}} title="Username" tvNav={{ down: '[data-tv-id="connect"]' }} />
+        <Pill onClick={() => {}} tvId="connect">Log in</Pill>
+      </>,
+    )
+    expect(screen.getByRole('button', { name: /Username/ })).toHaveAttribute('data-f-down', '[data-tv-id="connect"]')
+    expect(screen.getByRole('button', { name: 'Log in' })).toHaveAttribute('data-tv-id', 'connect')
+  })
   it('på skrivbordet är textfältet ett vanligt input', () => {
     __setTvModeForTests(false)
     const onChange = vi.fn()

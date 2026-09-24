@@ -178,13 +178,18 @@ export function CategoryCurationPanel({ list, mode, onClose }: { list: LiveTvLis
                 </div>
               ))}
             </div>
-            {marked.size >= 2 ? (
+            {marked.size < 2 ? (
+              // Ihopslagningen var osynlig tills två rader markerats — ingen
+              // hittade den (Jerry 2026-09-24). Raden säger hur, och byts mot
+              // namnfältet så fort villkoret är uppfyllt.
+              <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{h('mergeHint')}</div>
+            ) : (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <TextField title={h('mergeNameLabel')} placeholder={h('mergeInto')} value={mergeName} onChange={(next) => { setMergeName(next); setMergeError(null) }} style={fieldStyle} />
                 <Pill size="sm" variant="accent" onClick={merge}>{h('mergeAction')}</Pill>
                 {mergeError ? <div role="alert" style={{ fontSize: 'var(--st-small)', color: '#fca5a5', width: '100%' }}>{mergeError}</div> : null}
               </div>
-            ) : null}
+            )}
           </>
         )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

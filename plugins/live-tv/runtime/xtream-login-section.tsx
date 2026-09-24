@@ -110,6 +110,9 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
     <button
       type="button"
       data-f=""
+      // Nedåt från ett VÄNSTERSTÄLLT fält landade geometriskt långt ned på
+      // sidan (knapparna i korten är högerställda) — styr till Log in & fetch.
+      data-f-down='[data-tv-id="xtream-connect"]'
       onClick={() => setTvField(field)}
       style={{ ...inputStyle, textAlign: 'left', cursor: 'pointer', color: value ? TOKENS.text : TOKENS.textMute, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
     >
@@ -273,7 +276,7 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
           {state === 'authError' ? <span style={{ marginRight: 'auto', fontSize: 'var(--st-small)', color: TOKENS.red }}>{t('liveTvXtreamAuthFailed')}</span> : null}
           {state === 'netError' ? <span style={{ marginRight: 'auto', fontSize: 'var(--st-small)', color: TOKENS.red }}>{t('liveTvXtreamError')}</span> : null}
-          <PillBtn variant="accent" onClick={() => void handleConnect()} disabled={state === 'working'}>
+          <PillBtn variant="accent" onClick={() => void handleConnect()} disabled={state === 'working'} tvId="xtream-connect">
             {state === 'working' ? t('liveTvXtreamConnecting') : state === 'done' ? t('liveTvXtreamDone') : t('liveTvXtreamConnect')}
           </PillBtn>
         </div>

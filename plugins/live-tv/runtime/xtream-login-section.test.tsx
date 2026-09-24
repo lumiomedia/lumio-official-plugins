@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
-import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID, __resetXtreamAccountCacheForTests, type XtreamLogin } from './live-tv-data'
 import { XtreamLoginSection } from './xtream-login-section'
 
@@ -116,5 +116,21 @@ describe('XtreamLoginSection: Ta bort konto', () => {
 
     expect(getLiveTvLists()).toHaveLength(0)
     await vi.waitFor(() => expect(resets).toEqual(['xtream://panel.test:8080/annat-login-id']))
+  })
+})
+
+describe('XtreamLoginSection på TV: fokus från fälten', () => {
+  it('nedåt från ett inloggningsfält landar på Log in & fetch, inte längre ned på sidan', async () => {
+    __setTvModeForTests(true)
+    try {
+      stubXtreamAccountFetch({ auth: 1, status: 'Active' })
+      render(<XtreamLoginSection />)
+      const fields = screen.getAllByRole('button').filter((el) => el.getAttribute('data-f-down'))
+      expect(fields.length).toBeGreaterThanOrEqual(3)
+      const target = fields[0].getAttribute('data-f-down') as string
+      expect(document.querySelector(target)).toHaveTextContent('liveTvXtreamConnect')
+    } finally {
+      __setTvModeForTests(false)
+    }
   })
 })
