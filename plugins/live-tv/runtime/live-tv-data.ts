@@ -21,6 +21,7 @@ import {
   type XtreamImportSource,
 } from './index-client'
 import { forgetVod } from './vod-client'
+import { normalizeCuration } from './list-curation'
 
 export interface M3uChannel {
   name: string
@@ -70,6 +71,13 @@ const LIVE_TV_PINS_KEY = 'pins'
 export const LIVE_TV_CHANNELS_PREFIX = 'channels:'
 const LIVE_TV_LOGO_BUCKET = 'com.lumio.live-tv:logo'
 
+export interface ListCuration {
+  /** Originalgruppnamn som döljs. */
+  hidden: string[]
+  /** Ihopslagningar; `groups` är originalgruppnamn, `name` det nya namnet. */
+  merges: { name: string; groups: string[] }[]
+}
+
 export interface LiveTvList {
   id: string
   name: string
@@ -104,6 +112,16 @@ export interface LiveTvList {
    * ingenting sa att resten saknades.
    */
   truncated?: boolean
+  /**
+   * Kategorikuratering per källa (spec 2026-09-24): dolda originalgrupper
+   * och ihopslagningar. Tillämpas i modellen ovanpå indexet
+   * (`applyCuration` i list-curation.ts) — indexet bär alltid
+   * originalgrupperna, så `groups` ovan är OKURATERADE.
+   * Frånvarande = allt syns.
+   */
+  curation?: ListCuration
+  /** Kategoripanelen har visats (sparad eller överhoppad) efter en import. */
+  curationSeen?: boolean
   /**
    * Inbäddade kanaler ur den GAMLA lagringen (innan v2). Läses för sanering
    * och av äldre kod (`flattenChannels` m.fl., bytta i P3) — v2-koden här
@@ -286,7 +304,25 @@ function sanitizeListEntry(entry: Record<string, unknown>, xtreamLogins: XtreamL
     // `undefined` betyder PÅ (se `isLogoFallbackEnabled`) — bara ett
     // uttryckligt `false` ska överleva saneringen.
     logoFallbackEnabled: entry.logoFallbackEnabled === false ? false : undefined,
+    curation: sanitizeCuration(entry.curation),
+    curationSeen: entry.curationSeen === true ? true : undefined,
   }
+}
+
+/** Kurateringen ur lagringen: okänd form → ignoreras, tom → utelämnas. */
+function sanitizeCuration(raw: unknown): ListCuration | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const obj = raw as Record<string, unknown>
+  const hidden = Array.isArray(obj.hidden) ? obj.hidden.filter((g): g is string => typeof g === 'string') : []
+  const merges = Array.isArray(obj.merges)
+    ? obj.merges
+        .filter((m): m is Record<string, unknown> => Boolean(m) && typeof m === 'object')
+        .map((m) => ({
+          name: typeof m.name === 'string' ? m.name : '',
+          groups: Array.isArray(m.groups) ? m.groups.filter((g): g is string => typeof g === 'string') : [],
+        }))
+    : []
+  return normalizeCuration({ hidden, merges })
 }
 
 function readLists(): LiveTvList[] {
@@ -447,6 +483,22 @@ export function updateLiveTvListEpg(
       }
     }),
   )
+}
+
+/** Skriver kurateringen normaliserad (tom = fältet tas bort) och markerar panelen som visad. */
+export function updateLiveTvListCuration(listId: string, curation: ListCuration | undefined): void {
+  const normalized = normalizeCuration(curation)
+  writeLists(
+    readLists().map((list) => {
+      if (list.id !== listId) return list
+      const { curation: _dropped, ...rest } = list
+      return normalized ? { ...rest, curation: normalized, curationSeen: true } : { ...rest, curationSeen: true }
+    }),
+  )
+}
+
+export function markListCurationSeen(listId: string): void {
+  writeLists(readLists().map((list) => (list.id === listId ? { ...list, curationSeen: true } : list)))
 }
 
 /** `undefined` betyder PÅ — också för listor skapade innan v2-fältet fanns. */
