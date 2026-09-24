@@ -246,13 +246,20 @@ export function TvPanel({ title, hint, crumb, onBack, children, testId }: {
   useEffect(() => {
     const measure = () => {
       const overlay = rootRef.current
-      const column = overlay?.closest<HTMLElement>('[data-col="content"]') ?? null
-      if (!overlay || !column) { setLeft(null); return }
+      if (!overlay) { setLeft(null); return }
+      // Pluginets sida ritas i appens sidopanel, som ligger UTANFÖR
+      // innehållskolumnen i DOM — därför mäts sidlisten (`[data-col="side"]`)
+      // inom inställningarnas rot (`[data-tv-settings]`), och panelen börjar
+      // där sidlisten slutar. Utan sidlist: innehållskolumnens kant.
+      const settingsRoot = overlay.closest<HTMLElement>('[data-tv-settings]') ?? document
+      const side = settingsRoot.querySelector<HTMLElement>('[data-col="side"]')
+      const column = overlay.closest<HTMLElement>('[data-col="content"]') ?? settingsRoot.querySelector<HTMLElement>('[data-col="content"]')
       const o = overlay.getBoundingClientRect()
-      const c = column.getBoundingClientRect()
       if (o.width === 0 || overlay.offsetWidth === 0) { setLeft(null); return }
       const scale = o.width / overlay.offsetWidth
-      setLeft(Math.max(0, Math.round((c.left - o.left) / scale)))
+      const edge = side ? side.getBoundingClientRect().right : column ? column.getBoundingClientRect().left : null
+      if (edge === null) { setLeft(null); return }
+      setLeft(Math.max(0, Math.round((edge - o.left) / scale)))
     }
     measure()
     window.addEventListener('resize', measure)
