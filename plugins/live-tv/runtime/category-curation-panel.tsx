@@ -1,75 +1,59 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Card, TOKENS, useTvMode } from '@/lib/plugin-sdk'
-import { Pill, TextField, TvCheck } from './tv-aware-controls'
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
+import { LtBtn, LtCheckMark, LtDialog, LtEyebrow, LtInput, LtNote, ToastHost, UI, fmtInt, useToast } from './settings-ui'
 import { useHubText } from './hub-strings'
 import { listGroups } from './index-client'
-import { curatedGroupCounts, mergeNameConflict, normalizeCuration } from './list-curation'
+import { mergeNameConflict, normalizeCuration, renameMerge } from './list-curation'
 import { markListCurationSeen, updateLiveTvListCuration, type ListCuration, type LiveTvList } from './live-tv-data'
+import { playlistHost } from './playlist-card'
+
+type Group = { name: string; count: number }
+
+function cloneCuration(curation: ListCuration | undefined): ListCuration {
+  return {
+    hidden: [...(curation?.hidden ?? [])],
+    merges: (curation?.merges ?? []).map((m) => ({ name: m.name, groups: [...m.groups] })),
+  }
+}
 
 /**
- * "Markera"-växeln för ihopslagning: en vanlig kryssruta på skrivbordet, en
- * station med samma testid på TV (en rå <input type=checkbox> går inte att nå
- * med fjärrkontrollen).
+ * KATEGORIDIALOGEN för skrivbord och telefon (handoff §4.1).
+ *
+ * Allt är ett lokalt utkast tills Save; Cancel/Skip (och Bakåt/Escape) kastar
+ * det. Underlaget är listans OKURATERADE grupper ur indexet (`listGroups`),
+ * med importkvittot `list.groups` som reserv när anropet faller — dialogen
+ * ska gå att öppna även när servern är upptagen.
+ *
+ * Reglerna (§2): en kategori i högst en merge; medlemmar syns inte i
+ * kategorilistan; Split lägger tillbaka dem med det dolda läge de hade
+ * (det vilar under mergen, se list-curation.ts); mergens antal är summan.
+ *
+ * `mode`: 'after-import' är den automatiska öppningen efter första importen
+ * (Skip i stället för Cancel). Båda knapparna markerar dialogen som visad så
+ * att den inte kommer tillbaka.
  */
-function MarkToggle({ name, marked, onToggle, label }: { name: string; marked: boolean; onToggle: () => void; label: string }) {
-  const isTv = useTvMode()
-  if (isTv) {
-    return (
-      <button
-        type="button"
-        data-f=""
-        data-testid={`mark-${name}`}
-        aria-pressed={marked}
-        onClick={onToggle}
-        style={{ fontSize: 'var(--st-small)', color: marked ? TOKENS.accent : TOKENS.textMute, background: 'transparent', border: `1px solid ${marked ? TOKENS.accent : TOKENS.borderStrong}`, borderRadius: 10, padding: '6px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-      >
-        {marked ? '✓ ' : ''}{label}
-      </button>
-    )
-  }
+export function CategoriesDialog({ list, mode, onClose }: { list: LiveTvList; mode: 'settings' | 'after-import'; onClose: () => void }) {
   return (
-    <label style={{ fontSize: 'var(--st-label)', color: TOKENS.textMute, display: 'flex', alignItems: 'center', gap: 4 }}>
-      <input data-testid={`mark-${name}`} type="checkbox" checked={marked} onChange={onToggle} />
-      {label}
-    </label>
+    <ToastHost>
+      <DialogBody list={list} mode={mode} onClose={onClose} />
+    </ToastHost>
   )
 }
 
-type Row =
-  | { kind: 'group'; name: string; count: number; hidden: boolean }
-  | { kind: 'merge'; name: string; count: number; groups: string[] }
+/** Äldre namn — rutnätets tomma läge importerar det. Samma komponent. */
+export const CategoryCurationPanel = CategoriesDialog
 
-/**
- * Kategoripanelen för skrivbord och telefon (spec 2026-09-24).
- *
- * Allt är lokalt tillstånd tills Spara; Avbryt/Hoppa över kastar ändringarna.
- * Underlaget är listans OKURATERADE grupper ur indexet (`listGroups`), med
- * importkvittot `list.groups` som reserv när anropet faller — panelen ska gå
- * att öppna även när servern är upptagen.
- *
- * `mode`: 'after-import' är den automatiska öppningen efter första importen
- * (Hoppa över i stället för Avbryt, en förklarande rad överst). Båda knapparna
- * markerar panelen som visad så att den inte kommer tillbaka.
- */
-export function CategoryCurationPanel({ list, mode, onClose }: { list: LiveTvList; mode: 'settings' | 'after-import'; onClose: () => void }) {
+function DialogBody({ list, mode, onClose }: { list: LiveTvList; mode: 'settings' | 'after-import'; onClose: () => void }) {
   const { h, locale } = useHubText()
-  const [groups, setGroups] = useState<{ name: string; count: number }[] | null>(null)
-  const [draft, setDraft] = useState<ListCuration>(() => ({
-    hidden: [...(list.curation?.hidden ?? [])],
-    merges: (list.curation?.merges ?? []).map((m) => ({ name: m.name, groups: [...m.groups] })),
-  }))
-  const [marked, setMarked] = useState<Set<string>>(new Set())
+  const toast = useToast()
+  const [groups, setGroups] = useState<Group[] | null>(null)
+  const [draft, setDraft] = useState<ListCuration>(() => cloneCuration(list.curation))
+  const [marked, setMarked] = useState<string[]>([])
   const [mergeName, setMergeName] = useState('')
-  const [mergeError, setMergeError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-
-  // Efter import ligger panelen under alla listkort — utan det här syns den
-  // inte alls på en sida med flera listor (granskning 2026-09-24).
-  const rootRef = useRef<HTMLDivElement | null>(null)
-  useEffect(() => {
-    if (mode !== 'after-import') return
-    rootRef.current?.scrollIntoView?.({ block: 'nearest' })
-  }, [mode])
+  /** Namnet under redigering per merge-index — skrivs in i utkastet vid blur, när det är giltigt. */
+  const [editNames, setEditNames] = useState<Record<number, string>>({})
 
   useEffect(() => {
     let live = true
@@ -81,122 +65,150 @@ export function CategoryCurationPanel({ list, mode, onClose }: { list: LiveTvLis
   }, [list.id, list.source])
 
   const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups])
+  const countOf = useMemo(() => new Map((groups ?? []).map((g) => [g.name, g.count])), [groups])
   const claimed = useMemo(() => new Set(draft.merges.flatMap((m) => m.groups)), [draft.merges])
-  const rows = useMemo<Row[]>(() => {
-    if (!groups) return []
-    // En merge vars grupper leverantören tagit bort visas med det som finns
-    // kvar; är inget kvar visas den inte alls (regeln ligger kvar i lagringen
-    // ifall gruppen kommer tillbaka).
-    const merged: Row[] = draft.merges
-      .map((m) => ({
-        kind: 'merge' as const,
-        name: m.name,
-        groups: m.groups.filter((g) => known.has(g)),
-        count: groups.filter((g) => m.groups.includes(g.name)).reduce((sum, g) => sum + g.count, 0),
-      }))
-      .filter((m) => m.groups.length > 0)
-    const plain: Row[] = groups
-      .filter((g) => !claimed.has(g.name))
-      .map((g) => ({ kind: 'group' as const, name: g.name, count: g.count, hidden: draft.hidden.includes(g.name) }))
-    const needle = query.trim().toLowerCase()
-    return [...merged, ...plain]
-      .filter((r) => !needle || r.name.toLowerCase().includes(needle))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
-  }, [groups, draft, claimed, known, query])
-
-  const visibleCount = curatedGroupCounts(groups ?? [], draft).length
-  const toggleHidden = (name: string) => setDraft((d) => ({ ...d, hidden: d.hidden.includes(name) ? d.hidden.filter((g) => g !== name) : [...d.hidden, name] }))
-  const toggleMark = (name: string) => setMarked((m) => {
-    const next = new Set(m)
-    if (next.has(name)) next.delete(name)
-    else next.add(name)
-    return next
+  // En merge vars grupper leverantören tagit bort visas med det som finns
+  // kvar; är inget kvar visas den inte alls (regeln ligger kvar i lagringen
+  // ifall gruppen kommer tillbaka).
+  const merges = draft.merges
+    .map((m, index) => ({ index, name: m.name, members: m.groups.filter((g) => known.has(g)), count: m.groups.reduce((sum, g) => sum + (countOf.get(g) ?? 0), 0) }))
+    .filter((m) => m.members.length > 0)
+  const needle = query.trim().toLowerCase()
+  const rows = (groups ?? [])
+    .filter((g) => !claimed.has(g.name))
+    .filter((g) => !needle || g.name.toLowerCase().includes(needle))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  const summary = h('curationSummary', {
+    groups: known.size,
+    hidden: draft.hidden.filter((g) => known.has(g)).length,
+    merged: draft.merges.filter((m) => m.groups.some((g) => known.has(g))).length,
   })
+
+  const toggleHidden = (name: string) => setDraft((d) => ({ ...d, hidden: d.hidden.includes(name) ? d.hidden.filter((g) => g !== name) : [...d.hidden, name] }))
+  const toggleMark = (name: string) => setMarked((m) => (m.includes(name) ? m.filter((x) => x !== name) : [...m, name]))
   const merge = () => {
-    const conflict = mergeNameConflict(mergeName, groups ?? [], draft, [...marked])
+    const conflict = mergeNameConflict(mergeName, groups ?? [], draft, marked)
     if (conflict) {
-      setMergeError(conflict === 'empty' ? h('mergeNameEmpty') : conflict === 'duplicate' ? h('mergeNameTaken') : h('mergeNameIsGroup'))
+      toast(conflict === 'empty' ? h('giveMergedName') : conflict === 'duplicate' ? h('mergeNameTaken') : h('mergeNameIsGroup'))
       return
     }
-    const members = [...marked]
-    setDraft((d) => ({ ...d, merges: [...d.merges, { name: mergeName.trim(), groups: members }] }))
-    setMarked(new Set())
+    const name = mergeName.trim()
+    setDraft((d) => ({ ...d, merges: [...d.merges, { name, groups: [...marked] }] }))
+    setMarked([])
     setMergeName('')
-    setMergeError(null)
+    toast(h('mergedInto', { name }))
   }
-  const split = (name: string) => setDraft((d) => ({ ...d, merges: d.merges.filter((m) => m.name !== name) }))
-  const save = () => { updateLiveTvListCuration(list.id, normalizeCuration(draft)); onClose() }
-  const skip = () => { markListCurationSeen(list.id); onClose() }
+  const split = (index: number) => {
+    const name = draft.merges[index]?.name ?? ''
+    setDraft((d) => ({ ...d, merges: d.merges.filter((_, i) => i !== index) }))
+    setEditNames({})
+    toast(h('splitDone', { name }))
+  }
+  const commitRename = (index: number) => {
+    const value = editNames[index]
+    if (value === undefined) return
+    const next = renameMerge(draft, index, value)
+    const changed = next.merges[index]?.name !== draft.merges[index]?.name
+    if (!changed && value.trim() !== draft.merges[index]?.name) {
+      toast(value.trim() ? h('mergeNameTaken') : h('giveMergedName'))
+    }
+    if (changed) setDraft(next)
+    setEditNames((e) => { const copy = { ...e }; delete copy[index]; return copy })
+  }
+  const save = () => {
+    updateLiveTvListCuration(list.id, normalizeCuration(draft))
+    toast(h('categoriesSaved'))
+    onClose()
+  }
+  const dismiss = () => {
+    if (mode === 'after-import') markListCurationSeen(list.id)
+    onClose()
+  }
 
-  // Typografin via appens tokens (`--st-*`), som byter storlek under
-  // [data-tv="1"] — råa pixelvärden blev pyttesmå på TV (Jerry 2026-09-24).
-  const rowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${TOKENS.border}` } as const
-  const fieldStyle = { flex: 1, minWidth: 160 } as const
+  const smallBtn = { padding: '7px 13px', fontSize: 12.5 } as const
 
   return (
-    <Card>
-      <div ref={rootRef} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 'var(--st-h3)', fontWeight: 600, color: TOKENS.text }}>{h('categories')} · {list.name}</div>
-          {groups ? (
-            <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, marginTop: 2 }}>
-              {h('curationSummary', {
-                groups: visibleCount.toLocaleString(locale),
-                hidden: draft.hidden.filter((g) => known.has(g)).length,
-                merged: draft.merges.length,
-              })}
-            </div>
-          ) : null}
-          {mode === 'after-import' ? <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, marginTop: 6 }}>{h('curationIntro')}</div> : null}
-        </div>
+    <LtDialog title={h('categoriesTitle', { host: playlistHost(list) })} body={h('categoriesBody')} width={620} onClose={dismiss} testId="categories-dialog">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
+        <LtNote>{groups ? summary : ''}</LtNote>
+        {mode === 'after-import' ? <LtNote>{h('curationIntro')}</LtNote> : null}
         {groups && groups.length === 0 ? (
-          <div style={{ fontSize: 'var(--st-body)', color: TOKENS.textMute }}>{h('noCategoriesInList')}</div>
+          <LtNote>{h('noCategoriesInList')}</LtNote>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <TextField title={h('searchCategories')} placeholder={h('searchCategories')} value={query} onChange={setQuery} style={fieldStyle} />
-              <Pill size="sm" onClick={() => setDraft((d) => ({ ...d, hidden: [] }))}>{h('showAll')}</Pill>
-              <Pill size="sm" onClick={() => setDraft((d) => ({ ...d, hidden: (groups ?? []).map((g) => g.name).filter((g) => !claimed.has(g)) }))}>{h('hideAll')}</Pill>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <LtInput title={h('searchCategories')} placeholder={h('searchCategories')} value={query} onChange={setQuery} style={{ flex: '1 1 180px' }} />
+              <LtBtn style={smallBtn} onClick={() => setDraft((d) => ({ ...d, hidden: [] }))}>{h('showAll')}</LtBtn>
+              <LtBtn style={smallBtn} onClick={() => setDraft((d) => ({ ...d, hidden: (groups ?? []).map((g) => g.name).filter((g) => !claimed.has(g)) }))}>{h('hideAll')}</LtBtn>
             </div>
-            <div style={{ maxHeight: 360, overflowY: 'auto' }}>
-              {rows.map((row) => row.kind === 'merge' ? (
-                <div key={`m:${row.name}`} style={rowStyle}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 'var(--st-body)', fontWeight: 600, color: TOKENS.text }}>{row.name}</div>
-                    <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{h('mergeContains', { groups: row.groups.join(', ') })}</div>
+            {merges.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <LtEyebrow>{h('merged')}</LtEyebrow>
+                {merges.map((m) => (
+                  <div key={`m:${m.index}`} data-merge-row="" style={{ display: 'flex', alignItems: 'center', gap: 10, borderRadius: 9, background: UI.inset, padding: '10px 12px' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <input
+                        type="text"
+                        aria-label={h('mergeNameLabel')}
+                        value={editNames[m.index] ?? m.name}
+                        onChange={(event) => setEditNames((e) => ({ ...e, [m.index]: event.target.value }))}
+                        onBlur={() => commitRename(m.index)}
+                        onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); (event.target as HTMLInputElement).blur() } }}
+                        style={{ width: '100%', border: 0, borderRadius: 6, background: 'transparent', padding: '2px 0', fontSize: 13.5, fontFamily: 'inherit', color: UI.text, outline: 'none' }}
+                      />
+                      <p style={{ margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: UI.muted }}>
+                        {h('mergedMeta', { members: m.members.join(' · '), channels: fmtInt(m.count, locale) })}
+                      </p>
+                    </div>
+                    <LtBtn style={{ padding: '6px 11px' }} onClick={() => split(m.index)}>{h('splitMerge')}</LtBtn>
                   </div>
-                  <span style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{row.count.toLocaleString(locale)}</span>
-                  <Pill size="sm" onClick={() => split(row.name)}>{h('splitMerge')}</Pill>
-                </div>
-              ) : (
-                <div key={`g:${row.name}`} style={rowStyle}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <TvCheck checked={!row.hidden} onChange={() => toggleHidden(row.name)} label={row.name} />
-                  </div>
-                  <span style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{row.count.toLocaleString(locale)}</span>
-                  <MarkToggle name={row.name} marked={marked.has(row.name)} onToggle={() => toggleMark(row.name)} label={h('markForMerge')} />
-                </div>
-              ))}
-            </div>
-            {marked.size < 2 ? (
-              // Ihopslagningen var osynlig tills två rader markerats — ingen
-              // hittade den (Jerry 2026-09-24). Raden säger hur, och byts mot
-              // namnfältet så fort villkoret är uppfyllt.
-              <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{h('mergeHint')}</div>
-            ) : (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <TextField title={h('mergeNameLabel')} placeholder={h('mergeInto')} value={mergeName} onChange={(next) => { setMergeName(next); setMergeError(null) }} style={fieldStyle} />
-                <Pill size="sm" variant="accent" onClick={merge}>{h('mergeAction')}</Pill>
-                {mergeError ? <div role="alert" style={{ fontSize: 'var(--st-small)', color: '#fca5a5', width: '100%' }}>{mergeError}</div> : null}
+                ))}
               </div>
+            ) : null}
+            <div style={{ display: 'flex', maxHeight: 300, flexDirection: 'column', overflowY: 'auto', borderRadius: 9, background: UI.inset, padding: '0 12px' }}>
+              {groups === null ? <LtNote style={{ padding: '10px 0' }}>{h('listImportProgressUnknown')}</LtNote> : null}
+              {rows.map((g, i) => {
+                const hidden = draft.hidden.includes(g.name)
+                const isMarked = marked.includes(g.name)
+                return (
+                  <div key={`g:${g.name}`} data-cat-row="" style={{ display: 'flex', alignItems: 'center', gap: 12, borderTop: `1px solid ${i === 0 ? 'transparent' : UI.lineSoft}`, padding: '10px 0' }}>
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={!hidden}
+                      aria-label={g.name}
+                      onClick={() => toggleHidden(g.name)}
+                      style={{ display: 'flex', flex: 'none', cursor: 'pointer', background: 'transparent', border: 0, padding: 0 }}
+                    >
+                      <LtCheckMark on={!hidden} />
+                    </button>
+                    <span onClick={() => toggleHidden(g.name)} style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13.5, cursor: 'pointer', color: hidden ? UI.muted : UI.text }}>{g.name}</span>
+                    <span style={{ flex: 'none', fontSize: 12.5, fontFamily: UI.mono, color: UI.muted }}>{fmtInt(g.count, locale)}</span>
+                    <LtBtn active={isMarked} style={{ padding: '5px 11px', color: isMarked ? UI.text : UI.muted }} onClick={() => toggleMark(g.name)}>
+                      {isMarked ? h('marked') : h('mark')}
+                    </LtBtn>
+                  </div>
+                )
+              })}
+            </div>
+            {marked.length >= 2 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderRadius: 9, borderWidth: 1, borderStyle: 'solid', borderColor: UI.accent700, background: UI.accent900, padding: 12 }}>
+                <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12, color: UI.soft }}>{marked.join(' · ')}</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <LtInput title={h('mergeNameLabel')} placeholder={h('mergeNameSuggest')} value={mergeName} onChange={setMergeName} onEnter={merge} dark style={{ flex: 1 }} />
+                  <LtBtn variant="accent" style={{ padding: '7px 14px', fontSize: 12.5 }} onClick={merge}>{h('mergeN', { n: marked.length })}</LtBtn>
+                </div>
+              </div>
+            ) : (
+              <LtNote>{h('mergeHelp')}</LtNote>
             )}
           </>
         )}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <Pill size="sm" onClick={mode === 'after-import' ? skip : onClose}>{mode === 'after-import' ? h('skip') : h('cancel')}</Pill>
-          <Pill size="sm" variant="accent" onClick={save} disabled={groups === null}>{h('save')}</Pill>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+          <LtBtn size="md" onClick={dismiss}>{mode === 'after-import' ? h('skip') : h('cancel')}</LtBtn>
+          <LtBtn size="md" variant="accent" onClick={save} disabled={groups === null}>{h('save')}</LtBtn>
         </div>
       </div>
-    </Card>
+    </LtDialog>
   )
 }

@@ -447,10 +447,22 @@ export function LtConfirm({ title, body, confirmLabel, cancelLabel, onCancel, on
 
 /* ------------------------------------------------------------------ toast */
 
-const ToastContext = createContext<(text: string) => void>(() => {})
+const noToast = (_text: string): void => {}
+const ToastContext = createContext<(text: string) => void>(noToast)
 
-/** Toasten: en i taget, 2,4 s, fast nedtill (wireframen: `#1b1c23`-pill med grön punkt). */
+/**
+ * Toasten: en i taget, 2,4 s, fast nedtill (wireframen: `#1b1c23`-pill med
+ * grön punkt). En ToastHost inne i en annan återanvänder den yttre, så en
+ * dialog kan bära sin egen värd (rutnätets tomma läge) utan att en toast
+ * som skickas precis före stängning dör med dialogen på inställningssidan.
+ */
 export function ToastHost({ children }: { children: ReactNode }) {
+  const outer = useContext(ToastContext)
+  if (outer !== noToast) return <>{children}</>
+  return <ToastRoot>{children}</ToastRoot>
+}
+
+function ToastRoot({ children }: { children: ReactNode }) {
   const [text, setText] = useState<string | null>(null)
   const timer = useRef<number | null>(null)
   const toast = useCallback((next: string) => {
