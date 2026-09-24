@@ -45,6 +45,7 @@ import type { VodLibraryRow } from '../vod-library-rows'
 import { useVodLibrarySources } from '../hooks/useVodLibrarySources'
 import type { TvNav, TvViewProps } from './tv-shell'
 import { TvCategoryPicker, TvListPicker } from './tv-list-picker'
+import { TvCurationPicker } from './tv-curation-picker'
 import { useTextPrompt } from './tv-text-entry'
 import { TV, Toggle, dp, station } from './tv-ui'
 import type { useTvText } from './tv-strings'
@@ -188,6 +189,7 @@ export const ListRow = memo(function ListRow({
   onRefetch,
   onRemove,
   onEditChannels,
+  onCategories,
   phone = false,
 }: {
   list: LiveTvList
@@ -198,6 +200,7 @@ export const ListRow = memo(function ListRow({
   onRefetch: (list: LiveTvList) => void
   onRemove: (list: LiveTvList) => void
   onEditChannels: (list: LiveTvList) => void
+  onCategories: (list: LiveTvList) => void
   /** Telefonen (P12): namn + tagg, meta under, knapparna i en EGEN rad under texten. */
   phone?: boolean
 }) {
@@ -276,6 +279,7 @@ export const ListRow = memo(function ListRow({
         style={phone ? { display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 } : { flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10) }}
       >
         {importable ? <Action phone={phone} testId={`list-refetch-${list.id}`} label={busy ? tt('refetching') : tt('refetch')} onOk={() => onRefetch(list)} /> : null}
+        {importable ? <Action phone={phone} testId={`list-categories-${list.id}`} label={tt('categories')} onOk={() => onCategories(list)} /> : null}
         {/* Egna listor har inget att hämta — de fylls med kanalväljaren. */}
         {list.kind === 'custom' ? <Action phone={phone} testId={`list-channels-${list.id}`} label={tt('listChannels')} onOk={() => onEditChannels(list)} /> : null}
         {/* Inställning, inte handling: egen bakgrundston — samma TV.s06 som
@@ -370,6 +374,8 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
         return false
       }
       recordListImportOutcome(list.id)
+      const fresh = getLiveTvLists().find((entry) => entry.id === list.id)
+      if (fresh && fresh.curationSeen !== true) setCuration({ listId: list.id, mode: 'after-import' })
       return true
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
@@ -485,6 +491,9 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
   })
   const onRefetch = useCallback((list: LiveTvList) => refetchRef.current(list), [])
   const onRemove = useCallback((list: LiveTvList) => removeListAndSourceUrl(list), [])
+  /** Kategoripanelen (spec 2026-09-24): från radens knapp, eller automatiskt en gång efter första importen. */
+  const [curation, setCuration] = useState<{ listId: string; mode: 'settings' | 'after-import' } | null>(null)
+  const onCategories = useCallback((list: LiveTvList) => setCuration({ listId: list.id, mode: 'settings' }), [])
 
   /**
    * EGNA LISTOR: kanalerna bockas i en flervalsväljare, och medlemskapet hålls
@@ -569,6 +578,7 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
           onRefetch={onRefetch}
           onRemove={onRemove}
           onEditChannels={openPicker}
+          onCategories={onCategories}
           phone={phone}
         />
       ))}
@@ -586,6 +596,10 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
           onClose={() => setPickerListId(null)}
         />
       ) : null}
+      {curation ? (() => {
+        const target = lists.find((entry) => entry.id === curation.listId)
+        return target ? <TvCurationPicker nav={nav} list={target} mode={curation.mode} keyboard={keyboard} onClose={() => setCuration(null)} /> : null
+      })() : null}
       {keyboard.node}
     </section>
   )

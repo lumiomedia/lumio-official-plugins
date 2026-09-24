@@ -18,7 +18,7 @@ import { gp } from './guide-view-shared'
  * Skillnaden mot enkelvalet är avsiktlig: man bockar i tio kanaler i rad, så
  * panelen får INTE stänga sig på varje OK.
  */
-function PickerPanel({
+export function PickerPanel({
   nav,
   title,
   chips,
@@ -79,7 +79,7 @@ function PickerPanel({
 }
 
 /** Bocken. Enda återkopplingen i flervalsläget — raden ligger kvar. */
-function Check({ on, label }: { on: boolean; label: string }) {
+export function Check({ on, label }: { on: boolean; label: string }) {
   if (!on) return <span style={{ width: dp(28), flexShrink: 0 }} />
   return (
     <span data-testid={`picker-check-${label}`} style={{ width: dp(28), flexShrink: 0, color: TV.acc, fontSize: dp(22), textAlign: 'center' }}>✓</span>
