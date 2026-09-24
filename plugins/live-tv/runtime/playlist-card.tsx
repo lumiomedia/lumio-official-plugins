@@ -5,6 +5,8 @@ import { LtBtn, LtCard, LtCheck, LtConfirm, UI, fmtInt, hostOf } from './setting
 import { useHubText } from './hub-strings'
 import { EpgSourcesSection } from './epg-sources-section'
 import { useXtreamAccountMeta } from './xtream-login-section'
+import { ServerCategoriesDialog, serverCategoriesLabel, useXtreamCategoryCount } from './server-categories'
+import { completeLogos } from './index-client'
 import { getXtreamLogins, isLogoFallbackEnabled, setLogoFallbackEnabled, updateLiveTvListEpg, type LiveTvList } from './live-tv-data'
 
 /**
@@ -61,6 +63,15 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
 }) {
   const { h, locale } = useHubText()
   const [confirm, setConfirm] = useState(false)
+  const [serverCats, setServerCats] = useState(false)
+  // Komplettera-knappens eget tillstånd — en handling, skild från kryssrutan
+  // som bara styr OM reserven får användas (Jerrys ord efter test).
+  const [logoComplete, setLogoComplete] = useState<
+    | { status: 'running' }
+    | { status: 'done'; matched: number; total: number }
+    | { status: 'error'; error: string }
+    | null
+  >(null)
   const kind = list.kind
   const importable = kind === 'm3u' || kind === 'xtream'
   const login = kind === 'xtream' ? getXtreamLogins().find((entry) => entry.id === list.xtreamLoginId) ?? null : null
@@ -68,7 +79,22 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
   // en överförd Xtream-lista har en källa som ingen inloggning svarar mot.
   const needsLogin = kind === 'xtream' && !login
   const account = useXtreamAccountMeta(login)
+  const categoryTotal = useXtreamCategoryCount(login)
   const host = playlistHost(list)
+  /**
+   * `completeLogos` sänder `emitIndexChanged()` själv vid ett lyckat svar
+   * (index-client.ts) — den ropas INTE här igen, det hade blivit en dubbelsändning.
+   */
+  const runCompleteLogos = async () => {
+    if (!list.source) return
+    setLogoComplete({ status: 'running' })
+    try {
+      const result = await completeLogos(list.source)
+      setLogoComplete({ status: 'done', matched: result.matched, total: result.total })
+    } catch (err) {
+      setLogoComplete({ status: 'error', error: err instanceof Error ? err.message : String(err) })
+    }
+  }
   const kindLabel = kind === 'xtream' ? h('kindXtream') : kind === 'm3u' ? h('kindM3u') : h('kindCustom')
   const meta = busy
     ? h('fetching')
@@ -96,6 +122,7 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
         </div>
         <div style={{ display: 'flex', flex: 'none', flexWrap: 'wrap', gap: 8 }}>
           {importable ? <LtBtn onClick={onCategories}>{h('categories')}</LtBtn> : null}
+          {login ? <LtBtn onClick={() => setServerCats(true)}>{serverCategoriesLabel(login, categoryTotal, h)}</LtBtn> : null}
           {needsLogin ? (
             <LtBtn variant="accent" onClick={onRelogin}>{h('xtreamRelogin')}</LtBtn>
           ) : importable ? (
@@ -133,6 +160,25 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
         label={h('logoFallbackToggle')}
         hint={h('logoFallbackHint')}
       />
+      {/* Egen rad med avdelare: kryssrutan ÄR inställningen, knappen är HANDLINGEN. */}
+      <div style={{ borderTop: `1px solid ${UI.lineSoft}`, paddingTop: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <LtBtn
+          onClick={() => void runCompleteLogos()}
+          disabled={!isLogoFallbackEnabled(list) || kind === 'custom' || logoComplete?.status === 'running'}
+        >
+          {logoComplete?.status === 'running' ? h('logoCompleteRunning') : h('logoCompleteButton')}
+        </LtBtn>
+        <span style={{ fontSize: 12.5, color: logoComplete?.status === 'error' ? UI.danger : UI.muted }} role={logoComplete?.status === 'error' ? 'alert' : undefined}>
+          {logoComplete?.status === 'done'
+            ? h('logoCompleteResult', { matched: fmtInt(logoComplete.matched, locale), total: fmtInt(logoComplete.total, locale) })
+            : logoComplete?.status === 'error'
+              ? logoComplete.error
+              : h('completeLogosHint')}
+        </span>
+      </div>
+      {serverCats && login ? (
+        <ServerCategoriesDialog login={login} host={host} onClose={() => setServerCats(false)} onApplied={onUpdate} />
+      ) : null}
       {confirm ? (
         <LtConfirm
           testId={`remove-playlist-${list.id}`}

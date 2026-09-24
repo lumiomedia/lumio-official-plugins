@@ -7,6 +7,8 @@ import { fmtInt, useToast } from './settings-ui'
 import { useHubText } from './hub-strings'
 import { useLiveTvSettings, type CurationTarget } from './live-tv-settings-section'
 import { useXtreamAccountMeta, useXtreamLoginForm } from './xtream-login-section'
+import { applyServerCategories, isCategorySelected, toggleCategory, useXtreamCategories, useXtreamCategoryCount } from './server-categories'
+import { completeLogos } from './index-client'
 import { curationSummary, formatFetchedAt, playlistHost } from './playlist-card'
 import { useEpgStatus } from './hooks/useEpgStatus'
 import { useVodLibrarySources } from './hooks/useVodLibrarySources'
@@ -22,6 +24,7 @@ import {
   updateLiveTvListEpg,
   type ListCuration,
   type LiveTvList,
+  type XtreamLogin,
 } from './live-tv-data'
 
 /* ------------------------------------------------------------ hjälpare */
@@ -220,7 +223,10 @@ export function TvPlaylistPanel({ list, busy, onClose, onUpdate, onRemove, onRel
   const Keyboard = getTvKeyboardPanel()
   const [adding, setAdding] = useState(false)
   const [confirm, setConfirm] = useState(false)
+  const [serverCats, setServerCats] = useState(false)
+  const [completing, setCompleting] = useState(false)
   const login = list.kind === 'xtream' ? getXtreamLogins().find((entry) => entry.id === list.xtreamLoginId) ?? null : null
+  const categoryTotal = useXtreamCategoryCount(login)
   const needsLogin = list.kind === 'xtream' && !login
   const account = useXtreamAccountMeta(login)
   const importable = list.kind === 'm3u' || list.kind === 'xtream'
@@ -254,6 +260,25 @@ export function TvPlaylistPanel({ list, busy, onClose, onUpdate, onRemove, onRel
     updateLiveTvListEpg(list.id, { epgUrls: [...list.epgUrls, url] })
     toast(h('epgSourceAdded'))
   }
+  const serverMeta = login
+    ? (login.categoryIds.length === 0
+        ? h('tvAllFetched')
+        : categoryTotal !== null
+          ? h('tvNOfFetched', { n: login.categoryIds.length, total: categoryTotal })
+          : h('tvNSelected', { n: login.categoryIds.length }))
+    : ''
+  const runCompleteLogos = async () => {
+    if (!list.source) return
+    setCompleting(true)
+    try {
+      const result = await completeLogos(list.source)
+      toast(h('logoCompleteResult', { matched: fmtInt(result.matched, locale), total: fmtInt(result.total, locale) }))
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err))
+    } finally {
+      setCompleting(false)
+    }
+  }
 
   return (
     <TvPanel title={host} hint={`${kind} · ${h('channelsCount', { count: fmtInt(list.channelCount ?? 0, locale) })}`} onBack={onClose} testId="tv-playlist-panel">
@@ -261,6 +286,9 @@ export function TvPlaylistPanel({ list, busy, onClose, onUpdate, onRemove, onRel
       <TvRow size="panel" label={h('tvChannels')} hint={list.fetchedAt ? h('m3uFetchedAt', { time: formatFetchedAt(list.fetchedAt, locale) }) : h('m3uNeverFetched')} value={fmtInt(list.channelCount ?? 0, locale)} />
       {importable ? (
         <TvRow size="panel" init label={h('categories')} hint={h('curationSummary', { groups: summary.categories, hidden: summary.hidden, merged: summary.merged })} value={h('tvEdit')} onOk={onCategories} />
+      ) : null}
+      {login ? (
+        <TvRow size="panel" label={h('serverCategories')} hint={serverMeta} value={h('tvEdit')} onOk={() => setServerCats(true)} />
       ) : null}
       {needsLogin ? (
         <TvRow size="panel" label={h('xtreamRelogin')} hint={h('xtreamNeedsLogin')} value={h('tvLogin')} onOk={onRelogin} />
@@ -274,11 +302,15 @@ export function TvPlaylistPanel({ list, busy, onClose, onUpdate, onRemove, onRel
       {epgSources.filter((s) => !s.disabled).length === 0 ? <TvNote size="panel">{h('noEpgSourceYet')}</TvNote> : null}
       <TvRow size="panel" label={h('tvAddXmltv')} hint={h('tvAddXmltvMeta')} value={h('add')} onOk={() => setAdding(true)} />
       <TvRow size="panel" label={h('logoFallbackToggle')} hint={h('logoFallbackHint')} toggle={isLogoFallbackEnabled(list)} onToggle={(value) => setLogoFallbackEnabled(list.id, value)} disabled={list.kind === 'custom'} />
+      <TvRow size="panel" label={h('logoCompleteButton')} hint={h('completeLogosHint')} value={completing ? h('logoCompleteRunning') : h('tvUpdate')} onOk={() => void runCompleteLogos()} disabled={completing || !isLogoFallbackEnabled(list) || list.kind === 'custom'} />
       <TvEyebrow size="panel">{h('tvPlaylistEyebrow')}</TvEyebrow>
       <TvRow size="panel" label={h('tvRemovePlaylist')} hint={h('tvRemovePlaylistMeta')} value={h('remove')} onOk={() => setConfirm(true)} />
       <TvBtns buttons={[{ label: h('tvComplete'), style: 'accent', onOk: onClose }]} />
       {adding && Keyboard ? (
         <Keyboard title={h('tvAddXmltv')} hint={h('tvAddXmltvMeta')} placeholder="https://" initial="" onDone={(value) => { addUrl(value); setAdding(false) }} onClose={() => setAdding(false)} />
+      ) : null}
+      {serverCats && login ? (
+        <TvServerCategoriesPanel login={login} host={host} onClose={() => setServerCats(false)} onApplied={onUpdate} />
       ) : null}
       {confirm ? (
         <TvConfirmPanel
@@ -291,6 +323,40 @@ export function TvPlaylistPanel({ list, busy, onClose, onUpdate, onRemove, onRel
           onConfirm={() => { setConfirm(false); onRemove() }}
         />
       ) : null}
+    </TvPanel>
+  )
+}
+
+/* ------------------------------------------------- serverkategorier */
+
+/**
+ * Xtreams kategorival på servern som egen vy (samma stil som L:cats):
+ * "All categories" + en växel per kategori, Apply & fetch sparar valet på
+ * kontot och hämtar om listan. Ingen funktionalitet får försvinna (Jerry
+ * 2026-09-24) — det här fanns i det gamla kontokortet.
+ */
+export function TvServerCategoriesPanel({ login, host, onClose, onApplied }: { login: XtreamLogin; host: string; onClose: () => void; onApplied: () => void }) {
+  const { h } = useHubText()
+  const categories = useXtreamCategories(login)
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(login.categoryIds))
+  const allIds = (categories ?? []).map((c) => c.id)
+  const toggle = (id: string) => setSelected((cur) => toggleCategory(cur, id, allIds))
+  const apply = () => {
+    applyServerCategories(login, [...selected])
+    onApplied()
+    onClose()
+  }
+  return (
+    <TvPanel title={h('serverCategoriesTitle', { host })} hint={h('serverCategoriesBody')} crumb={host} onBack={onClose} testId="tv-server-categories-panel">
+      <TvRow size="panel" init label={h('allCategories')} toggle={selected.size === 0} onToggle={() => setSelected(new Set())} />
+      {categories === null ? <TvNote size="panel">{h('listImportProgressUnknown')}</TvNote> : null}
+      {(categories ?? []).map((c) => (
+        <TvRow key={c.id} size="panel" label={c.name} toggle={isCategorySelected(selected, c.id)} onToggle={() => toggle(c.id)} />
+      ))}
+      <TvBtns buttons={[
+        { label: h('cancel'), style: 'ghost', onOk: onClose },
+        { label: h('applyAndFetch'), style: 'accent', onOk: apply },
+      ]} />
     </TvPanel>
   )
 }

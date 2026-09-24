@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
+import * as liveTvData from './live-tv-data'
 import { LIVE_TV_PLUGIN_ID, __resetXtreamAccountCacheForTests, getLiveTvLists, isLogoFallbackEnabled, type LiveTvList, type XtreamLogin } from './live-tv-data'
 import { ToastHost } from './settings-ui'
 import { PlaylistCard } from './playlist-card'
@@ -26,11 +27,52 @@ beforeEach(() => {
   writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [login])
   vi.stubGlobal('fetch', ((input: RequestInfo | URL) => {
     const raw = typeof input === 'string' ? input : String(input)
+    if (raw.includes('get_live_categories')) return Promise.resolve({ ok: true, status: 200, json: async () => ([{ category_id: '1', category_name: 'Sport' }, { category_id: '2', category_name: 'News' }, { category_id: '3', category_name: 'Kids' }]) } as unknown as Response)
     if (raw.includes('player_api.php')) return Promise.resolve({ ok: true, status: 200, json: async () => ({ user_info: { auth: 1, status: 'Active', exp_date: '1800000000', max_connections: '2' } }) } as unknown as Response)
+    if (raw.includes('/api/live-tv/logo-fallback')) return Promise.resolve({ ok: true, status: 200, json: async () => ({ matched: 12, total: 40 }) } as unknown as Response)
     return Promise.resolve({ ok: true, status: 200, json: async () => ({}) } as unknown as Response)
   }) as typeof fetch)
 })
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+
+describe('PlaylistCard: ingen funktionalitet bort (Jerry 2026-09-24)', () => {
+  it('Xtream: Server categories öppnar väljaren; Apply & fetch sparar valet på kontot och hämtar om', async () => {
+    const spies = mount(xtream)
+    const btn = screen.getByRole('button', { name: /^Server categories/ })
+    expect(btn).toHaveTextContent('Server categories · all')
+    fireEvent.click(btn)
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('Server categories · tv.kkz.test:8080')).toBeInTheDocument()
+    expect(within(dialog).getByText('Choose which of the panel\u2019s categories are fetched. Unticked categories never enter Live TV.')).toBeInTheDocument()
+    expect(await within(dialog).findByRole('checkbox', { name: 'Sport' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('checkbox', { name: 'All categories' })).toHaveAttribute('aria-checked', 'true')
+    // Tomt val = alla: varje kategori visas som vald, och att bocka av två ur "alla" ger "alla utom de två".
+    expect(within(dialog).getByRole('checkbox', { name: 'Sport' })).toHaveAttribute('aria-checked', 'true')
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Sport' }))
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Kids' }))
+    expect(within(dialog).getByRole('checkbox', { name: 'Sport' })).toHaveAttribute('aria-checked', 'false')
+    expect(within(dialog).getByRole('checkbox', { name: 'All categories' })).toHaveAttribute('aria-checked', 'false')
+    fireEvent.change(within(dialog).getByPlaceholderText('Search categories'), { target: { value: 'kid' } })
+    expect(within(dialog).queryByRole('checkbox', { name: 'Sport' })).toBeNull()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Apply & fetch' }))
+    expect(liveTvData.getXtreamLogins()[0].categoryIds).toEqual(['2'])
+    expect(spies.onUpdate).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('button', { name: /^Server categories/ })).toHaveTextContent('Server categories · 1 of 3')
+  })
+  it('M3U-listor har inget serverval', () => {
+    mount(m3u)
+    expect(screen.queryByRole('button', { name: /^Server categories/ })).toBeNull()
+  })
+  it('Complete logos kör kompletteringen och visar kvittot; avstängd när reserven är av', async () => {
+    mount(m3u)
+    fireEvent.click(screen.getByRole('button', { name: 'Complete logos' }))
+    expect(await screen.findByText('12 of 40 completed')).toBeInTheDocument()
+    cleanup()
+    mount(list({ ...m3u, logoFallbackEnabled: false }))
+    expect(screen.getByRole('button', { name: 'Complete logos' })).toBeDisabled()
+  })
+})
 
 describe('PlaylistCard (handoff §3.1)', () => {
   it('värd, meta "M3U · 2,037 channels · fetched 12:46" och knapparna Categories · Refetch · Remove', () => {

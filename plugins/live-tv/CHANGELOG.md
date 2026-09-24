@@ -7,6 +7,7 @@
 - The category menu now lists every category in the playlist with its channel count, instead of the ones that happened to be on screen.
 - The Live TV settings page is rebuilt: each playlist is one card with its channels, status, Categories, Update channels / Refetch, Remove (with a confirmation), its EPG sources and the logo choice. M3U and Xtream login sit below as plain rows, then the programme guide status and Use as library.
 - Categories is a proper dialog: Mark two or more rows, name the merged category, rename it in place or split it again — the categories come back exactly as they were. Search filters the list only; Cancel discards, Save confirms with a toast.
+- Nothing is lost from the old page: an Xtream playlist keeps its server-side category choice (Server categories → Apply & fetch) and the Complete logos action, on desktop, phone and TV.
 - On TV the page is rows driven by the remote: a playlist opens as its own view, Categories as the next one, and naming a merged category uses the TV keyboard. Back closes one view at a time and leaves the focus where you came from.
 
 ## 0.10.0 — Cleaner channel guide on desktop and TV

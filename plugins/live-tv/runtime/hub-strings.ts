@@ -217,6 +217,19 @@ const EN = {
   nCategories: '{n} categories',
   nHidden: '{n} hidden',
   nMerged: '{n} merged',
+  // Xtreams kategorival på servern + Komplettera logotyper (Jerry 2026-09-24: ingen funktionalitet bort)
+  serverCategories: 'Server categories',
+  serverCategoriesAll: 'Server categories · all',
+  serverCategoriesCount: 'Server categories · {n} of {total}',
+  serverCategoriesSelected: 'Server categories · {n} selected',
+  serverCategoriesTitle: 'Server categories · {host}',
+  serverCategoriesBody: 'Choose which of the panel\u2019s categories are fetched. Unticked categories never enter Live TV.',
+  allCategories: 'All categories',
+  applyAndFetch: 'Apply & fetch',
+  tvAllFetched: 'All categories are fetched',
+  tvNOfFetched: '{n} of {total} fetched',
+  tvNSelected: '{n} selected',
+  completeLogosHint: 'Fetches missing logos from iptv-org now',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -411,6 +424,18 @@ const SV: Record<keyof typeof EN, string> = {
   nCategories: '{n} kategorier',
   nHidden: '{n} dolda',
   nMerged: '{n} ihopslagna',
+  serverCategories: 'Kategorier på servern',
+  serverCategoriesAll: 'Kategorier på servern · alla',
+  serverCategoriesCount: 'Kategorier på servern · {n} av {total}',
+  serverCategoriesSelected: 'Kategorier på servern · {n} valda',
+  serverCategoriesTitle: 'Kategorier på servern · {host}',
+  serverCategoriesBody: 'Välj vilka av panelens kategorier som hämtas. Avbockade kategorier kommer aldrig in i Live TV.',
+  allCategories: 'Alla kategorier',
+  applyAndFetch: 'Tillämpa & hämta',
+  tvAllFetched: 'Alla kategorier hämtas',
+  tvNOfFetched: '{n} av {total} hämtas',
+  tvNSelected: '{n} valda',
+  completeLogosHint: 'Hämtar saknade logotyper från iptv-org nu',
 }
 
 export type HubStringKey = keyof typeof EN
