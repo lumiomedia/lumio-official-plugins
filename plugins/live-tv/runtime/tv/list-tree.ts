@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { computeGroups, type LiveTvList, type M3uChannel } from '../live-tv-data'
 import { isPlayableChannel, type LiveTvModel } from '../live-tv-model'
 import { useListChannels } from '../view-helpers'
+import { curatedGroupCounts } from '../list-curation'
 import { FAVS_GROUP } from './tv-guide-shared'
 
 /**
@@ -49,7 +50,9 @@ export function useListTree(model: LiveTvModel, maxGroups?: number): ListTreeEnt
   return useMemo(() => model.lists.map((list) => {
     const embedded = list.channels ?? []
     const custom = list.kind === 'custom'
-    const groups = custom ? computeGroups(embedded) : list.groups ?? []
+    // Kvittot är okuraterat — dolda grupper bort, ihopslagna som en post, så
+    // Spellistor-läget följer samma regler som rutnätet (spec beslut 2).
+    const groups = custom ? computeGroups(embedded) : curatedGroupCounts(list.groups ?? [], list.curation)
     return {
       id: list.id,
       name: list.name,

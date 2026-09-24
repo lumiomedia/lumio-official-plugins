@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card, Checkbox, PillBtn, TOKENS, inputStyle } from '@/lib/plugin-sdk'
 import { useHubText } from './hub-strings'
 import { listGroups } from './index-client'
@@ -33,13 +33,22 @@ export function CategoryCurationPanel({ list, mode, onClose }: { list: LiveTvLis
   const [mergeError, setMergeError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
 
+  // Efter import ligger panelen under alla listkort — utan det här syns den
+  // inte alls på en sida med flera listor (granskning 2026-09-24).
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (mode !== 'after-import') return
+    rootRef.current?.scrollIntoView?.({ block: 'nearest' })
+  }, [mode])
+
   useEffect(() => {
     let live = true
     listGroups(list.source ?? null)
       .then((fetched) => { if (live) setGroups(fetched.length > 0 ? fetched : (list.groups ?? [])) })
       .catch(() => { if (live) setGroups(list.groups ?? []) })
     return () => { live = false }
-  }, [list.source, list.groups])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list.id, list.source])
 
   const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups])
   const claimed = useMemo(() => new Set(draft.merges.flatMap((m) => m.groups)), [draft.merges])
@@ -74,7 +83,7 @@ export function CategoryCurationPanel({ list, mode, onClose }: { list: LiveTvLis
     return next
   })
   const merge = () => {
-    const conflict = mergeNameConflict(mergeName, groups ?? [], draft)
+    const conflict = mergeNameConflict(mergeName, groups ?? [], draft, [...marked])
     if (conflict) {
       setMergeError(conflict === 'empty' ? h('mergeNameEmpty') : conflict === 'duplicate' ? h('mergeNameTaken') : h('mergeNameIsGroup'))
       return
@@ -94,7 +103,7 @@ export function CategoryCurationPanel({ list, mode, onClose }: { list: LiveTvLis
 
   return (
     <Card>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div ref={rootRef} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
           <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>{h('categories')} · {list.name}</div>
           {groups ? (

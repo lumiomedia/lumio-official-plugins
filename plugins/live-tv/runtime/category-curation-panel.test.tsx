@@ -53,6 +53,13 @@ describe('CategoryCurationPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() => expect(getLiveTvLists()[0].curation?.merges).toEqual([{ name: 'Mix', groups: ['Sport', 'News'] }]))
   })
+  it('rullar in sig i vyn när den öppnas efter en import', async () => {
+    const scroll = vi.fn()
+    Element.prototype.scrollIntoView = scroll
+    render(<CategoryCurationPanel list={list} mode="after-import" onClose={() => {}} />)
+    await screen.findByLabelText('News')
+    expect(scroll).toHaveBeenCalled()
+  })
   it('en merge med en grupp leverantören tagit bort visas med de grupper som finns', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, curation: { hidden: [], merges: [{ name: 'Mix', groups: ['Sport', 'Gone'] }] } }])
     render(<CategoryCurationPanel list={getLiveTvLists()[0]} mode="settings" onClose={() => {}} />)

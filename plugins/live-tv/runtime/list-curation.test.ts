@@ -71,6 +71,7 @@ describe('mergeNameConflict', () => {
   it('tomt namn', () => expect(mergeNameConflict('  ', groups, { hidden: [], merges: [] })).toBe('empty'))
   it('kollision med synlig originalgrupp', () => expect(mergeNameConflict('Sport', groups, { hidden: [], merges: [] })).toBe('visible-group'))
   it('tillåtet när originalgruppen är dold', () => expect(mergeNameConflict('Sport', groups, { hidden: ['Sport'], merges: [] })).toBeNull())
+  it('tillåtet att döpa mergen efter en av sina egna medlemmar', () => expect(mergeNameConflict('Sport', groups, { hidden: [], merges: [] }, ['Sport', 'News'])).toBeNull())
   it('kollision med befintlig merge', () => expect(mergeNameConflict('Mix', groups, { hidden: [], merges: [{ name: 'Mix', groups: ['News'] }] })).toBe('duplicate'))
 })
 

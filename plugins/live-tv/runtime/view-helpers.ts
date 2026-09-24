@@ -34,6 +34,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { channelKey, type LiveTvList, type M3uChannel } from './live-tv-data'
 import { channelSupportsCatchUp } from './catch-up'
 import { queryChannels, type IndexChannel } from './index-client'
+import { applyCuration } from './list-curation'
 import {
   channelsCacheKey,
   ensureLiveTvBootstrap,
@@ -260,7 +261,9 @@ export function useChannelsPage(
               limit,
               signal: controller?.signal,
             })
-            byListId[list.id] = page.items
+            // Kall väg förbi den delade laddaren: kurateringen måste på här,
+            // annars visar Spellistor-läget dolda kanaler tills källan är varm.
+            byListId[list.id] = applyCuration(page.items, list.curation)
             totalByListId[list.id] = page.total
           }
         } catch (err) {

@@ -73,7 +73,7 @@ function onXtreamPrefill(listener: (prefill: XtreamPrefill) => void): () => void
  * korrekt, så en M3U-länk kan aldrig fungera hos dem. Kanalerna syntetiseras
  * ur API:t och landar i samma listflöde som M3U-hämtningarna.
  */
-export function XtreamLoginSection() {
+export function XtreamLoginSection({ onImported }: { onImported?: (listId: string, existedBefore: boolean) => void } = {}) {
   const { t } = useLang()
   const { h, locale } = useHubText()
   const [logins, setLogins] = useState<XtreamLogin[]>([])
@@ -157,6 +157,7 @@ export function XtreamLoginSection() {
       // stod märket och det gamla felet kvar på kortet tills appen startades
       // om, trots att kanalerna just hämtats.
       recordListImportOutcome(list.id)
+      onImported?.(list.id, existedBefore)
     } catch (err) {
       if (existedBefore) recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err))
       throw err

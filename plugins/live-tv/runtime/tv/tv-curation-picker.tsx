@@ -50,7 +50,8 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
       .then((fetched) => { if (live) setGroups(fetched.length > 0 ? fetched : (list.groups ?? [])) })
       .catch(() => { if (live) setGroups(list.groups ?? []) })
     return () => { live = false }
-  }, [list.source, list.groups])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list.id, list.source])
 
   const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups])
   const claimed = useMemo(() => new Set(draft.merges.flatMap((m) => m.groups)), [draft.merges])
@@ -82,7 +83,7 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
   const finishMerge = () => {
     if (marked.size < 2) return
     keyboard.ask(tt('mergeNameLabel'), '', (value) => {
-      const conflict = mergeNameConflict(value, groups ?? [], draft)
+      const conflict = mergeNameConflict(value, groups ?? [], draft, [...marked])
       if (conflict) {
         setError(conflict === 'empty' ? tt('mergeNameEmpty') : conflict === 'duplicate' ? tt('mergeNameTaken') : tt('mergeNameIsGroup'))
         return

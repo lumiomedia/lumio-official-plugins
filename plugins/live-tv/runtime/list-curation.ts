@@ -100,16 +100,22 @@ export function curatedGroupCounts(
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
 
-/** Varför ett merge-namn inte kan användas, eller null när det går. */
+/**
+ * Varför ett merge-namn inte kan användas, eller null när det går.
+ * `members` är grupperna som ska ingå i den nya mergen: att döpa mergen efter
+ * en av sina egna medlemmar ("UK Sport" + "Sports UK" → "UK Sport") är det
+ * naturliga och tillåts — medlemmen försvinner ju som egen post.
+ */
 export function mergeNameConflict(
   name: string,
   groups: readonly { name: string }[],
   curation: ListCuration,
+  members: readonly string[] = [],
 ): 'empty' | 'duplicate' | 'visible-group' | null {
   const trimmed = name.trim()
   if (!trimmed) return 'empty'
   if (curation.merges.some((m) => m.name === trimmed)) return 'duplicate'
-  const claimed = new Set(curation.merges.flatMap((m) => m.groups))
+  const claimed = new Set([...curation.merges.flatMap((m) => m.groups), ...members])
   const hidden = new Set(curation.hidden)
   if (groups.some((g) => g.name === trimmed && !hidden.has(g.name) && !claimed.has(g.name))) return 'visible-group'
   return null

@@ -57,7 +57,8 @@ describe('kategorimenyn på en telefonskärm', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'l1', name: 'P', createdAt: '2026-01-01', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null, kind: 'm3u', source: PLAYLIST_URL, url: PLAYLIST_URL, curation: { hidden: CATEGORIES, merges: [] } }])
     render(<LiveTvGrid />)
     expect(await screen.findByText(/all categories in this playlist are hidden/i)).toBeInTheDocument()
-    expect(screen.getByTestId('grid-open-curation')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('grid-open-curation'))
+    expect(await screen.findByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
   })
 
   it('får ett höjdtak och egen rullning så alla grupper går att nå', async () => {

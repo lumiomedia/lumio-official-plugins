@@ -13,6 +13,7 @@ import { LiveTvLogoImage } from './live-tv-logo-image'
 import { startOfLocalDay, useLiveTvModel, type LiveTvModel } from './live-tv-model'
 import { Btn, ChannelBadge, Kicker, LT, LiveTag, ProgressBar, formatClock, progressOf } from './live-tv-ui'
 import { useHubText } from './hub-strings'
+import { CategoryCurationPanel } from './category-curation-panel'
 import { NowBadge } from './now-badge'
 import { ResultsPagination } from './results-pagination'
 import {
@@ -749,11 +750,14 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
    * kategorier och ingenting blev kvar att visa. Då är svaret en väg till
    * panelen, inte "inga kanaler matchar".
    */
+  const [curationOpen, setCurationOpen] = useState(false)
   const curatedEmptyList = useMemo(() => {
-    if (loading || visibleChannels.length > 0) return null
+    // Aggregerad laddning, inte `loading`: med två källor är A:s kanaler kvar
+    // medan B laddas om, och ett tomt B hade annars blinkat "allt dolt".
+    if (channelsLoading || visibleChannels.length > 0) return null
     const candidate = activeList ?? lists.find((list) => (list.curation?.hidden.length ?? 0) > 0) ?? null
     return candidate && (candidate.curation?.hidden.length ?? 0) > 0 ? candidate : null
-  }, [loading, visibleChannels.length, activeList, lists])
+  }, [channelsLoading, visibleChannels.length, activeList, lists])
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase()
@@ -1366,17 +1370,18 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
 
         {/* Channel grid */}
         {curatedEmptyList ? (
-          <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-            <p className="text-sm text-slate-300">{h('allCategoriesHidden')}</p>
-            <button
-              type="button"
-              data-testid="grid-open-curation"
-              className={neutralPillClass}
-              onClick={() => window.dispatchEvent(new CustomEvent('lumio-live-tv-open-curation', { detail: { listId: curatedEmptyList.id } }))}
-            >
-              {h('openCategories')}
-            </button>
-          </div>
+          curationOpen ? (
+            <div className="px-6 py-8">
+              <CategoryCurationPanel list={curatedEmptyList} mode="settings" onClose={() => setCurationOpen(false)} />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+              <p className="text-sm text-slate-300">{h('allCategoriesHidden')}</p>
+              <button type="button" data-testid="grid-open-curation" className={`${neutralPillClass} px-4 py-2 text-sm`} onClick={() => setCurationOpen(true)}>
+                {h('openCategories')}
+              </button>
+            </div>
+          )
         ) : filtered.length === 0 ? (
           // Samma tomma läge som appens övriga vyer: ikon, rubrik, en
           // förklarande mening. En ensam grå rad mitt på sidan såg ut som ett

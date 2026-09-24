@@ -81,20 +81,10 @@ export function LiveTvSettingsSection() {
   const [homeOverrideError, setHomeOverrideError] = useState('')
   const [lists, setLists] = useState<LiveTvList[]>([])
   /**
-   * Kategoripanelen (spec 2026-09-24). Öppnas från kortets knapp, från
-   * rutnätets tomma tillstånd (händelsen nedan) eller automatiskt EN gång
-   * efter en listas första import.
+   * Kategoripanelen (spec 2026-09-24). Öppnas från kortets knapp eller
+   * automatiskt EN gång efter en NY listas första import (m3u och Xtream).
    */
   const [curationList, setCurationList] = useState<{ list: LiveTvList; mode: 'settings' | 'after-import' } | null>(null)
-  useEffect(() => {
-    const onOpen = (event: Event) => {
-      const listId = (event as CustomEvent<{ listId: string }>).detail?.listId
-      const target = getLiveTvLists().find((entry) => entry.id === listId)
-      if (target) setCurationList({ list: target, mode: 'settings' })
-    }
-    window.addEventListener('lumio-live-tv-open-curation', onOpen)
-    return () => window.removeEventListener('lumio-live-tv-open-curation', onOpen)
-  }, [])
   /** Bara listor som aldrig visat panelen — en omhämtning öppnar inget. */
   function maybeOpenCurationAfterImport(listId: string) {
     const fresh = getLiveTvLists().find((entry) => entry.id === listId)
@@ -331,7 +321,7 @@ export function LiveTvSettingsSection() {
         )}
       </Card>
 
-      <XtreamLoginSection />
+      <XtreamLoginSection onImported={(listId, existedBefore) => { if (!existedBefore) maybeOpenCurationAfterImport(listId) }} />
 
       <EpgStatusCard />
 
