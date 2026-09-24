@@ -97,7 +97,7 @@ export function TvSettingsPage() {
       ? h('m3uFetchFailedOn', { host: s.fetchProgress.url ?? '', error: s.fetchProgress.error ?? '' })
       : s.fetchProgress.status === 'done'
         ? s.fetchProgress.results.map((r) => h('channelsCount', { count: fmtInt(r.channels, locale) })).join(' · ')
-        : h('tvM3uHint')
+        : h('tvFetchHint')
   const loginHint = form.state === 'authError' ? h('loginRejected') : form.state === 'netError' ? h('loginUnreachable') : form.importProgress
     ? (form.importProgress.total ? h('listImportProgress', { received: fmtInt(form.importProgress.received, locale), total: fmtInt(form.importProgress.total, locale) }) : h('listImportProgressUnknown'))
     : h('tvLoginHint')

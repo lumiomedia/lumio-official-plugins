@@ -39,6 +39,19 @@ export const TVS = {
 
 export type TvSize = 'page' | 'panel'
 
+/**
+ * Appens TV-mått (lib/tv-metrics.ts + components/settings/redesigned/primitives):
+ * text skalas med `--ui-scale` och `--tv-font-scale`, lådor med `--ui-scale`,
+ * och eyebrow/hjälptext följer typskalan `--st-*` som byter värde i TV-läge.
+ * SDK:n exponerar inte hjälparna, så formlerna står här — samma som appens.
+ */
+export const tvFont = (px: number) => `calc(${px}px * var(--ui-scale, 1) * var(--tv-font-scale, 1))`
+export const tvBox = (px: number) => `calc(${px}px * var(--ui-scale, 1))`
+export const ST = { label: 'var(--st-label)', small: 'var(--st-small)' } as const
+const TV_FONT = 'var(--font-sans, sans-serif)'
+/** Panelbredd: appens sidopanel är 648, den breda 960 — våra rader bär adresser och värden, så något bredare. */
+export const TV_PANEL_W = 760
+
 /** Fokusläget kan inte skrivas inline: rad → accent-900-grund, knapp → accent-800 + accent-100-text. */
 export function TvFocusStyle() {
   return <style>{'[data-lt-tv-row]:focus{outline:none;background:var(--color-accent-900)!important}[data-lt-tv-btn]:focus{outline:none;background:var(--color-accent-800)!important;color:var(--color-accent-100)!important}'}</style>
@@ -46,10 +59,7 @@ export function TvFocusStyle() {
 
 export function TvEyebrow({ children, size = 'page' }: { children: ReactNode; size?: TvSize }) {
   return (
-    <div style={size === 'page'
-      ? { fontSize: 11, fontWeight: 500, lineHeight: 1, letterSpacing: '.2em', textTransform: 'uppercase', color: TVS.n600, padding: '12px 0 2px' }
-      : { fontSize: 11, fontWeight: 500, lineHeight: 1, letterSpacing: '.16em', textTransform: 'uppercase', color: TVS.n600, padding: '10px 2px 4px' }}
-    >
+    <div style={{ font: `500 ${ST.label}/1 ${TV_FONT}`, letterSpacing: size === 'page' ? '.2em' : '.16em', textTransform: 'uppercase', color: TVS.n600, padding: size === 'page' ? '12px 0 2px' : '10px 2px 4px' }}>
       {children}
     </div>
   )
@@ -57,22 +67,20 @@ export function TvEyebrow({ children, size = 'page' }: { children: ReactNode; si
 
 export function TvNote({ children, size = 'page', tone = 'muted' }: { children: ReactNode; size?: TvSize; tone?: 'muted' | 'danger' }) {
   return (
-    <div style={size === 'page'
-      ? { fontSize: 13.5, lineHeight: 1.5, color: tone === 'danger' ? TVS.danger : TVS.n500, padding: 2, maxWidth: '78ch' }
-      : { fontSize: 12.5, lineHeight: 1.5, color: tone === 'danger' ? TVS.danger : TVS.n500, padding: '6px 2px' }}
-    >
+    <div style={{ font: `400 ${ST.small}/1.5 ${TV_FONT}`, color: tone === 'danger' ? TVS.danger : TVS.n500, padding: size === 'page' ? 2 : '6px 2px', maxWidth: '78ch', overflowWrap: 'anywhere' }}>
       {children}
     </div>
   )
 }
 
 function Switch({ on, size }: { on: boolean; size: TvSize }) {
-  const w = size === 'page' ? 62 : 56
-  const h = size === 'page' ? 32 : 29
-  const knob = size === 'page' ? 26 : 23
+  // Appens Switch: 84×44 (knopp 36) på sidan, 76×40 (knopp 32) i panelen.
+  const w = size === 'page' ? 84 : 76
+  const h = size === 'page' ? 44 : 40
+  const knob = size === 'page' ? 36 : 32
   return (
-    <span aria-hidden style={{ display: 'inline-block', width: w, height: h, borderRadius: 999, background: on ? TVS.accent : TVS.n800, flex: 'none', position: 'relative', transition: 'background .16s ease' }}>
-      <span style={{ position: 'absolute', top: 3, left: on ? w - 3 - knob : 3, width: knob, height: knob, borderRadius: 999, background: '#f4f4f6', boxShadow: '0 1px 3px rgba(0,0,0,.4)', transition: 'left .16s ease' }} />
+    <span aria-hidden style={{ display: 'block', width: w, height: h, borderRadius: 999, background: on ? TVS.accent : TVS.n800, flex: 'none', position: 'relative', transition: 'background .16s ease' }}>
+      <span style={{ position: 'absolute', top: 4, left: on ? w - 4 - knob : 4, width: knob, height: knob, borderRadius: 999, background: '#f4f4f6', boxShadow: '0 1px 3px rgba(0,0,0,.4)', transition: 'left .16s ease' }} />
     </span>
   )
 }
@@ -102,14 +110,17 @@ export function TvRow({ label, hint, value, valueTone = 'accent', caret = false,
   style?: CSSProperties
 }) {
   const page = size === 'page'
+  // Appens ROW_STYLE (tv-settings-rows.tsx): padding 22/30, minHeight 84,
+  // radie 10, kant i neutral800 — läsbart på tre meters håll.
   const base: CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: 15,
-    padding: page ? '15px 20px' : '15px 18px',
-    borderRadius: 8,
+    gap: 18,
+    padding: page ? `${tvBox(22)} ${tvBox(30)}` : `${tvBox(18)} ${tvBox(24)}`,
+    minHeight: page ? tvBox(84) : tvBox(72),
+    borderRadius: 10,
     background: TVS.n900,
-    border: page ? `1px solid ${TVS.n800}` : '1px solid transparent',
+    border: `1px solid ${TVS.n800}`,
     color: TVS.text,
     opacity: disabled ? 0.5 : 1,
     ...style,
@@ -131,15 +142,18 @@ export function TvRow({ label, hint, value, valueTone = 'accent', caret = false,
   const props = interactive ? { ...station(act, undefined, extra), style: { ...base, cursor: disabled ? 'default' : 'pointer' } } : { style: base }
   return (
     <div data-testid={testId} {...props}>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div style={{ fontSize: page ? 17 : 16, fontWeight: 500, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
-        {hint ? <div style={{ fontSize: page ? 13 : 12.5, lineHeight: 1.4, color: TVS.n500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hint}</div> : null}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ font: `500 ${tvFont(page ? 25 : 23)}/1.2 ${TV_FONT}`, minWidth: 0, overflowWrap: 'anywhere' }}>{label}</div>
+        {hint ? (
+          // Hjälptexten klipps efter två rader (appens §13) — en lång adress får inte göra raden tre gånger så hög.
+          <div style={{ font: `400 ${tvFont(page ? 24 : 22)}/1.45 ${TV_FONT}`, color: TVS.n300, minWidth: 0, maxWidth: '62ch', overflowWrap: 'anywhere', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{hint}</div>
+        ) : null}
       </div>
       {toggle !== undefined ? <Switch on={toggle} size={size} /> : null}
       {value !== undefined && value !== null && value !== '' ? (
-        <div style={{ flex: 'none', fontSize: 15, fontWeight: 500, lineHeight: 1, color: valueTone === 'accent' && interactive ? TVS.accent300 : TVS.n300, maxWidth: 230, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
+        <div style={{ flex: 'none', font: `500 ${tvFont(22)}/1 ${TV_FONT}`, color: valueTone === 'accent' && interactive ? TVS.accent300 : TVS.n300, maxWidth: tvBox(340), textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
       ) : null}
-      {glyph ? <span aria-hidden style={{ fontSize: 18, color: TVS.n500, flex: 'none' }}>{glyph}</span> : caret ? <span aria-hidden style={{ fontSize: 22, lineHeight: 1, color: TVS.n500, flex: 'none' }}>›</span> : null}
+      {glyph ? <span aria-hidden style={{ fontSize: 26, lineHeight: 1, color: TVS.n400, flex: 'none' }}>{glyph}</span> : caret ? <span aria-hidden style={{ fontSize: 26, lineHeight: 1, color: TVS.n400, flex: 'none' }}>›</span> : null}
     </div>
   )
 }
@@ -155,7 +169,7 @@ export interface TvButtonSpec {
 /** Knappraden (`btns`): 50 px-piller med ram, fokus = accent-800. */
 export function TvBtns({ buttons }: { buttons: TvButtonSpec[] }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: '14px 0 6px' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '14px 0 6px' }}>
       {buttons.map((b) => {
         const tone = b.style ?? 'ghost'
         return (
@@ -168,8 +182,8 @@ export function TvBtns({ buttons }: { buttons: TvButtonSpec[] }) {
             data-testid={b.testId}
             onClick={b.onOk}
             style={{
-              height: 50,
-              padding: '0 22px',
+              height: tvBox(56),
+              padding: `0 ${tvBox(26)}`,
               borderRadius: 999,
               borderWidth: 1,
               borderStyle: 'solid',
@@ -178,10 +192,7 @@ export function TvBtns({ buttons }: { buttons: TvButtonSpec[] }) {
               background: 'transparent',
               display: 'flex',
               alignItems: 'center',
-              fontSize: 15,
-              fontWeight: 500,
-              lineHeight: 1,
-              fontFamily: 'inherit',
+              font: `500 ${tvFont(24)}/1 ${TV_FONT}`,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}
@@ -195,7 +206,7 @@ export function TvBtns({ buttons }: { buttons: TvButtonSpec[] }) {
 }
 
 /**
- * Detaljpanelen (staplad vy): 648 px till höger över ett överdrag, crumb
+ * Detaljpanelen (staplad vy): 760 px till höger över ett överdrag, crumb
  * tillbaka till vyn under, titel 24/500, hint 13. En egen `data-panel-root`
  * (fokusfälla) med Bakåt-lagret från settings-ui: Bakåt stänger BARA den
  * översta panelen och lämnar fokus på raden som öppnade den.
@@ -231,15 +242,15 @@ export function TvPanel({ title, hint, crumb, onBack, children, testId }: {
     <div ref={rootRef} role="dialog" aria-label={title} data-panel-root="" data-testid={testId} style={{ position: 'fixed', inset: 0, zIndex: 1000, color: TVS.text }}>
       <TvFocusStyle />
       <div aria-hidden onClick={onBack} style={{ position: 'absolute', inset: 0, background: TVS.scrim }} />
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 648, maxWidth: '100%', background: TVS.bg, boxShadow: '0 0 60px rgba(0,0,0,.5)', display: 'flex', flexDirection: 'column', padding: '24px 26px 20px' }}>
+      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: TV_PANEL_W, maxWidth: '100%', background: TVS.bg, boxShadow: '0 0 60px rgba(0,0,0,.5)', display: 'flex', flexDirection: 'column', padding: '24px 26px 20px' }}>
         <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
           {crumb ? (
-            <div onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 500, lineHeight: 1, color: TVS.n500, cursor: 'pointer', paddingBottom: 2 }}>
-              <span aria-hidden>←</span>{crumb}
+            <div onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, font: `500 ${ST.small}/1 ${TV_FONT}`, color: TVS.n500, cursor: 'pointer', paddingBottom: 2 }}>
+              <span aria-hidden style={{ fontSize: 14, lineHeight: 1 }}>←</span>{crumb}
             </div>
           ) : null}
-          <div data-tv-title="" style={{ fontSize: 24, fontWeight: 500, lineHeight: 1.15, letterSpacing: '-.02em' }}>{title}</div>
-          {hint ? <div style={{ fontSize: 13, lineHeight: 1.45, color: TVS.n500 }}>{hint}</div> : null}
+          <div data-tv-title="" style={{ font: `500 ${tvFont(32)}/1.15 ${TV_FONT}`, letterSpacing: '-.02em', overflowWrap: 'anywhere' }}>{title}</div>
+          {hint ? <div style={{ marginTop: 4, font: `400 ${ST.small}/1.45 ${TV_FONT}`, color: TVS.n500, overflowWrap: 'anywhere' }}>{hint}</div> : null}
         </div>
         <div data-scroll="" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
           {children}
