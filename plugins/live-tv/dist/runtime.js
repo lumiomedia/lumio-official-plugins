@@ -8790,8 +8790,8 @@
   function clearPluginMemoryCache(pluginId, key) {
     if (!key) {
       const prefix = `${pluginId}:`;
-      for (const cacheKey of pluginMemoryCache.keys()) {
-        if (cacheKey.startsWith(prefix)) pluginMemoryCache.delete(cacheKey);
+      for (const cacheKey2 of pluginMemoryCache.keys()) {
+        if (cacheKey2.startsWith(prefix)) pluginMemoryCache.delete(cacheKey2);
       }
       return;
     }
@@ -8799,8 +8799,8 @@
   }
   function clearPluginMemoryCacheByPrefix(pluginId, keyPrefix) {
     const prefix = `${pluginId}:${keyPrefix}`;
-    for (const cacheKey of pluginMemoryCache.keys()) {
-      if (cacheKey.startsWith(prefix)) pluginMemoryCache.delete(cacheKey);
+    for (const cacheKey2 of pluginMemoryCache.keys()) {
+      if (cacheKey2.startsWith(prefix)) pluginMemoryCache.delete(cacheKey2);
     }
   }
   var PLUGIN_STORAGE_PREFIX, pluginMemoryCache;
@@ -11293,44 +11293,44 @@
   }
   async function checkEpisodeHasStream(imdbId, season, episode) {
     if (typeof window === "undefined" || !imdbId) return null;
-    const cacheKey = getCacheKey(imdbId, season, episode);
+    const cacheKey2 = getCacheKey(imdbId, season, episode);
     const cache7 = readStreamCache();
-    const cached = cache7[cacheKey];
+    const cached = cache7[cacheKey2];
     if (cached && Date.now() - cached.checkedAt < STREAM_CACHE_TTL_MS) {
       return cached.hasStream;
     }
-    const retryAt = failedCheckRetryAt.get(cacheKey);
+    const retryAt = failedCheckRetryAt.get(cacheKey2);
     if (retryAt && Date.now() < retryAt) return null;
-    const existing = streamCheckInFlight.get(cacheKey);
+    const existing = streamCheckInFlight.get(cacheKey2);
     if (existing) return existing;
     const filters = getStreamFilters();
     const request = (async () => {
-      if (!providerLookupInProgress.has(cacheKey)) {
-        providerLookupInProgress.add(cacheKey);
+      if (!providerLookupInProgress.has(cacheKey2)) {
+        providerLookupInProgress.add(cacheKey2);
         try {
           const providerResult = await resolveEpisodeStreamAvailabilityFromProviders(imdbId, season, episode);
           if (providerResult === true) {
-            cache7[cacheKey] = { checkedAt: Date.now(), hasStream: true };
+            cache7[cacheKey2] = { checkedAt: Date.now(), hasStream: true };
             writeStreamCache(cache7);
             return true;
           }
         } finally {
-          providerLookupInProgress.delete(cacheKey);
+          providerLookupInProgress.delete(cacheKey2);
         }
       }
       const streams = await fetchEpisodeStreamResults(imdbId, season, episode);
       const visibility = applyStreamFilters(streams, filters);
       const hasStream = streams.some((_, index3) => visibility[index3]);
-      cache7[cacheKey] = { checkedAt: Date.now(), hasStream };
+      cache7[cacheKey2] = { checkedAt: Date.now(), hasStream };
       writeStreamCache(cache7);
       return hasStream;
     })().catch(() => {
-      rememberFailedCheck(cacheKey, Date.now() + FAILED_CHECK_RETRY_MS);
+      rememberFailedCheck(cacheKey2, Date.now() + FAILED_CHECK_RETRY_MS);
       return null;
     }).finally(() => {
-      streamCheckInFlight.delete(cacheKey);
+      streamCheckInFlight.delete(cacheKey2);
     });
-    streamCheckInFlight.set(cacheKey, request);
+    streamCheckInFlight.set(cacheKey2, request);
     return request;
   }
   var STREAM_CACHE_KEY, STREAM_CACHE_TTL_MS, SERIES_STATUS_CACHE_TTL_MS, streamCheckInFlight, providerLookupInProgress, FAILED_CHECK_RETRY_MS, failedCheckRetryAt;
@@ -11485,44 +11485,44 @@
   }
   async function checkMovieHasStream(imdbId) {
     if (typeof window === "undefined" || !imdbId) return null;
-    const cacheKey = getCacheKey2(imdbId);
+    const cacheKey2 = getCacheKey2(imdbId);
     const cache7 = readStreamCache2();
-    const cached = cache7[cacheKey];
+    const cached = cache7[cacheKey2];
     if (cached && Date.now() - cached.checkedAt < STREAM_CACHE_TTL_MS2) {
       return cached.hasStream;
     }
-    const retryAt = failedCheckRetryAt2.get(cacheKey);
+    const retryAt = failedCheckRetryAt2.get(cacheKey2);
     if (retryAt && Date.now() < retryAt) return null;
-    const existing = movieStreamInFlight.get(cacheKey);
+    const existing = movieStreamInFlight.get(cacheKey2);
     if (existing) return existing;
     const filters = getStreamFilters();
     const request = (async () => {
-      if (!providerLookupInProgress2.has(cacheKey)) {
-        providerLookupInProgress2.add(cacheKey);
+      if (!providerLookupInProgress2.has(cacheKey2)) {
+        providerLookupInProgress2.add(cacheKey2);
         try {
           const providerResult = await resolveMovieStreamAvailabilityFromProviders(imdbId);
           if (providerResult !== null) {
-            cache7[cacheKey] = { checkedAt: Date.now(), hasStream: providerResult };
+            cache7[cacheKey2] = { checkedAt: Date.now(), hasStream: providerResult };
             writeStreamCache2(cache7);
             return providerResult;
           }
         } finally {
-          providerLookupInProgress2.delete(cacheKey);
+          providerLookupInProgress2.delete(cacheKey2);
         }
       }
       const streams = await fetchStreamResults(imdbId);
       const visibility = applyStreamFilters(streams, filters);
       const hasStream = streams.some((_, index3) => visibility[index3]);
-      cache7[cacheKey] = { checkedAt: Date.now(), hasStream };
+      cache7[cacheKey2] = { checkedAt: Date.now(), hasStream };
       writeStreamCache2(cache7);
       return hasStream;
     })().catch(() => {
-      rememberFailedCheck2(cacheKey, Date.now() + FAILED_CHECK_RETRY_MS2);
+      rememberFailedCheck2(cacheKey2, Date.now() + FAILED_CHECK_RETRY_MS2);
       return null;
     }).finally(() => {
-      movieStreamInFlight.delete(cacheKey);
+      movieStreamInFlight.delete(cacheKey2);
     });
-    movieStreamInFlight.set(cacheKey, request);
+    movieStreamInFlight.set(cacheKey2, request);
     return request;
   }
   var STREAM_CACHE_KEY2, STREAM_CACHE_TTL_MS2, movieStreamInFlight, providerLookupInProgress2, FAILED_CHECK_RETRY_MS2, failedCheckRetryAt2;
@@ -30372,9 +30372,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react165.forwardRef)(component);
+        return (0, import_react172.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -31463,21 +31463,21 @@
         return value == null || typeof value === "number" || typeof value === "boolean";
       }
       function monadic(fn, cache7, serializer, arg) {
-        var cacheKey = isPrimitive(arg) ? arg : serializer(arg);
-        var computedValue = cache7.get(cacheKey);
+        var cacheKey2 = isPrimitive(arg) ? arg : serializer(arg);
+        var computedValue = cache7.get(cacheKey2);
         if (typeof computedValue === "undefined") {
           computedValue = fn.call(this, arg);
-          cache7.set(cacheKey, computedValue);
+          cache7.set(cacheKey2, computedValue);
         }
         return computedValue;
       }
       function variadic(fn, cache7, serializer) {
         var args = Array.prototype.slice.call(arguments, 3);
-        var cacheKey = serializer(args);
-        var computedValue = cache7.get(cacheKey);
+        var cacheKey2 = serializer(args);
+        var computedValue = cache7.get(cacheKey2);
         if (typeof computedValue === "undefined") {
           computedValue = fn.apply(this, args);
-          cache7.set(cacheKey, computedValue);
+          cache7.set(cacheKey2, computedValue);
         }
         return computedValue;
       }
@@ -38026,10 +38026,10 @@
           options.hourCycle = pref ?? defaultHourCycle;
           delete options.hour12;
         }
-        let cacheKey = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
-        if ($10afcf45c4831ff7$var$formatterCache.has(cacheKey)) return $10afcf45c4831ff7$var$formatterCache.get(cacheKey);
+        let cacheKey2 = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
+        if ($10afcf45c4831ff7$var$formatterCache.has(cacheKey2)) return $10afcf45c4831ff7$var$formatterCache.get(cacheKey2);
         let numberFormatter = new Intl.DateTimeFormat(locale, options);
-        $10afcf45c4831ff7$var$formatterCache.set(cacheKey, numberFormatter);
+        $10afcf45c4831ff7$var$formatterCache.set(cacheKey2, numberFormatter);
         return numberFormatter;
       }
       var $10afcf45c4831ff7$var$_hasBuggyHour12Behavior = null;
@@ -40991,10 +40991,10 @@
             style: "decimal"
           };
         }
-        let cacheKey = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
-        if ($7fe67f77592add0a$var$formatterCache.has(cacheKey)) return $7fe67f77592add0a$var$formatterCache.get(cacheKey);
+        let cacheKey2 = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
+        if ($7fe67f77592add0a$var$formatterCache.has(cacheKey2)) return $7fe67f77592add0a$var$formatterCache.get(cacheKey2);
         let numberFormatter = new Intl.NumberFormat(locale, options);
-        $7fe67f77592add0a$var$formatterCache.set(cacheKey, numberFormatter);
+        $7fe67f77592add0a$var$formatterCache.set(cacheKey2, numberFormatter);
         return numberFormatter;
       }
       function $7fe67f77592add0a$export$711b50b3c525e0f2(numberFormat, signDisplay, num) {
@@ -41081,11 +41081,11 @@
         return defaultParser;
       }
       function $52ebab2a875d5a2c$var$getCachedNumberParser(locale, options) {
-        let cacheKey = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
-        let parser = $52ebab2a875d5a2c$var$numberParserCache.get(cacheKey);
+        let cacheKey2 = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
+        let parser = $52ebab2a875d5a2c$var$numberParserCache.get(cacheKey2);
         if (!parser) {
           parser = new $52ebab2a875d5a2c$var$NumberParserImpl(locale, options);
-          $52ebab2a875d5a2c$var$numberParserCache.set(cacheKey, parser);
+          $52ebab2a875d5a2c$var$numberParserCache.set(cacheKey2, parser);
         }
         return parser;
       }
@@ -41314,10 +41314,10 @@
       var $27a5ce66022270ad$var$cache = /* @__PURE__ */ new Map();
       function $27a5ce66022270ad$export$a16aca283550c30d(options) {
         let { locale } = (0, $47fa5ec5ff482271$exports.useLocale)();
-        let cacheKey = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
-        if ($27a5ce66022270ad$var$cache.has(cacheKey)) return $27a5ce66022270ad$var$cache.get(cacheKey);
+        let cacheKey2 = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
+        if ($27a5ce66022270ad$var$cache.has(cacheKey2)) return $27a5ce66022270ad$var$cache.get(cacheKey2);
         let formatter = new Intl.Collator(locale, options);
-        $27a5ce66022270ad$var$cache.set(cacheKey, formatter);
+        $27a5ce66022270ad$var$cache.set(cacheKey2, formatter);
         return formatter;
       }
     }
@@ -59875,17 +59875,17 @@
         renderFn: () => renderFn2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function getValidChildren2(children) {
-        return import_react165.Children.toArray(children).filter(
-          (child) => (0, import_react165.isValidElement)(child)
+        return import_react172.Children.toArray(children).filter(
+          (child) => (0, import_react172.isValidElement)(child)
         );
       }
       var pickChildren2 = (children, targetChild) => {
         var _a;
         let target2 = [];
-        const withoutTargetChildren = (_a = import_react165.Children.map(children, (item) => {
-          if (!(0, import_react165.isValidElement)(item)) return item;
+        const withoutTargetChildren = (_a = import_react172.Children.map(children, (item) => {
+          if (!(0, import_react172.isValidElement)(item)) return item;
           if (item.type === targetChild) {
             target2.push(item);
             return null;
@@ -60227,7 +60227,7 @@
           refs.forEach((ref) => assignRef(ref, node));
         };
       }
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function canUseDOM() {
         return !!(typeof window !== "undefined" && window.document && window.document.createElement);
       }
@@ -60313,17 +60313,17 @@
         };
       }
       function useDOMRef(ref) {
-        const domRef = (0, import_react165.useRef)(null);
-        (0, import_react165.useImperativeHandle)(ref, () => domRef.current);
+        const domRef = (0, import_react172.useRef)(null);
+        (0, import_react172.useImperativeHandle)(ref, () => domRef.current);
         return domRef;
       }
       function useFocusableRef(ref, focusableRef) {
-        const domRef = (0, import_react165.useRef)(null);
-        (0, import_react165.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
+        const domRef = (0, import_react172.useRef)(null);
+        (0, import_react172.useImperativeHandle)(ref, () => createFocusableRef(domRef, focusableRef));
         return domRef;
       }
       function useSyncRef(context, ref) {
-        (0, import_react165.useLayoutEffect)(() => {
+        (0, import_react172.useLayoutEffect)(() => {
           if (context && context.ref && ref && ref.current) {
             context.ref.current = ref.current;
             return () => {
@@ -60405,7 +60405,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist4();
       var import_i18n16 = require_main5();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_utils8 = require_main4();
       var import_overlays = require_main9();
@@ -60414,7 +60414,7 @@
         name: "ProviderContext",
         strict: false
       });
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var HeroUIProvider = ({
         children,
         navigate,
@@ -60435,9 +60435,9 @@
       }) => {
         let contents = children;
         if (navigate) {
-          contents = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
+          contents = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_utils8.RouterProvider, { navigate, useHref, children: contents });
         }
-        const context = (0, import_react165.useMemo)(() => {
+        const context = (0, import_react172.useMemo)(() => {
           if (disableAnimation && skipFramerMotionAnimations) {
             import_framer_motion2.MotionGlobalConfig.skipAnimations = true;
           }
@@ -60460,7 +60460,7 @@
           labelPlacement,
           spinnerVariant
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_i18n16.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(ProviderContext, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_i18n16.I18nProvider, { locale, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.MotionConfig, { reducedMotion, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_overlays.OverlayProvider, { ...otherProps, children: contents }) }) }) });
       };
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLabelPlacement(props) {
@@ -73719,9 +73719,9 @@
         toIterator: () => toIterator2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function forwardRef3(component) {
-        return (0, import_react165.forwardRef)(component);
+        return (0, import_react172.forwardRef)(component);
       }
       var toIterator2 = (obj) => {
         return {
@@ -73933,7 +73933,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_rsc_utils = require_dist9();
       function useSeparator(props) {
         let domProps = (0, import_react_rsc_utils.filterDOMProps)(props, {
@@ -73964,14 +73964,14 @@
           elementType: typeof Component2 === "string" ? Component2 : "hr",
           orientation
         });
-        const styles = (0, import_react165.useMemo)(
+        const styles = (0, import_react172.useMemo)(
           () => (0, import_theme.divider)({
             orientation,
             className
           }),
           [orientation, className]
         );
-        const getDividerProps = (0, import_react165.useCallback)(
+        const getDividerProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             className: styles,
             role: "separator",
@@ -73984,10 +73984,10 @@
         );
         return { Component: Component2, getDividerProps };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Divider2 = (0, import_system_rsc.forwardRef)((props, ref) => {
         const { Component: Component2, getDividerProps } = useDivider({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ref, ...getDividerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ref, ...getDividerProps() });
       });
       Divider2.displayName = "HeroUI.Divider";
       var divider_default = Divider2;
@@ -76778,22 +76778,22 @@
         };
       }
       var import_focus2 = require_main14();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_button = require_main16();
       function useReactAriaAccordionItem(props, state, ref) {
         let { item, isDisabled: isDisabledProp } = props;
         let key = item.key;
         let manager = state.selectionManager;
-        let buttonId = (0, import_react165.useId)();
-        let regionId = (0, import_react165.useId)();
+        let buttonId = (0, import_react172.useId)();
+        let regionId = (0, import_react172.useId)();
         let isDisabled = state.disabledKeys.has(item.key) || isDisabledProp;
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           let isFocused = key === state.focusedKey;
           if (isFocused && document.activeElement !== ref.current) {
             ref.current && (0, import_focus2.focusSafely)(ref.current);
           }
         }, [ref, key, state.focusedKey]);
-        let onSelect = (0, import_react165.useCallback)(
+        let onSelect = (0, import_react172.useCallback)(
           (e) => {
             if (!manager.canSelectItem(key)) {
               return;
@@ -76803,7 +76803,7 @@
           },
           [key, manager]
         );
-        const extendFocusSelection = (0, import_react165.useCallback)(
+        const extendFocusSelection = (0, import_react172.useCallback)(
           (toKey2) => {
             if (manager.selectionBehavior === "replace") {
               manager.extendSelection(toKey2);
@@ -76812,7 +76812,7 @@
           },
           [manager]
         );
-        const onKeyDown = (0, import_react165.useCallback)(
+        const onKeyDown = (0, import_react172.useCallback)(
           (event) => {
             const keyMap = {
               ArrowDown: () => {
@@ -76998,17 +76998,17 @@
         WarningIcon: () => WarningIcon
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Sun = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M256 118a22 22 0 01-22-22V48a22 22 0 0144 0v48a22 22 0 01-22 22zM256 486a22 22 0 01-22-22v-48a22 22 0 0144 0v48a22 22 0 01-22 22zM369.14 164.86a22 22 0 01-15.56-37.55l33.94-33.94a22 22 0 0131.11 31.11l-33.94 33.94a21.93 21.93 0 01-15.55 6.44zM108.92 425.08a22 22 0 01-15.55-37.56l33.94-33.94a22 22 0 1131.11 31.11l-33.94 33.94a21.94 21.94 0 01-15.56 6.45zM464 278h-48a22 22 0 010-44h48a22 22 0 010 44zM96 278H48a22 22 0 010-44h48a22 22 0 010 44zM403.08 425.08a21.94 21.94 0 01-15.56-6.45l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.55 37.56zM142.86 164.86a21.89 21.89 0 01-15.55-6.44l-33.94-33.94a22 22 0 0131.11-31.11l33.94 33.94a22 22 0 01-15.56 37.55zM256 358a102 102 0 11102-102 102.12 102.12 0 01-102 102z",
@@ -77018,8 +77018,8 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             "path",
             {
               d: "M256 48v48M256 416v48M403.08 108.92l-33.94 33.94M142.86 369.14l-33.94 33.94M464 256h-48M96 256H48M403.08 403.08l-33.94-33.94M142.86 142.86l-33.94-33.94",
@@ -77030,7 +77030,7 @@
               strokeWidth: 32
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             "circle",
             {
               cx: 256,
@@ -77046,21 +77046,21 @@
         ] });
       };
       var Mail = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M12 20.5H7c-3 0-5-1.5-5-5v-7c0-3.5 2-5 5-5h10c3 0 5 1.5 5 5v3" }),
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M17 9l-3.13 2.5a3.166 3.166 0 01-3.75 0L7 9M19.21 14.77l-3.539 3.54a1.232 1.232 0 00-.3.59l-.19 1.35a.635.635 0 00.76.76l1.35-.19a1.189 1.189 0 00.59-.3l3.54-3.54a1.365 1.365 0 000-2.22 1.361 1.361 0 00-2.211.01zM18.7 15.28a3.185 3.185 0 002.22 2.22" })
         ] }) });
       };
       var Moon = ({ fill, filled, size, height, width, ...props }) => {
         if (filled) {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             "svg",
             {
               height: size || height || 24,
               viewBox: "0 0 512 512",
               width: size || width || 24,
               ...props,
-              children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M152.62 126.77c0-33 4.85-66.35 17.23-94.77C87.54 67.83 32 151.89 32 247.38 32 375.85 136.15 480 264.62 480c95.49 0 179.55-55.54 215.38-137.85-28.42 12.38-61.8 17.23-94.77 17.23-128.47 0-232.61-104.14-232.61-232.61z",
@@ -77070,7 +77070,7 @@
             }
           );
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("svg", { height: size || height || 24, viewBox: "0 0 512 512", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "path",
           {
             d: "M160 136c0-30.62 4.51-61.61 16-88C99.57 81.27 48 159.32 48 248c0 119.29 96.71 216 216 216 88.68 0 166.73-51.57 200-128-26.39 11.49-57.38 16-88 16-119.29 0-216-96.71-216-216z",
@@ -77084,7 +77084,7 @@
       };
       var Lock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -77093,8 +77093,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M9.121,6.653V4.5A4.561,4.561,0,0,0,0,4.484V6.653",
@@ -77107,7 +77107,7 @@
                   transform: "translate(3.85 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -77120,7 +77120,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.4,0,7.66,0Z",
@@ -77139,7 +77139,7 @@
       };
       var Unlock = ({ fill, size, height, width, ...props }) => {
         const color2 = fill;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Lock",
@@ -77148,8 +77148,8 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("g", { transform: "translate(3.5 2)", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("g", { transform: "translate(3.5 2)", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M8.927,3.237A4.562,4.562,0,0,0,0,4.484V6.653",
@@ -77162,7 +77162,7 @@
                   transform: "translate(3.849 0.75)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M.5,0V2.221",
@@ -77175,7 +77175,7 @@
                   transform: "translate(7.91 12.156)"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M7.66,0C1.915,0,0,1.568,0,6.271s1.915,6.272,7.66,6.272,7.661-1.568,7.661-6.272S13.406,0,7.66,0Z",
@@ -77193,13 +77193,13 @@
         );
       };
       var Password = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("g", { fill, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("svg", { height: size || height || 24, viewBox: "0 0 24 24", width: size || width || 24, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("g", { fill, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M18.75 8v2.1a12.984 12.984 0 00-1.5-.1V8c0-3.15-.89-5.25-5.25-5.25S6.75 4.85 6.75 8v2a12.984 12.984 0 00-1.5.1V8c0-2.9.7-6.75 6.75-6.75S18.75 5.1 18.75 8z" }),
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M18.75 10.1a12.984 12.984 0 00-1.5-.1H6.75a12.984 12.984 0 00-1.5.1C2.7 10.41 2 11.66 2 15v2c0 4 1 5 5 5h10c4 0 5-1 5-5v-2c0-3.34-.7-4.59-3.25-4.9zM8.71 16.71A1.052 1.052 0 018 17a1 1 0 01-.38-.08 1.032 1.032 0 01-.33-.21A1.052 1.052 0 017 16a1 1 0 01.08-.38 1.155 1.155 0 01.21-.33 1.032 1.032 0 01.33-.21 1 1 0 011.09.21 1.155 1.155 0 01.21.33A1 1 0 019 16a1.052 1.052 0 01-.29.71zm4.21-.33a1.155 1.155 0 01-.21.33A1.052 1.052 0 0112 17a1.033 1.033 0 01-.71-.29 1.155 1.155 0 01-.21-.33A1 1 0 0111 16a1.033 1.033 0 01.29-.71 1.047 1.047 0 011.42 0A1.033 1.033 0 0113 16a1 1 0 01-.08.38zm3.79.33a1.014 1.014 0 01-1.42 0 1.014 1.014 0 010-1.42 1.047 1.047 0 011.42 0c.04.05.08.1.12.16a.556.556 0 01.09.17.636.636 0 01.06.18 1.5 1.5 0 01.02.2 1.052 1.052 0 01-.29.71z" })
         ] }) });
       };
       var Notification2 = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             fill: "none",
@@ -77208,7 +77208,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -77221,7 +77221,7 @@
         );
       };
       var User = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -77229,7 +77229,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
               "g",
               {
                 fill: "none",
@@ -77239,14 +77239,14 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                     "path",
                     {
                       d: "M11.845 21.662C8.153 21.662 5 21.088 5 18.787s3.133-4.425 6.845-4.425c3.692 0 6.845 2.1 6.845 4.4s-3.134 2.9-6.845 2.9z",
                       "data-name": "Stroke 1"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
+                  /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M11.837 11.174a4.372 4.372 0 10-.031 0z", "data-name": "Stroke 3" })
                 ]
               }
             )
@@ -77254,7 +77254,7 @@
         );
       };
       var VolumeUp = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             fill: "none",
@@ -77263,7 +77263,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -77276,7 +77276,7 @@
         );
       };
       var Camera = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             fill: "none",
@@ -77285,7 +77285,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 clipRule: "evenodd",
@@ -77298,7 +77298,7 @@
         );
       };
       var Activity2 = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             "data-name": "Iconly/Curved/Activity",
@@ -77307,7 +77307,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
               "g",
               {
                 fill: "none",
@@ -77317,9 +77317,9 @@
                 strokeMiterlimit: 10,
                 strokeWidth: 1.5,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
+                  /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M6.918 14.854l2.993-3.889 3.414 2.68 2.929-3.78" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M19.668 2.35a1.922 1.922 0 11-1.922 1.922 1.921 1.921 0 011.922-1.922z" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M20.756 9.269a20.809 20.809 0 01.194 3.034c0 6.938-2.312 9.25-9.25 9.25s-9.25-2.312-9.25-9.25 2.313-9.25 9.25-9.25a20.931 20.931 0 012.983.187" })
                 ]
               }
             )
@@ -77327,7 +77327,7 @@
         );
       };
       var Plus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -77335,15 +77335,15 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M6 12h12" }),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("path", { d: "M12 18V6" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("g", { fill: "none", stroke: fill, strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 1.5, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M6 12h12" }),
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("path", { d: "M12 18V6" })
             ] })
           }
         );
       };
       var Minus = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             height: size || height || 24,
@@ -77351,7 +77351,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 d: "M6 12h12",
@@ -77366,7 +77366,7 @@
         );
       };
       var Eye = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77376,7 +77376,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M12.9833 10C12.9833 11.65 11.65 12.9833 10 12.9833C8.35 12.9833 7.01666 11.65 7.01666 10C7.01666 8.35 8.35 7.01666 10 7.01666C11.65 7.01666 12.9833 8.35 12.9833 10Z",
@@ -77386,7 +77386,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M9.99999 16.8916C12.9417 16.8916 15.6833 15.1583 17.5917 12.1583C18.3417 10.9833 18.3417 9.00831 17.5917 7.83331C15.6833 4.83331 12.9417 3.09998 9.99999 3.09998C7.05833 3.09998 4.31666 4.83331 2.40833 7.83331C1.65833 9.00831 1.65833 10.9833 2.40833 12.1583C4.31666 15.1583 7.05833 16.8916 9.99999 16.8916Z",
@@ -77401,7 +77401,7 @@
         );
       };
       var Edit = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77411,7 +77411,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M11.05 3.00002L4.20835 10.2417C3.95002 10.5167 3.70002 11.0584 3.65002 11.4334L3.34169 14.1334C3.23335 15.1084 3.93335 15.775 4.90002 15.6084L7.58335 15.15C7.95835 15.0834 8.48335 14.8084 8.74168 14.525L15.5834 7.28335C16.7667 6.03335 17.3 4.60835 15.4583 2.86668C13.625 1.14168 12.2334 1.75002 11.05 3.00002Z",
@@ -77422,7 +77422,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M9.90833 4.20831C10.2667 6.50831 12.1333 8.26665 14.45 8.49998",
@@ -77433,7 +77433,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M2.5 18.3333H17.5",
@@ -77449,7 +77449,7 @@
         );
       };
       var Delete = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77459,7 +77459,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M17.5 4.98332C14.725 4.70832 11.9333 4.56665 9.15 4.56665C7.5 4.56665 5.85 4.64998 4.2 4.81665L2.5 4.98332",
@@ -77469,7 +77469,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M7.08331 4.14169L7.26665 3.05002C7.39998 2.25835 7.49998 1.66669 8.90831 1.66669H11.0916C12.5 1.66669 12.6083 2.29169 12.7333 3.05835L12.9166 4.14169",
@@ -77479,7 +77479,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M15.7084 7.61664L15.1667 16.0083C15.075 17.3166 15 18.3333 12.675 18.3333H7.32502C5.00002 18.3333 4.92502 17.3166 4.83335 16.0083L4.29169 7.61664",
@@ -77489,7 +77489,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M8.60834 13.75H11.3833",
@@ -77499,7 +77499,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M7.91669 10.4167H12.0834",
@@ -77514,7 +77514,7 @@
         );
       };
       var ChevronDown = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             fill: "none",
@@ -77523,7 +77523,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 d: "m19.92 8.95-6.52 6.52c-.77.77-2.03.77-2.8 0L4.08 8.95",
@@ -77538,7 +77538,7 @@
         );
       };
       var ChevronDownBold = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             fill: "none",
@@ -77547,7 +77547,7 @@
             width: size || width || 24,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 d: "M17.9188 8.17969H11.6888H6.07877C5.11877 8.17969 4.63877 9.33969 5.31877 10.0197L10.4988 15.1997C11.3288 16.0297 12.6788 16.0297 13.5088 15.1997L15.4788 13.2297L18.6888 10.0197C19.3588 9.33969 18.8788 8.17969 17.9188 8.17969Z",
@@ -77558,7 +77558,7 @@
         );
       };
       var NewFile = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77568,7 +77568,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M8 2V5",
@@ -77579,7 +77579,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M16 2V5",
@@ -77590,7 +77590,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M21 8.5V13.63C20.11 12.92 18.98 12.5 17.75 12.5C16.52 12.5 15.37 12.93 14.47 13.66C13.26 14.61 12.5 16.1 12.5 17.75C12.5 18.73 12.78 19.67 13.26 20.45C13.63 21.06 14.11 21.59 14.68 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z",
@@ -77601,7 +77601,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M7 11H13",
@@ -77612,7 +77612,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M7 16H9.62",
@@ -77623,7 +77623,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M23 17.75C23 18.73 22.72 19.67 22.24 20.45C21.96 20.93 21.61 21.35 21.2 21.69C20.28 22.51 19.08 23 17.75 23C16.6 23 15.54 22.63 14.68 22C14.11 21.59 13.63 21.06 13.26 20.45C12.78 19.67 12.5 18.73 12.5 17.75C12.5 16.1 13.26 14.61 14.47 13.66C15.37 12.93 16.52 12.5 17.75 12.5C18.98 12.5 20.11 12.92 21 13.63C22.22 14.59 23 16.08 23 17.75Z",
@@ -77634,7 +77634,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M17.75 20.25C17.75 18.87 18.87 17.75 20.25 17.75C18.87 17.75 17.75 16.63 17.75 15.25C17.75 16.63 16.63 17.75 15.25 17.75C16.63 17.75 17.75 18.87 17.75 20.25Z",
@@ -77649,7 +77649,7 @@
         );
       };
       var AddNoteBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77659,7 +77659,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M7.37 22h9.25a4.87 4.87 0 0 0 4.87-4.87V8.37a4.87 4.87 0 0 0-4.87-4.87H7.37A4.87 4.87 0 0 0 2.5 8.37v8.75c0 2.7 2.18 4.88 4.87 4.88Z",
@@ -77667,7 +77667,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M8.29 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM15.71 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM12 14.75h-1.69V13c0-.41-.34-.75-.75-.75s-.75.34-.75.75v1.75H7c-.41 0-.75.34-.75.75s.34.75.75.75h1.81V18c0 .41.34.75.75.75s.75-.34.75-.75v-1.75H12c.41 0 .75-.34.75-.75s-.34-.75-.75-.75Z",
@@ -77679,7 +77679,7 @@
         );
       };
       var CopyDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77689,7 +77689,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M15.5 13.15h-2.17c-1.78 0-3.23-1.44-3.23-3.23V7.75c0-.41-.33-.75-.75-.75H6.18C3.87 7 2 8.5 2 11.18v6.64C2 20.5 3.87 22 6.18 22h5.89c2.31 0 4.18-1.5 4.18-4.18V13.9c0-.42-.34-.75-.75-.75Z",
@@ -77697,14 +77697,14 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M17.82 2H11.93C9.67 2 7.84 3.44 7.76 6.01c.06 0 .11-.01.17-.01h5.89C16.13 6 18 7.5 18 10.18V16.83c0 .06-.01.11-.01.16 2.23-.07 4.01-1.55 4.01-4.16V6.18C22 3.5 20.13 2 17.82 2Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M11.98 7.15c-.31-.31-.84-.1-.84.33v2.62c0 1.1.93 2 2.07 2 .71.01 1.7.01 2.55.01.43 0 .65-.5.35-.8-1.09-1.09-3.03-3.04-4.13-4.16Z",
@@ -77716,7 +77716,7 @@
         );
       };
       var EditDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77726,7 +77726,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M15.48 3H7.52C4.07 3 2 5.06 2 8.52v7.95C2 19.94 4.07 22 7.52 22h7.95c3.46 0 5.52-2.06 5.52-5.52V8.52C21 5.06 18.93 3 15.48 3Z",
@@ -77734,7 +77734,7 @@
                   opacity: 0.4
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M21.02 2.98c-1.79-1.8-3.54-1.84-5.38 0L14.51 4.1c-.1.1-.13.24-.09.37.7 2.45 2.66 4.41 5.11 5.11.03.01.08.01.11.01.1 0 .2-.04.27-.11l1.11-1.12c.91-.91 1.36-1.78 1.36-2.67 0-.9-.45-1.79-1.36-2.71ZM17.86 10.42c-.27-.13-.53-.26-.77-.41-.2-.12-.4-.25-.59-.39-.16-.1-.34-.25-.52-.4-.02-.01-.08-.06-.16-.14-.31-.25-.64-.59-.95-.96-.02-.02-.08-.08-.13-.17-.1-.11-.25-.3-.38-.51-.11-.14-.24-.34-.36-.55-.15-.25-.28-.5-.4-.76-.13-.28-.23-.54-.32-.79L7.9 10.72c-.35.35-.69 1.01-.76 1.5l-.43 2.98c-.09.63.08 1.22.47 1.61.33.33.78.5 1.28.5.11 0 .22-.01.33-.02l2.97-.42c.49-.07 1.15-.4 1.5-.76l5.38-5.38c-.25-.08-.5-.19-.78-.31Z",
@@ -77746,7 +77746,7 @@
         );
       };
       var DeleteDocumentBulk = ({ fill, size, height, width, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77756,14 +77756,14 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M21.07 5.23c-1.61-.16-3.22-.28-4.84-.37v-.01l-.22-1.3c-.15-.92-.37-2.3-2.71-2.3h-2.62c-2.33 0-2.55 1.32-2.71 2.29l-.21 1.28c-.93.06-1.86.12-2.79.21l-2.04.2c-.42.04-.72.41-.68.82.04.41.4.71.82.67l2.04-.2c5.24-.52 10.52-.32 15.82.21h.08c.38 0 .71-.29.75-.68a.766.766 0 0 0-.69-.82Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M19.23 8.14c-.24-.25-.57-.39-.91-.39H5.68c-.34 0-.68.14-.91.39-.23.25-.36.59-.34.94l.62 10.26c.11 1.52.25 3.42 3.74 3.42h6.42c3.49 0 3.63-1.89 3.74-3.42l.62-10.25c.02-.36-.11-.7-.34-.95Z",
@@ -77771,7 +77771,7 @@
                   opacity: 0.399
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   clipRule: "evenodd",
@@ -77791,7 +77791,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77801,28 +77801,28 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M16.25 22.5C17.2165 22.5 18 21.7165 18 20.75C18 19.7835 17.2165 19 16.25 19C15.2835 19 14.5 19.7835 14.5 20.75C14.5 21.7165 15.2835 22.5 16.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M8.25 22.5C9.2165 22.5 10 21.7165 10 20.75C10 19.7835 9.2165 19 8.25 19C7.2835 19 6.5 19.7835 6.5 20.75C6.5 21.7165 7.2835 22.5 8.25 22.5Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M4.84 3.94L4.64 6.39C4.6 6.86 4.97 7.25 5.44 7.25H20.75C21.17 7.25 21.52 6.93 21.55 6.51C21.68 4.74 20.33 3.3 18.56 3.3H6.27C6.17 2.86 5.97 2.44 5.66 2.09C5.16 1.56 4.46 1.25 3.74 1.25H2C1.59 1.25 1.25 1.59 1.25 2C1.25 2.41 1.59 2.75 2 2.75H3.74C4.05 2.75 4.34 2.88 4.55 3.1C4.76 3.33 4.86 3.63 4.84 3.94Z",
                   fill
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M20.5101 8.75H5.17005C4.75005 8.75 4.41005 9.07 4.37005 9.48L4.01005 13.83C3.87005 15.54 5.21005 17 6.92005 17H18.0401C19.5401 17 20.8601 15.77 20.9701 14.27L21.3001 9.6C21.3401 9.14 20.9801 8.75 20.5101 8.75Z",
@@ -77840,7 +77840,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             fill: "none",
@@ -77849,7 +77849,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 d: "M6.09 13.28h3.09v7.2c0 1.68.91 2.02 2.02.76l7.57-8.6c.93-1.05.54-1.92-.87-1.92h-3.09v-7.2c0-1.68-.91-2.02-2.02-.76l-7.57 8.6c-.92 1.06-.53 1.92.87 1.92Z",
@@ -77870,7 +77870,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             fill: "none",
@@ -77879,7 +77879,7 @@
             width: size || width,
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 d: "M19.32 10H4.69c-1.48 0-2.68-1.21-2.68-2.68V4.69c0-1.48 1.21-2.68 2.68-2.68h14.63C20.8 2.01 22 3.22 22 4.69v2.63C22 8.79 20.79 10 19.32 10ZM19.32 22H4.69c-1.48 0-2.68-1.21-2.68-2.68v-2.63c0-1.48 1.21-2.68 2.68-2.68h14.63c1.48 0 2.68 1.21 2.68 2.68v2.63c0 1.47-1.21 2.68-2.68 2.68ZM6 5v2M10 5v2M6 17v2M10 17v2M14 6h4M14 18h4",
@@ -77899,7 +77899,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77909,7 +77909,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M18 18.86h-.76c-.8 0-1.56.31-2.12.87l-1.71 1.69c-.78.77-2.05.77-2.83 0l-1.71-1.69c-.56-.56-1.33-.87-2.12-.87H6c-1.66 0-3-1.33-3-2.97V4.98c0-1.64 1.34-2.97 3-2.97h12c1.66 0 3 1.33 3 2.97v10.91c0 1.63-1.34 2.97-3 2.97Z",
@@ -77920,7 +77920,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M12 10a2.33 2.33 0 1 0 0-4.66A2.33 2.33 0 0 0 12 10ZM16 15.66c0-1.8-1.79-3.26-4-3.26s-4 1.46-4 3.26",
@@ -77941,7 +77941,7 @@
         width,
         ...props
       }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
           "svg",
           {
             fill: "none",
@@ -77951,7 +77951,7 @@
             xmlns: "http://www.w3.org/2000/svg",
             ...props,
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M9 22h6c5 0 7-2 7-7V9c0-5-2-7-7-7H9C4 2 2 4 2 9v6c0 5 2 7 7 7ZM18 6 6 18",
@@ -77961,7 +77961,7 @@
                   strokeWidth: 1.5
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                 "path",
                 {
                   d: "M18 10V6h-4M6 14v4h4",
@@ -77976,7 +77976,7 @@
         );
       };
       var Search = ({ size, fill, width = 24, height = 24, ...props }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("svg", { fill: "none", height: size || height, viewBox: "0 0 24 24", width: size || width, ...props, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "path",
           {
             d: "M11.5 21a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19ZM22 22l-2-2",
@@ -78178,8 +78178,8 @@
           children: /* @__PURE__ */ (0, import_jsx_runtime910.jsx)("path", { d: "m6 9 6 6 6-6" })
         }
       );
-      var import_jsx_runtime102 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime102.jsx)(
+      var import_jsx_runtime108 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime108.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -78194,7 +78194,7 @@
           viewBox: "0 0 24 24",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime102.jsx)("path", { d: "m15 18-6-6 6-6" })
+          children: /* @__PURE__ */ (0, import_jsx_runtime108.jsx)("path", { d: "m15 18-6-6 6-6" })
         }
       );
       var import_jsx_runtime112 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
@@ -80131,14 +80131,14 @@
         useMeasure: () => useMeasure
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMeasure() {
-        const [dimensions, setDimensions] = (0, import_react165.useState)({
+        const [dimensions, setDimensions] = (0, import_react172.useState)({
           width: null,
           height: null
         });
-        const previousObserver = (0, import_react165.useRef)(null);
-        const customRef = (0, import_react165.useCallback)((node) => {
+        const previousObserver = (0, import_react172.useRef)(null);
+        const customRef = (0, import_react172.useCallback)((node) => {
           if (previousObserver.current) {
             previousObserver.current.disconnect();
             previousObserver.current = null;
@@ -80334,15 +80334,15 @@
           }
         }
       };
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_motion2 = require_cjs4();
       var import_use_measure = require_dist18();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ResizablePanel2 = (0, import_react165.forwardRef)(
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ResizablePanel2 = (0, import_react172.forwardRef)(
         (originalProps, ref) => {
           const { children, ...props } = originalProps;
           let [measureRef, bounds] = (0, import_use_measure.useMeasure)();
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.LazyMotion, { features: import_framer_motion2.domAnimation, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             import_framer_motion2.m.div,
             {
               ref,
@@ -80350,7 +80350,7 @@
                 width: bounds.width && (bounds == null ? void 0 : bounds.width) > 0 ? bounds.width : "auto",
                 height: bounds.height && bounds.height > 0 ? bounds.height : "auto"
               },
-              children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ref: measureRef, ...props, children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ref: measureRef, ...props, children })
             }
           ) });
         }
@@ -99005,7 +99005,7 @@
       var import_react510 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react165 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react172 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var import_tree = require_main12();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
@@ -99057,10 +99057,10 @@
         );
         const children = (0, import_react210.useMemo)(() => {
           let treeChildren = [];
-          import_react165.default.Children.map(childrenProp, (child) => {
+          import_react172.default.Children.map(childrenProp, (child) => {
             var _a2;
-            if (import_react165.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
-              const clonedChild = import_react165.default.cloneElement(child, {
+            if (import_react172.default.isValidElement(child) && typeof ((_a2 = child.props) == null ? void 0 : _a2.children) !== "string") {
+              const clonedChild = import_react172.default.cloneElement(child, {
                 // @ts-ignore
                 hasChildItems: false
               });
@@ -99131,7 +99131,7 @@
             motionProps
           ]
         );
-        const getBaseProps = (0, import_react165.useCallback)((props2 = {}) => {
+        const getBaseProps = (0, import_react172.useCallback)((props2 = {}) => {
           return {
             ref: domRef,
             className: classNames,
@@ -99145,7 +99145,7 @@
             )
           };
         }, []);
-        const handleFocusChanged = (0, import_react165.useCallback)((isFocused, key) => {
+        const handleFocusChanged = (0, import_react172.useCallback)((isFocused, key) => {
           isFocused && setFocusedKey(key);
         }, []);
         return {
@@ -99391,7 +99391,7 @@
           getSubtitleProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var AccordionItem = (0, import_system3.forwardRef)((props, ref) => {
         const {
@@ -99421,24 +99421,24 @@
         const willChange = (0, import_framer_motion3.useWillChange)();
         const indicatorContent = (0, import_react410.useMemo)(() => {
           if (typeof indicator === "function") {
-            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
+            return indicator({ indicator: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.ChevronIcon, {}), isOpen, isDisabled });
           }
           if (indicator) return indicator;
           return null;
         }, [indicator, isOpen, isDisabled]);
-        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.ChevronIcon, {});
+        const indicatorComponent = indicatorContent || /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.ChevronIcon, {});
         const content = (0, import_react410.useMemo)(() => {
           if (disableAnimation) {
             if (keepContentMounted) {
-              return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getContentProps(), children });
+              return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getContentProps(), children });
             }
-            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getContentProps(), children });
+            return isOpen && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getContentProps(), children });
           }
           const transitionVariants = {
             exit: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.exit, overflowY: "hidden" },
             enter: { ...import_framer_utils.TRANSITION_VARIANTS.collapse.enter, overflowY: "unset" }
           };
-          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return keepContentMounted ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             import_framer_motion3.m.section,
             {
               animate: isOpen ? "enter" : "exit",
@@ -99450,10 +99450,10 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
-          ) }) : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          ) }) : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion3.AnimatePresence, { initial: false, children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             import_framer_motion3.m.section,
             {
               animate: "enter",
@@ -99465,19 +99465,19 @@
                 e.stopPropagation();
               },
               ...motionProps,
-              children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getContentProps(), children })
+              children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getContentProps(), children })
             },
             "accordion-content"
           ) }) });
         }, [isOpen, disableAnimation, keepContentMounted, children, motionProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("button", { ...getButtonProps(), children: [
-            startContent && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
-              title && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getTitleProps(), children: title }),
-              subtitle && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getSubtitleProps(), children: subtitle })
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(HeadingComponent, { ...getHeadingProps(), children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("button", { ...getButtonProps(), children: [
+            startContent && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { className: slots.startContent({ class: classNames == null ? void 0 : classNames.startContent }), children: startContent }),
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { className: slots.titleWrapper({ class: classNames == null ? void 0 : classNames.titleWrapper }), children: [
+              title && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getTitleProps(), children: title }),
+              subtitle && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getSubtitleProps(), children: subtitle })
             ] }),
-            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
+            !hideIndicator && indicatorComponent && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getIndicatorProps(), children: indicatorComponent })
           ] }) }),
           content
         ] });
@@ -99557,8 +99557,8 @@
         useSafeLayoutEffect: () => useSafeLayoutEffect
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react165.useLayoutEffect : import_react165.useEffect;
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var useSafeLayoutEffect = Boolean(globalThis == null ? void 0 : globalThis.document) ? import_react172.useLayoutEffect : import_react172.useEffect;
     }
   });
 
@@ -99589,7 +99589,7 @@
         useImage: () => useImage
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
       function useImage(props = {}) {
@@ -99605,16 +99605,16 @@
           shouldBypassImageLoad = false
         } = props;
         const isHydrated = (0, import_react_utils.useIsHydrated)();
-        const imageRef = (0, import_react165.useRef)(null);
-        const [status, setStatus] = (0, import_react165.useState)("pending");
-        const flush = (0, import_react165.useCallback)(() => {
+        const imageRef = (0, import_react172.useRef)(null);
+        const [status, setStatus] = (0, import_react172.useState)("pending");
+        const flush = (0, import_react172.useCallback)(() => {
           if (imageRef.current) {
             imageRef.current.onload = null;
             imageRef.current.onerror = null;
             imageRef.current = null;
           }
         }, []);
-        const load = (0, import_react165.useCallback)(() => {
+        const load = (0, import_react172.useCallback)(() => {
           if (!src) return "pending";
           if (ignoreFallback || shouldBypassImageLoad) return "loaded";
           flush();
@@ -99700,8 +99700,8 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var AvatarIcon = () => /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
         "svg",
         {
           "aria-hidden": "true",
@@ -99711,14 +99711,14 @@
           viewBox: "0 0 24 24",
           width: "80%",
           children: [
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 d: "M12 2C9.38 2 7.25 4.13 7.25 6.75C7.25 9.32 9.26 11.4 11.88 11.49C11.96 11.48 12.04 11.48 12.1 11.49C12.12 11.49 12.13 11.49 12.15 11.49C12.16 11.49 12.16 11.49 12.17 11.49C14.73 11.4 16.74 9.32 16.75 6.75C16.75 4.13 14.62 2 12 2Z",
                 fill: "currentColor"
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "path",
               {
                 d: "M17.0809 14.1489C14.2909 12.2889 9.74094 12.2889 6.93094 14.1489C5.66094 14.9989 4.96094 16.1489 4.96094 17.3789C4.96094 18.6089 5.66094 19.7489 6.92094 20.5889C8.32094 21.5289 10.1609 21.9989 12.0009 21.9989C13.8409 21.9989 15.6809 21.5289 17.0809 20.5889C18.3409 19.7389 19.0409 18.5989 19.0409 17.3589C19.0309 16.1289 18.3409 14.9889 17.0809 14.1489Z",
@@ -99733,7 +99733,7 @@
       var import_react_utils2 = require_dist10();
       var import_shared_utils = require_dist2();
       var import_focus2 = require_main18();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_image = require_dist22();
       var import_interactions = require_main17();
       var import_react_utils = require_dist10();
@@ -99788,7 +99788,7 @@
         const isImgLoaded = imageStatus === "loaded";
         const shouldFilterDOMProps = !isHeroImage;
         const showFallback = (!src || !isImgLoaded) && showFallbackProp;
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => {
             var _a2;
             return (0, import_theme.avatar)({
@@ -99814,10 +99814,10 @@
           ]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const canBeFocused = (0, import_react165.useMemo)(() => {
+        const canBeFocused = (0, import_react172.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const getAvatarProps = (0, import_react165.useCallback)(
+        const getAvatarProps = (0, import_react172.useCallback)(
           (props = {}) => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -99831,7 +99831,7 @@
           }),
           [canBeFocused, slots, baseStyles, focusProps, otherProps]
         );
-        const getImageProps = (0, import_react165.useCallback)(
+        const getImageProps = (0, import_react172.useCallback)(
           (props = {}) => ({
             ref: imgRef,
             src,
@@ -100034,7 +100034,7 @@
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBadge(originalProps) {
         var _a, _b;
         const globalContext = (0, import_system.useProviderContext)();
@@ -100042,19 +100042,19 @@
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.badge.variantKeys);
         const { as, children, className, content, classNames, ...otherProps } = props;
         const Component2 = as || "span";
-        const isOneChar = (0, import_react165.useMemo)(
+        const isOneChar = (0, import_react172.useMemo)(
           () => {
             var _a2;
             return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 1 || (originalProps == null ? void 0 : originalProps.isOneChar);
           },
           [content, originalProps == null ? void 0 : originalProps.isOneChar]
         );
-        const isDot = (0, import_react165.useMemo)(() => {
+        const isDot = (0, import_react172.useMemo)(() => {
           var _a2;
           return ((_a2 = String(content)) == null ? void 0 : _a2.length) === 0;
         }, [content]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.badge, className);
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.badge)({
             ...variantProps2,
             showOutline: !!(originalProps == null ? void 0 : originalProps.disableOutline) ? !(originalProps == null ? void 0 : originalProps.disableOutline) : originalProps == null ? void 0 : originalProps.showOutline,
@@ -100082,14 +100082,14 @@
         };
       }
       var import_system2 = require_dist11();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Badge = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, content, slots, classNames, getBadgeProps } = useBadge({
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { className: slots.base({ class: classNames == null ? void 0 : classNames.base }), children: [
           children,
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ref, ...getBadgeProps(), children: content })
         ] });
       });
       Badge.displayName = "HeroUI.Badge";
@@ -100128,7 +100128,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       function useSpinner(originalProps) {
         var _a, _b;
@@ -100136,19 +100136,19 @@
         const globalContext = (0, import_system.useProviderContext)();
         const variant = (_b = (_a = originalProps == null ? void 0 : originalProps.variant) != null ? _a : globalContext == null ? void 0 : globalContext.spinnerVariant) != null ? _b : "default";
         const { children, className, classNames, label: labelProp, ...otherProps } = props;
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.spinner)({ ...variantProps2, variant }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), variant]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const label = labelProp || children;
-        const ariaLabel = (0, import_react165.useMemo)(() => {
+        const ariaLabel = (0, import_react172.useMemo)(() => {
           if (label && typeof label === "string") {
             return label;
           }
           return !otherProps["aria-label"] ? "Loading" : "";
         }, [children, label, otherProps["aria-label"]]);
-        const getSpinnerProps = (0, import_react165.useCallback)(
+        const getSpinnerProps = (0, import_react172.useCallback)(
           () => ({
             "aria-label": ariaLabel,
             className: slots.base({
@@ -100161,12 +100161,12 @@
         return { label, slots, classNames, variant, getSpinnerProps };
       }
       var import_system_rsc2 = require_dist14();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spinner = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { slots, classNames, label, variant, getSpinnerProps } = useSpinner({ ...props });
         if (variant === "wave" || variant === "dots") {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(3)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "i",
               {
                 className: slots.dots({ class: classNames == null ? void 0 : classNames.dots }),
@@ -100176,19 +100176,19 @@
               },
               `dot-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "simple") {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(
               "svg",
               {
                 className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }),
                 fill: "none",
                 viewBox: "0 0 24 24",
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                     "circle",
                     {
                       className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }),
@@ -100199,7 +100199,7 @@
                       strokeWidth: "4"
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
                     "path",
                     {
                       className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }),
@@ -100210,12 +100210,12 @@
                 ]
               }
             ),
-            label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
         if (variant === "spinner") {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [...new Array(12)].map((_, index3) => /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "i",
               {
                 className: slots.spinnerBars({ class: classNames == null ? void 0 : classNames.spinnerBars }),
@@ -100225,15 +100225,15 @@
               },
               `star-${index3}`
             )) }),
-            label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+            label && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
           ] });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ref, ...getSpinnerProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ref, ...getSpinnerProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("i", { className: slots.circle1({ class: classNames == null ? void 0 : classNames.circle1 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("i", { className: slots.circle2({ class: classNames == null ? void 0 : classNames.circle2 }) })
           ] }),
-          label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
+          label && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.label({ class: classNames == null ? void 0 : classNames.label }), children: label })
         ] });
       });
       Spinner.displayName = "HeroUI.Spinner";
@@ -100271,13 +100271,13 @@
       module.exports = __toCommonJS2(index_exports);
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_jsx_runtime100.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_jsx_runtime107.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             import_framer_motion2.m.span,
             {
               animate: {
@@ -100315,10 +100315,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react165.useState)([]);
-        const onPress = (0, import_react165.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react172.useState)([]);
+        const onPress = (0, import_react172.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -100331,7 +100331,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react165.useCallback)((key) => {
+        const onClear = (0, import_react172.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -103418,7 +103418,7 @@
       var import_system2 = require_dist11();
       var import_system = require_dist11();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_react_utils2 = require_dist10();
       var import_theme = require_dist12();
@@ -103495,7 +103495,7 @@
           ]
         );
         const { onPress: onRipplePressHandler, onClear: onClearRipple, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react165.useCallback)(
+        const handlePress = (0, import_react172.useCallback)(
           (e) => {
             if (disableRipple || isDisabled || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -103513,7 +103513,7 @@
           domRef
         );
         const { isHovered, hoverProps } = (0, import_interactions.useHover)({ isDisabled });
-        const getButtonProps = (0, import_react165.useCallback)(
+        const getButtonProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             "data-disabled": (0, import_shared_utils.dataAttr)(isDisabled),
             "data-focus": (0, import_shared_utils.dataAttr)(isFocused),
@@ -103562,7 +103562,7 @@
           };
           return buttonSpinnerSizeMap[size];
         }, [size]);
-        const getRippleProps = (0, import_react165.useCallback)(
+        const getRippleProps = (0, import_react172.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -103583,14 +103583,14 @@
           isIconOnly
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Button = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           domRef,
           children,
           spinnerSize,
-          spinner = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
+          spinner = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_spinner.Spinner, { color: "current", size: spinnerSize }),
           spinnerPlacement,
           startContent,
           endContent,
@@ -103600,13 +103600,13 @@
           getRippleProps,
           isIconOnly
         } = useButton({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ref: domRef, ...getButtonProps(), children: [
           startContent,
           isLoading && spinnerPlacement === "start" && spinner,
           isLoading && isIconOnly ? null : children,
           isLoading && spinnerPlacement === "end" && spinner,
           endContent,
-          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+          !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Button.displayName = "HeroUI.Button";
@@ -103732,7 +103732,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_theme = require_dist12();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
       var import_use_aria_button = require_dist27();
@@ -103764,7 +103764,7 @@
         const disableRipple = (_d = (_c = originalProps.disableRipple) != null ? _c : globalContext == null ? void 0 : globalContext.disableRipple) != null ? _d : false;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
         const { onClear: onClearRipple, onPress: onRipplePressHandler, ripples } = (0, import_ripple.useRipple)();
-        const handlePress = (0, import_react165.useCallback)(
+        const handlePress = (0, import_react172.useCallback)(
           (e) => {
             if (disableRipple || disableAnimation) return;
             domRef.current && onRipplePressHandler(e);
@@ -103789,14 +103789,14 @@
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.card)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const context = (0, import_react165.useMemo)(
+        const context = (0, import_react172.useMemo)(
           () => ({
             slots,
             classNames,
@@ -103814,7 +103814,7 @@
             originalProps.fullWidth
           ]
         );
-        const getCardProps = (0, import_react165.useCallback)(
+        const getCardProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ref: domRef,
@@ -103852,7 +103852,7 @@
             otherProps
           ]
         );
-        const getRippleProps = (0, import_react165.useCallback)(
+        const getRippleProps = (0, import_react172.useCallback)(
           () => ({ ripples, onClear: onClearRipple }),
           [ripples, onClearRipple]
         );
@@ -103882,7 +103882,7 @@
       });
       var import_system2 = require_dist11();
       var import_ripple2 = require_dist26();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Card4 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           children,
@@ -103894,9 +103894,9 @@
           getCardProps,
           getRippleProps
         } = useCard({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...getCardProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(CardProvider, { value: context, children }),
-          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...getCardProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(CardProvider, { value: context, children }),
+          isPressable && !disableAnimation && !disableRipple && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_ripple2.Ripple, { ...getRippleProps() })
         ] });
       });
       Card4.displayName = "HeroUI.Card";
@@ -103983,7 +103983,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useChip(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.chip.variantKeys);
         const {
@@ -104004,13 +104004,13 @@
         const isCloseable = !!onClose;
         const isDotVariant = originalProps.variant === "dot";
         const { focusProps: closeFocusProps, isFocusVisible: isCloseButtonFocusVisible } = (0, import_focus2.useFocusRing)();
-        const isOneChar = (0, import_react165.useMemo)(
+        const isOneChar = (0, import_react172.useMemo)(
           () => typeof children === "string" && (children == null ? void 0 : children.length) === 1,
           [children]
         );
-        const hasStartContent = (0, import_react165.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
-        const hasEndContent = (0, import_react165.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
-        const slots = (0, import_react165.useMemo)(
+        const hasStartContent = (0, import_react172.useMemo)(() => !!avatar || !!startContent, [avatar, startContent]);
+        const hasEndContent = (0, import_react172.useMemo)(() => !!endContent || isCloseable, [endContent, isCloseable]);
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.chip)({
             ...variantProps2,
             hasStartContent,
@@ -104049,13 +104049,13 @@
           };
         };
         const getAvatarClone = (avatar2) => {
-          if (!(0, import_react165.isValidElement)(avatar2)) return null;
-          return (0, import_react165.cloneElement)(avatar2, {
+          if (!(0, import_react172.isValidElement)(avatar2)) return null;
+          return (0, import_react172.cloneElement)(avatar2, {
             // @ts-ignore
             className: slots.avatar({ class: classNames == null ? void 0 : classNames.avatar })
           });
         };
-        const getContentClone = (content) => (0, import_react165.isValidElement)(content) ? (0, import_react165.cloneElement)(content, {
+        const getContentClone = (content) => (0, import_react172.isValidElement)(content) ? (0, import_react172.cloneElement)(content, {
           // @ts-ignore
           className: (0, import_theme.cn)("max-h-[80%]", content.props.className)
         }) : null;
@@ -104075,7 +104075,7 @@
       var import_shared_icons = require_dist17();
       var import_system2 = require_dist11();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Chip2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -104094,19 +104094,19 @@
         });
         const start3 = (0, import_react210.useMemo)(() => {
           if (isDot && !startContent) {
-            return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
+            return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.dot({ class: classNames == null ? void 0 : classNames.dot }) });
           }
           return startContent;
         }, [slots, startContent, isDot]);
         const end = (0, import_react210.useMemo)(() => {
           if (isCloseable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getCloseButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [endContent, isCloseable, getCloseButtonProps]);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...getChipProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...getChipProps(), children: [
           start3,
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children }),
           end
         ] });
       });
@@ -104224,14 +104224,14 @@
         useCallbackRef: () => useCallbackRef
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_safe_layout_effect = require_dist21();
       function useCallbackRef(fn, deps = []) {
-        const ref = (0, import_react165.useRef)(fn);
+        const ref = (0, import_react172.useRef)(fn);
         (0, import_use_safe_layout_effect.useSafeLayoutEffect)(() => {
           ref.current = fn;
         });
-        return (0, import_react165.useCallback)((...args) => {
+        return (0, import_react172.useCallback)((...args) => {
           var _a;
           return (_a = ref.current) == null ? void 0 : _a.call(ref, ...args);
         }, deps);
@@ -117668,13 +117668,13 @@
         useSlottedContext: () => useSlottedContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var DEFAULT_SLOT = /* @__PURE__ */ Symbol("default");
       function useObjectRef(ref) {
-        const objRef = (0, import_react165.useRef)(null);
-        const cleanupRef = (0, import_react165.useRef)(void 0);
-        const refEffect = (0, import_react165.useCallback)(
+        const objRef = (0, import_react172.useRef)(null);
+        const cleanupRef = (0, import_react172.useRef)(void 0);
+        const refEffect = (0, import_react172.useCallback)(
           (instance) => {
             if (typeof ref === "function") {
               const refCallback = ref;
@@ -117695,7 +117695,7 @@
           },
           [ref]
         );
-        return (0, import_react165.useMemo)(
+        return (0, import_react172.useMemo)(
           () => ({
             get current() {
               return objRef.current;
@@ -117715,7 +117715,7 @@
         );
       }
       function useSlottedContext(context, slot) {
-        let ctx = (0, import_react165.useContext)(context);
+        let ctx = (0, import_react172.useContext)(context);
         if (slot === null) {
           return null;
         }
@@ -117735,7 +117735,7 @@
       function useContextProps(props, ref, context) {
         let ctx = useSlottedContext(context, props.slot) || {};
         let { ref: contextRef, ...contextProps } = ctx;
-        let mergedRef = useObjectRef((0, import_react165.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
+        let mergedRef = useObjectRef((0, import_react172.useMemo)(() => (0, import_shared_utils.mergeRefs)(ref, contextRef), [ref, contextRef]));
         let mergedProps = (0, import_shared_utils.mergeProps)(contextProps, props);
         if ("style" in contextProps && contextProps.style && "style" in props && props.style) {
           if (typeof contextProps.style === "function" || typeof props.style === "function") {
@@ -117754,13 +117754,13 @@
       var import_form = require_main22();
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist32();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var FormContext = (0, import_react210.createContext)(null);
       var Form = (0, import_react210.forwardRef)(function Form2(props, ref) {
         [props, ref] = useContextProps(props, ref, FormContext);
         let { validationErrors, validationBehavior = "native", children, className, ...domProps } = props;
         const styles = (0, import_react210.useMemo)(() => (0, import_theme.form)({ className }), [className]);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("form", { noValidate: validationBehavior !== "native", ...domProps, ref, className: styles, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(FormContext.Provider, { value: { ...props, validationBehavior }, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_form.FormValidationContext.Provider, { value: validationErrors != null ? validationErrors : {}, children }) }) });
       });
       var import_system = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
@@ -117887,7 +117887,7 @@
       var import_system2 = require_dist11();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_toggle = require_main21();
       var import_theme = require_dist12();
@@ -117962,7 +117962,7 @@
           };
           onChange = (0, import_shared_utils.chain)(dispatch, onChange);
         }
-        const labelId = (0, import_react165.useId)();
+        const labelId = (0, import_react172.useId)();
         const ariaCheckboxProps = (0, import_react210.useMemo)(
           () => ({
             name,
@@ -118051,7 +118051,7 @@
           toggleState.setSelected(isInputRefChecked);
         }, [inputRef.current]);
         const onChangeProp = (0, import_use_callback_ref.useCallbackRef)(onChange);
-        const handleCheckboxChange = (0, import_react165.useCallback)(
+        const handleCheckboxChange = (0, import_react172.useCallback)(
           (event) => {
             if (isReadOnly || isDisabled) {
               event.preventDefault();
@@ -118062,7 +118062,7 @@
           [isReadOnly, isDisabled, onChangeProp]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react165.useCallback)(() => {
+        const getBaseProps = (0, import_react172.useCallback)(() => {
           return {
             ref: domRef,
             className: slots.base({ class: baseStyles }),
@@ -118092,7 +118092,7 @@
           hoverProps,
           otherProps
         ]);
-        const getWrapperProps = (0, import_react165.useCallback)(
+        const getWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -118102,7 +118102,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react165.useCallback)(() => {
+        const getInputProps = (0, import_react172.useCallback)(() => {
           return {
             ref: (0, import_react_utils2.mergeRefs)(inputRef, ref),
             ...(0, import_shared_utils.mergeProps)(inputProps, focusProps),
@@ -118110,14 +118110,14 @@
             onChange: (0, import_shared_utils.chain)(inputProps.onChange, handleCheckboxChange)
           };
         }, [inputProps, focusProps, handleCheckboxChange, classNames == null ? void 0 : classNames.hiddenInput]);
-        const getLabelProps = (0, import_react165.useCallback)(
+        const getLabelProps = (0, import_react172.useCallback)(
           () => ({
             id: labelId,
             className: slots.label({ class: classNames == null ? void 0 : classNames.label })
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getIconProps = (0, import_react165.useCallback)(
+        const getIconProps = (0, import_react172.useCallback)(
           () => ({
             isSelected,
             isIndeterminate,
@@ -118143,10 +118143,10 @@
           getIconProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function CheckIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -118163,18 +118163,18 @@
             } : {},
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("polyline", { points: "1 9 7 14 15 4" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("polyline", { points: "1 9 7 14 15 4" })
           }
         );
       }
       function IndeterminateIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("svg", { stroke: "currentColor", strokeWidth: 3, viewBox: "0 0 24 24", ...otherProps, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("line", { x1: "21", x2: "3", y1: "12", y2: "12" }) });
       }
       function CheckboxIcon(props) {
         const { isIndeterminate, ...otherProps } = props;
         const BaseIcon = isIndeterminate ? IndeterminateIcon : CheckIcon;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(BaseIcon, { ...otherProps });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(BaseIcon, { ...otherProps });
       }
       var import_jsx_runtime210 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Checkbox2 = (0, import_system2.forwardRef)((props, ref) => {
@@ -118426,13 +118426,13 @@
       var import_system_rsc2 = require_dist14();
       var import_theme = require_dist12();
       var import_system_rsc = require_dist14();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useCode(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.code.variantKeys);
         const { as, children, className, ...otherProps } = props;
         const Component2 = as || "code";
-        const styles = (0, import_react165.useMemo)(
+        const styles = (0, import_react172.useMemo)(
           () => (0, import_theme.code)({
             ...variantProps2,
             className
@@ -118447,10 +118447,10 @@
         };
         return { Component: Component2, children, getCodeProps };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Code = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getCodeProps } = useCode({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ref, ...getCodeProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ref, ...getCodeProps(), children });
       });
       Code.displayName = "HeroUI.Code";
       var code_default = Code;
@@ -121513,7 +121513,7 @@
       var import_react_utils = require_dist10();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useLink(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -121556,7 +121556,7 @@
           otherProps.rel = (_c = otherProps.rel) != null ? _c : "noopener noreferrer";
           otherProps.target = (_d = otherProps.target) != null ? _d : "_blank";
         }
-        const styles = (0, import_react165.useMemo)(
+        const styles = (0, import_react172.useMemo)(
           () => (0, import_theme.link)({
             ...variantProps2,
             disableAnimation,
@@ -121564,7 +121564,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, className]
         );
-        const getLinkProps = (0, import_react165.useCallback)(() => {
+        const getLinkProps = (0, import_react172.useCallback)(() => {
           return {
             ref: domRef,
             className: styles,
@@ -121578,19 +121578,19 @@
         }, [styles, isFocused, isFocusVisible, focusProps, linkProps, otherProps]);
         return { Component: Component2, children, anchorIcon, showAnchorIcon, getLinkProps };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Link = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
           showAnchorIcon,
-          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
+          anchorIcon = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.LinkIcon, { className: import_theme2.linkAnchorClasses }),
           getLinkProps
         } = useLink({
           ref,
           ...props
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(import_jsx_runtime100.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ...getLinkProps(), children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(import_jsx_runtime107.Fragment, { children: [
           children,
           showAnchorIcon && anchorIcon
         ] }) });
@@ -121649,7 +121649,7 @@
         usePagination: () => usePagination
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_i18n16 = require_main5();
       var import_shared_utils = require_dist2();
       var PaginationItemType2 = /* @__PURE__ */ ((PaginationItemType22) => {
@@ -121668,19 +121668,19 @@
           showControls = false,
           onChange
         } = props;
-        const [activePage, setActivePage] = (0, import_react165.useState)(page || initialPage);
+        const [activePage, setActivePage] = (0, import_react172.useState)(page || initialPage);
         const { direction } = (0, import_i18n16.useLocale)();
         const isRTL = direction === "rtl";
         const onChangeActivePage = (newPage) => {
           setActivePage(newPage);
           onChange && onChange(newPage);
         };
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (page && page !== activePage) {
             setActivePage(page);
           }
         }, [page]);
-        const setPage = (0, import_react165.useCallback)(
+        const setPage = (0, import_react172.useCallback)(
           (pageNumber) => {
             if (pageNumber <= 0) {
               onChangeActivePage(1);
@@ -121696,7 +121696,7 @@
         const previous = () => setPage(activePage - 1);
         const first = () => setPage(1);
         const last = () => setPage(total);
-        const formatRange = (0, import_react165.useCallback)(
+        const formatRange = (0, import_react172.useCallback)(
           (range2) => {
             if (showControls) {
               return [
@@ -121710,7 +121710,7 @@
           },
           [isRTL, showControls]
         );
-        const paginationRange = (0, import_react165.useMemo)(() => {
+        const paginationRange = (0, import_react172.useMemo)(() => {
           const totalPageNumbers = siblings * 2 + 3 + boundaries * 2;
           if (totalPageNumbers >= total) {
             return formatRange((0, import_shared_utils.range)(1, total));
@@ -121872,7 +121872,7 @@
         useIntersectionObserver: () => useIntersectionObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIntersectionObserver({
         threshold: threshold2 = 0,
         root = null,
@@ -121883,15 +121883,15 @@
         onChange
       } = {}) {
         var _a;
-        const [ref, setRef2] = (0, import_react165.useState)(null);
-        const [state, setState] = (0, import_react165.useState)(() => ({
+        const [ref, setRef2] = (0, import_react172.useState)(null);
+        const [state, setState] = (0, import_react172.useState)(() => ({
           isIntersecting: initialIsIntersecting,
           entry: void 0
         }));
-        const callbackRef = (0, import_react165.useRef)();
+        const callbackRef = (0, import_react172.useRef)();
         callbackRef.current = onChange;
         const frozen = ((_a = state.entry) == null ? void 0 : _a.isIntersecting) && freezeOnceVisible;
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (!isEnabled) return;
           if (!ref) return;
           if (!("IntersectionObserver" in window)) return;
@@ -121919,8 +121919,8 @@
             observer2.disconnect();
           };
         }, [ref, isEnabled, JSON.stringify(threshold2), root, rootMargin, frozen, freezeOnceVisible]);
-        const prevRef = (0, import_react165.useRef)(null);
-        (0, import_react165.useEffect)(() => {
+        const prevRef = (0, import_react172.useRef)(null);
+        (0, import_react172.useEffect)(() => {
           var _a2;
           if (!ref && ((_a2 = state.entry) == null ? void 0 : _a2.target) && !freezeOnceVisible && !frozen && prevRef.current !== state.entry.target) {
             prevRef.current = state.entry.target;
@@ -121987,7 +121987,7 @@
       var import_theme3 = require_dist12();
       var import_shared_utils = require_dist2();
       var import_use_pagination = require_dist38();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_use_pagination2 = require_dist38();
       var import_scroll_into_view_if_needed = __toESM2(require_dist40());
@@ -122020,9 +122020,9 @@
         } = props;
         const Component2 = as || "nav";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const cursorRef = (0, import_react165.useRef)(null);
-        const itemsRef = (0, import_react165.useRef)();
-        const cursorTimer = (0, import_react165.useRef)();
+        const cursorRef = (0, import_react172.useRef)(null);
+        const itemsRef = (0, import_react172.useRef)();
+        const cursorTimer = (0, import_react172.useRef)();
         const disableAnimation = (_b = (_a = originalProps == null ? void 0 : originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const disableCursorAnimation = (_d = (_c = originalProps == null ? void 0 : originalProps.disableCursorAnimation) != null ? _c : disableAnimation) != null ? _d : false;
         function getItemsRefMap() {
@@ -122080,13 +122080,13 @@
           onChange
         });
         const [setRef2, isVisible] = (0, import_use_intersection_observer.useIntersectionObserver)();
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (domRef.current) {
             setRef2(domRef.current);
           }
         }, [domRef.current]);
-        const activePageRef = (0, import_react165.useRef)(activePage);
-        (0, import_react165.useEffect)(() => {
+        const activePageRef = (0, import_react172.useRef)(activePage);
+        (0, import_react172.useEffect)(() => {
           if (activePage && !disableAnimation && isVisible) {
             scrollTo(activePage, activePage === activePageRef.current);
           }
@@ -122101,7 +122101,7 @@
           originalProps.isCompact,
           originalProps.showControls
         ]);
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.pagination)({
             ...variantProps2,
             disableAnimation,
@@ -122288,10 +122288,10 @@
           getItemProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var PaginationItem = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getItemProps } = usePaginationItem({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ...getItemProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ...getItemProps(), children });
       });
       PaginationItem.displayName = "HeroUI.PaginationItem";
       var pagination_item_default = PaginationItem;
@@ -122831,7 +122831,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system2 = require_dist11();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_interactions = require_main17();
@@ -122877,8 +122877,8 @@
         const Component2 = as || "label";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const inputRef = (0, import_react210.useRef)(null);
-        const labelId = (0, import_react165.useId)();
-        const descriptionId = (0, import_react165.useId)();
+        const labelId = (0, import_react172.useId)();
+        const descriptionId = (0, import_react172.useId)();
         const isRequired = (0, import_react210.useMemo)(() => {
           var _a2;
           return (_a2 = groupContext.isRequired) != null ? _a2 : false;
@@ -122932,7 +122932,7 @@
           [color2, size, isDisabled, isInvalid, disableAnimation]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getBaseProps = (0, import_react165.useCallback)(
+        const getBaseProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -122967,7 +122967,7 @@
             otherProps
           ]
         );
-        const getWrapperProps = (0, import_react165.useCallback)(
+        const getWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -122977,7 +122977,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.wrapper]
         );
-        const getInputProps = (0, import_react165.useCallback)(
+        const getInputProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputRef,
@@ -122988,7 +122988,7 @@
           },
           [inputProps, focusProps, onChange]
         );
-        const getLabelProps = (0, import_react165.useCallback)(
+        const getLabelProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -122996,21 +122996,21 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected, isInvalid]
         );
-        const getLabelWrapperProps = (0, import_react165.useCallback)(
+        const getLabelWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper })
           }),
           [slots, classNames == null ? void 0 : classNames.labelWrapper]
         );
-        const getControlProps = (0, import_react165.useCallback)(
+        const getControlProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.control({ class: classNames == null ? void 0 : classNames.control })
           }),
           [slots, classNames == null ? void 0 : classNames.control]
         );
-        const getDescriptionProps = (0, import_react165.useCallback)(
+        const getDescriptionProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: descriptionId,
@@ -123035,7 +123035,7 @@
           getDescriptionProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Radio = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -123049,12 +123049,12 @@
           getControlProps,
           getDescriptionProps
         } = useRadio({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getControlProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...getLabelWrapperProps(), children: [
-            children && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getLabelProps(), children }),
-            description && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getDescriptionProps(), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getControlProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...getLabelWrapperProps(), children: [
+            children && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getLabelProps(), children }),
+            description && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getDescriptionProps(), children: description })
           ] })
         ] });
       });
@@ -123283,20 +123283,20 @@
         useClipboard: () => useClipboard
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var transformValue2 = (text) => {
         return text.replace(/[\u00A0]/g, " ");
       };
       function useClipboard({ timeout = 2e3 } = {}) {
-        const [error, setError] = (0, import_react165.useState)(null);
-        const [copied, setCopied] = (0, import_react165.useState)(false);
-        const [copyTimeout, setCopyTimeout] = (0, import_react165.useState)(null);
-        const onClearTimeout = (0, import_react165.useCallback)(() => {
+        const [error, setError] = (0, import_react172.useState)(null);
+        const [copied, setCopied] = (0, import_react172.useState)(false);
+        const [copyTimeout, setCopyTimeout] = (0, import_react172.useState)(null);
+        const onClearTimeout = (0, import_react172.useCallback)(() => {
           if (copyTimeout) {
             clearTimeout(copyTimeout);
           }
         }, [copyTimeout]);
-        const handleCopyResult = (0, import_react165.useCallback)(
+        const handleCopyResult = (0, import_react172.useCallback)(
           (value) => {
             onClearTimeout();
             setCopyTimeout(setTimeout(() => setCopied(false), timeout));
@@ -123304,7 +123304,7 @@
           },
           [onClearTimeout, timeout]
         );
-        const copy = (0, import_react165.useCallback)(
+        const copy = (0, import_react172.useCallback)(
           (valueToCopy) => {
             if ("clipboard" in navigator) {
               const transformedValue = typeof valueToCopy === "string" ? transformValue2(valueToCopy) : valueToCopy;
@@ -123315,7 +123315,7 @@
           },
           [handleCopyResult]
         );
-        const reset = (0, import_react165.useCallback)(() => {
+        const reset = (0, import_react172.useCallback)(() => {
           setCopied(false);
           setError(null);
           onClearTimeout();
@@ -126613,7 +126613,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_focus2 = require_main36();
       var import_interactions = require_main35();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var visibleOverlays = [];
       function useAriaOverlay(props, ref) {
         const {
@@ -126625,7 +126625,7 @@
           shouldCloseOnBlur,
           shouldCloseOnInteractOutside
         } = props;
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (isOpen && !visibleOverlays.includes(ref)) {
             visibleOverlays.push(ref);
             return () => {
@@ -126755,7 +126755,7 @@
       var import_shared_utils2 = require_dist2();
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils2 = require_dist13();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tooltip = require_main33();
       var import_tooltip2 = require_main34();
       var import_overlays = require_main9();
@@ -126819,9 +126819,9 @@
         });
         const triggerRef = (0, import_react210.useRef)(null);
         const overlayRef = (0, import_react210.useRef)(null);
-        const tooltipId = (0, import_react165.useId)();
+        const tooltipId = (0, import_react172.useId)();
         const isOpen = state.isOpen && !isDisabled;
-        (0, import_react165.useImperativeHandle)(
+        (0, import_react172.useImperativeHandle)(
           ref,
           () => (
             // @ts-ignore
@@ -126955,7 +126955,7 @@
           getTooltipProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var Tooltip = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
@@ -126980,18 +126980,18 @@
           const childrenNum = import_react310.Children.count(children);
           if (childrenNum !== 1) throw new Error();
           if (!(0, import_react310.isValidElement)(children)) {
-            trigger = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("p", { ...getTriggerProps(), children });
+            trigger = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("p", { ...getTriggerProps(), children });
           } else {
             const child = children;
             const childRef = (_a = child.props.ref) != null ? _a : child.ref;
             trigger = (0, import_react310.cloneElement)(child, getTriggerProps(child.props, childRef));
           }
         } catch {
-          trigger = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", {});
+          trigger = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", {});
           (0, import_shared_utils2.warn)("Tooltip must have only one child node. Please, check your code.");
         }
         const { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps } = getTooltipProps();
-        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        const animatedContent = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ref: tooltipRef, id: id4, style: style2, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           import_framer_motion2.m.div,
           {
             animate: "enter",
@@ -127002,13 +127002,13 @@
             style: {
               ...(0, import_aria_utils2.getTransformOrigins)(placement)
             },
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ...getTooltipContentProps(), children: content })
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ...getTooltipContentProps(), children: content })
           },
           `${id4}-tooltip-inner`
         ) }, `${id4}-tooltip-content`);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(import_jsx_runtime100.Fragment, { children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(import_jsx_runtime107.Fragment, { children: [
           trigger,
-          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
+          disableAnimation ? isOpen && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ref: tooltipRef, id: id4, style: style2, ...otherTooltipProps, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ...getTooltipContentProps(), children: content }) }) }) : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.AnimatePresence, { children: isOpen && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_overlays2.OverlayContainer, { portalContainer, children: animatedContent }) }) })
         ] });
       });
       Tooltip.displayName = "HeroUI.Tooltip";
@@ -127050,7 +127050,7 @@
       var import_shared_utils = require_dist2();
       var import_use_clipboard = require_dist44();
       var import_focus2 = require_main18();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useSnippet(originalProps) {
         var _a, _b, _c, _d;
         const globalContext = (0, import_system.useProviderContext)();
@@ -127088,26 +127088,26 @@
           ...userTooltipProps
         };
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const preRef = (0, import_react165.useRef)(null);
+        const preRef = (0, import_react172.useRef)(null);
         const { copy, copied } = (0, import_use_clipboard.useClipboard)({ timeout });
         const isMultiLine = children && Array.isArray(children);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({
           autoFocus
         });
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.snippet)({
             ...variantProps2,
             disableAnimation
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
-        const symbolBefore = (0, import_react165.useMemo)(() => {
+        const symbolBefore = (0, import_react172.useMemo)(() => {
           if (!symbol || typeof symbol !== "string") return symbol;
           const str = symbol.trim();
           return str ? `${str} ` : "";
         }, [symbol]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getSnippetProps = (0, import_react165.useCallback)(
+        const getSnippetProps = (0, import_react172.useCallback)(
           () => ({
             className: slots.base({
               class: baseStyles
@@ -127118,7 +127118,7 @@
           }),
           [slots, baseStyles, isMultiLine, otherProps]
         );
-        const onCopy = (0, import_react165.useCallback)(() => {
+        const onCopy = (0, import_react172.useCallback)(() => {
           var _a2;
           if (disableCopy) {
             return;
@@ -127148,7 +127148,7 @@
           isIconOnly: true,
           ...userButtonProps
         };
-        const getCopyButtonProps = (0, import_react165.useCallback)(
+        const getCopyButtonProps = (0, import_react172.useCallback)(
           () => ({
             ...copyButtonProps,
             "data-copied": (0, import_shared_utils.dataAttr)(copied),
@@ -127196,7 +127196,7 @@
       var import_shared_icons = require_dist17();
       var import_button = require_dist28();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Snippet = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -127206,8 +127206,8 @@
           slots,
           classNames,
           copied,
-          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.CopyLinearIcon, {}),
-          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.CheckLinearIcon, {}),
+          copyIcon = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.CopyLinearIcon, {}),
+          checkIcon = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.CheckLinearIcon, {}),
           symbolBefore,
           disableCopy,
           disableTooltip,
@@ -127220,7 +127220,7 @@
           getCopyButtonProps
         } = useSnippet({ ...props, ref });
         const TooltipContent = (0, import_react210.useCallback)(
-          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
+          ({ children: children2 }) => /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_tooltip.Tooltip, { ...tooltipProps, isDisabled: copied || tooltipProps.isDisabled, children: children2 }),
           [(0, import_shared_utils2.objectToDeps)(tooltipProps)]
         );
         const contents = (0, import_react210.useMemo)(() => {
@@ -127229,14 +127229,14 @@
           }
           const clonedCheckIcon = checkIcon && (0, import_react210.cloneElement)(checkIcon, { className: slots.checkIcon() });
           const clonedCopyIcon = copyIcon && (0, import_react210.cloneElement)(copyIcon, { className: slots.copyIcon() });
-          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
+          const copyButton = /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(import_button.Button, { ...getCopyButtonProps(), children: [
             clonedCheckIcon,
             clonedCopyIcon
           ] });
           if (disableTooltip) {
             return copyButton;
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(TooltipContent, { children: copyButton });
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(TooltipContent, { children: copyButton });
         }, [
           slots,
           classNames == null ? void 0 : classNames.copyButton,
@@ -127251,17 +127251,17 @@
         ]);
         const preContent = (0, import_react210.useMemo)(() => {
           if (isMultiLine && children && Array.isArray(children)) {
-            return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+            return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children: children.map((t, index3) => /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("pre", { className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+              !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
               t
             ] }, `${index3}-${t}`)) });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
-            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("pre", { ref: preRef, className: slots.pre({ class: classNames == null ? void 0 : classNames.pre }), children: [
+            !hideSymbol && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.symbol({ class: classNames == null ? void 0 : classNames.symbol }), children: symbolBefore }),
             children
           ] });
         }, [children, hideSymbol, isMultiLine, symbolBefore, classNames == null ? void 0 : classNames.pre, slots]);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ref: domRef, ...getSnippetProps(), children: [
           preContent,
           contents
         ] });
@@ -127338,7 +127338,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_use_safe_layout_effect = require_dist21();
@@ -127373,10 +127373,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "label";
-        const domRef = (0, import_react165.useRef)(null);
-        const inputRef = (0, import_react165.useRef)(null);
+        const domRef = (0, import_react172.useRef)(null);
+        const inputRef = (0, import_react172.useRef)(null);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const labelId = (0, import_react165.useId)();
+        const labelId = (0, import_react172.useId)();
         const ariaSwitchProps = (0, import_react210.useMemo)(() => {
           const ariaLabel = otherProps["aria-label"] || typeof children === "string" ? children : void 0;
           return {
@@ -127443,7 +127443,7 @@
             "data-pressed": (0, import_shared_utils.dataAttr)(pressed)
           };
         };
-        const getWrapperProps = (0, import_react165.useCallback)(
+        const getWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -127462,14 +127462,14 @@
             onChange: (0, import_shared_utils.chain)(onChange, inputProps.onChange)
           };
         };
-        const getThumbProps = (0, import_react165.useCallback)(
+        const getThumbProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             ...props2,
             className: slots.thumb({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.thumb, props2 == null ? void 0 : props2.className) })
           }),
           [slots, classNames == null ? void 0 : classNames.thumb]
         );
-        const getLabelProps = (0, import_react165.useCallback)(
+        const getLabelProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             ...props2,
             id: labelId,
@@ -127477,7 +127477,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, isDisabled, isSelected]
         );
-        const getThumbIconProps = (0, import_react165.useCallback)(
+        const getThumbIconProps = (0, import_react172.useCallback)(
           (props2 = {
             includeStateProps: false
           }) => (0, import_shared_utils.mergeProps)(
@@ -127492,7 +127492,7 @@
           ),
           [slots, classNames == null ? void 0 : classNames.thumbIcon, isSelected]
         );
-        const getStartContentProps = (0, import_react165.useCallback)(
+        const getStartContentProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -127501,7 +127501,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.startContent, isSelected]
         );
-        const getEndContentProps = (0, import_react165.useCallback)(
+        const getEndContentProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             width: "1em",
             height: "1em",
@@ -127535,8 +127535,8 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var Switch2 = (0, import_system2.forwardRef)((props, ref) => {
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var Switch3 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
           children,
@@ -127555,18 +127555,18 @@
         const clonedThumbIcon = typeof thumbIcon === "function" ? thumbIcon(getThumbIconProps({ includeStateProps: true })) : thumbIcon && (0, import_react310.cloneElement)(thumbIcon, getThumbIconProps());
         const clonedStartContent = startContent && (0, import_react310.cloneElement)(startContent, getStartContentProps());
         const clonedEndContent = endContent && (0, import_react310.cloneElement)(endContent, getEndContentProps());
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("input", { ...getInputProps() }),
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("span", { ...getWrapperProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("input", { ...getInputProps() }),
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("span", { ...getWrapperProps(), children: [
             startContent && clonedStartContent,
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getThumbProps(), children: thumbIcon && clonedThumbIcon }),
             endContent && clonedEndContent
           ] }),
-          children && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getLabelProps(), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getLabelProps(), children })
         ] });
       });
-      Switch2.displayName = "HeroUI.Switch";
-      var switch_default = Switch2;
+      Switch3.displayName = "HeroUI.Switch";
+      var switch_default = Switch3;
     }
   });
 
@@ -127598,7 +127598,7 @@
         useUser: () => useUser
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_focus2 = require_main18();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
@@ -127624,12 +127624,12 @@
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)({});
-        const canBeFocused = (0, import_react165.useMemo)(() => {
+        const canBeFocused = (0, import_react172.useMemo)(() => {
           return isFocusable || as === "button";
         }, [isFocusable, as]);
-        const slots = (0, import_react165.useMemo)(() => (0, import_theme.user)(), []);
+        const slots = (0, import_react172.useMemo)(() => (0, import_theme.user)(), []);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const getUserProps = (0, import_react165.useCallback)(
+        const getUserProps = (0, import_react172.useCallback)(
           () => ({
             ref: domRef,
             tabIndex: canBeFocused ? 0 : -1,
@@ -127661,17 +127661,17 @@
       }
       var import_system = require_dist11();
       var import_avatar = require_dist23();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var User = (0, import_system.forwardRef)((props, ref) => {
         const { Component: Component2, name, slots, classNames, description, avatarProps, getUserProps } = useUser({
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...getUserProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_avatar.Avatar, { ...avatarProps }),
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...getUserProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_avatar.Avatar, { ...avatarProps }),
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { className: slots.wrapper({ class: classNames == null ? void 0 : classNames.wrapper }), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.name({ class: classNames == null ? void 0 : classNames.name }), children: name }),
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.description({ class: classNames == null ? void 0 : classNames.description }), children: description })
           ] })
         ] });
       });
@@ -127706,12 +127706,12 @@
         useIsMounted: () => useIsMounted2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useIsMounted2(props = {}) {
         const { rerender = false, delay: delay2 = 0 } = props;
-        const isMountedRef = (0, import_react165.useRef)(false);
-        const [isMounted, setIsMounted] = (0, import_react165.useState)(false);
-        (0, import_react165.useEffect)(() => {
+        const isMountedRef = (0, import_react172.useRef)(false);
+        const [isMounted, setIsMounted] = (0, import_react172.useState)(false);
+        (0, import_react172.useEffect)(() => {
           isMountedRef.current = true;
           let timer = null;
           if (rerender) {
@@ -127733,7 +127733,7 @@
             }
           };
         }, [rerender]);
-        return [(0, import_react165.useCallback)(() => isMountedRef.current, []), isMounted];
+        return [(0, import_react172.useCallback)(() => isMountedRef.current, []), isMounted];
       }
     }
   });
@@ -127828,7 +127828,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_is_mounted2 = require_dist50();
       var import_progress3 = require_dist51();
       function useProgress(originalProps) {
@@ -127873,7 +127873,7 @@
           "aria-labelledby": originalProps["aria-labelledby"],
           "aria-label": originalProps["aria-label"]
         });
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.progress)({
             ...variantProps2,
             disableAnimation
@@ -127881,11 +127881,11 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation]
         );
         const selfMounted = disableAnimation ? true : isMounted;
-        const percentage = (0, import_react165.useMemo)(
+        const percentage = (0, import_react172.useMemo)(
           () => isIndeterminate || !selfMounted ? void 0 : (0, import_shared_utils.clampPercentage)((value - minValue) / (maxValue - minValue) * 100),
           [selfMounted, isIndeterminate, value, minValue, maxValue]
         );
-        const getProgressBarProps = (0, import_react165.useCallback)(
+        const getProgressBarProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             ref: domRef,
             "data-indeterminate": (0, import_shared_utils.dataAttr)(isIndeterminate),
@@ -127903,7 +127903,7 @@
             otherProps
           ]
         );
-        const getLabelProps = (0, import_react165.useCallback)(
+        const getLabelProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             className: slots.label({ class: classNames == null ? void 0 : classNames.label }),
             ...(0, import_shared_utils.mergeProps)(labelProps, props2)
@@ -127922,7 +127922,7 @@
           getLabelProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Progress2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -127936,12 +127936,12 @@
         } = useProgress({ ...props, ref });
         const progressBarProps = getProgressBarProps();
         const shouldShowLabelWrapper = label || showValueLabel;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...progressBarProps, children: [
-          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
-            label && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getLabelProps(), children: label }),
-            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...progressBarProps, children: [
+          shouldShowLabelWrapper ? /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { className: slots.labelWrapper({ class: classNames == null ? void 0 : classNames.labelWrapper }), children: [
+            label && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getLabelProps(), children: label }),
+            showValueLabel && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.value({ class: classNames == null ? void 0 : classNames.value }), children: progressBarProps["aria-valuetext"] })
           ] }) : null,
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { className: slots.track({ class: classNames == null ? void 0 : classNames.track }), children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             "div",
             {
               className: slots.indicator({ class: classNames == null ? void 0 : classNames.indicator }),
@@ -128915,7 +128915,7 @@
       var import_interactions = require_main17();
       var import_shared_utils = require_dist2();
       var import_utils8 = require_main38();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_textfield = require_main40();
       var import_form = require_dist33();
       function useInput(originalProps) {
@@ -128945,13 +128945,13 @@
           },
           ...otherProps
         } = props;
-        const handleValueChange = (0, import_react165.useCallback)(
+        const handleValueChange = (0, import_react172.useCallback)(
           (value) => {
             onValueChange(value != null ? value : "");
           },
           [onValueChange]
         );
-        const [isFocusWithin, setFocusWithin] = (0, import_react165.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react172.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -128971,7 +128971,7 @@
         const isHiddenType = type === "hidden";
         const isMultiline = originalProps.isMultiline;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react165.useCallback)(() => {
+        const handleClear = (0, import_react172.useCallback)(() => {
           var _a2;
           if (isFileTypeInput) {
             domRef.current.value = "";
@@ -129048,7 +129048,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? isOutsideLeft || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.input)({
             ...variantProps2,
             isInvalid,
@@ -129065,7 +129065,7 @@
             disableAnimation
           ]
         );
-        const getBaseProps = (0, import_react165.useCallback)(
+        const getBaseProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -129118,7 +129118,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react165.useCallback)(
+        const getLabelProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -129128,7 +129128,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const handleKeyDown = (0, import_react165.useCallback)(
+        const handleKeyDown = (0, import_react172.useCallback)(
           (e) => {
             if (e.key === "Escape" && inputValue && (isClearable || onClear) && !originalProps.isReadOnly) {
               setInputValue("");
@@ -129137,7 +129137,7 @@
           },
           [inputValue, setInputValue, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getInputProps = (0, import_react165.useCallback)(
+        const getInputProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -129187,7 +129187,7 @@
             handleKeyDown
           ]
         );
-        const getInputWrapperProps = (0, import_react165.useCallback)(
+        const getInputWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -129220,7 +129220,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react165.useCallback)(
+        const getInnerWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -129238,7 +129238,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react165.useCallback)(
+        const getMainWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -129250,7 +129250,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react165.useCallback)(
+        const getHelperWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -129262,7 +129262,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react165.useCallback)(
+        const getDescriptionProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -129273,7 +129273,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react165.useCallback)(
+        const getErrorMessageProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -129284,7 +129284,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react165.useCallback)(
+        const getClearButtonProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -129335,7 +129335,7 @@
           getClearButtonProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Input = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -129362,10 +129362,10 @@
           getErrorMessageProps,
           getClearButtonProps
         } = useInput({ ...props, ref });
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("label", { ...getLabelProps(), children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("label", { ...getLabelProps(), children: label }) : null;
         const end = (0, import_react210.useMemo)(() => {
           if (isClearable) {
-            return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.CloseFilledIcon, {}) });
+            return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("button", { ...getClearButtonProps(), children: endContent || /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.CloseFilledIcon, {}) });
           }
           return endContent;
         }, [isClearable, getClearButtonProps]);
@@ -129373,7 +129373,7 @@
           const shouldShowError = isInvalid && errorMessage;
           const hasContent = shouldShowError || description;
           if (!hasHelper || !hasContent) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getDescriptionProps(), children: description }) });
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getHelperWrapperProps(), children: shouldShowError ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getErrorMessageProps(), children: errorMessage }) : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getDescriptionProps(), children: description }) });
         }, [
           hasHelper,
           isInvalid,
@@ -129384,24 +129384,24 @@
           getDescriptionProps
         ]);
         const innerWrapper = (0, import_react210.useMemo)(() => {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...getInnerWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...getInnerWrapperProps(), children: [
             startContent,
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("input", { ...getInputProps() }),
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("input", { ...getInputProps() }),
             end
           ] });
         }, [startContent, end, getInputProps, getInnerWrapperProps]);
         const mainWrapper = (0, import_react210.useMemo)(() => {
           if (shouldLabelBeOutside) {
-            return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...getMainWrapperProps(), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...getInputWrapperProps(), children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...getMainWrapperProps(), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...getInputWrapperProps(), children: [
                 !isOutsideLeft && !isOutsideTop ? labelContent : null,
                 innerWrapper
               ] }),
               helperWrapper
             ] });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(import_jsx_runtime100.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...getInputWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(import_jsx_runtime107.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...getInputWrapperProps(), children: [
               labelContent,
               innerWrapper
             ] }),
@@ -129420,7 +129420,7 @@
           getErrorMessageProps,
           getDescriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...getBaseProps(), children: [
           isOutsideLeft || isOutsideTop ? labelContent : null,
           mainWrapper
         ] });
@@ -129700,7 +129700,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_aria_utils = require_dist13();
       var import_overlays = require_main9();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       var import_use_safe_layout_effect = require_dist21();
       var import_use_aria_overlay = require_dist45();
@@ -129768,7 +129768,7 @@
           if (!updatePositionDeps.length) return;
           updatePosition();
         }, updatePositionDeps);
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           var _a, _b;
           if (state.isOpen && popoverRef.current) {
             if (isNonModal) {
@@ -130005,15 +130005,15 @@
         name: "PopoverContext",
         errorMessage: "usePopoverContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Popover />`"
       });
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Popover = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = usePopover({ ...otherProps, ref });
         const [trigger, content] = import_react310.Children.toArray(children);
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(PopoverProvider, { value: context, children: [
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_overlays4.Overlay, { portalContainer: context.portalContainer, children: content });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(PopoverProvider, { value: context, children: [
           trigger,
-          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
+          context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null })
         ] });
       });
       Popover.displayName = "HeroUI.Popover";
@@ -131518,7 +131518,7 @@
       var import_theme = require_dist12();
       var import_tree = require_main12();
       var import_react_utils = require_dist10();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useMenu(props) {
         var _a;
@@ -131551,7 +131551,7 @@
         const innerState = (0, import_tree.useTreeState)({ ...otherProps, ...userMenuProps, children });
         const state = propState || innerState;
         const { menuProps } = (0, import_menu.useMenu)({ ...otherProps, ...userMenuProps, onAction }, state, domRef);
-        const slots = (0, import_react165.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
+        const slots = (0, import_react172.useMemo)(() => (0, import_theme.menu)({ className }), [className]);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -131785,10 +131785,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function MenuSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -131796,7 +131796,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -132209,7 +132209,7 @@
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var getMenuItem = (props, key) => {
         if (props) {
           const mergedChildren = Array.isArray(props.children) ? props.children : [...(props == null ? void 0 : props.items) || []];
@@ -132253,10 +132253,10 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const triggerRef = (0, import_react165.useRef)(null);
+        const triggerRef = (0, import_react172.useRef)(null);
         const menuTriggerRef = triggerRefProp || triggerRef;
-        const menuRef = (0, import_react165.useRef)(null);
-        const popoverRef = (0, import_react165.useRef)(null);
+        const menuRef = (0, import_react172.useRef)(null);
+        const popoverRef = (0, import_react172.useRef)(null);
         const state = (0, import_menu.useMenuTriggerState)({
           trigger,
           isOpen,
@@ -132273,7 +132273,7 @@
           state,
           menuTriggerRef
         );
-        const styles = (0, import_react165.useMemo)(
+        const styles = (0, import_react172.useMemo)(
           () => (0, import_theme.dropdown)({
             className
           }),
@@ -132336,12 +132336,12 @@
           getMenuTriggerProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Dropdown2 = (props) => {
         const { children, ...otherProps } = props;
         const context = useDropdown(otherProps);
         const [menuTrigger, menu] = import_react210.default.Children.toArray(children);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(DropdownProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(import_popover.Popover, { ...context.getPopoverProps(), children: [
           menuTrigger,
           menu
         ] }) });
@@ -132400,7 +132400,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_react310 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -132485,7 +132485,7 @@
             }
           };
         };
-        const getWrapperProps = (0, import_react165.useCallback)(() => {
+        const getWrapperProps = (0, import_react172.useCallback)(() => {
           const fallbackStyle = showFallback ? {
             backgroundImage: `url(${fallbackSrc})`
           } : {};
@@ -132497,7 +132497,7 @@
             }
           };
         }, [slots, showFallback, fallbackSrc, classNames == null ? void 0 : classNames.wrapper, w]);
-        const getBlurredImgProps = (0, import_react165.useCallback)(() => {
+        const getBlurredImgProps = (0, import_react172.useCallback)(() => {
           return {
             src,
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -132520,7 +132520,7 @@
           getBlurredImgProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Image2 = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -132539,19 +132539,19 @@
           ...props,
           ref
         });
-        const img = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ref: domRef, ...getImgProps() });
+        const img = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ref: domRef, ...getImgProps() });
         if (removeWrapper) {
           return img;
         }
-        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
+        const zoomed = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { className: slots.zoomedWrapper({ class: classNames == null ? void 0 : classNames.zoomedWrapper }), children: img });
         if (isBlurred) {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...getWrapperProps(), children: [
             isZoomed ? zoomed : img,
             (0, import_react310.cloneElement)(img, getBlurredImgProps())
           ] });
         }
         if (isZoomed || !disableSkeleton || fallbackSrc) {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...getWrapperProps(), children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...getWrapperProps(), children: [
             " ",
             isZoomed ? zoomed : img
           ] });
@@ -132591,7 +132591,7 @@
       module.exports = __toCommonJS2(index_exports);
       var import_overlays = require_main9();
       var import_utils8 = require_main4();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_overlay = require_dist45();
       function useAriaModalOverlay(props = {
         shouldBlockScroll: true
@@ -132608,7 +132608,7 @@
           isDisabled: !state.isOpen || !props.shouldBlockScroll
         });
         (0, import_overlays.useOverlayFocusContain)();
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (state.isOpen && ref.current) {
             return (0, import_overlays.ariaHideOutside)([ref.current]);
           }
@@ -132658,9 +132658,9 @@
         useViewportSize: () => useViewportSize
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var import_react172 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
       var visualViewport = typeof document !== "undefined" && window.visualViewport;
-      var IsSSRContext = import_react165.default.createContext(false);
+      var IsSSRContext = import_react172.default.createContext(false);
       function getSnapshot() {
         return false;
       }
@@ -132672,15 +132672,15 @@
         };
       }
       function useIsSSR() {
-        if (typeof import_react165.default["useSyncExternalStore"] === "function") {
-          return import_react165.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
+        if (typeof import_react172.default["useSyncExternalStore"] === "function") {
+          return import_react172.default["useSyncExternalStore"](subscribe, getSnapshot, getServerSnapshot);
         }
-        return (0, import_react165.useContext)(IsSSRContext);
+        return (0, import_react172.useContext)(IsSSRContext);
       }
       function useViewportSize() {
         let isSSR = useIsSSR();
-        let [size, setSize] = (0, import_react165.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
-        (0, import_react165.useEffect)(() => {
+        let [size, setSize] = (0, import_react172.useState)(() => isSSR ? { width: 0, height: 0 } : getViewportSize());
+        (0, import_react172.useEffect)(() => {
           let onResize = () => {
             setSize((size2) => {
               let newSize = getViewportSize();
@@ -132856,7 +132856,7 @@
       var import_utils8 = require_main4();
       var import_utils22 = require_main46();
       var import_use_callback_ref = require_dist31();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDisclosure2(props = {}) {
         const {
           id: idProp,
@@ -132870,22 +132870,22 @@
         const onOpenPropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onOpenProp);
         const onClosePropCallbackRef = (0, import_use_callback_ref.useCallbackRef)(onCloseProp);
         const [isOpen, setIsOpen] = (0, import_utils22.useControlledState)(isOpenProp, defaultOpen || false, onChange);
-        const reactId = (0, import_react165.useId)();
+        const reactId = (0, import_react172.useId)();
         const id4 = idProp || reactId;
         const isControlled = isOpenProp !== void 0;
-        const onClose = (0, import_react165.useCallback)(() => {
+        const onClose = (0, import_react172.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(false);
           }
           onClosePropCallbackRef == null ? void 0 : onClosePropCallbackRef();
         }, [isControlled, onClosePropCallbackRef]);
-        const onOpen = (0, import_react165.useCallback)(() => {
+        const onOpen = (0, import_react172.useCallback)(() => {
           if (!isControlled) {
             setIsOpen(true);
           }
           onOpenPropCallbackRef == null ? void 0 : onOpenPropCallbackRef();
         }, [isControlled, onOpenPropCallbackRef]);
-        const onOpenChange = (0, import_react165.useCallback)(() => {
+        const onOpenChange = (0, import_react172.useCallback)(() => {
           const action = isOpen ? onClose : onOpen;
           action();
         }, [isOpen, onOpen, onClose]);
@@ -135001,15 +135001,15 @@
         useDraggable: () => useDraggable2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main47();
       function useDraggable2(props) {
         const { targetRef, isDisabled = false, canOverflow = false } = props;
-        const boundary = (0, import_react165.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
-        const isDragging2 = (0, import_react165.useRef)(false);
-        const transform2 = (0, import_react165.useRef)({ offsetX: 0, offsetY: 0 });
-        const prevTargetRef = (0, import_react165.useRef)(null);
-        (0, import_react165.useEffect)(() => {
+        const boundary = (0, import_react172.useRef)({ minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 });
+        const isDragging2 = (0, import_react172.useRef)(false);
+        const transform2 = (0, import_react172.useRef)({ offsetX: 0, offsetY: 0 });
+        const prevTargetRef = (0, import_react172.useRef)(null);
+        (0, import_react172.useEffect)(() => {
           var _a;
           const currentTarget = (_a = targetRef == null ? void 0 : targetRef.current) != null ? _a : null;
           if (prevTargetRef.current !== currentTarget) {
@@ -135017,7 +135017,7 @@
             prevTargetRef.current = currentTarget;
           }
         }, [targetRef == null ? void 0 : targetRef.current]);
-        const onMoveStart = (0, import_react165.useCallback)(() => {
+        const onMoveStart = (0, import_react172.useCallback)(() => {
           var _a, _b, _c, _d, _e;
           isDragging2.current = true;
           const { offsetX, offsetY } = transform2.current;
@@ -135039,7 +135039,7 @@
             maxTop
           };
         }, [targetRef]);
-        const onMove = (0, import_react165.useCallback)(
+        const onMove = (0, import_react172.useCallback)(
           (e) => {
             if (isDisabled) {
               return;
@@ -135062,7 +135062,7 @@
           },
           [isDisabled, canOverflow, targetRef]
         );
-        const onMoveEnd = (0, import_react165.useCallback)(() => {
+        const onMoveEnd = (0, import_react172.useCallback)(() => {
           isDragging2.current = false;
         }, []);
         const { moveProps } = (0, import_interactions.useMove)({
@@ -135070,12 +135070,12 @@
           onMove,
           onMoveEnd
         });
-        const preventDefault = (0, import_react165.useCallback)((e) => {
+        const preventDefault = (0, import_react172.useCallback)((e) => {
           if (isDragging2.current) {
             e.preventDefault();
           }
         }, []);
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (!isDisabled) {
             document.body.addEventListener("touchmove", preventDefault, { passive: false });
           }
@@ -135133,7 +135133,7 @@
       var import_overlays2 = require_main9();
       var import_system2 = require_dist11();
       var import_use_aria_modal_overlay = require_dist59();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_system = require_dist11();
       var import_use_aria_button = require_dist27();
@@ -135165,13 +135165,13 @@
         } = props;
         const Component2 = as || "section";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const closeButtonRef = (0, import_react165.useRef)(null);
-        const [headerMounted, setHeaderMounted] = (0, import_react165.useState)(false);
-        const [bodyMounted, setBodyMounted] = (0, import_react165.useState)(false);
+        const closeButtonRef = (0, import_react172.useRef)(null);
+        const [headerMounted, setHeaderMounted] = (0, import_react172.useState)(false);
+        const [bodyMounted, setBodyMounted] = (0, import_react172.useState)(false);
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const dialogId = (0, import_react165.useId)();
-        const headerId = (0, import_react165.useId)();
-        const bodyId = (0, import_react165.useId)();
+        const dialogId = (0, import_react172.useId)();
+        const headerId = (0, import_react172.useId)();
+        const bodyId = (0, import_react172.useId)();
         const state = (0, import_overlays.useOverlayTriggerState)({
           isOpen,
           defaultOpen,
@@ -135194,7 +135194,7 @@
         const { buttonProps: closeButtonProps } = (0, import_use_aria_button.useAriaButton)({ onPress: state.close }, closeButtonRef);
         const { isFocusVisible: isCloseButtonFocusVisible, focusProps: closeButtonFocusProps } = (0, import_focus2.useFocusRing)();
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.modal)({
             ...variantProps2,
             disableAnimation
@@ -135216,7 +135216,7 @@
             "aria-describedby": bodyMounted ? bodyId : void 0
           };
         };
-        const getBackdropProps = (0, import_react165.useCallback)(
+        const getBackdropProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             className: slots.backdrop({ class: classNames == null ? void 0 : classNames.backdrop }),
             ...underlayProps,
@@ -135263,12 +135263,12 @@
         name: "ModalContext",
         errorMessage: "useModalContext: `context` is undefined. Seems you forgot to wrap all popover components within `<Modal />`"
       });
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Modal = (0, import_system2.forwardRef)((props, ref) => {
         const { children, ...otherProps } = props;
         const context = useModal({ ...otherProps, ref });
-        const overlay = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
+        const overlay = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_overlays2.Overlay, { portalContainer: context.portalContainer, children });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(ModalProvider, { value: context, children: context.disableAnimation && context.isOpen ? overlay : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.AnimatePresence, { children: context.isOpen ? overlay : null }) });
       });
       Modal.displayName = "HeroUI.Modal";
       var modal_default = Modal;
@@ -135511,7 +135511,7 @@
         useScrollPosition: () => useScrollPosition
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var isBrowser3 = typeof window !== "undefined";
       function getScrollPosition(element) {
         if (!isBrowser3) return { x: 0, y: 0 };
@@ -135522,11 +135522,11 @@
       }
       var useScrollPosition = (props) => {
         const { elementRef, delay: delay2 = 30, callback, isEnabled } = props;
-        const position = (0, import_react165.useRef)(
+        const position = (0, import_react172.useRef)(
           isEnabled ? getScrollPosition(elementRef == null ? void 0 : elementRef.current) : { x: 0, y: 0 }
         );
-        const throttleTimeout = (0, import_react165.useRef)(null);
-        const handler = (0, import_react165.useCallback)(() => {
+        const throttleTimeout = (0, import_react172.useRef)(null);
+        const handler = (0, import_react172.useCallback)(() => {
           const currPos = getScrollPosition(elementRef == null ? void 0 : elementRef.current);
           if (typeof callback === "function") {
             callback({ prevPos: position.current, currPos });
@@ -135534,7 +135534,7 @@
           position.current = currPos;
           throttleTimeout.current = null;
         }, [callback, elementRef]);
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (!isEnabled) return;
           const handleScroll = () => {
             if (delay2) {
@@ -135588,9 +135588,9 @@
         useResizeObserver: () => useResizeObserver
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useResize(callback, immediatelyInvoke = true) {
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           const fn = () => callback();
           if (immediatelyInvoke) {
             fn();
@@ -135604,7 +135604,7 @@
       }
       function useResizeObserver(options) {
         const { ref, box, onResize } = options;
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           let element = ref == null ? void 0 : ref.current;
           if (!element) {
             return;
@@ -135828,7 +135828,7 @@
         useNavbarContext: () => useNavbarContext
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
@@ -135862,10 +135862,10 @@
         const Component2 = as || "nav";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const prevWidth = (0, import_react165.useRef)(0);
-        const navHeight = (0, import_react165.useRef)(0);
-        const [isHidden, setIsHidden] = (0, import_react165.useState)(false);
-        const handleMenuOpenChange = (0, import_react165.useCallback)(
+        const prevWidth = (0, import_react172.useRef)(0);
+        const navHeight = (0, import_react172.useRef)(0);
+        const [isHidden, setIsHidden] = (0, import_react172.useState)(false);
+        const handleMenuOpenChange = (0, import_react172.useCallback)(
           (isOpen) => {
             onMenuOpenChange(isOpen || false);
           },
@@ -135902,12 +135902,12 @@
             }
           }
         });
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           var _a2;
           updateWidth();
           navHeight.current = ((_a2 = domRef.current) == null ? void 0 : _a2.offsetHeight) || 0;
         }, []);
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.navbar)({
             ...variantProps2,
             disableAnimation,
@@ -136009,7 +136009,7 @@
           }
         }
       };
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_dist(), dist_exports)).then((res) => res.default);
       var NavbarMenu = (0, import_system2.forwardRef)((props, ref) => {
         var _a, _b;
@@ -136019,7 +136019,7 @@
         const styles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.menu, className);
         if (disableAnimation) {
           if (!isMenuOpen) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             "ul",
             {
               ref: domRef,
@@ -136034,7 +136034,7 @@
             }
           ) });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion3.AnimatePresence, { mode: "wait", children: isMenuOpen ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_overlays2.Overlay, { portalContainer, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion3.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           import_framer_motion3.m.ul,
           {
             ref: domRef,
@@ -138884,10 +138884,10 @@
       var $74751389dd0da9fc$var$cache = /* @__PURE__ */ new Map();
       function $74751389dd0da9fc$export$a16aca283550c30d(options) {
         let { locale } = (0, $2522e612fa919664$exports.useLocale)();
-        let cacheKey = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
-        if ($74751389dd0da9fc$var$cache.has(cacheKey)) return $74751389dd0da9fc$var$cache.get(cacheKey);
+        let cacheKey2 = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
+        if ($74751389dd0da9fc$var$cache.has(cacheKey2)) return $74751389dd0da9fc$var$cache.get(cacheKey2);
         let formatter = new Intl.Collator(locale, options);
-        $74751389dd0da9fc$var$cache.set(cacheKey, formatter);
+        $74751389dd0da9fc$var$cache.set(cacheKey2, formatter);
         return formatter;
       }
     }
@@ -142924,7 +142924,7 @@
         useTable: () => useTable
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_table = require_main50();
       var import_table2 = require_main53();
       var import_system = require_dist11();
@@ -143026,7 +143026,7 @@
             onCellAction
           ]
         );
-        const getBaseProps = (0, import_react165.useCallback)(
+        const getBaseProps = (0, import_react172.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -143034,7 +143034,7 @@
           }),
           [baseStyles, slots]
         );
-        const getWrapperProps = (0, import_react165.useCallback)(
+        const getWrapperProps = (0, import_react172.useCallback)(
           (props2) => ({
             ...props2,
             ref: domBaseRef,
@@ -143042,7 +143042,7 @@
           }),
           [classNames == null ? void 0 : classNames.wrapper, slots]
         );
-        const getTableProps = (0, import_react165.useCallback)(
+        const getTableProps = (0, import_react172.useCallback)(
           (props2) => ({
             ...(0, import_shared_utils.mergeProps)(
               gridProps,
@@ -143088,7 +143088,7 @@
       var import_shared_utils2 = require_dist2();
       var import_table3 = require_main53();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableRowGroup = (0, import_react310.forwardRef)((props, ref) => {
         var _a;
         const { as, className, children, slots, classNames, ...otherProps } = props;
@@ -143096,7 +143096,7 @@
         const domRef = (0, import_react_utils2.useDOMRef)(ref);
         const { rowGroupProps } = (0, import_table3.useTableRowGroup)();
         const theadStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.thead, className);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           Component2,
           {
             ref: domRef,
@@ -143701,7 +143701,7 @@
       var import_react_utils12 = require_dist10();
       var import_react810 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme10 = require_dist12();
-      var import_jsx_runtime102 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime108 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var TableBody = (0, import_system10.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -143726,7 +143726,7 @@
         const bodyProps = collection == null ? void 0 : collection.body.props;
         const isLoading = (bodyProps == null ? void 0 : bodyProps.isLoading) || (bodyProps == null ? void 0 : bodyProps.loadingState) === "loading" || (bodyProps == null ? void 0 : bodyProps.loadingState) === "loadingMore";
         const renderRows = (0, import_react810.useMemo)(() => {
-          return [...collection.body.childNodes].map((row) => /* @__PURE__ */ (0, import_jsx_runtime102.jsx)(
+          return [...collection.body.childNodes].map((row) => /* @__PURE__ */ (0, import_jsx_runtime108.jsx)(
             table_row_default,
             {
               classNames,
@@ -143735,7 +143735,7 @@
               slots,
               state,
               children: [...row.childNodes].map(
-                (cell) => cell.props.isSelectionCell ? /* @__PURE__ */ (0, import_jsx_runtime102.jsx)(
+                (cell) => cell.props.isSelectionCell ? /* @__PURE__ */ (0, import_jsx_runtime108.jsx)(
                   table_checkbox_cell_default,
                   {
                     checkboxesProps,
@@ -143749,7 +143749,7 @@
                     state
                   },
                   cell.key
-                ) : /* @__PURE__ */ (0, import_jsx_runtime102.jsx)(
+                ) : /* @__PURE__ */ (0, import_jsx_runtime108.jsx)(
                   table_cell_default,
                   {
                     classNames,
@@ -143768,7 +143768,7 @@
         let emptyContent;
         let loadingContent;
         if (collection.size === 0 && bodyProps.emptyContent) {
-          emptyContent = /* @__PURE__ */ (0, import_jsx_runtime102.jsx)("tr", { role: "row", children: /* @__PURE__ */ (0, import_jsx_runtime102.jsx)(
+          emptyContent = /* @__PURE__ */ (0, import_jsx_runtime108.jsx)("tr", { role: "row", children: /* @__PURE__ */ (0, import_jsx_runtime108.jsx)(
             "td",
             {
               className: slots == null ? void 0 : slots.emptyWrapper({ class: classNames == null ? void 0 : classNames.emptyWrapper }),
@@ -143779,8 +143779,8 @@
           ) });
         }
         if (isLoading && bodyProps.loadingContent) {
-          loadingContent = /* @__PURE__ */ (0, import_jsx_runtime102.jsxs)("tr", { role: "row", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime102.jsx)(
+          loadingContent = /* @__PURE__ */ (0, import_jsx_runtime108.jsxs)("tr", { role: "row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime108.jsx)(
               "td",
               {
                 className: slots == null ? void 0 : slots.loadingWrapper({ class: classNames == null ? void 0 : classNames.loadingWrapper }),
@@ -143789,10 +143789,10 @@
                 children: bodyProps.loadingContent
               }
             ),
-            !emptyContent && collection.size === 0 ? /* @__PURE__ */ (0, import_jsx_runtime102.jsx)("td", { className: slots == null ? void 0 : slots.emptyWrapper({ class: classNames == null ? void 0 : classNames.emptyWrapper }) }) : null
+            !emptyContent && collection.size === 0 ? /* @__PURE__ */ (0, import_jsx_runtime108.jsx)("td", { className: slots == null ? void 0 : slots.emptyWrapper({ class: classNames == null ? void 0 : classNames.emptyWrapper }) }) : null
           ] });
         }
-        return /* @__PURE__ */ (0, import_jsx_runtime102.jsxs)(
+        return /* @__PURE__ */ (0, import_jsx_runtime108.jsxs)(
           Component2,
           {
             ref: domRef,
@@ -143973,7 +143973,7 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var spacing = {
         px: "1px",
         0: "0px",
@@ -144019,7 +144019,7 @@
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.spacer.variantKeys);
         const { as, className, x = 1, y = 1, ...otherProps } = props;
         const Component2 = as || "span";
-        const styles = (0, import_react165.useMemo)(
+        const styles = (0, import_react172.useMemo)(
           () => (0, import_theme.spacer)({
             ...variantProps2,
             className
@@ -144042,10 +144042,10 @@
         });
         return { Component: Component2, getSpacerProps };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Spacer = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, getSpacerProps } = useSpacer({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ref, ...getSpacerProps() });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ref, ...getSpacerProps() });
       });
       Spacer.displayName = "HeroUI.Spacer";
       var spacer_default = Spacer;
@@ -144084,12 +144084,12 @@
       var import_system_rsc = require_dist14();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useKbd(originalProps) {
         const [props, variantProps2] = (0, import_system_rsc.mapPropsVariants)(originalProps, import_theme.kbd.variantKeys);
         const { as, children, className, keys: keys3, title, classNames, ...otherProps } = props;
         const Component2 = as || "kbd";
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.kbd)({
             ...variantProps2
           }),
@@ -144152,13 +144152,13 @@
         win: "Win",
         alt: "Alt"
       };
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Kbd = (0, import_system_rsc2.forwardRef)((props, ref) => {
         const { Component: Component2, children, slots, classNames, keysToRender, getKbdProps } = useKbd({
           ...props
         });
         const keysContent = (0, import_react210.useMemo)(() => {
-          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return keysToRender.map((key) => /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             "abbr",
             {
               className: slots.abbr({ class: classNames == null ? void 0 : classNames.abbr }),
@@ -144168,9 +144168,9 @@
             key
           ));
         }, [keysToRender]);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ref, ...getKbdProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ref, ...getKbdProps(), children: [
           keysContent,
-          children && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
+          children && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { className: slots.content({ class: classNames == null ? void 0 : classNames.content }), children })
         ] });
       });
       Kbd.displayName = "HeroUI.Kbd";
@@ -145032,7 +145032,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_react_utils2 = require_dist10();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_tabs = require_main55();
       var import_tabs2 = require_main56();
       function useTabs(originalProps) {
@@ -145066,7 +145066,7 @@
           state,
           domRef
         );
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.tabs)({
             ...variantProps2,
             disableAnimation,
@@ -145075,7 +145075,7 @@
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isVertical]
         );
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const values = (0, import_react165.useMemo)(
+        const values = (0, import_react172.useMemo)(
           () => ({
             state,
             slots,
@@ -145097,7 +145097,7 @@
             classNames
           ]
         );
-        const getBaseProps = (0, import_react165.useCallback)(
+        const getBaseProps = (0, import_react172.useCallback)(
           (props2) => ({
             "data-slot": "base",
             className: slots.base({ class: (0, import_theme.cn)(baseStyles, props2 == null ? void 0 : props2.className) }),
@@ -145110,7 +145110,7 @@
           }),
           [baseStyles, otherProps, slots]
         );
-        const getWrapperProps = (0, import_react165.useCallback)(
+        const getWrapperProps = (0, import_react172.useCallback)(
           (props2) => ({
             "data-slot": "tabWrapper",
             className: slots.tabWrapper({ class: (0, import_theme.cn)(classNames == null ? void 0 : classNames.tabWrapper, props2 == null ? void 0 : props2.className) }),
@@ -145119,7 +145119,7 @@
           }),
           [classNames, slots, placement, isVertical]
         );
-        const getTabListProps = (0, import_react165.useCallback)(
+        const getTabListProps = (0, import_react172.useCallback)(
           (props2) => ({
             ref: domRef,
             "data-slot": "tabList",
@@ -145128,7 +145128,7 @@
           }),
           [domRef, tabListProps, classNames, slots]
         );
-        const getTabCursorProps = (0, import_react165.useCallback)(
+        const getTabCursorProps = (0, import_react172.useCallback)(
           (props2) => ({
             "data-slot": "cursor",
             className: slots.cursor({
@@ -145157,7 +145157,7 @@
       var import_tabs3 = require_main56();
       var import_interactions = require_main17();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Tab = (0, import_system2.forwardRef)((props, ref) => {
         var _a;
         const {
@@ -145202,7 +145202,7 @@
             boundary: listRef == null ? void 0 : listRef.current
           });
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           Component2,
           {
             ref: (0, import_react_utils3.mergeRefs)(domRef, tabRef),
@@ -145233,7 +145233,7 @@
             className: (_a = slots.tab) == null ? void 0 : _a.call(slots, { class: tabStyles }),
             title: otherProps == null ? void 0 : otherProps.titleValue,
             type: Component2 === "button" ? "button" : void 0,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "div",
               {
                 className: slots.tabContent({
@@ -145476,7 +145476,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system2 = require_dist11();
       function useSkeleton(originalProps) {
         var _a, _b;
@@ -145485,7 +145485,7 @@
         const { as, children, isLoaded = false, className, classNames, ...otherProps } = props;
         const Component2 = as || "div";
         const disableAnimation = (_b = (_a = originalProps.disableAnimation) != null ? _a : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _b : false;
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.skeleton)({
             ...variantProps2,
             disableAnimation
@@ -145507,10 +145507,10 @@
         };
         return { Component: Component2, children, slots, classNames, getSkeletonProps, getContentProps };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Skeleton = (0, import_system3.forwardRef)((props, ref) => {
         const { Component: Component2, children, getSkeletonProps, getContentProps } = useSkeleton({ ...props });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getContentProps(), children }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ref, ...getSkeletonProps(), children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getContentProps(), children }) });
       });
       Skeleton.displayName = "HeroUI.Skeleton";
       var skeleton_default = Skeleton;
@@ -145544,7 +145544,7 @@
       });
       module.exports = __toCommonJS2(index_exports);
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useDataScrollOverflow(props = {}) {
         const {
           domRef,
@@ -145555,8 +145555,8 @@
           onVisibilityChange,
           updateDeps = []
         } = props;
-        const visibleRef = (0, import_react165.useRef)(visibility);
-        (0, import_react165.useEffect)(() => {
+        const visibleRef = (0, import_react172.useRef)(visibility);
+        (0, import_react172.useEffect)(() => {
           const el = domRef == null ? void 0 : domRef.current;
           if (!el || !isEnabled) return;
           const setAttributes = (direction, hasBefore, hasAfter, prefix, suffix) => {
@@ -145658,7 +145658,7 @@
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
       var import_use_data_scroll_overflow = require_dist72();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils = require_dist2();
       function useScrollShadow(originalProps) {
         var _a;
@@ -145687,7 +145687,7 @@
           updateDeps: [children],
           overflowCheck: (_a = originalProps.orientation) != null ? _a : "vertical"
         });
-        const styles = (0, import_react165.useMemo)(
+        const styles = (0, import_react172.useMemo)(
           () => (0, import_theme.scrollShadow)({
             ...variantProps2,
             className
@@ -145711,10 +145711,10 @@
         };
         return { Component: Component2, styles, domRef, children, getBaseProps };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var ScrollShadow = (0, import_system2.forwardRef)((props, ref) => {
         const { Component: Component2, children, getBaseProps } = useScrollShadow({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(Component2, { ...getBaseProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(Component2, { ...getBaseProps(), children });
       });
       ScrollShadow.displayName = "HeroUI.ScrollShadow";
       var scroll_shadow_default = ScrollShadow;
@@ -146242,7 +146242,7 @@
       var import_theme = require_dist12();
       var import_list = require_main58();
       var import_react_utils = require_dist10();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme2 = require_dist12();
       function useListbox(props) {
         var _a;
@@ -146274,7 +146274,7 @@
         const innerState = (0, import_list.useListState)({ ...props, children, onSelectionChange });
         const state = propState || innerState;
         const { listBoxProps } = (0, import_listbox.useListBox)({ ...props, onAction }, state, domRef);
-        const slots = (0, import_react165.useMemo)(() => (0, import_theme.listbox)(), []);
+        const slots = (0, import_react172.useMemo)(() => (0, import_theme.listbox)(), []);
         const baseStyles = (0, import_theme2.cn)(classNames == null ? void 0 : classNames.base, className);
         const getBaseProps = (props2 = {}) => {
           return {
@@ -146491,10 +146491,10 @@
           getSelectedIconProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function ListboxSelectedIcon(props) {
         const { isSelected, disableAnimation, ...otherProps } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "svg",
           {
             "aria-hidden": "true",
@@ -146502,7 +146502,7 @@
             role: "presentation",
             viewBox: "0 0 17 18",
             ...otherProps,
-            children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+            children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
               "polyline",
               {
                 fill: "none",
@@ -147072,27 +147072,27 @@
         useLayoutEffect: () => useLayoutEffect2
       });
       module.exports = __toCommonJS2(index_exports);
-      var import_react165 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
-      var useLayoutEffect2 = typeof document !== "undefined" ? import_react165.default.useLayoutEffect : () => {
+      var import_react172 = __toESM2((init_react_shim(), __toCommonJS(react_shim_exports)));
+      var useLayoutEffect2 = typeof document !== "undefined" ? import_react172.default.useLayoutEffect : () => {
       };
       function useEffectEvent2(fn) {
-        const ref = (0, import_react165.useRef)(null);
+        const ref = (0, import_react172.useRef)(null);
         useLayoutEffect2(() => {
           ref.current = fn;
         }, [fn]);
-        return (0, import_react165.useCallback)((...args) => {
+        return (0, import_react172.useCallback)((...args) => {
           const f = ref.current;
           return f == null ? void 0 : f(...args);
         }, []);
       }
       function useFormReset(ref, initialValue, onReset) {
-        let resetValue = (0, import_react165.useRef)(initialValue);
+        let resetValue = (0, import_react172.useRef)(initialValue);
         let handleReset = useEffectEvent2(() => {
           if (onReset) {
             onReset(resetValue.current);
           }
         });
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           var _a;
           let form = (_a = ref == null ? void 0 : ref.current) == null ? void 0 : _a.form;
           form == null ? void 0 : form.addEventListener("reset", handleReset);
@@ -150614,11 +150614,11 @@
       var import_menu = require_main61();
       var import_selection = require_main13();
       var import_utils8 = require_main4();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useMultiSelect(props, state, ref) {
         const { disallowEmptySelection, isDisabled } = props;
         const collator = (0, import_i18n16.useCollator)({ usage: "search", sensitivity: "base" });
-        const delegate = (0, import_react165.useMemo)(
+        const delegate = (0, import_react172.useMemo)(
           () => new import_selection.ListKeyboardDelegate(state.collection, state.disabledKeys, null, collator),
           [state.collection, state.disabledKeys, collator]
         );
@@ -150893,7 +150893,7 @@
       var import_system = require_dist11();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_use_aria_button = require_dist27();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -150977,9 +150977,9 @@
         const Component2 = as || "button";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const triggerRef = (0, import_react165.useRef)(null);
-        const listBoxRef = (0, import_react165.useRef)(null);
-        const popoverRef = (0, import_react165.useRef)(null);
+        const triggerRef = (0, import_react172.useRef)(null);
+        const listBoxRef = (0, import_react172.useRef)(null);
+        const popoverRef = (0, import_react172.useRef)(null);
         let state = (0, import_use_aria_multiselect.useMultiSelectState)({
           ...props,
           isOpen,
@@ -151040,7 +151040,7 @@
           state,
           triggerRef
         );
-        const handleClear = (0, import_react165.useCallback)(() => {
+        const handleClear = (0, import_react172.useCallback)(() => {
           var _a2;
           state.setSelectedKeys(/* @__PURE__ */ new Set([]));
           onClear == null ? void 0 : onClear();
@@ -151069,7 +151069,7 @@
         const hasLabel = !!label;
         const hasLabelOutside = hasLabel && (isOutsideLeft || shouldLabelBeOutside && hasPlaceholder);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.select)({
             ...variantProps2,
             isInvalid,
@@ -151085,14 +151085,14 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const hasHelper = !!description || !!errorMessage;
         const hasEndContent = !!endContent;
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (state.isOpen && popoverRef.current && triggerRef.current) {
             let selectRect = triggerRef.current.getBoundingClientRect();
             let popover = popoverRef.current;
             popover.style.width = selectRect.width + "px";
           }
         }, [state.isOpen]);
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -151103,7 +151103,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        const getBaseProps = (0, import_react165.useCallback)(
+        const getBaseProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             "data-slot": "base",
             "data-filled": (0, import_shared_utils.dataAttr)(isFilled),
@@ -151120,7 +151120,7 @@
           }),
           [slots, hasHelper, hasValue, hasLabel, hasLabelOutside, isFilled, baseStyles]
         );
-        const getTriggerProps = (0, import_react165.useCallback)(
+        const getTriggerProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ref: triggerRef,
@@ -151160,7 +151160,7 @@
             shouldFilterDOMProps
           ]
         );
-        const getHiddenSelectProps = (0, import_react165.useCallback)(
+        const getHiddenSelectProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             state,
             triggerRef,
@@ -151185,7 +151185,7 @@
             triggerRef
           ]
         );
-        const getLabelProps = (0, import_react165.useCallback)(
+        const getLabelProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             "data-slot": "label",
             className: slots.label({
@@ -151196,7 +151196,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.label, labelProps]
         );
-        const getValueProps = (0, import_react165.useCallback)(
+        const getValueProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             "data-slot": "value",
             className: slots.value({
@@ -151207,7 +151207,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.value, valueProps]
         );
-        const getListboxWrapperProps = (0, import_react165.useCallback)(
+        const getListboxWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => ({
             "data-slot": "listboxWrapper",
             className: slots.listboxWrapper({
@@ -151244,7 +151244,7 @@
             ...(0, import_shared_utils.mergeProps)(slotsProps.listboxProps, props2, menuProps)
           };
         };
-        const getPopoverProps = (0, import_react165.useCallback)(
+        const getPopoverProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             var _a2, _b2;
             const popoverProps2 = (0, import_shared_utils.mergeProps)(slotsProps.popoverProps, props2);
@@ -151276,7 +151276,7 @@
             state.selectedItems
           ]
         );
-        const getSelectorIconProps = (0, import_react165.useCallback)(
+        const getSelectorIconProps = (0, import_react172.useCallback)(
           () => ({
             "data-slot": "selectorIcon",
             "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -151285,7 +151285,7 @@
           }),
           [slots, classNames == null ? void 0 : classNames.selectorIcon, state.isOpen]
         );
-        const getInnerWrapperProps = (0, import_react165.useCallback)(
+        const getInnerWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -151297,7 +151297,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getHelperWrapperProps = (0, import_react165.useCallback)(
+        const getHelperWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -151309,7 +151309,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react165.useCallback)(
+        const getDescriptionProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -151320,7 +151320,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getMainWrapperProps = (0, import_react165.useCallback)(
+        const getMainWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -151332,7 +151332,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getEndWrapperProps = (0, import_react165.useCallback)(
+        const getEndWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -151344,7 +151344,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endWrapper]
         );
-        const getEndContentProps = (0, import_react165.useCallback)(
+        const getEndContentProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -151356,7 +151356,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.endContent]
         );
-        const getErrorMessageProps = (0, import_react165.useCallback)(
+        const getErrorMessageProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -151367,7 +151367,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getSpinnerProps = (0, import_react165.useCallback)(
+        const getSpinnerProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               "aria-hidden": (0, import_shared_utils.dataAttr)(true),
@@ -151382,7 +151382,7 @@
           },
           [slots, spinnerRef, spinnerProps, classNames == null ? void 0 : classNames.spinner]
         );
-        const getClearButtonProps = (0, import_react165.useCallback)(
+        const getClearButtonProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -151449,7 +151449,7 @@
           getEndContentProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       function useHiddenSelect(props, state, triggerRef) {
         var _a;
         let data = selectData.get(state) || {};
@@ -151507,20 +151507,20 @@
         let { state, triggerRef, selectRef, label, name, isDisabled, form } = props;
         let { containerProps, selectProps } = useHiddenSelect({ ...props, selectRef }, state, triggerRef);
         if (state.collection.size <= 300) {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("label", { children: [
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...containerProps, "data-testid": "hidden-select-container", children: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("label", { children: [
             label,
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("select", { ...selectProps, ref: selectRef, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("option", {}),
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("select", { ...selectProps, ref: selectRef, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("option", {}),
               [...state.collection.getKeys()].map((key) => {
                 let item = state.collection.getItem(key);
                 if ((item == null ? void 0 : item.type) === "item") {
-                  return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("option", { value: item.key, children: item.textValue }, item.key);
+                  return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("option", { value: item.key, children: item.textValue }, item.key);
                 }
               })
             ] })
           ] }) });
         } else if (name) {
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             "input",
             {
               autoComplete: selectProps.autoComplete,
@@ -152222,7 +152222,7 @@
       var import_visually_hidden = require_main8();
       var import_slider = require_main63();
       var import_react_utils = require_dist10();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_interactions = require_main17();
       var import_focus2 = require_main18();
       var import_shared_utils = require_dist2();
@@ -152246,7 +152246,7 @@
         } = props;
         const Component2 = as || "div";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const inputRef = (0, import_react165.useRef)(null);
+        const inputRef = (0, import_react172.useRef)(null);
         const numberFormatter = (0, import_i18n16.useNumberFormatter)(formatOptions);
         const { thumbProps, inputProps, isDragging: isDragging2, isFocused } = (0, import_slider.useSliderThumb)(
           {
@@ -152310,7 +152310,7 @@
           getInputProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var SliderThumb = (0, import_system.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -152327,14 +152327,14 @@
         const thumbProps = {
           ...getThumbProps(),
           index: index3,
-          children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("input", { ...getInputProps() }) })
+          children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_visually_hidden.VisuallyHidden, { children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("input", { ...getInputProps() }) })
         };
         const content = (0, import_react_utils2.renderFn)({
           Component: Component2,
           props: thumbProps,
           renderCustom: renderThumb
         });
-        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
+        return showTooltip ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_tooltip.Tooltip, { ...getTooltipProps(), children: content }) : content;
       });
       SliderThumb.displayName = "HeroUI.SliderThumb";
       var slider_thumb_default = SliderThumb;
@@ -153273,7 +153273,7 @@
       var import_react_utils = require_dist10();
       var import_breadcrumbs = require_main66();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useBreadcrumbItem(originalProps) {
         const [props, variantProps2] = (0, import_system.mapPropsVariants)(originalProps, import_theme.breadcrumbItem.variantKeys);
         const {
@@ -153300,7 +153300,7 @@
           domRef
         );
         const { isFocusVisible, isFocused, focusProps } = (0, import_focus2.useFocusRing)();
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.breadcrumbItem)({
             ...variantProps2,
             isCurrent,
@@ -153349,7 +153349,7 @@
           getSeparatorProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Breadcrumbs = (0, import_system2.forwardRef)((props, ref) => {
         const {
           Component: Component2,
@@ -153367,13 +153367,13 @@
           ...props,
           ref
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...getItemProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(WrapperComponent, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...getItemProps(), children: [
             startContent,
             children,
             endContent
           ] }),
-          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...getSeparatorProps(), children: separator })
+          !isLast && !hideSeparator && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...getSeparatorProps(), children: separator })
         ] });
       });
       Breadcrumbs.displayName = "HeroUI.Breadcrumbs";
@@ -157467,7 +157467,7 @@
       var import_input = require_dist53();
       var import_framer_motion2 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_react_utils = require_dist10();
       var import_combobox = require_main67();
       var import_i18n16 = require_main5();
@@ -157561,10 +157561,10 @@
             disabledKeys: /* @__PURE__ */ new Set([...state.collection.getKeys()])
           }
         };
-        const buttonRef = (0, import_react165.useRef)(null);
-        const inputWrapperRef = (0, import_react165.useRef)(null);
-        const listBoxRef = (0, import_react165.useRef)(null);
-        const popoverRef = (0, import_react165.useRef)(null);
+        const buttonRef = (0, import_react172.useRef)(null);
+        const inputWrapperRef = (0, import_react172.useRef)(null);
+        const listBoxRef = (0, import_react172.useRef)(null);
+        const popoverRef = (0, import_react172.useRef)(null);
         const inputRef = (0, import_react_utils.useDOMRef)(ref);
         const scrollShadowRef = (0, import_react_utils.useDOMRef)(scrollRefProp);
         const {
@@ -157663,7 +157663,7 @@
             state.setInputValue(item.textValue);
           }
         }, [inputRef.current]);
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           let keyToFocus;
           if (state.value && state.collection.getItem(state.value) && !state.disabledKeys.has(state.value)) {
             keyToFocus = state.value;
@@ -157676,7 +157676,7 @@
           }
           state.selectionManager.setFocusedKey(keyToFocus);
         }, [state.collection, state.disabledKeys, state.value, state.isOpen, state.inputValue]);
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (state.isOpen && popoverRef.current && listBoxRef.current) {
             let selectedItem = listBoxRef.current.querySelector("[aria-selected=true] [data-label=true]");
             let scrollShadow = scrollShadowRef.current;
@@ -157688,7 +157688,7 @@
             }
           }
         }, [state.isOpen, disableAnimation]);
-        (0, import_react165.useEffect)(() => {
+        (0, import_react172.useEffect)(() => {
           if (isOpen) {
             if (popoverRef.current && inputWrapperRef.current) {
               let rect = inputWrapperRef.current.getBoundingClientRect();
@@ -157708,7 +157708,7 @@
           };
         }
         const Component2 = as || "div";
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.autocomplete)({
             ...variantProps2,
             isClearable,
@@ -157874,15 +157874,15 @@
           getEndContentWrapperProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Autocomplete = (0, import_system2.forwardRef)(function Autocomplete2(props, ref) {
         var _a;
         const {
           Component: Component2,
           isOpen,
           disableAnimation,
-          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.ChevronDownIcon, {}),
-          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.CloseIcon, {}),
+          selectorIcon = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.ChevronDownIcon, {}),
+          clearIcon = /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.CloseIcon, {}),
           endContent,
           getBaseProps,
           getSelectorButtonProps,
@@ -157895,19 +157895,19 @@
           getEndContentWrapperProps
         } = useAutocomplete({ ...props, ref });
         const listboxProps = getListBoxProps();
-        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getEmptyPopoverProps() }) : null;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...getBaseProps(), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        const popoverContent = isOpen ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_scroll_shadow.ScrollShadow, { ...getListBoxWrapperProps(), children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_listbox.Listbox, { ...listboxProps }) }) }) : ((_a = listboxProps.state) == null ? void 0 : _a.collection.size) === 0 ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getEmptyPopoverProps() }) : null;
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...getBaseProps(), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             import_input.Input,
             {
               ...getInputProps(),
-              endContent: /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...getEndContentWrapperProps(), children: [
-                endContent || /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
-                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
+              endContent: /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...getEndContentWrapperProps(), children: [
+                endContent || /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_button.Button, { ...getClearButtonProps(), children: clearIcon }),
+                selectorIcon && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: selectorIcon })
               ] })
             }
           ),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var autocomplete_default = Autocomplete;
@@ -162350,10 +162350,10 @@
           options.hourCycle = pref !== null && pref !== void 0 ? pref : defaultHourCycle;
           delete options.hour12;
         }
-        let cacheKey = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
-        if ($8f23a04ae90a588b$var$formatterCache.has(cacheKey)) return $8f23a04ae90a588b$var$formatterCache.get(cacheKey);
+        let cacheKey2 = locale + (options ? Object.entries(options).sort((a, b) => a[0] < b[0] ? -1 : 1).join() : "");
+        if ($8f23a04ae90a588b$var$formatterCache.has(cacheKey2)) return $8f23a04ae90a588b$var$formatterCache.get(cacheKey2);
         let numberFormatter = new Intl.DateTimeFormat(locale, options);
-        $8f23a04ae90a588b$var$formatterCache.set(cacheKey, numberFormatter);
+        $8f23a04ae90a588b$var$formatterCache.set(cacheKey2, numberFormatter);
         return numberFormatter;
       }
       var $8f23a04ae90a588b$var$_hasBuggyHour12Behavior = null;
@@ -162532,7 +162532,7 @@
       var import_theme2 = require_dist12();
       var import_date = require_main74();
       var import_system = require_dist11();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_react_utils = require_dist10();
@@ -162578,7 +162578,7 @@
         const visibleMonths = (0, import_shared_utils.clamp)(visibleMonthsProp, 1, 3);
         const showMonthAndYearPickers = originalProps.showMonthAndYearPickers && visibleMonths === 1;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleHeaderExpandedChange = (0, import_react165.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react172.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange(isExpanded || false);
           },
@@ -162589,10 +162589,10 @@
           isHeaderDefaultExpanded != null ? isHeaderDefaultExpanded : false,
           handleHeaderExpandedChange
         );
-        const visibleDuration = (0, import_react165.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
+        const visibleDuration = (0, import_react172.useMemo)(() => ({ months: visibleMonths }), [visibleMonths]);
         const hasMultipleMonths = visibleMonths > 1;
         const shouldFilterDOMProps = typeof Component2 === "string";
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.calendar)({
             ...variantProps2,
             showMonthAndYearPickers,
@@ -162795,8 +162795,8 @@
       var import_framer_motion3 = require_cjs4();
       var import_i18n62 = require_main5();
       var import_framer_utils = require_dist19();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
-      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var ChevronLeftIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
         "svg",
         {
           "aria-hidden": "true",
@@ -162807,7 +162807,7 @@
           viewBox: "0 0 16 16",
           width: "1em",
           ...props,
-          children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             "path",
             {
               d: "M10 3.33334L6 8.00001L10 12.6667",
@@ -163643,10 +163643,10 @@
           bottomContent
         ] });
       }
-      var import_jsx_runtime102 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime108 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Calendar = (0, import_system2.forwardRef)(function Calendar2(props, ref) {
         const { context, getBaseCalendarProps } = useCalendar({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime102.jsx)(CalendarProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime102.jsx)(CalendarBase, { ...getBaseCalendarProps() }) });
+        return /* @__PURE__ */ (0, import_jsx_runtime108.jsx)(CalendarProvider, { value: context, children: /* @__PURE__ */ (0, import_jsx_runtime108.jsx)(CalendarBase, { ...getBaseCalendarProps() }) });
       });
       var calendar_default = Calendar;
       var import_system3 = require_dist11();
@@ -168512,7 +168512,7 @@
       var import_datepicker2 = require_main77();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useDateInput(originalProps) {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -168579,7 +168579,7 @@
           label
         });
         const shouldLabelBeOutside = labelPlacement === "outside" || labelPlacement === "outside-left" || labelPlacement === "outside-top";
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.dateInput)({
             ...variantProps2,
             disableAnimation,
@@ -168699,7 +168699,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system3 = require_dist11();
       var import_shared_utils2 = require_dist2();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DateInputGroup = (0, import_system3.forwardRef)((props, ref) => {
         const {
           as,
@@ -168722,7 +168722,7 @@
           ...otherProps
         } = props;
         const Component2 = as || "div";
-        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("span", { ...labelProps, children: label }) : null;
+        const labelContent = label ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("span", { ...labelProps, children: label }) : null;
         const errorMessage = typeof errorMessageProp === "function" ? errorMessageProp({
           isInvalid,
           validationErrors,
@@ -168731,7 +168731,7 @@
         const hasHelper = !!description || !!errorMessage;
         const helperWrapper = (0, import_react210.useMemo)(() => {
           if (!hasHelper) return null;
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...descriptionProps, children: description }) : null });
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...helperWrapperProps, children: isInvalid && errorMessage ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...errorMessageProps, children: errorMessage }) : description ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...descriptionProps, children: description }) : null });
         }, [
           hasHelper,
           errorMessage,
@@ -168740,11 +168740,11 @@
           errorMessageProps,
           descriptionProps
         ]);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(Component2, { ...otherProps, ref, "data-has-helper": (0, import_shared_utils2.dataAttr)(hasHelper), children: [
           shouldLabelBeOutside ? labelContent : null,
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...groupProps, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...groupProps, children: [
             !shouldLabelBeOutside ? labelContent : null,
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...wrapperProps, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...wrapperProps, children: [
               startContent,
               children,
               endContent
@@ -169077,7 +169077,7 @@
       var import_form = require_dist33();
       var import_shared_utils = require_dist2();
       var import_theme = require_dist12();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
       var import_i18n16 = require_main5();
@@ -169292,7 +169292,7 @@
           onHeaderExpandedChange,
           ...restUserCalendarProps
         } = userCalendarProps;
-        const handleHeaderExpandedChange = (0, import_react165.useCallback)(
+        const handleHeaderExpandedChange = (0, import_react172.useCallback)(
           (isExpanded) => {
             onHeaderExpandedChange == null ? void 0 : onHeaderExpandedChange(isExpanded || false);
           },
@@ -169595,7 +169595,7 @@
           getSelectorIconProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var DatePicker = (0, import_system3.forwardRef)(function DatePicker2(props, ref) {
         const { selectorButtonPlacement = "end", ...otherProps } = props;
         const {
@@ -169615,11 +169615,11 @@
           CalendarTopContent,
           CalendarBottomContent
         } = useDatePicker({ ...otherProps, ref });
-        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
+        const selectorContent = (0, import_react410.isValidElement)(selectorIcon) ? (0, import_react410.cloneElement)(selectorIcon, getSelectorIconProps()) : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.CalendarBoldIcon, { ...getSelectorIconProps() });
         const calendarBottomContent = (0, import_react310.useMemo)(() => {
           if (isCalendarHeaderExpanded) return null;
-          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(import_jsx_runtime100.Fragment, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
+          return showTimeField ? /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(import_jsx_runtime107.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_date_input.TimeInput, { ...getTimeInputProps() }),
             CalendarBottomContent
           ] }) : CalendarBottomContent;
         }, [state, showTimeField, CalendarBottomContent, isCalendarHeaderExpanded]);
@@ -169627,7 +169627,7 @@
           if (isCalendarHeaderExpanded) return null;
           return CalendarTopContent;
         }, [showTimeField, CalendarTopContent, isCalendarHeaderExpanded]);
-        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        const popoverContent = state.isOpen ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_popover.FreeSoloPopover, { ...getPopoverProps(), children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           import_calendar.Calendar,
           {
             ...getCalendarProps(),
@@ -169637,12 +169637,12 @@
         ) }) : null;
         const dateInputProps = {
           ...getDateInputProps(),
-          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
-          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
+          endContent: selectorButtonPlacement === "end" ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: endContent || selectorContent }) : endContent,
+          startContent: selectorButtonPlacement === "start" ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_button.Button, { ...getSelectorButtonProps(), children: startContent || selectorContent }) : startContent
         };
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)(import_jsx_runtime100.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_date_input.DateInput, { ...dateInputProps }),
-          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)(import_jsx_runtime107.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_date_input.DateInput, { ...dateInputProps }),
+          disableAnimation ? popoverContent : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion2.AnimatePresence, { children: popoverContent })
         ] });
       });
       var date_picker_default = DatePicker;
@@ -170138,7 +170138,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_system = require_dist11();
       var import_react_utils = require_dist10();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_theme = require_dist12();
       var import_utils8 = require_main38();
       var import_shared_utils = require_dist2();
@@ -170173,16 +170173,16 @@
         const Component2 = as || "div";
         const shouldFilterDOMProps = typeof Component2 === "string";
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const handleClose = (0, import_react165.useCallback)(() => {
+        const handleClose = (0, import_react172.useCallback)(() => {
           setIsVisible(false);
           onClose == null ? void 0 : onClose();
         }, [setIsVisible, onClose]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.alert)({ hasContent: !(0, import_shared_utils.isEmpty)(description) || !(0, import_shared_utils.isEmpty)(children), ...variantProps2 }),
           [description, (0, import_shared_utils.objectToDeps)(variantProps2)]
         );
-        const getBaseProps = (0, import_react165.useCallback)(() => {
+        const getBaseProps = (0, import_react172.useCallback)(() => {
           return {
             "data-visible": (0, import_shared_utils.dataAttr)(isVisible),
             "data-closeable": (0, import_shared_utils.dataAttr)(isClosable),
@@ -170197,35 +170197,35 @@
             className: slots.base({ class: baseStyles })
           };
         }, [slots, baseStyles]);
-        const getMainWrapperProps = (0, import_react165.useCallback)(() => {
+        const getMainWrapperProps = (0, import_react172.useCallback)(() => {
           return {
             className: slots.mainWrapper({ class: classNames == null ? void 0 : classNames.mainWrapper })
           };
         }, [slots, classNames == null ? void 0 : classNames.mainWrapper]);
-        const getDescriptionProps = (0, import_react165.useCallback)(() => {
+        const getDescriptionProps = (0, import_react172.useCallback)(() => {
           return {
             className: slots.description({ class: classNames == null ? void 0 : classNames.description })
           };
         }, [slots, classNames == null ? void 0 : classNames.description]);
-        const getTitleProps = (0, import_react165.useCallback)(() => {
+        const getTitleProps = (0, import_react172.useCallback)(() => {
           return {
             className: slots.title({ class: classNames == null ? void 0 : classNames.title })
           };
         }, [slots, classNames == null ? void 0 : classNames.title]);
-        const getCloseButtonProps = (0, import_react165.useCallback)(
+        const getCloseButtonProps = (0, import_react172.useCallback)(
           () => ({
             ...closeButtonProps,
             className: slots.closeButton({ class: classNames == null ? void 0 : classNames.closeButton })
           }),
           [slots, classNames == null ? void 0 : classNames.closeButton]
         );
-        const getAlertIconProps = (0, import_react165.useCallback)(
+        const getAlertIconProps = (0, import_react172.useCallback)(
           () => ({
             className: slots.alertIcon({ class: classNames == null ? void 0 : classNames.alertIcon })
           }),
           [slots, classNames == null ? void 0 : classNames.alertIcon]
         );
-        const getIconWrapperProps = (0, import_react165.useCallback)(
+        const getIconWrapperProps = (0, import_react172.useCallback)(
           () => ({
             className: slots.iconWrapper({ class: classNames == null ? void 0 : classNames.iconWrapper })
           }),
@@ -170253,7 +170253,7 @@
           getIconWrapperProps
         };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var iconMap = {
         primary: import_shared_icons.InfoCircleIcon,
         secondary: import_shared_icons.InfoCircleIcon,
@@ -170286,16 +170286,16 @@
         if (!isVisible) return null;
         const customIcon = icon && (0, import_react210.isValidElement)(icon) ? (0, import_react210.cloneElement)(icon, getAlertIconProps()) : null;
         const IconComponent = iconMap[color2] || iconMap.primary;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ref: domRef, role: "alert", ...getBaseProps(), children: [
           startContent,
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(IconComponent, { ...getAlertIconProps() }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime100.jsxs)("div", { ...getMainWrapperProps(), children: [
-            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getTitleProps(), children: title }),
-            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { ...getDescriptionProps(), children: description }),
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getIconWrapperProps(), children: customIcon || /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(IconComponent, { ...getAlertIconProps() }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime107.jsxs)("div", { ...getMainWrapperProps(), children: [
+            !(0, import_shared_utils2.isEmpty)(title) && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getTitleProps(), children: title }),
+            !(0, import_shared_utils2.isEmpty)(description) && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { ...getDescriptionProps(), children: description }),
             children
           ] }),
           endContent,
-          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          (isClosable || onClose) && /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             import_button.Button,
             {
               isIconOnly: true,
@@ -170304,7 +170304,7 @@
               variant: "light",
               onPress: handleClose,
               ...getCloseButtonProps(),
-              children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
+              children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.CloseIcon, { height: 20, width: 20 })
             }
           )
         ] });
@@ -170351,7 +170351,7 @@
       var import_modal = require_dist63();
       var import_theme = require_dist12();
       var import_react_utils = require_dist10();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_framer_utils = require_dist19();
       var import_shared_utils = require_dist2();
       function useDrawer(originalProps) {
@@ -170366,7 +170366,7 @@
           ...otherProps
         } = originalProps;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
-        const motionProps = (0, import_react165.useMemo)(() => {
+        const motionProps = (0, import_react172.useMemo)(() => {
           if (!(0, import_shared_utils.isEmpty)(drawerMotionProps)) return drawerMotionProps;
           const key = placement === "left" || placement === "right" ? "x" : "y";
           return {
@@ -170393,14 +170393,14 @@
           };
         }, [placement, drawerMotionProps]);
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className);
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.drawer)({
             size,
             placement
           }),
           [size, placement]
         );
-        const getModalProps = (0, import_react165.useCallback)(() => {
+        const getModalProps = (0, import_react172.useCallback)(() => {
           return {
             classNames: {
               ...classNames,
@@ -170414,10 +170414,10 @@
         }, [baseStyles, classNames, motionProps, scrollBehavior, size, otherProps]);
         return { domRef, getModalProps };
       }
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var Drawer = (0, import_system.forwardRef)(({ children, ...props }, ref) => {
         const { domRef, getModalProps } = useDrawer({ ...props, ref });
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_modal.Modal, { ref: domRef, ...getModalProps(), children });
       });
       Drawer.displayName = "HeroUI.Drawer";
       var drawer_default = Drawer;
@@ -170687,7 +170687,7 @@
       var import_react_utils = require_dist10();
       var import_shared_utils = require_dist2();
       var import_use_form_reset = require_dist75();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_utils8 = require_main38();
       var import_form = require_main22();
       var import_form2 = require_main39();
@@ -170733,7 +170733,7 @@
           autoFocus,
           isTextInput: true
         });
-        const handleValueChange = (0, import_react165.useCallback)(
+        const handleValueChange = (0, import_react172.useCallback)(
           (value2) => {
             onValueChange(value2 != null ? value2 : "");
           },
@@ -170765,7 +170765,7 @@
         const errorMessage = typeof props.errorMessage === "function" ? props.errorMessage({ isInvalid, validationErrors, validationDetails }) : props.errorMessage || (validationErrors == null ? void 0 : validationErrors.join(" "));
         const description = props.description;
         const hasHelper = !!description || !!errorMessage;
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.inputOtp)({
             ...variantProps2,
             disableAnimation,
@@ -170774,7 +170774,7 @@
           }),
           [(0, import_shared_utils.objectToDeps)(variantProps2), disableAnimation, isInvalid, isReadOnly]
         );
-        const getBaseProps = (0, import_react165.useCallback)(
+        const getBaseProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -170809,7 +170809,7 @@
           },
           [baseDomRef, slots, baseStyles, isDisabled, isInvalid, isRequired, isReadOnly, value, length]
         );
-        const getInputOtpProps = (0, import_react165.useCallback)(
+        const getInputOtpProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             var _a2;
             const otpProps = {
@@ -170853,7 +170853,7 @@
             autoFocus
           ]
         );
-        const getSegmentWrapperProps = (0, import_react165.useCallback)(
+        const getSegmentWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.segmentWrapper({
@@ -170867,7 +170867,7 @@
           },
           [classNames == null ? void 0 : classNames.segmentWrapper, isDisabled]
         );
-        const getHelperWrapperProps = (0, import_react165.useCallback)(
+        const getHelperWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.helperWrapper({
@@ -170879,7 +170879,7 @@
           },
           [classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getErrorMessageProps = (0, import_react165.useCallback)(
+        const getErrorMessageProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.errorMessage({
@@ -170891,7 +170891,7 @@
           },
           [classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getDescriptionProps = (0, import_react165.useCallback)(
+        const getDescriptionProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               className: slots.description({
@@ -170933,7 +170933,7 @@
       var import_react210 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_shared_utils2 = require_dist2();
       var import_theme2 = require_dist12();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var InputOtpSegment = ({
         ...props
       }) => {
@@ -170945,14 +170945,14 @@
         const displayValue = (0, import_react210.useMemo)(() => {
           var _a2, _b;
           if (props.isActive && !props.char) {
-            return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
+            return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { className: (0, import_theme2.cn)((_a2 = slots.caret) == null ? void 0 : _a2.call(slots, { class: caretStyles })) });
           }
           if (props.char) {
-            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { children: props.char });
+            return type === "password" ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { className: (0, import_theme2.cn)((_b = slots.passwordChar) == null ? void 0 : _b.call(slots, { class: passwordCharStyles })) }) : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { children: props.char });
           }
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)("div", { children: props.placeholderChar });
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)("div", { children: props.placeholderChar });
         }, [props.char, props.isActive, props.placeholderChar, type]);
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
           "div",
           {
             className: (0, import_theme2.cn)((_a = slots.segment) == null ? void 0 : _a.call(slots, { class: segmentStyles })),
@@ -171943,7 +171943,7 @@
       var import_shared_utils = require_dist2();
       var import_numberfield = require_main78();
       var import_numberfield2 = require_main79();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       var import_form = require_dist33();
       function useNumberInput(originalProps) {
         var _a, _b, _c;
@@ -171971,7 +171971,7 @@
           hideStepper,
           ...otherProps
         } = props;
-        const [isFocusWithin, setFocusWithin] = (0, import_react165.useState)(false);
+        const [isFocusWithin, setFocusWithin] = (0, import_react172.useState)(false);
         const Component2 = as || "div";
         const disableAnimation = (_c = (_b = originalProps.disableAnimation) != null ? _b : globalContext == null ? void 0 : globalContext.disableAnimation) != null ? _c : false;
         const domRef = (0, import_react_utils.useDOMRef)(ref);
@@ -172001,7 +172001,7 @@
         const isFilled = !(0, import_shared_utils.isEmpty)(state.inputValue) && !(0, import_shared_utils.isEmpty)(inputValue);
         const isFilledWithin = isFilled || isFocusWithin;
         const baseStyles = (0, import_theme.cn)(classNames == null ? void 0 : classNames.base, className, isFilled ? "is-filled" : "");
-        const handleClear = (0, import_react165.useCallback)(() => {
+        const handleClear = (0, import_react172.useCallback)(() => {
           var _a2;
           state.setInputValue("");
           onClear == null ? void 0 : onClear();
@@ -172045,7 +172045,7 @@
         const hasStartContent = !!startContent;
         const isLabelOutside = shouldLabelBeOutside ? labelPlacement === "outside-left" || isOutsideTop || hasPlaceholder || labelPlacement === "outside" && hasStartContent : false;
         const isLabelOutsideAsPlaceholder = labelPlacement === "outside" && !hasPlaceholder && !hasStartContent;
-        const slots = (0, import_react165.useMemo)(
+        const slots = (0, import_react172.useMemo)(
           () => (0, import_theme.numberInput)({
             ...variantProps2,
             isInvalid,
@@ -172062,7 +172062,7 @@
             disableAnimation
           ]
         );
-        const handleKeyDown = (0, import_react165.useCallback)(
+        const handleKeyDown = (0, import_react172.useCallback)(
           (e) => {
             var _a2, _b2;
             const inputElement = e.currentTarget;
@@ -172092,7 +172092,7 @@
           },
           [inputValue, state, onClear, isClearable, originalProps.isReadOnly]
         );
-        const getBaseProps = (0, import_react165.useCallback)(
+        const getBaseProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ref: baseDomRef,
@@ -172142,7 +172142,7 @@
             originalProps.isDisabled
           ]
         );
-        const getLabelProps = (0, import_react165.useCallback)(
+        const getLabelProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "label",
@@ -172152,7 +172152,7 @@
           },
           [slots, isLabelHovered, labelProps, classNames == null ? void 0 : classNames.label]
         );
-        const getNumberInputProps = (0, import_react165.useCallback)(
+        const getNumberInputProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               "data-slot": "input",
@@ -172194,7 +172194,7 @@
             handleKeyDown
           ]
         );
-        const getHiddenNumberInputProps = (0, import_react165.useCallback)(
+        const getHiddenNumberInputProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               name: originalProps.name,
@@ -172206,7 +172206,7 @@
           },
           [inputValue, originalProps.name]
         );
-        const getInputWrapperProps = (0, import_react165.useCallback)(
+        const getInputWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ref: inputWrapperRef,
@@ -172239,7 +172239,7 @@
             classNames == null ? void 0 : classNames.inputWrapper
           ]
         );
-        const getInnerWrapperProps = (0, import_react165.useCallback)(
+        const getInnerWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ref: innerWrapperRef,
@@ -172257,7 +172257,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.innerWrapper]
         );
-        const getMainWrapperProps = (0, import_react165.useCallback)(
+        const getMainWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -172269,7 +172269,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.mainWrapper]
         );
-        const getHelperWrapperProps = (0, import_react165.useCallback)(
+        const getHelperWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -172281,7 +172281,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.helperWrapper]
         );
-        const getDescriptionProps = (0, import_react165.useCallback)(
+        const getDescriptionProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -172292,7 +172292,7 @@
           },
           [slots, classNames == null ? void 0 : classNames.description]
         );
-        const getErrorMessageProps = (0, import_react165.useCallback)(
+        const getErrorMessageProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -172303,7 +172303,7 @@
           },
           [slots, errorMessageProps, classNames == null ? void 0 : classNames.errorMessage]
         );
-        const getClearButtonProps = (0, import_react165.useCallback)(
+        const getClearButtonProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -172319,7 +172319,7 @@
           },
           [slots, isClearButtonFocusVisible, clearPressProps, clearFocusProps, classNames == null ? void 0 : classNames.clearButton]
         );
-        const getStepperWrapperProps = (0, import_react165.useCallback)(
+        const getStepperWrapperProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -172331,7 +172331,7 @@
           },
           [slots]
         );
-        const getStepperIncreaseButtonProps = (0, import_react165.useCallback)(
+        const getStepperIncreaseButtonProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               ...props2,
@@ -172346,7 +172346,7 @@
           },
           [slots, incrementButtonProps, classNames == null ? void 0 : classNames.stepperButton]
         );
-        const getStepperDecreaseButtonProps = (0, import_react165.useCallback)(
+        const getStepperDecreaseButtonProps = (0, import_react172.useCallback)(
           (props2 = {}) => {
             return {
               type: "button",
@@ -172403,9 +172403,9 @@
       }
       var import_button = require_dist28();
       var import_shared_icons = require_dist17();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var NumberInputStepper = ({ direction, ...otherProps }) => {
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_shared_icons.ChevronDownIcon, {}) });
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_button.Button, { disableRipple: true, isIconOnly: true, ...otherProps, children: direction == "up" ? /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.ChevronUpIcon, {}) : /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_shared_icons.ChevronDownIcon, {}) });
       };
       NumberInputStepper.displayName = "HeroUI.NumberInputStepper";
       var number_input_stepper_default = NumberInputStepper;
@@ -173950,20 +173950,20 @@
         closeToast: () => closeToast,
         getToastQueue: () => getToastQueue,
         isToastClosing: () => isToastClosing,
-        useToast: () => useToast
+        useToast: () => useToast2
       });
       module.exports = __toCommonJS2(index_exports);
       var import_system4 = require_dist11();
       var import_spinner = require_dist25();
       var import_framer_motion22 = require_cjs4();
       var import_shared_utils = require_dist2();
-      var import_jsx_runtime100 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
+      var import_jsx_runtime107 = (init_jsx_runtime_shim(), __toCommonJS(jsx_runtime_shim_exports));
       var domAnimation2 = () => Promise.resolve().then(() => (init_src(), src_exports)).then((res) => res.default);
       var Ripple = (props) => {
         const { ripples = [], motionProps, color: color2 = "currentColor", style: style2, onClear } = props;
-        return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_jsx_runtime100.Fragment, { children: ripples.map((ripple) => {
+        return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_jsx_runtime107.Fragment, { children: ripples.map((ripple) => {
           const duration = (0, import_shared_utils.clamp)(0.01 * ripple.size, 0.2, ripple.size > 100 ? 0.75 : 0.5);
-          return /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime100.jsx)(
+          return /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion22.LazyMotion, { features: domAnimation2, children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(import_framer_motion22.AnimatePresence, { mode: "popLayout", children: /* @__PURE__ */ (0, import_jsx_runtime107.jsx)(
             import_framer_motion22.m.span,
             {
               animate: {
@@ -174001,10 +174001,10 @@
       Ripple.displayName = "HeroUI.Ripple";
       var ripple_default = Ripple;
       var import_shared_utils2 = require_dist2();
-      var import_react165 = (init_react_shim(), __toCommonJS(react_shim_exports));
+      var import_react172 = (init_react_shim(), __toCommonJS(react_shim_exports));
       function useRipple(props = {}) {
-        const [ripples, setRipples] = (0, import_react165.useState)([]);
-        const onPress = (0, import_react165.useCallback)((event) => {
+        const [ripples, setRipples] = (0, import_react172.useState)([]);
+        const onPress = (0, import_react172.useCallback)((event) => {
           const trigger = event.target;
           const size = Math.max(trigger.clientWidth, trigger.clientHeight);
           setRipples((prevRipples) => [
@@ -174017,7 +174017,7 @@
             }
           ]);
         }, []);
-        const onClear = (0, import_react165.useCallback)((key) => {
+        const onClear = (0, import_react172.useCallback)((key) => {
           setRipples((prevState) => prevState.filter((ripple) => ripple.key !== key));
         }, []);
         return { ripples, onClear, onPress, ...props };
@@ -174495,7 +174495,7 @@
       var SWIPE_THRESHOLD_X = 100;
       var SWIPE_THRESHOLD_Y = 20;
       var INITIAL_POSITION = 50;
-      function useToast(originalProps) {
+      function useToast2(originalProps) {
         var _a, _b;
         const [props, variantProps2] = (0, import_system3.mapPropsVariants)(originalProps, import_theme2.toast.variantKeys);
         const {
@@ -175013,7 +175013,7 @@
           getLoadingComponentProps,
           getSpinnerComponentProps,
           isLoading
-        } = useToast({
+        } = useToast2({
           ...props,
           ref
         });
@@ -179422,10 +179422,10 @@
     if (osApiKey) searchParams.set("os_api_key", osApiKey);
     if (osApiKey && mediaUrl) searchParams.set("media_url", mediaUrl);
     const url = `/api/subtitles?${searchParams.toString()}`;
-    const cacheKey = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
-    const cached = resultCache.get(cacheKey);
+    const cacheKey2 = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
+    const cached = resultCache.get(cacheKey2);
     if (cached && cached.expiresAt > Date.now()) return cached.subtitles;
-    const running2 = inflight5.get(cacheKey);
+    const running2 = inflight5.get(cacheKey2);
     if (running2) return running2;
     const parseSubtitles = (payload) => {
       const subtitles = payload?.subtitles;
@@ -179476,15 +179476,15 @@
         release: s.release
       }));
       pruneCache();
-      resultCache.set(cacheKey, {
+      resultCache.set(cacheKey2, {
         expiresAt: Date.now() + (subtitles.length > 0 ? NON_EMPTY_CACHE_TTL_MS : EMPTY_CACHE_TTL_MS),
         subtitles
       });
       return subtitles;
     })().finally(() => {
-      inflight5.delete(cacheKey);
+      inflight5.delete(cacheKey2);
     });
-    inflight5.set(cacheKey, request);
+    inflight5.set(cacheKey2, request);
     return request;
   }
   var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight5, LANG3_TO_22;
@@ -186767,7 +186767,7 @@ ${cue.text}`).join("\n\n")}
         "data-tv-player": tvChrome ? "1" : void 0,
         "data-tv-fullbleed": "",
         style: { "--player-accent": playerAccentRgb2 },
-        className: `fixed inset-x-0 top-0 z-[60] flex h-[var(--tv-scene-vh,100dvh)] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`,
+        className: `fixed inset-x-0 top-0 z-[60] flex h-[var(--tv-scene-vh,var(--lumio-vh))] flex-col !mt-0 ${useMpv ? "" : "bg-black"}`,
         children: [
           !hasEverStarted && (!hideStartSplash || clientOwnsSplash) && /* @__PURE__ */ jsxs(
             "div",
@@ -192849,6 +192849,11 @@ ${cue.text}`).join("\n\n")}
     }
     return results;
   }
+  async function listGroups(source) {
+    const qs = buildQuery({ source: source ?? void 0 });
+    const data = await requestJson(`/api/live-tv/groups${qs}`);
+    return data.groups ?? [];
+  }
   async function indexStatus() {
     const data = await requestJson("/api/live-tv/status", { cache: "no-store" });
     const sources = (data.sources ?? []).map((entry) => typeof entry === "string" ? { id: entry, channels: 0, updatedAt: 0 } : { id: String(entry.id ?? ""), channels: entry.channels ?? 0, updatedAt: entry.updatedAt ?? 0 }).filter((entry) => entry.id.length > 0);
@@ -193041,6 +193046,102 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts
+  function splitGroups(group) {
+    return group.split(";").map((s) => s.trim()).filter(Boolean);
+  }
+  function normalizeCuration(curation) {
+    if (!curation) return void 0;
+    const merges = [];
+    const claimed = /* @__PURE__ */ new Set();
+    const names = /* @__PURE__ */ new Set();
+    for (const merge of curation.merges ?? []) {
+      const name = (merge.name ?? "").trim();
+      if (!name || names.has(name)) continue;
+      const groups = [];
+      for (const raw of merge.groups ?? []) {
+        const g = (raw ?? "").trim();
+        if (!g || claimed.has(g)) continue;
+        claimed.add(g);
+        groups.push(g);
+      }
+      if (groups.length === 0) continue;
+      names.add(name);
+      merges.push({ name, groups });
+    }
+    const hidden = [];
+    for (const raw of curation.hidden ?? []) {
+      const g = (raw ?? "").trim();
+      if (!g || hidden.includes(g)) continue;
+      hidden.push(g);
+    }
+    if (hidden.length === 0 && merges.length === 0) return void 0;
+    return { hidden, merges };
+  }
+  function mergeNameFor(curation) {
+    const map = /* @__PURE__ */ new Map();
+    for (const merge of curation.merges) for (const g of merge.groups) map.set(g, merge.name);
+    return map;
+  }
+  function applyCuration(channels, curation) {
+    if (!curation || curation.hidden.length === 0 && curation.merges.length === 0) return [...channels];
+    const hidden = new Set(curation.hidden);
+    const renamed = mergeNameFor(curation);
+    const out = [];
+    for (const channel of channels) {
+      const parts = splitGroups(channel.group);
+      if (parts.length === 0) {
+        out.push(channel);
+        continue;
+      }
+      const kept = [];
+      for (const part of parts) {
+        const merged = renamed.get(part);
+        if (merged === void 0 && hidden.has(part)) continue;
+        const name = merged ?? part;
+        if (!kept.includes(name)) kept.push(name);
+      }
+      if (kept.length === 0) continue;
+      const group = kept.join(";");
+      out.push(group === channel.group ? channel : { ...channel, group });
+    }
+    return out;
+  }
+  function curatedGroupCounts(groups, curation) {
+    const hidden = new Set(curation?.hidden ?? []);
+    const renamed = curation ? mergeNameFor(curation) : /* @__PURE__ */ new Map();
+    const counts = /* @__PURE__ */ new Map();
+    for (const { name, count } of groups) {
+      const merged = renamed.get(name);
+      if (merged === void 0 && hidden.has(name)) continue;
+      const target2 = merged ?? name;
+      counts.set(target2, (counts.get(target2) ?? 0) + count);
+    }
+    return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }
+  function renameMerge(curation, index3, name) {
+    const trimmed = name.trim();
+    const copy = { hidden: [...curation.hidden], merges: curation.merges.map((m2) => ({ name: m2.name, groups: [...m2.groups] })) };
+    if (!trimmed || !copy.merges[index3]) return copy;
+    if (copy.merges.some((m2, i) => i !== index3 && m2.name === trimmed)) return copy;
+    copy.merges[index3] = { ...copy.merges[index3], name: trimmed };
+    return copy;
+  }
+  function mergeNameConflict(name, groups, curation, members = []) {
+    const trimmed = name.trim();
+    if (!trimmed) return "empty";
+    if (curation.merges.some((m2) => m2.name === trimmed)) return "duplicate";
+    const claimed = /* @__PURE__ */ new Set([...curation.merges.flatMap((m2) => m2.groups), ...members]);
+    const hidden = new Set(curation.hidden);
+    if (groups.some((g) => g.name === trimmed && !hidden.has(g.name) && !claimed.has(g.name))) return "visible-group";
+    return null;
+  }
+  var init_list_curation = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts"() {
+      "use strict";
+    }
+  });
+
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
@@ -193132,8 +193233,20 @@ ${cue.text}`).join("\n\n")}
       lastImportError: typeof entry.lastImportError === "string" && entry.lastImportError.trim().length > 0 ? entry.lastImportError : void 0,
       // `undefined` betyder PÅ (se `isLogoFallbackEnabled`) — bara ett
       // uttryckligt `false` ska överleva saneringen.
-      logoFallbackEnabled: entry.logoFallbackEnabled === false ? false : void 0
+      logoFallbackEnabled: entry.logoFallbackEnabled === false ? false : void 0,
+      curation: sanitizeCuration(entry.curation),
+      curationSeen: entry.curationSeen === true ? true : void 0
     };
+  }
+  function sanitizeCuration(raw) {
+    if (!raw || typeof raw !== "object") return void 0;
+    const obj = raw;
+    const hidden = Array.isArray(obj.hidden) ? obj.hidden.filter((g) => typeof g === "string") : [];
+    const merges = Array.isArray(obj.merges) ? obj.merges.filter((m2) => Boolean(m2) && typeof m2 === "object").map((m2) => ({
+      name: typeof m2.name === "string" ? m2.name : "",
+      groups: Array.isArray(m2.groups) ? m2.groups.filter((g) => typeof g === "string") : []
+    })) : [];
+    return normalizeCuration({ hidden, merges });
   }
   function readLists() {
     const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, LIVE_TV_LISTS_KEY, []);
@@ -193251,6 +193364,19 @@ ${cue.text}`).join("\n\n")}
         };
       })
     );
+  }
+  function updateLiveTvListCuration(listId, curation) {
+    const normalized = normalizeCuration(curation);
+    writeLists(
+      readLists().map((list) => {
+        if (list.id !== listId) return list;
+        const { curation: _dropped, ...rest } = list;
+        return normalized ? { ...rest, curation: normalized, curationSeen: true } : { ...rest, curationSeen: true };
+      })
+    );
+  }
+  function markListCurationSeen(listId) {
+    writeLists(readLists().map((list) => list.id === listId ? { ...list, curationSeen: true } : list));
   }
   function isLogoFallbackEnabled(list) {
     return list.logoFallbackEnabled !== false;
@@ -193613,6 +193739,7 @@ ${cue.text}`).join("\n\n")}
       init_plugin_sdk();
       init_index_client();
       init_vod_client();
+      init_list_curation();
       LIVE_TV_PLUGIN_ID = "com.lumio.live-tv";
       LIVE_TV_GLOBAL_EPG_ID = "global";
       M3U_URLS_KEY = "m3u_urls";
@@ -193653,6 +193780,25 @@ ${cue.text}`).join("\n\n")}
       init_react_shim();
       init_plugin_sdk();
       EN2 = {
+        categories: "Categories",
+        curationSummary: "{groups} categories \xB7 {hidden} hidden \xB7 {merged} merged",
+        showAll: "Show all",
+        hideAll: "Hide all",
+        mergeInto: "Merge into\u2026",
+        mergeAction: "Merge",
+        mergeSelected: "Merge selected ({n})",
+        splitMerge: "Split",
+        mergeContains: "Contains {groups}",
+        markForMerge: "Mark",
+        save: "Save",
+        skip: "Skip",
+        mergeNameLabel: "Name of the merged category",
+        mergeNameEmpty: "Give the category a name.",
+        mergeNameTaken: "A merged category with that name already exists.",
+        mergeNameIsGroup: "That name is already a visible category.",
+        noCategoriesInList: "This playlist has no categories.",
+        searchCategories: "Search categories",
+        curationIntro: "Choose which categories to show. You can change this later under the playlist\u2019s settings.",
         // Ikonrad
         railSearch: "Search",
         railHome: "Home",
@@ -194011,6 +194157,25 @@ ${cue.text}`).join("\n\n")}
         sectionMore: "More"
       };
       SV2 = {
+        categories: "Kategorier",
+        curationSummary: "{groups} kategorier \xB7 {hidden} dolda \xB7 {merged} ihopslagna",
+        showAll: "Visa alla",
+        hideAll: "D\xF6lj alla",
+        mergeInto: "Sl\xE5 ihop till\u2026",
+        mergeAction: "Sl\xE5 ihop",
+        mergeSelected: "Sl\xE5 ihop markerade ({n})",
+        splitMerge: "Dela upp",
+        mergeContains: "Inneh\xE5ller {groups}",
+        markForMerge: "Markera",
+        save: "Spara",
+        skip: "Hoppa \xF6ver",
+        mergeNameLabel: "Namn p\xE5 den ihopslagna kategorin",
+        mergeNameEmpty: "Ge kategorin ett namn.",
+        mergeNameTaken: "Det finns redan en ihopslagen kategori med det namnet.",
+        mergeNameIsGroup: "Det namnet \xE4r redan en synlig kategori.",
+        noCategoriesInList: "Den h\xE4r spellistan har inga kategorier.",
+        searchCategories: "S\xF6k kategorier",
+        curationIntro: "V\xE4lj vilka kategorier som ska visas. Du kan \xE4ndra det senare under spellistans inst\xE4llningar.",
         railSearch: "S\xF6k",
         railHome: "Hem",
         railGuide: "Kanalguide",
@@ -194419,6 +194584,710 @@ ${cue.text}`).join("\n\n")}
       pendingLogoLoads = [];
       activeLogoLoads = 0;
       MAX_CONCURRENT_LOGO_LOADS = isTauriEnv ? 1 : 8;
+    }
+  });
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx
+  function initialsOf(name) {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
+    return letters.join("") || "\u2022";
+  }
+  function progressOf(start3, stop, nowMs) {
+    if (stop <= start3) return 0;
+    return Math.min(1, Math.max(0, (nowMs - start3) / (stop - start3)));
+  }
+  function formatClock(ms, locale) {
+    return new Date(ms).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  }
+  function Tag({ variant = "neutral", children, style: style2 }) {
+    const base = {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      fontSize: 11,
+      letterSpacing: "0.04em",
+      padding: "3px 10px",
+      borderRadius: 6,
+      lineHeight: 1.3,
+      whiteSpace: "nowrap"
+    };
+    const look = variant === "accent" ? { background: LT.accentSoft, color: LT.accentText } : variant === "live" ? { background: LT.liveSoft, color: "#fecdd3", fontWeight: 600, letterSpacing: "0.12em", fontSize: 10, textTransform: "uppercase" } : variant === "outline" ? { border: `1px solid ${LT.accentLine}`, color: LT.accentText, padding: "2px 9px" } : { background: LT.neutral, color: LT.muted };
+    return /* @__PURE__ */ jsx("span", { style: { ...base, ...look, ...style2 }, children });
+  }
+  function LiveTag({ label }) {
+    return /* @__PURE__ */ jsxs(Tag, { variant: "live", children: [
+      /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: LT.live } }),
+      label
+    ] });
+  }
+  function Btn({
+    variant = "secondary",
+    children,
+    onClick,
+    title,
+    ariaLabel,
+    pressed,
+    block = false,
+    small = false,
+    icon = false,
+    style: style2,
+    tvStation
+  }) {
+    const base = {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      fontSize: small ? 13 : 14,
+      lineHeight: 1.2,
+      padding: icon ? 0 : small ? "6px 14px" : "8px 16px",
+      width: icon ? 36 : block ? "100%" : void 0,
+      height: icon ? 36 : void 0,
+      /*
+            IKONKNAPPEN ÄR RUND, oavsett vilket höjdgolv värden sätter.
+      
+            36×36 plus `borderRadius: 999` är en cirkel i pluginets egen stil — men
+            appens TV-CSS lägger `min-height: calc(52 * var(--tv-u))` på TV-knappar,
+            vilket vid grundskalan 1,54 är 80 px. Höjden växte alltså till 80 medan
+            bredden stod kvar på 36, och Tillbaka-pilen blev en STÅENDE kapsel
+            (Jerry 2026-09-08: "gör pilen rund sen").
+      
+            `aspect-ratio: 1` gör formen till en egenskap i stället för ett par tal
+            som måste hållas i takt: växer höjden av en regel utanför pluginet följer
+            bredden med, och knappen kan inte bli oval igen. Att i stället hårdkoda
+            80 px hade fungerat tills någon ändrade `--tv-base-scale`.
+          */
+      aspectRatio: icon ? "1 / 1" : void 0,
+      borderRadius: 999,
+      border: "1px solid transparent",
+      background: "transparent",
+      color: LT.text,
+      cursor: "pointer",
+      whiteSpace: "nowrap",
+      fontFamily: "inherit"
+    };
+    const look = variant === "primary" ? { color: LT.accentText, borderColor: LT.accentLine, background: pressed ? LT.accentSoft : LT.accentDeep } : variant === "solid" ? { color: "#1b0d08", background: LT.accent, fontWeight: 700, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase" } : variant === "ghost" ? { color: pressed ? LT.text : LT.muted, background: pressed ? "rgba(255,255,255,0.12)" : "transparent" } : { borderColor: pressed ? "rgba(255,255,255,0.5)" : LT.line, background: pressed ? "rgba(255,255,255,0.12)" : "rgba(252,252,255,0.06)" };
+    return /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        ...tvStation ?? {},
+        onClick,
+        title,
+        "aria-label": ariaLabel,
+        "aria-pressed": pressed,
+        className: "transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+        style: { ...base, ...look, ...style2 },
+        children
+      }
+    );
+  }
+  function ChannelBadge({ channel, size = 40, radius = LT.radiusSm }) {
+    const [failed, setFailed] = useState(false);
+    const primarySrc = getLiveTvLogoSrc(channel.logo);
+    const fallbackSrc = getLiveTvLogoSrc(channel.logoFallback);
+    const src = primarySrc ?? fallbackSrc;
+    const box = {
+      width: size,
+      height: size,
+      borderRadius: radius,
+      background: LT.neutral,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+      overflow: "hidden"
+    };
+    if (src && !failed) {
+      return /* @__PURE__ */ jsx("div", { style: box, children: /* @__PURE__ */ jsx(
+        LiveTvLogoImage,
+        {
+          src,
+          fallbackSrc: primarySrc ? fallbackSrc : void 0,
+          alt: "",
+          className: "h-full w-full object-contain p-1",
+          onError: () => setFailed(true)
+        }
+      ) });
+    }
+    return /* @__PURE__ */ jsx("div", { style: { ...box, fontSize: Math.max(9, Math.round(size * 0.28)), fontWeight: 600, color: LT.muted }, "aria-hidden": "true", children: initialsOf(channel.name) });
+  }
+  function ProgressBar({ value, width, height = 4 }) {
+    return /* @__PURE__ */ jsx("div", { style: { height, width: width ?? "100%", maxWidth: "100%", background: LT.neutral, borderRadius: height, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${Math.round(value * 100)}%`, background: LT.accent } }) });
+  }
+  function Kicker({ children }) {
+    return /* @__PURE__ */ jsx("div", { style: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: LT.accent }, children });
+  }
+  function PinGate({
+    open,
+    title,
+    wrongText,
+    unlockLabel,
+    cancelLabel,
+    onVerify,
+    onClose,
+    onUnlocked
+  }) {
+    const [pin, setPin] = useState("");
+    const [wrong, setWrong] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const inputRef = useRef(null);
+    useEffect(() => {
+      if (!open) return;
+      setPin("");
+      setWrong(false);
+      const timer = window.setTimeout(() => inputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer);
+    }, [open]);
+    if (!open) return null;
+    const submit = async () => {
+      if (pin.length < 4 || busy) return;
+      setBusy(true);
+      const ok = await onVerify(pin);
+      setBusy(false);
+      if (ok) {
+        onUnlocked();
+        return;
+      }
+      setWrong(true);
+      setPin("");
+      inputRef.current?.focus();
+    };
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-label": title,
+        style: { position: "fixed", inset: 0, zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" },
+        onClick: onClose,
+        children: /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, background: "#111b2f", padding: 20, width: 300, display: "flex", flexDirection: "column", gap: 12 }, onClick: (event) => event.stopPropagation(), children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, color: LT.text }, children: title }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              ref: inputRef,
+              type: "password",
+              inputMode: "numeric",
+              autoComplete: "off",
+              maxLength: 4,
+              value: pin,
+              onChange: (event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 4)),
+              onKeyDown: (event) => {
+                if (event.key === "Enter") void submit();
+                if (event.key === "Escape") onClose();
+              },
+              "aria-invalid": wrong,
+              style: {
+                fontSize: 24,
+                letterSpacing: "0.5em",
+                textAlign: "center",
+                padding: "10px 12px",
+                borderRadius: LT.radiusMd,
+                border: `1px solid ${wrong ? LT.live : LT.line}`,
+                background: LT.surfaceRaised,
+                color: LT.text,
+                outline: "none",
+                fontFamily: "inherit"
+              }
+            }
+          ),
+          wrong ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: "#fecdd3" }, children: wrongText }) : null,
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" }, children: [
+            /* @__PURE__ */ jsx(Btn, { variant: "ghost", small: true, onClick: onClose, children: cancelLabel }),
+            /* @__PURE__ */ jsx(Btn, { variant: "primary", small: true, onClick: () => void submit(), children: unlockLabel })
+          ] })
+        ] })
+      }
+    );
+  }
+  var LT, surfaceCard;
+  var init_live_tv_ui = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_logo_image();
+      init_live_tv_data();
+      init_jsx_runtime_shim();
+      LT = {
+        bg: "#050816",
+        /* Glas utan blur (Jerry 2026-09-02): samma yta som strömraderna på
+           detaljsidan. Ljusare än de solida panelerna och utan backdrop-filter,
+           som är dyrt på telefon och TV. */
+        surface: "rgba(252,252,255,0.09)",
+        surfaceRaised: "rgba(252,252,255,0.14)",
+        neutral: "rgba(252,252,255,0.12)",
+        line: "rgba(255,255,255,0.10)",
+        text: "#f3f4f8",
+        muted: "rgba(243,244,248,0.7)",
+        dim: "rgba(243,244,248,0.55)",
+        faint: "rgba(243,244,248,0.4)",
+        accent: "#f4845f",
+        accentText: "#ffd9c9",
+        accentSoft: "rgba(244,132,95,0.16)",
+        accentLine: "rgba(244,132,95,0.55)",
+        accentDeep: "rgba(244,132,95,0.12)",
+        live: "#fb7185",
+        liveSoft: "rgba(251,113,133,0.18)",
+        radiusLg: 14,
+        radiusMd: 8,
+        radiusSm: 4
+      };
+      surfaceCard = {
+        background: LT.surface,
+        borderRadius: LT.radiusMd,
+        border: `1px solid ${LT.line}`,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)"
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  function useInSceneBox(ref) {
+    const [inBox, setInBox] = useState(false);
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const read9 = () => {
+        const from = ref?.current ?? null;
+        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
+        return box !== null;
+      };
+      const sync2 = () => setInBox(read9());
+      sync2();
+      const observer2 = new MutationObserver(sync2);
+      observer2.observe(document.documentElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [TV_SCENE_BOX_ATTR]
+      });
+      return () => observer2.disconnect();
+    }, [ref]);
+    return inBox;
+  }
+  var init_useInSceneBox = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+    }
+  });
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  function useNarrowSurface(ref) {
+    const [narrow, setNarrow] = useState(false);
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const read9 = () => {
+        const from = ref?.current ?? null;
+        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
+        return box?.getAttribute(TV_SCENE_NARROW_ATTR) === "1";
+      };
+      const sync2 = () => setNarrow(read9());
+      sync2();
+      const observer2 = new MutationObserver(sync2);
+      observer2.observe(document.documentElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR]
+      });
+      return () => observer2.disconnect();
+    }, [ref]);
+    return narrow;
+  }
+  var init_useNarrowSurface = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+    }
+  });
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  function useSceneBoxScale() {
+    const [scale2, setScale] = useState(null);
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const read9 = () => {
+        const getScale = tvSceneBoxScale2;
+        if (typeof getScale !== "function") return null;
+        const box = document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
+        if (!box) return null;
+        const value = getScale(box);
+        return Number.isFinite(value) && value > 0 ? value : null;
+      };
+      const sync2 = () => setScale(read9());
+      sync2();
+      const observer2 = new MutationObserver(sync2);
+      observer2.observe(document.documentElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [TV_SCENE_BOX_ATTR, "style"]
+      });
+      return () => observer2.disconnect();
+    }, []);
+    return scale2;
+  }
+  var init_useSceneBoxScale = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
+    }
+  });
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx
+  function dp(n) {
+    return n;
+  }
+  function TvFocusStyle() {
+    return /* @__PURE__ */ jsx("style", { children: `
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f]:focus,
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f][data-fcur="1"] {
+  outline: 2px solid rgb(var(--accent-500)) !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 28px color-mix(in srgb, rgb(var(--accent-500)) 45%, transparent) !important;
+}
+[data-live-tv-tv-root] [data-f] { outline: none; }
+[data-live-tv-tv-root] [data-f] { user-select: none; -webkit-user-select: none; }
+[data-live-tv-tv-root] [data-selectable-text] { user-select: text; -webkit-user-select: text; }
+@media (hover: hover) and (pointer: fine) {
+  [data-live-tv-tv-root] [data-f]:hover { background-image: linear-gradient(rgba(252,252,255,0.06), rgba(252,252,255,0.06)) !important; }
+  [data-live-tv-tv-root] [data-live-tv-chip][data-f]:hover { border-color: rgba(255,255,255,0.22) !important; }
+}
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:focus,
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f][data-fcur="1"] { outline: none !important; box-shadow: none !important; }
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:hover { background-image: none !important; }
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f]:focus,
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f][data-fcur="1"] {
+  outline: 1px solid rgb(var(--accent-500)) !important;
+  outline-offset: -1px;
+  box-shadow: none !important;
+}
+[data-live-tv-tv-root] [data-guide-block]:not([data-live]):hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f][data-fcur="1"] { outline: none !important; }
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f]:focus,
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
+[data-live-tv-tv-root] [data-guide-row]:hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root] [data-guide-row][data-sticky]:hover { background: #232324 !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f][data-fcur="1"] { outline: none !important; }
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
+[data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
+[data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
+[data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
+[data-live-tv-tv-root] .lumio-tv-logo-img { max-width: 60%; max-height: 60%; object-fit: contain; }
+@keyframes lumio-livetv-fade { from { opacity: 0; transform: translateY(${dp(6)}px); } to { opacity: 1; transform: none; } }
+[data-live-tv-tv-root] [data-live-tv-layer] { animation: lumio-livetv-fade 160ms ease-out; }
+
+/* \xC5TG\xC4RDSKNAPPARNAS UTF\xC4LLBARA NAMN.
+   Samma kontrakt som appens hero-icon-action: knappen b\xE4r
+   [data-hero-icon-action] och namnet [data-hero-icon-label]. Appens egen regel
+   i spa/src/index.css f\xE4ller ut namnet n\xE4r <html data-hero-action-labels="open">
+   \u2014 allts\xE5 n\xE4r inst\xE4llningen \xE4r p\xE5 \u2014 och den tr\xE4ffar de h\xE4r elementen ocks\xE5,
+   eftersom markeringen \xE4r densamma. Det som INTE kommer d\xE4rifr\xE5n \xE4r hovring
+   och fokus: appens variant g\xF6r det med Tailwinds group-hover-klasser, och de
+   finns inte i pluginets inline-stilar. M\xE5tten \xE4r medvetet identiska
+   (9rem/1rem), s\xE5 de tv\xE5 inte kan glida is\xE4r utan att det syns. */
+[data-live-tv-tv-root] [data-hero-icon-label] {
+  max-width: 0;
+  padding-right: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 200ms ease-out, padding 200ms ease-out, opacity 200ms ease-out;
+}
+[data-live-tv-tv-root] [data-hero-icon-action]:hover [data-hero-icon-label],
+[data-live-tv-tv-root] [data-hero-icon-action]:focus [data-hero-icon-label],
+[data-live-tv-tv-root] [data-hero-icon-action][data-fcur="1"] [data-hero-icon-label] {
+  max-width: 9rem;
+  padding-right: 1rem;
+  opacity: 1;
+}
+` });
+  }
+  function station(onOk, onHold, extra) {
+    const hold = onHold ? tvHoldHandlers(onOk, onHold) : null;
+    const pointer = onHold ? tvPointerHoldHandlers(onOk, onHold) : null;
+    return {
+      "data-f": "",
+      tabIndex: 0,
+      role: "button",
+      ...pointer ? {
+        "data-hold": "",
+        // Ett fyrat håll undertrycker klicket i `onClickCapture`. Två bälten,
+        // för att SDK:t kan vara äldre än den här filen: capture-handlaren
+        // stoppar spridningen OCH markerar eventet som `defaultPrevented`,
+        // och onClick nedan vägrar köra onOk på ett sådant event. Utan det
+        // skulle både glasmenyn och uppspelningen starta på samma håll.
+        onClick: (event) => {
+          if (event?.defaultPrevented) return;
+          onOk();
+        },
+        onPointerDown: pointer.onPointerDown,
+        onPointerUp: pointer.onPointerUp,
+        onPointerCancel: pointer.onPointerCancel,
+        onPointerLeave: pointer.onPointerLeave,
+        onContextMenu: pointer.onContextMenu,
+        onClickCapture: pointer.onClickCapture
+      } : { onClick: onOk },
+      ...hold ? { onKeyDown: hold.onKeyDown, onKeyUp: hold.onKeyUp } : {
+        onKeyDown: (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOk();
+          }
+        }
+      },
+      ...extra ?? {}
+    };
+  }
+  function Tag2({ variant, children, style: style2, title }) {
+    const base = { display: "inline-flex", alignItems: "center", gap: dp(8), whiteSpace: "nowrap", lineHeight: 1.2 };
+    const look = {
+      live: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.14em", padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.liveSoft, color: TV2.liveText, textTransform: "uppercase" },
+      neutral: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.s12, color: TV2.text },
+      quality: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: "rgba(0,0,0,0.45)", color: TV2.text },
+      replay: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV2.accMix(22), color: TV2.accText },
+      reason: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: "rgba(0,0,0,0.45)", color: TV2.text },
+      audio: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.12em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV2.acc, color: TV2.onAcc, textTransform: "uppercase" }
+    };
+    return /* @__PURE__ */ jsxs("span", { title, style: { ...base, ...look[variant], ...style2 }, children: [
+      variant === "live" ? /* @__PURE__ */ jsx("span", { style: { width: dp(8), height: dp(8), borderRadius: 999, background: TV2.live } }) : null,
+      children
+    ] });
+  }
+  function Progress({ value, height = dp(5), track = TV2.s14, style: style2 }) {
+    const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
+    return /* @__PURE__ */ jsx("div", { style: { height, borderRadius: height, background: track, overflow: "hidden", ...style2 }, children: /* @__PURE__ */ jsx("div", { "data-fill": "", style: { width: `${pct}%`, height: "100%", background: TV2.acc } }) });
+  }
+  function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style: style2 }) {
+    const [frameFailed, setFrameFailed] = useState(false);
+    const [logoFailed, setLogoFailed] = useState(false);
+    const frameSrc = USE_PLAYER_FRAMES && !frameFailed && "url" in channel ? playerFrameUrl(channelKey(channel), frameVersion ?? null) : null;
+    const primaryLogo = getLiveTvLogoSrc(channel.logo);
+    const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback);
+    const logo = logoFailed ? null : primaryLogo ?? fallbackLogo;
+    return /* @__PURE__ */ jsxs("div", { style: { position: "relative", height, aspectRatio: aspect, background: "rgba(252,252,255,0.06)", borderRadius: radius, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", ...style2 }, children: [
+      frameSrc ? /* @__PURE__ */ jsx("img", { src: frameSrc, alt: "", onError: () => setFrameFailed(true), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }) : logo ? /* @__PURE__ */ jsx(
+        LiveTvLogoImage,
+        {
+          src: logo,
+          fallbackSrc: primaryLogo ? fallbackLogo : void 0,
+          alt: "",
+          className: "lumio-tv-logo-img",
+          onError: () => setLogoFailed(true)
+        }
+      ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: dp(22), fontWeight: 600, color: TV2.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }),
+      children
+    ] });
+  }
+  function Chip({ active: active2, children, style: style2, glass = false, ...rest }) {
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-live-tv-chip": "",
+        "data-live-tv-chip-glass": glass ? "" : void 0,
+        ...rest,
+        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active2 ? TV2.s16 : TV2.s05, color: active2 ? TV2.text : TV2.muted, fontWeight: active2 ? 600 : 400, border: `1px solid ${glass ? active2 ? TV2.lineStrong : TV2.line : active2 ? TV2.lineStrong : "transparent"}`, ...style2 },
+        children
+      }
+    );
+  }
+  function Segment({ options, value, onChange, style: style2 }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": "tv-segment", style: { display: "inline-flex", padding: dp(4), borderRadius: 999, background: TV2.s08, gap: dp(2), flexShrink: 0, whiteSpace: "nowrap", maxWidth: "100%", ...style2 }, children: options.map((option) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "tv-segment-option",
+        ...station(() => onChange(option.key)),
+        style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(16), whiteSpace: "nowrap", cursor: "pointer", background: option.key === value ? TV2.s16 : "transparent", color: option.key === value ? TV2.text : TV2.muted },
+        children: option.label
+      },
+      option.key
+    )) });
+  }
+  function RoundBtn({ size, children, background = TV2.s12, style: style2, ...rest }) {
+    const resolvedSize = size ?? dp(52);
+    return /* @__PURE__ */ jsx("div", { ...rest, style: { width: resolvedSize, height: resolvedSize, minHeight: resolvedSize, borderRadius: 999, background, border: `1px solid ${TV2.lineCard}`, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TV2.text, cursor: "pointer", flexShrink: 0, ...style2 }, children });
+  }
+  function Toggle({ on }) {
+    return /* @__PURE__ */ jsx("span", { style: { width: dp(52), height: dp(30), borderRadius: 999, background: on ? TV2.acc : TV2.s18, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(3), left: on ? dp(25) : dp(3), width: dp(24), height: dp(24), borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
+  }
+  function useTvClockNode(locale) {
+    const HostClock = getTvClock?.() ?? null;
+    const inSceneBox = useInSceneBox();
+    const sceneBoxScale = useSceneBoxScale();
+    const narrowSurface = useNarrowSurface();
+    const canCompensate = inSceneBox && sceneBoxScale !== null && !narrowSurface;
+    const clockRef = useRef(null);
+    const [naturalWidth, setNaturalWidth] = useState(0);
+    useEffect(() => {
+      const el = clockRef.current;
+      if (!el) return;
+      const mat = () => setNaturalWidth(el.offsetWidth);
+      mat();
+      const vakt = new ResizeObserver(mat);
+      vakt.observe(el);
+      return () => vakt.disconnect();
+    }, [canCompensate]);
+    const useHostClock = HostClock !== null && (!inSceneBox || canCompensate);
+    const [now3, setNow] = useState(() => /* @__PURE__ */ new Date());
+    useEffect(() => {
+      if (useHostClock) return;
+      let timer = 0;
+      const tick = () => {
+        const next2 = /* @__PURE__ */ new Date();
+        setNow(next2);
+        timer = window.setTimeout(tick, 6e4 - (next2.getSeconds() * 1e3 + next2.getMilliseconds()));
+      };
+      tick();
+      return () => window.clearTimeout(timer);
+    }, [useHostClock]);
+    if (useHostClock) {
+      if (inSceneBox) {
+        const bredd = naturalWidth > 0 ? naturalWidth / sceneBoxScale : void 0;
+        return /* @__PURE__ */ jsx("span", { style: { display: "inline-block", width: bredd, textAlign: "right" }, children: /* @__PURE__ */ jsx(
+          "span",
+          {
+            ref: clockRef,
+            style: { display: "inline-block", transform: `scale(${1 / sceneBoxScale})`, transformOrigin: "top right" },
+            children: /* @__PURE__ */ jsx(HostClock, { variant: "desktop" })
+          }
+        ) });
+      }
+      return /* @__PURE__ */ jsx(HostClock, { variant: "desktop" });
+    }
+    const time2 = now3.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+    const date = now3.toLocaleDateString(locale, { day: "numeric", month: "short" }).replace(".", "").toUpperCase();
+    const day = now3.toLocaleDateString(locale, { weekday: "short" }).replace(".", "").toUpperCase();
+    return /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), letterSpacing: "0.1em", color: "rgba(243,244,248,0.65)", whiteSpace: "nowrap" }, children: `${time2} | ${date} | ${day}` });
+  }
+  var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
+  var init_tv_ui = __esm({
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_live_tv_logo_image();
+      init_live_tv_ui();
+      init_useInSceneBox();
+      init_useNarrowSurface();
+      init_useSceneBoxScale();
+      init_jsx_runtime_shim();
+      TV2 = {
+        bg: "#000",
+        text: "#f3f4f8",
+        muted: "rgba(243,244,248,0.7)",
+        dim: "rgba(243,244,248,0.55)",
+        faint: "rgba(243,244,248,0.4)",
+        s05: "rgba(252,252,255,0.05)",
+        s06: "rgba(252,252,255,0.06)",
+        s07: "rgba(252,252,255,0.07)",
+        s08: "rgba(252,252,255,0.08)",
+        s10: "rgba(252,252,255,0.10)",
+        s12: "rgba(252,252,255,0.12)",
+        s14: "rgba(252,252,255,0.14)",
+        s16: "rgba(252,252,255,0.16)",
+        s18: "rgba(252,252,255,0.18)",
+        line: "rgba(255,255,255,0.08)",
+        lineCard: "rgba(255,255,255,0.10)",
+        lineStrong: "rgba(255,255,255,0.22)",
+        acc: "rgb(var(--accent-500))",
+        accMix: (pct) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct}%, transparent)`,
+        accText: "#ffd9c9",
+        onAcc: "#fff",
+        live: "#fb7185",
+        liveSoft: "rgba(251,113,133,0.22)",
+        liveText: "#fecdd3",
+        glass: "rgba(58,59,66,0.96)",
+        panel: "rgba(20,22,30,0.98)",
+        scrim: "rgba(0,0,0,0.6)",
+        font: "'Avenir Next', 'Trebuchet MS', sans-serif",
+        mono: "ui-monospace, SFMono-Regular, Menlo, monospace"
+      };
+      cardStyle = {
+        background: TV2.s07,
+        border: `1px solid ${TV2.lineCard}`,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+        borderRadius: dp(14),
+        overflow: "hidden"
+      };
+      USE_PLAYER_FRAMES = false;
+      sw = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+      svg = (size, children, fill) => createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", ...sw, fill: fill ? "currentColor" : "none" }, children);
+      Icons = {
+        Search: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
+          /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
+        ] })),
+        Home: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M3 11.5 12 4l9 7.5" }),
+          /* @__PURE__ */ jsx("path", { d: "M5 10v10h14V10" })
+        ] })),
+        Tv: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "13", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 21h8" })
+        ] })),
+        SquaresFour: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
+        ] })),
+        /** Filmremsa — Biblioteket. Två perforeringsrader och en ruta emellan. */
+        FilmStrip: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" })
+        ] })),
+        /** Rollista — två figurer, som appens detaljsida. */
+        Users: ({ size = dp(22) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "8", r: "3.2" }),
+          /* @__PURE__ */ jsx("path", { d: "M3.5 19a5.5 5.5 0 0 1 11 0" }),
+          /* @__PURE__ */ jsx("path", { d: "M16 5.2a3.2 3.2 0 0 1 0 5.6M17.5 13.2A5.5 5.5 0 0 1 20.5 19" })
+        ] })),
+        /** Min lista. */
+        Bookmark: ({ size = dp(22), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z", strokeLinejoin: "round" }), filled),
+        /** Sedd. */
+        Eye: ({ size = dp(22), filled = false }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z" }),
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" })
+        ] }), filled),
+        Heart: ({ size = dp(26), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
+        Gear: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })
+        ] })),
+        ChevronLeft: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M15 18l-6-6 6-6" })),
+        /** Öppningsknappen för telefonens meny-låda (spec §2) — tre linjer. */
+        ChevronDown: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "m6 9 6 6 6-6" })),
+        Play: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
+        Pause: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }), true),
+        Bell: ({ size = dp(20), filled = false }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" }),
+          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
+        ] }), filled),
+        Lock: ({ size = dp(18) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "5", y: "11", width: "14", height: "10", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 11V7a4 4 0 0 1 8 0v4" })
+        ] })),
+        Plus: ({ size = dp(40) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" })),
+        Dots: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "18", cy: "12", r: "1.6" })
+        ] }), true),
+        Calendar: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "16", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 3v4M16 3v4M3 10h18" })
+        ] }))
+      };
     }
   });
 
@@ -194981,15 +195850,6 @@ ${cue.text}`).join("\n\n")}
     if (PLACEHOLDER_NAME_RE.test(trimmedName) && !channel.tvgId) return false;
     return true;
   }
-  function topGroups(channels, limit = MAX_GROUP_CHIPS) {
-    const counts = /* @__PURE__ */ new Map();
-    for (const channel of channels) {
-      const group = channel.group?.trim();
-      if (!group) continue;
-      counts.set(group, (counts.get(group) ?? 0) + 1);
-    }
-    return [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, limit).map(([group]) => group);
-  }
   function ensureLiveTvBootstrap() {
     return ensureBootstrap();
   }
@@ -195062,6 +195922,40 @@ ${cue.text}`).join("\n\n")}
       }
     });
   }
+  function curationForSource(source) {
+    return getLiveTvLists().find((entry) => entry.source === source)?.curation;
+  }
+  function curationSnapshot() {
+    const snapshot2 = /* @__PURE__ */ new Map();
+    for (const list of getLiveTvLists()) {
+      if (!list.source || snapshot2.has(list.source)) continue;
+      snapshot2.set(list.source, JSON.stringify(list.curation ?? null));
+    }
+    return snapshot2;
+  }
+  function ensureCurationSubscription() {
+    if (curationSubscription || typeof window === "undefined") return;
+    curationBySource = curationSnapshot();
+    curationSubscription = onLiveTvListsChanged(() => {
+      const next2 = curationSnapshot();
+      const previous = curationBySource;
+      curationBySource = next2;
+      let changed = false;
+      for (const [source, value] of next2) {
+        if (previous?.get(source) === value) continue;
+        changed = true;
+        channelAborts.get(channelsCacheKey(source))?.abort();
+        channelLoads.delete(channelsCacheKey(source));
+        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source));
+      }
+      if (changed) {
+        channelAborts.get(channelsCacheKey(null))?.abort();
+        channelLoads.delete(channelsCacheKey(null));
+        clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(null));
+        for (const listener of [...generationListeners]) listener();
+      }
+    });
+  }
   async function loadEveryChannel(signal) {
     const sources = [...new Set(
       getLiveTvLists().filter((list) => list.kind !== "custom" && Boolean(list.source)).map((list) => list.source)
@@ -195097,24 +195991,26 @@ ${cue.text}`).join("\n\n")}
   }
   function loadChannelsShared(source) {
     ensureLogoFallbackSwitchSubscription();
-    const cacheKey = channelsCacheKey(source);
-    const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey);
+    ensureCurationSubscription();
+    const cacheKey2 = channelsCacheKey(source);
+    const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey2);
     if (cached) return Promise.resolve(cached);
-    const existing = channelLoads.get(cacheKey);
+    const existing = channelLoads.get(cacheKey2);
     if (existing) return existing;
     const controller = typeof AbortController === "function" ? new AbortController() : null;
-    if (controller) channelAborts.set(cacheKey, controller);
+    if (controller) channelAborts.set(cacheKey2, controller);
     const request = (async () => {
       await ensureBootstrap();
       const items = source === null ? await loadEveryChannel(controller?.signal) : await loadAllChannels(source, void 0, controller?.signal);
       if (source !== null) applyLogoFallbackSwitch(source, items);
-      setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items);
-      return items;
+      const curated = source !== null ? applyCuration(items, curationForSource(source)) : items;
+      setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey2, curated);
+      return curated;
     })().finally(() => {
-      if (channelLoads.get(cacheKey) === request) channelLoads.delete(cacheKey);
-      if (channelAborts.get(cacheKey) === controller) channelAborts.delete(cacheKey);
+      if (channelLoads.get(cacheKey2) === request) channelLoads.delete(cacheKey2);
+      if (channelAborts.get(cacheKey2) === controller) channelAborts.delete(cacheKey2);
     });
-    channelLoads.set(cacheKey, request);
+    channelLoads.set(cacheKey2, request);
     return request;
   }
   function subscribeChannelGeneration(listener) {
@@ -195218,7 +196114,16 @@ ${cue.text}`).join("\n\n")}
       for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel);
       return map;
     }, [byKey]);
-    const groups = useMemo(() => topGroups(channels), [channels]);
+    const groupCounts = useMemo(() => {
+      const counts = /* @__PURE__ */ new Map();
+      for (const channel of channels) {
+        for (const part of String(channel.group ?? "").split(";").map((s) => s.trim()).filter(Boolean)) {
+          counts.set(part, (counts.get(part) ?? 0) + 1);
+        }
+      }
+      return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    }, [channels]);
+    const groups = useMemo(() => groupCounts.map((g) => g.name), [groupCounts]);
     const playlists = useMemo(
       () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
       [lists]
@@ -195342,6 +196247,7 @@ ${cue.text}`).join("\n\n")}
       byKey,
       byUrl,
       groups,
+      groupCounts,
       pinnedKeys,
       pinnedSet: useMemo(() => new Set(pinnedKeys), [pinnedKeys]),
       togglePin: (channel) => setPinnedKeys(togglePinnedLiveTvChannel(channel)),
@@ -195390,7 +196296,7 @@ ${cue.text}`).join("\n\n")}
     if (/\b(SD|576|480)\b/.test(n)) return "SD";
     return null;
   }
-  var EMPTY2, PLACEHOLDER_NAME_RE, MAX_GROUP_CHIPS, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription;
+  var EMPTY2, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
@@ -195405,11 +196311,11 @@ ${cue.text}`).join("\n\n")}
       init_channel_history();
       init_reminders();
       init_channel_locks();
+      init_list_curation();
       init_live_tv_data();
       init_tv_settings_store();
       EMPTY2 = { now: null, next: null, later: null };
       PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/;
-      MAX_GROUP_CHIPS = 8;
       EPG_TTL_MS = 6 * 60 * 60 * 1e3;
       bootstrapPromise = null;
       appTooOldFlag = false;
@@ -195420,263 +196326,8 @@ ${cue.text}`).join("\n\n")}
       indexSubscription = null;
       logoFallbackStateBySource = null;
       logoFallbackSwitchSubscription = null;
-    }
-  });
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx
-  function initialsOf(name) {
-    const words = name.trim().split(/\s+/).filter(Boolean);
-    const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
-    return letters.join("") || "\u2022";
-  }
-  function progressOf(start3, stop, nowMs) {
-    if (stop <= start3) return 0;
-    return Math.min(1, Math.max(0, (nowMs - start3) / (stop - start3)));
-  }
-  function formatClock(ms, locale) {
-    return new Date(ms).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-  }
-  function Tag({ variant = "neutral", children, style: style2 }) {
-    const base = {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 6,
-      fontSize: 11,
-      letterSpacing: "0.04em",
-      padding: "3px 10px",
-      borderRadius: 6,
-      lineHeight: 1.3,
-      whiteSpace: "nowrap"
-    };
-    const look = variant === "accent" ? { background: LT.accentSoft, color: LT.accentText } : variant === "live" ? { background: LT.liveSoft, color: "#fecdd3", fontWeight: 600, letterSpacing: "0.12em", fontSize: 10, textTransform: "uppercase" } : variant === "outline" ? { border: `1px solid ${LT.accentLine}`, color: LT.accentText, padding: "2px 9px" } : { background: LT.neutral, color: LT.muted };
-    return /* @__PURE__ */ jsx("span", { style: { ...base, ...look, ...style2 }, children });
-  }
-  function LiveTag({ label }) {
-    return /* @__PURE__ */ jsxs(Tag, { variant: "live", children: [
-      /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: LT.live } }),
-      label
-    ] });
-  }
-  function Btn({
-    variant = "secondary",
-    children,
-    onClick,
-    title,
-    ariaLabel,
-    pressed,
-    block = false,
-    small = false,
-    icon = false,
-    style: style2,
-    tvStation
-  }) {
-    const base = {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      fontSize: small ? 13 : 14,
-      lineHeight: 1.2,
-      padding: icon ? 0 : small ? "6px 14px" : "8px 16px",
-      width: icon ? 36 : block ? "100%" : void 0,
-      height: icon ? 36 : void 0,
-      /*
-            IKONKNAPPEN ÄR RUND, oavsett vilket höjdgolv värden sätter.
-      
-            36×36 plus `borderRadius: 999` är en cirkel i pluginets egen stil — men
-            appens TV-CSS lägger `min-height: calc(52 * var(--tv-u))` på TV-knappar,
-            vilket vid grundskalan 1,54 är 80 px. Höjden växte alltså till 80 medan
-            bredden stod kvar på 36, och Tillbaka-pilen blev en STÅENDE kapsel
-            (Jerry 2026-09-08: "gör pilen rund sen").
-      
-            `aspect-ratio: 1` gör formen till en egenskap i stället för ett par tal
-            som måste hållas i takt: växer höjden av en regel utanför pluginet följer
-            bredden med, och knappen kan inte bli oval igen. Att i stället hårdkoda
-            80 px hade fungerat tills någon ändrade `--tv-base-scale`.
-          */
-      aspectRatio: icon ? "1 / 1" : void 0,
-      borderRadius: 999,
-      border: "1px solid transparent",
-      background: "transparent",
-      color: LT.text,
-      cursor: "pointer",
-      whiteSpace: "nowrap",
-      fontFamily: "inherit"
-    };
-    const look = variant === "primary" ? { color: LT.accentText, borderColor: LT.accentLine, background: pressed ? LT.accentSoft : LT.accentDeep } : variant === "solid" ? { color: "#1b0d08", background: LT.accent, fontWeight: 700, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase" } : variant === "ghost" ? { color: pressed ? LT.text : LT.muted, background: pressed ? "rgba(255,255,255,0.12)" : "transparent" } : { borderColor: pressed ? "rgba(255,255,255,0.5)" : LT.line, background: pressed ? "rgba(255,255,255,0.12)" : "rgba(252,252,255,0.06)" };
-    return /* @__PURE__ */ jsx(
-      "button",
-      {
-        type: "button",
-        ...tvStation ?? {},
-        onClick,
-        title,
-        "aria-label": ariaLabel,
-        "aria-pressed": pressed,
-        className: "transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-        style: { ...base, ...look, ...style2 },
-        children
-      }
-    );
-  }
-  function ChannelBadge({ channel, size = 40, radius = LT.radiusSm }) {
-    const [failed, setFailed] = useState(false);
-    const primarySrc = getLiveTvLogoSrc(channel.logo);
-    const fallbackSrc = getLiveTvLogoSrc(channel.logoFallback);
-    const src = primarySrc ?? fallbackSrc;
-    const box = {
-      width: size,
-      height: size,
-      borderRadius: radius,
-      background: LT.neutral,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-      overflow: "hidden"
-    };
-    if (src && !failed) {
-      return /* @__PURE__ */ jsx("div", { style: box, children: /* @__PURE__ */ jsx(
-        LiveTvLogoImage,
-        {
-          src,
-          fallbackSrc: primarySrc ? fallbackSrc : void 0,
-          alt: "",
-          className: "h-full w-full object-contain p-1",
-          onError: () => setFailed(true)
-        }
-      ) });
-    }
-    return /* @__PURE__ */ jsx("div", { style: { ...box, fontSize: Math.max(9, Math.round(size * 0.28)), fontWeight: 600, color: LT.muted }, "aria-hidden": "true", children: initialsOf(channel.name) });
-  }
-  function ProgressBar({ value, width, height = 4 }) {
-    return /* @__PURE__ */ jsx("div", { style: { height, width: width ?? "100%", maxWidth: "100%", background: LT.neutral, borderRadius: height, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${Math.round(value * 100)}%`, background: LT.accent } }) });
-  }
-  function Kicker({ children }) {
-    return /* @__PURE__ */ jsx("div", { style: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: LT.accent }, children });
-  }
-  function PinGate({
-    open,
-    title,
-    wrongText,
-    unlockLabel,
-    cancelLabel,
-    onVerify,
-    onClose,
-    onUnlocked
-  }) {
-    const [pin, setPin] = useState("");
-    const [wrong, setWrong] = useState(false);
-    const [busy, setBusy] = useState(false);
-    const inputRef = useRef(null);
-    useEffect(() => {
-      if (!open) return;
-      setPin("");
-      setWrong(false);
-      const timer = window.setTimeout(() => inputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer);
-    }, [open]);
-    if (!open) return null;
-    const submit = async () => {
-      if (pin.length < 4 || busy) return;
-      setBusy(true);
-      const ok = await onVerify(pin);
-      setBusy(false);
-      if (ok) {
-        onUnlocked();
-        return;
-      }
-      setWrong(true);
-      setPin("");
-      inputRef.current?.focus();
-    };
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-label": title,
-        style: { position: "fixed", inset: 0, zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" },
-        onClick: onClose,
-        children: /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, background: "#111b2f", padding: 20, width: 300, display: "flex", flexDirection: "column", gap: 12 }, onClick: (event) => event.stopPropagation(), children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, color: LT.text }, children: title }),
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              ref: inputRef,
-              type: "password",
-              inputMode: "numeric",
-              autoComplete: "off",
-              maxLength: 4,
-              value: pin,
-              onChange: (event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 4)),
-              onKeyDown: (event) => {
-                if (event.key === "Enter") void submit();
-                if (event.key === "Escape") onClose();
-              },
-              "aria-invalid": wrong,
-              style: {
-                fontSize: 24,
-                letterSpacing: "0.5em",
-                textAlign: "center",
-                padding: "10px 12px",
-                borderRadius: LT.radiusMd,
-                border: `1px solid ${wrong ? LT.live : LT.line}`,
-                background: LT.surfaceRaised,
-                color: LT.text,
-                outline: "none",
-                fontFamily: "inherit"
-              }
-            }
-          ),
-          wrong ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: "#fecdd3" }, children: wrongText }) : null,
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" }, children: [
-            /* @__PURE__ */ jsx(Btn, { variant: "ghost", small: true, onClick: onClose, children: cancelLabel }),
-            /* @__PURE__ */ jsx(Btn, { variant: "primary", small: true, onClick: () => void submit(), children: unlockLabel })
-          ] })
-        ] })
-      }
-    );
-  }
-  var LT, surfaceCard;
-  var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_live_tv_logo_image();
-      init_live_tv_data();
-      init_jsx_runtime_shim();
-      LT = {
-        bg: "#050816",
-        /* Glas utan blur (Jerry 2026-09-02): samma yta som strömraderna på
-           detaljsidan. Ljusare än de solida panelerna och utan backdrop-filter,
-           som är dyrt på telefon och TV. */
-        surface: "rgba(252,252,255,0.09)",
-        surfaceRaised: "rgba(252,252,255,0.14)",
-        neutral: "rgba(252,252,255,0.12)",
-        line: "rgba(255,255,255,0.10)",
-        text: "#f3f4f8",
-        muted: "rgba(243,244,248,0.7)",
-        dim: "rgba(243,244,248,0.55)",
-        faint: "rgba(243,244,248,0.4)",
-        accent: "#f4845f",
-        accentText: "#ffd9c9",
-        accentSoft: "rgba(244,132,95,0.16)",
-        accentLine: "rgba(244,132,95,0.55)",
-        accentDeep: "rgba(244,132,95,0.12)",
-        live: "#fb7185",
-        liveSoft: "rgba(251,113,133,0.18)",
-        radiusLg: 14,
-        radiusMd: 8,
-        radiusSm: 4
-      };
-      surfaceCard = {
-        background: LT.surface,
-        borderRadius: LT.radiusMd,
-        border: `1px solid ${LT.line}`,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)"
-      };
+      curationSubscription = null;
+      curationBySource = null;
     }
   });
 
@@ -196130,453 +196781,6 @@ ${cue.text}`).join("\n\n")}
     "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
-    }
-  });
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts
-  function useInSceneBox(ref) {
-    const [inBox, setInBox] = useState(false);
-    useEffect(() => {
-      if (typeof document === "undefined") return;
-      const read9 = () => {
-        const from = ref?.current ?? null;
-        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
-        return box !== null;
-      };
-      const sync2 = () => setInBox(read9());
-      sync2();
-      const observer2 = new MutationObserver(sync2);
-      observer2.observe(document.documentElement, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: [TV_SCENE_BOX_ATTR]
-      });
-      return () => observer2.disconnect();
-    }, [ref]);
-    return inBox;
-  }
-  var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
-      "use strict";
-      init_react_shim();
-      init_plugin_sdk();
-    }
-  });
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
-  function useNarrowSurface(ref) {
-    const [narrow, setNarrow] = useState(false);
-    useEffect(() => {
-      if (typeof document === "undefined") return;
-      const read9 = () => {
-        const from = ref?.current ?? null;
-        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
-        return box?.getAttribute(TV_SCENE_NARROW_ATTR) === "1";
-      };
-      const sync2 = () => setNarrow(read9());
-      sync2();
-      const observer2 = new MutationObserver(sync2);
-      observer2.observe(document.documentElement, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: [TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR]
-      });
-      return () => observer2.disconnect();
-    }, [ref]);
-    return narrow;
-  }
-  var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
-      "use strict";
-      init_react_shim();
-      init_plugin_sdk();
-    }
-  });
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
-  function useSceneBoxScale() {
-    const [scale2, setScale] = useState(null);
-    useEffect(() => {
-      if (typeof document === "undefined") return;
-      const read9 = () => {
-        const getScale = tvSceneBoxScale2;
-        if (typeof getScale !== "function") return null;
-        const box = document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
-        if (!box) return null;
-        const value = getScale(box);
-        return Number.isFinite(value) && value > 0 ? value : null;
-      };
-      const sync2 = () => setScale(read9());
-      sync2();
-      const observer2 = new MutationObserver(sync2);
-      observer2.observe(document.documentElement, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: [TV_SCENE_BOX_ATTR, "style"]
-      });
-      return () => observer2.disconnect();
-    }, []);
-    return scale2;
-  }
-  var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
-      "use strict";
-      init_react_shim();
-      init_plugin_sdk();
-      init_plugin_sdk();
-    }
-  });
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx
-  function dp(n) {
-    return n;
-  }
-  function TvFocusStyle() {
-    return /* @__PURE__ */ jsx("style", { children: `
-:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f]:focus,
-:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f][data-fcur="1"] {
-  outline: 2px solid rgb(var(--accent-500)) !important;
-  outline-offset: 3px;
-  box-shadow: 0 0 28px color-mix(in srgb, rgb(var(--accent-500)) 45%, transparent) !important;
-}
-[data-live-tv-tv-root] [data-f] { outline: none; }
-[data-live-tv-tv-root] [data-f] { user-select: none; -webkit-user-select: none; }
-[data-live-tv-tv-root] [data-selectable-text] { user-select: text; -webkit-user-select: text; }
-@media (hover: hover) and (pointer: fine) {
-  [data-live-tv-tv-root] [data-f]:hover { background-image: linear-gradient(rgba(252,252,255,0.06), rgba(252,252,255,0.06)) !important; }
-  [data-live-tv-tv-root] [data-live-tv-chip][data-f]:hover { border-color: rgba(255,255,255,0.22) !important; }
-}
-[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:focus,
-[data-live-tv-tv-root][data-lt-phone="1"] [data-f][data-fcur="1"] { outline: none !important; box-shadow: none !important; }
-[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:hover { background-image: none !important; }
-:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f]:focus,
-:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f][data-fcur="1"] {
-  outline: 1px solid rgb(var(--accent-500)) !important;
-  outline-offset: -1px;
-  box-shadow: none !important;
-}
-[data-live-tv-tv-root] [data-guide-block]:not([data-live]):hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f]:focus,
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f][data-fcur="1"] { outline: none !important; }
-[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f]:focus,
-[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
-[data-live-tv-tv-root] [data-guide-row]:hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
-[data-live-tv-tv-root] [data-guide-row][data-sticky]:hover { background: #232324 !important; }
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f]:focus,
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f][data-fcur="1"] { outline: none !important; }
-[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f]:focus,
-[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
-[data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
-[data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
-[data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
-[data-live-tv-tv-root] .lumio-tv-logo-img { max-width: 60%; max-height: 60%; object-fit: contain; }
-@keyframes lumio-livetv-fade { from { opacity: 0; transform: translateY(${dp(6)}px); } to { opacity: 1; transform: none; } }
-[data-live-tv-tv-root] [data-live-tv-layer] { animation: lumio-livetv-fade 160ms ease-out; }
-
-/* \xC5TG\xC4RDSKNAPPARNAS UTF\xC4LLBARA NAMN.
-   Samma kontrakt som appens hero-icon-action: knappen b\xE4r
-   [data-hero-icon-action] och namnet [data-hero-icon-label]. Appens egen regel
-   i spa/src/index.css f\xE4ller ut namnet n\xE4r <html data-hero-action-labels="open">
-   \u2014 allts\xE5 n\xE4r inst\xE4llningen \xE4r p\xE5 \u2014 och den tr\xE4ffar de h\xE4r elementen ocks\xE5,
-   eftersom markeringen \xE4r densamma. Det som INTE kommer d\xE4rifr\xE5n \xE4r hovring
-   och fokus: appens variant g\xF6r det med Tailwinds group-hover-klasser, och de
-   finns inte i pluginets inline-stilar. M\xE5tten \xE4r medvetet identiska
-   (9rem/1rem), s\xE5 de tv\xE5 inte kan glida is\xE4r utan att det syns. */
-[data-live-tv-tv-root] [data-hero-icon-label] {
-  max-width: 0;
-  padding-right: 0;
-  opacity: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  transition: max-width 200ms ease-out, padding 200ms ease-out, opacity 200ms ease-out;
-}
-[data-live-tv-tv-root] [data-hero-icon-action]:hover [data-hero-icon-label],
-[data-live-tv-tv-root] [data-hero-icon-action]:focus [data-hero-icon-label],
-[data-live-tv-tv-root] [data-hero-icon-action][data-fcur="1"] [data-hero-icon-label] {
-  max-width: 9rem;
-  padding-right: 1rem;
-  opacity: 1;
-}
-` });
-  }
-  function station(onOk, onHold, extra) {
-    const hold = onHold ? tvHoldHandlers(onOk, onHold) : null;
-    const pointer = onHold ? tvPointerHoldHandlers(onOk, onHold) : null;
-    return {
-      "data-f": "",
-      tabIndex: 0,
-      role: "button",
-      ...pointer ? {
-        "data-hold": "",
-        // Ett fyrat håll undertrycker klicket i `onClickCapture`. Två bälten,
-        // för att SDK:t kan vara äldre än den här filen: capture-handlaren
-        // stoppar spridningen OCH markerar eventet som `defaultPrevented`,
-        // och onClick nedan vägrar köra onOk på ett sådant event. Utan det
-        // skulle både glasmenyn och uppspelningen starta på samma håll.
-        onClick: (event) => {
-          if (event?.defaultPrevented) return;
-          onOk();
-        },
-        onPointerDown: pointer.onPointerDown,
-        onPointerUp: pointer.onPointerUp,
-        onPointerCancel: pointer.onPointerCancel,
-        onPointerLeave: pointer.onPointerLeave,
-        onContextMenu: pointer.onContextMenu,
-        onClickCapture: pointer.onClickCapture
-      } : { onClick: onOk },
-      ...hold ? { onKeyDown: hold.onKeyDown, onKeyUp: hold.onKeyUp } : {
-        onKeyDown: (event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onOk();
-          }
-        }
-      },
-      ...extra ?? {}
-    };
-  }
-  function Tag2({ variant, children, style: style2, title }) {
-    const base = { display: "inline-flex", alignItems: "center", gap: dp(8), whiteSpace: "nowrap", lineHeight: 1.2 };
-    const look = {
-      live: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.14em", padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.liveSoft, color: TV2.liveText, textTransform: "uppercase" },
-      neutral: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.s12, color: TV2.text },
-      quality: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: "rgba(0,0,0,0.45)", color: TV2.text },
-      replay: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV2.accMix(22), color: TV2.accText },
-      reason: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: "rgba(0,0,0,0.45)", color: TV2.text },
-      audio: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.12em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV2.acc, color: TV2.onAcc, textTransform: "uppercase" }
-    };
-    return /* @__PURE__ */ jsxs("span", { title, style: { ...base, ...look[variant], ...style2 }, children: [
-      variant === "live" ? /* @__PURE__ */ jsx("span", { style: { width: dp(8), height: dp(8), borderRadius: 999, background: TV2.live } }) : null,
-      children
-    ] });
-  }
-  function Progress({ value, height = dp(5), track = TV2.s14, style: style2 }) {
-    const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
-    return /* @__PURE__ */ jsx("div", { style: { height, borderRadius: height, background: track, overflow: "hidden", ...style2 }, children: /* @__PURE__ */ jsx("div", { "data-fill": "", style: { width: `${pct}%`, height: "100%", background: TV2.acc } }) });
-  }
-  function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style: style2 }) {
-    const [frameFailed, setFrameFailed] = useState(false);
-    const [logoFailed, setLogoFailed] = useState(false);
-    const frameSrc = USE_PLAYER_FRAMES && !frameFailed && "url" in channel ? playerFrameUrl(channelKey(channel), frameVersion ?? null) : null;
-    const primaryLogo = getLiveTvLogoSrc(channel.logo);
-    const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback);
-    const logo = logoFailed ? null : primaryLogo ?? fallbackLogo;
-    return /* @__PURE__ */ jsxs("div", { style: { position: "relative", height, aspectRatio: aspect, background: "rgba(252,252,255,0.06)", borderRadius: radius, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", ...style2 }, children: [
-      frameSrc ? /* @__PURE__ */ jsx("img", { src: frameSrc, alt: "", onError: () => setFrameFailed(true), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }) : logo ? /* @__PURE__ */ jsx(
-        LiveTvLogoImage,
-        {
-          src: logo,
-          fallbackSrc: primaryLogo ? fallbackLogo : void 0,
-          alt: "",
-          className: "lumio-tv-logo-img",
-          onError: () => setLogoFailed(true)
-        }
-      ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: dp(22), fontWeight: 600, color: TV2.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }),
-      children
-    ] });
-  }
-  function Chip({ active: active2, children, style: style2, glass = false, ...rest }) {
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        "data-live-tv-chip": "",
-        "data-live-tv-chip-glass": glass ? "" : void 0,
-        ...rest,
-        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active2 ? TV2.s16 : TV2.s05, color: active2 ? TV2.text : TV2.muted, fontWeight: active2 ? 600 : 400, border: `1px solid ${glass ? active2 ? TV2.lineStrong : TV2.line : active2 ? TV2.lineStrong : "transparent"}`, ...style2 },
-        children
-      }
-    );
-  }
-  function Segment({ options, value, onChange, style: style2 }) {
-    return /* @__PURE__ */ jsx("div", { "data-testid": "tv-segment", style: { display: "inline-flex", padding: dp(4), borderRadius: 999, background: TV2.s08, gap: dp(2), flexShrink: 0, whiteSpace: "nowrap", maxWidth: "100%", ...style2 }, children: options.map((option) => /* @__PURE__ */ jsx(
-      "div",
-      {
-        "data-testid": "tv-segment-option",
-        ...station(() => onChange(option.key)),
-        style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(16), whiteSpace: "nowrap", cursor: "pointer", background: option.key === value ? TV2.s16 : "transparent", color: option.key === value ? TV2.text : TV2.muted },
-        children: option.label
-      },
-      option.key
-    )) });
-  }
-  function RoundBtn({ size, children, background = TV2.s12, style: style2, ...rest }) {
-    const resolvedSize = size ?? dp(52);
-    return /* @__PURE__ */ jsx("div", { ...rest, style: { width: resolvedSize, height: resolvedSize, minHeight: resolvedSize, borderRadius: 999, background, border: `1px solid ${TV2.lineCard}`, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TV2.text, cursor: "pointer", flexShrink: 0, ...style2 }, children });
-  }
-  function Toggle({ on }) {
-    return /* @__PURE__ */ jsx("span", { style: { width: dp(52), height: dp(30), borderRadius: 999, background: on ? TV2.acc : TV2.s18, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(3), left: on ? dp(25) : dp(3), width: dp(24), height: dp(24), borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
-  }
-  function useTvClockNode(locale) {
-    const HostClock = getTvClock?.() ?? null;
-    const inSceneBox = useInSceneBox();
-    const sceneBoxScale = useSceneBoxScale();
-    const narrowSurface = useNarrowSurface();
-    const canCompensate = inSceneBox && sceneBoxScale !== null && !narrowSurface;
-    const clockRef = useRef(null);
-    const [naturalWidth, setNaturalWidth] = useState(0);
-    useEffect(() => {
-      const el = clockRef.current;
-      if (!el) return;
-      const mat = () => setNaturalWidth(el.offsetWidth);
-      mat();
-      const vakt = new ResizeObserver(mat);
-      vakt.observe(el);
-      return () => vakt.disconnect();
-    }, [canCompensate]);
-    const useHostClock = HostClock !== null && (!inSceneBox || canCompensate);
-    const [now3, setNow] = useState(() => /* @__PURE__ */ new Date());
-    useEffect(() => {
-      if (useHostClock) return;
-      let timer = 0;
-      const tick = () => {
-        const next2 = /* @__PURE__ */ new Date();
-        setNow(next2);
-        timer = window.setTimeout(tick, 6e4 - (next2.getSeconds() * 1e3 + next2.getMilliseconds()));
-      };
-      tick();
-      return () => window.clearTimeout(timer);
-    }, [useHostClock]);
-    if (useHostClock) {
-      if (inSceneBox) {
-        const bredd = naturalWidth > 0 ? naturalWidth / sceneBoxScale : void 0;
-        return /* @__PURE__ */ jsx("span", { style: { display: "inline-block", width: bredd, textAlign: "right" }, children: /* @__PURE__ */ jsx(
-          "span",
-          {
-            ref: clockRef,
-            style: { display: "inline-block", transform: `scale(${1 / sceneBoxScale})`, transformOrigin: "top right" },
-            children: /* @__PURE__ */ jsx(HostClock, { variant: "desktop" })
-          }
-        ) });
-      }
-      return /* @__PURE__ */ jsx(HostClock, { variant: "desktop" });
-    }
-    const time2 = now3.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-    const date = now3.toLocaleDateString(locale, { day: "numeric", month: "short" }).replace(".", "").toUpperCase();
-    const day = now3.toLocaleDateString(locale, { weekday: "short" }).replace(".", "").toUpperCase();
-    return /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), letterSpacing: "0.1em", color: "rgba(243,244,248,0.65)", whiteSpace: "nowrap" }, children: `${time2} | ${date} | ${day}` });
-  }
-  var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
-  var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_plugin_sdk();
-      init_plugin_sdk();
-      init_live_tv_data();
-      init_live_tv_logo_image();
-      init_live_tv_ui();
-      init_useInSceneBox();
-      init_useNarrowSurface();
-      init_useSceneBoxScale();
-      init_jsx_runtime_shim();
-      TV2 = {
-        bg: "#000",
-        text: "#f3f4f8",
-        muted: "rgba(243,244,248,0.7)",
-        dim: "rgba(243,244,248,0.55)",
-        faint: "rgba(243,244,248,0.4)",
-        s05: "rgba(252,252,255,0.05)",
-        s06: "rgba(252,252,255,0.06)",
-        s07: "rgba(252,252,255,0.07)",
-        s08: "rgba(252,252,255,0.08)",
-        s10: "rgba(252,252,255,0.10)",
-        s12: "rgba(252,252,255,0.12)",
-        s14: "rgba(252,252,255,0.14)",
-        s16: "rgba(252,252,255,0.16)",
-        s18: "rgba(252,252,255,0.18)",
-        line: "rgba(255,255,255,0.08)",
-        lineCard: "rgba(255,255,255,0.10)",
-        lineStrong: "rgba(255,255,255,0.22)",
-        acc: "rgb(var(--accent-500))",
-        accMix: (pct) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct}%, transparent)`,
-        accText: "#ffd9c9",
-        onAcc: "#fff",
-        live: "#fb7185",
-        liveSoft: "rgba(251,113,133,0.22)",
-        liveText: "#fecdd3",
-        glass: "rgba(58,59,66,0.96)",
-        panel: "rgba(20,22,30,0.98)",
-        scrim: "rgba(0,0,0,0.6)",
-        font: "'Avenir Next', 'Trebuchet MS', sans-serif",
-        mono: "ui-monospace, SFMono-Regular, Menlo, monospace"
-      };
-      cardStyle = {
-        background: TV2.s07,
-        border: `1px solid ${TV2.lineCard}`,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
-        borderRadius: dp(14),
-        overflow: "hidden"
-      };
-      USE_PLAYER_FRAMES = false;
-      sw = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
-      svg = (size, children, fill) => createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", ...sw, fill: fill ? "currentColor" : "none" }, children);
-      Icons = {
-        Search: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
-          /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
-        ] })),
-        Home: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M3 11.5 12 4l9 7.5" }),
-          /* @__PURE__ */ jsx("path", { d: "M5 10v10h14V10" })
-        ] })),
-        Tv: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "13", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M8 21h8" })
-        ] })),
-        SquaresFour: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "4", y: "4", width: "7", height: "7", rx: "1.5" }),
-          /* @__PURE__ */ jsx("rect", { x: "13", y: "4", width: "7", height: "7", rx: "1.5" }),
-          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "7", height: "7", rx: "1.5" }),
-          /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
-        ] })),
-        /** Filmremsa — Biblioteket. Två perforeringsrader och en ruta emellan. */
-        FilmStrip: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" })
-        ] })),
-        /** Rollista — två figurer, som appens detaljsida. */
-        Users: ({ size = dp(22) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "8", r: "3.2" }),
-          /* @__PURE__ */ jsx("path", { d: "M3.5 19a5.5 5.5 0 0 1 11 0" }),
-          /* @__PURE__ */ jsx("path", { d: "M16 5.2a3.2 3.2 0 0 1 0 5.6M17.5 13.2A5.5 5.5 0 0 1 20.5 19" })
-        ] })),
-        /** Min lista. */
-        Bookmark: ({ size = dp(22), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z", strokeLinejoin: "round" }), filled),
-        /** Sedd. */
-        Eye: ({ size = dp(22), filled = false }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z" }),
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" })
-        ] }), filled),
-        Heart: ({ size = dp(26), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
-        Gear: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
-          /* @__PURE__ */ jsx("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })
-        ] })),
-        ChevronLeft: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M15 18l-6-6 6-6" })),
-        /** Öppningsknappen för telefonens meny-låda (spec §2) — tre linjer. */
-        ChevronDown: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "m6 9 6 6 6-6" })),
-        Play: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
-        Pause: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }), true),
-        Bell: ({ size = dp(20), filled = false }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" }),
-          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
-        ] }), filled),
-        Lock: ({ size = dp(18) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "5", y: "11", width: "14", height: "10", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M8 11V7a4 4 0 0 1 8 0v4" })
-        ] })),
-        Plus: ({ size = dp(40) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" })),
-        Dots: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "12", r: "1.6" }),
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.6" }),
-          /* @__PURE__ */ jsx("circle", { cx: "18", cy: "12", r: "1.6" })
-        ] }), true),
-        Calendar: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "16", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M8 3v4M16 3v4M3 10h18" })
-        ] }))
-      };
     }
   });
 
@@ -198792,15 +198996,15 @@ ${cue.text}`).join("\n\n")}
         ]
       }
     );
-    return portalEl ? (0, import_react_dom3.createPortal)(content, portalEl) : content;
+    return portalEl ? (0, import_react_dom4.createPortal)(content, portalEl) : content;
   }
-  var import_react_dom3, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
+  var import_react_dom4, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
-      import_react_dom3 = __toESM(require_react_dom(), 1);
+      import_react_dom4 = __toESM(require_react_dom(), 1);
       init_plugin_sdk();
       init_channel_history();
       init_live_tv_data();
@@ -198830,9 +199034,322 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/settings-ui.tsx
+  init_react_shim();
+  var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
+  init_jsx_runtime_shim();
+  var UI = {
+    text: "#e8e8ec",
+    muted: "#8b8e99",
+    soft: "#c3c6d0",
+    danger: "#e0776a",
+    dangerLine: "rgba(224,119,106,0.3)",
+    green: "#3cd6a3",
+    greenSoft: "rgba(60,214,163,0.12)",
+    line: "rgba(255,255,255,0.12)",
+    lineDialog: "rgba(255,255,255,0.14)",
+    lineSoft: "rgba(255,255,255,0.055)",
+    lineBox: "rgba(255,255,255,0.2)",
+    card: "rgba(255,255,255,0.04)",
+    inset: "rgba(255,255,255,0.035)",
+    field: "rgba(255,255,255,0.055)",
+    fieldDark: "rgba(0,0,0,0.3)",
+    dark: "rgba(0,0,0,0.25)",
+    dialog: "#1b1c23",
+    overlay: "rgba(6,7,10,0.72)",
+    check: "#0e0f13",
+    accent: "var(--color-accent)",
+    accent700: "var(--color-accent-700)",
+    accent900: "var(--color-accent-900)",
+    mono: "ui-monospace, Menlo, monospace"
+  };
+  function LtCard({ children, style: style2, testId, gap = 14 }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { display: "flex", flexDirection: "column", gap, borderRadius: 10, background: UI.card, padding: "16px 18px", ...style2 }, children });
+  }
+  function LtSection({ eyebrow, title, hint, dot = false }) {
+    return /* @__PURE__ */ jsxs("div", { style: { marginBottom: 6 }, children: [
+      eyebrow ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }, children: [
+        dot ? /* @__PURE__ */ jsx("span", { style: { height: 5, width: 5, borderRadius: 999, background: UI.green } }) : null,
+        /* @__PURE__ */ jsx("div", { style: eyebrowText, children: eyebrow })
+      ] }) : null,
+      title ? /* @__PURE__ */ jsx("h3", { style: { margin: 0, fontSize: 15, fontWeight: 500, color: UI.text }, children: title }) : null,
+      hint ? /* @__PURE__ */ jsx("p", { style: { margin: "5px 0 0", fontSize: 13, lineHeight: 1.5, color: UI.muted, maxWidth: 560 }, children: hint }) : null
+    ] });
+  }
+  var eyebrowText = { fontSize: 11, fontWeight: 500, letterSpacing: "0.16em", textTransform: "uppercase", color: UI.text };
+  function LtEyebrow({ children }) {
+    return /* @__PURE__ */ jsx("p", { style: { margin: 0, ...eyebrowText }, children });
+  }
+  function LtNote({ children, style: style2 }) {
+    return /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12.5, lineHeight: 1.5, color: UI.muted, ...style2 }, children });
+  }
+  function LtMono({ children, style: style2 }) {
+    return /* @__PURE__ */ jsx("code", { style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, fontFamily: UI.mono, color: UI.soft, ...style2 }, children });
+  }
+  function LtAutoBadge() {
+    return /* @__PURE__ */ jsx("span", { style: { flex: "none", borderRadius: 999, background: UI.greenSoft, padding: "2px 8px", fontSize: 10.5, fontWeight: 500, letterSpacing: "0.08em", color: UI.green }, children: "AUTO" });
+  }
+  function LtBtn({ children, onClick, variant = "default", size = "sm", disabled, testId, style: style2, active: active2 = false, title }) {
+    const colors = active2 ? { background: UI.accent900, borderColor: UI.accent, color: UI.text } : variant === "accent" ? { background: "transparent", borderColor: UI.accent, color: UI.text } : variant === "danger" ? { background: "transparent", borderColor: UI.dangerLine, color: UI.danger } : { background: "transparent", borderColor: size === "md" ? UI.lineDialog : UI.line, color: UI.soft };
+    return /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        "data-testid": testId,
+        onClick,
+        disabled,
+        title,
+        style: {
+          flex: "none",
+          borderRadius: 7,
+          borderWidth: 1,
+          borderStyle: "solid",
+          padding: size === "md" ? "8px 15px" : "6px 12px",
+          fontSize: size === "md" ? 13 : 12,
+          fontFamily: "inherit",
+          fontWeight: 400,
+          cursor: disabled ? "default" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+          whiteSpace: "nowrap",
+          ...colors,
+          ...style2
+        },
+        children
+      }
+    );
+  }
+  function LtCheckMark({ on }) {
+    return on ? /* @__PURE__ */ jsx("span", { "data-lt-box": "", style: { display: "inline-flex", height: 17, width: 17, flex: "none", alignItems: "center", justifyContent: "center", borderRadius: 4, background: UI.accent, border: `1px solid ${UI.accent}` }, children: /* @__PURE__ */ jsx("svg", { width: "11", height: "11", viewBox: "0 0 24 24", fill: "none", stroke: UI.check, strokeWidth: "3", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7" }) }) }) : /* @__PURE__ */ jsx("span", { "data-lt-box": "", style: { display: "inline-flex", height: 17, width: 17, flex: "none", borderRadius: 4, background: "transparent", border: `1px solid ${UI.lineBox}` } });
+  }
+  function LtCheck({ checked, onChange, label, hint, disabled, testId }) {
+    return /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        role: "checkbox",
+        "aria-checked": checked,
+        "data-testid": testId,
+        disabled,
+        onClick: () => {
+          if (!disabled) onChange(!checked);
+        },
+        style: { display: "flex", alignItems: "flex-start", gap: 12, cursor: disabled ? "default" : "pointer", background: "transparent", border: 0, padding: 0, textAlign: "left", fontFamily: "inherit", color: UI.text, opacity: disabled ? 0.55 : 1 },
+        children: [
+          /* @__PURE__ */ jsx("span", { style: { marginTop: 2, display: "inline-flex" }, children: /* @__PURE__ */ jsx(LtCheckMark, { on: checked }) }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", gap: 2 }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 13.5, color: UI.text }, children: label }),
+            hint ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, lineHeight: 1.5, color: UI.muted }, children: hint }) : null
+          ] })
+        ]
+      }
+    );
+  }
+  function LtRows({ children }) {
+    return /* @__PURE__ */ jsx("div", { "data-lt-rows": "", style: { display: "flex", flexDirection: "column", borderRadius: 10, background: UI.card, padding: "0 18px" }, children });
+  }
+  function rowSeparator(first) {
+    return `1px solid ${first ? "transparent" : UI.lineSoft}`;
+  }
+  function LtToggleRow({ label, desc, checked, onChange, first = true, testId, error }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 20px", borderTop: rowSeparator(first), padding: "17px 0" }, children: [
+      /* @__PURE__ */ jsx("div", { style: { display: "flex", minWidth: 0, flex: "1 1 16rem", alignItems: "center" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+        /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 13.5, lineHeight: 1.35, color: UI.text }, children: label }),
+        desc ? /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12.5, lineHeight: 1.5, color: UI.muted, maxWidth: "56ch" }, children: desc }) : null,
+        error ? /* @__PURE__ */ jsx("p", { role: "alert", style: { margin: "4px 0 0", fontSize: 12.5, color: UI.danger }, children: error }) : null
+      ] }) }),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          role: "switch",
+          "aria-checked": checked,
+          "aria-label": label,
+          onClick: () => onChange(!checked),
+          style: { marginLeft: "auto", position: "relative", display: "inline-flex", height: 22, width: 38, flex: "none", borderRadius: 999, border: 0, padding: 0, background: checked ? UI.accent : "rgba(255,255,255,0.11)", cursor: "pointer" },
+          children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: checked ? 19 : 3, top: 3, height: 16, width: 16, borderRadius: 999, background: checked ? "#fff" : "#9a9daa" } })
+        }
+      )
+    ] });
+  }
+  function LtInput({ value, onChange, placeholder, title, onEnter, mono = false, dark = false, secret = false, testId, style: style2, autoFocus }) {
+    return /* @__PURE__ */ jsx(
+      "input",
+      {
+        type: secret ? "password" : "text",
+        "aria-label": title,
+        "data-testid": testId,
+        value,
+        placeholder,
+        autoFocus,
+        autoCapitalize: "none",
+        autoCorrect: "off",
+        spellCheck: false,
+        onChange: (event) => onChange(event.target.value),
+        onKeyDown: (event) => {
+          if (event.key === "Enter" && onEnter) {
+            event.preventDefault();
+            onEnter();
+          }
+        },
+        style: {
+          minWidth: 0,
+          borderRadius: 7,
+          border: 0,
+          background: dark ? UI.fieldDark : UI.field,
+          padding: "8px 11px",
+          fontSize: 13,
+          fontFamily: mono ? UI.mono : "inherit",
+          color: UI.text,
+          outline: "none",
+          ...style2
+        }
+      }
+    );
+  }
+  function LtTextRow({ label, desc, value, onChange, placeholder, fieldWidth = 240, secret = false, button, onButton, buttonDisabled, buttonVariant = "default", first = false, onEnter, testId }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 20px", borderTop: rowSeparator(first), padding: "17px 0" }, children: [
+      /* @__PURE__ */ jsx("div", { style: { display: "flex", minWidth: 0, flex: "1 1 10rem", alignItems: "center" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+        /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 13.5, lineHeight: 1.35, color: UI.text }, children: label }),
+        desc ? /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12.5, lineHeight: 1.5, color: UI.muted, maxWidth: "56ch" }, children: desc }) : null
+      ] }) }),
+      /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", minWidth: 0, maxWidth: "100%", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: 8 }, children: [
+        /* @__PURE__ */ jsx(LtInput, { title: label, value, onChange, placeholder, secret, onEnter: onEnter ?? onButton, style: { width: fieldWidth, maxWidth: "100%", textAlign: "right", padding: "7px 10px" } }),
+        button ? /* @__PURE__ */ jsx(LtBtn, { onClick: onButton, disabled: buttonDisabled, variant: buttonVariant, style: { padding: "6px 11px" }, children: button }) : null
+      ] })
+    ] });
+  }
+  var BACK_KEYS = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
+  function isTopPanel(root) {
+    if (!root) return false;
+    const panels = document.querySelectorAll("[data-panel-root]");
+    return panels.length > 0 && panels[panels.length - 1] === root;
+  }
+  function inTextField(target2) {
+    const el = target2;
+    if (!el || typeof el.tagName !== "string") return false;
+    return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable === true;
+  }
+  function useBackLayer(active2, onBack, rootRef) {
+    const isTv = useTvMode();
+    const onBackRef = useRef(onBack);
+    useEffect(() => {
+      onBackRef.current = onBack;
+    });
+    useEffect(() => {
+      if (!active2) return;
+      const opener = document.activeElement;
+      const onKey = (event) => {
+        if (!BACK_KEYS.has(event.key)) return;
+        if (!isTopPanel(rootRef.current)) return;
+        if (event.key === "Backspace" && (!isTv || inTextField(event.target))) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        onBackRef.current();
+      };
+      const onBrowse = (event) => {
+        if (!isTopPanel(rootRef.current)) return;
+        event.stopImmediatePropagation();
+        onBackRef.current();
+      };
+      window.addEventListener("keydown", onKey, true);
+      window.addEventListener(BROWSE_BACK_EVENT, onBrowse, true);
+      return () => {
+        window.removeEventListener("keydown", onKey, true);
+        window.removeEventListener(BROWSE_BACK_EVENT, onBrowse, true);
+        window.setTimeout(() => {
+          if (opener && opener.isConnected && opener !== document.body) opener.focus({ preventScroll: true });
+        }, 0);
+      };
+    }, [active2, isTv]);
+  }
+  function LtDialog({ title, body, width = 400, onClose, children, testId }) {
+    const rootRef = useRef(null);
+    useBackLayer(true, onClose, rootRef);
+    const node = /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: rootRef,
+        role: "dialog",
+        "aria-label": title,
+        "data-panel-root": "",
+        onClick: onClose,
+        style: { position: "fixed", inset: 0, zIndex: 1e3, display: "flex", alignItems: "center", justifyContent: "center", background: UI.overlay, padding: 24 },
+        children: [
+          /* @__PURE__ */ jsx("style", { children: "@media (max-width:639px){.lt-dialog-box{max-width:100%!important;padding:22px 18px 18px!important}}" }),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: "lt-dialog-box",
+              "data-testid": testId,
+              onClick: (event) => event.stopPropagation(),
+              style: { width: "100%", maxWidth: width, maxHeight: "100%", overflowY: "auto", borderRadius: 14, background: UI.dialog, padding: "26px 26px 22px", boxShadow: "0 30px 70px rgba(0,0,0,0.6)", color: UI.text },
+              children: [
+                /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 15, fontWeight: 500, color: UI.text }, children: title }),
+                body ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.6, color: UI.muted }, children: body }) : null,
+                children
+              ]
+            }
+          )
+        ]
+      }
+    );
+    return typeof document === "undefined" ? node : (0, import_react_dom3.createPortal)(node, document.body);
+  }
+  function LtConfirm({ title, body, confirmLabel, cancelLabel, onCancel, onConfirm, testId }) {
+    return /* @__PURE__ */ jsx(LtDialog, { title, body, width: 400, onClose: onCancel, testId, children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }, children: [
+      /* @__PURE__ */ jsx(LtBtn, { size: "md", onClick: onCancel, children: cancelLabel }),
+      /* @__PURE__ */ jsx(LtBtn, { size: "md", variant: "danger", onClick: onConfirm, testId: testId ? `${testId}-confirm` : void 0, children: confirmLabel })
+    ] }) });
+  }
+  var noToast = (_text) => {
+  };
+  var ToastContext = createContext2(noToast);
+  function ToastHost({ children }) {
+    const outer = useContext(ToastContext);
+    if (outer !== noToast) return /* @__PURE__ */ jsx(Fragment2, { children });
+    return /* @__PURE__ */ jsx(ToastRoot, { children });
+  }
+  function ToastRoot({ children }) {
+    const [text, setText] = useState(null);
+    const timer = useRef(null);
+    const toast = useCallback((next2) => {
+      setText(next2);
+      if (timer.current !== null) window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => {
+        timer.current = null;
+        setText(null);
+      }, 2400);
+    }, []);
+    useEffect(() => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+    }, []);
+    const node = useMemo(() => text ? /* @__PURE__ */ jsxs("div", { role: "status", style: { position: "fixed", left: "50%", bottom: 32, transform: "translateX(-50%)", zIndex: 1100, display: "flex", alignItems: "center", gap: 9, borderRadius: 999, background: UI.dialog, padding: "11px 20px", boxShadow: "0 18px 40px rgba(0,0,0,0.55)", pointerEvents: "none" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { height: 5, width: 5, borderRadius: 999, background: UI.green } }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: UI.text }, children: text })
+    ] }) : null, [text]);
+    return /* @__PURE__ */ jsxs(ToastContext.Provider, { value: toast, children: [
+      children,
+      node && typeof document !== "undefined" ? (0, import_react_dom3.createPortal)(node, document.body) : node
+    ] });
+  }
+  function useToast() {
+    return useContext(ToastContext);
+  }
+  function hostOf(url) {
+    try {
+      return new URL(url).host || url;
+    } catch {
+      return url;
+    }
+  }
+  function fmtInt(value, locale) {
+    return value.toLocaleString(locale);
+  }
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
-  init_index_client();
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
@@ -198908,6 +199425,28 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
+    categories: "Categories",
+    curationSummary: "{groups} categories \xB7 {hidden} hidden \xB7 {merged} merged",
+    showAll: "Show all",
+    hideAll: "Hide all",
+    mergeInto: "Merge into\u2026",
+    mergeHint: "To merge categories: press Mark on two or more rows, then give the merged category a name.",
+    mergeAction: "Merge",
+    mergeSelected: "Merge selected ({n})",
+    splitMerge: "Split",
+    mergeContains: "Contains {groups}",
+    markForMerge: "Mark",
+    save: "Save",
+    skip: "Skip",
+    mergeNameLabel: "Name of the merged category",
+    mergeNameEmpty: "Give the category a name.",
+    mergeNameTaken: "A merged category with that name already exists.",
+    mergeNameIsGroup: "That name is already a visible category.",
+    noCategoriesInList: "This playlist has no categories.",
+    searchCategories: "Search categories",
+    curationIntro: "Choose which categories to show. You can change this later under the playlist\u2019s settings.",
+    allCategoriesHidden: "All categories in this playlist are hidden.",
+    openCategories: "Choose categories",
     // Gemensamt
     back: "Back",
     search: "Search",
@@ -198993,9 +199532,147 @@ ${cue.text}`).join("\n\n")}
     xtreamAccountUnavailable: "Could not read the account",
     xtreamExpires: "expires {date}",
     xtreamNoExpiry: "no expiry date",
-    xtreamMaxConnections: "{count} connections"
+    xtreamMaxConnections: "{count} connections",
+    // Inställningssidan enligt handoff 2026-09-24 (copy ordagrant, §3–§4)
+    useAsHome: "Use as home page",
+    useAsHomeDesc: "Replaces the regular Home rows with the Live TV view but keeps the hero and the rest of the start page.",
+    hideHero: "Hide the movie hero on the Live TV page",
+    hideHeroDesc: "Live TV then starts with the hub instead of below the app\u2019s hero carousel.",
+    playlists: "Playlists",
+    yourPlaylists: "Your playlists",
+    playlistsHint: "Each playlist keeps its own categories and EPG sources.",
+    noPlaylistsYet: "No playlists yet. Add an M3U link or an Xtream login below.",
+    m3uTitle: "M3U Playlist URLs",
+    m3uHint: "Enter one M3U URL per line. Channels are stored in your browser.",
+    playlistUrl: "Playlist URL",
+    fetchList: "Fetch list",
+    xtreamLogin: "Xtream login",
+    xtreamHint: "For providers that use an Xtream Codes login (server, username, password) instead of an M3U link.",
+    serverUrl: "Server URL",
+    username: "Username",
+    password: "Password",
+    loginAndFetch: "Log in & fetch",
+    loggingIn: "Logging in\u2026",
+    loginFetched: "Fetched",
+    loginRejected: "Login rejected \u2014 check the username and password.",
+    loginUnreachable: "Could not reach the panel. Check the server URL.",
+    useAsLibrary: "Use as library",
+    useAsLibraryHint: "Build a library index from the film and series in this playlist. The library can then own the home page, the same way Plex and Jellyfin can.",
+    kindM3u: "M3U",
+    kindXtream: "Xtream",
+    kindCustom: "Custom list",
+    fetching: "Fetching\u2026",
+    updateChannels: "Update channels",
+    playlistMeta: "{kind} \xB7 {channels} channels \xB7 {fetched}",
+    epgSources: "EPG sources",
+    noEpgSourceYet: "No EPG source for this playlist yet.",
+    xmltvPlaceholder: "XMLTV URL (e.g. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)",
+    add: "Add",
+    on: "On",
+    pasteXmltvFirst: "Paste an XMLTV URL first",
+    epgSourceAdded: "EPG source added",
+    epgSourceRemoved: "EPG source removed",
+    removePlaylistTitle: "Remove {host}?",
+    removePlaylistBody: "Channels, categories and EPG sources from this playlist are removed from Live TV.",
+    hostRemoved: "{host} removed",
+    hostUpdated: "{host} updated",
+    guideFetchedToast: "Guide fetched \xB7 {programmes} programmes",
+    fetchingGuide: "Fetching the guide\u2026",
+    libraryBuiltToast: "Library built \xB7 {count} titles",
+    libraryBuilt: "Library built \xB7 {count} titles indexed",
+    titlesReady: "{count} titles ready to index",
+    categoriesTitle: "Categories \xB7 {host}",
+    categoriesBody: "Hide the ones you never watch and merge the ones that belong together.",
+    merged: "Merged",
+    mergedMeta: "{members} \xB7 {channels} channels",
+    mark: "Mark",
+    marked: "Marked",
+    mergeN: "Merge {n}",
+    mergeNameSuggest: "Name the merged category",
+    giveMergedName: "Give the merged category a name",
+    mergeHelp: "To merge categories: press Mark on two or more rows, then give the merged category a name.",
+    categoriesSaved: "Categories saved",
+    mergedInto: "Merged into {name}",
+    splitDone: "{name} split",
+    renamedTo: "Renamed to {name}",
+    // TV-vyerna (handoff §4.2)
+    tvNotSet: "Not set",
+    tvM3uUrls: "M3U URLs",
+    tvM3uHint: "One per line \u2014 https://example.com/playlist.m3u. Entered on the phone for long addresses.",
+    tvFetch: "Fetch",
+    tvLogin: "Log in",
+    tvLoginHint: "Signs in and fetches the channel list",
+    tvStatus: "Status",
+    tvChannels: "Channels",
+    tvEdit: "Edit",
+    tvUpdate: "Update",
+    tvUpdateHint: "Fetches the channel list again",
+    tvAutoEpgMeta: "Auto \xB7 url-tvg from the playlist",
+    tvManualEpgMeta: "Added by hand",
+    tvAddXmltv: "Add XMLTV URL",
+    tvAddXmltvMeta: "e.g. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz",
+    tvPlaylistEyebrow: "Playlist",
+    tvRemovePlaylist: "Remove playlist",
+    tvRemovePlaylistMeta: "Channels and categories from this list disappear from Live TV",
+    tvComplete: "Complete",
+    tvMergeCategories: "Merge categories",
+    tvMergeNCategories: "Merge {n} categories",
+    tvMarkTwoOrMore: "Mark two or more",
+    tvMarkAtLeastTwo: "Mark at least two categories",
+    tvRename: "Rename",
+    tvSplitName: "Split {name}",
+    tvSplitMeta: "The categories return as separate rows",
+    tvMarkEyebrow: "Mark the categories to merge",
+    tvMergeHelp: "To merge categories: press Merge categories, mark two or more rows, then give the merged category a name. It shows as one row in Live TV.",
+    tvNameMerged: "Name the merged category",
+    tvRenameMerged: "Rename merged category",
+    tvUseName: "Use \u201C{name}\u201D",
+    tvClear: "Clear",
+    tvSaveName: "Save name",
+    giveCategoryName: "Give the category a name",
+    tvGuideFetched: "Guide fetched {time}",
+    nCategories: "{n} categories",
+    nHidden: "{n} hidden",
+    nMerged: "{n} merged",
+    // Xtreams kategorival på servern + Komplettera logotyper (Jerry 2026-09-24: ingen funktionalitet bort)
+    serverCategories: "Server categories",
+    serverCategoriesAll: "Server categories \xB7 all",
+    serverCategoriesCount: "Server categories \xB7 {n} of {total}",
+    serverCategoriesSelected: "Server categories \xB7 {n} selected",
+    serverCategoriesTitle: "Server categories \xB7 {host}",
+    serverCategoriesBody: "Choose which of the panel\u2019s categories are fetched. Unticked categories never enter Live TV.",
+    allCategories: "All categories",
+    applyAndFetch: "Apply & fetch",
+    tvAllFetched: "All categories are fetched",
+    tvNOfFetched: "{n} of {total} fetched",
+    tvNSelected: "{n} selected",
+    completeLogosHint: "Fetches missing logos from iptv-org now",
+    tvNoKeyboard: "Text entry needs a newer Lumio",
+    tvFetchHint: "Fetches the addresses above"
   };
   var SV = {
+    categories: "Kategorier",
+    curationSummary: "{groups} kategorier \xB7 {hidden} dolda \xB7 {merged} ihopslagna",
+    showAll: "Visa alla",
+    hideAll: "D\xF6lj alla",
+    mergeInto: "Sl\xE5 ihop till\u2026",
+    mergeHint: "Sl\xE5 ihop kategorier: tryck Markera p\xE5 tv\xE5 eller fler rader och ge den ihopslagna kategorin ett namn.",
+    mergeAction: "Sl\xE5 ihop",
+    mergeSelected: "Sl\xE5 ihop markerade ({n})",
+    splitMerge: "Dela upp",
+    mergeContains: "Inneh\xE5ller {groups}",
+    markForMerge: "Markera",
+    save: "Spara",
+    skip: "Hoppa \xF6ver",
+    mergeNameLabel: "Namn p\xE5 den ihopslagna kategorin",
+    mergeNameEmpty: "Ge kategorin ett namn.",
+    mergeNameTaken: "Det finns redan en ihopslagen kategori med det namnet.",
+    mergeNameIsGroup: "Det namnet \xE4r redan en synlig kategori.",
+    noCategoriesInList: "Den h\xE4r spellistan har inga kategorier.",
+    searchCategories: "S\xF6k kategorier",
+    curationIntro: "V\xE4lj vilka kategorier som ska visas. Du kan \xE4ndra det senare under spellistans inst\xE4llningar.",
+    allCategoriesHidden: "Alla kategorier i den h\xE4r spellistan \xE4r dolda.",
+    openCategories: "V\xE4lj kategorier",
     back: "Tillbaka",
     search: "S\xF6k",
     reminders: "P\xE5minnelser",
@@ -199065,7 +199742,120 @@ ${cue.text}`).join("\n\n")}
     xtreamAccountUnavailable: "Kunde inte l\xE4sa kontot",
     xtreamExpires: "giltigt till {date}",
     xtreamNoExpiry: "inget utg\xE5ngsdatum",
-    xtreamMaxConnections: "{count} anslutningar"
+    xtreamMaxConnections: "{count} anslutningar",
+    useAsHome: "Anv\xE4nd som startsida",
+    useAsHomeDesc: "Ers\xE4tter de vanliga Hem-raderna med Live TV-vyn men beh\xE5ller hj\xE4lten och resten av startsidan.",
+    hideHero: "D\xF6lj filmhj\xE4lten p\xE5 Live TV-sidan",
+    hideHeroDesc: "Live TV b\xF6rjar d\xE5 med hubben i st\xE4llet f\xF6r under appens hj\xE4ltekarusell.",
+    playlists: "Spellistor",
+    yourPlaylists: "Dina spellistor",
+    playlistsHint: "Varje spellista har sina egna kategorier och EPG-k\xE4llor.",
+    noPlaylistsYet: "Inga spellistor \xE4n. L\xE4gg till en M3U-l\xE4nk eller en Xtream-inloggning nedan.",
+    m3uTitle: "M3U-spellistans adresser",
+    m3uHint: "Ange en M3U-adress per rad. Kanalerna sparas i din webbl\xE4sare.",
+    playlistUrl: "Spellistans adress",
+    fetchList: "H\xE4mta lista",
+    xtreamLogin: "Xtream-inloggning",
+    xtreamHint: "F\xF6r leverant\xF6rer med Xtream Codes-inloggning (server, anv\xE4ndarnamn, l\xF6senord) i st\xE4llet f\xF6r M3U-l\xE4nk.",
+    serverUrl: "Server-URL",
+    username: "Anv\xE4ndarnamn",
+    password: "L\xF6senord",
+    loginAndFetch: "Logga in & h\xE4mta",
+    loggingIn: "Loggar in\u2026",
+    loginFetched: "H\xE4mtat",
+    loginRejected: "Inloggningen nekades \u2014 kontrollera anv\xE4ndarnamn och l\xF6senord.",
+    loginUnreachable: "Kunde inte n\xE5 panelen. Kontrollera server-URL:en.",
+    useAsLibrary: "Anv\xE4nd som bibliotek",
+    useAsLibraryHint: "Bygg ett biblioteksindex av filmerna och serierna i spellistan. Biblioteket kan sedan \xE4ga startsidan, p\xE5 samma s\xE4tt som Plex och Jellyfin kan.",
+    kindM3u: "M3U",
+    kindXtream: "Xtream",
+    kindCustom: "Egen lista",
+    fetching: "H\xE4mtar\u2026",
+    updateChannels: "Uppdatera kanaler",
+    playlistMeta: "{kind} \xB7 {channels} kanaler \xB7 {fetched}",
+    epgSources: "EPG-k\xE4llor",
+    noEpgSourceYet: "Ingen EPG-k\xE4lla f\xF6r den h\xE4r spellistan \xE4n.",
+    xmltvPlaceholder: "XMLTV-URL (t.ex. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz)",
+    add: "L\xE4gg till",
+    on: "P\xE5",
+    pasteXmltvFirst: "Klistra in en XMLTV-adress f\xF6rst",
+    epgSourceAdded: "EPG-k\xE4lla tillagd",
+    epgSourceRemoved: "EPG-k\xE4lla borttagen",
+    removePlaylistTitle: "Ta bort {host}?",
+    removePlaylistBody: "Kanaler, kategorier och EPG-k\xE4llor fr\xE5n den h\xE4r spellistan tas bort ur Live TV.",
+    hostRemoved: "{host} borttagen",
+    hostUpdated: "{host} uppdaterad",
+    guideFetchedToast: "Tabl\xE5n h\xE4mtad \xB7 {programmes} program",
+    fetchingGuide: "H\xE4mtar tabl\xE5n\u2026",
+    libraryBuiltToast: "Biblioteket byggt \xB7 {count} titlar",
+    libraryBuilt: "Biblioteket byggt \xB7 {count} titlar indexerade",
+    titlesReady: "{count} titlar redo att indexeras",
+    categoriesTitle: "Kategorier \xB7 {host}",
+    categoriesBody: "D\xF6lj de du aldrig tittar p\xE5 och sl\xE5 ihop de som h\xF6r ihop.",
+    merged: "Ihopslagna",
+    mergedMeta: "{members} \xB7 {channels} kanaler",
+    mark: "Markera",
+    marked: "Markerad",
+    mergeN: "Sl\xE5 ihop {n}",
+    mergeNameSuggest: "Namnge den ihopslagna kategorin",
+    giveMergedName: "Ge den ihopslagna kategorin ett namn",
+    mergeHelp: "Sl\xE5 ihop kategorier: tryck Markera p\xE5 tv\xE5 eller fler rader och ge den ihopslagna kategorin ett namn.",
+    categoriesSaved: "Kategorierna sparade",
+    mergedInto: "Ihopslagen till {name}",
+    splitDone: "{name} uppdelad",
+    renamedTo: "Bytte namn till {name}",
+    tvNotSet: "Inte angiven",
+    tvM3uUrls: "M3U-adresser",
+    tvM3uHint: "En per rad \u2014 https://example.com/playlist.m3u. Skrivs in p\xE5 telefonen f\xF6r l\xE5nga adresser.",
+    tvFetch: "H\xE4mta",
+    tvLogin: "Logga in",
+    tvLoginHint: "Loggar in och h\xE4mtar kanallistan",
+    tvStatus: "Status",
+    tvChannels: "Kanaler",
+    tvEdit: "\xC4ndra",
+    tvUpdate: "Uppdatera",
+    tvUpdateHint: "H\xE4mtar kanallistan igen",
+    tvAutoEpgMeta: "Auto \xB7 url-tvg ur spellistan",
+    tvManualEpgMeta: "Tillagd f\xF6r hand",
+    tvAddXmltv: "L\xE4gg till XMLTV-adress",
+    tvAddXmltvMeta: "t.ex. https://epgshare01.online/epgshare01/epg_ripper_SE1.xml.gz",
+    tvPlaylistEyebrow: "Spellista",
+    tvRemovePlaylist: "Ta bort spellistan",
+    tvRemovePlaylistMeta: "Kanaler och kategorier fr\xE5n listan f\xF6rsvinner ur Live TV",
+    tvComplete: "Klart",
+    tvMergeCategories: "Sl\xE5 ihop kategorier",
+    tvMergeNCategories: "Sl\xE5 ihop {n} kategorier",
+    tvMarkTwoOrMore: "Markera tv\xE5 eller fler",
+    tvMarkAtLeastTwo: "Markera minst tv\xE5 kategorier",
+    tvRename: "Byt namn",
+    tvSplitName: "Dela upp {name}",
+    tvSplitMeta: "Kategorierna kommer tillbaka som egna rader",
+    tvMarkEyebrow: "Markera kategorierna som ska sl\xE5s ihop",
+    tvMergeHelp: "Sl\xE5 ihop kategorier: tryck Sl\xE5 ihop kategorier, markera tv\xE5 eller fler rader och ge den ihopslagna kategorin ett namn. Den visas som en rad i Live TV.",
+    tvNameMerged: "Namnge den ihopslagna kategorin",
+    tvRenameMerged: "Byt namn p\xE5 ihopslagen kategori",
+    tvUseName: "Anv\xE4nd \u201D{name}\u201D",
+    tvClear: "Rensa",
+    tvSaveName: "Spara namn",
+    giveCategoryName: "Ge kategorin ett namn",
+    tvGuideFetched: "Tabl\xE5n h\xE4mtad {time}",
+    nCategories: "{n} kategorier",
+    nHidden: "{n} dolda",
+    nMerged: "{n} ihopslagna",
+    serverCategories: "Kategorier p\xE5 servern",
+    serverCategoriesAll: "Kategorier p\xE5 servern \xB7 alla",
+    serverCategoriesCount: "Kategorier p\xE5 servern \xB7 {n} av {total}",
+    serverCategoriesSelected: "Kategorier p\xE5 servern \xB7 {n} valda",
+    serverCategoriesTitle: "Kategorier p\xE5 servern \xB7 {host}",
+    serverCategoriesBody: "V\xE4lj vilka av panelens kategorier som h\xE4mtas. Avbockade kategorier kommer aldrig in i Live TV.",
+    allCategories: "Alla kategorier",
+    applyAndFetch: "Till\xE4mpa & h\xE4mta",
+    tvAllFetched: "Alla kategorier h\xE4mtas",
+    tvNOfFetched: "{n} av {total} h\xE4mtas",
+    tvNSelected: "{n} valda",
+    completeLogosHint: "H\xE4mtar saknade logotyper fr\xE5n iptv-org nu",
+    tvNoKeyboard: "Textinmatning kr\xE4ver en nyare Lumio",
+    tvFetchHint: "H\xE4mtar adresserna ovan"
   };
   function hubText(lang, key, vars) {
     const table = lang === "sv" ? SV : EN;
@@ -199087,7 +199877,6 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
-  init_plugin_sdk();
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
@@ -199150,93 +199939,91 @@ ${cue.text}`).join("\n\n")}
     const now3 = /* @__PURE__ */ new Date();
     return then.toDateString() === now3.toDateString() ? then.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : then.toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   }
-  function sourceRow(url, meta, right, dimmed = false) {
-    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 12px", borderRadius: 10, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }, children: [
-      /* @__PURE__ */ jsxs("span", { style: { minWidth: 0, opacity: dimmed ? 0.45 : 1 }, children: [
-        /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: 12, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: url }),
-        meta
-      ] }),
-      /* @__PURE__ */ jsx("span", { style: { display: "flex", flex: "none", alignItems: "center", gap: 8 }, children: right })
+  function SourceRow({ url, auto: auto2 = false, dimmed = false, right }) {
+    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, borderRadius: 8, background: UI.dark, padding: "8px 10px", opacity: dimmed ? 0.55 : 1 }, children: [
+      /* @__PURE__ */ jsx(LtMono, { children: url }),
+      auto2 ? /* @__PURE__ */ jsx(LtAutoBadge, {}) : null,
+      right
     ] });
   }
   function EpgStatusCard() {
     const { h, locale } = useHubText();
     const { status, urls, refreshing, refresh } = useEpgStatus();
+    const toast = useToast();
+    const statusRef = useRef(status);
+    statusRef.current = status;
     if (urls.length === 0) return null;
     const overallFetched = formatRelative(status?.fetchedAt ?? null, locale);
-    return /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
-      /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle }, children: h("epgStatusTitle") }),
-      /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, color: TOKENS.textMute, lineHeight: 1.45 }, children: h("epgStatusAllLists") }),
-      urls.map((url) => {
-        const stat = status?.urls.find((item) => item.url === url);
-        const fetched = formatRelative(stat?.fetchedAt || null, locale);
-        const meta = !stat ? null : stat.error ? /* @__PURE__ */ jsx("span", { style: { display: "block", marginTop: 3, fontSize: 10.5, color: "#fca5a5" }, children: stat.error }) : /* @__PURE__ */ jsxs("span", { style: { display: "block", marginTop: 3, fontSize: 10.5, color: "rgba(110,231,183,0.75)" }, children: [
-          h("epgSourceStats", { channels: stat.channels, programmes: stat.programmes }),
-          fetched ? ` \xB7 ${h("epgSourceFetched", { time: fetched })}` : ""
-        ] });
-        return /* @__PURE__ */ jsx("div", { children: sourceRow(url, meta, null) }, url);
-      }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }, children: [
-        /* @__PURE__ */ jsx("span", { style: { fontSize: 11.5, color: status?.failedAt && !status.fetchedAt ? "#fca5a5" : TOKENS.textMute }, children: overallFetched ? h("epgFetchedAt", { time: overallFetched, programmes: status?.programmes ?? 0 }) : h("epgNeverFetched") }),
-        /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => void refresh(), disabled: refreshing, children: refreshing ? h("epgRefreshing") : h("epgRefresh") })
+    const doRefresh = async () => {
+      await refresh();
+      toast(h("guideFetchedToast", { programmes: fmtInt(statusRef.current?.programmes ?? 0, locale) }));
+    };
+    return /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsx(LtSection, { eyebrow: h("epgStatusTitle"), hint: h("epgStatusAllLists") }),
+      /* @__PURE__ */ jsxs(LtCard, { gap: 12, testId: "epg-status-card", children: [
+        urls.map((url) => {
+          const stat = status?.urls.find((item) => item.url === url);
+          const fetched = formatRelative(stat?.fetchedAt || null, locale);
+          return /* @__PURE__ */ jsxs("div", { style: { borderRadius: 8, background: UI.dark, padding: "10px 12px" }, children: [
+            /* @__PURE__ */ jsx(LtMono, { style: { display: "block", flex: "none" }, children: url }),
+            !stat ? null : stat.error ? /* @__PURE__ */ jsx("p", { style: { margin: "5px 0 0", fontSize: 12, color: UI.danger }, children: stat.error }) : /* @__PURE__ */ jsxs("p", { style: { margin: "5px 0 0", fontSize: 12, color: UI.green }, children: [
+              h("epgSourceStats", { channels: fmtInt(stat.channels, locale), programmes: fmtInt(stat.programmes, locale) }),
+              fetched ? ` \xB7 ${h("epgSourceFetched", { time: fetched })}` : ""
+            ] })
+          ] }, url);
+        }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10 }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: status?.failedAt && !status.fetchedAt ? UI.danger : UI.muted }, children: refreshing ? h("fetchingGuide") : overallFetched ? h("epgFetchedAt", { time: overallFetched, programmes: fmtInt(status?.programmes ?? 0, locale) }) : h("epgNeverFetched") }),
+          /* @__PURE__ */ jsx(LtBtn, { onClick: () => void doRefresh(), disabled: refreshing, children: refreshing ? h("epgRefreshing") : h("epgRefresh") })
+        ] })
       ] })
-    ] }) });
+    ] });
   }
-  function EpgSourcesSection({
-    autoUrl,
-    manualUrls,
-    onChangeManual,
-    autoDisabled = false,
-    onToggleAuto
-  }) {
-    const { t } = useLang();
+  function EpgSourcesSection({ autoUrl, manualUrls, onChangeManual, autoDisabled = false, onToggleAuto, testId }) {
+    const { h } = useHubText();
+    const toast = useToast();
     const [draft, setDraft] = useState("");
     const addUrl = () => {
       const trimmed = draft.trim();
-      if (!trimmed) return;
+      if (!trimmed) {
+        toast(h("pasteXmltvFirst"));
+        return;
+      }
       onChangeManual([...manualUrls, trimmed]);
       setDraft("");
+      toast(h("epgSourceAdded"));
     };
-    const removeUrl = (index3) => onChangeManual(manualUrls.filter((_, j) => j !== index3));
+    const removeUrl = (index3) => {
+      onChangeManual(manualUrls.filter((_, j) => j !== index3));
+      toast(h("epgSourceRemoved"));
+    };
     const hasAny = autoUrl !== null && !autoDisabled || manualUrls.length > 0;
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
-      /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle }, children: t("liveTvEpgSources") }),
-      autoUrl ? sourceRow(
-        autoUrl,
-        null,
-        /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: 10, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase", padding: "2px 8px", borderRadius: 999, background: autoDisabled ? TOKENS.surface2 : "rgba(60,214,163,0.18)", color: autoDisabled ? TOKENS.textMute : TOKENS.mint }, children: autoDisabled ? `Auto \xB7 ${t("off")}` : "Auto" }),
-          onToggleAuto ? /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: autoDisabled ? "accent" : "danger", onClick: () => onToggleAuto(!autoDisabled), children: autoDisabled ? t("on") : t("remove") }) : null
-        ] }),
-        autoDisabled
+    const removeStyle = { padding: "5px 10px" };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+      /* @__PURE__ */ jsx(LtEyebrow, { children: h("epgSources") }),
+      autoUrl ? /* @__PURE__ */ jsx(
+        SourceRow,
+        {
+          url: autoUrl,
+          auto: true,
+          dimmed: autoDisabled,
+          right: onToggleAuto ? autoDisabled ? /* @__PURE__ */ jsx(LtBtn, { variant: "accent", style: removeStyle, onClick: () => onToggleAuto(false), children: h("on") }) : /* @__PURE__ */ jsx(LtBtn, { variant: "danger", style: removeStyle, onClick: () => {
+            onToggleAuto(true);
+            toast(h("epgSourceRemoved"));
+          }, children: h("remove") }) : null
+        }
       ) : null,
-      manualUrls.map((url, i) => /* @__PURE__ */ jsx("div", { children: sourceRow(url, null, /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "danger", onClick: () => removeUrl(i), children: t("remove") })) }, `${url}-${i}`)),
+      manualUrls.map((url, i) => /* @__PURE__ */ jsx(SourceRow, { url, right: /* @__PURE__ */ jsx(LtBtn, { variant: "danger", style: removeStyle, onClick: () => removeUrl(i), children: h("remove") }) }, `${url}-${i}`)),
+      !hasAny ? /* @__PURE__ */ jsx(LtNote, { children: h("noEpgSourceYet") }) : null,
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
-        /* @__PURE__ */ jsx(
-          "input",
-          {
-            type: "url",
-            placeholder: t("liveTvEpgUrlPlaceholder"),
-            value: draft,
-            onChange: (event) => setDraft(event.target.value),
-            onKeyDown: (event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                addUrl();
-              }
-            },
-            style: { ...inputStyle, flex: 1 }
-          }
-        ),
-        /* @__PURE__ */ jsx(PillBtn, { variant: "accent", onClick: addUrl, style: { minHeight: 44 }, children: t("add") })
-      ] }),
-      !hasAny ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, color: TOKENS.textMute }, children: t("liveTvNoEpgSourcesPrefix") }) : null
+        /* @__PURE__ */ jsx(LtInput, { title: h("xmltvPlaceholder"), placeholder: h("xmltvPlaceholder"), value: draft, onChange: setDraft, onEnter: addUrl, style: { flex: 1, fontSize: 12.5 } }),
+        /* @__PURE__ */ jsx(LtBtn, { variant: "accent", style: { padding: "6px 13px" }, onClick: addUrl, children: h("add") })
+      ] })
     ] });
   }
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
-  init_plugin_sdk();
   init_live_tv_data();
   init_jsx_runtime_shim();
   function formatXtreamExpiry(expDate, locale) {
@@ -199244,6 +200031,39 @@ ${cue.text}`).join("\n\n")}
     const when = new Date(expDate * 1e3);
     if (Number.isNaN(when.getTime())) return null;
     return when.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
+  }
+  function useXtreamAccountMeta(login) {
+    const { h, locale } = useHubText();
+    const [account, setAccount] = useState(null);
+    const [failed, setFailed] = useState(false);
+    const base = login?.base ?? null;
+    const username = login?.username ?? null;
+    const password = login?.password ?? null;
+    useEffect(() => {
+      if (!base || !username || password === null) return;
+      let cancelled = false;
+      setFailed(false);
+      void fetchXtreamAccount({ base, username, password }).then((next2) => {
+        if (!cancelled) setAccount(next2);
+      }).catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [base, username, password]);
+    if (!login) return null;
+    if (failed) return { text: h("xtreamAccountUnavailable"), failed: true };
+    if (!account) return { text: h("listRefetching"), failed: false };
+    const expiry = formatXtreamExpiry(account.expDate, locale);
+    return {
+      failed: false,
+      text: [
+        account.status,
+        expiry ? h("xtreamExpires", { date: expiry }) : h("xtreamNoExpiry"),
+        account.maxConnections ? h("xtreamMaxConnections", { count: account.maxConnections }) : null
+      ].filter((part) => Boolean(part)).join(" \xB7 ")
+    };
   }
   var prefillListeners = /* @__PURE__ */ new Set();
   function prefillXtreamLogin(prefill) {
@@ -199255,10 +200075,7 @@ ${cue.text}`).join("\n\n")}
       prefillListeners.delete(listener);
     };
   }
-  function XtreamLoginSection() {
-    const { t } = useLang();
-    const { h, locale } = useHubText();
-    const [logins, setLogins] = useState([]);
+  function useXtreamLoginForm({ onImported, onPrefill } = {}) {
     const [server, setServer] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -199266,32 +200083,17 @@ ${cue.text}`).join("\n\n")}
     const [importProgress, setImportProgress] = useState(null);
     const [reuse, setReuse] = useState(null);
     const reuseLoginId = reuse && reuse.server === server ? reuse.loginId : null;
-    const cardRef = useRef(null);
-    const isTv = useTvMode();
-    const TvKeyboardPanel2 = isTv ? getTvKeyboardPanel() : null;
-    const [tvField, setTvField] = useState(null);
-    const tvFieldButton = (field, value, placeholder, secret = false) => /* @__PURE__ */ jsx(
-      "button",
-      {
-        type: "button",
-        "data-f": "",
-        onClick: () => setTvField(field),
-        style: { ...inputStyle, textAlign: "left", cursor: "pointer", color: value ? TOKENS.text : TOKENS.textMute, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-        children: value ? secret ? "\u2022".repeat(Math.min(value.length, 24)) : value : placeholder
-      }
-    );
+    const onPrefillRef = useRef(onPrefill);
     useEffect(() => {
-      const sync2 = () => setLogins(getXtreamLogins());
-      sync2();
-      return onXtreamLoginsChanged(sync2);
-    }, []);
+      onPrefillRef.current = onPrefill;
+    });
     useEffect(() => onXtreamPrefill((prefill) => {
       setServer(prefill.server);
       setUsername("");
       setPassword("");
       setReuse(prefill.loginId ? { loginId: prefill.loginId, server: prefill.server } : null);
       setState("idle");
-      cardRef.current?.scrollIntoView({ block: "center" });
+      onPrefillRef.current?.();
     }), []);
     async function refreshChannels(login) {
       const source = xtreamPseudoUrl(login);
@@ -199307,6 +200109,7 @@ ${cue.text}`).join("\n\n")}
           throw new Error(status.error ?? "xtream import failed");
         }
         recordListImportOutcome(list.id);
+        onImported?.(list.id, existedBefore);
       } catch (err) {
         if (existedBefore) recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err));
         throw err;
@@ -199314,7 +200117,7 @@ ${cue.text}`).join("\n\n")}
         setImportProgress(null);
       }
     }
-    async function handleConnect() {
+    async function connect() {
       const base = normalizeXtreamBase(server);
       const user = username.trim();
       const pass = password.trim();
@@ -199347,183 +200150,39 @@ ${cue.text}`).join("\n\n")}
         setState("netError");
       }
     }
-    function handleRemove(login) {
-      deleteXtreamLogin(login.id);
-      const source = xtreamPseudoUrl(login);
-      const list = getLiveTvLists().find((entry) => entry.source === source);
-      if (list) deleteLiveTvList(list.id);
-      clearLiveTvMemoryCache();
-      clearStoredLiveTvChannels();
-    }
-    return /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsxs("div", { ref: cardRef, style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
-      /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: 14.5, fontWeight: 600, color: TOKENS.text }, children: t("liveTvXtreamTitle") }),
-        /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }, children: t("liveTvXtreamDesc") })
-      ] }),
-      TvKeyboardPanel2 ? tvFieldButton("server", server, `${t("liveTvXtreamServer")} \u2014 http://host:8080`) : /* @__PURE__ */ jsx(
-        "input",
-        {
-          type: "url",
-          value: server,
-          onChange: (event) => setServer(event.target.value),
-          placeholder: `${t("liveTvXtreamServer")} \u2014 http://host:8080`,
-          autoCapitalize: "none",
-          autoCorrect: "off",
-          spellCheck: false,
-          style: inputStyle
-        }
-      ),
-      /* @__PURE__ */ jsxs("div", { style: { display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }, children: [
-        TvKeyboardPanel2 ? tvFieldButton("username", username, t("liveTvXtreamUsername")) : /* @__PURE__ */ jsx(
-          "input",
+    return { server, setServer, username, setUsername, password, setPassword, state, connect, importProgress };
+  }
+  function XtreamLoginSection({ onImported } = {}) {
+    const { h, locale } = useHubText();
+    const rootRef = useRef(null);
+    const form = useXtreamLoginForm({ onImported, onPrefill: () => rootRef.current?.scrollIntoView?.({ block: "center" }) });
+    const buttonLabel = form.state === "working" ? h("loggingIn") : form.state === "done" ? h("loginFetched") : h("loginAndFetch");
+    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "xtream-login", children: [
+      /* @__PURE__ */ jsxs(LtRows, { children: [
+        /* @__PURE__ */ jsx(LtTextRow, { first: true, label: h("serverUrl"), value: form.server, onChange: form.setServer, placeholder: "http://host:8080", fieldWidth: 240, onEnter: () => void form.connect() }),
+        /* @__PURE__ */ jsx(LtTextRow, { label: h("username"), value: form.username, onChange: form.setUsername, placeholder: h("username"), fieldWidth: 180, onEnter: () => void form.connect() }),
+        /* @__PURE__ */ jsx(
+          LtTextRow,
           {
-            type: "text",
-            value: username,
-            onChange: (event) => setUsername(event.target.value),
-            placeholder: t("liveTvXtreamUsername"),
-            autoCapitalize: "none",
-            autoCorrect: "off",
-            spellCheck: false,
-            style: inputStyle
-          }
-        ),
-        TvKeyboardPanel2 ? tvFieldButton("password", password, t("liveTvXtreamPassword"), true) : /* @__PURE__ */ jsx(
-          "input",
-          {
-            type: "password",
-            value: password,
-            onChange: (event) => setPassword(event.target.value),
-            placeholder: t("liveTvXtreamPassword"),
-            autoComplete: "off",
-            style: inputStyle
+            label: h("password"),
+            value: form.password,
+            onChange: form.setPassword,
+            placeholder: h("password"),
+            fieldWidth: 180,
+            secret: true,
+            button: buttonLabel,
+            onButton: () => void form.connect(),
+            buttonDisabled: form.state === "working"
           }
         )
       ] }),
-      TvKeyboardPanel2 && tvField ? /* @__PURE__ */ jsx(
-        TvKeyboardPanel2,
-        {
-          title: tvField === "server" ? t("liveTvXtreamServer") : tvField === "username" ? t("liveTvXtreamUsername") : t("liveTvXtreamPassword"),
-          placeholder: tvField === "server" ? "http://host:8080" : "",
-          initial: tvField === "server" ? server : tvField === "username" ? username : password,
-          onDone: (value) => {
-            if (tvField === "server") setServer(value);
-            else if (tvField === "username") setUsername(value);
-            else setPassword(value);
-            setTvField(null);
-          },
-          onClose: () => setTvField(null)
-        }
-      ) : null,
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: 8 }, children: [
-        state === "authError" ? /* @__PURE__ */ jsx("span", { style: { marginRight: "auto", fontSize: 12, color: TOKENS.red }, children: t("liveTvXtreamAuthFailed") }) : null,
-        state === "netError" ? /* @__PURE__ */ jsx("span", { style: { marginRight: "auto", fontSize: 12, color: TOKENS.red }, children: t("liveTvXtreamError") }) : null,
-        /* @__PURE__ */ jsx(PillBtn, { variant: "accent", onClick: () => void handleConnect(), disabled: state === "working", children: state === "working" ? t("liveTvXtreamConnecting") : state === "done" ? t("liveTvXtreamDone") : t("liveTvXtreamConnect") })
-      ] }),
-      importProgress ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, color: TOKENS.textMute }, children: importProgress.total ? h("listImportProgress", { received: importProgress.received.toLocaleString(locale), total: importProgress.total.toLocaleString(locale) }) : h("listImportProgressUnknown") }) : null,
-      logins.map((login) => /* @__PURE__ */ jsx(XtreamLoginCard, { login, onRefresh: refreshChannels, onRemove: handleRemove }, login.id))
-    ] }) });
-  }
-  function XtreamLoginCard({
-    login,
-    onRefresh,
-    onRemove
-  }) {
-    const { t } = useLang();
-    const { h, locale } = useHubText();
-    const [open, setOpen] = useState(false);
-    const [categories, setCategories] = useState(null);
-    const [query, setQuery] = useState("");
-    const [selected, setSelected] = useState(() => new Set(login.categoryIds));
-    const [busy, setBusy] = useState(false);
-    const [account, setAccount] = useState(null);
-    const [accountFailed, setAccountFailed] = useState(false);
-    useEffect(() => {
-      let cancelled = false;
-      setAccountFailed(false);
-      void fetchXtreamAccount(login).then((next2) => {
-        if (!cancelled) setAccount(next2);
-      }).catch(() => {
-        if (!cancelled) setAccountFailed(true);
-      });
-      return () => {
-        cancelled = true;
-      };
-    }, [login.base, login.username, login.password]);
-    let host2 = login.base;
-    try {
-      host2 = new URL(login.base).host;
-    } catch {
-    }
-    const expiry = account ? formatXtreamExpiry(account.expDate, locale) : null;
-    const accountMeta = accountFailed ? h("xtreamAccountUnavailable") : account ? [
-      account.status,
-      expiry ? h("xtreamExpires", { date: expiry }) : h("xtreamNoExpiry"),
-      account.maxConnections ? h("xtreamMaxConnections", { count: account.maxConnections }) : null
-    ].filter((part) => Boolean(part)).join(" \xB7 ") : h("listRefetching");
-    async function handleToggleOpen() {
-      const next2 = !open;
-      setOpen(next2);
-      if (next2 && categories === null) {
-        setCategories(await fetchXtreamCategories(login).catch(() => []));
-      }
-    }
-    function toggleCategory(id4) {
-      setSelected((current2) => {
-        const next2 = new Set(current2);
-        if (next2.has(id4)) next2.delete(id4);
-        else next2.add(id4);
-        return next2;
-      });
-    }
-    async function handleApply(categoryIds) {
-      setBusy(true);
-      try {
-        const next2 = { ...login, categoryIds };
-        saveXtreamLogin(next2);
-        setSelected(new Set(categoryIds));
-        await onRefresh(next2);
-      } finally {
-        setBusy(false);
-      }
-    }
-    const needle = query.trim().toLowerCase();
-    const filtered = (categories ?? []).filter((category) => !needle || category.name.toLowerCase().includes(needle));
-    const row = (checked, onChange, label) => /* @__PURE__ */ jsx("div", { style: { padding: "6px 0" }, children: /* @__PURE__ */ jsx(Checkbox, { checked, onChange, label: /* @__PURE__ */ jsx("span", { style: { fontSize: 13 }, children: label }) }) });
-    return /* @__PURE__ */ jsxs("div", { style: { padding: "12px 14px", borderRadius: 12, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }, children: [
-        /* @__PURE__ */ jsxs("div", { "data-testid": `xtream-account-${login.id}`, style: { minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 2 }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: 14, fontWeight: 600, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: host2 }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: 11.5, color: accountFailed ? TOKENS.red : TOKENS.textMute, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: accountMeta })
-        ] }),
-        /* @__PURE__ */ jsxs(PillBtn, { size: "sm", onClick: () => void handleToggleOpen(), children: [
-          t("liveTvXtreamCategories"),
-          login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ""
-        ] }),
-        /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "accent", onClick: () => void handleApply([...selected]).catch(() => {
-        }), disabled: busy, children: t("liveTvXtreamApplyCategories") }),
-        /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "danger", onClick: () => onRemove(login), children: t("liveTvXtreamRemove") })
-      ] }),
-      open ? /* @__PURE__ */ jsxs("div", { style: { marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }, children: [
-        /* @__PURE__ */ jsx(
-          "input",
-          {
-            type: "text",
-            value: query,
-            onChange: (event) => setQuery(event.target.value),
-            placeholder: t("liveTvXtreamSearchCategories"),
-            style: inputStyle
-          }
-        ),
-        /* @__PURE__ */ jsxs("div", { style: { maxHeight: 224, overflowY: "auto", paddingRight: 4 }, children: [
-          row(selected.size === 0, () => setSelected(/* @__PURE__ */ new Set()), t("liveTvXtreamAllCategories")),
-          (categories === null ? [] : filtered).map((category) => /* @__PURE__ */ jsx("div", { children: row(selected.has(category.id), () => toggleCategory(category.id), category.name) }, category.id))
-        ] })
-      ] }) : null
+      form.state === "authError" ? /* @__PURE__ */ jsx("p", { role: "alert", style: { margin: "8px 0 0", fontSize: 12.5, color: UI.danger }, children: h("loginRejected") }) : null,
+      form.state === "netError" ? /* @__PURE__ */ jsx("p", { role: "alert", style: { margin: "8px 0 0", fontSize: 12.5, color: UI.danger }, children: h("loginUnreachable") }) : null,
+      form.importProgress ? /* @__PURE__ */ jsx(LtNote, { style: { marginTop: 8 }, children: form.importProgress.total ? h("listImportProgress", { received: fmtInt(form.importProgress.received, locale), total: fmtInt(form.importProgress.total, locale) }) : h("listImportProgressUnknown") }) : null
     ] });
   }
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
-  init_plugin_sdk();
   init_tv_strings();
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
@@ -199777,58 +200436,156 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
   init_jsx_runtime_shim();
   function VodLibraryCard() {
-    const { tt, locale } = useTvText();
+    const { h, locale } = useHubText();
+    const { tt } = useTvText();
+    const toast = useToast();
     const { rows, progress: progress3, error, build, disabled } = useVodLibrarySources();
     if (rows.length === 0) return null;
     const statusText = (row) => {
-      if (progress3?.libraryId === row.libraryId) return tt("vodLibraryBuilding", { count: progress3.done.toLocaleString(locale) });
+      if (progress3?.libraryId === row.libraryId) return tt("vodLibraryBuilding", { count: fmtInt(progress3.done, locale) });
       if (row.importing) return tt("vodLibraryImporting");
-      if (row.indexedTitles === null) return tt("vodLibraryNotBuilt", { count: row.vodTitles.toLocaleString(locale) });
-      return tt("vodLibraryBuilt", { count: row.indexedTitles.toLocaleString(locale) });
+      if (row.indexedTitles === null) return h("titlesReady", { count: fmtInt(row.vodTitles, locale) });
+      return h("libraryBuilt", { count: fmtInt(row.indexedTitles, locale) });
     };
-    return /* @__PURE__ */ jsxs(Card, { children: [
-      /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: tt("vodLibraryHeading") }),
-      /* @__PURE__ */ jsx("p", { style: { margin: "0 0 12px", fontSize: 13, lineHeight: 1.5, color: TOKENS.textDim }, children: tt("vodLibraryHint") }),
-      /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, "data-testid": "vod-library-desktop", children: rows.map((row) => /* @__PURE__ */ jsxs(
-        "div",
-        {
-          "data-testid": `vod-library-${row.vodSource}`,
-          style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 },
-          children: [
-            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: row.label }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: TOKENS.textDim }, children: statusText(row) })
-            ] }),
-            /* @__PURE__ */ jsx(
-              PillBtn,
-              {
-                variant: "accent",
-                size: "sm",
-                disabled: disabled(row),
-                onClick: () => {
-                  void build(row);
-                },
-                children: row.indexedTitles === null ? tt("vodLibraryBuild") : tt("vodLibraryRebuild")
-              }
-            )
-          ]
-        },
-        row.libraryId
-      )) }),
-      /* @__PURE__ */ jsx("p", { style: { margin: "12px 0 0", fontSize: 12.5, color: error ? TOKENS.red : TOKENS.textDim }, children: error ? tt("vodLibraryFailed", { error }) : tt("vodLibraryWhereToEnable") })
+    const run = async (row) => {
+      await build(row);
+      toast(h("libraryBuiltToast", { count: fmtInt(row.vodTitles, locale) }));
+    };
+    return /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsx(LtSection, { eyebrow: h("useAsLibrary"), hint: h("useAsLibraryHint") }),
+      /* @__PURE__ */ jsxs(LtCard, { gap: 12, testId: "vod-library-desktop", children: [
+        rows.map((row) => /* @__PURE__ */ jsxs("div", { "data-testid": `vod-library-${row.vodSource}`, style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: "1 1 12rem" }, children: [
+            /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 13.5, color: UI.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: row.label }),
+            /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12.5, color: UI.muted }, children: statusText(row) })
+          ] }),
+          /* @__PURE__ */ jsx(LtBtn, { variant: "accent", style: { padding: "7px 14px", fontSize: 12.5 }, disabled: disabled(row), onClick: () => {
+            void run(row);
+          }, children: row.indexedTitles === null ? tt("vodLibraryBuild") : tt("vodLibraryRebuild") })
+        ] }, row.libraryId)),
+        /* @__PURE__ */ jsx(LtNote, { style: error ? { color: UI.danger } : void 0, children: error ? tt("vodLibraryFailed", { error }) : tt("vodLibraryWhereToEnable") })
+      ] })
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
+  init_react_shim();
+  init_index_client();
+  init_list_curation();
+  init_live_tv_data();
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
+  init_react_shim();
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/server-categories.tsx
+  init_react_shim();
+  init_live_tv_data();
   init_jsx_runtime_shim();
-  var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
-  function hostOf(url) {
-    try {
-      return new URL(url).hostname || url;
-    } catch {
-      return url;
-    }
+  var categoriesCache = /* @__PURE__ */ new Map();
+  var cacheListeners = /* @__PURE__ */ new Set();
+  function cacheKey(login) {
+    return `${login.base}|${login.username}`;
   }
+  function knownXtreamCategoryCount(login) {
+    if (!login) return null;
+    return categoriesCache.get(cacheKey(login))?.length ?? null;
+  }
+  function useXtreamCategories(login) {
+    const key = cacheKey(login);
+    const [categories, setCategories] = useState(() => categoriesCache.get(key) ?? null);
+    useEffect(() => {
+      let live2 = true;
+      const cached = categoriesCache.get(key);
+      if (cached) {
+        setCategories(cached);
+        return;
+      }
+      fetchXtreamCategories(login).then((fetched) => {
+        categoriesCache.set(key, fetched);
+        for (const cb of cacheListeners) cb();
+        if (live2) setCategories(fetched);
+      }).catch(() => {
+        if (live2) setCategories([]);
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [key]);
+    return categories;
+  }
+  function useXtreamCategoryCount(login) {
+    const [, bump] = useState(0);
+    useEffect(() => {
+      const cb = () => bump((n) => n + 1);
+      cacheListeners.add(cb);
+      return () => {
+        cacheListeners.delete(cb);
+      };
+    }, []);
+    return knownXtreamCategoryCount(login);
+  }
+  function serverCategoriesLabel(login, total, h) {
+    if (login.categoryIds.length === 0) return h("serverCategoriesAll");
+    if (total !== null) return h("serverCategoriesCount", { n: login.categoryIds.length, total });
+    return h("serverCategoriesSelected", { n: login.categoryIds.length });
+  }
+  function isCategorySelected(selected, id4) {
+    return selected.size === 0 || selected.has(id4);
+  }
+  function toggleCategory(selected, id4, allIds) {
+    const next2 = selected.size === 0 ? new Set(allIds) : new Set(selected);
+    if (next2.has(id4)) next2.delete(id4);
+    else next2.add(id4);
+    if (allIds.length > 0 && allIds.every((x) => next2.has(x))) return /* @__PURE__ */ new Set();
+    return next2;
+  }
+  function applyServerCategories(login, categoryIds) {
+    const next2 = { ...login, categoryIds };
+    saveXtreamLogin(next2);
+    return next2;
+  }
+  function ServerCategoriesDialog({ login, host: host2, onClose, onApplied }) {
+    const { h } = useHubText();
+    const categories = useXtreamCategories(login);
+    const [selected, setSelected] = useState(() => new Set(login.categoryIds));
+    const [query, setQuery] = useState("");
+    const needle = query.trim().toLowerCase();
+    const rows = useMemo(() => (categories ?? []).filter((c) => !needle || c.name.toLowerCase().includes(needle)), [categories, needle]);
+    const allIds = useMemo(() => (categories ?? []).map((c) => c.id), [categories]);
+    const toggle = (id4) => setSelected((cur) => toggleCategory(cur, id4, allIds));
+    const apply = () => {
+      applyServerCategories(login, [...selected]);
+      onApplied();
+      onClose();
+    };
+    const rowBase = { display: "flex", alignItems: "center", gap: 12, padding: "10px 0" };
+    return /* @__PURE__ */ jsx(LtDialog, { title: h("serverCategoriesTitle", { host: host2 }), body: h("serverCategoriesBody"), width: 620, onClose, testId: "server-categories-dialog", children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }, children: [
+      /* @__PURE__ */ jsx(LtInput, { title: h("searchCategories"), placeholder: h("searchCategories"), value: query, onChange: setQuery, style: { flex: "1 1 180px" } }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", maxHeight: 300, flexDirection: "column", overflowY: "auto", borderRadius: 9, background: UI.inset, padding: "0 12px" }, children: [
+        /* @__PURE__ */ jsxs("button", { type: "button", role: "checkbox", "aria-checked": selected.size === 0, "aria-label": h("allCategories"), onClick: () => setSelected(/* @__PURE__ */ new Set()), style: { ...rowBase, background: "transparent", border: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: UI.text }, children: [
+          /* @__PURE__ */ jsx(LtCheckMark, { on: selected.size === 0 }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 13.5 }, children: h("allCategories") })
+        ] }),
+        categories === null ? /* @__PURE__ */ jsx(LtNote, { style: { padding: "10px 0" }, children: h("listImportProgressUnknown") }) : null,
+        rows.map((c) => {
+          const on = isCategorySelected(selected, c.id);
+          return /* @__PURE__ */ jsxs("button", { type: "button", role: "checkbox", "aria-checked": on, "aria-label": c.name, onClick: () => toggle(c.id), style: { ...rowBase, borderTop: `1px solid ${UI.lineSoft}`, background: "transparent", border: 0, borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: UI.lineSoft, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: on ? UI.text : UI.muted }, children: [
+            /* @__PURE__ */ jsx(LtCheckMark, { on }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 13.5, minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: c.name })
+          ] }, c.id);
+        })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }, children: [
+        /* @__PURE__ */ jsx(LtBtn, { size: "md", onClick: onClose, children: h("cancel") }),
+        /* @__PURE__ */ jsx(LtBtn, { size: "md", variant: "accent", onClick: apply, disabled: categories === null, children: h("applyAndFetch") })
+      ] })
+    ] }) });
+  }
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
+  init_index_client();
+  init_live_tv_data();
+  init_jsx_runtime_shim();
   function formatFetchedAt(iso, locale) {
     const then = new Date(iso);
     if (Number.isNaN(then.getTime())) return iso;
@@ -199836,24 +200593,931 @@ ${cue.text}`).join("\n\n")}
     const sameDay = then.toDateString() === now3.toDateString();
     return sameDay ? then.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : then.toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   }
-  function LiveTvSettingsSection() {
-    const { t, lang } = useLang();
+  function playlistHost(list) {
+    return list.kind === "m3u" && list.url ? hostOf(list.url) : list.name;
+  }
+  function curationSummary(list) {
+    const known = new Set((list.groups ?? []).map((g) => g.name));
+    const curation = list.curation;
+    return {
+      categories: known.size,
+      hidden: (curation?.hidden ?? []).filter((g) => known.has(g)).length,
+      merged: (curation?.merges ?? []).filter((m2) => m2.groups.some((g) => known.has(g))).length
+    };
+  }
+  function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onRelogin }) {
     const { h, locale } = useHubText();
+    const [confirm, setConfirm] = useState(false);
+    const [serverCats, setServerCats] = useState(false);
+    const [logoComplete, setLogoComplete] = useState(null);
+    const kind = list.kind;
+    const importable = kind === "m3u" || kind === "xtream";
+    const login = kind === "xtream" ? getXtreamLogins().find((entry) => entry.id === list.xtreamLoginId) ?? null : null;
+    const needsLogin = kind === "xtream" && !login;
+    const account = useXtreamAccountMeta(login);
+    const categoryTotal = useXtreamCategoryCount(login);
+    const host2 = playlistHost(list);
+    const runCompleteLogos = async () => {
+      if (!list.source) return;
+      setLogoComplete({ status: "running" });
+      try {
+        const result = await completeLogos(list.source);
+        setLogoComplete({ status: "done", matched: result.matched, total: result.total });
+      } catch (err) {
+        setLogoComplete({ status: "error", error: err instanceof Error ? err.message : String(err) });
+      }
+    };
+    const kindLabel2 = kind === "xtream" ? h("kindXtream") : kind === "m3u" ? h("kindM3u") : h("kindCustom");
+    const meta = busy ? h("fetching") : h("playlistMeta", {
+      kind: kindLabel2,
+      channels: fmtInt(list.channelCount ?? 0, locale),
+      fetched: list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt(list.fetchedAt, locale) }) : h("m3uNeverFetched")
+    });
+    const summary = curationSummary(list);
+    const updateLabel = busy ? h("fetching") : kind === "xtream" ? h("updateChannels") : h("listRefetch");
+    const lineStyle = { margin: "2px 0 0", fontSize: 12.5, color: UI.muted };
+    return /* @__PURE__ */ jsxs(LtCard, { testId: `playlist-card-${list.id}`, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 12 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: "1 1 12rem" }, children: [
+          /* @__PURE__ */ jsx("p", { style: { margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, fontWeight: 500, color: UI.text }, children: host2 }),
+          /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12.5, color: UI.muted }, children: meta }),
+          needsLogin ? /* @__PURE__ */ jsx("p", { style: lineStyle, children: h("xtreamNeedsLogin") }) : null,
+          account ? /* @__PURE__ */ jsx("p", { style: { ...lineStyle, color: account.failed ? UI.danger : UI.muted }, children: account.text }) : null,
+          list.needsReimport ? /* @__PURE__ */ jsx("p", { style: lineStyle, children: h("listNeedsReimport") }) : null,
+          !busy && list.lastImportError ? /* @__PURE__ */ jsx("p", { role: "alert", style: { ...lineStyle, color: UI.danger }, children: h("listImportFailed", { error: list.lastImportError }) }) : null,
+          list.truncated ? /* @__PURE__ */ jsx("p", { role: "alert", "data-testid": `list-truncated-${list.id}`, style: { ...lineStyle, color: "#e2c489" }, children: h("listTruncated") }) : null
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", flex: "none", flexWrap: "wrap", gap: 8 }, children: [
+          importable ? /* @__PURE__ */ jsx(LtBtn, { onClick: onCategories, children: h("categories") }) : null,
+          login ? /* @__PURE__ */ jsx(LtBtn, { onClick: () => setServerCats(true), children: serverCategoriesLabel(login, categoryTotal, h) }) : null,
+          needsLogin ? /* @__PURE__ */ jsx(LtBtn, { variant: "accent", onClick: onRelogin, children: h("xtreamRelogin") }) : importable ? /* @__PURE__ */ jsx(LtBtn, { onClick: onUpdate, disabled: busy, children: updateLabel }) : null,
+          /* @__PURE__ */ jsx(LtBtn, { variant: "danger", onClick: () => setConfirm(true), children: h("remove") })
+        ] })
+      ] }),
+      importable ? /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          onClick: onCategories,
+          style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, border: 0, borderRadius: 9, background: UI.inset, padding: "11px 13px", textAlign: "left", fontFamily: "inherit", cursor: "pointer", color: UI.soft },
+          children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5 }, children: h("curationSummary", { groups: summary.categories, hidden: summary.hidden, merged: summary.merged }) }),
+            /* @__PURE__ */ jsx("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: UI.muted, strokeWidth: "2.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "m9 18 6-6-6-6" }) })
+          ]
+        }
+      ) : null,
+      /* @__PURE__ */ jsx(
+        EpgSourcesSection,
+        {
+          testId: `epg-sources-${list.id}`,
+          autoUrl: list.urlTvg,
+          manualUrls: list.epgUrls,
+          onChangeManual: (epgUrls) => updateLiveTvListEpg(list.id, { epgUrls }),
+          autoDisabled: list.autoEpgDisabled,
+          onToggleAuto: (disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        LtCheck,
+        {
+          testId: `logo-fallback-toggle-${list.id}`,
+          checked: isLogoFallbackEnabled(list),
+          onChange: (value) => setLogoFallbackEnabled(list.id, value),
+          disabled: kind === "custom",
+          label: h("logoFallbackToggle"),
+          hint: h("logoFallbackHint")
+        }
+      ),
+      /* @__PURE__ */ jsxs("div", { style: { borderTop: `1px solid ${UI.lineSoft}`, paddingTop: 12, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }, children: [
+        /* @__PURE__ */ jsx(
+          LtBtn,
+          {
+            onClick: () => void runCompleteLogos(),
+            disabled: !isLogoFallbackEnabled(list) || kind === "custom" || logoComplete?.status === "running",
+            children: logoComplete?.status === "running" ? h("logoCompleteRunning") : h("logoCompleteButton")
+          }
+        ),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: logoComplete?.status === "error" ? UI.danger : UI.muted }, role: logoComplete?.status === "error" ? "alert" : void 0, children: logoComplete?.status === "done" ? h("logoCompleteResult", { matched: fmtInt(logoComplete.matched, locale), total: fmtInt(logoComplete.total, locale) }) : logoComplete?.status === "error" ? logoComplete.error : h("completeLogosHint") })
+      ] }),
+      serverCats && login ? /* @__PURE__ */ jsx(ServerCategoriesDialog, { login, host: host2, onClose: () => setServerCats(false), onApplied: onUpdate }) : null,
+      confirm ? /* @__PURE__ */ jsx(
+        LtConfirm,
+        {
+          testId: `remove-playlist-${list.id}`,
+          title: h("removePlaylistTitle", { host: host2 }),
+          body: h("removePlaylistBody"),
+          cancelLabel: h("cancel"),
+          confirmLabel: h("remove"),
+          onCancel: () => setConfirm(false),
+          onConfirm: () => {
+            setConfirm(false);
+            onRemove();
+          }
+        }
+      ) : null
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
+  init_jsx_runtime_shim();
+  function cloneCuration(curation) {
+    return {
+      hidden: [...curation?.hidden ?? []],
+      merges: (curation?.merges ?? []).map((m2) => ({ name: m2.name, groups: [...m2.groups] }))
+    };
+  }
+  function CategoriesDialog({ list, mode, onClose }) {
+    return /* @__PURE__ */ jsx(ToastHost, { children: /* @__PURE__ */ jsx(DialogBody, { list, mode, onClose }) });
+  }
+  var CategoryCurationPanel = CategoriesDialog;
+  function DialogBody({ list, mode, onClose }) {
+    const { h, locale } = useHubText();
+    const toast = useToast();
+    const [groups, setGroups] = useState(null);
+    const [draft, setDraft] = useState(() => cloneCuration(list.curation));
+    const [marked, setMarked] = useState([]);
+    const [mergeName, setMergeName] = useState("");
+    const [query, setQuery] = useState("");
+    const [editNames, setEditNames] = useState({});
+    useEffect(() => {
+      let live2 = true;
+      listGroups(list.source ?? null).then((fetched) => {
+        if (live2) setGroups(fetched.length > 0 ? fetched : list.groups ?? []);
+      }).catch(() => {
+        if (live2) setGroups(list.groups ?? []);
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [list.id, list.source]);
+    const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups]);
+    const countOf = useMemo(() => new Map((groups ?? []).map((g) => [g.name, g.count])), [groups]);
+    const claimed = useMemo(() => new Set(draft.merges.flatMap((m2) => m2.groups)), [draft.merges]);
+    const merges = draft.merges.map((m2, index3) => ({ index: index3, name: m2.name, members: m2.groups.filter((g) => known.has(g)), count: m2.groups.reduce((sum, g) => sum + (countOf.get(g) ?? 0), 0) })).filter((m2) => m2.members.length > 0);
+    const needle = query.trim().toLowerCase();
+    const rows = (groups ?? []).filter((g) => !claimed.has(g.name)).filter((g) => !needle || g.name.toLowerCase().includes(needle)).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const summary = h("curationSummary", {
+      groups: known.size,
+      hidden: draft.hidden.filter((g) => known.has(g)).length,
+      merged: draft.merges.filter((m2) => m2.groups.some((g) => known.has(g))).length
+    });
+    const toggleHidden = (name) => setDraft((d) => ({ ...d, hidden: d.hidden.includes(name) ? d.hidden.filter((g) => g !== name) : [...d.hidden, name] }));
+    const toggleMark = (name) => setMarked((m2) => m2.includes(name) ? m2.filter((x) => x !== name) : [...m2, name]);
+    const merge = () => {
+      const conflict = mergeNameConflict(mergeName, groups ?? [], draft, marked);
+      if (conflict) {
+        toast(conflict === "empty" ? h("giveMergedName") : conflict === "duplicate" ? h("mergeNameTaken") : h("mergeNameIsGroup"));
+        return;
+      }
+      const name = mergeName.trim();
+      setDraft((d) => ({ ...d, merges: [...d.merges, { name, groups: [...marked] }] }));
+      setMarked([]);
+      setMergeName("");
+      toast(h("mergedInto", { name }));
+    };
+    const split2 = (index3) => {
+      const name = draft.merges[index3]?.name ?? "";
+      setDraft((d) => ({ ...d, merges: d.merges.filter((_, i) => i !== index3) }));
+      setEditNames({});
+      toast(h("splitDone", { name }));
+    };
+    const commitRename = (index3) => {
+      const value = editNames[index3];
+      if (value === void 0) return;
+      const next2 = renameMerge(draft, index3, value);
+      const changed = next2.merges[index3]?.name !== draft.merges[index3]?.name;
+      if (!changed && value.trim() !== draft.merges[index3]?.name) {
+        toast(value.trim() ? h("mergeNameTaken") : h("giveMergedName"));
+      }
+      if (changed) setDraft(next2);
+      setEditNames((e) => {
+        const copy = { ...e };
+        delete copy[index3];
+        return copy;
+      });
+    };
+    const save = () => {
+      updateLiveTvListCuration(list.id, normalizeCuration(draft));
+      toast(h("categoriesSaved"));
+      onClose();
+    };
+    const dismiss = () => {
+      if (mode === "after-import") markListCurationSeen(list.id);
+      onClose();
+    };
+    const smallBtn = { padding: "7px 13px", fontSize: 12.5 };
+    return /* @__PURE__ */ jsx(LtDialog, { title: h("categoriesTitle", { host: playlistHost(list) }), body: h("categoriesBody"), width: 620, onClose: dismiss, testId: "categories-dialog", children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }, children: [
+      /* @__PURE__ */ jsx(LtNote, { children: groups ? summary : "" }),
+      mode === "after-import" ? /* @__PURE__ */ jsx(LtNote, { children: h("curationIntro") }) : null,
+      groups && groups.length === 0 ? /* @__PURE__ */ jsx(LtNote, { children: h("noCategoriesInList") }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 }, children: [
+          /* @__PURE__ */ jsx(LtInput, { title: h("searchCategories"), placeholder: h("searchCategories"), value: query, onChange: setQuery, style: { flex: "1 1 180px" } }),
+          /* @__PURE__ */ jsx(LtBtn, { style: smallBtn, onClick: () => setDraft((d) => ({ ...d, hidden: [] })), children: h("showAll") }),
+          /* @__PURE__ */ jsx(LtBtn, { style: smallBtn, onClick: () => setDraft((d) => ({ ...d, hidden: (groups ?? []).map((g) => g.name).filter((g) => !claimed.has(g)) })), children: h("hideAll") })
+        ] }),
+        merges.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+          /* @__PURE__ */ jsx(LtEyebrow, { children: h("merged") }),
+          merges.map((m2) => /* @__PURE__ */ jsxs("div", { "data-merge-row": "", style: { display: "flex", alignItems: "center", gap: 10, borderRadius: 9, background: UI.inset, padding: "10px 12px" }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "text",
+                  "aria-label": h("mergeNameLabel"),
+                  value: editNames[m2.index] ?? m2.name,
+                  onChange: (event) => setEditNames((e) => ({ ...e, [m2.index]: event.target.value })),
+                  onBlur: () => commitRename(m2.index),
+                  onKeyDown: (event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      event.target.blur();
+                    }
+                  },
+                  style: { width: "100%", border: 0, borderRadius: 6, background: "transparent", padding: "2px 0", fontSize: 13.5, fontFamily: "inherit", color: UI.text, outline: "none" }
+                }
+              ),
+              /* @__PURE__ */ jsx("p", { style: { margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, color: UI.muted }, children: h("mergedMeta", { members: m2.members.join(" \xB7 "), channels: fmtInt(m2.count, locale) }) })
+            ] }),
+            /* @__PURE__ */ jsx(LtBtn, { style: { padding: "6px 11px" }, onClick: () => split2(m2.index), children: h("splitMerge") })
+          ] }, `m:${m2.index}`))
+        ] }) : null,
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", maxHeight: 300, flexDirection: "column", overflowY: "auto", borderRadius: 9, background: UI.inset, padding: "0 12px" }, children: [
+          groups === null ? /* @__PURE__ */ jsx(LtNote, { style: { padding: "10px 0" }, children: h("listImportProgressUnknown") }) : null,
+          rows.map((g, i) => {
+            const hidden = draft.hidden.includes(g.name);
+            const isMarked = marked.includes(g.name);
+            return /* @__PURE__ */ jsxs("div", { "data-cat-row": "", style: { display: "flex", alignItems: "center", gap: 12, borderTop: `1px solid ${i === 0 ? "transparent" : UI.lineSoft}`, padding: "10px 0" }, children: [
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  role: "checkbox",
+                  "aria-checked": !hidden,
+                  "aria-label": g.name,
+                  onClick: () => toggleHidden(g.name),
+                  style: { display: "flex", flex: "none", cursor: "pointer", background: "transparent", border: 0, padding: 0 },
+                  children: /* @__PURE__ */ jsx(LtCheckMark, { on: !hidden })
+                }
+              ),
+              /* @__PURE__ */ jsx("span", { onClick: () => toggleHidden(g.name), style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, cursor: "pointer", color: hidden ? UI.muted : UI.text }, children: g.name }),
+              /* @__PURE__ */ jsx("span", { style: { flex: "none", fontSize: 12.5, fontFamily: UI.mono, color: UI.muted }, children: fmtInt(g.count, locale) }),
+              /* @__PURE__ */ jsx(LtBtn, { active: isMarked, style: { padding: "5px 11px", color: isMarked ? UI.text : UI.muted }, onClick: () => toggleMark(g.name), children: isMarked ? h("marked") : h("mark") })
+            ] }, `g:${g.name}`);
+          })
+        ] }),
+        marked.length >= 2 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8, borderRadius: 9, borderWidth: 1, borderStyle: "solid", borderColor: UI.accent700, background: UI.accent900, padding: 12 }, children: [
+          /* @__PURE__ */ jsx("p", { style: { margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, color: UI.soft }, children: marked.join(" \xB7 ") }),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+            /* @__PURE__ */ jsx(LtInput, { title: h("mergeNameLabel"), placeholder: h("mergeNameSuggest"), value: mergeName, onChange: setMergeName, onEnter: merge, dark: true, style: { flex: 1 } }),
+            /* @__PURE__ */ jsx(LtBtn, { variant: "accent", style: { padding: "7px 14px", fontSize: 12.5 }, onClick: merge, children: h("mergeN", { n: marked.length }) })
+          ] })
+        ] }) : /* @__PURE__ */ jsx(LtNote, { children: h("mergeHelp") })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }, children: [
+        /* @__PURE__ */ jsx(LtBtn, { size: "md", onClick: dismiss, children: mode === "after-import" ? h("skip") : h("cancel") }),
+        /* @__PURE__ */ jsx(LtBtn, { size: "md", variant: "accent", onClick: save, disabled: groups === null, children: h("save") })
+      ] })
+    ] }) });
+  }
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
+  init_react_shim();
+  init_plugin_sdk();
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-ui.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_jsx_runtime_shim();
+  var TVS = {
+    bg: "#161826",
+    text: "#e9e9ed",
+    accent: "var(--color-accent)",
+    accent100: "var(--color-accent-100)",
+    accent200: "var(--color-accent-200)",
+    accent300: "var(--color-accent-300)",
+    accent800: "var(--color-accent-800)",
+    accent900: "var(--color-accent-900)",
+    n300: "#cfd3e5",
+    n400: "#b2b6ca",
+    n500: "#9397ab",
+    n600: "#75798c",
+    n700: "#595d6c",
+    n800: "#3f424d",
+    n900: "#292b31",
+    danger: "#e0776a",
+    scrim: "rgba(10,11,18,.66)"
+  };
+  var tvFont2 = (px2) => `calc(${px2}px * var(--ui-scale, 1) * var(--tv-font-scale, 1))`;
+  var tvBox2 = (px2) => `calc(${px2}px * var(--ui-scale, 1))`;
+  var ST = { label: "var(--st-label)", small: "var(--st-small)" };
+  var TV_FONT2 = "var(--font-sans, sans-serif)";
+  var TV_PANEL_W = 960;
+  function TvFocusStyle2() {
+    return /* @__PURE__ */ jsx("style", { children: "[data-lt-tv-row]:focus{outline:none;background:var(--color-accent-900)!important}[data-lt-tv-btn]:focus{outline:none;background:var(--color-accent-800)!important;color:var(--color-accent-100)!important}" });
+  }
+  function TvEyebrow({ children, size = "page" }) {
+    return /* @__PURE__ */ jsx("div", { "data-tv-size": size, style: { flex: "none", font: `500 ${ST.label}/1 ${TV_FONT2}`, letterSpacing: ".2em", textTransform: "uppercase", color: TVS.n600, padding: "12px 0 2px" }, children });
+  }
+  function TvNote({ children, size = "page", tone = "muted" }) {
+    return /* @__PURE__ */ jsx("div", { "data-tv-size": size, style: { flex: "none", font: `400 ${ST.small}/1.5 ${TV_FONT2}`, color: tone === "danger" ? TVS.danger : TVS.n500, padding: 2, maxWidth: "78ch", overflowWrap: "anywhere" }, children });
+  }
+  function Switch2({ on, size }) {
+    void size;
+    const w = 84;
+    const h = 44;
+    const knob = 36;
+    return /* @__PURE__ */ jsx("span", { "aria-hidden": true, style: { display: "block", width: w, height: h, borderRadius: 999, background: on ? TVS.accent : TVS.n800, flex: "none", position: "relative", transition: "background .16s ease" }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 4, left: on ? w - 4 - knob : 4, width: knob, height: knob, borderRadius: 999, background: "#f4f4f6", boxShadow: "0 1px 3px rgba(0,0,0,.4)", transition: "left .16s ease" } }) });
+  }
+  function TvRow({ label, hint, value, valueTone = "accent", caret = false, glyph, toggle, onToggle, onOk, size = "page", testId, init = false, disabled = false, style: style2 }) {
+    void size;
+    const base = {
+      display: "flex",
+      flex: "none",
+      alignItems: "center",
+      gap: 18,
+      padding: `${tvBox2(22)} ${tvBox2(30)}`,
+      minHeight: tvBox2(84),
+      borderRadius: 10,
+      background: TVS.n900,
+      border: `1px solid ${TVS.n800}`,
+      color: TVS.text,
+      opacity: disabled ? 0.5 : 1,
+      ...style2
+    };
+    const interactive = toggle !== void 0 || onOk !== void 0;
+    const act2 = () => {
+      if (disabled) return;
+      if (toggle !== void 0) onToggle?.(!toggle);
+      else onOk?.();
+    };
+    const extra = { "data-lt-tv-row": "" };
+    if (init) extra["data-init"] = "";
+    if (disabled) extra["aria-disabled"] = "true";
+    if (toggle !== void 0) {
+      extra.role = "switch";
+      extra["aria-checked"] = toggle ? "true" : "false";
+      extra["aria-label"] = typeof label === "string" ? label : "";
+    }
+    const props = interactive ? { ...station(act2, void 0, extra), style: { ...base, cursor: disabled ? "default" : "pointer" } } : { style: base };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...props, children: [
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { font: `500 ${tvFont2(25)}/1.2 ${TV_FONT2}`, minWidth: 0, overflowWrap: "anywhere" }, children: label }),
+        hint ? (
+          // Hjälptexten klipps efter två rader (appens §13) — en lång adress får inte göra raden tre gånger så hög.
+          /* @__PURE__ */ jsx("div", { style: { font: `400 ${tvFont2(24)}/1.45 ${TV_FONT2}`, color: TVS.n300, minWidth: 0, maxWidth: "62ch", overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }, children: hint })
+        ) : null
+      ] }),
+      toggle !== void 0 ? /* @__PURE__ */ jsx(Switch2, { on: toggle, size }) : null,
+      value !== void 0 && value !== null && value !== "" ? /* @__PURE__ */ jsx("div", { style: { flex: "none", font: `500 ${tvFont2(22)}/1 ${TV_FONT2}`, color: valueTone === "accent" && interactive ? TVS.accent300 : TVS.n300, maxWidth: tvBox2(340), textAlign: "right", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: value }) : null,
+      glyph ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, style: { fontSize: 26, lineHeight: 1, color: TVS.n400, flex: "none" }, children: glyph }) : caret ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, style: { fontSize: 26, lineHeight: 1, color: TVS.n400, flex: "none" }, children: "\u203A" }) : null
+    ] });
+  }
+  function TvBtns({ buttons }) {
+    return /* @__PURE__ */ jsx("div", { style: { flex: "none", display: "flex", flexWrap: "wrap", gap: 12, padding: "14px 0 6px" }, children: buttons.map((b) => {
+      const tone = b.style ?? "ghost";
+      return /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          "data-f": "",
+          "data-lt-tv-btn": "",
+          "data-init": b.init ? "" : void 0,
+          "data-testid": b.testId,
+          onClick: b.onOk,
+          style: {
+            height: tvBox2(56),
+            padding: `0 ${tvBox2(26)}`,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: tone === "danger" ? TVS.danger : tone === "accent" ? TVS.accent : TVS.n700,
+            color: tone === "danger" ? TVS.danger : tone === "accent" ? TVS.accent200 : TVS.n300,
+            background: "transparent",
+            display: "flex",
+            alignItems: "center",
+            font: `500 ${tvFont2(24)}/1 ${TV_FONT2}`,
+            cursor: "pointer",
+            whiteSpace: "nowrap"
+          },
+          children: b.label
+        },
+        b.label
+      );
+    }) });
+  }
+  function TvPanel({ title, hint, crumb, onBack, children, testId }) {
+    const rootRef = useRef(null);
+    useBackLayer(true, onBack, rootRef);
+    const [left, setLeft] = useState(null);
+    useEffect(() => {
+      const measure3 = () => {
+        const overlay = rootRef.current;
+        if (!overlay) {
+          setLeft(null);
+          return;
+        }
+        const settingsRoot = overlay.closest("[data-tv-settings]") ?? document;
+        const side = settingsRoot.querySelector('[data-col="side"]');
+        const column = overlay.closest('[data-col="content"]') ?? settingsRoot.querySelector('[data-col="content"]');
+        const o = overlay.getBoundingClientRect();
+        if (o.width === 0 || overlay.offsetWidth === 0) {
+          setLeft(null);
+          return;
+        }
+        const scale2 = o.width / overlay.offsetWidth;
+        const edge = side ? side.getBoundingClientRect().right : column ? column.getBoundingClientRect().left : null;
+        if (edge === null) {
+          setLeft(null);
+          return;
+        }
+        setLeft(Math.max(0, Math.round((edge - o.left) / scale2)));
+      };
+      measure3();
+      window.addEventListener("resize", measure3);
+      return () => window.removeEventListener("resize", measure3);
+    }, []);
+    useEffect(() => {
+      const id4 = window.setTimeout(() => {
+        const root = rootRef.current;
+        if (!root) return;
+        const target2 = root.querySelector("[data-init]") ?? root.querySelector("[data-f]");
+        target2?.focus({ preventScroll: true });
+      }, 0);
+      return () => window.clearTimeout(id4);
+    }, []);
+    return /* @__PURE__ */ jsxs("div", { ref: rootRef, role: "dialog", "aria-label": title, "data-panel-root": "", "data-testid": testId, style: { position: "fixed", inset: 0, zIndex: 1e3, color: TVS.text }, children: [
+      /* @__PURE__ */ jsx(TvFocusStyle2, {}),
+      /* @__PURE__ */ jsx("div", { "aria-hidden": true, onClick: onBack, style: { position: "absolute", inset: 0, background: TVS.scrim } }),
+      /* @__PURE__ */ jsxs("div", { style: { position: "absolute", top: 0, right: 0, bottom: 0, ...left !== null ? { left } : { width: TV_PANEL_W, maxWidth: "100%" }, background: TVS.bg, boxShadow: "0 0 60px rgba(0,0,0,.5)", display: "flex", flexDirection: "column", padding: "24px 26px 20px" }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { flex: "none", display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }, children: [
+          crumb ? /* @__PURE__ */ jsxs("div", { onClick: onBack, style: { display: "flex", alignItems: "center", gap: 6, font: `500 ${ST.small}/1 ${TV_FONT2}`, color: TVS.n500, cursor: "pointer", paddingBottom: 2 }, children: [
+            /* @__PURE__ */ jsx("span", { "aria-hidden": true, style: { fontSize: 14, lineHeight: 1 }, children: "\u2190" }),
+            crumb
+          ] }) : null,
+          /* @__PURE__ */ jsx("div", { "data-tv-title": "", style: { font: `500 ${tvFont2(32)}/1.15 ${TV_FONT2}`, letterSpacing: "-.02em", overflowWrap: "anywhere" }, children: title }),
+          hint ? /* @__PURE__ */ jsx("div", { style: { marginTop: 4, font: `400 ${ST.small}/1.45 ${TV_FONT2}`, color: TVS.n500, overflowWrap: "anywhere" }, children: hint }) : null
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 8, overflowY: "auto" }, children })
+      ] })
+    ] });
+  }
+  function TvConfirmPanel({ title, body, confirmLabel, cancelLabel, crumb, onCancel, onConfirm, testId = "tv-confirm-panel" }) {
+    return /* @__PURE__ */ jsxs(TvPanel, { title, crumb, onBack: onCancel, testId, children: [
+      /* @__PURE__ */ jsx(TvNote, { size: "panel", children: body }),
+      /* @__PURE__ */ jsx(TvBtns, { buttons: [
+        { label: cancelLabel, style: "ghost", onOk: onCancel, init: true },
+        { label: confirmLabel, style: "danger", onOk: onConfirm }
+      ] })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
+  init_index_client();
+  init_tv_strings();
+  init_index_client();
+  init_list_curation();
+  init_live_tv_data();
+  init_jsx_runtime_shim();
+  function kindLabel(list, h) {
+    return list.kind === "xtream" ? h("kindXtream") : list.kind === "m3u" ? h("kindM3u") : h("kindCustom");
+  }
+  function shortSummary(list, h) {
+    const s = curationSummary(list);
+    return [h("nCategories", { n: s.categories }), s.hidden ? h("nHidden", { n: s.hidden }) : null, s.merged ? h("nMerged", { n: s.merged }) : null].filter(Boolean).join(" \xB7 ");
+  }
+  function TvTextRow({ label, hint, value, placeholder, secret = false, onChange, testId }) {
+    const { h } = useHubText();
+    const Keyboard = getTvKeyboardPanel();
+    const [open, setOpen] = useState(false);
+    const shown = value ? secret ? "\u2022".repeat(Math.min(value.length, 24)) : value : h("tvNotSet");
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(TvRow, { label, hint: Keyboard ? hint : h("tvNoKeyboard"), value: shown, valueTone: value ? "accent" : "muted", glyph: "\u2328", onOk: () => setOpen(true), disabled: !Keyboard, testId }),
+      open && Keyboard ? /* @__PURE__ */ jsx(Keyboard, { title: label, placeholder: placeholder ?? "", initial: value, onDone: (next2) => {
+        onChange(next2);
+        setOpen(false);
+      }, onClose: () => setOpen(false) }) : null
+    ] });
+  }
+  function TvSettingsPage() {
+    const { t } = useLang();
+    const { h, locale } = useHubText();
+    const { tt } = useTvText();
+    const toast = useToast();
+    const s = useLiveTvSettings();
+    const form = useXtreamLoginForm({ onImported: (listId, existedBefore) => {
+      if (!existedBefore) s.maybeOpenCurationAfterImport(listId);
+    } });
+    const [openList, setOpenList] = useState(null);
+    const epg = useEpgStatus();
+    const vod = useVodLibrarySources();
+    const openedList = openList ? s.lists.find((l) => l.id === openList) ?? null : null;
+    useEffect(() => {
+      if (openList && !openedList) setOpenList(null);
+    }, [openList, openedList]);
+    const fetchHint = s.fetchProgress.status === "fetching" ? h("m3uFetchProgress", { current: s.fetchProgress.current, total: s.fetchProgress.total }) : s.fetchProgress.status === "error" ? h("m3uFetchFailedOn", { host: s.fetchProgress.url ?? "", error: s.fetchProgress.error ?? "" }) : s.fetchProgress.status === "done" ? s.fetchProgress.results.map((r) => h("channelsCount", { count: fmtInt(r.channels, locale) })).join(" \xB7 ") : h("tvFetchHint");
+    const loginHint = form.state === "authError" ? h("loginRejected") : form.state === "netError" ? h("loginUnreachable") : form.importProgress ? form.importProgress.total ? h("listImportProgress", { received: fmtInt(form.importProgress.received, locale), total: fmtInt(form.importProgress.total, locale) }) : h("listImportProgressUnknown") : h("tvLoginHint");
+    const loginValue = form.state === "working" ? h("loggingIn") : form.state === "done" ? h("loginFetched") : h("tvLogin");
+    const fetchedAt = (ms) => {
+      if (!ms) return null;
+      return formatFetchedAt(new Date(ms).toISOString(), locale);
+    };
+    const guideFetched = fetchedAt(epg.status?.fetchedAt ?? null);
+    const refetchGuide = async () => {
+      await epg.refresh();
+      toast(h("guideFetchedToast", { programmes: fmtInt(epg.status?.programmes ?? 0, locale) }));
+    };
+    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8, color: TVS.text }, children: [
+      /* @__PURE__ */ jsx(TvFocusStyle2, {}),
+      /* @__PURE__ */ jsx(TvRow, { label: h("useAsHome"), hint: s.homeOverrideError || h("useAsHomeDesc"), toggle: s.homeOverrideEnabled, onToggle: s.toggleHomeOverride }),
+      /* @__PURE__ */ jsx(TvRow, { label: h("hideHero"), hint: h("hideHeroDesc"), toggle: s.hideHero, onToggle: s.setHideHero }),
+      /* @__PURE__ */ jsx(TvEyebrow, { children: h("playlists") }),
+      s.lists.length === 0 ? /* @__PURE__ */ jsx(TvNote, { children: h("noPlaylistsYet") }) : null,
+      s.lists.map((list) => /* @__PURE__ */ jsx(
+        TvRow,
+        {
+          testId: `tv-playlist-row-${list.id}`,
+          label: playlistHost(list),
+          hint: s.listProgress?.listId === list.id ? h("fetching") : h("playlistMeta", { kind: kindLabel(list, h), channels: fmtInt(list.channelCount ?? 0, locale), fetched: list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt(list.fetchedAt, locale) }) : h("m3uNeverFetched") }),
+          value: list.kind === "custom" ? void 0 : shortSummary(list, h),
+          caret: true,
+          onOk: () => setOpenList(list.id)
+        },
+        list.id
+      )),
+      /* @__PURE__ */ jsx(TvEyebrow, { children: h("kindM3u") }),
+      /* @__PURE__ */ jsx(TvTextRow, { label: h("tvM3uUrls"), hint: h("tvM3uHint"), value: s.m3uText, placeholder: t("m3uUrlsPlaceholder"), onChange: s.setM3uText }),
+      /* @__PURE__ */ jsx(TvRow, { label: h("fetchList"), hint: fetchHint, value: s.fetchProgress.status === "fetching" ? h("fetching") : h("tvFetch"), caret: true, onOk: () => void s.fetchM3u(), disabled: s.fetchProgress.status === "fetching" }),
+      /* @__PURE__ */ jsx(TvEyebrow, { children: h("xtreamLogin") }),
+      /* @__PURE__ */ jsx(TvTextRow, { label: h("serverUrl"), hint: "http://host:8080", value: form.server, placeholder: "http://host:8080", onChange: form.setServer }),
+      /* @__PURE__ */ jsx(TvTextRow, { label: h("username"), value: form.username, onChange: form.setUsername }),
+      /* @__PURE__ */ jsx(TvTextRow, { label: h("password"), value: form.password, secret: true, onChange: form.setPassword }),
+      /* @__PURE__ */ jsx(TvRow, { label: h("loginAndFetch"), hint: loginHint, value: loginValue, caret: true, onOk: () => void form.connect(), disabled: form.state === "working" }),
+      epg.urls.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(TvEyebrow, { children: h("epgStatusTitle") }),
+        /* @__PURE__ */ jsx(TvNote, { children: h("epgStatusAllLists") }),
+        /* @__PURE__ */ jsx(
+          TvRow,
+          {
+            label: epg.refreshing ? h("fetchingGuide") : guideFetched ? h("tvGuideFetched", { time: guideFetched }) : h("epgNeverFetched"),
+            hint: h("epgSourceStats", { channels: fmtInt(epg.status?.channels ?? 0, locale), programmes: fmtInt(epg.status?.programmes ?? 0, locale) }),
+            value: h("epgRefresh"),
+            onOk: () => void refetchGuide(),
+            disabled: epg.refreshing
+          }
+        )
+      ] }) : null,
+      vod.rows.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(TvEyebrow, { children: h("useAsLibrary") }),
+        /* @__PURE__ */ jsx(TvNote, { children: h("useAsLibraryHint") }),
+        vod.rows.map((row) => /* @__PURE__ */ jsx(
+          TvRow,
+          {
+            label: row.label,
+            hint: vod.progress?.libraryId === row.libraryId ? tt("vodLibraryBuilding", { count: fmtInt(vod.progress.done, locale) }) : row.importing ? tt("vodLibraryImporting") : row.indexedTitles === null ? h("titlesReady", { count: fmtInt(row.vodTitles, locale) }) : h("libraryBuilt", { count: fmtInt(row.indexedTitles, locale) }),
+            value: row.indexedTitles === null ? tt("vodLibraryBuild") : tt("vodLibraryRebuild"),
+            disabled: vod.disabled(row),
+            onOk: () => {
+              void vod.build(row).then(() => toast(h("libraryBuiltToast", { count: fmtInt(row.vodTitles, locale) })));
+            }
+          },
+          row.libraryId
+        )),
+        /* @__PURE__ */ jsx(TvNote, { tone: vod.error ? "danger" : "muted", children: vod.error ? tt("vodLibraryFailed", { error: vod.error }) : tt("vodLibraryWhereToEnable") })
+      ] }) : null,
+      openedList ? /* @__PURE__ */ jsx(
+        TvPlaylistPanel,
+        {
+          list: openedList,
+          busy: s.listProgress?.listId === openedList.id,
+          onClose: () => setOpenList(null),
+          onUpdate: () => void s.refetchList(openedList),
+          onRemove: () => {
+            setOpenList(null);
+            s.removeList(openedList);
+          },
+          onRelogin: () => {
+            setOpenList(null);
+            s.relogin(openedList);
+          },
+          onCategories: () => s.setCurationList({ list: openedList, mode: "settings" })
+        }
+      ) : null,
+      s.curationList ? /* @__PURE__ */ jsx(
+        TvCategoriesPanel,
+        {
+          target: s.curationList,
+          crumb: openedList ? playlistHost(openedList) : void 0,
+          onClose: () => s.setCurationList(null)
+        }
+      ) : null
+    ] });
+  }
+  function TvPlaylistPanel({ list, busy, onClose, onUpdate, onRemove, onRelogin, onCategories }) {
+    const { h, locale } = useHubText();
+    const toast = useToast();
+    const Keyboard = getTvKeyboardPanel();
+    const [adding, setAdding] = useState(false);
+    const [confirm, setConfirm] = useState(false);
+    const [serverCats, setServerCats] = useState(false);
+    const [completing, setCompleting] = useState(false);
+    const login = list.kind === "xtream" ? getXtreamLogins().find((entry) => entry.id === list.xtreamLoginId) ?? null : null;
+    const categoryTotal = useXtreamCategoryCount(login);
+    const needsLogin = list.kind === "xtream" && !login;
+    const account = useXtreamAccountMeta(login);
+    const importable = list.kind === "m3u" || list.kind === "xtream";
+    const host2 = playlistHost(list);
+    const kind = kindLabel(list, h);
+    const summary = curationSummary(list);
+    const statusMeta = busy ? h("fetching") : needsLogin ? h("xtreamNeedsLogin") : account ? account.text : list.lastImportError ? h("listImportFailed", { error: list.lastImportError }) : list.needsReimport ? h("listNeedsReimport") : list.truncated ? h("listTruncated") : "\u2014";
+    const epgSources = [];
+    if (list.urlTvg) {
+      epgSources.push({ url: list.urlTvg, auto: true, disabled: list.autoEpgDisabled, remove: () => {
+        updateLiveTvListEpg(list.id, { autoEpgDisabled: !list.autoEpgDisabled });
+        toast(h("epgSourceRemoved"));
+      } });
+    }
+    list.epgUrls.forEach((url, i) => epgSources.push({ url, auto: false, disabled: false, remove: () => {
+      updateLiveTvListEpg(list.id, { epgUrls: list.epgUrls.filter((_, j) => j !== i) });
+      toast(h("epgSourceRemoved"));
+    } }));
+    const addUrl = (raw) => {
+      const url = raw.trim();
+      if (!url) {
+        toast(h("pasteXmltvFirst"));
+        return;
+      }
+      updateLiveTvListEpg(list.id, { epgUrls: [...list.epgUrls, url] });
+      toast(h("epgSourceAdded"));
+    };
+    const serverMeta = login ? login.categoryIds.length === 0 ? h("tvAllFetched") : categoryTotal !== null ? h("tvNOfFetched", { n: login.categoryIds.length, total: categoryTotal }) : h("tvNSelected", { n: login.categoryIds.length }) : "";
+    const runCompleteLogos = async () => {
+      if (!list.source) return;
+      setCompleting(true);
+      try {
+        const result = await completeLogos(list.source);
+        toast(h("logoCompleteResult", { matched: fmtInt(result.matched, locale), total: fmtInt(result.total, locale) }));
+      } catch (err) {
+        toast(err instanceof Error ? err.message : String(err));
+      } finally {
+        setCompleting(false);
+      }
+    };
+    return /* @__PURE__ */ jsxs(TvPanel, { title: host2, hint: `${kind} \xB7 ${h("channelsCount", { count: fmtInt(list.channelCount ?? 0, locale) })}`, onBack: onClose, testId: "tv-playlist-panel", children: [
+      /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("tvStatus"), hint: statusMeta, value: kind }),
+      /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("tvChannels"), hint: list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt(list.fetchedAt, locale) }) : h("m3uNeverFetched"), value: fmtInt(list.channelCount ?? 0, locale) }),
+      importable ? /* @__PURE__ */ jsx(TvRow, { size: "panel", init: true, label: h("categories"), hint: h("curationSummary", { groups: summary.categories, hidden: summary.hidden, merged: summary.merged }), value: h("tvEdit"), onOk: onCategories }) : null,
+      login ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("serverCategories"), hint: serverMeta, value: h("tvEdit"), onOk: () => setServerCats(true) }) : null,
+      needsLogin ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("xtreamRelogin"), hint: h("xtreamNeedsLogin"), value: h("tvLogin"), onOk: onRelogin }) : importable ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: list.kind === "xtream" ? h("updateChannels") : h("listRefetch"), hint: busy ? h("fetching") : h("tvUpdateHint"), value: busy ? "\u2026" : h("tvUpdate"), onOk: onUpdate, disabled: busy }) : null,
+      /* @__PURE__ */ jsx(TvEyebrow, { size: "panel", children: h("epgSources") }),
+      epgSources.map((src) => /* @__PURE__ */ jsx(TvRow, { size: "panel", label: src.url, hint: src.auto ? h("tvAutoEpgMeta") : h("tvManualEpgMeta"), value: src.disabled ? h("on") : h("remove"), onOk: src.remove, style: src.disabled ? { opacity: 0.55 } : void 0 }, src.url)),
+      epgSources.filter((s) => !s.disabled).length === 0 ? /* @__PURE__ */ jsx(TvNote, { size: "panel", children: h("noEpgSourceYet") }) : null,
+      /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("tvAddXmltv"), hint: Keyboard ? h("tvAddXmltvMeta") : h("tvNoKeyboard"), value: h("add"), onOk: () => setAdding(true), disabled: !Keyboard }),
+      /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("logoFallbackToggle"), hint: h("logoFallbackHint"), toggle: isLogoFallbackEnabled(list), onToggle: (value) => setLogoFallbackEnabled(list.id, value), disabled: list.kind === "custom" }),
+      /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("logoCompleteButton"), hint: h("completeLogosHint"), value: completing ? h("logoCompleteRunning") : h("tvUpdate"), onOk: () => void runCompleteLogos(), disabled: completing || !isLogoFallbackEnabled(list) || list.kind === "custom" }),
+      /* @__PURE__ */ jsx(TvEyebrow, { size: "panel", children: h("tvPlaylistEyebrow") }),
+      /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("tvRemovePlaylist"), hint: h("tvRemovePlaylistMeta"), value: h("remove"), onOk: () => setConfirm(true) }),
+      /* @__PURE__ */ jsx(TvBtns, { buttons: [{ label: h("tvComplete"), style: "accent", onOk: onClose }] }),
+      adding && Keyboard ? /* @__PURE__ */ jsx(Keyboard, { title: h("tvAddXmltv"), hint: h("tvAddXmltvMeta"), placeholder: "https://", initial: "", onDone: (value) => {
+        addUrl(value);
+        setAdding(false);
+      }, onClose: () => setAdding(false) }) : null,
+      serverCats && login ? /* @__PURE__ */ jsx(TvServerCategoriesPanel, { login, host: host2, onClose: () => setServerCats(false), onApplied: onUpdate }) : null,
+      confirm ? /* @__PURE__ */ jsx(
+        TvConfirmPanel,
+        {
+          title: h("removePlaylistTitle", { host: host2 }),
+          body: h("removePlaylistBody"),
+          cancelLabel: h("cancel"),
+          confirmLabel: h("remove"),
+          crumb: host2,
+          onCancel: () => setConfirm(false),
+          onConfirm: () => {
+            setConfirm(false);
+            onRemove();
+          }
+        }
+      ) : null
+    ] });
+  }
+  function TvServerCategoriesPanel({ login, host: host2, onClose, onApplied }) {
+    const { h } = useHubText();
+    const categories = useXtreamCategories(login);
+    const [selected, setSelected] = useState(() => new Set(login.categoryIds));
+    const allIds = (categories ?? []).map((c) => c.id);
+    const toggle = (id4) => setSelected((cur) => toggleCategory(cur, id4, allIds));
+    const apply = () => {
+      applyServerCategories(login, [...selected]);
+      onApplied();
+      onClose();
+    };
+    return /* @__PURE__ */ jsxs(TvPanel, { title: h("serverCategoriesTitle", { host: host2 }), hint: h("serverCategoriesBody"), crumb: host2, onBack: onClose, testId: "tv-server-categories-panel", children: [
+      /* @__PURE__ */ jsx(TvRow, { size: "panel", init: true, label: h("allCategories"), toggle: selected.size === 0, onToggle: () => setSelected(/* @__PURE__ */ new Set()) }),
+      categories === null ? /* @__PURE__ */ jsx(TvNote, { size: "panel", children: h("listImportProgressUnknown") }) : null,
+      (categories ?? []).map((c) => /* @__PURE__ */ jsx(TvRow, { size: "panel", label: c.name, toggle: isCategorySelected(selected, c.id), onToggle: () => toggle(c.id) }, c.id)),
+      /* @__PURE__ */ jsx(TvBtns, { buttons: [
+        { label: h("cancel"), style: "ghost", onOk: onClose },
+        { label: h("applyAndFetch"), style: "accent", onOk: apply }
+      ] })
+    ] });
+  }
+  function TvCategoriesPanel({ target: target2, crumb, onClose }) {
+    const { list, mode } = target2;
+    const { h, locale } = useHubText();
+    const toast = useToast();
+    const keyboardAvailable = getTvKeyboardPanel() !== null;
+    const [groups, setGroups] = useState(null);
+    const [draft, setDraft] = useState(() => ({
+      hidden: [...list.curation?.hidden ?? []],
+      merges: (list.curation?.merges ?? []).map((m2) => ({ name: m2.name, groups: [...m2.groups] }))
+    }));
+    const [marking, setMarking] = useState(false);
+    const [marked, setMarked] = useState([]);
+    const [naming, setNaming] = useState(null);
+    useEffect(() => {
+      let live2 = true;
+      listGroups(list.source ?? null).then((fetched) => {
+        if (live2) setGroups(fetched.length > 0 ? fetched : list.groups ?? []);
+      }).catch(() => {
+        if (live2) setGroups(list.groups ?? []);
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [list.id, list.source]);
+    const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups]);
+    const countOf = useMemo(() => new Map((groups ?? []).map((g) => [g.name, g.count])), [groups]);
+    const claimed = useMemo(() => new Set(draft.merges.flatMap((m2) => m2.groups)), [draft.merges]);
+    const merges = draft.merges.map((m2, index3) => ({ index: index3, name: m2.name, members: m2.groups.filter((g) => known.has(g)), count: m2.groups.reduce((sum, g) => sum + (countOf.get(g) ?? 0), 0) })).filter((m2) => m2.members.length > 0);
+    const plain = (groups ?? []).filter((g) => !claimed.has(g.name)).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const summary = h("curationSummary", {
+      groups: known.size,
+      hidden: draft.hidden.filter((g) => known.has(g)).length,
+      merged: draft.merges.filter((m2) => m2.groups.some((g) => known.has(g))).length
+    });
+    const toggleHidden = (name) => setDraft((d) => ({ ...d, hidden: d.hidden.includes(name) ? d.hidden.filter((g) => g !== name) : [...d.hidden, name] }));
+    const toggleMark = (name) => setMarked((m2) => m2.includes(name) ? m2.filter((x) => x !== name) : [...m2, name]);
+    const startNaming = () => {
+      if (marked.length < 2) {
+        toast(h("tvMarkAtLeastTwo"));
+        return;
+      }
+      if (!keyboardAvailable) {
+        toast(h("tvNoKeyboard"));
+        return;
+      }
+      setNaming({ edit: null });
+    };
+    const commitName = (raw) => {
+      const name = raw.trim();
+      if (!naming) return false;
+      if (naming.edit === null) {
+        const conflict = mergeNameConflict(name, groups ?? [], draft, marked);
+        if (conflict) {
+          toast(conflict === "empty" ? h("giveCategoryName") : conflict === "duplicate" ? h("mergeNameTaken") : h("mergeNameIsGroup"));
+          return false;
+        }
+        setDraft((d) => ({ ...d, merges: [...d.merges, { name, groups: [...marked] }] }));
+        setMarked([]);
+        setMarking(false);
+        toast(h("mergedInto", { name }));
+        return true;
+      }
+      if (!name) {
+        toast(h("giveCategoryName"));
+        return false;
+      }
+      const next2 = renameMerge(draft, naming.edit, name);
+      if (next2.merges[naming.edit]?.name !== name) {
+        toast(h("mergeNameTaken"));
+        return false;
+      }
+      setDraft(next2);
+      toast(h("renamedTo", { name }));
+      return true;
+    };
+    const split2 = (index3) => {
+      const name = draft.merges[index3]?.name ?? "";
+      setDraft((d) => ({ ...d, merges: d.merges.filter((_, i) => i !== index3) }));
+      toast(h("splitDone", { name }));
+    };
+    const save = () => {
+      updateLiveTvListCuration(list.id, normalizeCuration(draft));
+      toast(h("categoriesSaved"));
+      onClose();
+    };
+    const dismiss = () => {
+      if (mode === "after-import") markListCurationSeen(list.id);
+      onClose();
+    };
+    const namingMembers = naming ? naming.edit === null ? marked : draft.merges[naming.edit]?.groups ?? [] : [];
+    return /* @__PURE__ */ jsxs(TvPanel, { title: h("categoriesTitle", { host: playlistHost(list) }), hint: h("categoriesBody"), crumb, onBack: dismiss, testId: "tv-categories-panel", children: [
+      /* @__PURE__ */ jsx(TvNote, { size: "panel", children: groups ? summary : h("listImportProgressUnknown") }),
+      mode === "after-import" ? /* @__PURE__ */ jsx(TvNote, { size: "panel", children: h("curationIntro") }) : null,
+      marking ? /* @__PURE__ */ jsx(TvBtns, { buttons: [
+        { label: h("cancel"), style: "ghost", onOk: () => {
+          setMarking(false);
+          setMarked([]);
+        } },
+        { label: marked.length >= 2 ? h("tvMergeNCategories", { n: marked.length }) : h("tvMarkTwoOrMore"), style: "accent", onOk: startNaming }
+      ] }) : /* @__PURE__ */ jsx(TvBtns, { buttons: [
+        { label: h("showAll"), style: "ghost", onOk: () => setDraft((d) => ({ ...d, hidden: [] })), init: true },
+        { label: h("hideAll"), style: "ghost", onOk: () => setDraft((d) => ({ ...d, hidden: plain.map((g) => g.name) })) },
+        { label: h("tvMergeCategories"), style: "accent", onOk: () => {
+          setMarking(true);
+          setMarked([]);
+        } }
+      ] }),
+      merges.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(TvEyebrow, { size: "panel", children: h("merged") }),
+        merges.map((m2) => /* @__PURE__ */ jsxs("div", { style: { display: "contents" }, children: [
+          /* @__PURE__ */ jsx(TvRow, { size: "panel", label: m2.name, hint: h("mergedMeta", { members: m2.members.join(" \xB7 "), channels: fmtInt(m2.count, locale) }), value: h("tvRename"), onOk: () => setNaming({ edit: m2.index }), disabled: !keyboardAvailable }),
+          /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("tvSplitName", { name: m2.name }), hint: h("tvSplitMeta"), value: h("splitMerge"), onOk: () => split2(m2.index) })
+        ] }, `m:${m2.index}`))
+      ] }) : null,
+      /* @__PURE__ */ jsx(TvEyebrow, { size: "panel", children: marking ? h("tvMarkEyebrow") : h("categories") }),
+      groups && groups.length === 0 ? /* @__PURE__ */ jsx(TvNote, { size: "panel", children: h("noCategoriesInList") }) : null,
+      plain.map((g) => marking ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: g.name, hint: h("channelsCount", { count: fmtInt(g.count, locale) }), value: marked.includes(g.name) ? h("marked") : h("mark"), onOk: () => toggleMark(g.name) }, `g:${g.name}`) : /* @__PURE__ */ jsx(TvRow, { size: "panel", label: g.name, hint: h("channelsCount", { count: fmtInt(g.count, locale) }), toggle: !draft.hidden.includes(g.name), onToggle: () => toggleHidden(g.name) }, `g:${g.name}`)),
+      /* @__PURE__ */ jsx(TvNote, { size: "panel", children: h("tvMergeHelp") }),
+      /* @__PURE__ */ jsx(TvBtns, { buttons: [{ label: h("save"), style: "accent", onOk: save, testId: "tv-categories-save" }] }),
+      naming ? /* @__PURE__ */ jsx(
+        TvNamePanel,
+        {
+          editing: naming.edit !== null,
+          initial: naming.edit !== null ? draft.merges[naming.edit]?.name ?? "" : "",
+          members: namingMembers,
+          onCommit: commitName,
+          onClose: () => setNaming(null)
+        }
+      ) : null
+    ] });
+  }
+  function TvNamePanel({ editing, initial, members, onCommit, onClose }) {
+    const { h } = useHubText();
+    const Keyboard = getTvKeyboardPanel();
+    const [seed, setSeed] = useState(0);
+    const [prefill, setPrefill] = useState(initial);
+    const [value, setValue] = useState(initial);
+    const suggest = members.length > 0 ? members[0].replace(/^Live:\s*/, "") : "";
+    if (!Keyboard) return null;
+    const reset = (next2) => {
+      setPrefill(next2);
+      setValue(next2);
+      setSeed((n) => n + 1);
+    };
+    const commit = (raw) => {
+      if (onCommit(raw)) onClose();
+    };
+    const extra = /* @__PURE__ */ jsx(TvBtns, { buttons: [
+      ...suggest && !value.trim() ? [{ label: h("tvUseName", { name: suggest }), style: "ghost", onOk: () => reset(suggest) }] : [],
+      { label: h("tvClear"), style: "ghost", onOk: () => reset("") },
+      { label: editing ? h("tvSaveName") : h("mergeAction"), style: "accent", onOk: () => commit(value) }
+    ] });
+    return /* @__PURE__ */ jsx(
+      Keyboard,
+      {
+        title: editing ? h("tvRenameMerged") : h("tvNameMerged"),
+        hint: members.join(" \xB7 "),
+        initial: prefill,
+        placeholder: h("mergeNameSuggest"),
+        onChange: setValue,
+        onDone: commit,
+        onClose,
+        extra,
+        hideFooter: true
+      },
+      seed
+    );
+  }
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  init_jsx_runtime_shim();
+  var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
+  function splitUrls(text) {
+    return text.split(/[\s,]+/).map((u) => u.trim()).filter(Boolean);
+  }
+  function useLiveTvSettings() {
+    const { t } = useLang();
+    const { h } = useHubText();
+    const toast = useToast();
     const fetchProgress = useSyncExternalStore(subscribeM3uFetch, getM3uFetchProgress, getM3uFetchProgress);
-    const [hideHero, setHideHero] = useState(() => getLiveTvHideHero());
+    const [hideHero, setHideHeroState] = useState(() => getLiveTvHideHero());
     const [m3uText, setM3uText] = useState("");
     const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false);
     const [homeOverrideError, setHomeOverrideError] = useState("");
     const [lists, setLists] = useState([]);
+    const [curationList, setCurationList] = useState(null);
+    function maybeOpenCurationAfterImport(listId) {
+      const fresh = getLiveTvLists().find((entry) => entry.id === listId);
+      if (fresh && fresh.curationSeen !== true) setCurationList({ list: fresh, mode: "after-import" });
+    }
     const [listProgress, setListProgress] = useState(null);
-    const [logoComplete, setLogoComplete] = useState(null);
     useEffect(() => {
       const sync2 = () => setLists(getLiveTvLists());
       sync2();
       return onLiveTvListsChanged(sync2);
     }, []);
     useEffect(() => {
-      const sync2 = () => setM3uText(getM3uDraftUrls().join("\n"));
+      const sync2 = () => setM3uText(getM3uDraftUrls().join(" "));
       sync2();
       return onProfileChanged(sync2);
     }, []);
@@ -199865,8 +201529,8 @@ ${cue.text}`).join("\n\n")}
       sync2();
       return onHomeOverridePluginChanged(sync2);
     }, []);
-    async function handleFetchM3uList() {
-      const urls = m3uText.split("\n").map((u) => u.trim()).filter(Boolean);
+    async function fetchM3u() {
+      const urls = splitUrls(m3uText);
       if (urls.length === 0) return;
       setM3uDraftUrls(urls);
       clearLiveTvMemoryCache();
@@ -199880,183 +201544,148 @@ ${cue.text}`).join("\n\n")}
           if (!existedBefore) deleteLiveTvList(list.id);
           throw new Error(status.error ?? "m3u import failed");
         }
+        if (!existedBefore) maybeOpenCurationAfterImport(list.id);
         return status.result?.total ?? 0;
       });
       if (ok) applyM3uUrls(urls);
     }
-    function handleRemoveList(list) {
-      const remaining2 = getM3uUrls().filter((url) => !url.startsWith("xtream://") && hostOf(url) !== list.name);
-      applyM3uUrls(remaining2);
-      setM3uText(remaining2.join("\n"));
-      deleteLiveTvList(list.id);
+    function removeList(list) {
+      if (list.kind === "xtream" && list.xtreamLoginId) {
+        deleteXtreamLoginAndData(list.xtreamLoginId);
+      } else {
+        const remaining2 = getM3uUrls().filter((url) => !url.startsWith("xtream://") && hostOf(url) !== list.name && url !== list.url);
+        applyM3uUrls(remaining2);
+        setM3uText(remaining2.join(" "));
+        deleteLiveTvList(list.id);
+      }
       clearLiveTvMemoryCache();
       clearStoredLiveTvChannels();
+      toast(h("hostRemoved", { host: playlistHost(list) }));
     }
-    async function handleRefetchList(list) {
+    async function refetchList(list) {
       setListProgress({ listId: list.id, state: "fetching", received: 0, total: null });
       try {
         const status = await importList(list, (s) => setListProgress({ listId: list.id, state: s.state, received: s.received, total: s.total ?? null }));
         recordListImportOutcome(list.id, status.state === "error" ? status.error ?? "import failed" : void 0);
+        if (status.state !== "error") toast(h("hostUpdated", { host: playlistHost(list) }));
       } catch (err) {
         recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err));
       } finally {
         setListProgress(null);
       }
     }
-    async function handleCompleteLogos(list) {
-      setLogoComplete({ listId: list.id, status: "running" });
-      try {
-        const result = await completeLogos(list.source);
-        setLogoComplete({ listId: list.id, status: "done", matched: result.matched, total: result.total });
-      } catch (err) {
-        setLogoComplete({ listId: list.id, status: "error", error: err instanceof Error ? err.message : String(err) });
-      }
+    function relogin(list) {
+      const xtreamSource = parseXtreamSource(list.source);
+      prefillXtreamLogin({ server: xtreamSource ? `http://${xtreamSource.host}` : "", loginId: xtreamSource?.loginId });
     }
-    function handleHomeOverrideToggle(checked) {
+    function toggleHomeOverride(checked) {
       setHomeOverrideError("");
       if (!checked) {
         disableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID);
         return;
       }
       const result = tryEnableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID);
-      if (!result.ok) {
-        setHomeOverrideError(t("homeOverrideAlreadySet"));
-      }
+      if (!result.ok) setHomeOverrideError(t("homeOverrideAlreadySet"));
     }
-    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
-      /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
-        /* @__PURE__ */ jsx(Checkbox, { checked: homeOverrideEnabled, onChange: (value) => handleHomeOverrideToggle(value), label: t("homeOverrideUseAsHome"), hint: t("liveTvHomeOverrideDesc") }),
-        homeOverrideError ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, color: TOKENS.red }, children: homeOverrideError }) : null,
-        /* @__PURE__ */ jsx(
-          Checkbox,
-          {
-            checked: hideHero,
-            onChange: (value) => {
-              setLiveTvHideHero(value);
-              setHideHero(value);
+    function setHideHero(value) {
+      setLiveTvHideHero(value);
+      setHideHeroState(value);
+    }
+    return {
+      lists,
+      m3uText,
+      setM3uText,
+      fetchProgress,
+      fetchM3u,
+      removeList,
+      refetchList,
+      relogin,
+      listProgress,
+      homeOverrideEnabled,
+      homeOverrideError,
+      toggleHomeOverride,
+      hideHero,
+      setHideHero,
+      curationList,
+      setCurationList,
+      maybeOpenCurationAfterImport
+    };
+  }
+  function LiveTvSettingsSection() {
+    const isTv = useTvMode();
+    return /* @__PURE__ */ jsx(ToastHost, { children: isTv ? /* @__PURE__ */ jsx(TvSettingsPage, {}) : /* @__PURE__ */ jsx(DesktopPage, {}) });
+  }
+  function DesktopPage() {
+    const { t } = useLang();
+    const { h, locale } = useHubText();
+    const s = useLiveTvSettings();
+    const fetchLabel = s.fetchProgress.status === "fetching" ? h("fetching") : h("fetchList");
+    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 24, color: UI.text }, children: [
+      /* @__PURE__ */ jsxs(LtRows, { children: [
+        /* @__PURE__ */ jsx(LtToggleRow, { first: true, label: h("useAsHome"), desc: h("useAsHomeDesc"), checked: s.homeOverrideEnabled, onChange: s.toggleHomeOverride, error: s.homeOverrideError || null }),
+        /* @__PURE__ */ jsx(LtToggleRow, { first: false, label: h("hideHero"), desc: h("hideHeroDesc"), checked: s.hideHero, onChange: s.setHideHero })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx(LtSection, { eyebrow: h("playlists"), title: h("yourPlaylists"), hint: h("playlistsHint") }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+          s.lists.length === 0 ? /* @__PURE__ */ jsx(LtNote, { children: h("noPlaylistsYet") }) : null,
+          s.lists.map((list) => /* @__PURE__ */ jsx(
+            PlaylistCard,
+            {
+              list,
+              busy: s.listProgress?.listId === list.id,
+              onCategories: () => s.setCurationList({ list, mode: "settings" }),
+              onUpdate: () => void s.refetchList(list),
+              onRemove: () => s.removeList(list),
+              onRelogin: () => s.relogin(list)
             },
-            label: lang === "sv" ? "D\xF6lj filmhj\xE4lten p\xE5 Live TV-sidan" : "Hide the movie hero on the Live TV page",
-            hint: lang === "sv" ? "Live TV b\xF6rjar d\xE5 direkt med hubben i st\xE4llet f\xF6r under appens hj\xE4ltekarusell." : "Live TV then starts with the hub instead of below the app\u2019s hero carousel."
-          }
-        )
-      ] }) }),
-      /* @__PURE__ */ jsx(VodLibraryCard, {}),
-      /* @__PURE__ */ jsxs(Card, { children: [
-        /* @__PURE__ */ jsx("style", { children: "@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}" }),
-        /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: "M3U" }),
-        /* @__PURE__ */ jsx(
-          "textarea",
-          {
-            value: m3uText,
-            onChange: (event) => setM3uText(event.target.value),
-            placeholder: t("m3uUrlsPlaceholder"),
-            rows: 3,
-            style: { ...inputStyle, minHeight: 88, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }
-          }
-        ),
-        /* @__PURE__ */ jsx("div", { style: { marginTop: 10, display: "flex", justifyContent: "flex-end" }, children: /* @__PURE__ */ jsx(PillBtn, { variant: "accent", onClick: () => void handleFetchM3uList(), disabled: fetchProgress.status === "fetching", children: fetchProgress.status === "fetching" ? t("m3uLoading") : fetchProgress.status === "done" ? t("m3uFetchListDone") : fetchProgress.status === "error" ? t("m3uFetchListError") : t("m3uFetchList") }) }),
-        fetchProgress.status !== "idle" && /* @__PURE__ */ jsxs("div", { style: { marginTop: 12, display: "grid", gap: 6 }, children: [
-          fetchProgress.status === "fetching" && /* @__PURE__ */ jsxs(Fragment2, { children: [
-            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: TOKENS.text }, children: [
-              /* @__PURE__ */ jsx(
-                "span",
-                {
-                  "aria-hidden": true,
-                  style: {
-                    width: 14,
-                    height: 14,
-                    flex: "none",
-                    borderRadius: "50%",
-                    border: "2px solid rgba(255,255,255,0.25)",
-                    borderTopColor: "rgba(255,255,255,0.9)",
-                    animation: "lumio-livetv-spin 0.7s linear infinite"
-                  }
-                }
-              ),
-              /* @__PURE__ */ jsx("span", { children: h("m3uFetchProgress", { current: fetchProgress.current, total: fetchProgress.total }) }),
-              fetchProgress.jobProgress ? /* @__PURE__ */ jsx("span", { style: { color: TOKENS.textMute }, children: fetchProgress.jobProgress.total ? h("listImportProgress", {
-                received: fetchProgress.jobProgress.received.toLocaleString(locale),
-                total: fetchProgress.jobProgress.total.toLocaleString(locale)
-              }) : h("listImportProgressUnknown") }) : null
-            ] }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: TOKENS.textMute, lineHeight: 1.45 }, children: h("m3uFetchKeepOpen") })
-          ] }),
-          fetchProgress.results.map((result) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: TOKENS.textMute, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("span", { "aria-hidden": true, style: { color: "#4ade80", flex: "none" }, children: "\u2713" }),
-            /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: TOKENS.text }, children: hostOf(result.url) }),
-            /* @__PURE__ */ jsx("span", { style: { flex: "none" }, children: h("channelsCount", { count: result.channels }) })
-          ] }, result.url)),
-          fetchProgress.status === "error" && /* @__PURE__ */ jsx("div", { role: "alert", style: { fontSize: 12.5, color: "#fca5a5", lineHeight: 1.45 }, children: h("m3uFetchFailedOn", { host: hostOf(fetchProgress.url ?? ""), error: fetchProgress.error ?? "" }) })
+            list.id
+          ))
         ] })
       ] }),
-      /* @__PURE__ */ jsx(XtreamLoginSection, {}),
-      /* @__PURE__ */ jsx(EpgStatusCard, {}),
-      lists.map((list) => {
-        const busy = listProgress?.listId === list.id ? listProgress : null;
-        const importable = list.kind === "m3u" || list.kind === "xtream";
-        const xtreamSource = list.kind === "xtream" ? parseXtreamSource(list.source) : null;
-        const needsLogin = list.kind === "xtream" && !getXtreamLogins().some((login) => login.id === list.xtreamLoginId);
-        return /* @__PURE__ */ jsxs(Card, { children: [
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }, children: [
-            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-              /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 }, children: [
-                /* @__PURE__ */ jsx("span", { style: { fontSize: 14.5, fontWeight: 600, color: TOKENS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.name }),
-                list.needsReimport ? /* @__PURE__ */ jsx("span", { style: { flex: "none", fontSize: 10, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase", padding: "2px 8px", borderRadius: 999, background: "rgba(244,132,95,0.18)", color: "#f4845f" }, children: h("listNeedsReimport") }) : null
-              ] }),
-              /* @__PURE__ */ jsxs("div", { style: { fontSize: 12, color: TOKENS.textMute, marginTop: 2 }, children: [
-                (list.channelCount ?? 0).toLocaleString(locale),
-                " ",
-                t("m3uChannels"),
-                " \xB7 ",
-                list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt(list.fetchedAt, locale) }) : h("m3uNeverFetched")
-              ] }),
-              busy ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: TOKENS.text, marginTop: 4 }, children: busy.state === "parsing" ? h("listImportParsing") : busy.state === "writing" ? h("listImportWriting") : busy.total ? h("listImportProgress", { received: busy.received.toLocaleString(locale), total: busy.total.toLocaleString(locale) }) : h("listImportProgressUnknown") }) : null,
-              !busy && needsLogin ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: TOKENS.textMute, marginTop: 4 }, children: h("xtreamNeedsLogin") }) : null,
-              list.truncated ? /* @__PURE__ */ jsx("div", { "data-testid": `list-truncated-${list.id}`, role: "alert", style: { fontSize: 12, color: "#fbbf24", marginTop: 4 }, children: h("listTruncated") }) : null,
-              !busy && list.lastImportError ? /* @__PURE__ */ jsx("div", { role: "alert", style: { fontSize: 12, color: "#fca5a5", marginTop: 4 }, children: h("listImportFailed", { error: list.lastImportError }) }) : null
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx(LtSection, { eyebrow: h("kindM3u"), title: h("m3uTitle"), hint: h("m3uHint") }),
+        /* @__PURE__ */ jsx(LtRows, { children: /* @__PURE__ */ jsx(
+          LtTextRow,
+          {
+            first: true,
+            label: h("playlistUrl"),
+            value: s.m3uText,
+            onChange: s.setM3uText,
+            placeholder: t("m3uUrlsPlaceholder"),
+            fieldWidth: 260,
+            button: fetchLabel,
+            onButton: () => void s.fetchM3u(),
+            buttonDisabled: s.fetchProgress.status === "fetching"
+          }
+        ) }),
+        s.fetchProgress.status !== "idle" && /* @__PURE__ */ jsxs("div", { style: { marginTop: 10, display: "grid", gap: 6 }, children: [
+          /* @__PURE__ */ jsx("style", { children: "@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}" }),
+          s.fetchProgress.status === "fetching" && /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: UI.text }, children: [
+              /* @__PURE__ */ jsx("span", { "aria-hidden": true, style: { width: 12, height: 12, flex: "none", borderRadius: "50%", border: "2px solid rgba(255,255,255,0.25)", borderTopColor: "rgba(255,255,255,0.9)", animation: "lumio-livetv-spin 0.7s linear infinite" } }),
+              /* @__PURE__ */ jsx("span", { children: h("m3uFetchProgress", { current: s.fetchProgress.current, total: s.fetchProgress.total }) }),
+              s.fetchProgress.jobProgress ? /* @__PURE__ */ jsx("span", { style: { color: UI.muted }, children: s.fetchProgress.jobProgress.total ? h("listImportProgress", { received: fmtInt(s.fetchProgress.jobProgress.received, locale), total: fmtInt(s.fetchProgress.jobProgress.total, locale) }) : h("listImportProgressUnknown") }) : null
             ] }),
-            /* @__PURE__ */ jsxs("div", { style: { display: "flex", flex: "none", alignItems: "center", gap: 8 }, children: [
-              needsLogin ? /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "accent", onClick: () => prefillXtreamLogin({ server: xtreamSource ? `http://${xtreamSource.host}` : "", loginId: xtreamSource?.loginId }), children: h("xtreamRelogin") }) : importable ? /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => void handleRefetchList(list), disabled: busy !== null, children: busy ? h("listRefetching") : h("listRefetch") }) : null,
-              /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "danger", onClick: () => handleRemoveList(list), children: t("liveTvXtreamRemove") })
-            ] })
+            /* @__PURE__ */ jsx(LtNote, { children: h("m3uFetchKeepOpen") })
           ] }),
-          /* @__PURE__ */ jsx("div", { style: { marginTop: 12 }, children: /* @__PURE__ */ jsx(
-            EpgSourcesSection,
-            {
-              autoUrl: list.urlTvg,
-              manualUrls: list.epgUrls,
-              onChangeManual: (epgUrls) => updateLiveTvListEpg(list.id, { epgUrls }),
-              autoDisabled: list.autoEpgDisabled,
-              onToggleAuto: (disabled) => updateLiveTvListEpg(list.id, { autoEpgDisabled: disabled })
-            }
-          ) }),
-          /* @__PURE__ */ jsxs("div", { style: { marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }, children: [
-            /* @__PURE__ */ jsx("div", { "data-testid": `logo-fallback-toggle-${list.id}`, children: /* @__PURE__ */ jsx(
-              Checkbox,
-              {
-                checked: isLogoFallbackEnabled(list),
-                onChange: (value) => setLogoFallbackEnabled(list.id, value),
-                disabled: list.kind === "custom",
-                label: h("logoFallbackToggle"),
-                hint: h("logoFallbackHint")
-              }
-            ) }),
-            /* @__PURE__ */ jsxs("div", { style: { borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
-              /* @__PURE__ */ jsx("span", { "data-testid": `logo-complete-${list.id}`, children: /* @__PURE__ */ jsx(
-                PillBtn,
-                {
-                  size: "sm",
-                  onClick: () => void handleCompleteLogos(list),
-                  disabled: !isLogoFallbackEnabled(list) || list.kind === "custom" || logoComplete?.listId === list.id && logoComplete.status === "running",
-                  children: logoComplete?.listId === list.id && logoComplete.status === "running" ? h("logoCompleteRunning") : h("logoComplete")
-                }
-              ) }),
-              logoComplete?.listId === list.id && logoComplete.status === "done" ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: TOKENS.textMute }, children: h("logoCompleteResult", { matched: logoComplete.matched, total: logoComplete.total }) }) : null,
-              logoComplete?.listId === list.id && logoComplete.status === "error" ? /* @__PURE__ */ jsx("span", { role: "alert", style: { fontSize: 12, color: "#fca5a5" }, children: logoComplete.error }) : null
-            ] })
-          ] })
-        ] }, list.id);
-      })
+          s.fetchProgress.results.map((result) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: UI.muted, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx("span", { "aria-hidden": true, style: { color: UI.green, flex: "none" }, children: "\u2713" }),
+            /* @__PURE__ */ jsx("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: UI.text }, children: hostOf(result.url) }),
+            /* @__PURE__ */ jsx("span", { style: { flex: "none" }, children: h("channelsCount", { count: fmtInt(result.channels, locale) }) })
+          ] }, result.url)),
+          s.fetchProgress.status === "error" && /* @__PURE__ */ jsx("div", { role: "alert", style: { fontSize: 12.5, color: UI.danger, lineHeight: 1.45 }, children: h("m3uFetchFailedOn", { host: hostOf(s.fetchProgress.url ?? ""), error: s.fetchProgress.error ?? "" }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx(LtSection, { eyebrow: h("xtreamLogin"), title: h("xtreamLogin"), hint: h("xtreamHint") }),
+        /* @__PURE__ */ jsx(XtreamLoginSection, { onImported: (listId, existedBefore) => {
+          if (!existedBefore) s.maybeOpenCurationAfterImport(listId);
+        } })
+      ] }),
+      /* @__PURE__ */ jsx(EpgStatusCard, {}),
+      /* @__PURE__ */ jsx(VodLibraryCard, {}),
+      s.curationList ? /* @__PURE__ */ jsx(CategoriesDialog, { list: s.curationList.list, mode: s.curationList.mode, onClose: () => s.setCurationList(null) }) : null
     ] });
   }
 
@@ -200156,12 +201785,12 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/results-pagination.tsx
-  var import_react94 = __toESM(require_dist89(), 1);
+  var import_react104 = __toESM(require_dist89(), 1);
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
     if (totalPages <= 1) return null;
     return /* @__PURE__ */ jsx("div", { className: "flex items-center justify-center rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-4 py-4", children: /* @__PURE__ */ jsx(
-      import_react94.Pagination,
+      import_react104.Pagination,
       {
         total: totalPages,
         page: currentPage,
@@ -200346,6 +201975,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
+  init_list_curation();
   init_live_tv_model();
   function useChannelGeneration() {
     const [generation, setGeneration] = useState(0);
@@ -200462,7 +202092,7 @@ ${cue.text}`).join("\n\n")}
                 limit,
                 signal: controller?.signal
               });
-              byListId[list.id] = page.items;
+              byListId[list.id] = applyCuration(page.items, list.curation);
               totalByListId[list.id] = page.total;
             }
           } catch (err) {
@@ -200868,16 +202498,21 @@ ${cue.text}`).join("\n\n")}
         setActiveListId(null);
       }
     }, [loading, activeListId, pinnedChannels.length]);
-    const categories = useMemo(
-      () => Array.from(
-        new Set(
-          visibleChannels.flatMap(
-            (c) => String(c.group ?? "").split(";").map((s) => s.trim()).filter(Boolean)
-          )
-        )
-      ).sort(),
-      [visibleChannels]
-    );
+    const categories = useMemo(() => {
+      const counts = /* @__PURE__ */ new Map();
+      for (const c of visibleChannels) {
+        for (const part of String(c.group ?? "").split(";").map((s) => s.trim()).filter(Boolean)) {
+          counts.set(part, (counts.get(part) ?? 0) + 1);
+        }
+      }
+      return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    }, [visibleChannels]);
+    const [curationOpen, setCurationOpen] = useState(false);
+    const curatedEmptyList = useMemo(() => {
+      if (channelsLoading || visibleChannels.length > 0) return null;
+      const candidate = activeList ?? lists.find((list) => (list.curation?.hidden.length ?? 0) > 0) ?? null;
+      return candidate && (candidate.curation?.hidden.length ?? 0) > 0 ? candidate : null;
+    }, [channelsLoading, visibleChannels.length, activeList, lists]);
     const filtered = useMemo(() => {
       const needle = search.trim().toLowerCase();
       return sortChannelsWithPins(
@@ -201203,7 +202838,7 @@ ${cue.text}`).join("\n\n")}
                             ]
                           }
                         ),
-                        categories.map((cat) => {
+                        categories.map(({ name: cat, count }) => {
                           const isActive = activeGroup === cat;
                           return /* @__PURE__ */ jsxs(
                             "button",
@@ -201216,8 +202851,11 @@ ${cue.text}`).join("\n\n")}
                               },
                               className: `flex w-full items-center justify-between gap-3 px-4 text-left transition-all hover:bg-white/6 ${isTv ? "min-h-[52px] text-[15px]" : "py-2.5 text-sm"} ${isActive ? "text-accent-300" : "text-slate-200"}`,
                               children: [
-                                /* @__PURE__ */ jsx("span", { children: cat }),
-                                isActive ? /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5 flex-shrink-0 text-accent-400", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7", strokeLinecap: "round", strokeLinejoin: "round" }) }) : null
+                                /* @__PURE__ */ jsx("span", { className: "truncate", children: cat }),
+                                /* @__PURE__ */ jsxs("span", { className: "flex flex-none items-center gap-2", children: [
+                                  /* @__PURE__ */ jsx("span", { className: "tabular-nums text-slate-500", children: count.toLocaleString(locale) }),
+                                  isActive ? /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5 flex-shrink-0 text-accent-400", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7", strokeLinecap: "round", strokeLinejoin: "round" }) }) : null
+                                ] })
                               ]
                             },
                             cat
@@ -201381,7 +203019,10 @@ ${cue.text}`).join("\n\n")}
                 ] }, list.id);
               })
             ] }) }),
-            filtered.length === 0 ? (
+            curatedEmptyList ? curationOpen ? /* @__PURE__ */ jsx("div", { className: "px-6 py-8", children: /* @__PURE__ */ jsx(CategoryCurationPanel, { list: curatedEmptyList, mode: "settings", onClose: () => setCurationOpen(false) }) }) : /* @__PURE__ */ jsxs("div", { className: "flex flex-col items-center gap-3 px-6 py-16 text-center", children: [
+              /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-300", children: h("allCategoriesHidden") }),
+              /* @__PURE__ */ jsx("button", { type: "button", "data-testid": "grid-open-curation", className: `${neutralPillClass} px-4 py-2 text-sm`, onClick: () => setCurationOpen(true), children: h("openCategories") })
+            ] }) : filtered.length === 0 ? (
               // Samma tomma läge som appens övriga vyer: ikon, rubrik, en
               // förklarande mening. En ensam grå rad mitt på sidan såg ut som ett
               // fel snarare än ett svar — särskilt när man aldrig lagt till en
@@ -201833,7 +203474,7 @@ ${cue.text}`).join("\n\n")}
                       ]
                     }
                   ),
-                  categories.map((cat) => {
+                  categories.map(({ name: cat, count }) => {
                     const isActive = activeGroup === cat;
                     return /* @__PURE__ */ jsxs(
                       "button",
@@ -201847,7 +203488,10 @@ ${cue.text}`).join("\n\n")}
                         className: `${tvMenuItemClass} ${isActive ? "!border-accent-400/50 !bg-accent-400/10 !text-accent-300" : ""}`,
                         children: [
                           /* @__PURE__ */ jsx("span", { className: "truncate", children: cat }),
-                          isActive ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4 flex-none", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7" }) }) : null
+                          /* @__PURE__ */ jsxs("span", { className: "flex flex-none items-center gap-2", children: [
+                            /* @__PURE__ */ jsx("span", { className: "tabular-nums text-slate-500", children: count.toLocaleString(locale) }),
+                            isActive ? /* @__PURE__ */ jsx("svg", { className: "h-4 w-4 flex-none", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M5 13l4 4L19 7" }) }) : null
+                          ] })
                         ]
                       },
                       cat
@@ -203900,11 +205544,12 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
+  init_list_curation();
   function useListTree(model, maxGroups) {
     return useMemo(() => model.lists.map((list) => {
       const embedded = list.channels ?? [];
       const custom = list.kind === "custom";
-      const groups = custom ? computeGroups(embedded) : list.groups ?? [];
+      const groups = custom ? computeGroups(embedded) : curatedGroupCounts(list.groups ?? [], list.curation);
       return {
         id: list.id,
         name: list.name,
@@ -205504,7 +207149,7 @@ ${cue.text}`).join("\n\n")}
         onPointerEnter: hover2.enter ? () => hover2.enter?.(sel) : void 0
       };
     };
-    const rowStyle = (channel, empty) => ({
+    const rowStyle2 = (channel, empty) => ({
       display: "flex",
       height: ROW_H_PX2,
       minHeight: ROW_H_PX2,
@@ -205547,7 +207192,7 @@ ${cue.text}`).join("\n\n")}
           rows.map(({ channel, info }, index3) => {
             const now3 = info.now;
             const minutesLeft = Math.max(0, Math.ceil((now3.stop - nowMs) / 6e4));
-            return /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-row", ...rowProps(channel, now3, initTarget === "row" && index3 === 0), style: rowStyle(channel, false), children: [
+            return /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-row", ...rowProps(channel, now3, initTarget === "row" && index3 === 0), style: rowStyle2(channel, false), children: [
               cell(channel),
               /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-now", style: colStyle(COL_WEIGHTS[0]), children: [
                 /* @__PURE__ */ jsx("div", { title: now3.title, style: { flex: 1, minWidth: 0, fontSize: gp(14), ...ellipsis2 }, children: now3.title }),
@@ -205560,7 +207205,7 @@ ${cue.text}`).join("\n\n")}
               /* @__PURE__ */ jsx(UpcomingCell, { testId: "nownext-later", programme: info.later, locale, titleColor: "rgba(243,244,248,0.55)", timeColor: "rgba(243,244,248,0.35)", weight: COL_WEIGHTS[2] })
             ] }, channelKey(channel));
           }),
-          emptyRows.map((channel, index3) => /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-row", ...rowProps(channel, null, initTarget === "row" && rows.length === 0 && index3 === 0), style: rowStyle(channel, true), children: [
+          emptyRows.map((channel, index3) => /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-row", ...rowProps(channel, null, initTarget === "row" && rows.length === 0 && index3 === 0), style: rowStyle2(channel, true), children: [
             cell(channel),
             /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-cell", style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: gp(14), padding: `0 ${gp(12)}px` }, children: [
               /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(13), color: "rgba(243,244,248,0.4)", ...ellipsis2 }, children: tt("noEpgRow") }),
@@ -208466,6 +210111,163 @@ ${cue.text}`).join("\n\n")}
   init_index_client();
   init_channel_locks();
   init_live_tv_ui();
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+  init_index_client();
+  init_list_curation();
+  init_live_tv_data();
+  init_jsx_runtime_shim();
+  var rowStyle = {
+    height: dp(64),
+    minHeight: dp(64),
+    borderRadius: dp(12),
+    display: "flex",
+    alignItems: "center",
+    gap: dp(14),
+    padding: `0 ${dp(12)}px`,
+    fontSize: dp(19),
+    cursor: "pointer"
+  };
+  function TvCurationPicker({ nav, list, mode, keyboard, onClose }) {
+    const { tt } = useTvText();
+    const [groups, setGroups] = useState(null);
+    const [draft, setDraft] = useState(() => ({
+      hidden: [...list.curation?.hidden ?? []],
+      merges: (list.curation?.merges ?? []).map((m2) => ({ name: m2.name, groups: [...m2.groups] }))
+    }));
+    const [mergeMode, setMergeMode] = useState(false);
+    const [marked, setMarked] = useState(/* @__PURE__ */ new Set());
+    const [error, setError] = useState(null);
+    useEffect(() => {
+      let live2 = true;
+      listGroups(list.source ?? null).then((fetched) => {
+        if (live2) setGroups(fetched.length > 0 ? fetched : list.groups ?? []);
+      }).catch(() => {
+        if (live2) setGroups(list.groups ?? []);
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [list.id, list.source]);
+    const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups]);
+    const claimed = useMemo(() => new Set(draft.merges.flatMap((m2) => m2.groups)), [draft.merges]);
+    const merges = draft.merges.map((m2) => ({
+      ...m2,
+      groups: m2.groups.filter((g) => known.has(g)),
+      count: (groups ?? []).filter((g) => m2.groups.includes(g.name)).reduce((sum, g) => sum + g.count, 0)
+    })).filter((m2) => m2.groups.length > 0);
+    const plain = (groups ?? []).filter((g) => !claimed.has(g.name)).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const summary = groups ? tt("curationSummary", {
+      groups: curatedGroupCounts(groups, draft).length,
+      hidden: draft.hidden.filter((g) => known.has(g)).length,
+      merged: draft.merges.length
+    }) : "";
+    const toggleHidden = (name) => setDraft((d) => ({ ...d, hidden: d.hidden.includes(name) ? d.hidden.filter((g) => g !== name) : [...d.hidden, name] }));
+    const toggleMark = (name) => setMarked((m2) => {
+      const next2 = new Set(m2);
+      if (next2.has(name)) next2.delete(name);
+      else next2.add(name);
+      return next2;
+    });
+    const finishMerge = () => {
+      if (marked.size < 2) return;
+      keyboard.ask(tt("mergeNameLabel"), "", (value) => {
+        const conflict = mergeNameConflict(value, groups ?? [], draft, [...marked]);
+        if (conflict) {
+          setError(conflict === "empty" ? tt("mergeNameEmpty") : conflict === "duplicate" ? tt("mergeNameTaken") : tt("mergeNameIsGroup"));
+          return;
+        }
+        const members = [...marked];
+        setDraft((d) => ({ ...d, merges: [...d.merges, { name: value.trim(), groups: members }] }));
+        setMarked(/* @__PURE__ */ new Set());
+        setMergeMode(false);
+        setError(null);
+      });
+    };
+    const save = () => {
+      updateLiveTvListCuration(list.id, normalizeCuration(draft));
+      onClose();
+    };
+    const skip = () => {
+      markListCurationSeen(list.id);
+      onClose();
+    };
+    const dismiss = mode === "after-import" ? skip : onClose;
+    return /* @__PURE__ */ jsx(
+      PickerPanel,
+      {
+        nav,
+        title: `${tt("categories")} \xB7 ${list.name}`,
+        testId: "curation-picker",
+        onClose: dismiss,
+        chips: /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.dim }, children: mode === "after-import" ? tt("curationIntro") : summary }),
+        rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("div", { "data-testid": "curation-save", ...station(save, void 0, { "data-init": "" }), style: { ...rowStyle, color: TV2.acc }, children: tt("save") }),
+          /* @__PURE__ */ jsx("div", { "data-testid": "curation-skip", ...station(dismiss), style: rowStyle, children: mode === "after-import" ? tt("skip") : tt("cancel") }),
+          /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: [] }))), style: rowStyle, children: tt("showAll") }),
+          /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: plain.map((g) => g.name) }))), style: rowStyle, children: tt("hideAll") }),
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              "data-testid": "curation-merge-mode",
+              ...station(() => {
+                setMergeMode((m2) => !m2);
+                setMarked(/* @__PURE__ */ new Set());
+                setError(null);
+              }),
+              style: { ...rowStyle, color: mergeMode ? TV2.acc : void 0 },
+              children: tt("mergeInto")
+            }
+          ),
+          mergeMode ? /* @__PURE__ */ jsx("div", { "data-testid": "curation-merge-done", ...station(finishMerge), style: { ...rowStyle, color: marked.size >= 2 ? TV2.acc : TV2.dim }, children: tt("mergeSelected", { n: marked.size }) }) : null,
+          error ? /* @__PURE__ */ jsx("div", { role: "alert", style: { padding: dp(12), fontSize: dp(16), color: "#fca5a5" }, children: error }) : null,
+          groups === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("loadingChannels") }) : null,
+          groups && groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("noCategoriesInList") }) : null,
+          merges.map((m2) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `curation-merge-${m2.name}`,
+              ...station(() => setDraft((d) => ({ ...d, merges: d.merges.filter((x) => x.name !== m2.name) }))),
+              style: rowStyle,
+              children: [
+                /* @__PURE__ */ jsx(Check, { on: true, label: m2.name }),
+                /* @__PURE__ */ jsxs("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                  m2.name,
+                  /* @__PURE__ */ jsxs("span", { style: { color: TV2.dim, fontSize: dp(15) }, children: [
+                    " \xB7 ",
+                    tt("mergeContains", { groups: m2.groups.join(", ") }),
+                    " \xB7 ",
+                    tt("splitMerge")
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: m2.count })
+              ]
+            },
+            `m:${m2.name}`
+          )),
+          plain.map((g) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `curation-row-${g.name}`,
+              ...station(() => mergeMode ? toggleMark(g.name) : toggleHidden(g.name)),
+              style: rowStyle,
+              children: [
+                /* @__PURE__ */ jsx(Check, { on: mergeMode ? marked.has(g.name) : !draft.hidden.includes(g.name), label: g.name }),
+                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: draft.hidden.includes(g.name) && !mergeMode ? TV2.dim : void 0 }, children: g.name }),
+                /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: g.count })
+              ]
+            },
+            `g:${g.name}`
+          ))
+        ] })
+      }
+    );
+  }
+
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
@@ -208553,6 +210355,7 @@ ${cue.text}`).join("\n\n")}
     onRefetch,
     onRemove,
     onEditChannels,
+    onCategories,
     phone = false
   }) {
     const importable = list.kind === "m3u" || list.kind === "xtream";
@@ -208603,6 +210406,7 @@ ${cue.text}`).join("\n\n")}
               style: phone ? { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 } : { flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10) },
               children: [
                 importable ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-refetch-${list.id}`, label: busy ? tt("refetching") : tt("refetch"), onOk: () => onRefetch(list) }) : null,
+                importable ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-categories-${list.id}`, label: tt("categories"), onOk: () => onCategories(list) }) : null,
                 list.kind === "custom" ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-channels-${list.id}`, label: tt("listChannels"), onOk: () => onEditChannels(list) }) : null,
                 /* @__PURE__ */ jsxs(
                   "div",
@@ -208680,6 +210484,8 @@ ${cue.text}`).join("\n\n")}
           return false;
         }
         recordListImportOutcome(list.id);
+        const fresh = getLiveTvLists().find((entry) => entry.id === list.id);
+        if (!existedBefore && fresh && fresh.curationSeen !== true) setCuration({ listId: list.id, mode: "after-import" });
         return true;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -208770,6 +210576,8 @@ ${cue.text}`).join("\n\n")}
     });
     const onRefetch = useCallback((list) => refetchRef.current(list), []);
     const onRemove = useCallback((list) => removeListAndSourceUrl(list), []);
+    const [curation, setCuration] = useState(null);
+    const onCategories = useCallback((list) => setCuration({ listId: list.id, mode: "settings" }), []);
     const [pickerListId, setPickerListId] = useState(null);
     const [members, setMembers] = useState(() => /* @__PURE__ */ new Set());
     const pickerList = pickerListId ? getLiveTvLists().find((entry) => entry.id === pickerListId) ?? null : null;
@@ -208833,6 +210641,7 @@ ${cue.text}`).join("\n\n")}
           onRefetch,
           onRemove,
           onEditChannels: openPicker,
+          onCategories,
           phone
         },
         list.id
@@ -208854,6 +210663,10 @@ ${cue.text}`).join("\n\n")}
           onClose: () => setPickerListId(null)
         }
       ) : null,
+      curation ? (() => {
+        const target2 = lists.find((entry) => entry.id === curation.listId);
+        return target2 ? /* @__PURE__ */ jsx(TvCurationPicker, { nav, list: target2, mode: curation.mode, keyboard, onClose: () => setCuration(null) }) : null;
+      })() : null,
       keyboard.node
     ] });
   }
@@ -209427,7 +211240,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var VIEWS = ["hub", "guide", "favs", "channel", "search", "multi", "library", "title", "cast", "settings"];
-  var BACK_KEYS = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
+  var BACK_KEYS2 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   var ZAP_TIMEOUT_MS = 1500;
   var RAIL_W_TV = 104;
   var RAIL_W_DESKTOP = 84;
@@ -209598,7 +211411,7 @@ ${cue.text}`).join("\n\n")}
     }, [menu, pending2, active2, view, go]);
     useEffect(() => {
       const onKey = (event) => {
-        if (!BACK_KEYS.has(event.key)) return;
+        if (!BACK_KEYS2.has(event.key)) return;
         if (menu && !phone) return;
         if (pending2) {
           event.preventDefault();
@@ -209923,7 +211736,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.10.0"
+      version: "0.11.0"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -209937,7 +211750,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.10.0",
+    version: "0.11.0",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

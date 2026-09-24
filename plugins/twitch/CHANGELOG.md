@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.7
+
+- The Live, Categories, Following and Search pages start below the app's menu button and clock, on desktop and TV, so the title and the sort control no longer sit under them.
+
 ## 1.3.5
 
 - Embed parent for remote hosts, so the embed works outside localhost.

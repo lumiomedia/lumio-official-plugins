@@ -175190,6 +175190,22 @@
       }
     ) });
   }
+  function TwitchPageFrame({ children }) {
+    const [desktopWide, setDesktopWide] = useState(
+      () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1024px)").matches
+    );
+    useEffect(() => {
+      if (typeof window.matchMedia !== "function") return;
+      const mq = window.matchMedia("(min-width: 1024px)");
+      const sync2 = () => setDesktopWide(mq.matches);
+      sync2();
+      mq.addEventListener("change", sync2);
+      return () => mq.removeEventListener("change", sync2);
+    }, []);
+    const tv = isTvDom();
+    const paddingTop = tv ? "calc(64px * var(--tv-base-scale, 1) * 0.8 * var(--tv-menu-scale, 1) + 12px)" : desktopWide ? 40 : 0;
+    return /* @__PURE__ */ jsx("div", { "data-twitch-page-frame": "", style: paddingTop ? { paddingTop } : void 0, children });
+  }
   function TwitchBrowsePage({ pageId, onNavigate }) {
     const text = useTwitchText();
     const { lang } = useLang();
@@ -176263,9 +176279,9 @@
         label: { en: "Twitch: Live now", sv: "Twitch: Live nu" },
         rowId: "twitch-live-row"
       });
-      ctx.registerBrowsePage({ id: "twitch-live", label: { en: "Live", sv: "Live" }, Page: TwitchBrowsePage, hideHero: twitchHidesHero });
-      ctx.registerBrowsePage({ id: "twitch-categories", label: { en: "Categories", sv: "Kategorier" }, Page: TwitchCategoriesPage, hideHero: twitchHidesHero });
-      ctx.registerBrowsePage({ id: "twitch-search", label: { en: "Search", sv: "S\xF6k" }, Page: TwitchSearchPage, hideHero: twitchHidesHero });
+      ctx.registerBrowsePage({ id: "twitch-live", label: { en: "Live", sv: "Live" }, Page: (props) => /* @__PURE__ */ jsx(TwitchPageFrame, { children: /* @__PURE__ */ jsx(TwitchBrowsePage, { ...props }) }), hideHero: twitchHidesHero });
+      ctx.registerBrowsePage({ id: "twitch-categories", label: { en: "Categories", sv: "Kategorier" }, Page: (props) => /* @__PURE__ */ jsx(TwitchPageFrame, { children: /* @__PURE__ */ jsx(TwitchCategoriesPage, { ...props }) }), hideHero: twitchHidesHero });
+      ctx.registerBrowsePage({ id: "twitch-search", label: { en: "Search", sv: "S\xF6k" }, Page: (props) => /* @__PURE__ */ jsx(TwitchPageFrame, { children: /* @__PURE__ */ jsx(TwitchSearchPage, { ...props }) }), hideHero: twitchHidesHero });
       ctx.registerHomeRow({
         id: "twitch-following-row",
         title: { en: "Twitch: Following", sv: "Twitch: F\xF6ljer" },
@@ -176277,7 +176293,7 @@
         label: { en: "Twitch: Following", sv: "Twitch: F\xF6ljer" },
         rowId: "twitch-following-row"
       });
-      ctx.registerBrowsePage({ id: "twitch-following", label: { en: "Following", sv: "F\xF6ljer" }, Page: TwitchFollowingPage, hideHero: twitchHidesHero });
+      ctx.registerBrowsePage({ id: "twitch-following", label: { en: "Following", sv: "F\xF6ljer" }, Page: (props) => /* @__PURE__ */ jsx(TwitchPageFrame, { children: /* @__PURE__ */ jsx(TwitchFollowingPage, { ...props }) }), hideHero: twitchHidesHero });
       ctx.registerHomeRow({
         id: "twitch-category-row",
         title: { en: "Twitch: Category", sv: "Twitch: Kategori" },
