@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0 — Choose your categories
+
+- Each playlist gets a Categories panel: untick the categories you never watch and merge duplicates ("UK Sport", "Sports UK", "UK Sport HD") into one. Hidden categories disappear everywhere — All, search, the guide — and merged ones replace their originals.
+- The panel opens by itself after a new playlist's first import, with Skip. Afterwards it lives under the playlist in settings, on desktop, phone and TV.
+- The category menu now lists every category in the playlist with its channel count, instead of the ones that happened to be on screen.
+
 ## 0.10.0 — Cleaner channel guide on desktop and TV
 
 - One control row above the guide: source, category, day, Now, the mode
