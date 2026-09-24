@@ -1,6 +1,7 @@
 // Test-only stub of @/lib/plugin-sdk. Mirrors the surface the live-tv plugin
 // uses, with no real persistence. Spies should re-mock per test via vi.spyOn.
 
+import type { CSSProperties } from 'react'
 import { createElement, type ComponentType, type ReactNode } from 'react'
 
 type Listener = () => void
@@ -57,7 +58,7 @@ export function PillBtn({ children, onClick, disabled, type, title, style }: {
   icon?: string
   type?: 'button' | 'submit'
   title?: string
-  style?: Record<string, unknown>
+  style?: CSSProperties
 }) {
   return createElement('button', { type: type ?? 'button', onClick, disabled, title, style }, children)
 }

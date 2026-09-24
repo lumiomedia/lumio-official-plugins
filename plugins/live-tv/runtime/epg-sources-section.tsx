@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import type * as React from 'react'
-import { Card, PillBtn, TOKENS, eyebrowStyle, inputStyle, useLang } from '@/lib/plugin-sdk'
+import { Card, TOKENS, eyebrowStyle, inputStyle, useLang, useTvMode } from '@/lib/plugin-sdk'
+import { Pill as PillBtn, TextField } from './tv-aware-controls'
 import { useHubText } from './hub-strings'
 import { useEpgStatus } from './hooks/useEpgStatus'
 
@@ -29,7 +30,7 @@ function sourceRow(url: string, meta: React.ReactNode, right: React.ReactNode, d
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 12px', borderRadius: 10, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
       <span style={{ minWidth: 0, opacity: dimmed ? 0.45 : 1 }}>
-        <span style={{ display: 'block', fontSize: 12, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
+        <span style={{ display: 'block', fontSize: 'var(--st-small)', color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
         {meta}
       </span>
       <span style={{ display: 'flex', flex: 'none', alignItems: 'center', gap: 8 }}>{right}</span>
@@ -67,16 +68,16 @@ export function EpgStatusCard() {
     <Card>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ ...eyebrowStyle }}>{h('epgStatusTitle')}</div>
-        <p style={{ margin: 0, fontSize: 12, color: TOKENS.textMute, lineHeight: 1.45 }}>{h('epgStatusAllLists')}</p>
+        <p style={{ margin: 0, fontSize: 'var(--st-small)', color: TOKENS.textMute, lineHeight: 1.45 }}>{h('epgStatusAllLists')}</p>
         {urls.map((url) => {
           const stat = status?.urls.find((item) => item.url === url)
           const fetched = formatRelative(stat?.fetchedAt || null, locale)
           const meta = !stat
             ? null
             : stat.error
-              ? <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: '#fca5a5' }}>{stat.error}</span>
+              ? <span style={{ display: 'block', marginTop: 3, fontSize: 'var(--st-micro)', color: '#fca5a5' }}>{stat.error}</span>
               : (
-                <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: 'rgba(110,231,183,0.75)' }}>
+                <span style={{ display: 'block', marginTop: 3, fontSize: 'var(--st-micro)', color: 'rgba(110,231,183,0.75)' }}>
                   {h('epgSourceStats', { channels: stat.channels, programmes: stat.programmes })}
                   {fetched ? ` · ${h('epgSourceFetched', { time: fetched })}` : ''}
                 </span>
@@ -84,7 +85,7 @@ export function EpgStatusCard() {
           return <div key={url}>{sourceRow(url, meta, null)}</div>
         })}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11.5, color: status?.failedAt && !status.fetchedAt ? '#fca5a5' : TOKENS.textMute }}>
+          <span style={{ fontSize: 'var(--st-small)', color: status?.failedAt && !status.fetchedAt ? '#fca5a5' : TOKENS.textMute }}>
             {overallFetched
               ? h('epgFetchedAt', { time: overallFetched, programmes: status?.programmes ?? 0 })
               : h('epgNeverFetched')}
@@ -110,6 +111,7 @@ export function EpgSourcesSection({
   autoDisabled = false,
   onToggleAuto,
 }: Props) {
+  const isTv = useTvMode()
   const { t } = useLang()
   const [draft, setDraft] = useState('')
   const addUrl = () => {
@@ -129,7 +131,7 @@ export function EpgSourcesSection({
             autoUrl,
             null,
             <>
-              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: autoDisabled ? TOKENS.surface2 : 'rgba(60,214,163,0.18)', color: autoDisabled ? TOKENS.textMute : TOKENS.mint }}>
+              <span style={{ fontSize: 'var(--st-micro)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: autoDisabled ? TOKENS.surface2 : 'rgba(60,214,163,0.18)', color: autoDisabled ? TOKENS.textMute : TOKENS.mint }}>
                 {autoDisabled ? `Auto · ${t('off')}` : 'Auto'}
               </span>
               {/* Härledd källa: den går att STÄNGA AV, inte radera. En radering
@@ -150,22 +152,32 @@ export function EpgSourcesSection({
         </div>
       ))}
       <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          type="url"
-          placeholder={t('liveTvEpgUrlPlaceholder')}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              addUrl()
-            }
-          }}
-          style={{ ...inputStyle, flex: 1 }}
-        />
+        {isTv ? (
+          <TextField
+            title={t('liveTvEpgUrlPlaceholder')}
+            placeholder={t('liveTvEpgUrlPlaceholder')}
+            value={draft}
+            onChange={setDraft}
+            style={{ flex: 1, minWidth: 0 }}
+          />
+        ) : (
+          <input
+            type="url"
+            placeholder={t('liveTvEpgUrlPlaceholder')}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                addUrl()
+              }
+            }}
+            style={{ ...inputStyle, flex: 1 }}
+          />
+        )}
         <PillBtn variant="accent" onClick={addUrl} style={{ minHeight: 44 }}>{t('add')}</PillBtn>
       </div>
-      {!hasAny ? <p style={{ margin: 0, fontSize: 12, color: TOKENS.textMute }}>{t('liveTvNoEpgSourcesPrefix')}</p> : null}
+      {!hasAny ? <p style={{ margin: 0, fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{t('liveTvNoEpgSourcesPrefix')}</p> : null}
     </section>
   )
 

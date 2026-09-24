@@ -1,9 +1,39 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Card, Checkbox, PillBtn, TOKENS, inputStyle } from '@/lib/plugin-sdk'
+import { Card, TOKENS, useTvMode } from '@/lib/plugin-sdk'
+import { Pill, TextField, TvCheck } from './tv-aware-controls'
 import { useHubText } from './hub-strings'
 import { listGroups } from './index-client'
 import { curatedGroupCounts, mergeNameConflict, normalizeCuration } from './list-curation'
 import { markListCurationSeen, updateLiveTvListCuration, type ListCuration, type LiveTvList } from './live-tv-data'
+
+/**
+ * "Markera"-växeln för ihopslagning: en vanlig kryssruta på skrivbordet, en
+ * station med samma testid på TV (en rå <input type=checkbox> går inte att nå
+ * med fjärrkontrollen).
+ */
+function MarkToggle({ name, marked, onToggle, label }: { name: string; marked: boolean; onToggle: () => void; label: string }) {
+  const isTv = useTvMode()
+  if (isTv) {
+    return (
+      <button
+        type="button"
+        data-f=""
+        data-testid={`mark-${name}`}
+        aria-pressed={marked}
+        onClick={onToggle}
+        style={{ fontSize: 'var(--st-small)', color: marked ? TOKENS.accent : TOKENS.textMute, background: 'transparent', border: `1px solid ${marked ? TOKENS.accent : TOKENS.borderStrong}`, borderRadius: 10, padding: '6px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+      >
+        {marked ? '✓ ' : ''}{label}
+      </button>
+    )
+  }
+  return (
+    <label style={{ fontSize: 'var(--st-label)', color: TOKENS.textMute, display: 'flex', alignItems: 'center', gap: 4 }}>
+      <input data-testid={`mark-${name}`} type="checkbox" checked={marked} onChange={onToggle} />
+      {label}
+    </label>
+  )
+}
 
 type Row =
   | { kind: 'group'; name: string; count: number; hidden: boolean }
@@ -98,16 +128,18 @@ export function CategoryCurationPanel({ list, mode, onClose }: { list: LiveTvLis
   const save = () => { updateLiveTvListCuration(list.id, normalizeCuration(draft)); onClose() }
   const skip = () => { markListCurationSeen(list.id); onClose() }
 
+  // Typografin via appens tokens (`--st-*`), som byter storlek under
+  // [data-tv="1"] — råa pixelvärden blev pyttesmå på TV (Jerry 2026-09-24).
   const rowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${TOKENS.border}` } as const
-  const fieldStyle = { ...inputStyle, flex: 1, minWidth: 160, padding: '0 12px', background: 'transparent', color: TOKENS.text } as const
+  const fieldStyle = { flex: 1, minWidth: 160 } as const
 
   return (
     <Card>
       <div ref={rootRef} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>{h('categories')} · {list.name}</div>
+          <div style={{ fontSize: 'var(--st-h3)', fontWeight: 600, color: TOKENS.text }}>{h('categories')} · {list.name}</div>
           {groups ? (
-            <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 2 }}>
+            <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, marginTop: 2 }}>
               {h('curationSummary', {
                 groups: visibleCount.toLocaleString(locale),
                 hidden: draft.hidden.filter((g) => known.has(g)).length,
@@ -115,52 +147,49 @@ export function CategoryCurationPanel({ list, mode, onClose }: { list: LiveTvLis
               })}
             </div>
           ) : null}
-          {mode === 'after-import' ? <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 6 }}>{h('curationIntro')}</div> : null}
+          {mode === 'after-import' ? <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, marginTop: 6 }}>{h('curationIntro')}</div> : null}
         </div>
         {groups && groups.length === 0 ? (
-          <div style={{ fontSize: 13, color: TOKENS.textMute }}>{h('noCategoriesInList')}</div>
+          <div style={{ fontSize: 'var(--st-body)', color: TOKENS.textMute }}>{h('noCategoriesInList')}</div>
         ) : (
           <>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input aria-label={h('searchCategories')} placeholder={h('searchCategories')} value={query} onChange={(e) => setQuery(e.target.value)} style={fieldStyle} />
-              <PillBtn size="sm" onClick={() => setDraft((d) => ({ ...d, hidden: [] }))}>{h('showAll')}</PillBtn>
-              <PillBtn size="sm" onClick={() => setDraft((d) => ({ ...d, hidden: (groups ?? []).map((g) => g.name).filter((g) => !claimed.has(g)) }))}>{h('hideAll')}</PillBtn>
+              <TextField title={h('searchCategories')} placeholder={h('searchCategories')} value={query} onChange={setQuery} style={fieldStyle} />
+              <Pill size="sm" onClick={() => setDraft((d) => ({ ...d, hidden: [] }))}>{h('showAll')}</Pill>
+              <Pill size="sm" onClick={() => setDraft((d) => ({ ...d, hidden: (groups ?? []).map((g) => g.name).filter((g) => !claimed.has(g)) }))}>{h('hideAll')}</Pill>
             </div>
             <div style={{ maxHeight: 360, overflowY: 'auto' }}>
               {rows.map((row) => row.kind === 'merge' ? (
                 <div key={`m:${row.name}`} style={rowStyle}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: TOKENS.text }}>{row.name}</div>
-                    <div style={{ fontSize: 11.5, color: TOKENS.textMute }}>{h('mergeContains', { groups: row.groups.join(', ') })}</div>
+                    <div style={{ fontSize: 'var(--st-body)', fontWeight: 600, color: TOKENS.text }}>{row.name}</div>
+                    <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{h('mergeContains', { groups: row.groups.join(', ') })}</div>
                   </div>
-                  <span style={{ fontSize: 12, color: TOKENS.textMute }}>{row.count.toLocaleString(locale)}</span>
-                  <PillBtn size="sm" onClick={() => split(row.name)}>{h('splitMerge')}</PillBtn>
+                  <span style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{row.count.toLocaleString(locale)}</span>
+                  <Pill size="sm" onClick={() => split(row.name)}>{h('splitMerge')}</Pill>
                 </div>
               ) : (
                 <div key={`g:${row.name}`} style={rowStyle}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <Checkbox checked={!row.hidden} onChange={() => toggleHidden(row.name)} label={row.name} />
+                    <TvCheck checked={!row.hidden} onChange={() => toggleHidden(row.name)} label={row.name} />
                   </div>
-                  <span style={{ fontSize: 12, color: TOKENS.textMute }}>{row.count.toLocaleString(locale)}</span>
-                  <label style={{ fontSize: 11.5, color: TOKENS.textMute, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <input data-testid={`mark-${row.name}`} type="checkbox" checked={marked.has(row.name)} onChange={() => toggleMark(row.name)} />
-                    {h('markForMerge')}
-                  </label>
+                  <span style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>{row.count.toLocaleString(locale)}</span>
+                  <MarkToggle name={row.name} marked={marked.has(row.name)} onToggle={() => toggleMark(row.name)} label={h('markForMerge')} />
                 </div>
               ))}
             </div>
             {marked.size >= 2 ? (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <input aria-label={h('mergeNameLabel')} placeholder={h('mergeInto')} value={mergeName} onChange={(e) => { setMergeName(e.target.value); setMergeError(null) }} style={fieldStyle} />
-                <PillBtn size="sm" variant="accent" onClick={merge}>{h('mergeAction')}</PillBtn>
-                {mergeError ? <div role="alert" style={{ fontSize: 12, color: '#fca5a5', width: '100%' }}>{mergeError}</div> : null}
+                <TextField title={h('mergeNameLabel')} placeholder={h('mergeInto')} value={mergeName} onChange={(next) => { setMergeName(next); setMergeError(null) }} style={fieldStyle} />
+                <Pill size="sm" variant="accent" onClick={merge}>{h('mergeAction')}</Pill>
+                {mergeError ? <div role="alert" style={{ fontSize: 'var(--st-small)', color: '#fca5a5', width: '100%' }}>{mergeError}</div> : null}
               </div>
             ) : null}
           </>
         )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <PillBtn size="sm" onClick={mode === 'after-import' ? skip : onClose}>{mode === 'after-import' ? h('skip') : h('cancel')}</PillBtn>
-          <PillBtn size="sm" variant="accent" onClick={save} disabled={groups === null}>{h('save')}</PillBtn>
+          <Pill size="sm" onClick={mode === 'after-import' ? skip : onClose}>{mode === 'after-import' ? h('skip') : h('cancel')}</Pill>
+          <Pill size="sm" variant="accent" onClick={save} disabled={groups === null}>{h('save')}</Pill>
         </div>
       </div>
     </Card>

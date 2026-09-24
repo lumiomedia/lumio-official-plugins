@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Card, Checkbox, PillBtn, TOKENS, inputStyle, useLang, useTvMode, getTvKeyboardPanel } from '@/lib/plugin-sdk'
+import { Card, TOKENS, inputStyle, useLang, useTvMode, getTvKeyboardPanel } from '@/lib/plugin-sdk'
+import { Pill as PillBtn, TvCheck as Checkbox } from './tv-aware-controls'
 import {
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
@@ -216,8 +217,8 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
     <Card>
       <div ref={cardRef} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text }}>{t('liveTvXtreamTitle')}</div>
-          <p style={{ margin: '4px 0 0', fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }}>{t('liveTvXtreamDesc')}</p>
+          <div style={{ fontSize: 'var(--st-body)', fontWeight: 600, color: TOKENS.text }}>{t('liveTvXtreamTitle')}</div>
+          <p style={{ margin: '4px 0 0', fontSize: 'var(--st-small)', lineHeight: 1.5, color: TOKENS.textMute }}>{t('liveTvXtreamDesc')}</p>
         </div>
         {TvKeyboardPanel ? tvFieldButton('server', server, `${t('liveTvXtreamServer')} — http://host:8080`) : (
           <input
@@ -270,14 +271,14 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
           />
         ) : null}
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-          {state === 'authError' ? <span style={{ marginRight: 'auto', fontSize: 12, color: TOKENS.red }}>{t('liveTvXtreamAuthFailed')}</span> : null}
-          {state === 'netError' ? <span style={{ marginRight: 'auto', fontSize: 12, color: TOKENS.red }}>{t('liveTvXtreamError')}</span> : null}
+          {state === 'authError' ? <span style={{ marginRight: 'auto', fontSize: 'var(--st-small)', color: TOKENS.red }}>{t('liveTvXtreamAuthFailed')}</span> : null}
+          {state === 'netError' ? <span style={{ marginRight: 'auto', fontSize: 'var(--st-small)', color: TOKENS.red }}>{t('liveTvXtreamError')}</span> : null}
           <PillBtn variant="accent" onClick={() => void handleConnect()} disabled={state === 'working'}>
             {state === 'working' ? t('liveTvXtreamConnecting') : state === 'done' ? t('liveTvXtreamDone') : t('liveTvXtreamConnect')}
           </PillBtn>
         </div>
         {importProgress ? (
-          <p style={{ margin: 0, fontSize: 12, color: TOKENS.textMute }}>
+          <p style={{ margin: 0, fontSize: 'var(--st-small)', color: TOKENS.textMute }}>
             {importProgress.total
               ? h('listImportProgress', { received: importProgress.received.toLocaleString(locale), total: importProgress.total.toLocaleString(locale) })
               : h('listImportProgressUnknown')}
@@ -372,7 +373,7 @@ function XtreamLoginCard({
 
   const row = (checked: boolean, onChange: () => void, label: string) => (
     <div style={{ padding: '6px 0' }}>
-      <Checkbox checked={checked} onChange={onChange} label={<span style={{ fontSize: 13 }}>{label}</span>} />
+      <Checkbox checked={checked} onChange={onChange} label={<span style={{ fontSize: 'var(--st-body)' }}>{label}</span>} />
     </div>
   )
 
@@ -380,8 +381,8 @@ function XtreamLoginCard({
     <div style={{ padding: '12px 14px', borderRadius: 12, border: `1px solid ${TOKENS.border}`, background: TOKENS.surface0 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <div data-testid={`xtream-account-${login.id}`} style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</span>
-          <span style={{ fontSize: 11.5, color: accountFailed ? TOKENS.red : TOKENS.textMute, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{accountMeta}</span>
+          <span style={{ fontSize: 'var(--st-body)', fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{host}</span>
+          <span style={{ fontSize: 'var(--st-small)', color: accountFailed ? TOKENS.red : TOKENS.textMute, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{accountMeta}</span>
         </div>
         <PillBtn size="sm" onClick={() => void handleToggleOpen()}>
           {t('liveTvXtreamCategories')}{login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ''}

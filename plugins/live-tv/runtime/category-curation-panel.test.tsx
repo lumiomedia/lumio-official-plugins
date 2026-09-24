@@ -55,10 +55,17 @@ describe('CategoryCurationPanel', () => {
   })
   it('rullar in sig i vyn när den öppnas efter en import', async () => {
     const scroll = vi.fn()
+    const original = Element.prototype.scrollIntoView
     Element.prototype.scrollIntoView = scroll
-    render(<CategoryCurationPanel list={list} mode="after-import" onClose={() => {}} />)
-    await screen.findByLabelText('News')
-    expect(scroll).toHaveBeenCalled()
+    try {
+      render(<CategoryCurationPanel list={list} mode="after-import" onClose={() => {}} />)
+      await screen.findByLabelText('News')
+      expect(scroll).toHaveBeenCalled()
+    } finally {
+      // Prototypen delas av hela körningen — utan återställning smittade den
+      // andra testfiler (TvPlayerChrome föll i hela sviten men inte isolerat).
+      Element.prototype.scrollIntoView = original
+    }
   })
   it('en merge med en grupp leverantören tagit bort visas med de grupper som finns', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, curation: { hidden: [], merges: [{ name: 'Mix', groups: ['Sport', 'Gone'] }] } }])

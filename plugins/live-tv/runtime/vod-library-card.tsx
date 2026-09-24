@@ -1,6 +1,7 @@
 'use client'
 
-import { Card, PillBtn, TOKENS, eyebrowStyle } from '@/lib/plugin-sdk'
+import { Card, TOKENS, eyebrowStyle } from '@/lib/plugin-sdk'
+import { Pill as PillBtn } from './tv-aware-controls'
 import { useTvText } from './tv/tv-strings'
 import { useVodLibrarySources } from './hooks/useVodLibrarySources'
 import type { VodLibraryRow } from './vod-library-rows'
@@ -34,7 +35,7 @@ export function VodLibraryCard() {
   return (
     <Card>
       <div style={{ ...eyebrowStyle, marginBottom: 6 }}>{tt('vodLibraryHeading')}</div>
-      <p style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.5, color: TOKENS.textDim }}>{tt('vodLibraryHint')}</p>
+      <p style={{ margin: '0 0 12px', fontSize: 'var(--st-body)', lineHeight: 1.5, color: TOKENS.textDim }}>{tt('vodLibraryHint')}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }} data-testid="vod-library-desktop">
         {rows.map((row) => (
           <div
@@ -43,8 +44,8 @@ export function VodLibraryCard() {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
           >
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 14, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</div>
-              <div style={{ fontSize: 12.5, color: TOKENS.textDim }}>{statusText(row)}</div>
+              <div style={{ fontSize: 'var(--st-body)', color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.label}</div>
+              <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textDim }}>{statusText(row)}</div>
             </div>
             <PillBtn
               variant="accent"
@@ -57,7 +58,7 @@ export function VodLibraryCard() {
           </div>
         ))}
       </div>
-      <p style={{ margin: '12px 0 0', fontSize: 12.5, color: error ? TOKENS.red : TOKENS.textDim }}>
+      <p style={{ margin: '12px 0 0', fontSize: 'var(--st-small)', color: error ? TOKENS.red : TOKENS.textDim }}>
         {error ? tt('vodLibraryFailed', { error }) : tt('vodLibraryWhereToEnable')}
       </p>
     </Card>

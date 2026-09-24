@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { Card, Checkbox, PillBtn, TOKENS, eyebrowStyle, inputStyle } from '@/lib/plugin-sdk'
+import { Card, TOKENS, eyebrowStyle, inputStyle } from '@/lib/plugin-sdk'
+// TV-medvetna varianter under primitivernas namn: stationer på TV, identiska på skrivbordet.
+import { Pill as PillBtn, TvCheck as Checkbox } from './tv-aware-controls'
 import {
   disableHomeOverridePlugin,
   getHomeOverridePluginId,
@@ -224,7 +226,7 @@ export function LiveTvSettingsSection() {
       <Card>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <Checkbox checked={homeOverrideEnabled} onChange={(value) => handleHomeOverrideToggle(value)} label={t('homeOverrideUseAsHome')} hint={t('liveTvHomeOverrideDesc')} />
-          {homeOverrideError ? <p style={{ margin: 0, fontSize: 12, color: TOKENS.red }}>{homeOverrideError}</p> : null}
+          {homeOverrideError ? <p style={{ margin: 0, fontSize: 'var(--st-small)', color: TOKENS.red }}>{homeOverrideError}</p> : null}
           <Checkbox
             checked={hideHero}
             onChange={(value) => {
@@ -274,7 +276,7 @@ export function LiveTvSettingsSection() {
           <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
             {fetchProgress.status === 'fetching' && (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: TOKENS.text }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--st-body)', color: TOKENS.text }}>
                   <span
                     aria-hidden
                     style={{
@@ -302,18 +304,18 @@ export function LiveTvSettingsSection() {
                     </span>
                   ) : null}
                 </div>
-                <div style={{ fontSize: 12, color: TOKENS.textMute, lineHeight: 1.45 }}>{h('m3uFetchKeepOpen')}</div>
+                <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, lineHeight: 1.45 }}>{h('m3uFetchKeepOpen')}</div>
               </>
             )}
             {fetchProgress.results.map((result) => (
-              <div key={result.url} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 12.5, color: TOKENS.textMute, minWidth: 0 }}>
+              <div key={result.url} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 'var(--st-small)', color: TOKENS.textMute, minWidth: 0 }}>
                 <span aria-hidden style={{ color: '#4ade80', flex: 'none' }}>✓</span>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: TOKENS.text }}>{hostOf(result.url)}</span>
                 <span style={{ flex: 'none' }}>{h('channelsCount', { count: result.channels })}</span>
               </div>
             ))}
             {fetchProgress.status === 'error' && (
-              <div role="alert" style={{ fontSize: 12.5, color: '#fca5a5', lineHeight: 1.45 }}>
+              <div role="alert" style={{ fontSize: 'var(--st-small)', color: '#fca5a5', lineHeight: 1.45 }}>
                 {h('m3uFetchFailedOn', { host: hostOf(fetchProgress.url ?? ''), error: fetchProgress.error ?? '' })}
               </div>
             )}
@@ -339,12 +341,12 @@ export function LiveTvSettingsSection() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                <span style={{ fontSize: 14.5, fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</span>
+                <span style={{ fontSize: 'var(--st-body)', fontWeight: 600, color: TOKENS.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{list.name}</span>
                 {list.needsReimport ? (
-                  <span style={{ flex: 'none', fontSize: 10, fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: 'rgba(244,132,95,0.18)', color: '#f4845f' }}>{h('listNeedsReimport')}</span>
+                  <span style={{ flex: 'none', fontSize: 'var(--st-micro)', fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: 'rgba(244,132,95,0.18)', color: '#f4845f' }}>{h('listNeedsReimport')}</span>
                 ) : null}
               </div>
-              <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 2 }}>
+              <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, marginTop: 2 }}>
                 {(list.channelCount ?? 0).toLocaleString(locale)} {t('m3uChannels')}
                 {' · '}
                 {list.fetchedAt
@@ -352,7 +354,7 @@ export function LiveTvSettingsSection() {
                   : h('m3uNeverFetched')}
               </div>
               {busy ? (
-                <div style={{ fontSize: 12, color: TOKENS.text, marginTop: 4 }}>
+                <div style={{ fontSize: 'var(--st-small)', color: TOKENS.text, marginTop: 4 }}>
                   {busy.state === 'parsing'
                     ? h('listImportParsing')
                     : busy.state === 'writing'
@@ -363,15 +365,15 @@ export function LiveTvSettingsSection() {
                 </div>
               ) : null}
               {!busy && needsLogin ? (
-                <div style={{ fontSize: 12, color: TOKENS.textMute, marginTop: 4 }}>{h('xtreamNeedsLogin')}</div>
+                <div style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute, marginTop: 4 }}>{h('xtreamNeedsLogin')}</div>
               ) : null}
               {/* Kapad spellista: jobbet svarade `done`, så utan den här raden
                   ser en HALV lista ut som en hel. */}
               {list.truncated ? (
-                <div data-testid={`list-truncated-${list.id}`} role="alert" style={{ fontSize: 12, color: '#fbbf24', marginTop: 4 }}>{h('listTruncated')}</div>
+                <div data-testid={`list-truncated-${list.id}`} role="alert" style={{ fontSize: 'var(--st-small)', color: '#fbbf24', marginTop: 4 }}>{h('listTruncated')}</div>
               ) : null}
               {!busy && list.lastImportError ? (
-                <div role="alert" style={{ fontSize: 12, color: '#fca5a5', marginTop: 4 }}>{h('listImportFailed', { error: list.lastImportError })}</div>
+                <div role="alert" style={{ fontSize: 'var(--st-small)', color: '#fca5a5', marginTop: 4 }}>{h('listImportFailed', { error: list.lastImportError })}</div>
               ) : null}
             </div>
             <div style={{ display: 'flex', flex: 'none', alignItems: 'center', gap: 8 }}>
@@ -436,12 +438,12 @@ export function LiveTvSettingsSection() {
                 </PillBtn>
               </span>
               {logoComplete?.listId === list.id && logoComplete.status === 'done' ? (
-                <span style={{ fontSize: 12, color: TOKENS.textMute }}>
+                <span style={{ fontSize: 'var(--st-small)', color: TOKENS.textMute }}>
                   {h('logoCompleteResult', { matched: logoComplete.matched, total: logoComplete.total })}
                 </span>
               ) : null}
               {logoComplete?.listId === list.id && logoComplete.status === 'error' ? (
-                <span role="alert" style={{ fontSize: 12, color: '#fca5a5' }}>{logoComplete.error}</span>
+                <span role="alert" style={{ fontSize: 'var(--st-small)', color: '#fca5a5' }}>{logoComplete.error}</span>
               ) : null}
             </div>
           </div>
