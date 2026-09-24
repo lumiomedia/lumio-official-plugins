@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 import { station } from './tv/tv-ui'
 import { useBackLayer } from './settings-ui'
 
@@ -123,6 +122,7 @@ export function TvRow({ label, hint, value, valueTone = 'accent', caret = false,
   }
   const extra: Record<string, string> = { 'data-lt-tv-row': '' }
   if (init) extra['data-init'] = ''
+  if (disabled) extra['aria-disabled'] = 'true'
   if (toggle !== undefined) {
     extra.role = 'switch'
     extra['aria-checked'] = toggle ? 'true' : 'false'
@@ -198,8 +198,15 @@ export function TvBtns({ buttons }: { buttons: TvButtonSpec[] }) {
  * Detaljpanelen (staplad vy): 648 px till höger över ett överdrag, crumb
  * tillbaka till vyn under, titel 24/500, hint 13. En egen `data-panel-root`
  * (fokusfälla) med Bakåt-lagret från settings-ui: Bakåt stänger BARA den
- * översta panelen och lämnar fokus på raden som öppnade den. Portalas till
- * body så att den läggs sist i DOM — det är så motorn vet vilken som är överst.
+ * översta panelen och lämnar fokus på raden som öppnade den.
+ *
+ * INGEN portal till body: appens TV-scen läggs ut i 1080 designpixlar och
+ * skalas med en transform till den riktiga viewporten. Ett `position: fixed`
+ * INNE i den transformerade scenen blir "absolut mot scenen" och skalas med
+ * — utanför den (i body) hade panelen ritats i råa viewport-pixlar, dubbelt
+ * så stor på en skärm med skala 0,5. Samma val som pluginets PickerPanel.
+ * Ordningen bland `[data-panel-root]` håller ändå: en staplad vy ritas som
+ * barn eller senare syskon till den under, alltså efter den i DOM.
  */
 export function TvPanel({ title, hint, crumb, onBack, children, testId }: {
   title: string
@@ -220,7 +227,7 @@ export function TvPanel({ title, hint, crumb, onBack, children, testId }: {
     }, 0)
     return () => window.clearTimeout(id)
   }, [])
-  const node = (
+  return (
     <div ref={rootRef} role="dialog" aria-label={title} data-panel-root="" data-testid={testId} style={{ position: 'fixed', inset: 0, zIndex: 1000, color: TVS.text }}>
       <TvFocusStyle />
       <div aria-hidden onClick={onBack} style={{ position: 'absolute', inset: 0, background: TVS.scrim }} />
@@ -240,7 +247,6 @@ export function TvPanel({ title, hint, crumb, onBack, children, testId }: {
       </div>
     </div>
   )
-  return typeof document === 'undefined' ? node : createPortal(node, document.body)
 }
 
 /** Bekräftelsevyn (`c:`): titel, brödtext som note, Cancel + destruktiv knapp. */

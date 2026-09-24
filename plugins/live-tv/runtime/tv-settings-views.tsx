@@ -57,9 +57,11 @@ function TvTextRow({ label, hint, value, placeholder, secret = false, onChange, 
   const Keyboard = getTvKeyboardPanel()
   const [open, setOpen] = useState(false)
   const shown = value ? (secret ? '•'.repeat(Math.min(value.length, 24)) : value) : h('tvNotSet')
+  // Äldre värd utan tangentbordspanel: raden säger varför i stället för att
+  // tyst göra ingenting (granskning 2026-09-24).
   return (
     <>
-      <TvRow label={label} hint={hint} value={shown} valueTone={value ? 'accent' : 'muted'} glyph="⌨" onOk={() => setOpen(true)} testId={testId} />
+      <TvRow label={label} hint={Keyboard ? hint : h('tvNoKeyboard')} value={shown} valueTone={value ? 'accent' : 'muted'} glyph="⌨" onOk={() => setOpen(true)} disabled={!Keyboard} testId={testId} />
       {open && Keyboard ? (
         <Keyboard title={label} placeholder={placeholder ?? ''} initial={value} onDone={(next) => { onChange(next); setOpen(false) }} onClose={() => setOpen(false)} />
       ) : null}
@@ -300,7 +302,7 @@ export function TvPlaylistPanel({ list, busy, onClose, onUpdate, onRemove, onRel
         <TvRow key={src.url} size="panel" label={src.url} hint={src.auto ? h('tvAutoEpgMeta') : h('tvManualEpgMeta')} value={src.disabled ? h('on') : h('remove')} onOk={src.remove} style={src.disabled ? { opacity: 0.55 } : undefined} />
       ))}
       {epgSources.filter((s) => !s.disabled).length === 0 ? <TvNote size="panel">{h('noEpgSourceYet')}</TvNote> : null}
-      <TvRow size="panel" label={h('tvAddXmltv')} hint={h('tvAddXmltvMeta')} value={h('add')} onOk={() => setAdding(true)} />
+      <TvRow size="panel" label={h('tvAddXmltv')} hint={Keyboard ? h('tvAddXmltvMeta') : h('tvNoKeyboard')} value={h('add')} onOk={() => setAdding(true)} disabled={!Keyboard} />
       <TvRow size="panel" label={h('logoFallbackToggle')} hint={h('logoFallbackHint')} toggle={isLogoFallbackEnabled(list)} onToggle={(value) => setLogoFallbackEnabled(list.id, value)} disabled={list.kind === 'custom'} />
       <TvRow size="panel" label={h('logoCompleteButton')} hint={h('completeLogosHint')} value={completing ? h('logoCompleteRunning') : h('tvUpdate')} onOk={() => void runCompleteLogos()} disabled={completing || !isLogoFallbackEnabled(list) || list.kind === 'custom'} />
       <TvEyebrow size="panel">{h('tvPlaylistEyebrow')}</TvEyebrow>
@@ -376,6 +378,7 @@ export function TvCategoriesPanel({ target, crumb, onClose }: { target: NonNulla
   const { list, mode } = target
   const { h, locale } = useHubText()
   const toast = useToast()
+  const keyboardAvailable = getTvKeyboardPanel() !== null
   const [groups, setGroups] = useState<Group[] | null>(null)
   const [draft, setDraft] = useState<ListCuration>(() => ({
     hidden: [...(list.curation?.hidden ?? [])],
@@ -412,6 +415,10 @@ export function TvCategoriesPanel({ target, crumb, onClose }: { target: NonNulla
   const startNaming = () => {
     if (marked.length < 2) {
       toast(h('tvMarkAtLeastTwo'))
+      return
+    }
+    if (!keyboardAvailable) {
+      toast(h('tvNoKeyboard'))
       return
     }
     setNaming({ edit: null })
@@ -482,7 +489,7 @@ export function TvCategoriesPanel({ target, crumb, onClose }: { target: NonNulla
           <TvEyebrow size="panel">{h('merged')}</TvEyebrow>
           {merges.map((m) => (
             <div key={`m:${m.index}`} style={{ display: 'contents' }}>
-              <TvRow size="panel" label={m.name} hint={h('mergedMeta', { members: m.members.join(' · '), channels: fmtInt(m.count, locale) })} value={h('tvRename')} onOk={() => setNaming({ edit: m.index })} />
+              <TvRow size="panel" label={m.name} hint={h('mergedMeta', { members: m.members.join(' · '), channels: fmtInt(m.count, locale) })} value={h('tvRename')} onOk={() => setNaming({ edit: m.index })} disabled={!keyboardAvailable} />
               <TvRow size="panel" label={h('tvSplitName', { name: m.name })} hint={h('tvSplitMeta')} value={h('splitMerge')} onOk={() => split(m.index)} />
             </div>
           ))}

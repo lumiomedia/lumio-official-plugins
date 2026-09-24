@@ -230,6 +230,7 @@ const EN = {
   tvNOfFetched: '{n} of {total} fetched',
   tvNSelected: '{n} selected',
   completeLogosHint: 'Fetches missing logos from iptv-org now',
+  tvNoKeyboard: 'Text entry needs a newer Lumio',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -436,6 +437,7 @@ const SV: Record<keyof typeof EN, string> = {
   tvNOfFetched: '{n} av {total} hämtas',
   tvNSelected: '{n} valda',
   completeLogosHint: 'Hämtar saknade logotyper från iptv-org nu',
+  tvNoKeyboard: 'Textinmatning kräver en nyare Lumio',
 }
 
 export type HubStringKey = keyof typeof EN
