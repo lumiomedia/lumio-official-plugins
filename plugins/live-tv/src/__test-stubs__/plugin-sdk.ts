@@ -561,17 +561,20 @@ export function getTvGlassMenu(): typeof TvGlassMenuStub | null {
 // Värdens TV-tangentbord. Testet skriver i `tv-keyboard-input` och trycker
 // Done — utan ett fält kunde ingen text matas in alls, och varje "lägg till
 // URL"-väg såg ut att lyckas med tom sträng (dvs. gjorde ingenting).
-function TvKeyboardPanelStub({ title, initial, onDone, onClose }: { title: string; initial: string; onDone: (value: string) => void; onClose: () => void; hint?: string; placeholder?: string }) {
+function TvKeyboardPanelStub({ title, hint, initial, onDone, onClose, onChange, extra }: { title: string; initial: string; onDone: (value: string) => void; onClose: () => void; onChange?: (value: string) => void; extra?: ReactNode; hint?: string; placeholder?: string; hideFooter?: boolean; numeric?: boolean; maxLength?: number }) {
   let value = initial
   return createElement(
     'div',
     { role: 'dialog', 'data-panel-root': '', 'data-testid': 'tv-keyboard-panel' },
     createElement('div', null, title),
+    hint ? createElement('div', { 'data-testid': 'tv-keyboard-hint' }, hint) : null,
     createElement('input', {
       'data-testid': 'tv-keyboard-input',
       defaultValue: initial,
-      onChange: (event: { target: { value: string } }) => { value = event.target.value },
+      onChange: (event: { target: { value: string } }) => { value = event.target.value; onChange?.(value) },
     }),
+    // `extra` ritas under fältet, som i värdens panel (TV-sökets filterchips).
+    extra ?? null,
     // Klar anropar BÅDE onDone och onClose — precis som värdens panel gör
     // (components/tv/tv-settings-rows.tsx: `onDone(value.trim()); onClose()`,
     // både på Klar-tangenten och på Enter i systemtangentbordet). Stubben

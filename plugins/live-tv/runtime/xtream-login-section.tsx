@@ -65,7 +65,8 @@ export function useXtreamAccountMeta(login: XtreamLogin | null): { text: string;
 }
 
 /**
- * "Logga in på nytt"-bryggan från listkorten (`playlist-card.tsx`).
+ * "Logga in på nytt"-bryggan från listkorten (`playlist-card.tsx`) och
+ * TV-vyns spellistepanel.
  *
  * En Xtream-lista som kommit hit via enhetsöverföringen har kvar sin källa
  * (`xtream://<host>/<loginId>`) men INTE inloggningen — lösenord speglas inte
@@ -91,33 +92,34 @@ function onXtreamPrefill(listener: (prefill: XtreamPrefill) => void): () => void
   return () => { prefillListeners.delete(listener) }
 }
 
+export type XtreamLoginState = 'idle' | 'working' | 'done' | 'authError' | 'netError'
+
 /**
- * XTREAM LOGIN (handoff §3 block 4): tre rader — Server URL, Username,
- * Password — och knappen Log in & fetch på lösenordsraden. Kontot och dess
- * kanaler blir en spellista med eget kort under PLAYLISTS; kortet äger
- * kontostatusen (`useXtreamAccountMeta`), uppdateringen och borttagningen.
+ * Inloggningsformulärets tillstånd och flöde, delat av skrivbordets rader och
+ * TV-sidans rader. Kontot och dess kanaler blir en spellista med eget kort;
+ * kortet äger kontostatusen, uppdateringen och borttagningen.
  *
  * Behövs på riktigt — det finns leverantörer där get.php är helt avstängd
  * medan player_api.php svarar korrekt, så en M3U-länk kan aldrig fungera hos
  * dem. Kanalerna syntetiseras ur API:t och landar i samma listflöde.
  */
-export function XtreamLoginSection({ onImported }: { onImported?: (listId: string, existedBefore: boolean) => void } = {}) {
-  const { h, locale } = useHubText()
+export function useXtreamLoginForm({ onImported, onPrefill }: { onImported?: (listId: string, existedBefore: boolean) => void; onPrefill?: () => void } = {}) {
   const [server, setServer] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [state, setState] = useState<'idle' | 'working' | 'done' | 'authError' | 'netError'>('idle')
+  const [state, setState] = useState<XtreamLoginState>('idle')
   // Jobbets `state.received/total` (importList) — synlig framstegsräknare för
   // stora Xtream-utbud (tiotusentals kanaler kan ta en stund).
   const [importProgress, setImportProgress] = useState<{ received: number; total: number | null } | null>(null)
   /**
-   * Sätts av "Logga in på nytt" på ett listkort (se prefillXtreamLogin ovan).
-   * Den är KNUTEN till serveradressen förifyllningen kom med: skriver man om
-   * fältet till en annan panel är det inte längre samma lista man lagar.
+   * Sätts av "Logga in på nytt" (se prefillXtreamLogin ovan). KNUTEN till
+   * serveradressen förifyllningen kom med: skriver man om fältet till en annan
+   * panel är det inte längre samma lista man lagar.
    */
   const [reuse, setReuse] = useState<{ loginId: string; server: string } | null>(null)
   const reuseLoginId = reuse && reuse.server === server ? reuse.loginId : null
-  const rootRef = useRef<HTMLDivElement | null>(null)
+  const onPrefillRef = useRef(onPrefill)
+  useEffect(() => { onPrefillRef.current = onPrefill })
 
   useEffect(() => onXtreamPrefill((prefill) => {
     setServer(prefill.server)
@@ -125,7 +127,7 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
     setPassword('')
     setReuse(prefill.loginId ? { loginId: prefill.loginId, server: prefill.server } : null)
     setState('idle')
-    rootRef.current?.scrollIntoView?.({ block: 'center' })
+    onPrefillRef.current?.()
   }), [])
 
   async function refreshChannels(login: XtreamLogin): Promise<void> {
@@ -155,7 +157,7 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
     }
   }
 
-  async function handleConnect() {
+  async function connect() {
     const base = normalizeXtreamBase(server)
     const user = username.trim()
     const pass = password.trim()
@@ -191,31 +193,42 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
     }
   }
 
-  const buttonLabel = state === 'working' ? h('loggingIn') : state === 'done' ? h('loginFetched') : h('loginAndFetch')
+  return { server, setServer, username, setUsername, password, setPassword, state, connect, importProgress }
+}
+
+/**
+ * XTREAM LOGIN på skrivbordet (handoff §3 block 4): tre rader — Server URL,
+ * Username, Password — och knappen Log in & fetch på lösenordsraden.
+ */
+export function XtreamLoginSection({ onImported }: { onImported?: (listId: string, existedBefore: boolean) => void } = {}) {
+  const { h, locale } = useHubText()
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  const form = useXtreamLoginForm({ onImported, onPrefill: () => rootRef.current?.scrollIntoView?.({ block: 'center' }) })
+  const buttonLabel = form.state === 'working' ? h('loggingIn') : form.state === 'done' ? h('loginFetched') : h('loginAndFetch')
 
   return (
     <div ref={rootRef} data-testid="xtream-login">
       <LtRows>
-        <LtTextRow first label={h('serverUrl')} value={server} onChange={setServer} placeholder="http://host:8080" fieldWidth={240} onEnter={() => void handleConnect()} />
-        <LtTextRow label={h('username')} value={username} onChange={setUsername} placeholder={h('username')} fieldWidth={180} onEnter={() => void handleConnect()} />
+        <LtTextRow first label={h('serverUrl')} value={form.server} onChange={form.setServer} placeholder="http://host:8080" fieldWidth={240} onEnter={() => void form.connect()} />
+        <LtTextRow label={h('username')} value={form.username} onChange={form.setUsername} placeholder={h('username')} fieldWidth={180} onEnter={() => void form.connect()} />
         <LtTextRow
           label={h('password')}
-          value={password}
-          onChange={setPassword}
+          value={form.password}
+          onChange={form.setPassword}
           placeholder={h('password')}
           fieldWidth={180}
           secret
           button={buttonLabel}
-          onButton={() => void handleConnect()}
-          buttonDisabled={state === 'working'}
+          onButton={() => void form.connect()}
+          buttonDisabled={form.state === 'working'}
         />
       </LtRows>
-      {state === 'authError' ? <p role="alert" style={{ margin: '8px 0 0', fontSize: 12.5, color: UI.danger }}>{h('loginRejected')}</p> : null}
-      {state === 'netError' ? <p role="alert" style={{ margin: '8px 0 0', fontSize: 12.5, color: UI.danger }}>{h('loginUnreachable')}</p> : null}
-      {importProgress ? (
+      {form.state === 'authError' ? <p role="alert" style={{ margin: '8px 0 0', fontSize: 12.5, color: UI.danger }}>{h('loginRejected')}</p> : null}
+      {form.state === 'netError' ? <p role="alert" style={{ margin: '8px 0 0', fontSize: 12.5, color: UI.danger }}>{h('loginUnreachable')}</p> : null}
+      {form.importProgress ? (
         <LtNote style={{ marginTop: 8 }}>
-          {importProgress.total
-            ? h('listImportProgress', { received: fmtInt(importProgress.received, locale), total: fmtInt(importProgress.total, locale) })
+          {form.importProgress.total
+            ? h('listImportProgress', { received: fmtInt(form.importProgress.received, locale), total: fmtInt(form.importProgress.total, locale) })
             : h('listImportProgressUnknown')}
         </LtNote>
       ) : null}

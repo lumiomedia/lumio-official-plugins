@@ -8,6 +8,7 @@ import {
   onProfileChanged,
   tryEnableHomeOverridePlugin,
   useLang,
+  useTvMode,
 } from '@/lib/plugin-sdk'
 import { LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useToast } from './settings-ui'
 import {
@@ -41,45 +42,38 @@ import { useHubText } from './hub-strings'
 import { EpgStatusCard } from './epg-sources-section'
 import { XtreamLoginSection, prefillXtreamLogin } from './xtream-login-section'
 import { VodLibraryCard } from './vod-library-card'
-import { CategoryCurationPanel } from './category-curation-panel'
+import { CategoriesDialog } from './category-curation-panel'
 import { PlaylistCard, playlistHost } from './playlist-card'
+import { TvSettingsPage } from './tv-settings-views'
 
 const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.live-tv'
 
 /** Adressfältet är en rad: flera adresser skiljs med blanksteg eller komma. */
-function splitUrls(text: string): string[] {
+export function splitUrls(text: string): string[] {
   return text.split(/[\s,]+/).map((u) => u.trim()).filter(Boolean)
 }
 
-/**
- * LIVE TV:S INSTÄLLNINGSSIDA (handoff 2026-09-24 §3), blocken i ordning:
- * 1) de två växlarna, 2) PLAYLISTS med ett kort per spellista, 3) M3U,
- * 4) XTREAM LOGIN, 5) PROGRAMME GUIDE STATUS, 6) USE AS LIBRARY. Toaster och
- * dialoger lever i `ToastHost`/`LtDialog` (settings-ui.tsx).
- */
-export function LiveTvSettingsSection() {
-  return (
-    <ToastHost>
-      <SettingsPage />
-    </ToastHost>
-  )
-}
+export type CurationTarget = { list: LiveTvList; mode: 'settings' | 'after-import' } | null
 
-function SettingsPage() {
+/**
+ * Sidans tillstånd och handlingar, delade av skrivbordets kortsida och TV:ns
+ * radsida så att de två ytorna aldrig kan bete sig olika för samma knapp.
+ */
+export function useLiveTvSettings() {
   const { t } = useLang()
-  const { h, locale } = useHubText()
+  const { h } = useHubText()
   const toast = useToast()
   const fetchProgress = useSyncExternalStore(subscribeM3uFetch, getM3uFetchProgress, getM3uFetchProgress)
-  const [hideHero, setHideHero] = useState<boolean>(() => getLiveTvHideHero())
+  const [hideHero, setHideHeroState] = useState<boolean>(() => getLiveTvHideHero())
   const [m3uText, setM3uText] = useState('')
   const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
   const [homeOverrideError, setHomeOverrideError] = useState('')
   const [lists, setLists] = useState<LiveTvList[]>([])
   /**
-   * Kategoripanelen. Öppnas från kortet eller automatiskt EN gång efter en NY
-   * listas första import (m3u och Xtream).
+   * Kategorierna. Öppnas från kortet/raden eller automatiskt EN gång efter en
+   * NY listas första import (m3u och Xtream).
    */
-  const [curationList, setCurationList] = useState<{ list: LiveTvList; mode: 'settings' | 'after-import' } | null>(null)
+  const [curationList, setCurationList] = useState<CurationTarget>(null)
   /** Bara listor som aldrig visat panelen — en omhämtning öppnar inget. */
   function maybeOpenCurationAfterImport(listId: string) {
     const fresh = getLiveTvLists().find((entry) => entry.id === listId)
@@ -110,7 +104,7 @@ function SettingsPage() {
     return onHomeOverridePluginChanged(sync)
   }, [])
 
-  async function handleFetchM3uList() {
+  async function fetchM3u() {
     const urls = splitUrls(m3uText)
     if (urls.length === 0) return
 
@@ -143,12 +137,12 @@ function SettingsPage() {
   }
 
   /**
-   * Ta bort en spellista helt (bekräftad i kortet): posten, kanalerna i
-   * indexet, biblioteket, kategorierna och EPG-källorna — och för M3U även
-   * adressen den kom ifrån (annars kom feeden tillbaka vid nästa hämtning).
+   * Ta bort en spellista helt (bekräftad): posten, kanalerna i indexet,
+   * biblioteket, kategorierna och EPG-källorna — och för M3U även adressen
+   * den kom ifrån (annars kom feeden tillbaka vid nästa hämtning).
    * Xtream-listor går via inloggningen, så kontot följer med.
    */
-  function handleRemoveList(list: LiveTvList) {
+  function removeList(list: LiveTvList) {
     if (list.kind === 'xtream' && list.xtreamLoginId) {
       deleteXtreamLoginAndData(list.xtreamLoginId)
     } else {
@@ -167,7 +161,7 @@ function SettingsPage() {
    * sitt gamla innehåll (spec §5) — `needsReimport`/`lastImportError` på
    * posten är det som gör felet synligt efteråt.
    */
-  async function handleRefetchList(list: LiveTvList) {
+  async function refetchList(list: LiveTvList) {
     setListProgress({ listId: list.id, state: 'fetching', received: 0, total: null })
     try {
       const status = await importList(list, (s) => setListProgress({ listId: list.id, state: s.state, received: s.received, total: s.total ?? null }))
@@ -180,12 +174,12 @@ function SettingsPage() {
     }
   }
 
-  function handleRelogin(list: LiveTvList) {
+  function relogin(list: LiveTvList) {
     const xtreamSource = parseXtreamSource(list.source)
     prefillXtreamLogin({ server: xtreamSource ? `http://${xtreamSource.host}` : '', loginId: xtreamSource?.loginId })
   }
 
-  function handleHomeOverrideToggle(checked: boolean) {
+  function toggleHomeOverride(checked: boolean) {
     setHomeOverrideError('')
     if (!checked) {
       disableHomeOverridePlugin(HOME_OVERRIDE_PLUGIN_ID)
@@ -195,34 +189,74 @@ function SettingsPage() {
     if (!result.ok) setHomeOverrideError(t('homeOverrideAlreadySet'))
   }
 
-  const fetchLabel = fetchProgress.status === 'fetching' ? h('fetching') : h('fetchList')
+  function setHideHero(value: boolean) {
+    setLiveTvHideHero(value)
+    setHideHeroState(value)
+  }
+
+  return {
+    lists,
+    m3uText,
+    setM3uText,
+    fetchProgress,
+    fetchM3u,
+    removeList,
+    refetchList,
+    relogin,
+    listProgress,
+    homeOverrideEnabled,
+    homeOverrideError,
+    toggleHomeOverride,
+    hideHero,
+    setHideHero,
+    curationList,
+    setCurationList,
+    maybeOpenCurationAfterImport,
+  }
+}
+
+/**
+ * LIVE TV:S INSTÄLLNINGSSIDA (handoff 2026-09-24 §3), blocken i ordning:
+ * 1) de två växlarna, 2) PLAYLISTS med ett kort per spellista, 3) M3U,
+ * 4) XTREAM LOGIN, 5) PROGRAMME GUIDE STATUS, 6) USE AS LIBRARY. På TV är
+ * sidan rader och kategorierna staplade vyer (§4.2, `tv-settings-views.tsx`).
+ * Toaster och dialoger lever i `ToastHost`/`LtDialog` (settings-ui.tsx).
+ */
+export function LiveTvSettingsSection() {
+  const isTv = useTvMode()
+  return (
+    <ToastHost>
+      {isTv ? <TvSettingsPage /> : <DesktopPage />}
+    </ToastHost>
+  )
+}
+
+function DesktopPage() {
+  const { t } = useLang()
+  const { h, locale } = useHubText()
+  const s = useLiveTvSettings()
+  const fetchLabel = s.fetchProgress.status === 'fetching' ? h('fetching') : h('fetchList')
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, color: UI.text }}>
       <LtRows>
-        <LtToggleRow first label={h('useAsHome')} desc={h('useAsHomeDesc')} checked={homeOverrideEnabled} onChange={handleHomeOverrideToggle} error={homeOverrideError || null} />
-        <LtToggleRow
-          first={false}
-          label={h('hideHero')}
-          desc={h('hideHeroDesc')}
-          checked={hideHero}
-          onChange={(value) => { setLiveTvHideHero(value); setHideHero(value) }}
-        />
+        <LtToggleRow first label={h('useAsHome')} desc={h('useAsHomeDesc')} checked={s.homeOverrideEnabled} onChange={s.toggleHomeOverride} error={s.homeOverrideError || null} />
+        <LtToggleRow first={false} label={h('hideHero')} desc={h('hideHeroDesc')} checked={s.hideHero} onChange={s.setHideHero} />
       </LtRows>
 
       <div>
         <LtSection eyebrow={h('playlists')} title={h('yourPlaylists')} hint={h('playlistsHint')} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {lists.length === 0 ? <LtNote>{h('noPlaylistsYet')}</LtNote> : null}
-          {lists.map((list) => (
+          {s.lists.length === 0 ? <LtNote>{h('noPlaylistsYet')}</LtNote> : null}
+          {s.lists.map((list) => (
             <PlaylistCard
               key={list.id}
               list={list}
-              busy={listProgress?.listId === list.id}
-              onCategories={() => setCurationList({ list, mode: 'settings' })}
-              onUpdate={() => void handleRefetchList(list)}
-              onRemove={() => handleRemoveList(list)}
-              onRelogin={() => handleRelogin(list)}
+              busy={s.listProgress?.listId === list.id}
+              onCategories={() => s.setCurationList({ list, mode: 'settings' })}
+              onUpdate={() => void s.refetchList(list)}
+              onRemove={() => s.removeList(list)}
+              onRelogin={() => s.relogin(list)}
             />
           ))}
         </div>
@@ -234,13 +268,13 @@ function SettingsPage() {
           <LtTextRow
             first
             label={h('playlistUrl')}
-            value={m3uText}
-            onChange={setM3uText}
+            value={s.m3uText}
+            onChange={s.setM3uText}
             placeholder={t('m3uUrlsPlaceholder')}
             fieldWidth={260}
             button={fetchLabel}
-            onButton={() => void handleFetchM3uList()}
-            buttonDisabled={fetchProgress.status === 'fetching'}
+            onButton={() => void s.fetchM3u()}
+            buttonDisabled={s.fetchProgress.status === 'fetching'}
           />
         </LtRows>
         {/*
@@ -249,19 +283,19 @@ function SettingsPage() {
           hämtning startar — det läser tillståndet ur modulen, så det är sant
           även för den som kommer tillbaka efteråt.
         */}
-        {fetchProgress.status !== 'idle' && (
+        {s.fetchProgress.status !== 'idle' && (
           <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
             <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
-            {fetchProgress.status === 'fetching' && (
+            {s.fetchProgress.status === 'fetching' && (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: UI.text }}>
                   <span aria-hidden style={{ width: 12, height: 12, flex: 'none', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: 'rgba(255,255,255,0.9)', animation: 'lumio-livetv-spin 0.7s linear infinite' }} />
-                  <span>{h('m3uFetchProgress', { current: fetchProgress.current, total: fetchProgress.total })}</span>
+                  <span>{h('m3uFetchProgress', { current: s.fetchProgress.current, total: s.fetchProgress.total })}</span>
                   {/* Jobbets EGET förlopp: en adress kan vara 17 000 kanaler. */}
-                  {fetchProgress.jobProgress ? (
+                  {s.fetchProgress.jobProgress ? (
                     <span style={{ color: UI.muted }}>
-                      {fetchProgress.jobProgress.total
-                        ? h('listImportProgress', { received: fmtInt(fetchProgress.jobProgress.received, locale), total: fmtInt(fetchProgress.jobProgress.total, locale) })
+                      {s.fetchProgress.jobProgress.total
+                        ? h('listImportProgress', { received: fmtInt(s.fetchProgress.jobProgress.received, locale), total: fmtInt(s.fetchProgress.jobProgress.total, locale) })
                         : h('listImportProgressUnknown')}
                     </span>
                   ) : null}
@@ -269,16 +303,16 @@ function SettingsPage() {
                 <LtNote>{h('m3uFetchKeepOpen')}</LtNote>
               </>
             )}
-            {fetchProgress.results.map((result) => (
+            {s.fetchProgress.results.map((result) => (
               <div key={result.url} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 12.5, color: UI.muted, minWidth: 0 }}>
                 <span aria-hidden style={{ color: UI.green, flex: 'none' }}>✓</span>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: UI.text }}>{hostOf(result.url)}</span>
                 <span style={{ flex: 'none' }}>{h('channelsCount', { count: fmtInt(result.channels, locale) })}</span>
               </div>
             ))}
-            {fetchProgress.status === 'error' && (
+            {s.fetchProgress.status === 'error' && (
               <div role="alert" style={{ fontSize: 12.5, color: UI.danger, lineHeight: 1.45 }}>
-                {h('m3uFetchFailedOn', { host: hostOf(fetchProgress.url ?? ''), error: fetchProgress.error ?? '' })}
+                {h('m3uFetchFailedOn', { host: hostOf(s.fetchProgress.url ?? ''), error: s.fetchProgress.error ?? '' })}
               </div>
             )}
           </div>
@@ -287,15 +321,15 @@ function SettingsPage() {
 
       <div>
         <LtSection eyebrow={h('xtreamLogin')} title={h('xtreamLogin')} hint={h('xtreamHint')} />
-        <XtreamLoginSection onImported={(listId, existedBefore) => { if (!existedBefore) maybeOpenCurationAfterImport(listId) }} />
+        <XtreamLoginSection onImported={(listId, existedBefore) => { if (!existedBefore) s.maybeOpenCurationAfterImport(listId) }} />
       </div>
 
       <EpgStatusCard />
 
       <VodLibraryCard />
 
-      {curationList ? (
-        <CategoryCurationPanel list={curationList.list} mode={curationList.mode} onClose={() => setCurationList(null)} />
+      {s.curationList ? (
+        <CategoriesDialog list={s.curationList.list} mode={s.curationList.mode} onClose={() => s.setCurationList(null)} />
       ) : null}
     </div>
   )
