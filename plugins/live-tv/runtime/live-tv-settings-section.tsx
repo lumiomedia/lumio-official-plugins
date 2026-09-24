@@ -158,7 +158,8 @@ export function LiveTvSettingsSection() {
         if (!existedBefore) deleteLiveTvList(list.id)
         throw new Error(status.error ?? 'm3u import failed')
       }
-      maybeOpenCurationAfterImport(list.id)
+      // Bara första importen av en ny källa — en omhämtning öppnar aldrig panelen.
+      if (!existedBefore) maybeOpenCurationAfterImport(list.id)
       return status.result?.total ?? 0
     })
 
@@ -194,7 +195,6 @@ export function LiveTvSettingsSection() {
     try {
       const status = await importList(list, (s) => setListProgress({ listId: list.id, state: s.state, received: s.received, total: s.total ?? null }))
       recordListImportOutcome(list.id, status.state === 'error' ? (status.error ?? 'import failed') : undefined)
-      if (status.state === 'done') maybeOpenCurationAfterImport(list.id)
     } catch (err) {
       recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err))
     } finally {

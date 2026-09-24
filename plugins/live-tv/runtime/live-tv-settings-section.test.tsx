@@ -238,16 +238,24 @@ describe('kategoripanelen efter import', () => {
   function m3uList(extra: Partial<LiveTvList> = {}): LiveTvList {
     return list({ id: 'l1', name: 'panel.test', kind: 'm3u', source: 'http://panel.test/list.m3u', url: 'http://panel.test/list.m3u', channelCount: 4, groups: [{ name: 'Sport', count: 4 }], ...extra })
   }
-  it('öppnas efter en import som svarar done för en lista som aldrig visat den, och inte igen efter Hoppa över', async () => {
+  it('öppnas efter en NY källas första import, inte igen efter Hoppa över, och inte vid omhämtning', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'm3u_urls_draft', ['http://panel.test/list.m3u'])
+    render(<LiveTvSettingsSection />)
+    fireEvent.click(screen.getByText('m3uFetchList'))
+    expect(await screen.findByRole('button', { name: /^skip$/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^skip$/i }))
+    await waitFor(() => expect(getLiveTvLists()[0].curationSeen).toBe(true))
+    // Samma adress igen (knappen heter nu "klar" efter första körningen): listan finns, ingen panel.
+    fireEvent.click(screen.getByText('m3uFetchListDone'))
+    await waitFor(() => expect(getLiveTvLists()).toHaveLength(1))
+    expect(screen.queryByRole('button', { name: /^skip$/i })).toBeNull()
+  })
+  it('öppnas inte vid omhämtning av en lista som fanns före funktionen', async () => {
     vi.spyOn(liveTvData, 'importList').mockResolvedValue({ state: 'done', received: 4, total: 4, result: { total: 4, groups: [{ name: 'Sport', count: 4 }], urlTvg: null, truncated: false } })
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [m3uList()])
     render(<LiveTvSettingsSection />)
     fireEvent.click(screen.getByText('Refetch'))
-    expect(await screen.findByRole('button', { name: /^skip$/i })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /^skip$/i }))
-    await waitFor(() => expect(getLiveTvLists()[0].curationSeen).toBe(true))
-    fireEvent.click(screen.getByText('Refetch'))
-    await waitFor(() => expect(liveTvData.importList).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(liveTvData.importList).toHaveBeenCalledTimes(1))
     expect(screen.queryByRole('button', { name: /^skip$/i })).toBeNull()
   })
   it('öppnas inte efter en import som misslyckas', async () => {

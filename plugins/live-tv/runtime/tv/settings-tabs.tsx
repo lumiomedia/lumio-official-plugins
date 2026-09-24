@@ -375,7 +375,9 @@ export function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = fal
       }
       recordListImportOutcome(list.id)
       const fresh = getLiveTvLists().find((entry) => entry.id === list.id)
-      if (fresh && fresh.curationSeen !== true) setCuration({ listId: list.id, mode: 'after-import' })
+      // Bara en NY lista (första importen): en omhämtning av en lista som fanns
+      // före funktionen ska inte kapa fokus med en panel man inte bett om.
+      if (!existedBefore && fresh && fresh.curationSeen !== true) setCuration({ listId: list.id, mode: 'after-import' })
       return true
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
