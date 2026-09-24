@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Card, TOKENS, eyebrowStyle, inputStyle } from '@/lib/plugin-sdk'
 // TV-medvetna varianter under primitivernas namn: stationer på TV, identiska på skrivbordet.
 import { Pill as PillBtn, TvCheck as Checkbox } from './tv-aware-controls'
+import { useLinearTvNav } from './tv-linear-nav'
 import {
   disableHomeOverridePlugin,
   getHomeOverridePluginId,
@@ -82,6 +83,9 @@ export function LiveTvSettingsSection() {
   const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
   const [homeOverrideError, setHomeOverrideError] = useState('')
   const [lists, setLists] = useState<LiveTvList[]>([])
+  // Rad-för-rad-navigering med fjärrkontroll i TV-läge (se tv-linear-nav.tsx).
+  const sectionRef = useRef<HTMLDivElement | null>(null)
+  useLinearTvNav(sectionRef)
   /**
    * Kategoripanelen (spec 2026-09-24). Öppnas från kortets knapp eller
    * automatiskt EN gång efter en NY listas första import (m3u och Xtream).
@@ -222,7 +226,7 @@ export function LiveTvSettingsSection() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div ref={sectionRef} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <Card>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <Checkbox checked={homeOverrideEnabled} onChange={(value) => handleHomeOverrideToggle(value)} label={t('homeOverrideUseAsHome')} hint={t('liveTvHomeOverrideDesc')} />
