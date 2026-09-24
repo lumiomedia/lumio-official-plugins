@@ -45,6 +45,7 @@ import { useHubText } from './hub-strings'
 import { EpgSourcesSection, EpgStatusCard } from './epg-sources-section'
 import { XtreamLoginSection, prefillXtreamLogin } from './xtream-login-section'
 import { VodLibraryCard } from './vod-library-card'
+import { CategoryCurationPanel } from './category-curation-panel'
 
 
 const settingsActionButtonClass =
@@ -79,6 +80,26 @@ export function LiveTvSettingsSection() {
   const [homeOverrideEnabled, setHomeOverrideEnabled] = useState(false)
   const [homeOverrideError, setHomeOverrideError] = useState('')
   const [lists, setLists] = useState<LiveTvList[]>([])
+  /**
+   * Kategoripanelen (spec 2026-09-24). Öppnas från kortets knapp, från
+   * rutnätets tomma tillstånd (händelsen nedan) eller automatiskt EN gång
+   * efter en listas första import.
+   */
+  const [curationList, setCurationList] = useState<{ list: LiveTvList; mode: 'settings' | 'after-import' } | null>(null)
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const listId = (event as CustomEvent<{ listId: string }>).detail?.listId
+      const target = getLiveTvLists().find((entry) => entry.id === listId)
+      if (target) setCurationList({ list: target, mode: 'settings' })
+    }
+    window.addEventListener('lumio-live-tv-open-curation', onOpen)
+    return () => window.removeEventListener('lumio-live-tv-open-curation', onOpen)
+  }, [])
+  /** Bara listor som aldrig visat panelen — en omhämtning öppnar inget. */
+  function maybeOpenCurationAfterImport(listId: string) {
+    const fresh = getLiveTvLists().find((entry) => entry.id === listId)
+    if (fresh && fresh.curationSeen !== true) setCurationList({ list: fresh, mode: 'after-import' })
+  }
   // Omhämtning av EN lista (kortets egen knapp) — skild från M3U-fältets kö
   // ovan, som hämtar hela uppsättningen adresser.
   const [listProgress, setListProgress] = useState<{ listId: string; state: ImportStatus['state']; received: number; total: number | null } | null>(null)
@@ -137,6 +158,7 @@ export function LiveTvSettingsSection() {
         if (!existedBefore) deleteLiveTvList(list.id)
         throw new Error(status.error ?? 'm3u import failed')
       }
+      maybeOpenCurationAfterImport(list.id)
       return status.result?.total ?? 0
     })
 
@@ -172,6 +194,7 @@ export function LiveTvSettingsSection() {
     try {
       const status = await importList(list, (s) => setListProgress({ listId: list.id, state: s.state, received: s.received, total: s.total ?? null }))
       recordListImportOutcome(list.id, status.state === 'error' ? (status.error ?? 'import failed') : undefined)
+      if (status.state === 'done') maybeOpenCurationAfterImport(list.id)
     } catch (err) {
       recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err))
     } finally {
@@ -371,6 +394,9 @@ export function LiveTvSettingsSection() {
                   {busy ? h('listRefetching') : h('listRefetch')}
                 </PillBtn>
               ) : null}
+              {importable ? (
+                <PillBtn size="sm" onClick={() => setCurationList({ list, mode: 'settings' })}>{h('categories')}</PillBtn>
+              ) : null}
               <PillBtn size="sm" variant="danger" onClick={() => handleRemoveList(list)}>{t('liveTvXtreamRemove')}</PillBtn>
             </div>
           </div>
@@ -432,6 +458,9 @@ export function LiveTvSettingsSection() {
         </Card>
         )
       })}
+      {curationList ? (
+        <CategoryCurationPanel list={curationList.list} mode={curationList.mode} onClose={() => setCurationList(null)} />
+      ) : null}
     </div>
   )
 
