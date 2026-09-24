@@ -6,7 +6,7 @@ import {
   clearLiveTvMemoryCache,
   clearStoredLiveTvChannels,
   deleteLiveTvList,
-  deleteXtreamLogin,
+  deleteXtreamLoginAndData,
   ensureXtreamList,
   fetchXtreamAccount,
   fetchXtreamCategories,
@@ -203,13 +203,11 @@ export function XtreamLoginSection({ onImported }: { onImported?: (listId: strin
   }
 
   function handleRemove(login: XtreamLogin) {
-    deleteXtreamLogin(login.id)
-    // Källan (pseudo-URL:en), inte visningsnamnet — `ensureXtreamList` döper
-    // listan efter värdnamnet MED port, så en jämförelse mot hostname (utan
-    // port) missade panelen och lämnade listan kvar efter borttagning.
-    const source = xtreamPseudoUrl(login)
-    const list = getLiveTvLists().find((entry) => entry.source === source)
-    if (list) deleteLiveTvList(list.id)
+    // Samma väg som TV-inställningarna: listan hittas på `xtreamLoginId`, inte
+    // på källans pseudo-URL — en lista vars källa bär ett annat login-id (äldre
+    // import, ominloggning) missades annars och 2 000 kanaler låg kvar i
+    // indexet utan konto (Jerry 2026-09-24). Finns ingen lista töms källan ändå.
+    deleteXtreamLoginAndData(login.id)
     clearLiveTvMemoryCache()
     clearStoredLiveTvChannels()
   }

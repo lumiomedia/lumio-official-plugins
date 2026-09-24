@@ -90,3 +90,31 @@ describe('XtreamLoginSection: kontokortet (spec 4.4 punkt 3)', () => {
     expect(await screen.findByText('Could not read the account')).toBeInTheDocument()
   })
 })
+
+describe('XtreamLoginSection: Ta bort konto', () => {
+  it('tar bort listan via xtreamLoginId och tömmer indexets källa även när listans källa inte matchar pseudo-URL:en', async () => {
+    const { fireEvent } = await import('@testing-library/react')
+    const { getLiveTvLists } = await import('./live-tv-data')
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [xtreamLogin])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{
+      id: 'l1', name: 'panel.test', createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null,
+      kind: 'xtream', source: 'xtream://panel.test:8080/annat-login-id', xtreamLoginId: 'login-1', channelCount: 5, groups: [],
+    }])
+    const resets: string[] = []
+    vi.stubGlobal('fetch', ((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(typeof input === 'string' ? input : String(input), 'http://localhost')
+      if (url.pathname === '/api/live-tv/reset') {
+        resets.push(JSON.parse(String(init?.body ?? '{}')).source)
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true, removed: 5 }) } as unknown as Response)
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ user_info: { auth: 1, status: 'Active' } }) } as unknown as Response)
+    }) as typeof fetch)
+
+    render(<XtreamLoginSection />)
+    await screen.findByTestId('xtream-account-login-1')
+    fireEvent.click(screen.getByText('liveTvXtreamRemove'))
+
+    expect(getLiveTvLists()).toHaveLength(0)
+    await vi.waitFor(() => expect(resets).toEqual(['xtream://panel.test:8080/annat-login-id']))
+  })
+})
