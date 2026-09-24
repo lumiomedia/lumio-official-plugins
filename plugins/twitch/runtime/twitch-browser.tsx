@@ -867,6 +867,37 @@ function StreamFilterBar({
   )
 }
 
+/**
+ * SIDRAMEN: luft ovanför sidans innehåll så att rubriken inte hamnar under
+ * appens menypill (vänster) och sorteringen inte under hälsningen/klockan
+ * (höger) — värden ritar båda ovanpå sidan, på skrivbordet OCH i TV-läget
+ * (Jerry 2026-09-24: "flytta ner Twitch lite så det inte ligger över menyn
+ * till vänster samt meddelande/klocka till höger"). Telefonen har varken
+ * pill i det läget eller klocka, så där ändras ingenting.
+ *
+ * TV: pillret börjar på --tv-chrome-top (40) och är 64 px × menyskalan högt;
+ * skrivbord: pillret står på --page-top-pill (~19) och är 42 px, klockan två
+ * rader till höger — 40 px räcker för att rubrikraden ska gå fri.
+ */
+export function TwitchPageFrame({ children }: { children: ReactNode }) {
+  const [desktopWide, setDesktopWide] = useState(
+    () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches,
+  )
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const sync = () => setDesktopWide(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+  const tv = isTvDom()
+  const paddingTop = tv
+    ? 'calc(64px * var(--tv-base-scale, 1) * 0.8 * var(--tv-menu-scale, 1) + 12px)'
+    : desktopWide ? 40 : 0
+  return <div data-twitch-page-frame="" style={paddingTop ? { paddingTop } : undefined}>{children}</div>
+}
+
 export function TwitchBrowsePage({ pageId, onNavigate }: BrowsePageProps) {
   const text = useTwitchText()
   const { lang } = useLang()

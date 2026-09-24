@@ -11,6 +11,7 @@ import {
   TwitchFollowingRow,
   TwitchCategoryRow,
   TwitchChannelsRow,
+  TwitchPageFrame,
 } from './twitch-browser'
 
 /** Twitch-sidorna visar ingen hero — på NÅGON bredd (Jerry 2026-09-19:
@@ -54,9 +55,9 @@ export const TwitchPlugin: LumioPlugin = {
       label: { en: 'Twitch: Live now', sv: 'Twitch: Live nu' },
       rowId: 'twitch-live-row',
     })
-    ctx.registerBrowsePage({ id: 'twitch-live', label: { en: 'Live', sv: 'Live' }, Page: TwitchBrowsePage, hideHero: twitchHidesHero })
-    ctx.registerBrowsePage({ id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' }, Page: TwitchCategoriesPage, hideHero: twitchHidesHero })
-    ctx.registerBrowsePage({ id: 'twitch-search', label: { en: 'Search', sv: 'Sök' }, Page: TwitchSearchPage, hideHero: twitchHidesHero })
+    ctx.registerBrowsePage({ id: 'twitch-live', label: { en: 'Live', sv: 'Live' }, Page: (props) => <TwitchPageFrame><TwitchBrowsePage {...props} /></TwitchPageFrame>, hideHero: twitchHidesHero })
+    ctx.registerBrowsePage({ id: 'twitch-categories', label: { en: 'Categories', sv: 'Kategorier' }, Page: (props) => <TwitchPageFrame><TwitchCategoriesPage {...props} /></TwitchPageFrame>, hideHero: twitchHidesHero })
+    ctx.registerBrowsePage({ id: 'twitch-search', label: { en: 'Search', sv: 'Sök' }, Page: (props) => <TwitchPageFrame><TwitchSearchPage {...props} /></TwitchPageFrame>, hideHero: twitchHidesHero })
 
     ctx.registerHomeRow({
       id: 'twitch-following-row',
@@ -69,7 +70,7 @@ export const TwitchPlugin: LumioPlugin = {
       label: { en: 'Twitch: Following', sv: 'Twitch: Följer' },
       rowId: 'twitch-following-row',
     })
-    ctx.registerBrowsePage({ id: 'twitch-following', label: { en: 'Following', sv: 'Följer' }, Page: TwitchFollowingPage, hideHero: twitchHidesHero })
+    ctx.registerBrowsePage({ id: 'twitch-following', label: { en: 'Following', sv: 'Följer' }, Page: (props) => <TwitchPageFrame><TwitchFollowingPage {...props} /></TwitchPageFrame>, hideHero: twitchHidesHero })
 
     // Configurable rows: which category / channels they show is set under
     // Settings → Twitch (getTwitchHomeCategory / getTwitchHomeChannels).
