@@ -47,13 +47,26 @@ afterEach(() => {
 })
 
 describe('kategorimenyn på en telefonskärm', () => {
+  it('listar alla kategorier med antal ur modellen, oberoende av sidan som visas', async () => {
+    render(<LiveTvGrid />)
+    fireEvent.click(await screen.findByRole('button', { name: /allCategories/i }))
+    expect(await screen.findByRole('button', { name: /Land 97/ })).toHaveTextContent('1')
+    expect(screen.getAllByRole('button', { name: /^Land / })).toHaveLength(97)
+  })
+  it('visar ett tomt tillstånd med väg till panelen när alla kategorier är dolda', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ id: 'l1', name: 'P', createdAt: '2026-01-01', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null, kind: 'm3u', source: PLAYLIST_URL, url: PLAYLIST_URL, curation: { hidden: CATEGORIES, merges: [] } }])
+    render(<LiveTvGrid />)
+    expect(await screen.findByText(/all categories in this playlist are hidden/i)).toBeInTheDocument()
+    expect(screen.getByTestId('grid-open-curation')).toBeInTheDocument()
+  })
+
   it('får ett höjdtak och egen rullning så alla grupper går att nå', async () => {
     render(<LiveTvGrid />)
 
     const trigger = await screen.findByRole('button', { name: /allCategories/i })
     fireEvent.click(trigger)
 
-    const item = await screen.findByRole('button', { name: 'Land 97' })
+    const item = await screen.findByRole('button', { name: /^Land 97/ })
     const panel = item.parentElement as HTMLElement
 
     // Layout finns inte i happy-dom, så taket och rullningen kontrolleras

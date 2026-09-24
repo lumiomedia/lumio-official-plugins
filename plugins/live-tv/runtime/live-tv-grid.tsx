@@ -729,19 +729,31 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
     }
   }, [loading, activeListId, pinnedChannels.length])
 
-  const categories = useMemo(
-    () => Array.from(
-      new Set(
-        visibleChannels.flatMap((c) =>
-          String(c.group ?? '')
-            .split(';')
-            .map((s) => s.trim())
-            .filter(Boolean),
-        ),
-      ),
-    ).sort(),
-    [visibleChannels],
-  )
+  // HELA den kuraterade grupplistan för det som visas (fliken eller alla), med
+  // antal och störst först — inte bara det som råkar vara på skärmen. Kanalerna
+  // är redan kuraterade i den delade laddaren, så dolda grupper saknas här och
+  // ihopslagna bär sitt nya namn.
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const c of visibleChannels) {
+      for (const part of String(c.group ?? '').split(';').map((s) => s.trim()).filter(Boolean)) {
+        counts.set(part, (counts.get(part) ?? 0) + 1)
+      }
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  }, [visibleChannels])
+  /**
+   * Allt dolt: den valda listan (eller någon lista i "alla") har dolda
+   * kategorier och ingenting blev kvar att visa. Då är svaret en väg till
+   * panelen, inte "inga kanaler matchar".
+   */
+  const curatedEmptyList = useMemo(() => {
+    if (loading || visibleChannels.length > 0) return null
+    const candidate = activeList ?? lists.find((list) => (list.curation?.hidden.length ?? 0) > 0) ?? null
+    return candidate && (candidate.curation?.hidden.length ?? 0) > 0 ? candidate : null
+  }, [loading, visibleChannels.length, activeList, lists])
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase()
@@ -1132,7 +1144,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                     </svg>
                   ) : null}
                 </button>
-                {categories.map((cat) => {
+                {categories.map(({ name: cat, count }) => {
                   const isActive = activeGroup === cat
                   return (
                     <button
@@ -1147,12 +1159,15 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                         isTv ? 'min-h-[52px] text-[15px]' : 'py-2.5 text-sm'
                       } ${isActive ? 'text-accent-300' : 'text-slate-200'}`}
                     >
-                      <span>{cat}</span>
-                      {isActive ? (
-                        <svg className="h-3.5 w-3.5 flex-shrink-0 text-accent-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      ) : null}
+                      <span className="truncate">{cat}</span>
+                      <span className="flex flex-none items-center gap-2">
+                        <span className="tabular-nums text-slate-500">{count.toLocaleString(locale)}</span>
+                        {isActive ? (
+                          <svg className="h-3.5 w-3.5 flex-shrink-0 text-accent-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        ) : null}
+                      </span>
                     </button>
                   )
                 })}
@@ -1350,7 +1365,19 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
         </div>}
 
         {/* Channel grid */}
-        {filtered.length === 0 ? (
+        {curatedEmptyList ? (
+          <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+            <p className="text-sm text-slate-300">{h('allCategoriesHidden')}</p>
+            <button
+              type="button"
+              data-testid="grid-open-curation"
+              className={neutralPillClass}
+              onClick={() => window.dispatchEvent(new CustomEvent('lumio-live-tv-open-curation', { detail: { listId: curatedEmptyList.id } }))}
+            >
+              {h('openCategories')}
+            </button>
+          </div>
+        ) : filtered.length === 0 ? (
           // Samma tomma läge som appens övriga vyer: ikon, rubrik, en
           // förklarande mening. En ensam grå rad mitt på sidan såg ut som ett
           // fel snarare än ett svar — särskilt när man aldrig lagt till en
@@ -1814,7 +1841,7 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                       </svg>
                     ) : null}
                   </button>
-                  {categories.map((cat) => {
+                  {categories.map(({ name: cat, count }) => {
                     const isActive = activeGroup === cat
                     return (
                       <button
@@ -1828,11 +1855,14 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
                         className={`${tvMenuItemClass} ${isActive ? '!border-accent-400/50 !bg-accent-400/10 !text-accent-300' : ''}`}
                       >
                         <span className="truncate">{cat}</span>
-                        {isActive ? (
-                          <svg className="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : null}
+                        <span className="flex flex-none items-center gap-2">
+                          <span className="tabular-nums text-slate-500">{count.toLocaleString(locale)}</span>
+                          {isActive ? (
+                            <svg className="h-4 w-4 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : null}
+                        </span>
                       </button>
                     )
                   })}

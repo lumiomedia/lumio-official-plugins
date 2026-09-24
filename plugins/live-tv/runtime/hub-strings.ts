@@ -8,6 +8,8 @@ import { useLang } from '@/lib/plugin-sdk'
  * appar. `{namn}` ersätts med vars.
  */
 const EN = {
+  allCategoriesHidden: 'All categories in this playlist are hidden.',
+  openCategories: 'Choose categories',
   // Gemensamt
   back: 'Back',
   search: 'Search',
@@ -97,6 +99,8 @@ const EN = {
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
+  allCategoriesHidden: 'Alla kategorier i den här spellistan är dolda.',
+  openCategories: 'Välj kategorier',
   back: 'Tillbaka',
   search: 'Sök',
   reminders: 'Påminnelser',
