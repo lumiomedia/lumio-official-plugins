@@ -29,6 +29,7 @@ import { migrateStorageV2 } from './storage-v2-migration'
 import { getChannelHistory, onChannelHistoryChanged, type ChannelHistoryEntry } from './channel-history'
 import { useReminders, type Reminder } from './reminders'
 import { useLockedChannelKeys } from './channel-locks'
+import { applyCuration } from './list-curation'
 import {
   LIVE_TV_CHANNELS_PREFIX,
   LIVE_TV_GLOBAL_EPG_ID,
@@ -44,6 +45,7 @@ import {
   togglePinnedLiveTvChannel,
   type LiveTvList,
   type M3uChannel,
+  type ListCuration,
 } from './live-tv-data'
 import { getActivePlaylistId, onActivePlaylistChanged, setActivePlaylistId } from './tv/tv-settings-store'
 
@@ -114,7 +116,10 @@ export interface LiveTvModel {
   channels: M3uChannel[]
   byKey: Map<string, M3uChannel>
   byUrl: Map<string, M3uChannel>
+  /** Alla kuraterade gruppnamn, sorterade efter antal fallande (chipraden tar de första åtta). */
   groups: string[]
+  /** Samma lista med antal kanaler per grupp — kategorimenyns och panelens underlag. */
+  groupCounts: { name: string; count: number }[]
   pinnedKeys: string[]
   pinnedSet: Set<string>
   togglePin: (channel: M3uChannel) => void
@@ -318,6 +323,53 @@ function ensureLogoFallbackSwitchSubscription(): void {
   })
 }
 
+/** Första listan för källan vinner — samma upplösning som logotypswitchen. */
+export function curationForSource(source: string): ListCuration | undefined {
+  return getLiveTvLists().find((entry) => entry.source === source)?.curation
+}
+
+let curationSubscription: (() => void) | null = null
+let curationBySource: Map<string, string> | null = null
+
+function curationSnapshot(): Map<string, string> {
+  const snapshot = new Map<string, string>()
+  for (const list of getLiveTvLists()) {
+    if (!list.source || snapshot.has(list.source)) continue
+    snapshot.set(list.source, JSON.stringify(list.curation ?? null))
+  }
+  return snapshot
+}
+
+/**
+ * Sparad kuratering måste nå de kanaler som redan ligger varma i minnet —
+ * annars ser Spara ut att göra ingenting tills något orelaterat tömmer cachen.
+ * Samma mönster som `ensureLogoFallbackSwitchSubscription`, plus att en
+ * pågående laddning avbryts (den hade skrivit okuraterade kanaler efteråt).
+ */
+function ensureCurationSubscription(): void {
+  if (curationSubscription || typeof window === 'undefined') return
+  curationBySource = curationSnapshot()
+  curationSubscription = onLiveTvListsChanged(() => {
+    const next = curationSnapshot()
+    const previous = curationBySource
+    curationBySource = next
+    let changed = false
+    for (const [source, value] of next) {
+      if (previous?.get(source) === value) continue
+      changed = true
+      channelAborts.get(channelsCacheKey(source))?.abort()
+      channelLoads.delete(channelsCacheKey(source))
+      clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(source))
+    }
+    if (changed) {
+      channelAborts.get(channelsCacheKey(null))?.abort()
+      channelLoads.delete(channelsCacheKey(null))
+      clearPluginMemoryCache(LIVE_TV_PLUGIN_ID, channelsCacheKey(null))
+      for (const listener of [...generationListeners]) listener()
+    }
+  })
+}
+
 /**
  * "Alla kanaler" = UNIONEN av källorna, inte en egen hämtning.
  *
@@ -408,6 +460,7 @@ function applyLogoFallbackSwitchToExtra<T extends M3uChannel>(
  */
 export function loadChannelsShared(source: string | null): Promise<IndexChannel[]> {
   ensureLogoFallbackSwitchSubscription()
+  ensureCurationSubscription()
   const cacheKey = channelsCacheKey(source)
   const cached = getPluginMemoryCache<IndexChannel[]>(LIVE_TV_PLUGIN_ID, cacheKey)
   if (cached) return Promise.resolve(cached)
@@ -423,8 +476,12 @@ export function loadChannelsShared(source: string | null): Promise<IndexChannel[
       ? await loadEveryChannel(controller?.signal)
       : await loadAllChannels(source, undefined, controller?.signal)
     if (source !== null) applyLogoFallbackSwitch(source, items)
-    setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, items)
-    return items
+    // Kurateringen (dolda grupper, ihopslagningar) tillämpas HÄR, innan
+    // cachen: alla vyer läser samma kuraterade uppsättning. "Alla" byggs av
+    // per-källa-laddningarna i loadEveryChannel och blir kuraterad på köpet.
+    const curated = source !== null ? applyCuration(items, curationForSource(source)) : items
+    setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey, curated)
+    return curated
   })()
     .finally(() => {
       if (channelLoads.get(cacheKey) === request) channelLoads.delete(cacheKey)
@@ -464,6 +521,9 @@ export function __resetLiveTvModelForTests(): void {
   logoFallbackSwitchSubscription?.()
   logoFallbackSwitchSubscription = null
   logoFallbackStateBySource = null
+  curationSubscription?.()
+  curationSubscription = null
+  curationBySource = null
 }
 
 export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
@@ -618,7 +678,22 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel)
     return map
   }, [byKey])
-  const groups = useMemo(() => topGroups(channels), [channels])
+  // Hela den kuraterade grupplistan med antal, störst först — inte topp åtta.
+  // Kanalerna är redan kuraterade (loadChannelsShared), så dolda grupper
+  // saknas och ihopslagna bär sitt nya namn. Chipraden tar de första åtta
+  // själv (hub-data.ts).
+  const groupCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const channel of channels) {
+      for (const part of String(channel.group ?? '').split(';').map((s) => s.trim()).filter(Boolean)) {
+        counts.set(part, (counts.get(part) ?? 0) + 1)
+      }
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  }, [channels])
+  const groups = useMemo(() => groupCounts.map((g) => g.name), [groupCounts])
   const playlists = useMemo(
     () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),
     [lists],
@@ -841,6 +916,7 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     byKey,
     byUrl,
     groups,
+    groupCounts,
     pinnedKeys,
     pinnedSet: useMemo(() => new Set(pinnedKeys), [pinnedKeys]),
     togglePin: (channel) => setPinnedKeys(togglePinnedLiveTvChannel(channel)),
