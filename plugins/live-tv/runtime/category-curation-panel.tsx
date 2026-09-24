@@ -119,7 +119,7 @@ export function CategoryCurationPanel({ list, mode, onClose }: { list: LiveTvLis
       return
     }
     const members = [...marked]
-    setDraft((d) => ({ hidden: d.hidden.filter((g) => !members.includes(g)), merges: [...d.merges, { name: mergeName.trim(), groups: members }] }))
+    setDraft((d) => ({ ...d, merges: [...d.merges, { name: mergeName.trim(), groups: members }] }))
     setMarked(new Set())
     setMergeName('')
     setMergeError(null)

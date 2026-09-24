@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { __resetForTests, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
-import { applyCuration, curatedGroupCounts, mergeNameConflict, normalizeCuration } from './list-curation'
+import { applyCuration, curatedGroupCounts, mergeNameConflict, normalizeCuration, renameMerge } from './list-curation'
 import { LIVE_TV_PLUGIN_ID, getLiveTvLists, markListCurationSeen, updateLiveTvListCuration, type LiveTvList } from './live-tv-data'
 
 const ch = (name: string, group: string) => ({ name, group, url: `http://x/${name}`, tvgId: null, logo: null })
@@ -29,6 +29,14 @@ describe('applyCuration', () => {
     const out = applyCuration([ch('a', 'UK Sport;Sports UK')], { hidden: [], merges: [{ name: 'Sport', groups: ['UK Sport', 'Sports UK'] }] })
     expect(out[0].group).toBe('Sport')
   })
+  it('en dold medlem i en merge visas under mergens namn (dolt läge vilar)', () => {
+    const out = applyCuration([ch('a', 'UK Sport')], { hidden: ['UK Sport'], merges: [{ name: 'Sport', groups: ['UK Sport'] }] })
+    expect(out.map((c) => c.group)).toEqual(['Sport'])
+  })
+  it('split återställer dolt läge: utan mergen filtreras medlemmen igen', () => {
+    const out = applyCuration([ch('a', 'UK Sport'), ch('b', 'News')], { hidden: ['UK Sport'], merges: [] })
+    expect(out.map((c) => c.name)).toEqual(['b'])
+  })
   it('lämnar kanaler utan grupp orörda', () => {
     const out = applyCuration([ch('a', '')], { hidden: ['X'], merges: [] })
     expect(out).toHaveLength(1)
@@ -40,9 +48,9 @@ describe('normalizeCuration', () => {
     expect(normalizeCuration({ hidden: [], merges: [] })).toBeUndefined()
     expect(normalizeCuration(undefined)).toBeUndefined()
   })
-  it('tar bort en grupp ur hidden när den också ingår i en merge, och kastar tomma namn', () => {
+  it('behåller hidden för en grupp som också ingår i en merge (vilande läge), och kastar tomma namn', () => {
     const out = normalizeCuration({ hidden: ['A', 'A', ''], merges: [{ name: ' Sport ', groups: ['A', 'B', 'B'] }, { name: '', groups: ['C'] }] })
-    expect(out).toEqual({ hidden: [], merges: [{ name: 'Sport', groups: ['A', 'B'] }] })
+    expect(out).toEqual({ hidden: ['A'], merges: [{ name: 'Sport', groups: ['A', 'B'] }] })
   })
   it('låter en grupp ingå i högst en merge (första vinner)', () => {
     const out = normalizeCuration({ hidden: [], merges: [{ name: 'X', groups: ['A'] }, { name: 'Y', groups: ['A', 'B'] }] })
@@ -59,6 +67,11 @@ describe('curatedGroupCounts', () => {
     const out = curatedGroupCounts(groups, { hidden: ['C'], merges: [{ name: 'AB', groups: ['A', 'B'] }] })
     expect(out).toEqual([{ name: 'AB', count: 8 }])
   })
+  it('en dold medlem räknas in i mergen', () => {
+    const out = curatedGroupCounts(groups, { hidden: ['A'], merges: [{ name: 'AB', groups: ['A', 'B'] }] })
+    expect(out.find((g) => g.name === 'AB')?.count).toBe(8)
+    expect(out.find((g) => g.name === 'A')).toBeUndefined()
+  })
   it('en merge vars grupper saknas i källan visas inte, men en delvis känd merge visas med känt antal', () => {
     const out = curatedGroupCounts(groups, { hidden: [], merges: [{ name: 'Gone', groups: ['Z'] }, { name: 'Part', groups: ['A', 'Z'] }] })
     expect(out.map((g) => g.name)).toEqual(['C', 'Part', 'B'])
@@ -73,6 +86,25 @@ describe('mergeNameConflict', () => {
   it('tillåtet när originalgruppen är dold', () => expect(mergeNameConflict('Sport', groups, { hidden: ['Sport'], merges: [] })).toBeNull())
   it('tillåtet att döpa mergen efter en av sina egna medlemmar', () => expect(mergeNameConflict('Sport', groups, { hidden: [], merges: [] }, ['Sport', 'News'])).toBeNull())
   it('kollision med befintlig merge', () => expect(mergeNameConflict('Mix', groups, { hidden: [], merges: [{ name: 'Mix', groups: ['News'] }] })).toBe('duplicate'))
+})
+
+describe('renameMerge', () => {
+  const cur = { hidden: [], merges: [{ name: 'Sport', groups: ['A', 'B'] }, { name: 'News', groups: ['C'] }] }
+  it('byter namn på mergen med givet index och trimmar', () => {
+    expect(renameMerge(cur, 0, ' Sports ').merges[0].name).toBe('Sports')
+  })
+  it('tomt namn lämnar kurateringen oförändrad', () => {
+    expect(renameMerge(cur, 0, '   ')).toEqual(cur)
+  })
+  it('krock med en annan merge lämnar kurateringen oförändrad', () => {
+    expect(renameMerge(cur, 0, 'News')).toEqual(cur)
+  })
+  it('returnerar en kopia, inte samma objekt', () => {
+    const out = renameMerge(cur, 1, 'World')
+    expect(out).not.toBe(cur)
+    expect(cur.merges[1].name).toBe('News')
+    expect(out.merges[1].name).toBe('World')
+  })
 })
 
 describe('lagring', () => {

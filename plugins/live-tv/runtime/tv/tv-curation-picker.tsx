@@ -89,7 +89,7 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
         return
       }
       const members = [...marked]
-      setDraft((d) => ({ hidden: d.hidden.filter((g) => !members.includes(g)), merges: [...d.merges, { name: value.trim(), groups: members }] }))
+      setDraft((d) => ({ ...d, merges: [...d.merges, { name: value.trim(), groups: members }] }))
       setMarked(new Set())
       setMergeMode(false)
       setError(null)
