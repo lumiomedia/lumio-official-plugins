@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getTvKeyboardPanel, useLang } from '@/lib/plugin-sdk'
 import { TVS, TvBtns, TvConfirmPanel, TvEyebrow, TvFocusStyle, TvNote, TvPanel, TvRow } from './tv-settings-ui'
 import { fmtInt, useToast } from './settings-ui'
-import { formatDisplayMetrics, isViewportMismatch, readDisplayMetrics } from './display-metrics'
+import { formatDisplayMetrics, isSceneNotApplied, isViewportMismatch, readDisplayMetrics } from './display-metrics'
 import { useHubText } from './hub-strings'
 import { useLiveTvSettings, type CurationTarget } from './live-tv-settings-section'
 import { useXtreamAccountMeta, useXtreamLoginForm } from './xtream-login-section'
@@ -205,9 +205,13 @@ export function TvSettingsPage() {
           behöver kunna efter att ytan ändrats. */}
       <TvRow
         label={displayMetrics ? formatDisplayMetrics(displayMetrics) : '—'}
-        hint={displayMetrics && isViewportMismatch(displayMetrics)
-          ? 'The page is drawn against a larger area than the screen shows — that is the zoom fault.'
-          : 'Layout and visible area match, which is what a healthy screen looks like.'}
+        hint={!displayMetrics
+          ? ''
+          : isSceneNotApplied(displayMetrics)
+            ? 'THE TV SCENE IS NOT BEING APPLIED. The page is laid out at full design size inside a smaller box, so everything is enlarged and the area outside it stays unpainted.'
+            : isViewportMismatch(displayMetrics)
+              ? 'The page is drawn against a larger area than the screen shows — that is the zoom fault.'
+              : 'Layout and visible area match, and the scene is scaling the page. This is what a healthy screen looks like.'}
         value="Measure again"
         onOk={() => setDisplayMetrics(readDisplayMetrics())}
       />

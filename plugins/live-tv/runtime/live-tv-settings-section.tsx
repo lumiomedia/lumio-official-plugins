@@ -11,7 +11,7 @@ import {
   useTvMode,
 } from '@/lib/plugin-sdk'
 import { LtCard, LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useToast } from './settings-ui'
-import { formatDisplayMetrics, isViewportMismatch, readDisplayMetrics } from './display-metrics'
+import { formatDisplayMetrics, isSceneNotApplied, isViewportMismatch, readDisplayMetrics } from './display-metrics'
 import {
   applyM3uUrls,
   clearLiveTvMemoryCache,
@@ -374,9 +374,11 @@ function DisplayMetricsCard() {
           {formatDisplayMetrics(metrics)}
         </code>
         <p style={{ margin: 0, fontSize: 'var(--st-small, 12.5px)', lineHeight: 1.5, color: mismatch ? UI.danger : UI.muted }}>
-          {mismatch
-            ? 'The page is drawn against a larger area than the screen shows — that is the zoom fault.'
-            : 'Layout and visible area match, which is what a healthy screen looks like.'}
+          {isSceneNotApplied(metrics)
+            ? 'THE TV SCENE IS NOT BEING APPLIED. Everything is enlarged and the area outside the page stays unpainted.'
+            : mismatch
+              ? 'The page is drawn against a larger area than the screen shows — that is the zoom fault.'
+              : 'Layout and visible area match, and the scene is scaling the page.'}
         </p>
       </LtCard>
     </div>

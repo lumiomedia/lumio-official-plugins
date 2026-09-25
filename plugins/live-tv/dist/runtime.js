@@ -199353,6 +199353,7 @@ ${cue.text}`).join("\n\n")}
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
     const sceneScale = typeof document === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-scale").trim();
+    const body = typeof document === "undefined" ? null : document.body;
     return {
       layoutWidth: window.innerWidth,
       layoutHeight: window.innerHeight,
@@ -199360,12 +199361,22 @@ ${cue.text}`).join("\n\n")}
       visualHeight: visual ? visual.height : null,
       visualScale: visual ? visual.scale : null,
       dpr: window.devicePixelRatio,
-      sceneScale: sceneScale || "1"
+      sceneScale: sceneScale || "1",
+      sceneOn: typeof document !== "undefined" && document.documentElement.getAttribute("data-tv-scene") === "1",
+      bodyTransform: body ? getComputedStyle(body).transform || "none" : "none",
+      bodyWidth: body ? Math.round(body.getBoundingClientRect().width) : 0
     };
   }
   function formatDisplayMetrics(m2) {
     const visual = m2.visualWidth !== null && m2.visualHeight !== null ? `synlig ${Math.round(m2.visualWidth)}\xD7${Math.round(m2.visualHeight)} @${m2.visualScale}` : "synlig saknas";
-    return `${m2.layoutWidth}\xD7${m2.layoutHeight} \xB7 ${visual} \xB7 dpr ${m2.dpr} \xB7 scen ${m2.sceneScale}`;
+    const scen = `scen ${m2.sceneScale}${m2.sceneOn ? "" : " AV"}`;
+    const kropp = `kropp ${m2.bodyWidth} ${m2.bodyTransform === "none" ? "otransformerad" : "skalad"}`;
+    return `${m2.layoutWidth}\xD7${m2.layoutHeight} \xB7 ${visual} \xB7 dpr ${m2.dpr} \xB7 ${scen} \xB7 ${kropp}`;
+  }
+  function isSceneNotApplied(m2) {
+    if (!m2.sceneOn) return false;
+    if (m2.sceneScale === "1") return false;
+    return m2.bodyTransform === "none";
   }
   function isViewportMismatch(m2) {
     if (m2.visualWidth === null || m2.visualHeight === null) return false;
@@ -201220,7 +201231,7 @@ ${cue.text}`).join("\n\n")}
         TvRow,
         {
           label: displayMetrics ? formatDisplayMetrics(displayMetrics) : "\u2014",
-          hint: displayMetrics && isViewportMismatch(displayMetrics) ? "The page is drawn against a larger area than the screen shows \u2014 that is the zoom fault." : "Layout and visible area match, which is what a healthy screen looks like.",
+          hint: !displayMetrics ? "" : isSceneNotApplied(displayMetrics) ? "THE TV SCENE IS NOT BEING APPLIED. The page is laid out at full design size inside a smaller box, so everything is enlarged and the area outside it stays unpainted." : isViewportMismatch(displayMetrics) ? "The page is drawn against a larger area than the screen shows \u2014 that is the zoom fault." : "Layout and visible area match, and the scene is scaling the page. This is what a healthy screen looks like.",
           value: "Measure again",
           onOk: () => setDisplayMetrics(readDisplayMetrics())
         }
@@ -201756,7 +201767,7 @@ ${cue.text}`).join("\n\n")}
             children: formatDisplayMetrics(metrics2)
           }
         ),
-        /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: "var(--st-small, 12.5px)", lineHeight: 1.5, color: mismatch ? UI.danger : UI.muted }, children: mismatch ? "The page is drawn against a larger area than the screen shows \u2014 that is the zoom fault." : "Layout and visible area match, which is what a healthy screen looks like." })
+        /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: "var(--st-small, 12.5px)", lineHeight: 1.5, color: mismatch ? UI.danger : UI.muted }, children: isSceneNotApplied(metrics2) ? "THE TV SCENE IS NOT BEING APPLIED. Everything is enlarged and the area outside the page stays unpainted." : mismatch ? "The page is drawn against a larger area than the screen shows \u2014 that is the zoom fault." : "Layout and visible area match, and the scene is scaling the page." })
       ] })
     ] });
   }

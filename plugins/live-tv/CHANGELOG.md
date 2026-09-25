@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.4
+
+- The Display line now reports whether the TV scene is actually scaling the page, not just whether its scale was computed. Both the shrink and the black backdrop hang on the same CSS rule, so when it is not applied the page is laid out at full design size inside a smaller box: everything looks enlarged and the area around it stays unpainted. That matches a Fire TV Cube report whose viewport measured perfectly healthy.
+
 ## 0.11.3
 
 - The Display line can now be reached with a remote. A row without an action is an info row and gets no focus station, so 0.11.2 rendered the line but the remote could neither land on it nor scroll down to it. It now carries a Measure again action.
