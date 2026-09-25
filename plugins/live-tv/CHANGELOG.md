@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.3
+
+- The Display line can now be reached with a remote. A row without an action is an info row and gets no focus station, so 0.11.2 rendered the line but the remote could neither land on it nor scroll down to it. It now carries a Measure again action.
+
 ## 0.11.2
 
 - The Display line now also appears in TV mode, which is where it was needed: the TV settings view is a separate page from the desktop cards, so 0.11.1 only showed it on desktop.

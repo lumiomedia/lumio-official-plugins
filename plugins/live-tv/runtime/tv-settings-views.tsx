@@ -198,11 +198,18 @@ export function TvSettingsPage() {
           felet når inte debug-loggen, men kan fota en skärm, och han sitter i
           DEN HÄR vyn — inte i skrivbordets kortstapel, där kortet först låg. */}
       <TvEyebrow>Display</TvEyebrow>
+      {/* `onOk` gör raden till en fokusstation. En rad utan handling är en
+          INFOrad, och en sådan får inget `data-f` (se TvRow) — fjärren kunde
+          alltså inte nå den, och därmed inte heller scrolla ner till den
+          (Jerry 2026-09-25). Handlingen är att mäta om, vilket raden ändå
+          behöver kunna efter att ytan ändrats. */}
       <TvRow
         label={displayMetrics ? formatDisplayMetrics(displayMetrics) : '—'}
         hint={displayMetrics && isViewportMismatch(displayMetrics)
           ? 'The page is drawn against a larger area than the screen shows — that is the zoom fault.'
           : 'Layout and visible area match, which is what a healthy screen looks like.'}
+        value="Measure again"
+        onOk={() => setDisplayMetrics(readDisplayMetrics())}
       />
 
       {openedList ? (

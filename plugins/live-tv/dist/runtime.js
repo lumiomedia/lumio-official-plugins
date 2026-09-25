@@ -1638,6 +1638,7 @@
   var TRANSPARENT_PROPERTIES, NATIVE_SURFACES_ATTRIBUTE, holds, restore;
   var init_transparent_webview = __esm({
     "lib/transparent-webview.ts"() {
+      "use strict";
       TRANSPARENT_PROPERTIES = [
         { property: "background-color", value: "transparent" },
         { property: "background-image", value: "none" }
@@ -201219,7 +201220,9 @@ ${cue.text}`).join("\n\n")}
         TvRow,
         {
           label: displayMetrics ? formatDisplayMetrics(displayMetrics) : "\u2014",
-          hint: displayMetrics && isViewportMismatch(displayMetrics) ? "The page is drawn against a larger area than the screen shows \u2014 that is the zoom fault." : "Layout and visible area match, which is what a healthy screen looks like."
+          hint: displayMetrics && isViewportMismatch(displayMetrics) ? "The page is drawn against a larger area than the screen shows \u2014 that is the zoom fault." : "Layout and visible area match, which is what a healthy screen looks like.",
+          value: "Measure again",
+          onOk: () => setDisplayMetrics(readDisplayMetrics())
         }
       ),
       openedList ? /* @__PURE__ */ jsx(
