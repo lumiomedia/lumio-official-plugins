@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { getTvKeyboardPanel, useLang } from '@/lib/plugin-sdk'
 import { TVS, TvBtns, TvConfirmPanel, TvEyebrow, TvFocusStyle, TvNote, TvPanel, TvRow } from './tv-settings-ui'
 import { fmtInt, useToast } from './settings-ui'
+import { formatDisplayMetrics, isViewportMismatch, readDisplayMetrics } from './display-metrics'
 import { useHubText } from './hub-strings'
 import { useLiveTvSettings, type CurationTarget } from './live-tv-settings-section'
 import { useXtreamAccountMeta, useXtreamLoginForm } from './xtream-login-section'
@@ -84,6 +85,13 @@ export function TvSettingsPage() {
   const s = useLiveTvSettings()
   const form = useXtreamLoginForm({ onImported: (listId, existedBefore) => { if (!existedBefore) s.maybeOpenCurationAfterImport(listId) } })
   const [openList, setOpenList] = useState<string | null>(null)
+  const [displayMetrics, setDisplayMetrics] = useState(() => readDisplayMetrics())
+  useEffect(() => {
+    const sync = () => setDisplayMetrics(readDisplayMetrics())
+    sync()
+    window.addEventListener('resize', sync)
+    return () => window.removeEventListener('resize', sync)
+  }, [])
   const epg = useEpgStatus()
   const vod = useVodLibrarySources()
 
@@ -180,6 +188,22 @@ export function TvSettingsPage() {
           <TvNote tone={vod.error ? 'danger' : 'muted'}>{vod.error ? tt('vodLibraryFailed', { error: vod.error }) : tt('vodLibraryWhereToEnable')}</TvNote>
         </>
       ) : null}
+
+      {/* Skärmens mått, att fotografera.
+
+          Rapporten "channels are zoomed in and there is a white box issue"
+          (Fire TV Cube 2026-09-25) syns varken i skrivbordets TV-läge eller i
+          Television_4K-emulatorn — där är layouten och den synliga ytan
+          identiska (mätt: 960×540 mot 960×540 @1). Den som kan reproducera
+          felet når inte debug-loggen, men kan fota en skärm, och han sitter i
+          DEN HÄR vyn — inte i skrivbordets kortstapel, där kortet först låg. */}
+      <TvEyebrow>Display</TvEyebrow>
+      <TvRow
+        label={displayMetrics ? formatDisplayMetrics(displayMetrics) : '—'}
+        hint={displayMetrics && isViewportMismatch(displayMetrics)
+          ? 'The page is drawn against a larger area than the screen shows — that is the zoom fault.'
+          : 'Layout and visible area match, which is what a healthy screen looks like.'}
+      />
 
       {openedList ? (
         <TvPlaylistPanel

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.2
+
+- The Display line now also appears in TV mode, which is where it was needed: the TV settings view is a separate page from the desktop cards, so 0.11.1 only showed it on desktop.
+
 ## 0.11.1
 
 - Settings → Live TV now shows a Display line with the screen's real measurements. It exists to pin down a report of channels looking zoomed in with a white area below, on a Fire TV Cube: the fault cannot be seen on desktop TV mode or in the Android TV emulator, so it has to be read on the device that shows it. The line says outright whether the page is being drawn against a larger area than the screen displays.

@@ -201131,6 +201131,13 @@ ${cue.text}`).join("\n\n")}
       if (!existedBefore) s.maybeOpenCurationAfterImport(listId);
     } });
     const [openList, setOpenList] = useState(null);
+    const [displayMetrics, setDisplayMetrics] = useState(() => readDisplayMetrics());
+    useEffect(() => {
+      const sync2 = () => setDisplayMetrics(readDisplayMetrics());
+      sync2();
+      window.addEventListener("resize", sync2);
+      return () => window.removeEventListener("resize", sync2);
+    }, []);
     const epg = useEpgStatus();
     const vod = useVodLibrarySources();
     const openedList = openList ? s.lists.find((l) => l.id === openList) ?? null : null;
@@ -201207,6 +201214,14 @@ ${cue.text}`).join("\n\n")}
         )),
         /* @__PURE__ */ jsx(TvNote, { tone: vod.error ? "danger" : "muted", children: vod.error ? tt("vodLibraryFailed", { error: vod.error }) : tt("vodLibraryWhereToEnable") })
       ] }) : null,
+      /* @__PURE__ */ jsx(TvEyebrow, { children: "Display" }),
+      /* @__PURE__ */ jsx(
+        TvRow,
+        {
+          label: displayMetrics ? formatDisplayMetrics(displayMetrics) : "\u2014",
+          hint: displayMetrics && isViewportMismatch(displayMetrics) ? "The page is drawn against a larger area than the screen shows \u2014 that is the zoom fault." : "Layout and visible area match, which is what a healthy screen looks like."
+        }
+      ),
       openedList ? /* @__PURE__ */ jsx(
         TvPlaylistPanel,
         {
