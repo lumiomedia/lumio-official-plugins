@@ -1,6 +1,7 @@
 'use client'
 
 import { isPluginDesktopHost, launchPluginProgram, type PluginText } from '@/lib/plugin-sdk'
+import { getTwitchClientId } from './twitch-app-credentials'
 import { helixUrl } from './twitch-client'
 import {
   clearTwitchSession,
@@ -87,18 +88,42 @@ export async function openTwitchUrl(url: string): Promise<void> {
   return openTwitchVerificationUrl(url)
 }
 
-async function startTwitchDeviceFlow(): Promise<DeviceStartResponse> {
-  const response = await fetch('/api/plugins/twitch/device/start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  })
-  const payload = (await response.json().catch(() => ({}))) as Partial<DeviceStartResponse> & { error?: string }
+/**
+ * Twitchs OAuth-endpoints, anropade DIREKT från webviewn.
+ *
+ * Tidigare gick de via appens Rust-proxy (`/api/plugins/twitch/device/*`), som
+ * bar Lumios egna nycklar. Den vägen kunde aldrig fungera på Android —
+ * `android_bootstrap.rs` satte client_id till None — och den lade dessutom
+ * alla användare i samma kvothink. Twitch skickar
+ * `access-control-allow-origin: *` på båda endpoints, så webviewn får ringa
+ * själv (verifierat med preflight 2026-09-25).
+ */
+export const DEVICE_URL = 'https://id.twitch.tv/oauth2/device'
+export const TOKEN_URL = 'https://id.twitch.tv/oauth2/token'
+const SCOPES = 'user:read:follows'
+
+function requireClientId(): string {
+  const clientId = getTwitchClientId()
+  if (!clientId) {
+    throw new TwitchAuthError({
+      en: 'Register your own Twitch application first, then paste its Client ID above.',
+      sv: 'Registrera din egen Twitch-applikation först och klistra in dess Client ID ovan.',
+    })
+  }
+  return clientId
+}
+
+export async function requestDeviceCode(): Promise<DeviceStartResponse> {
+  const clientId = requireClientId()
+  const body = new URLSearchParams({ client_id: clientId, scopes: SCOPES })
+  const response = await fetch(`${DEVICE_URL}?${body.toString()}`, { method: 'POST' })
+  const payload = (await response.json().catch(() => ({}))) as Partial<DeviceStartResponse> & { message?: string }
 
   if (!response.ok || !payload.device_code || !payload.user_code || !payload.verification_uri) {
-    if (payload.error) throw new Error(payload.error)
+    if (payload.message) throw new Error(payload.message)
     throw new TwitchAuthError({
-      en: 'Could not start Twitch login.',
-      sv: 'Kunde inte starta Twitch-inloggningen.',
+      en: 'Could not start Twitch login. Check that the Client ID is correct.',
+      sv: 'Kunde inte starta Twitch-inloggningen. Kontrollera att Client ID stämmer.',
     })
   }
 
@@ -111,24 +136,44 @@ async function startTwitchDeviceFlow(): Promise<DeviceStartResponse> {
   }
 }
 
-async function pollTwitchDevice(deviceCode: string): Promise<DevicePollResult> {
-  const response = await fetch('/api/plugins/twitch/device/poll', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ deviceCode }),
+/**
+ * Växlar en enhetskod mot tokens.
+ *
+ * `authorization_pending` är INTE ett fel — det är svaret så länge användaren
+ * inte hunnit godkänna på twitch.tv, och loopen ska fortsätta fråga. Läses det
+ * som ett fel avbryts inloggningen i samma sekund den startar.
+ */
+export async function exchangeDeviceCode(deviceCode: string): Promise<DevicePollResult> {
+  const clientId = requireClientId()
+  const body = new URLSearchParams({
+    client_id: clientId,
+    scopes: SCOPES,
+    device_code: deviceCode,
+    grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
   })
-  const payload = (await response.json().catch(() => ({}))) as Partial<DevicePollResult>
+  const response = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  })
+  const payload = (await response.json().catch(() => ({}))) as {
+    access_token?: string
+    refresh_token?: string
+    expires_in?: number
+    message?: string
+    status?: number
+  }
 
-  if (payload.ok && payload.accessToken && payload.refreshToken && typeof payload.expiresAt === 'number') {
+  if (response.ok && payload.access_token && payload.refresh_token) {
     return {
       ok: true,
-      accessToken: payload.accessToken,
-      refreshToken: payload.refreshToken,
-      expiresAt: payload.expiresAt,
+      accessToken: payload.access_token,
+      refreshToken: payload.refresh_token,
+      expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
     }
   }
 
-  return { ok: false, status: payload.status, error: payload.error }
+  return { ok: false, status: payload.status ?? response.status, error: payload.message }
 }
 
 async function resolveTwitchAccount(accessToken: string): Promise<TwitchHelixUser> {
@@ -159,7 +204,7 @@ async function resolveTwitchAccount(accessToken: string): Promise<TwitchHelixUse
  * completed the flow on twitch.tv and the local session has been stored.
  */
 export async function connectTwitch(onCode: (userCode: string, verificationUri: string) => void): Promise<void> {
-  const start = await startTwitchDeviceFlow()
+  const start = await requestDeviceCode()
   onCode(start.user_code, start.verification_uri)
 
   const deadline = Date.now() + start.expires_in * 1000
@@ -168,7 +213,7 @@ export async function connectTwitch(onCode: (userCode: string, verificationUri: 
   while (Date.now() < deadline) {
     await sleep(intervalMs)
 
-    const poll = await pollTwitchDevice(start.device_code)
+    const poll = await exchangeDeviceCode(start.device_code)
     if (poll.ok && poll.accessToken && poll.refreshToken && typeof poll.expiresAt === 'number') {
       const user = await resolveTwitchAccount(poll.accessToken)
       setTwitchSession({
@@ -217,26 +262,38 @@ export async function refreshTwitchSession(): Promise<TwitchSession | null> {
   const session = getTwitchSession()
   if (!session?.refreshToken) return null
 
-  const response = await fetch('/api/plugins/twitch/device/refresh', {
+  const clientId = getTwitchClientId()
+  if (!clientId) return null
+  const body = new URLSearchParams({
+    client_id: clientId,
+    grant_type: 'refresh_token',
+    refresh_token: session.refreshToken,
+  })
+  const response = await fetch(TOKEN_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken: session.refreshToken }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
   }).catch(() => null)
   if (!response) return null
-  const payload = (await response.json().catch(() => ({}))) as Partial<DevicePollResult>
+  const payload = (await response.json().catch(() => ({}))) as {
+    access_token?: string
+    refresh_token?: string
+    expires_in?: number
+    status?: number
+  }
 
-  if (payload.ok && payload.accessToken && typeof payload.expiresAt === 'number') {
+  if (response.ok && payload.access_token) {
     const next: TwitchSession = {
       ...session,
-      accessToken: payload.accessToken,
-      refreshToken: payload.refreshToken || session.refreshToken,
-      expiresAt: payload.expiresAt,
+      accessToken: payload.access_token,
+      refreshToken: payload.refresh_token || session.refreshToken,
+      expiresAt: Date.now() + (payload.expires_in ?? 3600) * 1000,
     }
     setTwitchSession(next)
     return next
   }
 
-  if (typeof payload.status === 'number' && payload.status >= 400 && payload.status < 500) {
+  if (response.status >= 400 && response.status < 500) {
     // Refresh token revoked/expired — the account genuinely needs a new
     // device-flow login, so stop advertising a session that cannot work.
     clearTwitchSession()

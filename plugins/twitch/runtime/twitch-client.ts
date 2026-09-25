@@ -7,13 +7,17 @@ import type {
   TwitchFollowedChannel,
   TwitchUser,
 } from './twitch-types'
+import { getTwitchClientId } from './twitch-app-credentials'
+import { getTwitchSession } from './twitch-storage'
+
+export const HELIX_BASE = 'https://api.twitch.tv/helix'
 
 export function helixUrl(path: string, params: Record<string, string | number | undefined> = {}): string {
   const qs = Object.entries(params)
     .filter(([, v]) => v !== undefined && v !== '')
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
     .join('&')
-  return `/api/plugins/twitch/helix/${path}${qs ? `?${qs}` : ''}`
+  return `${HELIX_BASE}/${path}${qs ? `?${qs}` : ''}`
 }
 
 export function thumb(url: string, w: number, h: number): string {
@@ -23,9 +27,39 @@ export function thumb(url: string, w: number, h: number): string {
   return url.replace(/%?\{width\}/g, String(w)).replace(/%?\{height\}/g, String(h))
 }
 
+/**
+ * Twitch är inte uppsatt än: antingen saknas användarens appregistrering
+ * eller så är ingen inloggad. Egen typ, så gränssnittet kan visa vägen vidare
+ * i stället för ett rått "401" — testarna såg bara en tom sida.
+ */
+export class TwitchNotConfiguredError extends Error {
+  readonly reason: 'no-client-id' | 'signed-out'
+
+  constructor(reason: 'no-client-id' | 'signed-out') {
+    super(reason === 'no-client-id' ? 'No Twitch app registered.' : 'Not signed in to Twitch.')
+    this.name = 'TwitchNotConfiguredError'
+    this.reason = reason
+  }
+}
+
+/**
+ * Headrarna varje Helix-anrop bär.
+ *
+ * Det finns inget app-token att falla tillbaka på: utan appens Rust-proxy
+ * finns ingen client_secret, och alltså ingen client_credentials-flöde. Varje
+ * anrop bärs av användarens eget token — vilket också är poängen, eftersom
+ * Twitch då nycklar kvoten på användaren i stället för på en delad nyckel.
+ */
+function helixHeaders(userToken?: string): Record<string, string> {
+  const clientId = getTwitchClientId()
+  if (!clientId) throw new TwitchNotConfiguredError('no-client-id')
+  const token = userToken ?? getTwitchSession()?.accessToken ?? ''
+  if (!token) throw new TwitchNotConfiguredError('signed-out')
+  return { 'Client-Id': clientId, Authorization: `Bearer ${token}` }
+}
+
 async function helixGet<T>(url: string, userToken?: string): Promise<{ data: T[]; cursor: string | null }> {
-  const headers: Record<string, string> = {}
-  if (userToken) headers['x-twitch-user-token'] = userToken
+  const headers = helixHeaders(userToken)
   const res = await fetch(url, { headers })
   if (!res.ok) {
     // Include the status and (truncated) response body so auth/scope failures
@@ -96,7 +130,7 @@ export async function getUsersByIds(ids: string[]): Promise<TwitchUser[]> {
   // `GET /users` takes repeated `id` params (max 100), which the record-based
   // `helixUrl` can't express — build the query string directly.
   const qs = ids.slice(0, 100).map((id) => `id=${encodeURIComponent(id)}`).join('&')
-  const { data } = await helixGet<TwitchUser>(`/api/plugins/twitch/helix/users?${qs}`)
+  const { data } = await helixGet<TwitchUser>(`${HELIX_BASE}/users?${qs}`)
   return data
 }
 export async function getStreamsByLogins(logins: string[]): Promise<TwitchStream[]> {
@@ -105,7 +139,7 @@ export async function getStreamsByLogins(logins: string[]): Promise<TwitchStream
   // record-based `helixUrl` can't express — build the query string directly.
   // Only currently-live channels come back.
   const qs = logins.slice(0, 100).map((login) => `user_login=${encodeURIComponent(login)}`).join('&')
-  const { data } = await helixGet<TwitchStream>(`/api/plugins/twitch/helix/streams?${qs}`)
+  const { data } = await helixGet<TwitchStream>(`${HELIX_BASE}/streams?${qs}`)
   return data
 }
 export async function getChannelVideos(userId: string) {

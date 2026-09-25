@@ -27,6 +27,7 @@ import {
 } from './twitch-client'
 import { TwitchPlayerModal } from './twitch-player'
 import { ensureFreshTwitchSession, openTwitchUrl } from './twitch-auth'
+import { hasTwitchClientId } from './twitch-app-credentials'
 import {
   getTwitchHeroEnabled,
   getTwitchHomeCategory,
@@ -143,6 +144,16 @@ const TEXT = {
   openOnTwitch: { en: 'Open on Twitch', sv: 'Öppna på Twitch' },
   backToChannel: { en: 'Back', sv: 'Tillbaka' },
   backToApp: { en: 'Back', sv: 'Tillbaka' },
+  setupTitle: { en: 'Twitch is not set up yet', sv: 'Twitch är inte uppsatt än' },
+  setupBody: {
+    en: 'Twitch needs your own application registration. Open Settings → Twitch, follow the five steps there, and paste your Client ID.',
+    sv: 'Twitch behöver din egen applikationsregistrering. Öppna Inställningar → Twitch, följ de fem stegen där och klistra in ditt Client ID.',
+  },
+  setupSignInTitle: { en: 'Sign in to Twitch', sv: 'Logga in på Twitch' },
+  setupSignInBody: {
+    en: 'Your application is registered. Open Settings → Twitch and press Connect Twitch to finish signing in.',
+    sv: 'Din applikation är registrerad. Öppna Inställningar → Twitch och tryck Anslut Twitch för att logga in.',
+  },
 } as const
 
 type TextKey = keyof typeof TEXT
@@ -895,7 +906,50 @@ export function TwitchPageFrame({ children }: { children: ReactNode }) {
   const paddingTop = tv
     ? 'calc(64px * var(--tv-base-scale, 1) * 0.8 * var(--tv-menu-scale, 1) + 12px)'
     : desktopWide ? 40 : 0
-  return <div data-twitch-page-frame="" style={paddingTop ? { paddingTop } : undefined}>{children}</div>
+  return (
+    <div data-twitch-page-frame="" style={paddingTop ? { paddingTop } : undefined}>
+      <TwitchSetupGate>{children}</TwitchSetupGate>
+    </div>
+  )
+}
+
+/**
+ * Inget att visa förrän Twitch är uppsatt.
+ *
+ * Utan den här vakten föll varje sida tillbaka på ett rått 401 från Twitch och
+ * ritade en tom yta — det var exakt vad testarna rapporterade som "Twitch no
+ * working", utan något i gränssnittet som sa vad som saknades eller vart man
+ * skulle gå. Vakten sitter i sidramen så att alla Twitch-vyer ärver den.
+ */
+function TwitchSetupGate({ children }: { children: ReactNode }) {
+  const text = useTwitchText()
+  const [ready, setReady] = useState(() => hasTwitchClientId() && isTwitchSessionValid())
+  useEffect(() => {
+    const sync = () => setReady(hasTwitchClientId() && isTwitchSessionValid())
+    sync()
+    const stopPlugin = onTwitchPluginChanged(sync)
+    const stopAuth = onAuthCapabilitiesChanged(sync)
+    return () => { stopPlugin(); stopAuth() }
+  }, [])
+
+  if (ready) return <>{children}</>
+
+  const missingApp = !hasTwitchClientId()
+  return (
+    <div
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: '0.75em', minHeight: '40vh', padding: '0 2rem', textAlign: 'center',
+      }}
+    >
+      <div style={{ fontSize: 'var(--st-h2)', fontWeight: 600, color: 'var(--tk-text, #f8fafc)' }}>
+        {missingApp ? text('setupTitle') : text('setupSignInTitle')}
+      </div>
+      <p style={{ margin: 0, maxWidth: '34em', fontSize: 'var(--st-small)', lineHeight: 1.55, color: 'var(--tk-text-mute, #94a3b8)' }}>
+        {missingApp ? text('setupBody') : text('setupSignInBody')}
+      </p>
+    </div>
+  )
 }
 
 export function TwitchBrowsePage({ pageId, onNavigate }: BrowsePageProps) {

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- Twitch now uses your own application registration. Settings → Twitch walks you through the five steps on dev.twitch.tv and takes the Client ID; no secret is asked for or stored, since the app is registered as a public client.
+- Twitch works on Android and Android TV for the first time. The plugin calls Twitch directly instead of going through the app, which never carried Twitch credentials on those platforms.
+- Each user now has their own Twitch rate limit instead of sharing one, so heavy use by one person can no longer throttle everyone.
+- A Twitch page that is not set up yet explains what is missing and where to go, instead of showing an empty area.
+- Settings text follows the TV text-size scale instead of fixed pixel sizes, which rendered at roughly half the intended size on TV.
+
 ## 1.3.7
 
 - The Live, Categories, Following and Search pages start below the app's menu button and clock, on desktop and TV, so the title and the sort control no longer sit under them.
