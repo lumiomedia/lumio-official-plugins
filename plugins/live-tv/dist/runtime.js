@@ -1638,7 +1638,6 @@
   var TRANSPARENT_PROPERTIES, NATIVE_SURFACES_ATTRIBUTE, holds, restore;
   var init_transparent_webview = __esm({
     "lib/transparent-webview.ts"() {
-      "use strict";
       TRANSPARENT_PROPERTIES = [
         { property: "background-color", value: "transparent" },
         { property: "background-image", value: "none" }
@@ -199348,6 +199347,30 @@ ${cue.text}`).join("\n\n")}
     return value.toLocaleString(locale);
   }
 
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/display-metrics.ts
+  function readDisplayMetrics() {
+    if (typeof window === "undefined") return null;
+    const visual = window.visualViewport;
+    const sceneScale = typeof document === "undefined" ? "" : getComputedStyle(document.documentElement).getPropertyValue("--tv-scene-scale").trim();
+    return {
+      layoutWidth: window.innerWidth,
+      layoutHeight: window.innerHeight,
+      visualWidth: visual ? visual.width : null,
+      visualHeight: visual ? visual.height : null,
+      visualScale: visual ? visual.scale : null,
+      dpr: window.devicePixelRatio,
+      sceneScale: sceneScale || "1"
+    };
+  }
+  function formatDisplayMetrics(m2) {
+    const visual = m2.visualWidth !== null && m2.visualHeight !== null ? `synlig ${Math.round(m2.visualWidth)}\xD7${Math.round(m2.visualHeight)} @${m2.visualScale}` : "synlig saknas";
+    return `${m2.layoutWidth}\xD7${m2.layoutHeight} \xB7 ${visual} \xB7 dpr ${m2.dpr} \xB7 scen ${m2.sceneScale}`;
+  }
+  function isViewportMismatch(m2) {
+    if (m2.visualWidth === null || m2.visualHeight === null) return false;
+    return Math.abs(m2.layoutWidth - m2.visualWidth) > 1 || Math.abs(m2.layoutHeight - m2.visualHeight) > 1;
+  }
+
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
@@ -201685,7 +201708,38 @@ ${cue.text}`).join("\n\n")}
       ] }),
       /* @__PURE__ */ jsx(EpgStatusCard, {}),
       /* @__PURE__ */ jsx(VodLibraryCard, {}),
+      /* @__PURE__ */ jsx(DisplayMetricsCard, {}),
       s.curationList ? /* @__PURE__ */ jsx(CategoriesDialog, { list: s.curationList.list, mode: s.curationList.mode, onClose: () => s.setCurationList(null) }) : null
+    ] });
+  }
+  function DisplayMetricsCard() {
+    const [metrics2, setMetrics] = useState(() => readDisplayMetrics());
+    useEffect(() => {
+      const sync2 = () => setMetrics(readDisplayMetrics());
+      sync2();
+      window.addEventListener("resize", sync2);
+      return () => window.removeEventListener("resize", sync2);
+    }, []);
+    if (!metrics2) return null;
+    const mismatch = isViewportMismatch(metrics2);
+    return /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsx(LtSection, { eyebrow: "Display" }),
+      /* @__PURE__ */ jsxs(LtCard, { gap: 8, testId: "display-metrics-card", children: [
+        /* @__PURE__ */ jsx(
+          "code",
+          {
+            style: {
+              display: "block",
+              fontFamily: UI.mono,
+              fontSize: "var(--st-small, 12.5px)",
+              color: UI.soft,
+              wordBreak: "break-word"
+            },
+            children: formatDisplayMetrics(metrics2)
+          }
+        ),
+        /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: "var(--st-small, 12.5px)", lineHeight: 1.5, color: mismatch ? UI.danger : UI.muted }, children: mismatch ? "The page is drawn against a larger area than the screen shows \u2014 that is the zoom fault." : "Layout and visible area match, which is what a healthy screen looks like." })
+      ] })
     ] });
   }
 

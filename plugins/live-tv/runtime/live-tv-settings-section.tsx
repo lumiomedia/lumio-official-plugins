@@ -10,7 +10,8 @@ import {
   useLang,
   useTvMode,
 } from '@/lib/plugin-sdk'
-import { LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useToast } from './settings-ui'
+import { LtCard, LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useToast } from './settings-ui'
+import { formatDisplayMetrics, isViewportMismatch, readDisplayMetrics } from './display-metrics'
 import {
   applyM3uUrls,
   clearLiveTvMemoryCache,
@@ -328,9 +329,56 @@ function DesktopPage() {
 
       <VodLibraryCard />
 
+      <DisplayMetricsCard />
+
       {s.curationList ? (
         <CategoriesDialog list={s.curationList.list} mode={s.curationList.mode} onClose={() => s.setCurationList(null)} />
       ) : null}
+    </div>
+  )
+}
+
+/**
+ * Skärmens mått, synliga för den som felsöker en TV på distans.
+ *
+ * "Channels are zoomed in and there is a white box issue" (Fire TV Cube,
+ * 2026-09-25) går inte att se i skrivbordets TV-läge och inte i
+ * Television_4K-emulatorn — där är layouten och den synliga ytan identiska
+ * (mätt: 960×540 mot 960×540 @1). Felet måste alltså mätas på enheten som
+ * visar det, och testaren når inte alltid debug-loggen. Raden står därför
+ * här, att fotografera.
+ *
+ * Skiljer sig de två måtten ritas sidan mot en större yta än den som visas —
+ * då är det den fällan, och kortet säger det rakt ut.
+ */
+function DisplayMetricsCard() {
+  const [metrics, setMetrics] = useState(() => readDisplayMetrics())
+  useEffect(() => {
+    const sync = () => setMetrics(readDisplayMetrics())
+    sync()
+    window.addEventListener('resize', sync)
+    return () => window.removeEventListener('resize', sync)
+  }, [])
+  if (!metrics) return null
+  const mismatch = isViewportMismatch(metrics)
+  return (
+    <div>
+      <LtSection eyebrow="Display" />
+      <LtCard gap={8} testId="display-metrics-card">
+        <code
+          style={{
+            display: 'block', fontFamily: UI.mono, fontSize: 'var(--st-small, 12.5px)',
+            color: UI.soft, wordBreak: 'break-word',
+          }}
+        >
+          {formatDisplayMetrics(metrics)}
+        </code>
+        <p style={{ margin: 0, fontSize: 'var(--st-small, 12.5px)', lineHeight: 1.5, color: mismatch ? UI.danger : UI.muted }}>
+          {mismatch
+            ? 'The page is drawn against a larger area than the screen shows — that is the zoom fault.'
+            : 'Layout and visible area match, which is what a healthy screen looks like.'}
+        </p>
+      </LtCard>
     </div>
   )
 }
