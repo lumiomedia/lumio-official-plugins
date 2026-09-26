@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.5
+
+- The Display line now separates the two widths that decide whether the TV scene is healthy, because the single number it reported before could not tell the two apart. On a 960 px screen both a correctly scaled page (1920 design pixels shrunk by 0.5) and a broken one (laid out at 960 with no shrink) measured 960, so a broken screen could be reported as healthy. The line now reads the layout width before the transform and the real scale out of the transform matrix, and a transform that scales by 1 is no longer counted as scaling.
+- The plugin reports its own version again. The version in the runtime had been left at 0.11.0 since the 0.11.1 release, so the app was told the wrong version for four releases.
+
 ## 0.11.4
 
 - The Display line now reports whether the TV scene is actually scaling the page, not just whether its scale was computed. Both the shrink and the black backdrop hang on the same CSS rule, so when it is not applied the page is laid out at full design size inside a smaller box: everything looks enlarged and the area around it stays unpainted. That matches a Fire TV Cube report whose viewport measured perfectly healthy.
