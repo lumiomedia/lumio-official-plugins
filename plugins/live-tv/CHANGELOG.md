@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.6
+
+- The Display line now reports heights as well as widths. The reported symptom is a white area below the picture, and that is a height: a line that only measured widths could show the same number in both the healthy and the broken case. It now reads `kropp 1920x1080 to 960x540 x0.5` on a healthy screen, and `kropp 1920x1080 to 1920x1080 xotransformerad` when the page is laid out at full design size inside a smaller box, which is a body twice as tall as the box it sits in and readable straight off a photo.
+
 ## 0.11.5
 
 - The Display line now separates the two widths that decide whether the TV scene is healthy, because the single number it reported before could not tell the two apart. On a 960 px screen both a correctly scaled page (1920 design pixels shrunk by 0.5) and a broken one (laid out at 960 with no shrink) measured 960, so a broken screen could be reported as healthy. The line now reads the layout width before the transform and the real scale out of the transform matrix, and a transform that scales by 1 is no longer counted as scaling.

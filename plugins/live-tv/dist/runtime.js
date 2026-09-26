@@ -199366,6 +199366,8 @@ ${cue.text}`).join("\n\n")}
       bodyTransform: body ? getComputedStyle(body).transform || "none" : "none",
       bodyWidth: body ? Math.round(body.getBoundingClientRect().width) : 0,
       bodyLayoutWidth: body ? body.offsetWidth : 0,
+      bodyHeight: body ? Math.round(body.getBoundingClientRect().height) : 0,
+      bodyLayoutHeight: body ? body.offsetHeight : 0,
       bodyScale: body ? matrixScale(getComputedStyle(body).transform) : null
     };
   }
@@ -199378,7 +199380,7 @@ ${cue.text}`).join("\n\n")}
   function formatDisplayMetrics(m2) {
     const visual = m2.visualWidth !== null && m2.visualHeight !== null ? `synlig ${Math.round(m2.visualWidth)}\xD7${Math.round(m2.visualHeight)} @${m2.visualScale}` : "synlig saknas";
     const scen = `scen ${m2.sceneScale}${m2.sceneOn ? "" : " AV"}`;
-    const kropp = `kropp ${m2.bodyLayoutWidth}\u2192${m2.bodyWidth} \xD7${m2.bodyScale ?? "otransformerad"}`;
+    const kropp = `kropp ${m2.bodyLayoutWidth}\xD7${m2.bodyLayoutHeight}\u2192${m2.bodyWidth}\xD7${m2.bodyHeight} \xD7${m2.bodyScale ?? "otransformerad"}`;
     return `${m2.layoutWidth}\xD7${m2.layoutHeight} \xB7 ${visual} \xB7 dpr ${m2.dpr} \xB7 ${scen} \xB7 ${kropp}`;
   }
   function isSceneNotApplied(m2) {
@@ -211830,7 +211832,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.11.5"
+      version: "0.11.6"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -211844,7 +211846,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.11.5",
+    version: "0.11.6",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

@@ -12,13 +12,30 @@ const frisk = {
   visualWidth: 960, visualHeight: 540, visualScale: 1,
   dpr: 4, sceneScale: '0.5', sceneOn: true,
   bodyTransform: 'matrix(0.5, 0, 0, 0.5, 0, 0)',
-  bodyWidth: 960, bodyLayoutWidth: 1920, bodyScale: 0.5,
+  bodyWidth: 960, bodyLayoutWidth: 1920,
+  bodyHeight: 540, bodyLayoutHeight: 1080,
+  bodyScale: 0.5,
 }
 
 describe('formatDisplayMetrics', () => {
-  it('visar layout, synlig yta, pixelkvot, scenskala och kroppens två bredder', () => {
+  it('visar layout, synlig yta, pixelkvot, scenskala och kroppens mått i båda axlarna', () => {
     expect(formatDisplayMetrics(frisk))
-      .toBe('960×540 · synlig 960×540 @1 · dpr 4 · scen 0.5 · kropp 1920→960 ×0.5')
+      .toBe('960×540 · synlig 960×540 @1 · dpr 4 · scen 0.5 · kropp 1920×1080→960×540 ×0.5')
+  })
+
+  /**
+   * Vita boxen är en HÖJD, och bara höjden visar den.
+   *
+   * Tillämpas inte scenen ligger kroppen kvar i designmått inuti en halv så
+   * stor ruta. Bredderna säger `1920→1920`, men det är `1080` mot fönstrets
+   * `540` som gör den omålade ytan under sidan läsbar på ett foto.
+   */
+  it('visar den omålade ytan: en kropp dubbelt så hög som fönstret', () => {
+    expect(formatDisplayMetrics({
+      ...frisk,
+      bodyTransform: 'none', bodyScale: null,
+      bodyWidth: 1920, bodyHeight: 1080,
+    })).toBe('960×540 · synlig 960×540 @1 · dpr 4 · scen 0.5 · kropp 1920×1080→1920×1080 ×otransformerad')
   })
 
   it('klarar en webview utan visualViewport', () => {
@@ -26,8 +43,10 @@ describe('formatDisplayMetrics', () => {
       layoutWidth: 1920, layoutHeight: 1080,
       visualWidth: null, visualHeight: null, visualScale: null,
       dpr: 1, sceneScale: '1', sceneOn: false, bodyTransform: 'none',
-      bodyWidth: 1920, bodyLayoutWidth: 1920, bodyScale: null,
-    })).toBe('1920×1080 · synlig saknas · dpr 1 · scen 1 AV · kropp 1920→1920 ×otransformerad')
+      bodyWidth: 1920, bodyLayoutWidth: 1920,
+      bodyHeight: 1080, bodyLayoutHeight: 1080,
+      bodyScale: null,
+    })).toBe('1920×1080 · synlig saknas · dpr 1 · scen 1 AV · kropp 1920×1080→1920×1080 ×otransformerad')
   })
 
   it('avrundar bråkdelar, så raden går att läsa på ett foto', () => {

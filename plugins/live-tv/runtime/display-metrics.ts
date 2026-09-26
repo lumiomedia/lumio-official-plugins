@@ -45,6 +45,17 @@ export interface DisplayMetrics {
    */
   bodyLayoutWidth: number
   /**
+   * Kroppens höjd EFTER transform, mot `layoutHeight`.
+   *
+   * Bredderna ensamma missar rapportens andra hälft. "There is a white box
+   * issue" är en VERTIKAL yta: slutar den målade kroppen före fönstrets
+   * underkant står resten omålad, och inget av bredd-talen säger det. På en
+   * frisk 960×540-scen är det här talet 540, alltså exakt `layoutHeight`.
+   */
+  bodyHeight: number
+  /** Kroppens höjd FÖRE transform (`offsetHeight`), scenens designhöjd 1080. */
+  bodyLayoutHeight: number
+  /**
    * Skalan ur bodys transformmatris, inte ur variabeln.
    *
    * `matrix(a, …)` där a är den vågräta skalan. 1 betyder att transformen
@@ -74,6 +85,8 @@ export function readDisplayMetrics(): DisplayMetrics | null {
     bodyTransform: body ? (getComputedStyle(body).transform || 'none') : 'none',
     bodyWidth: body ? Math.round(body.getBoundingClientRect().width) : 0,
     bodyLayoutWidth: body ? body.offsetWidth : 0,
+    bodyHeight: body ? Math.round(body.getBoundingClientRect().height) : 0,
+    bodyLayoutHeight: body ? body.offsetHeight : 0,
     bodyScale: body ? matrixScale(getComputedStyle(body).transform) : null,
   }
 }
@@ -97,9 +110,16 @@ export function formatDisplayMetrics(m: DisplayMetrics): string {
     ? `synlig ${Math.round(m.visualWidth)}×${Math.round(m.visualHeight)} @${m.visualScale}`
     : 'synlig saknas'
   const scen = `scen ${m.sceneScale}${m.sceneOn ? '' : ' AV'}`
-  // Layoutbredden FÖRE transform står först: den är den som avgör, och den
+  // Layoutmåtten FÖRE transform står först: de är de som avgör, och den
   // skalade bredden ensam kunde inte skilja friskt från trasigt.
-  const kropp = `kropp ${m.bodyLayoutWidth}→${m.bodyWidth} ×${m.bodyScale ?? 'otransformerad'}`
+  //
+  // BÅDA axlarna, inte bara bredden: rapportens "white box" är en vertikal
+  // yta, och den syns först när kroppens målade höjd kan jämföras med
+  // fönstrets. Friskt på 960×540 blir `1920×1080→960×540`, alltså en höjd
+  // som möter fönstrets — trasigt blir `1920×1080→1920×1080`, en kropp som
+  // är dubbelt så hög som rutan den ligger i.
+  const kropp = `kropp ${m.bodyLayoutWidth}×${m.bodyLayoutHeight}`
+    + `→${m.bodyWidth}×${m.bodyHeight} ×${m.bodyScale ?? 'otransformerad'}`
   return `${m.layoutWidth}×${m.layoutHeight} · ${visual} · dpr ${m.dpr} · ${scen} · ${kropp}`
 }
 
