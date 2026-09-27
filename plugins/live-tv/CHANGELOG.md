@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.7
+
+- Films & series no longer show every title twice. A playlist whose Xtream login had been added again left its old source behind with the same titles, and "all playlists" counted both. With a single playlist the library now asks for that playlist's source only, and a title that still arrives twice is shown once.
+- Picking a category in the library changes the grid again. The repeated titles gave two cards the same key, which made the grid keep its old cards when the category changed.
+
 ## 0.11.6
 
 - The Display line now reports heights as well as widths. The reported symptom is a white area below the picture, and that is a height: a line that only measured widths could show the same number in both the healthy and the broken case. It now reads `kropp 1920x1080 to 960x540 x0.5` on a healthy screen, and `kropp 1920x1080 to 1920x1080 xotransformerad` when the page is laid out at full design size inside a smaller box, which is a body twice as tall as the box it sits in and readable straight off a photo.

@@ -9,6 +9,7 @@ import {
   type VodItem,
   type VodSort,
 } from '../vod-client'
+import { getLiveTvLists, onLiveTvListsChanged } from '../live-tv-data'
 
 /** En sida i affischrutnätet. 120 titlar ≈ 17 rader à 7 — långt under taket. */
 const PAGE_SIZE = 120
@@ -19,6 +20,52 @@ const PAGE_SIZE = 120
  * skulle bara belasta värden medan den arbetar.
  */
 const IMPORT_POLL_MS = 2_000
+
+/**
+ * Källan som "alla spellistor" faktiskt ska fråga.
+ *
+ * `null` till värden betyder VARJE källa i VOD-indexet — även en källa ingen
+ * lista längre pekar på. En Xtream-inloggning som lagts till på nytt lämnade
+ * sin gamla källa kvar i indexet med exakt samma 16 000 titlar, och raden
+ * "Film & serier" visade då varje titel två gånger (och dubbla antalet).
+ * Med en enda spellista frågar vi därför den listans källa direkt; först med
+ * flera listor faller vi tillbaka på värdens "alla".
+ */
+export function resolveVodSource(source: string | null): string | null {
+  if (source) return source
+  const sources = new Set(
+    getLiveTvLists()
+      .filter((list) => list.kind !== 'custom' && list.source)
+      .map((list) => list.source as string),
+  )
+  return sources.size === 1 ? [...sources][0] : null
+}
+
+function useVodSource(source: string | null): string | null {
+  const [resolved, setResolved] = useState(() => resolveVodSource(source))
+  useEffect(() => {
+    setResolved(resolveVodSource(source))
+    return onLiveTvListsChanged(() => setResolved(resolveVodSource(source)))
+  }, [source])
+  return resolved
+}
+
+/**
+ * En titel per nyckel.
+ *
+ * Två källor från samma panel (samma inloggning tillagd två gånger) ger samma
+ * `key` två gånger. Korten nycklas på `key`, och React lämnar då kvar GAMLA
+ * kort när listan byts — rutnätet såg ut att strunta i kategorivalet. Titeln
+ * nås ändå bara via nyckeln, så den andra kopian går inte att skilja ut.
+ */
+export function uniqueByKey(items: VodItem[]): VodItem[] {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    if (seen.has(item.key)) return false
+    seen.add(item.key)
+    return true
+  })
+}
 
 export interface VodLibraryCategories {
   categories: VodCategory[]
@@ -38,7 +85,8 @@ export interface VodLibraryCategories {
  * Kategorier och antal går att visa långt innan någon titel behövs — det är
  * hela vänsterkolumnen — så den här hämtas för sig och rutnätet för sig.
  */
-export function useVodCategories(source: string | null): VodLibraryCategories {
+export function useVodCategories(requested: string | null): VodLibraryCategories {
+  const source = useVodSource(requested)
   const [state, setState] = useState<Omit<VodLibraryCategories, 'reload'>>({
     categories: [],
     total: 0,
@@ -128,7 +176,8 @@ export function useVodPage(opts: {
   enabled?: boolean
   limit?: number
 }): VodLibraryPage {
-  const { source, categoryId, kind, q, sort, enabled = true, limit = PAGE_SIZE } = opts
+  const { categoryId, kind, q, sort, enabled = true, limit = PAGE_SIZE } = opts
+  const source = useVodSource(opts.source)
   const [items, setItems] = useState<VodItem[]>([])
   const [total, setTotal] = useState(0)
   const [known, setKnown] = useState(false)
@@ -174,7 +223,7 @@ export function useVodPage(opts: {
           signal: controller.signal,
         })
         if (cancelled) return
-        setItems(page.items)
+        setItems(uniqueByKey(page.items))
         setTotal(page.total)
         setKnown(page.known)
         setError(null)

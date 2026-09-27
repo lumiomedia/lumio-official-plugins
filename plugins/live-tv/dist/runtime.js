@@ -1638,7 +1638,6 @@
   var TRANSPARENT_PROPERTIES, NATIVE_SURFACES_ATTRIBUTE, holds, restore;
   var init_transparent_webview = __esm({
     "lib/transparent-webview.ts"() {
-      "use strict";
       TRANSPARENT_PROPERTIES = [
         { property: "background-color", value: "transparent" },
         { property: "background-image", value: "none" }
@@ -2936,6 +2935,7 @@
           themeSystemDesc: "Switches with the macOS appearance setting.",
           accentColor: "Accent color",
           profileSharedTab: "Shared settings",
+          settingsTabSync: "Sync",
           plTabBehavior: "Behavior",
           settingsPageLang: "Language",
           bugEyebrow: "Report a bug",
@@ -2984,6 +2984,7 @@
           advLegalP1: "Lumio is an independent media client. It is not affiliated with, endorsed by, sponsored by, or in any way associated with any streaming service, plugin or addon author, or trademark holder referenced inside the app. All names, logos and brand references are property of their respective owners and are used only for compatibility and identification.",
           advLegalP2: "Lumio itself does not host, distribute, or index any media. All streams come from third-party sources, addons, or services that you configure yourself. You are responsible for what you choose to play and for complying with the laws of your jurisdiction.",
           advAboutPlatform: "Platform",
+          advAboutDisplay: "Display",
           subStyleEyebrow: "Subtitle style",
           subStyleTitle: "How subtitles look",
           subStyleHint: "Size, position and colors during playback \u2014 live preview below.",
@@ -3872,7 +3873,9 @@
           tvQuickUnmarkWatched: "Mark as unwatched",
           tvQuickMoreInfo: "More info",
           tvQuickShowAllRow: "Show all in this row",
+          tvQuickFollow: "Follow",
           tvQuickUnfollow: "Unfollow",
+          tvQuickTrailer: "Trailer",
           tvMenuChip: "Menu",
           tvMenuSearch: "Search",
           tvSearchFilters: "Search & filters",
@@ -4214,6 +4217,28 @@
           advTransferSent: "Sent. The other device is restarting with your settings.",
           advTransferFailed: "Could not send",
           advTransferWrongCode: "Wrong code. Attempts left: {n}.",
+          syncWebdavTitle: "Cloud sync (WebDAV)",
+          syncWebdavHint: "Sync your settings and watch progress to a WebDAV server you already have \u2014 Nextcloud, ownCloud, Koofr, a NAS, or anything else that speaks WebDAV. Nothing is hosted by Lumio; you bring your own storage.",
+          syncWebdavServerLabel: "Server address",
+          syncWebdavServerPlaceholder: "https://your-server/remote.php/dav/files/you/lumio/",
+          syncWebdavUsernameLabel: "Username",
+          syncWebdavPasswordLabel: "Password",
+          syncWebdavPasswordHint: "For Nextcloud or ownCloud, use an app password instead of your account password.",
+          syncWebdavProviderCustom: "Other server",
+          syncWebdavServerPlaceholderNextcloud: "https://your-server/remote.php/dav/files/you/",
+          syncWebdavHintKoofr: "Sign in with your Koofr email and an app password from Preferences \u2192 Password \u2192 App passwords. Your account password will not work.",
+          syncWebdavHintNextcloud: "The address is under Settings \u2192 Personal \u2192 Security \u2192 WebDAV. Use your username and an app password, not your account password.",
+          syncWebdavHintCustom: "Enter the WebDAV address your provider gives you, including the full path to the folder the file should live in.",
+          syncWebdavErrorAuth: "The server rejected the username or password. For most providers you need an app password, not your account password.",
+          syncWebdavErrorPath: "The server could not find that address. Check the path \u2014 the folder has to exist already.",
+          syncWebdavConnect: "Connect",
+          syncWebdavConnecting: "Connecting\u2026",
+          syncWebdavConnected: "Connected to {url}",
+          syncWebdavDisconnect: "Disconnect",
+          syncWebdavSyncNow: "Sync now",
+          syncWebdavSyncing: "Syncing\u2026",
+          syncWebdavSynced: "Synced just now",
+          syncWebdavError: "Could not reach the server. Check the address, username and password.",
           appStarting: "Starting Lumio",
           // Splashens statusrad, tre steg i samma slot (se BootSpinner).
           splashStatusLibrary: "Loading your library",
@@ -5772,6 +5797,7 @@
           themeSystemDesc: "Byter med macOS utseende-inst\xE4llning.",
           accentColor: "Accentf\xE4rg",
           profileSharedTab: "Delade inst\xE4llningar",
+          settingsTabSync: "Synk",
           plTabBehavior: "Beteende",
           settingsPageLang: "Spr\xE5k",
           bugEyebrow: "Rapportera en bugg",
@@ -5820,6 +5846,7 @@
           advLegalP1: "Lumio \xE4r en frist\xE5ende mediaklient. Den \xE4r inte ansluten till, godk\xE4nd av, sponsrad av eller p\xE5 n\xE5got s\xE4tt associerad med n\xE5gon streamingtj\xE4nst, plugin- eller addon-utvecklare eller varum\xE4rkesinnehavare som refereras i appen. Alla namn, logotyper och varum\xE4rken tillh\xF6r sina respektive \xE4gare och anv\xE4nds enbart f\xF6r kompatibilitet och identifiering.",
           advLegalP2: "Lumio varken lagrar, distribuerar eller indexerar n\xE5got medieinneh\xE5ll. Alla str\xF6mmar kommer fr\xE5n tredjepartsk\xE4llor, addons eller tj\xE4nster som du sj\xE4lv konfigurerar. Du ansvarar f\xF6r vad du v\xE4ljer att spela upp och f\xF6r att f\xF6lja lagarna i din jurisdiktion.",
           advAboutPlatform: "Plattform",
+          advAboutDisplay: "Sk\xE4rm",
           subStyleEyebrow: "Undertextstil",
           subStyleTitle: "Hur undertexter ser ut",
           subStyleHint: "Storlek, position och f\xE4rger under uppspelning \u2014 f\xF6rhandsvisning nedan.",
@@ -6700,7 +6727,9 @@
           tvQuickUnmarkWatched: "Markera som osedd",
           tvQuickMoreInfo: "Mer info",
           tvQuickShowAllRow: "Visa alla i raden",
+          tvQuickFollow: "F\xF6lj",
           tvQuickUnfollow: "Sluta f\xF6lja",
+          tvQuickTrailer: "Trailer",
           tvMenuChip: "Menu",
           tvMenuSearch: "S\xF6k",
           tvSearchFilters: "S\xF6k & filter",
@@ -7035,6 +7064,28 @@
           advTransferSent: "Skickat. Den andra enheten startar om med dina inst\xE4llningar.",
           advTransferFailed: "Kunde inte skicka",
           advTransferWrongCode: "Fel kod. F\xF6rs\xF6k kvar: {n}.",
+          syncWebdavTitle: "Molnsynk (WebDAV)",
+          syncWebdavHint: "Synka dina inst\xE4llningar och tittade-status till en WebDAV-server du redan har \u2014 Nextcloud, ownCloud, Koofr, en NAS eller n\xE5got annat som pratar WebDAV. Inget hostas av Lumio; du tar med din egen lagring.",
+          syncWebdavServerLabel: "Serveradress",
+          syncWebdavServerPlaceholder: "https://din-server/remote.php/dav/files/du/lumio/",
+          syncWebdavUsernameLabel: "Anv\xE4ndarnamn",
+          syncWebdavPasswordLabel: "L\xF6senord",
+          syncWebdavPasswordHint: "Anv\xE4nd ett app-l\xF6senord i st\xE4llet f\xF6r kontol\xF6senordet om servern \xE4r Nextcloud eller ownCloud.",
+          syncWebdavProviderCustom: "Annan server",
+          syncWebdavServerPlaceholderNextcloud: "https://din-server/remote.php/dav/files/du/",
+          syncWebdavHintKoofr: "Logga in med din Koofr-e-post och ett app-l\xF6senord fr\xE5n Inst\xE4llningar \u2192 L\xF6senord \u2192 App-l\xF6senord. Kontol\xF6senordet fungerar inte.",
+          syncWebdavHintNextcloud: "Adressen hittar du under Inst\xE4llningar \u2192 Personligt \u2192 S\xE4kerhet \u2192 WebDAV. Anv\xE4nd ditt anv\xE4ndarnamn och ett app-l\xF6senord, inte kontol\xF6senordet.",
+          syncWebdavHintCustom: "Skriv in WebDAV-adressen du f\xE5tt av din leverant\xF6r, med hela s\xF6kv\xE4gen till mappen filen ska ligga i.",
+          syncWebdavErrorAuth: "Servern avvisade anv\xE4ndarnamnet eller l\xF6senordet. Hos de flesta leverant\xF6rer kr\xE4vs ett app-l\xF6senord, inte kontol\xF6senordet.",
+          syncWebdavErrorPath: "Servern hittade inte adressen. Kontrollera s\xF6kv\xE4gen \u2014 mappen m\xE5ste finnas sedan tidigare.",
+          syncWebdavConnect: "Anslut",
+          syncWebdavConnecting: "Ansluter\u2026",
+          syncWebdavConnected: "Ansluten till {url}",
+          syncWebdavDisconnect: "Koppla fr\xE5n",
+          syncWebdavSyncNow: "Synka nu",
+          syncWebdavSyncing: "Synkar\u2026",
+          syncWebdavSynced: "Synkad nyss",
+          syncWebdavError: "Kunde inte n\xE5 servern. Kontrollera adress, anv\xE4ndarnamn och l\xF6senord.",
           appStarting: "Startar Lumio",
           splashStatusLibrary: "Laddar ditt bibliotek",
           splashStatusAlmost: "N\xE4stan klart",
@@ -180360,26 +180411,6 @@
     }
   });
 
-  // lib/spoilers.ts
-  function spoilerMaskFor(s, opts) {
-    if (!s.enabled) return CLEAR;
-    if (opts.watched) return CLEAR;
-    if (s.keepNextVisible && opts.isNextUp) return CLEAR;
-    return {
-      thumb: s.blurThumbnails,
-      title: s.blurTitles,
-      desc: s.blurDescriptions
-    };
-  }
-  var CLEAR, SPOILER_THUMB_CLASS, SPOILER_TEXT_CLASS;
-  var init_spoilers = __esm({
-    "lib/spoilers.ts"() {
-      CLEAR = { thumb: false, title: false, desc: false };
-      SPOILER_THUMB_CLASS = "blur-[14px] scale-[1.04] transition-[filter,transform] duration-200 group-hover:blur-[0px] group-hover:scale-100 group-focus-within:blur-[0px] group-focus-within:scale-100";
-      SPOILER_TEXT_CLASS = "blur-[5px] select-none transition-[filter] duration-200 group-hover:blur-[0px] group-focus-within:blur-[0px]";
-    }
-  });
-
   // components/player/player-episodes-panel.tsx
   function PlayerEpisodesPanel({
     seasonNumber,
@@ -180392,7 +180423,6 @@
     const { t } = useLang();
     const isTv = useTvMode();
     const currentRef = useRef(null);
-    const spoiler = getSpoilerMaskSettings();
     useEffect(() => {
       if (!isTv) return;
       let frames = 0;
@@ -180449,10 +180479,6 @@
               ...isTv ? { "data-scroll": "" } : {},
               children: episodes.length === 0 ? /* @__PURE__ */ jsx("p", { className: "px-4 py-6 text-sm text-slate-500", children: t("noEpisodes") }) : episodes.map((episode) => {
                 const isCurrent = episode.number === currentEpisode;
-                const mask2 = spoilerMaskFor(spoiler, {
-                  watched: Boolean(episode.watched) || isCurrent,
-                  isNextUp: false
-                });
                 const isNext = currentEpisode != null && episode.number === currentEpisode + 1;
                 const etikett = isCurrent ? t("epPlaying") : isNext ? t("epNext") : null;
                 const delar = [
@@ -180477,7 +180503,7 @@
                         }
                       ),
                       /* @__PURE__ */ jsxs("span", { className: "min-w-0 flex-1", children: [
-                        /* @__PURE__ */ jsx("span", { className: `block truncate text-sm ${isCurrent ? "text-white" : "text-slate-200"} ${mask2.title ? SPOILER_TEXT_CLASS : ""}`, children: episode.title }),
+                        /* @__PURE__ */ jsx("span", { className: `block truncate text-sm ${isCurrent ? "text-white" : "text-slate-200"}`, children: episode.title }),
                         meta ? /* @__PURE__ */ jsx("span", { className: "mt-0.5 block text-[11px] tabular-nums text-slate-500", children: meta }) : null
                       ] }),
                       etikett ? /* @__PURE__ */ jsx("span", { className: "flex-none rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400", children: etikett }) : null
@@ -180498,8 +180524,6 @@
       init_react_shim();
       init_i18n();
       init_tv_focus_shim();
-      init_spoiler_settings();
-      init_spoilers();
       init_jsx_runtime_shim();
     }
   });
@@ -180676,7 +180700,7 @@
                       "aria-current": isCurrent ? "true" : void 0,
                       disabled: !stream.directUrl,
                       onClick: () => onSelect(stream),
-                      className: `flex min-h-[44px] w-full flex-col gap-1 border-b border-white/[0.04] px-4 py-2.5 text-left transition disabled:opacity-50 ${isCurrent ? "bg-accent-400/[0.22]" : "hover:bg-white/5"}`,
+                      className: `flex min-h-[44px] w-full flex-none flex-col gap-1 border-b border-white/[0.04] px-4 py-2.5 text-left transition disabled:opacity-50 ${isCurrent ? "bg-accent-400/[0.22]" : "hover:bg-white/5"}`,
                       children: [
                         /* @__PURE__ */ jsxs("span", { className: "flex w-full items-center gap-2", children: [
                           /* @__PURE__ */ jsx("span", { className: `min-w-0 flex-1 truncate text-sm font-semibold ${isCurrent ? "text-white" : "text-slate-200"}`, children: stream.name }),
@@ -191664,6 +191688,26 @@ ${cue.text}`).join("\n\n")}
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/full-cast-page-shim.ts"() {
       init_react_shim();
       init_full_cast_page();
+    }
+  });
+
+  // lib/spoilers.ts
+  function spoilerMaskFor(s, opts) {
+    if (!s.enabled) return CLEAR;
+    if (opts.watched) return CLEAR;
+    if (s.keepNextVisible && opts.isNextUp) return CLEAR;
+    return {
+      thumb: s.blurThumbnails,
+      title: s.blurTitles,
+      desc: s.blurDescriptions
+    };
+  }
+  var CLEAR, SPOILER_THUMB_CLASS, SPOILER_TEXT_CLASS;
+  var init_spoilers = __esm({
+    "lib/spoilers.ts"() {
+      CLEAR = { thumb: false, title: false, desc: false };
+      SPOILER_THUMB_CLASS = "blur-[14px] scale-[1.04] transition-[filter,transform] duration-200 group-hover:blur-[0px] group-hover:scale-100 group-focus-within:blur-[0px] group-focus-within:scale-100";
+      SPOILER_TEXT_CLASS = "blur-[5px] select-none transition-[filter] duration-200 group-hover:blur-[0px] group-focus-within:blur-[0px]";
     }
   });
 
@@ -204534,9 +204578,34 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
+  init_live_tv_data();
   var PAGE_SIZE = 120;
   var IMPORT_POLL_MS = 2e3;
-  function useVodCategories(source) {
+  function resolveVodSource(source) {
+    if (source) return source;
+    const sources = new Set(
+      getLiveTvLists().filter((list) => list.kind !== "custom" && list.source).map((list) => list.source)
+    );
+    return sources.size === 1 ? [...sources][0] : null;
+  }
+  function useVodSource(source) {
+    const [resolved, setResolved] = useState(() => resolveVodSource(source));
+    useEffect(() => {
+      setResolved(resolveVodSource(source));
+      return onLiveTvListsChanged(() => setResolved(resolveVodSource(source)));
+    }, [source]);
+    return resolved;
+  }
+  function uniqueByKey(items) {
+    const seen = /* @__PURE__ */ new Set();
+    return items.filter((item) => {
+      if (seen.has(item.key)) return false;
+      seen.add(item.key);
+      return true;
+    });
+  }
+  function useVodCategories(requested) {
+    const source = useVodSource(requested);
     const [state, setState] = useState({
       categories: [],
       total: 0,
@@ -204578,7 +204647,8 @@ ${cue.text}`).join("\n\n")}
     return useMemo(() => ({ ...state, reload }), [state, reload]);
   }
   function useVodPage(opts) {
-    const { source, categoryId, kind, q, sort, enabled = true, limit = PAGE_SIZE } = opts;
+    const { categoryId, kind, q, sort, enabled = true, limit = PAGE_SIZE } = opts;
+    const source = useVodSource(opts.source);
     const [items, setItems] = useState([]);
     const [total, setTotal] = useState(0);
     const [known, setKnown] = useState(false);
@@ -204618,7 +204688,7 @@ ${cue.text}`).join("\n\n")}
             signal: controller.signal
           });
           if (cancelled) return;
-          setItems(page.items);
+          setItems(uniqueByKey(page.items));
           setTotal(page.total);
           setKnown(page.known);
           setError(null);
@@ -211832,7 +211902,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.11.6"
+      version: "0.11.7"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -211846,7 +211916,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.11.6",
+    version: "0.11.7",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
