@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.9
+
+- The back arrow at the top of the side rail is now shown on TV as well, so there is always a visible way out of Live TV. It is a focus station like the other rail items and leaves Live TV directly.
+
 ## 0.11.8
 
 - Uses much less memory and responds faster to the remote. The plugin no longer carries its own copy of a large UI library it barely used, which made it several megabytes smaller and removed dozens of duplicate keyboard and focus listeners that ran on every key press.

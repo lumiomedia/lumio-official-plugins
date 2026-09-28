@@ -634,13 +634,12 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
           {narrow ? null : (
             <div data-live-tv-rail-badge="" aria-hidden="true" style={{ width: dp(44), height: dp(44), borderRadius: dp(12), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }}>L</div>
           )}
-          {/* Bakåt med pekaren: SAMMA `back()` som tangenten, så alla fyra
-              nivåerna (lager → spelare → vy → requestBrowseBack) nås med musen.
-              Aldrig på TV — där finns fjärrens egen Bakåt-knapp, och TV-designen
-              är godkänd som den är. */}
           {/* Bakåt-pilen i ikonraden lämnar Live TV DIREKT (Jerry 2026-09-17) —
-              inte ett steg i taget genom lager/vy/hubb som tangenten gör. */}
-          {isTv ? null : railItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: requestBrowseBack })}
+              inte ett steg i taget genom lager/vy/hubb som tangenten gör.
+              Även på TV (Jerry 2026-09-28): fjärrens Bakåt finns, men många
+              hittade inte ut ur Live TV utan en synlig väg tillbaka. Samma
+              station som övriga radposter, så den nås med pilarna. */}
+          {railItem({ key: 'back', label: tt('railBack'), icon: <Icons.ChevronLeft />, run: requestBrowseBack })}
           {rail.map((item) => railItem(item))}
           {railItem({ key: 'settings', label: tt('railSettings'), icon: <Icons.Gear /> }, { marginTop: 'auto' })}
         </nav>

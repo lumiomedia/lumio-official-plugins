@@ -213,10 +213,10 @@ describe('Bakåt med pekare', () => {
     expect(screen.getByTestId('rail-back')).toBeTruthy()
   })
 
-  it('Bakåt-posten saknas i TV-läge', () => {
+  it('Bakåt-posten finns även i TV-läge (Jerry 2026-09-28: många hittade inte ut)', () => {
     __setTvModeForTests(true)
     mount()
-    expect(screen.queryByTestId('rail-back')).toBeNull()
+    expect(screen.getByTestId('rail-back')).toBeTruthy()
   })
 
   /**
