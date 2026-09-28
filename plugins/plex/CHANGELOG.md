@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.32
+
+- Uses much less memory and responds faster to the remote. The plugin no longer carries its own copy of a large UI library it barely used, which made it several megabytes smaller and removed dozens of duplicate keyboard and focus listeners that ran on every key press.
+- Genre tags on library cards look the same but are simpler to draw.
+
 ## 1.0.31
 
 - Library provider: a full or delta scan feeds the core index, and playback resolves through the server.

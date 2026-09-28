@@ -5,7 +5,7 @@
     "en": "Twitch",
     "sv": "Twitch"
   },
-  "version": "1.4.0",
+  "version": "1.4.1",
   "minAppVersion": "0.1.603",
   "description": {
     "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",

@@ -12,7 +12,7 @@
         "en": "Plex",
         "sv": "Plex"
       },
-      "version": "1.0.31",
+      "version": "1.0.32",
       "description": {
         "en": "Browse and play media from your Plex Media Server.",
         "sv": "Bläddra i och spela upp media från din Plex Media Server."
@@ -34,7 +34,7 @@
         "en": "Jellyfin",
         "sv": "Jellyfin"
       },
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": {
         "en": "Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.",
         "sv": "Indexera din Jellyfin-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
@@ -56,7 +56,7 @@
         "en": "Live TV",
         "sv": "Live TV"
       },
-      "version": "0.11.7",
+      "version": "0.11.8",
       "minAppVersion": "0.1.600",
       "description": {
         "en": "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
@@ -78,7 +78,7 @@
         "en": "HomeKit",
         "sv": "HomeKit"
       },
-      "version": "0.2.5",
+      "version": "0.2.6",
       "description": {
         "en": "Connect Lumio playback events to HomeKit scenes and automations.",
         "sv": "Koppla Lumios uppspelningshändelser till HomeKit-scener och automationer."
@@ -99,7 +99,7 @@
         "en": "Trakt",
         "sv": "Trakt"
       },
-      "version": "0.2.5",
+      "version": "0.2.6",
       "description": {
         "en": "Sync watched history, watchlists and collection data with Trakt.",
         "sv": "Synka visningshistorik, listor och samlingsdata med Trakt."
@@ -120,7 +120,7 @@
         "en": "Twitch",
         "sv": "Twitch"
       },
-      "version": "1.4.0",
+      "version": "1.4.1",
       "description": {
         "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",
         "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch."

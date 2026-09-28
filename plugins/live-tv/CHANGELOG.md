@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.8
+
+- Uses much less memory and responds faster to the remote. The plugin no longer carries its own copy of a large UI library it barely used, which made it several megabytes smaller and removed dozens of duplicate keyboard and focus listeners that ran on every key press.
+- The page selector under the channel grid is lighter and looks the same as before.
+
 ## 0.11.7
 
 - Films & series no longer show every title twice. A playlist whose Xtream login had been added again left its old source behind with the same titles, and "all playlists" counted both. With a single playlist the library now asks for that playlist's source only, and a title that still arrives twice is shown once.
