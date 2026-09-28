@@ -63,6 +63,15 @@ export function PillBtn({ children, onClick, disabled, type, title, style }: {
   return createElement('button', { type: type ?? 'button', onClick, disabled, title, style }, children)
 }
 
+// Appens lätta paginering (components/ui/simple-pagination.tsx). Stubben
+// ritar bara sidknapparna, så ett test kan klicka på en sida.
+export function SimplePagination({ total, page, onChange }: { total: number; page: number; onChange: (page: number) => void }) {
+  return createElement('nav', { 'aria-label': 'pagination' },
+    Array.from({ length: total }, (_, i) => createElement('button', {
+      key: i + 1, type: 'button', 'aria-current': i + 1 === page ? 'page' : undefined, onClick: () => onChange(i + 1),
+    }, String(i + 1))))
+}
+
 export function Card({ children, style }: { children?: ReactNode; padding?: number | string; style?: Record<string, unknown> }) {
   return createElement('div', { style }, children)
 }

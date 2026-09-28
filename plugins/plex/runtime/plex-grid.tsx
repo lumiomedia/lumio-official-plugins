@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Chip } from '@heroui/react'
 import {
   applyFilters,
   createLanguageOption,
@@ -141,18 +140,16 @@ function PlexPosterCard({
         {item.genres.length > 0 && (
           <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-1 p-2">
             {item.genres.slice(0, 2).map((genre) => (
-              <Chip
+              // En vanlig span, inte HeroUI:s Chip: den enda HeroUI-importen i
+              // pluginet drog in hela HeroUI + framer-motion + react-aria i
+              // bunten. Samma mått som Chip size="sm" (h-5, rundad, inline-flex).
+              <span
                 key={genre}
-                size="sm"
-                variant="flat"
                 onClick={onGenreSelect ? (e) => { e.stopPropagation(); onGenreSelect(genre) } : undefined}
-                classNames={{
-                  base: `bg-white/8 border border-white/12 h-5 backdrop-blur-sm ${onGenreSelect ? 'cursor-pointer hover:bg-white/15 hover:border-accent-400/40 transition-colors' : ''}`,
-                  content: 'text-[10px] text-slate-300 px-1.5',
-                }}
+                className={`inline-flex h-5 max-w-full items-center rounded-full bg-white/8 border border-white/12 backdrop-blur-sm ${onGenreSelect ? 'cursor-pointer hover:bg-white/15 hover:border-accent-400/40 transition-colors' : ''}`}
               >
-                {genre}
-              </Chip>
+                <span className="truncate px-1.5 text-[10px] text-slate-300">{genre}</span>
+              </span>
             ))}
           </div>
         )}

@@ -1,6 +1,8 @@
 'use client'
 
-import { Pagination } from '@heroui/react'
+// Appens egen paginering, inte HeroUI:s: HeroUI-importen drog in hela
+// HeroUI + framer-motion + react-aria i buntaren (se appens simple-pagination.tsx).
+import { SimplePagination } from '@/lib/plugin-sdk'
 
 interface ResultsPaginationProps {
   currentPage: number
@@ -13,7 +15,7 @@ export function ResultsPagination({ currentPage, totalPages, onPageChange }: Res
 
   return (
     <div className="flex items-center justify-center rounded-[1.75rem] border border-white/10 bg-slate-950/60 px-4 py-4">
-      <Pagination
+      <SimplePagination
         total={totalPages}
         page={currentPage}
         onChange={onPageChange}
