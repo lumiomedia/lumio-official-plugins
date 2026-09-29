@@ -14,6 +14,8 @@ import { MIcons } from './mobile-icons'
 import { MobileHeader } from './mobile-header'
 import { MobileChips } from './mobile-chips'
 import { MobileChannelRow } from './mobile-channel-row'
+import { useVodPage } from '../../hooks/useVodLibrary'
+import { getVodMode } from '../../vod-data'
 
 /**
  * Sök på telefon (fas 3, Task 10, handoffen §7). Systemets tangentbord i
@@ -36,12 +38,16 @@ export function TvSearchPhone({ model, nav }: TvViewProps) {
   const { hits: programmes, loading: programmesLoading } = useProgrammeSearch(query, day.start, day.end)
   const hints = useMemo(() => suggestions(query, model.channels, programmes.map((p) => p.programme.title)), [query, model.channels, programmes])
   const noProgrammeLabel = model.epgLoading ? tt('loadingGuide') : tt('noProgramme')
+  // Film & serier ur VOD-indexet (Jerry 2026-09-29: footerns sök nådde inte VOD).
+  const vodHidden = getVodMode(model.activePlaylistId) === 'off'
+  const vod = useVodPage({ source: model.activeSource, q: query.trim() || undefined, sort: 'az', enabled: !vodHidden && query.trim() !== '', limit: 20 })
+  const vodItems = vodHidden || query.trim() === '' ? [] : vod.items
 
   // Handoffen §7, sista punkten: tomma träfflistor ska inte visas som två
   // rubriker ("Channels 0 hits" / "Programmes today 0 hits") på en annars tom
   // yta — då visas ETT centrerat meddelande i stället. Så fort NÅGON av
   // grupperna har ett svar (träffar eller pågår) ritas de vanliga sektionerna.
-  const isEmptyResult = query !== '' && channels.length === 0 && programmes.length === 0 && !programmesLoading
+  const isEmptyResult = query !== '' && channels.length === 0 && programmes.length === 0 && !programmesLoading && vodItems.length === 0 && !(vod.loading && !vodHidden)
 
   return (
     <div data-testid="search-phone" data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM }}>
@@ -86,6 +92,32 @@ export function TvSearchPhone({ model, nav }: TvViewProps) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+          {vodItems.length > 0 ? (
+            <section data-testid="search-vod" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minHeight: 24 }}>
+                <span style={{ fontSize: 16, fontWeight: 600 }}>{tt('scopeVod')}</span>
+                <span style={{ fontSize: 13, color: MT.dim }}>{tt('hits', { count: vod.total })}</span>
+              </div>
+              {vodItems.map((item) => (
+                <div
+                  key={item.key}
+                  data-testid="search-vod-row"
+                  {...station(() => nav.go('title', { key: item.key }))}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 56, cursor: 'pointer' }}
+                >
+                  <div style={{ width: 36, height: 54, borderRadius: 6, background: MT.s10, overflow: 'hidden', flexShrink: 0 }}>
+                    {item.posterUrl ? <img src={item.posterUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, ...ellipsis }}>{item.title}</div>
+                    <div style={{ fontSize: 13, color: MT.dim, ...ellipsis }}>
+                      {[item.year, item.kind === 'series' ? tt('libraryKindSeries') : tt('libraryKindMovie')].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </section>
+          ) : null}
           <section data-testid="search-channels" style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minHeight: 24 }}>
               <span style={{ fontSize: 16, fontWeight: 600 }}>{tt('searchChannels')}</span>

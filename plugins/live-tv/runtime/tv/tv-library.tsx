@@ -125,6 +125,9 @@ function KindTag({ kind, label }: { kind: VodItem['kind']; label: string }) {
   )
 }
 
+/** "Alla": hela biblioteket utan kategori — förvalt (Jerry 2026-09-29). */
+const ALL_CATEGORY = '__all__'
+
 export function TvLibrary({ model, nav }: TvViewProps) {
   const { tt } = useTvText()
   /**
@@ -142,30 +145,40 @@ export function TvLibrary({ model, nav }: TvViewProps) {
 
   const cats = useVodCategories(source)
   const [sort, setSortState] = useState<VodSort>(() => getVodSort())
-  const [selected, setSelected] = useState<string | null>(() => getVodCategory(playlistId))
+  const [selected, setSelected] = useState<string | null>(() => getVodCategory(playlistId) ?? ALL_CATEGORY)
+  // Sök direkt i biblioteket (telefonen), inom vald kategori — Alla söker
+  // hela indexet. Fördröjd 250 ms så varje tangent inte blir ett anrop.
+  const [query, setQuery] = useState('')
+  const [q, setQ] = useState('')
+  useEffect(() => {
+    const timer = window.setTimeout(() => setQ(query.trim()), 250)
+    return () => window.clearTimeout(timer)
+  }, [query])
 
   // Vald kategori följer spellistan. Den som bytt panel har ett kategori-id
   // som inte finns i den nya, och rutnätet hade öppnat sig tomt — faller
   // tillbaka på den första kategorin panelen faktiskt har.
   const validSelected = useMemo(() => {
-    if (cats.categories.length === 0) return null
+    if (selected === ALL_CATEGORY || cats.categories.length === 0) return ALL_CATEGORY
     if (selected && cats.categories.some((c) => c.id === selected)) return selected
-    return cats.categories[0]?.id ?? null
+    return ALL_CATEGORY
   }, [cats.categories, selected])
 
   useEffect(() => {
-    setSelected(getVodCategory(playlistId))
+    setSelected(getVodCategory(playlistId) ?? ALL_CATEGORY)
   }, [playlistId])
 
   const active = cats.categories.find((c) => c.id === validSelected) ?? null
   const page = useVodPage({
     source,
-    categoryId: validSelected,
+    // Söken håller sig inom vald kategori; Alla söker hela indexet (Jerry
+    // 2026-09-29). Källan får vara null: det betyder alla spellistor.
+    categoryId: validSelected === ALL_CATEGORY ? null : validSelected,
+    q: q || undefined,
     sort,
-    // Utan kategori finns inget att hämta ännu — vänta in listan i stället
-    // för att be om hela biblioteket osorterat. Källan får däremot vara null:
-    // det betyder alla spellistor.
-    enabled: Boolean(validSelected),
+    // Vänta in kategorilistan (den säger om det finns ett bibliotek alls),
+    // men en sökning får gå direkt.
+    enabled: cats.categories.length > 0 || Boolean(q),
   })
 
   const chooseCategory = (id: string) => {
@@ -250,6 +263,37 @@ export function TvLibrary({ model, nav }: TvViewProps) {
     </div>
   )
 
+  /** "Alla"-posten: en chip på telefonen, en rad i TV:ns kolumn. */
+  const allChip = (chip: boolean) => {
+    const isActive = validSelected === ALL_CATEGORY
+    return (
+      <div
+        key="__all__"
+        data-testid="library-category-all"
+        data-active={isActive ? '' : undefined}
+        {...station(
+          () => chooseCategory(ALL_CATEGORY),
+          undefined,
+          isActive && !initInGrid ? { 'data-init': '' } : undefined,
+        )}
+        style={chip
+          ? {
+              height: dp(36), padding: `0 ${dp(16)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: dp(8),
+              flexShrink: 0, whiteSpace: 'nowrap', fontSize: dp(14), cursor: 'pointer',
+              background: isActive ? TV.accMix(18) : TV.s06, color: isActive ? TV.text : 'rgba(243,244,248,0.65)',
+            }
+          : {
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`,
+              marginBottom: dp(8), borderRadius: dp(10), fontSize: dp(isTv ? 18 : 15), cursor: 'pointer',
+              background: isActive ? TV.accMix(18) : 'transparent', color: isActive ? TV.text : 'rgba(243,244,248,0.65)',
+            }}
+      >
+        {tt('libraryAll')}
+        <span style={{ color: 'rgba(243,244,248,0.4)' }}>{cats.total}</span>
+      </div>
+    )
+  }
+
   const status = (
     <LibraryStatus
       cats={cats}
@@ -285,11 +329,29 @@ export function TvLibrary({ model, nav }: TvViewProps) {
           <div style={{ fontSize: dp(13), color: 'rgba(243,244,248,0.5)' }}>
             {tt('librarySub', { playlist: playlistName, count: cats.total })}
           </div>
+          {/* Sök direkt här — footerns sök når bara kanaler och tablån (Jerry 2026-09-29). */}
+          <input
+            data-testid="library-search-input"
+            type="text"
+            inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={tt('librarySearchPlaceholder')}
+            aria-label={tt('librarySearchPlaceholder')}
+            style={{
+              display: 'block', width: '100%', minHeight: 44, marginTop: dp(12), borderRadius: 14, background: MT.s10,
+              border: '1px solid transparent', padding: '0 14px', fontSize: 16, color: MT.text, caretColor: MT.acc,
+              outline: 'none', fontFamily: MT.font, boxSizing: 'border-box',
+            }}
+          />
         </div>
         <div
           data-row=""
           style={{ display: 'flex', gap: dp(8), overflowX: 'auto', padding: `${dp(14)}px ${dp(20)}px` }}
         >
+          {allChip(true)}
           {cats.categories.map((category) => {
             const isActive = category.id === validSelected
             return (
@@ -355,6 +417,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
         <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)', marginBottom: dp(16) }}>
           {tt('librarySub', { playlist: playlistName, count: cats.total })}
         </div>
+        {allChip(false)}
         {grouped.map((group) => (
           <div key={group.kind}>
             <div

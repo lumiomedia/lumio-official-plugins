@@ -90,11 +90,11 @@ describe('TvLibrary', () => {
     expect(screen.getByText('SERIES')).toBeTruthy()
   })
 
-  it('öppnar första kategorin och visar dess titlar', async () => {
+  it('öppnar Alla som förval och visar hela biblioteket', async () => {
     mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(1))
-    // Första kategorin i ordningen är MOVIE: HBO, som har en titel.
-    expect(cardTitles()[0]).toContain('Oppenheimer')
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(LIBRARY.length))
+    expect(screen.getByTestId('library-category-all').hasAttribute('data-active')).toBe(true)
+    expect(cardTitles().some((title) => title.includes('Oppenheimer'))).toBe(true)
   })
 
   it('byter kategori och hämtar om rutnätet', async () => {
@@ -131,12 +131,13 @@ describe('TvLibrary', () => {
     // Jerrys krav 2026-09-19: detaljerna ska ligga kvar i Live TV med
     // ikonraden synlig, inte navigera bort till appens detaljsida.
     const onNavigate = mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(1))
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(LIBRARY.length))
     const opened: unknown[] = []
     const handler = (event: Event) => opened.push((event as CustomEvent).detail)
     window.addEventListener('lumio-open-media-item', handler)
     try {
-      fireEvent.click(screen.getByTestId('library-card'))
+      // Alla är förval: klicka just Oppenheimer (vod:3), inte första kortet i ordningen.
+      fireEvent.click(screen.getAllByTestId('library-card').find((el) => el.textContent?.includes('Oppenheimer')) as HTMLElement)
     } finally {
       window.removeEventListener('lumio-open-media-item', handler)
     }
@@ -172,13 +173,13 @@ describe('TvLibrary', () => {
 
   it('sätter exakt en startpunkt för fjärren', async () => {
     mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(1))
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(LIBRARY.length))
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
 
   it('Sök-knappen öppnar söket med film och serier förvalt', async () => {
     const onNavigate = mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(1))
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(LIBRARY.length))
     fireEvent.click(screen.getByTestId('library-search'))
     expect(onNavigate).toHaveBeenCalledWith({
       pageId: 'live-tv-browse',

@@ -32716,6 +32716,8 @@ ${cue.text}`).join("\n\n")}
         librarySortAz: "A\u2013Z",
         librarySortRating: "Rating",
         librarySearch: "Search",
+        libraryAll: "All",
+        librarySearchPlaceholder: "Search films and series",
         libraryKindMovie: "Film",
         libraryKindSeries: "Series",
         librarySeasons: "{count} seasons",
@@ -33062,6 +33064,8 @@ ${cue.text}`).join("\n\n")}
         librarySortAz: "A\u2013\xD6",
         librarySortRating: "Betyg",
         librarySearch: "S\xF6k",
+        libraryAll: "Alla",
+        librarySearchPlaceholder: "S\xF6k filmer och serier",
         libraryKindMovie: "Film",
         libraryKindSeries: "Serie",
         librarySeasons: "{count} s\xE4songer",
@@ -47385,7 +47389,10 @@ ${cue.text}`).join("\n\n")}
     const { hits: programmes, loading: programmesLoading } = useProgrammeSearch(query, day.start, day.end);
     const hints = useMemo(() => suggestions(query, model.channels, programmes.map((p) => p.programme.title)), [query, model.channels, programmes]);
     const noProgrammeLabel = model.epgLoading ? tt("loadingGuide") : tt("noProgramme");
-    const isEmptyResult = query !== "" && channels.length === 0 && programmes.length === 0 && !programmesLoading;
+    const vodHidden = getVodMode(model.activePlaylistId) === "off";
+    const vod = useVodPage({ source: model.activeSource, q: query.trim() || void 0, sort: "az", enabled: !vodHidden && query.trim() !== "", limit: 20 });
+    const vodItems = vodHidden || query.trim() === "" ? [] : vod.items;
+    const isEmptyResult = query !== "" && channels.length === 0 && programmes.length === 0 && !programmesLoading && vodItems.length === 0 && !(vod.loading && !vodHidden);
     return /* @__PURE__ */ jsxs("div", { "data-testid": "search-phone", "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM }, children: [
       /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("tabSearch") }) }),
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 10, alignItems: "center", marginTop: 10 }, children: [
@@ -47427,6 +47434,28 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("span", { style: { color: MT.faint, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.MagnifyingGlass, { size: 32 }) }),
         /* @__PURE__ */ jsx("span", { style: { fontSize: 15, color: MT.muted }, children: tt("searchEmptyHint") })
       ] }) : isEmptyResult ? /* @__PURE__ */ jsx("div", { "data-testid": "search-no-results", style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24, fontSize: 15, color: MT.dim }, children: model.channelsLoading ? tt("loadingChannels") : tt("noResults") }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }, children: [
+        vodItems.length > 0 ? /* @__PURE__ */ jsxs("section", { "data-testid": "search-vod", style: { display: "flex", flexDirection: "column" }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 10, minHeight: 24 }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 16, fontWeight: 600 }, children: tt("scopeVod") }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim }, children: tt("hits", { count: vod.total }) })
+          ] }),
+          vodItems.map((item) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": "search-vod-row",
+              ...station(() => nav.go("title", { key: item.key })),
+              style: { display: "flex", alignItems: "center", gap: 12, minHeight: 56, cursor: "pointer" },
+              children: [
+                /* @__PURE__ */ jsx("div", { style: { width: 36, height: 54, borderRadius: 6, background: MT.s10, overflow: "hidden", flexShrink: 0 }, children: item.posterUrl ? /* @__PURE__ */ jsx("img", { src: item.posterUrl, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }) : null }),
+                /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis }, children: item.title }),
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis }, children: [item.year, item.kind === "series" ? tt("libraryKindSeries") : tt("libraryKindMovie")].filter(Boolean).join(" \xB7 ") })
+                ] })
+              ]
+            },
+            item.key
+          ))
+        ] }) : null,
         /* @__PURE__ */ jsxs("section", { "data-testid": "search-channels", style: { display: "flex", flexDirection: "column" }, children: [
           /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 10, minHeight: 24 }, children: [
             /* @__PURE__ */ jsx("span", { style: { fontSize: 16, fontWeight: 600 }, children: tt("searchChannels") }),
@@ -48043,6 +48072,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
+  var ALL_CATEGORY = "__all__";
   function TvLibrary({ model, nav }) {
     const { tt } = useTvText();
     const narrow = useNarrowSurface();
@@ -48053,24 +48083,32 @@ ${cue.text}`).join("\n\n")}
     const playlistName = model.activePlaylistName ?? tt("allPlaylists");
     const cats = useVodCategories(source);
     const [sort, setSortState] = useState(() => getVodSort());
-    const [selected, setSelected] = useState(() => getVodCategory(playlistId));
+    const [selected, setSelected] = useState(() => getVodCategory(playlistId) ?? ALL_CATEGORY);
+    const [query, setQuery] = useState("");
+    const [q, setQ] = useState("");
+    useEffect(() => {
+      const timer = window.setTimeout(() => setQ(query.trim()), 250);
+      return () => window.clearTimeout(timer);
+    }, [query]);
     const validSelected = useMemo(() => {
-      if (cats.categories.length === 0) return null;
+      if (selected === ALL_CATEGORY || cats.categories.length === 0) return ALL_CATEGORY;
       if (selected && cats.categories.some((c) => c.id === selected)) return selected;
-      return cats.categories[0]?.id ?? null;
+      return ALL_CATEGORY;
     }, [cats.categories, selected]);
     useEffect(() => {
-      setSelected(getVodCategory(playlistId));
+      setSelected(getVodCategory(playlistId) ?? ALL_CATEGORY);
     }, [playlistId]);
     const active2 = cats.categories.find((c) => c.id === validSelected) ?? null;
     const page = useVodPage({
       source,
-      categoryId: validSelected,
+      // Söken håller sig inom vald kategori; Alla söker hela indexet (Jerry
+      // 2026-09-29). Källan får vara null: det betyder alla spellistor.
+      categoryId: validSelected === ALL_CATEGORY ? null : validSelected,
+      q: q || void 0,
       sort,
-      // Utan kategori finns inget att hämta ännu — vänta in listan i stället
-      // för att be om hela biblioteket osorterat. Källan får däremot vara null:
-      // det betyder alla spellistor.
-      enabled: Boolean(validSelected)
+      // Vänta in kategorilistan (den säger om det finns ett bibliotek alls),
+      // men en sökning får gå direkt.
+      enabled: cats.categories.length > 0 || Boolean(q)
     });
     const chooseCategory = (id) => {
       setSelected(id);
@@ -48139,6 +48177,52 @@ ${cue.text}`).join("\n\n")}
       },
       item.key
     );
+    const allChip = (chip) => {
+      const isActive = validSelected === ALL_CATEGORY;
+      return /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": "library-category-all",
+          "data-active": isActive ? "" : void 0,
+          ...station(
+            () => chooseCategory(ALL_CATEGORY),
+            void 0,
+            isActive && !initInGrid ? { "data-init": "" } : void 0
+          ),
+          style: chip ? {
+            height: dp(36),
+            padding: `0 ${dp(16)}px`,
+            borderRadius: 999,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: dp(8),
+            flexShrink: 0,
+            whiteSpace: "nowrap",
+            fontSize: dp(14),
+            cursor: "pointer",
+            background: isActive ? TV2.accMix(18) : TV2.s06,
+            color: isActive ? TV2.text : "rgba(243,244,248,0.65)"
+          } : {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: dp(10),
+            padding: `${dp(10)}px ${dp(12)}px`,
+            marginBottom: dp(8),
+            borderRadius: dp(10),
+            fontSize: dp(isTv ? 18 : 15),
+            cursor: "pointer",
+            background: isActive ? TV2.accMix(18) : "transparent",
+            color: isActive ? TV2.text : "rgba(243,244,248,0.65)"
+          },
+          children: [
+            tt("libraryAll"),
+            /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.4)" }, children: cats.total })
+          ]
+        },
+        "__all__"
+      );
+    };
     const status = /* @__PURE__ */ jsx(
       LibraryStatus,
       {
@@ -48156,47 +48240,80 @@ ${cue.text}`).join("\n\n")}
       return /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "tv-library", style: { flex: 1, minHeight: 0, overflowY: "auto", paddingBottom: dp(24) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { padding: `calc(${MT.SAFE_TOP_GUARD} + ${dp(20)}px) ${dp(20)}px 0` }, children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(26), fontWeight: 600 }, children: tt("library") }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(13), color: "rgba(243,244,248,0.5)" }, children: tt("librarySub", { playlist: playlistName, count: cats.total }) })
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(13), color: "rgba(243,244,248,0.5)" }, children: tt("librarySub", { playlist: playlistName, count: cats.total }) }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              "data-testid": "library-search-input",
+              type: "text",
+              inputMode: "search",
+              enterKeyHint: "search",
+              autoComplete: "off",
+              value: query,
+              onChange: (event) => setQuery(event.target.value),
+              placeholder: tt("librarySearchPlaceholder"),
+              "aria-label": tt("librarySearchPlaceholder"),
+              style: {
+                display: "block",
+                width: "100%",
+                minHeight: 44,
+                marginTop: dp(12),
+                borderRadius: 14,
+                background: MT.s10,
+                border: "1px solid transparent",
+                padding: "0 14px",
+                fontSize: 16,
+                color: MT.text,
+                caretColor: MT.acc,
+                outline: "none",
+                fontFamily: MT.font,
+                boxSizing: "border-box"
+              }
+            }
+          )
         ] }),
-        /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsxs(
           "div",
           {
             "data-row": "",
             style: { display: "flex", gap: dp(8), overflowX: "auto", padding: `${dp(14)}px ${dp(20)}px` },
-            children: cats.categories.map((category) => {
-              const isActive = category.id === validSelected;
-              return /* @__PURE__ */ jsxs(
-                "div",
-                {
-                  "data-testid": "library-category",
-                  "data-active": isActive ? "" : void 0,
-                  ...station(
-                    () => chooseCategory(category.id),
-                    void 0,
-                    isActive && !initInGrid ? { "data-init": "" } : void 0
-                  ),
-                  style: {
-                    height: dp(36),
-                    padding: `0 ${dp(16)}px`,
-                    borderRadius: 999,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: dp(8),
-                    flexShrink: 0,
-                    whiteSpace: "nowrap",
-                    fontSize: dp(14),
-                    cursor: "pointer",
-                    background: isActive ? TV2.accMix(18) : TV2.s06,
-                    color: isActive ? TV2.text : "rgba(243,244,248,0.65)"
+            children: [
+              allChip(true),
+              cats.categories.map((category) => {
+                const isActive = category.id === validSelected;
+                return /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    "data-testid": "library-category",
+                    "data-active": isActive ? "" : void 0,
+                    ...station(
+                      () => chooseCategory(category.id),
+                      void 0,
+                      isActive && !initInGrid ? { "data-init": "" } : void 0
+                    ),
+                    style: {
+                      height: dp(36),
+                      padding: `0 ${dp(16)}px`,
+                      borderRadius: 999,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: dp(8),
+                      flexShrink: 0,
+                      whiteSpace: "nowrap",
+                      fontSize: dp(14),
+                      cursor: "pointer",
+                      background: isActive ? TV2.accMix(18) : TV2.s06,
+                      color: isActive ? TV2.text : "rgba(243,244,248,0.65)"
+                    },
+                    children: [
+                      category.name,
+                      /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.4)" }, children: category.count })
+                    ]
                   },
-                  children: [
-                    category.name,
-                    /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.4)" }, children: category.count })
-                  ]
-                },
-                `${category.kind}:${category.id}`
-              );
-            })
+                  `${category.kind}:${category.id}`
+                );
+              })
+            ]
           }
         ),
         /* @__PURE__ */ jsxs(
@@ -48232,6 +48349,7 @@ ${cue.text}`).join("\n\n")}
           children: [
             /* @__PURE__ */ jsx("div", { style: { fontSize: dp(isTv ? 36 : 30), fontWeight: 600 }, children: tt("library") }),
             /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)", marginBottom: dp(16) }, children: tt("librarySub", { playlist: playlistName, count: cats.total }) }),
+            allChip(false),
             grouped.map((group) => /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsx(
                 "div",
@@ -50508,7 +50626,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.11.9"
+      version: "0.12.0"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -50522,7 +50640,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.11.9",
+    version: "0.12.0",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

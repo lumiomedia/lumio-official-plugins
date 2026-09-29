@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0
+
+- Library on the phone: a search field right in the library that searches within the selected category (or the whole library on All), and an **All** chip first in the category row, selected by default. On TV, All sits at the top of the category column.
+- The phone's Search tab now finds films and series from the VOD library too, not only channels and programmes.
+
 ## 0.11.9
 
 - The back arrow at the top of the side rail is now shown on TV as well, so there is always a visible way out of Live TV. It is a focus station like the other rail items and leaves Live TV directly.
