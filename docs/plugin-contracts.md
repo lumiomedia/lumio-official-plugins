@@ -221,10 +221,12 @@ Two practical consequences worth knowing:
   registries. Anything you need the *host* to know must go through `ctx`
   registrations — never by calling a bundled host-module function and hoping
   the host sees it.
-- **Styling**: the app compiles the CSS. Stick to the utility classes used by
-  the shared settings/sidebar chrome (standard Tailwind utilities); exotic
-  one-off classes may not exist in the host build. Follow the card patterns in
-  existing plugins.
+- **Styling**: the app compiles the CSS. Plugin-specific layout is inline
+  styles with `TOKENS`; Tailwind classes only work when the host build happens
+  to contain them. Settings bodies are a stack of `Card`s built from the SDK
+  primitives (`Card`, `Checkbox`, `PillBtn`, `Select`, `Switch`,
+  `eyebrowStyle`, `inputStyle`), paging uses `SimplePagination`. No UI library
+  may be imported into the bundle — see runtime-boundary.md.
 
 ## 5. Strings and localization
 

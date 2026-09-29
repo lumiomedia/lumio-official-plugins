@@ -27,11 +27,13 @@ See [docs/runtime-boundary.md](./docs/runtime-boundary.md).
 
 ## Current official plugins
 
-- `youtube`
+- `live-tv`
 - `plex`
-- `live-tv` (metadata scaffold)
-- `homekit` (metadata scaffold)
-- `trakt` (metadata scaffold)
+- `jellyfin`
+- `trakt`
+- `homekit`
+- `twitch`
+- `youtube`
 
 ## For developers
 

@@ -32,6 +32,15 @@ being moved out of core. Those legacy exceptions are tracked in:
 That script acts as the debt register. New app-internal imports are forbidden,
 and old ones must be removed plugin by plugin until the allowlist is empty.
 
+## No UI library in the bundle
+
+`@heroui/react` (and any other component library) is forbidden in runtime
+code. esbuild cannot tree-shake the HeroUI barrel: one `Pagination` or `Chip`
+import shipped ~6 MB of HeroUI, framer-motion and react-aria per plugin, dozens
+of duplicate global key and focus listeners, and a 3 GB Google TV was killed for
+memory on the home screen. Use the SDK's primitives (`SimplePagination`, `Card`,
+`PillBtn`, `Checkbox`, `Select`, `Switch`, `TOKENS`, …) and inline styles.
+
 ## Rule of thumb
 
 If a runtime file needs something that feels generic, add it to the SDK.
