@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import {
+  TV_SCENE_BOX_ATTR,
+  TV_SCENE_NARROW_ATTR,
+  TV_SCENE_PHONE_ATTR,
   __resetForTests,
   __resetWatchlistForTests,
   __setTvModeForTests,
@@ -9,6 +12,7 @@ import {
 } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex, type VodItemFixture } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
+import { MT } from './mobile/mobile-tokens'
 
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => <div data-testid="channel-player" /> }))
 import { LiveTvTvShell } from './tv-shell'
@@ -93,7 +97,12 @@ function stubTitleApis(opts: { wiki?: unknown; episodes?: unknown[] } = {}) {
   }) as typeof fetch
 }
 
-afterEach(cleanup)
+let phoneBox: HTMLElement | null = null
+afterEach(() => {
+  cleanup()
+  phoneBox?.remove()
+  phoneBox = null
+})
 beforeEach(() => {
   __resetForTests()
   __resetWatchlistForTests?.()
@@ -116,6 +125,61 @@ function mount(item: VodItemFixture, opts: Parameters<typeof stubTitleApis>[0] =
   )
   return onNavigate
 }
+
+/**
+ * Telefonen: värdens låda bär `data-tv-scene-phone`, precis som
+ * `applyTvSceneBox` märker den under 640 css-px. TV-läget är AV — skalets
+ * `phone` är `usePhoneSurface() && !isTv`.
+ */
+function mountPhone(item: VodItemFixture, opts: Parameters<typeof stubTitleApis>[0] = {}) {
+  __setTvModeForTests(false)
+  seedLiveTvIndex({ vod: { [SOURCE]: [item] } })
+  stubTitleApis(opts)
+  const box = document.createElement('div')
+  box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+  box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+  box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
+  document.body.appendChild(box)
+  phoneBox = box
+  render(
+    <LiveTvTvShell pageId="live-tv-browse" params={{ view: 'title', key: item.key }} onNavigate={vi.fn()} onOpenDetails={() => {}} />,
+    { container: box },
+  )
+}
+
+describe('TvLibraryTitle på telefon', () => {
+  /* Jerry 2026-09-29: "Details på VOD filmer går ej att scrolla, bakgrunds-
+     bilden är utsträckt och details (playknapp, info etc) ligger under
+     viewporten." Scenlayouten — bakgrund i `cover` över HELA ytan och
+     infoblocket pressat mot botten — är ritad för en liggande duk. På en
+     stående telefon zoomas den liggande bilden, och knappraden hamnar bakom
+     den fasta flik-raden utan att något går att rulla. */
+  it('bakgrunden är ett 16:9-block i flödet, inte en utsträckt fond', async () => {
+    mountPhone(MOVIE)
+    await waitFor(() => expect(screen.getByTestId('title-backdrop')).toBeTruthy())
+    const backdrop = screen.getByTestId('title-backdrop')
+    expect(backdrop.style.position).toBe('relative')
+    expect(backdrop.style.paddingTop).toBe('56.25%')
+    expect(backdrop.style.backgroundImage).toContain('backdrop.jpg')
+  })
+
+  it('vyn rullar och lämnar luft för flik-raden, så Play inte hamnar under den', async () => {
+    mountPhone(MOVIE)
+    await waitFor(() => expect(screen.getByTestId('title-play')).toBeTruthy())
+    const view = screen.getByTestId('tv-library-title')
+    // Samma bottenluft som telefonens övriga vyer: flik-radens höjd +
+    // systemfältet + andrum. (happy-dom tappar calc/env-värdet, precis som i
+    // channel-phone.test.tsx — därför samma toHaveStyle-form som där.)
+    expect(view).toHaveStyle({ overflowY: 'auto', paddingBottom: MT.SCROLL_PAD_BOTTOM })
+    // Infoblocket ligger i flödet under bilden, inte pressat mot botten.
+    const info = screen.getByTestId('title-play').closest('[data-testid="tv-library-title"] > div:last-child') as HTMLElement
+    expect(info).toBeTruthy()
+    expect(info.style.marginTop).not.toBe('auto')
+    // Telefonen har ingen ikonrad: vyn bär en egen väg tillbaka.
+    expect(screen.getByTestId('title-back')).toBeTruthy()
+    expect(screen.getByTestId('mobile-tab-bar')).toBeTruthy()
+  })
+})
 
 describe('TvLibraryTitle', () => {
   it('ritar detaljerna inne i Live TV, med ikonraden kvar', async () => {

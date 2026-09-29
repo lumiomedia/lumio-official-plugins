@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.1
+
+- Phone: the library's film and series page is now a scrolling page — the backdrop as a 16:9 image at the top, the details below it, and room left for the tab bar. Before, the landscape backdrop was blown up to fill the portrait screen and the Play row sat behind the tab bar with nothing to scroll. A back button sits over the image. TV and desktop are unchanged.
+
 ## 0.12.0
 
 - Library on the phone: a search field right in the library that searches within the selected category (or the whole library on All), and an **All** chip first in the category row, selected by default. On TV, All sits at the top of the category column.

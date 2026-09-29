@@ -48585,11 +48585,12 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
+  init_mobile_tokens();
   init_tv_strings();
   init_jsx_runtime_shim();
   var ICON_SIZE = 44;
   var ICON_SIZE_TV = 60;
-  function TvLibraryTitle({ model, nav, params }) {
+  function TvLibraryTitle({ model, nav, params, phone }) {
     const { tt } = useTvText();
     const isTv = useTvMode();
     const narrow = useNarrowSurface();
@@ -48732,6 +48733,194 @@ ${cue.text}`).join("\n\n")}
         }
       }] : []
     ];
+    const infoBlock = /* @__PURE__ */ jsxs(Fragment2, { children: [
+      logoUrl ? /* @__PURE__ */ jsx(
+        "img",
+        {
+          src: logoUrl,
+          alt: title,
+          "data-testid": "title-logo",
+          style: { maxWidth: narrow ? "68%" : dp(isTv ? 520 : 420), maxHeight: narrow ? 84 : dp(isTv ? 150 : 120), objectFit: "contain", display: "block", marginBottom: dp(12) }
+        }
+      ) : /* @__PURE__ */ jsx("div", { style: { fontSize: narrow ? 30 : dp(isTv ? 58 : 46), fontWeight: 700, lineHeight: 1.1, marginBottom: dp(8) }, children: title }),
+      meta.length > 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: narrow ? 14 : dp(isTv ? 21 : 17), color: "rgba(243,244,248,0.85)" }, children: meta.join("  |  ") }) : null,
+      info?.tagline ? /* @__PURE__ */ jsx("div", { style: { fontSize: narrow ? 14 : dp(isTv ? 20 : 17), color: TV2.dim, marginTop: dp(6), fontStyle: "italic" }, children: info.tagline }) : null,
+      info?.overview ? /* @__PURE__ */ jsx(
+        "p",
+        {
+          style: {
+            fontSize: narrow ? 14 : dp(isTv ? 22 : 18),
+            lineHeight: 1.45,
+            color: "rgba(243,244,248,0.9)",
+            marginTop: dp(12),
+            maxWidth: dp(700),
+            display: "-webkit-box",
+            WebkitLineClamp: narrow ? 2 : 3,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden"
+          },
+          children: info.overview
+        }
+      ) : null,
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", flexWrap: phone ? "wrap" : void 0, gap: dp(10), marginTop: dp(20) }, children: [
+        canPlay ? /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "title-play",
+            ...station(() => openPlayer(playUrl, item.kind === "series" ? firstEpisode ?? void 0 : void 0), void 0, { "data-init": "" }),
+            style: {
+              height: dp(iconSize),
+              padding: `0 ${dp(isTv ? 34 : 24)}px`,
+              borderRadius: 999,
+              background: TV2.acc,
+              color: "#fff",
+              fontSize: dp(isTv ? 22 : 18),
+              fontWeight: 600,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: dp(8),
+              cursor: "pointer"
+            },
+            children: [
+              /* @__PURE__ */ jsx(Icons.Play, { size: dp(isTv ? 22 : 18) }),
+              playLabel
+            ]
+          }
+        ) : null,
+        actions.map((action, index) => /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": `title-action-${action.key}`,
+            "data-hero-icon-action": "",
+            "data-active": action.active ? "" : void 0,
+            title: action.label,
+            "aria-label": action.label,
+            ...station(action.run, void 0, !canPlay && index === 0 ? { "data-init": "" } : void 0),
+            style: {
+              height: dp(iconSize),
+              minWidth: dp(iconSize),
+              borderRadius: 999,
+              background: action.active ? TV2.accMix(18) : TV2.s10,
+              border: `1px solid ${action.active ? TV2.acc : "transparent"}`,
+              color: TV2.text,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              overflow: "hidden"
+            },
+            children: [
+              /* @__PURE__ */ jsx(
+                "span",
+                {
+                  style: {
+                    width: dp(iconSize),
+                    height: dp(iconSize),
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  },
+                  children: action.icon
+                }
+              ),
+              /* @__PURE__ */ jsx("span", { "data-hero-icon-label": "", style: { fontSize: dp(isTv ? 20 : 16), fontWeight: 500 }, children: action.label })
+            ]
+          },
+          action.key
+        ))
+      ] }),
+      item.kind === "series" ? /* @__PURE__ */ jsx(
+        SeasonPicker,
+        {
+          seasons,
+          season,
+          onSeason: setSeason,
+          episodes: seasonEpisodes,
+          loading: episodes === null,
+          emptyLabel: tt("libraryNoEpisodes"),
+          seasonLabel: (n) => tt("librarySeasonNumber", { count: n }),
+          onPlay: (entry) => openPlayer(entry.url, entry)
+        }
+      ) : null
+    ] });
+    if (phone) {
+      const backdropUrl = info?.backdropUrl ?? null;
+      return /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": "tv-library-title",
+          "data-scroll": "",
+          style: {
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            display: "flex",
+            flexDirection: "column",
+            // Bottenluften är flik-radens: utan den låg Play bakom raden.
+            paddingBottom: MT.SCROLL_PAD_BOTTOM
+          },
+          children: [
+            backdropUrl ? /* @__PURE__ */ jsx(
+              "div",
+              {
+                "aria-hidden": "true",
+                "data-testid": "title-backdrop",
+                style: {
+                  position: "relative",
+                  width: "100%",
+                  paddingTop: "56.25%",
+                  flexShrink: 0,
+                  backgroundImage: `url(${backdropUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundColor: MT.s06
+                },
+                children: /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    style: {
+                      position: "absolute",
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      left: 0,
+                      background: `linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 45%, ${MT.bg} 100%)`
+                    }
+                  }
+                )
+              }
+            ) : /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { height: MT.HEADER_H, flexShrink: 0 } }),
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                "data-testid": "title-back",
+                "aria-label": tt("railBack"),
+                title: tt("railBack"),
+                ...station(() => nav.back()),
+                style: {
+                  position: "absolute",
+                  top: `calc(${MT.PAD}px + ${MT.SAFE_TOP_GUARD})`,
+                  left: MT.PAD,
+                  width: MT.HIT,
+                  height: MT.HIT,
+                  borderRadius: 999,
+                  background: "rgba(0,0,0,0.55)",
+                  color: MT.text,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer"
+                },
+                children: /* @__PURE__ */ jsx(Icons.ChevronLeft, { size: 24 })
+              }
+            ),
+            /* @__PURE__ */ jsx("div", { style: { position: "relative", marginTop: backdropUrl ? -36 : 0, padding: `0 ${MT.PAD}px` }, children: infoBlock })
+          ]
+        }
+      );
+    }
     return /* @__PURE__ */ jsxs(
       "div",
       {
@@ -48765,117 +48954,7 @@ ${cue.text}`).join("\n\n")}
               }
             }
           ),
-          /* @__PURE__ */ jsxs("div", { style: { position: "relative", marginTop: "auto", padding: narrow ? "24px 16px 28px" : `${dp(40)}px ${dp(48)}px ${dp(36)}px`, maxWidth: dp(1e3) }, children: [
-            logoUrl ? /* @__PURE__ */ jsx(
-              "img",
-              {
-                src: logoUrl,
-                alt: title,
-                "data-testid": "title-logo",
-                style: { maxWidth: narrow ? "68%" : dp(isTv ? 520 : 420), maxHeight: narrow ? 84 : dp(isTv ? 150 : 120), objectFit: "contain", display: "block", marginBottom: dp(12) }
-              }
-            ) : /* @__PURE__ */ jsx("div", { style: { fontSize: narrow ? 30 : dp(isTv ? 58 : 46), fontWeight: 700, lineHeight: 1.1, marginBottom: dp(8) }, children: title }),
-            meta.length > 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: narrow ? 14 : dp(isTv ? 21 : 17), color: "rgba(243,244,248,0.85)" }, children: meta.join("  |  ") }) : null,
-            info?.tagline ? /* @__PURE__ */ jsx("div", { style: { fontSize: narrow ? 14 : dp(isTv ? 20 : 17), color: TV2.dim, marginTop: dp(6), fontStyle: "italic" }, children: info.tagline }) : null,
-            info?.overview ? /* @__PURE__ */ jsx(
-              "p",
-              {
-                style: {
-                  fontSize: narrow ? 14 : dp(isTv ? 22 : 18),
-                  lineHeight: 1.45,
-                  color: "rgba(243,244,248,0.9)",
-                  marginTop: dp(12),
-                  maxWidth: dp(700),
-                  display: "-webkit-box",
-                  WebkitLineClamp: narrow ? 2 : 3,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden"
-                },
-                children: info.overview
-              }
-            ) : null,
-            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), marginTop: dp(20) }, children: [
-              canPlay ? /* @__PURE__ */ jsxs(
-                "div",
-                {
-                  "data-testid": "title-play",
-                  ...station(() => openPlayer(playUrl, item.kind === "series" ? firstEpisode ?? void 0 : void 0), void 0, { "data-init": "" }),
-                  style: {
-                    height: dp(iconSize),
-                    padding: `0 ${dp(isTv ? 34 : 24)}px`,
-                    borderRadius: 999,
-                    background: TV2.acc,
-                    color: "#fff",
-                    fontSize: dp(isTv ? 22 : 18),
-                    fontWeight: 600,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: dp(8),
-                    cursor: "pointer"
-                  },
-                  children: [
-                    /* @__PURE__ */ jsx(Icons.Play, { size: dp(isTv ? 22 : 18) }),
-                    playLabel
-                  ]
-                }
-              ) : null,
-              actions.map((action, index) => /* @__PURE__ */ jsxs(
-                "div",
-                {
-                  "data-testid": `title-action-${action.key}`,
-                  "data-hero-icon-action": "",
-                  "data-active": action.active ? "" : void 0,
-                  title: action.label,
-                  "aria-label": action.label,
-                  ...station(action.run, void 0, !canPlay && index === 0 ? { "data-init": "" } : void 0),
-                  style: {
-                    height: dp(iconSize),
-                    minWidth: dp(iconSize),
-                    borderRadius: 999,
-                    background: action.active ? TV2.accMix(18) : TV2.s10,
-                    border: `1px solid ${action.active ? TV2.acc : "transparent"}`,
-                    color: TV2.text,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    overflow: "hidden"
-                  },
-                  children: [
-                    /* @__PURE__ */ jsx(
-                      "span",
-                      {
-                        style: {
-                          width: dp(iconSize),
-                          height: dp(iconSize),
-                          flexShrink: 0,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center"
-                        },
-                        children: action.icon
-                      }
-                    ),
-                    /* @__PURE__ */ jsx("span", { "data-hero-icon-label": "", style: { fontSize: dp(isTv ? 20 : 16), fontWeight: 500 }, children: action.label })
-                  ]
-                },
-                action.key
-              ))
-            ] }),
-            item.kind === "series" ? /* @__PURE__ */ jsx(
-              SeasonPicker,
-              {
-                seasons,
-                season,
-                onSeason: setSeason,
-                episodes: seasonEpisodes,
-                loading: episodes === null,
-                emptyLabel: tt("libraryNoEpisodes"),
-                seasonLabel: (n) => tt("librarySeasonNumber", { count: n }),
-                onPlay: (entry) => openPlayer(entry.url, entry)
-              }
-            ) : null
-          ] })
+          /* @__PURE__ */ jsx("div", { style: { position: "relative", marginTop: "auto", padding: narrow ? "24px 16px 28px" : `${dp(40)}px ${dp(48)}px ${dp(36)}px`, maxWidth: dp(1e3) }, children: infoBlock })
         ]
       }
     );

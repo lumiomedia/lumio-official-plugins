@@ -8,6 +8,7 @@ import { fetchTitleLogo, fetchVodTitleInfo, formatRuntime, type VodTitleInfo } f
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import type { TvViewProps } from './tv-shell'
 import { Icons, TV, dp, station } from './tv-ui'
+import { MT } from './mobile/mobile-tokens'
 import { useTvText } from './tv-strings'
 
 /**
@@ -21,6 +22,15 @@ import { useTvText } from './tv-strings'
  * Det som medvetet INTE följer med från appens sida: rekommendationer,
  * kommentarer och strömväljaren. Källan är alltid panelen här, och Jerry bad
  * uttryckligen att slippa resten.
+ *
+ * TELEFONEN har en egen layout (`phone`). Scenformen ovan är ritad för en
+ * liggande duk: bakgrunden i `cover` över hela ytan och infoblocket pressat
+ * mot botten med `marginTop: auto`. På en stående telefon blev det tre fel
+ * på en gång (Jerry 2026-09-29): den liggande bilden zoomades till oigen-
+ * kännlighet, knappraden hamnade bakom den fasta flik-raden, och eftersom
+ * inget innehåll sköt över fanns inget att rulla fram. Telefonen får därför
+ * ett vanligt rullande flöde: bilden som 16:9-block högst upp, infoblocket
+ * under den, och samma bottenluft som telefonens övriga vyer.
  */
 
 /**
@@ -30,7 +40,7 @@ import { useTvText } from './tv-strings'
 const ICON_SIZE = 44
 const ICON_SIZE_TV = 60
 
-export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
+export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
   const { tt } = useTvText()
   const isTv = useTvMode()
   /* Telefonen är en SMAL yta, och måtten här är skrivna för en tv-duk.
@@ -208,40 +218,9 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
       : []),
   ]
 
-  return (
-    <div
-      data-testid="tv-library-title"
-      data-scroll=""
-      style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
-    >
-      {/* Bakgrunden fyller HELA ytan bredvid ikonraden, på 70 % som appens
-          sida. Fast position i flödet: den ska inte rulla med innehållet. */}
-      {info?.backdropUrl ? (
-        <div
-          aria-hidden="true"
-          data-testid="title-backdrop"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `url(${info.backdropUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.7,
-          }}
-        />
-      ) : null}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: `linear-gradient(0deg, ${TV.bg} 4%, rgba(0,0,0,0.75) 32%, rgba(0,0,0,0.15) 70%, rgba(0,0,0,0.35) 100%)`,
-        }}
-      />
-
-      {/* Informationsblocket nere till vänster — `marginTop:auto` trycker ned
-          det oavsett hur hög ytan är. */}
-      <div style={{ position: 'relative', marginTop: 'auto', padding: narrow ? '24px 16px 28px' : `${dp(40)}px ${dp(48)}px ${dp(36)}px`, maxWidth: dp(1000) }}>
+  /** Rubrik, metarad, handling, knapprad och säsonger — samma i båda layouterna. */
+  const infoBlock = (
+    <>
         {logoUrl ? (
           <img
             src={logoUrl}
@@ -277,7 +256,7 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
           </p>
         ) : null}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), marginTop: dp(20) }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: phone ? 'wrap' : undefined, gap: dp(10), marginTop: dp(20) }}>
           {canPlay ? (
             <div
               data-testid="title-play"
@@ -357,6 +336,126 @@ export function TvLibraryTitle({ model, nav, params }: TvViewProps) {
             onPlay={(entry) => openPlayer(entry.url, entry)}
           />
         ) : null}
+    </>
+  )
+
+  if (phone) {
+    const backdropUrl = info?.backdropUrl ?? null
+    return (
+      <div
+        data-testid="tv-library-title"
+        data-scroll=""
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          display: 'flex',
+          flexDirection: 'column',
+          // Bottenluften är flik-radens: utan den låg Play bakom raden.
+          paddingBottom: MT.SCROLL_PAD_BOTTOM,
+        }}
+      >
+        {/* Bilden är ett block i FLÖDET med bildens egna proportioner (TMDb:s
+            bakgrunder är 16:9), inte en fond som ska täcka ytan. Höjden via
+            padding-top: `aspect-ratio` saknas i äldre webviews. */}
+        {backdropUrl ? (
+          <div
+            aria-hidden="true"
+            data-testid="title-backdrop"
+            style={{
+              position: 'relative',
+              width: '100%',
+              paddingTop: '56.25%',
+              flexShrink: 0,
+              backgroundImage: `url(${backdropUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundColor: MT.s06,
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                background: `linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 45%, ${MT.bg} 100%)`,
+              }}
+            />
+          </div>
+        ) : (
+          <div aria-hidden="true" style={{ height: MT.HEADER_H, flexShrink: 0 }} />
+        )}
+        {/* Bakåt över bilden: telefonen har ingen ikonrad, och flik-radens
+            poster leder till hubbens vyer — inte tillbaka till listan man kom
+            från. Systemets Bakåt och svepet fungerar också (useSwipeBack). */}
+        <div
+          data-testid="title-back"
+          aria-label={tt('railBack')}
+          title={tt('railBack')}
+          {...station(() => nav.back())}
+          style={{
+            position: 'absolute',
+            top: `calc(${MT.PAD}px + ${MT.SAFE_TOP_GUARD})`,
+            left: MT.PAD,
+            width: MT.HIT,
+            height: MT.HIT,
+            borderRadius: 999,
+            background: 'rgba(0,0,0,0.55)',
+            color: MT.text,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <Icons.ChevronLeft size={24} />
+        </div>
+        {/* Infoblocket direkt under bilden, en bit upp i tonings-kanten. */}
+        <div style={{ position: 'relative', marginTop: backdropUrl ? -36 : 0, padding: `0 ${MT.PAD}px` }}>
+          {infoBlock}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      data-testid="tv-library-title"
+      data-scroll=""
+      style={{ flex: 1, minHeight: 0, overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}
+    >
+      {/* Bakgrunden fyller HELA ytan bredvid ikonraden, på 70 % som appens
+          sida. Fast position i flödet: den ska inte rulla med innehållet. */}
+      {info?.backdropUrl ? (
+        <div
+          aria-hidden="true"
+          data-testid="title-backdrop"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `url(${info.backdropUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.7,
+          }}
+        />
+      ) : null}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: `linear-gradient(0deg, ${TV.bg} 4%, rgba(0,0,0,0.75) 32%, rgba(0,0,0,0.15) 70%, rgba(0,0,0,0.35) 100%)`,
+        }}
+      />
+
+      {/* Informationsblocket nere till vänster — `marginTop:auto` trycker ned
+          det oavsett hur hög ytan är. */}
+      <div style={{ position: 'relative', marginTop: 'auto', padding: narrow ? '24px 16px 28px' : `${dp(40)}px ${dp(48)}px ${dp(36)}px`, maxWidth: dp(1000) }}>
+        {infoBlock}
       </div>
     </div>
   )
