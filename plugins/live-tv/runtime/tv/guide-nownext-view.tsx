@@ -11,7 +11,7 @@ import { LivePreviewArt } from './live-preview-art'
 import { useTvSettings } from './tv-settings-store'
 import { useTvText } from './tv-strings'
 import { GuideChannelCell, filterByGroup, guideCellStyle } from './tv-guide-shared'
-import { GuidePaginationRow, ROWS_STEP, ellipsis, gp, initAttr, useHoverSelect, withPointerLeave } from './guide-view-shared'
+import { GUIDE_CARD_BG, GUIDE_CARD_GAP, GUIDE_CARD_INSET, GUIDE_CARD_LINE, GUIDE_CARD_RADIUS, GUIDE_ON_SELECTED, GUIDE_ON_SELECTED_DIM, GuidePaginationRow, ROWS_STEP, ellipsis, gp, initAttr, useHoverSelect, withPointerLeave } from './guide-view-shared'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
@@ -30,13 +30,17 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * sist som kollapsade rader; pagineringen går över den sammanslagna listan.
  */
 
-const ROW_H_PX = gp(56)
+const ROW_H_PX = gp(66)
 /** Kanalcellens bredd i det här läget (handoffen: `KANAL` 340). */
 const CELL = guideCellStyle('nownext')
 /** Kolumnvikter 2 / 1,2 / 1 — NU får mest plats eftersom det är det man läser. */
 const COL_WEIGHTS = [2, 1.2, 1] as const
-const COL_LINE = '1px solid rgba(255,255,255,0.06)'
-const colStyle = (weight: number): CSSProperties => ({ flex: `${weight} 1 0%`, minWidth: 0, borderRight: COL_LINE, boxSizing: 'border-box', padding: `0 ${gp(12)}px`, display: 'flex', alignItems: 'center', gap: gp(10) })
+/** Varje cell är ett KORT (`GUIDE_CARD_*`), inte en kolumn med linje. */
+const colStyle = (weight: number): CSSProperties => ({ flex: `${weight} 1 0%`, minWidth: 0, boxSizing: 'border-box', margin: `${GUIDE_CARD_INSET}px ${GUIDE_CARD_GAP}px ${GUIDE_CARD_INSET}px 0`, padding: `0 ${gp(14)}px`, borderRadius: GUIDE_CARD_RADIUS, background: GUIDE_CARD_BG, border: GUIDE_CARD_LINE, display: 'flex', alignItems: 'center', gap: gp(10) })
+/** Kolumnhuvudets celler: samma bredd och luft som korten, men utan kort. */
+const headStyle = (weight: number): CSSProperties => ({ ...colStyle(weight), margin: `0 ${GUIDE_CARD_GAP}px 0 0`, background: 'transparent', border: 'none' })
+/** Kanalkortets yttre: kolumnbredden (`CELL`) med kortets luft runt om. */
+const channelWrap: CSSProperties = { ...CELL, display: 'flex', boxSizing: 'border-box', padding: `${GUIDE_CARD_INSET}px ${GUIDE_CARD_GAP}px ${GUIDE_CARD_INSET}px ${GUIDE_CARD_GAP}px` }
 
 type Row = { channel: M3uChannel; info: NowNextLater }
 
@@ -123,17 +127,21 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
       onPointerEnter: hover.enter ? () => hover.enter?.(sel) : undefined,
     }
   }
-  const rowStyle = (channel: M3uChannel, empty: boolean): CSSProperties => ({
+  // Markeringen syns på KORTEN (kanalkortet ljusare, Nu-kortet vitt) —
+  // raden själv har ingen bakgrund och ingen linje.
+  const rowStyle = (_channel: M3uChannel, _empty: boolean): CSSProperties => ({
     display: 'flex',
     height: ROW_H_PX,
     minHeight: ROW_H_PX,
     boxSizing: 'border-box',
-    borderBottom: COL_LINE,
-    background: isSelected(channel) ? TV.s05 : empty ? 'rgba(252,252,255,0.04)' : undefined,
     cursor: 'pointer',
   })
   const cell = (channel: M3uChannel) => (
-    <GuideChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(channelKey(channel))} locked={model.locked.has(channelKey(channel))} variant="nownext" />
+    <div data-testid="nownext-channel" style={channelWrap}>
+      <div data-testid="nownext-channel-card" style={{ flex: 1, minWidth: 0, display: 'flex', borderRadius: GUIDE_CARD_RADIUS, background: isSelected(channel) ? TV.s16 : GUIDE_CARD_BG, border: GUIDE_CARD_LINE, boxSizing: 'border-box' }}>
+        <GuideChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(channelKey(channel))} locked={model.locked.has(channelKey(channel))} variant="nownext" fill />
+      </div>
+    </div>
   )
 
   return (
@@ -154,10 +162,10 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
       {/* Kolumnhuvud 30 px: kanalcellen i EXAKT samma layoutkontext som
           raderna (`guideCellStyle('nownext')`), sedan de tre viktade
           kolumnerna med kolumnlinjer. */}
-      <div data-testid="nownext-header" style={{ height: gp(30), minHeight: gp(30), display: 'flex', alignItems: 'stretch', borderBottom: `1px solid ${TV.line}`, boxSizing: 'border-box', fontSize: gp(11), color: 'rgba(243,244,248,0.4)', letterSpacing: '0.12em' }}>
-        <div data-testid="nownext-header-channel" style={{ ...CELL, display: 'flex', alignItems: 'center', padding: `0 ${gp(10)}px`, borderRight: COL_LINE }}>{tt('colChannel')}</div>
+      <div data-testid="nownext-header" style={{ height: gp(34), minHeight: gp(34), display: 'flex', alignItems: 'stretch', boxSizing: 'border-box', fontSize: gp(12), fontWeight: 700, color: 'rgba(243,244,248,0.55)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+        <div data-testid="nownext-header-channel" style={{ ...CELL, display: 'flex', alignItems: 'center', padding: `0 ${GUIDE_CARD_GAP + gp(12)}px` }}>{tt('colChannel')}</div>
         {(['colNow', 'colNext', 'colLater'] as const).map((key, index) => (
-          <div key={key} data-testid="nownext-header-col" style={colStyle(COL_WEIGHTS[index])}>{tt(key)}</div>
+          <div key={key} data-testid="nownext-header-col" style={headStyle(COL_WEIGHTS[index])}>{tt(key)}</div>
         ))}
       </div>
 
@@ -178,19 +186,21 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
             {rows.map(({ channel, info }, index) => {
               const now = info.now as EpgProgramme
               const minutesLeft = Math.max(0, Math.ceil((now.stop - nowMs) / 60_000))
+              const selected = isSelected(channel)
               return (
                 <div key={channelKey(channel)} data-testid="nownext-row" {...rowProps(channel, now, initTarget === 'row' && index === 0)} style={rowStyle(channel, false)}>
                   {cell(channel)}
-                  {/* NU: titel + 90 px block med förlopp och `N m`. */}
-                  <div data-testid="nownext-now" style={colStyle(COL_WEIGHTS[0])}>
-                    <div title={now.title} style={{ flex: 1, minWidth: 0, fontSize: gp(14), ...ellipsis }}>{now.title}</div>
+                  {/* NU: titel + 90 px block med förlopp och `N m`. Pågående
+                      program tonas i accenten; det markerade kortet är vitt. */}
+                  <div data-testid="nownext-now" style={{ ...colStyle(COL_WEIGHTS[0]), background: selected ? TV.text : TV.accMix(14), border: selected ? '1px solid transparent' : `1px solid ${TV.accMix(45)}`, color: selected ? GUIDE_ON_SELECTED : TV.text }}>
+                    <div title={now.title} style={{ flex: 1, minWidth: 0, fontSize: gp(15), fontWeight: 600, ...ellipsis }}>{now.title}</div>
                     <div style={{ width: gp(90), flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: gp(4) }}>
-                      <Progress value={progressOf(now.start, now.stop, nowMs)} height={gp(4)} style={{ width: '100%' }} />
-                      <span style={{ fontSize: gp(11), color: 'rgba(243,244,248,0.5)', fontVariantNumeric: 'tabular-nums' }}>{tt('minShort', { min: minutesLeft })}</span>
+                      <Progress value={progressOf(now.start, now.stop, nowMs)} height={gp(4)} track={selected ? 'rgba(21,22,28,0.15)' : TV.s14} style={{ width: '100%' }} />
+                      <span style={{ fontSize: gp(11), color: selected ? GUIDE_ON_SELECTED_DIM : 'rgba(243,244,248,0.5)', fontVariantNumeric: 'tabular-nums' }}>{tt('minShort', { min: minutesLeft })}</span>
                     </div>
                   </div>
-                  <UpcomingCell testId="nownext-next" programme={info.next} locale={locale} titleColor="rgba(243,244,248,0.75)" timeColor="rgba(243,244,248,0.45)" weight={COL_WEIGHTS[1]} />
-                  <UpcomingCell testId="nownext-later" programme={info.later} locale={locale} titleColor="rgba(243,244,248,0.55)" timeColor="rgba(243,244,248,0.35)" weight={COL_WEIGHTS[2]} />
+                  <UpcomingCell testId="nownext-next" programme={info.next} locale={locale} titleColor="rgba(243,244,248,0.88)" timeColor="rgba(243,244,248,0.55)" weight={COL_WEIGHTS[1]} />
+                  <UpcomingCell testId="nownext-later" programme={info.later} locale={locale} titleColor="rgba(243,244,248,0.7)" timeColor="rgba(243,244,248,0.45)" weight={COL_WEIGHTS[2]} />
                 </div>
               )
             })}
@@ -200,7 +210,7 @@ export function GuideNowNextView({ model, nav, category, selection, onSelect, is
             {emptyRows.map((channel, index) => (
               <div key={channelKey(channel)} data-testid="nownext-empty-row" {...rowProps(channel, null, initTarget === 'row' && rows.length === 0 && index === 0)} style={rowStyle(channel, true)}>
                 {cell(channel)}
-                <div data-testid="nownext-empty-cell" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: gp(14), padding: `0 ${gp(12)}px` }}>
+                <div data-testid="nownext-empty-cell" style={{ ...colStyle(1), background: 'rgba(252,252,255,0.04)', gap: gp(14) }}>
                   <span style={{ flex: 1, minWidth: 0, fontSize: gp(13), color: 'rgba(243,244,248,0.4)', ...ellipsis }}>{tt('noEpgRow')}</span>
                   <span data-testid="nownext-watch-pill" style={{ height: gp(26), padding: `0 ${gp(12)}px`, borderRadius: 999, background: TV.s08, display: 'inline-flex', alignItems: 'center', gap: gp(6), fontSize: gp(12), flexShrink: 0 }}>
                     <Icons.Play size={gp(10)} /> {tt('watchNowShort')}
@@ -232,8 +242,8 @@ function UpcomingCell({ testId, programme, locale, titleColor, timeColor, weight
     <div data-testid={testId} style={colStyle(weight)}>
       {programme ? (
         <>
-          <div title={programme.title} style={{ flex: 1, minWidth: 0, fontSize: gp(13), color: titleColor, ...ellipsis }}>{programme.title}</div>
-          <span style={{ fontSize: gp(12), color: timeColor, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{formatClock(programme.start, locale)}</span>
+          <div title={programme.title} style={{ flex: 1, minWidth: 0, fontSize: gp(14), color: titleColor, ...ellipsis }}>{programme.title}</div>
+          <span style={{ fontSize: gp(12.5), color: timeColor, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{formatClock(programme.start, locale)}</span>
         </>
       ) : null}
     </div>

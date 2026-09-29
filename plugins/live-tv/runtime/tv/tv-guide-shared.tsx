@@ -113,22 +113,29 @@ export function guideCellStyle(variant: GuideCellVariant): CSSProperties {
  * Sky-kanaler går att skilja åt i alla tre lägen, inte bara i det som råkar
  * ha plats.
  */
-export function GuideChannelCell({ channel, number, pinned, locked, variant }: {
+export function GuideChannelCell({ channel, number, pinned, locked, variant, fill = false }: {
   channel: M3uChannel
   number: number | null
   pinned: boolean
   locked: boolean
   variant: GuideCellVariant
+  /**
+   * Fyller sitt KORT i stället för att bära kolumnbredden själv: vyerna
+   * ritar cellen inne i ett rundat kort (se `GUIDE_CARD_*`), och kortet är
+   * det som står i kolumnens layoutkontext.
+   */
+  fill?: boolean
 }): JSX.Element {
   const art = variant === 'timeline' ? null : GUIDE_ART_SIZE[variant]
+  const box: CSSProperties = fill ? { flex: 1, minWidth: 0, height: '100%', boxSizing: 'border-box' } : guideCellStyle(variant)
   return (
-    <div data-testid="guide-cell" style={{ ...guideCellStyle(variant), display: 'flex', alignItems: 'center', gap: gp(10), padding: `0 ${gp(10)}px` }}>
-      <span style={{ width: gp(26), flexShrink: 0, fontSize: gp(13), color: 'rgba(243,244,248,0.45)', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>{number ?? ''}</span>
+    <div data-testid="guide-cell" style={{ ...box, display: 'flex', alignItems: 'center', gap: gp(10), padding: `0 ${gp(12)}px` }}>
+      <span style={{ width: gp(26), flexShrink: 0, fontSize: gp(14), color: 'rgba(243,244,248,0.5)', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>{number ?? ''}</span>
       {art ? <ChannelArt channel={channel} style={{ width: art.width, flexShrink: 0 }} height={art.height} radius={gp(6)} /> : null}
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: gp(14), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
+        <div style={{ fontSize: gp(15), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
         {variant !== 'timeline' ? (
-          <div style={{ fontSize: gp(12), color: 'rgba(243,244,248,0.45)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: gp(12.5), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {[channel.group, qualityFromName(channel.name)].filter(Boolean).join(' · ')}
           </div>
         ) : null}

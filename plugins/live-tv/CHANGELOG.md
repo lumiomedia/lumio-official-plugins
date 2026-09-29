@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0
+
+- Desktop and TV: the side menu is wider and airier, with a label under every icon — Back, Search, Home, Guide, Library, Multiview, Favourites, Settings. A new switch under Settings, **Labels in the side menu**, turns the labels off and brings back the narrow icon-only menu.
+- Guide (Now / Next, Grid and Timeline): every channel, programme and Next/Later cell is now its own rounded grey card with a thin border, instead of rows separated by lines. The programme on air is tinted in the accent colour; the selected card is white with dark text. Channel names and the group/quality line are larger and brighter.
+- Library on desktop and TV: a **Films / Series** switch at the top of the category column. The column lists only the chosen kind's categories, with *All films* or *All series* first (selected by default). The poster grid has 5 columns on desktop and 4 on TV (was 7 and 5), the category text is larger, and the rating sits as a star badge on the poster. The phone layout is unchanged.
+
 ## 0.12.1
 
 - Phone: the library's film and series page is now a scrolling page — the backdrop as a 16:9 image at the top, the details below it, and room left for the tab bar. Before, the landscape backdrop was blown up to fill the portrait screen and the Play row sat behind the tab bar with nothing to scroll. A back button sits over the image. TV and desktop are unchanged.

@@ -30,6 +30,11 @@ export interface TvSettings {
   timelineZoom: TimelineZoom
   /** Den städade guiden: infobannern i Now/Next-vyn av/på. */
   nowNextDetails: boolean
+  /**
+   * Ikonraden med etiketter under ikonerna (Jerry 2026-09-29: "luftig").
+   * Av = den gamla smala raden med bara ikoner.
+   */
+  railLabels: boolean
 }
 
 const DEFAULTS: TvSettings = {
@@ -42,6 +47,7 @@ const DEFAULTS: TvSettings = {
   guideCategory: null,
   timelineZoom: 'day',
   nowNextDetails: true,
+  railLabels: true,
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -58,6 +64,7 @@ function sanitize(raw: unknown): TvSettings {
     guideCategory: typeof r.guideCategory === 'string' && r.guideCategory ? r.guideCategory : DEFAULTS.guideCategory,
     timelineZoom,
     nowNextDetails: typeof r.nowNextDetails === 'boolean' ? r.nowNextDetails : DEFAULTS.nowNextDetails,
+    railLabels: typeof r.railLabels === 'boolean' ? r.railLabels : DEFAULTS.railLabels,
   }
 }
 

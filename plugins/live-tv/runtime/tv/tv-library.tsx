@@ -5,7 +5,7 @@ import { useTvMode } from '@/lib/plugin-sdk'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { useVodCategories, useVodPage } from '../hooks/useVodLibrary'
 import { canOpenDetails, getVodCategory, getVodSort, openVodItem, setVodCategory, setVodSort } from '../vod-data'
-import type { VodCategory, VodItem, VodSort } from '../vod-client'
+import type { VodItem, VodKind, VodSort } from '../vod-client'
 import type { TvViewProps } from './tv-shell'
 import { TV, dp, station } from './tv-ui'
 import { MT } from './mobile/mobile-tokens'
@@ -35,8 +35,9 @@ import { useTvText } from './tv-strings'
  */
 const LEFT_W = 380
 const LEFT_W_TV = 440
-const GRID_COLUMNS = 7
-const GRID_COLUMNS_TV = 5
+/** Färre kolumner sedan 2026-09-29 (Jerry: "många i rad nu") — större affischer. */
+const GRID_COLUMNS = 5
+const GRID_COLUMNS_TV = 4
 /**
  * Telefonen får TVÅ kolumner, inte tre.
  *
@@ -104,27 +105,6 @@ function Poster({ item, radius }: { item: VodItem; radius: number }) {
   )
 }
 
-function KindTag({ kind, label }: { kind: VodItem['kind']; label: string }) {
-  return (
-    <span
-      style={{
-        position: 'absolute',
-        top: dp(8),
-        right: dp(8),
-        fontSize: dp(12),
-        letterSpacing: '0.06em',
-        padding: `${dp(3)}px ${dp(8)}px`,
-        borderRadius: dp(6),
-        background: 'rgba(0,0,0,0.55)',
-        color: 'rgba(255,255,255,0.75)',
-      }}
-      data-vod-kind={kind}
-    >
-      {label}
-    </span>
-  )
-}
-
 /** "Alla": hela biblioteket utan kategori — förvalt (Jerry 2026-09-29). */
 const ALL_CATEGORY = '__all__'
 
@@ -145,6 +125,12 @@ export function TvLibrary({ model, nav }: TvViewProps) {
 
   const cats = useVodCategories(source)
   const [sort, setSortState] = useState<VodSort>(() => getVodSort())
+  /**
+   * Filmer / Serier-växlaren (skrivbord + TV): kategorikolumnen visar bara
+   * vald sorts kategorier och "Alla" spänner över den sorten. Telefonen har
+   * kvar sin chipsrad med alla kategorier (fas 3 rörs inte).
+   */
+  const [kind, setKind] = useState<VodKind>('movie')
   const [selected, setSelected] = useState<string | null>(() => getVodCategory(playlistId) ?? ALL_CATEGORY)
   // Sök direkt i biblioteket (telefonen), inom vald kategori — Alla söker
   // hela indexet. Fördröjd 250 ms så varje tangent inte blir ett anrop.
@@ -160,9 +146,9 @@ export function TvLibrary({ model, nav }: TvViewProps) {
   // tillbaka på den första kategorin panelen faktiskt har.
   const validSelected = useMemo(() => {
     if (selected === ALL_CATEGORY || cats.categories.length === 0) return ALL_CATEGORY
-    if (selected && cats.categories.some((c) => c.id === selected)) return selected
+    if (selected && cats.categories.some((c) => c.id === selected && (narrow || c.kind === kind))) return selected
     return ALL_CATEGORY
-  }, [cats.categories, selected])
+  }, [cats.categories, selected, kind, narrow])
 
   useEffect(() => {
     setSelected(getVodCategory(playlistId) ?? ALL_CATEGORY)
@@ -174,6 +160,8 @@ export function TvLibrary({ model, nav }: TvViewProps) {
     // Söken håller sig inom vald kategori; Alla söker hela indexet (Jerry
     // 2026-09-29). Källan får vara null: det betyder alla spellistor.
     categoryId: validSelected === ALL_CATEGORY ? null : validSelected,
+    // Sorten gäller bara med växlaren (inte på telefon).
+    kind: narrow ? null : kind,
     q: q || undefined,
     sort,
     // Vänta in kategorilistan (den säger om det finns ett bibliotek alls),
@@ -184,6 +172,11 @@ export function TvLibrary({ model, nav }: TvViewProps) {
   const chooseCategory = (id: string) => {
     setSelected(id)
     if (playlistId) setVodCategory(playlistId, id)
+  }
+  const chooseKind = (next: VodKind) => {
+    if (next === kind) return
+    setKind(next)
+    setSelected(ALL_CATEGORY)
   }
   const chooseSort = (next: VodSort) => {
     setSortState(next)
@@ -226,7 +219,9 @@ export function TvLibrary({ model, nav }: TvViewProps) {
   const sortLabel = (key: VodSort) =>
     key === 'az' ? tt('librarySortAz') : key === 'rating' ? tt('librarySortRating') : tt('librarySortNew')
 
-  const grouped = useMemo(() => groupByKind(cats.categories), [cats.categories])
+  const kindCategories = useMemo(() => cats.categories.filter((c) => c.kind === kind), [cats.categories, kind])
+  const kindTotal = useMemo(() => kindCategories.reduce((sum, c) => sum + (c.count ?? 0), 0), [kindCategories])
+  const allKindLabel = kind === 'movie' ? tt('libraryAllMovies') : tt('libraryAllSeries')
   // `data-init` sätts på FÖRSTA kortet i rutnätet när det finns något att
   // fokusera där, annars på den valda kategorin. Ett tomt rutnät utan
   // startpunkt lämnar fjärren utan fokus alls.
@@ -243,9 +238,15 @@ export function TvLibrary({ model, nav }: TvViewProps) {
       )}
       style={{ cursor: 'pointer' }}
     >
-      <div style={{ position: 'relative' }}>
+      {/* Sorten bärs som attribut (växlaren och metaraden säger den), inte
+          som en synlig tagg — affischen ska vara ren (handoffen). */}
+      <div style={{ position: 'relative' }} data-vod-kind={item.kind}>
         <Poster item={item} radius={12} />
-        <KindTag kind={item.kind} label={item.kind === 'series' ? tt('libraryKindSeries') : tt('libraryKindMovie')} />
+        {item.rating ? (
+          <span data-testid="library-rating" style={{ position: 'absolute', top: dp(8), right: dp(8), fontSize: dp(isTv ? 16 : 13), fontWeight: 700, padding: `${dp(3)}px ${dp(9)}px`, borderRadius: 999, background: 'rgba(0,0,0,0.62)', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: dp(4), fontVariantNumeric: 'tabular-nums' }}>
+            <span aria-hidden="true" style={{ color: '#f6c453' }}>★</span>{item.rating.toFixed(1)}
+          </span>
+        ) : null}
       </div>
       <div
         style={{
@@ -259,7 +260,7 @@ export function TvLibrary({ model, nav }: TvViewProps) {
       >
         {item.title}
       </div>
-      <div style={{ fontSize: dp(narrow ? 13 : isTv ? 17 : 15), color: 'rgba(243,244,248,0.55)' }}>{metaLine(item)}</div>
+      <div style={{ fontSize: dp(narrow ? 13 : isTv ? 17 : 15), color: 'rgba(243,244,248,0.55)' }}>{metaLine(item, item.kind === 'series' ? tt('libraryKindSeries') : tt('libraryKindMovie'))}</div>
     </div>
   )
 
@@ -283,13 +284,13 @@ export function TvLibrary({ model, nav }: TvViewProps) {
               background: isActive ? TV.accMix(18) : TV.s06, color: isActive ? TV.text : 'rgba(243,244,248,0.65)',
             }
           : {
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`,
-              marginBottom: dp(8), borderRadius: dp(10), fontSize: dp(isTv ? 18 : 15), cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: dp(10), padding: `${dp(12)}px ${dp(14)}px`,
+              marginBottom: dp(8), borderRadius: dp(12), fontSize: dp(isTv ? 24 : 21), fontWeight: 600, cursor: 'pointer',
               background: isActive ? TV.accMix(18) : 'transparent', color: isActive ? TV.text : 'rgba(243,244,248,0.65)',
             }}
       >
-        {tt('libraryAll')}
-        <span style={{ color: 'rgba(243,244,248,0.4)' }}>{cats.total}</span>
+        {chip ? tt('libraryAll') : allKindLabel}
+        <span style={{ color: 'rgba(243,244,248,0.4)' }}>{chip ? cats.total : kindTotal}</span>
       </div>
     )
   }
@@ -414,62 +415,75 @@ export function TvLibrary({ model, nav }: TvViewProps) {
         }}
       >
         <div style={{ fontSize: dp(isTv ? 36 : 30), fontWeight: 600 }}>{tt('library')}</div>
-        <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)', marginBottom: dp(16) }}>
+        <div style={{ fontSize: dp(isTv ? 19 : 17), color: 'rgba(243,244,248,0.55)', marginBottom: dp(20) }}>
           {tt('librarySub', { playlist: playlistName, count: cats.total })}
         </div>
+        {/* Filmer / Serier — en segmentväxlare (handoffen). */}
+        <div data-testid="library-kind" style={{ display: 'flex', padding: dp(4), borderRadius: 999, background: TV.s06, marginBottom: dp(22) }}>
+          {(['movie', 'series'] as const).map((k) => {
+            const on = k === kind
+            return (
+              <div
+                key={k}
+                data-testid={`library-kind-${k}`}
+                data-active={on ? '' : undefined}
+                {...station(() => chooseKind(k))}
+                style={{ flex: 1, height: dp(isTv ? 54 : 46), borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: dp(isTv ? 22 : 19), fontWeight: 600, cursor: 'pointer', background: on ? TV.text : 'transparent', color: on ? '#15161c' : 'rgba(243,244,248,0.7)' }}
+              >
+                {k === 'movie' ? tt('librarySegMovies') : tt('librarySegSeries')}
+              </div>
+            )
+          })}
+        </div>
+        <div
+          style={{
+            fontSize: dp(isTv ? 16 : 14),
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.14em',
+            color: 'rgba(243,244,248,0.5)',
+            margin: `0 0 ${dp(10)}px`,
+          }}
+        >
+          {tt('libraryCategories')}
+        </div>
         {allChip(false)}
-        {grouped.map((group) => (
-          <div key={group.kind}>
+        {kindCategories.map((category) => {
+          const isActive = category.id === validSelected
+          return (
             <div
+              key={`${category.kind}:${category.id}`}
+              data-testid="library-category"
+              data-active={isActive ? '' : undefined}
+              {...station(
+                () => chooseCategory(category.id),
+                undefined,
+                isActive && !initInGrid ? { 'data-init': '' } : undefined,
+              )}
               style={{
-                fontSize: dp(isTv ? 17 : 14),
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.12em',
-                color: 'rgba(243,244,248,0.4)',
-                margin: `${dp(14)}px 0 ${dp(6)}px`,
+                minHeight: dp(isTv ? 64 : 56),
+                padding: `${dp(8)}px ${dp(14)}px`,
+                borderRadius: dp(12),
+                display: 'flex',
+                alignItems: 'center',
+                gap: dp(10),
+                cursor: 'pointer',
+                background: isActive ? TV.accMix(18) : 'transparent',
+                color: isActive ? TV.text : 'rgba(243,244,248,0.72)',
               }}
             >
-              {group.kind === 'series' ? tt('librarySectionSeries') : tt('librarySectionMovies')}
+              <span style={{ fontSize: dp(isTv ? 24 : 21), flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {category.name}
+              </span>
+              <span style={{ fontSize: dp(isTv ? 19 : 17), color: 'rgba(243,244,248,0.45)' }}>{category.count}</span>
             </div>
-            {group.categories.map((category) => {
-              const isActive = category.id === validSelected
-              return (
-                <div
-                  key={`${category.kind}:${category.id}`}
-                  data-testid="library-category"
-                  data-active={isActive ? '' : undefined}
-                  {...station(
-                    () => chooseCategory(category.id),
-                    undefined,
-                    isActive && !initInGrid ? { 'data-init': '' } : undefined,
-                  )}
-                  style={{
-                    minHeight: dp(isTv ? 62 : 52),
-                    padding: `${dp(8)}px ${dp(14)}px`,
-                    borderRadius: dp(10),
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: dp(10),
-                    cursor: 'pointer',
-                    background: isActive ? TV.accMix(18) : 'transparent',
-                    color: isActive ? TV.text : 'rgba(243,244,248,0.65)',
-                  }}
-                >
-                  <span style={{ fontSize: dp(isTv ? 22 : 18), flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {category.name}
-                  </span>
-                  <span style={{ fontSize: dp(isTv ? 17 : 14), color: 'rgba(243,244,248,0.4)' }}>{category.count}</span>
-                </div>
-              )
-            })}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(14), padding: `${dp(30)}px ${dp(48)}px ${dp(16)}px` }}>
-          <span style={{ fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }}>{active?.name ?? tt('library')}</span>
+          <span style={{ fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }}>{active?.name ?? allKindLabel}</span>
           <span style={{ fontSize: dp(isTv ? 20 : 17), color: 'rgba(243,244,248,0.5)' }}>
             {tt('libraryTitlesCount', { count: page.total })}
           </span>
@@ -547,20 +561,12 @@ export function TvLibrary({ model, nav }: TvViewProps) {
  * rutnät vore 120 anrop per skärm. Raden visar det panelen faktiskt skickade;
  * resten står i detaljvyn, som hämtar sitt från TMDB.
  */
-function metaLine(item: VodItem): string {
+function metaLine(item: VodItem, kindLabel: string): string {
   const parts: string[] = []
   if (item.year) parts.push(String(item.year))
-  if (item.rating) parts.push(item.rating.toFixed(1))
+  // Betyget sitter som märke på affischen sedan 2026-09-29; raden säger sorten.
+  parts.push(kindLabel)
   return parts.join(' · ')
-}
-
-function groupByKind(categories: VodCategory[]): { kind: VodItem['kind']; categories: VodCategory[] }[] {
-  const movies = categories.filter((c) => c.kind === 'movie')
-  const series = categories.filter((c) => c.kind === 'series')
-  return [
-    ...(movies.length > 0 ? [{ kind: 'movie' as const, categories: movies }] : []),
-    ...(series.length > 0 ? [{ kind: 'series' as const, categories: series }] : []),
-  ]
 }
 
 /**

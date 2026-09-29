@@ -108,7 +108,9 @@ describe('GuideNowNextView (TV-läge)', () => {
     const head = screen.getByTestId('nownext-header')
     const headCell = within(head).getByTestId('nownext-header-channel')
     const row = screen.getAllByTestId('nownext-row')[0]
-    const rowCell = within(row).getByTestId('guide-cell')
+    // Kanalcellen ritas som ett KORT inne i en yttre kolumncell (2026-09-29):
+    // det är den yttre cellen som bär kolumnbredden.
+    const rowCell = within(row).getByTestId('nownext-channel')
     expect(headCell.style.flex).toBe(rowCell.style.flex)
     expect(headCell.style.flex).toBe(`0 0 ${gp(340)}px`)
     const cols = within(head).getAllByTestId('nownext-header-col')
@@ -119,7 +121,7 @@ describe('GuideNowNextView (TV-läge)', () => {
     expect(head).toHaveTextContent('LATER')
   })
 
-  it('raden visar nu/sen/senare med tider, och ingen rad är högre än 56', async () => {
+  it('raden visar nu/sen/senare med tider, och ingen rad är högre än 66', async () => {
     await mount()
     const rows = screen.getAllByTestId('nownext-row')
     expect(rows).toHaveLength(1)
@@ -127,7 +129,7 @@ describe('GuideNowNextView (TV-läge)', () => {
     expect(within(rows[0]).getByTestId('nownext-next')).toHaveTextContent('Next A')
     expect(within(rows[0]).getByTestId('nownext-later')).toHaveTextContent('Later A')
     for (const el of [...rows, ...screen.getAllByTestId('nownext-empty-row')]) {
-      expect(Number.parseInt(el.style.height, 10)).toBeLessThanOrEqual(gp(56))
+      expect(Number.parseInt(el.style.height, 10)).toBeLessThanOrEqual(gp(66))
     }
   })
 
@@ -151,12 +153,13 @@ describe('GuideNowNextView (TV-läge)', () => {
     expect(screen.getAllByTestId('nownext-row')[0]).toHaveAttribute('data-init')
   })
 
-  it('fokus markerar raden (bakgrund .05) och bannern följer', async () => {
+  it('fokus markerar radens kanalkort (ljusare grå) och bannern följer', async () => {
     await mount()
     const empty = screen.getAllByTestId('nownext-empty-row')[0]
     fireEvent.focus(empty)
     expect(empty).toHaveAttribute('data-selected')
-    expect(empty.style.background).toBe('rgba(252, 252, 255, 0.05)')
+    // Markeringen sitter på KORTET, inte på raden (korten sedan 2026-09-29).
+    expect(within(empty).getByTestId('nownext-channel-card').style.background).toBe('rgba(252, 252, 255, 0.16)')
     expect(screen.getByTestId('nownext-banner-title')).toHaveTextContent('No programme information')
     expect(screen.queryByTestId('nownext-banner-remind')).not.toBeInTheDocument()
     fireEvent.focus(screen.getAllByTestId('nownext-row')[0])

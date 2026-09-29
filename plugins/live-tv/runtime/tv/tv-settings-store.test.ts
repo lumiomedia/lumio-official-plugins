@@ -17,6 +17,7 @@ describe('tv-settings-store', () => {
       guideCategory: null,
       timelineZoom: 'day',
       nowNextDetails: true,
+      railLabels: true,
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()

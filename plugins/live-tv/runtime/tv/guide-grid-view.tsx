@@ -12,7 +12,7 @@ import { startOfLocalDay } from '../live-tv-model'
 import { useGridRows } from './grid-rows'
 import { GuideChannelCell, filterByGroup, guideCellStyle } from './tv-guide-shared'
 import { GuideDetailPanel } from './guide-detail-panel'
-import { GuidePaginationRow, ROWS_STEP, ellipsis, gp, initAttr, useHoverSelect, withPointerLeave } from './guide-view-shared'
+import { GUIDE_CARD_BG, GUIDE_CARD_GAP, GUIDE_CARD_INSET, GUIDE_CARD_LINE, GUIDE_CARD_RADIUS, GUIDE_ON_SELECTED, GUIDE_ON_SELECTED_DIM, GuidePaginationRow, ROWS_STEP, ellipsis, gp, initAttr, useHoverSelect, withPointerLeave } from './guide-view-shared'
 import type { GuideSelection, GuideViewProps } from './guide-types'
 
 /**
@@ -37,7 +37,7 @@ import type { GuideSelection, GuideViewProps } from './guide-types'
  * Mönstret (sticky kolumn + x-scroll) är telefonens `guide-grid-phone.tsx`.
  */
 
-const ROW_H_PX = gp(60)
+const ROW_H_PX = gp(68)
 const HALF_HOUR_MS = 30 * 60_000
 /** Scen-px per minut i Grid: 30 min ≈ 200 px, så titel + tid ryms i ett normalt block. */
 export const PX_PER_MIN_GRID = gp(4.7)
@@ -146,9 +146,12 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, no
         data-sticky=""
         title={channel.name}
         {...station(() => nav.openChannel(channel), (element) => nav.channelMenu(channel, element), initAttr(init))}
-        style={{ ...guideCellStyle('grid'), position: 'sticky', left: 0, zIndex: 2, background: TV.bg, display: 'flex', alignItems: 'stretch', cursor: 'pointer' }}
+        style={{ ...guideCellStyle('grid'), position: 'sticky', left: 0, zIndex: 2, background: TV.bg, display: 'flex', alignItems: 'stretch', cursor: 'pointer', padding: `${GUIDE_CARD_INSET}px ${GUIDE_CARD_GAP}px` }}
       >
-        <GuideChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} variant="grid" />
+        {/* Kanalkortet: grå grund, ljusare när kanalen är markerad. */}
+        <div data-testid="grid-channel-card" style={{ flex: 1, minWidth: 0, display: 'flex', borderRadius: GUIDE_CARD_RADIUS, background: selectedKey === key ? TV.s16 : GUIDE_CARD_BG, border: GUIDE_CARD_LINE, boxSizing: 'border-box' }}>
+          <GuideChannelCell channel={channel} number={model.channelNumber(channel)} pinned={model.pinnedSet.has(key)} locked={model.locked.has(key)} variant="grid" fill />
+        </div>
       </div>
     )
   }
@@ -196,7 +199,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, no
                   const entries = entriesByChannel.get(key) ?? []
                   const rowInit = initKey !== null && initKey.channel === key && !initKey.empty
                   return (
-                    <div key={key} data-testid="grid-row" style={{ display: 'flex', height: ROW_H_PX, minHeight: ROW_H_PX, borderBottom: '1px solid rgba(255,255,255,0.06)', boxSizing: 'border-box' }}>
+                    <div key={key} data-testid="grid-row" style={{ display: 'flex', height: ROW_H_PX, minHeight: ROW_H_PX, boxSizing: 'border-box' }}>
                       {channelCell(channel, rowInit && initKey.start === null)}
                       <div data-testid="grid-track" style={{ width: trackWidth, flexShrink: 0, position: 'relative' }}>
                         {entries.map(({ box, programme }, blockIndex) => {
@@ -235,7 +238,7 @@ export function GuideGridView({ model, nav, category, dayOffset, windowStart, no
                   const key = channelKey(channel)
                   const sel: GuideSelection = { channel, programme: null }
                   return (
-                    <div key={key} data-testid="grid-empty-row" style={{ display: 'flex', height: ROW_H_PX, minHeight: ROW_H_PX, background: 'rgba(252,252,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.06)', boxSizing: 'border-box' }}>
+                    <div key={key} data-testid="grid-empty-row" style={{ display: 'flex', height: ROW_H_PX, minHeight: ROW_H_PX, background: 'rgba(252,252,255,0.03)', boxSizing: 'border-box' }}>
                       {channelCell(channel, false)}
                       <div
                         data-testid="grid-empty-cell"
@@ -364,16 +367,19 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, las
       {...withPointerLeave(station(onOk, onHold, init ? { 'data-init': '' } : undefined), onLeave)}
       onFocus={onFocus}
       onPointerEnter={onEnter}
-      style={{ position: 'absolute', top: gp(6), bottom: gp(6), left: box.left, width: box.width, paddingRight: gp(2), boxSizing: 'border-box', cursor: 'pointer' }}
+      style={{ position: 'absolute', top: GUIDE_CARD_INSET, bottom: GUIDE_CARD_INSET, left: box.left, width: box.width, paddingRight: marker ? gp(2) : GUIDE_CARD_GAP, boxSizing: 'border-box', cursor: 'pointer' }}
     >
+      {/* Kortet: grå grund + kant; pågående program tonas i accenten;
+          det markerade kortet är vitt med mörk text. */}
       <div
         style={{
           height: '100%',
           boxSizing: 'border-box',
-          borderRadius: marker ? 0 : gp(8),
-          padding: marker ? 0 : `${gp(8)}px ${gp(10)}px`,
-          background: marker ? TV.acc : live ? 'rgba(59,130,246,0.18)' : TV.s08,
-          border: live ? '1px solid rgba(59,130,246,0.5)' : '1px solid transparent',
+          borderRadius: marker ? 0 : GUIDE_CARD_RADIUS,
+          padding: marker ? 0 : `${gp(8)}px ${gp(12)}px`,
+          background: marker ? TV.acc : selected ? TV.text : live ? TV.accMix(14) : GUIDE_CARD_BG,
+          border: marker ? 'none' : selected ? '1px solid transparent' : live ? `1px solid ${TV.accMix(45)}` : GUIDE_CARD_LINE,
+          color: selected ? GUIDE_ON_SELECTED : TV.text,
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -381,9 +387,9 @@ function GridBlock({ box, programme, locale, live, init, selected, reminded, las
         {marker ? null : (
           <>
             {textFits ? (
-              <div style={{ fontSize: gp(13), fontWeight: live ? 600 : 400, color: live ? TV.text : TV.muted, paddingRight: reminded ? gp(14) : 0, ...ellipsis }}>{programme.title}</div>
+              <div style={{ fontSize: gp(14), fontWeight: 600, color: selected ? GUIDE_ON_SELECTED : live ? TV.text : 'rgba(243,244,248,0.88)', paddingRight: reminded ? gp(14) : 0, ...ellipsis }}>{programme.title}</div>
             ) : null}
-            {textFits && box.shape === 'full' ? <div style={{ fontSize: gp(11), color: live ? 'rgba(243,244,248,0.6)' : TV.faint, ...ellipsis }}>{times}</div> : null}
+            {textFits && box.shape === 'full' ? <div style={{ fontSize: gp(12), color: selected ? GUIDE_ON_SELECTED_DIM : live ? 'rgba(243,244,248,0.65)' : 'rgba(243,244,248,0.5)', ...ellipsis }}>{times}</div> : null}
             {reminded ? <span style={{ position: 'absolute', right: gp(4), top: gp(4), color: TV.acc }}><Icons.Bell size={gp(11)} filled /></span> : null}
           </>
         )}

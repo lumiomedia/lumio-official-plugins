@@ -55,6 +55,9 @@ const LIBRARY: VodItemFixture[] = [
   movie(3, 'Oppenheimer', HBO, { tmdbId: 872585 }),
   series(4, 'Dark', NETFLIX, { tmdbId: 70523 }),
 ]
+/** Filmer/Serier-växlaren (2026-09-29) står på Filmer vid start: kolumnen och "Alla" gäller filmerna. */
+const MOVIES = LIBRARY.filter((item) => item.kind === 'movie').length
+const MOVIE_CATEGORIES = 2
 
 afterEach(cleanup)
 beforeEach(() => {
@@ -80,26 +83,31 @@ const categoryNames = () => screen.getAllByTestId('library-category').map((el) =
 const cardTitles = () => screen.getAllByTestId('library-card').map((el) => el.textContent)
 
 describe('TvLibrary', () => {
-  it('visar panelens kategorinamn ordagrant, film före serier', async () => {
+  it('visar panelens kategorinamn ordagrant, och växlaren byter mellan film och serier', async () => {
     mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(3))
+    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(MOVIE_CATEGORIES))
     // Prefixet MOVIE:/SERIES: står kvar — användaren känner igen dem från sitt konto.
-    expect(categoryNames()).toEqual(['MOVIE: HBO1', 'MOVIE: Swedish2', 'SERIES: Netflix1'])
+    expect(categoryNames()).toEqual(['MOVIE: HBO1', 'MOVIE: Swedish2'])
+    expect(screen.getByTestId('library-kind-movie').hasAttribute('data-active')).toBe(true)
     // Stubben kör engelska, som resten av vy-sviten.
-    expect(screen.getByText('FILM')).toBeTruthy()
-    expect(screen.getByText('SERIES')).toBeTruthy()
+    expect(screen.getByText('Categories')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('library-kind-series'))
+    await waitFor(() => expect(categoryNames()).toEqual(['SERIES: Netflix1']))
+    expect(screen.getByTestId('library-kind-series').hasAttribute('data-active')).toBe(true)
+    // Alla gäller nu serierna.
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(1))
   })
 
-  it('öppnar Alla som förval och visar hela biblioteket', async () => {
+  it('öppnar Alla (filmer) som förval och visar alla filmer', async () => {
     mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(LIBRARY.length))
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(MOVIES))
     expect(screen.getByTestId('library-category-all').hasAttribute('data-active')).toBe(true)
     expect(cardTitles().some((title) => title.includes('Oppenheimer'))).toBe(true)
   })
 
   it('byter kategori och hämtar om rutnätet', async () => {
     mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(3))
+    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(MOVIE_CATEGORIES))
     fireEvent.click(screen.getAllByTestId('library-category')[1])
     await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(2))
     expect(cardTitles().join('|')).toContain('Dune')
@@ -108,7 +116,7 @@ describe('TvLibrary', () => {
 
   it('sorterar om i värden när ett chip väljs', async () => {
     mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(3))
+    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(MOVIE_CATEGORIES))
     fireEvent.click(screen.getAllByTestId('library-category')[1])
     await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(2))
     // "Senast tillagda" är standard: Barbie (2) före Dune (1).
@@ -121,8 +129,10 @@ describe('TvLibrary', () => {
 
   it('märker serier som serier och film som film', async () => {
     mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(3))
-    fireEvent.click(screen.getAllByTestId('library-category')[2])
+    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(MOVIE_CATEGORIES))
+    fireEvent.click(screen.getByTestId('library-kind-series'))
+    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(1))
+    fireEvent.click(screen.getAllByTestId('library-category')[0])
     await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(1))
     expect(screen.getByTestId('library-card').querySelector('[data-vod-kind="series"]')).toBeTruthy()
   })
@@ -131,7 +141,7 @@ describe('TvLibrary', () => {
     // Jerrys krav 2026-09-19: detaljerna ska ligga kvar i Live TV med
     // ikonraden synlig, inte navigera bort till appens detaljsida.
     const onNavigate = mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(LIBRARY.length))
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(MOVIES))
     const opened: unknown[] = []
     const handler = (event: Event) => opened.push((event as CustomEvent).detail)
     window.addEventListener('lumio-open-media-item', handler)
@@ -173,13 +183,13 @@ describe('TvLibrary', () => {
 
   it('sätter exakt en startpunkt för fjärren', async () => {
     mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(LIBRARY.length))
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(MOVIES))
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
 
   it('Sök-knappen öppnar söket med film och serier förvalt', async () => {
     const onNavigate = mount({ vod: LIBRARY })
-    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(LIBRARY.length))
+    await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBe(MOVIES))
     fireEvent.click(screen.getByTestId('library-search'))
     expect(onNavigate).toHaveBeenCalledWith({
       pageId: 'live-tv-browse',
@@ -463,7 +473,7 @@ describe('Biblioteket utanför TV-läget (skrivbord och telefon)', () => {
     )
     // Två hämtningar i följd (kategorier, sedan sidan) hinner passera 1 s när
     // hela sviten kör parallellt — det gav ett falskt larm.
-    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(3), { timeout: 4000 })
+    await waitFor(() => expect(screen.getAllByTestId('library-category').length).toBe(MOVIE_CATEGORIES), { timeout: 4000 })
     await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0), { timeout: 4000 })
   })
 
@@ -503,14 +513,14 @@ describe('Rutnätet i TV-läge kontra skrivbord', () => {
     await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0))
     // Samma designpixlar visas i full storlek på TV, där man sitter tre meter
     // bort — färre kolumner ger läsbara affischer.
-    expect(gridOf().style.gridTemplateColumns).toBe('repeat(5, minmax(0, 1fr))')
+    expect(gridOf().style.gridTemplateColumns).toBe('repeat(4, minmax(0, 1fr))')
     cleanup()
 
     __setTvModeForTests(false)
     try {
       mount({ vod: LIBRARY })
       await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0), { timeout: 4000 })
-      expect(gridOf().style.gridTemplateColumns).toBe('repeat(7, minmax(0, 1fr))')
+      expect(gridOf().style.gridTemplateColumns).toBe('repeat(5, minmax(0, 1fr))')
     } finally {
       __setTvModeForTests(true)
     }

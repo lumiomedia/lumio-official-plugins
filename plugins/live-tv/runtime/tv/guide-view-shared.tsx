@@ -29,6 +29,23 @@ export function gp(n: number): number {
   return Math.round(n * GUIDE_SCALE)
 }
 
+/**
+ * Cellernas KORT (Jerry 2026-09-29: "EPG behöver gråa bakgrunder så de är
+ * tydliga"): varje kanalcell, program och Nu/Sen/Senare-cell ritas som ett
+ * eget rundat kort med grå grund och tunn kant, i stället för rader med
+ * linjer emellan. Pågående program tonas i accenten, markerat kort blir vitt.
+ */
+export const GUIDE_CARD_BG = 'rgba(252,252,255,0.09)'
+export const GUIDE_CARD_LINE = '1px solid rgba(255,255,255,0.10)'
+export const GUIDE_CARD_RADIUS = gp(10)
+/** Luft mellan korten i en rad (samma i alla tre lägen). */
+export const GUIDE_CARD_GAP = gp(8)
+/** Kortets lodräta marginal inne i raden. */
+export const GUIDE_CARD_INSET = gp(5)
+/** Text på ett markerat (vitt) kort. */
+export const GUIDE_ON_SELECTED = '#15161c'
+export const GUIDE_ON_SELECTED_DIM = 'rgba(21,22,28,0.6)'
+
 export const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
 
 /** `data-init` som spridbart attribut — bara på EN station per vy. */

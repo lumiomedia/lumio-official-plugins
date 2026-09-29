@@ -161,11 +161,20 @@ const ZAP_TIMEOUT_MS = 1500
  * ryms där (`MobileSheet`). Måtten här gäller därför bara TV, skrivbord och
  * en smal-men-inte-telefon yta.
  */
-const RAIL_W_TV = 104
-const RAIL_W_DESKTOP = 84
+const RAIL_W_TV = 152
+const RAIL_W_DESKTOP = 132
 const RAIL_W_NARROW = 64
-/** Postens sida på TV och skrivbord. */
-const RAIL_ITEM_WIDE = 60
+/**
+ * Postens BREDD på TV och skrivbord. Sedan 2026-09-29 (Jerry: "menyn är
+ * bättre lite luftig") bär posten ikon + etikett under, så den är bredare än
+ * hög — höjden är `RAIL_ITEM_WIDE_H`. Smalläget behåller kvadraten utan text.
+ */
+const RAIL_ITEM_WIDE = 108
+const RAIL_ITEM_WIDE_H = 84
+/** Utan etiketter (inställningen `railLabels` av): den gamla raden — 104/84 bred med 60×60-poster. */
+const RAIL_W_TV_COMPACT = 104
+const RAIL_W_DESKTOP_COMPACT = 84
+const RAIL_ITEM_COMPACT = 60
 /** Postens sida på en smal yta — fortfarande över 44 px träffyta. */
 const RAIL_ITEM_NARROW = 48
 
@@ -236,8 +245,11 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    * för själva guiden är `useNewGuideSurface` i `guide-surface.ts`.
    */
   const desktopSurface = isDesktopTauri() && !isTv && !phone
-  const railWidth = isTv ? RAIL_W_TV : narrow ? RAIL_W_NARROW : RAIL_W_DESKTOP
-  const railItemSize = narrow ? RAIL_ITEM_NARROW : RAIL_ITEM_WIDE
+  // Etiketter under ikonerna kan stängas av i pluginets inställningar — då
+  // gäller den gamla smala raden. Smalläget har aldrig etiketter.
+  const railLabels = settings.railLabels && !narrow
+  const railWidth = isTv ? (railLabels ? RAIL_W_TV : RAIL_W_TV_COMPACT) : narrow ? RAIL_W_NARROW : railLabels ? RAIL_W_DESKTOP : RAIL_W_DESKTOP_COMPACT
+  const railItemSize = narrow ? RAIL_ITEM_NARROW : railLabels ? RAIL_ITEM_WIDE : RAIL_ITEM_COMPACT
 
   /**
    * More-arket (telefon): flik-raden har fyra vyer; multivy och inställningar
@@ -567,9 +579,15 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       <div
         key={item.key}
         {...station(item.run ?? (() => go(item.key as TvView)), undefined, { 'data-testid': `rail-${item.key}`, 'aria-label': item.label, title: item.label })}
-        style={{ width: dp(railItemSize), height: dp(railItemSize), borderRadius: dp(16), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.55)', ...extraStyle }}
+        style={{ width: dp(railItemSize), height: dp(railLabels ? RAIL_ITEM_WIDE_H : railItemSize), borderRadius: dp(railLabels ? 18 : 16), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: dp(5), cursor: 'pointer', background: activeItem ? TV.s14 : 'transparent', color: activeItem ? TV.text : 'rgba(243,244,248,0.62)', ...extraStyle }}
       >
         {item.icon}
+        {/* Etiketten under ikonen — bara när raden är bred nog. */}
+        {!railLabels ? null : (
+          <span data-live-tv-rail-label="" style={{ fontSize: dp(15), fontWeight: 600, lineHeight: 1.1, maxWidth: '100%', padding: `0 ${dp(6)}px`, boxSizing: 'border-box', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {item.label}
+          </span>
+        )}
       </div>
     )
   }
@@ -627,7 +645,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
             OFÖRÄNDRAD ovanför telefonbredden (spec §1/krav 3) — se
             "utan telefonattribut: ikonraden som förut" i tv-shell-phone.test.tsx.
             På telefon finns ingen rad alls: flik-raden nedan tar över. */
-        <nav data-testid="tv-rail" aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 14) }}>
+        <nav data-testid="tv-rail" aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 8) }}>
           {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
               yta går den bort tillsammans med luften ovanför — posterna ska nå
               ner i skärmen, inte trängas under en logotyp. */}

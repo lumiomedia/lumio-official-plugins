@@ -905,7 +905,7 @@
     useEffect(() => {
       if (!isAndroidTauriEnv || !enabled) return;
       let cancelled = false;
-      const tick = async () => {
+      const tick2 = async () => {
         const s = await np({ cmd: "status" });
         if (cancelled || !s || typeof s.timePos !== "number") return;
         const prev = prevRef.current;
@@ -957,9 +957,9 @@
         }
       };
       const id = window.setInterval(() => {
-        void tick();
+        void tick2();
       }, 250);
-      void tick();
+      void tick2();
       return () => {
         cancelled = true;
         window.clearInterval(id);
@@ -1115,14 +1115,14 @@
       captureSupported: true,
       maxSurfaces: () => MAX_HTML,
       create(id) {
-        const listeners8 = /* @__PURE__ */ new Set();
+        const listeners9 = /* @__PURE__ */ new Set();
         let video = null;
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
         const emit2 = (patch) => {
           state2 = { ...state2, ...patch };
-          for (const l of [...listeners8]) l(state2);
+          for (const l of [...listeners9]) l(state2);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -1195,15 +1195,15 @@
             return res.ok;
           },
           onState(l) {
-            listeners8.add(l);
-            return () => listeners8.delete(l);
+            listeners9.add(l);
+            return () => listeners9.delete(l);
           },
           // Värdstängning (yta 0 öppnas) ger ett sista loadFailed; en
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
             if (reason) emit2({ loadFailed: true });
-            listeners8.clear();
+            listeners9.clear();
           }
         };
       }
@@ -1257,17 +1257,17 @@
     }
   }
   function createMpvSurfaceBackend() {
-    const listeners8 = /* @__PURE__ */ new Set();
+    const listeners9 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit2 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners8]) listener(state2);
+      for (const listener of [...listeners9]) listener(state2);
     };
     const dispatch = (next) => {
       state2 = next;
-      for (const listener of [...listeners8]) listener(next);
+      for (const listener of [...listeners9]) listener(next);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
@@ -1343,15 +1343,15 @@
         }
       },
       onState(listener) {
-        listeners8.add(listener);
+        listeners9.add(listener);
         return () => {
-          listeners8.delete(listener);
+          listeners9.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
         if (reason) emit2({ loadFailed: true });
-        listeners8.clear();
+        listeners9.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
           dispatchersByRustId.delete(surface);
@@ -1414,11 +1414,11 @@
     };
   }
   function createDroidSurfaceBackend() {
-    const listeners8 = /* @__PURE__ */ new Set();
+    const listeners9 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit2 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners8]) listener(state2);
+      for (const listener of [...listeners9]) listener(state2);
     };
     let nativeId = null;
     let destroyed = false;
@@ -1458,7 +1458,7 @@
           const next = toSurfaceState(value);
           if (!next) return;
           state2 = next;
-          for (const listener of [...listeners8]) listener(next);
+          for (const listener of [...listeners9]) listener(next);
         });
       }, 250);
     }
@@ -1531,9 +1531,9 @@
         return false;
       },
       onState(listener) {
-        listeners8.add(listener);
+        listeners9.add(listener);
         return () => {
-          listeners8.delete(listener);
+          listeners9.delete(listener);
         };
       },
       async destroy(reason) {
@@ -1541,7 +1541,7 @@
         generation++;
         stopPolling();
         if (reason) emit2({ loadFailed: true });
-        listeners8.clear();
+        listeners9.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
         await np({ cmd: "surfaceDestroy", surface }).catch(() => {
@@ -1842,7 +1842,9 @@
       return null;
     }
   }
-  async function closeMpvPlayer() {
+  async function closeMpvPlayer(reason = "ok\xE4nd") {
+    void fetch(`/api/debug-log?msg=${encodeURIComponent(`[mpv-close] ${reason}`)}`).catch(() => {
+    });
     return (0, import_core2.invoke)("mpv_close");
   }
   async function setMpvPause(paused) {
@@ -2286,6 +2288,8 @@
           lastWatched: "Continue watching",
           watchHistory: "History",
           startNextSource: "The source didn\u2019t respond \u2014 trying the next\u2026",
+          startNextSourceNamed: "The source didn\u2019t respond \u2014 trying {stream}\u2026",
+          startSlateNext: "The source sent no film \u2014 trying {stream}\u2026",
           startCancel: "Cancel",
           startNoSourceTitle: "No source started",
           startNoSourceDesc: "We tried {n} sources. Pick one yourself or try again.",
@@ -2299,12 +2303,63 @@
           barcodeViewGrid: "Grid",
           barcodeViewList: "Strips",
           barcodeViewRing: "Rings",
+          barcodeViewShelf: "Shelf",
+          barcodeShelfStyle: "Shelf style",
+          barcodeShelfSpines: "Spines",
+          barcodeShelfPoster: "Poster",
+          barcodeShelfRing: "Ring",
+          barcodeShelfPortrait: "Portrait",
+          barcodePosterPortrait: "Portrait",
+          barcodeSearch: "Search",
+          barcodeSort: "Sort",
+          barcodeSortRecent: "Recent",
+          barcodeSortTitle: "Title",
+          barcodeSortYear: "Year",
+          barcodePage: "Page {p} of {n}",
+          barcodePrev: "Previous",
+          barcodeNext: "Next",
+          barcodeNoMatches: "No matches",
+          barcodeSetShelfStyle: "Default shelf style",
+          barcodeSetShelfPaper: "Shelf paper",
+          barcodePaperLightShort: "Light",
+          barcodePaperDarkShort: "Dark",
           barcodeResume: "Resume",
           barcodeResumeFrom: "Resume from {t}",
           barcodePlayAgain: "Play again",
           barcodeStartOver: "Start over",
           barcodeShare: "Share",
           barcodeShareSoFar: "Share so far",
+          barcodeShareTitle: "Share {title}",
+          barcodeShareImage: "Image",
+          barcodeShareStory: "Story",
+          barcodeShareWallpaper: "Wallpaper",
+          barcodeSharePoster: "Poster",
+          barcodePosterCredits: "Credits",
+          barcodePosterTitleCard: "Title card",
+          barcodePosterRing: "Ring",
+          barcodePaperLight: "Light paper",
+          barcodePaperDark: "Dark paper",
+          barcodePosterDirectedBy: "Directed by",
+          barcodePosterWrittenBy: "Written by",
+          barcodePosterStarring: "Starring",
+          barcodePosterMusicBy: "Music by",
+          barcodePosterCinematographyBy: "Cinematography by",
+          barcodePosterEditedBy: "Edited by",
+          barcodePosterCreditLine: "{label} {name}",
+          barcodeShareTitleYear: "Title and year",
+          barcodeShareCopy: "Copy image",
+          barcodeShareSave: "Save PNG",
+          barcodeShareSaved: "Saved as PNG",
+          barcodeShareCopied: "Image copied",
+          barcodeShareSaveFailed: "Couldn't save the image",
+          barcodeShareCopyFailed: "Couldn't copy the image",
+          barcodeShareCopyShort: "Copy",
+          barcodeShareSend: "Share image",
+          barcodeShareFailed: "Couldn't share the image",
+          barcodeShareToPhone: "Share to your phone",
+          barcodeShareToPhoneDesc: "Scan with your phone to save the image or share it on.",
+          barcodeShareNoLan: "This device has no network address the phone can reach.",
+          barcodeShareDone: "Done",
           barcodeYouAreHere: "You are here \xB7 {t}",
           barcodePlayFrom: "Play from {t}",
           barcodeNotWatched: "not watched",
@@ -2352,6 +2407,10 @@
           barcodeUnseenHatch: "Hatched",
           barcodeUnseenDim: "Dimmed",
           barcodeUnseenEmpty: "Empty",
+          barcodeSetTexture: "Stripe texture",
+          barcodeSetTextureDesc: "Smooth softens the stripes in shelf view.",
+          barcodeTextureRough: "Rough",
+          barcodeTextureSmooth: "Smooth",
           barcodeSetShareTitle: "Include title and year on shared images",
           barcodeSetSaved: "Saved barcodes",
           barcodeSetSavedDesc: "{n} films \xB7 {mb} MB",
@@ -4392,13 +4451,60 @@
              en engelsk profil. */
           advBackupSavedTitle: "Settings copy saved",
           advBackupOpenOnOtherDevice: "Open this address on the other device, download the file, and press Import there.",
+          hapticsTitle: "Feel the bass",
+          hapticsHint: "Your phone vibrates with the film\u2019s bass hits.",
+          hapticsHostToggleTitle: "Allow Feel the bass from a phone",
+          hapticsHostToggleDesc: "Phones on the same Wi-Fi can connect with a code shown here.",
+          hapticsHostOn: "On",
+          hapticsHostOff: "Off",
+          hapticsHostPortError: "Could not start: {e}",
+          hapticsHostDevicesTitle: "Paired phones",
+          hapticsHostNoDevices: "No phones paired yet.",
+          hapticsHostRemove: "Remove",
+          hapticsHostPairTitle: "Pair a phone",
+          hapticsHostPairDesc: "Open for two minutes, then tap Connect on the phone. Nothing on the network can pair while this is closed.",
+          hapticsHostPairOpen: "Pair phone",
+          hapticsHostPairCancel: "Cancel",
+          hapticsPairWaiting: "Waiting for a phone\u2026 Tap Connect under Feel the bass on the phone.",
+          hapticsReceiverNotOpen: "Tap \u201CPair phone\u201D under Feel the bass on {name} first.",
+          hapticsReceiverHostGone: "{name} has not been reachable for 15 minutes \u2014 stopped.",
+          hapticsPairCodeTitle: "{name} wants to feel the bass",
+          hapticsPairCodeDesc: "Enter this code on the phone",
+          hapticsConnectedNotice: "Bass is felt in {name}",
+          hapticsReceiverSearching: "Looking for Lumio on your Wi-Fi\u2026",
+          hapticsReceiverNone: "No Lumio found. Turn on \u201CAllow Feel the bass from a phone\u201D on the Mac or TV.",
+          hapticsReceiverConnect: "Connect",
+          hapticsReceiverDisconnect: "Disconnect",
+          hapticsReceiverForget: "Forget",
+          hapticsReceiverCodePrompt: "Enter the code shown on {name}",
+          hapticsReceiverCodeWrong: "Wrong code \u2014 {n} tries left",
+          hapticsReceiverCodeExpired: "The code expired. Try again.",
+          hapticsReceiverBusy: "Another phone is pairing right now. Try again in a moment.",
+          hapticsReceiverStrength: "Strength",
+          hapticsReceiverSensitivity: "Sensitivity",
+          hapticsReceiverSensitivityHint: "How easily a boom counts. Higher catches quieter bass \u2014 and more of it.",
+          hapticsSensitivity_low: "Low",
+          hapticsSensitivity_normal: "Normal",
+          hapticsSensitivity_high: "High",
+          hapticsSensitivity_max: "Max",
+          hapticsReceiverSync: "Earlier / later",
+          hapticsReceiverSyncHint: "Drag while the film plays until the vibration lands with the boom.",
+          hapticsReceiverPlaying: "Playing on {name}",
+          hapticsReceiverPaused: "Paused on {name}",
+          hapticsReceiverPassthrough: "Audio goes straight to the receiver \u2014 the bass can\u2019t be felt.",
+          hapticsReceiverNoAudio: "This audio track can\u2019t be analysed.",
+          hapticsReceiverRemoved: "{name} has removed this phone.",
+          hapticsReceiverHostOff: "{name} has turned off Feel the bass.",
+          hapticsNotifFeeling: "Feeling the bass from {name}",
+          hapticsNotifReconnecting: "Reconnecting\u2026",
+          hapticsNotifStop: "Stop",
           advTransferTitle: "Move settings to another device",
           advTransferHint: "Copy everything you have set up here \u2014 sources, keys, layout, lists \u2014 to another Lumio on the same Wi-Fi. Settings that belong to a particular device, like TV mode, audio output, gestures and autoplay limits, stay where they are.",
           advTransferReceiveTitle: "Receive from another device",
           advTransferReceiveDesc: "Start here on the device that should get the settings. It shows a code and becomes visible to other Lumio devices on the network for ten minutes.",
           advTransferReceiveStart: "Receive",
           advTransferReceiveStop: "Stop",
-          advTransferReceiveWaiting: "Waiting\u2026 On the other device, open Settings \u2192 Advanced \u2192 Send to another device, pick this one and enter the code:",
+          advTransferReceiveWaiting: "Waiting\u2026 On the other device, open Settings \u2192 Profiles \u2192 Send to another device, pick this one and enter the code:",
           advTransferReceiveIpHint: "If this device does not show up in the list, enter its address manually:",
           advTransferReceived: "Settings received \u2014 restarting\u2026",
           advTransferSendTitle: "Send to another device",
@@ -4671,9 +4777,40 @@
           onboardingExternalGroup: "External",
           onboardingThirdParty: "Third-party",
           onboardingExternalDisclaimer: "External plugins are developed and maintained by their respective developers \u2014 not by Lumio. They are fetched from the developer's own repository and used at your own risk.",
-          onboardingDiscoverEyebrow: "DISCOVER",
-          onboardingDiscoverTitle: "Find your next favourite",
-          onboardingDiscoverDesc: "Explore trends, the release calendar and curated rows for movies and series \u2014 a media hub built for inspiration.",
+          onboardingSyncEyebrow: "SYNC",
+          onboardingSyncTitle: "Already using Lumio?",
+          onboardingSyncDesc: "Bring over sources, keys, layout and lists from another device or from your own WebDAV storage. Nothing to bring? Press Next.",
+          onboardingSyncReceiveDesc: "Same Wi-Fi. This device shows a code you enter on the other one.",
+          onboardingSyncWebdavDesc: "Nextcloud, ownCloud, Koofr, a NAS \u2014 your own storage. Keeps devices in sync from now on.",
+          onboardingSyncVisible: "Visible on the network \xB7 {time} left",
+          onboardingSyncReceivedFrom: "Settings received from {device}",
+          onboardingSyncReceivedGeneric: "Settings received",
+          onboardingSyncReceivedDesc: "Sources, keys, layout and lists are in place. Device-specific settings like TV mode and autoplay limits stay as they are. Plugins are pre-ticked in the next step.",
+          onboardingSyncFoot: "All of this is also under Settings \u2192 Profiles.",
+          onboardingSyncBadgeReceived: "Received",
+          onboardingSyncBadgeConnected: "Connected",
+          onboardingPluginsFromSync: "Pre-ticked from your other device",
+          onboardingPerfSuggested: "Suggested",
+          onboardingRailWelcome: "Welcome",
+          onboardingRailLanguage: "Language",
+          onboardingRailSync: "Sync",
+          onboardingRailPlugins: "Plugins",
+          onboardingRailIntegrations: "Integrations",
+          onboardingRailPerformance: "Performance",
+          onboardingRailControl: "Ready",
+          onboardingSumLang: "Language",
+          onboardingSumSync: "Sync",
+          onboardingSumPlugins: "Plugins",
+          onboardingSumTrakt: "Trakt",
+          onboardingSumNone: "Not set",
+          onboardingSumSkipped: "Skipped",
+          onboardingSumReceivedFrom: "Received from {device}",
+          onboardingSumReceived: "Received from another device",
+          onboardingSumWillEnable: "{names} will be enabled",
+          onboardingHintMove: "Move",
+          onboardingHintSelect: "Select",
+          onboardingHintBack: "Previous step",
+          onboardingHintBackKey: "BACK",
           onboardingControlEyebrow: "READY",
           onboardingControlTitle: "You are in control",
           onboardingControlDesc: "Customise the start page, filters, language and layout exactly the way you want before you begin.",
@@ -5351,6 +5488,8 @@
           lastWatched: "Forts\xE4tt titta",
           watchHistory: "Historik",
           startNextSource: "K\xE4llan svarade inte \u2014 provar n\xE4sta\u2026",
+          startNextSourceNamed: "K\xE4llan svarade inte \u2014 provar {stream}\u2026",
+          startSlateNext: "K\xE4llan skickade ingen film \u2014 provar {stream}\u2026",
           startCancel: "Avbryt",
           startNoSourceTitle: "Ingen k\xE4lla startade",
           startNoSourceDesc: "Vi provade {n} k\xE4llor. V\xE4lj en sj\xE4lv eller f\xF6rs\xF6k igen.",
@@ -5364,12 +5503,63 @@
           barcodeViewGrid: "Rutn\xE4t",
           barcodeViewList: "Remsor",
           barcodeViewRing: "Ringar",
+          barcodeViewShelf: "Hylla",
+          barcodeShelfStyle: "Hyllans stil",
+          barcodeShelfSpines: "Ryggar",
+          barcodeShelfPoster: "Affisch",
+          barcodeShelfRing: "Ring",
+          barcodeShelfPortrait: "St\xE5ende",
+          barcodePosterPortrait: "St\xE5ende",
+          barcodeSearch: "S\xF6k",
+          barcodeSort: "Sortera",
+          barcodeSortRecent: "Senast",
+          barcodeSortTitle: "Titel",
+          barcodeSortYear: "\xC5r",
+          barcodePage: "Sida {p} av {n}",
+          barcodePrev: "F\xF6reg\xE5ende",
+          barcodeNext: "N\xE4sta",
+          barcodeNoMatches: "Inga tr\xE4ffar",
+          barcodeSetShelfStyle: "Hyllans standardstil",
+          barcodeSetShelfPaper: "Hyllans papper",
+          barcodePaperLightShort: "Ljust",
+          barcodePaperDarkShort: "M\xF6rkt",
           barcodeResume: "Forts\xE4tt",
           barcodeResumeFrom: "Forts\xE4tt fr\xE5n {t}",
           barcodePlayAgain: "Spela igen",
           barcodeStartOver: "B\xF6rja om",
           barcodeShare: "Dela",
           barcodeShareSoFar: "Dela hittills",
+          barcodeShareTitle: "Dela {title}",
+          barcodeShareImage: "Bild",
+          barcodeShareStory: "Story",
+          barcodeShareWallpaper: "Tapet",
+          barcodeSharePoster: "Affisch",
+          barcodePosterCredits: "F\xF6rtexter",
+          barcodePosterTitleCard: "Titelkort",
+          barcodePosterRing: "Ring",
+          barcodePaperLight: "Ljust papper",
+          barcodePaperDark: "M\xF6rkt papper",
+          barcodePosterDirectedBy: "Regi",
+          barcodePosterWrittenBy: "Manus",
+          barcodePosterStarring: "I rollerna",
+          barcodePosterMusicBy: "Musik",
+          barcodePosterCinematographyBy: "Foto",
+          barcodePosterEditedBy: "Klippning",
+          barcodePosterCreditLine: "{label}: {name}",
+          barcodeShareTitleYear: "Titel och \xE5r",
+          barcodeShareCopy: "Kopiera bild",
+          barcodeShareSave: "Spara PNG",
+          barcodeShareSaved: "Sparad som PNG",
+          barcodeShareCopied: "Bild kopierad",
+          barcodeShareSaveFailed: "Kunde inte spara bilden",
+          barcodeShareCopyFailed: "Kunde inte kopiera bilden",
+          barcodeShareCopyShort: "Kopiera",
+          barcodeShareSend: "Dela bild",
+          barcodeShareFailed: "Kunde inte dela bilden",
+          barcodeShareToPhone: "Dela till telefonen",
+          barcodeShareToPhoneDesc: "Skanna med telefonen f\xF6r att spara bilden eller dela den vidare.",
+          barcodeShareNoLan: "Enheten har ingen n\xE4tverksadress som telefonen kan n\xE5.",
+          barcodeShareDone: "Klar",
           barcodeYouAreHere: "Du \xE4r h\xE4r \xB7 {t}",
           barcodePlayFrom: "Spela fr\xE5n {t}",
           barcodeNotWatched: "inte sett",
@@ -5417,6 +5607,10 @@
           barcodeUnseenHatch: "Streckad",
           barcodeUnseenDim: "Nedtonad",
           barcodeUnseenEmpty: "Tom",
+          barcodeSetTexture: "Strecktextur",
+          barcodeSetTextureDesc: "Mjuk mjukar upp strecken i hyllvyn.",
+          barcodeTextureRough: "Grov",
+          barcodeTextureSmooth: "Mjuk",
           barcodeSetShareTitle: "Ta med titel och \xE5r p\xE5 delade bilder",
           barcodeSetSaved: "Sparade barcodes",
           barcodeSetSavedDesc: "{n} filmer \xB7 {mb} MB",
@@ -7438,13 +7632,60 @@
           introDebugMissing: "Ingen introtr\xE4ff",
           advBackupSavedTitle: "Kopia av inst\xE4llningarna sparad",
           advBackupOpenOnOtherDevice: "\xD6ppna adressen p\xE5 den andra enheten, h\xE4mta filen och tryck Importera d\xE4r.",
+          hapticsTitle: "K\xE4nn basen",
+          hapticsHint: "Telefonen vibrerar i takt med filmens bassm\xE4llar.",
+          hapticsHostToggleTitle: "Till\xE5t K\xE4nn basen fr\xE5n telefon",
+          hapticsHostToggleDesc: "Telefoner p\xE5 samma Wi-Fi kan ansluta med en kod som visas h\xE4r.",
+          hapticsHostOn: "P\xE5",
+          hapticsHostOff: "Av",
+          hapticsHostPortError: "Kunde inte starta: {e}",
+          hapticsHostDevicesTitle: "Parkopplade telefoner",
+          hapticsHostNoDevices: "Inga telefoner parkopplade \xE4n.",
+          hapticsHostRemove: "Ta bort",
+          hapticsHostPairTitle: "Parkoppla telefon",
+          hapticsHostPairDesc: "\xD6ppnas i tv\xE5 minuter, tryck sedan Anslut p\xE5 telefonen. Medan det \xE4r st\xE4ngt kan ingen p\xE5 n\xE4tet parkoppla.",
+          hapticsHostPairOpen: "Parkoppla telefon",
+          hapticsHostPairCancel: "Avbryt",
+          hapticsPairWaiting: "V\xE4ntar p\xE5 en telefon\u2026 Tryck Anslut under K\xE4nn basen p\xE5 telefonen.",
+          hapticsReceiverNotOpen: "Tryck f\xF6rst \u201DParkoppla telefon\u201D under K\xE4nn basen p\xE5 {name}.",
+          hapticsReceiverHostGone: "{name} har inte g\xE5tt att n\xE5 p\xE5 15 minuter \u2014 avslutat.",
+          hapticsPairCodeTitle: "{name} vill k\xE4nna basen",
+          hapticsPairCodeDesc: "Skriv den h\xE4r koden i telefonen",
+          hapticsConnectedNotice: "Basen k\xE4nns i {name}",
+          hapticsReceiverSearching: "Letar efter Lumio p\xE5 ditt Wi-Fi\u2026",
+          hapticsReceiverNone: "Ingen Lumio hittades. Sl\xE5 p\xE5 \u201DTill\xE5t K\xE4nn basen fr\xE5n telefon\u201D p\xE5 Macen eller TV:n.",
+          hapticsReceiverConnect: "Anslut",
+          hapticsReceiverDisconnect: "Koppla ner",
+          hapticsReceiverForget: "Gl\xF6m",
+          hapticsReceiverCodePrompt: "Skriv koden som visas p\xE5 {name}",
+          hapticsReceiverCodeWrong: "Fel kod \u2014 {n} f\xF6rs\xF6k kvar",
+          hapticsReceiverCodeExpired: "Koden gick ut. F\xF6rs\xF6k igen.",
+          hapticsReceiverBusy: "En annan telefon parkopplar just nu. F\xF6rs\xF6k igen om en stund.",
+          hapticsReceiverStrength: "Styrka",
+          hapticsReceiverSensitivity: "K\xE4nslighet",
+          hapticsReceiverSensitivityHint: "Hur l\xE4tt en sm\xE4ll r\xE4knas. H\xF6gre tar med svagare bas \u2014 och mer av den.",
+          hapticsSensitivity_low: "L\xE5g",
+          hapticsSensitivity_normal: "Normal",
+          hapticsSensitivity_high: "H\xF6g",
+          hapticsSensitivity_max: "Max",
+          hapticsReceiverSync: "F\xF6re / efter",
+          hapticsReceiverSyncHint: "Dra medan filmen g\xE5r tills vibrationen kommer samtidigt med sm\xE4llen.",
+          hapticsReceiverPlaying: "Spelar p\xE5 {name}",
+          hapticsReceiverPaused: "Pausad p\xE5 {name}",
+          hapticsReceiverPassthrough: "Ljudet g\xE5r direkt till receivern \u2014 basen kan inte k\xE4nnas.",
+          hapticsReceiverNoAudio: "Det h\xE4r ljudsp\xE5ret g\xE5r inte att analysera.",
+          hapticsReceiverRemoved: "{name} har tagit bort den h\xE4r telefonen.",
+          hapticsReceiverHostOff: "{name} har st\xE4ngt av K\xE4nn basen.",
+          hapticsNotifFeeling: "K\xE4nner basen fr\xE5n {name}",
+          hapticsNotifReconnecting: "\xC5teransluter\u2026",
+          hapticsNotifStop: "St\xE4ng",
           advTransferTitle: "Flytta inst\xE4llningar till en annan enhet",
           advTransferHint: "Kopiera allt du st\xE4llt in h\xE4r \u2014 k\xE4llor, nycklar, layout, listor \u2014 till en annan Lumio p\xE5 samma wifi. Inst\xE4llningar som h\xF6r till en viss enhet, som TV-l\xE4ge, ljudutg\xE5ng, gester och autospelningens gr\xE4nser, stannar d\xE4r de \xE4r.",
           advTransferReceiveTitle: "Ta emot fr\xE5n annan enhet",
           advTransferReceiveDesc: "B\xF6rja h\xE4r p\xE5 enheten som ska f\xE5 inst\xE4llningarna. Den visar en kod och blir synlig f\xF6r andra Lumio-enheter p\xE5 n\xE4tet i tio minuter.",
           advTransferReceiveStart: "Ta emot",
           advTransferReceiveStop: "Avbryt",
-          advTransferReceiveWaiting: "V\xE4ntar\u2026 \xD6ppna Inst\xE4llningar \u2192 Avancerat \u2192 Skicka till annan enhet p\xE5 den andra enheten, v\xE4lj den h\xE4r och skriv koden:",
+          advTransferReceiveWaiting: "V\xE4ntar\u2026 \xD6ppna Inst\xE4llningar \u2192 Profiler \u2192 Skicka till annan enhet p\xE5 den andra enheten, v\xE4lj den h\xE4r och skriv koden:",
           advTransferReceiveIpHint: "Syns inte den h\xE4r enheten i listan, skriv in adressen manuellt:",
           advTransferReceived: "Inst\xE4llningar mottagna \u2014 startar om\u2026",
           advTransferSendTitle: "Skicka till annan enhet",
@@ -7711,9 +7952,40 @@
           onboardingExternalGroup: "Externa",
           onboardingThirdParty: "Tredjepart",
           onboardingExternalDisclaimer: "Externa till\xE4gg utvecklas och underh\xE5lls av respektive utvecklare \u2014 inte av Lumio. De h\xE4mtas fr\xE5n utvecklarens egna kodf\xF6rr\xE5d och anv\xE4nds p\xE5 eget ansvar.",
-          onboardingDiscoverEyebrow: "UPPT\xC4CK",
-          onboardingDiscoverTitle: "Hitta n\xE4sta favorit",
-          onboardingDiscoverDesc: "Utforska trender, releasekalendern och samlade rader f\xF6r film och serier \u2014 en mediahub byggd f\xF6r inspiration.",
+          onboardingSyncEyebrow: "SYNK",
+          onboardingSyncTitle: "Har du redan Lumio?",
+          onboardingSyncDesc: "H\xE4mta k\xE4llor, nycklar, layout och listor fr\xE5n en annan enhet eller fr\xE5n din egen WebDAV-lagring. Inget att h\xE4mta? Tryck N\xE4sta.",
+          onboardingSyncReceiveDesc: "Samma wifi. Den h\xE4r enheten visar en kod som du skriver in p\xE5 den andra.",
+          onboardingSyncWebdavDesc: "Nextcloud, ownCloud, Koofr, en NAS \u2014 din egen lagring. H\xE5ller enheterna i synk fram\xF6ver.",
+          onboardingSyncVisible: "Synlig p\xE5 n\xE4tet \xB7 {time} kvar",
+          onboardingSyncReceivedFrom: "Inst\xE4llningar mottagna fr\xE5n {device}",
+          onboardingSyncReceivedGeneric: "Inst\xE4llningar mottagna",
+          onboardingSyncReceivedDesc: "K\xE4llor, nycklar, layout och listor \xE4r p\xE5 plats. Enhetsberoende inst\xE4llningar som TV-l\xE4ge och autospelningens gr\xE4nser stannar som de \xE4r. Till\xE4ggen \xE4r f\xF6rbockade i n\xE4sta steg.",
+          onboardingSyncFoot: "Allt h\xE4r finns ocks\xE5 under Inst\xE4llningar \u2192 Profiler.",
+          onboardingSyncBadgeReceived: "Mottaget",
+          onboardingSyncBadgeConnected: "Ansluten",
+          onboardingPluginsFromSync: "F\xF6rbockade fr\xE5n din andra enhet",
+          onboardingPerfSuggested: "F\xF6rslag",
+          onboardingRailWelcome: "V\xE4lkommen",
+          onboardingRailLanguage: "Spr\xE5k",
+          onboardingRailSync: "Synk",
+          onboardingRailPlugins: "Till\xE4gg",
+          onboardingRailIntegrations: "Integrationer",
+          onboardingRailPerformance: "Prestanda",
+          onboardingRailControl: "Klart",
+          onboardingSumLang: "Spr\xE5k",
+          onboardingSumSync: "Synk",
+          onboardingSumPlugins: "Till\xE4gg",
+          onboardingSumTrakt: "Trakt",
+          onboardingSumNone: "Inte valt",
+          onboardingSumSkipped: "Hoppades \xF6ver",
+          onboardingSumReceivedFrom: "Mottaget fr\xE5n {device}",
+          onboardingSumReceived: "Mottaget fr\xE5n annan enhet",
+          onboardingSumWillEnable: "{names} aktiveras",
+          onboardingHintMove: "Flytta",
+          onboardingHintSelect: "V\xE4lj",
+          onboardingHintBack: "F\xF6reg\xE5ende steg",
+          onboardingHintBackKey: "BAK\xC5T",
           onboardingControlEyebrow: "KLART",
           onboardingControlTitle: "Du har full kontroll",
           onboardingControlDesc: "Anpassa startsidan, filter, spr\xE5k och utseende precis som du vill ha det innan du b\xF6rjar.",
@@ -10676,11 +10948,11 @@
     return new Promise((resolve) => {
       const startedAt = Date.now();
       let done = false;
-      let timer = setTimeout(() => finish(), ms);
+      let timer2 = setTimeout(() => finish(), ms);
       const finish = () => {
         if (done) return;
         done = true;
-        clearTimeout(timer);
+        clearTimeout(timer2);
         document.removeEventListener("visibilitychange", wake);
         window.removeEventListener("focus", wake);
         resolve();
@@ -10693,8 +10965,8 @@
           finish();
           return;
         }
-        clearTimeout(timer);
-        timer = setTimeout(() => finish(), WAKE_MIN_DELAY_MS - elapsed);
+        clearTimeout(timer2);
+        timer2 = setTimeout(() => finish(), WAKE_MIN_DELAY_MS - elapsed);
       };
       document.addEventListener("visibilitychange", wake);
       window.addEventListener("focus", wake);
@@ -11658,6 +11930,9 @@
   });
 
   // lib/series-watchlist-feed.ts
+  function streamCacheTtl(hasStream) {
+    return hasStream === true ? STREAM_CACHE_POSITIVE_TTL_MS : STREAM_CACHE_TTL_MS;
+  }
   function readStreamCache() {
     if (typeof window === "undefined") return {};
     try {
@@ -11684,7 +11959,7 @@
   }
   async function fetchJsonWithTimeout(input, init, timeoutMs) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const timer2 = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(input, {
         ...init ?? {},
@@ -11693,7 +11968,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } finally {
-      clearTimeout(timer);
+      clearTimeout(timer2);
     }
   }
   async function fetchEpisodeStreamResults(imdbId, season, episode) {
@@ -11795,7 +12070,7 @@
     const cacheKey2 = getCacheKey(imdbId, season, episode);
     const cache8 = readStreamCache();
     const cached = cache8[cacheKey2];
-    if (cached && Date.now() - cached.checkedAt < STREAM_CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.checkedAt < streamCacheTtl(cached.hasStream)) {
       return cached.hasStream;
     }
     const retryAt = failedCheckRetryAt.get(cacheKey2);
@@ -11832,7 +12107,7 @@
     streamCheckInFlight.set(cacheKey2, request);
     return request;
   }
-  var STREAM_CACHE_KEY, STREAM_CACHE_TTL_MS, SERIES_STATUS_CACHE_TTL_MS, streamCheckInFlight, providerLookupInProgress, FAILED_CHECK_RETRY_MS, failedCheckRetryAt;
+  var STREAM_CACHE_KEY, STREAM_CACHE_TTL_MS, STREAM_CACHE_POSITIVE_TTL_MS, SERIES_STATUS_CACHE_TTL_MS, streamCheckInFlight, providerLookupInProgress, FAILED_CHECK_RETRY_MS, failedCheckRetryAt;
   var init_series_watchlist_feed = __esm({
     "lib/series-watchlist-feed.ts"() {
       "use strict";
@@ -11848,6 +12123,7 @@
       init_watched_episodes();
       STREAM_CACHE_KEY = "series_watchlist_stream_status";
       STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
+      STREAM_CACHE_POSITIVE_TTL_MS = 6 * 60 * 60 * 1e3;
       SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
       streamCheckInFlight = /* @__PURE__ */ new Map();
       providerLookupInProgress = /* @__PURE__ */ new Set();
@@ -11857,6 +12133,9 @@
   });
 
   // lib/release-watchlist-feed.ts
+  function streamCacheTtl2(hasStream) {
+    return hasStream === true ? STREAM_CACHE_POSITIVE_TTL_MS2 : STREAM_CACHE_TTL_MS2;
+  }
   function readStreamCache2() {
     if (typeof window === "undefined") return {};
     try {
@@ -11881,7 +12160,7 @@
   }
   async function fetchJsonWithTimeout2(input, init, timeoutMs) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const timer2 = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(input, {
         ...init ?? {},
@@ -11890,7 +12169,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } finally {
-      clearTimeout(timer);
+      clearTimeout(timer2);
     }
   }
   async function fetchStreamResults(imdbId) {
@@ -11987,7 +12266,7 @@
     const cacheKey2 = getCacheKey2(imdbId);
     const cache8 = readStreamCache2();
     const cached = cache8[cacheKey2];
-    if (cached && Date.now() - cached.checkedAt < STREAM_CACHE_TTL_MS2) {
+    if (cached && Date.now() - cached.checkedAt < streamCacheTtl2(cached.hasStream)) {
       return cached.hasStream;
     }
     const retryAt = failedCheckRetryAt2.get(cacheKey2);
@@ -12024,7 +12303,7 @@
     movieStreamInFlight.set(cacheKey2, request);
     return request;
   }
-  var STREAM_CACHE_KEY2, STREAM_CACHE_TTL_MS2, movieStreamInFlight, providerLookupInProgress2, FAILED_CHECK_RETRY_MS2, failedCheckRetryAt2;
+  var STREAM_CACHE_KEY2, STREAM_CACHE_TTL_MS2, STREAM_CACHE_POSITIVE_TTL_MS2, movieStreamInFlight, providerLookupInProgress2, FAILED_CHECK_RETRY_MS2, failedCheckRetryAt2;
   var init_release_watchlist_feed = __esm({
     "lib/release-watchlist-feed.ts"() {
       "use strict";
@@ -12039,6 +12318,7 @@
       init_source_request();
       STREAM_CACHE_KEY2 = "release_watchlist_stream_status";
       STREAM_CACHE_TTL_MS2 = 30 * 60 * 1e3;
+      STREAM_CACHE_POSITIVE_TTL_MS2 = 6 * 60 * 60 * 1e3;
       movieStreamInFlight = /* @__PURE__ */ new Map();
       providerLookupInProgress2 = /* @__PURE__ */ new Set();
       FAILED_CHECK_RETRY_MS2 = 5 * 60 * 1e3;
@@ -13552,8 +13832,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners8 = this.listeners[event$1];
-              listeners8.splice(listeners8.indexOf(handler), 1);
+              const listeners9 = this.listeners[event$1];
+              listeners9.splice(listeners9.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -13582,8 +13862,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners8 = this.listeners[event$1];
-              listeners8.splice(listeners8.indexOf(handler), 1);
+              const listeners9 = this.listeners[event$1];
+              listeners9.splice(listeners9.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -15429,8 +15709,14 @@
     return `#${hex(r)}${hex(g)}${hex(b)}`;
   }
   async function sampleNative() {
-    const value = await np({ cmd: "sampleColor" });
-    return typeof value?.color === "string" ? value.color : null;
+    const start2 = await np({ cmd: "sampleColorStart" });
+    if (!start2?.started) return null;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      const value = await np({ cmd: "sampleColorResult" });
+      if (value?.done) return typeof value.color === "string" ? value.color : null;
+    }
+    return null;
   }
   function sampleVideo(video) {
     if (!video || video.readyState < 2 || video.videoWidth === 0) return Promise.resolve(null);
@@ -15484,11 +15770,17 @@
       scope: pick(raw.scope, ["movies", "movies+episodes"], d.scope),
       unseenStyle: pick(raw.unseenStyle, UNSEEN, d.unseenStyle),
       shareIncludeTitle: bool(raw.shareIncludeTitle, d.shareIncludeTitle),
-      libraryView: pick(raw.libraryView, VIEWS, d.libraryView)
+      libraryView: raw[SHELF_MIGRATED] === true ? pick(raw.libraryView, VIEWS, d.libraryView) : "shelf",
+      stripeTexture: raw[ROUGH_MIGRATED] === true ? pick(raw.stripeTexture, TEXTURES, d.stripeTexture) : "rough",
+      posterStyle: pick(raw.posterStyle, ["credits", "titleCard", "ring", "portrait"], d.posterStyle),
+      posterPaper: pick(raw.posterPaper, ["light", "dark"], d.posterPaper),
+      shelfStyle: pick(raw.shelfStyle, ["spines", "poster", "ring", "portrait"], d.shelfStyle),
+      librarySort: pick(raw.librarySort, ["recent", "title", "year"], d.librarySort),
+      shelfPaper: pick(raw.shelfPaper, ["light", "dark"], d.shelfPaper)
     };
   }
   function setBarcodeSettings(patch) {
-    setScopedStorageItem(KEY11, JSON.stringify({ ...getBarcodeSettings(), ...patch }));
+    setScopedStorageItem(KEY11, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODE_SETTINGS_CHANGED_EVENT));
   }
   function onBarcodeSettingsChanged(listener) {
@@ -15501,7 +15793,7 @@
       window.removeEventListener("lumio-profile-changed", listener);
     };
   }
-  var KEY11, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS;
+  var KEY11, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
   var init_barcode_settings = __esm({
     "lib/barcode/barcode-settings.ts"() {
       init_profile_storage_shim();
@@ -15514,11 +15806,20 @@
         scope: "movies",
         unseenStyle: "hatch",
         shareIncludeTitle: true,
-        libraryView: "grid"
+        libraryView: "shelf",
+        stripeTexture: "rough",
+        posterStyle: "credits",
+        posterPaper: "light",
+        shelfStyle: "spines",
+        librarySort: "recent",
+        shelfPaper: "light"
       };
       COLUMNS = [120, 160, 320];
       UNSEEN = ["hatch", "dim", "empty"];
-      VIEWS = ["grid", "list", "ring"];
+      VIEWS = ["grid", "list", "ring", "shelf"];
+      TEXTURES = ["rough", "smooth"];
+      SHELF_MIGRATED = "shelfDefaultApplied";
+      ROUGH_MIGRATED = "roughDefaultApplied";
     }
   });
 
@@ -15545,19 +15846,30 @@
     if (!(duration > 0) || !Number.isFinite(t) || t < 0 || n <= 0) return -1;
     return Math.min(n - 1, Math.floor(t / duration * n));
   }
+  function hasBogusEnd(b) {
+    return b.endAt != null && !(b.endAt > 0);
+  }
   function tailFrom(b) {
-    if (b.endAt == null || !(b.duration > 0)) return null;
+    if (b.endAt == null || hasBogusEnd(b) || !(b.duration > 0)) return null;
     return Math.min(b.colors.length, Math.max(0, Math.ceil(b.endAt / b.duration * b.colors.length - 1e-9)));
   }
   function coverage(b) {
-    const end = b.endAt != null && b.duration ? tailFrom({ colors: b.colors, duration: b.duration, endAt: b.endAt }) ?? b.colors.length : b.colors.length;
+    const end = b.endAt != null && !hasBogusEnd(b) && b.duration ? tailFrom({ colors: b.colors, duration: b.duration, endAt: b.endAt }) ?? b.colors.length : b.colors.length;
     if (end === 0) return 0;
     let filled = 0;
     for (let i = 0; i < end; i++) if (b.colors[i]) filled++;
     return filled / end;
   }
   function isComplete(b) {
-    return Boolean(b.completedAt) || coverage(b) >= COMPLETE_THRESHOLD;
+    return Boolean(b.completedAt) && !hasBogusEnd(b) || coverage(b) >= COMPLETE_THRESHOLD;
+  }
+  function displayColumns(b) {
+    const n = b.colors.length;
+    if (!isComplete(b) || n === 0) return { colors: b.colors, tail: tailFrom(b), scale: 1 };
+    let end = tailFrom(b) ?? n;
+    while (end > 0 && !b.colors[end - 1]) end--;
+    if (end <= 0 || end >= n) return { colors: b.colors, tail: end >= n ? null : tailFrom(b), scale: 1 };
+    return { colors: b.colors.slice(0, end), tail: null, scale: n / end };
   }
   function markComplete(b, endAt, now2) {
     let end = endAt;
@@ -15566,7 +15878,7 @@
       b.colors.forEach((c, i) => {
         if (c) last = i;
       });
-      end = (last + 1) / b.colors.length * b.duration;
+      end = last < 0 ? b.duration : (last + 1) / b.colors.length * b.duration;
     }
     return { ...b, completedAt: now2, endAt: Math.min(b.duration, Math.max(0, end)), updatedAt: now2 };
   }
@@ -15591,11 +15903,19 @@
 
   // lib/barcode/barcode-sampler.ts
   function createSamplerState() {
-    return { lastTime: Number.NaN, settleUntil: 0, inFlight: false, failures: 0 };
+    return { lastTime: Number.NaN, settleUntil: 0, inFlight: false, failures: 0, pauseUntil: 0 };
   }
-  function recordSampleResult(state2, ok) {
+  function recordSampleResult(state2, ok, now2 = Date.now()) {
     state2.inFlight = false;
-    state2.failures = ok ? 0 : state2.failures + 1;
+    if (ok) {
+      state2.failures = 0;
+      return false;
+    }
+    state2.failures += 1;
+    if (state2.failures < MAX_FAILED_SAMPLES) return false;
+    state2.failures = 0;
+    state2.pauseUntil = now2 + FAILURE_PAUSE_MS;
+    return true;
   }
   function decideSample(input, state2) {
     const { now: now2, time, duration, columns, colors } = input;
@@ -15607,14 +15927,14 @@
       state2.settleUntil = now2 + SETTLE_MS;
       return -1;
     }
-    if (!advancing || state2.inFlight || state2.failures >= MAX_FAILED_SAMPLES || now2 < state2.settleUntil) return -1;
+    if (!advancing || state2.inFlight || now2 < state2.pauseUntil || now2 < state2.settleUntil) return -1;
     const i = columnIndex(time, duration, columns);
     if (i < 0) return -1;
     if (colors && colors[i]) return -1;
     const mid = (i + 0.5) / columns * duration;
     return time >= mid ? i : -1;
   }
-  var SETTLE_MS, SEEK_JUMP_S, MIN_ADVANCE_S, MAX_FAILED_SAMPLES;
+  var SETTLE_MS, SEEK_JUMP_S, MIN_ADVANCE_S, MAX_FAILED_SAMPLES, FAILURE_PAUSE_MS;
   var init_barcode_sampler = __esm({
     "lib/barcode/barcode-sampler.ts"() {
       "use strict";
@@ -15623,6 +15943,7 @@
       SEEK_JUMP_S = 3;
       MIN_ADVANCE_S = 0.25;
       MAX_FAILED_SAMPLES = 3;
+      FAILURE_PAUSE_MS = 1e4;
     }
   });
 
@@ -15725,6 +16046,13 @@
     await flushBarcode(id);
     emitSyncWorthy();
   }
+  async function setBarcodeMeta(id, meta) {
+    const b = items.get(id);
+    if (!b) return;
+    items.set(id, { ...b, meta });
+    emit();
+    await put(id);
+  }
   function onBarcodesChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
@@ -15758,13 +16086,491 @@
     }
   });
 
+  // lib/utils/fetch-client.ts
+  function classifyFetchError(error) {
+    if (error instanceof DOMException && error.name === "AbortError") return "aborted";
+    if (error instanceof Error) {
+      if (error.message === FETCH_TIMEOUT_ERROR) return "timeout";
+      if (error.message === "HTTP_429" || error.message === "TMDB_RATE_LIMITED") return "rate_limited";
+      if (/HTTP_\d+/.test(error.message)) return "http";
+      const message = error.message.toLowerCase();
+      if (message.includes("timeout") || message.includes("timed out")) return "timeout";
+      if (message.includes("network") || message.includes("failed to fetch") || message.includes("load failed")) return "network";
+      return "unknown";
+    }
+    return "unknown";
+  }
+  function isAbortError(error) {
+    return error instanceof DOMException && error.name === "AbortError";
+  }
+  function sleep(ms) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+  }
+  async function fetchWithTimeout(input, init = {}, timeoutMs = 5e3, signal) {
+    const controller = new AbortController();
+    let timedOut = false;
+    const abortFromSignal = () => controller.abort();
+    if (signal) {
+      if (signal.aborted) {
+        controller.abort();
+      } else {
+        signal.addEventListener("abort", abortFromSignal, { once: true });
+      }
+    }
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+    try {
+      return await fetch(input, {
+        ...init,
+        signal: controller.signal
+      });
+    } catch (error) {
+      if (isAbortError(error) && timedOut) throw new Error(FETCH_TIMEOUT_ERROR);
+      throw error;
+    } finally {
+      window.clearTimeout(timeoutId);
+      if (signal) signal.removeEventListener("abort", abortFromSignal);
+    }
+  }
+  async function fetchJsonWithRetry(input, init = {}, options = {}) {
+    const retries = Math.max(0, options.retries ?? 1);
+    const timeoutMs = Math.max(1e3, options.timeoutMs ?? 5e3);
+    const retryDelayMs = Math.max(0, options.retryDelayMs ?? 250);
+    let lastError = null;
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      try {
+        const response = await fetchWithTimeout(input, init, timeoutMs, options.signal);
+        if (!response.ok) throw new Error(`HTTP_${response.status}`);
+        return await response.json();
+      } catch (error) {
+        if (isAbortError(error)) throw error;
+        const kind = classifyFetchError(error);
+        if (kind === "rate_limited") throw error;
+        lastError = error;
+        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
+      }
+    }
+    throw lastError ?? new Error("fetch_failed");
+  }
+  async function fetchTextWithRetry(input, init = {}, options = {}) {
+    const retries = Math.max(0, options.retries ?? 1);
+    const timeoutMs = Math.max(1e3, options.timeoutMs ?? 5e3);
+    const retryDelayMs = Math.max(0, options.retryDelayMs ?? 250);
+    let lastError = null;
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      try {
+        const response = await fetchWithTimeout(input, init, timeoutMs, options.signal);
+        if (!response.ok) throw new Error(`HTTP_${response.status}`);
+        return await response.text();
+      } catch (error) {
+        if (isAbortError(error)) throw error;
+        const kind = classifyFetchError(error);
+        if (kind === "rate_limited") throw error;
+        lastError = error;
+        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
+      }
+    }
+    throw lastError ?? new Error("fetch_failed");
+  }
+  var FETCH_TIMEOUT_ERROR;
+  var init_fetch_client = __esm({
+    "lib/utils/fetch-client.ts"() {
+      FETCH_TIMEOUT_ERROR = "FETCH_TIMEOUT";
+    }
+  });
+
+  // lib/services/api-json-cache.ts
+  function maxConcurrentRequests() {
+    return isTvSurface() ? 10 : 6;
+  }
+  function rememberResponse(key, entry) {
+    cache3.delete(key);
+    cache3.set(key, entry);
+    if (cache3.size <= CACHE_MAX_ENTRIES) return;
+    const now2 = Date.now();
+    for (const [k, v] of cache3) if (v.expiresAt <= now2) cache3.delete(k);
+    while (cache3.size > CACHE_MAX_ENTRIES) {
+      const oldest = cache3.keys().next().value;
+      if (oldest === void 0) break;
+      cache3.delete(oldest);
+    }
+  }
+  function classifyRequestGroup(pathAndQuery) {
+    if (pathAndQuery.startsWith("/api/item")) return "item";
+    if (pathAndQuery.startsWith("/api/recommendations")) return "recommendations";
+    if (pathAndQuery.startsWith("/api/media")) return "media";
+    if (pathAndQuery.startsWith("/api/wiki")) return "wiki";
+    return "other";
+  }
+  function getGroupLimit(group) {
+    if (group === "item") return 4;
+    if (group === "recommendations") return 2;
+    if (group === "media") return isTvSurface() ? 6 : 2;
+    if (group === "wiki") return 3;
+    return 3;
+  }
+  function isTvSurface() {
+    if (tvSurface === null) tvSurface = detectTvMode();
+    return tvSurface;
+  }
+  function getGroupActive(group) {
+    return activeByGroup.get(group) ?? 0;
+  }
+  function canStartGroup(group) {
+    return activeRequests < maxConcurrentRequests() && getGroupActive(group) < getGroupLimit(group);
+  }
+  function onRequestStart(group) {
+    activeRequests += 1;
+    activeByGroup.set(group, getGroupActive(group) + 1);
+  }
+  function onRequestEnd(group) {
+    activeRequests = Math.max(0, activeRequests - 1);
+    activeByGroup.set(group, Math.max(0, getGroupActive(group) - 1));
+  }
+  function getPriorityValue(priority) {
+    if (priority === "high") return 3;
+    if (priority === "low") return 1;
+    return 2;
+  }
+  function enqueue(item) {
+    queue.push(item);
+    queue.sort((left, right) => {
+      if (left.priority !== right.priority) return right.priority - left.priority;
+      return left.seq - right.seq;
+    });
+  }
+  function pumpQueue() {
+    while (activeRequests < maxConcurrentRequests() && queue.length > 0) {
+      const nextIndex = queue.findIndex((entry) => canStartGroup(entry.group));
+      if (nextIndex < 0) return;
+      const [next] = queue.splice(nextIndex, 1);
+      if (!next) break;
+      next.start();
+    }
+  }
+  function acquireRequestSlot(priority, group, signal) {
+    if (canStartGroup(group)) {
+      onRequestStart(group);
+      let released = false;
+      return Promise.resolve(() => {
+        if (released) return;
+        released = true;
+        onRequestEnd(group);
+        pumpQueue();
+      });
+    }
+    if (signal?.aborted) {
+      return Promise.reject(new DOMException("Aborted", "AbortError"));
+    }
+    return new Promise((resolve, reject) => {
+      const seq = queueSeq++;
+      const item = {
+        priority: getPriorityValue(priority),
+        seq,
+        group,
+        start: () => {
+          cleanup();
+          onRequestStart(group);
+          let released = false;
+          resolve(() => {
+            if (released) return;
+            released = true;
+            onRequestEnd(group);
+            pumpQueue();
+          });
+        }
+      };
+      const bypass = setTimeout(() => {
+        const index = queue.findIndex((entry) => entry.seq === seq);
+        if (index < 0) return;
+        queue.splice(index, 1);
+        item.start();
+      }, QUEUE_BYPASS_MS);
+      const onAbort = () => {
+        const index = queue.findIndex((entry) => entry.seq === seq);
+        if (index >= 0) queue.splice(index, 1);
+        cleanup();
+        reject(new DOMException("Aborted", "AbortError"));
+      };
+      const cleanup = () => {
+        clearTimeout(bypass);
+        signal?.removeEventListener("abort", onAbort);
+      };
+      signal?.addEventListener("abort", onAbort, { once: true });
+      enqueue(item);
+      pumpQueue();
+    });
+  }
+  function withAbortSignal(promise, signal) {
+    if (!signal) return promise;
+    if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
+    return new Promise((resolve, reject) => {
+      const abort = () => reject(new DOMException("Aborted", "AbortError"));
+      signal.addEventListener("abort", abort, { once: true });
+      promise.then(resolve).catch(reject).finally(() => {
+        signal.removeEventListener("abort", abort);
+      });
+    });
+  }
+  function normalizeApiPath(pathAndQuery) {
+    const normalized = pathAndQuery.trim();
+    if (!normalized.startsWith("/api/")) {
+      throw new Error("api_json_cache_requires_api_path");
+    }
+    return normalized;
+  }
+  function resolveNegativeCacheTtlMs(error, overrideTtlMs) {
+    if (overrideTtlMs != null) return Math.max(0, overrideTtlMs);
+    if (!(error instanceof Error)) return 0;
+    const statusMatch = error.message.match(/^HTTP_(\d{3})$/);
+    const status = statusMatch ? Number(statusMatch[1]) : null;
+    if (status === 404) return 6e4;
+    if (status === 429) return 5e3;
+    if (status != null && status >= 500 && status <= 599) return 3e3;
+    if (error.message === "TMDB_RATE_LIMITED") return 5e3;
+    return 0;
+  }
+  async function fetchApiJsonCached(pathAndQuery, options = {}) {
+    const key = normalizeApiPath(pathAndQuery);
+    const requestGroup = classifyRequestGroup(key);
+    const now2 = Date.now();
+    const isRemote = typeof window !== "undefined" && (window.location.hostname.endsWith(".workers.dev") || window.__LUMIO_REMOTE__ === true);
+    const resolvedTimeoutMs = isRemote ? Math.max(options.timeoutMs ?? 4500, 25e3) : options.timeoutMs;
+    const ttlMs = Math.max(1e3, isRemote ? Math.max(options.ttlMs ?? DEFAULT_TTL_MS, 5 * 6e4) : options.ttlMs ?? DEFAULT_TTL_MS);
+    if (!options.forceRefresh) {
+      const cachedError = errorCache.get(key);
+      if (cachedError && cachedError.expiresAt > now2) {
+        throw new Error(cachedError.message);
+      }
+      const cached = cache3.get(key);
+      if (cached && cached.expiresAt > now2) {
+        return cached.data;
+      }
+    }
+    const existing = inflight2.get(key);
+    if (existing) return withAbortSignal(existing, options.signal);
+    const request = (async () => {
+      const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
+      try {
+        if (isPluginDesktopHost()) {
+          try {
+            const data = await fetchDesktopApiJson(
+              key,
+              options.desktopTimeoutMs ?? resolvedTimeoutMs ?? 4500
+            );
+            if (data != null) return data;
+          } catch {
+          }
+        }
+        return fetchJsonWithRetry(key, {}, {
+          timeoutMs: resolvedTimeoutMs,
+          retries: options.retries,
+          retryDelayMs: options.retryDelayMs
+          // Av samma skäl som ovan: den delade hämtningen tillhör alla som
+          // väntar på nyckeln, inte den som råkade starta den.
+        });
+      } finally {
+        release();
+      }
+    })().then((data) => {
+      rememberResponse(key, {
+        expiresAt: Date.now() + ttlMs,
+        data
+      });
+      errorCache.delete(key);
+      return data;
+    }).catch((error) => {
+      if (classifyFetchError(error) !== "aborted" && options.cacheErrors !== false) {
+        const negativeTtlMs = resolveNegativeCacheTtlMs(error, options.negativeTtlMs);
+        if (negativeTtlMs > 0) {
+          const message = error instanceof Error ? error.message : "api_request_failed";
+          errorCache.set(key, {
+            expiresAt: Date.now() + negativeTtlMs,
+            message
+          });
+        }
+      }
+      throw error;
+    }).finally(() => {
+      inflight2.delete(key);
+    });
+    inflight2.set(key, request);
+    return withAbortSignal(request, options.signal);
+  }
+  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache3, CACHE_MAX_ENTRIES, errorCache, inflight2, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
+  var init_api_json_cache = __esm({
+    "lib/services/api-json-cache.ts"() {
+      init_tv_focus_shim();
+      init_plugin_sdk();
+      init_fetch_client();
+      DEFAULT_TTL_MS = 2 * 6e4;
+      QUEUE_BYPASS_MS = 8e3;
+      cache3 = /* @__PURE__ */ new Map();
+      CACHE_MAX_ENTRIES = 400;
+      errorCache = /* @__PURE__ */ new Map();
+      inflight2 = /* @__PURE__ */ new Map();
+      queue = [];
+      activeRequests = 0;
+      queueSeq = 0;
+      activeByGroup = /* @__PURE__ */ new Map();
+      tvSurface = null;
+    }
+  });
+
+  // lib/services/wiki-request-cache.ts
+  function withAbortSignal2(promise, signal) {
+    if (!signal) return promise;
+    if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
+    return new Promise((resolve, reject) => {
+      const abort = () => reject(new DOMException("Aborted", "AbortError"));
+      signal.addEventListener("abort", abort, { once: true });
+      promise.then(resolve).catch(reject).finally(() => {
+        signal.removeEventListener("abort", abort);
+      });
+    });
+  }
+  async function fetchWikiCached(params, options = {}) {
+    const key = params.toString();
+    const now2 = Date.now();
+    if (!options.forceRefresh) {
+      const cached = cache4.get(key);
+      if (cached && cached.expiresAt > now2) {
+        return cached.data;
+      }
+    }
+    const existing = inflight3.get(key);
+    if (existing) return withAbortSignal2(existing, options.signal);
+    const request = fetchApiJsonCached(`/api/wiki?${key}`, {
+      timeoutMs: options.timeoutMs ?? 5200,
+      retries: options.retries ?? 1,
+      retryDelayMs: options.retryDelayMs ?? 260,
+      signal: options.signal,
+      ttlMs: WIKI_TTL_MS,
+      forceRefresh: options.forceRefresh,
+      priority: "normal"
+    }).then((data) => {
+      cache4.set(key, {
+        expiresAt: Date.now() + WIKI_TTL_MS,
+        data
+      });
+      return data;
+    }).finally(() => {
+      inflight3.delete(key);
+    });
+    inflight3.set(key, request);
+    return withAbortSignal2(request, options.signal);
+  }
+  var WIKI_TTL_MS, cache4, inflight3;
+  var init_wiki_request_cache = __esm({
+    "lib/services/wiki-request-cache.ts"() {
+      init_api_json_cache();
+      WIKI_TTL_MS = 5 * 6e4;
+      cache4 = /* @__PURE__ */ new Map();
+      inflight3 = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // lib/barcode/barcode-poster.ts
+  function uniq(names) {
+    const out = [];
+    for (const n of names) {
+      const name = n?.trim();
+      if (name && !out.includes(name)) out.push(name);
+    }
+    return out;
+  }
+  function cutSynopsis(text, max = SYNOPSIS_MAX) {
+    const clean = text.replace(/\s+/g, " ").trim();
+    if (clean.length <= max) return clean;
+    const cut = clean.slice(0, max);
+    const space = cut.lastIndexOf(" ");
+    return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:–-]+$/, "")}\u2026`;
+  }
+  function posterMetaFromWiki(w) {
+    const crew = w.crew ?? [];
+    const byJob = (job) => uniq(crew.filter((c) => c.job === job).map((c) => c.name));
+    const directors = byJob("Director");
+    const writers = uniq(crew.filter((c) => c.department === "Writing" && (c.job === "Screenplay" || c.job === "Writer")).map((c) => c.name));
+    const overview = w.overview?.trim();
+    const genres = (w.genres ?? []).filter(Boolean).slice(0, 3);
+    return {
+      directors: (directors.length ? directors : uniq(w.directors ?? [])).slice(0, 2),
+      writers: (writers.length ? writers : uniq(w.writers ?? [])).slice(0, 2),
+      dop: byJob("Director of Photography").slice(0, 2),
+      editors: byJob("Editor").slice(0, 2),
+      starring: uniq((w.cast ?? []).map((c) => c.name)).slice(0, 3),
+      music: byJob("Original Music Composer").slice(0, 2),
+      tagline: w.tagline?.trim() || null,
+      synopsis: overview ? cutSynopsis(overview) : null,
+      genres: genres.length ? genres.join(", ") : null,
+      releaseDate: w.releaseDate && /^\d{4}-\d{2}-\d{2}$/.test(w.releaseDate) ? w.releaseDate : null,
+      runtime: typeof w.runtime === "number" && w.runtime > 0 ? w.runtime : null
+    };
+  }
+  async function fetchPosterMeta(tmdbId) {
+    if (tmdbId == null) return null;
+    try {
+      const params = new URLSearchParams({ type: "movie", tmdbId: String(tmdbId), full: "1" });
+      const wiki = await fetchWikiCached(params);
+      return posterMetaFromWiki(wiki);
+    } catch {
+      return null;
+    }
+  }
+  var SYNOPSIS_MAX;
+  var init_barcode_poster = __esm({
+    "lib/barcode/barcode-poster.ts"() {
+      "use strict";
+      init_wiki_request_cache();
+      SYNOPSIS_MAX = 220;
+    }
+  });
+
+  // lib/barcode/barcode-meta.ts
+  function ensureBarcodeMeta(b) {
+    if (b.meta !== void 0) return Promise.resolve(b.meta);
+    if (b.tmdbId == null) return Promise.resolve(null);
+    const pending2 = inflight4.get(b.id);
+    if (pending2) return pending2;
+    const task = chain.then(async () => {
+      const current = getBarcode(b.id);
+      if (current && current.meta !== void 0) return current.meta;
+      const meta = await fetchPosterMeta(b.tmdbId);
+      if (meta) await setBarcodeMeta(b.id, meta);
+      await new Promise((resolve) => setTimeout(resolve, GAP_MS));
+      return meta;
+    }).finally(() => inflight4.delete(b.id));
+    inflight4.set(b.id, task);
+    chain = task.catch(() => void 0);
+    return task;
+  }
+  function backfillBarcodeMeta(id) {
+    const b = getBarcode(id);
+    if (b) void ensureBarcodeMeta(b).catch(() => {
+    });
+  }
+  var GAP_MS, inflight4, chain;
+  var init_barcode_meta = __esm({
+    "lib/barcode/barcode-meta.ts"() {
+      init_barcode_poster();
+      init_barcode_store();
+      GAP_MS = 250;
+      inflight4 = /* @__PURE__ */ new Map();
+      chain = Promise.resolve();
+    }
+  });
+
   // lib/barcode/barcode-player-status.ts
   function playerBarcodeState(input) {
     const { id, capable, enabled, showStrip, scopeOk, playing, hasBarcode } = input;
-    if (!id || !scopeOk) return { id, recording: false, status: null, showStrip: false };
+    if (!id || !scopeOk) return { id, recording: false, status: null, showStrip: false, stripToggle: false };
     const recording = capable && enabled;
     const status = !capable ? null : !enabled ? "off" : playing ? "recording" : "paused";
-    return { id, recording, status, showStrip: showStrip && (recording || hasBarcode) };
+    return { id, recording, status, showStrip: showStrip && (recording || hasBarcode), stripToggle: recording || hasBarcode };
   }
   var init_barcode_player_status = __esm({
     "lib/barcode/barcode-player-status.ts"() {
@@ -15794,13 +16600,9 @@
       void loadBarcodes().then(check);
       return onBarcodesChanged(check);
     }, [barcodeId]);
-    const [samplingDead, setSamplingDead] = useState(false);
-    useEffect(() => {
-      setSamplingDead(false);
-    }, [barcodeId, args.engine]);
     const playerState = playerBarcodeState({
       id: barcodeId,
-      capable: !samplingDead,
+      capable: true,
       enabled: settings.enabled,
       showStrip: settings.showStripInPlayer,
       scopeOk: !isEpisode || settings.scope === "movies+episodes",
@@ -15816,7 +16618,7 @@
       void loadBarcodes();
       const state2 = createSamplerState();
       const columns = settings.columns;
-      const timer = setInterval(() => {
+      const timer2 = setInterval(() => {
         const snap = args.snapshotRef.current;
         const existing = getBarcode(id);
         const n = existing?.columns ?? columns;
@@ -15831,11 +16633,10 @@
         state2.inFlight = true;
         const now2 = metaRef.current;
         void sampleColor(now2.engine, now2.videoRef?.current ?? null).then((color) => {
-          recordSampleResult(state2, color != null);
+          const pausing = recordSampleResult(state2, color != null);
           if (!color) {
-            if (state2.failures >= MAX_FAILED_SAMPLES) {
-              logDisabled(`${id}: ${state2.failures} f\xE4rgprov i rad misslyckades (${now2.engine}) \u2014 insamlingen av f\xF6r uppspelningen`);
-              setSamplingDead(true);
+            if (pausing) {
+              logDisabled(`${id}: ${MAX_FAILED_SAMPLES} f\xE4rgprov i rad misslyckades (${now2.engine}) \u2014 paus ${FAILURE_PAUSE_MS / 1e3} s, sedan nytt f\xF6rs\xF6k`);
             }
             return;
           }
@@ -15851,7 +16652,7 @@
         });
       }, TICK_MS);
       return () => {
-        clearInterval(timer);
+        clearInterval(timer2);
         void endRecording(id);
       };
     }, [applies, id]);
@@ -15860,10 +16661,16 @@
       if (!args.finished || !barcodeId || completedForRef.current === barcodeId) return;
       const existing = getBarcode(barcodeId);
       if (!existing || existing.completedAt) return;
+      const { realTime, totalDuration } = args.snapshotRef.current;
+      if (!isPlausibleFinish(realTime, totalDuration)) return;
       completedForRef.current = barcodeId;
-      void completeBarcode(barcodeId, args.snapshotRef.current.realTime);
+      void completeBarcode(barcodeId, realTime).then(() => backfillBarcodeMeta(barcodeId));
     }, [args.finished, barcodeId]);
     return playerState;
+  }
+  function isPlausibleFinish(time, duration) {
+    if (!Number.isFinite(time) || !Number.isFinite(duration) || duration <= 0) return false;
+    return time >= duration * 0.75;
   }
   var TICK_MS;
   var init_use_barcode_recorder = __esm({
@@ -15874,6 +16681,7 @@
       init_barcode_id();
       init_barcode_sampler();
       init_barcode_store();
+      init_barcode_meta();
       init_barcode_player_status();
       TICK_MS = 1e3;
     }
@@ -15907,14 +16715,14 @@
     return { background: `${head}${stops.join(",")})`, underlay };
   }
   function cachedBarcodeBackground(key, colors, unseen, shape, tailFrom2 = null) {
-    const hit = cache3.get(key);
+    const hit = cache5.get(key);
     if (hit) return hit;
     const value = barcodeBackground(colors, unseen, shape, tailFrom2);
-    if (cache3.size >= CACHE_MAX) cache3.delete(cache3.keys().next().value);
-    cache3.set(key, value);
+    if (cache5.size >= CACHE_MAX) cache5.delete(cache5.keys().next().value);
+    cache5.set(key, value);
     return value;
   }
-  var HATCH_UNDERLAY, DIM, EMPTY2, TAIL, RING_HATCH, cache3, CACHE_MAX;
+  var HATCH_UNDERLAY, DIM, EMPTY2, TAIL, RING_HATCH, cache5, CACHE_MAX;
   var init_barcode_gradient = __esm({
     "lib/barcode/barcode-gradient.ts"() {
       HATCH_UNDERLAY = "repeating-linear-gradient(135deg,#1c1d23 0 3px,#111216 3px 7px)";
@@ -15922,7 +16730,7 @@
       EMPTY2 = "#141519";
       TAIL = "#0b0b0d";
       RING_HATCH = ["#1b1c22", "#111216"];
-      cache3 = /* @__PURE__ */ new Map();
+      cache5 = /* @__PURE__ */ new Map();
       CACHE_MAX = 400;
     }
   });
@@ -15944,9 +16752,12 @@
   });
 
   // components/barcodes/barcode-strip.tsx
-  function BarcodeStrip({ barcode, unseen, shape = "h", className = "", style, resumePct, markerWidth = 2, children, onPointer }) {
-    const key = `${barcode.id}|${barcode.updatedAt}|${unseen}|${shape}`;
-    const { background, underlay } = cachedBarcodeBackground(key, barcode.colors, unseen, shape, tailFrom(barcode));
+  function BarcodeStrip({ barcode, unseen, shape = "h", className = "", style, resumePct: rawResumePct, markerWidth = 2, children, onPointer, trimCredits = false }) {
+    const shown = trimCredits && !onPointer ? displayColumns(barcode) : { colors: barcode.colors, tail: tailFrom(barcode), scale: 1 };
+    const key = `${barcode.id}|${barcode.updatedAt}|${unseen}|${shape}|${shown.colors.length}`;
+    const { background, underlay } = cachedBarcodeBackground(key, shown.colors, unseen, shape, shown.tail);
+    const scaledResume = rawResumePct == null ? null : rawResumePct * shown.scale;
+    const resumePct = scaledResume != null && scaledResume <= 1 ? scaledResume : null;
     const vertical = shape === "v";
     const pctOf = (e) => {
       const r = e.currentTarget.getBoundingClientRect();
@@ -16016,8 +16827,8 @@
         useEffect(() => {
           if (!state2.status) return;
           setChipUntil(Date.now() + CHIP_MS);
-          const timer = setTimeout(() => setChipUntil(0), CHIP_MS);
-          return () => clearTimeout(timer);
+          const timer2 = setTimeout(() => setChipUntil(0), CHIP_MS);
+          return () => clearTimeout(timer2);
         }, [state2.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
@@ -16720,6 +17531,115 @@
     }
   });
 
+  // lib/haptics-filter.ts
+  function hapticFilter(channelCount, sampleRate) {
+    if (!Number.isFinite(channelCount) || !Number.isFinite(sampleRate) || sampleRate <= 0) return null;
+    const n = Math.max(1, Math.round(sampleRate * 0.05));
+    const block = `asetnsamples=n=${n}:p=0`;
+    const label = `@${HAPTIC_FILTER_LABEL}:lavfi=`;
+    if (channelCount >= 6) return `${label}[${block},${STATS}]`;
+    if (channelCount === 2) {
+      return `${label}[asplit[m][s];[s]pan=mono|c0=0.5*c0+0.5*c1,lowpass=f=120,${block}[l];[m]${block}[m2];[m2][l]amerge=inputs=2,${STATS},pan=stereo|c0=c0|c1=c1]`;
+    }
+    if (channelCount === 1) {
+      return `${label}[asplit[m][s];[s]lowpass=f=120,${block}[l];[m]${block}[m2];[m2][l]amerge=inputs=2,${STATS},pan=mono|c0=c0]`;
+    }
+    return null;
+  }
+  function shouldAddHapticFilter(s) {
+    return s.active && s.firstFrame && !s.droid;
+  }
+  var HAPTIC_FILTER_LABEL, STATS;
+  var init_haptics_filter = __esm({
+    "lib/haptics-filter.ts"() {
+      HAPTIC_FILTER_LABEL = "lumiohaptic";
+      STATS = "astats=metadata=1:reset=1:measure_perchannel=RMS_level:measure_overall=none";
+    }
+  });
+
+  // lib/haptics-host.ts
+  function getHapticsHostEnabled() {
+    return getItem(HAPTICS_HOST_ENABLED_KEY) === "1";
+  }
+  async function fetchHapticsHostStatus() {
+    try {
+      const response = await fetch("/api/haptics/host/status");
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+  function markHapticsUnsupported(reason) {
+    unsupportedReason = reason;
+  }
+  function resetHapticsSupport() {
+    unsupportedReason = null;
+  }
+  function reportHapticsPlayback(s) {
+    if (!getHapticsHostEnabled()) return;
+    const payload = JSON.stringify({
+      playing: s.playing,
+      firstFrame: s.firstFrame,
+      title: s.title ?? null,
+      supported: unsupportedReason === null,
+      reason: unsupportedReason
+    });
+    if (payload === lastSent) return;
+    lastSent = payload;
+    void fetch("/api/haptics/playback", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).catch(() => {
+      lastSent = "";
+    });
+  }
+  async function tick() {
+    timer = null;
+    if (inFlight) {
+      again = true;
+      return;
+    }
+    if (listeners4.size === 0) return;
+    inFlight = true;
+    latest = getHapticsHostEnabled() ? await fetchHapticsHostStatus() : null;
+    inFlight = false;
+    listeners4.forEach((l) => l(latest));
+    if (again) {
+      again = false;
+      void tick();
+      return;
+    }
+    if (listeners4.size > 0 && getHapticsHostEnabled()) timer = setTimeout(() => void tick(), POLL_MS);
+  }
+  function subscribeHapticsHostStatus(listener) {
+    listeners4.add(listener);
+    listener(latest);
+    if (!timer && !inFlight) void tick();
+    return () => {
+      listeners4.delete(listener);
+    };
+  }
+  function useHapticsHostStatus() {
+    const [status, setStatus] = useState(latest);
+    useEffect(() => subscribeHapticsHostStatus(setStatus), []);
+    return status;
+  }
+  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners4, timer, latest, inFlight, again;
+  var init_haptics_host = __esm({
+    "lib/haptics-host.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      HAPTICS_HOST_ENABLED_KEY = "haptics_host_enabled";
+      POLL_MS = 1e3;
+      unsupportedReason = null;
+      lastSent = "";
+      listeners4 = /* @__PURE__ */ new Set();
+      timer = null;
+      latest = null;
+      inFlight = false;
+      again = false;
+    }
+  });
+
   // lib/download-target.ts
   async function resolveDownloadFolder() {
     const preset = getDownloadDir();
@@ -16815,394 +17735,6 @@
   var init_vlc_deep_link = __esm({
     "lib/vlc-deep-link.ts"() {
       init_app_storage();
-    }
-  });
-
-  // lib/utils/fetch-client.ts
-  function classifyFetchError(error) {
-    if (error instanceof DOMException && error.name === "AbortError") return "aborted";
-    if (error instanceof Error) {
-      if (error.message === FETCH_TIMEOUT_ERROR) return "timeout";
-      if (error.message === "HTTP_429" || error.message === "TMDB_RATE_LIMITED") return "rate_limited";
-      if (/HTTP_\d+/.test(error.message)) return "http";
-      const message = error.message.toLowerCase();
-      if (message.includes("timeout") || message.includes("timed out")) return "timeout";
-      if (message.includes("network") || message.includes("failed to fetch") || message.includes("load failed")) return "network";
-      return "unknown";
-    }
-    return "unknown";
-  }
-  function isAbortError(error) {
-    return error instanceof DOMException && error.name === "AbortError";
-  }
-  function sleep(ms) {
-    return new Promise((resolve) => {
-      window.setTimeout(resolve, ms);
-    });
-  }
-  async function fetchWithTimeout(input, init = {}, timeoutMs = 5e3, signal) {
-    const controller = new AbortController();
-    let timedOut = false;
-    const abortFromSignal = () => controller.abort();
-    if (signal) {
-      if (signal.aborted) {
-        controller.abort();
-      } else {
-        signal.addEventListener("abort", abortFromSignal, { once: true });
-      }
-    }
-    const timeoutId = window.setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, timeoutMs);
-    try {
-      return await fetch(input, {
-        ...init,
-        signal: controller.signal
-      });
-    } catch (error) {
-      if (isAbortError(error) && timedOut) throw new Error(FETCH_TIMEOUT_ERROR);
-      throw error;
-    } finally {
-      window.clearTimeout(timeoutId);
-      if (signal) signal.removeEventListener("abort", abortFromSignal);
-    }
-  }
-  async function fetchJsonWithRetry(input, init = {}, options = {}) {
-    const retries = Math.max(0, options.retries ?? 1);
-    const timeoutMs = Math.max(1e3, options.timeoutMs ?? 5e3);
-    const retryDelayMs = Math.max(0, options.retryDelayMs ?? 250);
-    let lastError = null;
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
-      try {
-        const response = await fetchWithTimeout(input, init, timeoutMs, options.signal);
-        if (!response.ok) throw new Error(`HTTP_${response.status}`);
-        return await response.json();
-      } catch (error) {
-        if (isAbortError(error)) throw error;
-        const kind = classifyFetchError(error);
-        if (kind === "rate_limited") throw error;
-        lastError = error;
-        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
-      }
-    }
-    throw lastError ?? new Error("fetch_failed");
-  }
-  async function fetchTextWithRetry(input, init = {}, options = {}) {
-    const retries = Math.max(0, options.retries ?? 1);
-    const timeoutMs = Math.max(1e3, options.timeoutMs ?? 5e3);
-    const retryDelayMs = Math.max(0, options.retryDelayMs ?? 250);
-    let lastError = null;
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
-      try {
-        const response = await fetchWithTimeout(input, init, timeoutMs, options.signal);
-        if (!response.ok) throw new Error(`HTTP_${response.status}`);
-        return await response.text();
-      } catch (error) {
-        if (isAbortError(error)) throw error;
-        const kind = classifyFetchError(error);
-        if (kind === "rate_limited") throw error;
-        lastError = error;
-        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
-      }
-    }
-    throw lastError ?? new Error("fetch_failed");
-  }
-  var FETCH_TIMEOUT_ERROR;
-  var init_fetch_client = __esm({
-    "lib/utils/fetch-client.ts"() {
-      FETCH_TIMEOUT_ERROR = "FETCH_TIMEOUT";
-    }
-  });
-
-  // lib/services/api-json-cache.ts
-  function maxConcurrentRequests() {
-    return isTvSurface() ? 10 : 6;
-  }
-  function rememberResponse(key, entry) {
-    cache4.delete(key);
-    cache4.set(key, entry);
-    if (cache4.size <= CACHE_MAX_ENTRIES) return;
-    const now2 = Date.now();
-    for (const [k, v] of cache4) if (v.expiresAt <= now2) cache4.delete(k);
-    while (cache4.size > CACHE_MAX_ENTRIES) {
-      const oldest = cache4.keys().next().value;
-      if (oldest === void 0) break;
-      cache4.delete(oldest);
-    }
-  }
-  function classifyRequestGroup(pathAndQuery) {
-    if (pathAndQuery.startsWith("/api/item")) return "item";
-    if (pathAndQuery.startsWith("/api/recommendations")) return "recommendations";
-    if (pathAndQuery.startsWith("/api/media")) return "media";
-    if (pathAndQuery.startsWith("/api/wiki")) return "wiki";
-    return "other";
-  }
-  function getGroupLimit(group) {
-    if (group === "item") return 4;
-    if (group === "recommendations") return 2;
-    if (group === "media") return isTvSurface() ? 6 : 2;
-    if (group === "wiki") return 3;
-    return 3;
-  }
-  function isTvSurface() {
-    if (tvSurface === null) tvSurface = detectTvMode();
-    return tvSurface;
-  }
-  function getGroupActive(group) {
-    return activeByGroup.get(group) ?? 0;
-  }
-  function canStartGroup(group) {
-    return activeRequests < maxConcurrentRequests() && getGroupActive(group) < getGroupLimit(group);
-  }
-  function onRequestStart(group) {
-    activeRequests += 1;
-    activeByGroup.set(group, getGroupActive(group) + 1);
-  }
-  function onRequestEnd(group) {
-    activeRequests = Math.max(0, activeRequests - 1);
-    activeByGroup.set(group, Math.max(0, getGroupActive(group) - 1));
-  }
-  function getPriorityValue(priority) {
-    if (priority === "high") return 3;
-    if (priority === "low") return 1;
-    return 2;
-  }
-  function enqueue(item) {
-    queue.push(item);
-    queue.sort((left, right) => {
-      if (left.priority !== right.priority) return right.priority - left.priority;
-      return left.seq - right.seq;
-    });
-  }
-  function pumpQueue() {
-    while (activeRequests < maxConcurrentRequests() && queue.length > 0) {
-      const nextIndex = queue.findIndex((entry) => canStartGroup(entry.group));
-      if (nextIndex < 0) return;
-      const [next] = queue.splice(nextIndex, 1);
-      if (!next) break;
-      next.start();
-    }
-  }
-  function acquireRequestSlot(priority, group, signal) {
-    if (canStartGroup(group)) {
-      onRequestStart(group);
-      let released = false;
-      return Promise.resolve(() => {
-        if (released) return;
-        released = true;
-        onRequestEnd(group);
-        pumpQueue();
-      });
-    }
-    if (signal?.aborted) {
-      return Promise.reject(new DOMException("Aborted", "AbortError"));
-    }
-    return new Promise((resolve, reject) => {
-      const seq = queueSeq++;
-      const item = {
-        priority: getPriorityValue(priority),
-        seq,
-        group,
-        start: () => {
-          cleanup();
-          onRequestStart(group);
-          let released = false;
-          resolve(() => {
-            if (released) return;
-            released = true;
-            onRequestEnd(group);
-            pumpQueue();
-          });
-        }
-      };
-      const bypass = setTimeout(() => {
-        const index = queue.findIndex((entry) => entry.seq === seq);
-        if (index < 0) return;
-        queue.splice(index, 1);
-        item.start();
-      }, QUEUE_BYPASS_MS);
-      const onAbort = () => {
-        const index = queue.findIndex((entry) => entry.seq === seq);
-        if (index >= 0) queue.splice(index, 1);
-        cleanup();
-        reject(new DOMException("Aborted", "AbortError"));
-      };
-      const cleanup = () => {
-        clearTimeout(bypass);
-        signal?.removeEventListener("abort", onAbort);
-      };
-      signal?.addEventListener("abort", onAbort, { once: true });
-      enqueue(item);
-      pumpQueue();
-    });
-  }
-  function withAbortSignal(promise, signal) {
-    if (!signal) return promise;
-    if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
-    return new Promise((resolve, reject) => {
-      const abort = () => reject(new DOMException("Aborted", "AbortError"));
-      signal.addEventListener("abort", abort, { once: true });
-      promise.then(resolve).catch(reject).finally(() => {
-        signal.removeEventListener("abort", abort);
-      });
-    });
-  }
-  function normalizeApiPath(pathAndQuery) {
-    const normalized = pathAndQuery.trim();
-    if (!normalized.startsWith("/api/")) {
-      throw new Error("api_json_cache_requires_api_path");
-    }
-    return normalized;
-  }
-  function resolveNegativeCacheTtlMs(error, overrideTtlMs) {
-    if (overrideTtlMs != null) return Math.max(0, overrideTtlMs);
-    if (!(error instanceof Error)) return 0;
-    const statusMatch = error.message.match(/^HTTP_(\d{3})$/);
-    const status = statusMatch ? Number(statusMatch[1]) : null;
-    if (status === 404) return 6e4;
-    if (status === 429) return 5e3;
-    if (status != null && status >= 500 && status <= 599) return 3e3;
-    if (error.message === "TMDB_RATE_LIMITED") return 5e3;
-    return 0;
-  }
-  async function fetchApiJsonCached(pathAndQuery, options = {}) {
-    const key = normalizeApiPath(pathAndQuery);
-    const requestGroup = classifyRequestGroup(key);
-    const now2 = Date.now();
-    const isRemote = typeof window !== "undefined" && (window.location.hostname.endsWith(".workers.dev") || window.__LUMIO_REMOTE__ === true);
-    const resolvedTimeoutMs = isRemote ? Math.max(options.timeoutMs ?? 4500, 25e3) : options.timeoutMs;
-    const ttlMs = Math.max(1e3, isRemote ? Math.max(options.ttlMs ?? DEFAULT_TTL_MS, 5 * 6e4) : options.ttlMs ?? DEFAULT_TTL_MS);
-    if (!options.forceRefresh) {
-      const cachedError = errorCache.get(key);
-      if (cachedError && cachedError.expiresAt > now2) {
-        throw new Error(cachedError.message);
-      }
-      const cached = cache4.get(key);
-      if (cached && cached.expiresAt > now2) {
-        return cached.data;
-      }
-    }
-    const existing = inflight2.get(key);
-    if (existing) return withAbortSignal(existing, options.signal);
-    const request = (async () => {
-      const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
-      try {
-        if (isPluginDesktopHost()) {
-          try {
-            const data = await fetchDesktopApiJson(
-              key,
-              options.desktopTimeoutMs ?? resolvedTimeoutMs ?? 4500
-            );
-            if (data != null) return data;
-          } catch {
-          }
-        }
-        return fetchJsonWithRetry(key, {}, {
-          timeoutMs: resolvedTimeoutMs,
-          retries: options.retries,
-          retryDelayMs: options.retryDelayMs
-          // Av samma skäl som ovan: den delade hämtningen tillhör alla som
-          // väntar på nyckeln, inte den som råkade starta den.
-        });
-      } finally {
-        release();
-      }
-    })().then((data) => {
-      rememberResponse(key, {
-        expiresAt: Date.now() + ttlMs,
-        data
-      });
-      errorCache.delete(key);
-      return data;
-    }).catch((error) => {
-      if (classifyFetchError(error) !== "aborted" && options.cacheErrors !== false) {
-        const negativeTtlMs = resolveNegativeCacheTtlMs(error, options.negativeTtlMs);
-        if (negativeTtlMs > 0) {
-          const message = error instanceof Error ? error.message : "api_request_failed";
-          errorCache.set(key, {
-            expiresAt: Date.now() + negativeTtlMs,
-            message
-          });
-        }
-      }
-      throw error;
-    }).finally(() => {
-      inflight2.delete(key);
-    });
-    inflight2.set(key, request);
-    return withAbortSignal(request, options.signal);
-  }
-  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache4, CACHE_MAX_ENTRIES, errorCache, inflight2, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
-  var init_api_json_cache = __esm({
-    "lib/services/api-json-cache.ts"() {
-      init_tv_focus_shim();
-      init_plugin_sdk();
-      init_fetch_client();
-      DEFAULT_TTL_MS = 2 * 6e4;
-      QUEUE_BYPASS_MS = 8e3;
-      cache4 = /* @__PURE__ */ new Map();
-      CACHE_MAX_ENTRIES = 400;
-      errorCache = /* @__PURE__ */ new Map();
-      inflight2 = /* @__PURE__ */ new Map();
-      queue = [];
-      activeRequests = 0;
-      queueSeq = 0;
-      activeByGroup = /* @__PURE__ */ new Map();
-      tvSurface = null;
-    }
-  });
-
-  // lib/services/wiki-request-cache.ts
-  function withAbortSignal2(promise, signal) {
-    if (!signal) return promise;
-    if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
-    return new Promise((resolve, reject) => {
-      const abort = () => reject(new DOMException("Aborted", "AbortError"));
-      signal.addEventListener("abort", abort, { once: true });
-      promise.then(resolve).catch(reject).finally(() => {
-        signal.removeEventListener("abort", abort);
-      });
-    });
-  }
-  async function fetchWikiCached(params, options = {}) {
-    const key = params.toString();
-    const now2 = Date.now();
-    if (!options.forceRefresh) {
-      const cached = cache5.get(key);
-      if (cached && cached.expiresAt > now2) {
-        return cached.data;
-      }
-    }
-    const existing = inflight3.get(key);
-    if (existing) return withAbortSignal2(existing, options.signal);
-    const request = fetchApiJsonCached(`/api/wiki?${key}`, {
-      timeoutMs: options.timeoutMs ?? 5200,
-      retries: options.retries ?? 1,
-      retryDelayMs: options.retryDelayMs ?? 260,
-      signal: options.signal,
-      ttlMs: WIKI_TTL_MS,
-      forceRefresh: options.forceRefresh,
-      priority: "normal"
-    }).then((data) => {
-      cache5.set(key, {
-        expiresAt: Date.now() + WIKI_TTL_MS,
-        data
-      });
-      return data;
-    }).finally(() => {
-      inflight3.delete(key);
-    });
-    inflight3.set(key, request);
-    return withAbortSignal2(request, options.signal);
-  }
-  var WIKI_TTL_MS, cache5, inflight3;
-  var init_wiki_request_cache = __esm({
-    "lib/services/wiki-request-cache.ts"() {
-      init_api_json_cache();
-      WIKI_TTL_MS = 5 * 6e4;
-      cache5 = /* @__PURE__ */ new Map();
-      inflight3 = /* @__PURE__ */ new Map();
     }
   });
 
@@ -17462,7 +17994,7 @@
     const controller = new AbortController();
     const onAbort = () => controller.abort();
     signal?.addEventListener("abort", onAbort);
-    const timer = setTimeout(() => controller.abort(), timeoutMs + 500);
+    const timer2 = setTimeout(() => controller.abort(), timeoutMs + 500);
     try {
       const response = await fetch(`/api/streams?${params}`, {
         headers: {
@@ -17476,7 +18008,7 @@
       if (payload.error) throw new Error(payload.error);
       return payload.streams ?? [];
     } finally {
-      clearTimeout(timer);
+      clearTimeout(timer2);
       signal?.removeEventListener("abort", onAbort);
     }
   }
@@ -17528,7 +18060,7 @@
     return `${target2.type}:${streamTargetKey(target2)}`;
   }
   function resetCoreStreamLookupMemo() {
-    inflight4.clear();
+    inflight5.clear();
     memo2.clear();
   }
   async function lookupCoreStreams(target2, options = {}) {
@@ -17546,15 +18078,15 @@
     };
     const cached = memo2.get(key);
     if (cached && Date.now() - cached.at < MEMO_TTL_MS) return replay(cached.result);
-    const pending2 = inflight4.get(key);
+    const pending2 = inflight5.get(key);
     if (pending2) return pending2.then(replay);
     const run = lookupCoreStreamsUncached(target2, options).then((result) => {
       if (result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty")) {
         memo2.set(key, { at: Date.now(), result });
       }
       return result;
-    }).finally(() => inflight4.delete(key));
-    inflight4.set(key, run);
+    }).finally(() => inflight5.delete(key));
+    inflight5.set(key, run);
     return run;
   }
   async function lookupCoreStreamsUncached(target2, options = {}) {
@@ -17579,7 +18111,7 @@
     });
     return { streams: merged, reports };
   }
-  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, inflight4, memo2;
+  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, inflight5, memo2;
   var init_lookup = __esm({
     "lib/core-streams/lookup.ts"() {
       "use client";
@@ -17594,7 +18126,7 @@
       freshSources = /* @__PURE__ */ new Map();
       RETRY_DELAY_MS = 700;
       MEMO_TTL_MS = 45e3;
-      inflight4 = /* @__PURE__ */ new Map();
+      inflight5 = /* @__PURE__ */ new Map();
       memo2 = /* @__PURE__ */ new Map();
     }
   });
@@ -17619,16 +18151,16 @@
     const now2 = Date.now();
     const expiresAt = cache6.get(key);
     if (expiresAt && expiresAt > now2) return;
-    const running2 = inflight5.get(key);
+    const running2 = inflight6.get(key);
     if (running2) {
       await withAbort(running2, signal);
       return;
     }
     const request = fn().catch(() => {
     }).finally(() => {
-      inflight5.delete(key);
+      inflight6.delete(key);
     });
-    inflight5.set(key, request);
+    inflight6.set(key, request);
     await withAbort(request, signal);
     cache6.set(key, Date.now() + PREFETCH_TTL_MS);
     if (cache6.size > 500) {
@@ -17736,7 +18268,7 @@
     }
     await Promise.allSettled(tasks);
   }
-  var inflight5, cache6, PREFETCH_TTL_MS, PREFETCH_RECOMMENDATIONS;
+  var inflight6, cache6, PREFETCH_TTL_MS, PREFETCH_RECOMMENDATIONS;
   var init_media_prefetch_cache = __esm({
     "lib/services/media-prefetch-cache.ts"() {
       init_fetch_client();
@@ -17744,7 +18276,7 @@
       init_soundtrack_request_cache();
       init_api_json_cache();
       init_core_addons();
-      inflight5 = /* @__PURE__ */ new Map();
+      inflight6 = /* @__PURE__ */ new Map();
       cache6 = /* @__PURE__ */ new Map();
       PREFETCH_TTL_MS = 5 * 6e4;
       PREFETCH_RECOMMENDATIONS = false;
@@ -17794,7 +18326,7 @@
     const cacheKey2 = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
     const cached = resultCache.get(cacheKey2);
     if (cached && cached.expiresAt > Date.now()) return cached.subtitles;
-    const running2 = inflight6.get(cacheKey2);
+    const running2 = inflight7.get(cacheKey2);
     if (running2) return running2;
     const parseSubtitles = (payload) => {
       const subtitles = payload?.subtitles;
@@ -17851,12 +18383,12 @@
       });
       return subtitles;
     })().finally(() => {
-      inflight6.delete(cacheKey2);
+      inflight7.delete(cacheKey2);
     });
-    inflight6.set(cacheKey2, request);
+    inflight7.set(cacheKey2, request);
     return request;
   }
-  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight6, LANG3_TO_22;
+  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
   var init_os_client = __esm({
     "lib/opensubtitles/os-client.ts"() {
       init_opensubtitles_settings();
@@ -17865,7 +18397,7 @@
       FETCH_TIMEOUT_MS = 4800;
       MAX_CACHE_ENTRIES = 600;
       resultCache = /* @__PURE__ */ new Map();
-      inflight6 = /* @__PURE__ */ new Map();
+      inflight7 = /* @__PURE__ */ new Map();
       LANG3_TO_22 = {
         eng: "en",
         swe: "sv",
@@ -19083,9 +19615,10 @@
     if (s.userMuted === null) s.userMuted = current;
     return s.userMuted;
   }
-  var KEY15;
+  var CINEMA_REVEAL_HOLD_MAX_MS, KEY15;
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
+      CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
       KEY15 = "__lumioRevealHold";
     }
   });
@@ -19612,17 +20145,17 @@
     return session;
   }
   function onBingeSessionChanged(listener) {
-    listeners4.add(listener);
+    listeners5.add(listener);
     return () => {
-      listeners4.delete(listener);
+      listeners5.delete(listener);
     };
   }
-  var session, listeners4;
+  var session, listeners5;
   var init_binge_session = __esm({
     "lib/binge-session.ts"() {
       "use client";
       session = null;
-      listeners4 = /* @__PURE__ */ new Set();
+      listeners5 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -20369,6 +20902,9 @@ ${cue.text}`).join("\n\n")}
     }
     const [playing, setPlaying] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
+    const hapticsStatus = useHapticsHostStatus();
+    const hapticsActive = Boolean(hapticsStatus?.active);
+    const hapticFilterWanted = shouldAddHapticFilter({ active: hapticsActive, firstFrame: hasStarted, droid: isDroidEngine });
     const [openSurface, setOpenSurface] = useState(null);
     const [statsHud, setStatsHudState] = useState(() => getStatsHud());
     const [stripSdh, setStripSdhState] = useState(() => getStripSdh());
@@ -20520,12 +21056,12 @@ ${cue.text}`).join("\n\n")}
           } catch {
           }
         };
-        const timer = window.setTimeout(() => {
+        const timer2 = window.setTimeout(() => {
           void probe();
         }, 1200);
         return () => {
           cancelled = true;
-          window.clearTimeout(timer);
+          window.clearTimeout(timer2);
         };
       }
       const v = videoRef.current;
@@ -20758,14 +21294,14 @@ ${cue.text}`).join("\n\n")}
       if (!clientOwnsSplash || startError) return;
       if (hasStarted || hasEverStarted) return;
       if (isDirectLocalFileSource) return;
-      const timer = window.setTimeout(() => {
+      const timer2 = window.setTimeout(() => {
         void fetch(`/api/debug-log?msg=${encodeURIComponent(
           `[browser-start-timeout] no first playable in ${BROWSER_START_TIMEOUT_MS}ms src=${(videoSrc || "(pending probe)").slice(0, 90)}`
         )}`).catch(() => {
         });
         escalateBrowserFailureRef.current();
       }, BROWSER_START_TIMEOUT_MS);
-      return () => window.clearTimeout(timer);
+      return () => window.clearTimeout(timer2);
     }, [clientOwnsSplash, startError, hasStarted, hasEverStarted, isDirectLocalFileSource, videoSrc]);
     const loadFailHandledTokenRef = useRef(0);
     const [subtitleClockOverride, setSubtitleClockOverride] = useState(null);
@@ -20885,34 +21421,45 @@ ${cue.text}`).join("\n\n")}
     }, [isDroidEngine, droid.audioTracks, droid.subtitleTracks, droid.selectedAudio, droid.sid]);
     useEffect(() => {
       if (!isDroidEngine || !isPlayerRevealHeld()) return;
-      captureUserMutedOnce(mutedRef.current);
+      const cinemaMute = cinemaMuteRef.current;
+      if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+      cinemaMute.held = true;
       void mpvCommand2(["set_property", "mute", "yes"]);
     }, [isDroidEngine, mpv.fileLoadedToken]);
     useEffect(() => {
       if (!isDroidEngine) return;
       if (!mpv.firstFrameRendered) return;
+      const cinemaMute = cinemaMuteRef.current;
       if (!isPlayerRevealHeld()) {
+        if (cinemaMute.held) {
+          cinemaMute.held = false;
+          void mpvCommand2(["set_property", "mute", cinemaMute.userMuted ? "yes" : "no"]);
+        }
         setMpvStartupHoldReady(true);
         return;
       }
-      const userMuted = captureUserMutedOnce(mutedRef.current);
+      if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+      cinemaMute.held = true;
+      const userMuted = cinemaMute.userMuted;
       const holdStill = () => {
         void setMpvPause2(true);
         void mpvCommand2(["set_property", "mute", "yes"]);
       };
       holdStill();
       markPlayerReadyToReveal();
-      const timer = window.setInterval(() => {
+      const timer2 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           holdStill();
           return;
         }
-        window.clearInterval(timer);
-        void mpvCommand2(["seek", initialTime ?? 0, "absolute"]);
+        window.clearInterval(timer2);
+        const target2 = initialTime ?? 0;
+        if (Math.abs(cinemaTimePosRef.current - target2) > 1.5) void mpvCommand2(["seek", target2, "absolute"]);
         void mpvCommand2(["set_property", "mute", userMuted ? "yes" : "no"]);
+        cinemaMute.held = false;
         setMpvStartupHoldReady(true);
       }, 200);
-      return () => window.clearInterval(timer);
+      return () => window.clearInterval(timer2);
     }, [isDroidEngine, mpv.firstFrameRendered]);
     const openMpvPlayer2 = isDroidEngine ? async (args) => {
       if (args.shouldAbort?.()) return;
@@ -20924,7 +21471,9 @@ ${cue.text}`).join("\n\n")}
         }
       });
       if (isPlayerRevealHeld()) {
-        captureUserMutedOnce(mutedRef.current);
+        const cinemaMute = cinemaMuteRef.current;
+        if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+        cinemaMute.held = true;
         droid.setMuted(true);
       }
       await openNativePlayer({ url: args.url, start: args.start, audioLang: args.audioLang });
@@ -21036,6 +21585,9 @@ ${cue.text}`).join("\n\n")}
     const firstFrameRenderedRef = useRef(false);
     firstFrameRenderedRef.current = mpv.firstFrameRendered;
     const mutedRef = useRef(muted);
+    const cinemaMuteRef = useRef({ held: false, userMuted: false });
+    const cinemaTimePosRef = useRef(0);
+    cinemaTimePosRef.current = mpv.timePos;
     mutedRef.current = muted;
     useEffect(() => {
       if (!useMpv) return;
@@ -21046,8 +21598,7 @@ ${cue.text}`).join("\n\n")}
       let firstFrameAt = null;
       let subsAt = null;
       let introAt = null;
-      let heldByCinema = false;
-      let userMutedAtHold = false;
+      const cinemaMute = cinemaMuteRef.current;
       void refreshMpvAudioTracks();
       void refreshMpvSubtitleTracks();
       const interval = window.setInterval(() => {
@@ -21094,16 +21645,18 @@ ${cue.text}`).join("\n\n")}
         const readyToReveal = firstFrame ? audioReady : extraHoldDone && audioReady && subtitlesReady && introReady;
         if (isDroidEngine && isPlayerRevealHeld()) return;
         if (isMpvEngine && isPlayerRevealHeld()) {
-          if (!heldByCinema) userMutedAtHold = captureUserMutedOnce(mutedRef.current);
-          heldByCinema = true;
-          void setMpvPause2(true);
+          if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+          cinemaMute.held = true;
+          if (firstFrame) void setMpvPause2(true);
           void mpvCommand2(["set_property", "mute", "yes"]);
           if (readyToReveal) markPlayerReadyToReveal();
           return;
         }
-        if (readyToReveal && heldByCinema) {
-          void mpvCommand2(["seek", String(initialTime ?? 0), "absolute"]);
-          void mpvCommand2(["set_property", "mute", userMutedAtHold ? "yes" : "no"]);
+        if (readyToReveal && cinemaMute.held) {
+          const target2 = initialTime ?? 0;
+          if (Math.abs(cinemaTimePosRef.current - target2) > 1.5) void mpvCommand2(["seek", String(target2), "absolute"]);
+          void mpvCommand2(["set_property", "mute", cinemaMute.userMuted ? "yes" : "no"]);
+          cinemaMute.held = false;
         }
         if (readyToReveal) {
           window.clearInterval(interval);
@@ -21152,35 +21705,47 @@ ${cue.text}`).join("\n\n")}
       isDroidEngine
     ]);
     useEffect(() => {
-      if (useMpv || !videoSrc || !isPlayerRevealHeld()) return;
+      if (useMpv || !videoSrc) return;
       const v = videoRef.current;
       if (!v) return;
-      const userMuted = captureUserMutedOnce(mutedRef.current);
+      const cinemaMute = cinemaMuteRef.current;
+      if (!isPlayerRevealHeld()) {
+        if (cinemaMute.held) {
+          cinemaMute.held = false;
+          v.muted = cinemaMute.userMuted;
+        }
+        return;
+      }
+      if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+      cinemaMute.held = true;
+      const userMuted = cinemaMute.userMuted;
       v.muted = true;
-      let heldAtFirstFrame = false;
-      const timer = window.setInterval(() => {
+      let pausedByUs = false;
+      const timer2 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           if (!v.muted) v.muted = true;
           if (hasStartedForUrlRef.current) {
-            if (!v.paused) v.pause();
-            if (v.readyState >= 2) {
-              heldAtFirstFrame = true;
-              markPlayerReadyToReveal();
+            if (!v.paused) {
+              v.pause();
+              pausedByUs = true;
             }
+            if (v.readyState >= 2) markPlayerReadyToReveal();
           }
           return;
         }
-        window.clearInterval(timer);
+        window.clearInterval(timer2);
         v.muted = userMuted;
-        if (!heldAtFirstFrame) return;
+        cinemaMute.held = false;
+        if (!pausedByUs) return;
+        const target2 = initialTime ?? 0;
         try {
-          v.currentTime = initialTime ?? 0;
+          if (Math.abs(v.currentTime - target2) > 1.5) v.currentTime = target2;
         } catch {
         }
         void v.play().catch(() => {
         });
       }, 120);
-      return () => window.clearInterval(timer);
+      return () => window.clearInterval(timer2);
     }, [useMpv, videoSrc]);
     useEffect(() => {
       if (!useMpv || !mpvStartupHoldReady) return;
@@ -21423,6 +21988,16 @@ ${cue.text}`).join("\n\n")}
       const filter = nightMode === "off" ? null : nightMode === "mild" ? "lavfi=[acompressor=threshold=0.25:ratio=2.5:attack=20:release=250,alimiter=limit=0.63:level=0]" : "lavfi=[acompressor=threshold=0.125:ratio=4:attack=10:release=300,alimiter=limit=0.4:level=0]";
       void (async () => {
         await mpvCommand2(["af", "clr", ""]);
+        if (hapticFilterWanted) {
+          const channels = Number(await mpvCommand2(["get_property", "audio-params/channel-count"]));
+          const rate = Number(await mpvCommand2(["get_property", "audio-params/samplerate"]));
+          const hf = hapticFilter(channels, rate);
+          if (hf) await mpvCommand2(["af", "add", hf]);
+          else {
+            markHapticsUnsupported("no-audio");
+            reportHapticsPlayback({ playing: !mpv.paused, firstFrame: hasStarted, title });
+          }
+        }
         for (const tuningFilter of audioTuningFilters(audioTuning)) {
           await mpvCommand2(["af", "add", tuningFilter]);
         }
@@ -21430,11 +22005,18 @@ ${cue.text}`).join("\n\n")}
           await mpvCommand2(["af", "add", filter]);
         }
         if (filter || audioTuningFilters(audioTuning).length > 0) {
-          const chain = await mpvGetAudioFilterChain2();
-          airplayLog(`nightmode: ${nightMode}, mpv af-kedja: ${chain}`);
+          const chain2 = await mpvGetAudioFilterChain2();
+          airplayLog(`nightmode: ${nightMode}, mpv af-kedja: ${chain2}`);
         }
       })();
-    }, [useMpv, nightMode, audioTuning, mpv.fileLoaded, mpv.fileLoadedToken]);
+    }, [useMpv, nightMode, audioTuning, mpv.fileLoaded, mpv.fileLoadedToken, hapticFilterWanted]);
+    useEffect(() => {
+      resetHapticsSupport();
+    }, [mpv.fileLoadedToken]);
+    useEffect(() => {
+      reportHapticsPlayback({ playing: hasStarted && (useMpv ? !mpv.paused : playing), firstFrame: hasStarted, title });
+    }, [hasStarted, useMpv, mpv.paused, playing, title]);
+    useEffect(() => () => reportHapticsPlayback({ playing: false, firstFrame: false, title: null }), []);
     useEffect(() => {
       if (!useMpv || !mpv.fileLoaded) return;
       if (playbackSpeed !== 1) mpv.setSpeed(playbackSpeed);
@@ -21490,7 +22072,7 @@ ${cue.text}`).join("\n\n")}
           `Speed  ${s.speed}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
         ]);
       };
-      const tick = async () => {
+      const tick2 = async () => {
         if (isDroidEngine) {
           tickDroid();
           return;
@@ -21521,9 +22103,9 @@ ${cue.text}`).join("\n\n")}
         ];
         setStatsLines(lines);
       };
-      void tick();
+      void tick2();
       const id = window.setInterval(() => {
-        void tick();
+        void tick2();
       }, 1e3);
       return () => {
         cancelled = true;
@@ -21804,7 +22386,7 @@ ${cue.text}`).join("\n\n")}
         boundsSyncFrameRef.current = null;
         syncPlayerBounds();
       });
-      boundsResyncTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
       boundsResyncTimersRef.current = [window.setTimeout(() => {
         syncPlayerBounds();
       }, 220)];
@@ -21900,7 +22482,7 @@ ${cue.text}`).join("\n\n")}
       prematureEndHandledRef.current = false;
       warmSourceCache(url, requestHeaders);
       let openPromise;
-      void closeMpvPlayer2().catch(() => {
+      void closeMpvPlayer2("spelare: \xF6ppnar ny fil").catch(() => {
       }).then(() => {
         if (cancelled) return;
         syncPlayerBounds();
@@ -21917,7 +22499,7 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
         const pending2 = openPromise;
         void (pending2 ? pending2.catch(() => {
-        }).then(() => closeMpvPlayer2()) : closeMpvPlayer2());
+        }).then(() => closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes")) : closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes"));
         releaseSourceCache(url);
         const v = airplayVideoRef.current;
         if (v) {
@@ -21977,8 +22559,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!hasStarted || !getShowTitleOnStart()) return;
       setShowStartTitle(true);
-      const timer = window.setTimeout(() => setShowStartTitle(false), 4e3);
-      return () => window.clearTimeout(timer);
+      const timer2 = window.setTimeout(() => setShowStartTitle(false), 4e3);
+      return () => window.clearTimeout(timer2);
     }, [hasStarted, title]);
     useEffect(() => {
       setAutoplayDurationHint(totalDuration > 0 ? totalDuration : null);
@@ -22110,7 +22692,7 @@ ${cue.text}`).join("\n\n")}
           showMpvTransitionCover(1400, 400);
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              void closeMpvPlayer2().catch(() => {
+              void closeMpvPlayer2("spelare: avmonterad").catch(() => {
               });
             });
           });
@@ -22357,7 +22939,7 @@ ${cue.text}`).join("\n\n")}
             window.cancelAnimationFrame(boundsSyncFrameRef.current);
             boundsSyncFrameRef.current = null;
           }
-          boundsResyncTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+          boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
           boundsResyncTimersRef.current = [];
         };
       }
@@ -22368,7 +22950,7 @@ ${cue.text}`).join("\n\n")}
           window.cancelAnimationFrame(boundsSyncFrameRef.current);
           boundsSyncFrameRef.current = null;
         }
-        boundsResyncTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+        boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
         boundsResyncTimersRef.current = [];
       };
     }, [portalEl, scheduleBoundsResync, useMpv]);
@@ -23026,7 +23608,7 @@ ${cue.text}`).join("\n\n")}
     }, [playbackSessionIdentity, url, inferredMediaType, mediaType, season, episode, shouldProxyPlayback, useMpv, initialTime, imdbId, tmdbId, wikiTmdbId, mediaId, title]);
     useEffect(() => {
       if (useMpv || hasStarted) return;
-      const timer = window.setInterval(() => {
+      const timer2 = window.setInterval(() => {
         const v = videoRef.current;
         if (!v) return;
         if (!v.paused && v.currentTime > 0.15) {
@@ -23037,7 +23619,7 @@ ${cue.text}`).join("\n\n")}
           onFirstPlay?.();
         }
       }, 350);
-      return () => window.clearInterval(timer);
+      return () => window.clearInterval(timer2);
     }, [hasStarted, onFirstPlay, useMpv]);
     useEffect(() => {
       if (imdbId) {
@@ -23582,7 +24164,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (useMpv || hasStarted || !videoSrc) return;
       if (startupRecoveryAttemptRef.current >= 2) return;
-      const timer = window.setTimeout(() => {
+      const timer2 = window.setTimeout(() => {
         if (useMpv || hasStarted || startupRecoveryAttemptRef.current >= 2) return;
         if (Date.now() - lastProxyRestartAtRef.current < PROXY_RESTART_MIN_GAP_MS) return;
         const currentReal = (videoRef.current?.currentTime ?? 0) + streamStartRef.current;
@@ -23620,7 +24202,7 @@ ${cue.text}`).join("\n\n")}
         );
       }, 2e4);
       return () => {
-        window.clearTimeout(timer);
+        window.clearTimeout(timer2);
       };
     }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
     useEffect(() => {
@@ -24098,7 +24680,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!creditsMode || !useMpv) return;
       const waitMs = creditsCards.length === 0 ? 8e3 : 600;
-      const timer = window.setTimeout(() => {
+      const timer2 = window.setTimeout(() => {
         const pip = creditsPipRef.current;
         if (pip) {
           const rect = pip.getBoundingClientRect();
@@ -24106,7 +24688,7 @@ ${cue.text}`).join("\n\n")}
         }
         leaveCreditsMode();
       }, waitMs);
-      return () => window.clearTimeout(timer);
+      return () => window.clearTimeout(timer2);
     }, [creditsMode, useMpv, creditsCards.length, leaveCreditsMode]);
     const currentTitleAsItem = useCallback(() => {
       if (!tmdbId) return null;
@@ -24436,7 +25018,7 @@ ${cue.text}`).join("\n\n")}
     }, [airplaySession, useMpv]);
     useEffect(() => {
       if (!airplaySession || airplayWasExternalRef.current || showCastMenu) return;
-      const timer = window.setTimeout(() => {
+      const timer2 = window.setTimeout(() => {
         if (!airplayWasExternalRef.current) {
           stopAirplayVideo();
           void avplayerTeardown();
@@ -24444,7 +25026,7 @@ ${cue.text}`).join("\n\n")}
           setAirplayPrepare("idle");
         }
       }, 1e4);
-      return () => window.clearTimeout(timer);
+      return () => window.clearTimeout(timer2);
     }, [showCastMenu, airplaySession]);
     const undoSubtitleAutoSync = useCallback(() => {
       if (lastAutoSyncedDelayRef.current === null) return;
@@ -24720,8 +25302,8 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("cast", "h-[19px] w-[19px]")
         }
       ) : null,
-      // Remsan ovanför seekbaren av/på. Bara när motorn kan spela in barcodes.
-      barcodeStrip: playerBarcode.status !== null ? /* @__PURE__ */ jsx(
+      // Remsan ovanför seekbaren av/på — så länge det finns en remsa att visa.
+      barcodeStrip: playerBarcode.stripToggle ? /* @__PURE__ */ jsx(
         "button",
         {
           type: "button",
@@ -27369,6 +27951,8 @@ ${cue.text}`).join("\n\n")}
       init_player_tuning_panel();
       init_video_tuning();
       init_audio_tuning();
+      init_haptics_filter();
+      init_haptics_host();
       init_playback_settings();
       init_scroll_lock();
       init_i18n();
@@ -29420,8 +30004,8 @@ ${cue.text}`).join("\n\n")}
     const nativeInputRef = useRef(null);
     useEffect(() => {
       if (!nativeInput) return;
-      const timer = window.setTimeout(() => nativeInputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer);
+      const timer2 = window.setTimeout(() => nativeInputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer2);
     }, [nativeInput]);
     const [shift, setShift] = useState(initial.length === 0);
     const ref = useRef(null);
@@ -29740,8 +30324,8 @@ ${cue.text}`).join("\n\n")}
       };
     }, [tmdbId, mediaType, reloadToken]);
     useEffect(() => {
-      const timer = window.setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 200);
-      return () => window.clearTimeout(timer);
+      const timer2 = window.setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 200);
+      return () => window.clearTimeout(timer2);
     }, [query]);
     useEffect(() => {
       if (personId == null) {
@@ -30348,10 +30932,10 @@ ${cue.text}`).join("\n\n")}
     const playButtonRef = useRef(null);
     useEffect(() => {
       if (!isTv) return;
-      let timer = null;
+      let timer2 = null;
       const arm = () => {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => {
+        if (timer2) clearTimeout(timer2);
+        timer2 = setTimeout(() => {
           const btn = playButtonRef.current;
           if (btn && btn.isConnected && document.activeElement !== btn) btn.focus();
         }, 1e4);
@@ -30359,7 +30943,7 @@ ${cue.text}`).join("\n\n")}
       arm();
       window.addEventListener("keydown", arm, true);
       return () => {
-        if (timer) clearTimeout(timer);
+        if (timer2) clearTimeout(timer2);
         window.removeEventListener("keydown", arm, true);
       };
     }, [isTv]);
@@ -30640,8 +31224,8 @@ ${cue.text}`).join("\n\n")}
          */
         emit(eventName, arg) {
           if (eventName in this.eventListeners) {
-            const listeners8 = this.eventListeners[eventName];
-            for (const listener of listeners8)
+            const listeners9 = this.eventListeners[eventName];
+            for (const listener of listeners9)
               listener(arg);
             return true;
           }
@@ -32452,7 +33036,7 @@ ${cue.text}`).join("\n\n")}
         // Ikonrad
         railSearch: "Search",
         railHome: "Home",
-        railGuide: "Channel guide",
+        railGuide: "Guide",
         railMultiview: "Multiview",
         railFavourites: "Favourites",
         railLibrary: "Library",
@@ -32631,6 +33215,7 @@ ${cue.text}`).join("\n\n")}
         settingPreview: "Preview in the channel guide (plays the stream muted)",
         settingStartLast: "Start on the last channel",
         settingNumericZap: "Number keys zap directly",
+        settingRailLabels: "Labels in the side menu",
         settingBannerHide: "Hide the info banner after",
         never: "Never",
         seconds: "{s} s",
@@ -32717,6 +33302,11 @@ ${cue.text}`).join("\n\n")}
         librarySortRating: "Rating",
         librarySearch: "Search",
         libraryAll: "All",
+        libraryAllMovies: "All films",
+        libraryAllSeries: "All series",
+        librarySegMovies: "Films",
+        librarySegSeries: "Series",
+        libraryCategories: "Categories",
         librarySearchPlaceholder: "Search films and series",
         libraryKindMovie: "Film",
         libraryKindSeries: "Series",
@@ -32830,7 +33420,7 @@ ${cue.text}`).join("\n\n")}
         curationIntro: "V\xE4lj vilka kategorier som ska visas. Du kan \xE4ndra det senare under spellistans inst\xE4llningar.",
         railSearch: "S\xF6k",
         railHome: "Hem",
-        railGuide: "Kanalguide",
+        railGuide: "Guide",
         railMultiview: "Multivy",
         railFavourites: "Favoriter",
         railLibrary: "Bibliotek",
@@ -32986,6 +33576,7 @@ ${cue.text}`).join("\n\n")}
         settingPreview: "F\xF6rhandsvisning i kanalguiden (spelar str\xF6mmen tyst)",
         settingStartLast: "Starta p\xE5 senaste kanalen",
         settingNumericZap: "Nummertangenter zappar direkt",
+        settingRailLabels: "Etiketter i sidomenyn",
         settingBannerHide: "D\xF6lj infobannern efter",
         never: "Aldrig",
         seconds: "{s} s",
@@ -33065,6 +33656,11 @@ ${cue.text}`).join("\n\n")}
         librarySortRating: "Betyg",
         librarySearch: "S\xF6k",
         libraryAll: "Alla",
+        libraryAllMovies: "Alla filmer",
+        libraryAllSeries: "Alla serier",
+        librarySegMovies: "Filmer",
+        librarySegSeries: "Serier",
+        libraryCategories: "Kategorier",
         librarySearchPlaceholder: "S\xF6k filmer och serier",
         libraryKindMovie: "Film",
         libraryKindSeries: "Serie",
@@ -33391,8 +33987,8 @@ ${cue.text}`).join("\n\n")}
       if (!open) return;
       setPin("");
       setWrong(false);
-      const timer = window.setTimeout(() => inputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer);
+      const timer2 = window.setTimeout(() => inputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer2);
     }, [open]);
     if (!open) return null;
     const submit = async () => {
@@ -33792,14 +34388,14 @@ ${cue.text}`).join("\n\n")}
     const [now2, setNow] = useState(() => /* @__PURE__ */ new Date());
     useEffect(() => {
       if (useHostClock) return;
-      let timer = 0;
-      const tick = () => {
+      let timer2 = 0;
+      const tick2 = () => {
         const next = /* @__PURE__ */ new Date();
         setNow(next);
-        timer = window.setTimeout(tick, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
+        timer2 = window.setTimeout(tick2, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
       };
-      tick();
-      return () => window.clearTimeout(timer);
+      tick2();
+      return () => window.clearTimeout(timer2);
     }, [useHostClock]);
     if (useHostClock) {
       if (inSceneBox) {
@@ -33979,7 +34575,7 @@ ${cue.text}`).join("\n\n")}
     const key = snapshotKey(listId, source);
     const cached = snapshots.get(key);
     if (!opts?.force && cached && Date.now() - cached.loadedAt < TTL_MS) return cached;
-    const existing = inflight7.get(key);
+    const existing = inflight8.get(key);
     if (existing) return existing;
     const request = epgNow({ listId: epgStoreId(listId), source: source ?? void 0 }).then((data) => {
       const snapshot2 = {
@@ -33996,25 +34592,25 @@ ${cue.text}`).join("\n\n")}
       publish2({ snapshot: snapshots.get(key) ?? null, failed: true });
       throw err;
     }).finally(() => {
-      inflight7.delete(key);
+      inflight8.delete(key);
     });
-    inflight7.set(key, request);
+    inflight8.set(key, request);
     return request;
   }
   function publish2(next) {
     active = next;
-    for (const listener of [...listeners6]) listener();
+    for (const listener of [...listeners7]) listener();
   }
   function getActiveNowSnapshot() {
     return active;
   }
   function subscribeNowSnapshot(listener) {
-    listeners6.add(listener);
+    listeners7.add(listener);
     return () => {
-      listeners6.delete(listener);
+      listeners7.delete(listener);
     };
   }
-  var TTL_MS, snapshots, inflight7, NOW_SNAPSHOT_MAX_AGE_MS, active, listeners6;
+  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active, listeners7;
   var init_now_snapshot = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
@@ -34023,10 +34619,10 @@ ${cue.text}`).join("\n\n")}
       init_store_id();
       TTL_MS = 6e4;
       snapshots = /* @__PURE__ */ new Map();
-      inflight7 = /* @__PURE__ */ new Map();
+      inflight8 = /* @__PURE__ */ new Map();
       NOW_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1e3;
       active = { snapshot: null, failed: false };
-      listeners6 = /* @__PURE__ */ new Set();
+      listeners7 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -34292,7 +34888,7 @@ ${cue.text}`).join("\n\n")}
   }
   function startReminderScheduler(onDue) {
     let stopped = false;
-    const tick = () => {
+    const tick2 = () => {
       if (stopped) return;
       const now2 = Date.now();
       for (const r of dueReminders(now2)) {
@@ -34300,12 +34896,12 @@ ${cue.text}`).join("\n\n")}
         onDue(r);
       }
     };
-    tick();
-    const timer = window.setInterval(tick, 3e4);
-    const off = onRemindersChanged(tick);
+    tick2();
+    const timer2 = window.setInterval(tick2, 3e4);
+    const off = onRemindersChanged(tick2);
     return () => {
       stopped = true;
-      window.clearInterval(timer);
+      window.clearInterval(timer2);
       off();
     };
   }
@@ -34328,10 +34924,10 @@ ${cue.text}`).join("\n\n")}
       const sync = () => setList(getReminders());
       sync();
       const off = onRemindersChanged(sync);
-      const timer = window.setInterval(sync, 6e4);
+      const timer2 = window.setInterval(sync, 6e4);
       return () => {
         off();
-        window.clearInterval(timer);
+        window.clearInterval(timer2);
       };
     }, []);
     return list;
@@ -34430,7 +35026,8 @@ ${cue.text}`).join("\n\n")}
       fullscreenOnRotate: typeof r.fullscreenOnRotate === "boolean" ? r.fullscreenOnRotate : DEFAULTS2.fullscreenOnRotate,
       guideCategory: typeof r.guideCategory === "string" && r.guideCategory ? r.guideCategory : DEFAULTS2.guideCategory,
       timelineZoom,
-      nowNextDetails: typeof r.nowNextDetails === "boolean" ? r.nowNextDetails : DEFAULTS2.nowNextDetails
+      nowNextDetails: typeof r.nowNextDetails === "boolean" ? r.nowNextDetails : DEFAULTS2.nowNextDetails,
+      railLabels: typeof r.railLabels === "boolean" ? r.railLabels : DEFAULTS2.railLabels
     };
   }
   function getTvSettings() {
@@ -34490,7 +35087,8 @@ ${cue.text}`).join("\n\n")}
         fullscreenOnRotate: true,
         guideCategory: null,
         timelineZoom: "day",
-        nowNextDetails: true
+        nowNextDetails: true,
+        railLabels: true
       };
       GUIDE_MODES = ["now", "tl", "playlists", "grid", "nownext", "timeline"];
     }
@@ -34820,18 +35418,18 @@ ${cue.text}`).join("\n\n")}
     const [epgTick, setEpgTick] = useState(0);
     useEffect(() => {
       const visible = () => typeof document === "undefined" || document.visibilityState === "visible";
-      const timer = window.setInterval(() => {
+      const timer2 = window.setInterval(() => {
         setNowMs(Date.now());
-        if (visible()) setEpgTick((tick) => tick + 1);
+        if (visible()) setEpgTick((tick2) => tick2 + 1);
       }, tickMs);
       const onVisibility = () => {
         if (!visible()) return;
         setNowMs(Date.now());
-        setEpgTick((tick) => tick + 1);
+        setEpgTick((tick2) => tick2 + 1);
       };
       document.addEventListener("visibilitychange", onVisibility);
       return () => {
-        window.clearInterval(timer);
+        window.clearInterval(timer2);
         document.removeEventListener("visibilitychange", onVisibility);
       };
     }, [tickMs]);
@@ -35009,12 +35607,12 @@ ${cue.text}`).join("\n\n")}
             evict(storedAt);
             return items2;
           });
-          for (const key of wanted) inflight8.set(entryKey2(listId, key, from, to), request);
+          for (const key of wanted) inflight9.set(entryKey2(listId, key, from, to), request);
           request.catch(() => {
           }).finally(() => {
             for (const key of wanted) {
-              if (inflight8.get(entryKey2(listId, key, from, to)) === request) {
-                inflight8.delete(entryKey2(listId, key, from, to));
+              if (inflight9.get(entryKey2(listId, key, from, to)) === request) {
+                inflight9.delete(entryKey2(listId, key, from, to));
               }
             }
           });
@@ -35071,7 +35669,7 @@ ${cue.text}`).join("\n\n")}
     const waiting = /* @__PURE__ */ new Set();
     const queue2 = [];
     for (const key of missing) {
-      const pending2 = inflight8.get(entryKey2(listId, key, from, to));
+      const pending2 = inflight9.get(entryKey2(listId, key, from, to));
       if (pending2) waiting.add(pending2);
       else queue2.push(key);
     }
@@ -35094,7 +35692,7 @@ ${cue.text}`).join("\n\n")}
     const anchor = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
     return { from: anchor - Math.max(0, hoursBack) * HOUR_MS, to: anchor + Math.max(1, hoursAhead) * HOUR_MS };
   }
-  var TTL_MS2, MAX_ENTRIES4, cache7, batches, inflight8, HOUR_MS;
+  var TTL_MS2, MAX_ENTRIES4, cache7, batches, inflight9, HOUR_MS;
   var init_schedule_cache = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
@@ -35105,7 +35703,7 @@ ${cue.text}`).join("\n\n")}
       MAX_ENTRIES4 = 600;
       cache7 = /* @__PURE__ */ new Map();
       batches = /* @__PURE__ */ new Map();
-      inflight8 = /* @__PURE__ */ new Map();
+      inflight9 = /* @__PURE__ */ new Map();
       HOUR_MS = 36e5;
     }
   });
@@ -35205,10 +35803,10 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!enabled) return;
       if (videoRef.current) return;
-      const timer = window.setInterval(() => {
-        if (videoRef.current) setAttachTick((tick) => tick + 1);
+      const timer2 = window.setInterval(() => {
+        if (videoRef.current) setAttachTick((tick2) => tick2 + 1);
       }, 60);
-      return () => window.clearInterval(timer);
+      return () => window.clearInterval(timer2);
     }, [enabled, videoRef, attachTick]);
     useEffect(() => {
       if (!enabled) return;
@@ -36023,9 +36621,9 @@ ${cue.text}`).join("\n\n")}
     return `${mins}m`;
   }
   function useReminded(channel, programme) {
-    const [tick, setTick] = useState(0);
+    const [tick2, setTick] = useState(0);
     useEffect(() => onRemindersChanged(() => setTick((v) => v + 1)), []);
-    void tick;
+    void tick2;
     return programme ? isReminded(channel, programme) : false;
   }
   function PlayerTopBar({ channel, tv, info, ps, visible, onClose, onKeep, onRelease }) {
@@ -36230,9 +36828,9 @@ ${cue.text}`).join("\n\n")}
     const scheduleChannels = useMemo(() => open ? [channel] : [], [open, channel]);
     const { schedules, loading: loading2 } = useSchedules(scheduleChannels, dayStart, dayStart + DAY_MS);
     const programmes = useMemo(() => sliceSchedule(schedules[channelKey(channel)] ?? [], dayStart, dayStart + DAY_MS), [schedules, channel, dayStart]);
-    const [tick, setTick] = useState(0);
+    const [tick2, setTick] = useState(0);
     useEffect(() => onRemindersChanged(() => setTick((v) => v + 1)), []);
-    void tick;
+    void tick2;
     const nowMs = tv.nowMs;
     const nowIndex = programmes.findIndex((p) => p.start <= nowMs && p.stop > nowMs);
     useEffect(() => {
@@ -36412,7 +37010,7 @@ ${cue.text}`).join("\n\n")}
       let frame = 0;
       let held = 0;
       const deadline = Date.now() + 4e3;
-      const tick = () => {
+      const tick2 = () => {
         if (!node.isConnected) return;
         const active2 = document.activeElement;
         const inLayer = layerRef.current.menuOpen || layerRef.current.guideOpen || layerRef.current.gateOpen;
@@ -36424,9 +37022,9 @@ ${cue.text}`).join("\n\n")}
           held = 0;
           node.focus({ preventScroll: true });
         }
-        if (Date.now() < deadline) frame = window.requestAnimationFrame(tick);
+        if (Date.now() < deadline) frame = window.requestAnimationFrame(tick2);
       };
-      frame = window.requestAnimationFrame(tick);
+      frame = window.requestAnimationFrame(tick2);
       return () => window.cancelAnimationFrame(frame);
     }, [channel]);
     const closeGuide = useCallback(() => {
@@ -36554,7 +37152,7 @@ ${cue.text}`).join("\n\n")}
   }
   function publish3() {
     snapshot = [...cutouts.values()];
-    for (const listener of [...listeners7]) listener();
+    for (const listener of [...listeners8]) listener();
   }
   function registerSurfaceCutout(key, cutout) {
     const previous = cutouts.get(key);
@@ -36570,9 +37168,9 @@ ${cue.text}`).join("\n\n")}
     return snapshot;
   }
   function subscribeSurfaceCutouts(listener) {
-    listeners7.add(listener);
+    listeners8.add(listener);
     return () => {
-      listeners7.delete(listener);
+      listeners8.delete(listener);
     };
   }
   function useSurfaceCutouts() {
@@ -36606,14 +37204,14 @@ ${cue.text}`).join("\n\n")}
   function round(value) {
     return Math.round(value * 100) / 100;
   }
-  var cutouts, listeners7, snapshot;
+  var cutouts, listeners8, snapshot;
   var init_surface_cutouts = __esm({
     "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
       cutouts = /* @__PURE__ */ new Map();
-      listeners7 = /* @__PURE__ */ new Set();
+      listeners8 = /* @__PURE__ */ new Set();
       snapshot = [];
     }
   });
@@ -37264,7 +37862,7 @@ ${cue.text}`).join("\n\n")}
         });
         return () => {
           cancelled2 = true;
-          boundsTimers.forEach((timer) => window.clearTimeout(timer));
+          boundsTimers.forEach((timer2) => window.clearTimeout(timer2));
           resizeObs?.disconnect();
           window.removeEventListener("resize", sync);
           window.removeEventListener("scroll", sync, true);
@@ -37967,17 +38565,17 @@ ${cue.text}`).join("\n\n")}
   }
   function ToastRoot({ children }) {
     const [text, setText] = useState(null);
-    const timer = useRef(null);
+    const timer2 = useRef(null);
     const toast = useCallback((next) => {
       setText(next);
-      if (timer.current !== null) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => {
-        timer.current = null;
+      if (timer2.current !== null) window.clearTimeout(timer2.current);
+      timer2.current = window.setTimeout(() => {
+        timer2.current = null;
         setText(null);
       }, 2400);
     }, []);
     useEffect(() => () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
+      if (timer2.current !== null) window.clearTimeout(timer2.current);
     }, []);
     const node = useMemo(() => text ? /* @__PURE__ */ jsxs("div", { role: "status", style: { position: "fixed", left: "50%", bottom: 32, transform: "translateX(-50%)", zIndex: 1100, display: "flex", alignItems: "center", gap: 9, borderRadius: 999, background: UI.dialog, padding: "11px 20px", boxShadow: "0 18px 40px rgba(0,0,0,0.55)", pointerEvents: "none" }, children: [
       /* @__PURE__ */ jsx("span", { style: { height: 5, width: 5, borderRadius: 999, background: UI.green } }),
@@ -38070,17 +38668,17 @@ ${cue.text}`).join("\n\n")}
     jobProgress: null
   };
   var progress = IDLE;
-  var listeners5 = /* @__PURE__ */ new Set();
+  var listeners6 = /* @__PURE__ */ new Set();
   function publish(next) {
     progress = next;
-    for (const listener of [...listeners5]) listener();
+    for (const listener of [...listeners6]) listener();
   }
   function getM3uFetchProgress() {
     return progress;
   }
   function subscribeM3uFetch(listener) {
-    listeners5.add(listener);
-    return () => listeners5.delete(listener);
+    listeners6.add(listener);
+    return () => listeners6.delete(listener);
   }
   function reportM3uFetchJobProgress(received, total) {
     if (progress.status !== "fetching") return;
@@ -40464,8 +41062,8 @@ ${cue.text}`).join("\n\n")}
     if (target2 === null) return () => {
     };
     const delay = Math.max(0, target2 - Date.now());
-    const timer = setTimeout(onBoundary, delay);
-    return () => clearTimeout(timer);
+    const timer2 = setTimeout(onBoundary, delay);
+    return () => clearTimeout(timer2);
   }
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
@@ -42718,8 +43316,8 @@ ${cue.text}`).join("\n\n")}
     );
     useEffect(() => {
       if (!banner) return;
-      const timer = window.setTimeout(() => setBanner(null), 2e4);
-      return () => window.clearTimeout(timer);
+      const timer2 = window.setTimeout(() => setBanner(null), 2e4);
+      return () => window.clearTimeout(timer2);
     }, [banner]);
     if (!banner) return null;
     const channel = reminderToChannel(banner);
@@ -42985,10 +43583,10 @@ ${cue.text}`).join("\n\n")}
   var ZAP_MAX_DIGITS = 4;
   function createZapBuffer(opts) {
     let digits = "";
-    let timer = null;
+    let timer2 = null;
     const clearTimer = () => {
-      if (timer !== null) window.clearTimeout(timer);
-      timer = null;
+      if (timer2 !== null) window.clearTimeout(timer2);
+      timer2 = null;
     };
     const commit = () => {
       clearTimer();
@@ -43005,7 +43603,7 @@ ${cue.text}`).join("\n\n")}
         digits += digit;
         opts.onChange(digits);
         clearTimer();
-        timer = window.setTimeout(commit, opts.timeoutMs);
+        timer2 = window.setTimeout(commit, opts.timeoutMs);
       },
       commit,
       clear() {
@@ -43228,14 +43826,14 @@ ${cue.text}`).join("\n\n")}
     const reload = useCallback(() => setNonce((n) => n + 1), []);
     useEffect(() => {
       let cancelled = false;
-      let timer = null;
+      let timer2 = null;
       const controller = new AbortController();
       const load = async () => {
         try {
           const result = await listVodCategories(source, controller.signal);
           if (cancelled) return;
           setState({ ...result, loading: false, error: null });
-          if (result.importing) timer = setTimeout(load, IMPORT_POLL_MS);
+          if (result.importing) timer2 = setTimeout(load, IMPORT_POLL_MS);
         } catch (err) {
           if (cancelled || controller.signal.aborted) return;
           setState((prev) => ({
@@ -43250,7 +43848,7 @@ ${cue.text}`).join("\n\n")}
       return () => {
         cancelled = true;
         controller.abort();
-        if (timer) clearTimeout(timer);
+        if (timer2) clearTimeout(timer2);
         off();
       };
     }, [source, nonce]);
@@ -44176,6 +44774,13 @@ ${cue.text}`).join("\n\n")}
   function gp(n) {
     return Math.round(n * GUIDE_SCALE);
   }
+  var GUIDE_CARD_BG = "rgba(252,252,255,0.09)";
+  var GUIDE_CARD_LINE = "1px solid rgba(255,255,255,0.10)";
+  var GUIDE_CARD_RADIUS = gp(10);
+  var GUIDE_CARD_GAP = gp(8);
+  var GUIDE_CARD_INSET = gp(5);
+  var GUIDE_ON_SELECTED = "#15161c";
+  var GUIDE_ON_SELECTED_DIM = "rgba(21,22,28,0.6)";
   var ellipsis2 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
   var initAttr = (on) => on ? { "data-init": "" } : void 0;
   function withPointerLeave(props, onLeave) {
@@ -44187,18 +44792,18 @@ ${cue.text}`).join("\n\n")}
     } };
   }
   function useHoverSelect(enabled, onSelect) {
-    const timer = useRef(null);
+    const timer2 = useRef(null);
     const clear = () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
-      timer.current = null;
+      if (timer2.current !== null) window.clearTimeout(timer2.current);
+      timer2.current = null;
     };
     useEffect(() => clear, []);
     if (!enabled) return { enter: void 0, leave: void 0 };
     return {
       enter: (sel) => {
         clear();
-        timer.current = window.setTimeout(() => {
-          timer.current = null;
+        timer2.current = window.setTimeout(() => {
+          timer2.current = null;
           onSelect(sel);
         }, HOVER_MS);
       },
@@ -44219,8 +44824,8 @@ ${cue.text}`).join("\n\n")}
   function useDebouncedChannel(channel, ms = 300) {
     const [value, setValue] = useState(channel);
     useEffect(() => {
-      const timer = window.setTimeout(() => setValue(channel), ms);
-      return () => window.clearTimeout(timer);
+      const timer2 = window.setTimeout(() => setValue(channel), ms);
+      return () => window.clearTimeout(timer2);
     }, [channel, ms]);
     return value;
   }
@@ -44263,14 +44868,15 @@ ${cue.text}`).join("\n\n")}
     const width = GUIDE_CELL_WIDTH[variant];
     return { flex: `0 0 ${width}px`, width, minWidth: 0, boxSizing: "border-box" };
   }
-  function GuideChannelCell({ channel, number, pinned, locked, variant }) {
+  function GuideChannelCell({ channel, number, pinned, locked, variant, fill = false }) {
     const art = variant === "timeline" ? null : GUIDE_ART_SIZE[variant];
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-cell", style: { ...guideCellStyle(variant), display: "flex", alignItems: "center", gap: gp(10), padding: `0 ${gp(10)}px` }, children: [
-      /* @__PURE__ */ jsx("span", { style: { width: gp(26), flexShrink: 0, fontSize: gp(13), color: "rgba(243,244,248,0.45)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number ?? "" }),
+    const box = fill ? { flex: 1, minWidth: 0, height: "100%", boxSizing: "border-box" } : guideCellStyle(variant);
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-cell", style: { ...box, display: "flex", alignItems: "center", gap: gp(10), padding: `0 ${gp(12)}px` }, children: [
+      /* @__PURE__ */ jsx("span", { style: { width: gp(26), flexShrink: 0, fontSize: gp(14), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number ?? "" }),
       art ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: art.width, flexShrink: 0 }, height: art.height, radius: gp(6) }) : null,
       /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: gp(14), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
-        variant !== "timeline" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(12), color: "rgba(243,244,248,0.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }) : null
+        /* @__PURE__ */ jsx("div", { style: { fontSize: gp(15), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+        variant !== "timeline" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(12.5), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }) : null
       ] }),
       pinned ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-pinned", style: { color: TV2.acc, flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: gp(13), filled: true }) }) : null,
       locked ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-locked", style: { color: "rgba(243,244,248,0.45)", flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: gp(13) }) }) : null
@@ -45623,7 +46229,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
-  var ROW_H_PX = gp(60);
+  var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
   var PX_PER_MIN_GRID = gp(4.7);
   var GRID_THRESHOLDS = { marker: gp(18), title: gp(72) };
@@ -45696,8 +46302,8 @@ ${cue.text}`).join("\n\n")}
           "data-sticky": "",
           title: channel.name,
           ...station(() => nav.openChannel(channel), (element) => nav.channelMenu(channel, element), initAttr(init)),
-          style: { ...guideCellStyle("grid"), position: "sticky", left: 0, zIndex: 2, background: TV2.bg, display: "flex", alignItems: "stretch", cursor: "pointer" },
-          children: /* @__PURE__ */ jsx(GuideChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), variant: "grid" })
+          style: { ...guideCellStyle("grid"), position: "sticky", left: 0, zIndex: 2, background: TV2.bg, display: "flex", alignItems: "stretch", cursor: "pointer", padding: `${GUIDE_CARD_INSET}px ${GUIDE_CARD_GAP}px` },
+          children: /* @__PURE__ */ jsx("div", { "data-testid": "grid-channel-card", style: { flex: 1, minWidth: 0, display: "flex", borderRadius: GUIDE_CARD_RADIUS, background: selectedKey === key ? TV2.s16 : GUIDE_CARD_BG, border: GUIDE_CARD_LINE, boxSizing: "border-box" }, children: /* @__PURE__ */ jsx(GuideChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(key), locked: model.locked.has(key), variant: "grid", fill: true }) })
         }
       );
     };
@@ -45724,7 +46330,7 @@ ${cue.text}`).join("\n\n")}
                 const key = channelKey(channel);
                 const entries = entriesByChannel.get(key) ?? [];
                 const rowInit = initKey !== null && initKey.channel === key && !initKey.empty;
-                return /* @__PURE__ */ jsxs("div", { "data-testid": "grid-row", style: { display: "flex", height: ROW_H_PX, minHeight: ROW_H_PX, borderBottom: "1px solid rgba(255,255,255,0.06)", boxSizing: "border-box" }, children: [
+                return /* @__PURE__ */ jsxs("div", { "data-testid": "grid-row", style: { display: "flex", height: ROW_H_PX, minHeight: ROW_H_PX, boxSizing: "border-box" }, children: [
                   channelCell(channel, rowInit && initKey.start === null),
                   /* @__PURE__ */ jsx("div", { "data-testid": "grid-track", style: { width: trackWidth, flexShrink: 0, position: "relative" }, children: entries.map(({ box, programme }, blockIndex) => {
                     const live2 = isLive(programme);
@@ -45757,7 +46363,7 @@ ${cue.text}`).join("\n\n")}
               withoutEpg.map((channel, index) => {
                 const key = channelKey(channel);
                 const sel = { channel, programme: null };
-                return /* @__PURE__ */ jsxs("div", { "data-testid": "grid-empty-row", style: { display: "flex", height: ROW_H_PX, minHeight: ROW_H_PX, background: "rgba(252,252,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.06)", boxSizing: "border-box" }, children: [
+                return /* @__PURE__ */ jsxs("div", { "data-testid": "grid-empty-row", style: { display: "flex", height: ROW_H_PX, minHeight: ROW_H_PX, background: "rgba(252,252,255,0.03)", boxSizing: "border-box" }, children: [
                   channelCell(channel, false),
                   /* @__PURE__ */ jsx(
                     "div",
@@ -45825,23 +46431,24 @@ ${cue.text}`).join("\n\n")}
         ...withPointerLeave(station(onOk, onHold, init ? { "data-init": "" } : void 0), onLeave),
         onFocus,
         onPointerEnter: onEnter,
-        style: { position: "absolute", top: gp(6), bottom: gp(6), left: box.left, width: box.width, paddingRight: gp(2), boxSizing: "border-box", cursor: "pointer" },
+        style: { position: "absolute", top: GUIDE_CARD_INSET, bottom: GUIDE_CARD_INSET, left: box.left, width: box.width, paddingRight: marker ? gp(2) : GUIDE_CARD_GAP, boxSizing: "border-box", cursor: "pointer" },
         children: /* @__PURE__ */ jsx(
           "div",
           {
             style: {
               height: "100%",
               boxSizing: "border-box",
-              borderRadius: marker ? 0 : gp(8),
-              padding: marker ? 0 : `${gp(8)}px ${gp(10)}px`,
-              background: marker ? TV2.acc : live2 ? "rgba(59,130,246,0.18)" : TV2.s08,
-              border: live2 ? "1px solid rgba(59,130,246,0.5)" : "1px solid transparent",
+              borderRadius: marker ? 0 : GUIDE_CARD_RADIUS,
+              padding: marker ? 0 : `${gp(8)}px ${gp(12)}px`,
+              background: marker ? TV2.acc : selected ? TV2.text : live2 ? TV2.accMix(14) : GUIDE_CARD_BG,
+              border: marker ? "none" : selected ? "1px solid transparent" : live2 ? `1px solid ${TV2.accMix(45)}` : GUIDE_CARD_LINE,
+              color: selected ? GUIDE_ON_SELECTED : TV2.text,
               overflow: "hidden",
               position: "relative"
             },
             children: marker ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
-              textFits ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(13), fontWeight: live2 ? 600 : 400, color: live2 ? TV2.text : TV2.muted, paddingRight: reminded ? gp(14) : 0, ...ellipsis2 }, children: programme.title }) : null,
-              textFits && box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(11), color: live2 ? "rgba(243,244,248,0.6)" : TV2.faint, ...ellipsis2 }, children: times }) : null,
+              textFits ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(14), fontWeight: 600, color: selected ? GUIDE_ON_SELECTED : live2 ? TV2.text : "rgba(243,244,248,0.88)", paddingRight: reminded ? gp(14) : 0, ...ellipsis2 }, children: programme.title }) : null,
+              textFits && box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(12), color: selected ? GUIDE_ON_SELECTED_DIM : live2 ? "rgba(243,244,248,0.65)" : "rgba(243,244,248,0.5)", ...ellipsis2 }, children: times }) : null,
               reminded ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", right: gp(4), top: gp(4), color: TV2.acc }, children: /* @__PURE__ */ jsx(Icons.Bell, { size: gp(11), filled: true }) }) : null
             ] })
           }
@@ -45860,11 +46467,12 @@ ${cue.text}`).join("\n\n")}
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
-  var ROW_H_PX2 = gp(56);
+  var ROW_H_PX2 = gp(66);
   var CELL = guideCellStyle("nownext");
   var COL_WEIGHTS = [2, 1.2, 1];
-  var COL_LINE = "1px solid rgba(255,255,255,0.06)";
-  var colStyle = (weight) => ({ flex: `${weight} 1 0%`, minWidth: 0, borderRight: COL_LINE, boxSizing: "border-box", padding: `0 ${gp(12)}px`, display: "flex", alignItems: "center", gap: gp(10) });
+  var colStyle = (weight) => ({ flex: `${weight} 1 0%`, minWidth: 0, boxSizing: "border-box", margin: `${GUIDE_CARD_INSET}px ${GUIDE_CARD_GAP}px ${GUIDE_CARD_INSET}px 0`, padding: `0 ${gp(14)}px`, borderRadius: GUIDE_CARD_RADIUS, background: GUIDE_CARD_BG, border: GUIDE_CARD_LINE, display: "flex", alignItems: "center", gap: gp(10) });
+  var headStyle = (weight) => ({ ...colStyle(weight), margin: `0 ${GUIDE_CARD_GAP}px 0 0`, background: "transparent", border: "none" });
+  var channelWrap = { ...CELL, display: "flex", boxSizing: "border-box", padding: `${GUIDE_CARD_INSET}px ${GUIDE_CARD_GAP}px ${GUIDE_CARD_INSET}px ${GUIDE_CARD_GAP}px` };
   function GuideNowNextView({ model, nav, category, selection, onSelect, isTv, details }) {
     const { tt, locale } = useTvText();
     const { nowMs } = model;
@@ -45925,16 +46533,14 @@ ${cue.text}`).join("\n\n")}
         onPointerEnter: hover.enter ? () => hover.enter?.(sel) : void 0
       };
     };
-    const rowStyle2 = (channel, empty) => ({
+    const rowStyle2 = (_channel, _empty) => ({
       display: "flex",
       height: ROW_H_PX2,
       minHeight: ROW_H_PX2,
       boxSizing: "border-box",
-      borderBottom: COL_LINE,
-      background: isSelected(channel) ? TV2.s05 : empty ? "rgba(252,252,255,0.04)" : void 0,
       cursor: "pointer"
     });
-    const cell = (channel) => /* @__PURE__ */ jsx(GuideChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(channelKey(channel)), locked: model.locked.has(channelKey(channel)), variant: "nownext" });
+    const cell = (channel) => /* @__PURE__ */ jsx("div", { "data-testid": "nownext-channel", style: channelWrap, children: /* @__PURE__ */ jsx("div", { "data-testid": "nownext-channel-card", style: { flex: 1, minWidth: 0, display: "flex", borderRadius: GUIDE_CARD_RADIUS, background: isSelected(channel) ? TV2.s16 : GUIDE_CARD_BG, border: GUIDE_CARD_LINE, boxSizing: "border-box" }, children: /* @__PURE__ */ jsx(GuideChannelCell, { channel, number: model.channelNumber(channel), pinned: model.pinnedSet.has(channelKey(channel)), locked: model.locked.has(channelKey(channel)), variant: "nownext", fill: true }) }) });
     return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-nownext-view", style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
       showBanner && subject ? /* @__PURE__ */ jsx(
         NowNextBanner,
@@ -45949,9 +46555,9 @@ ${cue.text}`).join("\n\n")}
           onRemind: (programme) => toggle(subject.channel, programme)
         }
       ) : null,
-      /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-header", style: { height: gp(30), minHeight: gp(30), display: "flex", alignItems: "stretch", borderBottom: `1px solid ${TV2.line}`, boxSizing: "border-box", fontSize: gp(11), color: "rgba(243,244,248,0.4)", letterSpacing: "0.12em" }, children: [
-        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-header-channel", style: { ...CELL, display: "flex", alignItems: "center", padding: `0 ${gp(10)}px`, borderRight: COL_LINE }, children: tt("colChannel") }),
-        ["colNow", "colNext", "colLater"].map((key, index) => /* @__PURE__ */ jsx("div", { "data-testid": "nownext-header-col", style: colStyle(COL_WEIGHTS[index]), children: tt(key) }, key))
+      /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-header", style: { height: gp(34), minHeight: gp(34), display: "flex", alignItems: "stretch", boxSizing: "border-box", fontSize: gp(12), fontWeight: 700, color: "rgba(243,244,248,0.55)", letterSpacing: "0.14em", textTransform: "uppercase" }, children: [
+        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-header-channel", style: { ...CELL, display: "flex", alignItems: "center", padding: `0 ${GUIDE_CARD_GAP + gp(12)}px` }, children: tt("colChannel") }),
+        ["colNow", "colNext", "colLater"].map((key, index) => /* @__PURE__ */ jsx("div", { "data-testid": "nownext-header-col", style: headStyle(COL_WEIGHTS[index]), children: tt(key) }, key))
       ] }),
       /* @__PURE__ */ jsxs("div", { "data-scroll": "", "data-testid": "nownext-scroll", style: { flex: 1, minHeight: 0, overflow: "auto" }, children: [
         /* @__PURE__ */ jsx(
@@ -45968,22 +46574,23 @@ ${cue.text}`).join("\n\n")}
           rows.map(({ channel, info }, index) => {
             const now2 = info.now;
             const minutesLeft = Math.max(0, Math.ceil((now2.stop - nowMs) / 6e4));
+            const selected = isSelected(channel);
             return /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-row", ...rowProps(channel, now2, initTarget === "row" && index === 0), style: rowStyle2(channel, false), children: [
               cell(channel),
-              /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-now", style: colStyle(COL_WEIGHTS[0]), children: [
-                /* @__PURE__ */ jsx("div", { title: now2.title, style: { flex: 1, minWidth: 0, fontSize: gp(14), ...ellipsis2 }, children: now2.title }),
+              /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-now", style: { ...colStyle(COL_WEIGHTS[0]), background: selected ? TV2.text : TV2.accMix(14), border: selected ? "1px solid transparent" : `1px solid ${TV2.accMix(45)}`, color: selected ? GUIDE_ON_SELECTED : TV2.text }, children: [
+                /* @__PURE__ */ jsx("div", { title: now2.title, style: { flex: 1, minWidth: 0, fontSize: gp(15), fontWeight: 600, ...ellipsis2 }, children: now2.title }),
                 /* @__PURE__ */ jsxs("div", { style: { width: gp(90), flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: gp(4) }, children: [
-                  /* @__PURE__ */ jsx(Progress, { value: progressOf(now2.start, now2.stop, nowMs), height: gp(4), style: { width: "100%" } }),
-                  /* @__PURE__ */ jsx("span", { style: { fontSize: gp(11), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums" }, children: tt("minShort", { min: minutesLeft }) })
+                  /* @__PURE__ */ jsx(Progress, { value: progressOf(now2.start, now2.stop, nowMs), height: gp(4), track: selected ? "rgba(21,22,28,0.15)" : TV2.s14, style: { width: "100%" } }),
+                  /* @__PURE__ */ jsx("span", { style: { fontSize: gp(11), color: selected ? GUIDE_ON_SELECTED_DIM : "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums" }, children: tt("minShort", { min: minutesLeft }) })
                 ] })
               ] }),
-              /* @__PURE__ */ jsx(UpcomingCell, { testId: "nownext-next", programme: info.next, locale, titleColor: "rgba(243,244,248,0.75)", timeColor: "rgba(243,244,248,0.45)", weight: COL_WEIGHTS[1] }),
-              /* @__PURE__ */ jsx(UpcomingCell, { testId: "nownext-later", programme: info.later, locale, titleColor: "rgba(243,244,248,0.55)", timeColor: "rgba(243,244,248,0.35)", weight: COL_WEIGHTS[2] })
+              /* @__PURE__ */ jsx(UpcomingCell, { testId: "nownext-next", programme: info.next, locale, titleColor: "rgba(243,244,248,0.88)", timeColor: "rgba(243,244,248,0.55)", weight: COL_WEIGHTS[1] }),
+              /* @__PURE__ */ jsx(UpcomingCell, { testId: "nownext-later", programme: info.later, locale, titleColor: "rgba(243,244,248,0.7)", timeColor: "rgba(243,244,248,0.45)", weight: COL_WEIGHTS[2] })
             ] }, channelKey(channel));
           }),
           emptyRows.map((channel, index) => /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-row", ...rowProps(channel, null, initTarget === "row" && rows.length === 0 && index === 0), style: rowStyle2(channel, true), children: [
             cell(channel),
-            /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-cell", style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: gp(14), padding: `0 ${gp(12)}px` }, children: [
+            /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-cell", style: { ...colStyle(1), background: "rgba(252,252,255,0.04)", gap: gp(14) }, children: [
               /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(13), color: "rgba(243,244,248,0.4)", ...ellipsis2 }, children: tt("noEpgRow") }),
               /* @__PURE__ */ jsxs("span", { "data-testid": "nownext-watch-pill", style: { height: gp(26), padding: `0 ${gp(12)}px`, borderRadius: 999, background: TV2.s08, display: "inline-flex", alignItems: "center", gap: gp(6), fontSize: gp(12), flexShrink: 0 }, children: [
                 /* @__PURE__ */ jsx(Icons.Play, { size: gp(10) }),
@@ -45999,8 +46606,8 @@ ${cue.text}`).join("\n\n")}
   }
   function UpcomingCell({ testId, programme, locale, titleColor, timeColor, weight }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: colStyle(weight), children: programme ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx("div", { title: programme.title, style: { flex: 1, minWidth: 0, fontSize: gp(13), color: titleColor, ...ellipsis2 }, children: programme.title }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(12), color: timeColor, flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: formatClock2(programme.start, locale) })
+      /* @__PURE__ */ jsx("div", { title: programme.title, style: { flex: 1, minWidth: 0, fontSize: gp(14), color: titleColor, ...ellipsis2 }, children: programme.title }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(12.5), color: timeColor, flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: formatClock2(programme.start, locale) })
     ] }) : null });
   }
   function NowNextBanner({ selection, info, nowMs, locale, channelNumber, init, onWatch, onRemind }) {
@@ -46321,7 +46928,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0 }, children: tt("colNext") }),
           /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0 }, children: tt("colLater") })
         ] }) : /* @__PURE__ */ jsxs("div", { style: { flex: 1, position: "relative", height: dp(20) }, children: [
-          timeTicks(win).map((tick, i) => /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: `${i * 25}%` }, children: formatClock2(tick, locale) }, tick)),
+          timeTicks(win).map((tick2, i) => /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: `${i * 25}%` }, children: formatClock2(tick2, locale) }, tick2)),
           /* @__PURE__ */ jsx("div", { "data-testid": "now-line", style: { position: "absolute", top: 0, bottom: 0, left: `${nowLeftPct}%`, width: 2, background: TV2.acc, boxShadow: `0 0 12px ${TV2.accMix(60)}`, pointerEvents: "none" } })
         ] })
       ] }),
@@ -47344,7 +47951,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       setState((prev) => ({ hits: prev.hits, loading: true }));
-      const timer = window.setTimeout(() => {
+      const timer2 = window.setTimeout(() => {
         epgSearch(listId, q, dayStart, dayEnd, limit).then(async (items2) => {
           const channels = await resolveChannelKeys(items2.map((item) => item.key));
           const byKey = new Map(channels.map((channel) => [channel.key, channel]));
@@ -47360,7 +47967,7 @@ ${cue.text}`).join("\n\n")}
         });
       }, DEBOUNCE_MS);
       return () => {
-        window.clearTimeout(timer);
+        window.clearTimeout(timer2);
       };
     }, [query, dayStart, dayEnd, listId, limit]);
     return state2;
@@ -47998,8 +48605,8 @@ ${cue.text}`).join("\n\n")}
   init_jsx_runtime_shim();
   var LEFT_W = 380;
   var LEFT_W_TV = 440;
-  var GRID_COLUMNS = 7;
-  var GRID_COLUMNS_TV = 5;
+  var GRID_COLUMNS = 5;
+  var GRID_COLUMNS_TV = 4;
   var GRID_COLUMNS_NARROW = 2;
   var SORTS = ["new", "az", "rating"];
   function PosterFallback({ title }) {
@@ -48052,26 +48659,6 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function KindTag({ kind, label }) {
-    return /* @__PURE__ */ jsx(
-      "span",
-      {
-        style: {
-          position: "absolute",
-          top: dp(8),
-          right: dp(8),
-          fontSize: dp(12),
-          letterSpacing: "0.06em",
-          padding: `${dp(3)}px ${dp(8)}px`,
-          borderRadius: dp(6),
-          background: "rgba(0,0,0,0.55)",
-          color: "rgba(255,255,255,0.75)"
-        },
-        "data-vod-kind": kind,
-        children: label
-      }
-    );
-  }
   var ALL_CATEGORY = "__all__";
   function TvLibrary({ model, nav }) {
     const { tt } = useTvText();
@@ -48083,18 +48670,19 @@ ${cue.text}`).join("\n\n")}
     const playlistName = model.activePlaylistName ?? tt("allPlaylists");
     const cats = useVodCategories(source);
     const [sort, setSortState] = useState(() => getVodSort());
+    const [kind, setKind] = useState("movie");
     const [selected, setSelected] = useState(() => getVodCategory(playlistId) ?? ALL_CATEGORY);
     const [query, setQuery] = useState("");
     const [q, setQ] = useState("");
     useEffect(() => {
-      const timer = window.setTimeout(() => setQ(query.trim()), 250);
-      return () => window.clearTimeout(timer);
+      const timer2 = window.setTimeout(() => setQ(query.trim()), 250);
+      return () => window.clearTimeout(timer2);
     }, [query]);
     const validSelected = useMemo(() => {
       if (selected === ALL_CATEGORY || cats.categories.length === 0) return ALL_CATEGORY;
-      if (selected && cats.categories.some((c) => c.id === selected)) return selected;
+      if (selected && cats.categories.some((c) => c.id === selected && (narrow || c.kind === kind))) return selected;
       return ALL_CATEGORY;
-    }, [cats.categories, selected]);
+    }, [cats.categories, selected, kind, narrow]);
     useEffect(() => {
       setSelected(getVodCategory(playlistId) ?? ALL_CATEGORY);
     }, [playlistId]);
@@ -48104,6 +48692,8 @@ ${cue.text}`).join("\n\n")}
       // Söken håller sig inom vald kategori; Alla söker hela indexet (Jerry
       // 2026-09-29). Källan får vara null: det betyder alla spellistor.
       categoryId: validSelected === ALL_CATEGORY ? null : validSelected,
+      // Sorten gäller bara med växlaren (inte på telefon).
+      kind: narrow ? null : kind,
       q: q || void 0,
       sort,
       // Vänta in kategorilistan (den säger om det finns ett bibliotek alls),
@@ -48113,6 +48703,11 @@ ${cue.text}`).join("\n\n")}
     const chooseCategory = (id) => {
       setSelected(id);
       if (playlistId) setVodCategory(playlistId, id);
+    };
+    const chooseKind = (next) => {
+      if (next === kind) return;
+      setKind(next);
+      setSelected(ALL_CATEGORY);
     };
     const chooseSort = (next) => {
       setSortState(next);
@@ -48141,7 +48736,9 @@ ${cue.text}`).join("\n\n")}
       nav.openMenu({ title: item.title, element, actions });
     };
     const sortLabel = (key) => key === "az" ? tt("librarySortAz") : key === "rating" ? tt("librarySortRating") : tt("librarySortNew");
-    const grouped = useMemo(() => groupByKind(cats.categories), [cats.categories]);
+    const kindCategories = useMemo(() => cats.categories.filter((c) => c.kind === kind), [cats.categories, kind]);
+    const kindTotal = useMemo(() => kindCategories.reduce((sum, c) => sum + (c.count ?? 0), 0), [kindCategories]);
+    const allKindLabel = kind === "movie" ? tt("libraryAllMovies") : tt("libraryAllSeries");
     const initInGrid = page.items.length > 0;
     const card2 = (item, index) => /* @__PURE__ */ jsxs(
       "div",
@@ -48154,9 +48751,12 @@ ${cue.text}`).join("\n\n")}
         ),
         style: { cursor: "pointer" },
         children: [
-          /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, "data-vod-kind": item.kind, children: [
             /* @__PURE__ */ jsx(Poster, { item, radius: 12 }),
-            /* @__PURE__ */ jsx(KindTag, { kind: item.kind, label: item.kind === "series" ? tt("libraryKindSeries") : tt("libraryKindMovie") })
+            item.rating ? /* @__PURE__ */ jsxs("span", { "data-testid": "library-rating", style: { position: "absolute", top: dp(8), right: dp(8), fontSize: dp(isTv ? 16 : 13), fontWeight: 700, padding: `${dp(3)}px ${dp(9)}px`, borderRadius: 999, background: "rgba(0,0,0,0.62)", color: "#fff", display: "inline-flex", alignItems: "center", gap: dp(4), fontVariantNumeric: "tabular-nums" }, children: [
+              /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { color: "#f6c453" }, children: "\u2605" }),
+              item.rating.toFixed(1)
+            ] }) : null
           ] }),
           /* @__PURE__ */ jsx(
             "div",
@@ -48172,7 +48772,7 @@ ${cue.text}`).join("\n\n")}
               children: item.title
             }
           ),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(narrow ? 13 : isTv ? 17 : 15), color: "rgba(243,244,248,0.55)" }, children: metaLine(item) })
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(narrow ? 13 : isTv ? 17 : 15), color: "rgba(243,244,248,0.55)" }, children: metaLine(item, item.kind === "series" ? tt("libraryKindSeries") : tt("libraryKindMovie")) })
         ]
       },
       item.key
@@ -48207,17 +48807,18 @@ ${cue.text}`).join("\n\n")}
             alignItems: "center",
             justifyContent: "space-between",
             gap: dp(10),
-            padding: `${dp(10)}px ${dp(12)}px`,
+            padding: `${dp(12)}px ${dp(14)}px`,
             marginBottom: dp(8),
-            borderRadius: dp(10),
-            fontSize: dp(isTv ? 18 : 15),
+            borderRadius: dp(12),
+            fontSize: dp(isTv ? 24 : 21),
+            fontWeight: 600,
             cursor: "pointer",
             background: isActive ? TV2.accMix(18) : "transparent",
             color: isActive ? TV2.text : "rgba(243,244,248,0.65)"
           },
           children: [
-            tt("libraryAll"),
-            /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.4)" }, children: cats.total })
+            chip ? tt("libraryAll") : allKindLabel,
+            /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.4)" }, children: chip ? cats.total : kindTotal })
           ]
         },
         "__all__"
@@ -48348,61 +48949,73 @@ ${cue.text}`).join("\n\n")}
           },
           children: [
             /* @__PURE__ */ jsx("div", { style: { fontSize: dp(isTv ? 36 : 30), fontWeight: 600 }, children: tt("library") }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)", marginBottom: dp(16) }, children: tt("librarySub", { playlist: playlistName, count: cats.total }) }),
-            allChip(false),
-            grouped.map((group) => /* @__PURE__ */ jsxs("div", { children: [
-              /* @__PURE__ */ jsx(
+            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(isTv ? 19 : 17), color: "rgba(243,244,248,0.55)", marginBottom: dp(20) }, children: tt("librarySub", { playlist: playlistName, count: cats.total }) }),
+            /* @__PURE__ */ jsx("div", { "data-testid": "library-kind", style: { display: "flex", padding: dp(4), borderRadius: 999, background: TV2.s06, marginBottom: dp(22) }, children: ["movie", "series"].map((k) => {
+              const on = k === kind;
+              return /* @__PURE__ */ jsx(
                 "div",
                 {
+                  "data-testid": `library-kind-${k}`,
+                  "data-active": on ? "" : void 0,
+                  ...station(() => chooseKind(k)),
+                  style: { flex: 1, height: dp(isTv ? 54 : 46), borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center", fontSize: dp(isTv ? 22 : 19), fontWeight: 600, cursor: "pointer", background: on ? TV2.text : "transparent", color: on ? "#15161c" : "rgba(243,244,248,0.7)" },
+                  children: k === "movie" ? tt("librarySegMovies") : tt("librarySegSeries")
+                },
+                k
+              );
+            }) }),
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                style: {
+                  fontSize: dp(isTv ? 16 : 14),
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.14em",
+                  color: "rgba(243,244,248,0.5)",
+                  margin: `0 0 ${dp(10)}px`
+                },
+                children: tt("libraryCategories")
+              }
+            ),
+            allChip(false),
+            kindCategories.map((category) => {
+              const isActive = category.id === validSelected;
+              return /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  "data-testid": "library-category",
+                  "data-active": isActive ? "" : void 0,
+                  ...station(
+                    () => chooseCategory(category.id),
+                    void 0,
+                    isActive && !initInGrid ? { "data-init": "" } : void 0
+                  ),
                   style: {
-                    fontSize: dp(isTv ? 17 : 14),
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.12em",
-                    color: "rgba(243,244,248,0.4)",
-                    margin: `${dp(14)}px 0 ${dp(6)}px`
+                    minHeight: dp(isTv ? 64 : 56),
+                    padding: `${dp(8)}px ${dp(14)}px`,
+                    borderRadius: dp(12),
+                    display: "flex",
+                    alignItems: "center",
+                    gap: dp(10),
+                    cursor: "pointer",
+                    background: isActive ? TV2.accMix(18) : "transparent",
+                    color: isActive ? TV2.text : "rgba(243,244,248,0.72)"
                   },
-                  children: group.kind === "series" ? tt("librarySectionSeries") : tt("librarySectionMovies")
-                }
-              ),
-              group.categories.map((category) => {
-                const isActive = category.id === validSelected;
-                return /* @__PURE__ */ jsxs(
-                  "div",
-                  {
-                    "data-testid": "library-category",
-                    "data-active": isActive ? "" : void 0,
-                    ...station(
-                      () => chooseCategory(category.id),
-                      void 0,
-                      isActive && !initInGrid ? { "data-init": "" } : void 0
-                    ),
-                    style: {
-                      minHeight: dp(isTv ? 62 : 52),
-                      padding: `${dp(8)}px ${dp(14)}px`,
-                      borderRadius: dp(10),
-                      display: "flex",
-                      alignItems: "center",
-                      gap: dp(10),
-                      cursor: "pointer",
-                      background: isActive ? TV2.accMix(18) : "transparent",
-                      color: isActive ? TV2.text : "rgba(243,244,248,0.65)"
-                    },
-                    children: [
-                      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 22 : 18), flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: category.name }),
-                      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 17 : 14), color: "rgba(243,244,248,0.4)" }, children: category.count })
-                    ]
-                  },
-                  `${category.kind}:${category.id}`
-                );
-              })
-            ] }, group.kind))
+                  children: [
+                    /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 24 : 21), flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: category.name }),
+                    /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 19 : 17), color: "rgba(243,244,248,0.45)" }, children: category.count })
+                  ]
+                },
+                `${category.kind}:${category.id}`
+              );
+            })
           ]
         }
       ),
       /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(14), padding: `${dp(30)}px ${dp(48)}px ${dp(16)}px` }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }, children: active2?.name ?? tt("library") }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }, children: active2?.name ?? allKindLabel }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 20 : 17), color: "rgba(243,244,248,0.5)" }, children: tt("libraryTitlesCount", { count: page.total }) }),
           /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(10) }, children: [
             SORTS.map((key) => /* @__PURE__ */ jsx(
@@ -48472,19 +49085,11 @@ ${cue.text}`).join("\n\n")}
       ] })
     ] });
   }
-  function metaLine(item) {
+  function metaLine(item, kindLabel2) {
     const parts = [];
     if (item.year) parts.push(String(item.year));
-    if (item.rating) parts.push(item.rating.toFixed(1));
+    parts.push(kindLabel2);
     return parts.join(" \xB7 ");
-  }
-  function groupByKind(categories) {
-    const movies = categories.filter((c) => c.kind === "movie");
-    const series = categories.filter((c) => c.kind === "series");
-    return [
-      ...movies.length > 0 ? [{ kind: "movie", categories: movies }] : [],
-      ...series.length > 0 ? [{ kind: "series", categories: series }] : []
-    ];
   }
   function LibraryStatus({
     cats,
@@ -50075,6 +50680,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx(Row, { testId: "setting-previewEnabled", label: tt("settingPreview"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.previewEnabled }), onOk: () => setTvSettings({ previewEnabled: !settings.previewEnabled }) }),
         /* @__PURE__ */ jsx(Row, { testId: "setting-startOnLastChannel", label: tt("settingStartLast"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.startOnLastChannel }), onOk: () => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel }) }),
         /* @__PURE__ */ jsx(Row, { testId: "setting-numericZap", label: tt("settingNumericZap"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.numericZap }), onOk: () => setTvSettings({ numericZap: !settings.numericZap }) }),
+        /* @__PURE__ */ jsx(Row, { testId: "setting-railLabels", label: tt("settingRailLabels"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.railLabels }), onOk: () => setTvSettings({ railLabels: !settings.railLabels }) }),
         /* @__PURE__ */ jsx(Row, { testId: "setting-bannerHideMs", label: tt("settingBannerHide"), right: settings.bannerHideMs === 0 ? tt("never") : tt("seconds", { s: settings.bannerHideMs / 1e3 }), onOk: () => setTvSettings({ bannerHideMs: nextBanner(settings.bannerHideMs) }) })
       ] })
     ] });
@@ -50211,10 +50817,14 @@ ${cue.text}`).join("\n\n")}
   var VIEWS2 = ["hub", "guide", "favs", "channel", "search", "multi", "library", "title", "cast", "settings"];
   var BACK_KEYS2 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   var ZAP_TIMEOUT_MS = 1500;
-  var RAIL_W_TV = 104;
-  var RAIL_W_DESKTOP = 84;
+  var RAIL_W_TV = 152;
+  var RAIL_W_DESKTOP = 132;
   var RAIL_W_NARROW = 64;
-  var RAIL_ITEM_WIDE = 60;
+  var RAIL_ITEM_WIDE = 108;
+  var RAIL_ITEM_WIDE_H = 84;
+  var RAIL_W_TV_COMPACT = 104;
+  var RAIL_W_DESKTOP_COMPACT = 84;
+  var RAIL_ITEM_COMPACT = 60;
   var RAIL_ITEM_NARROW = 48;
   function viewFromParams(params) {
     const raw = params?.view;
@@ -50246,8 +50856,9 @@ ${cue.text}`).join("\n\n")}
     const narrow = useNarrowSurface(rootRef) && !isTv;
     const phone = usePhoneSurface(rootRef) && !isTv;
     const desktopSurface = isDesktopTauri() && !isTv && !phone;
-    const railWidth = isTv ? RAIL_W_TV : narrow ? RAIL_W_NARROW : RAIL_W_DESKTOP;
-    const railItemSize = narrow ? RAIL_ITEM_NARROW : RAIL_ITEM_WIDE;
+    const railLabels = settings.railLabels && !narrow;
+    const railWidth = isTv ? railLabels ? RAIL_W_TV : RAIL_W_TV_COMPACT : narrow ? RAIL_W_NARROW : railLabels ? RAIL_W_DESKTOP : RAIL_W_DESKTOP_COMPACT;
+    const railItemSize = narrow ? RAIL_ITEM_NARROW : railLabels ? RAIL_ITEM_WIDE : RAIL_ITEM_COMPACT;
     const [moreOpen, setMoreOpen] = useState(false);
     useEffect(() => {
       if (active2) return;
@@ -50481,12 +51092,15 @@ ${cue.text}`).join("\n\n")}
     ];
     const railItem = (item, extraStyle) => {
       const activeItem = item.key === view || item.key === "guide" && view === "channel";
-      return /* @__PURE__ */ jsx(
+      return /* @__PURE__ */ jsxs(
         "div",
         {
           ...station(item.run ?? (() => go(item.key)), void 0, { "data-testid": `rail-${item.key}`, "aria-label": item.label, title: item.label }),
-          style: { width: dp(railItemSize), height: dp(railItemSize), borderRadius: dp(16), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: activeItem ? TV2.s14 : "transparent", color: activeItem ? TV2.text : "rgba(243,244,248,0.55)", ...extraStyle },
-          children: item.icon
+          style: { width: dp(railItemSize), height: dp(railLabels ? RAIL_ITEM_WIDE_H : railItemSize), borderRadius: dp(railLabels ? 18 : 16), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: dp(5), cursor: "pointer", background: activeItem ? TV2.s14 : "transparent", color: activeItem ? TV2.text : "rgba(243,244,248,0.62)", ...extraStyle },
+          children: [
+            item.icon,
+            !railLabels ? null : /* @__PURE__ */ jsx("span", { "data-live-tv-rail-label": "", style: { fontSize: dp(15), fontWeight: 600, lineHeight: 1.1, maxWidth: "100%", padding: `0 ${dp(6)}px`, boxSizing: "border-box", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: item.label })
+          ]
         },
         item.key
       );
@@ -50537,7 +51151,7 @@ ${cue.text}`).join("\n\n")}
                 OFÖRÄNDRAD ovanför telefonbredden (spec §1/krav 3) — se
                 "utan telefonattribut: ikonraden som förut" i tv-shell-phone.test.tsx.
                 På telefon finns ingen rad alls: flik-raden nedan tar över. */
-            /* @__PURE__ */ jsxs("nav", { "data-testid": "tv-rail", "aria-label": tt("liveTv"), style: { width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, background: "linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))", padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(narrow ? 8 : 14) }, children: [
+            /* @__PURE__ */ jsxs("nav", { "data-testid": "tv-rail", "aria-label": tt("liveTv"), style: { width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, background: "linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))", padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(narrow ? 8 : 8) }, children: [
               narrow ? null : /* @__PURE__ */ jsx("div", { "data-live-tv-rail-badge": "", "aria-hidden": "true", style: { width: dp(44), height: dp(44), borderRadius: dp(12), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }, children: "L" }),
               railItem({ key: "back", label: tt("railBack"), icon: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}), run: requestBrowseBack }),
               rail.map((item) => railItem(item)),
@@ -50686,14 +51300,14 @@ ${cue.text}`).join("\n\n")}
       });
       const msToNextMinute = 6e4 - Date.now() % 6e4;
       const timers2 = [];
-      const tick = () => {
+      const tick2 = () => {
         recompute();
-        timers2.push(window.setTimeout(tick, 6e4));
+        timers2.push(window.setTimeout(tick2, 6e4));
       };
-      timers2.push(window.setTimeout(tick, msToNextMinute));
+      timers2.push(window.setTimeout(tick2, msToNextMinute));
       return () => {
         cancelled = true;
-        for (const timer of timers2) window.clearTimeout(timer);
+        for (const timer2 of timers2) window.clearTimeout(timer2);
       };
     }, [key, listId, urls.join("|"), hoursAhead, hoursBack]);
     return programmes;
@@ -50705,7 +51319,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.12.0"
+      version: "0.13.0"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -50719,7 +51333,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.12.0",
+    version: "0.13.0",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
