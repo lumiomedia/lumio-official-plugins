@@ -50,6 +50,28 @@
       "minAppVersion": "0.1.603"
     },
     {
+      "id": "com.lumio.emby",
+      "slug": "emby",
+      "name": {
+        "en": "Emby",
+        "sv": "Emby"
+      },
+      "version": "0.1.0",
+      "description": {
+        "en": "Index your Emby server as a library: home rows, search, details and playback straight from what you own.",
+        "sv": "Indexera din Emby-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
+      },
+      "path": "plugins/emby",
+      "runtimeBundlePath": "dist/runtime.js",
+      "readmePath": "plugins/emby/README.md",
+      "changelogPath": "plugins/emby/CHANGELOG.md",
+      "official": true,
+      "bundled": true,
+      "removable": true,
+      "repoPath": "plugins/emby",
+      "minAppVersion": "0.1.603"
+    },
+    {
       "id": "com.lumio.live-tv",
       "slug": "live-tv",
       "name": {

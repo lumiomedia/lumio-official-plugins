@@ -1,0 +1,23 @@
+{
+  "id": "com.lumio.emby",
+  "slug": "emby",
+  "name": {
+    "en": "Emby",
+    "sv": "Emby"
+  },
+  "version": "0.1.0",
+  "minAppVersion": "0.1.603",
+  "description": {
+    "en": "Index your Emby server as a library: home rows, search, details and playback straight from what you own.",
+    "sv": "Indexera din Emby-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
+  },
+  "runtimeBundlePath": "dist/runtime.js",
+  "official": true,
+  "bundled": true,
+  "removable": true,
+  "sdkCapabilities": [
+    "settings-section",
+    "library-provider",
+    "main-menu-item"
+  ]
+}
