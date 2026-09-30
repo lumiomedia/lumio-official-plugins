@@ -205,6 +205,18 @@ export function TvFocusStyle() {
   padding-right: 1rem;
   opacity: 1;
 }
+
+/* Knappstorlek (appens Tema och skala → Knappstorlek): glyferna i VOD-
+   titelns knapprad följer --tv-button-scale som knapparna själva. Vilande
+   när appen inte sätter data-tv-button-scale (100 % eller äldre app). */
+:root[data-tv="1"][data-tv-button-scale] [data-live-tv-tv-root] [data-vod-actions] [data-hero-icon-action] svg {
+  width: calc(30px * var(--tv-button-scale));
+  height: calc(30px * var(--tv-button-scale));
+}
+:root[data-tv="1"][data-tv-button-scale] [data-live-tv-tv-root] [data-vod-actions] [data-testid="title-play"] svg {
+  width: calc(28px * var(--tv-button-scale));
+  height: calc(28px * var(--tv-button-scale));
+}
 `}</style>
   )
 }
