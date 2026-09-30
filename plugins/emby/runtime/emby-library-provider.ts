@@ -68,15 +68,28 @@ function mapMedia(settings: EmbySettings, item: EmbyItem, titleKey: string, epis
   })
 }
 
+/**
+ * Embys ProviderIds-nycklar har inget fast skiftläge: samma server gav
+ * `Tmdb` och `IMDB` på en och samma serie (Emby 4.10, Jerry 2026-09-30).
+ */
+export function providerId(item: Pick<EmbyItem, 'ProviderIds'>, name: string): string | null {
+  const wanted = name.toLowerCase()
+  for (const [key, value] of Object.entries(item.ProviderIds ?? {})) {
+    if (key.toLowerCase() === wanted && value) return value
+  }
+  return null
+}
+
 function mapTitle(settings: EmbySettings, sourceId: string, item: EmbyItem, kind: 'movie' | 'series'): LibraryTitle {
   const key = `${sourceId}:${item.Id}`
-  const tmdb = item.ProviderIds?.Tmdb ? Number.parseInt(item.ProviderIds.Tmdb, 10) : NaN
+  const tmdbRaw = providerId(item, 'Tmdb')
+  const tmdb = tmdbRaw ? Number.parseInt(tmdbRaw, 10) : NaN
   return {
     key,
     sourceId,
     kind,
     tmdbId: Number.isFinite(tmdb) ? tmdb : null,
-    imdbId: item.ProviderIds?.Imdb ?? null,
+    imdbId: providerId(item, 'Imdb'),
     title: item.Name,
     year: item.ProductionYear ?? null,
     genres: item.Genres ?? [],

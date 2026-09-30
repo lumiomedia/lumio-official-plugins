@@ -232,7 +232,7 @@ function EmbyIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof 
       <div style={{ marginTop: 12, fontSize: 12, color: TOKENS.textDim }}>
         {mine ? (
           <>
-            <span style={{ color: TOKENS.text }}>{s.indexStatus.replace('{titles}', String(mine.titles)).replace('{unmatched}', String(status?.unmatched ?? 0))}</span>
+            <span style={{ color: TOKENS.text }}>{s.indexStatus.replace('{titles}', String(mine.titles)).replace('{unmatched}', String((mine as { unmatched?: number }).unmatched ?? 0))}</span>
             <span style={{ margin: '0 8px', color: TOKENS.textMute }}>·</span>
             {s.indexLastSync}: {formatWhen(mine.lastDeltaSync ?? mine.lastFullSync)}
           </>
