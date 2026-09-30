@@ -208,6 +208,22 @@ async function attachEpisodes(settings: EmbySettings, titles: LibraryTitle[], si
   return false
 }
 
+/**
+ * Ett PlaySessionId per pågående uppspelning (item + mediakälla), så alla
+ * progressrapporter under samma visning hör till samma session hos Emby.
+ * Släpps när uppspelningen rapporteras som färdig.
+ */
+const playSessions = new Map<string, string>()
+function playSessionFor(itemId: string, mediaSourceId: string): string {
+  const key = `${itemId}|${mediaSourceId}`
+  let id = playSessions.get(key)
+  if (!id) {
+    id = `lumio-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+    playSessions.set(key, id)
+  }
+  return id
+}
+
 export const embyLibraryProvider: LibraryProvider = {
   id: EMBY_LIBRARY_PROVIDER_ID,
   label: { en: 'Emby', sv: 'Emby' },
@@ -225,7 +241,11 @@ export const embyLibraryProvider: LibraryProvider = {
     if (!isEmbyConnected(settings)) return
     const [itemId, mediaSourceId] = ref.media.playRef.split('|')
     if (!itemId || !mediaSourceId) return
-    if (state.finished) await markPlayed(settings, itemId)
-    else await reportPlaybackProgress(settings, itemId, mediaSourceId, state.positionMs)
+    if (state.finished) {
+      playSessions.delete(`${itemId}|${mediaSourceId}`)
+      await markPlayed(settings, itemId)
+    } else {
+      await reportPlaybackProgress(settings, itemId, mediaSourceId, playSessionFor(itemId, mediaSourceId), state.positionMs)
+    }
   },
 }

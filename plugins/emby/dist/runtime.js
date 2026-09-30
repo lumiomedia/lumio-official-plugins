@@ -13209,11 +13209,12 @@
     const file = ext && /^[a-z0-9]{2,5}$/.test(ext) ? `stream.${ext}` : "stream";
     return `${settings.apiBase}/Videos/${itemId}/${file}?Static=true&MediaSourceId=${encodeURIComponent(mediaSourceId)}&api_key=${encodeURIComponent(settings.accessToken)}`;
   }
-  async function reportPlaybackProgress(settings, itemId, mediaSourceId, positionMs) {
+  async function reportPlaybackProgress(settings, itemId, mediaSourceId, playSessionId, positionMs) {
     await request(settings, "/Sessions/Playing/Progress", {
       form: {
         ItemId: itemId,
         MediaSourceId: mediaSourceId,
+        PlaySessionId: playSessionId,
         PositionTicks: String(Math.round(positionMs * 1e4)),
         IsPaused: "false",
         PlayMethod: "DirectPlay",
@@ -13390,6 +13391,16 @@
     }
     return false;
   }
+  var playSessions = /* @__PURE__ */ new Map();
+  function playSessionFor(itemId, mediaSourceId) {
+    const key = `${itemId}|${mediaSourceId}`;
+    let id = playSessions.get(key);
+    if (!id) {
+      id = `lumio-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+      playSessions.set(key, id);
+    }
+    return id;
+  }
   var embyLibraryProvider = {
     id: EMBY_LIBRARY_PROVIDER_ID,
     label: { en: "Emby", sv: "Emby" },
@@ -13407,8 +13418,12 @@
       if (!isEmbyConnected(settings)) return;
       const [itemId, mediaSourceId] = ref.media.playRef.split("|");
       if (!itemId || !mediaSourceId) return;
-      if (state.finished) await markPlayed(settings, itemId);
-      else await reportPlaybackProgress(settings, itemId, mediaSourceId, state.positionMs);
+      if (state.finished) {
+        playSessions.delete(`${itemId}|${mediaSourceId}`);
+        await markPlayed(settings, itemId);
+      } else {
+        await reportPlaybackProgress(settings, itemId, mediaSourceId, playSessionFor(itemId, mediaSourceId), state.positionMs);
+      }
     }
   };
 

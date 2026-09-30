@@ -255,11 +255,18 @@ export function streamUrl(settings: ApiTarget, itemId: string, mediaSourceId: st
   return `${settings.apiBase}/Videos/${itemId}/${file}?Static=true&MediaSourceId=${encodeURIComponent(mediaSourceId)}&api_key=${encodeURIComponent(settings.accessToken)}`
 }
 
-export async function reportPlaybackProgress(settings: EmbySettings, itemId: string, mediaSourceId: string, positionMs: number): Promise<void> {
+/**
+ * Positionen tillbaka till Emby. `PlaySessionId` är obligatoriskt i Emby 4.10:
+ * utan det svarar servern 400 "Value cannot be null. (Parameter 'key')" och
+ * sparar ingenting. Med det sparar Progress-anropet positionen direkt — inget
+ * `/Sessions/Playing`-startanrop behövs (det räknar dessutom upp PlayCount).
+ */
+export async function reportPlaybackProgress(settings: EmbySettings, itemId: string, mediaSourceId: string, playSessionId: string, positionMs: number): Promise<void> {
   await request(settings, '/Sessions/Playing/Progress', {
     form: {
       ItemId: itemId,
       MediaSourceId: mediaSourceId,
+      PlaySessionId: playSessionId,
       PositionTicks: String(Math.round(positionMs * 10_000)),
       IsPaused: 'false',
       PlayMethod: 'DirectPlay',
