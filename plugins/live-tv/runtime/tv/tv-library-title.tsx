@@ -50,6 +50,10 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
      när jag väljer en VOD-film är för stor, går utanför viewporten"). */
   const narrow = useNarrowSurface()
   const iconSize = isTv ? ICON_SIZE_TV : ICON_SIZE
+  /* TV-mått följer appens inställning Tema och skala → Knappstorlek
+     (--tv-button-scale på <html>, saknas vid 100 %). Äldre appar har ingen
+     variabel, och fallbacken 1 ger då exakt de gamla måtten. */
+  const bs = (px: number): number | string => (isTv ? `calc(${px}px * var(--tv-button-scale, 1))` : dp(px))
   const itemKey = params.key ?? ''
   const source = model.activeSource
 
@@ -178,12 +182,14 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
     })
   }
 
+  // 22 px glyfer i en 60 px knapp var för små på tre meters håll (Jerry 2026-09-30).
+  const glyph = isTv ? dp(30) : undefined
   const actions: { key: string; label: string; icon: React.ReactNode; active?: boolean; run: () => void }[] = [
     ...(item.tmdbId
       ? [{
           key: 'cast',
           label: tt('fullCast'),
-          icon: <Icons.Users />,
+          icon: <Icons.Users size={glyph} />,
           run: () => nav.go('cast', { key: item.key, tmdbId: String(item.tmdbId), type: mediaType }),
         }]
       : []),
@@ -191,7 +197,7 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
       ? [{
           key: 'list',
           label: inList ? tt('inMyList') : tt('addToMyList'),
-          icon: <Icons.Bookmark filled={inList} />,
+          icon: <Icons.Bookmark size={glyph} filled={inList} />,
           active: inList,
           run: () => {
             toggleWatchlist({
@@ -208,7 +214,7 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
       ? [{
           key: 'watched',
           label: watched ? tt('watched') : tt('markWatched'),
-          icon: <Icons.Eye filled={watched} />,
+          icon: <Icons.Eye size={glyph} filled={watched} />,
           active: watched,
           run: () => {
             toggleMovieWatched({ tmdbId: watchKey, imdbId: info?.imdbId ?? null, title, year })
@@ -217,6 +223,17 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
         }]
       : []),
   ]
+
+  /* ▸ går till NÄSTA knapp i raden, uttryckligen. Geometrin räckte inte: den
+     fokuserade knappens namn fälls ut (0 → 9rem på 200 ms) och flyttar
+     grannarna medan nästa tryck mäts, och utan knapp till höger valde
+     motorn ett avsnittskort nedanför (Jerry 2026-09-30: "hoppade över
+     knappen och gick neråt till avsnitten"). Sista knappen länkas inte. */
+  const actionCount = (canPlay ? 1 : 0) + actions.length
+  const actionLink = (position: number): Record<string, string> => ({
+    'data-vod-act': String(position),
+    ...(position + 1 < actionCount ? { 'data-f-right': `[data-vod-act="${position + 1}"]` } : {}),
+  })
 
   /** Rubrik, metarad, handling, knapprad och säsonger — samma i båda layouterna. */
   const infoBlock = (
@@ -256,18 +273,18 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
           </p>
         ) : null}
 
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: phone ? 'wrap' : undefined, gap: dp(10), marginTop: dp(20) }}>
+        <div data-vod-actions="" style={{ display: 'flex', alignItems: 'center', flexWrap: phone ? 'wrap' : undefined, gap: dp(10), marginTop: dp(20) }}>
           {canPlay ? (
             <div
               data-testid="title-play"
-              {...station(() => openPlayer(playUrl as string, item.kind === 'series' ? firstEpisode ?? undefined : undefined), undefined, { 'data-init': '' })}
+              {...station(() => openPlayer(playUrl as string, item.kind === 'series' ? firstEpisode ?? undefined : undefined), undefined, { 'data-init': '', ...actionLink(0) })}
               style={{
-                height: dp(iconSize),
-                padding: `0 ${dp(isTv ? 34 : 24)}px`,
+                height: bs(iconSize),
+                padding: isTv ? `0 calc(34px * var(--tv-button-scale, 1))` : `0 ${dp(24)}px`,
                 borderRadius: 999,
                 background: TV.acc,
                 color: '#fff',
-                fontSize: dp(isTv ? 22 : 18),
+                fontSize: bs(isTv ? 22 : 18),
                 fontWeight: 600,
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -275,7 +292,7 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
                 cursor: 'pointer',
               }}
             >
-              <Icons.Play size={dp(isTv ? 22 : 18)} />
+              <Icons.Play size={dp(isTv ? 28 : 18)} />
               {playLabel}
             </div>
           ) : null}
@@ -290,10 +307,10 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
               data-active={action.active ? '' : undefined}
               title={action.label}
               aria-label={action.label}
-              {...station(action.run, undefined, !canPlay && index === 0 ? { 'data-init': '' } : undefined)}
+              {...station(action.run, undefined, { ...(!canPlay && index === 0 ? { 'data-init': '' } : {}), ...actionLink(canPlay ? index + 1 : index) })}
               style={{
-                height: dp(iconSize),
-                minWidth: dp(iconSize),
+                height: bs(iconSize),
+                minWidth: bs(iconSize),
                 borderRadius: 999,
                 background: action.active ? TV.accMix(18) : TV.s10,
                 border: `1px solid ${action.active ? TV.acc : 'transparent'}`,
@@ -307,8 +324,8 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
             >
               <span
                 style={{
-                  width: dp(iconSize),
-                  height: dp(iconSize),
+                  width: bs(iconSize),
+                  height: bs(iconSize),
                   flexShrink: 0,
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -317,7 +334,7 @@ export function TvLibraryTitle({ model, nav, params, phone }: TvViewProps) {
               >
                 {action.icon}
               </span>
-              <span data-hero-icon-label="" style={{ fontSize: dp(isTv ? 20 : 16), fontWeight: 500 }}>
+              <span data-hero-icon-label="" style={{ fontSize: bs(isTv ? 20 : 16), fontWeight: 500 }}>
                 {action.label}
               </span>
             </div>
