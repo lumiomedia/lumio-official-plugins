@@ -5,7 +5,7 @@
     "en": "Emby",
     "sv": "Emby"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minAppVersion": "0.1.603",
   "description": {
     "en": "Index your Emby server as a library: home rows, search, details and playback straight from what you own.",
