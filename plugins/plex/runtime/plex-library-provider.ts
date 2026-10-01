@@ -13,6 +13,14 @@ import { ensureCanonicalPlexSettings } from './plex-storage'
 
 const PAGE_SIZE = 200
 const EPISODE_CONCURRENCY = 3
+/**
+ * Övre gräns för en batch mot kärnans index. `/api/library/batch` har axums
+ * standardgräns på 2 MB, och en sida om 200 serier med alla avsnitt inbakade
+ * blir flera MB: servern svarar 413 mitt i uppladdningen, Chromium rapporterar
+ * det som "Failed to fetch" och skanningen dör innan den hunnit klart
+ * (samma fel som Jellyfin 0.1.2 rättade). Marginal kvar för id-ifyllnaden.
+ */
+const MAX_BATCH_BYTES = 1_000_000
 
 export const PLEX_LIBRARY_PROVIDER_ID = 'plex'
 
@@ -53,6 +61,26 @@ async function mapWithLimit<T, R>(items: T[], limit: number, fn: (item: T) => Pr
   })
   await Promise.all(workers)
   return out
+}
+
+/**
+ * Skickar titlarna i batchar under MAX_BATCH_BYTES. En enskild titel som
+ * själv är större (en jätteserie) går ensam — den kan inte delas.
+ */
+async function emitSized(emit: (batch: LibraryBatch) => Promise<void>, titles: LibraryTitle[]): Promise<void> {
+  let chunk: LibraryTitle[] = []
+  let bytes = 0
+  for (const title of titles) {
+    const size = JSON.stringify(title).length
+    if (chunk.length > 0 && bytes + size > MAX_BATCH_BYTES) {
+      await emit({ upsert: chunk })
+      chunk = []
+      bytes = 0
+    }
+    chunk.push(title)
+    bytes += size
+  }
+  if (chunk.length > 0) await emit({ upsert: chunk })
 }
 
 async function scan(
@@ -99,7 +127,7 @@ async function scan(
           }
         })
       }
-      await emit({ upsert: items })
+      await emitSized(emit, items)
       done += items.length
       progress({ phase: 'titles', section: library.title, done, total: total ?? undefined })
       if (page.nextStart == null) break

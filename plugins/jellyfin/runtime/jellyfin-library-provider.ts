@@ -13,6 +13,14 @@ import { getJellyfinSettings, isJellyfinConnected, jellyfinSourceId, type Jellyf
 export const JELLYFIN_LIBRARY_PROVIDER_ID = 'jellyfin'
 const PAGE_SIZE = 200
 const EPISODE_CONCURRENCY = 3
+/**
+ * Övre gräns för en batch mot kärnans index. `/api/library/batch` har axums
+ * standardgräns på 2 MB, och 200 serier med alla avsnitt inbakade blev flera
+ * MB: servern svarade 413 mitt i uppladdningen, Chromium rapporterade det som
+ * "Failed to fetch" och skanningen dog vid första tunga seriesidan (46 800
+ * titlar, aldrig klar). Marginal kvar för kärnans id-ifyllnad.
+ */
+const MAX_BATCH_BYTES = 1_000_000
 
 export function jellyfinLibrarySourceRef(settings: JellyfinSettings): LibrarySourceRef | null {
   const id = jellyfinSourceId(settings)
@@ -125,6 +133,26 @@ function mapEpisode(settings: JellyfinSettings, titleKey: string, item: Jellyfin
   return { episode, media: mapMedia(settings, item, titleKey, key) }
 }
 
+/**
+ * Skickar titlarna i batchar under MAX_BATCH_BYTES. En enskild titel som
+ * själv är större (en jätteserie) går ensam — den kan inte delas.
+ */
+async function emitSized(emit: (batch: LibraryBatch) => Promise<void>, titles: LibraryTitle[]): Promise<void> {
+  let chunk: LibraryTitle[] = []
+  let bytes = 0
+  for (const title of titles) {
+    const size = JSON.stringify(title).length
+    if (chunk.length > 0 && bytes + size > MAX_BATCH_BYTES) {
+      await emit({ upsert: chunk })
+      chunk = []
+      bytes = 0
+    }
+    chunk.push(title)
+    bytes += size
+  }
+  if (chunk.length > 0) await emit({ upsert: chunk })
+}
+
 async function scan(
   source: LibrarySourceRef,
   minDateLastSaved: string | null,
@@ -152,7 +180,7 @@ async function scan(
         if (await attachEpisodes(settings, titles, signal)) return { cursor: minDateLastSaved ?? startedAt }
         for (const title of titles) seenSeries.add(title.key.split(':').pop() ?? '')
       }
-      await emit({ upsert: titles })
+      await emitSized(emit, titles)
       done += titles.length
       progress({ phase: 'titles', done, total: page.TotalRecordCount || undefined, section: library.name })
       startIndex += items.length
@@ -182,7 +210,7 @@ async function scan(
         const seriesItems = await fetchSeriesByIds(settings, ids.slice(index, index + PAGE_SIZE))
         const titles = seriesItems.map((item) => mapTitle(settings, source.id, item, 'series'))
         if (await attachEpisodes(settings, titles, signal)) return { cursor: minDateLastSaved }
-        if (titles.length > 0) await emit({ upsert: titles })
+        await emitSized(emit, titles)
         done += titles.length
         progress({ phase: 'titles', done, section: library.name })
       }

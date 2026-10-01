@@ -8,11 +8,12 @@
     {
       "id": "com.lumio.plex",
       "slug": "plex",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Plex",
         "sv": "Plex"
       },
-      "version": "1.0.32",
+      "version": "1.0.33",
       "description": {
         "en": "Browse and play media from your Plex Media Server.",
         "sv": "Bläddra i och spela upp media från din Plex Media Server."
@@ -30,11 +31,12 @@
     {
       "id": "com.lumio.jellyfin",
       "slug": "jellyfin",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Jellyfin",
         "sv": "Jellyfin"
       },
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": {
         "en": "Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.",
         "sv": "Indexera din Jellyfin-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
@@ -74,6 +76,7 @@
     {
       "id": "com.lumio.live-tv",
       "slug": "live-tv",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Live TV",
         "sv": "Live TV"
@@ -96,6 +99,7 @@
     {
       "id": "com.lumio.homekit",
       "slug": "homekit",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "HomeKit",
         "sv": "HomeKit"
@@ -117,6 +121,7 @@
     {
       "id": "com.lumio.trakt",
       "slug": "trakt",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Trakt",
         "sv": "Trakt"
@@ -138,6 +143,7 @@
     {
       "id": "com.lumio.twitch",
       "slug": "twitch",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Twitch",
         "sv": "Twitch"
