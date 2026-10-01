@@ -59,7 +59,7 @@
         "en": "Emby",
         "sv": "Emby"
       },
-      "version": "0.1.3",
+      "version": "0.1.4",
       "description": {
         "en": "Index your Emby server as a library: home rows, search, details and playback straight from what you own.",
         "sv": "Indexera din Emby-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."

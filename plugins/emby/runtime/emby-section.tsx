@@ -19,6 +19,7 @@ import {
   type LibraryStatus,
 } from '@/lib/plugin-sdk'
 import { authenticate, EmbyServerKindError, fetchViews } from './emby-api'
+import { describeError, EmbyScanError, logEmby } from './emby-log'
 import {
   clearEmbySettings,
   getEmbySettings,
@@ -28,7 +29,7 @@ import {
   setEmbySettings,
   type EmbyLibraryOption,
 } from './emby-storage'
-import { embyLibraryProvider, embyLibrarySourceRef } from './emby-library-provider'
+import { embyLibraryProvider, getLastEmbyScanNotes, embyLibrarySourceRef } from './emby-library-provider'
 
 /**
  * Inställningar: anslut (server, användare, lösenord), välj bibliotek, bygg
@@ -45,6 +46,7 @@ const STR = {
     indexBuild: 'Build index', indexRebuild: 'Rebuild', indexUpdate: 'Update', indexClear: 'Remove index', indexEmpty: 'Not indexed yet.',
     indexStatus: '{titles} titles · {unmatched} unmatched', indexLastSync: 'Last synced', running: '{done} titles', cancel: 'Cancel',
     homeHint: 'Make it the home page or open the Emby tab: Settings → Home & appearance → Layout → Library.',
+    slimmed: 'Too large to index in full (newest episodes kept):',
   },
   sv: {
     server: 'Serveradress', serverPlaceholder: 'http://emby.local:8096', username: 'Användarnamn', password: 'Lösenord',
@@ -55,6 +57,7 @@ const STR = {
     indexBuild: 'Bygg index', indexRebuild: 'Bygg om', indexUpdate: 'Uppdatera', indexClear: 'Ta bort index', indexEmpty: 'Inte indexerat ännu.',
     indexStatus: '{titles} titlar · {unmatched} omatchade', indexLastSync: 'Senast synkat', running: '{done} titlar', cancel: 'Avbryt',
     homeHint: 'Gör det till startsida eller öppna Emby-fliken: Inställningar → Hem & utseende → Layout → Bibliotek.',
+    slimmed: 'För stora för att indexeras helt (nyaste avsnitten med):',
   },
 } as const
 
@@ -177,6 +180,7 @@ function EmbyIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof 
   const [status, setStatus] = useState<LibraryStatus | null>(null)
   const [progress, setProgress] = useState<LibraryScanProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notes, setNotes] = useState<string[]>([])
   const abortRef = useRef<AbortController | null>(null)
   const settings = getEmbySettings()
   const source = embyLibrarySourceRef(settings)
@@ -197,14 +201,20 @@ function EmbyIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof 
   const run = async (kind: 'full' | 'delta') => {
     if (!source || running) return
     setError(null)
+    setNotes([])
     const controller = new AbortController()
     abortRef.current = controller
     setProgress({ phase: 'listing', done: 0 })
     try {
       await runLibraryScan(embyLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, { mode: kind, signal: controller.signal, onProgress: setProgress })
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      // Fel utanför pluginets egna steg (kärnans rensning/slutpost) har ingen
+      // kontext än — loggraden och skärmbilden ska ändå säga var passet var.
+      const message = describeError(err)
+      if (!(err instanceof EmbyScanError)) logEmby(`scan failed outside the Emby steps (${kind}): ${message}`)
+      setError(message)
     } finally {
+      setNotes([...getLastEmbyScanNotes()])
       setProgress(null)
       abortRef.current = null
       refresh()
@@ -251,7 +261,13 @@ function EmbyIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof 
           </div>
         </div>
       ) : null}
-      {error ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.red }}>{error}</p> : null}
+      {error ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.red, overflowWrap: 'anywhere' }}>{error}</p> : null}
+      {notes.length > 0 ? (
+        <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, color: TOKENS.textDim }}>
+          {s.slimmed}
+          {notes.map((note) => <div key={note} style={{ color: TOKENS.textMute, overflowWrap: 'anywhere' }}>{note}</div>)}
+        </div>
+      ) : null}
       <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
         <PillBtn variant="accent" disabled={!connected || running} onClick={() => void run('full')}>{mine ? s.indexRebuild : s.indexBuild}</PillBtn>
         {mine ? <PillBtn disabled={running} onClick={() => void run('delta')}>{s.indexUpdate}</PillBtn> : null}

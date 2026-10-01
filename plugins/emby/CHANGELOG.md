@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- When indexing stops, the message now says where: which library or series, whether Emby or Lumio's own index failed, and after how many tries. The same details go to the debug log.
+- Series are read in pages of 300 episodes, and a library page that keeps failing is retried with smaller pages. Very large pages could take longer than the proxy in front of some Emby servers waits, and failed the same way on every try.
+- A series too large for Lumio's index is no longer the end of the scan: it is sent with its newest episodes, and the settings panel lists which series were cut.
+
 ## 0.1.3
 
 - Indexing large Emby servers no longer stops halfway. A slow answer or a dropped connection used to end the whole scan ("signal is aborted without reason" or "Failed to fetch"); each request now waits longer and is retried before giving up.

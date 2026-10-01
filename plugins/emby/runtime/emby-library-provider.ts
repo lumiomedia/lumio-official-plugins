@@ -1,7 +1,8 @@
 'use client'
 
 import type { LibraryBatch, LibraryEpisode, LibraryMedia, LibraryProvider, LibraryScanProgress, LibrarySourceRef, LibraryTitle } from '@/lib/plugin-sdk'
-import { fetchChangedEpisodes, fetchEpisodes, fetchLibraryItems, fetchSeriesByIds, imageUrl, markPlayed, reportPlaybackProgress, streamUrl, type EmbyItem, type EmbyMediaStream } from './emby-api'
+import { fetchChangedEpisodes, fetchEpisodes, fetchLibraryItems, fetchSeriesByIds, imageUrl, isTransientEmbyError, markPlayed, reportPlaybackProgress, streamUrl, type EmbyItem, type EmbyItemsPage, type EmbyMediaStream } from './emby-api'
+import { describeError, EmbyScanError, logEmby } from './emby-log'
 import { getEmbySettings, isEmbyConnected, embySourceId, type EmbySettings } from './emby-storage'
 
 /**
@@ -21,6 +22,21 @@ const EPISODE_CONCURRENCY = 3
  * Jellyfin 0.1.2 rättade). Marginal kvar för kärnans id-ifyllnad.
  */
 const MAX_BATCH_BYTES = 1_000_000
+/**
+ * En enskild titel kan inte delas: indexet ersätter hela titeln per nyckel.
+ * En dagsserie med tusentals avsnitt (och en mediapost per version) går
+ * därför över 2 MB-gränsen ensam, servern svarar 413 och skanningen dör med
+ * "Failed to fetch". Över den här storleken bantas titeln — se slimTitle.
+ */
+const MAX_TITLE_BYTES = 1_500_000
+/** Mindre sidor att falla tillbaka på när Emby (eller en proxy framför) ger upp på en full sida. */
+const FALLBACK_PAGE_SIZES = [50, 10]
+
+/** Det senaste passets anmärkningar (bantade serier), för inställningspanelen. */
+let lastScanNotes: string[] = []
+export function getLastEmbyScanNotes(): string[] {
+  return lastScanNotes
+}
 
 export function embyLibrarySourceRef(settings: EmbySettings): LibrarySourceRef | null {
   const id = embySourceId(settings)
@@ -134,24 +150,109 @@ function mapEpisode(settings: EmbySettings, titleKey: string, item: EmbyItem): {
   return { episode, media: mapMedia(settings, item, titleKey, key) }
 }
 
+const sizeOf = (value: unknown) => JSON.stringify(value).length
+
+/**
+ * Krymper en titel som är för stor för indexets gräns, i steg som kostar
+ * mindre först: språklistorna på avsnittens mediaposter, sedan avsnittens
+ * stillbilder, sist de äldsta avsnitten (de nyaste är dem man tittar på).
+ * Hellre en serie med färre avsnitt i indexet än en skanning som dör.
+ */
+function slimTitle(title: LibraryTitle): LibraryTitle {
+  const before = sizeOf(title)
+  let slim: LibraryTitle = {
+    ...title,
+    media: (title.media ?? []).map((media) => (media.episodeKey ? { ...media, audio: [], subtitles: [] } : media)),
+  }
+  if (sizeOf(slim) > MAX_TITLE_BYTES) {
+    slim = { ...slim, episodes: (slim.episodes ?? []).map((episode) => ({ ...episode, stillUrl: null })) }
+  }
+  let dropped = 0
+  if (sizeOf(slim) > MAX_TITLE_BYTES) {
+    const newestFirst = [...(slim.episodes ?? [])].sort((a, b) => b.season - a.season || b.episode - a.episode)
+    const mediaByEpisode = new Map<string, LibraryMedia[]>()
+    for (const media of slim.media ?? []) {
+      if (!media.episodeKey) continue
+      mediaByEpisode.set(media.episodeKey, [...(mediaByEpisode.get(media.episodeKey) ?? []), media])
+    }
+    const base = sizeOf({ ...slim, episodes: [], media: [] })
+    const keptEpisodes: LibraryEpisode[] = []
+    const keptMedia: LibraryMedia[] = []
+    let bytes = base
+    for (const episode of newestFirst) {
+      const media = mediaByEpisode.get(episode.key) ?? []
+      const cost = sizeOf(episode) + sizeOf(media) + 2
+      if (bytes + cost > MAX_TITLE_BYTES) break
+      keptEpisodes.push(episode)
+      keptMedia.push(...media)
+      bytes += cost
+    }
+    dropped = newestFirst.length - keptEpisodes.length
+    slim = { ...slim, episodes: keptEpisodes.reverse(), media: keptMedia }
+  }
+  const note = `${title.title}: ${Math.round(before / 1024)} KB → ${Math.round(sizeOf(slim) / 1024)} KB${dropped > 0 ? `, ${dropped} oldest episodes left out` : ''}`
+  logEmby(`slimmed ${note}`)
+  if (dropped > 0) lastScanNotes.push(note)
+  return slim
+}
+
 /**
  * Skickar titlarna i batchar under MAX_BATCH_BYTES. En enskild titel som
- * själv är större (en jätteserie) går ensam — den kan inte delas.
+ * själv är större går ensam, och bantas först om den inte ryms i indexets
+ * gräns. Ett fel från indexet bär batchens storlek, så det skiljs från
+ * Embys fel på panelens skärmbild.
  */
-async function emitSized(emit: (batch: LibraryBatch) => Promise<void>, titles: LibraryTitle[]): Promise<void> {
+async function emitSized(emit: (batch: LibraryBatch) => Promise<void>, titles: LibraryTitle[], where: string): Promise<void> {
   let chunk: LibraryTitle[] = []
   let bytes = 0
-  for (const title of titles) {
-    const size = JSON.stringify(title).length
-    if (chunk.length > 0 && bytes + size > MAX_BATCH_BYTES) {
+  const flush = async () => {
+    try {
       await emit({ upsert: chunk })
-      chunk = []
-      bytes = 0
+    } catch (err) {
+      logEmby(`index batch failed (${where}, ${chunk.length} titles, ${Math.round(bytes / 1024)} KB): ${describeError(err)}`)
+      throw new EmbyScanError(`Saving ${chunk.length} titles to Lumio's index failed (${Math.round(bytes / 1024)} KB, ${where})`, err)
     }
+    chunk = []
+    bytes = 0
+  }
+  for (const original of titles) {
+    const title = sizeOf(original) > MAX_TITLE_BYTES ? slimTitle(original) : original
+    const size = sizeOf(title)
+    if (chunk.length > 0 && bytes + size > MAX_BATCH_BYTES) await flush()
     chunk.push(title)
     bytes += size
   }
-  if (chunk.length > 0) await emit({ upsert: chunk })
+  if (chunk.length > 0) await flush()
+}
+
+/**
+ * En bibliotekssida, med mindre sidor som reserv. Samma fulla sida (200
+ * titlar med alla mediaströmmar) kan ta längre tid än en proxy framför Emby
+ * väntar; ett nytt försök med samma storlek faller då likadant. Mindre sidor
+ * kommer förbi. Storleken som lyckades gäller resten av biblioteket, så
+ * varje sida inte först väntar ut tre fulla försök.
+ */
+const PAGE_SIZES = [PAGE_SIZE, ...FALLBACK_PAGE_SIZES]
+async function fetchPage(
+  settings: EmbySettings,
+  library: EmbySettings['libraries'][number],
+  startIndex: number,
+  minDateLastSaved: string | null,
+  fromSize: number,
+): Promise<{ page: EmbyItemsPage; limit: number; sizeIndex: number }> {
+  const sizes = PAGE_SIZES
+  for (let index = fromSize; ; index += 1) {
+    const limit = sizes[index]
+    try {
+      return { page: await fetchLibraryItems(settings, library, startIndex, limit, minDateLastSaved), limit, sizeIndex: index }
+    } catch (err) {
+      const next = sizes[index + 1]
+      if (next === undefined || !isTransientEmbyError(err)) {
+        throw new EmbyScanError(`Emby library "${library.name}" from title ${startIndex}`, err)
+      }
+      logEmby(`page failed (${library.name}, from ${startIndex}, ${limit} per page), trying ${next}: ${describeError(err)}`)
+    }
+  }
 }
 
 async function scan(
@@ -164,29 +265,60 @@ async function scan(
   const settings = getEmbySettings()
   if (!isEmbyConnected(settings)) throw new Error('Emby is not connected')
   const startedAt = new Date().toISOString()
+  const startedMs = Date.now()
+  lastScanNotes = []
+  let done = 0
+  logEmby(`${minDateLastSaved ? 'delta' : 'full'} scan start: ${settings.libraries.map((library) => `${library.name} (${library.type})`).join(', ')}`)
+  try {
+    const cursor = await scanLibraries(settings, source, minDateLastSaved, startedAt, emit, progress, signal, (count) => { done = count })
+    logEmby(`scan ${signal.aborted ? 'cancelled' : 'done'}: ${done} titles in ${Math.round((Date.now() - startedMs) / 1000)} s`)
+    return cursor
+  } catch (err) {
+    logEmby(`scan FAILED after ${done} titles, ${Math.round((Date.now() - startedMs) / 1000)} s: ${describeError(err)}`)
+    throw err
+  }
+}
+
+async function scanLibraries(
+  settings: EmbySettings,
+  source: LibrarySourceRef,
+  minDateLastSaved: string | null,
+  startedAt: string,
+  emit: (batch: LibraryBatch) => Promise<void>,
+  progress: (state: LibraryScanProgress) => void,
+  signal: AbortSignal,
+  onDone: (count: number) => void,
+): Promise<{ cursor: string }> {
   let done = 0
   for (const library of settings.libraries) {
     // Serier som redan lästs i det här passet — deltans avsnittssvep hoppar över dem.
     const seenSeries = new Set<string>()
     let startIndex = 0
+    let sizeIndex = 0
     for (;;) {
       if (signal.aborted) return { cursor: minDateLastSaved ?? startedAt }
       progress({ phase: 'listing', done, section: library.name })
-      const page = await fetchLibraryItems(settings, library, startIndex, PAGE_SIZE, minDateLastSaved)
+      const fetched = await fetchPage(settings, library, startIndex, minDateLastSaved, sizeIndex)
+      const { page, limit } = fetched
+      sizeIndex = fetched.sizeIndex
       const items = page.Items ?? []
       if (items.length === 0) break
       const kind = library.type === 'movies' ? 'movie' : 'series'
       const titles = items.map((item) => mapTitle(settings, source.id, item, kind))
       if (kind === 'series') {
-        if (await attachEpisodes(settings, titles, signal)) return { cursor: minDateLastSaved ?? startedAt }
+        if (await attachEpisodes(settings, titles, signal, library.name)) return { cursor: minDateLastSaved ?? startedAt }
         for (const title of titles) seenSeries.add(title.key.split(':').pop() ?? '')
       }
-      await emitSized(emit, titles)
+      await emitSized(emit, titles, `${library.name} from ${startIndex}`)
       done += titles.length
+      onDone(done)
       progress({ phase: 'titles', done, total: page.TotalRecordCount || undefined, section: library.name })
       startIndex += items.length
+      // En reservsida (mindre än PAGE_SIZE) är inte slutet — bara totalen avgör då.
       if (startIndex >= (page.TotalRecordCount ?? startIndex)) break
+      if (limit < PAGE_SIZE && items.length < limit && !page.TotalRecordCount) break
     }
+    logEmby(`library ${library.name}: ${startIndex} titles listed`)
 
     // Delta: serier vars AVSNITT ändrats men som själva inte gjort det (ett
     // nytt avsnitt sparar inte om serien). Läses om i sin helhet så indexet
@@ -196,7 +328,9 @@ async function scan(
       let episodeIndex = 0
       for (;;) {
         if (signal.aborted) return { cursor: minDateLastSaved }
-        const page = await fetchChangedEpisodes(settings, library, episodeIndex, PAGE_SIZE, minDateLastSaved)
+        const page = await fetchChangedEpisodes(settings, library, episodeIndex, PAGE_SIZE, minDateLastSaved).catch((err) => {
+          throw new EmbyScanError(`Emby changed episodes in "${library.name}" from ${episodeIndex}`, err)
+        })
         const episodes = page.Items ?? []
         if (episodes.length === 0) break
         for (const episode of episodes) {
@@ -208,11 +342,14 @@ async function scan(
       const ids = [...changedSeriesIds]
       for (let index = 0; index < ids.length; index += PAGE_SIZE) {
         if (signal.aborted) return { cursor: minDateLastSaved }
-        const seriesItems = await fetchSeriesByIds(settings, ids.slice(index, index + PAGE_SIZE))
+        const seriesItems = await fetchSeriesByIds(settings, ids.slice(index, index + PAGE_SIZE)).catch((err) => {
+          throw new EmbyScanError(`Emby changed series in "${library.name}"`, err)
+        })
         const titles = seriesItems.map((item) => mapTitle(settings, source.id, item, 'series'))
-        if (await attachEpisodes(settings, titles, signal)) return { cursor: minDateLastSaved }
-        await emitSized(emit, titles)
+        if (await attachEpisodes(settings, titles, signal, library.name)) return { cursor: minDateLastSaved }
+        await emitSized(emit, titles, `${library.name} changed series`)
         done += titles.length
+        onDone(done)
         progress({ phase: 'titles', done, section: library.name })
       }
     }
@@ -230,13 +367,15 @@ async function scan(
  * inte i biblioteket" på detaljsidan och rättas inte förrän serien själv
  * ändras. Schemaläggaren försöker igen om fem minuter.
  */
-async function attachEpisodes(settings: EmbySettings, titles: LibraryTitle[], signal: AbortSignal): Promise<boolean> {
+async function attachEpisodes(settings: EmbySettings, titles: LibraryTitle[], signal: AbortSignal, libraryName: string): Promise<boolean> {
   for (let index = 0; index < titles.length; index += EPISODE_CONCURRENCY) {
     if (signal.aborted) return true
     await Promise.all(
       titles.slice(index, index + EPISODE_CONCURRENCY).map(async (title) => {
         const seriesId = title.key.split(':').pop() ?? ''
-        const episodes = await fetchEpisodes(settings, seriesId)
+        const episodes = await fetchEpisodes(settings, seriesId).catch((err) => {
+          throw new EmbyScanError(`Emby episodes of "${title.title}" (${libraryName})`, err)
+        })
         for (const episodeItem of episodes) {
           const mapped = mapEpisode(settings, title.key, episodeItem)
           if (!mapped) continue

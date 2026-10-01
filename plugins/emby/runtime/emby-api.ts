@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError, logEmby } from './emby-log'
 import { ensureEmbyDeviceId, type EmbyLibraryOption, type EmbySettings } from './emby-storage'
 
 /**
@@ -153,10 +154,41 @@ async function request<T>(
     try {
       return await requestOnce<T>(target, path, init)
     } catch (err) {
-      if (attempt >= delays.length || !isRetryable(err)) throw err
+      if (attempt >= delays.length || !isRetryable(err)) {
+        throw delays.length > 0 ? withAttempts(err, path, attempt + 1) : err
+      }
+      logEmby(`retry ${attempt + 1}/${delays.length} ${logPath(target, path)}: ${describeError(err)}`)
       await new Promise((resolve) => window.setTimeout(resolve, delays[attempt]))
     }
   }
+}
+
+/** Sökvägen utan användar-id, för loggen. Frågedelen (med token) följer aldrig med. */
+function logPath(target: ApiTarget, path: string): string {
+  const userId = (target as { userId?: string | null }).userId
+  return userId ? path.replace(userId, '{user}') : path
+}
+
+/**
+ * Nätfelet säger annars bara "Failed to fetch". Det betyder att svaret aldrig
+ * nådde webviewn: nätet föll, eller en proxy framför Emby svarade 502/504
+ * utan CORS-huvud så webbläsaren inte fick läsa det. Status och statusfält
+ * följer med så återförsöksreglerna gäller även för det inslagna felet.
+ */
+function withAttempts(err: unknown, path: string, attempts: number): Error {
+  const status = (err as { status?: number } | null)?.status
+  const shortPath = path.replace(/\/Users\/[^/]+/, '/Users/{user}')
+  const reason = err instanceof TypeError ? `no answer from Emby (${err.message}) for ${shortPath}` : describeError(err).replace(path, shortPath)
+  const wrapped = new Error(`${reason}, ${attempts} ${attempts === 1 ? 'try' : 'tries'}`) as Error & { status?: number; network?: boolean }
+  if (typeof status === 'number') wrapped.status = status
+  if (err instanceof TypeError || err instanceof EmbyTimeoutError) wrapped.network = true
+  return wrapped
+}
+
+/** Sant för fel som en mindre sida kan komma förbi: tidsgräns, nätfel, 5xx. */
+export function isTransientEmbyError(err: unknown): boolean {
+  if (isRetryable(err)) return true
+  return Boolean((err as { network?: boolean } | null)?.network)
 }
 
 interface PublicSystemInfo {
@@ -273,14 +305,33 @@ export async function fetchSeriesByIds(settings: EmbySettings, ids: string[]): P
   return page.Items ?? []
 }
 
+/**
+ * Avsnitten i sidor om EPISODE_PAGE. En dagsserie med tusentals avsnitt och
+ * alla mediaströmmar i ett enda svar tar längre tid än många proxys framför
+ * Emby väntar (60–100 s) — proxyn svarar då 504 utan CORS-huvud och webviewn
+ * ser bara "Failed to fetch", lika på varje nytt försök.
+ */
+const EPISODE_PAGE = 300
+
 export async function fetchEpisodes(settings: EmbySettings, seriesId: string): Promise<EmbyItem[]> {
-  const query = new URLSearchParams({
-    UserId: settings.userId ?? '',
-    Fields: ITEM_FIELDS,
-    EnableUserData: 'true',
-  })
-  const data = await request<{ Items: EmbyItem[] }>(settings, `/Shows/${seriesId}/Episodes`, { query, timeoutMs: 90_000 })
-  return data.Items ?? []
+  const all: EmbyItem[] = []
+  for (let startIndex = 0; ; ) {
+    const query = new URLSearchParams({
+      UserId: settings.userId ?? '',
+      Fields: ITEM_FIELDS,
+      EnableUserData: 'true',
+      StartIndex: String(startIndex),
+      Limit: String(EPISODE_PAGE),
+    })
+    const data = await request<EmbyItemsPage>(settings, `/Shows/${seriesId}/Episodes`, { query, timeoutMs: 90_000 })
+    const items = data.Items ?? []
+    all.push(...items)
+    startIndex += items.length
+    // Äldre servrar utan TotalRecordCount: en kort sida är den sista.
+    const total = typeof data.TotalRecordCount === 'number' ? data.TotalRecordCount : null
+    if (items.length === 0 || (total !== null ? startIndex >= total : items.length < EPISODE_PAGE)) break
+  }
+  return all
 }
 
 export function imageUrl(settings: ApiTarget, itemId: string, kind: 'Primary' | 'Backdrop', maxHeight: number): string | null {

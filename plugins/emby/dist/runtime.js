@@ -14418,7 +14418,7 @@
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/emby-scan-diagnostics/plugins/emby/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     EmbyPlugin: () => EmbyPlugin,
@@ -14426,7 +14426,7 @@
   });
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-storage.ts
+  // ../../../lumio-official-plugins/.worktrees/emby-scan-diagnostics/plugins/emby/runtime/emby-storage.ts
   init_plugin_sdk();
   var SETTINGS_KEY = "emby_settings";
   var DEVICE_KEY = "emby_device_id";
@@ -14498,7 +14498,27 @@
     return settings.serverId && settings.userId ? `emby-${settings.serverId}-${settings.userId.slice(0, 8)}` : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-api.ts
+  // ../../../lumio-official-plugins/.worktrees/emby-scan-diagnostics/plugins/emby/runtime/emby-log.ts
+  function logEmby(message) {
+    try {
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[emby-scan] ${message}`)}`).catch(() => {
+      });
+    } catch {
+    }
+  }
+  function describeError(err) {
+    if (err instanceof Error) return err.name && err.name !== "Error" && !(err instanceof EmbyScanError) ? `${err.name}: ${err.message}` : err.message;
+    return String(err);
+  }
+  var EmbyScanError = class extends Error {
+    constructor(step, original) {
+      super(`${step}: ${describeError(original)}`);
+      __publicField(this, "original", original);
+      this.name = "EmbyScanError";
+    }
+  };
+
+  // ../../../lumio-official-plugins/.worktrees/emby-scan-diagnostics/plugins/emby/runtime/emby-api.ts
   function authParams(token) {
     const params = new URLSearchParams({
       "X-Emby-Client": "Lumio",
@@ -14558,10 +14578,30 @@
       try {
         return await requestOnce(target, path, init);
       } catch (err) {
-        if (attempt >= delays.length || !isRetryable(err)) throw err;
+        if (attempt >= delays.length || !isRetryable(err)) {
+          throw delays.length > 0 ? withAttempts(err, path, attempt + 1) : err;
+        }
+        logEmby(`retry ${attempt + 1}/${delays.length} ${logPath(target, path)}: ${describeError(err)}`);
         await new Promise((resolve) => window.setTimeout(resolve, delays[attempt]));
       }
     }
+  }
+  function logPath(target, path) {
+    const userId = target.userId;
+    return userId ? path.replace(userId, "{user}") : path;
+  }
+  function withAttempts(err, path, attempts) {
+    const status = err?.status;
+    const shortPath = path.replace(/\/Users\/[^/]+/, "/Users/{user}");
+    const reason = err instanceof TypeError ? `no answer from Emby (${err.message}) for ${shortPath}` : describeError(err).replace(path, shortPath);
+    const wrapped = new Error(`${reason}, ${attempts} ${attempts === 1 ? "try" : "tries"}`);
+    if (typeof status === "number") wrapped.status = status;
+    if (err instanceof TypeError || err instanceof EmbyTimeoutError) wrapped.network = true;
+    return wrapped;
+  }
+  function isTransientEmbyError(err) {
+    if (isRetryable(err)) return true;
+    return Boolean(err?.network);
   }
   async function discoverServer(serverUrl) {
     let lastError = null;
@@ -14636,14 +14676,25 @@
     const page = await request(settings, `/Users/${settings.userId}/Items`, { query, timeoutMs: 9e4 });
     return page.Items ?? [];
   }
+  var EPISODE_PAGE = 300;
   async function fetchEpisodes(settings, seriesId) {
-    const query = new URLSearchParams({
-      UserId: settings.userId ?? "",
-      Fields: ITEM_FIELDS,
-      EnableUserData: "true"
-    });
-    const data = await request(settings, `/Shows/${seriesId}/Episodes`, { query, timeoutMs: 9e4 });
-    return data.Items ?? [];
+    const all = [];
+    for (let startIndex = 0; ; ) {
+      const query = new URLSearchParams({
+        UserId: settings.userId ?? "",
+        Fields: ITEM_FIELDS,
+        EnableUserData: "true",
+        StartIndex: String(startIndex),
+        Limit: String(EPISODE_PAGE)
+      });
+      const data = await request(settings, `/Shows/${seriesId}/Episodes`, { query, timeoutMs: 9e4 });
+      const items2 = data.Items ?? [];
+      all.push(...items2);
+      startIndex += items2.length;
+      const total = typeof data.TotalRecordCount === "number" ? data.TotalRecordCount : null;
+      if (items2.length === 0 || (total !== null ? startIndex >= total : items2.length < EPISODE_PAGE)) break;
+    }
+    return all;
   }
   function imageUrl(settings, itemId, kind, maxHeight) {
     if (!settings.apiBase || !settings.accessToken) return null;
@@ -14674,11 +14725,17 @@
     await request(settings, `/Users/${settings.userId}/PlayedItems/${itemId}`, { form: {}, timeoutMs: 8e3 });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/emby-scan-diagnostics/plugins/emby/runtime/emby-library-provider.ts
   var EMBY_LIBRARY_PROVIDER_ID = "emby";
   var PAGE_SIZE = 200;
   var EPISODE_CONCURRENCY = 3;
   var MAX_BATCH_BYTES = 1e6;
+  var MAX_TITLE_BYTES = 15e5;
+  var FALLBACK_PAGE_SIZES = [50, 10];
+  var lastScanNotes = [];
+  function getLastEmbyScanNotes() {
+    return lastScanNotes;
+  }
   function embyLibrarySourceRef(settings) {
     const id = embySourceId(settings);
     if (!id) return null;
@@ -14775,53 +14832,138 @@
     };
     return { episode, media: mapMedia(settings, item, titleKey, key) };
   }
-  async function emitSized(emit3, titles) {
+  var sizeOf = (value) => JSON.stringify(value).length;
+  function slimTitle(title) {
+    const before = sizeOf(title);
+    let slim = {
+      ...title,
+      media: (title.media ?? []).map((media) => media.episodeKey ? { ...media, audio: [], subtitles: [] } : media)
+    };
+    if (sizeOf(slim) > MAX_TITLE_BYTES) {
+      slim = { ...slim, episodes: (slim.episodes ?? []).map((episode) => ({ ...episode, stillUrl: null })) };
+    }
+    let dropped = 0;
+    if (sizeOf(slim) > MAX_TITLE_BYTES) {
+      const newestFirst = [...slim.episodes ?? []].sort((a, b) => b.season - a.season || b.episode - a.episode);
+      const mediaByEpisode = /* @__PURE__ */ new Map();
+      for (const media of slim.media ?? []) {
+        if (!media.episodeKey) continue;
+        mediaByEpisode.set(media.episodeKey, [...mediaByEpisode.get(media.episodeKey) ?? [], media]);
+      }
+      const base = sizeOf({ ...slim, episodes: [], media: [] });
+      const keptEpisodes = [];
+      const keptMedia = [];
+      let bytes = base;
+      for (const episode of newestFirst) {
+        const media = mediaByEpisode.get(episode.key) ?? [];
+        const cost = sizeOf(episode) + sizeOf(media) + 2;
+        if (bytes + cost > MAX_TITLE_BYTES) break;
+        keptEpisodes.push(episode);
+        keptMedia.push(...media);
+        bytes += cost;
+      }
+      dropped = newestFirst.length - keptEpisodes.length;
+      slim = { ...slim, episodes: keptEpisodes.reverse(), media: keptMedia };
+    }
+    const note = `${title.title}: ${Math.round(before / 1024)} KB \u2192 ${Math.round(sizeOf(slim) / 1024)} KB${dropped > 0 ? `, ${dropped} oldest episodes left out` : ""}`;
+    logEmby(`slimmed ${note}`);
+    if (dropped > 0) lastScanNotes.push(note);
+    return slim;
+  }
+  async function emitSized(emit3, titles, where) {
     let chunk = [];
     let bytes = 0;
-    for (const title of titles) {
-      const size = JSON.stringify(title).length;
-      if (chunk.length > 0 && bytes + size > MAX_BATCH_BYTES) {
+    const flush = async () => {
+      try {
         await emit3({ upsert: chunk });
-        chunk = [];
-        bytes = 0;
+      } catch (err) {
+        logEmby(`index batch failed (${where}, ${chunk.length} titles, ${Math.round(bytes / 1024)} KB): ${describeError(err)}`);
+        throw new EmbyScanError(`Saving ${chunk.length} titles to Lumio's index failed (${Math.round(bytes / 1024)} KB, ${where})`, err);
       }
+      chunk = [];
+      bytes = 0;
+    };
+    for (const original of titles) {
+      const title = sizeOf(original) > MAX_TITLE_BYTES ? slimTitle(original) : original;
+      const size = sizeOf(title);
+      if (chunk.length > 0 && bytes + size > MAX_BATCH_BYTES) await flush();
       chunk.push(title);
       bytes += size;
     }
-    if (chunk.length > 0) await emit3({ upsert: chunk });
+    if (chunk.length > 0) await flush();
+  }
+  var PAGE_SIZES = [PAGE_SIZE, ...FALLBACK_PAGE_SIZES];
+  async function fetchPage(settings, library, startIndex, minDateLastSaved, fromSize) {
+    const sizes = PAGE_SIZES;
+    for (let index = fromSize; ; index += 1) {
+      const limit = sizes[index];
+      try {
+        return { page: await fetchLibraryItems(settings, library, startIndex, limit, minDateLastSaved), limit, sizeIndex: index };
+      } catch (err) {
+        const next = sizes[index + 1];
+        if (next === void 0 || !isTransientEmbyError(err)) {
+          throw new EmbyScanError(`Emby library "${library.name}" from title ${startIndex}`, err);
+        }
+        logEmby(`page failed (${library.name}, from ${startIndex}, ${limit} per page), trying ${next}: ${describeError(err)}`);
+      }
+    }
   }
   async function scan(source, minDateLastSaved, emit3, progress, signal) {
     const settings = getEmbySettings();
     if (!isEmbyConnected(settings)) throw new Error("Emby is not connected");
     const startedAt = (/* @__PURE__ */ new Date()).toISOString();
+    const startedMs = Date.now();
+    lastScanNotes = [];
+    let done = 0;
+    logEmby(`${minDateLastSaved ? "delta" : "full"} scan start: ${settings.libraries.map((library) => `${library.name} (${library.type})`).join(", ")}`);
+    try {
+      const cursor = await scanLibraries(settings, source, minDateLastSaved, startedAt, emit3, progress, signal, (count) => {
+        done = count;
+      });
+      logEmby(`scan ${signal.aborted ? "cancelled" : "done"}: ${done} titles in ${Math.round((Date.now() - startedMs) / 1e3)} s`);
+      return cursor;
+    } catch (err) {
+      logEmby(`scan FAILED after ${done} titles, ${Math.round((Date.now() - startedMs) / 1e3)} s: ${describeError(err)}`);
+      throw err;
+    }
+  }
+  async function scanLibraries(settings, source, minDateLastSaved, startedAt, emit3, progress, signal, onDone) {
     let done = 0;
     for (const library of settings.libraries) {
       const seenSeries = /* @__PURE__ */ new Set();
       let startIndex = 0;
+      let sizeIndex = 0;
       for (; ; ) {
         if (signal.aborted) return { cursor: minDateLastSaved ?? startedAt };
         progress({ phase: "listing", done, section: library.name });
-        const page = await fetchLibraryItems(settings, library, startIndex, PAGE_SIZE, minDateLastSaved);
+        const fetched = await fetchPage(settings, library, startIndex, minDateLastSaved, sizeIndex);
+        const { page, limit } = fetched;
+        sizeIndex = fetched.sizeIndex;
         const items2 = page.Items ?? [];
         if (items2.length === 0) break;
         const kind = library.type === "movies" ? "movie" : "series";
         const titles = items2.map((item) => mapTitle(settings, source.id, item, kind));
         if (kind === "series") {
-          if (await attachEpisodes(settings, titles, signal)) return { cursor: minDateLastSaved ?? startedAt };
+          if (await attachEpisodes(settings, titles, signal, library.name)) return { cursor: minDateLastSaved ?? startedAt };
           for (const title of titles) seenSeries.add(title.key.split(":").pop() ?? "");
         }
-        await emitSized(emit3, titles);
+        await emitSized(emit3, titles, `${library.name} from ${startIndex}`);
         done += titles.length;
+        onDone(done);
         progress({ phase: "titles", done, total: page.TotalRecordCount || void 0, section: library.name });
         startIndex += items2.length;
         if (startIndex >= (page.TotalRecordCount ?? startIndex)) break;
+        if (limit < PAGE_SIZE && items2.length < limit && !page.TotalRecordCount) break;
       }
+      logEmby(`library ${library.name}: ${startIndex} titles listed`);
       if (minDateLastSaved && library.type === "tvshows") {
         const changedSeriesIds = /* @__PURE__ */ new Set();
         let episodeIndex = 0;
         for (; ; ) {
           if (signal.aborted) return { cursor: minDateLastSaved };
-          const page = await fetchChangedEpisodes(settings, library, episodeIndex, PAGE_SIZE, minDateLastSaved);
+          const page = await fetchChangedEpisodes(settings, library, episodeIndex, PAGE_SIZE, minDateLastSaved).catch((err) => {
+            throw new EmbyScanError(`Emby changed episodes in "${library.name}" from ${episodeIndex}`, err);
+          });
           const episodes = page.Items ?? [];
           if (episodes.length === 0) break;
           for (const episode of episodes) {
@@ -14833,24 +14975,29 @@
         const ids = [...changedSeriesIds];
         for (let index = 0; index < ids.length; index += PAGE_SIZE) {
           if (signal.aborted) return { cursor: minDateLastSaved };
-          const seriesItems = await fetchSeriesByIds(settings, ids.slice(index, index + PAGE_SIZE));
+          const seriesItems = await fetchSeriesByIds(settings, ids.slice(index, index + PAGE_SIZE)).catch((err) => {
+            throw new EmbyScanError(`Emby changed series in "${library.name}"`, err);
+          });
           const titles = seriesItems.map((item) => mapTitle(settings, source.id, item, "series"));
-          if (await attachEpisodes(settings, titles, signal)) return { cursor: minDateLastSaved };
-          await emitSized(emit3, titles);
+          if (await attachEpisodes(settings, titles, signal, library.name)) return { cursor: minDateLastSaved };
+          await emitSized(emit3, titles, `${library.name} changed series`);
           done += titles.length;
+          onDone(done);
           progress({ phase: "titles", done, section: library.name });
         }
       }
     }
     return { cursor: startedAt };
   }
-  async function attachEpisodes(settings, titles, signal) {
+  async function attachEpisodes(settings, titles, signal, libraryName) {
     for (let index = 0; index < titles.length; index += EPISODE_CONCURRENCY) {
       if (signal.aborted) return true;
       await Promise.all(
         titles.slice(index, index + EPISODE_CONCURRENCY).map(async (title) => {
           const seriesId = title.key.split(":").pop() ?? "";
-          const episodes = await fetchEpisodes(settings, seriesId);
+          const episodes = await fetchEpisodes(settings, seriesId).catch((err) => {
+            throw new EmbyScanError(`Emby episodes of "${title.title}" (${libraryName})`, err);
+          });
           for (const episodeItem of episodes) {
             const mapped = mapEpisode(settings, title.key, episodeItem);
             if (!mapped) continue;
@@ -14898,7 +15045,7 @@
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/emby-scan-diagnostics/plugins/emby/runtime/emby-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -14931,7 +15078,8 @@
       indexLastSync: "Last synced",
       running: "{done} titles",
       cancel: "Cancel",
-      homeHint: "Make it the home page or open the Emby tab: Settings \u2192 Home & appearance \u2192 Layout \u2192 Library."
+      homeHint: "Make it the home page or open the Emby tab: Settings \u2192 Home & appearance \u2192 Layout \u2192 Library.",
+      slimmed: "Too large to index in full (newest episodes kept):"
     },
     sv: {
       server: "Serveradress",
@@ -14961,7 +15109,8 @@
       indexLastSync: "Senast synkat",
       running: "{done} titlar",
       cancel: "Avbryt",
-      homeHint: "G\xF6r det till startsida eller \xF6ppna Emby-fliken: Inst\xE4llningar \u2192 Hem & utseende \u2192 Layout \u2192 Bibliotek."
+      homeHint: "G\xF6r det till startsida eller \xF6ppna Emby-fliken: Inst\xE4llningar \u2192 Hem & utseende \u2192 Layout \u2192 Bibliotek.",
+      slimmed: "F\xF6r stora f\xF6r att indexeras helt (nyaste avsnitten med):"
     }
   };
   function EmbySection() {
@@ -15072,6 +15221,7 @@
     const [status, setStatus] = useState(null);
     const [progress, setProgress] = useState(null);
     const [error, setError] = useState(null);
+    const [notes, setNotes] = useState([]);
     const abortRef = useRef(null);
     const settings = getEmbySettings();
     const source = embyLibrarySourceRef(settings);
@@ -15089,14 +15239,18 @@
     const run = async (kind) => {
       if (!source || running2) return;
       setError(null);
+      setNotes([]);
       const controller = new AbortController();
       abortRef.current = controller;
       setProgress({ phase: "listing", done: 0 });
       try {
         await runLibraryScan2(embyLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, { mode: kind, signal: controller.signal, onProgress: setProgress });
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        const message = describeError(err);
+        if (!(err instanceof EmbyScanError)) logEmby(`scan failed outside the Emby steps (${kind}): ${message}`);
+        setError(message);
       } finally {
+        setNotes([...getLastEmbyScanNotes()]);
         setProgress(null);
         abortRef.current = null;
         refresh();
@@ -15134,7 +15288,11 @@
         ] }),
         /* @__PURE__ */ jsx("div", { style: { marginTop: 8, height: 6, width: "100%", overflow: "hidden", borderRadius: 999, background: TOKENS.surface0 }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", borderRadius: 999, background: TOKENS.accent, width: pct2 != null ? `${pct2}%` : "35%", transition: "width .3s" } }) })
       ] }) : null,
-      error ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: 12, color: TOKENS.red }, children: error }) : null,
+      error ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: 12, color: TOKENS.red, overflowWrap: "anywhere" }, children: error }) : null,
+      notes.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { marginTop: 8, fontSize: 12, lineHeight: 1.5, color: TOKENS.textDim }, children: [
+        s.slimmed,
+        notes.map((note) => /* @__PURE__ */ jsx("div", { style: { color: TOKENS.textMute, overflowWrap: "anywhere" }, children: note }, note))
+      ] }) : null,
       /* @__PURE__ */ jsxs("div", { style: { marginTop: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }, children: [
         /* @__PURE__ */ jsx(PillBtn, { variant: "accent", disabled: !connected || running2, onClick: () => void run("full"), children: mine ? s.indexRebuild : s.indexBuild }),
         mine ? /* @__PURE__ */ jsx(PillBtn, { disabled: running2, onClick: () => void run("delta"), children: s.indexUpdate }) : null,
@@ -15144,7 +15302,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-fallback-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/emby-scan-diagnostics/plugins/emby/runtime/emby-fallback-page.tsx
   init_plugin_sdk();
   // Luft under rutan: på mobilen låg den kant i kant med skärmens nederkant
   // (Jerry 2026-09-07). Inline, inte Tailwind — pluginets klasser genereras
@@ -15158,7 +15316,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/emby-scan-diagnostics/plugins/emby/runtime/index.ts
   var EmbyPlugin = {
     id: "com.lumio.emby",
     name: { en: "Emby", sv: "Emby" },
