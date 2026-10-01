@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Large libraries with many series can be indexed again. Series were sent to Lumio 200 at a time with every episode included, which could be several megabytes per request. That was more than Lumio accepts, so the scan stopped with "Failed to fetch" and the index was never marked as synced. Titles are now sent in smaller batches.
+
 ## 0.1.1
 
 - Uses much less memory and responds faster to the remote. The plugin no longer carries its own copy of a large UI library it barely used, which made it several megabytes smaller and removed dozens of duplicate keyboard and focus listeners that ran on every key press.

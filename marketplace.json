@@ -34,7 +34,7 @@
         "en": "Jellyfin",
         "sv": "Jellyfin"
       },
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": {
         "en": "Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.",
         "sv": "Indexera din Jellyfin-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
