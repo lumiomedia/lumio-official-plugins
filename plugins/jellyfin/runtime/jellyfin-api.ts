@@ -50,10 +50,21 @@ export function authorizationHeader(token: string | null): string {
   return token ? `${base}, Token="${token}"` : base
 }
 
-async function request<T>(settings: Pick<JellyfinSettings, 'serverUrl' | 'accessToken'>, path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
+/**
+ * Försök per anrop, som i Emby-pluginet: på en stor server fällde ett enda
+ * långsamt svar eller en tappad anslutning hela indexeringen ("signal is
+ * aborted without reason", användarrapport 2026-10-01). Tidsgränser, nätfel
+ * och 5xx får nya försök; 4xx avgörs direkt.
+ */
+const RETRY_DELAYS_MS = [1_500, 5_000]
+
+class JellyfinTimeoutError extends Error {}
+
+async function requestOnce<T>(settings: Pick<JellyfinSettings, 'serverUrl' | 'accessToken'>, path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
   if (!settings.serverUrl) throw new Error('jellyfin: no server')
+  const timeoutMs = init?.timeoutMs ?? 30_000
   const controller = new AbortController()
-  const timer = window.setTimeout(() => controller.abort(), init?.timeoutMs ?? 20_000)
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs)
   try {
     const response = await fetch(`${settings.serverUrl}${path}`, {
       ...init,
@@ -65,16 +76,48 @@ async function request<T>(settings: Pick<JellyfinSettings, 'serverUrl' | 'access
         ...(init?.headers ?? {}),
       },
     })
-    if (!response.ok) throw new Error(`jellyfin: HTTP ${response.status} for ${path}`)
+    if (!response.ok) {
+      const error = new Error(`jellyfin: HTTP ${response.status} for ${path}`) as Error & { status?: number }
+      error.status = response.status
+      throw error
+    }
     const text = await response.text()
     return (text ? JSON.parse(text) : null) as T
+  } catch (err) {
+    if (controller.signal.aborted) {
+      throw new JellyfinTimeoutError(`Jellyfin did not answer within ${Math.round(timeoutMs / 1000)} s (${path.split('?')[0]})`)
+    }
+    throw err
   } finally {
     window.clearTimeout(timer)
   }
 }
 
+function isRetryable(err: unknown): boolean {
+  if (err instanceof JellyfinTimeoutError) return true
+  if (err instanceof TypeError) return true // "Failed to fetch": nätet, inte servern
+  const status = (err as { status?: number } | null)?.status
+  return typeof status === 'number' && status >= 500
+}
+
+async function request<T>(settings: Pick<JellyfinSettings, 'serverUrl' | 'accessToken'>, path: string, init?: RequestInit & { timeoutMs?: number; noRetry?: boolean }): Promise<T> {
+  // POST (inloggning, progress) görs en gång: ett nytt försök kan dubblera.
+  // Serverupptäckten likaså: en felskriven adress ska svara fel direkt.
+  const isWrite = Boolean(init?.method && init.method.toUpperCase() !== 'GET')
+  const delays = isWrite || init?.noRetry ? [] : RETRY_DELAYS_MS
+  const { noRetry: _noRetry, ...rest } = init ?? {}
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await requestOnce<T>(settings, path, rest)
+    } catch (err) {
+      if (attempt >= delays.length || !isRetryable(err)) throw err
+      await new Promise((resolve) => window.setTimeout(resolve, delays[attempt]))
+    }
+  }
+}
+
 export async function authenticate(serverUrl: string, username: string, password: string): Promise<{ accessToken: string; userId: string; userName: string; serverId: string; serverName: string }> {
-  const info = await request<{ Id: string; ServerName: string }>({ serverUrl, accessToken: null }, '/System/Info/Public', { timeoutMs: 8_000 })
+  const info = await request<{ Id: string; ServerName: string }>({ serverUrl, accessToken: null }, '/System/Info/Public', { timeoutMs: 8_000, noRetry: true })
   const auth = await request<{ AccessToken: string; User: { Id: string; Name: string } }>(
     { serverUrl, accessToken: null },
     '/Users/AuthenticateByName',
@@ -111,7 +154,7 @@ export async function fetchLibraryItems(
     EnableUserData: 'true',
   })
   if (minDateLastSaved) params.set('MinDateLastSaved', minDateLastSaved)
-  return request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 40_000 })
+  return request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 90_000 })
 }
 
 /**
@@ -139,7 +182,7 @@ export async function fetchChangedEpisodes(
     Limit: String(limit),
     MinDateLastSaved: minDateLastSaved,
   })
-  return request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 40_000 })
+  return request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 90_000 })
 }
 
 /** Serier per id, i samma form som bibliotekslistningen (för omläsning efter avsnittsändringar). */
@@ -151,7 +194,7 @@ export async function fetchSeriesByIds(settings: JellyfinSettings, ids: string[]
     Fields: ITEM_FIELDS,
     EnableUserData: 'true',
   })
-  const page = await request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 40_000 })
+  const page = await request<JellyfinItemsPage>(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 90_000 })
   return page.Items ?? []
 }
 
@@ -161,7 +204,7 @@ export async function fetchEpisodes(settings: JellyfinSettings, seriesId: string
     Fields: ITEM_FIELDS,
     EnableUserData: 'true',
   })
-  const data = await request<{ Items: JellyfinItem[] }>(settings, `/Shows/${seriesId}/Episodes?${params.toString()}`, { timeoutMs: 40_000 })
+  const data = await request<{ Items: JellyfinItem[] }>(settings, `/Shows/${seriesId}/Episodes?${params.toString()}`, { timeoutMs: 90_000 })
   return data.Items ?? []
 }
 

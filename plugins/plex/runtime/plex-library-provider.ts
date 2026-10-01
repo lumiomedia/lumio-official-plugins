@@ -41,8 +41,26 @@ interface PageResponse {
   serverUri?: string
 }
 
+/**
+ * Sidanropen går till appens egen endpoint, som i sin tur frågar Plex. Ett
+ * tappat anrop ("Failed to fetch") fällde hela indexeringen av ett stort
+ * bibliotek; nätfel får två nya försök. Ett avbrott från användaren och
+ * HTTP-fel avgörs direkt.
+ */
+const NETWORK_RETRY_DELAYS_MS = [1_000, 3_000]
+
 async function postJson<T>(url: string, body: unknown, signal: AbortSignal): Promise<T> {
-  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal })
+  const init = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal }
+  let response: Response
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      response = await fetch(url, init)
+      break
+    } catch (err) {
+      if (signal.aborted || !(err instanceof TypeError) || attempt >= NETWORK_RETRY_DELAYS_MS.length) throw err
+      await new Promise((resolve) => window.setTimeout(resolve, NETWORK_RETRY_DELAYS_MS[attempt]))
+    }
+  }
   if (!response.ok) {
     const text = await response.text().catch(() => '')
     throw new Error(`Plex ${response.status}: ${text.slice(0, 200)}`)

@@ -8160,13 +8160,22 @@
     return readJson(await fetch("/api/library/status", { cache: "no-store" }));
   }
   async function postLibraryBatch(source, batch) {
-    return readJson(
-      await fetch("/api/library/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] })
-      })
-    );
+    const body = JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] });
+    for (let attempt = 0; ; attempt += 1) {
+      let response;
+      try {
+        response = await fetch("/api/library/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body
+        });
+      } catch (err) {
+        if (attempt >= BATCH_RETRY_DELAYS_MS.length) throw err;
+        await new Promise((resolve) => setTimeout(resolve, BATCH_RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      return readJson(response);
+    }
   }
   async function fetchLibraryKeys(sourceId) {
     const params = sourceId ? `?sourceId=${encodeURIComponent(sourceId)}` : "";
@@ -8180,11 +8189,13 @@
     notifyLibraryIndexChanged();
     return payload.removed;
   }
+  var BATCH_RETRY_DELAYS_MS;
   var init_client = __esm({
     "lib/library/client.ts"() {
       "use client";
       init_ids();
       init_mode();
+      BATCH_RETRY_DELAYS_MS = [1e3, 3e3];
     }
   });
 
@@ -11813,7 +11824,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -14489,10 +14499,14 @@
     const base = `MediaBrowser Client="Lumio", Device="Lumio", DeviceId="${device}", Version="1.0.0"`;
     return token ? `${base}, Token="${token}"` : base;
   }
-  async function request(settings, path, init) {
+  var RETRY_DELAYS_MS = [1500, 5e3];
+  var JellyfinTimeoutError = class extends Error {
+  };
+  async function requestOnce(settings, path, init) {
     if (!settings.serverUrl) throw new Error("jellyfin: no server");
+    const timeoutMs = init?.timeoutMs ?? 3e4;
     const controller = new AbortController();
-    const timer2 = window.setTimeout(() => controller.abort(), init?.timeoutMs ?? 2e4);
+    const timer2 = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(`${settings.serverUrl}${path}`, {
         ...init,
@@ -14504,15 +14518,43 @@
           ...init?.headers ?? {}
         }
       });
-      if (!response.ok) throw new Error(`jellyfin: HTTP ${response.status} for ${path}`);
+      if (!response.ok) {
+        const error = new Error(`jellyfin: HTTP ${response.status} for ${path}`);
+        error.status = response.status;
+        throw error;
+      }
       const text = await response.text();
       return text ? JSON.parse(text) : null;
+    } catch (err) {
+      if (controller.signal.aborted) {
+        throw new JellyfinTimeoutError(`Jellyfin did not answer within ${Math.round(timeoutMs / 1e3)} s (${path.split("?")[0]})`);
+      }
+      throw err;
     } finally {
       window.clearTimeout(timer2);
     }
   }
+  function isRetryable(err) {
+    if (err instanceof JellyfinTimeoutError) return true;
+    if (err instanceof TypeError) return true;
+    const status = err?.status;
+    return typeof status === "number" && status >= 500;
+  }
+  async function request(settings, path, init) {
+    const isWrite = Boolean(init?.method && init.method.toUpperCase() !== "GET");
+    const delays = isWrite || init?.noRetry ? [] : RETRY_DELAYS_MS;
+    const { noRetry: _noRetry, ...rest } = init ?? {};
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await requestOnce(settings, path, rest);
+      } catch (err) {
+        if (attempt >= delays.length || !isRetryable(err)) throw err;
+        await new Promise((resolve) => window.setTimeout(resolve, delays[attempt]));
+      }
+    }
+  }
   async function authenticate(serverUrl, username, password) {
-    const info = await request({ serverUrl, accessToken: null }, "/System/Info/Public", { timeoutMs: 8e3 });
+    const info = await request({ serverUrl, accessToken: null }, "/System/Info/Public", { timeoutMs: 8e3, noRetry: true });
     const auth = await request(
       { serverUrl, accessToken: null },
       "/Users/AuthenticateByName",
@@ -14538,7 +14580,7 @@
       EnableUserData: "true"
     });
     if (minDateLastSaved) params.set("MinDateLastSaved", minDateLastSaved);
-    return request(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 4e4 });
+    return request(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 9e4 });
   }
   async function fetchChangedEpisodes(settings, library, startIndex, limit, minDateLastSaved) {
     const params = new URLSearchParams({
@@ -14550,7 +14592,7 @@
       Limit: String(limit),
       MinDateLastSaved: minDateLastSaved
     });
-    return request(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 4e4 });
+    return request(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 9e4 });
   }
   async function fetchSeriesByIds(settings, ids) {
     if (ids.length === 0) return [];
@@ -14560,7 +14602,7 @@
       Fields: ITEM_FIELDS,
       EnableUserData: "true"
     });
-    const page = await request(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 4e4 });
+    const page = await request(settings, `/Users/${settings.userId}/Items?${params.toString()}`, { timeoutMs: 9e4 });
     return page.Items ?? [];
   }
   async function fetchEpisodes(settings, seriesId) {
@@ -14569,7 +14611,7 @@
       Fields: ITEM_FIELDS,
       EnableUserData: "true"
     });
-    const data = await request(settings, `/Shows/${seriesId}/Episodes?${params.toString()}`, { timeoutMs: 4e4 });
+    const data = await request(settings, `/Shows/${seriesId}/Episodes?${params.toString()}`, { timeoutMs: 9e4 });
     return data.Items ?? [];
   }
   function imageUrl(settings, itemId, kind, maxHeight) {

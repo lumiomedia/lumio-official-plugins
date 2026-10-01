@@ -9602,13 +9602,22 @@
     return readJson(await fetch("/api/library/status", { cache: "no-store" }));
   }
   async function postLibraryBatch(source, batch) {
-    return readJson(
-      await fetch("/api/library/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] })
-      })
-    );
+    const body = JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] });
+    for (let attempt = 0; ; attempt += 1) {
+      let response;
+      try {
+        response = await fetch("/api/library/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body
+        });
+      } catch (err) {
+        if (attempt >= BATCH_RETRY_DELAYS_MS.length) throw err;
+        await new Promise((resolve) => setTimeout(resolve, BATCH_RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      return readJson(response);
+    }
   }
   async function fetchLibraryKeys(sourceId) {
     const params = sourceId ? `?sourceId=${encodeURIComponent(sourceId)}` : "";
@@ -9636,11 +9645,13 @@
     const payload = await readJson(response);
     return payload.item;
   }
+  var BATCH_RETRY_DELAYS_MS;
   var init_client = __esm({
     "lib/library/client.ts"() {
       "use client";
       init_ids();
       init_mode();
+      BATCH_RETRY_DELAYS_MS = [1e3, 3e3];
     }
   });
 
@@ -29766,8 +29777,19 @@ ${cue.text}`).join("\n\n")}
     if (!id) return null;
     return { id, name: settings.serverName ?? "Plex" };
   }
+  var NETWORK_RETRY_DELAYS_MS = [1e3, 3e3];
   async function postJson(url, body, signal) {
-    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
+    const init = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal };
+    let response;
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        response = await fetch(url, init);
+        break;
+      } catch (err) {
+        if (signal.aborted || !(err instanceof TypeError) || attempt >= NETWORK_RETRY_DELAYS_MS.length) throw err;
+        await new Promise((resolve) => window.setTimeout(resolve, NETWORK_RETRY_DELAYS_MS[attempt]));
+      }
+    }
     if (!response.ok) {
       const text = await response.text().catch(() => "");
       throw new Error(`Plex ${response.status}: ${text.slice(0, 200)}`);

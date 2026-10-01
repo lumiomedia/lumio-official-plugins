@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.35
+
+- Indexing a large Plex library no longer stops on a single dropped connection ("Failed to fetch"); the request is retried before giving up.
+
 ## 1.0.34
 
 - Loads again on Lumio 0.1.617. The copy of the plugin that ships inside that app version stopped at startup, so the plugin never appeared; this version replaces it automatically.
