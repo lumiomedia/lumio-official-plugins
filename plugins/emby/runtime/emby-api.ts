@@ -90,13 +90,25 @@ function buildUrl(target: ApiTarget, path: string, query?: URLSearchParams): str
   return `${target.apiBase}${path}?${params.toString()}`
 }
 
-async function request<T>(
+/**
+ * Försök per anrop. En stor server (80 000 titlar, användarrapport
+ * 2026-10-01) svarar ibland långsamt eller tappar en anslutning mitt i en
+ * skanning, och ett enda sådant svar fällde hela indexeringen med "signal is
+ * aborted without reason". Tidsgränser, nätfel och 5xx får nya försök; 4xx
+ * (fel token, borttaget objekt) avgörs direkt.
+ */
+const RETRY_DELAYS_MS = [1_500, 5_000]
+
+class EmbyTimeoutError extends Error {}
+
+async function requestOnce<T>(
   target: ApiTarget,
   path: string,
   init?: { query?: URLSearchParams; form?: Record<string, string>; timeoutMs?: number },
 ): Promise<T> {
+  const timeoutMs = init?.timeoutMs ?? 30_000
   const controller = new AbortController()
-  const timer = window.setTimeout(() => controller.abort(), init?.timeoutMs ?? 20_000)
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs)
   try {
     const response = await fetch(buildUrl(target, path, init?.query), {
       method: init?.form ? 'POST' : 'GET',
@@ -105,11 +117,45 @@ async function request<T>(
       // enkelt anrop utan preflight.
       body: init?.form ? new URLSearchParams(init.form) : undefined,
     })
-    if (!response.ok) throw new Error(`emby: HTTP ${response.status} for ${path}`)
+    if (!response.ok) {
+      const error = new Error(`emby: HTTP ${response.status} for ${path}`) as Error & { status?: number }
+      error.status = response.status
+      throw error
+    }
     const text = await response.text()
     return (text ? JSON.parse(text) : null) as T
+  } catch (err) {
+    if (controller.signal.aborted) {
+      throw new EmbyTimeoutError(`Emby did not answer within ${Math.round(timeoutMs / 1000)} s (${path})`)
+    }
+    throw err
   } finally {
     window.clearTimeout(timer)
+  }
+}
+
+function isRetryable(err: unknown): boolean {
+  if (err instanceof EmbyTimeoutError) return true
+  if (err instanceof TypeError) return true // "Failed to fetch": nätet, inte servern
+  const status = (err as { status?: number } | null)?.status
+  return typeof status === 'number' && status >= 500
+}
+
+async function request<T>(
+  target: ApiTarget,
+  path: string,
+  init?: { query?: URLSearchParams; form?: Record<string, string>; timeoutMs?: number; noRetry?: boolean },
+): Promise<T> {
+  // POST (inloggning, progress) görs en gång: ett nytt försök kan dubblera.
+  // Serverupptäckten likaså: en felskriven adress ska svara fel direkt.
+  const delays = init?.form || init?.noRetry ? [] : RETRY_DELAYS_MS
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await requestOnce<T>(target, path, init)
+    } catch (err) {
+      if (attempt >= delays.length || !isRetryable(err)) throw err
+      await new Promise((resolve) => window.setTimeout(resolve, delays[attempt]))
+    }
   }
 }
 
@@ -130,7 +176,7 @@ export async function discoverServer(serverUrl: string): Promise<{ apiBase: stri
   let lastError: unknown = null
   for (const apiBase of [`${serverUrl}/emby`, serverUrl]) {
     try {
-      const info = await request<PublicSystemInfo>({ apiBase, accessToken: null }, '/System/Info/Public', { timeoutMs: 8_000 })
+      const info = await request<PublicSystemInfo>({ apiBase, accessToken: null }, '/System/Info/Public', { timeoutMs: 8_000, noRetry: true })
       if (!info?.Id) continue
       if (/jellyfin/i.test(info.ProductName ?? '')) throw new EmbyServerKindError('jellyfin')
       return { apiBase, serverId: info.Id, serverName: info.ServerName ?? 'Emby' }
@@ -186,7 +232,7 @@ export async function fetchLibraryItems(
     EnableUserData: 'true',
   })
   if (minDateLastSaved) query.set('MinDateLastSaved', minDateLastSaved)
-  return request<EmbyItemsPage>(settings, `/Users/${settings.userId}/Items`, { query, timeoutMs: 40_000 })
+  return request<EmbyItemsPage>(settings, `/Users/${settings.userId}/Items`, { query, timeoutMs: 90_000 })
 }
 
 /**
@@ -211,7 +257,7 @@ export async function fetchChangedEpisodes(
     Limit: String(limit),
     MinDateLastSaved: minDateLastSaved,
   })
-  return request<EmbyItemsPage>(settings, `/Users/${settings.userId}/Items`, { query, timeoutMs: 40_000 })
+  return request<EmbyItemsPage>(settings, `/Users/${settings.userId}/Items`, { query, timeoutMs: 90_000 })
 }
 
 /** Serier per id, i samma form som bibliotekslistningen (för omläsning efter avsnittsändringar). */
@@ -223,7 +269,7 @@ export async function fetchSeriesByIds(settings: EmbySettings, ids: string[]): P
     Fields: ITEM_FIELDS,
     EnableUserData: 'true',
   })
-  const page = await request<EmbyItemsPage>(settings, `/Users/${settings.userId}/Items`, { query, timeoutMs: 40_000 })
+  const page = await request<EmbyItemsPage>(settings, `/Users/${settings.userId}/Items`, { query, timeoutMs: 90_000 })
   return page.Items ?? []
 }
 
@@ -233,7 +279,7 @@ export async function fetchEpisodes(settings: EmbySettings, seriesId: string): P
     Fields: ITEM_FIELDS,
     EnableUserData: 'true',
   })
-  const data = await request<{ Items: EmbyItem[] }>(settings, `/Shows/${seriesId}/Episodes`, { query, timeoutMs: 40_000 })
+  const data = await request<{ Items: EmbyItem[] }>(settings, `/Shows/${seriesId}/Episodes`, { query, timeoutMs: 90_000 })
   return data.Items ?? []
 }
 

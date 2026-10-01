@@ -9667,13 +9667,22 @@
     return readJson(await fetch("/api/library/status", { cache: "no-store" }));
   }
   async function postLibraryBatch(source, batch) {
-    return readJson(
-      await fetch("/api/library/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] })
-      })
-    );
+    const body = JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] });
+    for (let attempt = 0; ; attempt += 1) {
+      let response;
+      try {
+        response = await fetch("/api/library/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body
+        });
+      } catch (err) {
+        if (attempt >= BATCH_RETRY_DELAYS_MS.length) throw err;
+        await new Promise((resolve) => setTimeout(resolve, BATCH_RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      return readJson(response);
+    }
   }
   async function fetchLibraryKeys(sourceId) {
     const params = sourceId ? `?sourceId=${encodeURIComponent(sourceId)}` : "";
@@ -9719,11 +9728,13 @@
     const payload = await readJson(response);
     return payload.item;
   }
+  var BATCH_RETRY_DELAYS_MS;
   var init_client = __esm({
     "lib/library/client.ts"() {
       "use client";
       init_ids();
       init_mode();
+      BATCH_RETRY_DELAYS_MS = [1e3, 3e3];
     }
   });
 
@@ -52960,13 +52971,22 @@ ${cue.text}`).join("\n\n")}
     }
     return null;
   }
+  async function findMovieByTmdb(tmdbId) {
+    const sources = getLiveTvLists().filter((list) => list.kind === "xtream" && list.source).map((list) => list.source);
+    for (const source of new Set(sources)) {
+      const page = await queryVod({ source, tmdbId, kind: "movie", offset: 0, limit: 1 }).catch(() => null);
+      const item = page?.items[0];
+      if (item) return item;
+    }
+    return null;
+  }
   async function getVodStreams(query) {
     const tmdbId = Number.parseInt(String(query.tmdbId ?? ""), 10);
     if (!Number.isFinite(tmdbId) || tmdbId <= 0) return [];
     if (query.mediaType === "movie") {
-      const hit2 = await findByTmdb(tmdbId, "movie");
-      if (!hit2?.item.url) return [];
-      return [{ id: `xtream-vod:${hit2.item.key}`, label: labelFor(hit2.item), directUrl: hit2.item.url }];
+      const item = await findMovieByTmdb(tmdbId);
+      if (!item?.url) return [];
+      return [{ id: `xtream-vod:${item.key}`, label: labelFor(item), directUrl: item.url }];
     }
     if (query.season == null || query.episode == null) return [];
     const hit = await findByTmdb(tmdbId, "series");
@@ -53035,7 +53055,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.13.0"
+      version: "0.13.2"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -53049,7 +53069,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.13.0",
+    version: "0.13.2",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

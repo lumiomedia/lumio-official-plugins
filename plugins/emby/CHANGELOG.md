@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Indexing large Emby servers no longer stops halfway. A slow answer or a dropped connection used to end the whole scan ("signal is aborted without reason" or "Failed to fetch"); each request now waits longer and is retried before giving up.
+
 ## 0.1.2
 
 - Loads again on Lumio 0.1.617. The copy of the plugin that ships inside that app version stopped at startup, so the plugin never appeared; this version replaces it automatically.

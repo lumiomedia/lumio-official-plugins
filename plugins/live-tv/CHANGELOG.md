@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.2
+
+- The VOD button on a film's detail page shows again when the playlist's login is missing on this profile. Films play straight from the library's own link, so only series still need the login.
+
 ## 0.13.1
 
 - Loads again on Lumio 0.1.617. The copy of the plugin that ships inside that app version stopped at startup, so the plugin never appeared; this version replaces it automatically.
