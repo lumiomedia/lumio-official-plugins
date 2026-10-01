@@ -1737,6 +1737,17 @@
           plNextEpisode: "Next episode",
           plSwitchStream: "Switch stream",
           plStreams: "Streams",
+          plSleepTimer: "Sleep timer",
+          plSleepShort: "Sleep",
+          plSleepOff: "Off",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "End of episode or film",
+          plSleepStillThere: "Are you still there?",
+          plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
+          plCompanions: "Who's watching",
+          plWhoWatches: "Who's watching with you?",
+          plCompanionsJustMe: "Just me",
+          plCompanionsShort: "With",
           audioDelayTitle: "Audio delay",
           audioDelayHint: "Adjust lip sync. A positive value plays audio later.",
           btAudioAutoOffset: "Compensate for Bluetooth latency",
@@ -2944,6 +2955,7 @@
           quizStart: "Start quiz",
           quizBuilding: "Building questions \xB7 %s movies",
           quizTooFew: "Too few movies. Watch or save at least four.",
+          quizTooFewGenre: "Too few seen {genre} titles. Try another genre.",
           quizRateLimited: "TMDB is busy, try again in a moment.",
           quizLanOff: "Phones can only reach this screen when LAN streaming is on in Settings.",
           quizCode: "Code",
@@ -4194,9 +4206,9 @@
           profTabDiary: "Film diary",
           profTabHunt: "Filmography hunt",
           profTabWrapped: "Wrapped",
-          profComingSoon: "Coming in a later update.",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Move \xB7 OK Select \xB7 Back Close",
           profEmptyFirstStar: "Watch your first film and the first star lights up.",
-          profGalaxyLine: "{stars} stars and {constellations} constellations",
+          profGalaxyLine: "{stars} stars, {constellations} constellations and {zones} dark zones",
           profGalaxyDesc: "Every film you've seen is a star. Directors form constellations.",
           profViewingN: "Viewing {n}",
           profSecondViewing: "Second time",
@@ -4222,8 +4234,10 @@
           profHuntSeen: "You've seen {seen}/{total} {name}",
           profHuntMissing: "{n} left to find.",
           profHuntAllSeen: "You've seen them all.",
-          profHuntMakeRow: "Make a row of the rest",
+          profHuntMakeRow: "Make a row",
+          profHuntMakeCollection: "Make a collection",
           profHuntRowName: "{name} \u2013 still to see",
+          profHuntHomeRowMade: 'Row "{name}" added to your home screen.',
           profHuntRowMade: 'Row "{name}" created \u2013 add it to your home screen from Settings.',
           profHuntRowFailed: "Couldn't create the row \u2013 you may have too many rows.",
           profHuntNew: "+ Hunt a new director",
@@ -4235,7 +4249,8 @@
           profBadgeAlmost: "Almost there",
           profBadgeComplete: "Complete",
           profBadgeInOrder: "In order",
-          profWrappedTeaser: "Your year.\nIn film.",
+          profWrappedTeaser: "{h} hours.\nAnd more.",
+          profWrappedKicker: "Lumio Wrapped {year}",
           profWrappedPlay: "Play your year \u2192",
           profMoreAboutYou: "More about you",
           profClose: "Close",
@@ -4254,7 +4269,229 @@
           profModAbandoned: "Abandoned",
           profModAbandonedLine: "Films you gave up on early.",
           profModQuiz: "Quiz profile",
-          profModQuizLine: "What you watch vs what you know."
+          profModQuizLine: "What you watch vs what you know.",
+          profModBack: "\u2190 Profile",
+          profModColorTitle: "Your year as a single strip",
+          profModColorDesc: "Every stripe is a film's barcode, in the order you watched. Pick a month to see which films gave the colour.",
+          profModColorNote: "From your barcodes",
+          profModSleptTitle: "Films you fell asleep to",
+          profModSleptDesc: "The sleep timer knows exactly where you drifted off. Continue from there, or start over when you're more awake.",
+          profModSleptNote: "From the sleep timer",
+          profModCouchTitle: "Who you watch with",
+          profModCouchDesc: "Taste match per profile and picks that suit you both, based on what you've watched together and apart.",
+          profModCouchNote: `From "Who's watching?"`,
+          profModClockTitle: "When you watch",
+          profModClockDesc: "Weekday against time of day for everything you started. Pick a day to see your habits.",
+          profModClockNote: "From start times in the diary",
+          profModCapsuleTitle: "Send a film to the future",
+          profModCapsuleDesc: "Pick a film today. Lumio brings it back in a few years, together with today's diary page.",
+          profModCapsuleNote: "Opens on the home screen",
+          profModRecordsTitle: "Your personal records",
+          profModRecordsDesc: "Longest marathon, latest night and more. New records are marked when they fall.",
+          profModRecordsNote: "From the diary",
+          profModAbandonedTitle: "Films you gave up on",
+          profModAbandonedDesc: "Everything you left under 20 %. Give them a second chance, or let go for good.",
+          profModAbandonedNote: "From the diary",
+          profSleptSummary: "You fall asleep most often on {day}, on average {m} minutes in.",
+          profSleptTopGenre: "{genre} accounts for {n} of {total} naps.",
+          profSleptWhen: "{date} \xB7 fell asleep {time}",
+          profSleptResume: "Continue {time}",
+          profSleptRestart: "Start over",
+          profSleptRemove: "Remove",
+          profSleptEmpty: "The list is empty. You woke up for everything.",
+          profAbandonedCount: "{n} films left under 20 %.",
+          profAbandonedWhen: "Stopped at {p} % \xB7 {date}",
+          profAbandonedRetry: "Second chance",
+          profAbandonedAdded: "In Continue watching",
+          profAbandonedLetGo: "Let go",
+          profAbandonedDismissRow: "Remove {title} from the list",
+          profAbandonedEmpty: "Nothing abandoned. You finish what you start.",
+          profModQuizTitle: "What you know, vs what you watch",
+          profModQuizDesc: "Your film quiz results per genre, against how much you actually watch the genre.",
+          profModQuizNote: "From the film quiz",
+          profPrevNoCapsule: "No capsule yet",
+          profPrevOpens: "Opens",
+          profPrevTogether: "{n} films together",
+          profPrevEmpty: "Nothing here yet",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "Longest marathon",
+          profRecLatestNight: "Latest night",
+          profRecMostInDay: "Most films in a day",
+          profRecLongestFilm: "Longest film",
+          profRecMostRewatched: "Most rewatched",
+          profRecStreak: "Longest streak",
+          profRecStreakValue: "{n} days",
+          profDayPl0: "Mondays",
+          profDayPl1: "Tuesdays",
+          profDayPl2: "Wednesdays",
+          profDayPl3: "Thursdays",
+          profDayPl4: "Fridays",
+          profDayPl5: "Saturdays",
+          profDayPl6: "Sundays",
+          profColorMonthCount: "{month}: {n} films",
+          profColorMoodRecord: "The year's record month",
+          profColorMoodDark: "The year's darkest month",
+          profColorMoodBright: "The year's brightest month",
+          profColorUseBg: "Use as profile background",
+          profColorRemoveBg: "Remove profile background",
+          profColorBgSet: "The strip is now behind your profile.",
+          profColorExport: "Export as image",
+          profColorShareTitle: "Colour year {year}",
+          profColorFilms: "{n} films",
+          profColorEmpty: "No movies watched this year yet.",
+          profColorNoBarcodeNote: "Grey stripes = films without a barcode yet. Play them in Lumio to fill in the colour.",
+          profShareSaved: "Image saved.",
+          profShareFailed: "Couldn't create the image.",
+          profShareNoLan: "No network address found for the phone.",
+          profShareScan: "Scan with your phone to save the image.",
+          profClockTopTime: "Top time",
+          profClockFilms: "Films",
+          profClockUsual: "Usually",
+          profClockBigNight: "The week's big night.",
+          profClockWith: "Usually with {name}.",
+          profClockEmpty: "Start a few films and the clock fills in.",
+          profRecNew: "New",
+          profRecMarathonHow: "{n} in a row from {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "in a row, until {date}",
+          profRecEmpty: "Records appear once you have a few evenings behind you.",
+          profPrevMatch: "taste match with {name}",
+          profCouchUsual: "Usually: {day} {time}",
+          profCouchDisagree: "Disagree most on: {genre}",
+          profCouchTonight: "Tonight's film for you both",
+          profCouchReasonBoth: "On both watchlists",
+          profCouchReasonRec: "Like {title}",
+          profCouchStart: "Start an evening together",
+          profCouchSolo: "Add another profile to see who you watch with.",
+          profCouchHint: "Pick who's watching when you start a film, and this fills in.",
+          profCouchNoPicks: "No shared picks yet.",
+          profQuizLegendWatch: "Share of your watching",
+          profQuizLegendRight: "Right answers in the quiz",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "You know most about {best}, though you watch {watched} the most.",
+          profQuizSummarySame: "You know {best} best \u2014 and watch it the most.",
+          profQuizWeak: "{weak} is your weak spot.",
+          profQuizEmpty: "Play a round of the film quiz and your results show up here.",
+          profCapStep1: "1 \xB7 Pick a film",
+          profCapStep2: "2 \xB7 When should it open?",
+          profCapYears: "{n} yr",
+          profCapLine: "{title} opens {date}.",
+          profCapSeal: "Seal the capsule",
+          profCapSealing: "Sealing\u2026",
+          profCapSealed: "Sealed. See you {date}.",
+          profCapAnother: "Seal another",
+          profCapYours: "Your capsules",
+          profCapOpens: "Opens {date}",
+          profCapOpened: "Opened {date}",
+          profCapNone: "No capsules yet.",
+          profCapNoFilms: "Finish a film first \u2014 then you can send it forward.",
+          profCapDueKicker: "Time capsule \xB7 opened today",
+          profCapDueLine: "You sealed {title} on {date}.",
+          profCapOpen: "Open",
+          profDiaryAsleep: "Fell asleep {time} \xB7 {p} %",
+          profGxDirectors: "Directors",
+          profGxGenres: "Genres",
+          profGxWhole: "\u2190 Whole galaxy",
+          profGxExplore: "Explore",
+          profGxPickTitle: "Pick a star or a dark zone",
+          profGxPickBody: "Constellations are directors you've followed for a long time. Dashed circles are genres you've hardly watched.",
+          profGxStar: "Star",
+          profGxSeenTimes: "Seen {n} times \xB7 last {date}",
+          profGxSeenOnce: "Seen once \xB7 {date}",
+          profGxNextStar: "Next star \u2192",
+          profGxDetails: "Details",
+          profGxHunt: "Filmography hunt",
+          profGxDarkZone: "Dark zone",
+          profGxZoneBetween: "{n} seen. Lies between {a} and {b}.",
+          profGxZoneNear: "{n} seen. Lies next to {a}.",
+          profGxZoneEdge: "{n} seen. An unexplored corner.",
+          profGxOkHint: "on the zone to fly there",
+          profGxFly: "Fly there",
+          profGxLightFirst: "Light the first stars",
+          profGxLoading: "Looking for films\u2026",
+          profGxNoSuggestions: "No suggestions right now. Try again later.",
+          profGxPlay: "Play",
+          profGxConstellations: "Constellations",
+          profGxZones: "Dark zones",
+          settingsPageProfilePage: "Profile page",
+          ppWeatherGroup: "Weather in the diary",
+          ppWeatherToggle: "Record the weather",
+          ppWeatherToggleDesc: "When a film ends, Lumio looks up the current weather for your town once (Open-Meteo, no account). Off: no lookups at all.",
+          ppWeatherPlace: "Town",
+          ppWeatherNoPlace: "No town chosen yet.",
+          ppWeatherSearchPh: "e.g. Gothenburg",
+          ppWeatherSearch: "Search",
+          ppWeatherSearching: "Searching\u2026",
+          ppWeatherNoResults: "No town found.",
+          ppWeatherFailed: "The search failed. Check the connection and try again.",
+          ppWeatherCredit: "Weather data by Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "so far this year",
+          profWrPrev: "Previous",
+          profWrNext: "Next",
+          profWrNotEnough: "Wrapped needs at least 10 sessions in {year}. Keep watching!",
+          profWrIntroTitle: "Your year\nin film.",
+          profWrIntroBody: "{n} stars later. Tap to begin.",
+          profWrIntroBodyTv: "{n} stars later. Press \u25B6 to begin.",
+          profWrGuessKicker: "Guess first",
+          profWrGuessQ: "Which genre did you watch most this year?",
+          profWrGuessRight: "Spot on. {genre}, with {h} hours.",
+          profWrGuessWrong: "Close. It was {genre}, with {h} hours.",
+          profWrNoGenres: "Not enough genre data yet.",
+          profWrHoursKicker: "You watched",
+          profWrHoursUnit: "hours",
+          profWrDays: "= {n} days on the sofa",
+          profWrInterstellar: "= {n} Interstellars in a row",
+          profWrEpisodes: "= {n} episodes of a half-hour show",
+          profWrGenreKicker: "Genre ranking",
+          profWrGenreWon: "{genre} won.",
+          profWrHoursShort: "{h} h",
+          profWrGoldenKicker: "Golden hour",
+          profWrGoldenBody: "The time you most often pressed play.",
+          profWrStarsKicker: "Your stars",
+          profWrStarsTitle: "The actors you saw most.",
+          profWrStarsNone: "Not enough cast data yet.",
+          profWrStarsFilms: "{n} films",
+          profWrRewatchKicker: "Most rewatched",
+          profWrRewatchNone: "No rewatches this year \u2014 always something new.",
+          profWrSleepTitle: "You fell asleep {n} times.",
+          profWrSleepNone: "You stayed awake all year.",
+          profWrBuddyTitle: "You and {name} watched {n} films together.",
+          profWrBuddyNone: "Mostly you and the screen this year.",
+          profWrPersKicker: "Your film personality",
+          profWrTraitNight: "Night owl",
+          profWrTraitNightValue: "starts {time}",
+          profWrTraitGenre: "Genre loyal",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Rewatcher",
+          profWrTraitRewatchValue: "{n} rewatches",
+          profWrTraitNap: "Dozer",
+          profWrTraitNapValue: "at {p} %",
+          profWrShareTitle: "Share your year.",
+          profWrShare: "Share",
+          profWrReplay: "Play again",
+          profWrCardHours: "total",
+          profWrCardGenre: "top genre",
+          profWrCardTitle: "most played",
+          profWrCardNaps: "naps",
+          profWrBNight: "The night owl",
+          profWrBRewatch: "The rewatcher",
+          profWrBNap: "The nap master",
+          profWrBMarathon: "The marathoner",
+          profWrBExplorer: "The explorer",
+          profWrAScifi: "from outer space",
+          profWrADrama: "with a big heart",
+          profWrAHorror: "from the dark",
+          profWrAComedy: "who laughs first",
+          profWrAAnimation: "with a drawn soul",
+          profWrADocumentary: "who wants to know",
+          profWrAThriller: "on the edge",
+          profWrAAction: "at full speed",
+          profWrARomance: "in rose-tinted glasses",
+          profWrACrime: "from the underworld",
+          profWrAFantasy: "from the fairy realm",
+          profWrAOther: "without a map"
         },
         sv: {
           // Nav
@@ -5100,6 +5337,17 @@
           plNextEpisode: "N\xE4sta avsnitt",
           plSwitchStream: "Byt str\xF6m",
           plStreams: "Str\xF6mmar",
+          plSleepTimer: "S\xF6mntimer",
+          plSleepShort: "S\xF6mn",
+          plSleepOff: "Av",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "Slutet av avsnittet/filmen",
+          plSleepStillThere: "\xC4r du kvar?",
+          plSleepStillThereBody: "S\xF6mntimern pausade. R\xF6r musen eller tryck p\xE5 n\xE5got f\xF6r att titta vidare.",
+          plCompanions: "Vem tittar med",
+          plWhoWatches: "Vem tittar med?",
+          plCompanionsJustMe: "Bara jag",
+          plCompanionsShort: "Med",
           audioDelayTitle: "Ljudf\xF6rdr\xF6jning",
           audioDelayHint: "Justera l\xE4ppsynk. Positivt v\xE4rde spelar ljudet senare.",
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
@@ -6295,6 +6543,7 @@
           quizStart: "Starta quiz",
           quizBuilding: "Bygger fr\xE5gor \xB7 %s filmer",
           quizTooFew: "F\xF6r f\xE5 filmer. Se eller spara minst fyra.",
+          quizTooFewGenre: "F\xF6r f\xE5 sedda {genre}-titlar. Prova en annan genre.",
           quizRateLimited: "TMDB \xE4r upptaget, f\xF6rs\xF6k om en stund.",
           quizLanOff: "Telefoner n\xE5r den h\xE4r sk\xE4rmen bara n\xE4r LAN-str\xF6mning \xE4r p\xE5 i inst\xE4llningarna.",
           quizCode: "Kod",
@@ -7535,9 +7784,9 @@
           profTabDiary: "Filmdagbok",
           profTabHunt: "Filmografijakt",
           profTabWrapped: "Wrapped",
-          profComingSoon: "Kommer i en senare uppdatering.",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Flytta \xB7 OK V\xE4lj \xB7 Bak\xE5t St\xE4ng",
           profEmptyFirstStar: "Titta p\xE5 din f\xF6rsta film s\xE5 t\xE4nds f\xF6rsta stj\xE4rnan.",
-          profGalaxyLine: "{stars} stj\xE4rnor och {constellations} stj\xE4rnbilder",
+          profGalaxyLine: "{stars} stj\xE4rnor, {constellations} stj\xE4rnbilder och {zones} m\xF6rka zoner",
           profGalaxyDesc: "Varje film du sett \xE4r en stj\xE4rna. Regiss\xF6rer bildar stj\xE4rnbilder.",
           profViewingN: "G\xE5ng {n}",
           profSecondViewing: "Andra g\xE5ngen",
@@ -7563,8 +7812,10 @@
           profHuntSeen: "Du har sett {seen}/{total} {name}",
           profHuntMissing: "{n} kvar att hitta.",
           profHuntAllSeen: "Du har sett alla.",
-          profHuntMakeRow: "G\xF6r samlingsrad av resten",
+          profHuntMakeRow: "G\xF6r en rad",
+          profHuntMakeCollection: "G\xF6r en samling",
           profHuntRowName: "{name} \u2013 kvar att se",
+          profHuntHomeRowMade: 'Raden "{name}" finns nu p\xE5 startsidan.',
           profHuntRowMade: 'Raden "{name}" \xE4r skapad \u2013 l\xE4gg till den p\xE5 startsidan via Inst\xE4llningar.',
           profHuntRowFailed: "Raden gick inte att skapa \u2013 du kanske har f\xF6r m\xE5nga rader.",
           profHuntNew: "+ Jaga en ny regiss\xF6r",
@@ -7576,7 +7827,8 @@
           profBadgeAlmost: "N\xE4stan d\xE4r",
           profBadgeComplete: "Komplett",
           profBadgeInOrder: "I ordning",
-          profWrappedTeaser: "Ditt \xE5r.\nI film.",
+          profWrappedTeaser: "{h} timmar.\nOch mer.",
+          profWrappedKicker: "Lumio Wrapped {year}",
           profWrappedPlay: "Spela upp ditt \xE5r \u2192",
           profMoreAboutYou: "Mer om dig",
           profClose: "St\xE4ng",
@@ -7595,7 +7847,229 @@
           profModAbandoned: "\xD6vergivna",
           profModAbandonedLine: "Filmer du gav upp tidigt.",
           profModQuiz: "Quizprofilen",
-          profModQuizLine: "Vad du tittar p\xE5 mot vad du kan."
+          profModQuizLine: "Vad du tittar p\xE5 mot vad du kan.",
+          profModBack: "\u2190 Profil",
+          profModColorTitle: "Ditt \xE5r som en enda remsa",
+          profModColorDesc: "Varje strimma \xE4r en films barcode, i den ordning du s\xE5g dem. V\xE4lj en m\xE5nad f\xF6r att se vilka filmer som gav f\xE4rgen.",
+          profModColorNote: "Fr\xE5n dina barcodes",
+          profModSleptTitle: "Filmer du somnade till",
+          profModSleptDesc: "S\xF6mntimern vet exakt var du slocknade. Forts\xE4tt d\xE4rifr\xE5n, eller b\xF6rja om n\xE4r du \xE4r piggare.",
+          profModSleptNote: "Fr\xE5n s\xF6mntimern",
+          profModCouchTitle: "Vem du tittar med",
+          profModCouchDesc: "Smakmatch per profil och f\xF6rslag som passar er b\xE5da, baserat p\xE5 vad ni sett tillsammans och var f\xF6r sig.",
+          profModCouchNote: 'Fr\xE5n "Vem tittar med?"',
+          profModClockTitle: "N\xE4r du tittar",
+          profModClockDesc: "Veckodag mot klockslag f\xF6r allt du startat. V\xE4lj en dag f\xF6r att se dina vanor.",
+          profModClockNote: "Fr\xE5n starttiderna i dagboken",
+          profModCapsuleTitle: "Skicka en film till framtiden",
+          profModCapsuleDesc: "V\xE4lj en film i dag. Lumio f\xF6resl\xE5r den igen om n\xE5gra \xE5r, tillsammans med dagens dagbokssida.",
+          profModCapsuleNote: "\xD6ppnas p\xE5 startsidan",
+          profModRecordsTitle: "Dina personliga rekord",
+          profModRecordsDesc: "L\xE4ngsta maraton, senaste kv\xE4llen och mer. Nya rekord markeras n\xE4r de sl\xE5s.",
+          profModRecordsNote: "Fr\xE5n dagboken",
+          profModAbandonedTitle: "Filmer du gav upp",
+          profModAbandonedDesc: "Allt du l\xE4mnat under 20 %. Ge dem en andra chans eller sl\xE4pp taget f\xF6r gott.",
+          profModAbandonedNote: "Fr\xE5n dagboken",
+          profSleptSummary: "Du somnar oftast p\xE5 {day}, i snitt {m} minuter in.",
+          profSleptTopGenre: "{genre} st\xE5r f\xF6r {n} av {total} tupplurar.",
+          profSleptWhen: "{date} \xB7 somnade {time}",
+          profSleptResume: "Forts\xE4tt {time}",
+          profSleptRestart: "B\xF6rja om",
+          profSleptRemove: "Ta bort",
+          profSleptEmpty: "Listan \xE4r tom. Du har vaknat till allt.",
+          profAbandonedCount: "{n} filmer l\xE4mnade under 20 %.",
+          profAbandonedWhen: "Slutade vid {p} % \xB7 {date}",
+          profAbandonedRetry: "Andra chans",
+          profAbandonedAdded: "I Forts\xE4tt titta",
+          profAbandonedLetGo: "Sl\xE4pp taget",
+          profAbandonedDismissRow: "Ta bort {title} fr\xE5n listan",
+          profAbandonedEmpty: "Inget \xF6vergivet. Du ser klart det du b\xF6rjar p\xE5.",
+          profModQuizTitle: "Vad du kan, mot vad du ser",
+          profModQuizDesc: "Dina resultat i filmquizet per genre, j\xE4mf\xF6rt med hur mycket du faktiskt tittar p\xE5 genren.",
+          profModQuizNote: "Fr\xE5n filmquizet",
+          profPrevNoCapsule: "Ingen kapsel \xE4n",
+          profPrevOpens: "\xD6ppnas",
+          profPrevTogether: "{n} filmer tillsammans",
+          profPrevEmpty: "Inget h\xE4r \xE4n",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "L\xE4ngsta maraton",
+          profRecLatestNight: "Senaste kv\xE4llen",
+          profRecMostInDay: "Flest filmer p\xE5 en dag",
+          profRecLongestFilm: "L\xE4ngsta film",
+          profRecMostRewatched: "Flest omtittningar",
+          profRecStreak: "L\xE4ngsta svit",
+          profRecStreakValue: "{n} dagar",
+          profDayPl0: "m\xE5ndagar",
+          profDayPl1: "tisdagar",
+          profDayPl2: "onsdagar",
+          profDayPl3: "torsdagar",
+          profDayPl4: "fredagar",
+          profDayPl5: "l\xF6rdagar",
+          profDayPl6: "s\xF6ndagar",
+          profColorMonthCount: "{month}: {n} filmer",
+          profColorMoodRecord: "\xC5rets rekordm\xE5nad",
+          profColorMoodDark: "\xC5rets m\xF6rkaste m\xE5nad",
+          profColorMoodBright: "\xC5rets ljusaste m\xE5nad",
+          profColorUseBg: "Anv\xE4nd som profilbakgrund",
+          profColorRemoveBg: "Ta bort profilbakgrund",
+          profColorBgSet: "Remsan ligger nu bakom din profil.",
+          profColorExport: "Exportera som bild",
+          profColorShareTitle: "F\xE4rg\xE5ret {year}",
+          profColorFilms: "{n} filmer",
+          profColorEmpty: "Inga sedda filmer i \xE5r \xE4n.",
+          profColorNoBarcodeNote: "Gr\xE5 strimmor = filmer utan barcode \xE4n. Spela dem i Lumio s\xE5 fylls f\xE4rgen i.",
+          profShareSaved: "Bilden \xE4r sparad.",
+          profShareFailed: "Bilden gick inte att skapa.",
+          profShareNoLan: "Hittade ingen n\xE4tverksadress f\xF6r telefonen.",
+          profShareScan: "Skanna med telefonen f\xF6r att spara bilden.",
+          profClockTopTime: "Topptimme",
+          profClockFilms: "Filmer",
+          profClockUsual: "Oftast",
+          profClockBigNight: "Veckans stora kv\xE4ll.",
+          profClockWith: "Oftast med {name}.",
+          profClockEmpty: "Starta n\xE5gra filmer s\xE5 fylls klockan i.",
+          profRecNew: "Nytt",
+          profRecMarathonHow: "{n} i rad fr\xE5n {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "i rad, till {date}",
+          profRecEmpty: "Rekorden dyker upp n\xE4r du har n\xE5gra kv\xE4llar bakom dig.",
+          profPrevMatch: "smakmatch med {name}",
+          profCouchUsual: "Oftast: {day} {time}",
+          profCouchDisagree: "Oenigast om: {genre}",
+          profCouchTonight: "Kv\xE4llens film f\xF6r er b\xE5da",
+          profCouchReasonBoth: "P\xE5 b\xE5da listorna",
+          profCouchReasonRec: "Liknar {title}",
+          profCouchStart: "Starta en kv\xE4ll ihop",
+          profCouchSolo: "L\xE4gg till en profil till s\xE5 ser du vem du tittar med.",
+          profCouchHint: "V\xE4lj vem som tittar med n\xE4r du startar en film, s\xE5 fylls det h\xE4r i.",
+          profCouchNoPicks: "Inga gemensamma f\xF6rslag \xE4n.",
+          profQuizLegendWatch: "Andel av ditt tittande",
+          profQuizLegendRight: "R\xE4tt svar i quizet",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "Du kan mest om {best}, fast du tittar mest p\xE5 {watched}.",
+          profQuizSummarySame: "Du kan {best} b\xE4st \u2014 och tittar mest p\xE5 det.",
+          profQuizWeak: "{weak} \xE4r din svaga punkt.",
+          profQuizEmpty: "Spela en runda filmquiz s\xE5 dyker resultaten upp h\xE4r.",
+          profCapStep1: "1 \xB7 V\xE4lj en film",
+          profCapStep2: "2 \xB7 N\xE4r ska den \xF6ppnas?",
+          profCapYears: "{n} \xE5r",
+          profCapLine: "{title} \xF6ppnas {date}.",
+          profCapSeal: "F\xF6rslut kapseln",
+          profCapSealing: "F\xF6rsluter\u2026",
+          profCapSealed: "F\xF6rseglad. Vi ses {date}.",
+          profCapAnother: "F\xF6rsegla en till",
+          profCapYours: "Dina kapslar",
+          profCapOpens: "\xD6ppnas {date}",
+          profCapOpened: "\xD6ppnad {date}",
+          profCapNone: "Inga kapslar \xE4n.",
+          profCapNoFilms: "Se klart en film f\xF6rst \u2014 sedan kan du skicka den fram\xE5t.",
+          profCapDueKicker: "Tidskapseln \xB7 \xF6ppnad i dag",
+          profCapDueLine: "Du f\xF6rseglade {title} den {date}.",
+          profCapOpen: "\xD6ppna",
+          profDiaryAsleep: "Somnade {time} \xB7 {p} %",
+          profGxDirectors: "Regiss\xF6rer",
+          profGxGenres: "Genrer",
+          profGxWhole: "\u2190 Hela galaxen",
+          profGxExplore: "Utforska",
+          profGxPickTitle: "V\xE4lj en stj\xE4rna eller en m\xF6rk zon",
+          profGxPickBody: "Stj\xE4rnbilder \xE4r regiss\xF6rer du f\xF6ljt l\xE4nge. Streckade cirklar \xE4r genrer du n\xE4stan aldrig tittat p\xE5.",
+          profGxStar: "Stj\xE4rna",
+          profGxSeenTimes: "Sedd {n} g\xE5nger \xB7 senast {date}",
+          profGxSeenOnce: "Sedd en g\xE5ng \xB7 {date}",
+          profGxNextStar: "N\xE4sta stj\xE4rna \u2192",
+          profGxDetails: "Detaljer",
+          profGxHunt: "Filmografijakt",
+          profGxDarkZone: "M\xF6rk zon",
+          profGxZoneBetween: "{n} sedda. Ligger mellan {a} och {b}.",
+          profGxZoneNear: "{n} sedda. Ligger intill {a}.",
+          profGxZoneEdge: "{n} sedda. Ett outforskat h\xF6rn.",
+          profGxOkHint: "p\xE5 zonen f\xF6r att flyga dit",
+          profGxFly: "Flyg dit",
+          profGxLightFirst: "T\xE4nd de f\xF6rsta stj\xE4rnorna",
+          profGxLoading: "Letar filmer\u2026",
+          profGxNoSuggestions: "Inga f\xF6rslag just nu. F\xF6rs\xF6k igen senare.",
+          profGxPlay: "Spela",
+          profGxConstellations: "Stj\xE4rnbilder",
+          profGxZones: "M\xF6rka zoner",
+          settingsPageProfilePage: "Profilsida",
+          ppWeatherGroup: "V\xE4der i dagboken",
+          ppWeatherToggle: "Spara v\xE4dret",
+          ppWeatherToggleDesc: "N\xE4r en film slutar h\xE4mtar Lumio v\xE4dret f\xF6r din ort en g\xE5ng (Open-Meteo, inget konto). Av: inga uppslag alls.",
+          ppWeatherPlace: "Ort",
+          ppWeatherNoPlace: "Ingen ort vald \xE4n.",
+          ppWeatherSearchPh: "t.ex. G\xF6teborg",
+          ppWeatherSearch: "S\xF6k",
+          ppWeatherSearching: "S\xF6ker\u2026",
+          ppWeatherNoResults: "Ingen ort hittades.",
+          ppWeatherFailed: "S\xF6kningen misslyckades. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
+          ppWeatherCredit: "V\xE4derdata fr\xE5n Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "hittills i \xE5r",
+          profWrPrev: "F\xF6reg\xE5ende",
+          profWrNext: "N\xE4sta",
+          profWrNotEnough: "Wrapped beh\xF6ver minst 10 sessioner under {year}. Forts\xE4tt titta!",
+          profWrIntroTitle: "Ditt \xE5r\ni film.",
+          profWrIntroBody: "{n} stj\xE4rnor senare. Tryck f\xF6r att b\xF6rja.",
+          profWrIntroBodyTv: "{n} stj\xE4rnor senare. Tryck \u25B6 f\xF6r att b\xF6rja.",
+          profWrGuessKicker: "Gissa f\xF6rst",
+          profWrGuessQ: "Vilken genre tittade du mest p\xE5 i \xE5r?",
+          profWrGuessRight: "Helt r\xE4tt. {genre}, med {h} timmar.",
+          profWrGuessWrong: "N\xE4ra. Det blev {genre}, med {h} timmar.",
+          profWrNoGenres: "Inte tillr\xE4ckligt med genredata \xE4n.",
+          profWrHoursKicker: "Du tittade i",
+          profWrHoursUnit: "timmar",
+          profWrDays: "= {n} dygn i soffan",
+          profWrInterstellar: "= {n} Interstellar i rad",
+          profWrEpisodes: "= {n} avsnitt av en halvtimmesserie",
+          profWrGenreKicker: "Genretopplistan",
+          profWrGenreWon: "{genre} vann.",
+          profWrHoursShort: "{h} tim",
+          profWrGoldenKicker: "Gyllene timmen",
+          profWrGoldenBody: "Klockslaget d\xE5 du oftast tryckte p\xE5 play.",
+          profWrStarsKicker: "Dina stj\xE4rnor",
+          profWrStarsTitle: "Sk\xE5despelarna du s\xE5g mest.",
+          profWrStarsNone: "Inte tillr\xE4ckligt med rollistor \xE4n.",
+          profWrStarsFilms: "{n} filmer",
+          profWrRewatchKicker: "Mest omsedda",
+          profWrRewatchNone: "Inga omtittningar i \xE5r \u2014 alltid n\xE5got nytt.",
+          profWrSleepTitle: "{n} g\xE5nger somnade du.",
+          profWrSleepNone: "Du h\xF6ll dig vaken hela \xE5ret.",
+          profWrBuddyTitle: "Du och {name} s\xE5g {n} filmer ihop.",
+          profWrBuddyNone: "Mest du och sk\xE4rmen i \xE5r.",
+          profWrPersKicker: "Din filmpersonlighet",
+          profWrTraitNight: "Nattuggla",
+          profWrTraitNightValue: "startar {time}",
+          profWrTraitGenre: "Genretrogen",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Omtittare",
+          profWrTraitRewatchValue: "{n} omtittningar",
+          profWrTraitNap: "Somnar",
+          profWrTraitNapValue: "vid {p} %",
+          profWrShareTitle: "Dela ditt \xE5r.",
+          profWrShare: "Dela",
+          profWrReplay: "Spela igen",
+          profWrCardHours: "totalt",
+          profWrCardGenre: "toppgenre",
+          profWrCardTitle: "mest spelad",
+          profWrCardNaps: "tupplurar",
+          profWrBNight: "Nattugglan",
+          profWrBRewatch: "Omtittaren",
+          profWrBNap: "Tupplursm\xE4staren",
+          profWrBMarathon: "Maratonl\xF6paren",
+          profWrBExplorer: "Uppt\xE4ckaren",
+          profWrAScifi: "fr\xE5n rymden",
+          profWrADrama: "med hj\xE4rtat utanp\xE5",
+          profWrAHorror: "fr\xE5n m\xF6rkret",
+          profWrAComedy: "som skrattar f\xF6rst",
+          profWrAAnimation: "med tecknad sj\xE4l",
+          profWrADocumentary: "som vill veta",
+          profWrAThriller: "p\xE5 helsp\xE4nn",
+          profWrAAction: "i full fart",
+          profWrARomance: "med rosa glas\xF6gon",
+          profWrACrime: "fr\xE5n undre v\xE4rlden",
+          profWrAFantasy: "fr\xE5n sagolandet",
+          profWrAOther: "utan karta"
         }
       };
       detachedLangContextValue = {
@@ -10845,34 +11319,50 @@
   function isCompleteAt(pos, duration) {
     return duration > 0 && pos / duration >= COMPLETE_RATIO;
   }
-  var COMPLETE_RATIO;
+  var COMPLETE_RATIO, VIEWING_DEDUPE_WINDOW_MS;
   var init_types = __esm({
     "lib/watch-journal/types.ts"() {
       "use strict";
       COMPLETE_RATIO = 0.9;
+      VIEWING_DEDUPE_WINDOW_MS = 36 * 36e5;
     }
   });
 
   // lib/watch-journal/recorder-core.ts
+  function defaultCompanions(last2, nowMs) {
+    if (!last2 || last2.ids.length === 0) return [];
+    return nowMs - last2.endedAtMs <= COMPANIONS_WINDOW_MS ? [...last2.ids] : [];
+  }
   function createRecorder(deps) {
-    let open = null;
+    let open2 = null;
     let openKey = "";
     let lastTickMs = 0;
     let lastPos = 0;
     let lastPersistMs = null;
+    let chosen = null;
+    let chosenAtMs = 0;
+    function choiceFor(nowMs) {
+      if (chosen && nowMs - chosenAtMs <= COVIEWER_CHOICE_TTL_MS) return [...chosen];
+      chosen = null;
+      return deps.defaultCoViewers?.() ?? [];
+    }
     function close() {
-      if (open && open.played >= MIN_PLAYED_S) deps.persist({ ...open }, true);
-      open = null;
+      if (open2 && open2.played >= MIN_PLAYED_S) deps.persist({ ...open2 }, true);
+      open2 = null;
       openKey = "";
+    }
+    function finish() {
+      close();
+      chosen = null;
     }
     function tick(input, final = false) {
       if (input.type === "audiobook" || !(input.duration > 0)) return;
       const nowMs = deps.now();
       const key = viewingKey(input);
-      if (open && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close();
+      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close();
       const iso = new Date(nowMs).toISOString();
-      if (!open) {
-        open = {
+      if (!open2) {
+        open2 = {
           id: deps.newId(),
           profileId: deps.profileId(),
           mediaId: input.mediaId,
@@ -10891,38 +11381,57 @@
           duration: input.duration,
           played: 0,
           completed: isCompleteAt(input.position, input.duration),
-          coViewers: []
+          coViewers: choiceFor(nowMs)
         };
         openKey = key;
         lastPos = input.position;
         lastPersistMs = null;
       } else {
         const advance = input.position - lastPos;
-        if (advance > 0 && advance <= MAX_TICK_ADVANCE_S) open.played += advance;
+        if (advance > 0 && advance <= MAX_TICK_ADVANCE_S) open2.played += advance;
         lastPos = input.position;
-        open.endPos = input.position;
-        open.duration = input.duration;
-        open.endedAt = iso;
-        open.updatedAt = iso;
-        if (isCompleteAt(input.position, input.duration)) open.completed = true;
+        open2.endPos = input.position;
+        open2.duration = input.duration;
+        open2.endedAt = iso;
+        open2.updatedAt = iso;
+        if (isCompleteAt(input.position, input.duration)) open2.completed = true;
       }
       lastTickMs = nowMs;
-      if (open.played < MIN_PLAYED_S) {
-        if (final) close();
+      if (chosen) chosenAtMs = nowMs;
+      if (open2.played < MIN_PLAYED_S) {
+        if (final) finish();
         return;
       }
       if (final) {
-        close();
+        finish();
         return;
       }
       if (lastPersistMs === null || nowMs - lastPersistMs >= PERSIST_EVERY_MS) {
         lastPersistMs = nowMs;
-        deps.persist({ ...open }, false);
+        deps.persist({ ...open2 }, false);
       }
     }
-    return { tick, current: () => open };
+    function setCoViewers(ids) {
+      const nowMs = deps.now();
+      chosen = [...new Set(ids)];
+      chosenAtMs = nowMs;
+      if (open2) {
+        open2.coViewers = [...chosen];
+        open2.updatedAt = new Date(nowMs).toISOString();
+      }
+    }
+    function coViewers() {
+      return open2 ? [...open2.coViewers] : choiceFor(deps.now());
+    }
+    function markAsleep(pos, atMs) {
+      if (!open2) return false;
+      open2.fellAsleep = { at: new Date(atMs).toISOString(), pos };
+      open2.updatedAt = new Date(deps.now()).toISOString();
+      return true;
+    }
+    return { tick, current: () => open2, setCoViewers, coViewers, markAsleep };
   }
-  var SESSION_GAP_MS, MIN_PLAYED_S, PERSIST_EVERY_MS, MAX_TICK_ADVANCE_S;
+  var SESSION_GAP_MS, MIN_PLAYED_S, PERSIST_EVERY_MS, MAX_TICK_ADVANCE_S, COVIEWER_CHOICE_TTL_MS, COMPANIONS_WINDOW_MS;
   var init_recorder_core = __esm({
     "lib/watch-journal/recorder-core.ts"() {
       "use strict";
@@ -10931,6 +11440,8 @@
       MIN_PLAYED_S = 60;
       PERSIST_EVERY_MS = 6e4;
       MAX_TICK_ADVANCE_S = 10;
+      COVIEWER_CHOICE_TTL_MS = 5 * 6e4;
+      COMPANIONS_WINDOW_MS = 12 * 36e5;
     }
   });
 
@@ -11005,31 +11516,181 @@
     }
   });
 
+  // lib/watch-journal/player-open.ts
+  function isPlayerOpen() {
+    return open;
+  }
+  var open;
+  var init_player_open = __esm({
+    "lib/watch-journal/player-open.ts"() {
+      open = false;
+    }
+  });
+
+  // lib/watch-journal/weather.ts
+  function getWeatherPrefs() {
+    try {
+      const raw = getScopedStorageItem(WEATHER_PREFS_KEY);
+      if (!raw) return OFF;
+      const p = JSON.parse(raw);
+      const place = p.place && typeof p.place.lat === "number" && typeof p.place.lon === "number" ? p.place : null;
+      return { enabled: p.enabled === true, place };
+    } catch {
+      return OFF;
+    }
+  }
+  function forecastUrl(lat, lon) {
+    return `${FORECAST_URL}?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=weather_code,temperature_2m`;
+  }
+  function parseForecast(json) {
+    const c = json?.current;
+    if (!c || typeof c.weather_code !== "number" || typeof c.temperature_2m !== "number") return null;
+    return { code: c.weather_code, tempC: c.temperature_2m };
+  }
+  function schedule(ms) {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      void drain();
+    }, ms);
+  }
+  async function drain() {
+    const nowMs = Date.now();
+    for (let i = pending2.length - 1; i >= 0; i--) {
+      if (nowMs - Date.parse(pending2[i].endedAt) > WEATHER_MAX_AGE_MS) pending2.splice(i, 1);
+    }
+    if (pending2.length === 0) return;
+    if (isPlayerOpen()) {
+      schedule(WEATHER_RETRY_MS);
+      return;
+    }
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place) {
+      pending2.length = 0;
+      return;
+    }
+    let weather = null;
+    try {
+      const r = await fetch(forecastUrl(prefs.place.lat, prefs.place.lon));
+      if (r.ok) weather = parseForecast(await r.json());
+    } catch {
+    }
+    if (!weather) {
+      schedule(WEATHER_RETRY_MS * 5);
+      return;
+    }
+    const iso = (/* @__PURE__ */ new Date()).toISOString();
+    for (const s of pending2.splice(0)) upsertSession({ ...s, weather, updatedAt: iso });
+  }
+  function queueSessionWeather(s) {
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place || s.weather || s.seeded) return;
+    if (!pending2.some((p) => p.id === s.id)) pending2.push(s);
+    schedule(0);
+  }
+  var WEATHER_PREFS_KEY, FORECAST_URL, WEATHER_RETRY_MS, WEATHER_MAX_AGE_MS, OFF, pending2, timer;
+  var init_weather = __esm({
+    "lib/watch-journal/weather.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      init_player_open();
+      init_store();
+      WEATHER_PREFS_KEY = "profile_weather_v1";
+      FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+      WEATHER_RETRY_MS = 6e4;
+      WEATHER_MAX_AGE_MS = 3 * 36e5;
+      OFF = { enabled: false, place: null };
+      pending2 = [];
+      timer = null;
+    }
+  });
+
   // lib/watch-journal/recorder.ts
+  function loadLast() {
+    try {
+      const raw = getScopedStorageItem(LAST_COMPANIONS_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      last = parsed && Array.isArray(parsed.ids) && typeof parsed.endedAtMs === "number" ? { ids: parsed.ids.filter((x) => typeof x === "string"), endedAtMs: parsed.endedAtMs } : null;
+    } catch {
+      last = null;
+    }
+  }
   function newId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
-  var recorder;
+  var LAST_COMPANIONS_KEY, last, recorder;
   var init_recorder = __esm({
     "lib/watch-journal/recorder.ts"() {
       init_profile_storage_shim();
       init_recorder_core();
       init_store();
+      init_weather();
+      LAST_COMPANIONS_KEY = "journal_last_companions_v1";
+      last = null;
+      if (typeof window !== "undefined") {
+        scheduleIdle(loadLast);
+        window.addEventListener("lumio-profile-changed", () => {
+          last = null;
+          scheduleIdle(loadLast);
+        });
+      }
       recorder = createRecorder({
         now: () => Date.now(),
         newId,
         profileId: () => getActiveProfileId() ?? "default",
         persist: (s, final) => {
           upsertSession(s);
-          if (final && typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_SYNC_WORTHY_EVENT));
-        }
+          if (!final) return;
+          if (typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_SYNC_WORTHY_EVENT));
+          scheduleIdle(() => queueSessionWeather(s));
+          if (s.profileId !== (getActiveProfileId() ?? "default")) return;
+          const record = { ids: [...s.coViewers], endedAtMs: Date.parse(s.endedAt) };
+          last = record;
+          scheduleIdle(() => {
+            try {
+              setScopedStorageItem(LAST_COMPANIONS_KEY, JSON.stringify(record));
+            } catch {
+            }
+          });
+        },
+        defaultCoViewers: () => defaultCompanions(last, Date.now())
       });
     }
   });
 
-  // lib/watch-journal/player-open.ts
-  var init_player_open = __esm({
-    "lib/watch-journal/player-open.ts"() {
+  // lib/avatars/catalog.ts
+  var PROFILE_COLORS;
+  var init_catalog = __esm({
+    "lib/avatars/catalog.ts"() {
+      PROFILE_COLORS = [
+        "#7dd3fc",
+        "#60a5fa",
+        "#a78bfa",
+        "#f472b6",
+        "#fb7185",
+        "#fb923c",
+        "#fbbf24",
+        "#a3e635",
+        "#34d399",
+        "#22d3ee"
+      ];
+    }
+  });
+
+  // components/ui/profile-avatar.tsx
+  var DEFAULT_COLOR;
+  var init_profile_avatar = __esm({
+    "components/ui/profile-avatar.tsx"() {
+      "use client";
+      init_catalog();
+      init_jsx_runtime_shim();
+      DEFAULT_COLOR = PROFILE_COLORS[0];
+    }
+  });
+
+  // lib/sleep-timer.ts
+  var init_sleep_timer = __esm({
+    "lib/sleep-timer.ts"() {
     }
   });
 
@@ -11154,7 +11815,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -11444,8 +12104,8 @@
         useEffect(() => {
           if (!state.status) return;
           setChipUntil(Date.now() + CHIP_MS);
-          const timer = setTimeout(() => setChipUntil(0), CHIP_MS);
-          return () => clearTimeout(timer);
+          const timer2 = setTimeout(() => setChipUntil(0), CHIP_MS);
+          return () => clearTimeout(timer2);
         }, [state.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
@@ -11925,6 +12585,9 @@
       init_transparent_webview();
       init_video_progress();
       init_recorder();
+      init_profile_storage_shim();
+      init_profile_avatar();
+      init_sleep_timer();
       init_player_open();
       init_use_barcode_recorder();
       init_barcode_settings();
@@ -13743,7 +14406,7 @@
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/emby-plugin/plugins/emby/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     EmbyPlugin: () => EmbyPlugin,
@@ -13751,7 +14414,7 @@
   });
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/emby-plugin/plugins/emby/runtime/emby-storage.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-storage.ts
   init_plugin_sdk();
   var SETTINGS_KEY = "emby_settings";
   var DEVICE_KEY = "emby_device_id";
@@ -13823,7 +14486,7 @@
     return settings.serverId && settings.userId ? `emby-${settings.serverId}-${settings.userId.slice(0, 8)}` : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/emby-plugin/plugins/emby/runtime/emby-api.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-api.ts
   function authParams(token) {
     const params = new URLSearchParams({
       "X-Emby-Client": "Lumio",
@@ -13842,7 +14505,7 @@
   }
   async function request(target, path, init) {
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), init?.timeoutMs ?? 2e4);
+    const timer2 = window.setTimeout(() => controller.abort(), init?.timeoutMs ?? 2e4);
     try {
       const response = await fetch(buildUrl(target, path, init?.query), {
         method: init?.form ? "POST" : "GET",
@@ -13855,7 +14518,7 @@
       const text = await response.text();
       return text ? JSON.parse(text) : null;
     } finally {
-      window.clearTimeout(timer);
+      window.clearTimeout(timer2);
     }
   }
   async function discoverServer(serverUrl) {
@@ -13969,7 +14632,7 @@
     await request(settings, `/Users/${settings.userId}/PlayedItems/${itemId}`, { form: {}, timeoutMs: 8e3 });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/emby-plugin/plugins/emby/runtime/emby-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-library-provider.ts
   var EMBY_LIBRARY_PROVIDER_ID = "emby";
   var PAGE_SIZE = 200;
   var EPISODE_CONCURRENCY = 3;
@@ -14193,7 +14856,7 @@
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/emby-plugin/plugins/emby/runtime/emby-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -14439,7 +15102,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/emby-plugin/plugins/emby/runtime/emby-fallback-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/emby-fallback-page.tsx
   init_plugin_sdk();
   // Luft under rutan: på mobilen låg den kant i kant med skärmens nederkant
   // (Jerry 2026-09-07). Inline, inte Tailwind — pluginets klasser genereras
@@ -14453,7 +15116,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/emby-plugin/plugins/emby/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/emby/runtime/index.ts
   var EmbyPlugin = {
     id: "com.lumio.emby",
     name: { en: "Emby", sv: "Emby" },

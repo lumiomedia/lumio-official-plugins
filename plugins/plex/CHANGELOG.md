@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.34
+
+- Loads again on Lumio 0.1.617. The copy of the plugin that ships inside that app version stopped at startup, so the plugin never appeared; this version replaces it automatically.
+
 ## 1.0.33
 
 - Large libraries with many series can be indexed without the scan stopping halfway. Series were sent to Lumio 200 at a time with every episode included, which could be several megabytes per request. That was more than Lumio accepts, so the scan stopped with "Failed to fetch". Titles are now sent in smaller batches.

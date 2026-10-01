@@ -388,7 +388,7 @@
           handler(eventData);
         }, options);
       }
-      async function emit2(event, payload) {
+      async function emit3(event, payload) {
         await core.invoke("plugin:event|emit", {
           event,
           payload
@@ -402,7 +402,7 @@
           payload
         });
       }
-      exports.emit = emit2;
+      exports.emit = emit3;
       exports.emitTo = emitTo;
       exports.listen = listen3;
       exports.once = once;
@@ -883,6 +883,7 @@
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
     const [paused, setPaused] = useState(false);
+    const pendingPauseRef = useRef(null);
     const [ended, setEnded] = useState(false);
     const [sid, setSid] = useState(null);
     const [fileLoaded, setFileLoaded] = useState(false);
@@ -912,7 +913,9 @@
         setTimePos(s.timePos);
         prev.timePos = s.timePos;
         setDuration(s.duration);
-        setPaused(s.paused);
+        const pending4 = pendingPauseRef.current;
+        if (pending4 && (s.paused === pending4.value || Date.now() > pending4.until)) pendingPauseRef.current = null;
+        if (!pendingPauseRef.current) setPaused(s.paused);
         setEnded(s.ended);
         setPausedForCache(s.pausedForCache);
         setExternalDisplay(s.externalDisplay === true);
@@ -972,6 +975,8 @@
       void np({ cmd: "seek", value: Math.max(0, prevRef.current.timePos + delta) });
     }, []);
     const setPlayPause = useCallback((pause) => {
+      pendingPauseRef.current = { value: pause, until: Date.now() + 1500 };
+      setPaused(pause);
       void np({ cmd: "setPause", value: pause });
     }, []);
     const setVolume = useCallback((vol) => {
@@ -1120,7 +1125,7 @@
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-        const emit2 = (patch) => {
+        const emit3 = (patch) => {
           state2 = { ...state2, ...patch };
           for (const l of [...listeners9]) l(state2);
         };
@@ -1145,10 +1150,10 @@
             v.playsInline = true;
             v.style.cssText = "position:absolute;object-fit:contain;background:#000;left:0;top:0;width:0;height:0";
             if (pendingRect) applyRect(v, pendingRect);
-            v.addEventListener("loadeddata", () => emit2({ fileLoaded: true }));
-            v.addEventListener("playing", () => emit2({ firstFrameRendered: true, paused: false }));
-            v.addEventListener("pause", () => emit2({ paused: true }));
-            v.addEventListener("error", () => emit2({ loadFailed: true }));
+            v.addEventListener("loadeddata", () => emit3({ fileLoaded: true }));
+            v.addEventListener("playing", () => emit3({ firstFrameRendered: true, paused: false }));
+            v.addEventListener("pause", () => emit3({ paused: true }));
+            v.addEventListener("error", () => emit3({ loadFailed: true }));
             ensureLayer().appendChild(v);
             video = v;
             const src = sourceCacheUrl(opts.url, opts.requestHeaders) ?? opts.url;
@@ -1202,7 +1207,7 @@
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
-            if (reason) emit2({ loadFailed: true });
+            if (reason) emit3({ loadFailed: true });
             listeners9.clear();
           }
         };
@@ -1231,10 +1236,10 @@
   }
   function teardownSharedListenerIfIdle() {
     if (dispatchersByRustId.size > 0) return;
-    const pending2 = sharedUnlisten;
-    if (!pending2) return;
+    const pending4 = sharedUnlisten;
+    if (!pending4) return;
     closingSharedListener = true;
-    void pending2.then((unlisten) => {
+    void pending4.then((unlisten) => {
       if (!closingSharedListener) return;
       sharedUnlisten = null;
       unlisten();
@@ -1261,7 +1266,7 @@
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit2 = (patch) => {
+    const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
       for (const listener of [...listeners9]) listener(state2);
     };
@@ -1271,7 +1276,7 @@
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
-        if (!destroyed) emit2({ loadFailed: true });
+        if (!destroyed) emit3({ loadFailed: true });
         return null;
       }
       rustId = sid;
@@ -1293,7 +1298,7 @@
             }
           });
         } catch {
-          emit2({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
+          emit3({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
           return;
         }
         if (!opts.muted) {
@@ -1350,7 +1355,7 @@
       },
       async destroy(reason) {
         destroyed = true;
-        if (reason) emit2({ loadFailed: true });
+        if (reason) emit3({ loadFailed: true });
         listeners9.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
@@ -1416,7 +1421,7 @@
   function createDroidSurfaceBackend() {
     const listeners9 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit2 = (patch) => {
+    const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
       for (const listener of [...listeners9]) listener(state2);
     };
@@ -1479,7 +1484,7 @@
       if (!createPromise) {
         createPromise = createNativeSurface().then((id) => {
           if (id === null) {
-            if (!destroyed) emit2({ loadFailed: true });
+            if (!destroyed) emit3({ loadFailed: true });
             return null;
           }
           nativeId = id;
@@ -1540,7 +1545,7 @@
         destroyed = true;
         generation++;
         stopPolling();
-        if (reason) emit2({ loadFailed: true });
+        if (reason) emit3({ loadFailed: true });
         listeners9.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
@@ -2092,12 +2097,16 @@
   });
 
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
-  var sdk, getActiveProfile, getActiveProfileId, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged, profileHasPin, checkProfilePin;
+  var sdk, getActiveProfile, getActiveProfileId, getProfiles, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged, profileHasPin, checkProfilePin;
   var init_profile_storage_shim = __esm({
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
       getActiveProfile = () => sdk.getActiveProfile();
       getActiveProfileId = () => sdk.getActiveProfileId();
+      getProfiles = () => {
+        const p = sdk?.getActiveProfile?.();
+        return p ? [p] : [];
+      };
       getProfileStorageKey = (baseKey, profileId) => sdk.getProfileStorageKey(baseKey, profileId);
       getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
       setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
@@ -3128,6 +3137,17 @@
           plNextEpisode: "Next episode",
           plSwitchStream: "Switch stream",
           plStreams: "Streams",
+          plSleepTimer: "Sleep timer",
+          plSleepShort: "Sleep",
+          plSleepOff: "Off",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "End of episode or film",
+          plSleepStillThere: "Are you still there?",
+          plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
+          plCompanions: "Who's watching",
+          plWhoWatches: "Who's watching with you?",
+          plCompanionsJustMe: "Just me",
+          plCompanionsShort: "With",
           audioDelayTitle: "Audio delay",
           audioDelayHint: "Adjust lip sync. A positive value plays audio later.",
           btAudioAutoOffset: "Compensate for Bluetooth latency",
@@ -3474,6 +3494,8 @@
           tvMenuVariantHint: "The pill opens the menu when you want it; the rail stays along the left edge.",
           tvMenuVariantPill: "Pill",
           tvMenuVariantRail: "Rail",
+          tvButtonScale: "Button size",
+          tvButtonScaleDesc: "Size of the buttons on the home hero and the details page (Play, My list, Follow \u2026) in TV mode.",
           tvMenuScale: "Menu size",
           tvMenuScaleDesc: "Scales the side menu \u2014 icons and labels \u2014 in TV mode.",
           menuScale: "Menu scale",
@@ -4317,6 +4339,64 @@
           appUpdateChannelHint: "Beta gets test builds before they are released to everyone.",
           exitOnCloseTitle: "Quit fully on close",
           exitOnCloseHint: "Android/TV: end the process when you leave the app instead of keeping it in the background. Frees memory on small boxes.",
+          exitAppAction: "Quit Lumio",
+          exitAppTitle: "Quit Lumio?",
+          exitAppConfirm: "Quit",
+          quizMenuLabel: "Film quiz",
+          quizLobbyTitle: "Who knows their movies?",
+          quizLobbyIntro: "Scan the code with your phone to join. The questions come from movies you have watched.",
+          quizOrGoTo: "Or go to",
+          quizPlayers: "Players",
+          quizWaitingMore: "Waiting for more \u2026",
+          quizSourcesLabel: "Questions from",
+          quizSourceSeen: "Watched movies",
+          quizSourceList: "My list",
+          quizSourceColl: "Whole collections",
+          quizStart: "Start quiz",
+          quizBuilding: "Building questions \xB7 %s movies",
+          quizTooFew: "Too few movies. Watch or save at least four.",
+          quizTooFewGenre: "Too few seen {genre} titles. Try another genre.",
+          quizRateLimited: "TMDB is busy, try again in a moment.",
+          quizLanOff: "Phones can only reach this screen when LAN streaming is on in Settings.",
+          quizCode: "Code",
+          quizQuestionOf: "Question %1 of %2",
+          quizAnswered: "%1 of %2 have answered",
+          quizAnswerShown: "Answer shown",
+          quizShowAnswer: "Show answer",
+          quizStanding: "Standings",
+          quizFinalStanding: "Final standings",
+          quizStandingAfter: "Standings after question %s",
+          quizNextQuestion: "Next question",
+          quizPlayAgain: "Play again",
+          quizExit: "Quit",
+          quizCancelTitle: "Cancel the quiz?",
+          quizCloseTitle: "Close Film quiz?",
+          quizCancelBody: "Players will be disconnected and the standings are not saved.",
+          quizKeepPlaying: "Keep playing",
+          quizKindStill: "Still",
+          quizKindClip: "Clip",
+          quizKindTagline: "Tagline",
+          quizKindAltTitle: "Foreign title",
+          quizKindCast: "Cast",
+          quizKindSort: "Collection",
+          quizPromptStill: "Which movie?",
+          quizPromptClip: "Which movie is this clip from?",
+          quizPromptTagline: "Which movie has this tagline?",
+          quizPromptAltTitle: "Which movie is this?",
+          quizPromptCast: "Who was not in it?",
+          quizPromptSort: "Sort the collection, oldest first",
+          quizSortOnPhone: "Sort on your phone, oldest first.",
+          quizAllRight: "All correct: %s",
+          quizNobodyRight: "Nobody got the order right",
+          quizAudioOnly: "Audio only",
+          quizShowVideo: "Show video",
+          quizLangDE: "German title",
+          quizLangFR: "French title",
+          quizLangSE: "Swedish title",
+          quizKeyHints: "\u2191 \u2193 \u2190 \u2192 Move \xB7 OK Select \xB7 \u27F5 Back",
+          quizCreateFailed: "Could not start the quiz. Try again in a moment.",
+          quizClose: "Close",
+          quizBankError: "Could not build questions. Check the connection and try again.",
           creditsFinishedSeason: "Season %s is over",
           creditsNextSeason: "Season %s",
           creditsFinishedTitle: "You finished",
@@ -4927,6 +5007,8 @@
           ptSourcesHint: "External sources you have added yourself are listed here.",
           ptNoSources: "No sources added yet. Add a GitHub repo above to get started.",
           ptInstalledBadge: "Installed",
+          ptInstallFailed: "Could not install the plugin.",
+          ptSourceReaddZip: "Add the ZIP file again to install",
           ptUpdating: "Checking for the latest version\u2026",
           ptUpdatedTo: "Updated to {version} \u2014 restart to apply.",
           ptUpToDate: "Already on the latest version.",
@@ -4970,6 +5052,8 @@
           libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
           libraryRowSuffix: "in your library",
           libraryModeTab: "Library",
+          libraryModeChip: "Library mode",
+          libraryTabRowsCaption: "Rows per library:",
           libraryModeTitle: "Library mode",
           libraryModeHint: "When a library is the home page, every row is filtered to what you own. Rows with nothing indexed are hidden; the count shows how many titles each row can offer right now.",
           libraryUseAsHome: "Use as home page",
@@ -4985,6 +5069,30 @@
           localLibraryEmpty: "No folders yet.",
           localLibraryScanning: "Indexing\u2026 {done}",
           localLibraryNotIndexed: "Not indexed yet",
+          webdavLibraryTitle: "Network folders (WebDAV)",
+          webdavLibraryHint: "A folder on a WebDAV server becomes its own library with a menu entry, just like a local folder. Files are matched against TMDB by name and stream through the app \u2014 the password stays on this device.",
+          webdavLibraryAdd: "Add folder",
+          webdavLibraryUrl: "Server address",
+          webdavLibraryUsername: "Username",
+          webdavLibraryPassword: "Password",
+          webdavLibraryPasswordKeep: "Unchanged",
+          webdavLibraryName: "Name in the menu",
+          webdavLibraryNamePlaceholder: "Taken from the address if left empty",
+          webdavLibraryTest: "Test",
+          webdavLibraryTestOk: "Connection works",
+          webdavLibrarySave: "Save and index",
+          webdavLibraryCancel: "Cancel",
+          webdavLibraryEdit: "Edit",
+          webdavLibraryEmpty: "No network folders yet.",
+          webdavLibraryListing: "Listing folders\u2026 {done}/{total}",
+          webdavLibraryErrAuth: "The server rejected the username or password.",
+          webdavLibraryErrNotFound: "The folder was not found on the server.",
+          webdavLibraryErrNetwork: "Could not reach the server.",
+          webdavLibraryErrNotWebdav: "The address answered, but not as a WebDAV folder.",
+          webdavLibraryErrUrl: "Enter a full address starting with http:// or https://, without username or password in it.",
+          webdavLibraryErrTooLarge: "The folder is too large to list in one go. Point the address at a subfolder.",
+          webdavLibraryErrUpstream: "The server answered with an error. Try again in a while.",
+          webdavLibraryErrLocalOnly: "Network folders can only be changed on the device running Lumio.",
           libraryRowUnmatched: "Not identified",
           librarySourceNotIndexed: "Not indexed yet \u2014 build the index in the plugin's settings.",
           libraryModeOff: "No library is set as the home page. Turn it on under the library plugin's settings.",
@@ -5009,6 +5117,13 @@
           libraryEpisodeNotInLibrary: "This episode is not in your library",
           libraryRowNotLoaded: "not loaded yet",
           libraryRowRecent: "Recently added to your library",
+          libraryRowMovies: "Movies in your library",
+          tvLibraryTabRowsLabel: "Library tab",
+          tvLibraryTabRowsDesc: "Edit the rows of a library in the menu instead of a page above.",
+          tvLibraryTabRowsNone: "None",
+          libraryRowSeries: "Series in your library",
+          libraryTabRowsFollowHome: "This library shows the home screen rows until you change them here.",
+          libraryTabRowsUntouched: "Showing the recommended rows for this library. Your changes take over once you edit.",
           libraryRowContinue: "Library progress in Last watched",
           libraryRowUnseen: "Unseen favourites",
           libraryRowGenre: "Genre",
@@ -5478,7 +5593,305 @@
           pluginYoutubeMissingChannelId: "Channel ID is missing.",
           ptNeedsNewerApp: "A newer app version is required for this update.",
           ptScanSummary: "{updated} updated, {uptodate} already current, {failed} failed.",
-          ptScanNoUpdates: "All plugins are on the latest version."
+          ptScanNoUpdates: "All plugins are on the latest version.",
+          // Profile page (profilsida)
+          profKicker: "Lumio \xB7 Profile",
+          profYourProfile: "Your profile",
+          profSince: "Since {date} \xB7 {movies} films \xB7 {series} series",
+          profSwitch: "Switch profile",
+          profViewProfile: "View profile",
+          profMyProfile: "My profile",
+          profTabOverview: "Overview",
+          profTabGalaxy: "Taste galaxy",
+          profTabDiary: "Film diary",
+          profTabHunt: "Filmography hunt",
+          profTabWrapped: "Wrapped",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Move \xB7 OK Select \xB7 Back Close",
+          profEmptyFirstStar: "Watch your first film and the first star lights up.",
+          profGalaxyLine: "{stars} stars, {constellations} constellations and {zones} dark zones",
+          profGalaxyDesc: "Every film you've seen is a star. Directors form constellations.",
+          profViewingN: "Viewing {n}",
+          profSecondViewing: "Second time",
+          profDiaryList: "Diary",
+          profDiaryBook: "Autobiography",
+          profDiaryNote: "Written from what you watch in Lumio.",
+          profDiaryEmpty: "Nothing here yet.",
+          profApprox: "Approximate",
+          profChapters: "Chapters",
+          profChKicker: "Chapter {n} \xB7 {year}",
+          profChKickerOngoing: "Chapter {n} \xB7 {year} (ongoing)",
+          profChShort: "{n}. {year}",
+          profChTitles: "You watched {n} titles, about {h} hours.",
+          profChTop: "{title} was the one you came back to \u2013 {n} times.",
+          profChLate: "{p} % of your evenings started after ten.",
+          profChDirector: "{name} was your director of the year, with {n} films.",
+          profChTitleNight: "The year of late nights",
+          profChTitleDirector: "The year of {name}",
+          profChTitleRewatch: "The year of {title}",
+          profChTitleDefault: "A year in film",
+          profHuntEmpty: "See two films by the same director to start a hunt.",
+          profHuntKicker: "Filmography",
+          profHuntSeen: "You've seen {seen}/{total} {name}",
+          profHuntMissing: "{n} left to find.",
+          profHuntAllSeen: "You've seen them all.",
+          profHuntMakeRow: "Make a row",
+          profHuntMakeCollection: "Make a collection",
+          profHuntRowName: "{name} \u2013 still to see",
+          profHuntHomeRowMade: 'Row "{name}" added to your home screen.',
+          profHuntRowMade: 'Row "{name}" created \u2013 add it to your home screen from Settings.',
+          profHuntRowFailed: "Couldn't create the row \u2013 you may have too many rows.",
+          profHuntNew: "+ Hunt a new director",
+          profHuntSearchPh: "Search director",
+          profHuntDocs: "+ Documentaries",
+          profHuntShorts: "+ Short films",
+          profBadgeFirst: "First step",
+          profBadgeHalf: "Halfway",
+          profBadgeAlmost: "Almost there",
+          profBadgeComplete: "Complete",
+          profBadgeInOrder: "In order",
+          profWrappedTeaser: "{h} hours.\nAnd more.",
+          profWrappedKicker: "Lumio Wrapped {year}",
+          profWrappedPlay: "Play your year \u2192",
+          profMoreAboutYou: "More about you",
+          profClose: "Close",
+          profModColor: "Colour year",
+          profModColorLine: "Your year as a strip of film colours.",
+          profModSlept: "Fell asleep",
+          profModSleptLine: "Everything you drifted off to.",
+          profModCouch: "Couch buddies",
+          profModCouchLine: "Who you watch with, and what you agree on.",
+          profModClock: "Watch clock",
+          profModClockLine: "When in the week you watch.",
+          profModCapsule: "Time capsule",
+          profModCapsuleLine: "Seal a film for your future self.",
+          profModRecords: "Records",
+          profModRecordsLine: "Longest marathon, latest night and more.",
+          profModAbandoned: "Abandoned",
+          profModAbandonedLine: "Films you gave up on early.",
+          profModQuiz: "Quiz profile",
+          profModQuizLine: "What you watch vs what you know.",
+          profModBack: "\u2190 Profile",
+          profModColorTitle: "Your year as a single strip",
+          profModColorDesc: "Every stripe is a film's barcode, in the order you watched. Pick a month to see which films gave the colour.",
+          profModColorNote: "From your barcodes",
+          profModSleptTitle: "Films you fell asleep to",
+          profModSleptDesc: "The sleep timer knows exactly where you drifted off. Continue from there, or start over when you're more awake.",
+          profModSleptNote: "From the sleep timer",
+          profModCouchTitle: "Who you watch with",
+          profModCouchDesc: "Taste match per profile and picks that suit you both, based on what you've watched together and apart.",
+          profModCouchNote: `From "Who's watching?"`,
+          profModClockTitle: "When you watch",
+          profModClockDesc: "Weekday against time of day for everything you started. Pick a day to see your habits.",
+          profModClockNote: "From start times in the diary",
+          profModCapsuleTitle: "Send a film to the future",
+          profModCapsuleDesc: "Pick a film today. Lumio brings it back in a few years, together with today's diary page.",
+          profModCapsuleNote: "Opens on the home screen",
+          profModRecordsTitle: "Your personal records",
+          profModRecordsDesc: "Longest marathon, latest night and more. New records are marked when they fall.",
+          profModRecordsNote: "From the diary",
+          profModAbandonedTitle: "Films you gave up on",
+          profModAbandonedDesc: "Everything you left under 20 %. Give them a second chance, or let go for good.",
+          profModAbandonedNote: "From the diary",
+          profSleptSummary: "You fall asleep most often on {day}, on average {m} minutes in.",
+          profSleptTopGenre: "{genre} accounts for {n} of {total} naps.",
+          profSleptWhen: "{date} \xB7 fell asleep {time}",
+          profSleptResume: "Continue {time}",
+          profSleptRestart: "Start over",
+          profSleptRemove: "Remove",
+          profSleptEmpty: "The list is empty. You woke up for everything.",
+          profAbandonedCount: "{n} films left under 20 %.",
+          profAbandonedWhen: "Stopped at {p} % \xB7 {date}",
+          profAbandonedRetry: "Second chance",
+          profAbandonedAdded: "In Continue watching",
+          profAbandonedLetGo: "Let go",
+          profAbandonedDismissRow: "Remove {title} from the list",
+          profAbandonedEmpty: "Nothing abandoned. You finish what you start.",
+          profModQuizTitle: "What you know, vs what you watch",
+          profModQuizDesc: "Your film quiz results per genre, against how much you actually watch the genre.",
+          profModQuizNote: "From the film quiz",
+          profPrevNoCapsule: "No capsule yet",
+          profPrevOpens: "Opens",
+          profPrevTogether: "{n} films together",
+          profPrevEmpty: "Nothing here yet",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "Longest marathon",
+          profRecLatestNight: "Latest night",
+          profRecMostInDay: "Most films in a day",
+          profRecLongestFilm: "Longest film",
+          profRecMostRewatched: "Most rewatched",
+          profRecStreak: "Longest streak",
+          profRecStreakValue: "{n} days",
+          profDayPl0: "Mondays",
+          profDayPl1: "Tuesdays",
+          profDayPl2: "Wednesdays",
+          profDayPl3: "Thursdays",
+          profDayPl4: "Fridays",
+          profDayPl5: "Saturdays",
+          profDayPl6: "Sundays",
+          profColorMonthCount: "{month}: {n} films",
+          profColorMoodRecord: "The year's record month",
+          profColorMoodDark: "The year's darkest month",
+          profColorMoodBright: "The year's brightest month",
+          profColorUseBg: "Use as profile background",
+          profColorRemoveBg: "Remove profile background",
+          profColorBgSet: "The strip is now behind your profile.",
+          profColorExport: "Export as image",
+          profColorShareTitle: "Colour year {year}",
+          profColorFilms: "{n} films",
+          profColorEmpty: "No movies watched this year yet.",
+          profColorNoBarcodeNote: "Grey stripes = films without a barcode yet. Play them in Lumio to fill in the colour.",
+          profShareSaved: "Image saved.",
+          profShareFailed: "Couldn't create the image.",
+          profShareNoLan: "No network address found for the phone.",
+          profShareScan: "Scan with your phone to save the image.",
+          profClockTopTime: "Top time",
+          profClockFilms: "Films",
+          profClockUsual: "Usually",
+          profClockBigNight: "The week's big night.",
+          profClockWith: "Usually with {name}.",
+          profClockEmpty: "Start a few films and the clock fills in.",
+          profRecNew: "New",
+          profRecMarathonHow: "{n} in a row from {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "in a row, until {date}",
+          profRecEmpty: "Records appear once you have a few evenings behind you.",
+          profPrevMatch: "taste match with {name}",
+          profCouchUsual: "Usually: {day} {time}",
+          profCouchDisagree: "Disagree most on: {genre}",
+          profCouchTonight: "Tonight's film for you both",
+          profCouchReasonBoth: "On both watchlists",
+          profCouchReasonRec: "Like {title}",
+          profCouchStart: "Start an evening together",
+          profCouchSolo: "Add another profile to see who you watch with.",
+          profCouchHint: "Pick who's watching when you start a film, and this fills in.",
+          profCouchNoPicks: "No shared picks yet.",
+          profQuizLegendWatch: "Share of your watching",
+          profQuizLegendRight: "Right answers in the quiz",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "You know most about {best}, though you watch {watched} the most.",
+          profQuizSummarySame: "You know {best} best \u2014 and watch it the most.",
+          profQuizWeak: "{weak} is your weak spot.",
+          profQuizEmpty: "Play a round of the film quiz and your results show up here.",
+          profCapStep1: "1 \xB7 Pick a film",
+          profCapStep2: "2 \xB7 When should it open?",
+          profCapYears: "{n} yr",
+          profCapLine: "{title} opens {date}.",
+          profCapSeal: "Seal the capsule",
+          profCapSealing: "Sealing\u2026",
+          profCapSealed: "Sealed. See you {date}.",
+          profCapAnother: "Seal another",
+          profCapYours: "Your capsules",
+          profCapOpens: "Opens {date}",
+          profCapOpened: "Opened {date}",
+          profCapNone: "No capsules yet.",
+          profCapNoFilms: "Finish a film first \u2014 then you can send it forward.",
+          profCapDueKicker: "Time capsule \xB7 opened today",
+          profCapDueLine: "You sealed {title} on {date}.",
+          profCapOpen: "Open",
+          profDiaryAsleep: "Fell asleep {time} \xB7 {p} %",
+          profGxDirectors: "Directors",
+          profGxGenres: "Genres",
+          profGxWhole: "\u2190 Whole galaxy",
+          profGxExplore: "Explore",
+          profGxPickTitle: "Pick a star or a dark zone",
+          profGxPickBody: "Constellations are directors you've followed for a long time. Dashed circles are genres you've hardly watched.",
+          profGxStar: "Star",
+          profGxSeenTimes: "Seen {n} times \xB7 last {date}",
+          profGxSeenOnce: "Seen once \xB7 {date}",
+          profGxNextStar: "Next star \u2192",
+          profGxDetails: "Details",
+          profGxHunt: "Filmography hunt",
+          profGxDarkZone: "Dark zone",
+          profGxZoneBetween: "{n} seen. Lies between {a} and {b}.",
+          profGxZoneNear: "{n} seen. Lies next to {a}.",
+          profGxZoneEdge: "{n} seen. An unexplored corner.",
+          profGxOkHint: "on the zone to fly there",
+          profGxFly: "Fly there",
+          profGxLightFirst: "Light the first stars",
+          profGxLoading: "Looking for films\u2026",
+          profGxNoSuggestions: "No suggestions right now. Try again later.",
+          profGxPlay: "Play",
+          profGxConstellations: "Constellations",
+          profGxZones: "Dark zones",
+          settingsPageProfilePage: "Profile page",
+          ppWeatherGroup: "Weather in the diary",
+          ppWeatherToggle: "Record the weather",
+          ppWeatherToggleDesc: "When a film ends, Lumio looks up the current weather for your town once (Open-Meteo, no account). Off: no lookups at all.",
+          ppWeatherPlace: "Town",
+          ppWeatherNoPlace: "No town chosen yet.",
+          ppWeatherSearchPh: "e.g. Gothenburg",
+          ppWeatherSearch: "Search",
+          ppWeatherSearching: "Searching\u2026",
+          ppWeatherNoResults: "No town found.",
+          ppWeatherFailed: "The search failed. Check the connection and try again.",
+          ppWeatherCredit: "Weather data by Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "so far this year",
+          profWrPrev: "Previous",
+          profWrNext: "Next",
+          profWrNotEnough: "Wrapped needs at least 10 sessions in {year}. Keep watching!",
+          profWrIntroTitle: "Your year\nin film.",
+          profWrIntroBody: "{n} stars later. Tap to begin.",
+          profWrIntroBodyTv: "{n} stars later. Press \u25B6 to begin.",
+          profWrGuessKicker: "Guess first",
+          profWrGuessQ: "Which genre did you watch most this year?",
+          profWrGuessRight: "Spot on. {genre}, with {h} hours.",
+          profWrGuessWrong: "Close. It was {genre}, with {h} hours.",
+          profWrNoGenres: "Not enough genre data yet.",
+          profWrHoursKicker: "You watched",
+          profWrHoursUnit: "hours",
+          profWrDays: "= {n} days on the sofa",
+          profWrInterstellar: "= {n} Interstellars in a row",
+          profWrEpisodes: "= {n} episodes of a half-hour show",
+          profWrGenreKicker: "Genre ranking",
+          profWrGenreWon: "{genre} won.",
+          profWrHoursShort: "{h} h",
+          profWrGoldenKicker: "Golden hour",
+          profWrGoldenBody: "The time you most often pressed play.",
+          profWrStarsKicker: "Your stars",
+          profWrStarsTitle: "The actors you saw most.",
+          profWrStarsNone: "Not enough cast data yet.",
+          profWrStarsFilms: "{n} films",
+          profWrRewatchKicker: "Most rewatched",
+          profWrRewatchNone: "No rewatches this year \u2014 always something new.",
+          profWrSleepTitle: "You fell asleep {n} times.",
+          profWrSleepNone: "You stayed awake all year.",
+          profWrBuddyTitle: "You and {name} watched {n} films together.",
+          profWrBuddyNone: "Mostly you and the screen this year.",
+          profWrPersKicker: "Your film personality",
+          profWrTraitNight: "Night owl",
+          profWrTraitNightValue: "starts {time}",
+          profWrTraitGenre: "Genre loyal",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Rewatcher",
+          profWrTraitRewatchValue: "{n} rewatches",
+          profWrTraitNap: "Dozer",
+          profWrTraitNapValue: "at {p} %",
+          profWrShareTitle: "Share your year.",
+          profWrShare: "Share",
+          profWrReplay: "Play again",
+          profWrCardHours: "total",
+          profWrCardGenre: "top genre",
+          profWrCardTitle: "most played",
+          profWrCardNaps: "naps",
+          profWrBNight: "The night owl",
+          profWrBRewatch: "The rewatcher",
+          profWrBNap: "The nap master",
+          profWrBMarathon: "The marathoner",
+          profWrBExplorer: "The explorer",
+          profWrAScifi: "from outer space",
+          profWrADrama: "with a big heart",
+          profWrAHorror: "from the dark",
+          profWrAComedy: "who laughs first",
+          profWrAAnimation: "with a drawn soul",
+          profWrADocumentary: "who wants to know",
+          profWrAThriller: "on the edge",
+          profWrAAction: "at full speed",
+          profWrARomance: "in rose-tinted glasses",
+          profWrACrime: "from the underworld",
+          profWrAFantasy: "from the fairy realm",
+          profWrAOther: "without a map"
         },
         sv: {
           // Nav
@@ -6324,6 +6737,17 @@
           plNextEpisode: "N\xE4sta avsnitt",
           plSwitchStream: "Byt str\xF6m",
           plStreams: "Str\xF6mmar",
+          plSleepTimer: "S\xF6mntimer",
+          plSleepShort: "S\xF6mn",
+          plSleepOff: "Av",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "Slutet av avsnittet/filmen",
+          plSleepStillThere: "\xC4r du kvar?",
+          plSleepStillThereBody: "S\xF6mntimern pausade. R\xF6r musen eller tryck p\xE5 n\xE5got f\xF6r att titta vidare.",
+          plCompanions: "Vem tittar med",
+          plWhoWatches: "Vem tittar med?",
+          plCompanionsJustMe: "Bara jag",
+          plCompanionsShort: "Med",
           audioDelayTitle: "Ljudf\xF6rdr\xF6jning",
           audioDelayHint: "Justera l\xE4ppsynk. Positivt v\xE4rde spelar ljudet senare.",
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
@@ -6667,6 +7091,8 @@
           tvMenuVariantHint: "Pillret \xF6ppnar menyn n\xE4r du vill; listen st\xE5r kvar l\xE4ngs v\xE4nsterkanten.",
           tvMenuVariantPill: "Pillret",
           tvMenuVariantRail: "Ikonlist",
+          tvButtonScale: "Knappstorlek",
+          tvButtonScaleDesc: "Storleken p\xE5 knapparna i startsidans hero och p\xE5 detaljsidan (Spela, Min lista, F\xF6lj \u2026) i TV-l\xE4get.",
           tvMenuScale: "Menystorlek",
           tvMenuScaleDesc: "Skalar sidomenyn \u2014 ikoner och etiketter \u2014 i TV-l\xE4get.",
           menuScale: "Menyskalning",
@@ -7501,6 +7927,64 @@
           appUpdateChannelHint: "Beta f\xE5r testbyggen innan de sl\xE4pps till alla.",
           exitOnCloseTitle: "Avsluta helt vid st\xE4ngning",
           exitOnCloseHint: "Android/TV: avsluta processen n\xE4r du l\xE4mnar appen i st\xE4llet f\xF6r att l\xE5ta den ligga i bakgrunden. Frig\xF6r minne p\xE5 sm\xE5 boxar.",
+          exitAppAction: "Avsluta Lumio",
+          exitAppTitle: "Avsluta Lumio?",
+          exitAppConfirm: "Avsluta",
+          quizMenuLabel: "Filmquiz",
+          quizLobbyTitle: "Vem kan sin film?",
+          quizLobbyIntro: "Skanna koden med telefonen f\xF6r att vara med. Fr\xE5gorna kommer ur filmer ni har sett.",
+          quizOrGoTo: "Eller g\xE5 till",
+          quizPlayers: "Spelare",
+          quizWaitingMore: "V\xE4ntar p\xE5 fler \u2026",
+          quizSourcesLabel: "Fr\xE5gor ur",
+          quizSourceSeen: "Sedda filmer",
+          quizSourceList: "Min lista",
+          quizSourceColl: "Hela samlingar",
+          quizStart: "Starta quiz",
+          quizBuilding: "Bygger fr\xE5gor \xB7 %s filmer",
+          quizTooFew: "F\xF6r f\xE5 filmer. Se eller spara minst fyra.",
+          quizTooFewGenre: "F\xF6r f\xE5 sedda {genre}-titlar. Prova en annan genre.",
+          quizRateLimited: "TMDB \xE4r upptaget, f\xF6rs\xF6k om en stund.",
+          quizLanOff: "Telefoner n\xE5r den h\xE4r sk\xE4rmen bara n\xE4r LAN-str\xF6mning \xE4r p\xE5 i inst\xE4llningarna.",
+          quizCode: "Kod",
+          quizQuestionOf: "Fr\xE5ga %1 av %2",
+          quizAnswered: "%1 av %2 har svarat",
+          quizAnswerShown: "Svaret visas",
+          quizShowAnswer: "Visa svar",
+          quizStanding: "St\xE4llning",
+          quizFinalStanding: "Slutst\xE4llning",
+          quizStandingAfter: "St\xE4llning efter fr\xE5ga %s",
+          quizNextQuestion: "N\xE4sta fr\xE5ga",
+          quizPlayAgain: "Spela igen",
+          quizExit: "Avsluta",
+          quizCancelTitle: "Avbryta quizet?",
+          quizCloseTitle: "St\xE4nga Filmquiz?",
+          quizCancelBody: "Spelarna kopplas fr\xE5n och st\xE4llningen sparas inte.",
+          quizKeepPlaying: "Forts\xE4tt spela",
+          quizKindStill: "Stillbild",
+          quizKindClip: "Klipp",
+          quizKindTagline: "Tagline",
+          quizKindAltTitle: "Utl\xE4ndsk titel",
+          quizKindCast: "Sk\xE5despelare",
+          quizKindSort: "Samling",
+          quizPromptStill: "Vilken film?",
+          quizPromptClip: "Vilken film \xE4r klippet ur?",
+          quizPromptTagline: "Vilken film har den h\xE4r taglinen?",
+          quizPromptAltTitle: "Vilken film \xE4r det h\xE4r?",
+          quizPromptCast: "Vem var inte med?",
+          quizPromptSort: "Sortera samlingen, \xE4ldst f\xF6rst",
+          quizSortOnPhone: "Sortera p\xE5 telefonen, \xE4ldst f\xF6rst.",
+          quizAllRight: "Helt r\xE4tt: %s",
+          quizNobodyRight: "Ingen fick ordningen r\xE4tt",
+          quizAudioOnly: "Bara ljud",
+          quizShowVideo: "Visa bild",
+          quizLangDE: "Tysk titel",
+          quizLangFR: "Fransk titel",
+          quizLangSE: "Svensk titel",
+          quizKeyHints: "\u2191 \u2193 \u2190 \u2192 Flytta \xB7 OK V\xE4lj \xB7 \u27F5 Tillbaka",
+          quizCreateFailed: "Kunde inte starta quizet. F\xF6rs\xF6k igen om en stund.",
+          quizClose: "St\xE4ng",
+          quizBankError: "Kunde inte bygga fr\xE5gor. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
           creditsFinishedSeason: "S\xE4song %s \xE4r slut",
           creditsNextSeason: "S\xE4song %s",
           creditsFinishedTitle: "Du s\xE5g klart",
@@ -8102,6 +8586,8 @@
           ptSourcesHint: "H\xE4r listas de externa k\xE4llor du sj\xE4lv har lagt till.",
           ptNoSources: "Inga egna k\xE4llor tillagda \xE4n. L\xE4gg till ett GitHub-repo ovan f\xF6r att b\xF6rja.",
           ptInstalledBadge: "Installerad",
+          ptInstallFailed: "Kunde inte installera pluginet.",
+          ptSourceReaddZip: "L\xE4gg till ZIP-filen igen f\xF6r att installera",
           ptUpdating: "H\xE4mtar senaste versionen\u2026",
           ptUpdatedTo: "Uppdaterad till {version} \u2014 starta om f\xF6r att aktivera.",
           ptUpToDate: "Redan senaste versionen.",
@@ -8145,6 +8631,8 @@
           libraryServerUnreachable: "Fick ingen uppspelningsadress fr\xE5n {source}. Kontrollera att servern \xE4r ig\xE5ng.",
           libraryRowSuffix: "i ditt bibliotek",
           libraryModeTab: "Bibliotek",
+          libraryModeChip: "Biblioteksl\xE4ge",
+          libraryTabRowsCaption: "Rader per bibliotek:",
           libraryModeTitle: "Biblioteksl\xE4ge",
           libraryModeHint: "N\xE4r ett bibliotek \xE4r startsida filtreras varje rad mot det du \xE4ger. Rader utan indexerat inneh\xE5ll g\xF6ms; siffran visar hur m\xE5nga titlar raden kan visa just nu.",
           libraryUseAsHome: "Anv\xE4nd som startsida",
@@ -8160,6 +8648,30 @@
           localLibraryEmpty: "Inga mappar \xE4nnu.",
           localLibraryScanning: "Indexerar\u2026 {done}",
           localLibraryNotIndexed: "Inte indexerad \xE4nnu",
+          webdavLibraryTitle: "N\xE4tverksmappar (WebDAV)",
+          webdavLibraryHint: "En mapp p\xE5 en WebDAV-server blir ett eget bibliotek med egen menying\xE5ng, precis som en lokal mapp. Filerna matchas mot TMDB via namnet och str\xF6mmas genom appen \u2014 l\xF6senordet stannar p\xE5 den h\xE4r enheten.",
+          webdavLibraryAdd: "L\xE4gg till mapp",
+          webdavLibraryUrl: "Serveradress",
+          webdavLibraryUsername: "Anv\xE4ndarnamn",
+          webdavLibraryPassword: "L\xF6senord",
+          webdavLibraryPasswordKeep: "Of\xF6r\xE4ndrat",
+          webdavLibraryName: "Namn i menyn",
+          webdavLibraryNamePlaceholder: "H\xE4mtas fr\xE5n adressen om det l\xE4mnas tomt",
+          webdavLibraryTest: "Testa",
+          webdavLibraryTestOk: "Anslutningen fungerar",
+          webdavLibrarySave: "Spara och indexera",
+          webdavLibraryCancel: "Avbryt",
+          webdavLibraryEdit: "\xC4ndra",
+          webdavLibraryEmpty: "Inga n\xE4tverksmappar \xE4nnu.",
+          webdavLibraryListing: "Listar mappar\u2026 {done}/{total}",
+          webdavLibraryErrAuth: "Servern godk\xE4nde inte anv\xE4ndarnamnet eller l\xF6senordet.",
+          webdavLibraryErrNotFound: "Mappen finns inte p\xE5 servern.",
+          webdavLibraryErrNetwork: "Kunde inte n\xE5 servern.",
+          webdavLibraryErrNotWebdav: "Adressen svarade, men inte som en WebDAV-mapp.",
+          webdavLibraryErrUrl: "Skriv en hel adress som b\xF6rjar med http:// eller https://, utan anv\xE4ndarnamn eller l\xF6senord i den.",
+          webdavLibraryErrTooLarge: "Mappen \xE4r f\xF6r stor f\xF6r att listas i ett svep. Peka adressen mot en undermapp.",
+          webdavLibraryErrUpstream: "Servern svarade med ett fel. F\xF6rs\xF6k igen om en stund.",
+          webdavLibraryErrLocalOnly: "N\xE4tverksmappar kan bara \xE4ndras p\xE5 enheten som k\xF6r Lumio.",
           libraryRowUnmatched: "Ej identifierade",
           librarySourceNotIndexed: "Inte indexerat \xE4nnu \u2014 bygg indexet i pluginets inst\xE4llningar.",
           libraryModeOff: "Inget bibliotek \xE4r startsida. Sl\xE5 p\xE5 det under bibliotekspluginets inst\xE4llningar.",
@@ -8183,6 +8695,13 @@
           libraryEpisodeNotInLibrary: "Avsnittet finns inte i ditt bibliotek",
           libraryRowNotLoaded: "inte laddad \xE4nnu",
           libraryRowRecent: "Nyligen tillagt i biblioteket",
+          libraryRowMovies: "Filmer i biblioteket",
+          tvLibraryTabRowsLabel: "Biblioteksflik",
+          tvLibraryTabRowsDesc: "Redigera raderna f\xF6r ett bibliotek i menyn i st\xE4llet f\xF6r en sida ovan.",
+          tvLibraryTabRowsNone: "Ingen",
+          libraryRowSeries: "Serier i biblioteket",
+          libraryTabRowsFollowHome: "Biblioteket visar startsidans rader tills du \xE4ndrar dem h\xE4r.",
+          libraryTabRowsUntouched: "Visar de rekommenderade raderna f\xF6r biblioteket. Dina \xE4ndringar tar \xF6ver n\xE4r du redigerar.",
           libraryRowContinue: "Bibliotekets progress i Senast sedda",
           libraryRowUnseen: "Osedda favoriter",
           libraryRowGenre: "Genre",
@@ -8652,7 +9171,305 @@
           pluginYoutubeMissingChannelId: "Kanalens ID saknas.",
           ptNeedsNewerApp: "Uppdateringen kr\xE4ver en nyare version av appen.",
           ptScanSummary: "{updated} uppdaterade, {uptodate} redan aktuella, {failed} misslyckades.",
-          ptScanNoUpdates: "Alla plugins \xE4r p\xE5 senaste versionen."
+          ptScanNoUpdates: "Alla plugins \xE4r p\xE5 senaste versionen.",
+          // Profilsidan
+          profKicker: "Lumio \xB7 Profil",
+          profYourProfile: "Din profil",
+          profSince: "Sedan {date} \xB7 {movies} filmer \xB7 {series} serier",
+          profSwitch: "Byt profil",
+          profViewProfile: "Visa profil",
+          profMyProfile: "Min profil",
+          profTabOverview: "\xD6versikt",
+          profTabGalaxy: "Smakgalaxen",
+          profTabDiary: "Filmdagbok",
+          profTabHunt: "Filmografijakt",
+          profTabWrapped: "Wrapped",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Flytta \xB7 OK V\xE4lj \xB7 Bak\xE5t St\xE4ng",
+          profEmptyFirstStar: "Titta p\xE5 din f\xF6rsta film s\xE5 t\xE4nds f\xF6rsta stj\xE4rnan.",
+          profGalaxyLine: "{stars} stj\xE4rnor, {constellations} stj\xE4rnbilder och {zones} m\xF6rka zoner",
+          profGalaxyDesc: "Varje film du sett \xE4r en stj\xE4rna. Regiss\xF6rer bildar stj\xE4rnbilder.",
+          profViewingN: "G\xE5ng {n}",
+          profSecondViewing: "Andra g\xE5ngen",
+          profDiaryList: "Dagbok",
+          profDiaryBook: "Sj\xE4lvbiografi",
+          profDiaryNote: "Skrivs utifr\xE5n vad du tittar p\xE5 i Lumio.",
+          profDiaryEmpty: "H\xE4r st\xE5r ingenting \xE4n.",
+          profApprox: "Ungef\xE4rligt",
+          profChapters: "Kapitel",
+          profChKicker: "Kapitel {n} \xB7 {year}",
+          profChKickerOngoing: "Kapitel {n} \xB7 {year} (p\xE5g\xE5r)",
+          profChShort: "{n}. {year}",
+          profChTitles: "Du s\xE5g {n} titlar, ungef\xE4r {h} timmar.",
+          profChTop: "{title} var den du \xE5terv\xE4nde till \u2013 {n} g\xE5nger.",
+          profChLate: "{p} % av kv\xE4llarna b\xF6rjade efter tio.",
+          profChDirector: "{name} var \xE5rets regiss\xF6r, med {n} filmer.",
+          profChTitleNight: "\xC5ret med de sena kv\xE4llarna",
+          profChTitleDirector: "\xC5ret med {name}",
+          profChTitleRewatch: "\xC5ret med {title}",
+          profChTitleDefault: "Ett \xE5r i film",
+          profHuntEmpty: "Se tv\xE5 filmer av samma regiss\xF6r s\xE5 b\xF6rjar en jakt.",
+          profHuntKicker: "Filmografi",
+          profHuntSeen: "Du har sett {seen}/{total} {name}",
+          profHuntMissing: "{n} kvar att hitta.",
+          profHuntAllSeen: "Du har sett alla.",
+          profHuntMakeRow: "G\xF6r en rad",
+          profHuntMakeCollection: "G\xF6r en samling",
+          profHuntRowName: "{name} \u2013 kvar att se",
+          profHuntHomeRowMade: 'Raden "{name}" finns nu p\xE5 startsidan.',
+          profHuntRowMade: 'Raden "{name}" \xE4r skapad \u2013 l\xE4gg till den p\xE5 startsidan via Inst\xE4llningar.',
+          profHuntRowFailed: "Raden gick inte att skapa \u2013 du kanske har f\xF6r m\xE5nga rader.",
+          profHuntNew: "+ Jaga en ny regiss\xF6r",
+          profHuntSearchPh: "S\xF6k regiss\xF6r",
+          profHuntDocs: "+ Dokument\xE4rer",
+          profHuntShorts: "+ Kortfilmer",
+          profBadgeFirst: "F\xF6rsta steget",
+          profBadgeHalf: "Halvv\xE4gs",
+          profBadgeAlmost: "N\xE4stan d\xE4r",
+          profBadgeComplete: "Komplett",
+          profBadgeInOrder: "I ordning",
+          profWrappedTeaser: "{h} timmar.\nOch mer.",
+          profWrappedKicker: "Lumio Wrapped {year}",
+          profWrappedPlay: "Spela upp ditt \xE5r \u2192",
+          profMoreAboutYou: "Mer om dig",
+          profClose: "St\xE4ng",
+          profModColor: "F\xE4rg\xE5ret",
+          profModColorLine: "Ditt \xE5r som en remsa av filmf\xE4rger.",
+          profModSlept: "Somnade-listan",
+          profModSleptLine: "Allt du somnade till.",
+          profModCouch: "Soffkompisar",
+          profModCouchLine: "Vem du tittar med, och vad ni \xE4r \xF6verens om.",
+          profModClock: "Tittarklockan",
+          profModClockLine: "N\xE4r i veckan du tittar.",
+          profModCapsule: "Tidskapseln",
+          profModCapsuleLine: "F\xF6rsegla en film till ditt framtida jag.",
+          profModRecords: "Rekordtavlan",
+          profModRecordsLine: "L\xE4ngsta maraton, senaste natten och mer.",
+          profModAbandoned: "\xD6vergivna",
+          profModAbandonedLine: "Filmer du gav upp tidigt.",
+          profModQuiz: "Quizprofilen",
+          profModQuizLine: "Vad du tittar p\xE5 mot vad du kan.",
+          profModBack: "\u2190 Profil",
+          profModColorTitle: "Ditt \xE5r som en enda remsa",
+          profModColorDesc: "Varje strimma \xE4r en films barcode, i den ordning du s\xE5g dem. V\xE4lj en m\xE5nad f\xF6r att se vilka filmer som gav f\xE4rgen.",
+          profModColorNote: "Fr\xE5n dina barcodes",
+          profModSleptTitle: "Filmer du somnade till",
+          profModSleptDesc: "S\xF6mntimern vet exakt var du slocknade. Forts\xE4tt d\xE4rifr\xE5n, eller b\xF6rja om n\xE4r du \xE4r piggare.",
+          profModSleptNote: "Fr\xE5n s\xF6mntimern",
+          profModCouchTitle: "Vem du tittar med",
+          profModCouchDesc: "Smakmatch per profil och f\xF6rslag som passar er b\xE5da, baserat p\xE5 vad ni sett tillsammans och var f\xF6r sig.",
+          profModCouchNote: 'Fr\xE5n "Vem tittar med?"',
+          profModClockTitle: "N\xE4r du tittar",
+          profModClockDesc: "Veckodag mot klockslag f\xF6r allt du startat. V\xE4lj en dag f\xF6r att se dina vanor.",
+          profModClockNote: "Fr\xE5n starttiderna i dagboken",
+          profModCapsuleTitle: "Skicka en film till framtiden",
+          profModCapsuleDesc: "V\xE4lj en film i dag. Lumio f\xF6resl\xE5r den igen om n\xE5gra \xE5r, tillsammans med dagens dagbokssida.",
+          profModCapsuleNote: "\xD6ppnas p\xE5 startsidan",
+          profModRecordsTitle: "Dina personliga rekord",
+          profModRecordsDesc: "L\xE4ngsta maraton, senaste kv\xE4llen och mer. Nya rekord markeras n\xE4r de sl\xE5s.",
+          profModRecordsNote: "Fr\xE5n dagboken",
+          profModAbandonedTitle: "Filmer du gav upp",
+          profModAbandonedDesc: "Allt du l\xE4mnat under 20 %. Ge dem en andra chans eller sl\xE4pp taget f\xF6r gott.",
+          profModAbandonedNote: "Fr\xE5n dagboken",
+          profSleptSummary: "Du somnar oftast p\xE5 {day}, i snitt {m} minuter in.",
+          profSleptTopGenre: "{genre} st\xE5r f\xF6r {n} av {total} tupplurar.",
+          profSleptWhen: "{date} \xB7 somnade {time}",
+          profSleptResume: "Forts\xE4tt {time}",
+          profSleptRestart: "B\xF6rja om",
+          profSleptRemove: "Ta bort",
+          profSleptEmpty: "Listan \xE4r tom. Du har vaknat till allt.",
+          profAbandonedCount: "{n} filmer l\xE4mnade under 20 %.",
+          profAbandonedWhen: "Slutade vid {p} % \xB7 {date}",
+          profAbandonedRetry: "Andra chans",
+          profAbandonedAdded: "I Forts\xE4tt titta",
+          profAbandonedLetGo: "Sl\xE4pp taget",
+          profAbandonedDismissRow: "Ta bort {title} fr\xE5n listan",
+          profAbandonedEmpty: "Inget \xF6vergivet. Du ser klart det du b\xF6rjar p\xE5.",
+          profModQuizTitle: "Vad du kan, mot vad du ser",
+          profModQuizDesc: "Dina resultat i filmquizet per genre, j\xE4mf\xF6rt med hur mycket du faktiskt tittar p\xE5 genren.",
+          profModQuizNote: "Fr\xE5n filmquizet",
+          profPrevNoCapsule: "Ingen kapsel \xE4n",
+          profPrevOpens: "\xD6ppnas",
+          profPrevTogether: "{n} filmer tillsammans",
+          profPrevEmpty: "Inget h\xE4r \xE4n",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "L\xE4ngsta maraton",
+          profRecLatestNight: "Senaste kv\xE4llen",
+          profRecMostInDay: "Flest filmer p\xE5 en dag",
+          profRecLongestFilm: "L\xE4ngsta film",
+          profRecMostRewatched: "Flest omtittningar",
+          profRecStreak: "L\xE4ngsta svit",
+          profRecStreakValue: "{n} dagar",
+          profDayPl0: "m\xE5ndagar",
+          profDayPl1: "tisdagar",
+          profDayPl2: "onsdagar",
+          profDayPl3: "torsdagar",
+          profDayPl4: "fredagar",
+          profDayPl5: "l\xF6rdagar",
+          profDayPl6: "s\xF6ndagar",
+          profColorMonthCount: "{month}: {n} filmer",
+          profColorMoodRecord: "\xC5rets rekordm\xE5nad",
+          profColorMoodDark: "\xC5rets m\xF6rkaste m\xE5nad",
+          profColorMoodBright: "\xC5rets ljusaste m\xE5nad",
+          profColorUseBg: "Anv\xE4nd som profilbakgrund",
+          profColorRemoveBg: "Ta bort profilbakgrund",
+          profColorBgSet: "Remsan ligger nu bakom din profil.",
+          profColorExport: "Exportera som bild",
+          profColorShareTitle: "F\xE4rg\xE5ret {year}",
+          profColorFilms: "{n} filmer",
+          profColorEmpty: "Inga sedda filmer i \xE5r \xE4n.",
+          profColorNoBarcodeNote: "Gr\xE5 strimmor = filmer utan barcode \xE4n. Spela dem i Lumio s\xE5 fylls f\xE4rgen i.",
+          profShareSaved: "Bilden \xE4r sparad.",
+          profShareFailed: "Bilden gick inte att skapa.",
+          profShareNoLan: "Hittade ingen n\xE4tverksadress f\xF6r telefonen.",
+          profShareScan: "Skanna med telefonen f\xF6r att spara bilden.",
+          profClockTopTime: "Topptimme",
+          profClockFilms: "Filmer",
+          profClockUsual: "Oftast",
+          profClockBigNight: "Veckans stora kv\xE4ll.",
+          profClockWith: "Oftast med {name}.",
+          profClockEmpty: "Starta n\xE5gra filmer s\xE5 fylls klockan i.",
+          profRecNew: "Nytt",
+          profRecMarathonHow: "{n} i rad fr\xE5n {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "i rad, till {date}",
+          profRecEmpty: "Rekorden dyker upp n\xE4r du har n\xE5gra kv\xE4llar bakom dig.",
+          profPrevMatch: "smakmatch med {name}",
+          profCouchUsual: "Oftast: {day} {time}",
+          profCouchDisagree: "Oenigast om: {genre}",
+          profCouchTonight: "Kv\xE4llens film f\xF6r er b\xE5da",
+          profCouchReasonBoth: "P\xE5 b\xE5da listorna",
+          profCouchReasonRec: "Liknar {title}",
+          profCouchStart: "Starta en kv\xE4ll ihop",
+          profCouchSolo: "L\xE4gg till en profil till s\xE5 ser du vem du tittar med.",
+          profCouchHint: "V\xE4lj vem som tittar med n\xE4r du startar en film, s\xE5 fylls det h\xE4r i.",
+          profCouchNoPicks: "Inga gemensamma f\xF6rslag \xE4n.",
+          profQuizLegendWatch: "Andel av ditt tittande",
+          profQuizLegendRight: "R\xE4tt svar i quizet",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "Du kan mest om {best}, fast du tittar mest p\xE5 {watched}.",
+          profQuizSummarySame: "Du kan {best} b\xE4st \u2014 och tittar mest p\xE5 det.",
+          profQuizWeak: "{weak} \xE4r din svaga punkt.",
+          profQuizEmpty: "Spela en runda filmquiz s\xE5 dyker resultaten upp h\xE4r.",
+          profCapStep1: "1 \xB7 V\xE4lj en film",
+          profCapStep2: "2 \xB7 N\xE4r ska den \xF6ppnas?",
+          profCapYears: "{n} \xE5r",
+          profCapLine: "{title} \xF6ppnas {date}.",
+          profCapSeal: "F\xF6rslut kapseln",
+          profCapSealing: "F\xF6rsluter\u2026",
+          profCapSealed: "F\xF6rseglad. Vi ses {date}.",
+          profCapAnother: "F\xF6rsegla en till",
+          profCapYours: "Dina kapslar",
+          profCapOpens: "\xD6ppnas {date}",
+          profCapOpened: "\xD6ppnad {date}",
+          profCapNone: "Inga kapslar \xE4n.",
+          profCapNoFilms: "Se klart en film f\xF6rst \u2014 sedan kan du skicka den fram\xE5t.",
+          profCapDueKicker: "Tidskapseln \xB7 \xF6ppnad i dag",
+          profCapDueLine: "Du f\xF6rseglade {title} den {date}.",
+          profCapOpen: "\xD6ppna",
+          profDiaryAsleep: "Somnade {time} \xB7 {p} %",
+          profGxDirectors: "Regiss\xF6rer",
+          profGxGenres: "Genrer",
+          profGxWhole: "\u2190 Hela galaxen",
+          profGxExplore: "Utforska",
+          profGxPickTitle: "V\xE4lj en stj\xE4rna eller en m\xF6rk zon",
+          profGxPickBody: "Stj\xE4rnbilder \xE4r regiss\xF6rer du f\xF6ljt l\xE4nge. Streckade cirklar \xE4r genrer du n\xE4stan aldrig tittat p\xE5.",
+          profGxStar: "Stj\xE4rna",
+          profGxSeenTimes: "Sedd {n} g\xE5nger \xB7 senast {date}",
+          profGxSeenOnce: "Sedd en g\xE5ng \xB7 {date}",
+          profGxNextStar: "N\xE4sta stj\xE4rna \u2192",
+          profGxDetails: "Detaljer",
+          profGxHunt: "Filmografijakt",
+          profGxDarkZone: "M\xF6rk zon",
+          profGxZoneBetween: "{n} sedda. Ligger mellan {a} och {b}.",
+          profGxZoneNear: "{n} sedda. Ligger intill {a}.",
+          profGxZoneEdge: "{n} sedda. Ett outforskat h\xF6rn.",
+          profGxOkHint: "p\xE5 zonen f\xF6r att flyga dit",
+          profGxFly: "Flyg dit",
+          profGxLightFirst: "T\xE4nd de f\xF6rsta stj\xE4rnorna",
+          profGxLoading: "Letar filmer\u2026",
+          profGxNoSuggestions: "Inga f\xF6rslag just nu. F\xF6rs\xF6k igen senare.",
+          profGxPlay: "Spela",
+          profGxConstellations: "Stj\xE4rnbilder",
+          profGxZones: "M\xF6rka zoner",
+          settingsPageProfilePage: "Profilsida",
+          ppWeatherGroup: "V\xE4der i dagboken",
+          ppWeatherToggle: "Spara v\xE4dret",
+          ppWeatherToggleDesc: "N\xE4r en film slutar h\xE4mtar Lumio v\xE4dret f\xF6r din ort en g\xE5ng (Open-Meteo, inget konto). Av: inga uppslag alls.",
+          ppWeatherPlace: "Ort",
+          ppWeatherNoPlace: "Ingen ort vald \xE4n.",
+          ppWeatherSearchPh: "t.ex. G\xF6teborg",
+          ppWeatherSearch: "S\xF6k",
+          ppWeatherSearching: "S\xF6ker\u2026",
+          ppWeatherNoResults: "Ingen ort hittades.",
+          ppWeatherFailed: "S\xF6kningen misslyckades. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
+          ppWeatherCredit: "V\xE4derdata fr\xE5n Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "hittills i \xE5r",
+          profWrPrev: "F\xF6reg\xE5ende",
+          profWrNext: "N\xE4sta",
+          profWrNotEnough: "Wrapped beh\xF6ver minst 10 sessioner under {year}. Forts\xE4tt titta!",
+          profWrIntroTitle: "Ditt \xE5r\ni film.",
+          profWrIntroBody: "{n} stj\xE4rnor senare. Tryck f\xF6r att b\xF6rja.",
+          profWrIntroBodyTv: "{n} stj\xE4rnor senare. Tryck \u25B6 f\xF6r att b\xF6rja.",
+          profWrGuessKicker: "Gissa f\xF6rst",
+          profWrGuessQ: "Vilken genre tittade du mest p\xE5 i \xE5r?",
+          profWrGuessRight: "Helt r\xE4tt. {genre}, med {h} timmar.",
+          profWrGuessWrong: "N\xE4ra. Det blev {genre}, med {h} timmar.",
+          profWrNoGenres: "Inte tillr\xE4ckligt med genredata \xE4n.",
+          profWrHoursKicker: "Du tittade i",
+          profWrHoursUnit: "timmar",
+          profWrDays: "= {n} dygn i soffan",
+          profWrInterstellar: "= {n} Interstellar i rad",
+          profWrEpisodes: "= {n} avsnitt av en halvtimmesserie",
+          profWrGenreKicker: "Genretopplistan",
+          profWrGenreWon: "{genre} vann.",
+          profWrHoursShort: "{h} tim",
+          profWrGoldenKicker: "Gyllene timmen",
+          profWrGoldenBody: "Klockslaget d\xE5 du oftast tryckte p\xE5 play.",
+          profWrStarsKicker: "Dina stj\xE4rnor",
+          profWrStarsTitle: "Sk\xE5despelarna du s\xE5g mest.",
+          profWrStarsNone: "Inte tillr\xE4ckligt med rollistor \xE4n.",
+          profWrStarsFilms: "{n} filmer",
+          profWrRewatchKicker: "Mest omsedda",
+          profWrRewatchNone: "Inga omtittningar i \xE5r \u2014 alltid n\xE5got nytt.",
+          profWrSleepTitle: "{n} g\xE5nger somnade du.",
+          profWrSleepNone: "Du h\xF6ll dig vaken hela \xE5ret.",
+          profWrBuddyTitle: "Du och {name} s\xE5g {n} filmer ihop.",
+          profWrBuddyNone: "Mest du och sk\xE4rmen i \xE5r.",
+          profWrPersKicker: "Din filmpersonlighet",
+          profWrTraitNight: "Nattuggla",
+          profWrTraitNightValue: "startar {time}",
+          profWrTraitGenre: "Genretrogen",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Omtittare",
+          profWrTraitRewatchValue: "{n} omtittningar",
+          profWrTraitNap: "Somnar",
+          profWrTraitNapValue: "vid {p} %",
+          profWrShareTitle: "Dela ditt \xE5r.",
+          profWrShare: "Dela",
+          profWrReplay: "Spela igen",
+          profWrCardHours: "totalt",
+          profWrCardGenre: "toppgenre",
+          profWrCardTitle: "mest spelad",
+          profWrCardNaps: "tupplurar",
+          profWrBNight: "Nattugglan",
+          profWrBRewatch: "Omtittaren",
+          profWrBNap: "Tupplursm\xE4staren",
+          profWrBMarathon: "Maratonl\xF6paren",
+          profWrBExplorer: "Uppt\xE4ckaren",
+          profWrAScifi: "fr\xE5n rymden",
+          profWrADrama: "med hj\xE4rtat utanp\xE5",
+          profWrAHorror: "fr\xE5n m\xF6rkret",
+          profWrAComedy: "som skrattar f\xF6rst",
+          profWrAAnimation: "med tecknad sj\xE4l",
+          profWrADocumentary: "som vill veta",
+          profWrAThriller: "p\xE5 helsp\xE4nn",
+          profWrAAction: "i full fart",
+          profWrARomance: "med rosa glas\xF6gon",
+          profWrACrime: "fr\xE5n undre v\xE4rlden",
+          profWrAFantasy: "fr\xE5n sagolandet",
+          profWrAOther: "utan karta"
         }
       };
       detachedLangContextValue = {
@@ -8933,29 +9750,237 @@
     }
   });
 
+  // lib/local-episode-files.ts
+  function parseSeasonEpisode(filename) {
+    for (const pattern of SEASON_EPISODE_PATTERNS) {
+      const match = filename.match(pattern);
+      if (!match) continue;
+      const season = Number(match[1]);
+      const episode = Number(match[2]);
+      if (!Number.isFinite(season) || !Number.isFinite(episode)) continue;
+      if (season < 0 || episode < 1) continue;
+      return { season, episode };
+    }
+    return null;
+  }
+  var SEASON_EPISODE_PATTERNS;
+  var init_local_episode_files = __esm({
+    "lib/local-episode-files.ts"() {
+      SEASON_EPISODE_PATTERNS = [
+        // Inget avslutande \b: dubbelavsnitt heter `S01E02E03`, och en gräns där
+        // kräver en icke-bokstav efter numret — så hela filen föll bort.
+        /\bs\s*(\d{1,2})\s*[._\- ]?\s*e\s*(\d{1,3})/i,
+        // Två siffror i avsnittsledet med flit: `4x4` i ett filnamn är en bil, inte
+        // säsong 4 avsnitt 4. `1x02` är ett avsnitt.
+        /\b(\d{1,2})\s*x\s*(\d{2,3})\b/i,
+        /\bseason\s*(\d{1,2})\s*[._\- ]*episode\s*(\d{1,3})\b/i
+      ];
+    }
+  });
+
+  // lib/local-files-storage.ts
+  var init_local_files_storage = __esm({
+    "lib/local-files-storage.ts"() {
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/library/local-folders.ts
+  var init_local_folders = __esm({
+    "lib/library/local-folders.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      init_local_files_storage();
+    }
+  });
+
+  // lib/library/local-folder-provider.ts
+  function parseLocalName(filename, parentFolder) {
+    const stem = filename.replace(/\.[a-z0-9]{2,4}$/i, "");
+    const se = parseSeasonEpisode(stem);
+    let work = stem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
+    const quality = work.match(QUALITY_TOKENS);
+    const qualityTokens = Array.from(work.matchAll(new RegExp(QUALITY_TOKENS.source, "gi"))).map((m) => m[0].toUpperCase());
+    const cuts = [];
+    const seMatch = work.match(/\bs\s*\d{1,2}\s*[._\- ]?\s*e\s*\d{1,3}|\b\d{1,2}x\d{2,3}\b|\bseason\s*\d{1,2}/i);
+    if (seMatch?.index != null) cuts.push(seMatch.index);
+    let year = null;
+    for (const yearMatch of work.matchAll(/(?:^|[\s(\[])((?:19|20)\d{2})(?=[\s)\]]|$)/g)) {
+      const at = yearMatch.index ?? 0;
+      const digitsAt = at + yearMatch[0].indexOf(yearMatch[1]);
+      if (digitsAt === 0) continue;
+      year = Number.parseInt(yearMatch[1], 10);
+      cuts.push(at);
+      break;
+    }
+    if (quality?.index != null) cuts.push(quality.index);
+    if (cuts.length > 0) work = work.slice(0, Math.min(...cuts));
+    let title = work.replace(/[\s\-–(\[]+$/g, "").trim();
+    if (se && (title.length === 0 || /^(season|säsong|s)\s*\d+/i.test(title)) && parentFolder) {
+      const parsedFolder = parseLocalName(`${parentFolder}.mkv`);
+      title = parsedFolder.title;
+      year = year ?? parsedFolder.year;
+    }
+    return {
+      title: title || stem,
+      year,
+      season: se?.season ?? null,
+      episode: se?.episode ?? null,
+      qualityLabel: qualityTokens.length > 0 ? [...new Set(qualityTokens)].slice(0, 3).join(" \xB7 ") : (filename.split(".").pop() ?? "Video").toUpperCase()
+    };
+  }
+  function normalizeKey(title) {
+    return title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  function readMatchCache() {
+    try {
+      const raw = getScopedStorageItem(MATCH_CACHE_KEY);
+      if (raw) return JSON.parse(raw);
+      const legacy = getScopedStorageItem(LEGACY_MATCH_CACHE_KEY);
+      if (!legacy) return {};
+      const hits = {};
+      for (const [key, entry] of Object.entries(JSON.parse(legacy))) {
+        if (entry?.hit) hits[key] = entry;
+      }
+      return hits;
+    } catch {
+      return {};
+    }
+  }
+  function writeMatchCache(cache8) {
+    try {
+      setScopedStorageItem(MATCH_CACHE_KEY, JSON.stringify(cache8));
+    } catch {
+    }
+  }
+  async function searchTmdb(title, year, kind) {
+    const params = new URLSearchParams({ query: title });
+    if (year) params.set("year", String(year));
+    const response = await fetch(`/api/local-files/search?${params}`);
+    if (!response.ok) return void 0;
+    const data = await response.json();
+    const results = (data.results ?? []).filter((hit) => hit.type === kind);
+    if (results.length === 0 && year) {
+      const retry = await fetch(`/api/local-files/search?${new URLSearchParams({ query: title })}`);
+      if (!retry.ok) return void 0;
+      const retryData = await retry.json();
+      return (retryData.results ?? []).find((hit) => hit.type === kind) ?? null;
+    }
+    return results[0] ?? null;
+  }
+  async function matchCached(title, year, kind, cache8) {
+    const key = `${kind}:${normalizeKey(title)}:${year ?? ""}`;
+    const cached = cache8[key];
+    if (cached && (cached.hit || Date.now() - cached.at < MISS_TTL_MS)) return cached.hit;
+    const hit = await searchTmdb(title, year, kind).catch(() => void 0);
+    if (hit === void 0) return null;
+    cache8[key] = { hit, at: Date.now() };
+    return hit;
+  }
+  async function matchTitlesByName(wanted, signal) {
+    const cache8 = readMatchCache();
+    const out = new Array(wanted.length).fill(null);
+    for (let index = 0; index < wanted.length; index += 2) {
+      if (signal?.aborted) break;
+      await Promise.all(wanted.slice(index, index + 2).map(async (entry, offset) => {
+        const parsed = parseLocalName(`${entry.title}.mkv`);
+        const looksLikeEpisode = parsed.season != null && parsed.episode != null;
+        if (looksLikeEpisode && entry.kind === "movie") return;
+        out[index + offset] = await matchCached(parsed.title || entry.title, entry.year ?? parsed.year, entry.kind, cache8);
+      }));
+    }
+    writeMatchCache(cache8);
+    return out;
+  }
+  var QUALITY_TOKENS, MATCH_CACHE_KEY, LEGACY_MATCH_CACHE_KEY, MISS_TTL_MS;
+  var init_local_folder_provider = __esm({
+    "lib/library/local-folder-provider.ts"() {
+      "use strict";
+      "use client";
+      init_local_episode_files();
+      init_profile_storage_shim();
+      init_local_folders();
+      QUALITY_TOKENS = /\b(2160p|1080p|720p|480p|4k|uhd|hdr|dv|web[- ]?dl|webrip|bluray|blu-ray|bdrip|brrip|hdtv|dvdrip|remux|x264|x265|h\.?264|h\.?265|hevc|avc|aac|ac3|eac3|dts|atmos|truehd|10bit|proper|repack|multi|nordic|swesub|amzn|nf|dsnp|hmax)\b/i;
+      MATCH_CACHE_KEY = "local_library_match_cache_v2";
+      LEGACY_MATCH_CACHE_KEY = "local_library_match_cache_v1";
+      MISS_TTL_MS = 7 * 24 * 60 * 6e4;
+    }
+  });
+
+  // lib/library/name-match.ts
+  async function fillMissingIds(titles, signal, match = matchTitlesByName) {
+    const missing = titles.filter((title) => !title.tmdbId && !title.imdbId);
+    if (missing.length === 0) return titles;
+    const hits = await match(
+      missing.map((title) => ({ title: title.title, year: title.year ?? null, kind: title.kind === "series" ? "tv" : "movie" })),
+      signal
+    );
+    const byKey = /* @__PURE__ */ new Map();
+    missing.forEach((title, index) => {
+      const hit = hits[index];
+      if (hit) byKey.set(title.key, hit);
+    });
+    if (byKey.size === 0) return titles;
+    return titles.map((title) => {
+      const hit = byKey.get(title.key);
+      if (!hit) return title;
+      return {
+        ...title,
+        tmdbId: hit.tmdbId,
+        posterUrl: hit.posterUrl ?? title.posterUrl ?? null,
+        backdropUrl: hit.backdropUrl ?? title.backdropUrl ?? null,
+        overview: title.overview || hit.overview || null,
+        year: title.year ?? hit.year ?? null
+      };
+    });
+  }
+  var init_name_match = __esm({
+    "lib/library/name-match.ts"() {
+      "use strict";
+      "use client";
+      init_local_folder_provider();
+    }
+  });
+
   // lib/library/scan.ts
   function isLibraryScanRunning() {
     return running;
   }
+  function setActive(next) {
+    active = next;
+    for (const listener of scanListeners) listener(next);
+  }
   async function runLibraryScan(provider, source, options) {
     if (running) throw new Error("library scan already running");
     running = true;
+    setActive({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
+    const onProgress = options.onProgress;
     try {
-      return await runLibraryScanInner(provider, source, options);
+      return await runLibraryScanInner(provider, source, {
+        ...options,
+        onProgress: (progress2) => {
+          setActive({ sourceId: source.id, progress: progress2 });
+          onProgress?.(progress2);
+        }
+      });
     } finally {
       running = false;
+      setActive(null);
     }
   }
   async function runLibraryScanInner(provider, source, options) {
-    const io = options.io ?? { postBatch: postLibraryBatch, fetchKeys: fetchLibraryKeys };
+    const io = options.io ?? { postBatch: postLibraryBatch, fetchKeys: fetchLibraryKeys, fillIds: fillMissingIds };
+    const fillIds = io.fillIds ?? (async (titles2) => titles2);
     const startedAt = Date.now();
     const sourceRecord = { id: source.id, provider: provider.id, name: source.name, enabled: true };
     const seen = /* @__PURE__ */ new Set();
     let titles = 0;
     let unmatched = 0;
     const report = (progress2) => options.onProgress?.(progress2);
-    const emit2 = async (batch) => {
+    const emit3 = async (incoming) => {
       if (options.signal?.aborted) return;
+      const batch = incoming.upsert?.length ? { ...incoming, upsert: await fillIds(incoming.upsert, options.signal) } : incoming;
       for (const title of batch.upsert ?? []) {
         seen.add(title.key);
         titles += 1;
@@ -8966,7 +9991,7 @@
     };
     report({ phase: "listing", done: 0 });
     const before = options.mode === "full" ? new Set(await io.fetchKeys(source.id)) : /* @__PURE__ */ new Set();
-    const result = options.mode === "full" ? await provider.scanAll(source, emit2, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit2, report, options.signal ?? new AbortController().signal);
+    const result = options.mode === "full" ? await provider.scanAll(source, emit3, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit3, report, options.signal ?? new AbortController().signal);
     let removed = 0;
     if (options.mode === "full" && !options.signal?.aborted) {
       report({ phase: "pruning", done: titles });
@@ -8989,13 +10014,16 @@
     report({ phase: "done", done: titles, total: titles });
     return { titles, removed, unmatched, cursor: result.cursor ?? null, durationMs: Date.now() - startedAt };
   }
-  var running;
+  var running, active, scanListeners;
   var init_scan = __esm({
     "lib/library/scan.ts"() {
       "use client";
       init_client();
       init_ids();
+      init_name_match();
       running = false;
+      active = null;
+      scanListeners = /* @__PURE__ */ new Set();
     }
   });
 
@@ -9265,6 +10293,11 @@
     const raw = Number(getScopedStorageItem(TV_MENU_SCALE_KEY));
     return TV_MENU_SCALE_OPTIONS.includes(raw) ? raw : 100;
   }
+  function getTvButtonScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(TV_BUTTON_SCALE_KEY));
+    return TV_BUTTON_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
   function getCornerScale() {
     if (typeof window === "undefined") return 100;
     const raw = Number(getScopedStorageItem(CORNER_SCALE_KEY));
@@ -9347,6 +10380,14 @@
     const tvMenuScale = getTvMenuScale();
     if (tvMenuScale === 100) root.style.removeProperty("--tv-menu-scale");
     else root.style.setProperty("--tv-menu-scale", String(tvMenuScale / 100));
+    const tvButtonScale = getTvButtonScale();
+    if (tvButtonScale === 100) {
+      root.style.removeProperty("--tv-button-scale");
+      delete root.dataset.tvButtonScale;
+    } else {
+      root.style.setProperty("--tv-button-scale", String(tvButtonScale / 100));
+      root.dataset.tvButtonScale = String(tvButtonScale);
+    }
     const cornerScale = getCornerScale();
     if (cornerScale === 100) root.style.removeProperty("--corner-scale");
     else root.style.setProperty("--corner-scale", String(cornerScale / 100));
@@ -9357,8 +10398,8 @@
     if (getHeroActionsExpanded()) root.dataset.heroActionLabels = "open";
     else delete root.dataset.heroActionLabels;
     if (getAppTheme() === "custom") {
-      const active2 = getCustomThemes().find((theme) => theme.id === getActiveCustomThemeId());
-      applyCustomThemeVars(active2 ?? null);
+      const active3 = getCustomThemes().find((theme) => theme.id === getActiveCustomThemeId());
+      applyCustomThemeVars(active3 ?? null);
     } else {
       applyCustomThemeVars(null);
     }
@@ -9385,7 +10426,7 @@
       root.style.setProperty("--accent-600", a600);
     }
   }
-  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT2, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
+  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT2, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, TV_BUTTON_SCALE_KEY, TV_BUTTON_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
   var init_appearance_settings = __esm({
     "lib/appearance-settings.ts"() {
       "use strict";
@@ -9408,6 +10449,8 @@
       TV_FONT_SCALE_OPTIONS = [90, 100, 110, 120, 135];
       TV_MENU_SCALE_KEY = "appearance_tv_menu_scale";
       TV_MENU_SCALE_OPTIONS = [100, 115, 130, 150];
+      TV_BUTTON_SCALE_KEY = "appearance_tv_button_scale";
+      TV_BUTTON_SCALE_OPTIONS = [80, 90, 100, 115, 130, 150];
       CORNER_SCALE_KEY = "appearance_corner_scale";
       CORNER_SCALE_OPTIONS = [100, 115, 130, 150];
       HERO_ACTIONS_KEY = "appearance_hero_actions_expanded";
@@ -10948,11 +11991,11 @@
     return new Promise((resolve) => {
       const startedAt = Date.now();
       let done = false;
-      let timer2 = setTimeout(() => finish(), ms);
+      let timer3 = setTimeout(() => finish(), ms);
       const finish = () => {
         if (done) return;
         done = true;
-        clearTimeout(timer2);
+        clearTimeout(timer3);
         document.removeEventListener("visibilitychange", wake);
         window.removeEventListener("focus", wake);
         resolve();
@@ -10965,8 +12008,8 @@
           finish();
           return;
         }
-        clearTimeout(timer2);
-        timer2 = setTimeout(() => finish(), WAKE_MIN_DELAY_MS - elapsed);
+        clearTimeout(timer3);
+        timer3 = setTimeout(() => finish(), WAKE_MIN_DELAY_MS - elapsed);
       };
       document.addEventListener("visibilitychange", wake);
       window.addEventListener("focus", wake);
@@ -11959,7 +13002,7 @@
   }
   async function fetchJsonWithTimeout(input, init, timeoutMs) {
     const controller = new AbortController();
-    const timer2 = setTimeout(() => controller.abort(), timeoutMs);
+    const timer3 = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(input, {
         ...init ?? {},
@@ -11968,7 +13011,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } finally {
-      clearTimeout(timer2);
+      clearTimeout(timer3);
     }
   }
   async function fetchEpisodeStreamResults(imdbId, season, episode) {
@@ -12160,7 +13203,7 @@
   }
   async function fetchJsonWithTimeout2(input, init, timeoutMs) {
     const controller = new AbortController();
-    const timer2 = setTimeout(() => controller.abort(), timeoutMs);
+    const timer3 = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(input, {
         ...init ?? {},
@@ -12169,7 +13212,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } finally {
-      clearTimeout(timer2);
+      clearTimeout(timer3);
     }
   }
   async function fetchStreamResults(imdbId) {
@@ -13094,6 +14137,15 @@
           /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
           /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
           /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
+        ] });
+      case "sleepTimer":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" }) });
+      case "companions":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "8", r: "3.2" }),
+          /* @__PURE__ */ jsx("path", { d: "M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5" }),
+          /* @__PURE__ */ jsx("circle", { cx: "17", cy: "9", r: "2.4" }),
+          /* @__PURE__ */ jsx("path", { d: "M16 14c2.6.1 4.4 1.6 5 4.5" })
         ] });
       case "barcodeStrip":
         return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M5 5v14M9 5v14M13 5v14M17 5v14M20 5v14" }) });
@@ -15684,6 +16736,451 @@
     }
   });
 
+  // lib/watch-journal/types.ts
+  function viewingKey(s) {
+    return `${s.mediaId}|${s.season ?? ""}|${s.episode ?? ""}`;
+  }
+  function isCompleteAt(pos, duration) {
+    return duration > 0 && pos / duration >= COMPLETE_RATIO;
+  }
+  var COMPLETE_RATIO, VIEWING_DEDUPE_WINDOW_MS;
+  var init_types = __esm({
+    "lib/watch-journal/types.ts"() {
+      "use strict";
+      COMPLETE_RATIO = 0.9;
+      VIEWING_DEDUPE_WINDOW_MS = 36 * 36e5;
+    }
+  });
+
+  // lib/watch-journal/recorder-core.ts
+  function defaultCompanions(last2, nowMs) {
+    if (!last2 || last2.ids.length === 0) return [];
+    return nowMs - last2.endedAtMs <= COMPANIONS_WINDOW_MS ? [...last2.ids] : [];
+  }
+  function createRecorder(deps) {
+    let open2 = null;
+    let openKey = "";
+    let lastTickMs = 0;
+    let lastPos = 0;
+    let lastPersistMs = null;
+    let chosen = null;
+    let chosenAtMs = 0;
+    function choiceFor(nowMs) {
+      if (chosen && nowMs - chosenAtMs <= COVIEWER_CHOICE_TTL_MS) return [...chosen];
+      chosen = null;
+      return deps.defaultCoViewers?.() ?? [];
+    }
+    function close() {
+      if (open2 && open2.played >= MIN_PLAYED_S) deps.persist({ ...open2 }, true);
+      open2 = null;
+      openKey = "";
+    }
+    function finish() {
+      close();
+      chosen = null;
+    }
+    function tick2(input, final = false) {
+      if (input.type === "audiobook" || !(input.duration > 0)) return;
+      const nowMs = deps.now();
+      const key = viewingKey(input);
+      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close();
+      const iso = new Date(nowMs).toISOString();
+      if (!open2) {
+        open2 = {
+          id: deps.newId(),
+          profileId: deps.profileId(),
+          mediaId: input.mediaId,
+          tmdbId: input.tmdbId,
+          type: input.type,
+          ...input.season != null ? { season: input.season } : {},
+          ...input.episode != null ? { episode: input.episode } : {},
+          title: input.title,
+          posterUrl: input.posterUrl ?? null,
+          year: input.year ?? null,
+          startedAt: iso,
+          endedAt: iso,
+          updatedAt: iso,
+          startPos: input.position,
+          endPos: input.position,
+          duration: input.duration,
+          played: 0,
+          completed: isCompleteAt(input.position, input.duration),
+          coViewers: choiceFor(nowMs)
+        };
+        openKey = key;
+        lastPos = input.position;
+        lastPersistMs = null;
+      } else {
+        const advance = input.position - lastPos;
+        if (advance > 0 && advance <= MAX_TICK_ADVANCE_S) open2.played += advance;
+        lastPos = input.position;
+        open2.endPos = input.position;
+        open2.duration = input.duration;
+        open2.endedAt = iso;
+        open2.updatedAt = iso;
+        if (isCompleteAt(input.position, input.duration)) open2.completed = true;
+      }
+      lastTickMs = nowMs;
+      if (chosen) chosenAtMs = nowMs;
+      if (open2.played < MIN_PLAYED_S) {
+        if (final) finish();
+        return;
+      }
+      if (final) {
+        finish();
+        return;
+      }
+      if (lastPersistMs === null || nowMs - lastPersistMs >= PERSIST_EVERY_MS) {
+        lastPersistMs = nowMs;
+        deps.persist({ ...open2 }, false);
+      }
+    }
+    function setCoViewers(ids) {
+      const nowMs = deps.now();
+      chosen = [...new Set(ids)];
+      chosenAtMs = nowMs;
+      if (open2) {
+        open2.coViewers = [...chosen];
+        open2.updatedAt = new Date(nowMs).toISOString();
+      }
+    }
+    function coViewers() {
+      return open2 ? [...open2.coViewers] : choiceFor(deps.now());
+    }
+    function markAsleep(pos, atMs) {
+      if (!open2) return false;
+      open2.fellAsleep = { at: new Date(atMs).toISOString(), pos };
+      open2.updatedAt = new Date(deps.now()).toISOString();
+      return true;
+    }
+    return { tick: tick2, current: () => open2, setCoViewers, coViewers, markAsleep };
+  }
+  var SESSION_GAP_MS, MIN_PLAYED_S, PERSIST_EVERY_MS, MAX_TICK_ADVANCE_S, COVIEWER_CHOICE_TTL_MS, COMPANIONS_WINDOW_MS;
+  var init_recorder_core = __esm({
+    "lib/watch-journal/recorder-core.ts"() {
+      "use strict";
+      init_types();
+      SESSION_GAP_MS = 30 * 6e4;
+      MIN_PLAYED_S = 60;
+      PERSIST_EVERY_MS = 6e4;
+      MAX_TICK_ADVANCE_S = 10;
+      COVIEWER_CHOICE_TTL_MS = 5 * 6e4;
+      COMPANIONS_WINDOW_MS = 12 * 36e5;
+    }
+  });
+
+  // lib/watch-journal/store.ts
+  function emit() {
+    version2++;
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_CHANGED_EVENT));
+  }
+  function scheduleIdle(fn) {
+    const ric = typeof window !== "undefined" ? window.requestIdleCallback : void 0;
+    if (ric) ric(fn, { timeout: 5e3 });
+    else setTimeout(fn, 0);
+  }
+  async function put(s) {
+    try {
+      const r = await fetch(`/api/journal?profile=${encodeURIComponent(s.profileId)}&id=${encodeURIComponent(s.id)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(s)
+      });
+      return r.ok;
+    } catch {
+      return false;
+    }
+  }
+  async function flushJournal() {
+    flushQueued = false;
+    const batch = [...pending2.values()];
+    pending2.clear();
+    let anyFailed = false;
+    for (const s of batch) {
+      const ok = await put(s);
+      if (!ok) {
+        anyFailed = true;
+        if (!pending2.has(s.id)) pending2.set(s.id, s);
+      }
+    }
+    if (anyFailed && !retryTimer) {
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        void flushJournal();
+      }, RETRY_MS);
+    }
+  }
+  function upsertSession(s) {
+    pending2.set(s.id, { ...s });
+    if (s.profileId === loadedFor) {
+      sessions.set(s.id, { ...s });
+      emit();
+    }
+    if (!flushQueued) {
+      flushQueued = true;
+      scheduleIdle(() => {
+        void flushJournal();
+      });
+    }
+  }
+  var JOURNAL_CHANGED_EVENT, JOURNAL_SYNC_WORTHY_EVENT, sessions, pending2, loadedFor, version2, flushQueued, RETRY_MS, retryTimer;
+  var init_store = __esm({
+    "lib/watch-journal/store.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      JOURNAL_CHANGED_EVENT = "lumio-watch-journal-changed";
+      JOURNAL_SYNC_WORTHY_EVENT = "lumio-journal-sync-worthy";
+      sessions = /* @__PURE__ */ new Map();
+      pending2 = /* @__PURE__ */ new Map();
+      loadedFor = null;
+      version2 = 0;
+      flushQueued = false;
+      RETRY_MS = 3e4;
+      retryTimer = null;
+    }
+  });
+
+  // lib/watch-journal/player-open.ts
+  function setPlayerOpen(value) {
+    open = value;
+  }
+  function isPlayerOpen() {
+    return open;
+  }
+  var open;
+  var init_player_open = __esm({
+    "lib/watch-journal/player-open.ts"() {
+      open = false;
+    }
+  });
+
+  // lib/watch-journal/weather.ts
+  function getWeatherPrefs() {
+    try {
+      const raw = getScopedStorageItem(WEATHER_PREFS_KEY);
+      if (!raw) return OFF;
+      const p = JSON.parse(raw);
+      const place = p.place && typeof p.place.lat === "number" && typeof p.place.lon === "number" ? p.place : null;
+      return { enabled: p.enabled === true, place };
+    } catch {
+      return OFF;
+    }
+  }
+  function forecastUrl(lat, lon) {
+    return `${FORECAST_URL}?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=weather_code,temperature_2m`;
+  }
+  function parseForecast(json) {
+    const c = json?.current;
+    if (!c || typeof c.weather_code !== "number" || typeof c.temperature_2m !== "number") return null;
+    return { code: c.weather_code, tempC: c.temperature_2m };
+  }
+  function schedule(ms) {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      void drain();
+    }, ms);
+  }
+  async function drain() {
+    const nowMs = Date.now();
+    for (let i = pending3.length - 1; i >= 0; i--) {
+      if (nowMs - Date.parse(pending3[i].endedAt) > WEATHER_MAX_AGE_MS) pending3.splice(i, 1);
+    }
+    if (pending3.length === 0) return;
+    if (isPlayerOpen()) {
+      schedule(WEATHER_RETRY_MS);
+      return;
+    }
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place) {
+      pending3.length = 0;
+      return;
+    }
+    let weather = null;
+    try {
+      const r = await fetch(forecastUrl(prefs.place.lat, prefs.place.lon));
+      if (r.ok) weather = parseForecast(await r.json());
+    } catch {
+    }
+    if (!weather) {
+      schedule(WEATHER_RETRY_MS * 5);
+      return;
+    }
+    const iso = (/* @__PURE__ */ new Date()).toISOString();
+    for (const s of pending3.splice(0)) upsertSession({ ...s, weather, updatedAt: iso });
+  }
+  function queueSessionWeather(s) {
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place || s.weather || s.seeded) return;
+    if (!pending3.some((p) => p.id === s.id)) pending3.push(s);
+    schedule(0);
+  }
+  var WEATHER_PREFS_KEY, FORECAST_URL, WEATHER_RETRY_MS, WEATHER_MAX_AGE_MS, OFF, pending3, timer;
+  var init_weather = __esm({
+    "lib/watch-journal/weather.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      init_player_open();
+      init_store();
+      WEATHER_PREFS_KEY = "profile_weather_v1";
+      FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+      WEATHER_RETRY_MS = 6e4;
+      WEATHER_MAX_AGE_MS = 3 * 36e5;
+      OFF = { enabled: false, place: null };
+      pending3 = [];
+      timer = null;
+    }
+  });
+
+  // lib/watch-journal/recorder.ts
+  function loadLast() {
+    try {
+      const raw = getScopedStorageItem(LAST_COMPANIONS_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      last = parsed && Array.isArray(parsed.ids) && typeof parsed.endedAtMs === "number" ? { ids: parsed.ids.filter((x) => typeof x === "string"), endedAtMs: parsed.endedAtMs } : null;
+    } catch {
+      last = null;
+    }
+  }
+  function newId() {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+  function journalTick(input, final = false) {
+    try {
+      recorder.tick(input, final);
+    } catch (error) {
+      console.warn("[journal] tick", error);
+    }
+  }
+  function journalSetCoViewers(ids) {
+    try {
+      recorder.setCoViewers(ids);
+    } catch (error) {
+      console.warn("[journal] coViewers", error);
+    }
+  }
+  function journalCoViewers() {
+    try {
+      return recorder.coViewers();
+    } catch {
+      return [];
+    }
+  }
+  function journalMarkAsleep(pos, atMs) {
+    try {
+      recorder.markAsleep(pos, atMs);
+    } catch (error) {
+      console.warn("[journal] asleep", error);
+    }
+  }
+  var LAST_COMPANIONS_KEY, last, recorder;
+  var init_recorder = __esm({
+    "lib/watch-journal/recorder.ts"() {
+      init_profile_storage_shim();
+      init_recorder_core();
+      init_store();
+      init_weather();
+      LAST_COMPANIONS_KEY = "journal_last_companions_v1";
+      last = null;
+      if (typeof window !== "undefined") {
+        scheduleIdle(loadLast);
+        window.addEventListener("lumio-profile-changed", () => {
+          last = null;
+          scheduleIdle(loadLast);
+        });
+      }
+      recorder = createRecorder({
+        now: () => Date.now(),
+        newId,
+        profileId: () => getActiveProfileId() ?? "default",
+        persist: (s, final) => {
+          upsertSession(s);
+          if (!final) return;
+          if (typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_SYNC_WORTHY_EVENT));
+          scheduleIdle(() => queueSessionWeather(s));
+          if (s.profileId !== (getActiveProfileId() ?? "default")) return;
+          const record = { ids: [...s.coViewers], endedAtMs: Date.parse(s.endedAt) };
+          last = record;
+          scheduleIdle(() => {
+            try {
+              setScopedStorageItem(LAST_COMPANIONS_KEY, JSON.stringify(record));
+            } catch {
+            }
+          });
+        },
+        defaultCoViewers: () => defaultCompanions(last, Date.now())
+      });
+    }
+  });
+
+  // lib/avatars/catalog.ts
+  var AVATAR_URLS, avatarUrl, PROFILE_COLORS;
+  var init_catalog = __esm({
+    "lib/avatars/catalog.ts"() {
+      AVATAR_URLS = {};
+      avatarUrl = (id) => AVATAR_URLS[`/src/assets/avatars/${id}.webp`] ?? "";
+      PROFILE_COLORS = [
+        "#7dd3fc",
+        "#60a5fa",
+        "#a78bfa",
+        "#f472b6",
+        "#fb7185",
+        "#fb923c",
+        "#fbbf24",
+        "#a3e635",
+        "#34d399",
+        "#22d3ee"
+      ];
+    }
+  });
+
+  // components/ui/profile-avatar.tsx
+  function profileColor(profile) {
+    return profile.color ?? DEFAULT_COLOR;
+  }
+  function ProfileAvatar({
+    profile,
+    className
+  }) {
+    const color = profileColor(profile);
+    return /* @__PURE__ */ jsx(
+      "span",
+      {
+        className: `relative flex items-center justify-center overflow-hidden rounded-full bg-white/[0.06] ${className ?? "h-12 w-12"}`,
+        style: { boxShadow: `0 0 0 2px ${color}` },
+        children: profile.avatar ? /* @__PURE__ */ jsx("img", { src: avatarUrl(profile.avatar), alt: "", className: "h-full w-full object-cover", draggable: false }) : /* @__PURE__ */ jsx("span", { className: "text-lg font-semibold", style: { color }, children: profile.name.trim().charAt(0).toUpperCase() || "?" })
+      }
+    );
+  }
+  var DEFAULT_COLOR;
+  var init_profile_avatar = __esm({
+    "components/ui/profile-avatar.tsx"() {
+      "use client";
+      init_catalog();
+      init_jsx_runtime_shim();
+      DEFAULT_COLOR = PROFILE_COLORS[0];
+    }
+  });
+
+  // lib/sleep-timer.ts
+  function armSleepTimer(mode, nowMs) {
+    return mode === "off" ? DISARMED : { mode, armedAtMs: nowMs };
+  }
+  function sleepTimerDue(state2, c) {
+    if (state2.mode === "off" || state2.armedAtMs == null) return false;
+    if (state2.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
+    return c.nowMs - state2.armedAtMs >= state2.mode * 6e4;
+  }
+  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED;
+  var init_sleep_timer = __esm({
+    "lib/sleep-timer.ts"() {
+      SLEEP_TIMER_OPTIONS = ["off", 15, 30, 45, 60, 90, "end"];
+      SLEEP_PROMPT_SECONDS = 60;
+      SLEEP_END_MARGIN_S = 20;
+      DISARMED = { mode: "off", armedAtMs: null };
+    }
+  });
+
   // lib/barcode/barcode-samplers.ts
   function toLinear(c) {
     const v = c / 255;
@@ -15874,11 +17371,11 @@
   function markComplete(b, endAt, now2) {
     let end = endAt;
     if (end == null) {
-      let last = -1;
+      let last2 = -1;
       b.colors.forEach((c, i) => {
-        if (c) last = i;
+        if (c) last2 = i;
       });
-      end = last < 0 ? b.duration : (last + 1) / b.colors.length * b.duration;
+      end = last2 < 0 ? b.duration : (last2 + 1) / b.colors.length * b.duration;
     }
     return { ...b, completedAt: now2, endAt: Math.min(b.duration, Math.max(0, end)), updatedAt: now2 };
   }
@@ -15951,7 +17448,7 @@
   function profileParam() {
     return encodeURIComponent(getActiveProfileId() ?? "default");
   }
-  function emit() {
+  function emit2() {
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODES_CHANGED_EVENT));
   }
   function emitSyncWorthy() {
@@ -15967,13 +17464,13 @@
     lastWrite.clear();
     for (const t of timers.values()) clearTimeout(t);
     timers.clear();
-    loadedFor = null;
+    loadedFor2 = null;
     loading = null;
   }
   function loadBarcodes() {
     const profile = profileParam();
-    if (loadedFor === profile) return Promise.resolve(listBarcodes());
-    if (loadedFor !== null) resetBarcodeCache();
+    if (loadedFor2 === profile) return Promise.resolve(listBarcodes());
+    if (loadedFor2 !== null) resetBarcodeCache();
     if (loading) return loading;
     loading = (async () => {
       try {
@@ -15982,9 +17479,9 @@
         for (const b of data.items ?? []) if (!items.has(b.id)) items.set(b.id, b);
       } catch {
       }
-      loadedFor = profile;
+      loadedFor2 = profile;
       loading = null;
-      emit();
+      emit2();
       return listBarcodes();
     })();
     return loading;
@@ -15995,7 +17492,7 @@
   function getBarcode(id) {
     return items.get(id) ?? null;
   }
-  async function put(id) {
+  async function put2(id) {
     const b = items.get(id);
     if (!b) return;
     dirty.delete(id);
@@ -16010,13 +17507,13 @@
       dirty.add(id);
     }
   }
-  function schedule(id) {
+  function schedule2(id) {
     if (timers.has(id)) return;
     const since = Date.now() - (lastWrite.get(id) ?? 0);
     const wait = Math.max(0, BARCODE_WRITE_INTERVAL_MS - since);
     timers.set(id, setTimeout(() => {
       timers.delete(id);
-      if (dirty.has(id)) void put(id);
+      if (dirty.has(id)) void put2(id);
     }, wait));
   }
   function recordColumn(meta, columns, i, color) {
@@ -16026,8 +17523,8 @@
     if (next === current && items.has(meta.id)) return;
     items.set(meta.id, next);
     dirty.add(meta.id);
-    schedule(meta.id);
-    emit();
+    schedule2(meta.id);
+    emit2();
   }
   async function flushBarcode(id) {
     const t = timers.get(id);
@@ -16035,14 +17532,14 @@
       clearTimeout(t);
       timers.delete(id);
     }
-    if (dirty.has(id)) await put(id);
+    if (dirty.has(id)) await put2(id);
   }
   async function completeBarcode(id, endAt) {
     const b = items.get(id);
     if (!b) return;
     items.set(id, markComplete(b, endAt, (/* @__PURE__ */ new Date()).toISOString()));
     dirty.add(id);
-    emit();
+    emit2();
     await flushBarcode(id);
     emitSyncWorthy();
   }
@@ -16050,8 +17547,8 @@
     const b = items.get(id);
     if (!b) return;
     items.set(id, { ...b, meta });
-    emit();
-    await put(id);
+    emit2();
+    await put2(id);
   }
   function onBarcodesChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -16068,7 +17565,7 @@
       window.removeEventListener("lumio-profile-changed", onProfile);
     };
   }
-  var BARCODES_CHANGED_EVENT, BARCODE_WRITE_INTERVAL_MS, items, loadedFor, loading, dirty, lastWrite, timers, SYNC_WORTHY_EVENT;
+  var BARCODES_CHANGED_EVENT, BARCODE_WRITE_INTERVAL_MS, items, loadedFor2, loading, dirty, lastWrite, timers, SYNC_WORTHY_EVENT;
   var init_barcode_store = __esm({
     "lib/barcode/barcode-store.ts"() {
       "use strict";
@@ -16077,7 +17574,7 @@
       BARCODES_CHANGED_EVENT = "lumio-barcodes-changed";
       BARCODE_WRITE_INTERVAL_MS = 1e4;
       items = /* @__PURE__ */ new Map();
-      loadedFor = null;
+      loadedFor2 = null;
       loading = null;
       dirty = /* @__PURE__ */ new Set();
       lastWrite = /* @__PURE__ */ new Map();
@@ -16534,8 +18031,8 @@
   function ensureBarcodeMeta(b) {
     if (b.meta !== void 0) return Promise.resolve(b.meta);
     if (b.tmdbId == null) return Promise.resolve(null);
-    const pending2 = inflight4.get(b.id);
-    if (pending2) return pending2;
+    const pending4 = inflight4.get(b.id);
+    if (pending4) return pending4;
     const task = chain.then(async () => {
       const current = getBarcode(b.id);
       if (current && current.meta !== void 0) return current.meta;
@@ -16618,7 +18115,7 @@
       void loadBarcodes();
       const state2 = createSamplerState();
       const columns = settings.columns;
-      const timer2 = setInterval(() => {
+      const timer3 = setInterval(() => {
         const snap = args.snapshotRef.current;
         const existing = getBarcode(id);
         const n = existing?.columns ?? columns;
@@ -16652,7 +18149,7 @@
         });
       }, TICK_MS);
       return () => {
-        clearInterval(timer2);
+        clearInterval(timer3);
         void endRecording(id);
       };
     }, [applies, id]);
@@ -16827,8 +18324,8 @@
         useEffect(() => {
           if (!state2.status) return;
           setChipUntil(Date.now() + CHIP_MS);
-          const timer2 = setTimeout(() => setChipUntil(0), CHIP_MS);
-          return () => clearTimeout(timer2);
+          const timer3 = setTimeout(() => setChipUntil(0), CHIP_MS);
+          return () => clearTimeout(timer3);
         }, [state2.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
@@ -17106,6 +18603,8 @@
         "audioDelay",
         "nextEpisode",
         "switchStream",
+        "sleepTimer",
+        "companions",
         "more",
         "fullscreen"
       ];
@@ -17592,7 +19091,7 @@
     });
   }
   async function tick() {
-    timer = null;
+    timer2 = null;
     if (inFlight) {
       again = true;
       return;
@@ -17607,12 +19106,12 @@
       void tick();
       return;
     }
-    if (listeners4.size > 0 && getHapticsHostEnabled()) timer = setTimeout(() => void tick(), POLL_MS);
+    if (listeners4.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
   }
   function subscribeHapticsHostStatus(listener) {
     listeners4.add(listener);
     listener(latest);
-    if (!timer && !inFlight) void tick();
+    if (!timer2 && !inFlight) void tick();
     return () => {
       listeners4.delete(listener);
     };
@@ -17622,7 +19121,7 @@
     useEffect(() => subscribeHapticsHostStatus(setStatus), []);
     return status;
   }
-  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners4, timer, latest, inFlight, again;
+  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners4, timer2, latest, inFlight, again;
   var init_haptics_host = __esm({
     "lib/haptics-host.ts"() {
       "use client";
@@ -17633,7 +19132,7 @@
       unsupportedReason = null;
       lastSent = "";
       listeners4 = /* @__PURE__ */ new Set();
-      timer = null;
+      timer2 = null;
       latest = null;
       inFlight = false;
       again = false;
@@ -17818,8 +19317,8 @@
         return buildFallbackResult(params);
       }
     })().finally(() => {
-      const active2 = inflightByKey.get(key);
-      if (active2 === request) inflightByKey.delete(key);
+      const active3 = inflightByKey.get(key);
+      if (active3 === request) inflightByKey.delete(key);
     });
     inflightByKey.set(key, request);
     return request;
@@ -17994,7 +19493,7 @@
     const controller = new AbortController();
     const onAbort = () => controller.abort();
     signal?.addEventListener("abort", onAbort);
-    const timer2 = setTimeout(() => controller.abort(), timeoutMs + 500);
+    const timer3 = setTimeout(() => controller.abort(), timeoutMs + 500);
     try {
       const response = await fetch(`/api/streams?${params}`, {
         headers: {
@@ -18008,7 +19507,7 @@
       if (payload.error) throw new Error(payload.error);
       return payload.streams ?? [];
     } finally {
-      clearTimeout(timer2);
+      clearTimeout(timer3);
       signal?.removeEventListener("abort", onAbort);
     }
   }
@@ -18078,8 +19577,8 @@
     };
     const cached = memo2.get(key);
     if (cached && Date.now() - cached.at < MEMO_TTL_MS) return replay(cached.result);
-    const pending2 = inflight5.get(key);
-    if (pending2) return pending2.then(replay);
+    const pending4 = inflight5.get(key);
+    if (pending4) return pending4.then(replay);
     const run = lookupCoreStreamsUncached(target2, options).then((result) => {
       if (result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty")) {
         memo2.set(key, { at: Date.now(), result });
@@ -20816,9 +22315,9 @@ ${cue.text}`).join("\n\n")}
         }
       };
     }, [endHlsSessionOnServer]);
-    const notifyLanPlaybackState = useCallback((active2) => {
+    const notifyLanPlaybackState = useCallback((active3) => {
       if (!getLanStreamingEnabled() || getLanStreamingMode() !== "playback") return;
-      const body = active2 ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
+      const body = active3 ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
       void fetch("/api/lan-playback-state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -20867,6 +22366,11 @@ ${cue.text}`).join("\n\n")}
     const hideTimerRef = useRef(null);
     const [showStillWatchingPrompt, setShowStillWatchingPrompt] = useState(false);
     const [stillWatchingCountdown, setStillWatchingCountdown] = useState(STILL_WATCHING_CLOSE_SECONDS);
+    const [stillWatchingReason, setStillWatchingReason] = useState("episodes");
+    const [sleepTimer, setSleepTimer] = useState(DISARMED);
+    const sleepFiredAtRef = useRef(0);
+    const [companionIds, setCompanionIds] = useState([]);
+    const [companionProfiles, setCompanionProfiles] = useState([]);
     const stillWatchingEnabledRef = useRef(false);
     const stillWatchingMaxMinutesRef = useRef(90);
     const [disableSubtitlesWhenAudioMatches, setDisableSubtitlesWhenAudioMatches] = useState(() => getDisableSubtitlesWhenAudioMatches());
@@ -20876,7 +22380,10 @@ ${cue.text}`).join("\n\n")}
     const stillWatchingEpisodeCountRef = useRef(0);
     function registerPlaybackInteraction() {
       lastPlaybackInteractionRef.current = realTime;
-      if (showStillWatchingPrompt) setShowStillWatchingPrompt(false);
+      if (showStillWatchingPrompt) {
+        setShowStillWatchingPrompt(false);
+        if (stillWatchingReason === "sleep") resumeAfterSleepPrompt();
+      }
     }
     const creditsModeRef = useRef(false);
     function onMouseActivity() {
@@ -20906,6 +22413,26 @@ ${cue.text}`).join("\n\n")}
     const hapticsActive = Boolean(hapticsStatus?.active);
     const hapticFilterWanted = shouldAddHapticFilter({ active: hapticsActive, firstFrame: hasStarted, droid: isDroidEngine });
     const [openSurface, setOpenSurface] = useState(null);
+    const anchorCacheRef = useRef({ surface: null, w: 0, h: 0, styles: /* @__PURE__ */ new Map() });
+    const anchoredMenuStyle = (trigger, menuWidth = 0) => {
+      if (!trigger || typeof window === "undefined") return getAnchoredMenuStyle(trigger, menuWidth);
+      const cache8 = anchorCacheRef.current;
+      if (cache8.surface !== openSurface || cache8.w !== window.innerWidth || cache8.h !== window.innerHeight) {
+        anchorCacheRef.current = { surface: openSurface, w: window.innerWidth, h: window.innerHeight, styles: /* @__PURE__ */ new Map() };
+      }
+      const byTrigger = anchorCacheRef.current.styles;
+      let byWidth = byTrigger.get(trigger);
+      if (!byWidth) {
+        byWidth = /* @__PURE__ */ new Map();
+        byTrigger.set(trigger, byWidth);
+      }
+      let style = byWidth.get(menuWidth);
+      if (!style) {
+        style = getAnchoredMenuStyle(trigger, menuWidth);
+        byWidth.set(menuWidth, style);
+      }
+      return style;
+    };
     const [statsHud, setStatsHudState] = useState(() => getStatsHud());
     const [stripSdh, setStripSdhState] = useState(() => getStripSdh());
     const [playbackSpeed, setPlaybackSpeedState] = useState(() => getSavedPlaybackSpeed(mediaType, tmdbId ?? null));
@@ -20923,6 +22450,10 @@ ${cue.text}`).join("\n\n")}
     const setShowAudioMenu = surfaceSetter("audio");
     const showAudioDelayMenu = openSurface === "audioDelay";
     const setShowAudioDelayMenu = surfaceSetter("audioDelay");
+    const showSleepMenu = openSurface === "sleep";
+    const setShowSleepMenu = surfaceSetter("sleep");
+    const showCompanionsMenu = openSurface === "companions";
+    const setShowCompanionsMenu = surfaceSetter("companions");
     const showCastMenu = openSurface === "cast";
     const setShowCastMenu = surfaceSetter("cast");
     const showAspectMenu = openSurface === "aspect";
@@ -21056,12 +22587,12 @@ ${cue.text}`).join("\n\n")}
           } catch {
           }
         };
-        const timer2 = window.setTimeout(() => {
+        const timer3 = window.setTimeout(() => {
           void probe();
         }, 1200);
         return () => {
           cancelled = true;
-          window.clearTimeout(timer2);
+          window.clearTimeout(timer3);
         };
       }
       const v = videoRef.current;
@@ -21294,14 +22825,14 @@ ${cue.text}`).join("\n\n")}
       if (!clientOwnsSplash || startError) return;
       if (hasStarted || hasEverStarted) return;
       if (isDirectLocalFileSource) return;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         void fetch(`/api/debug-log?msg=${encodeURIComponent(
           `[browser-start-timeout] no first playable in ${BROWSER_START_TIMEOUT_MS}ms src=${(videoSrc || "(pending probe)").slice(0, 90)}`
         )}`).catch(() => {
         });
         escalateBrowserFailureRef.current();
       }, BROWSER_START_TIMEOUT_MS);
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [clientOwnsSplash, startError, hasStarted, hasEverStarted, isDirectLocalFileSource, videoSrc]);
     const loadFailHandledTokenRef = useRef(0);
     const [subtitleClockOverride, setSubtitleClockOverride] = useState(null);
@@ -21312,6 +22843,8 @@ ${cue.text}`).join("\n\n")}
     const aspectTriggerRef = useRef(null);
     const cropTriggerRef = useRef(null);
     const moreTriggerRef = useRef(null);
+    const sleepTriggerRef = useRef(null);
+    const companionsTriggerRef = useRef(null);
     const downloadEsRef = useRef(null);
     const downloadTimerRef = useRef(null);
     const autoSkippedIntroRef = useRef(false);
@@ -21447,19 +22980,19 @@ ${cue.text}`).join("\n\n")}
       };
       holdStill();
       markPlayerReadyToReveal();
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           holdStill();
           return;
         }
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
         const target2 = initialTime ?? 0;
         if (Math.abs(cinemaTimePosRef.current - target2) > 1.5) void mpvCommand2(["seek", target2, "absolute"]);
         void mpvCommand2(["set_property", "mute", userMuted ? "yes" : "no"]);
         cinemaMute.held = false;
         setMpvStartupHoldReady(true);
       }, 200);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [isDroidEngine, mpv.firstFrameRendered]);
     const openMpvPlayer2 = isDroidEngine ? async (args) => {
       if (args.shouldAbort?.()) return;
@@ -21721,7 +23254,7 @@ ${cue.text}`).join("\n\n")}
       const userMuted = cinemaMute.userMuted;
       v.muted = true;
       let pausedByUs = false;
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           if (!v.muted) v.muted = true;
           if (hasStartedForUrlRef.current) {
@@ -21733,7 +23266,7 @@ ${cue.text}`).join("\n\n")}
           }
           return;
         }
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
         v.muted = userMuted;
         cinemaMute.held = false;
         if (!pausedByUs) return;
@@ -21745,7 +23278,7 @@ ${cue.text}`).join("\n\n")}
         void v.play().catch(() => {
         });
       }, 120);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [useMpv, videoSrc]);
     useEffect(() => {
       if (!useMpv || !mpvStartupHoldReady) return;
@@ -22249,7 +23782,9 @@ ${cue.text}`).join("\n\n")}
       else onMouseActivity();
     }
     const togglePlay = useCallback(() => {
+      const sleepPromptUp = showStillWatchingPrompt && stillWatchingReason === "sleep";
       registerPlaybackInteraction();
+      if (sleepPromptUp) return;
       if (useMpv) {
         void setMpvPause2(!mpv.paused);
         return;
@@ -22258,7 +23793,7 @@ ${cue.text}`).join("\n\n")}
       if (!v) return;
       if (v.paused) void safePlay(v);
       else v.pause();
-    }, [useMpv, mpv.paused, realTime, showStillWatchingPrompt]);
+    }, [useMpv, mpv.paused, realTime, showStillWatchingPrompt, stillWatchingReason]);
     const attemptHtml5Start = useCallback(async (userGesture) => {
       if (useMpv) return;
       const v = videoRef.current;
@@ -22386,7 +23921,7 @@ ${cue.text}`).join("\n\n")}
         boundsSyncFrameRef.current = null;
         syncPlayerBounds();
       });
-      boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
+      boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
       boundsResyncTimersRef.current = [window.setTimeout(() => {
         syncPlayerBounds();
       }, 220)];
@@ -22497,8 +24032,8 @@ ${cue.text}`).join("\n\n")}
       });
       return () => {
         cancelled = true;
-        const pending2 = openPromise;
-        void (pending2 ? pending2.catch(() => {
+        const pending4 = openPromise;
+        void (pending4 ? pending4.catch(() => {
         }).then(() => closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes")) : closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes"));
         releaseSourceCache(url);
         const v = airplayVideoRef.current;
@@ -22559,8 +24094,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!hasStarted || !getShowTitleOnStart()) return;
       setShowStartTitle(true);
-      const timer2 = window.setTimeout(() => setShowStartTitle(false), 4e3);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setShowStartTitle(false), 4e3);
+      return () => window.clearTimeout(timer3);
     }, [hasStarted, title]);
     useEffect(() => {
       setAutoplayDurationHint(totalDuration > 0 ? totalDuration : null);
@@ -22758,23 +24293,27 @@ ${cue.text}`).join("\n\n")}
       finishClose();
     }, [notifyLanPlaybackState, onClose, realTime, scheduleBoundsResync, skipHomeKitOnClose, syncDesktopFullscreenState, title, totalDuration, tryCloseDesktopPlaybackSession, useMpv]);
     useEffect(() => {
+      const seconds = stillWatchingReason === "sleep" ? SLEEP_PROMPT_SECONDS : STILL_WATCHING_CLOSE_SECONDS;
       if (!showStillWatchingPrompt) {
-        setStillWatchingCountdown(STILL_WATCHING_CLOSE_SECONDS);
+        setStillWatchingCountdown(seconds);
         return;
       }
-      setStillWatchingCountdown(STILL_WATCHING_CLOSE_SECONDS);
+      setStillWatchingCountdown(seconds);
       const interval = window.setInterval(() => {
         setStillWatchingCountdown((current) => {
           if (current <= 1) {
             window.clearInterval(interval);
-            window.setTimeout(() => handleClose(), 0);
+            window.setTimeout(() => {
+              if (stillWatchingReason === "sleep") journalMarkAsleep(realTimeRef.current, sleepFiredAtRef.current);
+              handleClose();
+            }, 0);
             return 0;
           }
           return current - 1;
         });
       }, 1e3);
       return () => window.clearInterval(interval);
-    }, [handleClose, showStillWatchingPrompt, STILL_WATCHING_CLOSE_SECONDS]);
+    }, [handleClose, showStillWatchingPrompt, stillWatchingReason, STILL_WATCHING_CLOSE_SECONDS]);
     const handleCopyStreamLink = useCallback(async () => {
       const direct = resolveDirectStreamUrl2(url) ?? url;
       await writeTextToClipboard(direct);
@@ -22939,7 +24478,7 @@ ${cue.text}`).join("\n\n")}
             window.cancelAnimationFrame(boundsSyncFrameRef.current);
             boundsSyncFrameRef.current = null;
           }
-          boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
+          boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
           boundsResyncTimersRef.current = [];
         };
       }
@@ -22950,7 +24489,7 @@ ${cue.text}`).join("\n\n")}
           window.cancelAnimationFrame(boundsSyncFrameRef.current);
           boundsSyncFrameRef.current = null;
         }
-        boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
+        boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
         boundsResyncTimersRef.current = [];
       };
     }, [portalEl, scheduleBoundsResync, useMpv]);
@@ -22963,119 +24502,122 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv) return;
       scheduleBoundsResync();
     }, [useMpv, url, hasStarted, scheduleBoundsResync]);
-    useEffect(() => {
-      lockBodyScroll();
-      function onKey(e) {
-        const keyTarget = e.target;
-        const typing = keyTarget?.tagName === "INPUT" || keyTarget?.tagName === "TEXTAREA" || keyTarget?.isContentEditable === true;
-        if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (openSurfaceRef.current !== null) {
-            const surface = openSurfaceRef.current;
-            setOpenSurface(null);
-            onMouseActivityRef.current();
-            if (isTv) {
-              const trigger = surface === "subs" ? subTriggerRef.current : surface === "audio" ? audioTriggerRef.current : surface === "audioDelay" ? audioDelayTriggerRef.current : surface === "aspect" ? aspectTriggerRef.current : surface === "zoom" ? cropTriggerRef.current : surface === "more" ? moreTriggerRef.current : surface === "tuning" ? tuningTriggerRef.current : null;
-              window.requestAnimationFrame(() => {
-                if (trigger && trigger.isConnected) trigger.focus();
-                else tvFocus?.focusInit(playerRootRef.current);
-              });
+    const playerKeyRef = useRef(() => {
+    });
+    playerKeyRef.current = function onKey(e) {
+      const keyTarget = e.target;
+      const typing = keyTarget?.tagName === "INPUT" || keyTarget?.tagName === "TEXTAREA" || keyTarget?.isContentEditable === true;
+      if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (openSurfaceRef.current !== null) {
+          const surface = openSurfaceRef.current;
+          setOpenSurface(null);
+          onMouseActivityRef.current();
+          if (isTv) {
+            const trigger = surface === "subs" ? subTriggerRef.current : surface === "audio" ? audioTriggerRef.current : surface === "audioDelay" ? audioDelayTriggerRef.current : surface === "aspect" ? aspectTriggerRef.current : surface === "zoom" ? cropTriggerRef.current : surface === "more" ? moreTriggerRef.current : surface === "tuning" ? tuningTriggerRef.current : null;
+            window.requestAnimationFrame(() => {
+              if (trigger && trigger.isConnected) trigger.focus();
+              else tvFocus?.focusInit(playerRootRef.current);
+            });
+          }
+          return;
+        }
+        if (isTv && controlsVisibleRef.current) {
+          setControlsVisible(false);
+          return;
+        }
+        if (useMpv) {
+          void syncDesktopFullscreenState().then((fullscreen) => {
+            if (!fullscreen) {
+              handleClose();
+              return;
             }
-            return;
-          }
-          if (isTv && controlsVisibleRef.current) {
-            setControlsVisible(false);
-            return;
-          }
-          if (useMpv) {
-            void syncDesktopFullscreenState().then((fullscreen) => {
-              if (!fullscreen) {
-                handleClose();
-                return;
-              }
-              return setWindowNativeFullscreen2(false).then((nextFullscreen) => {
+            return setWindowNativeFullscreen2(false).then((nextFullscreen) => {
+              setDesktopFullscreen(nextFullscreen);
+              scheduleBoundsResync();
+              showControlsPermanent();
+            });
+          }).catch(() => {
+          });
+          return;
+        }
+        if (typeof document !== "undefined" && document.fullscreenElement) {
+          void document.exitFullscreen().catch(() => {
+          });
+          showControlsPermanent();
+          return;
+        }
+        if (isTauriEnv) {
+          void syncDesktopFullscreenState().then((fullscreen) => {
+            if (fullscreen) {
+              return setWindowFullscreen2(false).then((nextFullscreen) => {
                 setDesktopFullscreen(nextFullscreen);
                 scheduleBoundsResync();
                 showControlsPermanent();
               });
-            }).catch(() => {
-            });
-            return;
-          }
-          if (typeof document !== "undefined" && document.fullscreenElement) {
-            void document.exitFullscreen().catch(() => {
-            });
-            showControlsPermanent();
-            return;
-          }
-          if (isTauriEnv) {
-            void syncDesktopFullscreenState().then((fullscreen) => {
-              if (fullscreen) {
-                return setWindowFullscreen2(false).then((nextFullscreen) => {
-                  setDesktopFullscreen(nextFullscreen);
-                  scheduleBoundsResync();
-                  showControlsPermanent();
-                });
-              }
-              handleClose();
-            }).catch(() => handleClose());
-            return;
-          }
-          handleClose();
+            }
+            handleClose();
+          }).catch(() => handleClose());
           return;
         }
-        if (isTv && e.key.startsWith("Arrow")) return;
-        if (matchesShortcut("playPause", e.key) || e.key === "k") {
-          e.preventDefault();
-          togglePlay();
-          return;
-        }
-        if (matchesShortcut("seekForward", e.key)) {
-          seek(10);
-          return;
-        }
-        if (matchesShortcut("seekBack", e.key)) {
-          seek(-10);
-          return;
-        }
-        if (matchesShortcut("mute", e.key)) {
-          toggleMute();
-          return;
-        }
-        if (matchesShortcut("fullscreen", e.key)) {
-          toggleFullscreen();
-          return;
-        }
-        if (matchesShortcut("secondarySubtitleCycle", e.key)) {
-          secondaryCycleRef.current?.();
-          return;
-        }
-        if (matchesShortcut("subtitleCycle", e.key)) {
-          if (subtitleOptions.length > 0) {
-            const currentIndex = subtitleOptions.findIndex((option) => option.id === activeSubId);
-            const nextIndex = currentIndex + 1;
-            void selectSubtitle(
-              nextIndex >= subtitleOptions.length ? null : subtitleOptions[nextIndex],
-              { manual: true }
-            );
-          }
-          return;
-        }
-        if (matchesShortcut("subtitleDelayBack", e.key)) {
-          setSubDelay((value) => Number((value - SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
-          return;
-        }
-        if (matchesShortcut("subtitleDelayForward", e.key)) {
-          setSubDelay((value) => Number((value + SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
-        }
+        handleClose();
+        return;
       }
+      if (isTv && e.key.startsWith("Arrow")) return;
+      if (matchesShortcut("playPause", e.key) || e.key === "k") {
+        e.preventDefault();
+        togglePlay();
+        return;
+      }
+      if (matchesShortcut("seekForward", e.key)) {
+        seek(10);
+        return;
+      }
+      if (matchesShortcut("seekBack", e.key)) {
+        seek(-10);
+        return;
+      }
+      if (matchesShortcut("mute", e.key)) {
+        toggleMute();
+        return;
+      }
+      if (matchesShortcut("fullscreen", e.key)) {
+        toggleFullscreen();
+        return;
+      }
+      if (matchesShortcut("secondarySubtitleCycle", e.key)) {
+        secondaryCycleRef.current?.();
+        return;
+      }
+      if (matchesShortcut("subtitleCycle", e.key)) {
+        if (subtitleOptions.length > 0) {
+          const currentIndex = subtitleOptions.findIndex((option) => option.id === activeSubId);
+          const nextIndex = currentIndex + 1;
+          void selectSubtitle(
+            nextIndex >= subtitleOptions.length ? null : subtitleOptions[nextIndex],
+            { manual: true }
+          );
+        }
+        return;
+      }
+      if (matchesShortcut("subtitleDelayBack", e.key)) {
+        setSubDelay((value) => Number((value - SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
+        return;
+      }
+      if (matchesShortcut("subtitleDelayForward", e.key)) {
+        setSubDelay((value) => Number((value + SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
+      }
+    };
+    useEffect(() => {
+      lockBodyScroll();
+      const onKey = (e) => playerKeyRef.current(e);
       window.addEventListener("keydown", onKey);
       return () => {
         unlockBodyScroll();
         window.removeEventListener("keydown", onKey);
       };
-    }, [handleClose, scheduleBoundsResync, syncDesktopFullscreenState, togglePlay, seek, toggleMute, toggleFullscreen, useMpv, isTv]);
+    }, []);
     useEffect(() => {
       if (!useMpv) return;
       let raf = null;
@@ -23444,7 +24986,7 @@ ${cue.text}`).join("\n\n")}
     }, [wikiTmdbId, imdbId, season, episode]);
     useEffect(() => {
       if (!mediaId || !url) return;
-      function save() {
+      function save(final = false) {
         const snapshot2 = progressSnapshotRef.current;
         if (!mediaId || !url || snapshot2.totalDuration <= 0) return;
         if (watchedMarkedRef.current) return;
@@ -23467,13 +25009,29 @@ ${cue.text}`).join("\n\n")}
           season,
           episode
         });
+        journalTick({
+          mediaId,
+          tmdbId: wikiTmdbId ?? null,
+          type: mediaType ?? "movie",
+          season,
+          episode,
+          title: mediaTitle ?? title,
+          posterUrl: posterUrl ?? null,
+          year: year ?? null,
+          position: snapshot2.realTime,
+          duration: snapshot2.totalDuration
+        }, final);
       }
-      const interval = setInterval(save, 5e3);
+      const interval = setInterval(() => save(), 5e3);
       return () => {
         clearInterval(interval);
-        save();
+        save(true);
       };
     }, [backdropUrl, episode, imdbId, mediaId, mediaSource, mediaTitle, mediaType, posterUrl, season, sourceInfoHash, title, url, wikiTmdbId, year]);
+    useEffect(() => {
+      setPlayerOpen(true);
+      return () => setPlayerOpen(false);
+    }, []);
     const playerBarcode = useBarcodeRecorder({ engine: engineKind, mediaId: mediaId ?? null, mediaType, tmdbId: wikiTmdbId, title: mediaTitle ?? title, year, posterUrl, season, episode, snapshotRef: progressSnapshotRef, videoRef, playing: isPlaying, finished: creditsMode || hasEndedPlayback });
     useEffect(() => {
       if (useMpv) {
@@ -23608,7 +25166,7 @@ ${cue.text}`).join("\n\n")}
     }, [playbackSessionIdentity, url, inferredMediaType, mediaType, season, episode, shouldProxyPlayback, useMpv, initialTime, imdbId, tmdbId, wikiTmdbId, mediaId, title]);
     useEffect(() => {
       if (useMpv || hasStarted) return;
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         const v = videoRef.current;
         if (!v) return;
         if (!v.paused && v.currentTime > 0.15) {
@@ -23619,7 +25177,7 @@ ${cue.text}`).join("\n\n")}
           onFirstPlay?.();
         }
       }, 350);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [hasStarted, onFirstPlay, useMpv]);
     useEffect(() => {
       if (imdbId) {
@@ -23720,8 +25278,32 @@ ${cue.text}`).join("\n\n")}
       } else {
         videoRef.current?.pause();
       }
+      setStillWatchingReason("episodes");
       setShowStillWatchingPrompt(true);
     }, [hasEndedPlayback, hasStarted, isPlaying, mediaType, realTime, showStillWatchingPrompt, useMpv]);
+    useEffect(() => {
+      if (sleepTimer.mode === "off" || showStillWatchingPrompt || !hasStarted) return;
+      if (!sleepTimerDue(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback })) return;
+      setSleepTimer(DISARMED);
+      sleepFiredAtRef.current = Date.now();
+      if (useMpv) void setMpvPause2(true);
+      else videoRef.current?.pause();
+      setStillWatchingReason("sleep");
+      setShowStillWatchingPrompt(true);
+    }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepTimer, totalDuration, useMpv]);
+    useEffect(() => {
+      if (isTv && showStillWatchingPrompt) tvFocus?.focusInit(playerRootRef.current?.querySelector("[data-still-watching]") ?? null);
+    }, [isTv, showStillWatchingPrompt, tvFocus]);
+    useEffect(() => {
+      if (!hasStarted) return;
+      const me = getActiveProfileId();
+      setCompanionProfiles(getProfiles().filter((p) => p.id !== me));
+      setCompanionIds(journalCoViewers());
+    }, [hasStarted]);
+    const setCompanions = (next) => {
+      setCompanionIds(next);
+      journalSetCoViewers(next);
+    };
     useEffect(() => {
       if (mediaType !== "tv") return;
       if (!hasStarted || !hasStartedForUrlRef.current) return;
@@ -23914,9 +25496,18 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [isMpvEngine, mpv.fileLoaded, introDataReady, introSegment, url]);
+    function resumeAfterSleepPrompt() {
+      setStillWatchingReason("episodes");
+      if (useMpv) {
+        void setMpvPause2(false);
+        return;
+      }
+      void safePlay(videoRef.current);
+    }
     function handleStillWatchingContinue() {
       registerPlaybackInteraction();
       setShowStillWatchingPrompt(false);
+      setStillWatchingReason("episodes");
       if (useMpv) {
         void setMpvPause2(false);
         return;
@@ -24164,7 +25755,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (useMpv || hasStarted || !videoSrc) return;
       if (startupRecoveryAttemptRef.current >= 2) return;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         if (useMpv || hasStarted || startupRecoveryAttemptRef.current >= 2) return;
         if (Date.now() - lastProxyRestartAtRef.current < PROXY_RESTART_MIN_GAP_MS) return;
         const currentReal = (videoRef.current?.currentTime ?? 0) + streamStartRef.current;
@@ -24202,7 +25793,7 @@ ${cue.text}`).join("\n\n")}
         );
       }, 2e4);
       return () => {
-        window.clearTimeout(timer2);
+        window.clearTimeout(timer3);
       };
     }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
     useEffect(() => {
@@ -24680,7 +26271,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!creditsMode || !useMpv) return;
       const waitMs = creditsCards.length === 0 ? 8e3 : 600;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         const pip = creditsPipRef.current;
         if (pip) {
           const rect = pip.getBoundingClientRect();
@@ -24688,7 +26279,7 @@ ${cue.text}`).join("\n\n")}
         }
         leaveCreditsMode();
       }, waitMs);
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [creditsMode, useMpv, creditsCards.length, leaveCreditsMode]);
     const currentTitleAsItem = useCallback(() => {
       if (!tmdbId) return null;
@@ -25018,7 +26609,7 @@ ${cue.text}`).join("\n\n")}
     }, [airplaySession, useMpv]);
     useEffect(() => {
       if (!airplaySession || airplayWasExternalRef.current || showCastMenu) return;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         if (!airplayWasExternalRef.current) {
           stopAirplayVideo();
           void avplayerTeardown();
@@ -25026,7 +26617,7 @@ ${cue.text}`).join("\n\n")}
           setAirplayPrepare("idle");
         }
       }, 1e4);
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [showCastMenu, airplaySession]);
     const undoSubtitleAutoSync = useCallback(() => {
       if (lastAutoSyncedDelayRef.current === null) return;
@@ -25041,11 +26632,11 @@ ${cue.text}`).join("\n\n")}
     const dtDivider = /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "mx-2 h-[22px] w-px flex-none bg-white/[0.12]" });
     const dtMenuSurfaceClass = newChrome ? "z-50 rounded-xl border border-white/10 bg-base-800/95 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : "z-50 rounded-xl border border-white/10 bg-slate-900/95 py-2 shadow-xl backdrop-blur-sm";
     const dtMenuHeadingClass = newChrome ? "px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500" : "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500";
-    const dtMenuRowClass = (active2) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active2 ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active2 ? "text-aurora-300" : "text-slate-300"}`;
+    const dtMenuRowClass = (active3) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active3 ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active3 ? "text-aurora-300" : "text-slate-300"}`;
     const dtMoreRowClass = newChrome ? `flex w-full items-center gap-3 rounded-lg text-left text-slate-100 transition hover:bg-[rgb(var(--player-accent)/0.14)] ${portraitChrome ? "px-3 py-3.5" : "px-3 py-2.5"}` : "flex w-full items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left text-slate-100 transition hover:bg-white/5";
     const dtMoreIconClass = newChrome ? "h-[18px] w-[18px] flex-none text-slate-300" : "h-5 w-5 flex-none text-slate-200";
     const dtMoreTextClass = newChrome ? portraitChrome ? "text-[15px] leading-tight" : "text-sm leading-tight" : "text-[15px] leading-tight";
-    const pickerStyle = (trigger, width) => portraitChrome ? { position: "fixed", left: 12, right: 12, bottom: 172, maxHeight: "55vh", overflowY: "auto" } : { ...getAnchoredMenuStyle(trigger, newChrome ? width : 0), width: newChrome ? width : void 0 };
+    const pickerStyle = (trigger, width) => portraitChrome ? { position: "fixed", left: 12, right: 12, bottom: 172, maxHeight: "55vh", overflowY: "auto" } : { ...anchoredMenuStyle(trigger, newChrome ? width : 0), width: newChrome ? width : void 0 };
     const pickerHeading = (label) => portraitChrome ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3 px-3 pb-1.5 pt-2", children: [
       /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label }),
       /* @__PURE__ */ jsx(
@@ -25126,7 +26717,7 @@ ${cue.text}`).join("\n\n")}
         {
           type: "button",
           ...dtStation,
-          onClick: () => setShowEpisodes((open) => !open),
+          onClick: () => setShowEpisodes((open2) => !open2),
           title: t("plNextEpisode"),
           "aria-label": t("plNextEpisode"),
           className: dtIconButtonClass(showEpisodes ? "open" : "idle"),
@@ -25139,7 +26730,7 @@ ${cue.text}`).join("\n\n")}
           type: "button",
           ...hasStreamChoice ? dtStation : {},
           disabled: !hasStreamChoice,
-          onClick: () => setShowStreams((open) => !open),
+          onClick: () => setShowStreams((open2) => !open2),
           title: t("plSwitchStream"),
           "aria-label": t("plSwitchStream"),
           className: `${dtIconButtonClass(showStreams ? "open" : "idle")} disabled:opacity-40`,
@@ -25302,6 +26893,32 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("cast", "h-[19px] w-[19px]")
         }
       ) : null,
+      sleepTimer: /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: sleepTriggerRef,
+          onClick: () => setShowSleepMenu((open2) => !open2),
+          title: t("plSleepTimer"),
+          "aria-label": t("plSleepTimer"),
+          className: dtIconButtonClass(showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle"),
+          children: playerIcon("sleepTimer", "h-[19px] w-[19px]")
+        }
+      ),
+      companions: companionProfiles.length > 0 ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: companionsTriggerRef,
+          onClick: () => setShowCompanionsMenu((open2) => !open2),
+          title: t("plCompanions"),
+          "aria-label": t("plCompanions"),
+          className: dtIconButtonClass(showCompanionsMenu ? "open" : companionIds.length > 0 ? "active" : "idle"),
+          children: playerIcon("companions", "h-[19px] w-[19px]")
+        }
+      ) : null,
       // Remsan ovanför seekbaren av/på — så länge det finns en remsa att visa.
       barcodeStrip: playerBarcode.stripToggle ? /* @__PURE__ */ jsx(
         "button",
@@ -25361,7 +26978,7 @@ ${cue.text}`).join("\n\n")}
       right: [
         ["subtitles", "audioTrack", "aspect", "cropZoom"],
         ["wiki", "soundtrack", "cast"],
-        ["tuning", "barcodeStrip", "more", "fullscreen"]
+        ["tuning", "barcodeStrip", "sleepTimer", "companions", "more", "fullscreen"]
       ]
     };
     const renderDesktopZone = (groups) => {
@@ -25392,13 +27009,16 @@ ${cue.text}`).join("\n\n")}
         togglePlay();
       }
     };
-    useEffect(() => onMediaKey((action) => {
+    const mediaKeyRef = useRef(() => {
+    });
+    mediaKeyRef.current = (action) => {
       switch (action) {
+        // Play växlar, som i Kodi: många TV-fjärrar (och TV:ns egen fjärr via
+        // HDMI-CEC) skickar MEDIA_PLAY på den kombinerade ▶⏸-knappen, och med
+        // "bara spela om pausad" gjorde den ingenting under uppspelning.
         case "playpause":
-          togglePlay();
-          break;
         case "play":
-          if (!isPlaying) togglePlay();
+          togglePlay();
           break;
         case "pause":
           if (isPlaying) togglePlay();
@@ -25422,7 +27042,8 @@ ${cue.text}`).join("\n\n")}
         }
       }
       onMouseActivityRef.current();
-    }), [togglePlay, isPlaying, seek, handleClose, episodes]);
+    };
+    useEffect(() => onMediaKey((action) => mediaKeyRef.current(action)), []);
     const tvSeekStation = isTv ? {
       "data-f": "1",
       "data-init": "1",
@@ -25717,7 +27338,7 @@ ${cue.text}`).join("\n\n")}
         const activeLang = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((sub) => sub.id === activeSubId)?.language ?? null) : null;
         setSelectedLang(activeLang);
       }
-      setShowSubMenu((open) => !open);
+      setShowSubMenu((open2) => !open2);
     };
     const toggleCastMenu = () => {
       const opening = !showCastMenu;
@@ -25725,6 +27346,7 @@ ${cue.text}`).join("\n\n")}
       if (opening && castDevices.length === 0) void scanCastDevices();
       if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
     };
+    const sleepModeLabel = (mode) => mode === "off" ? t("plSleepOff") : mode === "end" ? t("plSleepEnd") : t("plSleepMinutes").replace("{n}", String(mode));
     const phoneControls = {
       subtitles: {
         label: activeSubLangCode,
@@ -25737,46 +27359,46 @@ ${cue.text}`).join("\n\n")}
         label: activeAudioLangCode,
         title: t("audioLanguage"),
         state: showAudioMenu ? "open" : "idle",
-        onClick: () => setShowAudioMenu((open) => !open),
+        onClick: () => setShowAudioMenu((open2) => !open2),
         triggerRef: audioTriggerRef
       } : void 0,
       nextEpisode: episodes && episodes.items.length > 0 ? {
         label: t("plShortEpisodes"),
         title: t("plNextEpisode"),
         state: showEpisodes ? "open" : "idle",
-        onClick: () => setShowEpisodes((open) => !open)
+        onClick: () => setShowEpisodes((open2) => !open2)
       } : void 0,
       switchStream: hasStreamChoice ? {
         label: t("plStreams"),
         title: t("plSwitchStream"),
         state: showStreams ? "open" : "idle",
-        onClick: () => setShowStreams((open) => !open)
+        onClick: () => setShowStreams((open2) => !open2)
       } : void 0,
       tuning: {
         label: t("plShortPicture"),
         title: t("vtTitle"),
         state: showTuningPanel ? "open" : "idle",
-        onClick: () => setShowTuningPanel((open) => !open),
+        onClick: () => setShowTuningPanel((open2) => !open2),
         triggerRef: tuningTriggerRef
       },
       wiki: wikiTmdbId || resolvedImdbId ? {
         label: t("plShortWiki"),
         title: t("info"),
         state: showWiki ? "open" : "idle",
-        onClick: () => setShowWiki((open) => !open)
+        onClick: () => setShowWiki((open2) => !open2)
       } : void 0,
       soundtrack: title ? {
         label: t("plShortMusic"),
         title: t("soundtrack"),
         state: showSoundtrack ? "open" : "idle",
-        onClick: () => setShowSoundtrack((open) => !open)
+        onClick: () => setShowSoundtrack((open2) => !open2)
       } : void 0,
       cropZoom: {
         label: t("plShortZoom"),
         title: t("cropZoom"),
         value: cropZoomLabel,
         state: showCropZoomMenu ? "open" : cropZoomMode !== "off" ? "active" : "idle",
-        onClick: () => setShowCropZoomMenu((open) => !open),
+        onClick: () => setShowCropZoomMenu((open2) => !open2),
         triggerRef: cropTriggerRef
       },
       aspect: {
@@ -25784,7 +27406,7 @@ ${cue.text}`).join("\n\n")}
         title: t("aspectRatio"),
         value: aspectLabel,
         state: showAspectMenu ? "open" : aspectRatioMode !== "auto" ? "active" : "idle",
-        onClick: () => setShowAspectMenu((open) => !open),
+        onClick: () => setShowAspectMenu((open2) => !open2),
         triggerRef: aspectTriggerRef
       },
       cast: !isClientSession() ? {
@@ -25793,6 +27415,22 @@ ${cue.text}`).join("\n\n")}
         state: showCastMenu ? "open" : castTarget ? "active" : "idle",
         onClick: toggleCastMenu
       } : void 0,
+      sleepTimer: {
+        label: t("plSleepShort"),
+        title: t("plSleepTimer"),
+        value: sleepTimer.mode === "off" ? void 0 : sleepModeLabel(sleepTimer.mode),
+        state: showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle",
+        onClick: () => setShowSleepMenu((open2) => !open2),
+        triggerRef: sleepTriggerRef
+      },
+      companions: companionProfiles.length > 0 ? {
+        label: t("plCompanionsShort"),
+        title: t("plCompanions"),
+        value: companionIds.length > 0 ? String(companionIds.length) : void 0,
+        state: showCompanionsMenu ? "open" : companionIds.length > 0 ? "active" : "idle",
+        onClick: () => setShowCompanionsMenu((open2) => !open2),
+        triggerRef: companionsTriggerRef
+      } : void 0,
       fullscreen: !isTauriEnv || isDesktopTauriEnv ? {
         label: t("plShortFullscreen"),
         title: t("plFullscreen"),
@@ -25800,7 +27438,7 @@ ${cue.text}`).join("\n\n")}
         onClick: toggleFullscreen
       } : void 0
     };
-    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "switchStream", "aspect", "fullscreen"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "wiki", "soundtrack", "cropZoom", "aspect"];
+    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "switchStream", "aspect", "fullscreen", "sleepTimer", "companions"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "wiki", "soundtrack", "cropZoom", "aspect", "sleepTimer", "companions"];
     const LANDSCAPE_ROW_BUDGET = 6;
     const phoneDedicatedIds = landscapeChrome ? ["nextEpisode", "cast"] : ["cast", "fullscreen"];
     const phoneRowCandidates = PHONE_ROW_ORDER.filter((id) => !phoneDedicatedIds.includes(id) && showsControl(id) && Boolean(phoneControls[id]));
@@ -25876,7 +27514,7 @@ ${cue.text}`).join("\n\n")}
       if (isClientSession()) return null;
       const downloading = downloadState.type === "downloading";
       const busy = downloadState.type === "picking-folder";
-      const active2 = downloadLabel !== null;
+      const active3 = downloadLabel !== null;
       return /* @__PURE__ */ jsxs(
         "button",
         {
@@ -25887,7 +27525,7 @@ ${cue.text}`).join("\n\n")}
           disabled: busy,
           title: downloading ? t("cancel") : t("downloadThisVideo"),
           "aria-label": downloading ? t("cancel") : t("downloadThisVideo"),
-          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active2 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active2 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
+          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active3 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active3 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
           children: [
             downloadIcon(variant === "round" ? "h-[19px] w-[19px]" : "h-[17px] w-[17px]"),
             downloadLabel ? /* @__PURE__ */ jsx("span", { className: `font-semibold tabular-nums ${variant === "round" ? "text-[13px]" : "text-xs"}`, children: downloadLabel }) : null
@@ -26784,7 +28422,7 @@ ${cue.text}`).join("\n\n")}
                   "div",
                   {
                     ...tvSurface2("subs"),
-                    style: { ...getAnchoredMenuStyle(subTriggerRef.current), right: 16, left: "auto" },
+                    style: { ...anchoredMenuStyle(subTriggerRef.current), right: 16, left: "auto" },
                     className: `z-[70] flex max-h-[75vh] w-[min(calc(100vw-2rem),20rem)] flex-col overflow-y-auto rounded-xl border border-white/10 shadow-xl backdrop-blur-sm sm:max-h-none sm:w-auto sm:flex-row sm:overflow-visible ${desktopChrome ? "bg-base-800/95" : "bg-slate-900/95"}`,
                     onClick: (e) => e.stopPropagation(),
                     children: [
@@ -27018,15 +28656,17 @@ ${cue.text}`).join("\n\n")}
                   }
                 ),
                 overlayContent,
-                showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
+                showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { "data-still-watching": "", ...isTv ? { "data-panel-root": "1" } : {}, className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
                   /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("playbackTitle") }),
-                  /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: t("stillWatching") }),
+                  /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: stillWatchingReason === "sleep" ? t("plSleepStillThere") : t("stillWatching") }),
+                  stillWatchingReason === "sleep" && /* @__PURE__ */ jsx("p", { className: "mt-2 text-sm text-slate-400", children: t("plSleepStillThereBody") }),
                   /* @__PURE__ */ jsxs("div", { className: "mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center", children: [
                     /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
                         "data-f": isTv ? "1" : void 0,
+                        "data-init": isTv ? "1" : void 0,
                         onClick: handleStillWatchingContinue,
                         className: "rounded-full bg-accent-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-400",
                         children: t("stillWatchingContinue")
@@ -27141,7 +28781,7 @@ ${cue.text}`).join("\n\n")}
                                 {
                                   type: "button",
                                   ref: moreTriggerRef,
-                                  onClick: () => setShowMoreMenu((open) => !open),
+                                  onClick: () => setShowMoreMenu((open2) => !open2),
                                   title: t("moreActions"),
                                   "aria-label": t("moreActions"),
                                   className: `flex w-[54px] flex-none flex-col items-center gap-0.5 rounded-[10px] py-1 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-200"}`,
@@ -27174,7 +28814,7 @@ ${cue.text}`).join("\n\n")}
                               {
                                 type: "button",
                                 ref: moreTriggerRef,
-                                onClick: () => setShowMoreMenu((open) => !open),
+                                onClick: () => setShowMoreMenu((open2) => !open2),
                                 title: t("moreActions"),
                                 "aria-label": t("moreActions"),
                                 className: `flex h-10 flex-none items-center gap-[7px] rounded-full border border-white/[0.12] px-3.5 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300"}`,
@@ -27229,6 +28869,8 @@ ${cue.text}`).join("\n\n")}
                         /* @__PURE__ */ jsx("div", { className: "vp-controls-row flex items-center gap-4 overflow-x-auto whitespace-nowrap", children: (() => {
                           const controls = {
                             barcodeStrip: null,
+                            sleepTimer: null,
+                            companions: null,
                             playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
                             seekBack: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
                             seekForward: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
@@ -27244,7 +28886,7 @@ ${cue.text}`).join("\n\n")}
                                 type: "button",
                                 ref: audioDelayTriggerRef,
                                 "data-f": isTv ? "1" : void 0,
-                                onClick: () => setShowAudioDelayMenu((open) => !open),
+                                onClick: () => setShowAudioDelayMenu((open2) => !open2),
                                 title: t("audioDelayTitle"),
                                 "aria-label": t("audioDelayTitle"),
                                 className: `rounded px-1.5 py-0.5 text-xs font-medium tabular-nums transition ${effectiveAudioDelayMs !== 0 ? "bg-aurora-500/25 text-aurora-200" : "text-slate-300 hover:text-white"}`,
@@ -27259,7 +28901,7 @@ ${cue.text}`).join("\n\n")}
                               {
                                 type: "button",
                                 "data-f": isTv ? "1" : void 0,
-                                onClick: () => setShowEpisodes((open) => !open),
+                                onClick: () => setShowEpisodes((open2) => !open2),
                                 title: t("plNextEpisode"),
                                 "aria-label": t("plNextEpisode"),
                                 className: showEpisodes ? "text-aurora-300" : "text-slate-300 transition hover:text-white",
@@ -27275,7 +28917,7 @@ ${cue.text}`).join("\n\n")}
                                 type: "button",
                                 "data-f": isTv && hasStreamChoice ? "1" : void 0,
                                 disabled: !hasStreamChoice,
-                                onClick: () => setShowStreams((open) => !open),
+                                onClick: () => setShowStreams((open2) => !open2),
                                 title: t("plSwitchStream"),
                                 "aria-label": t("plSwitchStream"),
                                 className: showStreams ? "text-aurora-300" : "text-slate-300 transition hover:text-white disabled:opacity-40",
@@ -27456,7 +29098,7 @@ ${cue.text}`).join("\n\n")}
                       showAudioDelayMenu && useMpv && /* @__PURE__ */ jsxs(
                         "div",
                         {
-                          style: getAnchoredMenuStyle(audioDelayTriggerRef.current, 244),
+                          style: anchoredMenuStyle(audioDelayTriggerRef.current, 244),
                           className: "z-50 w-[244px] rounded-[1.1rem] border border-white/10 bg-base-800/95 p-3 shadow-2xl backdrop-blur-md",
                           onClick: (event) => event.stopPropagation(),
                           children: [
@@ -27690,12 +29332,81 @@ ${cue.text}`).join("\n\n")}
                           ]
                         }
                       ),
+                      showSleepMenu && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("sleep"),
+                          style: pickerStyle(sleepTriggerRef.current, 240),
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plSleepTimer")),
+                            SLEEP_TIMER_OPTIONS.map((mode) => {
+                              const isActive = sleepTimer.mode === mode;
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  onClick: () => {
+                                    setSleepTimer(armSleepTimer(mode, Date.now()));
+                                    setShowSleepMenu(false);
+                                  },
+                                  className: dtMenuRowClass(isActive),
+                                  children: [
+                                    /* @__PURE__ */ jsx("span", { children: sleepModeLabel(mode) }),
+                                    isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                String(mode)
+                              );
+                            })
+                          ]
+                        }
+                      ),
+                      showCompanionsMenu && companionProfiles.length > 0 && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("companions"),
+                          style: pickerStyle(companionsTriggerRef.current, 260),
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plWhoWatches")),
+                            /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => setCompanions([]), className: dtMenuRowClass(companionIds.length === 0), children: [
+                              /* @__PURE__ */ jsx("span", { children: t("plCompanionsJustMe") }),
+                              companionIds.length === 0 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                            ] }),
+                            companionProfiles.map((p) => {
+                              const on = companionIds.includes(p.id);
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  "aria-pressed": on,
+                                  onClick: () => setCompanions(on ? companionIds.filter((x) => x !== p.id) : [...companionIds, p.id]),
+                                  className: dtMenuRowClass(on),
+                                  children: [
+                                    /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-2.5", children: [
+                                      /* @__PURE__ */ jsx(ProfileAvatar, { profile: p, className: "h-6 w-6" }),
+                                      p.name
+                                    ] }),
+                                    on && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                p.id
+                              );
+                            })
+                          ]
+                        }
+                      ),
                       showMoreMenu && /* @__PURE__ */ jsxs(
                         "div",
                         {
                           ref: moreMenuRef,
                           ...tvSurface2("more"),
-                          style: portraitChrome ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "70vh", overflowY: "auto" } : newChrome ? pickerStyle(moreTriggerRef.current, landscapeChrome ? 244 : 262) : getAnchoredMenuStyle(moreTriggerRef.current),
+                          style: portraitChrome ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "70vh", overflowY: "auto" } : newChrome ? pickerStyle(moreTriggerRef.current, landscapeChrome ? 244 : 262) : anchoredMenuStyle(moreTriggerRef.current),
                           className: portraitChrome ? "z-50 rounded-t-2xl border-t border-white/[0.07] bg-base-950/[0.96] px-3 pb-6 pt-3 shadow-[0_-20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : newChrome ? dtMenuSurfaceClass : "z-50 w-64 rounded-[1.6rem] border border-white/10 bg-base-800/95 p-2.5 shadow-2xl backdrop-blur-md",
                           onClick: (e) => e.stopPropagation(),
                           children: [
@@ -27937,6 +29648,11 @@ ${cue.text}`).join("\n\n")}
       import_window = __toESM(require_window());
       init_transparent_webview();
       init_video_progress();
+      init_recorder();
+      init_profile_storage_shim();
+      init_profile_avatar();
+      init_sleep_timer();
+      init_player_open();
       init_use_barcode_recorder();
       init_barcode_settings();
       init_player_barcode_strip();
@@ -28188,16 +29904,16 @@ ${cue.text}`).join("\n\n")}
           // error correction level, data codeword bytes, and mask number.
           // This is a low-level API that most users should not use directly.
           // A mid-level API is the encodeSegments() function.
-          constructor(version2, errorCorrectionLevel, dataCodewords, msk) {
-            this.version = version2;
+          constructor(version3, errorCorrectionLevel, dataCodewords, msk) {
+            this.version = version3;
             this.errorCorrectionLevel = errorCorrectionLevel;
             this.modules = [];
             this.isFunction = [];
-            if (version2 < _QrCode2.MIN_VERSION || version2 > _QrCode2.MAX_VERSION)
+            if (version3 < _QrCode2.MIN_VERSION || version3 > _QrCode2.MAX_VERSION)
               throw new RangeError("Version value out of range");
             if (msk < -1 || msk > 7)
               throw new RangeError("Mask value out of range");
-            this.size = version2 * 4 + 17;
+            this.size = version3 * 4 + 17;
             let row = [];
             for (let i = 0; i < this.size; i++)
               row.push(false);
@@ -28258,31 +29974,31 @@ ${cue.text}`).join("\n\n")}
           static encodeSegments(segs, ecl, minVersion = 1, maxVersion = 40, mask = -1, boostEcl = true) {
             if (!(_QrCode2.MIN_VERSION <= minVersion && minVersion <= maxVersion && maxVersion <= _QrCode2.MAX_VERSION) || mask < -1 || mask > 7)
               throw new RangeError("Invalid value");
-            let version2;
+            let version3;
             let dataUsedBits;
-            for (version2 = minVersion; ; version2++) {
-              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version2, ecl) * 8;
-              const usedBits = QrSegment.getTotalBits(segs, version2);
+            for (version3 = minVersion; ; version3++) {
+              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
+              const usedBits = QrSegment.getTotalBits(segs, version3);
               if (usedBits <= dataCapacityBits2) {
                 dataUsedBits = usedBits;
                 break;
               }
-              if (version2 >= maxVersion)
+              if (version3 >= maxVersion)
                 throw new RangeError("Data too long");
             }
             for (const newEcl of [_QrCode2.Ecc.MEDIUM, _QrCode2.Ecc.QUARTILE, _QrCode2.Ecc.HIGH]) {
-              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version2, newEcl) * 8)
+              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version3, newEcl) * 8)
                 ecl = newEcl;
             }
             let bb = [];
             for (const seg of segs) {
               appendBits(seg.mode.modeBits, 4, bb);
-              appendBits(seg.numChars, seg.mode.numCharCountBits(version2), bb);
+              appendBits(seg.numChars, seg.mode.numCharCountBits(version3), bb);
               for (const b of seg.getData())
                 bb.push(b);
             }
             assert(bb.length == dataUsedBits);
-            const dataCapacityBits = _QrCode2.getNumDataCodewords(version2, ecl) * 8;
+            const dataCapacityBits = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
             assert(bb.length <= dataCapacityBits);
             appendBits(0, Math.min(4, dataCapacityBits - bb.length), bb);
             appendBits(0, (8 - bb.length % 8) % 8, bb);
@@ -28293,7 +30009,7 @@ ${cue.text}`).join("\n\n")}
             while (dataCodewords.length * 8 < bb.length)
               dataCodewords.push(0);
             bb.forEach((b, i) => dataCodewords[i >>> 3] |= b << 7 - (i & 7));
-            return new _QrCode2(version2, ecl, dataCodewords, mask);
+            return new _QrCode2(version3, ecl, dataCodewords, mask);
           }
           /*-- Accessor methods --*/
           // Returns the color of the module (pixel) at the given coordinates, which is false
@@ -28809,10 +30525,10 @@ ${cue.text}`).join("\n\n")}
           }
           // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
           // the given version. The result is infinity if a segment has too many characters to fit its length field.
-          static getTotalBits(segs, version2) {
+          static getTotalBits(segs, version3) {
             let result = 0;
             for (const seg of segs) {
-              const ccbits = seg.mode.numCharCountBits(version2);
+              const ccbits = seg.mode.numCharCountBits(version3);
               if (seg.numChars >= 1 << ccbits)
                 return Infinity;
               result += 4 + ccbits + seg.bitData.length;
@@ -29350,7 +31066,7 @@ ${cue.text}`).join("\n\n")}
     compact,
     placeholder
   }) {
-    const [open, setOpen] = useState(false);
+    const [open2, setOpen] = useState(false);
     const ref = useRef(null);
     const menuRef = useRef(null);
     const [menuPos, setMenuPos] = useState(null);
@@ -29364,7 +31080,7 @@ ${cue.text}`).join("\n\n")}
       return () => document.removeEventListener("mousedown", onDoc);
     }, []);
     useEffect(() => {
-      if (!open) {
+      if (!open2) {
         setMenuPos(null);
         return;
       }
@@ -29393,7 +31109,7 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("scroll", update, true);
         window.removeEventListener("resize", update);
       };
-    }, [open]);
+    }, [open2]);
     const normalized = options.map(
       (o) => typeof o === "object" ? o : { value: o, label: String(o) }
     );
@@ -29410,7 +31126,7 @@ ${cue.text}`).join("\n\n")}
             textAlign: "left",
             padding: compact ? "7px 10px" : "10px 12px",
             background: TOKENS.surface2,
-            border: `1px solid ${open ? TOKENS.accent : TOKENS.borderStrong}`,
+            border: `1px solid ${open2 ? TOKENS.accent : TOKENS.borderStrong}`,
             borderRadius: 8,
             color: dim ? TOKENS.textDim : TOKENS.text,
             fontSize: compact ? 13 : 14,
@@ -29430,13 +31146,13 @@ ${cue.text}`).join("\n\n")}
                 name: "chevDown",
                 size: 14,
                 color: TOKENS.textDim,
-                style: { transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }
+                style: { transform: open2 ? "rotate(180deg)" : "none", transition: "transform .15s" }
               }
             )
           ]
         }
       ),
-      open && menuPos ? (0, import_react_dom2.createPortal)(
+      open2 && menuPos ? (0, import_react_dom2.createPortal)(
         /* @__PURE__ */ jsx(
           "div",
           {
@@ -29457,7 +31173,7 @@ ${cue.text}`).join("\n\n")}
               overflowY: "auto"
             },
             children: normalized.map((o) => {
-              const active2 = o.value === value;
+              const active3 = o.value === value;
               return /* @__PURE__ */ jsxs(
                 "div",
                 {
@@ -29470,21 +31186,21 @@ ${cue.text}`).join("\n\n")}
                     borderRadius: 6,
                     cursor: "pointer",
                     fontSize: TYPE.body,
-                    color: active2 ? TOKENS.text : TOKENS.textDim,
-                    background: active2 ? TOKENS.accentSoft : "transparent",
+                    color: active3 ? TOKENS.text : TOKENS.textDim,
+                    background: active3 ? TOKENS.accentSoft : "transparent",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between"
                   },
                   onMouseEnter: (e) => {
-                    if (!active2) e.currentTarget.style.background = TOKENS.surface3;
+                    if (!active3) e.currentTarget.style.background = TOKENS.surface3;
                   },
                   onMouseLeave: (e) => {
-                    if (!active2) e.currentTarget.style.background = "transparent";
+                    if (!active3) e.currentTarget.style.background = "transparent";
                   },
                   children: [
                     /* @__PURE__ */ jsx("span", { children: o.label }),
-                    active2 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
+                    active3 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
                   ]
                 },
                 String(o.value)
@@ -30004,8 +31720,8 @@ ${cue.text}`).join("\n\n")}
     const nativeInputRef = useRef(null);
     useEffect(() => {
       if (!nativeInput) return;
-      const timer2 = window.setTimeout(() => nativeInputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => nativeInputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer3);
     }, [nativeInput]);
     const [shift, setShift] = useState(initial.length === 0);
     const ref = useRef(null);
@@ -30158,7 +31874,7 @@ ${cue.text}`).join("\n\n")}
       aside ? /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }, children: aside }) : null
     ] }) });
   }
-  function Key({ label, onSelect, primary, active: active2, init }) {
+  function Key({ label, onSelect, primary, active: active3, init }) {
     const [focused, setFocused] = useState(false);
     return /* @__PURE__ */ jsx(
       "div",
@@ -30194,7 +31910,7 @@ ${cue.text}`).join("\n\n")}
           cursor: "pointer",
           font: `500 ${TYPE.body}/1 ${TV_FONT}`,
           color: primary ? TV.accent100 : TV.text,
-          background: focused ? TV.accent900 : primary ? TV.accent800 : active2 ? TV.accent900 : TV.neutral900
+          background: focused ? TV.accent900 : primary ? TV.accent800 : active3 ? TV.accent900 : TV.neutral900
         },
         children: label
       }
@@ -30324,8 +32040,8 @@ ${cue.text}`).join("\n\n")}
       };
     }, [tmdbId, mediaType, reloadToken]);
     useEffect(() => {
-      const timer2 = window.setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 200);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 200);
+      return () => window.clearTimeout(timer3);
     }, [query]);
     useEffect(() => {
       if (personId == null) {
@@ -30862,7 +32578,7 @@ ${cue.text}`).join("\n\n")}
       init_tv_settings_rows();
       init_jsx_runtime_shim();
       KEY_CREW_JOBS = ["Director", "Screenplay", "Writer", "Director of Photography", "Original Music Composer"];
-      pillClass = (active2, tv) => `flex shrink-0 items-center whitespace-nowrap rounded-full transition ${tv ? "h-11 px-5 text-lg" : "h-9 px-4 text-sm"} ${active2 ? "bg-[#fcfcff2e] font-semibold text-accent-400" : "bg-[#fcfcff14] text-slate-300 hover:bg-[#fcfcff22] hover:text-white"}`;
+      pillClass = (active3, tv) => `flex shrink-0 items-center whitespace-nowrap rounded-full transition ${tv ? "h-11 px-5 text-lg" : "h-9 px-4 text-sm"} ${active3 ? "bg-[#fcfcff2e] font-semibold text-accent-400" : "bg-[#fcfcff14] text-slate-300 hover:bg-[#fcfcff22] hover:text-white"}`;
       backPillClass = "menu-glass flex h-9 shrink-0 items-center gap-1.5 rounded-full border-0 bg-[#fcfcff14] backdrop-blur-md pl-3 pr-4 text-xs font-normal text-slate-200 transition-all hover:bg-[#fcfcff22] hover:text-white focus-visible:ring-2 focus-visible:ring-accent-400/60 focus-visible:text-white focus-visible:outline-none sm:text-sm";
     }
   });
@@ -30932,10 +32648,10 @@ ${cue.text}`).join("\n\n")}
     const playButtonRef = useRef(null);
     useEffect(() => {
       if (!isTv) return;
-      let timer2 = null;
+      let timer3 = null;
       const arm = () => {
-        if (timer2) clearTimeout(timer2);
-        timer2 = setTimeout(() => {
+        if (timer3) clearTimeout(timer3);
+        timer3 = setTimeout(() => {
           const btn = playButtonRef.current;
           if (btn && btn.isConnected && document.activeElement !== btn) btn.focus();
         }, 1e4);
@@ -30943,7 +32659,7 @@ ${cue.text}`).join("\n\n")}
       arm();
       window.addEventListener("keydown", arm, true);
       return () => {
-        if (timer2) clearTimeout(timer2);
+        if (timer3) clearTimeout(timer3);
         window.removeEventListener("keydown", arm, true);
       };
     }, [isTv]);
@@ -31434,7 +33150,7 @@ ${cue.text}`).join("\n\n")}
           });
         }
       };
-      async function open(path, openWith) {
+      async function open2(path, openWith) {
         await core.invoke("plugin:shell|open", {
           path,
           with: openWith
@@ -31443,7 +33159,7 @@ ${cue.text}`).join("\n\n")}
       exports.Child = Child;
       exports.Command = Command;
       exports.EventEmitter = EventEmitter;
-      exports.open = open;
+      exports.open = open2;
     }
   });
 
@@ -31921,8 +33637,8 @@ ${cue.text}`).join("\n\n")}
     if (layout === "slider") return PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS;
     return options?.gridClassName?.trim() || PLUGIN_HOME_ROW_GRID_TRACK_CLASS;
   }
-  function playerFrameUrl(key, version2) {
-    const v = version2 == null ? "" : `&v=${encodeURIComponent(String(version2))}`;
+  function playerFrameUrl(key, version3) {
+    const v = version3 == null ? "" : `&v=${encodeURIComponent(String(version3))}`;
     return `/api/player-frame?key=${playerFrameId(key)}${v}`;
   }
   async function capturePlayerFrame(key, video) {
@@ -32011,7 +33727,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -32185,7 +33901,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       INDEX_CHANGED_EVENT = "lumio-live-tv-index-changed";
@@ -32196,7 +33912,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -32273,14 +33989,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/list-curation.ts
   function splitGroups(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -32371,12 +34087,12 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -32967,7 +34683,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -32992,7 +34708,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = lang === "sv" ? SV2 : EN2;
     let out = table[key] ?? EN2[key];
@@ -33008,7 +34724,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -33744,7 +35460,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       activeLogoLoads += 1;
@@ -33824,7 +35540,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -33837,7 +35553,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
     const words = name.trim().split(/\s+/).filter(Boolean);
     const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
@@ -33970,7 +35686,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { style: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: LT.accent }, children });
   }
   function PinGate({
-    open,
+    open: open2,
     title,
     wrongText,
     unlockLabel,
@@ -33984,13 +35700,13 @@ ${cue.text}`).join("\n\n")}
     const [busy, setBusy] = useState(false);
     const inputRef = useRef(null);
     useEffect(() => {
-      if (!open) return;
+      if (!open2) return;
       setPin("");
       setWrong(false);
-      const timer2 = window.setTimeout(() => inputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer2);
-    }, [open]);
-    if (!open) return null;
+      const timer3 = window.setTimeout(() => inputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer3);
+    }, [open2]);
+    if (!open2) return null;
     const submit = async () => {
       if (pin.length < 4 || busy) return;
       setBusy(true);
@@ -34054,7 +35770,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -34094,7 +35810,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
@@ -34117,14 +35833,14 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
@@ -34147,14 +35863,14 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
@@ -34180,7 +35896,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -34188,7 +35904,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -34336,14 +36052,14 @@ ${cue.text}`).join("\n\n")}
       children
     ] });
   }
-  function Chip({ active: active2, children, style, glass = false, ...rest }) {
+  function Chip({ active: active3, children, style, glass = false, ...rest }) {
     return /* @__PURE__ */ jsx(
       "div",
       {
         "data-live-tv-chip": "",
         "data-live-tv-chip-glass": glass ? "" : void 0,
         ...rest,
-        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active2 ? TV2.s16 : TV2.s05, color: active2 ? TV2.text : TV2.muted, fontWeight: active2 ? 600 : 400, border: `1px solid ${glass ? active2 ? TV2.lineStrong : TV2.line : active2 ? TV2.lineStrong : "transparent"}`, ...style },
+        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active3 ? TV2.s16 : TV2.s05, color: active3 ? TV2.text : TV2.muted, fontWeight: active3 ? 600 : 400, border: `1px solid ${glass ? active3 ? TV2.lineStrong : TV2.line : active3 ? TV2.lineStrong : "transparent"}`, ...style },
         children
       }
     );
@@ -34388,14 +36104,14 @@ ${cue.text}`).join("\n\n")}
     const [now2, setNow] = useState(() => /* @__PURE__ */ new Date());
     useEffect(() => {
       if (useHostClock) return;
-      let timer2 = 0;
+      let timer3 = 0;
       const tick2 = () => {
         const next = /* @__PURE__ */ new Date();
         setNow(next);
-        timer2 = window.setTimeout(tick2, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
+        timer3 = window.setTimeout(tick2, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
       };
       tick2();
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [useHostClock]);
     if (useHostClock) {
       if (inSceneBox) {
@@ -34418,7 +36134,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -34541,19 +36257,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
@@ -34598,11 +36314,11 @@ ${cue.text}`).join("\n\n")}
     return request;
   }
   function publish2(next) {
-    active = next;
+    active2 = next;
     for (const listener of [...listeners7]) listener();
   }
   function getActiveNowSnapshot() {
-    return active;
+    return active2;
   }
   function subscribeNowSnapshot(listener) {
     listeners7.add(listener);
@@ -34610,9 +36326,9 @@ ${cue.text}`).join("\n\n")}
       listeners7.delete(listener);
     };
   }
-  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active, listeners7;
+  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active2, listeners7;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -34621,12 +36337,12 @@ ${cue.text}`).join("\n\n")}
       snapshots = /* @__PURE__ */ new Map();
       inflight8 = /* @__PURE__ */ new Map();
       NOW_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1e3;
-      active = { snapshot: null, failed: false };
+      active2 = { snapshot: null, failed: false };
       listeners7 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
     while (memo3.size > MAX_ENTRIES3) {
@@ -34658,7 +36374,7 @@ ${cue.text}`).join("\n\n")}
   }
   var MAX_ENTRIES3, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -34667,7 +36383,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -34682,14 +36398,14 @@ ${cue.text}`).join("\n\n")}
     return stored;
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -34747,7 +36463,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -34757,7 +36473,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-history.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/channel-history.ts
   function sanitize(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -34804,7 +36520,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -34814,7 +36530,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
@@ -34897,11 +36613,11 @@ ${cue.text}`).join("\n\n")}
       }
     };
     tick2();
-    const timer2 = window.setInterval(tick2, 3e4);
+    const timer3 = window.setInterval(tick2, 3e4);
     const off = onRemindersChanged(tick2);
     return () => {
       stopped = true;
-      window.clearInterval(timer2);
+      window.clearInterval(timer3);
       off();
     };
   }
@@ -34924,17 +36640,17 @@ ${cue.text}`).join("\n\n")}
       const sync = () => setList(getReminders());
       sync();
       const off = onRemindersChanged(sync);
-      const timer2 = window.setInterval(sync, 6e4);
+      const timer3 = window.setInterval(sync, 6e4);
       return () => {
         off();
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
       };
     }, []);
     return list;
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -34946,7 +36662,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -35000,7 +36716,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -35012,7 +36728,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
@@ -35067,7 +36783,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -35094,7 +36810,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -35418,7 +37134,7 @@ ${cue.text}`).join("\n\n")}
     const [epgTick, setEpgTick] = useState(0);
     useEffect(() => {
       const visible = () => typeof document === "undefined" || document.visibilityState === "visible";
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         setNowMs(Date.now());
         if (visible()) setEpgTick((tick2) => tick2 + 1);
       }, tickMs);
@@ -35429,7 +37145,7 @@ ${cue.text}`).join("\n\n")}
       };
       document.addEventListener("visibilitychange", onVisibility);
       return () => {
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
         document.removeEventListener("visibilitychange", onVisibility);
       };
     }, [tickMs]);
@@ -35550,7 +37266,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY3, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -35583,7 +37299,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -35669,8 +37385,8 @@ ${cue.text}`).join("\n\n")}
     const waiting = /* @__PURE__ */ new Set();
     const queue2 = [];
     for (const key of missing) {
-      const pending2 = inflight9.get(entryKey2(listId, key, from, to));
-      if (pending2) waiting.add(pending2);
+      const pending4 = inflight9.get(entryKey2(listId, key, from, to));
+      if (pending4) waiting.add(pending4);
       else queue2.push(key);
     }
     if (queue2.length > 0) waiting.add(queueBatch(listId, queue2, from, to));
@@ -35694,7 +37410,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS2, MAX_ENTRIES4, cache7, batches, inflight9, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -35708,7 +37424,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -35737,13 +37453,13 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY4;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY4 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
@@ -35773,7 +37489,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY6;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -35783,7 +37499,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -35803,10 +37519,10 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!enabled) return;
       if (videoRef.current) return;
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         if (videoRef.current) setAttachTick((tick2) => tick2 + 1);
       }, 60);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [enabled, videoRef, attachTick]);
     useEffect(() => {
       if (!enabled) return;
@@ -35932,13 +37648,13 @@ ${cue.text}`).join("\n\n")}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useOrientation.ts
   function read8() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
@@ -35957,22 +37673,22 @@ ${cue.text}`).join("\n\n")}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
     return candidate && typeof candidate.request === "function" ? candidate : null;
   }
-  function useWakeLock(active2) {
+  function useWakeLock(active3) {
     useEffect(() => {
-      if (!active2) return;
+      if (!active3) return;
       const wakeLock = wakeLockOf();
       if (!wakeLock) return;
       let cancelled = false;
@@ -36010,16 +37726,16 @@ ${cue.text}`).join("\n\n")}
           });
         }
       };
-    }, [active2]);
+    }, [active3]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -36030,16 +37746,16 @@ ${cue.text}`).join("\n\n")}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis, clamp2, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         bg: "#000",
@@ -36118,10 +37834,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -36191,7 +37907,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -36211,7 +37927,7 @@ ${cue.text}`).join("\n\n")}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -36224,7 +37940,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -36268,7 +37984,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -36281,7 +37997,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
   function MobileSheet({ title, subtitle, art, body, items: items2, onClose, pushLayer, testId }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
@@ -36353,7 +38069,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -36363,7 +38079,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -36555,7 +38271,7 @@ ${cue.text}`).join("\n\n")}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -36578,11 +38294,11 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
-  function ctlStyle(ps, active2 = false) {
+  function ctlStyle(ps, active3 = false) {
     return {
       height: ps(44),
       minHeight: ps(44),
@@ -36591,8 +38307,8 @@ ${cue.text}`).join("\n\n")}
       borderRadius: 999,
       boxSizing: "border-box",
       flexShrink: 0,
-      background: active2 ? "rgba(252,252,255,0.20)" : "rgba(252,252,255,0.10)",
-      border: `1px solid ${active2 ? TV2.lineStrong : "rgba(255,255,255,0.15)"}`,
+      background: active3 ? "rgba(252,252,255,0.20)" : "rgba(252,252,255,0.10)",
+      border: `1px solid ${active3 ? TV2.lineStrong : "rgba(255,255,255,0.15)"}`,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -36822,10 +38538,10 @@ ${cue.text}`).join("\n\n")}
       );
     }) });
   }
-  function PlayerScheduleOverlay({ channel, tv, ps, open, onClose, onSwitch, onHoldChip, overlayRef }) {
+  function PlayerScheduleOverlay({ channel, tv, ps, open: open2, onClose, onSwitch, onHoldChip, overlayRef }) {
     const { tt } = useTvText();
     const dayStart = startOfLocalDay(tv.nowMs);
-    const scheduleChannels = useMemo(() => open ? [channel] : [], [open, channel]);
+    const scheduleChannels = useMemo(() => open2 ? [channel] : [], [open2, channel]);
     const { schedules, loading: loading2 } = useSchedules(scheduleChannels, dayStart, dayStart + DAY_MS);
     const programmes = useMemo(() => sliceSchedule(schedules[channelKey(channel)] ?? [], dayStart, dayStart + DAY_MS), [schedules, channel, dayStart]);
     const [tick2, setTick] = useState(0);
@@ -36834,13 +38550,13 @@ ${cue.text}`).join("\n\n")}
     const nowMs = tv.nowMs;
     const nowIndex = programmes.findIndex((p) => p.start <= nowMs && p.stop > nowMs);
     useEffect(() => {
-      if (!open) return;
+      if (!open2) return;
       const root = overlayRef.current;
       const target2 = root?.querySelector("[data-now]") ?? root?.querySelector('[data-testid="schedule-row"]') ?? root?.querySelector("[data-f]");
       target2?.focus({ preventScroll: true });
       target2?.scrollIntoView?.({ block: "start" });
-    }, [open, nowIndex, overlayRef]);
-    if (!open) return null;
+    }, [open2, nowIndex, overlayRef]);
+    if (!open2) return null;
     return /* @__PURE__ */ jsxs("div", { ref: overlayRef, "data-testid": "schedule-overlay", "data-live-tv-layer": "", style: { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 40, pointerEvents: "auto", maxHeight: "55%", display: "flex", flexDirection: "column", borderTop: `1px solid ${TV2.lineCard}`, borderRadius: `${ps(24)}px ${ps(24)}px 0 0`, background: "rgba(0,0,0,0.88)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 -20px 60px rgba(0,0,0,0.5)", fontFamily: TV2.font, color: TV2.text }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: ps(12), padding: `${ps(12)}px ${ps(20)}px`, borderBottom: `1px solid ${TV2.line}`, flexShrink: 0 }, children: [
         /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
@@ -36894,7 +38610,7 @@ ${cue.text}`).join("\n\n")}
   }
   var FAV_WINDOW, DAY_MS, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -36938,7 +38654,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -37012,9 +38728,9 @@ ${cue.text}`).join("\n\n")}
       const deadline = Date.now() + 4e3;
       const tick2 = () => {
         if (!node.isConnected) return;
-        const active2 = document.activeElement;
+        const active3 = document.activeElement;
         const inLayer = layerRef.current.menuOpen || layerRef.current.guideOpen || layerRef.current.gateOpen;
-        if (active2 === node) {
+        if (active3 === node) {
           if (++held >= 5) return;
         } else if (inLayer) {
           held = 0;
@@ -37132,7 +38848,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37146,7 +38862,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
@@ -37206,7 +38922,7 @@ ${cue.text}`).join("\n\n")}
   }
   var cutouts, listeners8, snapshot;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37216,7 +38932,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -37506,7 +39222,7 @@ ${cue.text}`).join("\n\n")}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37524,7 +39240,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer
@@ -37862,7 +39578,7 @@ ${cue.text}`).join("\n\n")}
         });
         return () => {
           cancelled2 = true;
-          boundsTimers.forEach((timer2) => window.clearTimeout(timer2));
+          boundsTimers.forEach((timer3) => window.clearTimeout(timer3));
           resizeObs?.disconnect();
           window.removeEventListener("resize", sync);
           window.removeEventListener("scroll", sync, true);
@@ -38252,7 +39968,7 @@ ${cue.text}`).join("\n\n")}
   }
   var import_react_dom4, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -38273,7 +39989,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -38283,11 +39999,11 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -38343,8 +40059,8 @@ ${cue.text}`).join("\n\n")}
   function LtAutoBadge() {
     return /* @__PURE__ */ jsx("span", { style: { flex: "none", borderRadius: 999, background: UI.greenSoft, padding: "2px 8px", fontSize: 10.5, fontWeight: 500, letterSpacing: "0.08em", color: UI.green }, children: "AUTO" });
   }
-  function LtBtn({ children, onClick, variant = "default", size = "sm", disabled, testId, style, active: active2 = false, title }) {
-    const colors = active2 ? { background: UI.accent900, borderColor: UI.accent, color: UI.text } : variant === "accent" ? { background: "transparent", borderColor: UI.accent, color: UI.text } : variant === "danger" ? { background: "transparent", borderColor: UI.dangerLine, color: UI.danger } : { background: "transparent", borderColor: size === "md" ? UI.lineDialog : UI.line, color: UI.soft };
+  function LtBtn({ children, onClick, variant = "default", size = "sm", disabled, testId, style, active: active3 = false, title }) {
+    const colors = active3 ? { background: UI.accent900, borderColor: UI.accent, color: UI.text } : variant === "accent" ? { background: "transparent", borderColor: UI.accent, color: UI.text } : variant === "danger" ? { background: "transparent", borderColor: UI.dangerLine, color: UI.danger } : { background: "transparent", borderColor: size === "md" ? UI.lineDialog : UI.line, color: UI.soft };
     return /* @__PURE__ */ jsx(
       "button",
       {
@@ -38483,14 +40199,14 @@ ${cue.text}`).join("\n\n")}
     if (!el || typeof el.tagName !== "string") return false;
     return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable === true;
   }
-  function useBackLayer(active2, onBack, rootRef) {
+  function useBackLayer(active3, onBack, rootRef) {
     const isTv = useTvMode();
     const onBackRef = useRef(onBack);
     useEffect(() => {
       onBackRef.current = onBack;
     });
     useEffect(() => {
-      if (!active2) return;
+      if (!active3) return;
       const opener = document.activeElement;
       const onKey = (event) => {
         if (!BACK_KEYS.has(event.key)) return;
@@ -38514,7 +40230,7 @@ ${cue.text}`).join("\n\n")}
           if (opener && opener.isConnected && opener !== document.body) opener.focus({ preventScroll: true });
         }, 0);
       };
-    }, [active2, isTv]);
+    }, [active3, isTv]);
   }
   function LtDialog({ title, body, width = 400, onClose, children, testId }) {
     const rootRef = useRef(null);
@@ -38565,17 +40281,17 @@ ${cue.text}`).join("\n\n")}
   }
   function ToastRoot({ children }) {
     const [text, setText] = useState(null);
-    const timer2 = useRef(null);
+    const timer3 = useRef(null);
     const toast = useCallback((next) => {
       setText(next);
-      if (timer2.current !== null) window.clearTimeout(timer2.current);
-      timer2.current = window.setTimeout(() => {
-        timer2.current = null;
+      if (timer3.current !== null) window.clearTimeout(timer3.current);
+      timer3.current = window.setTimeout(() => {
+        timer3.current = null;
         setText(null);
       }, 2400);
     }, []);
     useEffect(() => () => {
-      if (timer2.current !== null) window.clearTimeout(timer2.current);
+      if (timer3.current !== null) window.clearTimeout(timer3.current);
     }, []);
     const node = useMemo(() => text ? /* @__PURE__ */ jsxs("div", { role: "status", style: { position: "fixed", left: "50%", bottom: 32, transform: "translateX(-50%)", zIndex: 1100, display: "flex", alignItems: "center", gap: 9, borderRadius: 999, background: UI.dialog, padding: "11px 20px", boxShadow: "0 18px 40px rgba(0,0,0,0.55)", pointerEvents: "none" }, children: [
       /* @__PURE__ */ jsx("span", { style: { height: 5, width: 5, borderRadius: 999, background: UI.green } }),
@@ -38600,7 +40316,7 @@ ${cue.text}`).join("\n\n")}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -38648,16 +40364,16 @@ ${cue.text}`).join("\n\n")}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -38722,7 +40438,7 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
     categories: "Categories",
@@ -39175,10 +40891,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -39230,7 +40946,7 @@ ${cue.text}`).join("\n\n")}
     return { status, urls, refreshing, refresh, reload };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms, locale) {
     if (!ms) return null;
@@ -39322,7 +41038,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -39482,18 +41198,18 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -39566,7 +41282,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -39588,7 +41304,7 @@ ${cue.text}`).join("\n\n")}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
@@ -39597,7 +41313,7 @@ ${cue.text}`).join("\n\n")}
     return libraryId.startsWith(prefix) ? libraryId.slice(prefix.length) || null : null;
   }
   var defaultDeps = { query: queryVod, status: vodStatus };
-  async function scanVodSource(libraryId, emit2, progress2, signal, deps = defaultDeps) {
+  async function scanVodSource(libraryId, emit3, progress2, signal, deps = defaultDeps) {
     const source = vodSourceFromLibraryId(libraryId);
     if (!source) return { titles: 0, cursor: null };
     const sources = await deps.status();
@@ -39610,7 +41326,7 @@ ${cue.text}`).join("\n\n")}
       const page = await deps.query({ source, offset, limit: VOD_SCAN_PAGE, sort: "new", signal });
       const upsert = page.items.map((item) => vodItemToLibraryTitle(item, source)).filter((title) => title !== null);
       if (upsert.length > 0) {
-        await emit2({ upsert });
+        await emit3({ upsert });
         titles += upsert.length;
         progress2({ phase: "titles", done: titles });
       }
@@ -39633,15 +41349,15 @@ ${cue.text}`).join("\n\n")}
     id: VOD_LIBRARY_PROVIDER_ID,
     label: { en: "Xtream VOD", sv: "Xtream VOD" },
     pluginId: "com.lumio.live-tv",
-    async scanAll(source, emit2, progress2, signal) {
-      const out = await scanVodSource(source.id, emit2, progress2, signal);
+    async scanAll(source, emit3, progress2, signal) {
+      const out = await scanVodSource(source.id, emit3, progress2, signal);
       return { titles: out.titles, cursor: out.cursor };
     },
-    async scanDelta(source, cursor, emit2, progress2, signal) {
+    async scanDelta(source, cursor, emit3, progress2, signal) {
       const account = vodSourceFromLibraryId(source.id);
       const updatedAt = account ? (await vodStatus()).find((entry) => entry.id === account)?.updatedAt ?? null : null;
       if (!vodDeltaNeeded(cursor, updatedAt)) return { titles: 0, cursor };
-      const out = await scanVodSource(source.id, emit2, progress2, signal);
+      const out = await scanVodSource(source.id, emit3, progress2, signal);
       return { titles: out.titles, cursor: out.cursor };
     },
     /**
@@ -39685,7 +41401,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -39733,7 +41449,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-library-card.tsx
   init_jsx_runtime_shim();
   function VodLibraryCard() {
     const { h, locale } = useHubText();
@@ -39768,16 +41484,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -39882,7 +41598,7 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -40018,7 +41734,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/category-curation-panel.tsx
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -40180,11 +41896,11 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -40371,7 +42087,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv-settings-views.tsx
   init_index_client();
   init_tv_strings();
   init_index_client();
@@ -40388,11 +42104,11 @@ ${cue.text}`).join("\n\n")}
   function TvTextRow({ label, hint, value, placeholder, secret = false, onChange, testId }) {
     const { h } = useHubText();
     const Keyboard = getTvKeyboardPanel();
-    const [open, setOpen] = useState(false);
+    const [open2, setOpen] = useState(false);
     const shown = value ? secret ? "\u2022".repeat(Math.min(value.length, 24)) : value : h("tvNotSet");
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx(TvRow, { label, hint: Keyboard ? hint : h("tvNoKeyboard"), value: shown, valueTone: value ? "accent" : "muted", glyph: "\u2328", onOk: () => setOpen(true), disabled: !Keyboard, testId }),
-      open && Keyboard ? /* @__PURE__ */ jsx(Keyboard, { title: label, placeholder: placeholder ?? "", initial: value, onDone: (next) => {
+      open2 && Keyboard ? /* @__PURE__ */ jsx(Keyboard, { title: label, placeholder: placeholder ?? "", initial: value, onDone: (next) => {
         onChange(next);
         setOpen(false);
       }, onClose: () => setOpen(false) }) : null
@@ -40806,7 +42522,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text) {
@@ -41037,36 +42753,36 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_logo_image();
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
     };
     const delay = Math.max(0, target2 - Date.now());
-    const timer2 = setTimeout(onBoundary, delay);
-    return () => clearTimeout(timer2);
+    const timer3 = setTimeout(onBoundary, delay);
+    return () => clearTimeout(timer3);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY5 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -41099,7 +42815,7 @@ ${cue.text}`).join("\n\n")}
     return data;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }) {
@@ -41132,7 +42848,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -41162,11 +42878,11 @@ ${cue.text}`).join("\n\n")}
     ) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-shell.tsx
   var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
   function encodeChannelParams(channel) {
     return {
@@ -41178,10 +42894,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-grid.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -41209,7 +42925,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -41274,14 +42990,14 @@ ${cue.text}`).join("\n\n")}
     return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -41298,11 +43014,11 @@ ${cue.text}`).join("\n\n")}
     const minutes = Math.max(1, Math.round(durationMs / 6e4));
     return `${a.base}/timeshift/${encodeURIComponent(a.username)}/${encodeURIComponent(a.password)}/${minutes}/${stamp}/${a.streamId}.ts`;
   }
-  function catchUpForChannel(channel, schedule2, nowMs, limit = 12) {
-    if (!schedule2 || schedule2.length === 0 || !channelSupportsCatchUp(channel)) return [];
+  function catchUpForChannel(channel, schedule3, nowMs, limit = 12) {
+    if (!schedule3 || schedule3.length === 0 || !channelSupportsCatchUp(channel)) return [];
     const days = channel.archive.days;
     const windowStart = nowMs - days * 864e5;
-    const programmes = schedule2.filter((p) => p.stop > windowStart && p.start < nowMs);
+    const programmes = schedule3.filter((p) => p.stop > windowStart && p.start < nowMs);
     const out = [];
     for (const programme of programmes) {
       if (programme.stop > nowMs || programme.start < windowStart) continue;
@@ -41321,7 +43037,7 @@ ${cue.text}`).join("\n\n")}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -41475,7 +43191,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-grid.tsx
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
   var CHANNELS_PER_PAGE = 28;
@@ -41630,8 +43346,8 @@ ${cue.text}`).join("\n\n")}
       const onKeyDown = (event) => {
         if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
         if (document.querySelector("[data-panel-root]")) return;
-        const active2 = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        const current = active2?.hasAttribute("data-f") ? active2 : document.querySelector('[data-fcur="1"]');
+        const active3 = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        const current = active3?.hasAttribute("data-f") ? active3 : document.querySelector('[data-fcur="1"]');
         if (!current) return;
         if (event.key === "ArrowDown" && current === tvMenuButtonRef.current) {
           const target2 = document.querySelector(".live-tv-channel-grid > div:first-child[data-f]") ?? document.querySelector(".live-tv-channel-grid > div:first-child [data-f]");
@@ -42136,7 +43852,7 @@ ${cue.text}`).join("\n\n")}
                     ...tvStation,
                     onClick: () => {
                       if (categories.length === 0) return;
-                      setGroupDropdownOpen((open) => !open);
+                      setGroupDropdownOpen((open2) => !open2);
                     },
                     disabled: categories.length === 0,
                     className: isTv ? `flex w-full items-center justify-between ${tvControlClass} ${groupDropdownOpen ? "!border-accent-400/50 !bg-accent-400/10 !text-accent-300" : ""} disabled:cursor-default disabled:opacity-60` : `flex h-9 w-full items-center justify-between rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all whitespace-nowrap ${groupDropdownOpen ? activePillClass : neutralPillClass} disabled:cursor-default disabled:opacity-60`,
@@ -42950,11 +44666,11 @@ ${cue.text}`).join("\n\n")}
     const { nowMs } = model;
     const scheduleChannels = useMemo(() => channel ? [channel] : [], [channel]);
     const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, startOfLocalDay(nowMs), startOfLocalDay(nowMs, 1));
-    const schedule2 = channel ? schedules[channelKey(channel)] ?? [] : [];
+    const schedule3 = channel ? schedules[channelKey(channel)] ?? [] : [];
     const info = channel ? model.nowFor(channel) : { now: null, next: null, later: null };
     useEffect(() => {
       nowRef.current?.scrollIntoView({ block: "center" });
-    }, [channel?.url, schedule2.length]);
+    }, [channel?.url, schedule3.length]);
     if (!channel) return null;
     return /* @__PURE__ */ jsxs("div", { style: { background: "rgba(255,255,255,0.04)", border: `1px solid ${LT.line}`, borderRadius: LT.radiusLg, padding: 16, display: "flex", flexDirection: "column", gap: 12, maxHeight: "calc(100vh - 140px)" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
@@ -42973,10 +44689,10 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("div", { style: { marginTop: 6 }, children: /* @__PURE__ */ jsx(ProgressBar, { value: progressOf(info.now.start, info.now.stop, nowMs), height: 3 }) })
       ] }) : null,
       /* @__PURE__ */ jsx(Kicker, { children: h("hubGuideKicker") }),
-      schedule2.length === 0 ? (
+      schedule3.length === 0 ? (
         // Tablån hämtas från appen: tomt betyder "hämtar" tills svaret kommit.
         /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 13, color: LT.muted }, children: scheduleLoading ? h("hubLoadingEpg") : h("hubNoProgramme") })
-      ) : /* @__PURE__ */ jsx("div", { style: { overflowY: "auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 2 }, children: schedule2.map((programme) => {
+      ) : /* @__PURE__ */ jsx("div", { style: { overflowY: "auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 2 }, children: schedule3.map((programme) => {
         const isNow = programme.start <= nowMs && programme.stop > nowMs;
         const past = programme.stop <= nowMs;
         return /* @__PURE__ */ jsxs(
@@ -42995,13 +44711,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -43018,7 +44734,7 @@ ${cue.text}`).join("\n\n")}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/now-next-later-row.tsx
   init_jsx_runtime_shim();
   function formatTime(ms) {
     return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -43080,7 +44796,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_tv_settings_store();
@@ -43298,7 +45014,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
@@ -43316,8 +45032,8 @@ ${cue.text}`).join("\n\n")}
     );
     useEffect(() => {
       if (!banner) return;
-      const timer2 = window.setTimeout(() => setBanner(null), 2e4);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setBanner(null), 2e4);
+      return () => window.clearTimeout(timer3);
     }, [banner]);
     if (!banner) return null;
     const channel = reminderToChannel(banner);
@@ -43364,7 +45080,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -43373,7 +45089,7 @@ ${cue.text}`).join("\n\n")}
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
@@ -43398,7 +45114,7 @@ ${cue.text}`).join("\n\n")}
     return phone;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -43450,12 +45166,12 @@ ${cue.text}`).join("\n\n")}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -43481,9 +45197,9 @@ ${cue.text}`).join("\n\n")}
       query.addEventListener?.("change", onChange);
       return () => query.removeEventListener?.("change", onChange);
     }, []);
-    const active2 = enabled && finePointer;
+    const active3 = enabled && finePointer;
     useEffect(() => {
-      if (!active2) {
+      if (!active3) {
         hide();
         return;
       }
@@ -43520,8 +45236,8 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("scroll", hide, true);
         window.removeEventListener("resize", hide);
       };
-    }, [active2, hide, rootRef]);
-    if (!active2 || !spot) return null;
+    }, [active3, hide, rootRef]);
+    if (!active3 || !spot) return null;
     return /* @__PURE__ */ jsx(
       "button",
       {
@@ -43570,10 +45286,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -43583,10 +45299,10 @@ ${cue.text}`).join("\n\n")}
   var ZAP_MAX_DIGITS = 4;
   function createZapBuffer(opts) {
     let digits = "";
-    let timer2 = null;
+    let timer3 = null;
     const clearTimer = () => {
-      if (timer2 !== null) window.clearTimeout(timer2);
-      timer2 = null;
+      if (timer3 !== null) window.clearTimeout(timer3);
+      timer3 = null;
     };
     const commit = () => {
       clearTimer();
@@ -43603,7 +45319,7 @@ ${cue.text}`).join("\n\n")}
         digits += digit;
         opts.onChange(digits);
         clearTimer();
-        timer2 = window.setTimeout(commit, opts.timeoutMs);
+        timer3 = window.setTimeout(commit, opts.timeoutMs);
       },
       commit,
       clear() {
@@ -43617,11 +45333,11 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_video_surface();
   init_surface_cutouts();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -43630,12 +45346,12 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -43683,7 +45399,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 36;
   var MAX_CHIPS = 12;
   var REPLAY_DAYS = 3;
@@ -43712,7 +45428,7 @@ ${cue.text}`).join("\n\n")}
     return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -43723,7 +45439,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_ui();
@@ -43780,10 +45496,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
@@ -43826,14 +45542,14 @@ ${cue.text}`).join("\n\n")}
     const reload = useCallback(() => setNonce((n) => n + 1), []);
     useEffect(() => {
       let cancelled = false;
-      let timer2 = null;
+      let timer3 = null;
       const controller = new AbortController();
       const load = async () => {
         try {
           const result = await listVodCategories(source, controller.signal);
           if (cancelled) return;
           setState({ ...result, loading: false, error: null });
-          if (result.importing) timer2 = setTimeout(load, IMPORT_POLL_MS);
+          if (result.importing) timer3 = setTimeout(load, IMPORT_POLL_MS);
         } catch (err) {
           if (cancelled || controller.signal.aborted) return;
           setState((prev) => ({
@@ -43848,7 +45564,7 @@ ${cue.text}`).join("\n\n")}
       return () => {
         cancelled = true;
         controller.abort();
-        if (timer2) clearTimeout(timer2);
+        if (timer3) clearTimeout(timer3);
         off();
       };
     }, [source, nonce]);
@@ -43922,7 +45638,7 @@ ${cue.text}`).join("\n\n")}
     return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -44041,7 +45757,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-data.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-data.ts
   init_plugin_sdk();
   init_live_tv_data();
   var VOD_MODE_DEFAULT = "link";
@@ -44127,24 +45843,24 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileChips({ items: items2, value, onChange, testId, emphasisKey, dimKeys }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: items2.map(({ key, label, id }) => {
-      const active2 = key === value;
+      const active3 = key === value;
       const emphasis = emphasisKey !== void 0 && key === emphasisKey;
       const dim = dimKeys?.includes(key) ?? false;
       return /* @__PURE__ */ jsx(
         "div",
         {
           "data-testid": `chip-${id}`,
-          ...station(() => onChange(key), void 0, { "aria-pressed": String(active2) }),
+          ...station(() => onChange(key), void 0, { "aria-pressed": String(active3) }),
           style: {
             minHeight: 34,
             padding: "0 14px",
@@ -44166,10 +45882,10 @@ ${cue.text}`).join("\n\n")}
                             Kanten sitter kvar på BÅDA lägena nu: en osynlig kant på det
                             ovalda gjorde att chippen bytte storlek när man valde dem.
                           */
-            background: emphasis ? "#f3f4f8" : active2 ? MT.s16 : MT.s12,
-            border: emphasis ? "1px solid transparent" : `1px solid ${active2 ? MT.line20 : MT.line10}`,
-            color: emphasis ? "#111" : active2 ? MT.text : MT.muted70,
-            fontWeight: active2 ? 600 : 400,
+            background: emphasis ? "#f3f4f8" : active3 ? MT.s16 : MT.s12,
+            border: emphasis ? "1px solid transparent" : `1px solid ${active3 ? MT.line20 : MT.line10}`,
+            color: emphasis ? "#111" : active3 ? MT.text : MT.muted70,
+            fontWeight: active3 ? 600 : 400,
             opacity: dim ? 0.65 : void 0,
             cursor: "pointer"
           },
@@ -44180,7 +45896,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
   var RECENT_MAX = 8;
@@ -44355,7 +46071,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-vod-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-vod-hub.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -44432,7 +46148,7 @@ ${cue.text}`).join("\n\n")}
   }
   function VodRowCard({ item, nav }) {
     const { tt } = useTvText();
-    const open = () => nav.go("title", { key: item.key });
+    const open2 = () => nav.go("title", { key: item.key });
     const hold = (element) => {
       const actions = [
         ...item.url ? [{
@@ -44457,7 +46173,7 @@ ${cue.text}`).join("\n\n")}
       "div",
       {
         "data-testid": "hub-vod-card",
-        ...station(open, hold),
+        ...station(open2, hold),
         style: {
           width: dp(190),
           flexShrink: 0,
@@ -44505,7 +46221,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_DESKTOP = 3;
   var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
@@ -44565,14 +46281,14 @@ ${cue.text}`).join("\n\n")}
           ] }),
           playlistOpen ? /* @__PURE__ */ jsxs("div", { ref: menuRef, role: "menu", "data-panel-root": "", "data-scroll": "", "data-live-tv-layer": "", style: { position: "absolute", top: `calc(100% + ${dp(8)}px)`, left: 0, zIndex: 60, width: dp(380), padding: dp(8), borderRadius: dp(16), background: "rgba(58,59,66,0.98)", boxShadow: "0 24px 64px rgba(0,0,0,0.55)", maxHeight: dp(560), overflowY: "auto" }, children: [
             [{ id: null, name: tt("allPlaylists"), count: model.allChannels.length }, ...model.playlists].map((p) => {
-              const active2 = (model.activePlaylistId ?? null) === p.id;
+              const active3 = (model.activePlaylistId ?? null) === p.id;
               return /* @__PURE__ */ jsxs("div", { "data-testid": `playlist-${p.id ?? "all"}`, "data-live-tv-menu-item": "", ...station(() => {
                 model.setActivePlaylist(p.id);
                 setPlaylistOpen(false);
                 setGroup(null);
                 setVisible(ALL_STEP);
                 window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0);
-              }, void 0, active2 ? { "data-init": "" } : {}), style: { height: dp(56), minHeight: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? TV2.s12 : "transparent", cursor: "pointer" }, children: [
+              }, void 0, active3 ? { "data-init": "" } : {}), style: { height: dp(56), minHeight: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active3 ? TV2.s12 : "transparent", cursor: "pointer" }, children: [
                 /* @__PURE__ */ jsx("span", { style: { fontSize: dp(19), fontWeight: 600 }, children: p.name }),
                 /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)" }, children: tt("channelsCount", { count: p.count }) })
               ] }, p.id ?? "__all");
@@ -44724,7 +46440,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -44733,7 +46449,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -44758,12 +46474,12 @@ ${cue.text}`).join("\n\n")}
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS * 100));
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -44792,18 +46508,18 @@ ${cue.text}`).join("\n\n")}
     } };
   }
   function useHoverSelect(enabled, onSelect) {
-    const timer2 = useRef(null);
+    const timer3 = useRef(null);
     const clear = () => {
-      if (timer2.current !== null) window.clearTimeout(timer2.current);
-      timer2.current = null;
+      if (timer3.current !== null) window.clearTimeout(timer3.current);
+      timer3.current = null;
     };
     useEffect(() => clear, []);
     if (!enabled) return { enter: void 0, leave: void 0 };
     return {
       enter: (sel) => {
         clear();
-        timer2.current = window.setTimeout(() => {
-          timer2.current = null;
+        timer3.current = window.setTimeout(() => {
+          timer3.current = null;
           onSelect(sel);
         }, HOVER_MS);
       },
@@ -44819,13 +46535,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms = 300) {
     const [value, setValue] = useState(channel);
     useEffect(() => {
-      const timer2 = window.setTimeout(() => setValue(channel), ms);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setValue(channel), ms);
+      return () => window.clearTimeout(timer3);
     }, [channel, ms]);
     return value;
   }
@@ -44883,7 +46599,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -44913,7 +46629,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -44922,7 +46638,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -44956,7 +46672,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -44965,25 +46681,25 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileSegment({ options, value, onChange, height = 36, testId }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { display: "flex", padding: 3, borderRadius: 999, background: MT.s08 }, children: options.map(({ key, label }) => {
-      const active2 = key === value;
+      const active3 = key === value;
       return /* @__PURE__ */ jsx(
         "div",
         {
           "data-testid": `segment-${key}`,
-          ...station(() => onChange(key), void 0, { "aria-pressed": String(active2) }),
+          ...station(() => onChange(key), void 0, { "aria-pressed": String(active3) }),
           style: {
             flex: 1,
             minHeight: height,
@@ -44992,9 +46708,9 @@ ${cue.text}`).join("\n\n")}
             alignItems: "center",
             justifyContent: "center",
             fontSize: 14,
-            fontWeight: active2 ? 600 : 400,
-            background: active2 ? MT.s16 : "transparent",
-            color: active2 ? MT.text : MT.muted,
+            fontWeight: active3 ? 600 : 400,
+            background: active3 ? MT.s16 : "transparent",
+            color: active3 ? MT.text : MT.muted,
             cursor: "pointer"
           },
           children: label
@@ -45004,7 +46720,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -45073,7 +46789,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -45206,7 +46922,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_jsx_runtime_shim();
   var MAX_GROUPS2 = 12;
   var ROW_STEP3 = 40;
@@ -45260,7 +46976,7 @@ ${cue.text}`).join("\n\n")}
       );
     };
     const noRows = rows.length === 0;
-    const colItem = (key, active2, label, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active2 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
+    const colItem = (key, active3, label, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active3 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active3 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
       /* @__PURE__ */ jsx("span", { style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.45)" }, children: count })
     ] }, key);
@@ -45331,7 +47047,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -45341,7 +47057,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -45379,7 +47095,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -45387,7 +47103,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
@@ -45458,7 +47174,7 @@ ${cue.text}`).join("\n\n")}
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_jsx_runtime_shim();
@@ -45580,7 +47296,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
@@ -45830,11 +47546,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -45843,7 +47559,7 @@ ${cue.text}`).join("\n\n")}
   init_guide_surface();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -46006,7 +47722,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-control-row.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -46022,12 +47738,12 @@ ${cue.text}`).join("\n\n")}
   }
   function ControlSegment({ options, value, onChange, testId, activeStyle }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: SEGMENT, children: options.map((option) => {
-      const active2 = option.key === value;
+      const active3 = option.key === value;
       return /* @__PURE__ */ jsx(
         "div",
         {
-          ...station(() => onChange(option.key), void 0, active2 ? { "data-active": "" } : void 0),
-          style: { ...SEGMENT_BTN, background: active2 ? TV2.s16 : "transparent", color: active2 ? TV2.text : TV2.muted, fontWeight: active2 ? 600 : 400, ...active2 ? activeStyle : void 0 },
+          ...station(() => onChange(option.key), void 0, active3 ? { "data-active": "" } : void 0),
+          style: { ...SEGMENT_BTN, background: active3 ? TV2.s16 : "transparent", color: active3 ? TV2.text : TV2.muted, fontWeight: active3 ? 600 : 400, ...active3 ? activeStyle : void 0 },
           children: option.label
         },
         option.key
@@ -46101,7 +47817,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -46110,11 +47826,11 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -46159,7 +47875,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -46227,7 +47943,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
   var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
@@ -46457,7 +48173,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -46662,7 +48378,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
@@ -46777,7 +48493,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
   function TvGuide(props) {
@@ -47016,7 +48732,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -47024,7 +48740,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -47034,7 +48750,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -47095,7 +48811,7 @@ ${cue.text}`).join("\n\n")}
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
   function TvFavouritesPhone({ model, nav }) {
@@ -47191,7 +48907,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
@@ -47271,13 +48987,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
   init_channel_locks();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -47315,16 +49031,16 @@ ${cue.text}`).join("\n\n")}
     const windowTo = dayStart + DAY_MS2;
     const scheduleChannels = useMemo(() => channel ? [channel] : [], [channel]);
     const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, windowFrom, windowTo);
-    const schedule2 = channel ? schedules[channelKey(channel)] ?? [] : [];
+    const schedule3 = channel ? schedules[channelKey(channel)] ?? [] : [];
     const programmes = useMemo(
-      () => sliceSchedule(schedule2, dayStart, dayStart + DAY_MS2),
+      () => sliceSchedule(schedule3, dayStart, dayStart + DAY_MS2),
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [schedule2, dayStart]
+      [schedule3, dayStart]
     );
     const yesterday = useMemo(
-      () => dayOffset === 0 ? sliceSchedule(schedule2, dayStart - DAY_MS2, dayStart).slice(-2) : [],
+      () => dayOffset === 0 ? sliceSchedule(schedule3, dayStart - DAY_MS2, dayStart).slice(-2) : [],
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [schedule2, dayStart, dayOffset]
+      [schedule3, dayStart, dayOffset]
     );
     const rows = useMemo(
       () => [...yesterday.map((p) => ({ p, day: "yesterday" })), ...programmes.map((p) => ({ p, day: "today" }))],
@@ -47332,9 +49048,9 @@ ${cue.text}`).join("\n\n")}
     );
     const catchUpByStart = useMemo(() => {
       if (!channel) return /* @__PURE__ */ new Map();
-      const items2 = catchUpForChannel(channel, schedule2, model.nowMs, 500);
+      const items2 = catchUpForChannel(channel, schedule3, model.nowMs, 500);
       return new Map(items2.map((item) => [item.programme.start, true]));
-    }, [channel, schedule2, model.nowMs]);
+    }, [channel, schedule3, model.nowMs]);
     const selected = useMemo(
       () => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === "now")?.p ?? rows[0]?.p ?? null,
       [rows, selectedStart, model.nowMs]
@@ -47398,12 +49114,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_tv_ui();
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -47582,7 +49298,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_jsx_runtime_shim();
   function TvChannel(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
@@ -47653,9 +49369,9 @@ ${cue.text}`).join("\n\n")}
         ] })
       ] }),
       /* @__PURE__ */ jsx("div", { "data-testid": "day-picker", style: dayPickerStyle, children: DAY_OFFSETS.map((offset) => {
-        const active2 = offset === dayOffset;
+        const active3 = offset === dayOffset;
         const label = dayLabel(offset);
-        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active2 ? "#f3f4f8" : "transparent", color: active2 ? "#111" : offset > 0 ? TV2.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
+        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active3 ? "#f3f4f8" : "transparent", color: active3 ? "#111" : offset > 0 ? TV2.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: label.top }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.75 }, children: label.bottom })
         ] }) }, offset);
@@ -47712,7 +49428,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -47721,13 +49437,13 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-keyboard.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -47758,7 +49474,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_jsx_runtime_shim();
   function isComposing(event) {
     return event.nativeEvent.isComposing === true || event.keyCode === 229;
@@ -47768,16 +49484,16 @@ ${cue.text}`).join("\n\n")}
     const Panel = getTvKeyboardPanel();
     const [prompt, setPrompt] = useState(null);
     const promptId = useRef(0);
-    const open = prompt !== null;
+    const open2 = prompt !== null;
     const openerRef = useRef(null);
     useEffect(() => {
-      if (!open) return;
+      if (!open2) return;
       openerRef.current = document.activeElement;
       return () => {
         const opener = openerRef.current;
         window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
       };
-    }, [open]);
+    }, [open2]);
     const ask = (title, initial, onDone, kind = "text") => {
       promptId.current += 1;
       setPrompt({ id: promptId.current, title, initial, kind, onDone });
@@ -47897,7 +49613,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -47931,7 +49647,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -47951,7 +49667,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       setState((prev) => ({ hits: prev.hits, loading: true }));
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         epgSearch(listId, q, dayStart, dayEnd, limit).then(async (items2) => {
           const channels = await resolveChannelKeys(items2.map((item) => item.key));
           const byKey = new Map(channels.map((channel) => [channel.key, channel]));
@@ -47967,13 +49683,13 @@ ${cue.text}`).join("\n\n")}
         });
       }, DEBOUNCE_MS);
       return () => {
-        window.clearTimeout(timer2);
+        window.clearTimeout(timer3);
       };
     }, [query, dayStart, dayEnd, listId, limit]);
     return state2;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -48111,7 +49827,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
     return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
@@ -48226,14 +49942,14 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -48242,10 +49958,10 @@ ${cue.text}`).join("\n\n")}
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -48295,7 +50011,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -48463,7 +50179,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
     2: { columns: "1fr 1fr", rows: "1fr" },
@@ -48489,8 +50205,8 @@ ${cue.text}`).join("\n\n")}
       if (!narrow) return;
       const root = rootRef.current;
       if (!root) return;
-      const active2 = document.activeElement;
-      if (active2 && root.contains(active2)) return;
+      const active3 = document.activeElement;
+      if (active3 && root.contains(active3)) return;
       root.querySelector("[data-init]")?.focus({ preventScroll: true });
     }, [narrow]);
     const liveBudget = Math.max(0, caps.maxLive - 1);
@@ -48595,7 +50311,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -48675,8 +50391,8 @@ ${cue.text}`).join("\n\n")}
     const [query, setQuery] = useState("");
     const [q, setQ] = useState("");
     useEffect(() => {
-      const timer2 = window.setTimeout(() => setQ(query.trim()), 250);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setQ(query.trim()), 250);
+      return () => window.clearTimeout(timer3);
     }, [query]);
     const validSelected = useMemo(() => {
       if (selected === ALL_CATEGORY || cats.categories.length === 0) return ALL_CATEGORY;
@@ -48686,7 +50402,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       setSelected(getVodCategory(playlistId) ?? ALL_CATEGORY);
     }, [playlistId]);
-    const active2 = cats.categories.find((c) => c.id === validSelected) ?? null;
+    const active3 = cats.categories.find((c) => c.id === validSelected) ?? null;
     const page = useVodPage({
       source,
       // Söken håller sig inom vald kategori; Alla söker hela indexet (Jerry
@@ -49015,7 +50731,7 @@ ${cue.text}`).join("\n\n")}
       ),
       /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(14), padding: `${dp(30)}px ${dp(48)}px ${dp(16)}px` }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }, children: active2?.name ?? allKindLabel }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }, children: active3?.name ?? allKindLabel }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 20 : 17), color: "rgba(243,244,248,0.5)" }, children: tt("libraryTitlesCount", { count: page.total }) }),
           /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(10) }, children: [
             SORTS.map((key) => /* @__PURE__ */ jsx(
@@ -49123,13 +50839,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -49187,7 +50903,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -49637,7 +51353,7 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -49672,21 +51388,21 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_live_tv_data();
   init_index_client();
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -49841,19 +51557,19 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileToggle({ on }) {
     return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_jsx_runtime_shim();
   function Row({ label, right, onOk, testId, phone = false }) {
     if (phone) {
@@ -50284,9 +52000,9 @@ ${cue.text}`).join("\n\n")}
       if (pickerLogin) pendingRef.current = { login: pickerLogin, dirty: dirty2 };
     });
     useEffect(() => () => {
-      const pending2 = pendingRef.current;
-      if (!pending2.dirty || !pending2.login?.id) return;
-      const list = getLiveTvLists().find((entry) => entry.xtreamLoginId === pending2.login.id);
+      const pending4 = pendingRef.current;
+      if (!pending4.dirty || !pending4.login?.id) return;
+      const list = getLiveTvLists().find((entry) => entry.xtreamLoginId === pending4.login.id);
       if (!list) return;
       void importList(list).catch((err) => recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err)));
     }, []);
@@ -50394,14 +52110,14 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 12 : dp(14) }, "data-testid": "settings-content", children: [
       /* @__PURE__ */ jsx(Heading, { phone, hint: cats.total > 0 ? tt("vodHint", { count: cats.total }) : tt("vodHintEmpty"), children: tt("vodHeading") }),
       /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: phone ? 10 : dp(16), flexWrap: "wrap" }, children: options.map((option) => {
-        const active2 = option.key === mode;
+        const active3 = option.key === mode;
         return /* @__PURE__ */ jsxs(
           "div",
           {
             "data-testid": `vod-mode-${option.key}`,
-            "data-active": active2 ? "" : void 0,
+            "data-active": active3 ? "" : void 0,
             ...station(() => choose(option.key)),
-            style: phone ? { width: "100%", padding: "12px 14px", borderRadius: 12, background: MT.s07, border: `1px solid ${active2 ? TV2.acc : MT.line10}`, cursor: "pointer" } : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV2.s07, border: `1px solid ${active2 ? TV2.acc : TV2.lineCard}`, cursor: "pointer", textAlign: "left" },
+            style: phone ? { width: "100%", padding: "12px 14px", borderRadius: 12, background: MT.s07, border: `1px solid ${active3 ? TV2.acc : MT.line10}`, cursor: "pointer" } : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV2.s07, border: `1px solid ${active3 ? TV2.acc : TV2.lineCard}`, cursor: "pointer", textAlign: "left" },
             children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), fontWeight: 600 }, children: option.title }),
               /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : "rgba(243,244,248,0.6)", marginTop: 4 }, children: option.body })
@@ -50549,7 +52265,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -50619,7 +52335,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_jsx_runtime_shim();
   var TABS = ["appearance", "content", "playlists", "epg", "parental"];
@@ -50686,7 +52402,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -50700,7 +52416,7 @@ ${cue.text}`).join("\n\n")}
     settings: TvSettingsView
   };
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -50725,7 +52441,7 @@ ${cue.text}`).join("\n\n")}
   }
   function MobileTabBar({ view, onGo, onMore, showLibrary = false }) {
     const { tt } = useTvText();
-    const active2 = tabForView(view);
+    const active3 = tabForView(view);
     const tabs = tabsFor(showLibrary);
     return /* @__PURE__ */ jsx(
       "nav",
@@ -50748,7 +52464,7 @@ ${cue.text}`).join("\n\n")}
           display: "flex"
         },
         children: tabs.map(({ key, icon: Icon2, label }) => {
-          const isActive = key === active2;
+          const isActive = key === active3;
           return /* @__PURE__ */ jsxs(
             "div",
             {
@@ -50779,7 +52495,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_mobile_sheet();
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
@@ -50841,10 +52557,10 @@ ${cue.text}`).join("\n\n")}
     const view = viewFromParams(params);
     const viewParams = useMemo(() => params ?? {}, [params]);
     const [Player, setPlayer] = useState(null);
-    const [active2, setActive] = useState(null);
+    const [active3, setActive2] = useState(null);
     const [stream, setStream] = useState(null);
     const [StreamPlayer, setStreamPlayer] = useState(null);
-    const [pending2, setPending] = useState(null);
+    const [pending4, setPending] = useState(null);
     const [menu, setMenu] = useState(null);
     const [zapDigits, setZapDigits] = useState("");
     const [toastText, setToastText] = useState(null);
@@ -50861,7 +52577,7 @@ ${cue.text}`).join("\n\n")}
     const railItemSize = narrow ? RAIL_ITEM_NARROW : railLabels ? RAIL_ITEM_WIDE : RAIL_ITEM_COMPACT;
     const [moreOpen, setMoreOpen] = useState(false);
     useEffect(() => {
-      if (active2) return;
+      if (active3) return;
       let frame = 0;
       const focusInit = () => {
         const main = mainRef.current;
@@ -50873,19 +52589,19 @@ ${cue.text}`).join("\n\n")}
         frame = window.requestAnimationFrame(focusInit);
       });
       return () => window.cancelAnimationFrame(frame);
-    }, [view, active2]);
+    }, [view, active3]);
     useEffect(() => {
-      if (!active2 || Player) return;
+      if (!active3 || Player) return;
       let cancelled = false;
       void Promise.resolve().then(() => (init_live_tv_player(), live_tv_player_exports)).then((mod) => {
         if (!cancelled) setPlayer(() => mod.LiveTvPlayer);
       }).catch(() => {
-        if (!cancelled) setActive(null);
+        if (!cancelled) setActive2(null);
       });
       return () => {
         cancelled = true;
       };
-    }, [active2, Player]);
+    }, [active3, Player]);
     useEffect(() => {
       if (!stream || StreamPlayer) return;
       let cancelled = false;
@@ -50921,7 +52637,7 @@ ${cue.text}`).join("\n\n")}
         setPending({ kind: "play", request });
         return;
       }
-      void releaseAllSurfaces().finally(() => setActive(request));
+      void releaseAllSurfaces().finally(() => setActive2(request));
     }, []);
     const openChannel = useCallback((channel, programmeStart) => {
       go("channel", { ...encodeChannelParams(channel), ...programmeStart ? { programme: String(programmeStart) } : {} });
@@ -50966,12 +52682,12 @@ ${cue.text}`).join("\n\n")}
         setMenu(null);
         return;
       }
-      if (pending2) {
+      if (pending4) {
         setPending(null);
         return;
       }
-      if (active2) {
-        setActive(null);
+      if (active3) {
+        setActive2(null);
         return;
       }
       const top = layersRef.current[layersRef.current.length - 1];
@@ -50988,18 +52704,18 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       requestBrowseBack();
-    }, [menu, pending2, active2, view, go]);
+    }, [menu, pending4, active3, view, go]);
     useEffect(() => {
       const onKey = (event) => {
         if (!BACK_KEYS2.has(event.key)) return;
         if (menu && !phone) return;
-        if (pending2) {
+        if (pending4) {
           event.preventDefault();
           event.stopPropagation();
           back();
           return;
         }
-        if (active2 && Player) return;
+        if (active3 && Player) return;
         const target2 = event.target;
         if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
         if (target2?.closest?.("[data-live-tv-host-ui]")) return;
@@ -51009,7 +52725,7 @@ ${cue.text}`).join("\n\n")}
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [back, menu, phone, active2, Player, pending2]);
+    }, [back, menu, phone, active3, Player, pending4]);
     const favourites = model.favouriteChannels;
     const channels = model.channels;
     const zapDepsRef = useRef({ favourites, channels, play, toast, tt });
@@ -51058,8 +52774,8 @@ ${cue.text}`).join("\n\n")}
     const startedRef = useRef(false);
     useEffect(() => {
       if (startedRef.current || !settings.startOnLastChannel || view !== "hub" || params?.url) return;
-      const last = model.history[0];
-      const channel = last ? model.byUrl.get(last.url) : null;
+      const last2 = model.history[0];
+      const channel = last2 ? model.byUrl.get(last2.url) : null;
       if (!channel) return;
       startedRef.current = true;
       play({ channel });
@@ -51077,11 +52793,11 @@ ${cue.text}`).join("\n\n")}
       addToMultiview,
       pushLayer,
       toast,
-      playerOpen: active2 !== null
-    }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active2]);
-    useSwipeBack(back, (!menu || phone) && pending2 === null);
+      playerOpen: active3 !== null
+    }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active3]);
+    useSwipeBack(back, (!menu || phone) && pending4 === null);
     const View = TV_VIEWS[view];
-    const activeChannel = active2 ? active2.url ? { ...active2.channel, url: active2.url, name: active2.label ?? active2.channel.name } : active2.channel : null;
+    const activeChannel = active3 ? active3.url ? { ...active3.channel, url: active3.url, name: active3.label ?? active3.channel.name } : active3.channel : null;
     const rail = [
       { key: "search", label: tt("railSearch"), icon: /* @__PURE__ */ jsx(Icons.Search, {}) },
       { key: "hub", label: tt("railHome"), icon: /* @__PURE__ */ jsx(Icons.Home, {}) },
@@ -51114,17 +52830,17 @@ ${cue.text}`).join("\n\n")}
       // Kanalbyte till en LÅST kanal lämnar `active` orörd och öppnar
       // grinden ovanpå spelaren (se `play` ovan) — kromet måste då stå
       // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
-      gateOpen: pending2 !== null,
+      gateOpen: pending4 !== null,
       onOpenChannelDetails: () => {
-        setActive(null);
+        setActive2(null);
         openChannel(activeChannel);
       },
       onOpenMultiview: () => {
-        setActive(null);
+        setActive2(null);
         go("multi");
       },
       onOpenGuide: () => {
-        setActive(null);
+        setActive2(null);
         go("guide");
       },
       onAddToMultiview: addToMultiview,
@@ -51159,7 +52875,7 @@ ${cue.text}`).join("\n\n")}
             ] })
           ),
           /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone }, view) }),
-          phone && active2 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
+          phone && active3 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
           phone && moreOpen ? /* @__PURE__ */ jsx(
             MobileSheet,
             {
@@ -51173,7 +52889,7 @@ ${cue.text}`).join("\n\n")}
               testId: "more-sheet"
             }
           ) : null,
-          activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => play({ channel }), tv: tvPlayerProps }) : null,
+          activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive2(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => play({ channel }), tv: tvPlayerProps }) : null,
           stream && StreamPlayer ? /* @__PURE__ */ jsx("div", { "data-testid": "tv-stream-player", "data-live-tv-layer": "", children: /* @__PURE__ */ jsx(
             StreamPlayer,
             {
@@ -51194,7 +52910,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx(
             PinGate,
             {
-              open: pending2 !== null,
+              open: pending4 !== null,
               title: tt("enterPin"),
               wrongText: tt("pinWrong"),
               unlockLabel: tt("unlock"),
@@ -51202,7 +52918,7 @@ ${cue.text}`).join("\n\n")}
               onVerify: verifyActiveProfilePin2,
               onClose: () => setPending(null),
               onUnlocked: () => {
-                const gate = pending2;
+                const gate = pending4;
                 setPending(null);
                 if (!gate) return;
                 if (gate.kind === "lock") {
@@ -51210,7 +52926,7 @@ ${cue.text}`).join("\n\n")}
                   return;
                 }
                 markUnlockedThisSession();
-                void releaseAllSurfaces().finally(() => setActive(gate.request));
+                void releaseAllSurfaces().finally(() => setActive2(gate.request));
               }
             }
           ),
@@ -51223,7 +52939,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -51271,7 +52987,7 @@ ${cue.text}`).join("\n\n")}
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -51307,13 +53023,13 @@ ${cue.text}`).join("\n\n")}
       timers2.push(window.setTimeout(tick2, msToNextMinute));
       return () => {
         cancelled = true;
-        for (const timer2 of timers2) window.clearTimeout(timer2);
+        for (const timer3 of timers2) window.clearTimeout(timer3);
       };
     }, [key, listId, urls.join("|"), hoursAhead, hoursBack]);
     return programmes;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/live-tv/runtime/index.ts
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,

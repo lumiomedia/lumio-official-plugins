@@ -907,8 +907,8 @@
         setTimePos(s.timePos);
         prev.timePos = s.timePos;
         setDuration(s.duration);
-        const pending2 = pendingPauseRef.current;
-        if (pending2 && (s.paused === pending2.value || Date.now() > pending2.until)) pendingPauseRef.current = null;
+        const pending3 = pendingPauseRef.current;
+        if (pending3 && (s.paused === pending3.value || Date.now() > pending3.until)) pendingPauseRef.current = null;
         if (!pendingPauseRef.current) setPaused(s.paused);
         setEnded(s.ended);
         setPausedForCache(s.pausedForCache);
@@ -1230,10 +1230,10 @@
   }
   function teardownSharedListenerIfIdle() {
     if (dispatchersByRustId.size > 0) return;
-    const pending2 = sharedUnlisten;
-    if (!pending2) return;
+    const pending3 = sharedUnlisten;
+    if (!pending3) return;
     closingSharedListener = true;
-    void pending2.then((unlisten) => {
+    void pending3.then((unlisten) => {
       if (!closingSharedListener) return;
       sharedUnlisten = null;
       unlisten();
@@ -2085,11 +2085,15 @@
   });
 
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
-  var sdk, getActiveProfileId, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged;
+  var sdk, getActiveProfileId, getProfiles, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged;
   var init_profile_storage_shim = __esm({
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
       getActiveProfileId = () => sdk.getActiveProfileId();
+      getProfiles = () => {
+        const p = sdk?.getActiveProfile?.();
+        return p ? [p] : [];
+      };
       getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
       setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
       removeScopedStorageItem = (baseKey) => sdk.removeScopedStorageItem(baseKey);
@@ -3079,6 +3083,17 @@
           plNextEpisode: "Next episode",
           plSwitchStream: "Switch stream",
           plStreams: "Streams",
+          plSleepTimer: "Sleep timer",
+          plSleepShort: "Sleep",
+          plSleepOff: "Off",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "End of episode or film",
+          plSleepStillThere: "Are you still there?",
+          plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
+          plCompanions: "Who's watching",
+          plWhoWatches: "Who's watching with you?",
+          plCompanionsJustMe: "Just me",
+          plCompanionsShort: "With",
           audioDelayTitle: "Audio delay",
           audioDelayHint: "Adjust lip sync. A positive value plays audio later.",
           btAudioAutoOffset: "Compensate for Bluetooth latency",
@@ -4286,6 +4301,7 @@
           quizStart: "Start quiz",
           quizBuilding: "Building questions \xB7 %s movies",
           quizTooFew: "Too few movies. Watch or save at least four.",
+          quizTooFewGenre: "Too few seen {genre} titles. Try another genre.",
           quizRateLimited: "TMDB is busy, try again in a moment.",
           quizLanOff: "Phones can only reach this screen when LAN streaming is on in Settings.",
           quizCode: "Code",
@@ -5536,9 +5552,9 @@
           profTabDiary: "Film diary",
           profTabHunt: "Filmography hunt",
           profTabWrapped: "Wrapped",
-          profComingSoon: "Coming in a later update.",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Move \xB7 OK Select \xB7 Back Close",
           profEmptyFirstStar: "Watch your first film and the first star lights up.",
-          profGalaxyLine: "{stars} stars and {constellations} constellations",
+          profGalaxyLine: "{stars} stars, {constellations} constellations and {zones} dark zones",
           profGalaxyDesc: "Every film you've seen is a star. Directors form constellations.",
           profViewingN: "Viewing {n}",
           profSecondViewing: "Second time",
@@ -5564,8 +5580,10 @@
           profHuntSeen: "You've seen {seen}/{total} {name}",
           profHuntMissing: "{n} left to find.",
           profHuntAllSeen: "You've seen them all.",
-          profHuntMakeRow: "Make a row of the rest",
+          profHuntMakeRow: "Make a row",
+          profHuntMakeCollection: "Make a collection",
           profHuntRowName: "{name} \u2013 still to see",
+          profHuntHomeRowMade: 'Row "{name}" added to your home screen.',
           profHuntRowMade: 'Row "{name}" created \u2013 add it to your home screen from Settings.',
           profHuntRowFailed: "Couldn't create the row \u2013 you may have too many rows.",
           profHuntNew: "+ Hunt a new director",
@@ -5577,7 +5595,8 @@
           profBadgeAlmost: "Almost there",
           profBadgeComplete: "Complete",
           profBadgeInOrder: "In order",
-          profWrappedTeaser: "Your year.\nIn film.",
+          profWrappedTeaser: "{h} hours.\nAnd more.",
+          profWrappedKicker: "Lumio Wrapped {year}",
           profWrappedPlay: "Play your year \u2192",
           profMoreAboutYou: "More about you",
           profClose: "Close",
@@ -5596,7 +5615,229 @@
           profModAbandoned: "Abandoned",
           profModAbandonedLine: "Films you gave up on early.",
           profModQuiz: "Quiz profile",
-          profModQuizLine: "What you watch vs what you know."
+          profModQuizLine: "What you watch vs what you know.",
+          profModBack: "\u2190 Profile",
+          profModColorTitle: "Your year as a single strip",
+          profModColorDesc: "Every stripe is a film's barcode, in the order you watched. Pick a month to see which films gave the colour.",
+          profModColorNote: "From your barcodes",
+          profModSleptTitle: "Films you fell asleep to",
+          profModSleptDesc: "The sleep timer knows exactly where you drifted off. Continue from there, or start over when you're more awake.",
+          profModSleptNote: "From the sleep timer",
+          profModCouchTitle: "Who you watch with",
+          profModCouchDesc: "Taste match per profile and picks that suit you both, based on what you've watched together and apart.",
+          profModCouchNote: `From "Who's watching?"`,
+          profModClockTitle: "When you watch",
+          profModClockDesc: "Weekday against time of day for everything you started. Pick a day to see your habits.",
+          profModClockNote: "From start times in the diary",
+          profModCapsuleTitle: "Send a film to the future",
+          profModCapsuleDesc: "Pick a film today. Lumio brings it back in a few years, together with today's diary page.",
+          profModCapsuleNote: "Opens on the home screen",
+          profModRecordsTitle: "Your personal records",
+          profModRecordsDesc: "Longest marathon, latest night and more. New records are marked when they fall.",
+          profModRecordsNote: "From the diary",
+          profModAbandonedTitle: "Films you gave up on",
+          profModAbandonedDesc: "Everything you left under 20 %. Give them a second chance, or let go for good.",
+          profModAbandonedNote: "From the diary",
+          profSleptSummary: "You fall asleep most often on {day}, on average {m} minutes in.",
+          profSleptTopGenre: "{genre} accounts for {n} of {total} naps.",
+          profSleptWhen: "{date} \xB7 fell asleep {time}",
+          profSleptResume: "Continue {time}",
+          profSleptRestart: "Start over",
+          profSleptRemove: "Remove",
+          profSleptEmpty: "The list is empty. You woke up for everything.",
+          profAbandonedCount: "{n} films left under 20 %.",
+          profAbandonedWhen: "Stopped at {p} % \xB7 {date}",
+          profAbandonedRetry: "Second chance",
+          profAbandonedAdded: "In Continue watching",
+          profAbandonedLetGo: "Let go",
+          profAbandonedDismissRow: "Remove {title} from the list",
+          profAbandonedEmpty: "Nothing abandoned. You finish what you start.",
+          profModQuizTitle: "What you know, vs what you watch",
+          profModQuizDesc: "Your film quiz results per genre, against how much you actually watch the genre.",
+          profModQuizNote: "From the film quiz",
+          profPrevNoCapsule: "No capsule yet",
+          profPrevOpens: "Opens",
+          profPrevTogether: "{n} films together",
+          profPrevEmpty: "Nothing here yet",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "Longest marathon",
+          profRecLatestNight: "Latest night",
+          profRecMostInDay: "Most films in a day",
+          profRecLongestFilm: "Longest film",
+          profRecMostRewatched: "Most rewatched",
+          profRecStreak: "Longest streak",
+          profRecStreakValue: "{n} days",
+          profDayPl0: "Mondays",
+          profDayPl1: "Tuesdays",
+          profDayPl2: "Wednesdays",
+          profDayPl3: "Thursdays",
+          profDayPl4: "Fridays",
+          profDayPl5: "Saturdays",
+          profDayPl6: "Sundays",
+          profColorMonthCount: "{month}: {n} films",
+          profColorMoodRecord: "The year's record month",
+          profColorMoodDark: "The year's darkest month",
+          profColorMoodBright: "The year's brightest month",
+          profColorUseBg: "Use as profile background",
+          profColorRemoveBg: "Remove profile background",
+          profColorBgSet: "The strip is now behind your profile.",
+          profColorExport: "Export as image",
+          profColorShareTitle: "Colour year {year}",
+          profColorFilms: "{n} films",
+          profColorEmpty: "No movies watched this year yet.",
+          profColorNoBarcodeNote: "Grey stripes = films without a barcode yet. Play them in Lumio to fill in the colour.",
+          profShareSaved: "Image saved.",
+          profShareFailed: "Couldn't create the image.",
+          profShareNoLan: "No network address found for the phone.",
+          profShareScan: "Scan with your phone to save the image.",
+          profClockTopTime: "Top time",
+          profClockFilms: "Films",
+          profClockUsual: "Usually",
+          profClockBigNight: "The week's big night.",
+          profClockWith: "Usually with {name}.",
+          profClockEmpty: "Start a few films and the clock fills in.",
+          profRecNew: "New",
+          profRecMarathonHow: "{n} in a row from {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "in a row, until {date}",
+          profRecEmpty: "Records appear once you have a few evenings behind you.",
+          profPrevMatch: "taste match with {name}",
+          profCouchUsual: "Usually: {day} {time}",
+          profCouchDisagree: "Disagree most on: {genre}",
+          profCouchTonight: "Tonight's film for you both",
+          profCouchReasonBoth: "On both watchlists",
+          profCouchReasonRec: "Like {title}",
+          profCouchStart: "Start an evening together",
+          profCouchSolo: "Add another profile to see who you watch with.",
+          profCouchHint: "Pick who's watching when you start a film, and this fills in.",
+          profCouchNoPicks: "No shared picks yet.",
+          profQuizLegendWatch: "Share of your watching",
+          profQuizLegendRight: "Right answers in the quiz",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "You know most about {best}, though you watch {watched} the most.",
+          profQuizSummarySame: "You know {best} best \u2014 and watch it the most.",
+          profQuizWeak: "{weak} is your weak spot.",
+          profQuizEmpty: "Play a round of the film quiz and your results show up here.",
+          profCapStep1: "1 \xB7 Pick a film",
+          profCapStep2: "2 \xB7 When should it open?",
+          profCapYears: "{n} yr",
+          profCapLine: "{title} opens {date}.",
+          profCapSeal: "Seal the capsule",
+          profCapSealing: "Sealing\u2026",
+          profCapSealed: "Sealed. See you {date}.",
+          profCapAnother: "Seal another",
+          profCapYours: "Your capsules",
+          profCapOpens: "Opens {date}",
+          profCapOpened: "Opened {date}",
+          profCapNone: "No capsules yet.",
+          profCapNoFilms: "Finish a film first \u2014 then you can send it forward.",
+          profCapDueKicker: "Time capsule \xB7 opened today",
+          profCapDueLine: "You sealed {title} on {date}.",
+          profCapOpen: "Open",
+          profDiaryAsleep: "Fell asleep {time} \xB7 {p} %",
+          profGxDirectors: "Directors",
+          profGxGenres: "Genres",
+          profGxWhole: "\u2190 Whole galaxy",
+          profGxExplore: "Explore",
+          profGxPickTitle: "Pick a star or a dark zone",
+          profGxPickBody: "Constellations are directors you've followed for a long time. Dashed circles are genres you've hardly watched.",
+          profGxStar: "Star",
+          profGxSeenTimes: "Seen {n} times \xB7 last {date}",
+          profGxSeenOnce: "Seen once \xB7 {date}",
+          profGxNextStar: "Next star \u2192",
+          profGxDetails: "Details",
+          profGxHunt: "Filmography hunt",
+          profGxDarkZone: "Dark zone",
+          profGxZoneBetween: "{n} seen. Lies between {a} and {b}.",
+          profGxZoneNear: "{n} seen. Lies next to {a}.",
+          profGxZoneEdge: "{n} seen. An unexplored corner.",
+          profGxOkHint: "on the zone to fly there",
+          profGxFly: "Fly there",
+          profGxLightFirst: "Light the first stars",
+          profGxLoading: "Looking for films\u2026",
+          profGxNoSuggestions: "No suggestions right now. Try again later.",
+          profGxPlay: "Play",
+          profGxConstellations: "Constellations",
+          profGxZones: "Dark zones",
+          settingsPageProfilePage: "Profile page",
+          ppWeatherGroup: "Weather in the diary",
+          ppWeatherToggle: "Record the weather",
+          ppWeatherToggleDesc: "When a film ends, Lumio looks up the current weather for your town once (Open-Meteo, no account). Off: no lookups at all.",
+          ppWeatherPlace: "Town",
+          ppWeatherNoPlace: "No town chosen yet.",
+          ppWeatherSearchPh: "e.g. Gothenburg",
+          ppWeatherSearch: "Search",
+          ppWeatherSearching: "Searching\u2026",
+          ppWeatherNoResults: "No town found.",
+          ppWeatherFailed: "The search failed. Check the connection and try again.",
+          ppWeatherCredit: "Weather data by Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "so far this year",
+          profWrPrev: "Previous",
+          profWrNext: "Next",
+          profWrNotEnough: "Wrapped needs at least 10 sessions in {year}. Keep watching!",
+          profWrIntroTitle: "Your year\nin film.",
+          profWrIntroBody: "{n} stars later. Tap to begin.",
+          profWrIntroBodyTv: "{n} stars later. Press \u25B6 to begin.",
+          profWrGuessKicker: "Guess first",
+          profWrGuessQ: "Which genre did you watch most this year?",
+          profWrGuessRight: "Spot on. {genre}, with {h} hours.",
+          profWrGuessWrong: "Close. It was {genre}, with {h} hours.",
+          profWrNoGenres: "Not enough genre data yet.",
+          profWrHoursKicker: "You watched",
+          profWrHoursUnit: "hours",
+          profWrDays: "= {n} days on the sofa",
+          profWrInterstellar: "= {n} Interstellars in a row",
+          profWrEpisodes: "= {n} episodes of a half-hour show",
+          profWrGenreKicker: "Genre ranking",
+          profWrGenreWon: "{genre} won.",
+          profWrHoursShort: "{h} h",
+          profWrGoldenKicker: "Golden hour",
+          profWrGoldenBody: "The time you most often pressed play.",
+          profWrStarsKicker: "Your stars",
+          profWrStarsTitle: "The actors you saw most.",
+          profWrStarsNone: "Not enough cast data yet.",
+          profWrStarsFilms: "{n} films",
+          profWrRewatchKicker: "Most rewatched",
+          profWrRewatchNone: "No rewatches this year \u2014 always something new.",
+          profWrSleepTitle: "You fell asleep {n} times.",
+          profWrSleepNone: "You stayed awake all year.",
+          profWrBuddyTitle: "You and {name} watched {n} films together.",
+          profWrBuddyNone: "Mostly you and the screen this year.",
+          profWrPersKicker: "Your film personality",
+          profWrTraitNight: "Night owl",
+          profWrTraitNightValue: "starts {time}",
+          profWrTraitGenre: "Genre loyal",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Rewatcher",
+          profWrTraitRewatchValue: "{n} rewatches",
+          profWrTraitNap: "Dozer",
+          profWrTraitNapValue: "at {p} %",
+          profWrShareTitle: "Share your year.",
+          profWrShare: "Share",
+          profWrReplay: "Play again",
+          profWrCardHours: "total",
+          profWrCardGenre: "top genre",
+          profWrCardTitle: "most played",
+          profWrCardNaps: "naps",
+          profWrBNight: "The night owl",
+          profWrBRewatch: "The rewatcher",
+          profWrBNap: "The nap master",
+          profWrBMarathon: "The marathoner",
+          profWrBExplorer: "The explorer",
+          profWrAScifi: "from outer space",
+          profWrADrama: "with a big heart",
+          profWrAHorror: "from the dark",
+          profWrAComedy: "who laughs first",
+          profWrAAnimation: "with a drawn soul",
+          profWrADocumentary: "who wants to know",
+          profWrAThriller: "on the edge",
+          profWrAAction: "at full speed",
+          profWrARomance: "in rose-tinted glasses",
+          profWrACrime: "from the underworld",
+          profWrAFantasy: "from the fairy realm",
+          profWrAOther: "without a map"
         },
         sv: {
           // Nav
@@ -6442,6 +6683,17 @@
           plNextEpisode: "N\xE4sta avsnitt",
           plSwitchStream: "Byt str\xF6m",
           plStreams: "Str\xF6mmar",
+          plSleepTimer: "S\xF6mntimer",
+          plSleepShort: "S\xF6mn",
+          plSleepOff: "Av",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "Slutet av avsnittet/filmen",
+          plSleepStillThere: "\xC4r du kvar?",
+          plSleepStillThereBody: "S\xF6mntimern pausade. R\xF6r musen eller tryck p\xE5 n\xE5got f\xF6r att titta vidare.",
+          plCompanions: "Vem tittar med",
+          plWhoWatches: "Vem tittar med?",
+          plCompanionsJustMe: "Bara jag",
+          plCompanionsShort: "Med",
           audioDelayTitle: "Ljudf\xF6rdr\xF6jning",
           audioDelayHint: "Justera l\xE4ppsynk. Positivt v\xE4rde spelar ljudet senare.",
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
@@ -7637,6 +7889,7 @@
           quizStart: "Starta quiz",
           quizBuilding: "Bygger fr\xE5gor \xB7 %s filmer",
           quizTooFew: "F\xF6r f\xE5 filmer. Se eller spara minst fyra.",
+          quizTooFewGenre: "F\xF6r f\xE5 sedda {genre}-titlar. Prova en annan genre.",
           quizRateLimited: "TMDB \xE4r upptaget, f\xF6rs\xF6k om en stund.",
           quizLanOff: "Telefoner n\xE5r den h\xE4r sk\xE4rmen bara n\xE4r LAN-str\xF6mning \xE4r p\xE5 i inst\xE4llningarna.",
           quizCode: "Kod",
@@ -8877,9 +9130,9 @@
           profTabDiary: "Filmdagbok",
           profTabHunt: "Filmografijakt",
           profTabWrapped: "Wrapped",
-          profComingSoon: "Kommer i en senare uppdatering.",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Flytta \xB7 OK V\xE4lj \xB7 Bak\xE5t St\xE4ng",
           profEmptyFirstStar: "Titta p\xE5 din f\xF6rsta film s\xE5 t\xE4nds f\xF6rsta stj\xE4rnan.",
-          profGalaxyLine: "{stars} stj\xE4rnor och {constellations} stj\xE4rnbilder",
+          profGalaxyLine: "{stars} stj\xE4rnor, {constellations} stj\xE4rnbilder och {zones} m\xF6rka zoner",
           profGalaxyDesc: "Varje film du sett \xE4r en stj\xE4rna. Regiss\xF6rer bildar stj\xE4rnbilder.",
           profViewingN: "G\xE5ng {n}",
           profSecondViewing: "Andra g\xE5ngen",
@@ -8905,8 +9158,10 @@
           profHuntSeen: "Du har sett {seen}/{total} {name}",
           profHuntMissing: "{n} kvar att hitta.",
           profHuntAllSeen: "Du har sett alla.",
-          profHuntMakeRow: "G\xF6r samlingsrad av resten",
+          profHuntMakeRow: "G\xF6r en rad",
+          profHuntMakeCollection: "G\xF6r en samling",
           profHuntRowName: "{name} \u2013 kvar att se",
+          profHuntHomeRowMade: 'Raden "{name}" finns nu p\xE5 startsidan.',
           profHuntRowMade: 'Raden "{name}" \xE4r skapad \u2013 l\xE4gg till den p\xE5 startsidan via Inst\xE4llningar.',
           profHuntRowFailed: "Raden gick inte att skapa \u2013 du kanske har f\xF6r m\xE5nga rader.",
           profHuntNew: "+ Jaga en ny regiss\xF6r",
@@ -8918,7 +9173,8 @@
           profBadgeAlmost: "N\xE4stan d\xE4r",
           profBadgeComplete: "Komplett",
           profBadgeInOrder: "I ordning",
-          profWrappedTeaser: "Ditt \xE5r.\nI film.",
+          profWrappedTeaser: "{h} timmar.\nOch mer.",
+          profWrappedKicker: "Lumio Wrapped {year}",
           profWrappedPlay: "Spela upp ditt \xE5r \u2192",
           profMoreAboutYou: "Mer om dig",
           profClose: "St\xE4ng",
@@ -8937,7 +9193,229 @@
           profModAbandoned: "\xD6vergivna",
           profModAbandonedLine: "Filmer du gav upp tidigt.",
           profModQuiz: "Quizprofilen",
-          profModQuizLine: "Vad du tittar p\xE5 mot vad du kan."
+          profModQuizLine: "Vad du tittar p\xE5 mot vad du kan.",
+          profModBack: "\u2190 Profil",
+          profModColorTitle: "Ditt \xE5r som en enda remsa",
+          profModColorDesc: "Varje strimma \xE4r en films barcode, i den ordning du s\xE5g dem. V\xE4lj en m\xE5nad f\xF6r att se vilka filmer som gav f\xE4rgen.",
+          profModColorNote: "Fr\xE5n dina barcodes",
+          profModSleptTitle: "Filmer du somnade till",
+          profModSleptDesc: "S\xF6mntimern vet exakt var du slocknade. Forts\xE4tt d\xE4rifr\xE5n, eller b\xF6rja om n\xE4r du \xE4r piggare.",
+          profModSleptNote: "Fr\xE5n s\xF6mntimern",
+          profModCouchTitle: "Vem du tittar med",
+          profModCouchDesc: "Smakmatch per profil och f\xF6rslag som passar er b\xE5da, baserat p\xE5 vad ni sett tillsammans och var f\xF6r sig.",
+          profModCouchNote: 'Fr\xE5n "Vem tittar med?"',
+          profModClockTitle: "N\xE4r du tittar",
+          profModClockDesc: "Veckodag mot klockslag f\xF6r allt du startat. V\xE4lj en dag f\xF6r att se dina vanor.",
+          profModClockNote: "Fr\xE5n starttiderna i dagboken",
+          profModCapsuleTitle: "Skicka en film till framtiden",
+          profModCapsuleDesc: "V\xE4lj en film i dag. Lumio f\xF6resl\xE5r den igen om n\xE5gra \xE5r, tillsammans med dagens dagbokssida.",
+          profModCapsuleNote: "\xD6ppnas p\xE5 startsidan",
+          profModRecordsTitle: "Dina personliga rekord",
+          profModRecordsDesc: "L\xE4ngsta maraton, senaste kv\xE4llen och mer. Nya rekord markeras n\xE4r de sl\xE5s.",
+          profModRecordsNote: "Fr\xE5n dagboken",
+          profModAbandonedTitle: "Filmer du gav upp",
+          profModAbandonedDesc: "Allt du l\xE4mnat under 20 %. Ge dem en andra chans eller sl\xE4pp taget f\xF6r gott.",
+          profModAbandonedNote: "Fr\xE5n dagboken",
+          profSleptSummary: "Du somnar oftast p\xE5 {day}, i snitt {m} minuter in.",
+          profSleptTopGenre: "{genre} st\xE5r f\xF6r {n} av {total} tupplurar.",
+          profSleptWhen: "{date} \xB7 somnade {time}",
+          profSleptResume: "Forts\xE4tt {time}",
+          profSleptRestart: "B\xF6rja om",
+          profSleptRemove: "Ta bort",
+          profSleptEmpty: "Listan \xE4r tom. Du har vaknat till allt.",
+          profAbandonedCount: "{n} filmer l\xE4mnade under 20 %.",
+          profAbandonedWhen: "Slutade vid {p} % \xB7 {date}",
+          profAbandonedRetry: "Andra chans",
+          profAbandonedAdded: "I Forts\xE4tt titta",
+          profAbandonedLetGo: "Sl\xE4pp taget",
+          profAbandonedDismissRow: "Ta bort {title} fr\xE5n listan",
+          profAbandonedEmpty: "Inget \xF6vergivet. Du ser klart det du b\xF6rjar p\xE5.",
+          profModQuizTitle: "Vad du kan, mot vad du ser",
+          profModQuizDesc: "Dina resultat i filmquizet per genre, j\xE4mf\xF6rt med hur mycket du faktiskt tittar p\xE5 genren.",
+          profModQuizNote: "Fr\xE5n filmquizet",
+          profPrevNoCapsule: "Ingen kapsel \xE4n",
+          profPrevOpens: "\xD6ppnas",
+          profPrevTogether: "{n} filmer tillsammans",
+          profPrevEmpty: "Inget h\xE4r \xE4n",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "L\xE4ngsta maraton",
+          profRecLatestNight: "Senaste kv\xE4llen",
+          profRecMostInDay: "Flest filmer p\xE5 en dag",
+          profRecLongestFilm: "L\xE4ngsta film",
+          profRecMostRewatched: "Flest omtittningar",
+          profRecStreak: "L\xE4ngsta svit",
+          profRecStreakValue: "{n} dagar",
+          profDayPl0: "m\xE5ndagar",
+          profDayPl1: "tisdagar",
+          profDayPl2: "onsdagar",
+          profDayPl3: "torsdagar",
+          profDayPl4: "fredagar",
+          profDayPl5: "l\xF6rdagar",
+          profDayPl6: "s\xF6ndagar",
+          profColorMonthCount: "{month}: {n} filmer",
+          profColorMoodRecord: "\xC5rets rekordm\xE5nad",
+          profColorMoodDark: "\xC5rets m\xF6rkaste m\xE5nad",
+          profColorMoodBright: "\xC5rets ljusaste m\xE5nad",
+          profColorUseBg: "Anv\xE4nd som profilbakgrund",
+          profColorRemoveBg: "Ta bort profilbakgrund",
+          profColorBgSet: "Remsan ligger nu bakom din profil.",
+          profColorExport: "Exportera som bild",
+          profColorShareTitle: "F\xE4rg\xE5ret {year}",
+          profColorFilms: "{n} filmer",
+          profColorEmpty: "Inga sedda filmer i \xE5r \xE4n.",
+          profColorNoBarcodeNote: "Gr\xE5 strimmor = filmer utan barcode \xE4n. Spela dem i Lumio s\xE5 fylls f\xE4rgen i.",
+          profShareSaved: "Bilden \xE4r sparad.",
+          profShareFailed: "Bilden gick inte att skapa.",
+          profShareNoLan: "Hittade ingen n\xE4tverksadress f\xF6r telefonen.",
+          profShareScan: "Skanna med telefonen f\xF6r att spara bilden.",
+          profClockTopTime: "Topptimme",
+          profClockFilms: "Filmer",
+          profClockUsual: "Oftast",
+          profClockBigNight: "Veckans stora kv\xE4ll.",
+          profClockWith: "Oftast med {name}.",
+          profClockEmpty: "Starta n\xE5gra filmer s\xE5 fylls klockan i.",
+          profRecNew: "Nytt",
+          profRecMarathonHow: "{n} i rad fr\xE5n {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "i rad, till {date}",
+          profRecEmpty: "Rekorden dyker upp n\xE4r du har n\xE5gra kv\xE4llar bakom dig.",
+          profPrevMatch: "smakmatch med {name}",
+          profCouchUsual: "Oftast: {day} {time}",
+          profCouchDisagree: "Oenigast om: {genre}",
+          profCouchTonight: "Kv\xE4llens film f\xF6r er b\xE5da",
+          profCouchReasonBoth: "P\xE5 b\xE5da listorna",
+          profCouchReasonRec: "Liknar {title}",
+          profCouchStart: "Starta en kv\xE4ll ihop",
+          profCouchSolo: "L\xE4gg till en profil till s\xE5 ser du vem du tittar med.",
+          profCouchHint: "V\xE4lj vem som tittar med n\xE4r du startar en film, s\xE5 fylls det h\xE4r i.",
+          profCouchNoPicks: "Inga gemensamma f\xF6rslag \xE4n.",
+          profQuizLegendWatch: "Andel av ditt tittande",
+          profQuizLegendRight: "R\xE4tt svar i quizet",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "Du kan mest om {best}, fast du tittar mest p\xE5 {watched}.",
+          profQuizSummarySame: "Du kan {best} b\xE4st \u2014 och tittar mest p\xE5 det.",
+          profQuizWeak: "{weak} \xE4r din svaga punkt.",
+          profQuizEmpty: "Spela en runda filmquiz s\xE5 dyker resultaten upp h\xE4r.",
+          profCapStep1: "1 \xB7 V\xE4lj en film",
+          profCapStep2: "2 \xB7 N\xE4r ska den \xF6ppnas?",
+          profCapYears: "{n} \xE5r",
+          profCapLine: "{title} \xF6ppnas {date}.",
+          profCapSeal: "F\xF6rslut kapseln",
+          profCapSealing: "F\xF6rsluter\u2026",
+          profCapSealed: "F\xF6rseglad. Vi ses {date}.",
+          profCapAnother: "F\xF6rsegla en till",
+          profCapYours: "Dina kapslar",
+          profCapOpens: "\xD6ppnas {date}",
+          profCapOpened: "\xD6ppnad {date}",
+          profCapNone: "Inga kapslar \xE4n.",
+          profCapNoFilms: "Se klart en film f\xF6rst \u2014 sedan kan du skicka den fram\xE5t.",
+          profCapDueKicker: "Tidskapseln \xB7 \xF6ppnad i dag",
+          profCapDueLine: "Du f\xF6rseglade {title} den {date}.",
+          profCapOpen: "\xD6ppna",
+          profDiaryAsleep: "Somnade {time} \xB7 {p} %",
+          profGxDirectors: "Regiss\xF6rer",
+          profGxGenres: "Genrer",
+          profGxWhole: "\u2190 Hela galaxen",
+          profGxExplore: "Utforska",
+          profGxPickTitle: "V\xE4lj en stj\xE4rna eller en m\xF6rk zon",
+          profGxPickBody: "Stj\xE4rnbilder \xE4r regiss\xF6rer du f\xF6ljt l\xE4nge. Streckade cirklar \xE4r genrer du n\xE4stan aldrig tittat p\xE5.",
+          profGxStar: "Stj\xE4rna",
+          profGxSeenTimes: "Sedd {n} g\xE5nger \xB7 senast {date}",
+          profGxSeenOnce: "Sedd en g\xE5ng \xB7 {date}",
+          profGxNextStar: "N\xE4sta stj\xE4rna \u2192",
+          profGxDetails: "Detaljer",
+          profGxHunt: "Filmografijakt",
+          profGxDarkZone: "M\xF6rk zon",
+          profGxZoneBetween: "{n} sedda. Ligger mellan {a} och {b}.",
+          profGxZoneNear: "{n} sedda. Ligger intill {a}.",
+          profGxZoneEdge: "{n} sedda. Ett outforskat h\xF6rn.",
+          profGxOkHint: "p\xE5 zonen f\xF6r att flyga dit",
+          profGxFly: "Flyg dit",
+          profGxLightFirst: "T\xE4nd de f\xF6rsta stj\xE4rnorna",
+          profGxLoading: "Letar filmer\u2026",
+          profGxNoSuggestions: "Inga f\xF6rslag just nu. F\xF6rs\xF6k igen senare.",
+          profGxPlay: "Spela",
+          profGxConstellations: "Stj\xE4rnbilder",
+          profGxZones: "M\xF6rka zoner",
+          settingsPageProfilePage: "Profilsida",
+          ppWeatherGroup: "V\xE4der i dagboken",
+          ppWeatherToggle: "Spara v\xE4dret",
+          ppWeatherToggleDesc: "N\xE4r en film slutar h\xE4mtar Lumio v\xE4dret f\xF6r din ort en g\xE5ng (Open-Meteo, inget konto). Av: inga uppslag alls.",
+          ppWeatherPlace: "Ort",
+          ppWeatherNoPlace: "Ingen ort vald \xE4n.",
+          ppWeatherSearchPh: "t.ex. G\xF6teborg",
+          ppWeatherSearch: "S\xF6k",
+          ppWeatherSearching: "S\xF6ker\u2026",
+          ppWeatherNoResults: "Ingen ort hittades.",
+          ppWeatherFailed: "S\xF6kningen misslyckades. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
+          ppWeatherCredit: "V\xE4derdata fr\xE5n Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "hittills i \xE5r",
+          profWrPrev: "F\xF6reg\xE5ende",
+          profWrNext: "N\xE4sta",
+          profWrNotEnough: "Wrapped beh\xF6ver minst 10 sessioner under {year}. Forts\xE4tt titta!",
+          profWrIntroTitle: "Ditt \xE5r\ni film.",
+          profWrIntroBody: "{n} stj\xE4rnor senare. Tryck f\xF6r att b\xF6rja.",
+          profWrIntroBodyTv: "{n} stj\xE4rnor senare. Tryck \u25B6 f\xF6r att b\xF6rja.",
+          profWrGuessKicker: "Gissa f\xF6rst",
+          profWrGuessQ: "Vilken genre tittade du mest p\xE5 i \xE5r?",
+          profWrGuessRight: "Helt r\xE4tt. {genre}, med {h} timmar.",
+          profWrGuessWrong: "N\xE4ra. Det blev {genre}, med {h} timmar.",
+          profWrNoGenres: "Inte tillr\xE4ckligt med genredata \xE4n.",
+          profWrHoursKicker: "Du tittade i",
+          profWrHoursUnit: "timmar",
+          profWrDays: "= {n} dygn i soffan",
+          profWrInterstellar: "= {n} Interstellar i rad",
+          profWrEpisodes: "= {n} avsnitt av en halvtimmesserie",
+          profWrGenreKicker: "Genretopplistan",
+          profWrGenreWon: "{genre} vann.",
+          profWrHoursShort: "{h} tim",
+          profWrGoldenKicker: "Gyllene timmen",
+          profWrGoldenBody: "Klockslaget d\xE5 du oftast tryckte p\xE5 play.",
+          profWrStarsKicker: "Dina stj\xE4rnor",
+          profWrStarsTitle: "Sk\xE5despelarna du s\xE5g mest.",
+          profWrStarsNone: "Inte tillr\xE4ckligt med rollistor \xE4n.",
+          profWrStarsFilms: "{n} filmer",
+          profWrRewatchKicker: "Mest omsedda",
+          profWrRewatchNone: "Inga omtittningar i \xE5r \u2014 alltid n\xE5got nytt.",
+          profWrSleepTitle: "{n} g\xE5nger somnade du.",
+          profWrSleepNone: "Du h\xF6ll dig vaken hela \xE5ret.",
+          profWrBuddyTitle: "Du och {name} s\xE5g {n} filmer ihop.",
+          profWrBuddyNone: "Mest du och sk\xE4rmen i \xE5r.",
+          profWrPersKicker: "Din filmpersonlighet",
+          profWrTraitNight: "Nattuggla",
+          profWrTraitNightValue: "startar {time}",
+          profWrTraitGenre: "Genretrogen",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Omtittare",
+          profWrTraitRewatchValue: "{n} omtittningar",
+          profWrTraitNap: "Somnar",
+          profWrTraitNapValue: "vid {p} %",
+          profWrShareTitle: "Dela ditt \xE5r.",
+          profWrShare: "Dela",
+          profWrReplay: "Spela igen",
+          profWrCardHours: "totalt",
+          profWrCardGenre: "toppgenre",
+          profWrCardTitle: "mest spelad",
+          profWrCardNaps: "tupplurar",
+          profWrBNight: "Nattugglan",
+          profWrBRewatch: "Omtittaren",
+          profWrBNap: "Tupplursm\xE4staren",
+          profWrBMarathon: "Maratonl\xF6paren",
+          profWrBExplorer: "Uppt\xE4ckaren",
+          profWrAScifi: "fr\xE5n rymden",
+          profWrADrama: "med hj\xE4rtat utanp\xE5",
+          profWrAHorror: "fr\xE5n m\xF6rkret",
+          profWrAComedy: "som skrattar f\xF6rst",
+          profWrAAnimation: "med tecknad sj\xE4l",
+          profWrADocumentary: "som vill veta",
+          profWrAThriller: "p\xE5 helsp\xE4nn",
+          profWrAAction: "i full fart",
+          profWrARomance: "med rosa glas\xF6gon",
+          profWrACrime: "fr\xE5n undre v\xE4rlden",
+          profWrAFantasy: "fr\xE5n sagolandet",
+          profWrAOther: "utan karta"
         }
       };
       detachedLangContextValue = {
@@ -11202,6 +11680,15 @@
           /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
           /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
           /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
+        ] });
+      case "sleepTimer":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" }) });
+      case "companions":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "8", r: "3.2" }),
+          /* @__PURE__ */ jsx("path", { d: "M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5" }),
+          /* @__PURE__ */ jsx("circle", { cx: "17", cy: "9", r: "2.4" }),
+          /* @__PURE__ */ jsx("path", { d: "M16 14c2.6.1 4.4 1.6 5 4.5" })
         ] });
       case "barcodeStrip":
         return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M5 5v14M9 5v14M13 5v14M17 5v14M20 5v14" }) });
@@ -13799,25 +14286,41 @@
   function isCompleteAt(pos, duration) {
     return duration > 0 && pos / duration >= COMPLETE_RATIO;
   }
-  var COMPLETE_RATIO;
+  var COMPLETE_RATIO, VIEWING_DEDUPE_WINDOW_MS;
   var init_types = __esm({
     "lib/watch-journal/types.ts"() {
       "use strict";
       COMPLETE_RATIO = 0.9;
+      VIEWING_DEDUPE_WINDOW_MS = 36 * 36e5;
     }
   });
 
   // lib/watch-journal/recorder-core.ts
+  function defaultCompanions(last2, nowMs) {
+    if (!last2 || last2.ids.length === 0) return [];
+    return nowMs - last2.endedAtMs <= COMPANIONS_WINDOW_MS ? [...last2.ids] : [];
+  }
   function createRecorder(deps) {
     let open2 = null;
     let openKey = "";
     let lastTickMs = 0;
     let lastPos = 0;
     let lastPersistMs = null;
+    let chosen = null;
+    let chosenAtMs = 0;
+    function choiceFor(nowMs) {
+      if (chosen && nowMs - chosenAtMs <= COVIEWER_CHOICE_TTL_MS) return [...chosen];
+      chosen = null;
+      return deps.defaultCoViewers?.() ?? [];
+    }
     function close() {
       if (open2 && open2.played >= MIN_PLAYED_S) deps.persist({ ...open2 }, true);
       open2 = null;
       openKey = "";
+    }
+    function finish() {
+      close();
+      chosen = null;
     }
     function tick2(input, final = false) {
       if (input.type === "audiobook" || !(input.duration > 0)) return;
@@ -13845,7 +14348,7 @@
           duration: input.duration,
           played: 0,
           completed: isCompleteAt(input.position, input.duration),
-          coViewers: []
+          coViewers: choiceFor(nowMs)
         };
         openKey = key;
         lastPos = input.position;
@@ -13861,12 +14364,13 @@
         if (isCompleteAt(input.position, input.duration)) open2.completed = true;
       }
       lastTickMs = nowMs;
+      if (chosen) chosenAtMs = nowMs;
       if (open2.played < MIN_PLAYED_S) {
-        if (final) close();
+        if (final) finish();
         return;
       }
       if (final) {
-        close();
+        finish();
         return;
       }
       if (lastPersistMs === null || nowMs - lastPersistMs >= PERSIST_EVERY_MS) {
@@ -13874,9 +14378,27 @@
         deps.persist({ ...open2 }, false);
       }
     }
-    return { tick: tick2, current: () => open2 };
+    function setCoViewers(ids) {
+      const nowMs = deps.now();
+      chosen = [...new Set(ids)];
+      chosenAtMs = nowMs;
+      if (open2) {
+        open2.coViewers = [...chosen];
+        open2.updatedAt = new Date(nowMs).toISOString();
+      }
+    }
+    function coViewers() {
+      return open2 ? [...open2.coViewers] : choiceFor(deps.now());
+    }
+    function markAsleep(pos, atMs) {
+      if (!open2) return false;
+      open2.fellAsleep = { at: new Date(atMs).toISOString(), pos };
+      open2.updatedAt = new Date(deps.now()).toISOString();
+      return true;
+    }
+    return { tick: tick2, current: () => open2, setCoViewers, coViewers, markAsleep };
   }
-  var SESSION_GAP_MS, MIN_PLAYED_S, PERSIST_EVERY_MS, MAX_TICK_ADVANCE_S;
+  var SESSION_GAP_MS, MIN_PLAYED_S, PERSIST_EVERY_MS, MAX_TICK_ADVANCE_S, COVIEWER_CHOICE_TTL_MS, COMPANIONS_WINDOW_MS;
   var init_recorder_core = __esm({
     "lib/watch-journal/recorder-core.ts"() {
       "use strict";
@@ -13885,6 +14407,8 @@
       MIN_PLAYED_S = 60;
       PERSIST_EVERY_MS = 6e4;
       MAX_TICK_ADVANCE_S = 10;
+      COVIEWER_CHOICE_TTL_MS = 5 * 6e4;
+      COMPANIONS_WINDOW_MS = 12 * 36e5;
     }
   });
 
@@ -13959,7 +14483,108 @@
     }
   });
 
+  // lib/watch-journal/player-open.ts
+  function setPlayerOpen(value) {
+    open = value;
+  }
+  function isPlayerOpen() {
+    return open;
+  }
+  var open;
+  var init_player_open = __esm({
+    "lib/watch-journal/player-open.ts"() {
+      open = false;
+    }
+  });
+
+  // lib/watch-journal/weather.ts
+  function getWeatherPrefs() {
+    try {
+      const raw = getScopedStorageItem(WEATHER_PREFS_KEY);
+      if (!raw) return OFF;
+      const p = JSON.parse(raw);
+      const place = p.place && typeof p.place.lat === "number" && typeof p.place.lon === "number" ? p.place : null;
+      return { enabled: p.enabled === true, place };
+    } catch {
+      return OFF;
+    }
+  }
+  function forecastUrl(lat, lon) {
+    return `${FORECAST_URL}?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=weather_code,temperature_2m`;
+  }
+  function parseForecast(json) {
+    const c = json?.current;
+    if (!c || typeof c.weather_code !== "number" || typeof c.temperature_2m !== "number") return null;
+    return { code: c.weather_code, tempC: c.temperature_2m };
+  }
+  function schedule(ms) {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      void drain();
+    }, ms);
+  }
+  async function drain() {
+    const nowMs = Date.now();
+    for (let i = pending2.length - 1; i >= 0; i--) {
+      if (nowMs - Date.parse(pending2[i].endedAt) > WEATHER_MAX_AGE_MS) pending2.splice(i, 1);
+    }
+    if (pending2.length === 0) return;
+    if (isPlayerOpen()) {
+      schedule(WEATHER_RETRY_MS);
+      return;
+    }
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place) {
+      pending2.length = 0;
+      return;
+    }
+    let weather = null;
+    try {
+      const r = await fetch(forecastUrl(prefs.place.lat, prefs.place.lon));
+      if (r.ok) weather = parseForecast(await r.json());
+    } catch {
+    }
+    if (!weather) {
+      schedule(WEATHER_RETRY_MS * 5);
+      return;
+    }
+    const iso = (/* @__PURE__ */ new Date()).toISOString();
+    for (const s of pending2.splice(0)) upsertSession({ ...s, weather, updatedAt: iso });
+  }
+  function queueSessionWeather(s) {
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place || s.weather || s.seeded) return;
+    if (!pending2.some((p) => p.id === s.id)) pending2.push(s);
+    schedule(0);
+  }
+  var WEATHER_PREFS_KEY, FORECAST_URL, WEATHER_RETRY_MS, WEATHER_MAX_AGE_MS, OFF, pending2, timer;
+  var init_weather = __esm({
+    "lib/watch-journal/weather.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      init_player_open();
+      init_store();
+      WEATHER_PREFS_KEY = "profile_weather_v1";
+      FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+      WEATHER_RETRY_MS = 6e4;
+      WEATHER_MAX_AGE_MS = 3 * 36e5;
+      OFF = { enabled: false, place: null };
+      pending2 = [];
+      timer = null;
+    }
+  });
+
   // lib/watch-journal/recorder.ts
+  function loadLast() {
+    try {
+      const raw = getScopedStorageItem(LAST_COMPANIONS_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      last = parsed && Array.isArray(parsed.ids) && typeof parsed.endedAtMs === "number" ? { ids: parsed.ids.filter((x) => typeof x === "string"), endedAtMs: parsed.endedAtMs } : null;
+    } catch {
+      last = null;
+    }
+  }
   function newId() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
@@ -13970,32 +14595,132 @@
       console.warn("[journal] tick", error);
     }
   }
-  var recorder;
+  function journalSetCoViewers(ids) {
+    try {
+      recorder.setCoViewers(ids);
+    } catch (error) {
+      console.warn("[journal] coViewers", error);
+    }
+  }
+  function journalCoViewers() {
+    try {
+      return recorder.coViewers();
+    } catch {
+      return [];
+    }
+  }
+  function journalMarkAsleep(pos, atMs) {
+    try {
+      recorder.markAsleep(pos, atMs);
+    } catch (error) {
+      console.warn("[journal] asleep", error);
+    }
+  }
+  var LAST_COMPANIONS_KEY, last, recorder;
   var init_recorder = __esm({
     "lib/watch-journal/recorder.ts"() {
       init_profile_storage_shim();
       init_recorder_core();
       init_store();
+      init_weather();
+      LAST_COMPANIONS_KEY = "journal_last_companions_v1";
+      last = null;
+      if (typeof window !== "undefined") {
+        scheduleIdle(loadLast);
+        window.addEventListener("lumio-profile-changed", () => {
+          last = null;
+          scheduleIdle(loadLast);
+        });
+      }
       recorder = createRecorder({
         now: () => Date.now(),
         newId,
         profileId: () => getActiveProfileId() ?? "default",
         persist: (s, final) => {
           upsertSession(s);
-          if (final && typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_SYNC_WORTHY_EVENT));
-        }
+          if (!final) return;
+          if (typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_SYNC_WORTHY_EVENT));
+          scheduleIdle(() => queueSessionWeather(s));
+          if (s.profileId !== (getActiveProfileId() ?? "default")) return;
+          const record = { ids: [...s.coViewers], endedAtMs: Date.parse(s.endedAt) };
+          last = record;
+          scheduleIdle(() => {
+            try {
+              setScopedStorageItem(LAST_COMPANIONS_KEY, JSON.stringify(record));
+            } catch {
+            }
+          });
+        },
+        defaultCoViewers: () => defaultCompanions(last, Date.now())
       });
     }
   });
 
-  // lib/watch-journal/player-open.ts
-  function setPlayerOpen(value) {
-    open = value;
+  // lib/avatars/catalog.ts
+  var AVATAR_URLS, avatarUrl, PROFILE_COLORS;
+  var init_catalog = __esm({
+    "lib/avatars/catalog.ts"() {
+      AVATAR_URLS = {};
+      avatarUrl = (id) => AVATAR_URLS[`/src/assets/avatars/${id}.webp`] ?? "";
+      PROFILE_COLORS = [
+        "#7dd3fc",
+        "#60a5fa",
+        "#a78bfa",
+        "#f472b6",
+        "#fb7185",
+        "#fb923c",
+        "#fbbf24",
+        "#a3e635",
+        "#34d399",
+        "#22d3ee"
+      ];
+    }
+  });
+
+  // components/ui/profile-avatar.tsx
+  function profileColor(profile) {
+    return profile.color ?? DEFAULT_COLOR;
   }
-  var open;
-  var init_player_open = __esm({
-    "lib/watch-journal/player-open.ts"() {
-      open = false;
+  function ProfileAvatar({
+    profile,
+    className
+  }) {
+    const color = profileColor(profile);
+    return /* @__PURE__ */ jsx(
+      "span",
+      {
+        className: `relative flex items-center justify-center overflow-hidden rounded-full bg-white/[0.06] ${className ?? "h-12 w-12"}`,
+        style: { boxShadow: `0 0 0 2px ${color}` },
+        children: profile.avatar ? /* @__PURE__ */ jsx("img", { src: avatarUrl(profile.avatar), alt: "", className: "h-full w-full object-cover", draggable: false }) : /* @__PURE__ */ jsx("span", { className: "text-lg font-semibold", style: { color }, children: profile.name.trim().charAt(0).toUpperCase() || "?" })
+      }
+    );
+  }
+  var DEFAULT_COLOR;
+  var init_profile_avatar = __esm({
+    "components/ui/profile-avatar.tsx"() {
+      "use client";
+      init_catalog();
+      init_jsx_runtime_shim();
+      DEFAULT_COLOR = PROFILE_COLORS[0];
+    }
+  });
+
+  // lib/sleep-timer.ts
+  function armSleepTimer(mode, nowMs) {
+    return mode === "off" ? DISARMED : { mode, armedAtMs: nowMs };
+  }
+  function sleepTimerDue(state2, c) {
+    if (state2.mode === "off" || state2.armedAtMs == null) return false;
+    if (state2.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
+    return c.nowMs - state2.armedAtMs >= state2.mode * 6e4;
+  }
+  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED;
+  var init_sleep_timer = __esm({
+    "lib/sleep-timer.ts"() {
+      SLEEP_TIMER_OPTIONS = ["off", 15, 30, 45, 60, 90, "end"];
+      SLEEP_PROMPT_SECONDS = 60;
+      SLEEP_END_MARGIN_S = 20;
+      DISARMED = { mode: "off", armedAtMs: null };
     }
   });
 
@@ -14189,11 +14914,11 @@
   function markComplete(b, endAt, now2) {
     let end = endAt;
     if (end == null) {
-      let last = -1;
+      let last2 = -1;
       b.colors.forEach((c, i) => {
-        if (c) last = i;
+        if (c) last2 = i;
       });
-      end = last < 0 ? b.duration : (last + 1) / b.colors.length * b.duration;
+      end = last2 < 0 ? b.duration : (last2 + 1) / b.colors.length * b.duration;
     }
     return { ...b, completedAt: now2, endAt: Math.min(b.duration, Math.max(0, end)), updatedAt: now2 };
   }
@@ -14211,7 +14936,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -14325,7 +15049,7 @@
       dirty.add(id);
     }
   }
-  function schedule(id) {
+  function schedule2(id) {
     if (timers.has(id)) return;
     const since = Date.now() - (lastWrite.get(id) ?? 0);
     const wait = Math.max(0, BARCODE_WRITE_INTERVAL_MS - since);
@@ -14341,7 +15065,7 @@
     if (next === current && items.has(meta.id)) return;
     items.set(meta.id, next);
     dirty.add(meta.id);
-    schedule(meta.id);
+    schedule2(meta.id);
     emit2();
   }
   async function flushBarcode(id) {
@@ -14849,8 +15573,8 @@
   function ensureBarcodeMeta(b) {
     if (b.meta !== void 0) return Promise.resolve(b.meta);
     if (b.tmdbId == null) return Promise.resolve(null);
-    const pending2 = inflight4.get(b.id);
-    if (pending2) return pending2;
+    const pending3 = inflight4.get(b.id);
+    if (pending3) return pending3;
     const task = chain.then(async () => {
       const current = getBarcode(b.id);
       if (current && current.meta !== void 0) return current.meta;
@@ -14933,7 +15657,7 @@
       void loadBarcodes();
       const state2 = createSamplerState();
       const columns = settings.columns;
-      const timer2 = setInterval(() => {
+      const timer3 = setInterval(() => {
         const snap = args.snapshotRef.current;
         const existing = getBarcode(id);
         const n = existing?.columns ?? columns;
@@ -14967,7 +15691,7 @@
         });
       }, TICK_MS);
       return () => {
-        clearInterval(timer2);
+        clearInterval(timer3);
         void endRecording(id);
       };
     }, [applies, id]);
@@ -15142,8 +15866,8 @@
         useEffect(() => {
           if (!state2.status) return;
           setChipUntil(Date.now() + CHIP_MS);
-          const timer2 = setTimeout(() => setChipUntil(0), CHIP_MS);
-          return () => clearTimeout(timer2);
+          const timer3 = setTimeout(() => setChipUntil(0), CHIP_MS);
+          return () => clearTimeout(timer3);
         }, [state2.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
@@ -15421,6 +16145,8 @@
         "audioDelay",
         "nextEpisode",
         "switchStream",
+        "sleepTimer",
+        "companions",
         "more",
         "fullscreen"
       ];
@@ -15907,7 +16633,7 @@
     });
   }
   async function tick() {
-    timer = null;
+    timer2 = null;
     if (inFlight) {
       again = true;
       return;
@@ -15922,12 +16648,12 @@
       void tick();
       return;
     }
-    if (listeners3.size > 0 && getHapticsHostEnabled()) timer = setTimeout(() => void tick(), POLL_MS);
+    if (listeners3.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
   }
   function subscribeHapticsHostStatus(listener) {
     listeners3.add(listener);
     listener(latest);
-    if (!timer && !inFlight) void tick();
+    if (!timer2 && !inFlight) void tick();
     return () => {
       listeners3.delete(listener);
     };
@@ -15937,7 +16663,7 @@
     useEffect(() => subscribeHapticsHostStatus(setStatus), []);
     return status;
   }
-  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners3, timer, latest, inFlight, again;
+  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners3, timer2, latest, inFlight, again;
   var init_haptics_host = __esm({
     "lib/haptics-host.ts"() {
       "use client";
@@ -15948,7 +16674,7 @@
       unsupportedReason = null;
       lastSent = "";
       listeners3 = /* @__PURE__ */ new Set();
-      timer = null;
+      timer2 = null;
       latest = null;
       inFlight = false;
       again = false;
@@ -16309,7 +17035,7 @@
     const controller = new AbortController();
     const onAbort = () => controller.abort();
     signal?.addEventListener("abort", onAbort);
-    const timer2 = setTimeout(() => controller.abort(), timeoutMs + 500);
+    const timer3 = setTimeout(() => controller.abort(), timeoutMs + 500);
     try {
       const response = await fetch(`/api/streams?${params}`, {
         headers: {
@@ -16323,7 +17049,7 @@
       if (payload.error) throw new Error(payload.error);
       return payload.streams ?? [];
     } finally {
-      clearTimeout(timer2);
+      clearTimeout(timer3);
       signal?.removeEventListener("abort", onAbort);
     }
   }
@@ -16393,8 +17119,8 @@
     };
     const cached = memo2.get(key);
     if (cached && Date.now() - cached.at < MEMO_TTL_MS) return replay(cached.result);
-    const pending2 = inflight5.get(key);
-    if (pending2) return pending2.then(replay);
+    const pending3 = inflight5.get(key);
+    if (pending3) return pending3.then(replay);
     const run = lookupCoreStreamsUncached(target2, options).then((result) => {
       if (result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty")) {
         memo2.set(key, { at: Date.now(), result });
@@ -19182,6 +19908,11 @@ ${cue.text}`).join("\n\n")}
     const hideTimerRef = useRef(null);
     const [showStillWatchingPrompt, setShowStillWatchingPrompt] = useState(false);
     const [stillWatchingCountdown, setStillWatchingCountdown] = useState(STILL_WATCHING_CLOSE_SECONDS);
+    const [stillWatchingReason, setStillWatchingReason] = useState("episodes");
+    const [sleepTimer, setSleepTimer] = useState(DISARMED);
+    const sleepFiredAtRef = useRef(0);
+    const [companionIds, setCompanionIds] = useState([]);
+    const [companionProfiles, setCompanionProfiles] = useState([]);
     const stillWatchingEnabledRef = useRef(false);
     const stillWatchingMaxMinutesRef = useRef(90);
     const [disableSubtitlesWhenAudioMatches, setDisableSubtitlesWhenAudioMatches] = useState(() => getDisableSubtitlesWhenAudioMatches());
@@ -19191,7 +19922,10 @@ ${cue.text}`).join("\n\n")}
     const stillWatchingEpisodeCountRef = useRef(0);
     function registerPlaybackInteraction() {
       lastPlaybackInteractionRef.current = realTime;
-      if (showStillWatchingPrompt) setShowStillWatchingPrompt(false);
+      if (showStillWatchingPrompt) {
+        setShowStillWatchingPrompt(false);
+        if (stillWatchingReason === "sleep") resumeAfterSleepPrompt();
+      }
     }
     const creditsModeRef = useRef(false);
     function onMouseActivity() {
@@ -19258,6 +19992,10 @@ ${cue.text}`).join("\n\n")}
     const setShowAudioMenu = surfaceSetter("audio");
     const showAudioDelayMenu = openSurface === "audioDelay";
     const setShowAudioDelayMenu = surfaceSetter("audioDelay");
+    const showSleepMenu = openSurface === "sleep";
+    const setShowSleepMenu = surfaceSetter("sleep");
+    const showCompanionsMenu = openSurface === "companions";
+    const setShowCompanionsMenu = surfaceSetter("companions");
     const showCastMenu = openSurface === "cast";
     const setShowCastMenu = surfaceSetter("cast");
     const showAspectMenu = openSurface === "aspect";
@@ -19391,12 +20129,12 @@ ${cue.text}`).join("\n\n")}
           } catch {
           }
         };
-        const timer2 = window.setTimeout(() => {
+        const timer3 = window.setTimeout(() => {
           void probe();
         }, 1200);
         return () => {
           cancelled = true;
-          window.clearTimeout(timer2);
+          window.clearTimeout(timer3);
         };
       }
       const v = videoRef.current;
@@ -19629,14 +20367,14 @@ ${cue.text}`).join("\n\n")}
       if (!clientOwnsSplash || startError) return;
       if (hasStarted || hasEverStarted) return;
       if (isDirectLocalFileSource) return;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         void fetch(`/api/debug-log?msg=${encodeURIComponent(
           `[browser-start-timeout] no first playable in ${BROWSER_START_TIMEOUT_MS}ms src=${(videoSrc || "(pending probe)").slice(0, 90)}`
         )}`).catch(() => {
         });
         escalateBrowserFailureRef.current();
       }, BROWSER_START_TIMEOUT_MS);
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [clientOwnsSplash, startError, hasStarted, hasEverStarted, isDirectLocalFileSource, videoSrc]);
     const loadFailHandledTokenRef = useRef(0);
     const [subtitleClockOverride, setSubtitleClockOverride] = useState(null);
@@ -19647,6 +20385,8 @@ ${cue.text}`).join("\n\n")}
     const aspectTriggerRef = useRef(null);
     const cropTriggerRef = useRef(null);
     const moreTriggerRef = useRef(null);
+    const sleepTriggerRef = useRef(null);
+    const companionsTriggerRef = useRef(null);
     const downloadEsRef = useRef(null);
     const downloadTimerRef = useRef(null);
     const autoSkippedIntroRef = useRef(false);
@@ -19782,19 +20522,19 @@ ${cue.text}`).join("\n\n")}
       };
       holdStill();
       markPlayerReadyToReveal();
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           holdStill();
           return;
         }
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
         const target2 = initialTime ?? 0;
         if (Math.abs(cinemaTimePosRef.current - target2) > 1.5) void mpvCommand2(["seek", target2, "absolute"]);
         void mpvCommand2(["set_property", "mute", userMuted ? "yes" : "no"]);
         cinemaMute.held = false;
         setMpvStartupHoldReady(true);
       }, 200);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [isDroidEngine, mpv.firstFrameRendered]);
     const openMpvPlayer2 = isDroidEngine ? async (args) => {
       if (args.shouldAbort?.()) return;
@@ -20056,7 +20796,7 @@ ${cue.text}`).join("\n\n")}
       const userMuted = cinemaMute.userMuted;
       v.muted = true;
       let pausedByUs = false;
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           if (!v.muted) v.muted = true;
           if (hasStartedForUrlRef.current) {
@@ -20068,7 +20808,7 @@ ${cue.text}`).join("\n\n")}
           }
           return;
         }
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
         v.muted = userMuted;
         cinemaMute.held = false;
         if (!pausedByUs) return;
@@ -20080,7 +20820,7 @@ ${cue.text}`).join("\n\n")}
         void v.play().catch(() => {
         });
       }, 120);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [useMpv, videoSrc]);
     useEffect(() => {
       if (!useMpv || !mpvStartupHoldReady) return;
@@ -20584,7 +21324,9 @@ ${cue.text}`).join("\n\n")}
       else onMouseActivity();
     }
     const togglePlay = useCallback(() => {
+      const sleepPromptUp = showStillWatchingPrompt && stillWatchingReason === "sleep";
       registerPlaybackInteraction();
+      if (sleepPromptUp) return;
       if (useMpv) {
         void setMpvPause2(!mpv.paused);
         return;
@@ -20593,7 +21335,7 @@ ${cue.text}`).join("\n\n")}
       if (!v) return;
       if (v.paused) void safePlay(v);
       else v.pause();
-    }, [useMpv, mpv.paused, realTime, showStillWatchingPrompt]);
+    }, [useMpv, mpv.paused, realTime, showStillWatchingPrompt, stillWatchingReason]);
     const attemptHtml5Start = useCallback(async (userGesture) => {
       if (useMpv) return;
       const v = videoRef.current;
@@ -20721,7 +21463,7 @@ ${cue.text}`).join("\n\n")}
         boundsSyncFrameRef.current = null;
         syncPlayerBounds();
       });
-      boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
+      boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
       boundsResyncTimersRef.current = [window.setTimeout(() => {
         syncPlayerBounds();
       }, 220)];
@@ -20832,8 +21574,8 @@ ${cue.text}`).join("\n\n")}
       });
       return () => {
         cancelled = true;
-        const pending2 = openPromise;
-        void (pending2 ? pending2.catch(() => {
+        const pending3 = openPromise;
+        void (pending3 ? pending3.catch(() => {
         }).then(() => closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes")) : closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes"));
         releaseSourceCache(url);
         const v = airplayVideoRef.current;
@@ -20894,8 +21636,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!hasStarted || !getShowTitleOnStart()) return;
       setShowStartTitle(true);
-      const timer2 = window.setTimeout(() => setShowStartTitle(false), 4e3);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setShowStartTitle(false), 4e3);
+      return () => window.clearTimeout(timer3);
     }, [hasStarted, title]);
     useEffect(() => {
       setAutoplayDurationHint(totalDuration > 0 ? totalDuration : null);
@@ -21093,23 +21835,27 @@ ${cue.text}`).join("\n\n")}
       finishClose();
     }, [notifyLanPlaybackState, onClose, realTime, scheduleBoundsResync, skipHomeKitOnClose, syncDesktopFullscreenState, title, totalDuration, tryCloseDesktopPlaybackSession, useMpv]);
     useEffect(() => {
+      const seconds = stillWatchingReason === "sleep" ? SLEEP_PROMPT_SECONDS : STILL_WATCHING_CLOSE_SECONDS;
       if (!showStillWatchingPrompt) {
-        setStillWatchingCountdown(STILL_WATCHING_CLOSE_SECONDS);
+        setStillWatchingCountdown(seconds);
         return;
       }
-      setStillWatchingCountdown(STILL_WATCHING_CLOSE_SECONDS);
+      setStillWatchingCountdown(seconds);
       const interval = window.setInterval(() => {
         setStillWatchingCountdown((current) => {
           if (current <= 1) {
             window.clearInterval(interval);
-            window.setTimeout(() => handleClose(), 0);
+            window.setTimeout(() => {
+              if (stillWatchingReason === "sleep") journalMarkAsleep(realTimeRef.current, sleepFiredAtRef.current);
+              handleClose();
+            }, 0);
             return 0;
           }
           return current - 1;
         });
       }, 1e3);
       return () => window.clearInterval(interval);
-    }, [handleClose, showStillWatchingPrompt, STILL_WATCHING_CLOSE_SECONDS]);
+    }, [handleClose, showStillWatchingPrompt, stillWatchingReason, STILL_WATCHING_CLOSE_SECONDS]);
     const handleCopyStreamLink = useCallback(async () => {
       const direct = resolveDirectStreamUrl2(url) ?? url;
       await writeTextToClipboard(direct);
@@ -21274,7 +22020,7 @@ ${cue.text}`).join("\n\n")}
             window.cancelAnimationFrame(boundsSyncFrameRef.current);
             boundsSyncFrameRef.current = null;
           }
-          boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
+          boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
           boundsResyncTimersRef.current = [];
         };
       }
@@ -21285,7 +22031,7 @@ ${cue.text}`).join("\n\n")}
           window.cancelAnimationFrame(boundsSyncFrameRef.current);
           boundsSyncFrameRef.current = null;
         }
-        boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
+        boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
         boundsResyncTimersRef.current = [];
       };
     }, [portalEl, scheduleBoundsResync, useMpv]);
@@ -21962,7 +22708,7 @@ ${cue.text}`).join("\n\n")}
     }, [playbackSessionIdentity, url, inferredMediaType, mediaType, season, episode, shouldProxyPlayback, useMpv, initialTime, imdbId, tmdbId, wikiTmdbId, mediaId, title]);
     useEffect(() => {
       if (useMpv || hasStarted) return;
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         const v = videoRef.current;
         if (!v) return;
         if (!v.paused && v.currentTime > 0.15) {
@@ -21973,7 +22719,7 @@ ${cue.text}`).join("\n\n")}
           onFirstPlay?.();
         }
       }, 350);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [hasStarted, onFirstPlay, useMpv]);
     useEffect(() => {
       if (imdbId) {
@@ -22074,8 +22820,32 @@ ${cue.text}`).join("\n\n")}
       } else {
         videoRef.current?.pause();
       }
+      setStillWatchingReason("episodes");
       setShowStillWatchingPrompt(true);
     }, [hasEndedPlayback, hasStarted, isPlaying, mediaType, realTime, showStillWatchingPrompt, useMpv]);
+    useEffect(() => {
+      if (sleepTimer.mode === "off" || showStillWatchingPrompt || !hasStarted) return;
+      if (!sleepTimerDue(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback })) return;
+      setSleepTimer(DISARMED);
+      sleepFiredAtRef.current = Date.now();
+      if (useMpv) void setMpvPause2(true);
+      else videoRef.current?.pause();
+      setStillWatchingReason("sleep");
+      setShowStillWatchingPrompt(true);
+    }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepTimer, totalDuration, useMpv]);
+    useEffect(() => {
+      if (isTv && showStillWatchingPrompt) tvFocus?.focusInit(playerRootRef.current?.querySelector("[data-still-watching]") ?? null);
+    }, [isTv, showStillWatchingPrompt, tvFocus]);
+    useEffect(() => {
+      if (!hasStarted) return;
+      const me = getActiveProfileId();
+      setCompanionProfiles(getProfiles().filter((p) => p.id !== me));
+      setCompanionIds(journalCoViewers());
+    }, [hasStarted]);
+    const setCompanions = (next) => {
+      setCompanionIds(next);
+      journalSetCoViewers(next);
+    };
     useEffect(() => {
       if (mediaType !== "tv") return;
       if (!hasStarted || !hasStartedForUrlRef.current) return;
@@ -22268,9 +23038,18 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [isMpvEngine, mpv.fileLoaded, introDataReady, introSegment, url]);
+    function resumeAfterSleepPrompt() {
+      setStillWatchingReason("episodes");
+      if (useMpv) {
+        void setMpvPause2(false);
+        return;
+      }
+      void safePlay(videoRef.current);
+    }
     function handleStillWatchingContinue() {
       registerPlaybackInteraction();
       setShowStillWatchingPrompt(false);
+      setStillWatchingReason("episodes");
       if (useMpv) {
         void setMpvPause2(false);
         return;
@@ -22518,7 +23297,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (useMpv || hasStarted || !videoSrc) return;
       if (startupRecoveryAttemptRef.current >= 2) return;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         if (useMpv || hasStarted || startupRecoveryAttemptRef.current >= 2) return;
         if (Date.now() - lastProxyRestartAtRef.current < PROXY_RESTART_MIN_GAP_MS) return;
         const currentReal = (videoRef.current?.currentTime ?? 0) + streamStartRef.current;
@@ -22556,7 +23335,7 @@ ${cue.text}`).join("\n\n")}
         );
       }, 2e4);
       return () => {
-        window.clearTimeout(timer2);
+        window.clearTimeout(timer3);
       };
     }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
     useEffect(() => {
@@ -23034,7 +23813,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!creditsMode || !useMpv) return;
       const waitMs = creditsCards.length === 0 ? 8e3 : 600;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         const pip = creditsPipRef.current;
         if (pip) {
           const rect = pip.getBoundingClientRect();
@@ -23042,7 +23821,7 @@ ${cue.text}`).join("\n\n")}
         }
         leaveCreditsMode();
       }, waitMs);
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [creditsMode, useMpv, creditsCards.length, leaveCreditsMode]);
     const currentTitleAsItem = useCallback(() => {
       if (!tmdbId) return null;
@@ -23372,7 +24151,7 @@ ${cue.text}`).join("\n\n")}
     }, [airplaySession, useMpv]);
     useEffect(() => {
       if (!airplaySession || airplayWasExternalRef.current || showCastMenu) return;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         if (!airplayWasExternalRef.current) {
           stopAirplayVideo();
           void avplayerTeardown();
@@ -23380,7 +24159,7 @@ ${cue.text}`).join("\n\n")}
           setAirplayPrepare("idle");
         }
       }, 1e4);
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [showCastMenu, airplaySession]);
     const undoSubtitleAutoSync = useCallback(() => {
       if (lastAutoSyncedDelayRef.current === null) return;
@@ -23656,6 +24435,32 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("cast", "h-[19px] w-[19px]")
         }
       ) : null,
+      sleepTimer: /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: sleepTriggerRef,
+          onClick: () => setShowSleepMenu((open2) => !open2),
+          title: t("plSleepTimer"),
+          "aria-label": t("plSleepTimer"),
+          className: dtIconButtonClass(showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle"),
+          children: playerIcon("sleepTimer", "h-[19px] w-[19px]")
+        }
+      ),
+      companions: companionProfiles.length > 0 ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: companionsTriggerRef,
+          onClick: () => setShowCompanionsMenu((open2) => !open2),
+          title: t("plCompanions"),
+          "aria-label": t("plCompanions"),
+          className: dtIconButtonClass(showCompanionsMenu ? "open" : companionIds.length > 0 ? "active" : "idle"),
+          children: playerIcon("companions", "h-[19px] w-[19px]")
+        }
+      ) : null,
       // Remsan ovanför seekbaren av/på — så länge det finns en remsa att visa.
       barcodeStrip: playerBarcode.stripToggle ? /* @__PURE__ */ jsx(
         "button",
@@ -23715,7 +24520,7 @@ ${cue.text}`).join("\n\n")}
       right: [
         ["subtitles", "audioTrack", "aspect", "cropZoom"],
         ["wiki", "soundtrack", "cast"],
-        ["tuning", "barcodeStrip", "more", "fullscreen"]
+        ["tuning", "barcodeStrip", "sleepTimer", "companions", "more", "fullscreen"]
       ]
     };
     const renderDesktopZone = (groups) => {
@@ -24083,6 +24888,7 @@ ${cue.text}`).join("\n\n")}
       if (opening && castDevices.length === 0) void scanCastDevices();
       if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
     };
+    const sleepModeLabel = (mode) => mode === "off" ? t("plSleepOff") : mode === "end" ? t("plSleepEnd") : t("plSleepMinutes").replace("{n}", String(mode));
     const phoneControls = {
       subtitles: {
         label: activeSubLangCode,
@@ -24151,6 +24957,22 @@ ${cue.text}`).join("\n\n")}
         state: showCastMenu ? "open" : castTarget ? "active" : "idle",
         onClick: toggleCastMenu
       } : void 0,
+      sleepTimer: {
+        label: t("plSleepShort"),
+        title: t("plSleepTimer"),
+        value: sleepTimer.mode === "off" ? void 0 : sleepModeLabel(sleepTimer.mode),
+        state: showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle",
+        onClick: () => setShowSleepMenu((open2) => !open2),
+        triggerRef: sleepTriggerRef
+      },
+      companions: companionProfiles.length > 0 ? {
+        label: t("plCompanionsShort"),
+        title: t("plCompanions"),
+        value: companionIds.length > 0 ? String(companionIds.length) : void 0,
+        state: showCompanionsMenu ? "open" : companionIds.length > 0 ? "active" : "idle",
+        onClick: () => setShowCompanionsMenu((open2) => !open2),
+        triggerRef: companionsTriggerRef
+      } : void 0,
       fullscreen: !isTauriEnv || isDesktopTauriEnv ? {
         label: t("plShortFullscreen"),
         title: t("plFullscreen"),
@@ -24158,7 +24980,7 @@ ${cue.text}`).join("\n\n")}
         onClick: toggleFullscreen
       } : void 0
     };
-    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "switchStream", "aspect", "fullscreen"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "wiki", "soundtrack", "cropZoom", "aspect"];
+    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "switchStream", "aspect", "fullscreen", "sleepTimer", "companions"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "wiki", "soundtrack", "cropZoom", "aspect", "sleepTimer", "companions"];
     const LANDSCAPE_ROW_BUDGET = 6;
     const phoneDedicatedIds = landscapeChrome ? ["nextEpisode", "cast"] : ["cast", "fullscreen"];
     const phoneRowCandidates = PHONE_ROW_ORDER.filter((id) => !phoneDedicatedIds.includes(id) && showsControl(id) && Boolean(phoneControls[id]));
@@ -25376,15 +26198,17 @@ ${cue.text}`).join("\n\n")}
                   }
                 ),
                 overlayContent,
-                showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
+                showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { "data-still-watching": "", ...isTv ? { "data-panel-root": "1" } : {}, className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
                   /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("playbackTitle") }),
-                  /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: t("stillWatching") }),
+                  /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: stillWatchingReason === "sleep" ? t("plSleepStillThere") : t("stillWatching") }),
+                  stillWatchingReason === "sleep" && /* @__PURE__ */ jsx("p", { className: "mt-2 text-sm text-slate-400", children: t("plSleepStillThereBody") }),
                   /* @__PURE__ */ jsxs("div", { className: "mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center", children: [
                     /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
                         "data-f": isTv ? "1" : void 0,
+                        "data-init": isTv ? "1" : void 0,
                         onClick: handleStillWatchingContinue,
                         className: "rounded-full bg-accent-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-400",
                         children: t("stillWatchingContinue")
@@ -25587,6 +26411,8 @@ ${cue.text}`).join("\n\n")}
                         /* @__PURE__ */ jsx("div", { className: "vp-controls-row flex items-center gap-4 overflow-x-auto whitespace-nowrap", children: (() => {
                           const controls = {
                             barcodeStrip: null,
+                            sleepTimer: null,
+                            companions: null,
                             playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
                             seekBack: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
                             seekForward: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
@@ -26048,6 +26874,75 @@ ${cue.text}`).join("\n\n")}
                           ]
                         }
                       ),
+                      showSleepMenu && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("sleep"),
+                          style: pickerStyle(sleepTriggerRef.current, 240),
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plSleepTimer")),
+                            SLEEP_TIMER_OPTIONS.map((mode) => {
+                              const isActive = sleepTimer.mode === mode;
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  onClick: () => {
+                                    setSleepTimer(armSleepTimer(mode, Date.now()));
+                                    setShowSleepMenu(false);
+                                  },
+                                  className: dtMenuRowClass(isActive),
+                                  children: [
+                                    /* @__PURE__ */ jsx("span", { children: sleepModeLabel(mode) }),
+                                    isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                String(mode)
+                              );
+                            })
+                          ]
+                        }
+                      ),
+                      showCompanionsMenu && companionProfiles.length > 0 && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("companions"),
+                          style: pickerStyle(companionsTriggerRef.current, 260),
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plWhoWatches")),
+                            /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => setCompanions([]), className: dtMenuRowClass(companionIds.length === 0), children: [
+                              /* @__PURE__ */ jsx("span", { children: t("plCompanionsJustMe") }),
+                              companionIds.length === 0 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                            ] }),
+                            companionProfiles.map((p) => {
+                              const on = companionIds.includes(p.id);
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  "aria-pressed": on,
+                                  onClick: () => setCompanions(on ? companionIds.filter((x) => x !== p.id) : [...companionIds, p.id]),
+                                  className: dtMenuRowClass(on),
+                                  children: [
+                                    /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-2.5", children: [
+                                      /* @__PURE__ */ jsx(ProfileAvatar, { profile: p, className: "h-6 w-6" }),
+                                      p.name
+                                    ] }),
+                                    on && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                p.id
+                              );
+                            })
+                          ]
+                        }
+                      ),
                       showMoreMenu && /* @__PURE__ */ jsxs(
                         "div",
                         {
@@ -26296,6 +27191,9 @@ ${cue.text}`).join("\n\n")}
       init_transparent_webview();
       init_video_progress();
       init_recorder();
+      init_profile_storage_shim();
+      init_profile_avatar();
+      init_sleep_timer();
       init_player_open();
       init_use_barcode_recorder();
       init_barcode_settings();
@@ -28249,10 +29147,10 @@ ${cue.text}`).join("\n\n")}
     const playButtonRef = useRef(null);
     useEffect(() => {
       if (!isTv) return;
-      let timer2 = null;
+      let timer3 = null;
       const arm = () => {
-        if (timer2) clearTimeout(timer2);
-        timer2 = setTimeout(() => {
+        if (timer3) clearTimeout(timer3);
+        timer3 = setTimeout(() => {
           const btn = playButtonRef.current;
           if (btn && btn.isConnected && document.activeElement !== btn) btn.focus();
         }, 1e4);
@@ -28260,7 +29158,7 @@ ${cue.text}`).join("\n\n")}
       arm();
       window.addEventListener("keydown", arm, true);
       return () => {
-        if (timer2) clearTimeout(timer2);
+        if (timer3) clearTimeout(timer3);
         window.removeEventListener("keydown", arm, true);
       };
     }, [isTv]);
@@ -28570,13 +29468,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     PlexPlugin: () => PlexPlugin
   });
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-storage.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-storage.ts
   init_plugin_sdk();
   var AUTH_KEY2 = "plex_auth";
   var SETTINGS_KEY = "plex_settings";
@@ -28855,7 +29753,7 @@ ${cue.text}`).join("\n\n")}
     return () => window.removeEventListener(SETTINGS_EVENT, listener);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-library-provider.ts
   var PAGE_SIZE = 200;
   var EPISODE_CONCURRENCY = 3;
   var MAX_BATCH_BYTES = 1e6;
@@ -28989,7 +29887,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-sync.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-sync.ts
   init_plugin_sdk();
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
   var plexLibraryCooldownUntil = /* @__PURE__ */ new Map();
@@ -29332,7 +30230,7 @@ ${cue.text}`).join("\n\n")}
     let lastError = null;
     for (let attempt = 0; attempt <= retries; attempt += 1) {
       const controller = new AbortController();
-      const timer2 = window.setTimeout(() => controller.abort(), timeoutMs);
+      const timer3 = window.setTimeout(() => controller.abort(), timeoutMs);
       try {
         return await fetch(input, {
           ...init,
@@ -29344,7 +30242,7 @@ ${cue.text}`).join("\n\n")}
         if (isLastAttempt) break;
         await new Promise((resolve) => window.setTimeout(resolve, retryDelayMs));
       } finally {
-        window.clearTimeout(timer2);
+        window.clearTimeout(timer3);
       }
     }
     throw lastError instanceof Error ? lastError : new Error("Network request failed");
@@ -29618,7 +30516,7 @@ ${cue.text}`).join("\n\n")}
     });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/playback-utils.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/playback-utils.ts
   function normalizeTitle2(value) {
     return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
@@ -29698,7 +30596,7 @@ ${cue.text}`).join("\n\n")}
     return Boolean(plexItem && plexItem.source === "plex" && isPlexPlaybackReady(plexItem));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/playback-capability-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/playback-capability-provider.ts
   var plexPlaybackCapabilityProvider = {
     id: "plex-playback",
     pluginId: "com.lumio.plex",
@@ -29736,11 +30634,11 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-browse-page.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -30103,7 +31001,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-browse-page.tsx
   init_jsx_runtime_shim();
   var defaultFilterOptions = {
     providers: [],
@@ -30227,7 +31125,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-home-override.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var defaultFilterOptions2 = {
@@ -30279,10 +31177,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-library-index-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-library-index-panel.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -30366,7 +31264,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-section.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.plex";
@@ -30880,7 +31778,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/plex-episode-sidebar.tsx
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-episode-sidebar.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -31374,7 +32272,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/episode-sidebar-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/episode-sidebar-provider.ts
   function isPlexItem(item) {
     return item.source === "plex" || item.id?.startsWith("plex-") || (item.providers ?? []).includes("Plex");
   }
@@ -31387,7 +32285,7 @@ ${cue.text}`).join("\n\n")}
     SidebarSection: PlexEpisodeSidebar
   };
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/sync-identity-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/sync-identity-provider.ts
   async function resolvePlexSyncIdentity(item) {
     let resolvedTmdbId = item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
     let resolvedImdbId = item.imdbId?.trim() ?? null;
@@ -31450,7 +32348,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/plex-batch-size/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/index.ts
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },

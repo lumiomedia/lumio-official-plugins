@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.1
+
+- Loads again on Lumio 0.1.617. The copy of the plugin that ships inside that app version stopped at startup, so the plugin never appeared; this version replaces it automatically.
+
 ## 0.13.0
 
 - Desktop and TV: the side menu is wider and airier, with a label under every icon — Back, Search, Home, Guide, Library, Multiview, Favourites, Settings. A new switch under Settings, **Labels in the side menu**, turns the labels off and brings back the narrow icon-only menu.
