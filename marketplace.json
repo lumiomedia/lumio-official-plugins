@@ -8,6 +8,7 @@
     {
       "id": "com.lumio.plex",
       "slug": "plex",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Plex",
         "sv": "Plex"
@@ -30,6 +31,7 @@
     {
       "id": "com.lumio.jellyfin",
       "slug": "jellyfin",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Jellyfin",
         "sv": "Jellyfin"
@@ -52,6 +54,7 @@
     {
       "id": "com.lumio.live-tv",
       "slug": "live-tv",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Live TV",
         "sv": "Live TV"
@@ -74,6 +77,7 @@
     {
       "id": "com.lumio.homekit",
       "slug": "homekit",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "HomeKit",
         "sv": "HomeKit"
@@ -95,6 +99,7 @@
     {
       "id": "com.lumio.trakt",
       "slug": "trakt",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Trakt",
         "sv": "Trakt"
@@ -116,6 +121,7 @@
     {
       "id": "com.lumio.twitch",
       "slug": "twitch",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Twitch",
         "sv": "Twitch"
