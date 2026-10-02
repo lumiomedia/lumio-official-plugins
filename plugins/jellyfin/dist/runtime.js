@@ -8084,8 +8084,15 @@
   });
 
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/tv-focus-shim.ts
+  function useTvMode() {
+    const sdk3 = hostSdk();
+    return sdk3?.useTvMode ? sdk3.useTvMode() : domTvMode();
+  }
+  var hostSdk, domTvMode;
   var init_tv_focus_shim = __esm({
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/tv-focus-shim.ts"() {
+      hostSdk = () => globalThis.__lumioPluginRuntime?.sdk;
+      domTvMode = () => typeof document !== "undefined" && document.documentElement.getAttribute("data-tv") === "1";
     }
   });
 
@@ -8401,24 +8408,47 @@
   });
 
   // lib/library/scan.ts
+  function getActiveLibraryScan() {
+    return active;
+  }
+  function onLibraryScanChanged(listener) {
+    scanListeners.add(listener);
+    return () => {
+      scanListeners.delete(listener);
+    };
+  }
   function setActive(next) {
     active = next;
     for (const listener of scanListeners) listener(next);
   }
+  function cancelLibraryScan() {
+    if (!activeController) return false;
+    activeController.abort();
+    return true;
+  }
   async function runLibraryScan(provider, source, options) {
     if (running) throw new Error("library scan already running");
     running = true;
+    const controller = new AbortController();
+    activeController = controller;
+    const outer = options.signal;
+    const forward = () => controller.abort();
+    if (outer?.aborted) controller.abort();
+    else outer?.addEventListener("abort", forward, { once: true });
     setActive({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
     const onProgress = options.onProgress;
     try {
       return await runLibraryScanInner(provider, source, {
         ...options,
+        signal: controller.signal,
         onProgress: (progress) => {
           setActive({ sourceId: source.id, progress });
           onProgress?.(progress);
         }
       });
     } finally {
+      outer?.removeEventListener("abort", forward);
+      activeController = null;
       running = false;
       setActive(null);
     }
@@ -8468,7 +8498,7 @@
     report({ phase: "done", done: titles, total: titles });
     return { titles, removed, unmatched, cursor: result.cursor ?? null, durationMs: Date.now() - startedAt };
   }
-  var running, active, scanListeners;
+  var running, active, scanListeners, activeController;
   var init_scan = __esm({
     "lib/library/scan.ts"() {
       "use client";
@@ -8478,6 +8508,7 @@
       running = false;
       active = null;
       scanListeners = /* @__PURE__ */ new Set();
+      activeController = null;
     }
   });
 
@@ -11824,6 +11855,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -14354,6 +14386,18 @@
     const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.runLibraryScan;
     return host ? host(provider, source, options) : runLibraryScan(provider, source, options);
   }
+  function getActiveLibraryScan2() {
+    const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.getActiveLibraryScan;
+    return host ? host() : getActiveLibraryScan();
+  }
+  function onLibraryScanChanged2(listener) {
+    const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.onLibraryScanChanged;
+    return host ? host(listener) : onLibraryScanChanged(listener);
+  }
+  function cancelLibraryScan2() {
+    const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.cancelLibraryScan;
+    return host ? host() : cancelLibraryScan();
+  }
   var LIBRARY_BROWSE_PAGE_ID;
   var init_plugin_sdk = __esm({
     "lib/plugin-sdk.ts"() {
@@ -14415,7 +14459,7 @@
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/jellyfin/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/jellyfin/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     JellyfinPlugin: () => JellyfinPlugin,
@@ -14423,7 +14467,7 @@
   });
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/jellyfin/runtime/jellyfin-storage.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/jellyfin/runtime/jellyfin-storage.ts
   init_plugin_sdk();
   var SETTINGS_KEY = "jellyfin_settings";
   var DEVICE_KEY = "jellyfin_device_id";
@@ -14493,7 +14537,7 @@
     return settings.serverId && settings.userId ? `jellyfin-${settings.serverId}-${settings.userId.slice(0, 8)}` : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/jellyfin/runtime/jellyfin-api.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/jellyfin/runtime/jellyfin-api.ts
   function authorizationHeader(token) {
     const device = ensureJellyfinDeviceId();
     const base = `MediaBrowser Client="Lumio", Device="Lumio", DeviceId="${device}", Version="1.0.0"`;
@@ -14638,7 +14682,7 @@
     await request(settings, `/Users/${settings.userId}/PlayedItems/${itemId}`, { method: "POST", timeoutMs: 8e3 });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/jellyfin/runtime/jellyfin-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/jellyfin/runtime/jellyfin-library-provider.ts
   var JELLYFIN_LIBRARY_PROVIDER_ID = "jellyfin";
   var PAGE_SIZE = 200;
   var EPISODE_CONCURRENCY = 3;
@@ -14852,7 +14896,7 @@
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/jellyfin/runtime/jellyfin-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/jellyfin/runtime/jellyfin-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -14884,6 +14928,7 @@
       indexLastSync: "Last synced",
       running: "{done} titles",
       cancel: "Cancel",
+      busyElsewhere: "Another library is being indexed. Try again when it is done.",
       homeHint: "Make it the home page or open the Jellyfin tab: Settings \u2192 Home & appearance \u2192 Layout \u2192 Library."
     },
     sv: {
@@ -14913,11 +14958,18 @@
       indexLastSync: "Senast synkat",
       running: "{done} titlar",
       cancel: "Avbryt",
+      busyElsewhere: "Ett annat bibliotek indexeras. F\xF6rs\xF6k igen n\xE4r det \xE4r klart.",
       homeHint: "G\xF6r det till startsida eller \xF6ppna Jellyfin-fliken: Inst\xE4llningar \u2192 Hem & utseende \u2192 Layout \u2192 Bibliotek."
     }
   };
+  var tvFont2 = (px) => `calc(${px}px * var(--ui-scale, 1) * var(--tv-font-scale, 1))`;
+  function useSectionType() {
+    const tv = useTvMode();
+    return tv ? { tv, title: tvFont2(25), body: tvFont2(20), gap: 18, rowPad: "16px 22px", bar: 10, input: { fontSize: tvFont2(22), padding: "14px 18px" } } : { tv, title: 14.5, body: 12, gap: 12, rowPad: "10px 14px", bar: 6, input: {} };
+  }
   function JellyfinSection() {
     const { lang } = useLang();
+    const type = useSectionType();
     const s = STR[lang === "sv" ? "sv" : "en"];
     const [settings, setSettings] = useState(() => getJellyfinSettings());
     useEffect(() => onJellyfinSettingsChanged(() => setSettings(getJellyfinSettings())), []);
@@ -14928,7 +14980,7 @@
     const [error, setError] = useState(null);
     const [available, setAvailable] = useState(null);
     const connected = isJellyfinConnected(settings);
-    const stack = { display: "flex", flexDirection: "column", gap: 12 };
+    const stack = { display: "flex", flexDirection: "column", gap: type.gap };
     const loadLibraries = async (next = settings) => {
       setBusy("libraries");
       try {
@@ -14968,7 +15020,7 @@
       /* @__PURE__ */ jsxs(Card, { children: [
         connected ? /* @__PURE__ */ jsxs("div", { style: stack, children: [
           /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsxs("div", { style: { fontSize: 14.5, fontWeight: 600, color: TOKENS.text }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { fontSize: type.title, fontWeight: 600, color: TOKENS.text }, children: [
               s.connectedAs,
               " ",
               settings.userName,
@@ -14977,7 +15029,7 @@
               " ",
               settings.serverName
             ] }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: TOKENS.textMute, marginTop: 2 }, children: settings.serverUrl })
+            /* @__PURE__ */ jsx("div", { style: { fontSize: type.body, color: TOKENS.textMute, marginTop: 2 }, children: settings.serverUrl })
           ] }),
           /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 }, children: [
             /* @__PURE__ */ jsx(PillBtn, { onClick: () => void loadLibraries(), disabled: busy !== "idle", children: s.refreshLibraries }),
@@ -14989,31 +15041,31 @@
         ] }) : /* @__PURE__ */ jsxs("div", { style: stack, children: [
           /* @__PURE__ */ jsxs("div", { children: [
             /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: s.server }),
-            /* @__PURE__ */ jsx("input", { type: "url", value: server, onChange: (event) => setServer(event.target.value), placeholder: s.serverPlaceholder, autoCapitalize: "none", autoCorrect: "off", spellCheck: false, style: inputStyle })
+            /* @__PURE__ */ jsx("input", { type: "url", value: server, onChange: (event) => setServer(event.target.value), placeholder: s.serverPlaceholder, autoCapitalize: "none", autoCorrect: "off", spellCheck: false, style: { ...inputStyle, ...type.input } })
           ] }),
           /* @__PURE__ */ jsxs("div", { style: { display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }, children: [
             /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: s.username }),
-              /* @__PURE__ */ jsx("input", { type: "text", value: username, onChange: (event) => setUsername(event.target.value), autoCapitalize: "none", autoCorrect: "off", spellCheck: false, style: inputStyle })
+              /* @__PURE__ */ jsx("input", { type: "text", value: username, onChange: (event) => setUsername(event.target.value), autoCapitalize: "none", autoCorrect: "off", spellCheck: false, style: { ...inputStyle, ...type.input } })
             ] }),
             /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: s.password }),
-              /* @__PURE__ */ jsx("input", { type: "password", value: password, onChange: (event) => setPassword(event.target.value), autoComplete: "off", style: inputStyle })
+              /* @__PURE__ */ jsx("input", { type: "password", value: password, onChange: (event) => setPassword(event.target.value), autoComplete: "off", style: { ...inputStyle, ...type.input } })
             ] })
           ] }),
           /* @__PURE__ */ jsx(PillBtn, { variant: "accent", onClick: () => void connect(), disabled: busy === "connecting" || !server.trim() || !username.trim(), style: { alignSelf: "flex-start" }, children: busy === "connecting" ? s.connecting : s.connect })
         ] }),
-        error ? /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: 12, color: TOKENS.red }, children: error }) : null
+        error ? /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: type.body, color: TOKENS.red }, children: error }) : null
       ] }),
       connected ? /* @__PURE__ */ jsxs(Card, { children: [
         /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 10 }, children: s.libraries }),
-        available && available.length === 0 ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 12, color: TOKENS.textMute }, children: s.noLibraries }) : null,
+        available && available.length === 0 ? /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: type.body, color: TOKENS.textMute }, children: s.noLibraries }) : null,
         /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: (available ?? settings.libraries).map((library) => {
           const on = settings.libraries.some((entry) => entry.id === library.id);
-          return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, border: `1px solid ${on ? TOKENS.accent : TOKENS.border}`, background: on ? TOKENS.accentSoft : TOKENS.surface0 }, children: [
+          return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: type.rowPad, borderRadius: 12, border: `1px solid ${on ? TOKENS.accent : TOKENS.border}`, background: on ? TOKENS.accentSoft : TOKENS.surface0 }, children: [
             /* @__PURE__ */ jsx(Checkbox, { checked: on, onChange: (value) => toggleLibrary(library, value) }),
-            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 14.5, fontWeight: 600, color: TOKENS.text }, children: library.name }),
-            /* @__PURE__ */ jsx("span", { style: { ...eyebrowStyle, marginBottom: 0 }, children: library.type === "movies" ? s.movies : s.series })
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: type.title, fontWeight: 600, color: TOKENS.text }, children: library.name }),
+            /* @__PURE__ */ jsx("span", { style: { ...eyebrowStyle, marginBottom: 0, lineHeight: 1 }, children: library.type === "movies" ? s.movies : s.series })
           ] }, library.id);
         }) })
       ] }) : null,
@@ -15021,10 +15073,10 @@
     ] });
   }
   function JellyfinIndexPanel({ strings: s }) {
+    const type = useSectionType();
     const [status, setStatus] = useState(null);
-    const [progress, setProgress] = useState(null);
+    const [active2, setActive2] = useState(() => getActiveLibraryScan2());
     const [error, setError] = useState(null);
-    const abortRef = useRef(null);
     const settings = getJellyfinSettings();
     const source = jellyfinLibrarySourceRef(settings);
     const connected = isJellyfinConnected(settings) && settings.libraries.length > 0;
@@ -15035,22 +15087,23 @@
       refresh();
       return onLibraryModeChanged(refresh);
     }, []);
+    useEffect(() => onLibraryScanChanged2((scan2) => {
+      setActive2(scan2);
+      if (!scan2) refresh();
+    }), []);
     const mine = status?.sources.find((entry) => entry.id === source?.id) ?? null;
-    const running2 = progress !== null && progress.phase !== "done";
+    const progress = active2 && source && active2.sourceId === source.id ? active2.progress : null;
+    const running2 = active2 !== null;
+    const busyElsewhere = active2 !== null && progress === null;
     const pct2 = progress?.total ? Math.min(100, Math.round(progress.done / Math.max(1, progress.total) * 100)) : null;
     const run = async (kind) => {
       if (!source || running2) return;
       setError(null);
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setProgress({ phase: "listing", done: 0 });
       try {
-        await runLibraryScan2(jellyfinLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, { mode: kind, signal: controller.signal, onProgress: setProgress });
+        await runLibraryScan2(jellyfinLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, { mode: kind });
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
-        setProgress(null);
-        abortRef.current = null;
         refresh();
       }
     };
@@ -15066,9 +15119,9 @@
     };
     const formatWhen = (seconds) => seconds ? new Date(seconds * 1e3).toLocaleString(void 0, { dateStyle: "short", timeStyle: "short" }) : "\u2013";
     return /* @__PURE__ */ jsxs(Card, { children: [
-      /* @__PURE__ */ jsx("div", { style: { fontSize: 14.5, fontWeight: 600, color: TOKENS.text }, children: s.indexTitle }),
-      /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }, children: s.indexDesc }),
-      /* @__PURE__ */ jsx("div", { style: { marginTop: 12, fontSize: 12, color: TOKENS.textDim }, children: mine ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("div", { style: { fontSize: type.title, fontWeight: 600, color: TOKENS.text }, children: s.indexTitle }),
+      /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: type.body, lineHeight: 1.5, color: TOKENS.textMute }, children: s.indexDesc }),
+      /* @__PURE__ */ jsx("div", { style: { marginTop: 12, fontSize: type.body, color: TOKENS.textDim }, children: mine ? /* @__PURE__ */ jsxs(Fragment2, { children: [
         /* @__PURE__ */ jsx("span", { style: { color: TOKENS.text }, children: s.indexStatus.replace("{titles}", String(mine.titles)).replace("{unmatched}", String(status?.unmatched ?? 0)) }),
         /* @__PURE__ */ jsx("span", { style: { margin: "0 8px", color: TOKENS.textMute }, children: "\xB7" }),
         s.indexLastSync,
@@ -15076,27 +15129,28 @@
         formatWhen(mine.lastDeltaSync ?? mine.lastFullSync)
       ] }) : s.indexEmpty }),
       progress ? /* @__PURE__ */ jsxs("div", { style: { marginTop: 12 }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: TOKENS.textDim }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: type.body, color: TOKENS.textDim }, children: [
           /* @__PURE__ */ jsxs("span", { children: [
             progress.section ? `${progress.section} \xB7 ` : "",
             s.running.replace("{done}", String(progress.done)),
             progress.total ? ` / ${progress.total}` : ""
           ] }),
-          /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => abortRef.current?.abort(), children: s.cancel })
+          /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => cancelLibraryScan2(), children: s.cancel })
         ] }),
-        /* @__PURE__ */ jsx("div", { style: { marginTop: 8, height: 6, width: "100%", overflow: "hidden", borderRadius: 999, background: TOKENS.surface0 }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", borderRadius: 999, background: TOKENS.accent, width: pct2 != null ? `${pct2}%` : "35%", transition: "width .3s" } }) })
+        /* @__PURE__ */ jsx("div", { style: { marginTop: 8, height: type.bar, width: "100%", overflow: "hidden", borderRadius: 999, background: TOKENS.surface0 }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", borderRadius: 999, background: TOKENS.accent, width: pct2 != null ? `${pct2}%` : "35%", transition: "width .3s" } }) })
       ] }) : null,
-      error ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: 12, color: TOKENS.red }, children: error }) : null,
+      busyElsewhere ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: type.body, color: TOKENS.textDim }, children: s.busyElsewhere }) : null,
+      error ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: type.body, color: TOKENS.red }, children: error }) : null,
       /* @__PURE__ */ jsxs("div", { style: { marginTop: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }, children: [
         /* @__PURE__ */ jsx(PillBtn, { variant: "accent", disabled: !connected || running2, onClick: () => void run("full"), children: mine ? s.indexRebuild : s.indexBuild }),
         mine ? /* @__PURE__ */ jsx(PillBtn, { disabled: running2, onClick: () => void run("delta"), children: s.indexUpdate }) : null,
         mine ? /* @__PURE__ */ jsx(PillBtn, { variant: "danger", disabled: running2, onClick: () => void clear(), children: s.indexClear }) : null
       ] }),
-      /* @__PURE__ */ jsx("p", { style: { margin: "12px 0 0", fontSize: 12, lineHeight: 1.5, color: TOKENS.textMute }, children: s.homeHint })
+      /* @__PURE__ */ jsx("p", { style: { margin: "12px 0 0", fontSize: type.body, lineHeight: 1.5, color: TOKENS.textMute }, children: s.homeHint })
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/jellyfin/runtime/jellyfin-fallback-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/jellyfin/runtime/jellyfin-fallback-page.tsx
   init_plugin_sdk();
   // Luft under rutan: på mobilen låg den kant i kant med skärmens nederkant
   // (Jerry 2026-09-07). Inline, inte Tailwind — pluginets klasser genereras
@@ -15110,7 +15164,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/jellyfin/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/jellyfin/runtime/index.ts
   var JellyfinPlugin = {
     id: "com.lumio.jellyfin",
     name: { en: "Jellyfin", sv: "Jellyfin" },

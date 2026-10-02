@@ -9857,24 +9857,47 @@
   });
 
   // lib/library/scan.ts
+  function getActiveLibraryScan() {
+    return active;
+  }
+  function onLibraryScanChanged(listener) {
+    scanListeners.add(listener);
+    return () => {
+      scanListeners.delete(listener);
+    };
+  }
   function setActive(next) {
     active = next;
     for (const listener of scanListeners) listener(next);
   }
+  function cancelLibraryScan() {
+    if (!activeController) return false;
+    activeController.abort();
+    return true;
+  }
   async function runLibraryScan(provider, source, options) {
     if (running) throw new Error("library scan already running");
     running = true;
+    const controller = new AbortController();
+    activeController = controller;
+    const outer = options.signal;
+    const forward = () => controller.abort();
+    if (outer?.aborted) controller.abort();
+    else outer?.addEventListener("abort", forward, { once: true });
     setActive({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
     const onProgress = options.onProgress;
     try {
       return await runLibraryScanInner(provider, source, {
         ...options,
+        signal: controller.signal,
         onProgress: (progress) => {
           setActive({ sourceId: source.id, progress });
           onProgress?.(progress);
         }
       });
     } finally {
+      outer?.removeEventListener("abort", forward);
+      activeController = null;
       running = false;
       setActive(null);
     }
@@ -9924,7 +9947,7 @@
     report({ phase: "done", done: titles, total: titles });
     return { titles, removed, unmatched, cursor: result.cursor ?? null, durationMs: Date.now() - startedAt };
   }
-  var running, active, scanListeners;
+  var running, active, scanListeners, activeController;
   var init_scan = __esm({
     "lib/library/scan.ts"() {
       "use client";
@@ -9934,6 +9957,7 @@
       running = false;
       active = null;
       scanListeners = /* @__PURE__ */ new Set();
+      activeController = null;
     }
   });
 
@@ -14947,6 +14971,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -29359,6 +29384,18 @@ ${cue.text}`).join("\n\n")}
     const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.runLibraryScan;
     return host ? host(provider, source, options) : runLibraryScan(provider, source, options);
   }
+  function getActiveLibraryScan2() {
+    const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.getActiveLibraryScan;
+    return host ? host() : getActiveLibraryScan();
+  }
+  function onLibraryScanChanged2(listener) {
+    const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.onLibraryScanChanged;
+    return host ? host(listener) : onLibraryScanChanged(listener);
+  }
+  function cancelLibraryScan2() {
+    const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.cancelLibraryScan;
+    return host ? host() : cancelLibraryScan();
+  }
   function isPluginDesktopHost() {
     if (typeof window === "undefined") return false;
     const userAgentEarly = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -29479,13 +29516,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     PlexPlugin: () => PlexPlugin
   });
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-storage.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-storage.ts
   init_plugin_sdk();
   var AUTH_KEY2 = "plex_auth";
   var SETTINGS_KEY = "plex_settings";
@@ -29764,7 +29801,7 @@ ${cue.text}`).join("\n\n")}
     return () => window.removeEventListener(SETTINGS_EVENT, listener);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-library-provider.ts
   var PAGE_SIZE = 200;
   var EPISODE_CONCURRENCY = 3;
   var MAX_BATCH_BYTES = 1e6;
@@ -29909,7 +29946,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-sync.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-sync.ts
   init_plugin_sdk();
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
   var plexLibraryCooldownUntil = /* @__PURE__ */ new Map();
@@ -30538,7 +30575,7 @@ ${cue.text}`).join("\n\n")}
     });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/playback-utils.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/playback-utils.ts
   function normalizeTitle2(value) {
     return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
@@ -30618,7 +30655,7 @@ ${cue.text}`).join("\n\n")}
     return Boolean(plexItem && plexItem.source === "plex" && isPlexPlaybackReady(plexItem));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/playback-capability-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/playback-capability-provider.ts
   var plexPlaybackCapabilityProvider = {
     id: "plex-playback",
     pluginId: "com.lumio.plex",
@@ -30656,11 +30693,11 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-browse-page.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -31023,7 +31060,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-browse-page.tsx
   init_jsx_runtime_shim();
   var defaultFilterOptions = {
     providers: [],
@@ -31147,7 +31184,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-home-override.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var defaultFilterOptions2 = {
@@ -31199,20 +31236,23 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-library-index-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-library-index-panel.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
+  var BUSY_ELSEWHERE = {
+    en: "Another library is being indexed. Try again when it is done.",
+    sv: "Ett annat bibliotek indexeras. F\xF6rs\xF6k igen n\xE4r det \xE4r klart."
+  };
   function PlexLibraryIndexPanel() {
-    const { t } = useLang();
+    const { t, lang } = useLang();
     const [status, setStatus] = useState(null);
-    const [progress, setProgress] = useState(null);
+    const [active2, setActive2] = useState(() => getActiveLibraryScan2());
     const [error, setError] = useState(null);
     const [mode, setMode] = useState(() => getLibraryMode());
-    const abortRef = useRef(null);
     const settings = ensureCanonicalPlexSettings();
     const source = plexLibrarySourceRef(settings);
     const connected = Boolean(getPlexAuth() && settings.serverUri && settings.libraries.length > 0);
@@ -31223,25 +31263,22 @@ ${cue.text}`).join("\n\n")}
       refresh();
       return onLibraryModeChanged(() => setMode(getLibraryMode()));
     }, []);
+    useEffect(() => onLibraryScanChanged2((scan2) => {
+      setActive2(scan2);
+      if (!scan2) refresh();
+    }), []);
     const mine = status?.sources.find((entry) => entry.id === source?.id) ?? null;
-    const running2 = progress !== null && progress.phase !== "done";
+    const progress = active2 && source && active2.sourceId === source.id ? active2.progress : null;
+    const running2 = active2 !== null;
+    const busyElsewhere = active2 !== null && progress === null;
     const run = async (kind) => {
       if (!source || running2) return;
       setError(null);
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setProgress({ phase: "listing", done: 0 });
       try {
-        await runLibraryScan2(plexLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, {
-          mode: kind,
-          signal: controller.signal,
-          onProgress: setProgress
-        });
+        await runLibraryScan2(plexLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, { mode: kind });
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
-        setProgress(null);
-        abortRef.current = null;
         refresh();
       }
     };
@@ -31273,10 +31310,11 @@ ${cue.text}`).join("\n\n")}
             t("plexIndexRunning").replace("{done}", String(progress.done)),
             progress.total ? ` / ${progress.total}` : ""
           ] }),
-          /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => abortRef.current?.abort(), children: t("cancel") })
+          /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => cancelLibraryScan2(), children: t("cancel") })
         ] }),
         /* @__PURE__ */ jsx("div", { style: { marginTop: 8, height: 6, width: "100%", overflow: "hidden", borderRadius: 999, background: TOKENS.surface0 }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", borderRadius: 999, background: TOKENS.accent, width: pct2 != null ? `${pct2}%` : "35%", transition: "width .3s" } }) })
       ] }) : null,
+      busyElsewhere ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: 12, color: TOKENS.textDim }, children: lang === "sv" ? BUSY_ELSEWHERE.sv : BUSY_ELSEWHERE.en }) : null,
       error ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: 12, color: TOKENS.red }, children: error }) : null,
       /* @__PURE__ */ jsxs("div", { style: { marginTop: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }, children: [
         /* @__PURE__ */ jsx(PillBtn, { variant: "accent", disabled: !connected || running2, onClick: () => void run("full"), children: mine ? t("plexIndexRebuild") : t("plexIndexBuild") }),
@@ -31286,7 +31324,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-section.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.plex";
@@ -31800,7 +31838,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/plex-episode-sidebar.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-episode-sidebar.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -32294,7 +32332,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/episode-sidebar-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/episode-sidebar-provider.ts
   function isPlexItem(item) {
     return item.source === "plex" || item.id?.startsWith("plex-") || (item.providers ?? []).includes("Plex");
   }
@@ -32307,7 +32345,7 @@ ${cue.text}`).join("\n\n")}
     SidebarSection: PlexEpisodeSidebar
   };
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/sync-identity-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/sync-identity-provider.ts
   async function resolvePlexSyncIdentity(item) {
     let resolvedTmdbId = item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
     let resolvedImdbId = item.imdbId?.trim() ?? null;
@@ -32370,7 +32408,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/release-0.1.617/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/index.ts
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },

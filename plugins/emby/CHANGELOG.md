@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- The index card keeps showing a running scan after you leave Settings and come back, and Cancel stops it. Rebuild and Update no longer answer "library scan already running" while a scan you can't see holds the lock; if another library is indexing, the card says so.
+- In TV mode the settings text, inputs and library rows are drawn at TV size instead of desktop size.
+
 ## 0.1.4
 
 - When indexing stops, the message now says where: which library or series, whether Emby or Lumio's own index failed, and after how many tries. The same details go to the debug log.

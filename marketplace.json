@@ -13,7 +13,7 @@
         "en": "Plex",
         "sv": "Plex"
       },
-      "version": "1.0.35",
+      "version": "1.0.36",
       "description": {
         "en": "Browse and play media from your Plex Media Server.",
         "sv": "Bläddra i och spela upp media från din Plex Media Server."
@@ -36,7 +36,7 @@
         "en": "Jellyfin",
         "sv": "Jellyfin"
       },
-      "version": "0.1.4",
+      "version": "0.1.5",
       "description": {
         "en": "Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.",
         "sv": "Indexera din Jellyfin-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
@@ -59,7 +59,7 @@
         "en": "Emby",
         "sv": "Emby"
       },
-      "version": "0.1.4",
+      "version": "0.1.5",
       "description": {
         "en": "Index your Emby server as a library: home rows, search, details and playback straight from what you own.",
         "sv": "Indexera din Emby-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."

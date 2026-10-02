@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.36
+
+- The index card keeps showing a running scan after you leave Settings and come back, and Cancel stops it. Rebuild and Update no longer answer "library scan already running" while a scan you can't see holds the lock; if another library is indexing, the card says so.
+
 ## 1.0.35
 
 - Indexing a large Plex library no longer stops on a single dropped connection ("Failed to fetch"); the request is retried before giving up.
