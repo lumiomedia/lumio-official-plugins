@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import {
   Card,
   Checkbox,
@@ -12,6 +12,9 @@ import {
   onLibraryModeChanged,
   resetLibrarySource,
   runLibraryScan,
+  cancelLibraryScan,
+  getActiveLibraryScan,
+  onLibraryScanChanged,
   setLibraryMode,
   getStoredLibraryMode,
   useLang,
@@ -44,7 +47,7 @@ const STR = {
     movies: 'Movies', series: 'Series', authFailed: 'Could not sign in. Check the address, username and password.', isJellyfin: 'This is a Jellyfin server. Use the Jellyfin plugin for it.',
     indexTitle: 'Library index', indexDesc: 'Lumio indexes your Emby libraries locally so the home page, search and Zapp can run on what you own.',
     indexBuild: 'Build index', indexRebuild: 'Rebuild', indexUpdate: 'Update', indexClear: 'Remove index', indexEmpty: 'Not indexed yet.',
-    indexStatus: '{titles} titles · {unmatched} unmatched', indexLastSync: 'Last synced', running: '{done} titles', cancel: 'Cancel',
+    indexStatus: '{titles} titles · {unmatched} unmatched', indexLastSync: 'Last synced', running: '{done} titles', cancel: 'Cancel', busyElsewhere: 'Another library is being indexed. Try again when it is done.',
     homeHint: 'Make it the home page or open the Emby tab: Settings → Home & appearance → Layout → Library.',
     slimmed: 'Too large to index in full (newest episodes kept):',
   },
@@ -55,7 +58,7 @@ const STR = {
     movies: 'Filmer', series: 'Serier', authFailed: 'Kunde inte logga in. Kontrollera adress, användarnamn och lösenord.', isJellyfin: 'Det här är en Jellyfin-server. Använd Jellyfin-pluginet för den.',
     indexTitle: 'Biblioteksindex', indexDesc: 'Lumio indexerar dina Emby-bibliotek lokalt så startsida, sök och Zapp kan gå helt på det du äger.',
     indexBuild: 'Bygg index', indexRebuild: 'Bygg om', indexUpdate: 'Uppdatera', indexClear: 'Ta bort index', indexEmpty: 'Inte indexerat ännu.',
-    indexStatus: '{titles} titlar · {unmatched} omatchade', indexLastSync: 'Senast synkat', running: '{done} titlar', cancel: 'Avbryt',
+    indexStatus: '{titles} titlar · {unmatched} omatchade', indexLastSync: 'Senast synkat', running: '{done} titlar', cancel: 'Avbryt', busyElsewhere: 'Ett annat bibliotek indexeras. Försök igen när det är klart.',
     homeHint: 'Gör det till startsida eller öppna Emby-fliken: Inställningar → Hem & utseende → Layout → Bibliotek.',
     slimmed: 'För stora för att indexeras helt (nyaste avsnitten med):',
   },
@@ -178,10 +181,13 @@ export function EmbySection() {
 
 function EmbyIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof STR)['sv'] }) {
   const [status, setStatus] = useState<LibraryStatus | null>(null)
-  const [progress, setProgress] = useState<LibraryScanProgress | null>(null)
+  // Förloppet läses ur värdens delade skanning, inte ur egen state:
+  // skanningen överlever panelen. Med egen state tappades den när
+  // användaren navigerade bort, låset satt kvar och nästa knapptryck
+  // svarade "library scan already running" (Emby, 2026-10-02).
+  const [active, setActive] = useState(() => getActiveLibraryScan())
   const [error, setError] = useState<string | null>(null)
   const [notes, setNotes] = useState<string[]>([])
-  const abortRef = useRef<AbortController | null>(null)
   const settings = getEmbySettings()
   const source = embyLibrarySourceRef(settings)
   const connected = isEmbyConnected(settings) && settings.libraries.length > 0
@@ -193,20 +199,25 @@ function EmbyIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof 
     refresh()
     return onLibraryModeChanged(refresh)
   }, [])
+  useEffect(() => onLibraryScanChanged((scan) => {
+    setActive(scan)
+    // Klar (eller avbruten) medan panelen stod öppen: visa nya siffror.
+    if (!scan) refresh()
+  }), [])
 
   const mine = status?.sources.find((entry) => entry.id === source?.id) ?? null
-  const running = progress !== null && progress.phase !== 'done'
+  const progress: LibraryScanProgress | null = active && source && active.sourceId === source.id ? active.progress : null
+  // Låset är ett för alla bibliotek: en Plex-skanning håller det också.
+  const running = active !== null
+  const busyElsewhere = active !== null && progress === null
   const pct = progress?.total ? Math.min(100, Math.round((progress.done / Math.max(1, progress.total)) * 100)) : null
 
   const run = async (kind: 'full' | 'delta') => {
     if (!source || running) return
     setError(null)
     setNotes([])
-    const controller = new AbortController()
-    abortRef.current = controller
-    setProgress({ phase: 'listing', done: 0 })
     try {
-      await runLibraryScan(embyLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, { mode: kind, signal: controller.signal, onProgress: setProgress })
+      await runLibraryScan(embyLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, { mode: kind })
     } catch (err) {
       // Fel utanför pluginets egna steg (kärnans rensning/slutpost) har ingen
       // kontext än — loggraden och skärmbilden ska ändå säga var passet var.
@@ -215,8 +226,6 @@ function EmbyIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof 
       setError(message)
     } finally {
       setNotes([...getLastEmbyScanNotes()])
-      setProgress(null)
-      abortRef.current = null
       refresh()
     }
   }
@@ -254,13 +263,14 @@ function EmbyIndexPanel({ strings: s }: { strings: (typeof STR)['en'] | (typeof 
         <div style={{ marginTop: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: TOKENS.textDim }}>
             <span>{progress.section ? `${progress.section} · ` : ''}{s.running.replace('{done}', String(progress.done))}{progress.total ? ` / ${progress.total}` : ''}</span>
-            <PillBtn size="sm" onClick={() => abortRef.current?.abort()}>{s.cancel}</PillBtn>
+            <PillBtn size="sm" onClick={() => cancelLibraryScan()}>{s.cancel}</PillBtn>
           </div>
           <div style={{ marginTop: 8, height: 6, width: '100%', overflow: 'hidden', borderRadius: 999, background: TOKENS.surface0 }}>
             <div style={{ height: '100%', borderRadius: 999, background: TOKENS.accent, width: pct != null ? `${pct}%` : '35%', transition: 'width .3s' }} />
           </div>
         </div>
       ) : null}
+      {busyElsewhere ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.textDim }}>{s.busyElsewhere}</p> : null}
       {error ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.red, overflowWrap: 'anywhere' }}>{error}</p> : null}
       {notes.length > 0 ? (
         <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, color: TOKENS.textDim }}>
