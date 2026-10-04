@@ -450,6 +450,35 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     }
   }, [isTv, mpvPaused, hasNativeSurface, tvChrome])
 
+  /* Fjärrens medietangenter. Appen (MainActivity → window.__lumioMediaKey)
+     sänder dem som händelsen 'lumio-media-key' på window; värdens spelare
+     lyssnar via onMediaKey, men den här spelaren är pluginets egen och hörde
+     ingenting — play/paus på fjärren gjorde inget i Live TV (Jerry
+     2026-09-30). Händelsenamnet lyssnas på direkt i stället för via SDK:t,
+     så det fungerar även mot appar som inte exporterar onMediaKey.
+     Nästa/föregående zappar som kanal upp/ned: tv-kromets egen lyssnare. */
+  const mediaKeyRef = useRef<(action: string) => void>(() => {})
+  mediaKeyRef.current = (action: string) => {
+    switch (action) {
+      case 'playpause':
+      case 'play': void mpv.setPlayPause(!mpvPaused); break
+      case 'pause': if (!mpvPaused) void mpv.setPlayPause(true); break
+      case 'stop': handleCloseRef.current(); break
+      case 'next':
+      case 'previous':
+        if (tvChrome) window.dispatchEvent(new KeyboardEvent('keydown', { key: action === 'next' ? 'ChannelUp' : 'ChannelDown' }))
+        break
+    }
+  }
+  useEffect(() => {
+    const onMediaKey = (event: Event) => {
+      const action = (event as CustomEvent<{ action?: string }>).detail?.action
+      if (action) mediaKeyRef.current(action)
+    }
+    window.addEventListener('lumio-media-key', onMediaKey)
+    return () => window.removeEventListener('lumio-media-key', onMediaKey)
+  }, [])
+
   // Vänster vid en vänsterkant i spelaren: anspråka trycket så värdens
   // reservlyssnare inte öppnar huvudmenyn ovanpå strömmen. Trycket ska inte
   // göra något annat. Defensivt meta?.claim?.() — äldre värdar saknar metan.
