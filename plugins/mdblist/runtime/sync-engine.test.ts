@@ -42,6 +42,8 @@ function makeHost(over: Partial<SyncHost> = {}) {
     waitForStartIdle: async () => {},
     log: () => {},
     now: () => 1_000_000_000,
+    accountKey: () => 'acct-1',
+    scopeId: () => 'p1',
     ...over,
   }
   return { host, store }
@@ -74,6 +76,13 @@ const prefsOn = (watched = true, watchlist = true) => {
 
 const ok = (data: unknown): ApiResult<unknown> => ({ ok: true, data })
 
+/** En giltig snapshot för kontot acct-1 med båda slagen synkade. */
+const snap = (over: Record<string, unknown> = {}) => ({
+  version: 2, accountKey: 'acct-1', shows: [], movies: [], activities: {},
+  syncedKinds: { watched: true, watchlist: true }, watchedHash: '0:0', watchedPending: false,
+  unconfirmed: {}, fullAt: 0, syncedAt: 1, ...over,
+})
+
 describe('synkmotorn', () => {
   it('avstår utan påslagna reglage', async () => {
     const { host } = makeHost()
@@ -85,7 +94,7 @@ describe('synkmotorn', () => {
 
   it('oförändrade stämplar och inget lokalt → ett enda anrop', async () => {
     const { host, store } = makeHost()
-    store[SNAPSHOT_KEY] = { shows: [], movies: [], activities: { watched_at: 'A' }, watchedLocalCount: 0, fullAt: 1_000_000_000, syncedAt: 1 }
+    store[SNAPSHOT_KEY] = snap({ activities: { watched_at: 'A' }, fullAt: 1_000_000_000 })
     const { api, call } = makeApi((_m, p) => (p === '/sync/last_activities' ? ok({ watched_at: 'A', server_time: 'S' }) : ok({})))
     const out = await runMdblistSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'test' })
     expect(out).toEqual({ status: 'unchanged' })
@@ -112,7 +121,7 @@ describe('synkmotorn', () => {
   it('tom fjärrlista bredvid stor snapshot raderar ingenting lokalt', async () => {
     const ids = Array.from({ length: 20 }, (_, i) => String(i + 1))
     const { host, store } = makeHost({ getShows: () => ids.map((id) => ({ tmdbId: id, imdbId: null, title: id })) })
-    store[SNAPSHOT_KEY] = { shows: ids, movies: [], activities: {}, watchedLocalCount: 0, fullAt: 0, syncedAt: 1 }
+    store[SNAPSHOT_KEY] = snap({ shows: ids, activities: { watchlisted_at: 'old' } })
     const { api, call } = makeApi((m, p) => {
       if (p === '/sync/last_activities') return ok({ watchlisted_at: 'C' })
       if (m === 'GET' && p === '/watchlist/items') return ok({ items: [] })
@@ -148,7 +157,7 @@ describe('synkmotorn', () => {
 
   it('429 mitt i körningen: snapshoten rörs inte', async () => {
     const { host, store } = makeHost()
-    store[SNAPSHOT_KEY] = { shows: ['1'], movies: [], activities: { watchlisted_at: 'old' }, watchedLocalCount: 0, fullAt: 0, syncedAt: 1 }
+    store[SNAPSHOT_KEY] = snap({ shows: ['1'], activities: { watchlisted_at: 'old' } })
     const before = JSON.stringify(store[SNAPSHOT_KEY])
     const { api } = makeApi((_m, p) => {
       if (p === '/sync/last_activities') return ok({ watchlisted_at: 'new' })
@@ -164,5 +173,117 @@ describe('synkmotorn', () => {
     const { api } = makeApi(() => ({ ok: false, status: 401, retryAfter: null, error: 'mdblist 401' }))
     const out = await runMdblistSync({ host, api, prefs: prefsOn() }, { pushWatched: false, reason: 'test' })
     expect(out).toEqual({ status: 'failed', error: 'mdblist 401', authFailed: true })
+  })
+})
+
+describe('synkmotorn efter granskningen', () => {
+  it('C1: en snapshot från ett annat konto raderar inget lokalt', async () => {
+    const { host, store } = makeHost({ getMovies: () => [{ tmdbId: '603', imdbId: null, title: 'M' }] })
+    store[SNAPSHOT_KEY] = snap({ accountKey: 'other', movies: ['603'], fullAt: 1_000_000_000 })
+    const { api } = makeApi((m, p) => {
+      if (p === '/sync/last_activities') return ok({ watchlisted_at: 'X' })
+      if (m === 'GET' && p === '/watchlist/items') return ok({ items: [{ id: 13, title: 'F', mediatype: 'movie' }] })
+      return ok({})
+    })
+    await runMdblistSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 'test' })
+    expect(host.removeMovie).not.toHaveBeenCalled()
+  })
+
+  it('C2: en hämtningskörning döljer inte osända sedda för nästa intervallkörning', async () => {
+    const local = [{ tmdbId: '1399', season: 1, episode: 1, watchedAt: 'T0' }]
+    const { host } = makeHost({ getWatchedEpisodes: () => local })
+    const { api, call } = makeApi((m, p) => {
+      if (p === '/sync/last_activities') return ok({ watched_at: 'D' })
+      if (m === 'GET' && p === '/sync/watched') return ok({ movies: [], episodes: [] })
+      return ok({})
+    })
+    await runMdblistSync({ host, api, prefs: prefsOn(true, false) }, { pushWatched: false, reason: 'start' })
+    expect(call).not.toHaveBeenCalledWith('POST', '/sync/watched', expect.anything())
+    await runMdblistSync({ host, api, prefs: prefsOn(true, false) }, { pushWatched: true, reason: 'intervall' })
+    expect(call).toHaveBeenCalledWith('POST', '/sync/watched', expect.anything())
+  })
+
+  it('I1: profilbyte mitt i körningen — inga lokala skrivningar, ingen snapshot', async () => {
+    let scope = 'p1'
+    const { host, store } = makeHost({ scopeId: () => scope })
+    const { api } = makeApi((m, p) => {
+      if (p === '/sync/last_activities') return ok({ watchlisted_at: 'X' })
+      if (m === 'GET' && p === '/watchlist/items') { scope = 'p2'; return ok({ items: [{ id: 13, title: 'F', mediatype: 'movie' }] }) }
+      return ok({})
+    })
+    const out = await runMdblistSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 'test' })
+    expect(out).toEqual({ status: 'skipped', reason: 'profilbyte' })
+    expect(host.addMovie).not.toHaveBeenCalled()
+    expect(store[SNAPSHOT_KEY]).toBeUndefined()
+  })
+
+  it('I2: ett nytt reglage hämtar trots oförändrade stämplar', async () => {
+    const { host, store } = makeHost()
+    store[SNAPSHOT_KEY] = snap({ activities: { watchlisted_at: 'A' }, syncedKinds: { watched: true, watchlist: false }, fullAt: 1_000_000_000 })
+    const { api } = makeApi((m, p) => {
+      if (p === '/sync/last_activities') return ok({ watchlisted_at: 'A' })
+      if (m === 'GET' && p === '/watchlist/items') return ok({ items: [{ id: 13, title: 'F', mediatype: 'movie' }] })
+      return ok({ movies: [], episodes: [] })
+    })
+    await runMdblistSync({ host, api, prefs: prefsOn(true, true) }, { pushWatched: false, reason: 'reglage' })
+    expect(host.addMovie).toHaveBeenCalledWith(expect.objectContaining({ tmdbId: '13' }))
+  })
+
+  it('I5: hämtningen markerar bara det som saknas, och skriver aldrig över en tid', async () => {
+    const { host } = makeHost({ getWatchedEpisodes: () => [{ tmdbId: '1399', season: 1, episode: 1, watchedAt: 'LOCAL' }] })
+    const { api } = makeApi((m, p) => {
+      if (p === '/sync/last_activities') return ok({ watched_at: 'D' })
+      if (m === 'GET' && p === '/sync/watched') return ok({ movies: [], episodes: [
+        { episode: { show: { ids: { tmdb: 1399 } }, season: 1, number: 1 }, watched_at: 'REMOTE' },
+        { episode: { show: { ids: { tmdb: 1399 } }, season: 1, number: 2 }, watched_at: 'R2' },
+      ] })
+      return ok({})
+    })
+    await runMdblistSync({ host, api, prefs: prefsOn(true, false) }, { pushWatched: false, reason: 'test' })
+    expect(host.markEpisodeWatched).toHaveBeenCalledTimes(1)
+    expect(host.markEpisodeWatched).toHaveBeenCalledWith('1399', 1, 2, 'R2')
+  })
+
+  it('I8: utan lokal tid skickas inget, och obekräftade ger upp efter två försök', async () => {
+    const { host, store } = makeHost({ getWatchedMovies: () => [
+      { tmdbId: '1', watchedAt: '' as unknown as string },
+      { tmdbId: '2', watchedAt: 'T2' },
+    ] })
+    const { api, call } = makeApi((m, p) => {
+      if (p === '/sync/last_activities') return ok({ watched_at: String(Math.random()) })
+      if (m === 'GET' && p === '/sync/watched') return ok({ movies: [], episodes: [] })
+      return ok({})
+    })
+    const run = () => runMdblistSync({ host, api, prefs: prefsOn(true, false) }, { pushWatched: true, reason: 'intervall' })
+    await run()
+    const first = call.mock.calls.filter(([m, p]) => m === 'POST' && p === '/sync/watched')
+    expect(JSON.stringify(first[0][2])).not.toContain('"tmdb":1,')
+    await run()
+    call.mockClear()
+    await run()
+    expect(call).not.toHaveBeenCalledWith('POST', '/sync/watched', expect.anything())
+    expect((store[SNAPSHOT_KEY] as { unconfirmed: Record<string, { attempts: number }> }).unconfirmed['m:tmdb:2'].attempts).toBe(2)
+  })
+
+  it('Minor 1: våra egna pausscrobbles (paused_at) startar ingen körning', async () => {
+    const { host, store } = makeHost()
+    store[SNAPSHOT_KEY] = snap({ activities: { watched_at: 'A', watchlisted_at: 'B' }, fullAt: 1_000_000_000 })
+    const { api, call } = makeApi((_m, p) => p === '/sync/last_activities'
+      ? ok({ watched_at: 'A', watchlisted_at: 'B', paused_at: 'NY', episode_paused_at: 'NY' })
+      : ok({}))
+    expect(await runMdblistSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'test' })).toEqual({ status: 'unchanged' })
+    expect(call).toHaveBeenCalledTimes(1)
+  })
+
+  it('Minor 2: utan push läses watchlisten en gång', async () => {
+    const { host } = makeHost()
+    let reads = 0
+    const { api } = makeApi((m, p) => {
+      if (p === '/sync/last_activities') return ok({ watchlisted_at: 'X' })
+      if (m === 'GET' && p === '/watchlist/items') { reads += 1; return ok({ items: [] }) }
+      return ok({})
+    })
+    await runMdblistSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 'test' })
+    expect(reads).toBe(1)
   })
 })
