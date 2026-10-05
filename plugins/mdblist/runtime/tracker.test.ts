@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { MdblistApi } from './api'
 import { createPrefs } from './prefs'
 import { createScrobbler } from './tracker'
 import type { ScrobbleEvent } from './types'
@@ -17,7 +18,7 @@ function setup(on = true) {
   const call = vi.fn(async () => ({ ok: true as const, data: null }))
   const prefs = createPrefs(memoryStorage(on ? { mdblist_scrobble_enabled: '1' } : {}), () => {})
   const scrobble = createScrobbler({
-    api: { call, getAllPages: vi.fn(), pausedUntil: () => 0, hasAuth: () => true },
+    api: { call: call as unknown as MdblistApi['call'], getAllPages: vi.fn(), pausedUntil: () => 0, hasAuth: () => true },
     prefs, now: () => clock, log: () => {},
   })
   return { call, scrobble, tick: (ms: number) => { clock += ms } }
