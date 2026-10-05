@@ -1,0 +1,20 @@
+[
+  {
+    "id": 14,
+    "user_id": "<scrubbed>",
+    "user_name": "<scrubbed>",
+    "name": "Top Watched Movies of The Week / >60",
+    "slug": "top-watched-movies-of-the-week",
+    "description": "",
+    "mediatype": "movie",
+    "items": 42,
+    "likes": 1237,
+    "dynamic": true,
+    "private": false,
+    "updated": "2026-10-05T13:44:05.000Z",
+    "expires": "2026-10-06T14:11:05.000Z",
+    "liked": false,
+    "movies": 42,
+    "shows": 0
+  }
+]

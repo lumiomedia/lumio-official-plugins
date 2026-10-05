@@ -1,0 +1,10 @@
+{
+  "movies": [],
+  "shows": [],
+  "pagination": {
+    "offset": 0,
+    "limit": 5,
+    "total": 0,
+    "has_more": false
+  }
+}

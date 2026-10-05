@@ -1,0 +1,127 @@
+{
+  "movies": [
+    {
+      "id": 502356,
+      "mediatype": "movie",
+      "imdb_id": "tt6718170",
+      "tvdb_id": 136578,
+      "ids": {
+        "mdblist": "3446",
+        "imdb": "tt6718170",
+        "tmdb": 502356,
+        "tvdb": 136578
+      },
+      "title": "The Super Mario Bros. Movie",
+      "language": "en",
+      "spoken_language": "en",
+      "country": "us",
+      "release_year": 2023,
+      "adult": 0,
+      "release_date": "2023-04-05",
+      "status": "Released",
+      "runtime": 93,
+      "added_at": "2026-10-04T13:00:10",
+      "rank": 8
+    },
+    {
+      "id": 933260,
+      "mediatype": "movie",
+      "imdb_id": "tt17526714",
+      "tvdb_id": 355643,
+      "ids": {
+        "mdblist": "2vd5e",
+        "imdb": "tt17526714",
+        "tmdb": 933260,
+        "tvdb": 355643
+      },
+      "title": "The Substance",
+      "language": "en",
+      "spoken_language": "en",
+      "country": "gb",
+      "release_year": 2024,
+      "adult": 0,
+      "release_date": "2024-09-07",
+      "status": "released",
+      "runtime": 141,
+      "added_at": "2026-10-03T12:12:07",
+      "rank": 12
+    },
+    {
+      "id": 425274,
+      "mediatype": "movie",
+      "imdb_id": "tt4712810",
+      "tvdb_id": 13538,
+      "ids": {
+        "mdblist": "j7r8",
+        "imdb": "tt4712810",
+        "tmdb": 425274,
+        "tvdb": 13538
+      },
+      "title": "Now You See Me: Now You Don't",
+      "language": "en",
+      "spoken_language": "en",
+      "country": "us",
+      "release_year": 2025,
+      "adult": 0,
+      "release_date": "2025-11-12",
+      "status": "released",
+      "runtime": 112,
+      "added_at": "2026-10-03T12:12:07",
+      "rank": 24
+    },
+    {
+      "id": 593643,
+      "mediatype": "movie",
+      "imdb_id": "tt9764362",
+      "tvdb_id": 337249,
+      "ids": {
+        "mdblist": "c7pd",
+        "imdb": "tt9764362",
+        "tmdb": 593643,
+        "tvdb": 337249
+      },
+      "title": "The Menu",
+      "language": "en",
+      "spoken_language": "en",
+      "country": "us",
+      "release_year": 2022,
+      "adult": 0,
+      "release_date": "2022-11-17",
+      "status": "Released",
+      "runtime": 107,
+      "added_at": "2026-09-29T09:40:08",
+      "rank": 37
+    },
+    {
+      "id": 475557,
+      "mediatype": "movie",
+      "imdb_id": "tt7286456",
+      "tvdb_id": 7644,
+      "ids": {
+        "mdblist": "1fqk",
+        "imdb": "tt7286456",
+        "tmdb": 475557,
+        "tvdb": 7644
+      },
+      "title": "Joker",
+      "language": "en",
+      "spoken_language": "en",
+      "country": "us",
+      "release_year": 2019,
+      "adult": 0,
+      "release_date": "2019-10-01",
+      "status": "released",
+      "runtime": 122,
+      "added_at": "2026-09-28T09:08:06",
+      "rank": 222
+    }
+  ],
+  "shows": [],
+  "pagination": {
+    "limit": 5,
+    "offset": 0,
+    "total": 42,
+    "has_more": true,
+    "next_cursor": "eyJzIjogMjIyLCAiaSI6IDQwNTc5NDUwNDIzLCAiciI6IDIyMn0="
+  }
+}
