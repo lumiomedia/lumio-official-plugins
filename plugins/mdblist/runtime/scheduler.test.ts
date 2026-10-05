@@ -6,7 +6,7 @@ describe('schemaläggaren', () => {
   afterEach(() => { vi.useRealTimers() })
 
   function setup() {
-    const run = vi.fn(async () => {})
+    const run = vi.fn(async (_opts: { pushWatched: boolean; reason: string }) => {})
     const fire: Record<string, () => void> = {}
     const stop = startScheduler({
       run,
