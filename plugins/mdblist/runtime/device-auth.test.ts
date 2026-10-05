@@ -6,6 +6,7 @@ type Reply = { status: number; data: Record<string, unknown> }
 function setup(replies: Reply[], initialToken: OauthToken | null = null) {
   let clock = 1_000_000
   let token = initialToken
+  let scope = 'p1'
   const scheduled: Array<{ fn: () => void; ms: number }> = []
   const oauth = vi.fn(async () => replies.shift() ?? { status: 500, data: {} })
   const onConnected = vi.fn(async () => {})
@@ -19,6 +20,7 @@ function setup(replies: Reply[], initialToken: OauthToken | null = null) {
     clientId: 'cid',
     log: () => {},
     onConnected,
+    scopeId: () => scope,
   })
   const runNext = async () => {
     const next = scheduled.shift()
@@ -28,7 +30,10 @@ function setup(replies: Reply[], initialToken: OauthToken | null = null) {
     await new Promise((r) => setTimeout(r, 0))
     return next.ms
   }
-  return { auth, oauth, onConnected, runNext, scheduled, token: () => token, tick: (ms: number) => { clock += ms } }
+  return {
+    auth, oauth, onConnected, runNext, scheduled, token: () => token, tick: (ms: number) => { clock += ms },
+    setToken: (t: OauthToken | null) => { token = t }, setScope: (s: string) => { scope = s },
+  }
 }
 
 const deviceReply: Reply = {
@@ -137,5 +142,50 @@ describe('token', () => {
     await auth.disconnect()
     expect(oauth).toHaveBeenCalledWith('revoke_token', { token: 'A', client_id: 'cid' })
     expect(token()).toBeNull()
+  })
+
+  it('I6: en misslyckad förnyelse försöks inte igen förrän efter 5 minuter', async () => {
+    const { auth, oauth, tick } = setup([{ status: 502, data: {} }, { status: 502, data: {} }], fresh(1_000_000 + 3_600_000))
+    await auth.getAccessToken()
+    await auth.getAccessToken()
+    expect(oauth).toHaveBeenCalledTimes(1)
+    tick(5 * 60_000 + 1)
+    await auth.getAccessToken()
+    expect(oauth).toHaveBeenCalledTimes(2)
+  })
+
+  it('I6: invalid_grant när en annan enhet redan förnyat — den nya token används, inget raderas', async () => {
+    const replies: Reply[] = []
+    const s = setup(replies, fresh(1_000_000 + 3_600_000))
+    replies.push({ status: 400, data: { error: 'invalid_grant' } })
+    s.oauth.mockImplementationOnce(async () => {
+      s.setToken({ accessToken: 'B', refreshToken: 'R-other', expiresAt: 1_000_000 + 30 * 86_400_000 })
+      return { status: 400, data: { error: 'invalid_grant' } }
+    })
+    expect(await s.auth.getAccessToken()).toBe('B')
+    expect(s.token()?.accessToken).toBe('B')
+  })
+
+  it('I6: en förnyelse som landar efter frånkoppling skriver inte tillbaka token', async () => {
+    let release: (r: Reply) => void = () => {}
+    const s = setup([], fresh(1_000_000 + 3_600_000))
+    s.oauth.mockImplementationOnce(() => new Promise<Reply>((resolve) => { release = resolve }))
+    const pending = s.auth.getAccessToken()
+    await s.auth.disconnect()
+    release({ status: 200, data: { access_token: 'A2', refresh_token: 'R2', expires_in: 100 } })
+    await pending
+    expect(s.token()).toBeNull()
+  })
+
+  it('I1: en förnyelse som landar efter profilbyte skriver inte i den nya profilen', async () => {
+    let release: (r: Reply) => void = () => {}
+    const s = setup([], fresh(1_000_000 + 3_600_000))
+    s.oauth.mockImplementationOnce(() => new Promise<Reply>((resolve) => { release = resolve }))
+    const pending = s.auth.getAccessToken()
+    s.setScope('p2')
+    s.setToken(null)
+    release({ status: 200, data: { access_token: 'A2', refresh_token: 'R2', expires_in: 100 } })
+    await pending
+    expect(s.token()).toBeNull()
   })
 })

@@ -25,6 +25,7 @@ export interface DeviceState {
 
 const DEVICE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code'
 const REFRESH_MARGIN_MS = 24 * 60 * 60_000
+const REFRESH_BACKOFF_MS = 5 * 60_000
 const DEFAULT_INTERVAL_S = 5
 const DEFAULT_EXPIRES_S = 300
 const DEFAULT_TOKEN_LIFETIME_S = 30 * 24 * 60 * 60
@@ -43,11 +44,17 @@ export function createDeviceAuth(deps: {
   log(message: string): void
   /** Körs när en ny token sparats — värden frågar `GET /user` och visar namnet. */
   onConnected?(): Promise<void> | void
+  /** Aktiv profil. Ett svar som landar efter ett profilbyte skrivs aldrig. */
+  scopeId?(): string | null
 }) {
+  const scopeNow = () => deps.scopeId?.() ?? ''
   let state: DeviceState = { phase: 'idle' }
   let timer: unknown = null
   let generation = 0
   let refreshing: Promise<string | null> | null = null
+  /** Ökas vid frånkoppling: en förnyelse som startade före får inte skriva efter. */
+  let authEpoch = 0
+  let lastRefreshFailAt = -Infinity
   const listeners = new Set<() => void>()
 
   const set = (next: DeviceState) => {
@@ -70,9 +77,10 @@ export function createDeviceAuth(deps: {
     timer = null
   }
 
-  async function poll(run: number, deviceCode: string, intervalS: number, expiresAt: number) {
+  async function poll(run: number, deviceCode: string, intervalS: number, expiresAt: number, scope: string) {
     timer = null
     if (run !== generation) return
+    if (scopeNow() !== scope) { cancel(); return }
     if (deps.now() >= expiresAt) {
       deps.log('enhetskod: gick ut utan godkännande')
       set({ ...state, phase: 'expired' })
@@ -80,6 +88,7 @@ export function createDeviceAuth(deps: {
     }
     const reply = await deps.oauth('token', { grant_type: DEVICE_GRANT, device_code: deviceCode, client_id: deps.clientId })
     if (run !== generation) return
+    if (scopeNow() !== scope) { cancel(); return }
     const token = tokenFrom(reply.data)
     if (token) {
       deps.writeToken(token)
@@ -97,7 +106,7 @@ export function createDeviceAuth(deps: {
     if (error === 'access_denied') { set({ ...state, phase: 'denied' }); return }
     // authorization_pending, slow_down eller ett nätverksfel: fortsätt polla.
     const nextInterval = error === 'slow_down' ? intervalS + 5 : intervalS
-    timer = deps.schedule(() => { void poll(run, deviceCode, nextInterval, expiresAt) }, nextInterval * 1000)
+    timer = deps.schedule(() => { void poll(run, deviceCode, nextInterval, expiresAt, scope) }, nextInterval * 1000)
   }
 
   async function start(): Promise<void> {
@@ -125,7 +134,8 @@ export function createDeviceAuth(deps: {
       verificationUriComplete: str(reply.data.verification_uri_complete) ?? `${verificationUri}?user_code=${encodeURIComponent(userCode)}`,
       expiresAt,
     })
-    timer = deps.schedule(() => { void poll(run, deviceCode, intervalS, expiresAt) }, intervalS * 1000)
+    const scope = scopeNow()
+    timer = deps.schedule(() => { void poll(run, deviceCode, intervalS, expiresAt, scope) }, intervalS * 1000)
   }
 
   function cancel(): void {
@@ -135,7 +145,11 @@ export function createDeviceAuth(deps: {
   }
 
   async function refresh(token: OauthToken): Promise<string | null> {
+    const scope = scopeNow()
+    const epoch = authEpoch
     const reply = await deps.oauth('token', { grant_type: 'refresh_token', refresh_token: token.refreshToken, client_id: deps.clientId })
+    // Frånkopplad eller annan profil under tiden: svaret hör inte hit längre.
+    if (epoch !== authEpoch || scopeNow() !== scope) return null
     const next = tokenFrom(reply.data, token.refreshToken)
     if (next) {
       deps.writeToken(next)
@@ -143,12 +157,22 @@ export function createDeviceAuth(deps: {
       return next.accessToken
     }
     if (str(reply.data.error) === 'invalid_grant') {
+      // Token synkas mellan enheter: har en annan enhet hunnit förnya är
+      // refresh-token roterad här också. Använd den i stället för att koppla
+      // från — en radering hade synkats tillbaka och kopplat från båda.
+      const stored = deps.readToken()
+      if (stored && stored.refreshToken !== token.refreshToken) {
+        deps.log('token: förnyad på en annan enhet — använder den')
+        return stored.accessToken
+      }
       deps.log('token: förnyelsen avvisades (invalid_grant) — kopplar från')
       deps.writeToken(null)
       return null
     }
-    // Nätverksfel eller annat: den gamla token gäller tills den faktiskt går ut.
-    deps.log(`token: förnyelsen misslyckades (HTTP ${reply.status}) — försöker igen senare`)
+    // Nätverksfel eller annat: den gamla token gäller tills den faktiskt går
+    // ut, och nästa försök väntar fem minuter — inte en förnyelse per anrop.
+    lastRefreshFailAt = deps.now()
+    deps.log(`token: förnyelsen misslyckades (HTTP ${reply.status}) — nytt försök om 5 min`)
     return deps.now() < token.expiresAt ? token.accessToken : null
   }
 
@@ -156,6 +180,9 @@ export function createDeviceAuth(deps: {
     const token = deps.readToken()
     if (!token) return null
     if (token.expiresAt - deps.now() > REFRESH_MARGIN_MS) return token.accessToken
+    if (deps.now() - lastRefreshFailAt < REFRESH_BACKOFF_MS) {
+      return deps.now() < token.expiresAt ? token.accessToken : null
+    }
     // En förnyelse i taget: refresh-token roteras, och två samtidiga hade
     // ogiltigförklarat varandra.
     refreshing ??= refresh(token).finally(() => { refreshing = null })
@@ -163,6 +190,7 @@ export function createDeviceAuth(deps: {
   }
 
   async function disconnect(): Promise<void> {
+    authEpoch += 1
     const token = deps.readToken()
     if (token) {
       await deps.oauth('revoke_token', { token: token.accessToken, client_id: deps.clientId }).catch(() => null)
