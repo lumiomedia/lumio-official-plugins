@@ -25,6 +25,8 @@ export function createMdblistApi(deps: {
   hasAuth?: () => boolean
   now: () => number
   log: (message: string) => void
+  /** Anropas med pausens slut när MDBList svarat 429 — statusen visar pausen. */
+  onPause?: (until: number) => void
 }): MdblistApi {
   let pausedUntil = 0
 
@@ -53,6 +55,7 @@ export function createMdblistApi(deps: {
       const retryAfter = typeof json?.retryAfter === 'number' ? json.retryAfter : null
       if (response.status === 429) {
         pausedUntil = deps.now() + (retryAfter ?? DEFAULT_PAUSE_S) * 1000
+        deps.onPause?.(pausedUntil)
         deps.log(`429 på ${method} ${path} — pausar MDBList i ${retryAfter ?? DEFAULT_PAUSE_S} s`)
       } else {
         deps.log(`${method} ${path}: HTTP ${response.status} ${json?.error ?? ''}`.trim())
@@ -73,15 +76,17 @@ export function createMdblistApi(deps: {
   async function getAllPages(path: string, query: Record<string, string | number> = {}) {
     const merged: Record<string, unknown[]> = {}
     let next: Record<string, string | number> = {}
+    let complete = false
     for (let page = 0; page < MAX_PAGES; page += 1) {
       const result: ApiResult<unknown> = await call<unknown>('GET', path, { query: { ...query, ...next } })
       if (!result.ok) return result
       const data = result.data
       if (Array.isArray(data)) {
         ;(merged.items ??= []).push(...data)
+        complete = true
         break
       }
-      if (!data || typeof data !== 'object') break
+      if (!data || typeof data !== 'object') { complete = true; break }
       for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
         if (key === 'pagination' || !Array.isArray(value)) continue
         ;(merged[key] ??= []).push(...value)
@@ -91,11 +96,17 @@ export function createMdblistApi(deps: {
         next = { cursor: pagination.next_cursor }
       } else if (pagination?.has_more) {
         const limit = pagination.limit ?? Number(query.limit ?? 0)
-        if (!limit) break
+        if (!limit) { complete = true; break }
         next = { offset: (pagination.offset ?? 0) + limit }
       } else {
+        complete = true
         break
       }
+    }
+    // En trunkerad lista hade sett ut som "borttaget på MDBList" för watchlist-mergen.
+    if (!complete) {
+      deps.log(`${path}: fler än ${MAX_PAGES} sidor — avbryter hellre än returnerar en halv lista`)
+      return { ok: false as const, status: 0, retryAfter: null, error: 'too many pages' }
     }
     return { ok: true as const, data: merged }
   }

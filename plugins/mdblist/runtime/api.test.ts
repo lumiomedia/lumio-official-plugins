@@ -79,4 +79,20 @@ describe('MDBList-klienten', () => {
     const { api } = setup([jsonResponse(200, { data: [{ id: 1 }, { id: 2 }] })])
     expect(await api.getAllPages('/lists/user')).toEqual({ ok: true, data: { items: [{ id: 1 }, { id: 2 }] } })
   })
+
+  it('Minor 4: sidtaket med has_more kvar är ett fel, inte en trunkerad lista', async () => {
+    const pages = Array.from({ length: 60 }, (_, i) =>
+      jsonResponse(200, { data: { movies: [{ a: i }], pagination: { offset: i, limit: 1, has_more: true } } }))
+    const { api } = setup(pages)
+    const result = await api.getAllPages('/watchlist/items', { limit: 1 })
+    expect(result.ok).toBe(false)
+  })
+
+  it('I10: en 429 meddelas så att statusen kan visa pausen', async () => {
+    const onPause = vi.fn()
+    const fetchImpl = vi.fn(async () => jsonResponse(429, { error: 'rate limited', retryAfter: 30 }))
+    const api = createMdblistApi({ fetchImpl: fetchImpl as unknown as typeof fetch, getAuth: async () => ({ apikey: 'k' }), now: () => 1_000, log: () => {}, onPause })
+    await api.call('POST', '/scrobble/start', { body: {} })
+    expect(onPause).toHaveBeenCalledWith(31_000)
+  })
 })
