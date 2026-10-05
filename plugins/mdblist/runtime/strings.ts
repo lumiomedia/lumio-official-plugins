@@ -3,6 +3,12 @@
 export const S = {
   pluginName: { en: 'MDBList', sv: 'MDBList' },
   listSourceLabel: { en: 'MDBList list', sv: 'MDBList-lista' },
+  groupMine: { en: 'My lists', sv: 'Mina listor' },
+  groupLiked: { en: 'Liked lists', sv: 'Gillade listor' },
+  groupTop: { en: 'Popular lists', sv: 'Populära listor' },
+  groupCurated: { en: 'Curated lists', sv: 'Kurerade listor' },
+  groupOfficial: { en: 'Official lists', sv: 'Officiella listor' },
+  myWatchlist: { en: 'My watchlist', sv: 'Min watchlist' },
   description: {
     en: 'Scrobble playback, sync watched titles and watchlists, and show MDBList lists as rows.',
     sv: 'Scrobbla uppspelning, synka sedda titlar och watchlist, och visa MDBList-listor som rader.',
@@ -31,6 +37,10 @@ export const S = {
   badgeBadKey: { en: 'LOGGED OUT', sv: 'UTLOGGAD' },
   badgeNotConnected: { en: 'NOT CONNECTED', sv: 'EJ ANSLUTEN' },
   connect: { en: 'Connect with MDBList', sv: 'Anslut med MDBList' },
+  onboardingHint: {
+    en: 'Scrobble playback and sync watched titles and your watchlist with MDBList. Lists from MDBList can become rows on Home.',
+    sv: 'Scrobbla uppspelning och synka sedda titlar och watchlist med MDBList. Listor från MDBList kan bli rader på startsidan.',
+  },
   disconnect: { en: 'Disconnect', sv: 'Koppla från' },
 
   // Enhetskoden

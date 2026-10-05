@@ -1,0 +1,10 @@
+{
+  "lists": [],
+  "pagination": {
+    "page": 1,
+    "limit": 3,
+    "offset": 0,
+    "total": 0,
+    "has_more": false
+  }
+}

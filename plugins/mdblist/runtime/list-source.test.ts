@@ -69,4 +69,36 @@ describe('listkällan', () => {
     expect(found).toEqual(expect.objectContaining({ id: '77', name: 'Mina' }))
     expect(source.describeList('77')?.name).toBe('Mina')
   })
+
+  it('kategorier: mina listor (med watchlisten), gillade, populära, kurerade och officiella', async () => {
+    const { source } = setup((path) => {
+      if (path === '/lists/user') return { ok: true, data: [{ id: 7, name: 'Star Wars TMDB', description: 'Testar en lista', items: 8 }] }
+      if (path === '/lists/liked') return { ok: true, data: { lists: [{ id: 9, name: 'Gillad', items: 3 }] } }
+      if (path === '/lists/top') return { ok: true, data: [{ id: 14, name: 'Topp', items: 42 }] }
+      if (path === '/lists/curated') return { ok: true, data: [{ id: 15, name: 'Kurerad', items: 5 }] }
+      if (path === '/lists/official') return { ok: true, data: [{ id: 63, name: 'Popular Movies & Shows', slug: 'popular', items: 200 }] }
+      return { ok: true, data: [] }
+    })
+    const lists = await source.listLists()
+    expect(lists.map((l) => [l.group?.id, l.id])).toEqual([
+      ['mine', 'watchlist'], ['mine', '7'], ['liked', '9'], ['top', '14'], ['curated', '15'], ['official', 'official:popular'],
+    ])
+    expect(source.describeList('7')).toEqual(expect.objectContaining({ name: 'Star Wars TMDB', description: 'Testar en lista' }))
+  })
+
+  it('en kategori som fallerar tar inte med sig de andra', async () => {
+    const { source } = setup((path) => path === '/lists/curated'
+      ? { ok: false, status: 500, retryAfter: null, error: 'x' }
+      : { ok: true, data: [] })
+    const lists = await source.listLists()
+    expect(lists.map((l) => l.id)).toEqual(['watchlist'])
+  })
+
+  it('watchlisten och officiella listor hämtas från rätt ställe', async () => {
+    const paths: string[] = []
+    const { source } = setup((path) => { paths.push(path); return { ok: true, data: { movies: [{ id: 603, title: 'M', mediatype: 'movie' }] } } })
+    expect((await source.loadList('watchlist')).map((x) => x.tmdbId)).toEqual(['603'])
+    await source.loadList('official:most-watched-week')
+    expect(paths).toEqual(['/watchlist/items', '/lists/official/most-watched-week/items'])
+  })
 })

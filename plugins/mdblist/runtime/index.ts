@@ -8,6 +8,7 @@ import {
   scrobbler, startBackground, status, syncNow,
 } from './host'
 import { buildTvRows } from './rows'
+import { MdblistOnboardingCard } from './onboarding-card'
 import { MdblistSettingsSection, MdblistSyncSection } from './settings-section'
 import { S } from './strings'
 
@@ -47,6 +48,8 @@ export const MdblistPlugin: LumioPlugin = {
   version: '0.1.0',
   description: S.description,
   preinstalled: true,
+  // Kortet i onboardingens Integrationer-steg — läses ur bunten före installationen.
+  onboarding: { Card: MdblistOnboardingCard },
 
   register(ctx) {
     ctx.registerAuthCapabilityProvider(authProvider)

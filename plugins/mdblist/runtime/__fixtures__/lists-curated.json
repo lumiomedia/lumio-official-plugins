@@ -1,0 +1,47 @@
+[
+  {
+    "id": 121077,
+    "user_id": "<scrubbed>",
+    "user_name": "<scrubbed>",
+    "user_avatar_url": "https://media.trakt.tv/images/users/004/176/526/avatars/large/cd2530d00c.jpg",
+    "name": "Psychological Thrillers",
+    "slug": "psychological-thrillers",
+    "description": null,
+    "mediatype": "",
+    "items": 199,
+    "likes": 87,
+    "private": false,
+    "dynamic": false,
+    "liked": false
+  },
+  {
+    "id": 143797,
+    "user_id": "<scrubbed>",
+    "user_name": "<scrubbed>",
+    "user_avatar_url": "https://secure.gravatar.com/avatar/61e79b578e41ade9e907f15e217ed5eb?d=https%3A%2F%2Fmedia.trakt.tv%2Fhotlink-ok%2Fplaceholders%2Fmedium%2Fzoidberg.png&r=pg&s=256",
+    "name": "Oscar Nominees for Best Picture",
+    "slug": "oscar-nominees-for-best-picture",
+    "description": null,
+    "mediatype": "",
+    "items": 624,
+    "likes": 79,
+    "private": false,
+    "dynamic": false,
+    "liked": false
+  },
+  {
+    "id": 155533,
+    "user_id": "<scrubbed>",
+    "user_name": "<scrubbed>",
+    "user_avatar_url": "https://media.trakt.tv/images/users/016/396/934/avatars/large/9a9c0f49a6.",
+    "name": "Movie Collections",
+    "slug": "movie-collections",
+    "description": null,
+    "mediatype": "",
+    "items": 298,
+    "likes": 64,
+    "private": false,
+    "dynamic": false,
+    "liked": false
+  }
+]

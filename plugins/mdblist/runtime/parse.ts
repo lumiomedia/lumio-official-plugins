@@ -89,7 +89,15 @@ export function parseWatchlist(pages: Record<string, unknown[]>): { shows: Remot
   return { shows, movies }
 }
 
-export type ListInfo = { id: string; name: string; itemCount: number | null; owner: string | null; dynamic: boolean }
+export type ListInfo = {
+  id: string
+  name: string
+  description: string | null
+  itemCount: number | null
+  owner: string | null
+  dynamic: boolean
+  group?: { id: string; label: { en: string; sv: string } }
+}
 
 export function parseLists(data: unknown): ListInfo[] {
   const list = Array.isArray(data) ? data : isObj(data) && Array.isArray(data.lists) ? data.lists : isObj(data) ? [data] : []
@@ -100,6 +108,7 @@ export function parseLists(data: unknown): ListInfo[] {
     return [{
       id,
       name,
+      description: str(entry.description),
       itemCount: typeof entry.items === 'number' ? entry.items : null,
       owner: str(entry.user_name) ?? str(entry.username),
       dynamic: entry.dynamic === true,

@@ -68,7 +68,7 @@ describe('parsning', () => {
 
   it('listmetadata ur /lists/{user}/{slug} (fixtur)', () => {
     expect(parseLists(listBySlug)).toEqual([
-      { id: '14', name: 'Top Watched Movies of The Week / >60', itemCount: 42, owner: '<scrubbed>', dynamic: true },
+      { id: '14', name: 'Top Watched Movies of The Week / >60', description: null, itemCount: 42, owner: '<scrubbed>', dynamic: true },
     ])
   })
 })

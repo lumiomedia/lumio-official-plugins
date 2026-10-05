@@ -3343,6 +3343,7 @@
           ipMdblistViaLogin: "Uses your MDBList login (Tracking services \u2192 Accounts) \u2014 no key needed.",
           ipMdblistLoginHint: "Easier: connect MDBList under Tracking services \u2192 Accounts, then no key is needed.",
           hpListChoose: "Choose a list",
+          hpListCategory: "Category",
           hpListPasteLabel: "Or paste a link or id",
           hpListLookup: "Find",
           hpListNotFound: "Couldn't find that list",
@@ -7176,6 +7177,7 @@
           ipMdblistViaLogin: "Anv\xE4nder din MDBList-inloggning (Sp\xE5rningstj\xE4nster \u2192 Konton) \u2014 ingen nyckel beh\xF6vs.",
           ipMdblistLoginHint: "Enklare: anslut MDBList under Sp\xE5rningstj\xE4nster \u2192 Konton, d\xE5 beh\xF6vs ingen nyckel.",
           hpListChoose: "V\xE4lj en lista",
+          hpListCategory: "Kategori",
           hpListPasteLabel: "Eller klistra in l\xE4nk eller id",
           hpListLookup: "H\xE4mta",
           hpListNotFound: "Hittade ingen s\xE5dan lista",
@@ -9352,6 +9354,50 @@
     }
   });
 
+  // lib/open-external.ts
+  async function openAndroidUrl(url) {
+    try {
+      const response = await fetch("/api/native-player", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cmd: "openUrl", url })
+      });
+      if (!response.ok) return false;
+      const payload = await response.json();
+      return payload?.ok === true;
+    } catch {
+      return false;
+    }
+  }
+  async function openExternalUrl(url) {
+    if (!url) return;
+    if (isAndroidTauri) {
+      if (await openAndroidUrl(url)) return;
+      console.warn("[open-external] Android intent failed, not falling back to window.open", url);
+      return;
+    }
+    if (isTauriEnv) {
+      try {
+        const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
+        await invoke6("open_external_url", { url });
+        return;
+      } catch {
+      }
+    }
+    if (typeof window !== "undefined") {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  }
+  var isAndroidTauri;
+  var init_open_external = __esm({
+    "lib/open-external.ts"() {
+      "use strict";
+      "use client";
+      init_tauri_mpv();
+      isAndroidTauri = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+    }
+  });
+
   // node_modules/qrcode.react/lib/esm/index.js
   function generatePath(modules, margin = 0) {
     const ops = [];
@@ -10485,16 +10531,6 @@
       init_watched_episodes();
       init_profile_storage_shim();
       FULL_SWEEP_INTERVAL_MS = 24 * 60 * 60 * 1e3;
-    }
-  });
-
-  // lib/open-external.ts
-  var isAndroidTauri;
-  var init_open_external = __esm({
-    "lib/open-external.ts"() {
-      "use client";
-      init_tauri_mpv();
-      isAndroidTauri = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
     }
   });
 
@@ -13664,7 +13700,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -15274,6 +15309,7 @@
       init_watchlist_merge();
       init_mutation_source();
       init_rating_sources();
+      init_open_external();
       init_esm();
       init_playback_start_gate();
       init_watchlist_auto_remove();
@@ -15819,6 +15855,7 @@
       return [{
         id,
         name,
+        description: str2(entry.description),
         itemCount: typeof entry.items === "number" ? entry.items : null,
         owner: str2(entry.user_name) ?? str2(entry.username),
         dynamic: entry.dynamic === true
@@ -15826,8 +15863,146 @@
     });
   }
 
+  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/strings.ts
+  var S = {
+    pluginName: { en: "MDBList", sv: "MDBList" },
+    listSourceLabel: { en: "MDBList list", sv: "MDBList-lista" },
+    groupMine: { en: "My lists", sv: "Mina listor" },
+    groupLiked: { en: "Liked lists", sv: "Gillade listor" },
+    groupTop: { en: "Popular lists", sv: "Popul\xE4ra listor" },
+    groupCurated: { en: "Curated lists", sv: "Kurerade listor" },
+    groupOfficial: { en: "Official lists", sv: "Officiella listor" },
+    myWatchlist: { en: "My watchlist", sv: "Min watchlist" },
+    description: {
+      en: "Scrobble playback, sync watched titles and watchlists, and show MDBList lists as rows.",
+      sv: "Scrobbla uppspelning, synka sedda titlar och watchlist, och visa MDBList-listor som rader."
+    },
+    // Anslutning (enhetskod — ingen API-nyckel; den hör till betygen)
+    connectedAs: { en: "Connected as {name}", sv: "Ansluten som {name}" },
+    connected: { en: "Connected", sv: "Ansluten" },
+    connectedBody: {
+      en: "Scrobble, watched titles and watchlist go through your account.",
+      sv: "Scrobble, sedda och watchlist g\xE5r via ditt konto."
+    },
+    badKey: { en: "Login no longer valid", sv: "Inloggningen g\xE4ller inte l\xE4ngre" },
+    badKeyBody: {
+      en: "MDBList no longer accepts the login. Sync is paused \u2014 connect again.",
+      sv: "MDBList godk\xE4nner inte l\xE4ngre inloggningen. Synken st\xE5r still \u2014 anslut igen."
+    },
+    notConnected: { en: "Not connected", sv: "Inte ansluten" },
+    notConnectedBody: {
+      en: "Connect your MDBList account to send playback, watched titles and watchlist there.",
+      sv: "Anslut ditt MDBList-konto f\xF6r att skicka uppspelning, sedda titlar och watchlist dit."
+    },
+    offline: { en: "Couldn't reach MDBList", sv: "Kunde inte n\xE5 MDBList" },
+    checking: { en: "Checking\u2026", sv: "Kontrollerar\u2026" },
+    badgeConnected: { en: "CONNECTED", sv: "ANSLUTEN" },
+    badgeBadKey: { en: "LOGGED OUT", sv: "UTLOGGAD" },
+    badgeNotConnected: { en: "NOT CONNECTED", sv: "EJ ANSLUTEN" },
+    connect: { en: "Connect with MDBList", sv: "Anslut med MDBList" },
+    onboardingHint: {
+      en: "Scrobble playback and sync watched titles and your watchlist with MDBList. Lists from MDBList can become rows on Home.",
+      sv: "Scrobbla uppspelning och synka sedda titlar och watchlist med MDBList. Listor fr\xE5n MDBList kan bli rader p\xE5 startsidan."
+    },
+    disconnect: { en: "Disconnect", sv: "Koppla fr\xE5n" },
+    // Enhetskoden
+    deviceTitle: { en: "Connect MDBList", sv: "Anslut MDBList" },
+    deviceIntro: {
+      en: "Scan the code with your phone, or go to the address and enter the code. Approve on mdblist.com.",
+      sv: "Skanna koden med telefonen, eller g\xE5 till adressen och skriv in koden. Godk\xE4nn p\xE5 mdblist.com."
+    },
+    deviceScanHint: {
+      en: "Scan, or go to mdblist.com/oauth/device",
+      sv: "Skanna, eller g\xE5 till mdblist.com/oauth/device"
+    },
+    deviceCode: { en: "Code", sv: "Kod" },
+    deviceWaiting: { en: "Waiting for approval \xB7 closes in {time}", sv: "V\xE4ntar p\xE5 godk\xE4nnande \xB7 st\xE4ngs om {time}" },
+    deviceChecking: { en: "Checking who approved\u2026", sv: "Fr\xE5gar MDBList vem som godk\xE4nde\u2026" },
+    deviceExpired: { en: "The code has expired", sv: "Koden har g\xE5tt ut" },
+    deviceDenied: { en: "The connection was declined", sv: "Anslutningen nekades" },
+    deviceError: { en: "Couldn't start the connection", sv: "Kunde inte starta anslutningen" },
+    deviceNewCode: { en: "Show a new code", sv: "Visa ny kod" },
+    cancel: { en: "Cancel", sv: "Avbryt" },
+    // API-nyckeln
+    // Vad som synkas
+    whatSyncs: { en: "WHAT SYNCS", sv: "VAD SOM SYNKAS" },
+    connectFirst: {
+      en: "Connect MDBList under Accounts to choose what syncs.",
+      sv: "Anslut MDBList under Konton f\xF6r att v\xE4lja vad som synkas."
+    },
+    scrobble: { en: "Scrobble playback", sv: "Scrobbla uppspelning" },
+    scrobbleHint: {
+      en: "Start, pause and stop are sent to MDBList while you watch \u2014 the same moments as for Trakt.",
+      sv: "Start, paus och stopp skickas till MDBList medan du tittar, samma tillf\xE4llen som f\xF6r Trakt."
+    },
+    scrobbleHintTv: { en: "Start, pause and stop are sent to MDBList.", sv: "Start, paus och stopp skickas till MDBList." },
+    syncWatched: { en: "Sync watched", sv: "Synka sedda" },
+    syncWatchedHint: {
+      en: "Watched movies and episodes are merged both ways. A title is only unmarked on MDBList when you unmark it here.",
+      sv: "Sedda filmer och avsnitt sl\xE5s ihop \xE5t b\xE5da h\xE5llen. En titel avmarkeras p\xE5 MDBList bara n\xE4r du avmarkerar den h\xE4r."
+    },
+    syncWatchedHintTv: { en: "Watched movies and episodes are merged both ways.", sv: "Sedda filmer och avsnitt sl\xE5s ihop \xE5t b\xE5da h\xE5llen." },
+    syncWatchlist: { en: "Sync watchlist", sv: "Synka watchlist" },
+    syncWatchlistHint: {
+      en: "Followed series and the movie watchlist are kept the same in Lumio and on MDBList.",
+      sv: "F\xF6ljda serier och filmwatchlisten h\xE5lls lika i Lumio och p\xE5 MDBList."
+    },
+    syncWatchlistHintTv: { en: "Followed series and the movie watchlist are kept the same.", sv: "F\xF6ljda serier och filmwatchlisten h\xE5lls lika." },
+    // Synkstatus
+    lastSync: { en: "Last synced {time} \xB7 {changes}", sv: "Senast synkad {time} \xB7 {changes}" },
+    changesNone: { en: "no changes", sv: "inga \xE4ndringar" },
+    changesOne: { en: "1 change", sv: "1 \xE4ndring" },
+    changesMany: { en: "{n} changes", sv: "{n} \xE4ndringar" },
+    neverSynced: { en: "Not synced yet", sv: "Inte synkad \xE4n" },
+    syncingLong: { en: "Syncing with MDBList\u2026", sv: "Synkar med MDBList\u2026" },
+    syncing: { en: "Syncing\u2026", sv: "Synkar\u2026" },
+    syncAuto: {
+      en: "Syncs on its own every 15 minutes and when you change a toggle.",
+      sv: "Synkar av sig sj\xE4lv var 15:e minut och n\xE4r du \xE4ndrar ett reglage."
+    },
+    syncNow: { en: "Sync now", sv: "Synka nu" },
+    pausedUntil: {
+      en: "Paused until {time} \u2014 MDBList limits how often apps may call it",
+      sv: "Pausat till {time}, MDBList begr\xE4nsar antalet anrop"
+    },
+    pausedBody: {
+      en: "Lumio sends nothing to MDBList until the pause is over. Scrobble and sync then resume on their own.",
+      sv: "Lumio skickar inget till MDBList f\xF6rr\xE4n pausen \xE4r slut. Scrobble och synk forts\xE4tter sedan av sig sj\xE4lva."
+    },
+    traktTip: {
+      en: "If Trakt sync is on at mdblist.com you don't need to turn on the same thing here \u2014 it gives double plays in Trakt.",
+      sv: "Har du Trakt-synk p\xE5slagen p\xE5 mdblist.com beh\xF6ver du inte sl\xE5 p\xE5 samma sak h\xE4r, det ger dubbla visningar i Trakt."
+    },
+    // TV
+    tvAccount: { en: "Account", sv: "Konto" },
+    tvIntro: {
+      en: "How Lumio and MDBList exchange playback, watched titles and watchlist.",
+      sv: "Hur Lumio och MDBList utbyter uppspelning, sedda titlar och watchlist."
+    },
+    tvConnectHint: {
+      en: "Shows a code and a QR code. Approve on mdblist.com.",
+      sv: "Visar en kod och en QR-kod. Godk\xE4nn p\xE5 mdblist.com."
+    },
+    tvConnectedHint: {
+      en: "Follows along to your other devices via sync.",
+      sv: "F\xF6ljer med till dina andra enheter via synken."
+    }
+  };
+  function fill2(text, values) {
+    return text.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ""));
+  }
+  function fillBoth(text, values) {
+    return { en: fill2(text.en, values), sv: fill2(text.sv, values) };
+  }
+
   // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/list-source.ts
   var FRESH_MS = 6 * 60 * 6e4;
+  var WATCHLIST_ID = "watchlist";
+  function itemsPath(id) {
+    if (id === WATCHLIST_ID) return "/watchlist/items";
+    if (id.startsWith("official:")) return `/lists/official/${id.slice("official:".length)}/items`;
+    return `/lists/${id}/items`;
+  }
   var LISTS_KEY = "mdblist_lists_cache";
   var itemsKey = (id) => `mdblist_list_items_${id}`;
   function createListSource(deps) {
@@ -15837,7 +16012,7 @@
       deps.writeJson(LISTS_KEY, [...known.values()]);
     };
     async function fetchItems(id) {
-      const result = await deps.api.getAllPages(`/lists/${id}/items`, { limit: 200 });
+      const result = await deps.api.getAllPages(itemsPath(id), { limit: 200 });
       if (!result.ok) {
         deps.log(`lista ${id}: ${result.error}`);
         return null;
@@ -15847,10 +16022,49 @@
       return items2;
     }
     return {
+      /**
+       * Listorna i väljarens kategorier, i MDBList-menyns ordning. En kategori
+       * som inte svarar faller bort; de andra visas ändå. Fem läsningar — bara
+       * när väljaren öppnas.
+       */
       async listLists() {
-        const result = await deps.api.call("GET", "/lists/user");
-        if (!result.ok) throw new Error(result.error);
-        const lists = parseLists(result.data);
+        const categories = [
+          { id: "mine", label: S.groupMine, path: "/lists/user" },
+          { id: "liked", label: S.groupLiked, path: "/lists/liked", query: { limit: 50 } },
+          { id: "top", label: S.groupTop, path: "/lists/top", query: { limit: 30 } },
+          { id: "curated", label: S.groupCurated, path: "/lists/curated", query: { limit: 30 } },
+          { id: "official", label: S.groupOfficial, path: "/lists/official" }
+        ];
+        const results = await Promise.all(categories.map(async (category) => {
+          const result = await deps.api.call("GET", category.path, category.query ? { query: category.query } : void 0);
+          if (!result.ok) {
+            deps.log(`listor (${category.id}): ${result.error}`);
+            return [];
+          }
+          const group = { id: category.id, label: category.label };
+          if (category.id === "official") {
+            const slugs = /* @__PURE__ */ new Map();
+            for (const entry of Array.isArray(result.data) ? result.data : []) {
+              const { id, slug } = entry ?? {};
+              if ((typeof id === "number" || typeof id === "string") && typeof slug === "string") slugs.set(String(id), slug);
+            }
+            return parseLists(result.data).flatMap((list) => {
+              const slug = slugs.get(list.id);
+              return slug ? [{ ...list, id: `official:${slug}`, group }] : [];
+            });
+          }
+          return parseLists(result.data).map((list) => ({ ...list, group }));
+        }));
+        const watchlist = {
+          id: WATCHLIST_ID,
+          name: S.myWatchlist[deps.lang?.() ?? "en"],
+          description: null,
+          itemCount: null,
+          owner: null,
+          dynamic: true,
+          group: { id: "mine", label: S.groupMine }
+        };
+        const lists = [watchlist, ...results.flat()];
         remember(lists);
         return lists;
       },
@@ -16277,7 +16491,7 @@
     onPause: (until) => status.set({ pausedUntil: until })
   });
   var scrobbler = createScrobbler({ api, prefs, now: () => Date.now(), log });
-  var listSource = createListSource({ api, readJson, writeJson, now: () => Date.now(), log });
+  var listSource = createListSource({ api, readJson, writeJson, now: () => Date.now(), log, lang: () => readStoredLang() });
   var isTraktConnected = () => Boolean(getTraktAuth());
   var syncHost = {
     getShows: () => getWatchlist(),
@@ -16397,128 +16611,6 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/strings.ts
-  var S = {
-    pluginName: { en: "MDBList", sv: "MDBList" },
-    listSourceLabel: { en: "MDBList list", sv: "MDBList-lista" },
-    description: {
-      en: "Scrobble playback, sync watched titles and watchlists, and show MDBList lists as rows.",
-      sv: "Scrobbla uppspelning, synka sedda titlar och watchlist, och visa MDBList-listor som rader."
-    },
-    // Anslutning (enhetskod — ingen API-nyckel; den hör till betygen)
-    connectedAs: { en: "Connected as {name}", sv: "Ansluten som {name}" },
-    connected: { en: "Connected", sv: "Ansluten" },
-    connectedBody: {
-      en: "Scrobble, watched titles and watchlist go through your account.",
-      sv: "Scrobble, sedda och watchlist g\xE5r via ditt konto."
-    },
-    badKey: { en: "Login no longer valid", sv: "Inloggningen g\xE4ller inte l\xE4ngre" },
-    badKeyBody: {
-      en: "MDBList no longer accepts the login. Sync is paused \u2014 connect again.",
-      sv: "MDBList godk\xE4nner inte l\xE4ngre inloggningen. Synken st\xE5r still \u2014 anslut igen."
-    },
-    notConnected: { en: "Not connected", sv: "Inte ansluten" },
-    notConnectedBody: {
-      en: "Connect your MDBList account to send playback, watched titles and watchlist there.",
-      sv: "Anslut ditt MDBList-konto f\xF6r att skicka uppspelning, sedda titlar och watchlist dit."
-    },
-    offline: { en: "Couldn't reach MDBList", sv: "Kunde inte n\xE5 MDBList" },
-    checking: { en: "Checking\u2026", sv: "Kontrollerar\u2026" },
-    badgeConnected: { en: "CONNECTED", sv: "ANSLUTEN" },
-    badgeBadKey: { en: "LOGGED OUT", sv: "UTLOGGAD" },
-    badgeNotConnected: { en: "NOT CONNECTED", sv: "EJ ANSLUTEN" },
-    connect: { en: "Connect with MDBList", sv: "Anslut med MDBList" },
-    disconnect: { en: "Disconnect", sv: "Koppla fr\xE5n" },
-    // Enhetskoden
-    deviceTitle: { en: "Connect MDBList", sv: "Anslut MDBList" },
-    deviceIntro: {
-      en: "Scan the code with your phone, or go to the address and enter the code. Approve on mdblist.com.",
-      sv: "Skanna koden med telefonen, eller g\xE5 till adressen och skriv in koden. Godk\xE4nn p\xE5 mdblist.com."
-    },
-    deviceScanHint: {
-      en: "Scan, or go to mdblist.com/oauth/device",
-      sv: "Skanna, eller g\xE5 till mdblist.com/oauth/device"
-    },
-    deviceCode: { en: "Code", sv: "Kod" },
-    deviceWaiting: { en: "Waiting for approval \xB7 closes in {time}", sv: "V\xE4ntar p\xE5 godk\xE4nnande \xB7 st\xE4ngs om {time}" },
-    deviceChecking: { en: "Checking who approved\u2026", sv: "Fr\xE5gar MDBList vem som godk\xE4nde\u2026" },
-    deviceExpired: { en: "The code has expired", sv: "Koden har g\xE5tt ut" },
-    deviceDenied: { en: "The connection was declined", sv: "Anslutningen nekades" },
-    deviceError: { en: "Couldn't start the connection", sv: "Kunde inte starta anslutningen" },
-    deviceNewCode: { en: "Show a new code", sv: "Visa ny kod" },
-    cancel: { en: "Cancel", sv: "Avbryt" },
-    // API-nyckeln
-    // Vad som synkas
-    whatSyncs: { en: "WHAT SYNCS", sv: "VAD SOM SYNKAS" },
-    connectFirst: {
-      en: "Connect MDBList under Accounts to choose what syncs.",
-      sv: "Anslut MDBList under Konton f\xF6r att v\xE4lja vad som synkas."
-    },
-    scrobble: { en: "Scrobble playback", sv: "Scrobbla uppspelning" },
-    scrobbleHint: {
-      en: "Start, pause and stop are sent to MDBList while you watch \u2014 the same moments as for Trakt.",
-      sv: "Start, paus och stopp skickas till MDBList medan du tittar, samma tillf\xE4llen som f\xF6r Trakt."
-    },
-    scrobbleHintTv: { en: "Start, pause and stop are sent to MDBList.", sv: "Start, paus och stopp skickas till MDBList." },
-    syncWatched: { en: "Sync watched", sv: "Synka sedda" },
-    syncWatchedHint: {
-      en: "Watched movies and episodes are merged both ways. A title is only unmarked on MDBList when you unmark it here.",
-      sv: "Sedda filmer och avsnitt sl\xE5s ihop \xE5t b\xE5da h\xE5llen. En titel avmarkeras p\xE5 MDBList bara n\xE4r du avmarkerar den h\xE4r."
-    },
-    syncWatchedHintTv: { en: "Watched movies and episodes are merged both ways.", sv: "Sedda filmer och avsnitt sl\xE5s ihop \xE5t b\xE5da h\xE5llen." },
-    syncWatchlist: { en: "Sync watchlist", sv: "Synka watchlist" },
-    syncWatchlistHint: {
-      en: "Followed series and the movie watchlist are kept the same in Lumio and on MDBList.",
-      sv: "F\xF6ljda serier och filmwatchlisten h\xE5lls lika i Lumio och p\xE5 MDBList."
-    },
-    syncWatchlistHintTv: { en: "Followed series and the movie watchlist are kept the same.", sv: "F\xF6ljda serier och filmwatchlisten h\xE5lls lika." },
-    // Synkstatus
-    lastSync: { en: "Last synced {time} \xB7 {changes}", sv: "Senast synkad {time} \xB7 {changes}" },
-    changesNone: { en: "no changes", sv: "inga \xE4ndringar" },
-    changesOne: { en: "1 change", sv: "1 \xE4ndring" },
-    changesMany: { en: "{n} changes", sv: "{n} \xE4ndringar" },
-    neverSynced: { en: "Not synced yet", sv: "Inte synkad \xE4n" },
-    syncingLong: { en: "Syncing with MDBList\u2026", sv: "Synkar med MDBList\u2026" },
-    syncing: { en: "Syncing\u2026", sv: "Synkar\u2026" },
-    syncAuto: {
-      en: "Syncs on its own every 15 minutes and when you change a toggle.",
-      sv: "Synkar av sig sj\xE4lv var 15:e minut och n\xE4r du \xE4ndrar ett reglage."
-    },
-    syncNow: { en: "Sync now", sv: "Synka nu" },
-    pausedUntil: {
-      en: "Paused until {time} \u2014 MDBList limits how often apps may call it",
-      sv: "Pausat till {time}, MDBList begr\xE4nsar antalet anrop"
-    },
-    pausedBody: {
-      en: "Lumio sends nothing to MDBList until the pause is over. Scrobble and sync then resume on their own.",
-      sv: "Lumio skickar inget till MDBList f\xF6rr\xE4n pausen \xE4r slut. Scrobble och synk forts\xE4tter sedan av sig sj\xE4lva."
-    },
-    traktTip: {
-      en: "If Trakt sync is on at mdblist.com you don't need to turn on the same thing here \u2014 it gives double plays in Trakt.",
-      sv: "Har du Trakt-synk p\xE5slagen p\xE5 mdblist.com beh\xF6ver du inte sl\xE5 p\xE5 samma sak h\xE4r, det ger dubbla visningar i Trakt."
-    },
-    // TV
-    tvAccount: { en: "Account", sv: "Konto" },
-    tvIntro: {
-      en: "How Lumio and MDBList exchange playback, watched titles and watchlist.",
-      sv: "Hur Lumio och MDBList utbyter uppspelning, sedda titlar och watchlist."
-    },
-    tvConnectHint: {
-      en: "Shows a code and a QR code. Approve on mdblist.com.",
-      sv: "Visar en kod och en QR-kod. Godk\xE4nn p\xE5 mdblist.com."
-    },
-    tvConnectedHint: {
-      en: "Follows along to your other devices via sync.",
-      sv: "F\xF6ljer med till dina andra enheter via synken."
-    }
-  };
-  function fill2(text, values) {
-    return text.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ""));
-  }
-  function fillBoth(text, values) {
-    return { en: fill2(text.en, values), sv: fill2(text.sv, values) };
-  }
-
   // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/rows.ts
   var clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   function countdown(msLeft) {
@@ -16612,6 +16704,10 @@
     if (view.traktConnected && (view.prefs.scrobble || view.prefs.watched)) rows.push({ t: "note", text: S.traktTip });
     return rows;
   }
+
+  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/onboarding-card.tsx
+  init_react_shim();
+  init_plugin_sdk();
 
   // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/settings-section.tsx
   init_react_shim();
@@ -16739,10 +16835,21 @@
         /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: TOKENS.textMute, maxWidth: "44ch" }, children: tx(S.deviceIntro) }),
         /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle }, children: tx(S.deviceCode) }),
         /* @__PURE__ */ jsx("div", { style: { fontFamily: monoFont, fontSize: 26, letterSpacing: ".12em", color: TOKENS.text }, children: flow.userCode }),
-        /* @__PURE__ */ jsxs("a", { href: flow.verificationUriComplete, target: "_blank", rel: "noreferrer", style: { color: TOKENS.accent, fontSize: 13 }, children: [
-          (flow.verificationUri ?? "https://mdblist.com/oauth/device/").replace(/^https?:\/\//, ""),
-          " \u2197"
-        ] }),
+        /* @__PURE__ */ jsxs(
+          "a",
+          {
+            href: flow.verificationUriComplete,
+            onClick: (e) => {
+              e.preventDefault();
+              void openExternalUrl(flow.verificationUriComplete ?? "");
+            },
+            style: { color: TOKENS.accent, fontSize: 13, cursor: "pointer" },
+            children: [
+              (flow.verificationUri ?? "https://mdblist.com/oauth/device/").replace(/^https?:\/\//, ""),
+              " \u2197"
+            ]
+          }
+        ),
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: TOKENS.textDim }, children: tx(fillBoth(S.deviceWaiting, { time: countdown(left) })) }),
           /* @__PURE__ */ jsx(PillBtn, { onClick: () => device.cancel(), children: tx(S.cancel) })
@@ -16766,6 +16873,69 @@
         /* @__PURE__ */ jsx("div", { style: { fontSize: 13, lineHeight: 1.5, color: "#8b8e99", maxWidth: "62ch", marginTop: 4 }, children: hint })
       ] }),
       /* @__PURE__ */ jsx(Switch, { checked, disabled, onChange })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/onboarding-card.tsx
+  init_jsx_runtime_shim();
+  function MdblistOnboardingCard({ init }) {
+    const { lang } = useLang();
+    const tx = (text) => resolvePluginText(text, lang);
+    useLive();
+    useEffect(() => {
+      if (hasAuth()) void checkConnection();
+    }, []);
+    const state = status.get();
+    const flow = device.state();
+    const connected = hasAuth() && state.connection !== "bad-key";
+    const busy = flow.phase === "waiting" || flow.phase === "checking";
+    const finished = flow.phase === "expired" || flow.phase === "denied" || flow.phase === "error";
+    return /* @__PURE__ */ jsxs("div", { className: "onb-panel", "data-size": "sm", children: [
+      /* @__PURE__ */ jsxs("div", { className: "onb-row", children: [
+        /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("p", { className: "onb-card-title", children: "MDBList" }),
+          /* @__PURE__ */ jsx("p", { className: "onb-hint", style: { marginTop: "calc(2 * var(--u))" }, children: tx(connected ? S.connectedBody : S.onboardingHint) })
+        ] }),
+        connected ? /* @__PURE__ */ jsx("p", { className: "onb-status", style: { color: "var(--onb-ok)", fontWeight: 500 }, children: tx(connectionTitle(state, true)) }) : /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: "onb-btn",
+            "data-size": "sm",
+            disabled: busy,
+            onClick: () => {
+              void device.start();
+            },
+            ...init && !busy ? { "data-init": "" } : {},
+            children: tx(busy ? S.checking : finished ? S.deviceNewCode : S.connect)
+          }
+        )
+      ] }),
+      !connected && flow.phase === "waiting" && flow.userCode ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: "calc(16 * var(--u))", alignItems: "center", flexWrap: "wrap", marginTop: "calc(12 * var(--u))" }, children: [
+        /* @__PURE__ */ jsx("div", { style: { background: "#f4f4f6", borderRadius: 10, padding: 10, lineHeight: 0 }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: flow.verificationUriComplete ?? "", size: 132 }) }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: "calc(6 * var(--u))", minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("p", { className: "onb-hint", children: tx(S.deviceIntro) }),
+          /* @__PURE__ */ jsx("p", { style: { fontFamily: monoFont, fontSize: "calc(26 * var(--u))", letterSpacing: ".12em", margin: 0 }, children: flow.userCode }),
+          /* @__PURE__ */ jsxs(
+            "a",
+            {
+              href: flow.verificationUriComplete,
+              onClick: (e) => {
+                e.preventDefault();
+                void openExternalUrl(flow.verificationUriComplete ?? "");
+              },
+              className: "onb-status",
+              style: { cursor: "pointer" },
+              children: [
+                (flow.verificationUri ?? "https://mdblist.com/oauth/device/").replace(/^https?:\/\//, ""),
+                " \u2197"
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsx("p", { className: "onb-small-note", children: tx(fillBoth(S.deviceWaiting, { time: countdown((flow.expiresAt ?? Date.now()) - Date.now()) })) })
+        ] })
+      ] }) : null,
+      !connected && finished ? /* @__PURE__ */ jsx("p", { className: "onb-status", style: { marginTop: "calc(8 * var(--u))", color: "var(--onb-danger)" }, children: tx(flow.phase === "expired" ? S.deviceExpired : flow.phase === "denied" ? S.deviceDenied : S.deviceError) }) : null
     ] });
   }
 
@@ -16806,6 +16976,8 @@
     version: "0.1.0",
     description: S.description,
     preinstalled: true,
+    // Kortet i onboardingens Integrationer-steg — läses ur bunten före installationen.
+    onboarding: { Card: MdblistOnboardingCard },
     register(ctx) {
       ctx.registerAuthCapabilityProvider(authProvider);
       ctx.registerBootstrap({ id: "mdblist-background", Mount: MdblistBootstrap });

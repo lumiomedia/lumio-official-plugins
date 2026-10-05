@@ -3,7 +3,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   Card, Icon, PillBtn, QRCodeSVG, Switch, TOKENS, eyebrowStyle, monoFont,
-  onProfileChanged, resolvePluginText, useLang,
+  onProfileChanged, openExternalUrl, resolvePluginText, useLang,
 } from '@/lib/plugin-sdk'
 import { device, disconnect, hasAuth, isTraktConnected, onTick, prefs, prefsSnapshot, status, syncNow } from './host'
 import type { PrefKind } from './prefs'
@@ -14,7 +14,7 @@ const MINT = '#3CD6A3'
 const RED = '#FF5A6A'
 
 /** Ritar om när status, enhetsflöde, nedräkning eller profil ändras — och när en paus tar slut. */
-function useLive(): () => void {
+export function useLive(): () => void {
   const [, rerender] = useState(0)
   const bump = () => rerender((n) => n + 1)
   useEffect(() => {
@@ -175,7 +175,12 @@ function DeviceFlow({ tx }: { tx: (text: Text) => string }) {
         <div style={{ fontSize: 12.5, color: TOKENS.textMute, maxWidth: '44ch' }}>{tx(S.deviceIntro)}</div>
         <div style={{ ...eyebrowStyle }}>{tx(S.deviceCode)}</div>
         <div style={{ fontFamily: monoFont, fontSize: 26, letterSpacing: '.12em', color: TOKENS.text }}>{flow.userCode}</div>
-        <a href={flow.verificationUriComplete} target="_blank" rel="noreferrer" style={{ color: TOKENS.accent, fontSize: 13 }}>
+        {/* Inte target=_blank: Tauri-webbvyn öppnar inga nya fönster. */}
+        <a
+          href={flow.verificationUriComplete}
+          onClick={(e) => { e.preventDefault(); void openExternalUrl(flow.verificationUriComplete ?? '') }}
+          style={{ color: TOKENS.accent, fontSize: 13, cursor: 'pointer' }}
+        >
           {(flow.verificationUri ?? 'https://mdblist.com/oauth/device/').replace(/^https?:\/\//, '')} ↗
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

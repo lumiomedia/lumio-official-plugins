@@ -3,7 +3,7 @@
 import {
   addToMovieWatchlist, addToWatchlist, getActiveProfileId, getMovieWatchlist,
   getScopedStorageItem, getTraktAuth, getWatchedEpisodes, getWatchedMovies, getWatchlist,
-  isUserMutation, onMovieWatchlistMutation, onProfileChanged,
+  isUserMutation, onMovieWatchlistMutation, onProfileChanged, readStoredLang,
   onWatchedEpisodeMutation, onWatchedMovieMutation, onWatchlistMutation, planWatchlistSync,
   removeFromMovieWatchlist, removeFromWatchlist, removeScopedStorageItem, setMovieWatched,
   setScopedStorageItem, setWatched, waitForStartIdle,
@@ -117,7 +117,7 @@ export const api = createMdblistApi({
 })
 
 export const scrobbler = createScrobbler({ api, prefs, now: () => Date.now(), log })
-export const listSource = createListSource({ api, readJson, writeJson, now: () => Date.now(), log })
+export const listSource = createListSource({ api, readJson, writeJson, now: () => Date.now(), log, lang: () => readStoredLang() })
 export const isTraktConnected = () => Boolean(getTraktAuth())
 
 const syncHost: SyncHost = {
