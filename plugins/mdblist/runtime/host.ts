@@ -1,9 +1,9 @@
 // runtime/host.ts — den ENDA modulen (utöver UI och index) som rör SDK:n.
 // Allt annat i pluginet tar sina beroenden som parametrar och testas utan värd.
 import {
-  addToMovieWatchlist, addToWatchlist, getActiveProfileId, getMdblistApiKey, getMovieWatchlist,
+  addToMovieWatchlist, addToWatchlist, getActiveProfileId, getMovieWatchlist,
   getScopedStorageItem, getTraktAuth, getWatchedEpisodes, getWatchedMovies, getWatchlist,
-  isUserMutation, onMovieWatchlistMutation, onProfileChanged, onRatingSourcesChanged,
+  isUserMutation, onMovieWatchlistMutation, onProfileChanged,
   onWatchedEpisodeMutation, onWatchedMovieMutation, onWatchlistMutation, planWatchlistSync,
   removeFromMovieWatchlist, removeFromWatchlist, removeScopedStorageItem, setMovieWatched,
   setScopedStorageItem, setWatched, waitForStartIdle,
@@ -53,11 +53,8 @@ export const prefs = createPrefs(
 )
 export const onPrefsChanged = (listener: () => void) => listen(PREFS_EVENT, listener)
 
-/** Ny token, frånkoppling eller ändrad API-nyckel — allt som byter vem vi är hos MDBList. */
-export const onAuthChanged = (listener: () => void) => {
-  const offs = [listen(AUTH_EVENT, listener), onRatingSourcesChanged(listener)]
-  return () => { for (const off of offs) off() }
-}
+/** Ny token eller frånkoppling — det som byter vem vi är hos MDBList. */
+export const onAuthChanged = (listener: () => void) => listen(AUTH_EVENT, listener)
 
 export const prefsSnapshot = (): Record<PrefKind, boolean> => ({
   scrobble: prefs.isOn('scrobble'), watched: prefs.isOn('watched'), watchlist: prefs.isOn('watchlist'),
@@ -104,16 +101,14 @@ export async function disconnect(): Promise<void> {
   await checkConnection()
 }
 
-export const hasApiKey = () => getMdblistApiKey().trim().length > 0
-export const hasAuth = () => device.hasToken() || hasApiKey()
+/** Bara inloggningen (enhetskod). API-nyckeln hör till betygen, inte till pluginet. */
+export const hasAuth = () => device.hasToken()
 
 export const api = createMdblistApi({
   fetchImpl: (...args) => fetch(...args),
   getAuth: async (): Promise<ApiAuth | null> => {
     const token = await device.getAccessToken()
-    if (token) return { accessToken: token }
-    const key = getMdblistApiKey().trim()
-    return key ? { apikey: key } : null
+    return token ? { accessToken: token } : null
   },
   hasAuth,
   now: () => Date.now(),

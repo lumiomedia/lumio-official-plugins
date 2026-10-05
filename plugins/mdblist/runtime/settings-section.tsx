@@ -2,10 +2,10 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import {
-  Card, Icon, PillBtn, QRCodeSVG, Switch, TOKENS, eyebrowStyle, getMdblistApiKey, inputStyle, monoFont,
-  onProfileChanged, onRatingSourcesChanged, resolvePluginText, setMdblistApiKey, useLang,
+  Card, Icon, PillBtn, QRCodeSVG, Switch, TOKENS, eyebrowStyle, monoFont,
+  onProfileChanged, resolvePluginText, useLang,
 } from '@/lib/plugin-sdk'
-import { checkConnection, device, disconnect, hasAuth, isTraktConnected, onTick, prefs, prefsSnapshot, status, syncNow } from './host'
+import { device, disconnect, hasAuth, isTraktConnected, onTick, prefs, prefsSnapshot, status, syncNow } from './host'
 import type { PrefKind } from './prefs'
 import { connectionTitle, countdown, syncText } from './rows'
 import { fillBoth, S, type Text } from './strings'
@@ -36,22 +36,6 @@ export function MdblistSettingsSection() {
   const { lang } = useLang()
   const tx = (text: Text) => resolvePluginText(text, lang)
   useLive()
-  const [key, setKey] = useState(() => getMdblistApiKey())
-  const [showKey, setShowKey] = useState(() => getMdblistApiKey().trim().length > 0 && !device.hasToken())
-
-  useEffect(() => {
-    const offs = [
-      onRatingSourcesChanged(() => setKey(getMdblistApiKey())),
-      // Profilbyte: fältet ska visa den nya profilens nyckel, och en osparad
-      // ändring får inte sparas in i den nya profilen vid blur.
-      onProfileChanged(() => {
-        setKey(getMdblistApiKey())
-        setShowKey(getMdblistApiKey().trim().length > 0 && !device.hasToken())
-      }),
-    ]
-    return () => { for (const off of offs) off() }
-  }, [])
-
   const state = status.get()
   const flow = device.state()
   const authed = hasAuth()
@@ -84,48 +68,15 @@ export function MdblistSettingsSection() {
 
           {flow.phase === 'idle' || flow.phase === 'done' ? (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {!device.hasToken() ? (
+              {!device.hasToken() || state.connection === 'bad-key' ? (
                 <PillBtn variant="accent" onClick={() => { void device.start() }}>{tx(S.connect)}</PillBtn>
-              ) : (
+              ) : null}
+              {device.hasToken() ? (
                 <PillBtn onClick={() => { void disconnect() }}>{tx(S.disconnect)}</PillBtn>
-              )}
-              {!device.hasToken() && !showKey ? (
-                <PillBtn onClick={() => setShowKey(true)}>{tx(S.useApiKey)}</PillBtn>
               ) : null}
             </div>
           ) : null}
 
-          {showKey && !device.hasToken() ? (
-            <div>
-              <div style={{ ...eyebrowStyle, marginBottom: 6 }}>{tx(S.apiKeyEyebrow)}</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  type="password"
-                  value={key}
-                  placeholder={tx(S.apiKeyPlaceholder)}
-                  onChange={(e) => setKey(e.target.value)}
-                  onBlur={() => { if (key.trim() !== getMdblistApiKey().trim()) setMdblistApiKey(key.trim()) }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { setMdblistApiKey(key.trim()); void checkConnection() } }}
-                  style={{
-                    ...inputStyle, flex: 1, minWidth: 0, fontFamily: monoFont, fontSize: 14,
-                    ...(state.connection === 'bad-key' ? { borderColor: 'rgba(255,90,106,.5)' } : null),
-                  }}
-                />
-                <PillBtn
-                  onClick={() => { setMdblistApiKey(key.trim()); void checkConnection() }}
-                  disabled={state.connection === 'checking'}
-                >
-                  {tx(state.connection === 'checking' ? S.checking : S.check)}
-                </PillBtn>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 8, fontSize: 12.5, color: TOKENS.textMute }}>
-                <span>{tx(S.keyHint)}</span>
-                <a href="https://mdblist.com/preferences/" target="_blank" rel="noreferrer" style={{ color: TOKENS.accent, whiteSpace: 'nowrap' }}>
-                  {tx(S.getKey)}
-                </a>
-              </div>
-            </div>
-          ) : null}
         </div>
       </Card>
 

@@ -7,6 +7,6 @@ Gör MDBList till Lumios tracker, bredvid eller i stället för Trakt.
 - Visar dina MDBList-listor, eller vilken publik lista som helst, som rader på startsidan.
 
 Anslut med "Anslut med MDBList": en kod och en QR-kod visas, och du godkänner
-på mdblist.com från telefonen eller datorn. Det fungerar likadant på TV:n.
-Har du redan en API-nyckel från mdblist.com (Preferences → API key) går den
-också att använda. Det är samma nyckel som MDBList-betygen använder.
+på mdblist.com från telefonen eller datorn — likadant på TV:n. Ingen API-nyckel
+behövs. Inloggningen gör också att MDBList-betygen på detaljsidan fungerar
+utan nyckel.

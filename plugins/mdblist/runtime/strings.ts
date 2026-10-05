@@ -8,17 +8,17 @@ export const S = {
     sv: 'Scrobbla uppspelning, synka sedda titlar och watchlist, och visa MDBList-listor som rader.',
   },
 
-  // Anslutning
+  // Anslutning (enhetskod — ingen API-nyckel; den hör till betygen)
   connectedAs: { en: 'Connected as {name}', sv: 'Ansluten som {name}' },
   connected: { en: 'Connected', sv: 'Ansluten' },
   connectedBody: {
     en: 'Scrobble, watched titles and watchlist go through your account.',
     sv: 'Scrobble, sedda och watchlist går via ditt konto.',
   },
-  badKey: { en: 'Wrong key', sv: 'Fel nyckel' },
+  badKey: { en: 'Login no longer valid', sv: 'Inloggningen gäller inte längre' },
   badKeyBody: {
-    en: "MDBList didn't accept the key. Sync is paused until it's fixed. The key is never removed, since the ratings source uses it too.",
-    sv: 'MDBList godkände inte nyckeln. Synken står still tills den är rättad. Nyckeln tas inte bort, eftersom betygskällan använder samma.',
+    en: "MDBList no longer accepts the login. Sync is paused — connect again.",
+    sv: 'MDBList godkänner inte längre inloggningen. Synken står still — anslut igen.',
   },
   notConnected: { en: 'Not connected', sv: 'Inte ansluten' },
   notConnectedBody: {
@@ -28,11 +28,10 @@ export const S = {
   offline: { en: "Couldn't reach MDBList", sv: 'Kunde inte nå MDBList' },
   checking: { en: 'Checking…', sv: 'Kontrollerar…' },
   badgeConnected: { en: 'CONNECTED', sv: 'ANSLUTEN' },
-  badgeBadKey: { en: 'WRONG KEY', sv: 'FEL NYCKEL' },
+  badgeBadKey: { en: 'LOGGED OUT', sv: 'UTLOGGAD' },
   badgeNotConnected: { en: 'NOT CONNECTED', sv: 'EJ ANSLUTEN' },
   connect: { en: 'Connect with MDBList', sv: 'Anslut med MDBList' },
   disconnect: { en: 'Disconnect', sv: 'Koppla från' },
-  useApiKey: { en: 'Use an API key instead', sv: 'Använd API-nyckel i stället' },
 
   // Enhetskoden
   deviceTitle: { en: 'Connect MDBList', sv: 'Anslut MDBList' },
@@ -54,15 +53,6 @@ export const S = {
   cancel: { en: 'Cancel', sv: 'Avbryt' },
 
   // API-nyckeln
-  apiKey: { en: 'API key', sv: 'API-nyckel' },
-  apiKeyEyebrow: { en: 'API KEY', sv: 'API-NYCKEL' },
-  apiKeyPlaceholder: { en: 'Paste the key from mdblist.com', sv: 'Klistra in nyckeln från mdblist.com' },
-  check: { en: 'Check', sv: 'Kontrollera' },
-  getKey: { en: 'Get a key on mdblist.com ↗', sv: 'Hämta nyckel på mdblist.com ↗' },
-  keyHint: {
-    en: 'The same key as the ratings source in Library & metadata. Changing it here changes it there too.',
-    sv: 'Samma nyckel som betygskällan i Bibliotek & metadata. Ändrar du den här ändras den där också.',
-  },
 
   // Vad som synkas
   whatSyncs: { en: 'WHAT SYNCS', sv: 'VAD SOM SYNKAS' },

@@ -3337,9 +3337,11 @@
           upgradeSubtitleWhenBetter: "Upgrade subtitles when better ones load",
           upgradeSubtitleWhenBetterDesc: "Swap to a higher-priority subtitle if one arrives after playback starts. Manual picks are never overridden.",
           ipDescRpdb: "Posters with the rating burned in, on every card. Free key at ratingposterdb.com.",
-          ipDescMdblist: "Aggregated scores from Trakt, Letterboxd and more on the details page. Free key at mdblist.com.",
+          ipDescMdblist: "Aggregated scores from Trakt, Letterboxd and more on the details page. Uses your MDBList login, or a free key.",
           ipRpdbHint: "With a key set, card posters swap to RPDB rated posters (IMDb-keyed).",
           ipMdblistHint: "Shown as extra badges next to the year on the details page.",
+          ipMdblistViaLogin: "Uses your MDBList login (Tracking services \u2192 Accounts) \u2014 no key needed.",
+          ipMdblistLoginHint: "Easier: connect MDBList under Tracking services \u2192 Accounts, then no key is needed.",
           hpListChoose: "Choose a list",
           hpListPasteLabel: "Or paste a link or id",
           hpListLookup: "Find",
@@ -7168,9 +7170,11 @@
           upgradeSubtitleWhenBetter: "Uppgradera undertext n\xE4r b\xE4ttre laddas",
           upgradeSubtitleWhenBetterDesc: "Byt till en h\xF6gre prioriterad undertext om en dyker upp efter uppspelningsstart. Manuella val skrivs aldrig \xF6ver.",
           ipDescRpdb: "Posters med betyget inbr\xE4nt, p\xE5 varje kort. Gratis nyckel p\xE5 ratingposterdb.com.",
-          ipDescMdblist: "Aggregerade betyg fr\xE5n Trakt, Letterboxd m.fl. p\xE5 detaljsidan. Gratis nyckel p\xE5 mdblist.com.",
+          ipDescMdblist: "Aggregerade betyg fr\xE5n Trakt, Letterboxd m.fl. p\xE5 detaljsidan. Anv\xE4nder din MDBList-inloggning, eller en gratis nyckel.",
           ipRpdbHint: "Med nyckel satt byts kortens posters till RPDB:s betygsposters (IMDb-nycklade).",
           ipMdblistHint: "Visas som extra badges bredvid \xE5rtalet p\xE5 detaljsidan.",
+          ipMdblistViaLogin: "Anv\xE4nder din MDBList-inloggning (Sp\xE5rningstj\xE4nster \u2192 Konton) \u2014 ingen nyckel beh\xF6vs.",
+          ipMdblistLoginHint: "Enklare: anslut MDBList under Sp\xE5rningstj\xE4nster \u2192 Konton, d\xE5 beh\xF6vs ingen nyckel.",
           hpListChoose: "V\xE4lj en lista",
           hpListPasteLabel: "Eller klistra in l\xE4nk eller id",
           hpListLookup: "H\xE4mta",
@@ -9340,29 +9344,11 @@
   });
 
   // lib/rating-sources.ts
-  function getMdblistApiKey() {
-    if (typeof window === "undefined") return "";
-    return getScopedStorageItem(KEY_MDBLIST) ?? "";
-  }
-  function setMdblistApiKey(value) {
-    if (value) setScopedStorageItem(KEY_MDBLIST, value);
-    else removeScopedStorageItem(KEY_MDBLIST);
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT4));
-  }
-  function onRatingSourcesChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(EVENT4, listener);
-    return () => window.removeEventListener(EVENT4, listener);
-  }
-  var KEY_MDBLIST, EVENT4;
   var init_rating_sources = __esm({
     "lib/rating-sources.ts"() {
       "use strict";
       "use client";
       init_profile_storage_shim();
-      KEY_MDBLIST = "mdblist_api_key";
-      EVENT4 = "lumio-rating-sources-changed";
     }
   });
 
@@ -13154,18 +13140,18 @@
   });
 
   // lib/video-progress.ts
-  var EVENT5, HISTORY_EVENT;
+  var EVENT4, HISTORY_EVENT;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
       init_profile_storage_shim();
       init_watched_episodes();
       init_playback_availability();
-      EVENT5 = "lumio-stream-progress-changed";
+      EVENT4 = "lumio-stream-progress-changed";
       if (typeof window !== "undefined") {
         void Promise.resolve().then(() => (init_plugin_registry(), plugin_registry_exports)).then(({ subscribePluginRegistry: subscribePluginRegistry2 }) => {
           subscribePluginRegistry2(() => {
-            window.dispatchEvent(new CustomEvent(EVENT5));
+            window.dispatchEvent(new CustomEvent(EVENT4));
             window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
           });
         }).catch(() => {
@@ -16236,12 +16222,7 @@
     () => emit3(PREFS_EVENT)
   );
   var onPrefsChanged = (listener) => listen3(PREFS_EVENT, listener);
-  var onAuthChanged = (listener) => {
-    const offs = [listen3(AUTH_EVENT, listener), onRatingSourcesChanged(listener)];
-    return () => {
-      for (const off of offs) off();
-    };
-  };
+  var onAuthChanged = (listener) => listen3(AUTH_EVENT, listener);
   var prefsSnapshot = () => ({
     scrobble: prefs.isOn("scrobble"),
     watched: prefs.isOn("watched"),
@@ -16283,15 +16264,12 @@
     removeScopedStorageItem(SNAPSHOT_KEY);
     await checkConnection();
   }
-  var hasApiKey = () => getMdblistApiKey().trim().length > 0;
-  var hasAuth = () => device.hasToken() || hasApiKey();
+  var hasAuth = () => device.hasToken();
   var api = createMdblistApi({
     fetchImpl: (...args) => fetch(...args),
     getAuth: async () => {
       const token = await device.getAccessToken();
-      if (token) return { accessToken: token };
-      const key = getMdblistApiKey().trim();
-      return key ? { apikey: key } : null;
+      return token ? { accessToken: token } : null;
     },
     hasAuth,
     now: () => Date.now(),
@@ -16427,17 +16405,17 @@
       en: "Scrobble playback, sync watched titles and watchlists, and show MDBList lists as rows.",
       sv: "Scrobbla uppspelning, synka sedda titlar och watchlist, och visa MDBList-listor som rader."
     },
-    // Anslutning
+    // Anslutning (enhetskod — ingen API-nyckel; den hör till betygen)
     connectedAs: { en: "Connected as {name}", sv: "Ansluten som {name}" },
     connected: { en: "Connected", sv: "Ansluten" },
     connectedBody: {
       en: "Scrobble, watched titles and watchlist go through your account.",
       sv: "Scrobble, sedda och watchlist g\xE5r via ditt konto."
     },
-    badKey: { en: "Wrong key", sv: "Fel nyckel" },
+    badKey: { en: "Login no longer valid", sv: "Inloggningen g\xE4ller inte l\xE4ngre" },
     badKeyBody: {
-      en: "MDBList didn't accept the key. Sync is paused until it's fixed. The key is never removed, since the ratings source uses it too.",
-      sv: "MDBList godk\xE4nde inte nyckeln. Synken st\xE5r still tills den \xE4r r\xE4ttad. Nyckeln tas inte bort, eftersom betygsk\xE4llan anv\xE4nder samma."
+      en: "MDBList no longer accepts the login. Sync is paused \u2014 connect again.",
+      sv: "MDBList godk\xE4nner inte l\xE4ngre inloggningen. Synken st\xE5r still \u2014 anslut igen."
     },
     notConnected: { en: "Not connected", sv: "Inte ansluten" },
     notConnectedBody: {
@@ -16447,11 +16425,10 @@
     offline: { en: "Couldn't reach MDBList", sv: "Kunde inte n\xE5 MDBList" },
     checking: { en: "Checking\u2026", sv: "Kontrollerar\u2026" },
     badgeConnected: { en: "CONNECTED", sv: "ANSLUTEN" },
-    badgeBadKey: { en: "WRONG KEY", sv: "FEL NYCKEL" },
+    badgeBadKey: { en: "LOGGED OUT", sv: "UTLOGGAD" },
     badgeNotConnected: { en: "NOT CONNECTED", sv: "EJ ANSLUTEN" },
     connect: { en: "Connect with MDBList", sv: "Anslut med MDBList" },
     disconnect: { en: "Disconnect", sv: "Koppla fr\xE5n" },
-    useApiKey: { en: "Use an API key instead", sv: "Anv\xE4nd API-nyckel i st\xE4llet" },
     // Enhetskoden
     deviceTitle: { en: "Connect MDBList", sv: "Anslut MDBList" },
     deviceIntro: {
@@ -16471,15 +16448,6 @@
     deviceNewCode: { en: "Show a new code", sv: "Visa ny kod" },
     cancel: { en: "Cancel", sv: "Avbryt" },
     // API-nyckeln
-    apiKey: { en: "API key", sv: "API-nyckel" },
-    apiKeyEyebrow: { en: "API KEY", sv: "API-NYCKEL" },
-    apiKeyPlaceholder: { en: "Paste the key from mdblist.com", sv: "Klistra in nyckeln fr\xE5n mdblist.com" },
-    check: { en: "Check", sv: "Kontrollera" },
-    getKey: { en: "Get a key on mdblist.com \u2197", sv: "H\xE4mta nyckel p\xE5 mdblist.com \u2197" },
-    keyHint: {
-      en: "The same key as the ratings source in Library & metadata. Changing it here changes it there too.",
-      sv: "Samma nyckel som betygsk\xE4llan i Bibliotek & metadata. \xC4ndrar du den h\xE4r \xE4ndras den d\xE4r ocks\xE5."
-    },
     // Vad som synkas
     whatSyncs: { en: "WHAT SYNCS", sv: "VAD SOM SYNKAS" },
     connectFirst: {
@@ -16673,22 +16641,6 @@
     const { lang } = useLang();
     const tx = (text) => resolvePluginText(text, lang);
     useLive();
-    const [key, setKey] = useState(() => getMdblistApiKey());
-    const [showKey, setShowKey] = useState(() => getMdblistApiKey().trim().length > 0 && !device.hasToken());
-    useEffect(() => {
-      const offs = [
-        onRatingSourcesChanged(() => setKey(getMdblistApiKey())),
-        // Profilbyte: fältet ska visa den nya profilens nyckel, och en osparad
-        // ändring får inte sparas in i den nya profilen vid blur.
-        onProfileChanged(() => {
-          setKey(getMdblistApiKey());
-          setShowKey(getMdblistApiKey().trim().length > 0 && !device.hasToken());
-        })
-      ];
-      return () => {
-        for (const off of offs) off();
-      };
-    }, []);
     const state = status.get();
     const flow = device.state();
     const authed = hasAuth();
@@ -16708,58 +16660,12 @@
       ] }),
       /* @__PURE__ */ jsx(DeviceFlow, { tx }),
       flow.phase === "idle" || flow.phase === "done" ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" }, children: [
-        !device.hasToken() ? /* @__PURE__ */ jsx(PillBtn, { variant: "accent", onClick: () => {
+        !device.hasToken() || state.connection === "bad-key" ? /* @__PURE__ */ jsx(PillBtn, { variant: "accent", onClick: () => {
           void device.start();
-        }, children: tx(S.connect) }) : /* @__PURE__ */ jsx(PillBtn, { onClick: () => {
+        }, children: tx(S.connect) }) : null,
+        device.hasToken() ? /* @__PURE__ */ jsx(PillBtn, { onClick: () => {
           void disconnect();
-        }, children: tx(S.disconnect) }),
-        !device.hasToken() && !showKey ? /* @__PURE__ */ jsx(PillBtn, { onClick: () => setShowKey(true), children: tx(S.useApiKey) }) : null
-      ] }) : null,
-      showKey && !device.hasToken() ? /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: tx(S.apiKeyEyebrow) }),
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              type: "password",
-              value: key,
-              placeholder: tx(S.apiKeyPlaceholder),
-              onChange: (e) => setKey(e.target.value),
-              onBlur: () => {
-                if (key.trim() !== getMdblistApiKey().trim()) setMdblistApiKey(key.trim());
-              },
-              onKeyDown: (e) => {
-                if (e.key === "Enter") {
-                  setMdblistApiKey(key.trim());
-                  void checkConnection();
-                }
-              },
-              style: {
-                ...inputStyle,
-                flex: 1,
-                minWidth: 0,
-                fontFamily: monoFont,
-                fontSize: 14,
-                ...state.connection === "bad-key" ? { borderColor: "rgba(255,90,106,.5)" } : null
-              }
-            }
-          ),
-          /* @__PURE__ */ jsx(
-            PillBtn,
-            {
-              onClick: () => {
-                setMdblistApiKey(key.trim());
-                void checkConnection();
-              },
-              disabled: state.connection === "checking",
-              children: tx(state.connection === "checking" ? S.checking : S.check)
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", gap: 16, marginTop: 8, fontSize: 12.5, color: TOKENS.textMute }, children: [
-          /* @__PURE__ */ jsx("span", { children: tx(S.keyHint) }),
-          /* @__PURE__ */ jsx("a", { href: "https://mdblist.com/preferences/", target: "_blank", rel: "noreferrer", style: { color: TOKENS.accent, whiteSpace: "nowrap" }, children: tx(S.getKey) })
-        ] })
+        }, children: tx(S.disconnect) }) : null
       ] }) : null
     ] }) }) });
   }
