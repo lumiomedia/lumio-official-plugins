@@ -3,9 +3,9 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   Card, Icon, PillBtn, QRCodeSVG, Switch, TOKENS, eyebrowStyle, getMdblistApiKey, inputStyle, monoFont,
-  onRatingSourcesChanged, resolvePluginText, setMdblistApiKey, useLang,
+  onProfileChanged, onRatingSourcesChanged, resolvePluginText, setMdblistApiKey, useLang,
 } from '@/lib/plugin-sdk'
-import { checkConnection, device, hasAuth, isTraktConnected, onTick, prefs, prefsSnapshot, status, syncNow } from './host'
+import { checkConnection, device, disconnect, hasAuth, isTraktConnected, onTick, prefs, prefsSnapshot, status, syncNow } from './host'
 import type { PrefKind } from './prefs'
 import { connectionTitle, countdown, syncText } from './rows'
 import { fillBoth, S, type Text } from './strings'
@@ -23,9 +23,27 @@ export function MdblistSettingsSection() {
   const [showKey, setShowKey] = useState(() => getMdblistApiKey().trim().length > 0 && !device.hasToken())
 
   useEffect(() => {
-    const offs = [status.subscribe(bump), device.subscribe(bump), onTick(bump), onRatingSourcesChanged(() => setKey(getMdblistApiKey()))]
+    const offs = [
+      status.subscribe(bump), device.subscribe(bump), onTick(bump),
+      onRatingSourcesChanged(() => setKey(getMdblistApiKey())),
+      // Profilbyte: fältet ska visa den nya profilens nyckel, och en osparad
+      // ändring får inte sparas in i den nya profilen vid blur.
+      onProfileChanged(() => {
+        setKey(getMdblistApiKey())
+        setShowKey(getMdblistApiKey().trim().length > 0 && !device.hasToken())
+      }),
+    ]
     return () => { for (const off of offs) off() }
   }, [])
+
+  // Pausrutan försvinner av sig själv när pausen är slut.
+  const pausedUntil = status.get().pausedUntil
+  useEffect(() => {
+    const left = pausedUntil - Date.now()
+    if (left <= 0) return
+    const timer = window.setTimeout(bump, left + 50)
+    return () => window.clearTimeout(timer)
+  }, [pausedUntil])
 
   const state = status.get()
   const flow = device.state()
@@ -70,7 +88,7 @@ export function MdblistSettingsSection() {
               {!device.hasToken() ? (
                 <PillBtn variant="accent" onClick={() => { void device.start() }}>{tx(S.connect)}</PillBtn>
               ) : (
-                <PillBtn onClick={() => { void device.disconnect().then(() => checkConnection()) }}>{tx(S.disconnect)}</PillBtn>
+                <PillBtn onClick={() => { void disconnect() }}>{tx(S.disconnect)}</PillBtn>
               )}
               {!device.hasToken() && !showKey ? (
                 <PillBtn onClick={() => setShowKey(true)}>{tx(S.useApiKey)}</PillBtn>
@@ -87,7 +105,7 @@ export function MdblistSettingsSection() {
                   value={key}
                   placeholder={tx(S.apiKeyPlaceholder)}
                   onChange={(e) => setKey(e.target.value)}
-                  onBlur={() => setMdblistApiKey(key.trim())}
+                  onBlur={() => { if (key.trim() !== getMdblistApiKey().trim()) setMdblistApiKey(key.trim()) }}
                   onKeyDown={(e) => { if (e.key === 'Enter') { setMdblistApiKey(key.trim()); void checkConnection() } }}
                   style={{
                     ...inputStyle, flex: 1, minWidth: 0, fontFamily: monoFont, fontSize: 14,
@@ -123,7 +141,7 @@ export function MdblistSettingsSection() {
         </div>
       </div>
 
-      {ok && paused ? (
+      {connected && paused ? (
         <div style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${TOKENS.warn}`, background: 'rgba(243,201,105,.08)' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: TOKENS.warn }}>{tx(syncText(state, Date.now()))}</div>
           <div style={{ fontSize: 12, lineHeight: 1.5, color: TOKENS.textDim, marginTop: 2 }}>{tx(S.pausedBody)}</div>

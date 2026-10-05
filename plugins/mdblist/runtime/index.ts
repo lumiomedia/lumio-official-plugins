@@ -4,7 +4,7 @@ import {
   type AuthCapabilityProvider, type AuthCapabilityStatus, type LumioPlugin,
 } from '@/lib/plugin-sdk'
 import {
-  checkConnection, device, hasAuth, isTraktConnected, listSource, onAuthChanged, onTick, prefs, prefsSnapshot,
+  device, disconnect, hasAuth, isTraktConnected, listSource, onAuthChanged, onTick, prefs, prefsSnapshot,
   scrobbler, startBackground, status, syncNow,
 } from './host'
 import { buildTvRows } from './rows'
@@ -25,8 +25,7 @@ const authProvider: AuthCapabilityProvider = {
   label: S.pluginName,
   getStatus,
   async disconnect() {
-    await device.disconnect()
-    await checkConnection()
+    await disconnect()
   },
   async trySilentReconnect() {
     return hasAuth() ? 'success' : 'needs_user_action'
@@ -74,7 +73,7 @@ export const MdblistPlugin: LumioPlugin = {
           syncNow: () => { void syncNow({ pushWatched: true, reason: 'Synka nu (TV)' }) },
           connect: () => { void device.start() },
           cancelConnect: () => device.cancel(),
-          disconnect: () => { void device.disconnect().then(() => checkConnection()) },
+          disconnect: () => { void disconnect() },
         },
       ),
       subscribe: (listener) => {

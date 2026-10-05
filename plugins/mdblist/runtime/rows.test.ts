@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { buildTvRows, type TvView } from './rows'
 
 const base: TvView = {
-  status: { connection: 'ok', username: 'jerry', supporter: false, lastSyncAt: null, lastChanges: 0, pausedUntil: 0, syncing: false },
+  status: { connection: 'ok', username: 'jerry', supporter: false, accountKey: 'id:1', lastSyncAt: null, lastChanges: 0, pausedUntil: 0, syncing: false },
   prefs: { scrobble: true, watched: false, watchlist: true },
   hasAuth: true,
   viaOauth: true,

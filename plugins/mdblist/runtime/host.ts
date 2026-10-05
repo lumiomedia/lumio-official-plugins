@@ -1,7 +1,7 @@
 // runtime/host.ts — den ENDA modulen (utöver UI och index) som rör SDK:n.
 // Allt annat i pluginet tar sina beroenden som parametrar och testas utan värd.
 import {
-  addToMovieWatchlist, addToWatchlist, getMdblistApiKey, getMovieWatchlist,
+  addToMovieWatchlist, addToWatchlist, getActiveProfileId, getMdblistApiKey, getMovieWatchlist,
   getScopedStorageItem, getTraktAuth, getWatchedEpisodes, getWatchedMovies, getWatchlist,
   isUserMutation, onMovieWatchlistMutation, onProfileChanged, onRatingSourcesChanged,
   onWatchedEpisodeMutation, onWatchedMovieMutation, onWatchlistMutation, planWatchlistSync,
@@ -16,7 +16,7 @@ import { parseUser } from './parse'
 import { createPrefs, type PrefKind } from './prefs'
 import { startScheduler } from './scheduler'
 import { createStatus } from './status'
-import { runMdblistSync, type SyncHost } from './sync-engine'
+import { runMdblistSync, SNAPSHOT_KEY, type SyncHost } from './sync-engine'
 import { createScrobbler } from './tracker'
 
 /** Lumio som "Device Code App" på mdblist.com/developer. Publikt id, ingen hemlighet. */
@@ -94,7 +94,15 @@ export const device = createDeviceAuth({
   clientId: MDBLIST_CLIENT_ID,
   log,
   onConnected: () => checkConnection(),
+  scopeId: () => getActiveProfileId(),
 })
+
+/** Koppla från: återkalla token och glöm snapshoten — nästa konto börjar om som första synk. */
+export async function disconnect(): Promise<void> {
+  await device.disconnect()
+  removeScopedStorageItem(SNAPSHOT_KEY)
+  await checkConnection()
+}
 
 export const hasApiKey = () => getMdblistApiKey().trim().length > 0
 export const hasAuth = () => device.hasToken() || hasApiKey()
@@ -110,6 +118,7 @@ export const api = createMdblistApi({
   hasAuth,
   now: () => Date.now(),
   log,
+  onPause: (until) => status.set({ pausedUntil: until }),
 })
 
 export const scrobbler = createScrobbler({ api, prefs, now: () => Date.now(), log })
@@ -135,20 +144,28 @@ const syncHost: SyncHost = {
   waitForStartIdle: () => waitForStartIdle(),
   log,
   now: () => Date.now(),
+  accountKey: () => status.get().accountKey,
+  scopeId: () => getActiveProfileId(),
 }
 
 /** Vem är vi hos MDBList? `GET /user` — också beviset att nyckeln eller token gäller. */
 export async function checkConnection(): Promise<void> {
-  if (!hasAuth()) { status.set({ connection: 'none', username: null, supporter: false }); return }
-  status.set({ connection: 'checking' })
+  if (!hasAuth()) { status.set({ connection: 'none', username: null, supporter: false, accountKey: null }); return }
+  const scope = getActiveProfileId()
+  const previous = status.get().connection
+  if (previous === 'none' || previous === 'bad-key') status.set({ connection: 'checking' })
   const result = await api.call('GET', '/user')
+  if (getActiveProfileId() !== scope) return
   if (result.ok) {
     const user = parseUser(result.data)
-    status.set({ connection: 'ok', username: user.username, supporter: user.supporter })
-  } else if (result.status === 401 || result.status === 403) {
-    status.set({ connection: 'bad-key', username: null, supporter: false })
+    status.set({ connection: 'ok', username: user.username, supporter: user.supporter, accountKey: user.accountKey })
+  } else if (result.status === 401) {
+    status.set({ connection: 'bad-key', username: null, supporter: false, accountKey: null })
+  } else if (result.status === 429) {
+    // En paus är inte ett avbrott: anslutningen står kvar, pausen visas.
+    status.set({ connection: previous === 'checking' ? 'ok' : previous, pausedUntil: api.pausedUntil() })
   } else {
-    status.set({ connection: 'offline', pausedUntil: api.pausedUntil() })
+    status.set({ connection: 'offline' })
   }
 }
 
@@ -189,14 +206,20 @@ export const onTick = (listener: () => void) => {
 export function startBackground(): () => void {
   void checkConnection()
   const offAuthCheck = onAuthChanged(() => { void checkConnection() })
-  const offProfileCheck = onProfileChanged(() => { void checkConnection() })
+  const offProfileCheck = onProfileChanged(() => {
+    // En väntande enhetskod och bryggans kö hör till den gamla profilen.
+    device.cancel()
+    status.set({ connection: 'none', username: null, supporter: false, accountKey: null })
+    restartBridge()
+    void checkConnection()
+  })
   const stopScheduler = startScheduler({
     run: (opts) => syncNow(opts),
     onKeyChanged: (l) => onAuthChanged(l),
     onPrefsChanged: (l) => onPrefsChanged(l),
     onProfileChanged: (l) => onProfileChanged(l),
   })
-  const stopBridge = startBridge({
+  const makeBridge = () => startBridge({
     subscribe: {
       onShow: (l) => onWatchlistMutation(l),
       onMovie: (l) => onMovieWatchlistMutation(l),
@@ -204,8 +227,21 @@ export function startBackground(): () => void {
       onMovieWatched: (l) => onWatchedMovieMutation(l),
     },
     api, prefs, isUserMutation, log,
+    now: () => Date.now(),
     schedule: (fn, ms) => window.setTimeout(fn, ms),
     cancel: (h) => window.clearTimeout(h as number),
   })
-  return () => { offAuthCheck(); offProfileCheck(); stopScheduler(); stopBridge() }
+  let stopBridge = makeBridge()
+  function restartBridge() {
+    stopBridge()
+    stopBridge = makeBridge()
+  }
+  return () => {
+    offAuthCheck()
+    offProfileCheck()
+    stopScheduler()
+    stopBridge()
+    // Avstängt plugin: en väntande enhetskod får inte spara en token efteråt.
+    device.cancel()
+  }
 }

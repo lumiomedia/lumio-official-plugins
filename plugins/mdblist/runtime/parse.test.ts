@@ -12,6 +12,8 @@ describe('parsning', () => {
     expect(typeof parsed.username).toBe('string')
     expect(parsed.supporter).toBe(false)
     expect(parseUser({ username: 'x', is_supporter: true }).supporter).toBe(true)
+    expect(parseUser({ user_id: 225295, username: 'x' }).accountKey).toBe('id:225295')
+    expect(parseUser({ username: 'x' }).accountKey).toBe('user:x')
   })
 
   it('tidsstämplar: bara satta *_at utom server_time (fixtur)', () => {

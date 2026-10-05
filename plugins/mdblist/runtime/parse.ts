@@ -6,11 +6,15 @@ const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? 
 const idStr = (v: unknown): string | null =>
   typeof v === 'number' && Number.isFinite(v) ? String(v) : typeof v === 'string' && /^\d+$/.test(v) ? v : null
 
-export function parseUser(data: unknown): { username: string | null; supporter: boolean } {
-  if (!isObj(data)) return { username: null, supporter: false }
+/** `accountKey` binder synkens snapshot till kontot: ett annat konto börjar om. */
+export function parseUser(data: unknown): { username: string | null; supporter: boolean; accountKey: string | null } {
+  if (!isObj(data)) return { username: null, supporter: false, accountKey: null }
+  const username = str(data.username) ?? str(data.user_name) ?? str(data.name)
+  const id = idStr(data.user_id)
   return {
-    username: str(data.username) ?? str(data.user_name) ?? str(data.name),
+    username,
     supporter: data.is_supporter === true,
+    accountKey: id ? `id:${id}` : username ? `user:${username}` : null,
   }
 }
 
