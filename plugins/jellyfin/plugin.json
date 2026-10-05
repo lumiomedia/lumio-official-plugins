@@ -5,7 +5,7 @@
     "en": "Jellyfin",
     "sv": "Jellyfin"
   },
-  "version": "0.1.1",
+  "version": "0.1.5",
   "minAppVersion": "0.1.603",
   "description": {
     "en": "Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.",

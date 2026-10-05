@@ -8,11 +8,12 @@
     {
       "id": "com.lumio.plex",
       "slug": "plex",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Plex",
         "sv": "Plex"
       },
-      "version": "1.0.32",
+      "version": "1.0.36",
       "description": {
         "en": "Browse and play media from your Plex Media Server.",
         "sv": "Bläddra i och spela upp media från din Plex Media Server."
@@ -30,11 +31,12 @@
     {
       "id": "com.lumio.jellyfin",
       "slug": "jellyfin",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Jellyfin",
         "sv": "Jellyfin"
       },
-      "version": "0.1.1",
+      "version": "0.1.5",
       "description": {
         "en": "Index your Jellyfin server as a library: home rows, search, details and playback straight from what you own.",
         "sv": "Indexera din Jellyfin-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
@@ -50,13 +52,37 @@
       "minAppVersion": "0.1.603"
     },
     {
+      "id": "com.lumio.emby",
+      "slug": "emby",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
+      "name": {
+        "en": "Emby",
+        "sv": "Emby"
+      },
+      "version": "0.1.5",
+      "description": {
+        "en": "Index your Emby server as a library: home rows, search, details and playback straight from what you own.",
+        "sv": "Indexera din Emby-server som bibliotek: startsida, sök, detaljsida och uppspelning direkt ur det du äger."
+      },
+      "path": "plugins/emby",
+      "runtimeBundlePath": "dist/runtime.js",
+      "readmePath": "plugins/emby/README.md",
+      "changelogPath": "plugins/emby/CHANGELOG.md",
+      "official": true,
+      "bundled": true,
+      "removable": true,
+      "repoPath": "plugins/emby",
+      "minAppVersion": "0.1.603"
+    },
+    {
       "id": "com.lumio.live-tv",
       "slug": "live-tv",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Live TV",
         "sv": "Live TV"
       },
-      "version": "0.13.0",
+      "version": "0.13.3",
       "minAppVersion": "0.1.600",
       "description": {
         "en": "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
@@ -74,11 +100,12 @@
     {
       "id": "com.lumio.homekit",
       "slug": "homekit",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "HomeKit",
         "sv": "HomeKit"
       },
-      "version": "0.2.6",
+      "version": "0.2.7",
       "description": {
         "en": "Connect Lumio playback events to HomeKit scenes and automations.",
         "sv": "Koppla Lumios uppspelningshändelser till HomeKit-scener och automationer."
@@ -95,11 +122,12 @@
     {
       "id": "com.lumio.trakt",
       "slug": "trakt",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Trakt",
         "sv": "Trakt"
       },
-      "version": "0.2.6",
+      "version": "0.2.7",
       "description": {
         "en": "Sync watched history, watchlists and collection data with Trakt.",
         "sv": "Synka visningshistorik, listor och samlingsdata med Trakt."
@@ -114,13 +142,36 @@
       "repoPath": "plugins/trakt"
     },
     {
+      "id": "com.lumio.mdblist",
+      "slug": "mdblist",
+      "name": {
+        "en": "MDBList",
+        "sv": "MDBList"
+      },
+      "version": "0.1.0",
+      "description": {
+        "en": "Scrobble playback, sync watched titles and watchlists, and show MDBList lists as rows.",
+        "sv": "Scrobbla uppspelning, synka sedda titlar och watchlist, och visa MDBList-listor som rader."
+      },
+      "path": "plugins/mdblist",
+      "runtimeBundlePath": "dist/runtime.js",
+      "readmePath": "plugins/mdblist/README.md",
+      "changelogPath": "plugins/mdblist/CHANGELOG.md",
+      "official": true,
+      "bundled": true,
+      "removable": true,
+      "repoPath": "plugins/mdblist",
+      "minAppVersion": "0.1.622"
+    },
+    {
       "id": "com.lumio.twitch",
       "slug": "twitch",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
       "name": {
         "en": "Twitch",
         "sv": "Twitch"
       },
-      "version": "1.4.1",
+      "version": "1.4.2",
       "description": {
         "en": "Browse live channels, categories, followed streams, VODs and clips from Twitch.",
         "sv": "Bläddra bland live-kanaler, kategorier, följda streams, VOD:er och klipp från Twitch."

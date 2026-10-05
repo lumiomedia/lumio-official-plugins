@@ -141,6 +141,24 @@ describe('getVodStreams', () => {
     expect(await getVodStreams({ mediaType: 'tv', tmdbId: '1396', season: 9, episode: 9 })).toEqual([])
   })
 
+  // En profil kan ha listan men sakna inloggningen (2026-10-01: profilen
+  // "Lumio" hade xtream_logins = []). Filmens URL i indexet är redan spelbar,
+  // så VOD-knappen ska fungera ändå.
+  it('hittar filmen även när listans inloggning saknas', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [])
+    queryVod.mockResolvedValue({ items: [movie()], total: 1, known: true })
+    const streams = await getVodStreams({ mediaType: 'movie', tmdbId: '438631' })
+    expect(streams.map((s) => s.directUrl)).toEqual(['http://panel-a/movie/u/p/1.mkv'])
+    expect(queryVod).toHaveBeenCalledWith(expect.objectContaining({ source: SOURCE_A, tmdbId: 438631, kind: 'movie' }))
+  })
+
+  it('serier kräver fortfarande inloggningen (avsnitten hämtas ur panelen)', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'xtream_logins', [])
+    queryVod.mockResolvedValue({ items: [movie({ kind: 'series', seriesId: 7 } as Partial<VodItem>)], total: 1, known: true })
+    expect(await getVodStreams({ mediaType: 'tv', tmdbId: '1396', season: 1, episode: 1 })).toEqual([])
+    expect(fetchVodEpisodes).not.toHaveBeenCalled()
+  })
+
   it('struntar i spellistor som inte är Xtream', async () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list('l3', 'http://x.m3u', ''), kind: 'm3u' }])
     expect(await getVodStreams({ mediaType: 'movie', tmdbId: '438631' })).toEqual([])

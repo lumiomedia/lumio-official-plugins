@@ -49,6 +49,12 @@ Accounts and identity:
 - managed auth consumers (for example `google-youtube`)
 - sync identity providers
 
+Tracking and lists:
+
+- trackers: receive the player's scrobbles (`registerTracker`)
+- list sources: user lists the host shows as ordinary home rows
+  (`registerListSource`)
+
 Everything that used to be app-local — HomeKit, Trakt, Live TV, Plex,
 Jellyfin, Twitch, YouTube — now ships as a plugin on these contracts. The
 scraper/stream engine is not part of the app at all; source plugins provide it.
@@ -204,6 +210,59 @@ Auth-capable plugins register through auth providers instead of hardcoded
 settings UI. Providers expose the current state, whether connect or disconnect
 is possible, whether silent reconnect is supported and whether auth needs a
 user gesture. Core renders a generic auth status area from that.
+
+## Trackers and list sources
+
+A **tracker** receives every playback start, pause and stop, including the
+player's 30-second pulse:
+
+```ts
+ctx.registerTracker?.({
+  id: 'my-tracker',
+  label: { en: 'My tracker', sv: 'Min tracker' },
+  scrobble: async (event) => {
+    // event: { action: 'start' | 'pause' | 'stop', mediaType: 'movie' | 'episode',
+    //          tmdbId, imdbId, season, episode, progress /* 0–100 */ }
+  },
+})
+```
+
+The host only calls a tracker with a usable id (and season and episode for
+episodes). It drops repeats of the same event within five seconds, and skips
+the tracker while its plugin is disabled. Scrobbling is fire-and-forget:
+nothing a tracker does can affect playback.
+
+A **list source** turns lists from a service into home rows. The row source
+is `plugin_list:<id>`. The user picks the list in the row's settings, the
+host stores it in the row, and the host resolves the titles and draws the
+cards on desktop, phone and TV:
+
+```ts
+ctx.registerListSource?.({
+  id: 'my-lists',
+  label: { en: 'My list', sv: 'Min lista' },
+  listLists: async () => [{ id: '42', name: 'Favourites', itemCount: 12 }],
+  loadList: async (listId) => [{ mediaType: 'movie', tmdbId: '603', imdbId: null, title: 'The Matrix', posterUrl: null }],
+  resolveListRef: async (input) => null, // optional: a pasted link or id
+  describeList: (listId) => null,        // optional, synchronous, from cache
+})
+```
+
+`loadList` should answer quickly from the plugin's own cache. The host looks
+up at most 40 titles per row.
+
+**Syncing watched titles or watchlists.** A tracker that pulls from a service
+writes locally with `source: 'tracker'`. A realtime bridge that pushes
+local changes must forward only `isUserMutation(mutation.source)`, which is
+`true` only for changes the user made in Lumio. Otherwise a change from one
+service echoes to another. Some services sync with each other on their own,
+and history APIs are not idempotent. `planWatchlistSync` is the same
+three-way merge the built-in Trakt sync uses.
+
+**Waiting for playback start.** `waitForStartIdle()` resolves when no title
+is starting. A plugin bundle carries its own copy of the SDK, so this call
+goes through the host bridge. A background job that waits on it never
+competes with a title the user just pressed play on.
 
 ## Design principles
 

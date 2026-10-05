@@ -289,7 +289,7 @@
           handler(eventData);
         }, options);
       }
-      async function emit3(event, payload) {
+      async function emit4(event, payload) {
         await core.invoke("plugin:event|emit", {
           event,
           payload
@@ -303,7 +303,7 @@
           payload
         });
       }
-      exports.emit = emit3;
+      exports.emit = emit4;
       exports.emitTo = emitTo;
       exports.listen = listen3;
       exports.once = once;
@@ -877,6 +877,7 @@
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
     const [paused, setPaused] = useState(false);
+    const pendingPauseRef = useRef(null);
     const [ended, setEnded] = useState(false);
     const [sid, setSid] = useState(null);
     const [fileLoaded, setFileLoaded] = useState(false);
@@ -899,14 +900,16 @@
     useEffect(() => {
       if (!isAndroidTauriEnv || !enabled) return;
       let cancelled = false;
-      const tick = async () => {
+      const tick2 = async () => {
         const s = await np({ cmd: "status" });
         if (cancelled || !s || typeof s.timePos !== "number") return;
         const prev = prevRef.current;
         setTimePos(s.timePos);
         prev.timePos = s.timePos;
         setDuration(s.duration);
-        setPaused(s.paused);
+        const pending3 = pendingPauseRef.current;
+        if (pending3 && (s.paused === pending3.value || Date.now() > pending3.until)) pendingPauseRef.current = null;
+        if (!pendingPauseRef.current) setPaused(s.paused);
         setEnded(s.ended);
         setPausedForCache(s.pausedForCache);
         setExternalDisplay(s.externalDisplay === true);
@@ -951,9 +954,9 @@
         }
       };
       const id = window.setInterval(() => {
-        void tick();
+        void tick2();
       }, 250);
-      void tick();
+      void tick2();
       return () => {
         cancelled = true;
         window.clearInterval(id);
@@ -966,6 +969,8 @@
       void np({ cmd: "seek", value: Math.max(0, prevRef.current.timePos + delta) });
     }, []);
     const setPlayPause = useCallback((pause) => {
+      pendingPauseRef.current = { value: pause, until: Date.now() + 1500 };
+      setPaused(pause);
       void np({ cmd: "setPause", value: pause });
     }, []);
     const setVolume = useCallback((vol) => {
@@ -1109,14 +1114,14 @@
       captureSupported: true,
       maxSurfaces: () => MAX_HTML,
       create(id) {
-        const listeners4 = /* @__PURE__ */ new Set();
+        const listeners5 = /* @__PURE__ */ new Set();
         let video = null;
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-        const emit3 = (patch) => {
+        const emit4 = (patch) => {
           state2 = { ...state2, ...patch };
-          for (const l of [...listeners4]) l(state2);
+          for (const l of [...listeners5]) l(state2);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -1139,10 +1144,10 @@
             v.playsInline = true;
             v.style.cssText = "position:absolute;object-fit:contain;background:#000;left:0;top:0;width:0;height:0";
             if (pendingRect) applyRect(v, pendingRect);
-            v.addEventListener("loadeddata", () => emit3({ fileLoaded: true }));
-            v.addEventListener("playing", () => emit3({ firstFrameRendered: true, paused: false }));
-            v.addEventListener("pause", () => emit3({ paused: true }));
-            v.addEventListener("error", () => emit3({ loadFailed: true }));
+            v.addEventListener("loadeddata", () => emit4({ fileLoaded: true }));
+            v.addEventListener("playing", () => emit4({ firstFrameRendered: true, paused: false }));
+            v.addEventListener("pause", () => emit4({ paused: true }));
+            v.addEventListener("error", () => emit4({ loadFailed: true }));
             ensureLayer().appendChild(v);
             video = v;
             const src = sourceCacheUrl(opts.url, opts.requestHeaders) ?? opts.url;
@@ -1189,15 +1194,15 @@
             return res.ok;
           },
           onState(l) {
-            listeners4.add(l);
-            return () => listeners4.delete(l);
+            listeners5.add(l);
+            return () => listeners5.delete(l);
           },
           // Värdstängning (yta 0 öppnas) ger ett sista loadFailed; en
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
-            if (reason) emit3({ loadFailed: true });
-            listeners4.clear();
+            if (reason) emit4({ loadFailed: true });
+            listeners5.clear();
           }
         };
       }
@@ -1225,10 +1230,10 @@
   }
   function teardownSharedListenerIfIdle() {
     if (dispatchersByRustId.size > 0) return;
-    const pending = sharedUnlisten;
-    if (!pending) return;
+    const pending3 = sharedUnlisten;
+    if (!pending3) return;
     closingSharedListener = true;
-    void pending.then((unlisten) => {
+    void pending3.then((unlisten) => {
       if (!closingSharedListener) return;
       sharedUnlisten = null;
       unlisten();
@@ -1251,21 +1256,21 @@
     }
   }
   function createMpvSurfaceBackend() {
-    const listeners4 = /* @__PURE__ */ new Set();
+    const listeners5 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit3 = (patch) => {
+    const emit4 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners4]) listener(state2);
+      for (const listener of [...listeners5]) listener(state2);
     };
     const dispatch = (next) => {
       state2 = next;
-      for (const listener of [...listeners4]) listener(next);
+      for (const listener of [...listeners5]) listener(next);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
-        if (!destroyed) emit3({ loadFailed: true });
+        if (!destroyed) emit4({ loadFailed: true });
         return null;
       }
       rustId = sid;
@@ -1287,7 +1292,7 @@
             }
           });
         } catch {
-          emit3({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
+          emit4({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
           return;
         }
         if (!opts.muted) {
@@ -1337,15 +1342,15 @@
         }
       },
       onState(listener) {
-        listeners4.add(listener);
+        listeners5.add(listener);
         return () => {
-          listeners4.delete(listener);
+          listeners5.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
-        if (reason) emit3({ loadFailed: true });
-        listeners4.clear();
+        if (reason) emit4({ loadFailed: true });
+        listeners5.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
           dispatchersByRustId.delete(surface);
@@ -1408,11 +1413,11 @@
     };
   }
   function createDroidSurfaceBackend() {
-    const listeners4 = /* @__PURE__ */ new Set();
+    const listeners5 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit3 = (patch) => {
+    const emit4 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners4]) listener(state2);
+      for (const listener of [...listeners5]) listener(state2);
     };
     let nativeId = null;
     let destroyed = false;
@@ -1452,7 +1457,7 @@
           const next = toSurfaceState(value);
           if (!next) return;
           state2 = next;
-          for (const listener of [...listeners4]) listener(next);
+          for (const listener of [...listeners5]) listener(next);
         });
       }, 250);
     }
@@ -1473,7 +1478,7 @@
       if (!createPromise) {
         createPromise = createNativeSurface().then((id) => {
           if (id === null) {
-            if (!destroyed) emit3({ loadFailed: true });
+            if (!destroyed) emit4({ loadFailed: true });
             return null;
           }
           nativeId = id;
@@ -1525,17 +1530,17 @@
         return false;
       },
       onState(listener) {
-        listeners4.add(listener);
+        listeners5.add(listener);
         return () => {
-          listeners4.delete(listener);
+          listeners5.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
         generation++;
         stopPolling();
-        if (reason) emit3({ loadFailed: true });
-        listeners4.clear();
+        if (reason) emit4({ loadFailed: true });
+        listeners5.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
         await np({ cmd: "surfaceDestroy", surface }).catch(() => {
@@ -1833,7 +1838,9 @@
       return null;
     }
   }
-  async function closeMpvPlayer() {
+  async function closeMpvPlayer(reason = "ok\xE4nd") {
+    void fetch(`/api/debug-log?msg=${encodeURIComponent(`[mpv-close] ${reason}`)}`).catch(() => {
+    });
     return (0, import_core2.invoke)("mpv_close");
   }
   async function setMpvPause(paused) {
@@ -2078,11 +2085,15 @@
   });
 
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
-  var sdk, getActiveProfileId, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged;
+  var sdk, getActiveProfileId, getProfiles, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged;
   var init_profile_storage_shim = __esm({
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
       getActiveProfileId = () => sdk.getActiveProfileId();
+      getProfiles = () => {
+        const p = sdk?.getActiveProfile?.();
+        return p ? [p] : [];
+      };
       getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
       setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
       removeScopedStorageItem = (baseKey) => sdk.removeScopedStorageItem(baseKey);
@@ -2232,6 +2243,8 @@
           lastWatched: "Continue watching",
           watchHistory: "History",
           startNextSource: "The source didn\u2019t respond \u2014 trying the next\u2026",
+          startNextSourceNamed: "The source didn\u2019t respond \u2014 trying {stream}\u2026",
+          startSlateNext: "The source sent no film \u2014 trying {stream}\u2026",
           startCancel: "Cancel",
           startNoSourceTitle: "No source started",
           startNoSourceDesc: "We tried {n} sources. Pick one yourself or try again.",
@@ -2245,12 +2258,63 @@
           barcodeViewGrid: "Grid",
           barcodeViewList: "Strips",
           barcodeViewRing: "Rings",
+          barcodeViewShelf: "Shelf",
+          barcodeShelfStyle: "Shelf style",
+          barcodeShelfSpines: "Spines",
+          barcodeShelfPoster: "Poster",
+          barcodeShelfRing: "Ring",
+          barcodeShelfPortrait: "Portrait",
+          barcodePosterPortrait: "Portrait",
+          barcodeSearch: "Search",
+          barcodeSort: "Sort",
+          barcodeSortRecent: "Recent",
+          barcodeSortTitle: "Title",
+          barcodeSortYear: "Year",
+          barcodePage: "Page {p} of {n}",
+          barcodePrev: "Previous",
+          barcodeNext: "Next",
+          barcodeNoMatches: "No matches",
+          barcodeSetShelfStyle: "Default shelf style",
+          barcodeSetShelfPaper: "Shelf paper",
+          barcodePaperLightShort: "Light",
+          barcodePaperDarkShort: "Dark",
           barcodeResume: "Resume",
           barcodeResumeFrom: "Resume from {t}",
           barcodePlayAgain: "Play again",
           barcodeStartOver: "Start over",
           barcodeShare: "Share",
           barcodeShareSoFar: "Share so far",
+          barcodeShareTitle: "Share {title}",
+          barcodeShareImage: "Image",
+          barcodeShareStory: "Story",
+          barcodeShareWallpaper: "Wallpaper",
+          barcodeSharePoster: "Poster",
+          barcodePosterCredits: "Credits",
+          barcodePosterTitleCard: "Title card",
+          barcodePosterRing: "Ring",
+          barcodePaperLight: "Light paper",
+          barcodePaperDark: "Dark paper",
+          barcodePosterDirectedBy: "Directed by",
+          barcodePosterWrittenBy: "Written by",
+          barcodePosterStarring: "Starring",
+          barcodePosterMusicBy: "Music by",
+          barcodePosterCinematographyBy: "Cinematography by",
+          barcodePosterEditedBy: "Edited by",
+          barcodePosterCreditLine: "{label} {name}",
+          barcodeShareTitleYear: "Title and year",
+          barcodeShareCopy: "Copy image",
+          barcodeShareSave: "Save PNG",
+          barcodeShareSaved: "Saved as PNG",
+          barcodeShareCopied: "Image copied",
+          barcodeShareSaveFailed: "Couldn't save the image",
+          barcodeShareCopyFailed: "Couldn't copy the image",
+          barcodeShareCopyShort: "Copy",
+          barcodeShareSend: "Share image",
+          barcodeShareFailed: "Couldn't share the image",
+          barcodeShareToPhone: "Share to your phone",
+          barcodeShareToPhoneDesc: "Scan with your phone to save the image or share it on.",
+          barcodeShareNoLan: "This device has no network address the phone can reach.",
+          barcodeShareDone: "Done",
           barcodeYouAreHere: "You are here \xB7 {t}",
           barcodePlayFrom: "Play from {t}",
           barcodeNotWatched: "not watched",
@@ -2298,6 +2362,10 @@
           barcodeUnseenHatch: "Hatched",
           barcodeUnseenDim: "Dimmed",
           barcodeUnseenEmpty: "Empty",
+          barcodeSetTexture: "Stripe texture",
+          barcodeSetTextureDesc: "Smooth softens the stripes in shelf view.",
+          barcodeTextureRough: "Rough",
+          barcodeTextureSmooth: "Smooth",
           barcodeSetShareTitle: "Include title and year on shared images",
           barcodeSetSaved: "Saved barcodes",
           barcodeSetSavedDesc: "{n} films \xB7 {mb} MB",
@@ -3015,6 +3083,17 @@
           plNextEpisode: "Next episode",
           plSwitchStream: "Switch stream",
           plStreams: "Streams",
+          plSleepTimer: "Sleep timer",
+          plSleepShort: "Sleep",
+          plSleepOff: "Off",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "End of episode or film",
+          plSleepStillThere: "Are you still there?",
+          plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
+          plCompanions: "Who's watching",
+          plWhoWatches: "Who's watching with you?",
+          plCompanionsJustMe: "Just me",
+          plCompanionsShort: "With",
           audioDelayTitle: "Audio delay",
           audioDelayHint: "Adjust lip sync. A positive value plays audio later.",
           btAudioAutoOffset: "Compensate for Bluetooth latency",
@@ -3361,6 +3440,8 @@
           tvMenuVariantHint: "The pill opens the menu when you want it; the rail stays along the left edge.",
           tvMenuVariantPill: "Pill",
           tvMenuVariantRail: "Rail",
+          tvButtonScale: "Button size",
+          tvButtonScaleDesc: "Size of the buttons on the home hero and the details page (Play, My list, Follow \u2026) in TV mode.",
           tvMenuScale: "Menu size",
           tvMenuScaleDesc: "Scales the side menu \u2014 icons and labels \u2014 in TV mode.",
           menuScale: "Menu scale",
@@ -4204,6 +4285,64 @@
           appUpdateChannelHint: "Beta gets test builds before they are released to everyone.",
           exitOnCloseTitle: "Quit fully on close",
           exitOnCloseHint: "Android/TV: end the process when you leave the app instead of keeping it in the background. Frees memory on small boxes.",
+          exitAppAction: "Quit Lumio",
+          exitAppTitle: "Quit Lumio?",
+          exitAppConfirm: "Quit",
+          quizMenuLabel: "Film quiz",
+          quizLobbyTitle: "Who knows their movies?",
+          quizLobbyIntro: "Scan the code with your phone to join. The questions come from movies you have watched.",
+          quizOrGoTo: "Or go to",
+          quizPlayers: "Players",
+          quizWaitingMore: "Waiting for more \u2026",
+          quizSourcesLabel: "Questions from",
+          quizSourceSeen: "Watched movies",
+          quizSourceList: "My list",
+          quizSourceColl: "Whole collections",
+          quizStart: "Start quiz",
+          quizBuilding: "Building questions \xB7 %s movies",
+          quizTooFew: "Too few movies. Watch or save at least four.",
+          quizTooFewGenre: "Too few seen {genre} titles. Try another genre.",
+          quizRateLimited: "TMDB is busy, try again in a moment.",
+          quizLanOff: "Phones can only reach this screen when LAN streaming is on in Settings.",
+          quizCode: "Code",
+          quizQuestionOf: "Question %1 of %2",
+          quizAnswered: "%1 of %2 have answered",
+          quizAnswerShown: "Answer shown",
+          quizShowAnswer: "Show answer",
+          quizStanding: "Standings",
+          quizFinalStanding: "Final standings",
+          quizStandingAfter: "Standings after question %s",
+          quizNextQuestion: "Next question",
+          quizPlayAgain: "Play again",
+          quizExit: "Quit",
+          quizCancelTitle: "Cancel the quiz?",
+          quizCloseTitle: "Close Film quiz?",
+          quizCancelBody: "Players will be disconnected and the standings are not saved.",
+          quizKeepPlaying: "Keep playing",
+          quizKindStill: "Still",
+          quizKindClip: "Clip",
+          quizKindTagline: "Tagline",
+          quizKindAltTitle: "Foreign title",
+          quizKindCast: "Cast",
+          quizKindSort: "Collection",
+          quizPromptStill: "Which movie?",
+          quizPromptClip: "Which movie is this clip from?",
+          quizPromptTagline: "Which movie has this tagline?",
+          quizPromptAltTitle: "Which movie is this?",
+          quizPromptCast: "Who was not in it?",
+          quizPromptSort: "Sort the collection, oldest first",
+          quizSortOnPhone: "Sort on your phone, oldest first.",
+          quizAllRight: "All correct: %s",
+          quizNobodyRight: "Nobody got the order right",
+          quizAudioOnly: "Audio only",
+          quizShowVideo: "Show video",
+          quizLangDE: "German title",
+          quizLangFR: "French title",
+          quizLangSE: "Swedish title",
+          quizKeyHints: "\u2191 \u2193 \u2190 \u2192 Move \xB7 OK Select \xB7 \u27F5 Back",
+          quizCreateFailed: "Could not start the quiz. Try again in a moment.",
+          quizClose: "Close",
+          quizBankError: "Could not build questions. Check the connection and try again.",
           creditsFinishedSeason: "Season %s is over",
           creditsNextSeason: "Season %s",
           creditsFinishedTitle: "You finished",
@@ -4338,13 +4477,60 @@
              en engelsk profil. */
           advBackupSavedTitle: "Settings copy saved",
           advBackupOpenOnOtherDevice: "Open this address on the other device, download the file, and press Import there.",
+          hapticsTitle: "Feel the bass",
+          hapticsHint: "Your phone vibrates with the film\u2019s bass hits.",
+          hapticsHostToggleTitle: "Allow Feel the bass from a phone",
+          hapticsHostToggleDesc: "Phones on the same Wi-Fi can connect with a code shown here.",
+          hapticsHostOn: "On",
+          hapticsHostOff: "Off",
+          hapticsHostPortError: "Could not start: {e}",
+          hapticsHostDevicesTitle: "Paired phones",
+          hapticsHostNoDevices: "No phones paired yet.",
+          hapticsHostRemove: "Remove",
+          hapticsHostPairTitle: "Pair a phone",
+          hapticsHostPairDesc: "Open for two minutes, then tap Connect on the phone. Nothing on the network can pair while this is closed.",
+          hapticsHostPairOpen: "Pair phone",
+          hapticsHostPairCancel: "Cancel",
+          hapticsPairWaiting: "Waiting for a phone\u2026 Tap Connect under Feel the bass on the phone.",
+          hapticsReceiverNotOpen: "Tap \u201CPair phone\u201D under Feel the bass on {name} first.",
+          hapticsReceiverHostGone: "{name} has not been reachable for 15 minutes \u2014 stopped.",
+          hapticsPairCodeTitle: "{name} wants to feel the bass",
+          hapticsPairCodeDesc: "Enter this code on the phone",
+          hapticsConnectedNotice: "Bass is felt in {name}",
+          hapticsReceiverSearching: "Looking for Lumio on your Wi-Fi\u2026",
+          hapticsReceiverNone: "No Lumio found. Turn on \u201CAllow Feel the bass from a phone\u201D on the Mac or TV.",
+          hapticsReceiverConnect: "Connect",
+          hapticsReceiverDisconnect: "Disconnect",
+          hapticsReceiverForget: "Forget",
+          hapticsReceiverCodePrompt: "Enter the code shown on {name}",
+          hapticsReceiverCodeWrong: "Wrong code \u2014 {n} tries left",
+          hapticsReceiverCodeExpired: "The code expired. Try again.",
+          hapticsReceiverBusy: "Another phone is pairing right now. Try again in a moment.",
+          hapticsReceiverStrength: "Strength",
+          hapticsReceiverSensitivity: "Sensitivity",
+          hapticsReceiverSensitivityHint: "How easily a boom counts. Higher catches quieter bass \u2014 and more of it.",
+          hapticsSensitivity_low: "Low",
+          hapticsSensitivity_normal: "Normal",
+          hapticsSensitivity_high: "High",
+          hapticsSensitivity_max: "Max",
+          hapticsReceiverSync: "Earlier / later",
+          hapticsReceiverSyncHint: "Drag while the film plays until the vibration lands with the boom.",
+          hapticsReceiverPlaying: "Playing on {name}",
+          hapticsReceiverPaused: "Paused on {name}",
+          hapticsReceiverPassthrough: "Audio goes straight to the receiver \u2014 the bass can\u2019t be felt.",
+          hapticsReceiverNoAudio: "This audio track can\u2019t be analysed.",
+          hapticsReceiverRemoved: "{name} has removed this phone.",
+          hapticsReceiverHostOff: "{name} has turned off Feel the bass.",
+          hapticsNotifFeeling: "Feeling the bass from {name}",
+          hapticsNotifReconnecting: "Reconnecting\u2026",
+          hapticsNotifStop: "Stop",
           advTransferTitle: "Move settings to another device",
           advTransferHint: "Copy everything you have set up here \u2014 sources, keys, layout, lists \u2014 to another Lumio on the same Wi-Fi. Settings that belong to a particular device, like TV mode, audio output, gestures and autoplay limits, stay where they are.",
           advTransferReceiveTitle: "Receive from another device",
           advTransferReceiveDesc: "Start here on the device that should get the settings. It shows a code and becomes visible to other Lumio devices on the network for ten minutes.",
           advTransferReceiveStart: "Receive",
           advTransferReceiveStop: "Stop",
-          advTransferReceiveWaiting: "Waiting\u2026 On the other device, open Settings \u2192 Advanced \u2192 Send to another device, pick this one and enter the code:",
+          advTransferReceiveWaiting: "Waiting\u2026 On the other device, open Settings \u2192 Profiles \u2192 Send to another device, pick this one and enter the code:",
           advTransferReceiveIpHint: "If this device does not show up in the list, enter its address manually:",
           advTransferReceived: "Settings received \u2014 restarting\u2026",
           advTransferSendTitle: "Send to another device",
@@ -4617,9 +4803,40 @@
           onboardingExternalGroup: "External",
           onboardingThirdParty: "Third-party",
           onboardingExternalDisclaimer: "External plugins are developed and maintained by their respective developers \u2014 not by Lumio. They are fetched from the developer's own repository and used at your own risk.",
-          onboardingDiscoverEyebrow: "DISCOVER",
-          onboardingDiscoverTitle: "Find your next favourite",
-          onboardingDiscoverDesc: "Explore trends, the release calendar and curated rows for movies and series \u2014 a media hub built for inspiration.",
+          onboardingSyncEyebrow: "SYNC",
+          onboardingSyncTitle: "Already using Lumio?",
+          onboardingSyncDesc: "Bring over sources, keys, layout and lists from another device or from your own WebDAV storage. Nothing to bring? Press Next.",
+          onboardingSyncReceiveDesc: "Same Wi-Fi. This device shows a code you enter on the other one.",
+          onboardingSyncWebdavDesc: "Nextcloud, ownCloud, Koofr, a NAS \u2014 your own storage. Keeps devices in sync from now on.",
+          onboardingSyncVisible: "Visible on the network \xB7 {time} left",
+          onboardingSyncReceivedFrom: "Settings received from {device}",
+          onboardingSyncReceivedGeneric: "Settings received",
+          onboardingSyncReceivedDesc: "Sources, keys, layout and lists are in place. Device-specific settings like TV mode and autoplay limits stay as they are. Plugins are pre-ticked in the next step.",
+          onboardingSyncFoot: "All of this is also under Settings \u2192 Profiles.",
+          onboardingSyncBadgeReceived: "Received",
+          onboardingSyncBadgeConnected: "Connected",
+          onboardingPluginsFromSync: "Pre-ticked from your other device",
+          onboardingPerfSuggested: "Suggested",
+          onboardingRailWelcome: "Welcome",
+          onboardingRailLanguage: "Language",
+          onboardingRailSync: "Sync",
+          onboardingRailPlugins: "Plugins",
+          onboardingRailIntegrations: "Integrations",
+          onboardingRailPerformance: "Performance",
+          onboardingRailControl: "Ready",
+          onboardingSumLang: "Language",
+          onboardingSumSync: "Sync",
+          onboardingSumPlugins: "Plugins",
+          onboardingSumTrakt: "Trakt",
+          onboardingSumNone: "Not set",
+          onboardingSumSkipped: "Skipped",
+          onboardingSumReceivedFrom: "Received from {device}",
+          onboardingSumReceived: "Received from another device",
+          onboardingSumWillEnable: "{names} will be enabled",
+          onboardingHintMove: "Move",
+          onboardingHintSelect: "Select",
+          onboardingHintBack: "Previous step",
+          onboardingHintBackKey: "BACK",
           onboardingControlEyebrow: "READY",
           onboardingControlTitle: "You are in control",
           onboardingControlDesc: "Customise the start page, filters, language and layout exactly the way you want before you begin.",
@@ -4736,6 +4953,8 @@
           ptSourcesHint: "External sources you have added yourself are listed here.",
           ptNoSources: "No sources added yet. Add a GitHub repo above to get started.",
           ptInstalledBadge: "Installed",
+          ptInstallFailed: "Could not install the plugin.",
+          ptSourceReaddZip: "Add the ZIP file again to install",
           ptUpdating: "Checking for the latest version\u2026",
           ptUpdatedTo: "Updated to {version} \u2014 restart to apply.",
           ptUpToDate: "Already on the latest version.",
@@ -4779,6 +4998,8 @@
           libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
           libraryRowSuffix: "in your library",
           libraryModeTab: "Library",
+          libraryModeChip: "Library mode",
+          libraryTabRowsCaption: "Rows per library:",
           libraryModeTitle: "Library mode",
           libraryModeHint: "When a library is the home page, every row is filtered to what you own. Rows with nothing indexed are hidden; the count shows how many titles each row can offer right now.",
           libraryUseAsHome: "Use as home page",
@@ -4794,6 +5015,30 @@
           localLibraryEmpty: "No folders yet.",
           localLibraryScanning: "Indexing\u2026 {done}",
           localLibraryNotIndexed: "Not indexed yet",
+          webdavLibraryTitle: "Network folders (WebDAV)",
+          webdavLibraryHint: "A folder on a WebDAV server becomes its own library with a menu entry, just like a local folder. Files are matched against TMDB by name and stream through the app \u2014 the password stays on this device.",
+          webdavLibraryAdd: "Add folder",
+          webdavLibraryUrl: "Server address",
+          webdavLibraryUsername: "Username",
+          webdavLibraryPassword: "Password",
+          webdavLibraryPasswordKeep: "Unchanged",
+          webdavLibraryName: "Name in the menu",
+          webdavLibraryNamePlaceholder: "Taken from the address if left empty",
+          webdavLibraryTest: "Test",
+          webdavLibraryTestOk: "Connection works",
+          webdavLibrarySave: "Save and index",
+          webdavLibraryCancel: "Cancel",
+          webdavLibraryEdit: "Edit",
+          webdavLibraryEmpty: "No network folders yet.",
+          webdavLibraryListing: "Listing folders\u2026 {done}/{total}",
+          webdavLibraryErrAuth: "The server rejected the username or password.",
+          webdavLibraryErrNotFound: "The folder was not found on the server.",
+          webdavLibraryErrNetwork: "Could not reach the server.",
+          webdavLibraryErrNotWebdav: "The address answered, but not as a WebDAV folder.",
+          webdavLibraryErrUrl: "Enter a full address starting with http:// or https://, without username or password in it.",
+          webdavLibraryErrTooLarge: "The folder is too large to list in one go. Point the address at a subfolder.",
+          webdavLibraryErrUpstream: "The server answered with an error. Try again in a while.",
+          webdavLibraryErrLocalOnly: "Network folders can only be changed on the device running Lumio.",
           libraryRowUnmatched: "Not identified",
           librarySourceNotIndexed: "Not indexed yet \u2014 build the index in the plugin's settings.",
           libraryModeOff: "No library is set as the home page. Turn it on under the library plugin's settings.",
@@ -4818,6 +5063,13 @@
           libraryEpisodeNotInLibrary: "This episode is not in your library",
           libraryRowNotLoaded: "not loaded yet",
           libraryRowRecent: "Recently added to your library",
+          libraryRowMovies: "Movies in your library",
+          tvLibraryTabRowsLabel: "Library tab",
+          tvLibraryTabRowsDesc: "Edit the rows of a library in the menu instead of a page above.",
+          tvLibraryTabRowsNone: "None",
+          libraryRowSeries: "Series in your library",
+          libraryTabRowsFollowHome: "This library shows the home screen rows until you change them here.",
+          libraryTabRowsUntouched: "Showing the recommended rows for this library. Your changes take over once you edit.",
           libraryRowContinue: "Library progress in Last watched",
           libraryRowUnseen: "Unseen favourites",
           libraryRowGenre: "Genre",
@@ -5287,7 +5539,305 @@
           pluginYoutubeMissingChannelId: "Channel ID is missing.",
           ptNeedsNewerApp: "A newer app version is required for this update.",
           ptScanSummary: "{updated} updated, {uptodate} already current, {failed} failed.",
-          ptScanNoUpdates: "All plugins are on the latest version."
+          ptScanNoUpdates: "All plugins are on the latest version.",
+          // Profile page (profilsida)
+          profKicker: "Lumio \xB7 Profile",
+          profYourProfile: "Your profile",
+          profSince: "Since {date} \xB7 {movies} films \xB7 {series} series",
+          profSwitch: "Switch profile",
+          profViewProfile: "View profile",
+          profMyProfile: "My profile",
+          profTabOverview: "Overview",
+          profTabGalaxy: "Taste galaxy",
+          profTabDiary: "Film diary",
+          profTabHunt: "Filmography hunt",
+          profTabWrapped: "Wrapped",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Move \xB7 OK Select \xB7 Back Close",
+          profEmptyFirstStar: "Watch your first film and the first star lights up.",
+          profGalaxyLine: "{stars} stars, {constellations} constellations and {zones} dark zones",
+          profGalaxyDesc: "Every film you've seen is a star. Directors form constellations.",
+          profViewingN: "Viewing {n}",
+          profSecondViewing: "Second time",
+          profDiaryList: "Diary",
+          profDiaryBook: "Autobiography",
+          profDiaryNote: "Written from what you watch in Lumio.",
+          profDiaryEmpty: "Nothing here yet.",
+          profApprox: "Approximate",
+          profChapters: "Chapters",
+          profChKicker: "Chapter {n} \xB7 {year}",
+          profChKickerOngoing: "Chapter {n} \xB7 {year} (ongoing)",
+          profChShort: "{n}. {year}",
+          profChTitles: "You watched {n} titles, about {h} hours.",
+          profChTop: "{title} was the one you came back to \u2013 {n} times.",
+          profChLate: "{p} % of your evenings started after ten.",
+          profChDirector: "{name} was your director of the year, with {n} films.",
+          profChTitleNight: "The year of late nights",
+          profChTitleDirector: "The year of {name}",
+          profChTitleRewatch: "The year of {title}",
+          profChTitleDefault: "A year in film",
+          profHuntEmpty: "See two films by the same director to start a hunt.",
+          profHuntKicker: "Filmography",
+          profHuntSeen: "You've seen {seen}/{total} {name}",
+          profHuntMissing: "{n} left to find.",
+          profHuntAllSeen: "You've seen them all.",
+          profHuntMakeRow: "Make a row",
+          profHuntMakeCollection: "Make a collection",
+          profHuntRowName: "{name} \u2013 still to see",
+          profHuntHomeRowMade: 'Row "{name}" added to your home screen.',
+          profHuntRowMade: 'Row "{name}" created \u2013 add it to your home screen from Settings.',
+          profHuntRowFailed: "Couldn't create the row \u2013 you may have too many rows.",
+          profHuntNew: "+ Hunt a new director",
+          profHuntSearchPh: "Search director",
+          profHuntDocs: "+ Documentaries",
+          profHuntShorts: "+ Short films",
+          profBadgeFirst: "First step",
+          profBadgeHalf: "Halfway",
+          profBadgeAlmost: "Almost there",
+          profBadgeComplete: "Complete",
+          profBadgeInOrder: "In order",
+          profWrappedTeaser: "{h} hours.\nAnd more.",
+          profWrappedKicker: "Lumio Wrapped {year}",
+          profWrappedPlay: "Play your year \u2192",
+          profMoreAboutYou: "More about you",
+          profClose: "Close",
+          profModColor: "Colour year",
+          profModColorLine: "Your year as a strip of film colours.",
+          profModSlept: "Fell asleep",
+          profModSleptLine: "Everything you drifted off to.",
+          profModCouch: "Couch buddies",
+          profModCouchLine: "Who you watch with, and what you agree on.",
+          profModClock: "Watch clock",
+          profModClockLine: "When in the week you watch.",
+          profModCapsule: "Time capsule",
+          profModCapsuleLine: "Seal a film for your future self.",
+          profModRecords: "Records",
+          profModRecordsLine: "Longest marathon, latest night and more.",
+          profModAbandoned: "Abandoned",
+          profModAbandonedLine: "Films you gave up on early.",
+          profModQuiz: "Quiz profile",
+          profModQuizLine: "What you watch vs what you know.",
+          profModBack: "\u2190 Profile",
+          profModColorTitle: "Your year as a single strip",
+          profModColorDesc: "Every stripe is a film's barcode, in the order you watched. Pick a month to see which films gave the colour.",
+          profModColorNote: "From your barcodes",
+          profModSleptTitle: "Films you fell asleep to",
+          profModSleptDesc: "The sleep timer knows exactly where you drifted off. Continue from there, or start over when you're more awake.",
+          profModSleptNote: "From the sleep timer",
+          profModCouchTitle: "Who you watch with",
+          profModCouchDesc: "Taste match per profile and picks that suit you both, based on what you've watched together and apart.",
+          profModCouchNote: `From "Who's watching?"`,
+          profModClockTitle: "When you watch",
+          profModClockDesc: "Weekday against time of day for everything you started. Pick a day to see your habits.",
+          profModClockNote: "From start times in the diary",
+          profModCapsuleTitle: "Send a film to the future",
+          profModCapsuleDesc: "Pick a film today. Lumio brings it back in a few years, together with today's diary page.",
+          profModCapsuleNote: "Opens on the home screen",
+          profModRecordsTitle: "Your personal records",
+          profModRecordsDesc: "Longest marathon, latest night and more. New records are marked when they fall.",
+          profModRecordsNote: "From the diary",
+          profModAbandonedTitle: "Films you gave up on",
+          profModAbandonedDesc: "Everything you left under 20 %. Give them a second chance, or let go for good.",
+          profModAbandonedNote: "From the diary",
+          profSleptSummary: "You fall asleep most often on {day}, on average {m} minutes in.",
+          profSleptTopGenre: "{genre} accounts for {n} of {total} naps.",
+          profSleptWhen: "{date} \xB7 fell asleep {time}",
+          profSleptResume: "Continue {time}",
+          profSleptRestart: "Start over",
+          profSleptRemove: "Remove",
+          profSleptEmpty: "The list is empty. You woke up for everything.",
+          profAbandonedCount: "{n} films left under 20 %.",
+          profAbandonedWhen: "Stopped at {p} % \xB7 {date}",
+          profAbandonedRetry: "Second chance",
+          profAbandonedAdded: "In Continue watching",
+          profAbandonedLetGo: "Let go",
+          profAbandonedDismissRow: "Remove {title} from the list",
+          profAbandonedEmpty: "Nothing abandoned. You finish what you start.",
+          profModQuizTitle: "What you know, vs what you watch",
+          profModQuizDesc: "Your film quiz results per genre, against how much you actually watch the genre.",
+          profModQuizNote: "From the film quiz",
+          profPrevNoCapsule: "No capsule yet",
+          profPrevOpens: "Opens",
+          profPrevTogether: "{n} films together",
+          profPrevEmpty: "Nothing here yet",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "Longest marathon",
+          profRecLatestNight: "Latest night",
+          profRecMostInDay: "Most films in a day",
+          profRecLongestFilm: "Longest film",
+          profRecMostRewatched: "Most rewatched",
+          profRecStreak: "Longest streak",
+          profRecStreakValue: "{n} days",
+          profDayPl0: "Mondays",
+          profDayPl1: "Tuesdays",
+          profDayPl2: "Wednesdays",
+          profDayPl3: "Thursdays",
+          profDayPl4: "Fridays",
+          profDayPl5: "Saturdays",
+          profDayPl6: "Sundays",
+          profColorMonthCount: "{month}: {n} films",
+          profColorMoodRecord: "The year's record month",
+          profColorMoodDark: "The year's darkest month",
+          profColorMoodBright: "The year's brightest month",
+          profColorUseBg: "Use as profile background",
+          profColorRemoveBg: "Remove profile background",
+          profColorBgSet: "The strip is now behind your profile.",
+          profColorExport: "Export as image",
+          profColorShareTitle: "Colour year {year}",
+          profColorFilms: "{n} films",
+          profColorEmpty: "No movies watched this year yet.",
+          profColorNoBarcodeNote: "Grey stripes = films without a barcode yet. Play them in Lumio to fill in the colour.",
+          profShareSaved: "Image saved.",
+          profShareFailed: "Couldn't create the image.",
+          profShareNoLan: "No network address found for the phone.",
+          profShareScan: "Scan with your phone to save the image.",
+          profClockTopTime: "Top time",
+          profClockFilms: "Films",
+          profClockUsual: "Usually",
+          profClockBigNight: "The week's big night.",
+          profClockWith: "Usually with {name}.",
+          profClockEmpty: "Start a few films and the clock fills in.",
+          profRecNew: "New",
+          profRecMarathonHow: "{n} in a row from {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "in a row, until {date}",
+          profRecEmpty: "Records appear once you have a few evenings behind you.",
+          profPrevMatch: "taste match with {name}",
+          profCouchUsual: "Usually: {day} {time}",
+          profCouchDisagree: "Disagree most on: {genre}",
+          profCouchTonight: "Tonight's film for you both",
+          profCouchReasonBoth: "On both watchlists",
+          profCouchReasonRec: "Like {title}",
+          profCouchStart: "Start an evening together",
+          profCouchSolo: "Add another profile to see who you watch with.",
+          profCouchHint: "Pick who's watching when you start a film, and this fills in.",
+          profCouchNoPicks: "No shared picks yet.",
+          profQuizLegendWatch: "Share of your watching",
+          profQuizLegendRight: "Right answers in the quiz",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "You know most about {best}, though you watch {watched} the most.",
+          profQuizSummarySame: "You know {best} best \u2014 and watch it the most.",
+          profQuizWeak: "{weak} is your weak spot.",
+          profQuizEmpty: "Play a round of the film quiz and your results show up here.",
+          profCapStep1: "1 \xB7 Pick a film",
+          profCapStep2: "2 \xB7 When should it open?",
+          profCapYears: "{n} yr",
+          profCapLine: "{title} opens {date}.",
+          profCapSeal: "Seal the capsule",
+          profCapSealing: "Sealing\u2026",
+          profCapSealed: "Sealed. See you {date}.",
+          profCapAnother: "Seal another",
+          profCapYours: "Your capsules",
+          profCapOpens: "Opens {date}",
+          profCapOpened: "Opened {date}",
+          profCapNone: "No capsules yet.",
+          profCapNoFilms: "Finish a film first \u2014 then you can send it forward.",
+          profCapDueKicker: "Time capsule \xB7 opened today",
+          profCapDueLine: "You sealed {title} on {date}.",
+          profCapOpen: "Open",
+          profDiaryAsleep: "Fell asleep {time} \xB7 {p} %",
+          profGxDirectors: "Directors",
+          profGxGenres: "Genres",
+          profGxWhole: "\u2190 Whole galaxy",
+          profGxExplore: "Explore",
+          profGxPickTitle: "Pick a star or a dark zone",
+          profGxPickBody: "Constellations are directors you've followed for a long time. Dashed circles are genres you've hardly watched.",
+          profGxStar: "Star",
+          profGxSeenTimes: "Seen {n} times \xB7 last {date}",
+          profGxSeenOnce: "Seen once \xB7 {date}",
+          profGxNextStar: "Next star \u2192",
+          profGxDetails: "Details",
+          profGxHunt: "Filmography hunt",
+          profGxDarkZone: "Dark zone",
+          profGxZoneBetween: "{n} seen. Lies between {a} and {b}.",
+          profGxZoneNear: "{n} seen. Lies next to {a}.",
+          profGxZoneEdge: "{n} seen. An unexplored corner.",
+          profGxOkHint: "on the zone to fly there",
+          profGxFly: "Fly there",
+          profGxLightFirst: "Light the first stars",
+          profGxLoading: "Looking for films\u2026",
+          profGxNoSuggestions: "No suggestions right now. Try again later.",
+          profGxPlay: "Play",
+          profGxConstellations: "Constellations",
+          profGxZones: "Dark zones",
+          settingsPageProfilePage: "Profile page",
+          ppWeatherGroup: "Weather in the diary",
+          ppWeatherToggle: "Record the weather",
+          ppWeatherToggleDesc: "When a film ends, Lumio looks up the current weather for your town once (Open-Meteo, no account). Off: no lookups at all.",
+          ppWeatherPlace: "Town",
+          ppWeatherNoPlace: "No town chosen yet.",
+          ppWeatherSearchPh: "e.g. Gothenburg",
+          ppWeatherSearch: "Search",
+          ppWeatherSearching: "Searching\u2026",
+          ppWeatherNoResults: "No town found.",
+          ppWeatherFailed: "The search failed. Check the connection and try again.",
+          ppWeatherCredit: "Weather data by Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "so far this year",
+          profWrPrev: "Previous",
+          profWrNext: "Next",
+          profWrNotEnough: "Wrapped needs at least 10 sessions in {year}. Keep watching!",
+          profWrIntroTitle: "Your year\nin film.",
+          profWrIntroBody: "{n} stars later. Tap to begin.",
+          profWrIntroBodyTv: "{n} stars later. Press \u25B6 to begin.",
+          profWrGuessKicker: "Guess first",
+          profWrGuessQ: "Which genre did you watch most this year?",
+          profWrGuessRight: "Spot on. {genre}, with {h} hours.",
+          profWrGuessWrong: "Close. It was {genre}, with {h} hours.",
+          profWrNoGenres: "Not enough genre data yet.",
+          profWrHoursKicker: "You watched",
+          profWrHoursUnit: "hours",
+          profWrDays: "= {n} days on the sofa",
+          profWrInterstellar: "= {n} Interstellars in a row",
+          profWrEpisodes: "= {n} episodes of a half-hour show",
+          profWrGenreKicker: "Genre ranking",
+          profWrGenreWon: "{genre} won.",
+          profWrHoursShort: "{h} h",
+          profWrGoldenKicker: "Golden hour",
+          profWrGoldenBody: "The time you most often pressed play.",
+          profWrStarsKicker: "Your stars",
+          profWrStarsTitle: "The actors you saw most.",
+          profWrStarsNone: "Not enough cast data yet.",
+          profWrStarsFilms: "{n} films",
+          profWrRewatchKicker: "Most rewatched",
+          profWrRewatchNone: "No rewatches this year \u2014 always something new.",
+          profWrSleepTitle: "You fell asleep {n} times.",
+          profWrSleepNone: "You stayed awake all year.",
+          profWrBuddyTitle: "You and {name} watched {n} films together.",
+          profWrBuddyNone: "Mostly you and the screen this year.",
+          profWrPersKicker: "Your film personality",
+          profWrTraitNight: "Night owl",
+          profWrTraitNightValue: "starts {time}",
+          profWrTraitGenre: "Genre loyal",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Rewatcher",
+          profWrTraitRewatchValue: "{n} rewatches",
+          profWrTraitNap: "Dozer",
+          profWrTraitNapValue: "at {p} %",
+          profWrShareTitle: "Share your year.",
+          profWrShare: "Share",
+          profWrReplay: "Play again",
+          profWrCardHours: "total",
+          profWrCardGenre: "top genre",
+          profWrCardTitle: "most played",
+          profWrCardNaps: "naps",
+          profWrBNight: "The night owl",
+          profWrBRewatch: "The rewatcher",
+          profWrBNap: "The nap master",
+          profWrBMarathon: "The marathoner",
+          profWrBExplorer: "The explorer",
+          profWrAScifi: "from outer space",
+          profWrADrama: "with a big heart",
+          profWrAHorror: "from the dark",
+          profWrAComedy: "who laughs first",
+          profWrAAnimation: "with a drawn soul",
+          profWrADocumentary: "who wants to know",
+          profWrAThriller: "on the edge",
+          profWrAAction: "at full speed",
+          profWrARomance: "in rose-tinted glasses",
+          profWrACrime: "from the underworld",
+          profWrAFantasy: "from the fairy realm",
+          profWrAOther: "without a map"
         },
         sv: {
           // Nav
@@ -5297,6 +5847,8 @@
           lastWatched: "Forts\xE4tt titta",
           watchHistory: "Historik",
           startNextSource: "K\xE4llan svarade inte \u2014 provar n\xE4sta\u2026",
+          startNextSourceNamed: "K\xE4llan svarade inte \u2014 provar {stream}\u2026",
+          startSlateNext: "K\xE4llan skickade ingen film \u2014 provar {stream}\u2026",
           startCancel: "Avbryt",
           startNoSourceTitle: "Ingen k\xE4lla startade",
           startNoSourceDesc: "Vi provade {n} k\xE4llor. V\xE4lj en sj\xE4lv eller f\xF6rs\xF6k igen.",
@@ -5310,12 +5862,63 @@
           barcodeViewGrid: "Rutn\xE4t",
           barcodeViewList: "Remsor",
           barcodeViewRing: "Ringar",
+          barcodeViewShelf: "Hylla",
+          barcodeShelfStyle: "Hyllans stil",
+          barcodeShelfSpines: "Ryggar",
+          barcodeShelfPoster: "Affisch",
+          barcodeShelfRing: "Ring",
+          barcodeShelfPortrait: "St\xE5ende",
+          barcodePosterPortrait: "St\xE5ende",
+          barcodeSearch: "S\xF6k",
+          barcodeSort: "Sortera",
+          barcodeSortRecent: "Senast",
+          barcodeSortTitle: "Titel",
+          barcodeSortYear: "\xC5r",
+          barcodePage: "Sida {p} av {n}",
+          barcodePrev: "F\xF6reg\xE5ende",
+          barcodeNext: "N\xE4sta",
+          barcodeNoMatches: "Inga tr\xE4ffar",
+          barcodeSetShelfStyle: "Hyllans standardstil",
+          barcodeSetShelfPaper: "Hyllans papper",
+          barcodePaperLightShort: "Ljust",
+          barcodePaperDarkShort: "M\xF6rkt",
           barcodeResume: "Forts\xE4tt",
           barcodeResumeFrom: "Forts\xE4tt fr\xE5n {t}",
           barcodePlayAgain: "Spela igen",
           barcodeStartOver: "B\xF6rja om",
           barcodeShare: "Dela",
           barcodeShareSoFar: "Dela hittills",
+          barcodeShareTitle: "Dela {title}",
+          barcodeShareImage: "Bild",
+          barcodeShareStory: "Story",
+          barcodeShareWallpaper: "Tapet",
+          barcodeSharePoster: "Affisch",
+          barcodePosterCredits: "F\xF6rtexter",
+          barcodePosterTitleCard: "Titelkort",
+          barcodePosterRing: "Ring",
+          barcodePaperLight: "Ljust papper",
+          barcodePaperDark: "M\xF6rkt papper",
+          barcodePosterDirectedBy: "Regi",
+          barcodePosterWrittenBy: "Manus",
+          barcodePosterStarring: "I rollerna",
+          barcodePosterMusicBy: "Musik",
+          barcodePosterCinematographyBy: "Foto",
+          barcodePosterEditedBy: "Klippning",
+          barcodePosterCreditLine: "{label}: {name}",
+          barcodeShareTitleYear: "Titel och \xE5r",
+          barcodeShareCopy: "Kopiera bild",
+          barcodeShareSave: "Spara PNG",
+          barcodeShareSaved: "Sparad som PNG",
+          barcodeShareCopied: "Bild kopierad",
+          barcodeShareSaveFailed: "Kunde inte spara bilden",
+          barcodeShareCopyFailed: "Kunde inte kopiera bilden",
+          barcodeShareCopyShort: "Kopiera",
+          barcodeShareSend: "Dela bild",
+          barcodeShareFailed: "Kunde inte dela bilden",
+          barcodeShareToPhone: "Dela till telefonen",
+          barcodeShareToPhoneDesc: "Skanna med telefonen f\xF6r att spara bilden eller dela den vidare.",
+          barcodeShareNoLan: "Enheten har ingen n\xE4tverksadress som telefonen kan n\xE5.",
+          barcodeShareDone: "Klar",
           barcodeYouAreHere: "Du \xE4r h\xE4r \xB7 {t}",
           barcodePlayFrom: "Spela fr\xE5n {t}",
           barcodeNotWatched: "inte sett",
@@ -5363,6 +5966,10 @@
           barcodeUnseenHatch: "Streckad",
           barcodeUnseenDim: "Nedtonad",
           barcodeUnseenEmpty: "Tom",
+          barcodeSetTexture: "Strecktextur",
+          barcodeSetTextureDesc: "Mjuk mjukar upp strecken i hyllvyn.",
+          barcodeTextureRough: "Grov",
+          barcodeTextureSmooth: "Mjuk",
           barcodeSetShareTitle: "Ta med titel och \xE5r p\xE5 delade bilder",
           barcodeSetSaved: "Sparade barcodes",
           barcodeSetSavedDesc: "{n} filmer \xB7 {mb} MB",
@@ -6076,6 +6683,17 @@
           plNextEpisode: "N\xE4sta avsnitt",
           plSwitchStream: "Byt str\xF6m",
           plStreams: "Str\xF6mmar",
+          plSleepTimer: "S\xF6mntimer",
+          plSleepShort: "S\xF6mn",
+          plSleepOff: "Av",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "Slutet av avsnittet/filmen",
+          plSleepStillThere: "\xC4r du kvar?",
+          plSleepStillThereBody: "S\xF6mntimern pausade. R\xF6r musen eller tryck p\xE5 n\xE5got f\xF6r att titta vidare.",
+          plCompanions: "Vem tittar med",
+          plWhoWatches: "Vem tittar med?",
+          plCompanionsJustMe: "Bara jag",
+          plCompanionsShort: "Med",
           audioDelayTitle: "Ljudf\xF6rdr\xF6jning",
           audioDelayHint: "Justera l\xE4ppsynk. Positivt v\xE4rde spelar ljudet senare.",
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
@@ -6419,6 +7037,8 @@
           tvMenuVariantHint: "Pillret \xF6ppnar menyn n\xE4r du vill; listen st\xE5r kvar l\xE4ngs v\xE4nsterkanten.",
           tvMenuVariantPill: "Pillret",
           tvMenuVariantRail: "Ikonlist",
+          tvButtonScale: "Knappstorlek",
+          tvButtonScaleDesc: "Storleken p\xE5 knapparna i startsidans hero och p\xE5 detaljsidan (Spela, Min lista, F\xF6lj \u2026) i TV-l\xE4get.",
           tvMenuScale: "Menystorlek",
           tvMenuScaleDesc: "Skalar sidomenyn \u2014 ikoner och etiketter \u2014 i TV-l\xE4get.",
           menuScale: "Menyskalning",
@@ -7253,6 +7873,64 @@
           appUpdateChannelHint: "Beta f\xE5r testbyggen innan de sl\xE4pps till alla.",
           exitOnCloseTitle: "Avsluta helt vid st\xE4ngning",
           exitOnCloseHint: "Android/TV: avsluta processen n\xE4r du l\xE4mnar appen i st\xE4llet f\xF6r att l\xE5ta den ligga i bakgrunden. Frig\xF6r minne p\xE5 sm\xE5 boxar.",
+          exitAppAction: "Avsluta Lumio",
+          exitAppTitle: "Avsluta Lumio?",
+          exitAppConfirm: "Avsluta",
+          quizMenuLabel: "Filmquiz",
+          quizLobbyTitle: "Vem kan sin film?",
+          quizLobbyIntro: "Skanna koden med telefonen f\xF6r att vara med. Fr\xE5gorna kommer ur filmer ni har sett.",
+          quizOrGoTo: "Eller g\xE5 till",
+          quizPlayers: "Spelare",
+          quizWaitingMore: "V\xE4ntar p\xE5 fler \u2026",
+          quizSourcesLabel: "Fr\xE5gor ur",
+          quizSourceSeen: "Sedda filmer",
+          quizSourceList: "Min lista",
+          quizSourceColl: "Hela samlingar",
+          quizStart: "Starta quiz",
+          quizBuilding: "Bygger fr\xE5gor \xB7 %s filmer",
+          quizTooFew: "F\xF6r f\xE5 filmer. Se eller spara minst fyra.",
+          quizTooFewGenre: "F\xF6r f\xE5 sedda {genre}-titlar. Prova en annan genre.",
+          quizRateLimited: "TMDB \xE4r upptaget, f\xF6rs\xF6k om en stund.",
+          quizLanOff: "Telefoner n\xE5r den h\xE4r sk\xE4rmen bara n\xE4r LAN-str\xF6mning \xE4r p\xE5 i inst\xE4llningarna.",
+          quizCode: "Kod",
+          quizQuestionOf: "Fr\xE5ga %1 av %2",
+          quizAnswered: "%1 av %2 har svarat",
+          quizAnswerShown: "Svaret visas",
+          quizShowAnswer: "Visa svar",
+          quizStanding: "St\xE4llning",
+          quizFinalStanding: "Slutst\xE4llning",
+          quizStandingAfter: "St\xE4llning efter fr\xE5ga %s",
+          quizNextQuestion: "N\xE4sta fr\xE5ga",
+          quizPlayAgain: "Spela igen",
+          quizExit: "Avsluta",
+          quizCancelTitle: "Avbryta quizet?",
+          quizCloseTitle: "St\xE4nga Filmquiz?",
+          quizCancelBody: "Spelarna kopplas fr\xE5n och st\xE4llningen sparas inte.",
+          quizKeepPlaying: "Forts\xE4tt spela",
+          quizKindStill: "Stillbild",
+          quizKindClip: "Klipp",
+          quizKindTagline: "Tagline",
+          quizKindAltTitle: "Utl\xE4ndsk titel",
+          quizKindCast: "Sk\xE5despelare",
+          quizKindSort: "Samling",
+          quizPromptStill: "Vilken film?",
+          quizPromptClip: "Vilken film \xE4r klippet ur?",
+          quizPromptTagline: "Vilken film har den h\xE4r taglinen?",
+          quizPromptAltTitle: "Vilken film \xE4r det h\xE4r?",
+          quizPromptCast: "Vem var inte med?",
+          quizPromptSort: "Sortera samlingen, \xE4ldst f\xF6rst",
+          quizSortOnPhone: "Sortera p\xE5 telefonen, \xE4ldst f\xF6rst.",
+          quizAllRight: "Helt r\xE4tt: %s",
+          quizNobodyRight: "Ingen fick ordningen r\xE4tt",
+          quizAudioOnly: "Bara ljud",
+          quizShowVideo: "Visa bild",
+          quizLangDE: "Tysk titel",
+          quizLangFR: "Fransk titel",
+          quizLangSE: "Svensk titel",
+          quizKeyHints: "\u2191 \u2193 \u2190 \u2192 Flytta \xB7 OK V\xE4lj \xB7 \u27F5 Tillbaka",
+          quizCreateFailed: "Kunde inte starta quizet. F\xF6rs\xF6k igen om en stund.",
+          quizClose: "St\xE4ng",
+          quizBankError: "Kunde inte bygga fr\xE5gor. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
           creditsFinishedSeason: "S\xE4song %s \xE4r slut",
           creditsNextSeason: "S\xE4song %s",
           creditsFinishedTitle: "Du s\xE5g klart",
@@ -7384,13 +8062,60 @@
           introDebugMissing: "Ingen introtr\xE4ff",
           advBackupSavedTitle: "Kopia av inst\xE4llningarna sparad",
           advBackupOpenOnOtherDevice: "\xD6ppna adressen p\xE5 den andra enheten, h\xE4mta filen och tryck Importera d\xE4r.",
+          hapticsTitle: "K\xE4nn basen",
+          hapticsHint: "Telefonen vibrerar i takt med filmens bassm\xE4llar.",
+          hapticsHostToggleTitle: "Till\xE5t K\xE4nn basen fr\xE5n telefon",
+          hapticsHostToggleDesc: "Telefoner p\xE5 samma Wi-Fi kan ansluta med en kod som visas h\xE4r.",
+          hapticsHostOn: "P\xE5",
+          hapticsHostOff: "Av",
+          hapticsHostPortError: "Kunde inte starta: {e}",
+          hapticsHostDevicesTitle: "Parkopplade telefoner",
+          hapticsHostNoDevices: "Inga telefoner parkopplade \xE4n.",
+          hapticsHostRemove: "Ta bort",
+          hapticsHostPairTitle: "Parkoppla telefon",
+          hapticsHostPairDesc: "\xD6ppnas i tv\xE5 minuter, tryck sedan Anslut p\xE5 telefonen. Medan det \xE4r st\xE4ngt kan ingen p\xE5 n\xE4tet parkoppla.",
+          hapticsHostPairOpen: "Parkoppla telefon",
+          hapticsHostPairCancel: "Avbryt",
+          hapticsPairWaiting: "V\xE4ntar p\xE5 en telefon\u2026 Tryck Anslut under K\xE4nn basen p\xE5 telefonen.",
+          hapticsReceiverNotOpen: "Tryck f\xF6rst \u201DParkoppla telefon\u201D under K\xE4nn basen p\xE5 {name}.",
+          hapticsReceiverHostGone: "{name} har inte g\xE5tt att n\xE5 p\xE5 15 minuter \u2014 avslutat.",
+          hapticsPairCodeTitle: "{name} vill k\xE4nna basen",
+          hapticsPairCodeDesc: "Skriv den h\xE4r koden i telefonen",
+          hapticsConnectedNotice: "Basen k\xE4nns i {name}",
+          hapticsReceiverSearching: "Letar efter Lumio p\xE5 ditt Wi-Fi\u2026",
+          hapticsReceiverNone: "Ingen Lumio hittades. Sl\xE5 p\xE5 \u201DTill\xE5t K\xE4nn basen fr\xE5n telefon\u201D p\xE5 Macen eller TV:n.",
+          hapticsReceiverConnect: "Anslut",
+          hapticsReceiverDisconnect: "Koppla ner",
+          hapticsReceiverForget: "Gl\xF6m",
+          hapticsReceiverCodePrompt: "Skriv koden som visas p\xE5 {name}",
+          hapticsReceiverCodeWrong: "Fel kod \u2014 {n} f\xF6rs\xF6k kvar",
+          hapticsReceiverCodeExpired: "Koden gick ut. F\xF6rs\xF6k igen.",
+          hapticsReceiverBusy: "En annan telefon parkopplar just nu. F\xF6rs\xF6k igen om en stund.",
+          hapticsReceiverStrength: "Styrka",
+          hapticsReceiverSensitivity: "K\xE4nslighet",
+          hapticsReceiverSensitivityHint: "Hur l\xE4tt en sm\xE4ll r\xE4knas. H\xF6gre tar med svagare bas \u2014 och mer av den.",
+          hapticsSensitivity_low: "L\xE5g",
+          hapticsSensitivity_normal: "Normal",
+          hapticsSensitivity_high: "H\xF6g",
+          hapticsSensitivity_max: "Max",
+          hapticsReceiverSync: "F\xF6re / efter",
+          hapticsReceiverSyncHint: "Dra medan filmen g\xE5r tills vibrationen kommer samtidigt med sm\xE4llen.",
+          hapticsReceiverPlaying: "Spelar p\xE5 {name}",
+          hapticsReceiverPaused: "Pausad p\xE5 {name}",
+          hapticsReceiverPassthrough: "Ljudet g\xE5r direkt till receivern \u2014 basen kan inte k\xE4nnas.",
+          hapticsReceiverNoAudio: "Det h\xE4r ljudsp\xE5ret g\xE5r inte att analysera.",
+          hapticsReceiverRemoved: "{name} har tagit bort den h\xE4r telefonen.",
+          hapticsReceiverHostOff: "{name} har st\xE4ngt av K\xE4nn basen.",
+          hapticsNotifFeeling: "K\xE4nner basen fr\xE5n {name}",
+          hapticsNotifReconnecting: "\xC5teransluter\u2026",
+          hapticsNotifStop: "St\xE4ng",
           advTransferTitle: "Flytta inst\xE4llningar till en annan enhet",
           advTransferHint: "Kopiera allt du st\xE4llt in h\xE4r \u2014 k\xE4llor, nycklar, layout, listor \u2014 till en annan Lumio p\xE5 samma wifi. Inst\xE4llningar som h\xF6r till en viss enhet, som TV-l\xE4ge, ljudutg\xE5ng, gester och autospelningens gr\xE4nser, stannar d\xE4r de \xE4r.",
           advTransferReceiveTitle: "Ta emot fr\xE5n annan enhet",
           advTransferReceiveDesc: "B\xF6rja h\xE4r p\xE5 enheten som ska f\xE5 inst\xE4llningarna. Den visar en kod och blir synlig f\xF6r andra Lumio-enheter p\xE5 n\xE4tet i tio minuter.",
           advTransferReceiveStart: "Ta emot",
           advTransferReceiveStop: "Avbryt",
-          advTransferReceiveWaiting: "V\xE4ntar\u2026 \xD6ppna Inst\xE4llningar \u2192 Avancerat \u2192 Skicka till annan enhet p\xE5 den andra enheten, v\xE4lj den h\xE4r och skriv koden:",
+          advTransferReceiveWaiting: "V\xE4ntar\u2026 \xD6ppna Inst\xE4llningar \u2192 Profiler \u2192 Skicka till annan enhet p\xE5 den andra enheten, v\xE4lj den h\xE4r och skriv koden:",
           advTransferReceiveIpHint: "Syns inte den h\xE4r enheten i listan, skriv in adressen manuellt:",
           advTransferReceived: "Inst\xE4llningar mottagna \u2014 startar om\u2026",
           advTransferSendTitle: "Skicka till annan enhet",
@@ -7657,9 +8382,40 @@
           onboardingExternalGroup: "Externa",
           onboardingThirdParty: "Tredjepart",
           onboardingExternalDisclaimer: "Externa till\xE4gg utvecklas och underh\xE5lls av respektive utvecklare \u2014 inte av Lumio. De h\xE4mtas fr\xE5n utvecklarens egna kodf\xF6rr\xE5d och anv\xE4nds p\xE5 eget ansvar.",
-          onboardingDiscoverEyebrow: "UPPT\xC4CK",
-          onboardingDiscoverTitle: "Hitta n\xE4sta favorit",
-          onboardingDiscoverDesc: "Utforska trender, releasekalendern och samlade rader f\xF6r film och serier \u2014 en mediahub byggd f\xF6r inspiration.",
+          onboardingSyncEyebrow: "SYNK",
+          onboardingSyncTitle: "Har du redan Lumio?",
+          onboardingSyncDesc: "H\xE4mta k\xE4llor, nycklar, layout och listor fr\xE5n en annan enhet eller fr\xE5n din egen WebDAV-lagring. Inget att h\xE4mta? Tryck N\xE4sta.",
+          onboardingSyncReceiveDesc: "Samma wifi. Den h\xE4r enheten visar en kod som du skriver in p\xE5 den andra.",
+          onboardingSyncWebdavDesc: "Nextcloud, ownCloud, Koofr, en NAS \u2014 din egen lagring. H\xE5ller enheterna i synk fram\xF6ver.",
+          onboardingSyncVisible: "Synlig p\xE5 n\xE4tet \xB7 {time} kvar",
+          onboardingSyncReceivedFrom: "Inst\xE4llningar mottagna fr\xE5n {device}",
+          onboardingSyncReceivedGeneric: "Inst\xE4llningar mottagna",
+          onboardingSyncReceivedDesc: "K\xE4llor, nycklar, layout och listor \xE4r p\xE5 plats. Enhetsberoende inst\xE4llningar som TV-l\xE4ge och autospelningens gr\xE4nser stannar som de \xE4r. Till\xE4ggen \xE4r f\xF6rbockade i n\xE4sta steg.",
+          onboardingSyncFoot: "Allt h\xE4r finns ocks\xE5 under Inst\xE4llningar \u2192 Profiler.",
+          onboardingSyncBadgeReceived: "Mottaget",
+          onboardingSyncBadgeConnected: "Ansluten",
+          onboardingPluginsFromSync: "F\xF6rbockade fr\xE5n din andra enhet",
+          onboardingPerfSuggested: "F\xF6rslag",
+          onboardingRailWelcome: "V\xE4lkommen",
+          onboardingRailLanguage: "Spr\xE5k",
+          onboardingRailSync: "Synk",
+          onboardingRailPlugins: "Till\xE4gg",
+          onboardingRailIntegrations: "Integrationer",
+          onboardingRailPerformance: "Prestanda",
+          onboardingRailControl: "Klart",
+          onboardingSumLang: "Spr\xE5k",
+          onboardingSumSync: "Synk",
+          onboardingSumPlugins: "Till\xE4gg",
+          onboardingSumTrakt: "Trakt",
+          onboardingSumNone: "Inte valt",
+          onboardingSumSkipped: "Hoppades \xF6ver",
+          onboardingSumReceivedFrom: "Mottaget fr\xE5n {device}",
+          onboardingSumReceived: "Mottaget fr\xE5n annan enhet",
+          onboardingSumWillEnable: "{names} aktiveras",
+          onboardingHintMove: "Flytta",
+          onboardingHintSelect: "V\xE4lj",
+          onboardingHintBack: "F\xF6reg\xE5ende steg",
+          onboardingHintBackKey: "BAK\xC5T",
           onboardingControlEyebrow: "KLART",
           onboardingControlTitle: "Du har full kontroll",
           onboardingControlDesc: "Anpassa startsidan, filter, spr\xE5k och utseende precis som du vill ha det innan du b\xF6rjar.",
@@ -7776,6 +8532,8 @@
           ptSourcesHint: "H\xE4r listas de externa k\xE4llor du sj\xE4lv har lagt till.",
           ptNoSources: "Inga egna k\xE4llor tillagda \xE4n. L\xE4gg till ett GitHub-repo ovan f\xF6r att b\xF6rja.",
           ptInstalledBadge: "Installerad",
+          ptInstallFailed: "Kunde inte installera pluginet.",
+          ptSourceReaddZip: "L\xE4gg till ZIP-filen igen f\xF6r att installera",
           ptUpdating: "H\xE4mtar senaste versionen\u2026",
           ptUpdatedTo: "Uppdaterad till {version} \u2014 starta om f\xF6r att aktivera.",
           ptUpToDate: "Redan senaste versionen.",
@@ -7819,6 +8577,8 @@
           libraryServerUnreachable: "Fick ingen uppspelningsadress fr\xE5n {source}. Kontrollera att servern \xE4r ig\xE5ng.",
           libraryRowSuffix: "i ditt bibliotek",
           libraryModeTab: "Bibliotek",
+          libraryModeChip: "Biblioteksl\xE4ge",
+          libraryTabRowsCaption: "Rader per bibliotek:",
           libraryModeTitle: "Biblioteksl\xE4ge",
           libraryModeHint: "N\xE4r ett bibliotek \xE4r startsida filtreras varje rad mot det du \xE4ger. Rader utan indexerat inneh\xE5ll g\xF6ms; siffran visar hur m\xE5nga titlar raden kan visa just nu.",
           libraryUseAsHome: "Anv\xE4nd som startsida",
@@ -7834,6 +8594,30 @@
           localLibraryEmpty: "Inga mappar \xE4nnu.",
           localLibraryScanning: "Indexerar\u2026 {done}",
           localLibraryNotIndexed: "Inte indexerad \xE4nnu",
+          webdavLibraryTitle: "N\xE4tverksmappar (WebDAV)",
+          webdavLibraryHint: "En mapp p\xE5 en WebDAV-server blir ett eget bibliotek med egen menying\xE5ng, precis som en lokal mapp. Filerna matchas mot TMDB via namnet och str\xF6mmas genom appen \u2014 l\xF6senordet stannar p\xE5 den h\xE4r enheten.",
+          webdavLibraryAdd: "L\xE4gg till mapp",
+          webdavLibraryUrl: "Serveradress",
+          webdavLibraryUsername: "Anv\xE4ndarnamn",
+          webdavLibraryPassword: "L\xF6senord",
+          webdavLibraryPasswordKeep: "Of\xF6r\xE4ndrat",
+          webdavLibraryName: "Namn i menyn",
+          webdavLibraryNamePlaceholder: "H\xE4mtas fr\xE5n adressen om det l\xE4mnas tomt",
+          webdavLibraryTest: "Testa",
+          webdavLibraryTestOk: "Anslutningen fungerar",
+          webdavLibrarySave: "Spara och indexera",
+          webdavLibraryCancel: "Avbryt",
+          webdavLibraryEdit: "\xC4ndra",
+          webdavLibraryEmpty: "Inga n\xE4tverksmappar \xE4nnu.",
+          webdavLibraryListing: "Listar mappar\u2026 {done}/{total}",
+          webdavLibraryErrAuth: "Servern godk\xE4nde inte anv\xE4ndarnamnet eller l\xF6senordet.",
+          webdavLibraryErrNotFound: "Mappen finns inte p\xE5 servern.",
+          webdavLibraryErrNetwork: "Kunde inte n\xE5 servern.",
+          webdavLibraryErrNotWebdav: "Adressen svarade, men inte som en WebDAV-mapp.",
+          webdavLibraryErrUrl: "Skriv en hel adress som b\xF6rjar med http:// eller https://, utan anv\xE4ndarnamn eller l\xF6senord i den.",
+          webdavLibraryErrTooLarge: "Mappen \xE4r f\xF6r stor f\xF6r att listas i ett svep. Peka adressen mot en undermapp.",
+          webdavLibraryErrUpstream: "Servern svarade med ett fel. F\xF6rs\xF6k igen om en stund.",
+          webdavLibraryErrLocalOnly: "N\xE4tverksmappar kan bara \xE4ndras p\xE5 enheten som k\xF6r Lumio.",
           libraryRowUnmatched: "Ej identifierade",
           librarySourceNotIndexed: "Inte indexerat \xE4nnu \u2014 bygg indexet i pluginets inst\xE4llningar.",
           libraryModeOff: "Inget bibliotek \xE4r startsida. Sl\xE5 p\xE5 det under bibliotekspluginets inst\xE4llningar.",
@@ -7857,6 +8641,13 @@
           libraryEpisodeNotInLibrary: "Avsnittet finns inte i ditt bibliotek",
           libraryRowNotLoaded: "inte laddad \xE4nnu",
           libraryRowRecent: "Nyligen tillagt i biblioteket",
+          libraryRowMovies: "Filmer i biblioteket",
+          tvLibraryTabRowsLabel: "Biblioteksflik",
+          tvLibraryTabRowsDesc: "Redigera raderna f\xF6r ett bibliotek i menyn i st\xE4llet f\xF6r en sida ovan.",
+          tvLibraryTabRowsNone: "Ingen",
+          libraryRowSeries: "Serier i biblioteket",
+          libraryTabRowsFollowHome: "Biblioteket visar startsidans rader tills du \xE4ndrar dem h\xE4r.",
+          libraryTabRowsUntouched: "Visar de rekommenderade raderna f\xF6r biblioteket. Dina \xE4ndringar tar \xF6ver n\xE4r du redigerar.",
           libraryRowContinue: "Bibliotekets progress i Senast sedda",
           libraryRowUnseen: "Osedda favoriter",
           libraryRowGenre: "Genre",
@@ -8326,7 +9117,305 @@
           pluginYoutubeMissingChannelId: "Kanalens ID saknas.",
           ptNeedsNewerApp: "Uppdateringen kr\xE4ver en nyare version av appen.",
           ptScanSummary: "{updated} uppdaterade, {uptodate} redan aktuella, {failed} misslyckades.",
-          ptScanNoUpdates: "Alla plugins \xE4r p\xE5 senaste versionen."
+          ptScanNoUpdates: "Alla plugins \xE4r p\xE5 senaste versionen.",
+          // Profilsidan
+          profKicker: "Lumio \xB7 Profil",
+          profYourProfile: "Din profil",
+          profSince: "Sedan {date} \xB7 {movies} filmer \xB7 {series} serier",
+          profSwitch: "Byt profil",
+          profViewProfile: "Visa profil",
+          profMyProfile: "Min profil",
+          profTabOverview: "\xD6versikt",
+          profTabGalaxy: "Smakgalaxen",
+          profTabDiary: "Filmdagbok",
+          profTabHunt: "Filmografijakt",
+          profTabWrapped: "Wrapped",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Flytta \xB7 OK V\xE4lj \xB7 Bak\xE5t St\xE4ng",
+          profEmptyFirstStar: "Titta p\xE5 din f\xF6rsta film s\xE5 t\xE4nds f\xF6rsta stj\xE4rnan.",
+          profGalaxyLine: "{stars} stj\xE4rnor, {constellations} stj\xE4rnbilder och {zones} m\xF6rka zoner",
+          profGalaxyDesc: "Varje film du sett \xE4r en stj\xE4rna. Regiss\xF6rer bildar stj\xE4rnbilder.",
+          profViewingN: "G\xE5ng {n}",
+          profSecondViewing: "Andra g\xE5ngen",
+          profDiaryList: "Dagbok",
+          profDiaryBook: "Sj\xE4lvbiografi",
+          profDiaryNote: "Skrivs utifr\xE5n vad du tittar p\xE5 i Lumio.",
+          profDiaryEmpty: "H\xE4r st\xE5r ingenting \xE4n.",
+          profApprox: "Ungef\xE4rligt",
+          profChapters: "Kapitel",
+          profChKicker: "Kapitel {n} \xB7 {year}",
+          profChKickerOngoing: "Kapitel {n} \xB7 {year} (p\xE5g\xE5r)",
+          profChShort: "{n}. {year}",
+          profChTitles: "Du s\xE5g {n} titlar, ungef\xE4r {h} timmar.",
+          profChTop: "{title} var den du \xE5terv\xE4nde till \u2013 {n} g\xE5nger.",
+          profChLate: "{p} % av kv\xE4llarna b\xF6rjade efter tio.",
+          profChDirector: "{name} var \xE5rets regiss\xF6r, med {n} filmer.",
+          profChTitleNight: "\xC5ret med de sena kv\xE4llarna",
+          profChTitleDirector: "\xC5ret med {name}",
+          profChTitleRewatch: "\xC5ret med {title}",
+          profChTitleDefault: "Ett \xE5r i film",
+          profHuntEmpty: "Se tv\xE5 filmer av samma regiss\xF6r s\xE5 b\xF6rjar en jakt.",
+          profHuntKicker: "Filmografi",
+          profHuntSeen: "Du har sett {seen}/{total} {name}",
+          profHuntMissing: "{n} kvar att hitta.",
+          profHuntAllSeen: "Du har sett alla.",
+          profHuntMakeRow: "G\xF6r en rad",
+          profHuntMakeCollection: "G\xF6r en samling",
+          profHuntRowName: "{name} \u2013 kvar att se",
+          profHuntHomeRowMade: 'Raden "{name}" finns nu p\xE5 startsidan.',
+          profHuntRowMade: 'Raden "{name}" \xE4r skapad \u2013 l\xE4gg till den p\xE5 startsidan via Inst\xE4llningar.',
+          profHuntRowFailed: "Raden gick inte att skapa \u2013 du kanske har f\xF6r m\xE5nga rader.",
+          profHuntNew: "+ Jaga en ny regiss\xF6r",
+          profHuntSearchPh: "S\xF6k regiss\xF6r",
+          profHuntDocs: "+ Dokument\xE4rer",
+          profHuntShorts: "+ Kortfilmer",
+          profBadgeFirst: "F\xF6rsta steget",
+          profBadgeHalf: "Halvv\xE4gs",
+          profBadgeAlmost: "N\xE4stan d\xE4r",
+          profBadgeComplete: "Komplett",
+          profBadgeInOrder: "I ordning",
+          profWrappedTeaser: "{h} timmar.\nOch mer.",
+          profWrappedKicker: "Lumio Wrapped {year}",
+          profWrappedPlay: "Spela upp ditt \xE5r \u2192",
+          profMoreAboutYou: "Mer om dig",
+          profClose: "St\xE4ng",
+          profModColor: "F\xE4rg\xE5ret",
+          profModColorLine: "Ditt \xE5r som en remsa av filmf\xE4rger.",
+          profModSlept: "Somnade-listan",
+          profModSleptLine: "Allt du somnade till.",
+          profModCouch: "Soffkompisar",
+          profModCouchLine: "Vem du tittar med, och vad ni \xE4r \xF6verens om.",
+          profModClock: "Tittarklockan",
+          profModClockLine: "N\xE4r i veckan du tittar.",
+          profModCapsule: "Tidskapseln",
+          profModCapsuleLine: "F\xF6rsegla en film till ditt framtida jag.",
+          profModRecords: "Rekordtavlan",
+          profModRecordsLine: "L\xE4ngsta maraton, senaste natten och mer.",
+          profModAbandoned: "\xD6vergivna",
+          profModAbandonedLine: "Filmer du gav upp tidigt.",
+          profModQuiz: "Quizprofilen",
+          profModQuizLine: "Vad du tittar p\xE5 mot vad du kan.",
+          profModBack: "\u2190 Profil",
+          profModColorTitle: "Ditt \xE5r som en enda remsa",
+          profModColorDesc: "Varje strimma \xE4r en films barcode, i den ordning du s\xE5g dem. V\xE4lj en m\xE5nad f\xF6r att se vilka filmer som gav f\xE4rgen.",
+          profModColorNote: "Fr\xE5n dina barcodes",
+          profModSleptTitle: "Filmer du somnade till",
+          profModSleptDesc: "S\xF6mntimern vet exakt var du slocknade. Forts\xE4tt d\xE4rifr\xE5n, eller b\xF6rja om n\xE4r du \xE4r piggare.",
+          profModSleptNote: "Fr\xE5n s\xF6mntimern",
+          profModCouchTitle: "Vem du tittar med",
+          profModCouchDesc: "Smakmatch per profil och f\xF6rslag som passar er b\xE5da, baserat p\xE5 vad ni sett tillsammans och var f\xF6r sig.",
+          profModCouchNote: 'Fr\xE5n "Vem tittar med?"',
+          profModClockTitle: "N\xE4r du tittar",
+          profModClockDesc: "Veckodag mot klockslag f\xF6r allt du startat. V\xE4lj en dag f\xF6r att se dina vanor.",
+          profModClockNote: "Fr\xE5n starttiderna i dagboken",
+          profModCapsuleTitle: "Skicka en film till framtiden",
+          profModCapsuleDesc: "V\xE4lj en film i dag. Lumio f\xF6resl\xE5r den igen om n\xE5gra \xE5r, tillsammans med dagens dagbokssida.",
+          profModCapsuleNote: "\xD6ppnas p\xE5 startsidan",
+          profModRecordsTitle: "Dina personliga rekord",
+          profModRecordsDesc: "L\xE4ngsta maraton, senaste kv\xE4llen och mer. Nya rekord markeras n\xE4r de sl\xE5s.",
+          profModRecordsNote: "Fr\xE5n dagboken",
+          profModAbandonedTitle: "Filmer du gav upp",
+          profModAbandonedDesc: "Allt du l\xE4mnat under 20 %. Ge dem en andra chans eller sl\xE4pp taget f\xF6r gott.",
+          profModAbandonedNote: "Fr\xE5n dagboken",
+          profSleptSummary: "Du somnar oftast p\xE5 {day}, i snitt {m} minuter in.",
+          profSleptTopGenre: "{genre} st\xE5r f\xF6r {n} av {total} tupplurar.",
+          profSleptWhen: "{date} \xB7 somnade {time}",
+          profSleptResume: "Forts\xE4tt {time}",
+          profSleptRestart: "B\xF6rja om",
+          profSleptRemove: "Ta bort",
+          profSleptEmpty: "Listan \xE4r tom. Du har vaknat till allt.",
+          profAbandonedCount: "{n} filmer l\xE4mnade under 20 %.",
+          profAbandonedWhen: "Slutade vid {p} % \xB7 {date}",
+          profAbandonedRetry: "Andra chans",
+          profAbandonedAdded: "I Forts\xE4tt titta",
+          profAbandonedLetGo: "Sl\xE4pp taget",
+          profAbandonedDismissRow: "Ta bort {title} fr\xE5n listan",
+          profAbandonedEmpty: "Inget \xF6vergivet. Du ser klart det du b\xF6rjar p\xE5.",
+          profModQuizTitle: "Vad du kan, mot vad du ser",
+          profModQuizDesc: "Dina resultat i filmquizet per genre, j\xE4mf\xF6rt med hur mycket du faktiskt tittar p\xE5 genren.",
+          profModQuizNote: "Fr\xE5n filmquizet",
+          profPrevNoCapsule: "Ingen kapsel \xE4n",
+          profPrevOpens: "\xD6ppnas",
+          profPrevTogether: "{n} filmer tillsammans",
+          profPrevEmpty: "Inget h\xE4r \xE4n",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "L\xE4ngsta maraton",
+          profRecLatestNight: "Senaste kv\xE4llen",
+          profRecMostInDay: "Flest filmer p\xE5 en dag",
+          profRecLongestFilm: "L\xE4ngsta film",
+          profRecMostRewatched: "Flest omtittningar",
+          profRecStreak: "L\xE4ngsta svit",
+          profRecStreakValue: "{n} dagar",
+          profDayPl0: "m\xE5ndagar",
+          profDayPl1: "tisdagar",
+          profDayPl2: "onsdagar",
+          profDayPl3: "torsdagar",
+          profDayPl4: "fredagar",
+          profDayPl5: "l\xF6rdagar",
+          profDayPl6: "s\xF6ndagar",
+          profColorMonthCount: "{month}: {n} filmer",
+          profColorMoodRecord: "\xC5rets rekordm\xE5nad",
+          profColorMoodDark: "\xC5rets m\xF6rkaste m\xE5nad",
+          profColorMoodBright: "\xC5rets ljusaste m\xE5nad",
+          profColorUseBg: "Anv\xE4nd som profilbakgrund",
+          profColorRemoveBg: "Ta bort profilbakgrund",
+          profColorBgSet: "Remsan ligger nu bakom din profil.",
+          profColorExport: "Exportera som bild",
+          profColorShareTitle: "F\xE4rg\xE5ret {year}",
+          profColorFilms: "{n} filmer",
+          profColorEmpty: "Inga sedda filmer i \xE5r \xE4n.",
+          profColorNoBarcodeNote: "Gr\xE5 strimmor = filmer utan barcode \xE4n. Spela dem i Lumio s\xE5 fylls f\xE4rgen i.",
+          profShareSaved: "Bilden \xE4r sparad.",
+          profShareFailed: "Bilden gick inte att skapa.",
+          profShareNoLan: "Hittade ingen n\xE4tverksadress f\xF6r telefonen.",
+          profShareScan: "Skanna med telefonen f\xF6r att spara bilden.",
+          profClockTopTime: "Topptimme",
+          profClockFilms: "Filmer",
+          profClockUsual: "Oftast",
+          profClockBigNight: "Veckans stora kv\xE4ll.",
+          profClockWith: "Oftast med {name}.",
+          profClockEmpty: "Starta n\xE5gra filmer s\xE5 fylls klockan i.",
+          profRecNew: "Nytt",
+          profRecMarathonHow: "{n} i rad fr\xE5n {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "i rad, till {date}",
+          profRecEmpty: "Rekorden dyker upp n\xE4r du har n\xE5gra kv\xE4llar bakom dig.",
+          profPrevMatch: "smakmatch med {name}",
+          profCouchUsual: "Oftast: {day} {time}",
+          profCouchDisagree: "Oenigast om: {genre}",
+          profCouchTonight: "Kv\xE4llens film f\xF6r er b\xE5da",
+          profCouchReasonBoth: "P\xE5 b\xE5da listorna",
+          profCouchReasonRec: "Liknar {title}",
+          profCouchStart: "Starta en kv\xE4ll ihop",
+          profCouchSolo: "L\xE4gg till en profil till s\xE5 ser du vem du tittar med.",
+          profCouchHint: "V\xE4lj vem som tittar med n\xE4r du startar en film, s\xE5 fylls det h\xE4r i.",
+          profCouchNoPicks: "Inga gemensamma f\xF6rslag \xE4n.",
+          profQuizLegendWatch: "Andel av ditt tittande",
+          profQuizLegendRight: "R\xE4tt svar i quizet",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "Du kan mest om {best}, fast du tittar mest p\xE5 {watched}.",
+          profQuizSummarySame: "Du kan {best} b\xE4st \u2014 och tittar mest p\xE5 det.",
+          profQuizWeak: "{weak} \xE4r din svaga punkt.",
+          profQuizEmpty: "Spela en runda filmquiz s\xE5 dyker resultaten upp h\xE4r.",
+          profCapStep1: "1 \xB7 V\xE4lj en film",
+          profCapStep2: "2 \xB7 N\xE4r ska den \xF6ppnas?",
+          profCapYears: "{n} \xE5r",
+          profCapLine: "{title} \xF6ppnas {date}.",
+          profCapSeal: "F\xF6rslut kapseln",
+          profCapSealing: "F\xF6rsluter\u2026",
+          profCapSealed: "F\xF6rseglad. Vi ses {date}.",
+          profCapAnother: "F\xF6rsegla en till",
+          profCapYours: "Dina kapslar",
+          profCapOpens: "\xD6ppnas {date}",
+          profCapOpened: "\xD6ppnad {date}",
+          profCapNone: "Inga kapslar \xE4n.",
+          profCapNoFilms: "Se klart en film f\xF6rst \u2014 sedan kan du skicka den fram\xE5t.",
+          profCapDueKicker: "Tidskapseln \xB7 \xF6ppnad i dag",
+          profCapDueLine: "Du f\xF6rseglade {title} den {date}.",
+          profCapOpen: "\xD6ppna",
+          profDiaryAsleep: "Somnade {time} \xB7 {p} %",
+          profGxDirectors: "Regiss\xF6rer",
+          profGxGenres: "Genrer",
+          profGxWhole: "\u2190 Hela galaxen",
+          profGxExplore: "Utforska",
+          profGxPickTitle: "V\xE4lj en stj\xE4rna eller en m\xF6rk zon",
+          profGxPickBody: "Stj\xE4rnbilder \xE4r regiss\xF6rer du f\xF6ljt l\xE4nge. Streckade cirklar \xE4r genrer du n\xE4stan aldrig tittat p\xE5.",
+          profGxStar: "Stj\xE4rna",
+          profGxSeenTimes: "Sedd {n} g\xE5nger \xB7 senast {date}",
+          profGxSeenOnce: "Sedd en g\xE5ng \xB7 {date}",
+          profGxNextStar: "N\xE4sta stj\xE4rna \u2192",
+          profGxDetails: "Detaljer",
+          profGxHunt: "Filmografijakt",
+          profGxDarkZone: "M\xF6rk zon",
+          profGxZoneBetween: "{n} sedda. Ligger mellan {a} och {b}.",
+          profGxZoneNear: "{n} sedda. Ligger intill {a}.",
+          profGxZoneEdge: "{n} sedda. Ett outforskat h\xF6rn.",
+          profGxOkHint: "p\xE5 zonen f\xF6r att flyga dit",
+          profGxFly: "Flyg dit",
+          profGxLightFirst: "T\xE4nd de f\xF6rsta stj\xE4rnorna",
+          profGxLoading: "Letar filmer\u2026",
+          profGxNoSuggestions: "Inga f\xF6rslag just nu. F\xF6rs\xF6k igen senare.",
+          profGxPlay: "Spela",
+          profGxConstellations: "Stj\xE4rnbilder",
+          profGxZones: "M\xF6rka zoner",
+          settingsPageProfilePage: "Profilsida",
+          ppWeatherGroup: "V\xE4der i dagboken",
+          ppWeatherToggle: "Spara v\xE4dret",
+          ppWeatherToggleDesc: "N\xE4r en film slutar h\xE4mtar Lumio v\xE4dret f\xF6r din ort en g\xE5ng (Open-Meteo, inget konto). Av: inga uppslag alls.",
+          ppWeatherPlace: "Ort",
+          ppWeatherNoPlace: "Ingen ort vald \xE4n.",
+          ppWeatherSearchPh: "t.ex. G\xF6teborg",
+          ppWeatherSearch: "S\xF6k",
+          ppWeatherSearching: "S\xF6ker\u2026",
+          ppWeatherNoResults: "Ingen ort hittades.",
+          ppWeatherFailed: "S\xF6kningen misslyckades. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
+          ppWeatherCredit: "V\xE4derdata fr\xE5n Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "hittills i \xE5r",
+          profWrPrev: "F\xF6reg\xE5ende",
+          profWrNext: "N\xE4sta",
+          profWrNotEnough: "Wrapped beh\xF6ver minst 10 sessioner under {year}. Forts\xE4tt titta!",
+          profWrIntroTitle: "Ditt \xE5r\ni film.",
+          profWrIntroBody: "{n} stj\xE4rnor senare. Tryck f\xF6r att b\xF6rja.",
+          profWrIntroBodyTv: "{n} stj\xE4rnor senare. Tryck \u25B6 f\xF6r att b\xF6rja.",
+          profWrGuessKicker: "Gissa f\xF6rst",
+          profWrGuessQ: "Vilken genre tittade du mest p\xE5 i \xE5r?",
+          profWrGuessRight: "Helt r\xE4tt. {genre}, med {h} timmar.",
+          profWrGuessWrong: "N\xE4ra. Det blev {genre}, med {h} timmar.",
+          profWrNoGenres: "Inte tillr\xE4ckligt med genredata \xE4n.",
+          profWrHoursKicker: "Du tittade i",
+          profWrHoursUnit: "timmar",
+          profWrDays: "= {n} dygn i soffan",
+          profWrInterstellar: "= {n} Interstellar i rad",
+          profWrEpisodes: "= {n} avsnitt av en halvtimmesserie",
+          profWrGenreKicker: "Genretopplistan",
+          profWrGenreWon: "{genre} vann.",
+          profWrHoursShort: "{h} tim",
+          profWrGoldenKicker: "Gyllene timmen",
+          profWrGoldenBody: "Klockslaget d\xE5 du oftast tryckte p\xE5 play.",
+          profWrStarsKicker: "Dina stj\xE4rnor",
+          profWrStarsTitle: "Sk\xE5despelarna du s\xE5g mest.",
+          profWrStarsNone: "Inte tillr\xE4ckligt med rollistor \xE4n.",
+          profWrStarsFilms: "{n} filmer",
+          profWrRewatchKicker: "Mest omsedda",
+          profWrRewatchNone: "Inga omtittningar i \xE5r \u2014 alltid n\xE5got nytt.",
+          profWrSleepTitle: "{n} g\xE5nger somnade du.",
+          profWrSleepNone: "Du h\xF6ll dig vaken hela \xE5ret.",
+          profWrBuddyTitle: "Du och {name} s\xE5g {n} filmer ihop.",
+          profWrBuddyNone: "Mest du och sk\xE4rmen i \xE5r.",
+          profWrPersKicker: "Din filmpersonlighet",
+          profWrTraitNight: "Nattuggla",
+          profWrTraitNightValue: "startar {time}",
+          profWrTraitGenre: "Genretrogen",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Omtittare",
+          profWrTraitRewatchValue: "{n} omtittningar",
+          profWrTraitNap: "Somnar",
+          profWrTraitNapValue: "vid {p} %",
+          profWrShareTitle: "Dela ditt \xE5r.",
+          profWrShare: "Dela",
+          profWrReplay: "Spela igen",
+          profWrCardHours: "totalt",
+          profWrCardGenre: "toppgenre",
+          profWrCardTitle: "mest spelad",
+          profWrCardNaps: "tupplurar",
+          profWrBNight: "Nattugglan",
+          profWrBRewatch: "Omtittaren",
+          profWrBNap: "Tupplursm\xE4staren",
+          profWrBMarathon: "Maratonl\xF6paren",
+          profWrBExplorer: "Uppt\xE4ckaren",
+          profWrAScifi: "fr\xE5n rymden",
+          profWrADrama: "med hj\xE4rtat utanp\xE5",
+          profWrAHorror: "fr\xE5n m\xF6rkret",
+          profWrAComedy: "som skrattar f\xF6rst",
+          profWrAAnimation: "med tecknad sj\xE4l",
+          profWrADocumentary: "som vill veta",
+          profWrAThriller: "p\xE5 helsp\xE4nn",
+          profWrAAction: "i full fart",
+          profWrARomance: "med rosa glas\xF6gon",
+          profWrACrime: "fr\xE5n undre v\xE4rlden",
+          profWrAFantasy: "fr\xE5n sagolandet",
+          profWrAOther: "utan karta"
         }
       };
       detachedLangContextValue = {
@@ -8513,13 +9602,22 @@
     return readJson(await fetch("/api/library/status", { cache: "no-store" }));
   }
   async function postLibraryBatch(source, batch) {
-    return readJson(
-      await fetch("/api/library/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] })
-      })
-    );
+    const body = JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] });
+    for (let attempt = 0; ; attempt += 1) {
+      let response;
+      try {
+        response = await fetch("/api/library/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body
+        });
+      } catch (err) {
+        if (attempt >= BATCH_RETRY_DELAYS_MS.length) throw err;
+        await new Promise((resolve) => setTimeout(resolve, BATCH_RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      return readJson(response);
+    }
   }
   async function fetchLibraryKeys(sourceId) {
     const params = sourceId ? `?sourceId=${encodeURIComponent(sourceId)}` : "";
@@ -8547,11 +9645,13 @@
     const payload = await readJson(response);
     return payload.item;
   }
+  var BATCH_RETRY_DELAYS_MS;
   var init_client = __esm({
     "lib/library/client.ts"() {
       "use client";
       init_ids();
       init_mode();
+      BATCH_RETRY_DELAYS_MS = [1e3, 3e3];
     }
   });
 
@@ -8563,26 +9663,257 @@
     }
   });
 
+  // lib/local-episode-files.ts
+  function parseSeasonEpisode(filename) {
+    for (const pattern of SEASON_EPISODE_PATTERNS) {
+      const match = filename.match(pattern);
+      if (!match) continue;
+      const season = Number(match[1]);
+      const episode = Number(match[2]);
+      if (!Number.isFinite(season) || !Number.isFinite(episode)) continue;
+      if (season < 0 || episode < 1) continue;
+      return { season, episode };
+    }
+    return null;
+  }
+  var SEASON_EPISODE_PATTERNS;
+  var init_local_episode_files = __esm({
+    "lib/local-episode-files.ts"() {
+      SEASON_EPISODE_PATTERNS = [
+        // Inget avslutande \b: dubbelavsnitt heter `S01E02E03`, och en gräns där
+        // kräver en icke-bokstav efter numret — så hela filen föll bort.
+        /\bs\s*(\d{1,2})\s*[._\- ]?\s*e\s*(\d{1,3})/i,
+        // Två siffror i avsnittsledet med flit: `4x4` i ett filnamn är en bil, inte
+        // säsong 4 avsnitt 4. `1x02` är ett avsnitt.
+        /\b(\d{1,2})\s*x\s*(\d{2,3})\b/i,
+        /\bseason\s*(\d{1,2})\s*[._\- ]*episode\s*(\d{1,3})\b/i
+      ];
+    }
+  });
+
+  // lib/local-files-storage.ts
+  var init_local_files_storage = __esm({
+    "lib/local-files-storage.ts"() {
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/library/local-folders.ts
+  var init_local_folders = __esm({
+    "lib/library/local-folders.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      init_local_files_storage();
+    }
+  });
+
+  // lib/library/local-folder-provider.ts
+  function parseLocalName(filename, parentFolder) {
+    const stem = filename.replace(/\.[a-z0-9]{2,4}$/i, "");
+    const se = parseSeasonEpisode(stem);
+    let work = stem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
+    const quality = work.match(QUALITY_TOKENS);
+    const qualityTokens = Array.from(work.matchAll(new RegExp(QUALITY_TOKENS.source, "gi"))).map((m) => m[0].toUpperCase());
+    const cuts = [];
+    const seMatch = work.match(/\bs\s*\d{1,2}\s*[._\- ]?\s*e\s*\d{1,3}|\b\d{1,2}x\d{2,3}\b|\bseason\s*\d{1,2}/i);
+    if (seMatch?.index != null) cuts.push(seMatch.index);
+    let year = null;
+    for (const yearMatch of work.matchAll(/(?:^|[\s(\[])((?:19|20)\d{2})(?=[\s)\]]|$)/g)) {
+      const at = yearMatch.index ?? 0;
+      const digitsAt = at + yearMatch[0].indexOf(yearMatch[1]);
+      if (digitsAt === 0) continue;
+      year = Number.parseInt(yearMatch[1], 10);
+      cuts.push(at);
+      break;
+    }
+    if (quality?.index != null) cuts.push(quality.index);
+    if (cuts.length > 0) work = work.slice(0, Math.min(...cuts));
+    let title = work.replace(/[\s\-–(\[]+$/g, "").trim();
+    if (se && (title.length === 0 || /^(season|säsong|s)\s*\d+/i.test(title)) && parentFolder) {
+      const parsedFolder = parseLocalName(`${parentFolder}.mkv`);
+      title = parsedFolder.title;
+      year = year ?? parsedFolder.year;
+    }
+    return {
+      title: title || stem,
+      year,
+      season: se?.season ?? null,
+      episode: se?.episode ?? null,
+      qualityLabel: qualityTokens.length > 0 ? [...new Set(qualityTokens)].slice(0, 3).join(" \xB7 ") : (filename.split(".").pop() ?? "Video").toUpperCase()
+    };
+  }
+  function normalizeKey(title) {
+    return title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  function readMatchCache() {
+    try {
+      const raw = getScopedStorageItem(MATCH_CACHE_KEY);
+      if (raw) return JSON.parse(raw);
+      const legacy = getScopedStorageItem(LEGACY_MATCH_CACHE_KEY);
+      if (!legacy) return {};
+      const hits = {};
+      for (const [key, entry] of Object.entries(JSON.parse(legacy))) {
+        if (entry?.hit) hits[key] = entry;
+      }
+      return hits;
+    } catch {
+      return {};
+    }
+  }
+  function writeMatchCache(cache7) {
+    try {
+      setScopedStorageItem(MATCH_CACHE_KEY, JSON.stringify(cache7));
+    } catch {
+    }
+  }
+  async function searchTmdb(title, year, kind) {
+    const params = new URLSearchParams({ query: title });
+    if (year) params.set("year", String(year));
+    const response = await fetch(`/api/local-files/search?${params}`);
+    if (!response.ok) return void 0;
+    const data = await response.json();
+    const results = (data.results ?? []).filter((hit) => hit.type === kind);
+    if (results.length === 0 && year) {
+      const retry = await fetch(`/api/local-files/search?${new URLSearchParams({ query: title })}`);
+      if (!retry.ok) return void 0;
+      const retryData = await retry.json();
+      return (retryData.results ?? []).find((hit) => hit.type === kind) ?? null;
+    }
+    return results[0] ?? null;
+  }
+  async function matchCached(title, year, kind, cache7) {
+    const key = `${kind}:${normalizeKey(title)}:${year ?? ""}`;
+    const cached = cache7[key];
+    if (cached && (cached.hit || Date.now() - cached.at < MISS_TTL_MS)) return cached.hit;
+    const hit = await searchTmdb(title, year, kind).catch(() => void 0);
+    if (hit === void 0) return null;
+    cache7[key] = { hit, at: Date.now() };
+    return hit;
+  }
+  async function matchTitlesByName(wanted, signal) {
+    const cache7 = readMatchCache();
+    const out = new Array(wanted.length).fill(null);
+    for (let index = 0; index < wanted.length; index += 2) {
+      if (signal?.aborted) break;
+      await Promise.all(wanted.slice(index, index + 2).map(async (entry, offset) => {
+        const parsed = parseLocalName(`${entry.title}.mkv`);
+        const looksLikeEpisode = parsed.season != null && parsed.episode != null;
+        if (looksLikeEpisode && entry.kind === "movie") return;
+        out[index + offset] = await matchCached(parsed.title || entry.title, entry.year ?? parsed.year, entry.kind, cache7);
+      }));
+    }
+    writeMatchCache(cache7);
+    return out;
+  }
+  var QUALITY_TOKENS, MATCH_CACHE_KEY, LEGACY_MATCH_CACHE_KEY, MISS_TTL_MS;
+  var init_local_folder_provider = __esm({
+    "lib/library/local-folder-provider.ts"() {
+      "use strict";
+      "use client";
+      init_local_episode_files();
+      init_profile_storage_shim();
+      init_local_folders();
+      QUALITY_TOKENS = /\b(2160p|1080p|720p|480p|4k|uhd|hdr|dv|web[- ]?dl|webrip|bluray|blu-ray|bdrip|brrip|hdtv|dvdrip|remux|x264|x265|h\.?264|h\.?265|hevc|avc|aac|ac3|eac3|dts|atmos|truehd|10bit|proper|repack|multi|nordic|swesub|amzn|nf|dsnp|hmax)\b/i;
+      MATCH_CACHE_KEY = "local_library_match_cache_v2";
+      LEGACY_MATCH_CACHE_KEY = "local_library_match_cache_v1";
+      MISS_TTL_MS = 7 * 24 * 60 * 6e4;
+    }
+  });
+
+  // lib/library/name-match.ts
+  async function fillMissingIds(titles, signal, match = matchTitlesByName) {
+    const missing = titles.filter((title) => !title.tmdbId && !title.imdbId);
+    if (missing.length === 0) return titles;
+    const hits = await match(
+      missing.map((title) => ({ title: title.title, year: title.year ?? null, kind: title.kind === "series" ? "tv" : "movie" })),
+      signal
+    );
+    const byKey = /* @__PURE__ */ new Map();
+    missing.forEach((title, index) => {
+      const hit = hits[index];
+      if (hit) byKey.set(title.key, hit);
+    });
+    if (byKey.size === 0) return titles;
+    return titles.map((title) => {
+      const hit = byKey.get(title.key);
+      if (!hit) return title;
+      return {
+        ...title,
+        tmdbId: hit.tmdbId,
+        posterUrl: hit.posterUrl ?? title.posterUrl ?? null,
+        backdropUrl: hit.backdropUrl ?? title.backdropUrl ?? null,
+        overview: title.overview || hit.overview || null,
+        year: title.year ?? hit.year ?? null
+      };
+    });
+  }
+  var init_name_match = __esm({
+    "lib/library/name-match.ts"() {
+      "use strict";
+      "use client";
+      init_local_folder_provider();
+    }
+  });
+
   // lib/library/scan.ts
+  function getActiveLibraryScan() {
+    return active;
+  }
+  function onLibraryScanChanged(listener) {
+    scanListeners.add(listener);
+    return () => {
+      scanListeners.delete(listener);
+    };
+  }
+  function setActive(next) {
+    active = next;
+    for (const listener of scanListeners) listener(next);
+  }
+  function cancelLibraryScan() {
+    if (!activeController) return false;
+    activeController.abort();
+    return true;
+  }
   async function runLibraryScan(provider, source, options) {
     if (running) throw new Error("library scan already running");
     running = true;
+    const controller = new AbortController();
+    activeController = controller;
+    const outer = options.signal;
+    const forward = () => controller.abort();
+    if (outer?.aborted) controller.abort();
+    else outer?.addEventListener("abort", forward, { once: true });
+    setActive({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
+    const onProgress = options.onProgress;
     try {
-      return await runLibraryScanInner(provider, source, options);
+      return await runLibraryScanInner(provider, source, {
+        ...options,
+        signal: controller.signal,
+        onProgress: (progress) => {
+          setActive({ sourceId: source.id, progress });
+          onProgress?.(progress);
+        }
+      });
     } finally {
+      outer?.removeEventListener("abort", forward);
+      activeController = null;
       running = false;
+      setActive(null);
     }
   }
   async function runLibraryScanInner(provider, source, options) {
-    const io = options.io ?? { postBatch: postLibraryBatch, fetchKeys: fetchLibraryKeys };
+    const io = options.io ?? { postBatch: postLibraryBatch, fetchKeys: fetchLibraryKeys, fillIds: fillMissingIds };
+    const fillIds = io.fillIds ?? (async (titles2) => titles2);
     const startedAt = Date.now();
     const sourceRecord = { id: source.id, provider: provider.id, name: source.name, enabled: true };
     const seen = /* @__PURE__ */ new Set();
     let titles = 0;
     let unmatched = 0;
     const report = (progress) => options.onProgress?.(progress);
-    const emit3 = async (batch) => {
+    const emit4 = async (incoming) => {
       if (options.signal?.aborted) return;
+      const batch = incoming.upsert?.length ? { ...incoming, upsert: await fillIds(incoming.upsert, options.signal) } : incoming;
       for (const title of batch.upsert ?? []) {
         seen.add(title.key);
         titles += 1;
@@ -8593,7 +9924,7 @@
     };
     report({ phase: "listing", done: 0 });
     const before = options.mode === "full" ? new Set(await io.fetchKeys(source.id)) : /* @__PURE__ */ new Set();
-    const result = options.mode === "full" ? await provider.scanAll(source, emit3, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit3, report, options.signal ?? new AbortController().signal);
+    const result = options.mode === "full" ? await provider.scanAll(source, emit4, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit4, report, options.signal ?? new AbortController().signal);
     let removed = 0;
     if (options.mode === "full" && !options.signal?.aborted) {
       report({ phase: "pruning", done: titles });
@@ -8616,13 +9947,17 @@
     report({ phase: "done", done: titles, total: titles });
     return { titles, removed, unmatched, cursor: result.cursor ?? null, durationMs: Date.now() - startedAt };
   }
-  var running;
+  var running, active, scanListeners, activeController;
   var init_scan = __esm({
     "lib/library/scan.ts"() {
       "use client";
       init_client();
       init_ids();
+      init_name_match();
       running = false;
+      active = null;
+      scanListeners = /* @__PURE__ */ new Set();
+      activeController = null;
     }
   });
 
@@ -9678,7 +11013,7 @@
   });
 
   // lib/series-watchlist-feed.ts
-  var STREAM_CACHE_TTL_MS, SERIES_STATUS_CACHE_TTL_MS, FAILED_CHECK_RETRY_MS;
+  var STREAM_CACHE_TTL_MS, STREAM_CACHE_POSITIVE_TTL_MS, SERIES_STATUS_CACHE_TTL_MS, FAILED_CHECK_RETRY_MS;
   var init_series_watchlist_feed = __esm({
     "lib/series-watchlist-feed.ts"() {
       "use strict";
@@ -9693,13 +11028,14 @@
       init_source_request();
       init_watched_episodes();
       STREAM_CACHE_TTL_MS = 30 * 60 * 1e3;
+      STREAM_CACHE_POSITIVE_TTL_MS = 6 * 60 * 60 * 1e3;
       SERIES_STATUS_CACHE_TTL_MS = 15 * 60 * 1e3;
       FAILED_CHECK_RETRY_MS = 5 * 60 * 1e3;
     }
   });
 
   // lib/release-watchlist-feed.ts
-  var STREAM_CACHE_TTL_MS2, FAILED_CHECK_RETRY_MS2;
+  var STREAM_CACHE_TTL_MS2, STREAM_CACHE_POSITIVE_TTL_MS2, FAILED_CHECK_RETRY_MS2;
   var init_release_watchlist_feed = __esm({
     "lib/release-watchlist-feed.ts"() {
       "use strict";
@@ -9713,6 +11049,7 @@
       init_core_addons();
       init_source_request();
       STREAM_CACHE_TTL_MS2 = 30 * 60 * 1e3;
+      STREAM_CACHE_POSITIVE_TTL_MS2 = 6 * 60 * 60 * 1e3;
       FAILED_CHECK_RETRY_MS2 = 5 * 60 * 1e3;
     }
   });
@@ -10378,6 +11715,15 @@
           /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
           /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
           /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
+        ] });
+      case "sleepTimer":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" }) });
+      case "companions":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "8", r: "3.2" }),
+          /* @__PURE__ */ jsx("path", { d: "M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5" }),
+          /* @__PURE__ */ jsx("circle", { cx: "17", cy: "9", r: "2.4" }),
+          /* @__PURE__ */ jsx("path", { d: "M16 14c2.6.1 4.4 1.6 5 4.5" })
         ] });
       case "barcodeStrip":
         return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M5 5v14M9 5v14M13 5v14M17 5v14M20 5v14" }) });
@@ -11116,8 +12462,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners4 = this.listeners[event$1];
-              listeners4.splice(listeners4.indexOf(handler), 1);
+              const listeners5 = this.listeners[event$1];
+              listeners5.splice(listeners5.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -11146,8 +12492,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners4 = this.listeners[event$1];
-              listeners4.splice(listeners4.indexOf(handler), 1);
+              const listeners5 = this.listeners[event$1];
+              listeners5.splice(listeners5.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -12968,6 +14314,451 @@
     }
   });
 
+  // lib/watch-journal/types.ts
+  function viewingKey(s) {
+    return `${s.mediaId}|${s.season ?? ""}|${s.episode ?? ""}`;
+  }
+  function isCompleteAt(pos, duration) {
+    return duration > 0 && pos / duration >= COMPLETE_RATIO;
+  }
+  var COMPLETE_RATIO, VIEWING_DEDUPE_WINDOW_MS;
+  var init_types = __esm({
+    "lib/watch-journal/types.ts"() {
+      "use strict";
+      COMPLETE_RATIO = 0.9;
+      VIEWING_DEDUPE_WINDOW_MS = 36 * 36e5;
+    }
+  });
+
+  // lib/watch-journal/recorder-core.ts
+  function defaultCompanions(last2, nowMs) {
+    if (!last2 || last2.ids.length === 0) return [];
+    return nowMs - last2.endedAtMs <= COMPANIONS_WINDOW_MS ? [...last2.ids] : [];
+  }
+  function createRecorder(deps) {
+    let open2 = null;
+    let openKey = "";
+    let lastTickMs = 0;
+    let lastPos = 0;
+    let lastPersistMs = null;
+    let chosen = null;
+    let chosenAtMs = 0;
+    function choiceFor(nowMs) {
+      if (chosen && nowMs - chosenAtMs <= COVIEWER_CHOICE_TTL_MS) return [...chosen];
+      chosen = null;
+      return deps.defaultCoViewers?.() ?? [];
+    }
+    function close() {
+      if (open2 && open2.played >= MIN_PLAYED_S) deps.persist({ ...open2 }, true);
+      open2 = null;
+      openKey = "";
+    }
+    function finish() {
+      close();
+      chosen = null;
+    }
+    function tick2(input, final = false) {
+      if (input.type === "audiobook" || !(input.duration > 0)) return;
+      const nowMs = deps.now();
+      const key = viewingKey(input);
+      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close();
+      const iso = new Date(nowMs).toISOString();
+      if (!open2) {
+        open2 = {
+          id: deps.newId(),
+          profileId: deps.profileId(),
+          mediaId: input.mediaId,
+          tmdbId: input.tmdbId,
+          type: input.type,
+          ...input.season != null ? { season: input.season } : {},
+          ...input.episode != null ? { episode: input.episode } : {},
+          title: input.title,
+          posterUrl: input.posterUrl ?? null,
+          year: input.year ?? null,
+          startedAt: iso,
+          endedAt: iso,
+          updatedAt: iso,
+          startPos: input.position,
+          endPos: input.position,
+          duration: input.duration,
+          played: 0,
+          completed: isCompleteAt(input.position, input.duration),
+          coViewers: choiceFor(nowMs)
+        };
+        openKey = key;
+        lastPos = input.position;
+        lastPersistMs = null;
+      } else {
+        const advance = input.position - lastPos;
+        if (advance > 0 && advance <= MAX_TICK_ADVANCE_S) open2.played += advance;
+        lastPos = input.position;
+        open2.endPos = input.position;
+        open2.duration = input.duration;
+        open2.endedAt = iso;
+        open2.updatedAt = iso;
+        if (isCompleteAt(input.position, input.duration)) open2.completed = true;
+      }
+      lastTickMs = nowMs;
+      if (chosen) chosenAtMs = nowMs;
+      if (open2.played < MIN_PLAYED_S) {
+        if (final) finish();
+        return;
+      }
+      if (final) {
+        finish();
+        return;
+      }
+      if (lastPersistMs === null || nowMs - lastPersistMs >= PERSIST_EVERY_MS) {
+        lastPersistMs = nowMs;
+        deps.persist({ ...open2 }, false);
+      }
+    }
+    function setCoViewers(ids) {
+      const nowMs = deps.now();
+      chosen = [...new Set(ids)];
+      chosenAtMs = nowMs;
+      if (open2) {
+        open2.coViewers = [...chosen];
+        open2.updatedAt = new Date(nowMs).toISOString();
+      }
+    }
+    function coViewers() {
+      return open2 ? [...open2.coViewers] : choiceFor(deps.now());
+    }
+    function markAsleep(pos, atMs) {
+      if (!open2) return false;
+      open2.fellAsleep = { at: new Date(atMs).toISOString(), pos };
+      open2.updatedAt = new Date(deps.now()).toISOString();
+      return true;
+    }
+    return { tick: tick2, current: () => open2, setCoViewers, coViewers, markAsleep };
+  }
+  var SESSION_GAP_MS, MIN_PLAYED_S, PERSIST_EVERY_MS, MAX_TICK_ADVANCE_S, COVIEWER_CHOICE_TTL_MS, COMPANIONS_WINDOW_MS;
+  var init_recorder_core = __esm({
+    "lib/watch-journal/recorder-core.ts"() {
+      "use strict";
+      init_types();
+      SESSION_GAP_MS = 30 * 6e4;
+      MIN_PLAYED_S = 60;
+      PERSIST_EVERY_MS = 6e4;
+      MAX_TICK_ADVANCE_S = 10;
+      COVIEWER_CHOICE_TTL_MS = 5 * 6e4;
+      COMPANIONS_WINDOW_MS = 12 * 36e5;
+    }
+  });
+
+  // lib/watch-journal/store.ts
+  function emit() {
+    version2++;
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_CHANGED_EVENT));
+  }
+  function scheduleIdle(fn) {
+    const ric = typeof window !== "undefined" ? window.requestIdleCallback : void 0;
+    if (ric) ric(fn, { timeout: 5e3 });
+    else setTimeout(fn, 0);
+  }
+  async function put(s) {
+    try {
+      const r = await fetch(`/api/journal?profile=${encodeURIComponent(s.profileId)}&id=${encodeURIComponent(s.id)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(s)
+      });
+      return r.ok;
+    } catch {
+      return false;
+    }
+  }
+  async function flushJournal() {
+    flushQueued = false;
+    const batch = [...pending.values()];
+    pending.clear();
+    let anyFailed = false;
+    for (const s of batch) {
+      const ok = await put(s);
+      if (!ok) {
+        anyFailed = true;
+        if (!pending.has(s.id)) pending.set(s.id, s);
+      }
+    }
+    if (anyFailed && !retryTimer) {
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        void flushJournal();
+      }, RETRY_MS);
+    }
+  }
+  function upsertSession(s) {
+    pending.set(s.id, { ...s });
+    if (s.profileId === loadedFor) {
+      sessions.set(s.id, { ...s });
+      emit();
+    }
+    if (!flushQueued) {
+      flushQueued = true;
+      scheduleIdle(() => {
+        void flushJournal();
+      });
+    }
+  }
+  var JOURNAL_CHANGED_EVENT, JOURNAL_SYNC_WORTHY_EVENT, sessions, pending, loadedFor, version2, flushQueued, RETRY_MS, retryTimer;
+  var init_store = __esm({
+    "lib/watch-journal/store.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      JOURNAL_CHANGED_EVENT = "lumio-watch-journal-changed";
+      JOURNAL_SYNC_WORTHY_EVENT = "lumio-journal-sync-worthy";
+      sessions = /* @__PURE__ */ new Map();
+      pending = /* @__PURE__ */ new Map();
+      loadedFor = null;
+      version2 = 0;
+      flushQueued = false;
+      RETRY_MS = 3e4;
+      retryTimer = null;
+    }
+  });
+
+  // lib/watch-journal/player-open.ts
+  function setPlayerOpen(value) {
+    open = value;
+  }
+  function isPlayerOpen() {
+    return open;
+  }
+  var open;
+  var init_player_open = __esm({
+    "lib/watch-journal/player-open.ts"() {
+      open = false;
+    }
+  });
+
+  // lib/watch-journal/weather.ts
+  function getWeatherPrefs() {
+    try {
+      const raw = getScopedStorageItem(WEATHER_PREFS_KEY);
+      if (!raw) return OFF;
+      const p = JSON.parse(raw);
+      const place = p.place && typeof p.place.lat === "number" && typeof p.place.lon === "number" ? p.place : null;
+      return { enabled: p.enabled === true, place };
+    } catch {
+      return OFF;
+    }
+  }
+  function forecastUrl(lat, lon) {
+    return `${FORECAST_URL}?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=weather_code,temperature_2m`;
+  }
+  function parseForecast(json) {
+    const c = json?.current;
+    if (!c || typeof c.weather_code !== "number" || typeof c.temperature_2m !== "number") return null;
+    return { code: c.weather_code, tempC: c.temperature_2m };
+  }
+  function schedule(ms) {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      void drain();
+    }, ms);
+  }
+  async function drain() {
+    const nowMs = Date.now();
+    for (let i = pending2.length - 1; i >= 0; i--) {
+      if (nowMs - Date.parse(pending2[i].endedAt) > WEATHER_MAX_AGE_MS) pending2.splice(i, 1);
+    }
+    if (pending2.length === 0) return;
+    if (isPlayerOpen()) {
+      schedule(WEATHER_RETRY_MS);
+      return;
+    }
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place) {
+      pending2.length = 0;
+      return;
+    }
+    let weather = null;
+    try {
+      const r = await fetch(forecastUrl(prefs.place.lat, prefs.place.lon));
+      if (r.ok) weather = parseForecast(await r.json());
+    } catch {
+    }
+    if (!weather) {
+      schedule(WEATHER_RETRY_MS * 5);
+      return;
+    }
+    const iso = (/* @__PURE__ */ new Date()).toISOString();
+    for (const s of pending2.splice(0)) upsertSession({ ...s, weather, updatedAt: iso });
+  }
+  function queueSessionWeather(s) {
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place || s.weather || s.seeded) return;
+    if (!pending2.some((p) => p.id === s.id)) pending2.push(s);
+    schedule(0);
+  }
+  var WEATHER_PREFS_KEY, FORECAST_URL, WEATHER_RETRY_MS, WEATHER_MAX_AGE_MS, OFF, pending2, timer;
+  var init_weather = __esm({
+    "lib/watch-journal/weather.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      init_player_open();
+      init_store();
+      WEATHER_PREFS_KEY = "profile_weather_v1";
+      FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+      WEATHER_RETRY_MS = 6e4;
+      WEATHER_MAX_AGE_MS = 3 * 36e5;
+      OFF = { enabled: false, place: null };
+      pending2 = [];
+      timer = null;
+    }
+  });
+
+  // lib/watch-journal/recorder.ts
+  function loadLast() {
+    try {
+      const raw = getScopedStorageItem(LAST_COMPANIONS_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      last = parsed && Array.isArray(parsed.ids) && typeof parsed.endedAtMs === "number" ? { ids: parsed.ids.filter((x) => typeof x === "string"), endedAtMs: parsed.endedAtMs } : null;
+    } catch {
+      last = null;
+    }
+  }
+  function newId() {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+  function journalTick(input, final = false) {
+    try {
+      recorder.tick(input, final);
+    } catch (error) {
+      console.warn("[journal] tick", error);
+    }
+  }
+  function journalSetCoViewers(ids) {
+    try {
+      recorder.setCoViewers(ids);
+    } catch (error) {
+      console.warn("[journal] coViewers", error);
+    }
+  }
+  function journalCoViewers() {
+    try {
+      return recorder.coViewers();
+    } catch {
+      return [];
+    }
+  }
+  function journalMarkAsleep(pos, atMs) {
+    try {
+      recorder.markAsleep(pos, atMs);
+    } catch (error) {
+      console.warn("[journal] asleep", error);
+    }
+  }
+  var LAST_COMPANIONS_KEY, last, recorder;
+  var init_recorder = __esm({
+    "lib/watch-journal/recorder.ts"() {
+      init_profile_storage_shim();
+      init_recorder_core();
+      init_store();
+      init_weather();
+      LAST_COMPANIONS_KEY = "journal_last_companions_v1";
+      last = null;
+      if (typeof window !== "undefined") {
+        scheduleIdle(loadLast);
+        window.addEventListener("lumio-profile-changed", () => {
+          last = null;
+          scheduleIdle(loadLast);
+        });
+      }
+      recorder = createRecorder({
+        now: () => Date.now(),
+        newId,
+        profileId: () => getActiveProfileId() ?? "default",
+        persist: (s, final) => {
+          upsertSession(s);
+          if (!final) return;
+          if (typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_SYNC_WORTHY_EVENT));
+          scheduleIdle(() => queueSessionWeather(s));
+          if (s.profileId !== (getActiveProfileId() ?? "default")) return;
+          const record = { ids: [...s.coViewers], endedAtMs: Date.parse(s.endedAt) };
+          last = record;
+          scheduleIdle(() => {
+            try {
+              setScopedStorageItem(LAST_COMPANIONS_KEY, JSON.stringify(record));
+            } catch {
+            }
+          });
+        },
+        defaultCoViewers: () => defaultCompanions(last, Date.now())
+      });
+    }
+  });
+
+  // lib/avatars/catalog.ts
+  var AVATAR_URLS, avatarUrl, PROFILE_COLORS;
+  var init_catalog = __esm({
+    "lib/avatars/catalog.ts"() {
+      AVATAR_URLS = {};
+      avatarUrl = (id) => AVATAR_URLS[`/src/assets/avatars/${id}.webp`] ?? "";
+      PROFILE_COLORS = [
+        "#7dd3fc",
+        "#60a5fa",
+        "#a78bfa",
+        "#f472b6",
+        "#fb7185",
+        "#fb923c",
+        "#fbbf24",
+        "#a3e635",
+        "#34d399",
+        "#22d3ee"
+      ];
+    }
+  });
+
+  // components/ui/profile-avatar.tsx
+  function profileColor(profile) {
+    return profile.color ?? DEFAULT_COLOR;
+  }
+  function ProfileAvatar({
+    profile,
+    className
+  }) {
+    const color = profileColor(profile);
+    return /* @__PURE__ */ jsx(
+      "span",
+      {
+        className: `relative flex items-center justify-center overflow-hidden rounded-full bg-white/[0.06] ${className ?? "h-12 w-12"}`,
+        style: { boxShadow: `0 0 0 2px ${color}` },
+        children: profile.avatar ? /* @__PURE__ */ jsx("img", { src: avatarUrl(profile.avatar), alt: "", className: "h-full w-full object-cover", draggable: false }) : /* @__PURE__ */ jsx("span", { className: "text-lg font-semibold", style: { color }, children: profile.name.trim().charAt(0).toUpperCase() || "?" })
+      }
+    );
+  }
+  var DEFAULT_COLOR;
+  var init_profile_avatar = __esm({
+    "components/ui/profile-avatar.tsx"() {
+      "use client";
+      init_catalog();
+      init_jsx_runtime_shim();
+      DEFAULT_COLOR = PROFILE_COLORS[0];
+    }
+  });
+
+  // lib/sleep-timer.ts
+  function armSleepTimer(mode, nowMs) {
+    return mode === "off" ? DISARMED : { mode, armedAtMs: nowMs };
+  }
+  function sleepTimerDue(state2, c) {
+    if (state2.mode === "off" || state2.armedAtMs == null) return false;
+    if (state2.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
+    return c.nowMs - state2.armedAtMs >= state2.mode * 6e4;
+  }
+  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED;
+  var init_sleep_timer = __esm({
+    "lib/sleep-timer.ts"() {
+      SLEEP_TIMER_OPTIONS = ["off", 15, 30, 45, 60, 90, "end"];
+      SLEEP_PROMPT_SECONDS = 60;
+      SLEEP_END_MARGIN_S = 20;
+      DISARMED = { mode: "off", armedAtMs: null };
+    }
+  });
+
   // lib/barcode/barcode-samplers.ts
   function toLinear(c) {
     const v = c / 255;
@@ -12993,8 +14784,14 @@
     return `#${hex(r)}${hex(g)}${hex(b)}`;
   }
   async function sampleNative() {
-    const value = await np({ cmd: "sampleColor" });
-    return typeof value?.color === "string" ? value.color : null;
+    const start2 = await np({ cmd: "sampleColorStart" });
+    if (!start2?.started) return null;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      const value = await np({ cmd: "sampleColorResult" });
+      if (value?.done) return typeof value.color === "string" ? value.color : null;
+    }
+    return null;
   }
   function sampleVideo(video) {
     if (!video || video.readyState < 2 || video.videoWidth === 0) return Promise.resolve(null);
@@ -13048,11 +14845,17 @@
       scope: pick(raw.scope, ["movies", "movies+episodes"], d.scope),
       unseenStyle: pick(raw.unseenStyle, UNSEEN, d.unseenStyle),
       shareIncludeTitle: bool(raw.shareIncludeTitle, d.shareIncludeTitle),
-      libraryView: pick(raw.libraryView, VIEWS, d.libraryView)
+      libraryView: raw[SHELF_MIGRATED] === true ? pick(raw.libraryView, VIEWS, d.libraryView) : "shelf",
+      stripeTexture: raw[ROUGH_MIGRATED] === true ? pick(raw.stripeTexture, TEXTURES, d.stripeTexture) : "rough",
+      posterStyle: pick(raw.posterStyle, ["credits", "titleCard", "ring", "portrait"], d.posterStyle),
+      posterPaper: pick(raw.posterPaper, ["light", "dark"], d.posterPaper),
+      shelfStyle: pick(raw.shelfStyle, ["spines", "poster", "ring", "portrait"], d.shelfStyle),
+      librarySort: pick(raw.librarySort, ["recent", "title", "year"], d.librarySort),
+      shelfPaper: pick(raw.shelfPaper, ["light", "dark"], d.shelfPaper)
     };
   }
   function setBarcodeSettings(patch) {
-    setScopedStorageItem(KEY7, JSON.stringify({ ...getBarcodeSettings(), ...patch }));
+    setScopedStorageItem(KEY7, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODE_SETTINGS_CHANGED_EVENT));
   }
   function onBarcodeSettingsChanged(listener) {
@@ -13065,7 +14868,7 @@
       window.removeEventListener("lumio-profile-changed", listener);
     };
   }
-  var KEY7, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS;
+  var KEY7, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
   var init_barcode_settings = __esm({
     "lib/barcode/barcode-settings.ts"() {
       init_profile_storage_shim();
@@ -13078,11 +14881,20 @@
         scope: "movies",
         unseenStyle: "hatch",
         shareIncludeTitle: true,
-        libraryView: "grid"
+        libraryView: "shelf",
+        stripeTexture: "rough",
+        posterStyle: "credits",
+        posterPaper: "light",
+        shelfStyle: "spines",
+        librarySort: "recent",
+        shelfPaper: "light"
       };
       COLUMNS = [120, 160, 320];
       UNSEEN = ["hatch", "dim", "empty"];
-      VIEWS = ["grid", "list", "ring"];
+      VIEWS = ["grid", "list", "ring", "shelf"];
+      TEXTURES = ["rough", "smooth"];
+      SHELF_MIGRATED = "shelfDefaultApplied";
+      ROUGH_MIGRATED = "roughDefaultApplied";
     }
   });
 
@@ -13109,28 +14921,39 @@
     if (!(duration > 0) || !Number.isFinite(t) || t < 0 || n <= 0) return -1;
     return Math.min(n - 1, Math.floor(t / duration * n));
   }
+  function hasBogusEnd(b) {
+    return b.endAt != null && !(b.endAt > 0);
+  }
   function tailFrom(b) {
-    if (b.endAt == null || !(b.duration > 0)) return null;
+    if (b.endAt == null || hasBogusEnd(b) || !(b.duration > 0)) return null;
     return Math.min(b.colors.length, Math.max(0, Math.ceil(b.endAt / b.duration * b.colors.length - 1e-9)));
   }
   function coverage(b) {
-    const end = b.endAt != null && b.duration ? tailFrom({ colors: b.colors, duration: b.duration, endAt: b.endAt }) ?? b.colors.length : b.colors.length;
+    const end = b.endAt != null && !hasBogusEnd(b) && b.duration ? tailFrom({ colors: b.colors, duration: b.duration, endAt: b.endAt }) ?? b.colors.length : b.colors.length;
     if (end === 0) return 0;
     let filled = 0;
     for (let i = 0; i < end; i++) if (b.colors[i]) filled++;
     return filled / end;
   }
   function isComplete(b) {
-    return Boolean(b.completedAt) || coverage(b) >= COMPLETE_THRESHOLD;
+    return Boolean(b.completedAt) && !hasBogusEnd(b) || coverage(b) >= COMPLETE_THRESHOLD;
+  }
+  function displayColumns(b) {
+    const n = b.colors.length;
+    if (!isComplete(b) || n === 0) return { colors: b.colors, tail: tailFrom(b), scale: 1 };
+    let end = tailFrom(b) ?? n;
+    while (end > 0 && !b.colors[end - 1]) end--;
+    if (end <= 0 || end >= n) return { colors: b.colors, tail: end >= n ? null : tailFrom(b), scale: 1 };
+    return { colors: b.colors.slice(0, end), tail: null, scale: n / end };
   }
   function markComplete(b, endAt, now2) {
     let end = endAt;
     if (end == null) {
-      let last = -1;
+      let last2 = -1;
       b.colors.forEach((c, i) => {
-        if (c) last = i;
+        if (c) last2 = i;
       });
-      end = (last + 1) / b.colors.length * b.duration;
+      end = last2 < 0 ? b.duration : (last2 + 1) / b.colors.length * b.duration;
     }
     return { ...b, completedAt: now2, endAt: Math.min(b.duration, Math.max(0, end)), updatedAt: now2 };
   }
@@ -13155,11 +14978,19 @@
 
   // lib/barcode/barcode-sampler.ts
   function createSamplerState() {
-    return { lastTime: Number.NaN, settleUntil: 0, inFlight: false, failures: 0 };
+    return { lastTime: Number.NaN, settleUntil: 0, inFlight: false, failures: 0, pauseUntil: 0 };
   }
-  function recordSampleResult(state2, ok) {
+  function recordSampleResult(state2, ok, now2 = Date.now()) {
     state2.inFlight = false;
-    state2.failures = ok ? 0 : state2.failures + 1;
+    if (ok) {
+      state2.failures = 0;
+      return false;
+    }
+    state2.failures += 1;
+    if (state2.failures < MAX_FAILED_SAMPLES) return false;
+    state2.failures = 0;
+    state2.pauseUntil = now2 + FAILURE_PAUSE_MS;
+    return true;
   }
   function decideSample(input, state2) {
     const { now: now2, time, duration, columns, colors } = input;
@@ -13171,14 +15002,14 @@
       state2.settleUntil = now2 + SETTLE_MS;
       return -1;
     }
-    if (!advancing || state2.inFlight || state2.failures >= MAX_FAILED_SAMPLES || now2 < state2.settleUntil) return -1;
+    if (!advancing || state2.inFlight || now2 < state2.pauseUntil || now2 < state2.settleUntil) return -1;
     const i = columnIndex(time, duration, columns);
     if (i < 0) return -1;
     if (colors && colors[i]) return -1;
     const mid = (i + 0.5) / columns * duration;
     return time >= mid ? i : -1;
   }
-  var SETTLE_MS, SEEK_JUMP_S, MIN_ADVANCE_S, MAX_FAILED_SAMPLES;
+  var SETTLE_MS, SEEK_JUMP_S, MIN_ADVANCE_S, MAX_FAILED_SAMPLES, FAILURE_PAUSE_MS;
   var init_barcode_sampler = __esm({
     "lib/barcode/barcode-sampler.ts"() {
       "use strict";
@@ -13187,6 +15018,7 @@
       SEEK_JUMP_S = 3;
       MIN_ADVANCE_S = 0.25;
       MAX_FAILED_SAMPLES = 3;
+      FAILURE_PAUSE_MS = 1e4;
     }
   });
 
@@ -13194,7 +15026,7 @@
   function profileParam() {
     return encodeURIComponent(getActiveProfileId() ?? "default");
   }
-  function emit() {
+  function emit2() {
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODES_CHANGED_EVENT));
   }
   function emitSyncWorthy() {
@@ -13210,13 +15042,13 @@
     lastWrite.clear();
     for (const t of timers.values()) clearTimeout(t);
     timers.clear();
-    loadedFor = null;
+    loadedFor2 = null;
     loading = null;
   }
   function loadBarcodes() {
     const profile = profileParam();
-    if (loadedFor === profile) return Promise.resolve(listBarcodes());
-    if (loadedFor !== null) resetBarcodeCache();
+    if (loadedFor2 === profile) return Promise.resolve(listBarcodes());
+    if (loadedFor2 !== null) resetBarcodeCache();
     if (loading) return loading;
     loading = (async () => {
       try {
@@ -13225,9 +15057,9 @@
         for (const b of data.items ?? []) if (!items.has(b.id)) items.set(b.id, b);
       } catch {
       }
-      loadedFor = profile;
+      loadedFor2 = profile;
       loading = null;
-      emit();
+      emit2();
       return listBarcodes();
     })();
     return loading;
@@ -13238,7 +15070,7 @@
   function getBarcode(id) {
     return items.get(id) ?? null;
   }
-  async function put(id) {
+  async function put2(id) {
     const b = items.get(id);
     if (!b) return;
     dirty.delete(id);
@@ -13253,13 +15085,13 @@
       dirty.add(id);
     }
   }
-  function schedule(id) {
+  function schedule2(id) {
     if (timers.has(id)) return;
     const since = Date.now() - (lastWrite.get(id) ?? 0);
     const wait = Math.max(0, BARCODE_WRITE_INTERVAL_MS - since);
     timers.set(id, setTimeout(() => {
       timers.delete(id);
-      if (dirty.has(id)) void put(id);
+      if (dirty.has(id)) void put2(id);
     }, wait));
   }
   function recordColumn(meta, columns, i, color) {
@@ -13269,8 +15101,8 @@
     if (next === current && items.has(meta.id)) return;
     items.set(meta.id, next);
     dirty.add(meta.id);
-    schedule(meta.id);
-    emit();
+    schedule2(meta.id);
+    emit2();
   }
   async function flushBarcode(id) {
     const t = timers.get(id);
@@ -13278,16 +15110,23 @@
       clearTimeout(t);
       timers.delete(id);
     }
-    if (dirty.has(id)) await put(id);
+    if (dirty.has(id)) await put2(id);
   }
   async function completeBarcode(id, endAt) {
     const b = items.get(id);
     if (!b) return;
     items.set(id, markComplete(b, endAt, (/* @__PURE__ */ new Date()).toISOString()));
     dirty.add(id);
-    emit();
+    emit2();
     await flushBarcode(id);
     emitSyncWorthy();
+  }
+  async function setBarcodeMeta(id, meta) {
+    const b = items.get(id);
+    if (!b) return;
+    items.set(id, { ...b, meta });
+    emit2();
+    await put2(id);
   }
   function onBarcodesChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -13304,7 +15143,7 @@
       window.removeEventListener("lumio-profile-changed", onProfile);
     };
   }
-  var BARCODES_CHANGED_EVENT, BARCODE_WRITE_INTERVAL_MS, items, loadedFor, loading, dirty, lastWrite, timers, SYNC_WORTHY_EVENT;
+  var BARCODES_CHANGED_EVENT, BARCODE_WRITE_INTERVAL_MS, items, loadedFor2, loading, dirty, lastWrite, timers, SYNC_WORTHY_EVENT;
   var init_barcode_store = __esm({
     "lib/barcode/barcode-store.ts"() {
       "use strict";
@@ -13313,7 +15152,7 @@
       BARCODES_CHANGED_EVENT = "lumio-barcodes-changed";
       BARCODE_WRITE_INTERVAL_MS = 1e4;
       items = /* @__PURE__ */ new Map();
-      loadedFor = null;
+      loadedFor2 = null;
       loading = null;
       dirty = /* @__PURE__ */ new Set();
       lastWrite = /* @__PURE__ */ new Map();
@@ -13322,13 +15161,491 @@
     }
   });
 
+  // lib/utils/fetch-client.ts
+  function classifyFetchError(error) {
+    if (error instanceof DOMException && error.name === "AbortError") return "aborted";
+    if (error instanceof Error) {
+      if (error.message === FETCH_TIMEOUT_ERROR) return "timeout";
+      if (error.message === "HTTP_429" || error.message === "TMDB_RATE_LIMITED") return "rate_limited";
+      if (/HTTP_\d+/.test(error.message)) return "http";
+      const message = error.message.toLowerCase();
+      if (message.includes("timeout") || message.includes("timed out")) return "timeout";
+      if (message.includes("network") || message.includes("failed to fetch") || message.includes("load failed")) return "network";
+      return "unknown";
+    }
+    return "unknown";
+  }
+  function isAbortError(error) {
+    return error instanceof DOMException && error.name === "AbortError";
+  }
+  function sleep(ms) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+  }
+  async function fetchWithTimeout(input, init = {}, timeoutMs = 5e3, signal) {
+    const controller = new AbortController();
+    let timedOut = false;
+    const abortFromSignal = () => controller.abort();
+    if (signal) {
+      if (signal.aborted) {
+        controller.abort();
+      } else {
+        signal.addEventListener("abort", abortFromSignal, { once: true });
+      }
+    }
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+    try {
+      return await fetch(input, {
+        ...init,
+        signal: controller.signal
+      });
+    } catch (error) {
+      if (isAbortError(error) && timedOut) throw new Error(FETCH_TIMEOUT_ERROR);
+      throw error;
+    } finally {
+      window.clearTimeout(timeoutId);
+      if (signal) signal.removeEventListener("abort", abortFromSignal);
+    }
+  }
+  async function fetchJsonWithRetry(input, init = {}, options = {}) {
+    const retries = Math.max(0, options.retries ?? 1);
+    const timeoutMs = Math.max(1e3, options.timeoutMs ?? 5e3);
+    const retryDelayMs = Math.max(0, options.retryDelayMs ?? 250);
+    let lastError = null;
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      try {
+        const response = await fetchWithTimeout(input, init, timeoutMs, options.signal);
+        if (!response.ok) throw new Error(`HTTP_${response.status}`);
+        return await response.json();
+      } catch (error) {
+        if (isAbortError(error)) throw error;
+        const kind = classifyFetchError(error);
+        if (kind === "rate_limited") throw error;
+        lastError = error;
+        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
+      }
+    }
+    throw lastError ?? new Error("fetch_failed");
+  }
+  async function fetchTextWithRetry(input, init = {}, options = {}) {
+    const retries = Math.max(0, options.retries ?? 1);
+    const timeoutMs = Math.max(1e3, options.timeoutMs ?? 5e3);
+    const retryDelayMs = Math.max(0, options.retryDelayMs ?? 250);
+    let lastError = null;
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      try {
+        const response = await fetchWithTimeout(input, init, timeoutMs, options.signal);
+        if (!response.ok) throw new Error(`HTTP_${response.status}`);
+        return await response.text();
+      } catch (error) {
+        if (isAbortError(error)) throw error;
+        const kind = classifyFetchError(error);
+        if (kind === "rate_limited") throw error;
+        lastError = error;
+        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
+      }
+    }
+    throw lastError ?? new Error("fetch_failed");
+  }
+  var FETCH_TIMEOUT_ERROR;
+  var init_fetch_client = __esm({
+    "lib/utils/fetch-client.ts"() {
+      FETCH_TIMEOUT_ERROR = "FETCH_TIMEOUT";
+    }
+  });
+
+  // lib/services/api-json-cache.ts
+  function maxConcurrentRequests() {
+    return isTvSurface() ? 10 : 6;
+  }
+  function rememberResponse(key, entry) {
+    cache3.delete(key);
+    cache3.set(key, entry);
+    if (cache3.size <= CACHE_MAX_ENTRIES) return;
+    const now2 = Date.now();
+    for (const [k, v] of cache3) if (v.expiresAt <= now2) cache3.delete(k);
+    while (cache3.size > CACHE_MAX_ENTRIES) {
+      const oldest = cache3.keys().next().value;
+      if (oldest === void 0) break;
+      cache3.delete(oldest);
+    }
+  }
+  function classifyRequestGroup(pathAndQuery) {
+    if (pathAndQuery.startsWith("/api/item")) return "item";
+    if (pathAndQuery.startsWith("/api/recommendations")) return "recommendations";
+    if (pathAndQuery.startsWith("/api/media")) return "media";
+    if (pathAndQuery.startsWith("/api/wiki")) return "wiki";
+    return "other";
+  }
+  function getGroupLimit(group) {
+    if (group === "item") return 4;
+    if (group === "recommendations") return 2;
+    if (group === "media") return isTvSurface() ? 6 : 2;
+    if (group === "wiki") return 3;
+    return 3;
+  }
+  function isTvSurface() {
+    if (tvSurface === null) tvSurface = detectTvMode();
+    return tvSurface;
+  }
+  function getGroupActive(group) {
+    return activeByGroup.get(group) ?? 0;
+  }
+  function canStartGroup(group) {
+    return activeRequests < maxConcurrentRequests() && getGroupActive(group) < getGroupLimit(group);
+  }
+  function onRequestStart(group) {
+    activeRequests += 1;
+    activeByGroup.set(group, getGroupActive(group) + 1);
+  }
+  function onRequestEnd(group) {
+    activeRequests = Math.max(0, activeRequests - 1);
+    activeByGroup.set(group, Math.max(0, getGroupActive(group) - 1));
+  }
+  function getPriorityValue(priority) {
+    if (priority === "high") return 3;
+    if (priority === "low") return 1;
+    return 2;
+  }
+  function enqueue(item) {
+    queue.push(item);
+    queue.sort((left, right) => {
+      if (left.priority !== right.priority) return right.priority - left.priority;
+      return left.seq - right.seq;
+    });
+  }
+  function pumpQueue() {
+    while (activeRequests < maxConcurrentRequests() && queue.length > 0) {
+      const nextIndex = queue.findIndex((entry) => canStartGroup(entry.group));
+      if (nextIndex < 0) return;
+      const [next] = queue.splice(nextIndex, 1);
+      if (!next) break;
+      next.start();
+    }
+  }
+  function acquireRequestSlot(priority, group, signal) {
+    if (canStartGroup(group)) {
+      onRequestStart(group);
+      let released = false;
+      return Promise.resolve(() => {
+        if (released) return;
+        released = true;
+        onRequestEnd(group);
+        pumpQueue();
+      });
+    }
+    if (signal?.aborted) {
+      return Promise.reject(new DOMException("Aborted", "AbortError"));
+    }
+    return new Promise((resolve, reject) => {
+      const seq = queueSeq++;
+      const item = {
+        priority: getPriorityValue(priority),
+        seq,
+        group,
+        start: () => {
+          cleanup();
+          onRequestStart(group);
+          let released = false;
+          resolve(() => {
+            if (released) return;
+            released = true;
+            onRequestEnd(group);
+            pumpQueue();
+          });
+        }
+      };
+      const bypass = setTimeout(() => {
+        const index = queue.findIndex((entry) => entry.seq === seq);
+        if (index < 0) return;
+        queue.splice(index, 1);
+        item.start();
+      }, QUEUE_BYPASS_MS);
+      const onAbort = () => {
+        const index = queue.findIndex((entry) => entry.seq === seq);
+        if (index >= 0) queue.splice(index, 1);
+        cleanup();
+        reject(new DOMException("Aborted", "AbortError"));
+      };
+      const cleanup = () => {
+        clearTimeout(bypass);
+        signal?.removeEventListener("abort", onAbort);
+      };
+      signal?.addEventListener("abort", onAbort, { once: true });
+      enqueue(item);
+      pumpQueue();
+    });
+  }
+  function withAbortSignal(promise, signal) {
+    if (!signal) return promise;
+    if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
+    return new Promise((resolve, reject) => {
+      const abort = () => reject(new DOMException("Aborted", "AbortError"));
+      signal.addEventListener("abort", abort, { once: true });
+      promise.then(resolve).catch(reject).finally(() => {
+        signal.removeEventListener("abort", abort);
+      });
+    });
+  }
+  function normalizeApiPath(pathAndQuery) {
+    const normalized = pathAndQuery.trim();
+    if (!normalized.startsWith("/api/")) {
+      throw new Error("api_json_cache_requires_api_path");
+    }
+    return normalized;
+  }
+  function resolveNegativeCacheTtlMs(error, overrideTtlMs) {
+    if (overrideTtlMs != null) return Math.max(0, overrideTtlMs);
+    if (!(error instanceof Error)) return 0;
+    const statusMatch = error.message.match(/^HTTP_(\d{3})$/);
+    const status = statusMatch ? Number(statusMatch[1]) : null;
+    if (status === 404) return 6e4;
+    if (status === 429) return 5e3;
+    if (status != null && status >= 500 && status <= 599) return 3e3;
+    if (error.message === "TMDB_RATE_LIMITED") return 5e3;
+    return 0;
+  }
+  async function fetchApiJsonCached(pathAndQuery, options = {}) {
+    const key = normalizeApiPath(pathAndQuery);
+    const requestGroup = classifyRequestGroup(key);
+    const now2 = Date.now();
+    const isRemote = typeof window !== "undefined" && (window.location.hostname.endsWith(".workers.dev") || window.__LUMIO_REMOTE__ === true);
+    const resolvedTimeoutMs = isRemote ? Math.max(options.timeoutMs ?? 4500, 25e3) : options.timeoutMs;
+    const ttlMs = Math.max(1e3, isRemote ? Math.max(options.ttlMs ?? DEFAULT_TTL_MS, 5 * 6e4) : options.ttlMs ?? DEFAULT_TTL_MS);
+    if (!options.forceRefresh) {
+      const cachedError = errorCache.get(key);
+      if (cachedError && cachedError.expiresAt > now2) {
+        throw new Error(cachedError.message);
+      }
+      const cached = cache3.get(key);
+      if (cached && cached.expiresAt > now2) {
+        return cached.data;
+      }
+    }
+    const existing = inflight2.get(key);
+    if (existing) return withAbortSignal(existing, options.signal);
+    const request = (async () => {
+      const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
+      try {
+        if (isPluginDesktopHost()) {
+          try {
+            const data = await fetchDesktopApiJson(
+              key,
+              options.desktopTimeoutMs ?? resolvedTimeoutMs ?? 4500
+            );
+            if (data != null) return data;
+          } catch {
+          }
+        }
+        return fetchJsonWithRetry(key, {}, {
+          timeoutMs: resolvedTimeoutMs,
+          retries: options.retries,
+          retryDelayMs: options.retryDelayMs
+          // Av samma skäl som ovan: den delade hämtningen tillhör alla som
+          // väntar på nyckeln, inte den som råkade starta den.
+        });
+      } finally {
+        release();
+      }
+    })().then((data) => {
+      rememberResponse(key, {
+        expiresAt: Date.now() + ttlMs,
+        data
+      });
+      errorCache.delete(key);
+      return data;
+    }).catch((error) => {
+      if (classifyFetchError(error) !== "aborted" && options.cacheErrors !== false) {
+        const negativeTtlMs = resolveNegativeCacheTtlMs(error, options.negativeTtlMs);
+        if (negativeTtlMs > 0) {
+          const message = error instanceof Error ? error.message : "api_request_failed";
+          errorCache.set(key, {
+            expiresAt: Date.now() + negativeTtlMs,
+            message
+          });
+        }
+      }
+      throw error;
+    }).finally(() => {
+      inflight2.delete(key);
+    });
+    inflight2.set(key, request);
+    return withAbortSignal(request, options.signal);
+  }
+  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache3, CACHE_MAX_ENTRIES, errorCache, inflight2, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
+  var init_api_json_cache = __esm({
+    "lib/services/api-json-cache.ts"() {
+      init_tv_focus_shim();
+      init_plugin_sdk();
+      init_fetch_client();
+      DEFAULT_TTL_MS = 2 * 6e4;
+      QUEUE_BYPASS_MS = 8e3;
+      cache3 = /* @__PURE__ */ new Map();
+      CACHE_MAX_ENTRIES = 400;
+      errorCache = /* @__PURE__ */ new Map();
+      inflight2 = /* @__PURE__ */ new Map();
+      queue = [];
+      activeRequests = 0;
+      queueSeq = 0;
+      activeByGroup = /* @__PURE__ */ new Map();
+      tvSurface = null;
+    }
+  });
+
+  // lib/services/wiki-request-cache.ts
+  function withAbortSignal2(promise, signal) {
+    if (!signal) return promise;
+    if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
+    return new Promise((resolve, reject) => {
+      const abort = () => reject(new DOMException("Aborted", "AbortError"));
+      signal.addEventListener("abort", abort, { once: true });
+      promise.then(resolve).catch(reject).finally(() => {
+        signal.removeEventListener("abort", abort);
+      });
+    });
+  }
+  async function fetchWikiCached(params, options = {}) {
+    const key = params.toString();
+    const now2 = Date.now();
+    if (!options.forceRefresh) {
+      const cached = cache4.get(key);
+      if (cached && cached.expiresAt > now2) {
+        return cached.data;
+      }
+    }
+    const existing = inflight3.get(key);
+    if (existing) return withAbortSignal2(existing, options.signal);
+    const request = fetchApiJsonCached(`/api/wiki?${key}`, {
+      timeoutMs: options.timeoutMs ?? 5200,
+      retries: options.retries ?? 1,
+      retryDelayMs: options.retryDelayMs ?? 260,
+      signal: options.signal,
+      ttlMs: WIKI_TTL_MS,
+      forceRefresh: options.forceRefresh,
+      priority: "normal"
+    }).then((data) => {
+      cache4.set(key, {
+        expiresAt: Date.now() + WIKI_TTL_MS,
+        data
+      });
+      return data;
+    }).finally(() => {
+      inflight3.delete(key);
+    });
+    inflight3.set(key, request);
+    return withAbortSignal2(request, options.signal);
+  }
+  var WIKI_TTL_MS, cache4, inflight3;
+  var init_wiki_request_cache = __esm({
+    "lib/services/wiki-request-cache.ts"() {
+      init_api_json_cache();
+      WIKI_TTL_MS = 5 * 6e4;
+      cache4 = /* @__PURE__ */ new Map();
+      inflight3 = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // lib/barcode/barcode-poster.ts
+  function uniq(names) {
+    const out = [];
+    for (const n of names) {
+      const name = n?.trim();
+      if (name && !out.includes(name)) out.push(name);
+    }
+    return out;
+  }
+  function cutSynopsis(text, max = SYNOPSIS_MAX) {
+    const clean = text.replace(/\s+/g, " ").trim();
+    if (clean.length <= max) return clean;
+    const cut = clean.slice(0, max);
+    const space = cut.lastIndexOf(" ");
+    return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:–-]+$/, "")}\u2026`;
+  }
+  function posterMetaFromWiki(w) {
+    const crew = w.crew ?? [];
+    const byJob = (job) => uniq(crew.filter((c) => c.job === job).map((c) => c.name));
+    const directors = byJob("Director");
+    const writers = uniq(crew.filter((c) => c.department === "Writing" && (c.job === "Screenplay" || c.job === "Writer")).map((c) => c.name));
+    const overview = w.overview?.trim();
+    const genres = (w.genres ?? []).filter(Boolean).slice(0, 3);
+    return {
+      directors: (directors.length ? directors : uniq(w.directors ?? [])).slice(0, 2),
+      writers: (writers.length ? writers : uniq(w.writers ?? [])).slice(0, 2),
+      dop: byJob("Director of Photography").slice(0, 2),
+      editors: byJob("Editor").slice(0, 2),
+      starring: uniq((w.cast ?? []).map((c) => c.name)).slice(0, 3),
+      music: byJob("Original Music Composer").slice(0, 2),
+      tagline: w.tagline?.trim() || null,
+      synopsis: overview ? cutSynopsis(overview) : null,
+      genres: genres.length ? genres.join(", ") : null,
+      releaseDate: w.releaseDate && /^\d{4}-\d{2}-\d{2}$/.test(w.releaseDate) ? w.releaseDate : null,
+      runtime: typeof w.runtime === "number" && w.runtime > 0 ? w.runtime : null
+    };
+  }
+  async function fetchPosterMeta(tmdbId) {
+    if (tmdbId == null) return null;
+    try {
+      const params = new URLSearchParams({ type: "movie", tmdbId: String(tmdbId), full: "1" });
+      const wiki = await fetchWikiCached(params);
+      return posterMetaFromWiki(wiki);
+    } catch {
+      return null;
+    }
+  }
+  var SYNOPSIS_MAX;
+  var init_barcode_poster = __esm({
+    "lib/barcode/barcode-poster.ts"() {
+      "use strict";
+      init_wiki_request_cache();
+      SYNOPSIS_MAX = 220;
+    }
+  });
+
+  // lib/barcode/barcode-meta.ts
+  function ensureBarcodeMeta(b) {
+    if (b.meta !== void 0) return Promise.resolve(b.meta);
+    if (b.tmdbId == null) return Promise.resolve(null);
+    const pending3 = inflight4.get(b.id);
+    if (pending3) return pending3;
+    const task = chain.then(async () => {
+      const current = getBarcode(b.id);
+      if (current && current.meta !== void 0) return current.meta;
+      const meta = await fetchPosterMeta(b.tmdbId);
+      if (meta) await setBarcodeMeta(b.id, meta);
+      await new Promise((resolve) => setTimeout(resolve, GAP_MS));
+      return meta;
+    }).finally(() => inflight4.delete(b.id));
+    inflight4.set(b.id, task);
+    chain = task.catch(() => void 0);
+    return task;
+  }
+  function backfillBarcodeMeta(id) {
+    const b = getBarcode(id);
+    if (b) void ensureBarcodeMeta(b).catch(() => {
+    });
+  }
+  var GAP_MS, inflight4, chain;
+  var init_barcode_meta = __esm({
+    "lib/barcode/barcode-meta.ts"() {
+      init_barcode_poster();
+      init_barcode_store();
+      GAP_MS = 250;
+      inflight4 = /* @__PURE__ */ new Map();
+      chain = Promise.resolve();
+    }
+  });
+
   // lib/barcode/barcode-player-status.ts
   function playerBarcodeState(input) {
     const { id, capable, enabled, showStrip, scopeOk, playing, hasBarcode } = input;
-    if (!id || !scopeOk) return { id, recording: false, status: null, showStrip: false };
+    if (!id || !scopeOk) return { id, recording: false, status: null, showStrip: false, stripToggle: false };
     const recording = capable && enabled;
     const status = !capable ? null : !enabled ? "off" : playing ? "recording" : "paused";
-    return { id, recording, status, showStrip: showStrip && (recording || hasBarcode) };
+    return { id, recording, status, showStrip: showStrip && (recording || hasBarcode), stripToggle: recording || hasBarcode };
   }
   var init_barcode_player_status = __esm({
     "lib/barcode/barcode-player-status.ts"() {
@@ -13358,13 +15675,9 @@
       void loadBarcodes().then(check);
       return onBarcodesChanged(check);
     }, [barcodeId]);
-    const [samplingDead, setSamplingDead] = useState(false);
-    useEffect(() => {
-      setSamplingDead(false);
-    }, [barcodeId, args.engine]);
     const playerState = playerBarcodeState({
       id: barcodeId,
-      capable: !samplingDead,
+      capable: true,
       enabled: settings.enabled,
       showStrip: settings.showStripInPlayer,
       scopeOk: !isEpisode || settings.scope === "movies+episodes",
@@ -13380,7 +15693,7 @@
       void loadBarcodes();
       const state2 = createSamplerState();
       const columns = settings.columns;
-      const timer = setInterval(() => {
+      const timer3 = setInterval(() => {
         const snap = args.snapshotRef.current;
         const existing = getBarcode(id);
         const n = existing?.columns ?? columns;
@@ -13395,11 +15708,10 @@
         state2.inFlight = true;
         const now2 = metaRef.current;
         void sampleColor(now2.engine, now2.videoRef?.current ?? null).then((color) => {
-          recordSampleResult(state2, color != null);
+          const pausing = recordSampleResult(state2, color != null);
           if (!color) {
-            if (state2.failures >= MAX_FAILED_SAMPLES) {
-              logDisabled(`${id}: ${state2.failures} f\xE4rgprov i rad misslyckades (${now2.engine}) \u2014 insamlingen av f\xF6r uppspelningen`);
-              setSamplingDead(true);
+            if (pausing) {
+              logDisabled(`${id}: ${MAX_FAILED_SAMPLES} f\xE4rgprov i rad misslyckades (${now2.engine}) \u2014 paus ${FAILURE_PAUSE_MS / 1e3} s, sedan nytt f\xF6rs\xF6k`);
             }
             return;
           }
@@ -13415,7 +15727,7 @@
         });
       }, TICK_MS);
       return () => {
-        clearInterval(timer);
+        clearInterval(timer3);
         void endRecording(id);
       };
     }, [applies, id]);
@@ -13424,10 +15736,16 @@
       if (!args.finished || !barcodeId || completedForRef.current === barcodeId) return;
       const existing = getBarcode(barcodeId);
       if (!existing || existing.completedAt) return;
+      const { realTime, totalDuration } = args.snapshotRef.current;
+      if (!isPlausibleFinish(realTime, totalDuration)) return;
       completedForRef.current = barcodeId;
-      void completeBarcode(barcodeId, args.snapshotRef.current.realTime);
+      void completeBarcode(barcodeId, realTime).then(() => backfillBarcodeMeta(barcodeId));
     }, [args.finished, barcodeId]);
     return playerState;
+  }
+  function isPlausibleFinish(time, duration) {
+    if (!Number.isFinite(time) || !Number.isFinite(duration) || duration <= 0) return false;
+    return time >= duration * 0.75;
   }
   var TICK_MS;
   var init_use_barcode_recorder = __esm({
@@ -13438,6 +15756,7 @@
       init_barcode_id();
       init_barcode_sampler();
       init_barcode_store();
+      init_barcode_meta();
       init_barcode_player_status();
       TICK_MS = 1e3;
     }
@@ -13471,14 +15790,14 @@
     return { background: `${head}${stops.join(",")})`, underlay };
   }
   function cachedBarcodeBackground(key, colors, unseen, shape, tailFrom2 = null) {
-    const hit = cache3.get(key);
+    const hit = cache5.get(key);
     if (hit) return hit;
     const value = barcodeBackground(colors, unseen, shape, tailFrom2);
-    if (cache3.size >= CACHE_MAX) cache3.delete(cache3.keys().next().value);
-    cache3.set(key, value);
+    if (cache5.size >= CACHE_MAX) cache5.delete(cache5.keys().next().value);
+    cache5.set(key, value);
     return value;
   }
-  var HATCH_UNDERLAY, DIM, EMPTY2, TAIL, RING_HATCH, cache3, CACHE_MAX;
+  var HATCH_UNDERLAY, DIM, EMPTY2, TAIL, RING_HATCH, cache5, CACHE_MAX;
   var init_barcode_gradient = __esm({
     "lib/barcode/barcode-gradient.ts"() {
       HATCH_UNDERLAY = "repeating-linear-gradient(135deg,#1c1d23 0 3px,#111216 3px 7px)";
@@ -13486,7 +15805,7 @@
       EMPTY2 = "#141519";
       TAIL = "#0b0b0d";
       RING_HATCH = ["#1b1c22", "#111216"];
-      cache3 = /* @__PURE__ */ new Map();
+      cache5 = /* @__PURE__ */ new Map();
       CACHE_MAX = 400;
     }
   });
@@ -13508,9 +15827,12 @@
   });
 
   // components/barcodes/barcode-strip.tsx
-  function BarcodeStrip({ barcode, unseen, shape = "h", className = "", style, resumePct, markerWidth = 2, children, onPointer }) {
-    const key = `${barcode.id}|${barcode.updatedAt}|${unseen}|${shape}`;
-    const { background, underlay } = cachedBarcodeBackground(key, barcode.colors, unseen, shape, tailFrom(barcode));
+  function BarcodeStrip({ barcode, unseen, shape = "h", className = "", style, resumePct: rawResumePct, markerWidth = 2, children, onPointer, trimCredits = false }) {
+    const shown = trimCredits && !onPointer ? displayColumns(barcode) : { colors: barcode.colors, tail: tailFrom(barcode), scale: 1 };
+    const key = `${barcode.id}|${barcode.updatedAt}|${unseen}|${shape}|${shown.colors.length}`;
+    const { background, underlay } = cachedBarcodeBackground(key, shown.colors, unseen, shape, shown.tail);
+    const scaledResume = rawResumePct == null ? null : rawResumePct * shown.scale;
+    const resumePct = scaledResume != null && scaledResume <= 1 ? scaledResume : null;
     const vertical = shape === "v";
     const pctOf = (e) => {
       const r = e.currentTarget.getBoundingClientRect();
@@ -13580,8 +15902,8 @@
         useEffect(() => {
           if (!state2.status) return;
           setChipUntil(Date.now() + CHIP_MS);
-          const timer = setTimeout(() => setChipUntil(0), CHIP_MS);
-          return () => clearTimeout(timer);
+          const timer3 = setTimeout(() => setChipUntil(0), CHIP_MS);
+          return () => clearTimeout(timer3);
         }, [state2.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
@@ -13859,6 +16181,8 @@
         "audioDelay",
         "nextEpisode",
         "switchStream",
+        "sleepTimer",
+        "companions",
         "more",
         "fullscreen"
       ];
@@ -14284,6 +16608,115 @@
     }
   });
 
+  // lib/haptics-filter.ts
+  function hapticFilter(channelCount, sampleRate) {
+    if (!Number.isFinite(channelCount) || !Number.isFinite(sampleRate) || sampleRate <= 0) return null;
+    const n = Math.max(1, Math.round(sampleRate * 0.05));
+    const block = `asetnsamples=n=${n}:p=0`;
+    const label = `@${HAPTIC_FILTER_LABEL}:lavfi=`;
+    if (channelCount >= 6) return `${label}[${block},${STATS}]`;
+    if (channelCount === 2) {
+      return `${label}[asplit[m][s];[s]pan=mono|c0=0.5*c0+0.5*c1,lowpass=f=120,${block}[l];[m]${block}[m2];[m2][l]amerge=inputs=2,${STATS},pan=stereo|c0=c0|c1=c1]`;
+    }
+    if (channelCount === 1) {
+      return `${label}[asplit[m][s];[s]lowpass=f=120,${block}[l];[m]${block}[m2];[m2][l]amerge=inputs=2,${STATS},pan=mono|c0=c0]`;
+    }
+    return null;
+  }
+  function shouldAddHapticFilter(s) {
+    return s.active && s.firstFrame && !s.droid;
+  }
+  var HAPTIC_FILTER_LABEL, STATS;
+  var init_haptics_filter = __esm({
+    "lib/haptics-filter.ts"() {
+      HAPTIC_FILTER_LABEL = "lumiohaptic";
+      STATS = "astats=metadata=1:reset=1:measure_perchannel=RMS_level:measure_overall=none";
+    }
+  });
+
+  // lib/haptics-host.ts
+  function getHapticsHostEnabled() {
+    return getItem(HAPTICS_HOST_ENABLED_KEY) === "1";
+  }
+  async function fetchHapticsHostStatus() {
+    try {
+      const response = await fetch("/api/haptics/host/status");
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+  function markHapticsUnsupported(reason) {
+    unsupportedReason = reason;
+  }
+  function resetHapticsSupport() {
+    unsupportedReason = null;
+  }
+  function reportHapticsPlayback(s) {
+    if (!getHapticsHostEnabled()) return;
+    const payload = JSON.stringify({
+      playing: s.playing,
+      firstFrame: s.firstFrame,
+      title: s.title ?? null,
+      supported: unsupportedReason === null,
+      reason: unsupportedReason
+    });
+    if (payload === lastSent) return;
+    lastSent = payload;
+    void fetch("/api/haptics/playback", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }).catch(() => {
+      lastSent = "";
+    });
+  }
+  async function tick() {
+    timer2 = null;
+    if (inFlight) {
+      again = true;
+      return;
+    }
+    if (listeners3.size === 0) return;
+    inFlight = true;
+    latest = getHapticsHostEnabled() ? await fetchHapticsHostStatus() : null;
+    inFlight = false;
+    listeners3.forEach((l) => l(latest));
+    if (again) {
+      again = false;
+      void tick();
+      return;
+    }
+    if (listeners3.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
+  }
+  function subscribeHapticsHostStatus(listener) {
+    listeners3.add(listener);
+    listener(latest);
+    if (!timer2 && !inFlight) void tick();
+    return () => {
+      listeners3.delete(listener);
+    };
+  }
+  function useHapticsHostStatus() {
+    const [status, setStatus] = useState(latest);
+    useEffect(() => subscribeHapticsHostStatus(setStatus), []);
+    return status;
+  }
+  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners3, timer2, latest, inFlight, again;
+  var init_haptics_host = __esm({
+    "lib/haptics-host.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      HAPTICS_HOST_ENABLED_KEY = "haptics_host_enabled";
+      POLL_MS = 1e3;
+      unsupportedReason = null;
+      lastSent = "";
+      listeners3 = /* @__PURE__ */ new Set();
+      timer2 = null;
+      latest = null;
+      inFlight = false;
+      again = false;
+    }
+  });
+
   // lib/download-target.ts
   async function resolveDownloadFolder() {
     const preset = getDownloadDir();
@@ -14382,394 +16815,6 @@
     }
   });
 
-  // lib/utils/fetch-client.ts
-  function classifyFetchError(error) {
-    if (error instanceof DOMException && error.name === "AbortError") return "aborted";
-    if (error instanceof Error) {
-      if (error.message === FETCH_TIMEOUT_ERROR) return "timeout";
-      if (error.message === "HTTP_429" || error.message === "TMDB_RATE_LIMITED") return "rate_limited";
-      if (/HTTP_\d+/.test(error.message)) return "http";
-      const message = error.message.toLowerCase();
-      if (message.includes("timeout") || message.includes("timed out")) return "timeout";
-      if (message.includes("network") || message.includes("failed to fetch") || message.includes("load failed")) return "network";
-      return "unknown";
-    }
-    return "unknown";
-  }
-  function isAbortError(error) {
-    return error instanceof DOMException && error.name === "AbortError";
-  }
-  function sleep(ms) {
-    return new Promise((resolve) => {
-      window.setTimeout(resolve, ms);
-    });
-  }
-  async function fetchWithTimeout(input, init = {}, timeoutMs = 5e3, signal) {
-    const controller = new AbortController();
-    let timedOut = false;
-    const abortFromSignal = () => controller.abort();
-    if (signal) {
-      if (signal.aborted) {
-        controller.abort();
-      } else {
-        signal.addEventListener("abort", abortFromSignal, { once: true });
-      }
-    }
-    const timeoutId = window.setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, timeoutMs);
-    try {
-      return await fetch(input, {
-        ...init,
-        signal: controller.signal
-      });
-    } catch (error) {
-      if (isAbortError(error) && timedOut) throw new Error(FETCH_TIMEOUT_ERROR);
-      throw error;
-    } finally {
-      window.clearTimeout(timeoutId);
-      if (signal) signal.removeEventListener("abort", abortFromSignal);
-    }
-  }
-  async function fetchJsonWithRetry(input, init = {}, options = {}) {
-    const retries = Math.max(0, options.retries ?? 1);
-    const timeoutMs = Math.max(1e3, options.timeoutMs ?? 5e3);
-    const retryDelayMs = Math.max(0, options.retryDelayMs ?? 250);
-    let lastError = null;
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
-      try {
-        const response = await fetchWithTimeout(input, init, timeoutMs, options.signal);
-        if (!response.ok) throw new Error(`HTTP_${response.status}`);
-        return await response.json();
-      } catch (error) {
-        if (isAbortError(error)) throw error;
-        const kind = classifyFetchError(error);
-        if (kind === "rate_limited") throw error;
-        lastError = error;
-        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
-      }
-    }
-    throw lastError ?? new Error("fetch_failed");
-  }
-  async function fetchTextWithRetry(input, init = {}, options = {}) {
-    const retries = Math.max(0, options.retries ?? 1);
-    const timeoutMs = Math.max(1e3, options.timeoutMs ?? 5e3);
-    const retryDelayMs = Math.max(0, options.retryDelayMs ?? 250);
-    let lastError = null;
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
-      try {
-        const response = await fetchWithTimeout(input, init, timeoutMs, options.signal);
-        if (!response.ok) throw new Error(`HTTP_${response.status}`);
-        return await response.text();
-      } catch (error) {
-        if (isAbortError(error)) throw error;
-        const kind = classifyFetchError(error);
-        if (kind === "rate_limited") throw error;
-        lastError = error;
-        if (attempt < retries && retryDelayMs > 0) await sleep(retryDelayMs);
-      }
-    }
-    throw lastError ?? new Error("fetch_failed");
-  }
-  var FETCH_TIMEOUT_ERROR;
-  var init_fetch_client = __esm({
-    "lib/utils/fetch-client.ts"() {
-      FETCH_TIMEOUT_ERROR = "FETCH_TIMEOUT";
-    }
-  });
-
-  // lib/services/api-json-cache.ts
-  function maxConcurrentRequests() {
-    return isTvSurface() ? 10 : 6;
-  }
-  function rememberResponse(key, entry) {
-    cache4.delete(key);
-    cache4.set(key, entry);
-    if (cache4.size <= CACHE_MAX_ENTRIES) return;
-    const now2 = Date.now();
-    for (const [k, v] of cache4) if (v.expiresAt <= now2) cache4.delete(k);
-    while (cache4.size > CACHE_MAX_ENTRIES) {
-      const oldest = cache4.keys().next().value;
-      if (oldest === void 0) break;
-      cache4.delete(oldest);
-    }
-  }
-  function classifyRequestGroup(pathAndQuery) {
-    if (pathAndQuery.startsWith("/api/item")) return "item";
-    if (pathAndQuery.startsWith("/api/recommendations")) return "recommendations";
-    if (pathAndQuery.startsWith("/api/media")) return "media";
-    if (pathAndQuery.startsWith("/api/wiki")) return "wiki";
-    return "other";
-  }
-  function getGroupLimit(group) {
-    if (group === "item") return 4;
-    if (group === "recommendations") return 2;
-    if (group === "media") return isTvSurface() ? 6 : 2;
-    if (group === "wiki") return 3;
-    return 3;
-  }
-  function isTvSurface() {
-    if (tvSurface === null) tvSurface = detectTvMode();
-    return tvSurface;
-  }
-  function getGroupActive(group) {
-    return activeByGroup.get(group) ?? 0;
-  }
-  function canStartGroup(group) {
-    return activeRequests < maxConcurrentRequests() && getGroupActive(group) < getGroupLimit(group);
-  }
-  function onRequestStart(group) {
-    activeRequests += 1;
-    activeByGroup.set(group, getGroupActive(group) + 1);
-  }
-  function onRequestEnd(group) {
-    activeRequests = Math.max(0, activeRequests - 1);
-    activeByGroup.set(group, Math.max(0, getGroupActive(group) - 1));
-  }
-  function getPriorityValue(priority) {
-    if (priority === "high") return 3;
-    if (priority === "low") return 1;
-    return 2;
-  }
-  function enqueue(item) {
-    queue.push(item);
-    queue.sort((left, right) => {
-      if (left.priority !== right.priority) return right.priority - left.priority;
-      return left.seq - right.seq;
-    });
-  }
-  function pumpQueue() {
-    while (activeRequests < maxConcurrentRequests() && queue.length > 0) {
-      const nextIndex = queue.findIndex((entry) => canStartGroup(entry.group));
-      if (nextIndex < 0) return;
-      const [next] = queue.splice(nextIndex, 1);
-      if (!next) break;
-      next.start();
-    }
-  }
-  function acquireRequestSlot(priority, group, signal) {
-    if (canStartGroup(group)) {
-      onRequestStart(group);
-      let released = false;
-      return Promise.resolve(() => {
-        if (released) return;
-        released = true;
-        onRequestEnd(group);
-        pumpQueue();
-      });
-    }
-    if (signal?.aborted) {
-      return Promise.reject(new DOMException("Aborted", "AbortError"));
-    }
-    return new Promise((resolve, reject) => {
-      const seq = queueSeq++;
-      const item = {
-        priority: getPriorityValue(priority),
-        seq,
-        group,
-        start: () => {
-          cleanup();
-          onRequestStart(group);
-          let released = false;
-          resolve(() => {
-            if (released) return;
-            released = true;
-            onRequestEnd(group);
-            pumpQueue();
-          });
-        }
-      };
-      const bypass = setTimeout(() => {
-        const index = queue.findIndex((entry) => entry.seq === seq);
-        if (index < 0) return;
-        queue.splice(index, 1);
-        item.start();
-      }, QUEUE_BYPASS_MS);
-      const onAbort = () => {
-        const index = queue.findIndex((entry) => entry.seq === seq);
-        if (index >= 0) queue.splice(index, 1);
-        cleanup();
-        reject(new DOMException("Aborted", "AbortError"));
-      };
-      const cleanup = () => {
-        clearTimeout(bypass);
-        signal?.removeEventListener("abort", onAbort);
-      };
-      signal?.addEventListener("abort", onAbort, { once: true });
-      enqueue(item);
-      pumpQueue();
-    });
-  }
-  function withAbortSignal(promise, signal) {
-    if (!signal) return promise;
-    if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
-    return new Promise((resolve, reject) => {
-      const abort = () => reject(new DOMException("Aborted", "AbortError"));
-      signal.addEventListener("abort", abort, { once: true });
-      promise.then(resolve).catch(reject).finally(() => {
-        signal.removeEventListener("abort", abort);
-      });
-    });
-  }
-  function normalizeApiPath(pathAndQuery) {
-    const normalized = pathAndQuery.trim();
-    if (!normalized.startsWith("/api/")) {
-      throw new Error("api_json_cache_requires_api_path");
-    }
-    return normalized;
-  }
-  function resolveNegativeCacheTtlMs(error, overrideTtlMs) {
-    if (overrideTtlMs != null) return Math.max(0, overrideTtlMs);
-    if (!(error instanceof Error)) return 0;
-    const statusMatch = error.message.match(/^HTTP_(\d{3})$/);
-    const status = statusMatch ? Number(statusMatch[1]) : null;
-    if (status === 404) return 6e4;
-    if (status === 429) return 5e3;
-    if (status != null && status >= 500 && status <= 599) return 3e3;
-    if (error.message === "TMDB_RATE_LIMITED") return 5e3;
-    return 0;
-  }
-  async function fetchApiJsonCached(pathAndQuery, options = {}) {
-    const key = normalizeApiPath(pathAndQuery);
-    const requestGroup = classifyRequestGroup(key);
-    const now2 = Date.now();
-    const isRemote = typeof window !== "undefined" && (window.location.hostname.endsWith(".workers.dev") || window.__LUMIO_REMOTE__ === true);
-    const resolvedTimeoutMs = isRemote ? Math.max(options.timeoutMs ?? 4500, 25e3) : options.timeoutMs;
-    const ttlMs = Math.max(1e3, isRemote ? Math.max(options.ttlMs ?? DEFAULT_TTL_MS, 5 * 6e4) : options.ttlMs ?? DEFAULT_TTL_MS);
-    if (!options.forceRefresh) {
-      const cachedError = errorCache.get(key);
-      if (cachedError && cachedError.expiresAt > now2) {
-        throw new Error(cachedError.message);
-      }
-      const cached = cache4.get(key);
-      if (cached && cached.expiresAt > now2) {
-        return cached.data;
-      }
-    }
-    const existing = inflight2.get(key);
-    if (existing) return withAbortSignal(existing, options.signal);
-    const request = (async () => {
-      const release = await acquireRequestSlot(options.priority ?? "normal", requestGroup);
-      try {
-        if (isPluginDesktopHost()) {
-          try {
-            const data = await fetchDesktopApiJson(
-              key,
-              options.desktopTimeoutMs ?? resolvedTimeoutMs ?? 4500
-            );
-            if (data != null) return data;
-          } catch {
-          }
-        }
-        return fetchJsonWithRetry(key, {}, {
-          timeoutMs: resolvedTimeoutMs,
-          retries: options.retries,
-          retryDelayMs: options.retryDelayMs
-          // Av samma skäl som ovan: den delade hämtningen tillhör alla som
-          // väntar på nyckeln, inte den som råkade starta den.
-        });
-      } finally {
-        release();
-      }
-    })().then((data) => {
-      rememberResponse(key, {
-        expiresAt: Date.now() + ttlMs,
-        data
-      });
-      errorCache.delete(key);
-      return data;
-    }).catch((error) => {
-      if (classifyFetchError(error) !== "aborted" && options.cacheErrors !== false) {
-        const negativeTtlMs = resolveNegativeCacheTtlMs(error, options.negativeTtlMs);
-        if (negativeTtlMs > 0) {
-          const message = error instanceof Error ? error.message : "api_request_failed";
-          errorCache.set(key, {
-            expiresAt: Date.now() + negativeTtlMs,
-            message
-          });
-        }
-      }
-      throw error;
-    }).finally(() => {
-      inflight2.delete(key);
-    });
-    inflight2.set(key, request);
-    return withAbortSignal(request, options.signal);
-  }
-  var DEFAULT_TTL_MS, QUEUE_BYPASS_MS, cache4, CACHE_MAX_ENTRIES, errorCache, inflight2, queue, activeRequests, queueSeq, activeByGroup, tvSurface;
-  var init_api_json_cache = __esm({
-    "lib/services/api-json-cache.ts"() {
-      init_tv_focus_shim();
-      init_plugin_sdk();
-      init_fetch_client();
-      DEFAULT_TTL_MS = 2 * 6e4;
-      QUEUE_BYPASS_MS = 8e3;
-      cache4 = /* @__PURE__ */ new Map();
-      CACHE_MAX_ENTRIES = 400;
-      errorCache = /* @__PURE__ */ new Map();
-      inflight2 = /* @__PURE__ */ new Map();
-      queue = [];
-      activeRequests = 0;
-      queueSeq = 0;
-      activeByGroup = /* @__PURE__ */ new Map();
-      tvSurface = null;
-    }
-  });
-
-  // lib/services/wiki-request-cache.ts
-  function withAbortSignal2(promise, signal) {
-    if (!signal) return promise;
-    if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
-    return new Promise((resolve, reject) => {
-      const abort = () => reject(new DOMException("Aborted", "AbortError"));
-      signal.addEventListener("abort", abort, { once: true });
-      promise.then(resolve).catch(reject).finally(() => {
-        signal.removeEventListener("abort", abort);
-      });
-    });
-  }
-  async function fetchWikiCached(params, options = {}) {
-    const key = params.toString();
-    const now2 = Date.now();
-    if (!options.forceRefresh) {
-      const cached = cache5.get(key);
-      if (cached && cached.expiresAt > now2) {
-        return cached.data;
-      }
-    }
-    const existing = inflight3.get(key);
-    if (existing) return withAbortSignal2(existing, options.signal);
-    const request = fetchApiJsonCached(`/api/wiki?${key}`, {
-      timeoutMs: options.timeoutMs ?? 5200,
-      retries: options.retries ?? 1,
-      retryDelayMs: options.retryDelayMs ?? 260,
-      signal: options.signal,
-      ttlMs: WIKI_TTL_MS,
-      forceRefresh: options.forceRefresh,
-      priority: "normal"
-    }).then((data) => {
-      cache5.set(key, {
-        expiresAt: Date.now() + WIKI_TTL_MS,
-        data
-      });
-      return data;
-    }).finally(() => {
-      inflight3.delete(key);
-    });
-    inflight3.set(key, request);
-    return withAbortSignal2(request, options.signal);
-  }
-  var WIKI_TTL_MS, cache5, inflight3;
-  var init_wiki_request_cache = __esm({
-    "lib/services/wiki-request-cache.ts"() {
-      init_api_json_cache();
-      WIKI_TTL_MS = 5 * 6e4;
-      cache5 = /* @__PURE__ */ new Map();
-      inflight3 = /* @__PURE__ */ new Map();
-    }
-  });
-
   // lib/spotify-settings.ts
   function getSpotifyClientId() {
     if (typeof window === "undefined") return "";
@@ -14850,8 +16895,8 @@
         return buildFallbackResult(params);
       }
     })().finally(() => {
-      const active = inflightByKey.get(key);
-      if (active === request) inflightByKey.delete(key);
+      const active2 = inflightByKey.get(key);
+      if (active2 === request) inflightByKey.delete(key);
     });
     inflightByKey.set(key, request);
     return request;
@@ -15026,7 +17071,7 @@
     const controller = new AbortController();
     const onAbort = () => controller.abort();
     signal?.addEventListener("abort", onAbort);
-    const timer = setTimeout(() => controller.abort(), timeoutMs + 500);
+    const timer3 = setTimeout(() => controller.abort(), timeoutMs + 500);
     try {
       const response = await fetch(`/api/streams?${params}`, {
         headers: {
@@ -15040,7 +17085,7 @@
       if (payload.error) throw new Error(payload.error);
       return payload.streams ?? [];
     } finally {
-      clearTimeout(timer);
+      clearTimeout(timer3);
       signal?.removeEventListener("abort", onAbort);
     }
   }
@@ -15092,7 +17137,7 @@
     return `${target2.type}:${streamTargetKey(target2)}`;
   }
   function resetCoreStreamLookupMemo() {
-    inflight4.clear();
+    inflight5.clear();
     memo2.clear();
   }
   async function lookupCoreStreams(target2, options = {}) {
@@ -15110,15 +17155,15 @@
     };
     const cached = memo2.get(key);
     if (cached && Date.now() - cached.at < MEMO_TTL_MS) return replay(cached.result);
-    const pending = inflight4.get(key);
-    if (pending) return pending.then(replay);
+    const pending3 = inflight5.get(key);
+    if (pending3) return pending3.then(replay);
     const run = lookupCoreStreamsUncached(target2, options).then((result) => {
       if (result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty")) {
         memo2.set(key, { at: Date.now(), result });
       }
       return result;
-    }).finally(() => inflight4.delete(key));
-    inflight4.set(key, run);
+    }).finally(() => inflight5.delete(key));
+    inflight5.set(key, run);
     return run;
   }
   async function lookupCoreStreamsUncached(target2, options = {}) {
@@ -15143,7 +17188,7 @@
     });
     return { streams: merged, reports };
   }
-  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, inflight4, memo2;
+  var cooldownUntil, COOLDOWN_MS, FRESH_SOURCE_MS, freshSources, RETRY_DELAY_MS, MEMO_TTL_MS, inflight5, memo2;
   var init_lookup = __esm({
     "lib/core-streams/lookup.ts"() {
       "use client";
@@ -15158,7 +17203,7 @@
       freshSources = /* @__PURE__ */ new Map();
       RETRY_DELAY_MS = 700;
       MEMO_TTL_MS = 45e3;
-      inflight4 = /* @__PURE__ */ new Map();
+      inflight5 = /* @__PURE__ */ new Map();
       memo2 = /* @__PURE__ */ new Map();
     }
   });
@@ -15183,16 +17228,16 @@
     const now2 = Date.now();
     const expiresAt = cache6.get(key);
     if (expiresAt && expiresAt > now2) return;
-    const running2 = inflight5.get(key);
+    const running2 = inflight6.get(key);
     if (running2) {
       await withAbort(running2, signal);
       return;
     }
     const request = fn().catch(() => {
     }).finally(() => {
-      inflight5.delete(key);
+      inflight6.delete(key);
     });
-    inflight5.set(key, request);
+    inflight6.set(key, request);
     await withAbort(request, signal);
     cache6.set(key, Date.now() + PREFETCH_TTL_MS);
     if (cache6.size > 500) {
@@ -15300,7 +17345,7 @@
     }
     await Promise.allSettled(tasks);
   }
-  var inflight5, cache6, PREFETCH_TTL_MS, PREFETCH_RECOMMENDATIONS;
+  var inflight6, cache6, PREFETCH_TTL_MS, PREFETCH_RECOMMENDATIONS;
   var init_media_prefetch_cache = __esm({
     "lib/services/media-prefetch-cache.ts"() {
       init_fetch_client();
@@ -15308,7 +17353,7 @@
       init_soundtrack_request_cache();
       init_api_json_cache();
       init_core_addons();
-      inflight5 = /* @__PURE__ */ new Map();
+      inflight6 = /* @__PURE__ */ new Map();
       cache6 = /* @__PURE__ */ new Map();
       PREFETCH_TTL_MS = 5 * 6e4;
       PREFETCH_RECOMMENDATIONS = false;
@@ -15358,7 +17403,7 @@
     const cacheKey = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
     const cached = resultCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.subtitles;
-    const running2 = inflight6.get(cacheKey);
+    const running2 = inflight7.get(cacheKey);
     if (running2) return running2;
     const parseSubtitles = (payload) => {
       const subtitles = payload?.subtitles;
@@ -15415,12 +17460,12 @@
       });
       return subtitles;
     })().finally(() => {
-      inflight6.delete(cacheKey);
+      inflight7.delete(cacheKey);
     });
-    inflight6.set(cacheKey, request);
+    inflight7.set(cacheKey, request);
     return request;
   }
-  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight6, LANG3_TO_22;
+  var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
   var init_os_client = __esm({
     "lib/opensubtitles/os-client.ts"() {
       init_opensubtitles_settings();
@@ -15429,7 +17474,7 @@
       FETCH_TIMEOUT_MS = 4800;
       MAX_CACHE_ENTRIES = 600;
       resultCache = /* @__PURE__ */ new Map();
-      inflight6 = /* @__PURE__ */ new Map();
+      inflight7 = /* @__PURE__ */ new Map();
       LANG3_TO_22 = {
         eng: "en",
         swe: "sv",
@@ -16647,9 +18692,10 @@
     if (s.userMuted === null) s.userMuted = current;
     return s.userMuted;
   }
-  var KEY11;
+  var CINEMA_REVEAL_HOLD_MAX_MS, KEY11;
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
+      CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
       KEY11 = "__lumioRevealHold";
     }
   });
@@ -17176,17 +19222,17 @@
     return session;
   }
   function onBingeSessionChanged(listener) {
-    listeners3.add(listener);
+    listeners4.add(listener);
     return () => {
-      listeners3.delete(listener);
+      listeners4.delete(listener);
     };
   }
-  var session, listeners3;
+  var session, listeners4;
   var init_binge_session = __esm({
     "lib/binge-session.ts"() {
       "use client";
       session = null;
-      listeners3 = /* @__PURE__ */ new Set();
+      listeners4 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -17847,9 +19893,9 @@ ${cue.text}`).join("\n\n")}
         }
       };
     }, [endHlsSessionOnServer]);
-    const notifyLanPlaybackState = useCallback((active) => {
+    const notifyLanPlaybackState = useCallback((active2) => {
       if (!getLanStreamingEnabled() || getLanStreamingMode() !== "playback") return;
-      const body = active ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
+      const body = active2 ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
       void fetch("/api/lan-playback-state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -17898,6 +19944,11 @@ ${cue.text}`).join("\n\n")}
     const hideTimerRef = useRef(null);
     const [showStillWatchingPrompt, setShowStillWatchingPrompt] = useState(false);
     const [stillWatchingCountdown, setStillWatchingCountdown] = useState(STILL_WATCHING_CLOSE_SECONDS);
+    const [stillWatchingReason, setStillWatchingReason] = useState("episodes");
+    const [sleepTimer, setSleepTimer] = useState(DISARMED);
+    const sleepFiredAtRef = useRef(0);
+    const [companionIds, setCompanionIds] = useState([]);
+    const [companionProfiles, setCompanionProfiles] = useState([]);
     const stillWatchingEnabledRef = useRef(false);
     const stillWatchingMaxMinutesRef = useRef(90);
     const [disableSubtitlesWhenAudioMatches, setDisableSubtitlesWhenAudioMatches] = useState(() => getDisableSubtitlesWhenAudioMatches());
@@ -17907,7 +19958,10 @@ ${cue.text}`).join("\n\n")}
     const stillWatchingEpisodeCountRef = useRef(0);
     function registerPlaybackInteraction() {
       lastPlaybackInteractionRef.current = realTime;
-      if (showStillWatchingPrompt) setShowStillWatchingPrompt(false);
+      if (showStillWatchingPrompt) {
+        setShowStillWatchingPrompt(false);
+        if (stillWatchingReason === "sleep") resumeAfterSleepPrompt();
+      }
     }
     const creditsModeRef = useRef(false);
     function onMouseActivity() {
@@ -17933,7 +19987,30 @@ ${cue.text}`).join("\n\n")}
     }
     const [playing, setPlaying] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
+    const hapticsStatus = useHapticsHostStatus();
+    const hapticsActive = Boolean(hapticsStatus?.active);
+    const hapticFilterWanted = shouldAddHapticFilter({ active: hapticsActive, firstFrame: hasStarted, droid: isDroidEngine });
     const [openSurface, setOpenSurface] = useState(null);
+    const anchorCacheRef = useRef({ surface: null, w: 0, h: 0, styles: /* @__PURE__ */ new Map() });
+    const anchoredMenuStyle = (trigger, menuWidth = 0) => {
+      if (!trigger || typeof window === "undefined") return getAnchoredMenuStyle(trigger, menuWidth);
+      const cache7 = anchorCacheRef.current;
+      if (cache7.surface !== openSurface || cache7.w !== window.innerWidth || cache7.h !== window.innerHeight) {
+        anchorCacheRef.current = { surface: openSurface, w: window.innerWidth, h: window.innerHeight, styles: /* @__PURE__ */ new Map() };
+      }
+      const byTrigger = anchorCacheRef.current.styles;
+      let byWidth = byTrigger.get(trigger);
+      if (!byWidth) {
+        byWidth = /* @__PURE__ */ new Map();
+        byTrigger.set(trigger, byWidth);
+      }
+      let style = byWidth.get(menuWidth);
+      if (!style) {
+        style = getAnchoredMenuStyle(trigger, menuWidth);
+        byWidth.set(menuWidth, style);
+      }
+      return style;
+    };
     const [statsHud, setStatsHudState] = useState(() => getStatsHud());
     const [stripSdh, setStripSdhState] = useState(() => getStripSdh());
     const [playbackSpeed, setPlaybackSpeedState] = useState(() => getSavedPlaybackSpeed(mediaType, tmdbId ?? null));
@@ -17951,6 +20028,10 @@ ${cue.text}`).join("\n\n")}
     const setShowAudioMenu = surfaceSetter("audio");
     const showAudioDelayMenu = openSurface === "audioDelay";
     const setShowAudioDelayMenu = surfaceSetter("audioDelay");
+    const showSleepMenu = openSurface === "sleep";
+    const setShowSleepMenu = surfaceSetter("sleep");
+    const showCompanionsMenu = openSurface === "companions";
+    const setShowCompanionsMenu = surfaceSetter("companions");
     const showCastMenu = openSurface === "cast";
     const setShowCastMenu = surfaceSetter("cast");
     const showAspectMenu = openSurface === "aspect";
@@ -18084,12 +20165,12 @@ ${cue.text}`).join("\n\n")}
           } catch {
           }
         };
-        const timer = window.setTimeout(() => {
+        const timer3 = window.setTimeout(() => {
           void probe();
         }, 1200);
         return () => {
           cancelled = true;
-          window.clearTimeout(timer);
+          window.clearTimeout(timer3);
         };
       }
       const v = videoRef.current;
@@ -18322,14 +20403,14 @@ ${cue.text}`).join("\n\n")}
       if (!clientOwnsSplash || startError) return;
       if (hasStarted || hasEverStarted) return;
       if (isDirectLocalFileSource) return;
-      const timer = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         void fetch(`/api/debug-log?msg=${encodeURIComponent(
           `[browser-start-timeout] no first playable in ${BROWSER_START_TIMEOUT_MS}ms src=${(videoSrc || "(pending probe)").slice(0, 90)}`
         )}`).catch(() => {
         });
         escalateBrowserFailureRef.current();
       }, BROWSER_START_TIMEOUT_MS);
-      return () => window.clearTimeout(timer);
+      return () => window.clearTimeout(timer3);
     }, [clientOwnsSplash, startError, hasStarted, hasEverStarted, isDirectLocalFileSource, videoSrc]);
     const loadFailHandledTokenRef = useRef(0);
     const [subtitleClockOverride, setSubtitleClockOverride] = useState(null);
@@ -18340,6 +20421,8 @@ ${cue.text}`).join("\n\n")}
     const aspectTriggerRef = useRef(null);
     const cropTriggerRef = useRef(null);
     const moreTriggerRef = useRef(null);
+    const sleepTriggerRef = useRef(null);
+    const companionsTriggerRef = useRef(null);
     const downloadEsRef = useRef(null);
     const downloadTimerRef = useRef(null);
     const autoSkippedIntroRef = useRef(false);
@@ -18449,34 +20532,45 @@ ${cue.text}`).join("\n\n")}
     }, [isDroidEngine, droid.audioTracks, droid.subtitleTracks, droid.selectedAudio, droid.sid]);
     useEffect(() => {
       if (!isDroidEngine || !isPlayerRevealHeld()) return;
-      captureUserMutedOnce(mutedRef.current);
+      const cinemaMute = cinemaMuteRef.current;
+      if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+      cinemaMute.held = true;
       void mpvCommand2(["set_property", "mute", "yes"]);
     }, [isDroidEngine, mpv.fileLoadedToken]);
     useEffect(() => {
       if (!isDroidEngine) return;
       if (!mpv.firstFrameRendered) return;
+      const cinemaMute = cinemaMuteRef.current;
       if (!isPlayerRevealHeld()) {
+        if (cinemaMute.held) {
+          cinemaMute.held = false;
+          void mpvCommand2(["set_property", "mute", cinemaMute.userMuted ? "yes" : "no"]);
+        }
         setMpvStartupHoldReady(true);
         return;
       }
-      const userMuted = captureUserMutedOnce(mutedRef.current);
+      if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+      cinemaMute.held = true;
+      const userMuted = cinemaMute.userMuted;
       const holdStill = () => {
         void setMpvPause2(true);
         void mpvCommand2(["set_property", "mute", "yes"]);
       };
       holdStill();
       markPlayerReadyToReveal();
-      const timer = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           holdStill();
           return;
         }
-        window.clearInterval(timer);
-        void mpvCommand2(["seek", initialTime ?? 0, "absolute"]);
+        window.clearInterval(timer3);
+        const target2 = initialTime ?? 0;
+        if (Math.abs(cinemaTimePosRef.current - target2) > 1.5) void mpvCommand2(["seek", target2, "absolute"]);
         void mpvCommand2(["set_property", "mute", userMuted ? "yes" : "no"]);
+        cinemaMute.held = false;
         setMpvStartupHoldReady(true);
       }, 200);
-      return () => window.clearInterval(timer);
+      return () => window.clearInterval(timer3);
     }, [isDroidEngine, mpv.firstFrameRendered]);
     const openMpvPlayer2 = isDroidEngine ? async (args) => {
       if (args.shouldAbort?.()) return;
@@ -18488,7 +20582,9 @@ ${cue.text}`).join("\n\n")}
         }
       });
       if (isPlayerRevealHeld()) {
-        captureUserMutedOnce(mutedRef.current);
+        const cinemaMute = cinemaMuteRef.current;
+        if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+        cinemaMute.held = true;
         droid.setMuted(true);
       }
       await openNativePlayer({ url: args.url, start: args.start, audioLang: args.audioLang });
@@ -18600,6 +20696,9 @@ ${cue.text}`).join("\n\n")}
     const firstFrameRenderedRef = useRef(false);
     firstFrameRenderedRef.current = mpv.firstFrameRendered;
     const mutedRef = useRef(muted);
+    const cinemaMuteRef = useRef({ held: false, userMuted: false });
+    const cinemaTimePosRef = useRef(0);
+    cinemaTimePosRef.current = mpv.timePos;
     mutedRef.current = muted;
     useEffect(() => {
       if (!useMpv) return;
@@ -18610,8 +20709,7 @@ ${cue.text}`).join("\n\n")}
       let firstFrameAt = null;
       let subsAt = null;
       let introAt = null;
-      let heldByCinema = false;
-      let userMutedAtHold = false;
+      const cinemaMute = cinemaMuteRef.current;
       void refreshMpvAudioTracks();
       void refreshMpvSubtitleTracks();
       const interval = window.setInterval(() => {
@@ -18658,16 +20756,18 @@ ${cue.text}`).join("\n\n")}
         const readyToReveal = firstFrame ? audioReady : extraHoldDone && audioReady && subtitlesReady && introReady;
         if (isDroidEngine && isPlayerRevealHeld()) return;
         if (isMpvEngine && isPlayerRevealHeld()) {
-          if (!heldByCinema) userMutedAtHold = captureUserMutedOnce(mutedRef.current);
-          heldByCinema = true;
-          void setMpvPause2(true);
+          if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+          cinemaMute.held = true;
+          if (firstFrame) void setMpvPause2(true);
           void mpvCommand2(["set_property", "mute", "yes"]);
           if (readyToReveal) markPlayerReadyToReveal();
           return;
         }
-        if (readyToReveal && heldByCinema) {
-          void mpvCommand2(["seek", String(initialTime ?? 0), "absolute"]);
-          void mpvCommand2(["set_property", "mute", userMutedAtHold ? "yes" : "no"]);
+        if (readyToReveal && cinemaMute.held) {
+          const target2 = initialTime ?? 0;
+          if (Math.abs(cinemaTimePosRef.current - target2) > 1.5) void mpvCommand2(["seek", String(target2), "absolute"]);
+          void mpvCommand2(["set_property", "mute", cinemaMute.userMuted ? "yes" : "no"]);
+          cinemaMute.held = false;
         }
         if (readyToReveal) {
           window.clearInterval(interval);
@@ -18716,35 +20816,47 @@ ${cue.text}`).join("\n\n")}
       isDroidEngine
     ]);
     useEffect(() => {
-      if (useMpv || !videoSrc || !isPlayerRevealHeld()) return;
+      if (useMpv || !videoSrc) return;
       const v = videoRef.current;
       if (!v) return;
-      const userMuted = captureUserMutedOnce(mutedRef.current);
+      const cinemaMute = cinemaMuteRef.current;
+      if (!isPlayerRevealHeld()) {
+        if (cinemaMute.held) {
+          cinemaMute.held = false;
+          v.muted = cinemaMute.userMuted;
+        }
+        return;
+      }
+      if (!cinemaMute.held) cinemaMute.userMuted = captureUserMutedOnce(mutedRef.current);
+      cinemaMute.held = true;
+      const userMuted = cinemaMute.userMuted;
       v.muted = true;
-      let heldAtFirstFrame = false;
-      const timer = window.setInterval(() => {
+      let pausedByUs = false;
+      const timer3 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           if (!v.muted) v.muted = true;
           if (hasStartedForUrlRef.current) {
-            if (!v.paused) v.pause();
-            if (v.readyState >= 2) {
-              heldAtFirstFrame = true;
-              markPlayerReadyToReveal();
+            if (!v.paused) {
+              v.pause();
+              pausedByUs = true;
             }
+            if (v.readyState >= 2) markPlayerReadyToReveal();
           }
           return;
         }
-        window.clearInterval(timer);
+        window.clearInterval(timer3);
         v.muted = userMuted;
-        if (!heldAtFirstFrame) return;
+        cinemaMute.held = false;
+        if (!pausedByUs) return;
+        const target2 = initialTime ?? 0;
         try {
-          v.currentTime = initialTime ?? 0;
+          if (Math.abs(v.currentTime - target2) > 1.5) v.currentTime = target2;
         } catch {
         }
         void v.play().catch(() => {
         });
       }, 120);
-      return () => window.clearInterval(timer);
+      return () => window.clearInterval(timer3);
     }, [useMpv, videoSrc]);
     useEffect(() => {
       if (!useMpv || !mpvStartupHoldReady) return;
@@ -18987,6 +21099,16 @@ ${cue.text}`).join("\n\n")}
       const filter = nightMode === "off" ? null : nightMode === "mild" ? "lavfi=[acompressor=threshold=0.25:ratio=2.5:attack=20:release=250,alimiter=limit=0.63:level=0]" : "lavfi=[acompressor=threshold=0.125:ratio=4:attack=10:release=300,alimiter=limit=0.4:level=0]";
       void (async () => {
         await mpvCommand2(["af", "clr", ""]);
+        if (hapticFilterWanted) {
+          const channels = Number(await mpvCommand2(["get_property", "audio-params/channel-count"]));
+          const rate = Number(await mpvCommand2(["get_property", "audio-params/samplerate"]));
+          const hf = hapticFilter(channels, rate);
+          if (hf) await mpvCommand2(["af", "add", hf]);
+          else {
+            markHapticsUnsupported("no-audio");
+            reportHapticsPlayback({ playing: !mpv.paused, firstFrame: hasStarted, title });
+          }
+        }
         for (const tuningFilter of audioTuningFilters(audioTuning)) {
           await mpvCommand2(["af", "add", tuningFilter]);
         }
@@ -18994,11 +21116,18 @@ ${cue.text}`).join("\n\n")}
           await mpvCommand2(["af", "add", filter]);
         }
         if (filter || audioTuningFilters(audioTuning).length > 0) {
-          const chain = await mpvGetAudioFilterChain2();
-          airplayLog(`nightmode: ${nightMode}, mpv af-kedja: ${chain}`);
+          const chain2 = await mpvGetAudioFilterChain2();
+          airplayLog(`nightmode: ${nightMode}, mpv af-kedja: ${chain2}`);
         }
       })();
-    }, [useMpv, nightMode, audioTuning, mpv.fileLoaded, mpv.fileLoadedToken]);
+    }, [useMpv, nightMode, audioTuning, mpv.fileLoaded, mpv.fileLoadedToken, hapticFilterWanted]);
+    useEffect(() => {
+      resetHapticsSupport();
+    }, [mpv.fileLoadedToken]);
+    useEffect(() => {
+      reportHapticsPlayback({ playing: hasStarted && (useMpv ? !mpv.paused : playing), firstFrame: hasStarted, title });
+    }, [hasStarted, useMpv, mpv.paused, playing, title]);
+    useEffect(() => () => reportHapticsPlayback({ playing: false, firstFrame: false, title: null }), []);
     useEffect(() => {
       if (!useMpv || !mpv.fileLoaded) return;
       if (playbackSpeed !== 1) mpv.setSpeed(playbackSpeed);
@@ -19054,7 +21183,7 @@ ${cue.text}`).join("\n\n")}
           `Speed  ${s.speed}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
         ]);
       };
-      const tick = async () => {
+      const tick2 = async () => {
         if (isDroidEngine) {
           tickDroid();
           return;
@@ -19085,9 +21214,9 @@ ${cue.text}`).join("\n\n")}
         ];
         setStatsLines(lines);
       };
-      void tick();
+      void tick2();
       const id = window.setInterval(() => {
-        void tick();
+        void tick2();
       }, 1e3);
       return () => {
         cancelled = true;
@@ -19231,7 +21360,9 @@ ${cue.text}`).join("\n\n")}
       else onMouseActivity();
     }
     const togglePlay = useCallback(() => {
+      const sleepPromptUp = showStillWatchingPrompt && stillWatchingReason === "sleep";
       registerPlaybackInteraction();
+      if (sleepPromptUp) return;
       if (useMpv) {
         void setMpvPause2(!mpv.paused);
         return;
@@ -19240,7 +21371,7 @@ ${cue.text}`).join("\n\n")}
       if (!v) return;
       if (v.paused) void safePlay(v);
       else v.pause();
-    }, [useMpv, mpv.paused, realTime, showStillWatchingPrompt]);
+    }, [useMpv, mpv.paused, realTime, showStillWatchingPrompt, stillWatchingReason]);
     const attemptHtml5Start = useCallback(async (userGesture) => {
       if (useMpv) return;
       const v = videoRef.current;
@@ -19368,7 +21499,7 @@ ${cue.text}`).join("\n\n")}
         boundsSyncFrameRef.current = null;
         syncPlayerBounds();
       });
-      boundsResyncTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
       boundsResyncTimersRef.current = [window.setTimeout(() => {
         syncPlayerBounds();
       }, 220)];
@@ -19464,7 +21595,7 @@ ${cue.text}`).join("\n\n")}
       prematureEndHandledRef.current = false;
       warmSourceCache(url, requestHeaders);
       let openPromise;
-      void closeMpvPlayer2().catch(() => {
+      void closeMpvPlayer2("spelare: \xF6ppnar ny fil").catch(() => {
       }).then(() => {
         if (cancelled) return;
         syncPlayerBounds();
@@ -19479,9 +21610,9 @@ ${cue.text}`).join("\n\n")}
       });
       return () => {
         cancelled = true;
-        const pending = openPromise;
-        void (pending ? pending.catch(() => {
-        }).then(() => closeMpvPlayer2()) : closeMpvPlayer2());
+        const pending3 = openPromise;
+        void (pending3 ? pending3.catch(() => {
+        }).then(() => closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes")) : closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes"));
         releaseSourceCache(url);
         const v = airplayVideoRef.current;
         if (v) {
@@ -19541,8 +21672,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!hasStarted || !getShowTitleOnStart()) return;
       setShowStartTitle(true);
-      const timer = window.setTimeout(() => setShowStartTitle(false), 4e3);
-      return () => window.clearTimeout(timer);
+      const timer3 = window.setTimeout(() => setShowStartTitle(false), 4e3);
+      return () => window.clearTimeout(timer3);
     }, [hasStarted, title]);
     useEffect(() => {
       setAutoplayDurationHint(totalDuration > 0 ? totalDuration : null);
@@ -19674,7 +21805,7 @@ ${cue.text}`).join("\n\n")}
           showMpvTransitionCover(1400, 400);
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              void closeMpvPlayer2().catch(() => {
+              void closeMpvPlayer2("spelare: avmonterad").catch(() => {
               });
             });
           });
@@ -19740,23 +21871,27 @@ ${cue.text}`).join("\n\n")}
       finishClose();
     }, [notifyLanPlaybackState, onClose, realTime, scheduleBoundsResync, skipHomeKitOnClose, syncDesktopFullscreenState, title, totalDuration, tryCloseDesktopPlaybackSession, useMpv]);
     useEffect(() => {
+      const seconds = stillWatchingReason === "sleep" ? SLEEP_PROMPT_SECONDS : STILL_WATCHING_CLOSE_SECONDS;
       if (!showStillWatchingPrompt) {
-        setStillWatchingCountdown(STILL_WATCHING_CLOSE_SECONDS);
+        setStillWatchingCountdown(seconds);
         return;
       }
-      setStillWatchingCountdown(STILL_WATCHING_CLOSE_SECONDS);
+      setStillWatchingCountdown(seconds);
       const interval = window.setInterval(() => {
         setStillWatchingCountdown((current) => {
           if (current <= 1) {
             window.clearInterval(interval);
-            window.setTimeout(() => handleClose(), 0);
+            window.setTimeout(() => {
+              if (stillWatchingReason === "sleep") journalMarkAsleep(realTimeRef.current, sleepFiredAtRef.current);
+              handleClose();
+            }, 0);
             return 0;
           }
           return current - 1;
         });
       }, 1e3);
       return () => window.clearInterval(interval);
-    }, [handleClose, showStillWatchingPrompt, STILL_WATCHING_CLOSE_SECONDS]);
+    }, [handleClose, showStillWatchingPrompt, stillWatchingReason, STILL_WATCHING_CLOSE_SECONDS]);
     const handleCopyStreamLink = useCallback(async () => {
       const direct = resolveDirectStreamUrl2(url) ?? url;
       await writeTextToClipboard(direct);
@@ -19921,7 +22056,7 @@ ${cue.text}`).join("\n\n")}
             window.cancelAnimationFrame(boundsSyncFrameRef.current);
             boundsSyncFrameRef.current = null;
           }
-          boundsResyncTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+          boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
           boundsResyncTimersRef.current = [];
         };
       }
@@ -19932,7 +22067,7 @@ ${cue.text}`).join("\n\n")}
           window.cancelAnimationFrame(boundsSyncFrameRef.current);
           boundsSyncFrameRef.current = null;
         }
-        boundsResyncTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+        boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
         boundsResyncTimersRef.current = [];
       };
     }, [portalEl, scheduleBoundsResync, useMpv]);
@@ -19945,119 +22080,122 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv) return;
       scheduleBoundsResync();
     }, [useMpv, url, hasStarted, scheduleBoundsResync]);
-    useEffect(() => {
-      lockBodyScroll();
-      function onKey(e) {
-        const keyTarget = e.target;
-        const typing = keyTarget?.tagName === "INPUT" || keyTarget?.tagName === "TEXTAREA" || keyTarget?.isContentEditable === true;
-        if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (openSurfaceRef.current !== null) {
-            const surface = openSurfaceRef.current;
-            setOpenSurface(null);
-            onMouseActivityRef.current();
-            if (isTv) {
-              const trigger = surface === "subs" ? subTriggerRef.current : surface === "audio" ? audioTriggerRef.current : surface === "audioDelay" ? audioDelayTriggerRef.current : surface === "aspect" ? aspectTriggerRef.current : surface === "zoom" ? cropTriggerRef.current : surface === "more" ? moreTriggerRef.current : surface === "tuning" ? tuningTriggerRef.current : null;
-              window.requestAnimationFrame(() => {
-                if (trigger && trigger.isConnected) trigger.focus();
-                else tvFocus?.focusInit(playerRootRef.current);
-              });
+    const playerKeyRef = useRef(() => {
+    });
+    playerKeyRef.current = function onKey(e) {
+      const keyTarget = e.target;
+      const typing = keyTarget?.tagName === "INPUT" || keyTarget?.tagName === "TEXTAREA" || keyTarget?.isContentEditable === true;
+      if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (openSurfaceRef.current !== null) {
+          const surface = openSurfaceRef.current;
+          setOpenSurface(null);
+          onMouseActivityRef.current();
+          if (isTv) {
+            const trigger = surface === "subs" ? subTriggerRef.current : surface === "audio" ? audioTriggerRef.current : surface === "audioDelay" ? audioDelayTriggerRef.current : surface === "aspect" ? aspectTriggerRef.current : surface === "zoom" ? cropTriggerRef.current : surface === "more" ? moreTriggerRef.current : surface === "tuning" ? tuningTriggerRef.current : null;
+            window.requestAnimationFrame(() => {
+              if (trigger && trigger.isConnected) trigger.focus();
+              else tvFocus?.focusInit(playerRootRef.current);
+            });
+          }
+          return;
+        }
+        if (isTv && controlsVisibleRef.current) {
+          setControlsVisible(false);
+          return;
+        }
+        if (useMpv) {
+          void syncDesktopFullscreenState().then((fullscreen) => {
+            if (!fullscreen) {
+              handleClose();
+              return;
             }
-            return;
-          }
-          if (isTv && controlsVisibleRef.current) {
-            setControlsVisible(false);
-            return;
-          }
-          if (useMpv) {
-            void syncDesktopFullscreenState().then((fullscreen) => {
-              if (!fullscreen) {
-                handleClose();
-                return;
-              }
-              return setWindowNativeFullscreen2(false).then((nextFullscreen) => {
+            return setWindowNativeFullscreen2(false).then((nextFullscreen) => {
+              setDesktopFullscreen(nextFullscreen);
+              scheduleBoundsResync();
+              showControlsPermanent();
+            });
+          }).catch(() => {
+          });
+          return;
+        }
+        if (typeof document !== "undefined" && document.fullscreenElement) {
+          void document.exitFullscreen().catch(() => {
+          });
+          showControlsPermanent();
+          return;
+        }
+        if (isTauriEnv) {
+          void syncDesktopFullscreenState().then((fullscreen) => {
+            if (fullscreen) {
+              return setWindowFullscreen2(false).then((nextFullscreen) => {
                 setDesktopFullscreen(nextFullscreen);
                 scheduleBoundsResync();
                 showControlsPermanent();
               });
-            }).catch(() => {
-            });
-            return;
-          }
-          if (typeof document !== "undefined" && document.fullscreenElement) {
-            void document.exitFullscreen().catch(() => {
-            });
-            showControlsPermanent();
-            return;
-          }
-          if (isTauriEnv) {
-            void syncDesktopFullscreenState().then((fullscreen) => {
-              if (fullscreen) {
-                return setWindowFullscreen2(false).then((nextFullscreen) => {
-                  setDesktopFullscreen(nextFullscreen);
-                  scheduleBoundsResync();
-                  showControlsPermanent();
-                });
-              }
-              handleClose();
-            }).catch(() => handleClose());
-            return;
-          }
-          handleClose();
+            }
+            handleClose();
+          }).catch(() => handleClose());
           return;
         }
-        if (isTv && e.key.startsWith("Arrow")) return;
-        if (matchesShortcut("playPause", e.key) || e.key === "k") {
-          e.preventDefault();
-          togglePlay();
-          return;
-        }
-        if (matchesShortcut("seekForward", e.key)) {
-          seek(10);
-          return;
-        }
-        if (matchesShortcut("seekBack", e.key)) {
-          seek(-10);
-          return;
-        }
-        if (matchesShortcut("mute", e.key)) {
-          toggleMute();
-          return;
-        }
-        if (matchesShortcut("fullscreen", e.key)) {
-          toggleFullscreen();
-          return;
-        }
-        if (matchesShortcut("secondarySubtitleCycle", e.key)) {
-          secondaryCycleRef.current?.();
-          return;
-        }
-        if (matchesShortcut("subtitleCycle", e.key)) {
-          if (subtitleOptions.length > 0) {
-            const currentIndex = subtitleOptions.findIndex((option) => option.id === activeSubId);
-            const nextIndex = currentIndex + 1;
-            void selectSubtitle(
-              nextIndex >= subtitleOptions.length ? null : subtitleOptions[nextIndex],
-              { manual: true }
-            );
-          }
-          return;
-        }
-        if (matchesShortcut("subtitleDelayBack", e.key)) {
-          setSubDelay((value) => Number((value - SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
-          return;
-        }
-        if (matchesShortcut("subtitleDelayForward", e.key)) {
-          setSubDelay((value) => Number((value + SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
-        }
+        handleClose();
+        return;
       }
+      if (isTv && e.key.startsWith("Arrow")) return;
+      if (matchesShortcut("playPause", e.key) || e.key === "k") {
+        e.preventDefault();
+        togglePlay();
+        return;
+      }
+      if (matchesShortcut("seekForward", e.key)) {
+        seek(10);
+        return;
+      }
+      if (matchesShortcut("seekBack", e.key)) {
+        seek(-10);
+        return;
+      }
+      if (matchesShortcut("mute", e.key)) {
+        toggleMute();
+        return;
+      }
+      if (matchesShortcut("fullscreen", e.key)) {
+        toggleFullscreen();
+        return;
+      }
+      if (matchesShortcut("secondarySubtitleCycle", e.key)) {
+        secondaryCycleRef.current?.();
+        return;
+      }
+      if (matchesShortcut("subtitleCycle", e.key)) {
+        if (subtitleOptions.length > 0) {
+          const currentIndex = subtitleOptions.findIndex((option) => option.id === activeSubId);
+          const nextIndex = currentIndex + 1;
+          void selectSubtitle(
+            nextIndex >= subtitleOptions.length ? null : subtitleOptions[nextIndex],
+            { manual: true }
+          );
+        }
+        return;
+      }
+      if (matchesShortcut("subtitleDelayBack", e.key)) {
+        setSubDelay((value) => Number((value - SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
+        return;
+      }
+      if (matchesShortcut("subtitleDelayForward", e.key)) {
+        setSubDelay((value) => Number((value + SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
+      }
+    };
+    useEffect(() => {
+      lockBodyScroll();
+      const onKey = (e) => playerKeyRef.current(e);
       window.addEventListener("keydown", onKey);
       return () => {
         unlockBodyScroll();
         window.removeEventListener("keydown", onKey);
       };
-    }, [handleClose, scheduleBoundsResync, syncDesktopFullscreenState, togglePlay, seek, toggleMute, toggleFullscreen, useMpv, isTv]);
+    }, []);
     useEffect(() => {
       if (!useMpv) return;
       let raf = null;
@@ -20426,7 +22564,7 @@ ${cue.text}`).join("\n\n")}
     }, [wikiTmdbId, imdbId, season, episode]);
     useEffect(() => {
       if (!mediaId || !url) return;
-      function save() {
+      function save(final = false) {
         const snapshot = progressSnapshotRef.current;
         if (!mediaId || !url || snapshot.totalDuration <= 0) return;
         if (watchedMarkedRef.current) return;
@@ -20449,13 +22587,29 @@ ${cue.text}`).join("\n\n")}
           season,
           episode
         });
+        journalTick({
+          mediaId,
+          tmdbId: wikiTmdbId ?? null,
+          type: mediaType ?? "movie",
+          season,
+          episode,
+          title: mediaTitle ?? title,
+          posterUrl: posterUrl ?? null,
+          year: year ?? null,
+          position: snapshot.realTime,
+          duration: snapshot.totalDuration
+        }, final);
       }
-      const interval = setInterval(save, 5e3);
+      const interval = setInterval(() => save(), 5e3);
       return () => {
         clearInterval(interval);
-        save();
+        save(true);
       };
     }, [backdropUrl, episode, imdbId, mediaId, mediaSource, mediaTitle, mediaType, posterUrl, season, sourceInfoHash, title, url, wikiTmdbId, year]);
+    useEffect(() => {
+      setPlayerOpen(true);
+      return () => setPlayerOpen(false);
+    }, []);
     const playerBarcode = useBarcodeRecorder({ engine: engineKind, mediaId: mediaId ?? null, mediaType, tmdbId: wikiTmdbId, title: mediaTitle ?? title, year, posterUrl, season, episode, snapshotRef: progressSnapshotRef, videoRef, playing: isPlaying, finished: creditsMode || hasEndedPlayback });
     useEffect(() => {
       if (useMpv) {
@@ -20590,7 +22744,7 @@ ${cue.text}`).join("\n\n")}
     }, [playbackSessionIdentity, url, inferredMediaType, mediaType, season, episode, shouldProxyPlayback, useMpv, initialTime, imdbId, tmdbId, wikiTmdbId, mediaId, title]);
     useEffect(() => {
       if (useMpv || hasStarted) return;
-      const timer = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         const v = videoRef.current;
         if (!v) return;
         if (!v.paused && v.currentTime > 0.15) {
@@ -20601,7 +22755,7 @@ ${cue.text}`).join("\n\n")}
           onFirstPlay?.();
         }
       }, 350);
-      return () => window.clearInterval(timer);
+      return () => window.clearInterval(timer3);
     }, [hasStarted, onFirstPlay, useMpv]);
     useEffect(() => {
       if (imdbId) {
@@ -20702,8 +22856,32 @@ ${cue.text}`).join("\n\n")}
       } else {
         videoRef.current?.pause();
       }
+      setStillWatchingReason("episodes");
       setShowStillWatchingPrompt(true);
     }, [hasEndedPlayback, hasStarted, isPlaying, mediaType, realTime, showStillWatchingPrompt, useMpv]);
+    useEffect(() => {
+      if (sleepTimer.mode === "off" || showStillWatchingPrompt || !hasStarted) return;
+      if (!sleepTimerDue(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback })) return;
+      setSleepTimer(DISARMED);
+      sleepFiredAtRef.current = Date.now();
+      if (useMpv) void setMpvPause2(true);
+      else videoRef.current?.pause();
+      setStillWatchingReason("sleep");
+      setShowStillWatchingPrompt(true);
+    }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepTimer, totalDuration, useMpv]);
+    useEffect(() => {
+      if (isTv && showStillWatchingPrompt) tvFocus?.focusInit(playerRootRef.current?.querySelector("[data-still-watching]") ?? null);
+    }, [isTv, showStillWatchingPrompt, tvFocus]);
+    useEffect(() => {
+      if (!hasStarted) return;
+      const me = getActiveProfileId();
+      setCompanionProfiles(getProfiles().filter((p) => p.id !== me));
+      setCompanionIds(journalCoViewers());
+    }, [hasStarted]);
+    const setCompanions = (next) => {
+      setCompanionIds(next);
+      journalSetCoViewers(next);
+    };
     useEffect(() => {
       if (mediaType !== "tv") return;
       if (!hasStarted || !hasStartedForUrlRef.current) return;
@@ -20896,9 +23074,18 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [isMpvEngine, mpv.fileLoaded, introDataReady, introSegment, url]);
+    function resumeAfterSleepPrompt() {
+      setStillWatchingReason("episodes");
+      if (useMpv) {
+        void setMpvPause2(false);
+        return;
+      }
+      void safePlay(videoRef.current);
+    }
     function handleStillWatchingContinue() {
       registerPlaybackInteraction();
       setShowStillWatchingPrompt(false);
+      setStillWatchingReason("episodes");
       if (useMpv) {
         void setMpvPause2(false);
         return;
@@ -21146,7 +23333,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (useMpv || hasStarted || !videoSrc) return;
       if (startupRecoveryAttemptRef.current >= 2) return;
-      const timer = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         if (useMpv || hasStarted || startupRecoveryAttemptRef.current >= 2) return;
         if (Date.now() - lastProxyRestartAtRef.current < PROXY_RESTART_MIN_GAP_MS) return;
         const currentReal = (videoRef.current?.currentTime ?? 0) + streamStartRef.current;
@@ -21184,7 +23371,7 @@ ${cue.text}`).join("\n\n")}
         );
       }, 2e4);
       return () => {
-        window.clearTimeout(timer);
+        window.clearTimeout(timer3);
       };
     }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
     useEffect(() => {
@@ -21662,7 +23849,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!creditsMode || !useMpv) return;
       const waitMs = creditsCards.length === 0 ? 8e3 : 600;
-      const timer = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         const pip = creditsPipRef.current;
         if (pip) {
           const rect = pip.getBoundingClientRect();
@@ -21670,7 +23857,7 @@ ${cue.text}`).join("\n\n")}
         }
         leaveCreditsMode();
       }, waitMs);
-      return () => window.clearTimeout(timer);
+      return () => window.clearTimeout(timer3);
     }, [creditsMode, useMpv, creditsCards.length, leaveCreditsMode]);
     const currentTitleAsItem = useCallback(() => {
       if (!tmdbId) return null;
@@ -22000,7 +24187,7 @@ ${cue.text}`).join("\n\n")}
     }, [airplaySession, useMpv]);
     useEffect(() => {
       if (!airplaySession || airplayWasExternalRef.current || showCastMenu) return;
-      const timer = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         if (!airplayWasExternalRef.current) {
           stopAirplayVideo();
           void avplayerTeardown();
@@ -22008,7 +24195,7 @@ ${cue.text}`).join("\n\n")}
           setAirplayPrepare("idle");
         }
       }, 1e4);
-      return () => window.clearTimeout(timer);
+      return () => window.clearTimeout(timer3);
     }, [showCastMenu, airplaySession]);
     const undoSubtitleAutoSync = useCallback(() => {
       if (lastAutoSyncedDelayRef.current === null) return;
@@ -22023,11 +24210,11 @@ ${cue.text}`).join("\n\n")}
     const dtDivider = /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "mx-2 h-[22px] w-px flex-none bg-white/[0.12]" });
     const dtMenuSurfaceClass = newChrome ? "z-50 rounded-xl border border-white/10 bg-base-800/95 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : "z-50 rounded-xl border border-white/10 bg-slate-900/95 py-2 shadow-xl backdrop-blur-sm";
     const dtMenuHeadingClass = newChrome ? "px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500" : "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500";
-    const dtMenuRowClass = (active) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active ? "text-aurora-300" : "text-slate-300"}`;
+    const dtMenuRowClass = (active2) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active2 ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active2 ? "text-aurora-300" : "text-slate-300"}`;
     const dtMoreRowClass = newChrome ? `flex w-full items-center gap-3 rounded-lg text-left text-slate-100 transition hover:bg-[rgb(var(--player-accent)/0.14)] ${portraitChrome ? "px-3 py-3.5" : "px-3 py-2.5"}` : "flex w-full items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left text-slate-100 transition hover:bg-white/5";
     const dtMoreIconClass = newChrome ? "h-[18px] w-[18px] flex-none text-slate-300" : "h-5 w-5 flex-none text-slate-200";
     const dtMoreTextClass = newChrome ? portraitChrome ? "text-[15px] leading-tight" : "text-sm leading-tight" : "text-[15px] leading-tight";
-    const pickerStyle = (trigger, width) => portraitChrome ? { position: "fixed", left: 12, right: 12, bottom: 172, maxHeight: "55vh", overflowY: "auto" } : { ...getAnchoredMenuStyle(trigger, newChrome ? width : 0), width: newChrome ? width : void 0 };
+    const pickerStyle = (trigger, width) => portraitChrome ? { position: "fixed", left: 12, right: 12, bottom: 172, maxHeight: "55vh", overflowY: "auto" } : { ...anchoredMenuStyle(trigger, newChrome ? width : 0), width: newChrome ? width : void 0 };
     const pickerHeading = (label) => portraitChrome ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3 px-3 pb-1.5 pt-2", children: [
       /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label }),
       /* @__PURE__ */ jsx(
@@ -22108,7 +24295,7 @@ ${cue.text}`).join("\n\n")}
         {
           type: "button",
           ...dtStation,
-          onClick: () => setShowEpisodes((open) => !open),
+          onClick: () => setShowEpisodes((open2) => !open2),
           title: t("plNextEpisode"),
           "aria-label": t("plNextEpisode"),
           className: dtIconButtonClass(showEpisodes ? "open" : "idle"),
@@ -22121,7 +24308,7 @@ ${cue.text}`).join("\n\n")}
           type: "button",
           ...hasStreamChoice ? dtStation : {},
           disabled: !hasStreamChoice,
-          onClick: () => setShowStreams((open) => !open),
+          onClick: () => setShowStreams((open2) => !open2),
           title: t("plSwitchStream"),
           "aria-label": t("plSwitchStream"),
           className: `${dtIconButtonClass(showStreams ? "open" : "idle")} disabled:opacity-40`,
@@ -22284,8 +24471,34 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("cast", "h-[19px] w-[19px]")
         }
       ) : null,
-      // Remsan ovanför seekbaren av/på. Bara när motorn kan spela in barcodes.
-      barcodeStrip: playerBarcode.status !== null ? /* @__PURE__ */ jsx(
+      sleepTimer: /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: sleepTriggerRef,
+          onClick: () => setShowSleepMenu((open2) => !open2),
+          title: t("plSleepTimer"),
+          "aria-label": t("plSleepTimer"),
+          className: dtIconButtonClass(showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle"),
+          children: playerIcon("sleepTimer", "h-[19px] w-[19px]")
+        }
+      ),
+      companions: companionProfiles.length > 0 ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: companionsTriggerRef,
+          onClick: () => setShowCompanionsMenu((open2) => !open2),
+          title: t("plCompanions"),
+          "aria-label": t("plCompanions"),
+          className: dtIconButtonClass(showCompanionsMenu ? "open" : companionIds.length > 0 ? "active" : "idle"),
+          children: playerIcon("companions", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      // Remsan ovanför seekbaren av/på — så länge det finns en remsa att visa.
+      barcodeStrip: playerBarcode.stripToggle ? /* @__PURE__ */ jsx(
         "button",
         {
           type: "button",
@@ -22343,7 +24556,7 @@ ${cue.text}`).join("\n\n")}
       right: [
         ["subtitles", "audioTrack", "aspect", "cropZoom"],
         ["wiki", "soundtrack", "cast"],
-        ["tuning", "barcodeStrip", "more", "fullscreen"]
+        ["tuning", "barcodeStrip", "sleepTimer", "companions", "more", "fullscreen"]
       ]
     };
     const renderDesktopZone = (groups) => {
@@ -22374,13 +24587,16 @@ ${cue.text}`).join("\n\n")}
         togglePlay();
       }
     };
-    useEffect(() => onMediaKey((action) => {
+    const mediaKeyRef = useRef(() => {
+    });
+    mediaKeyRef.current = (action) => {
       switch (action) {
+        // Play växlar, som i Kodi: många TV-fjärrar (och TV:ns egen fjärr via
+        // HDMI-CEC) skickar MEDIA_PLAY på den kombinerade ▶⏸-knappen, och med
+        // "bara spela om pausad" gjorde den ingenting under uppspelning.
         case "playpause":
-          togglePlay();
-          break;
         case "play":
-          if (!isPlaying) togglePlay();
+          togglePlay();
           break;
         case "pause":
           if (isPlaying) togglePlay();
@@ -22404,7 +24620,8 @@ ${cue.text}`).join("\n\n")}
         }
       }
       onMouseActivityRef.current();
-    }), [togglePlay, isPlaying, seek, handleClose, episodes]);
+    };
+    useEffect(() => onMediaKey((action) => mediaKeyRef.current(action)), []);
     const tvSeekStation = isTv ? {
       "data-f": "1",
       "data-init": "1",
@@ -22699,7 +24916,7 @@ ${cue.text}`).join("\n\n")}
         const activeLang = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((sub) => sub.id === activeSubId)?.language ?? null) : null;
         setSelectedLang(activeLang);
       }
-      setShowSubMenu((open) => !open);
+      setShowSubMenu((open2) => !open2);
     };
     const toggleCastMenu = () => {
       const opening = !showCastMenu;
@@ -22707,6 +24924,7 @@ ${cue.text}`).join("\n\n")}
       if (opening && castDevices.length === 0) void scanCastDevices();
       if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
     };
+    const sleepModeLabel = (mode) => mode === "off" ? t("plSleepOff") : mode === "end" ? t("plSleepEnd") : t("plSleepMinutes").replace("{n}", String(mode));
     const phoneControls = {
       subtitles: {
         label: activeSubLangCode,
@@ -22719,46 +24937,46 @@ ${cue.text}`).join("\n\n")}
         label: activeAudioLangCode,
         title: t("audioLanguage"),
         state: showAudioMenu ? "open" : "idle",
-        onClick: () => setShowAudioMenu((open) => !open),
+        onClick: () => setShowAudioMenu((open2) => !open2),
         triggerRef: audioTriggerRef
       } : void 0,
       nextEpisode: episodes && episodes.items.length > 0 ? {
         label: t("plShortEpisodes"),
         title: t("plNextEpisode"),
         state: showEpisodes ? "open" : "idle",
-        onClick: () => setShowEpisodes((open) => !open)
+        onClick: () => setShowEpisodes((open2) => !open2)
       } : void 0,
       switchStream: hasStreamChoice ? {
         label: t("plStreams"),
         title: t("plSwitchStream"),
         state: showStreams ? "open" : "idle",
-        onClick: () => setShowStreams((open) => !open)
+        onClick: () => setShowStreams((open2) => !open2)
       } : void 0,
       tuning: {
         label: t("plShortPicture"),
         title: t("vtTitle"),
         state: showTuningPanel ? "open" : "idle",
-        onClick: () => setShowTuningPanel((open) => !open),
+        onClick: () => setShowTuningPanel((open2) => !open2),
         triggerRef: tuningTriggerRef
       },
       wiki: wikiTmdbId || resolvedImdbId ? {
         label: t("plShortWiki"),
         title: t("info"),
         state: showWiki ? "open" : "idle",
-        onClick: () => setShowWiki((open) => !open)
+        onClick: () => setShowWiki((open2) => !open2)
       } : void 0,
       soundtrack: title ? {
         label: t("plShortMusic"),
         title: t("soundtrack"),
         state: showSoundtrack ? "open" : "idle",
-        onClick: () => setShowSoundtrack((open) => !open)
+        onClick: () => setShowSoundtrack((open2) => !open2)
       } : void 0,
       cropZoom: {
         label: t("plShortZoom"),
         title: t("cropZoom"),
         value: cropZoomLabel,
         state: showCropZoomMenu ? "open" : cropZoomMode !== "off" ? "active" : "idle",
-        onClick: () => setShowCropZoomMenu((open) => !open),
+        onClick: () => setShowCropZoomMenu((open2) => !open2),
         triggerRef: cropTriggerRef
       },
       aspect: {
@@ -22766,7 +24984,7 @@ ${cue.text}`).join("\n\n")}
         title: t("aspectRatio"),
         value: aspectLabel,
         state: showAspectMenu ? "open" : aspectRatioMode !== "auto" ? "active" : "idle",
-        onClick: () => setShowAspectMenu((open) => !open),
+        onClick: () => setShowAspectMenu((open2) => !open2),
         triggerRef: aspectTriggerRef
       },
       cast: !isClientSession() ? {
@@ -22775,6 +24993,22 @@ ${cue.text}`).join("\n\n")}
         state: showCastMenu ? "open" : castTarget ? "active" : "idle",
         onClick: toggleCastMenu
       } : void 0,
+      sleepTimer: {
+        label: t("plSleepShort"),
+        title: t("plSleepTimer"),
+        value: sleepTimer.mode === "off" ? void 0 : sleepModeLabel(sleepTimer.mode),
+        state: showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle",
+        onClick: () => setShowSleepMenu((open2) => !open2),
+        triggerRef: sleepTriggerRef
+      },
+      companions: companionProfiles.length > 0 ? {
+        label: t("plCompanionsShort"),
+        title: t("plCompanions"),
+        value: companionIds.length > 0 ? String(companionIds.length) : void 0,
+        state: showCompanionsMenu ? "open" : companionIds.length > 0 ? "active" : "idle",
+        onClick: () => setShowCompanionsMenu((open2) => !open2),
+        triggerRef: companionsTriggerRef
+      } : void 0,
       fullscreen: !isTauriEnv || isDesktopTauriEnv ? {
         label: t("plShortFullscreen"),
         title: t("plFullscreen"),
@@ -22782,7 +25016,7 @@ ${cue.text}`).join("\n\n")}
         onClick: toggleFullscreen
       } : void 0
     };
-    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "switchStream", "aspect", "fullscreen"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "wiki", "soundtrack", "cropZoom", "aspect"];
+    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "switchStream", "aspect", "fullscreen", "sleepTimer", "companions"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "wiki", "soundtrack", "cropZoom", "aspect", "sleepTimer", "companions"];
     const LANDSCAPE_ROW_BUDGET = 6;
     const phoneDedicatedIds = landscapeChrome ? ["nextEpisode", "cast"] : ["cast", "fullscreen"];
     const phoneRowCandidates = PHONE_ROW_ORDER.filter((id) => !phoneDedicatedIds.includes(id) && showsControl(id) && Boolean(phoneControls[id]));
@@ -22858,7 +25092,7 @@ ${cue.text}`).join("\n\n")}
       if (isClientSession()) return null;
       const downloading = downloadState.type === "downloading";
       const busy = downloadState.type === "picking-folder";
-      const active = downloadLabel !== null;
+      const active2 = downloadLabel !== null;
       return /* @__PURE__ */ jsxs(
         "button",
         {
@@ -22869,7 +25103,7 @@ ${cue.text}`).join("\n\n")}
           disabled: busy,
           title: downloading ? t("cancel") : t("downloadThisVideo"),
           "aria-label": downloading ? t("cancel") : t("downloadThisVideo"),
-          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
+          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active2 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active2 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
           children: [
             downloadIcon(variant === "round" ? "h-[19px] w-[19px]" : "h-[17px] w-[17px]"),
             downloadLabel ? /* @__PURE__ */ jsx("span", { className: `font-semibold tabular-nums ${variant === "round" ? "text-[13px]" : "text-xs"}`, children: downloadLabel }) : null
@@ -23766,7 +26000,7 @@ ${cue.text}`).join("\n\n")}
                   "div",
                   {
                     ...tvSurface2("subs"),
-                    style: { ...getAnchoredMenuStyle(subTriggerRef.current), right: 16, left: "auto" },
+                    style: { ...anchoredMenuStyle(subTriggerRef.current), right: 16, left: "auto" },
                     className: `z-[70] flex max-h-[75vh] w-[min(calc(100vw-2rem),20rem)] flex-col overflow-y-auto rounded-xl border border-white/10 shadow-xl backdrop-blur-sm sm:max-h-none sm:w-auto sm:flex-row sm:overflow-visible ${desktopChrome ? "bg-base-800/95" : "bg-slate-900/95"}`,
                     onClick: (e) => e.stopPropagation(),
                     children: [
@@ -24000,15 +26234,17 @@ ${cue.text}`).join("\n\n")}
                   }
                 ),
                 overlayContent,
-                showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
+                showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { "data-still-watching": "", ...isTv ? { "data-panel-root": "1" } : {}, className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
                   /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("playbackTitle") }),
-                  /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: t("stillWatching") }),
+                  /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: stillWatchingReason === "sleep" ? t("plSleepStillThere") : t("stillWatching") }),
+                  stillWatchingReason === "sleep" && /* @__PURE__ */ jsx("p", { className: "mt-2 text-sm text-slate-400", children: t("plSleepStillThereBody") }),
                   /* @__PURE__ */ jsxs("div", { className: "mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center", children: [
                     /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
                         "data-f": isTv ? "1" : void 0,
+                        "data-init": isTv ? "1" : void 0,
                         onClick: handleStillWatchingContinue,
                         className: "rounded-full bg-accent-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-400",
                         children: t("stillWatchingContinue")
@@ -24123,7 +26359,7 @@ ${cue.text}`).join("\n\n")}
                                 {
                                   type: "button",
                                   ref: moreTriggerRef,
-                                  onClick: () => setShowMoreMenu((open) => !open),
+                                  onClick: () => setShowMoreMenu((open2) => !open2),
                                   title: t("moreActions"),
                                   "aria-label": t("moreActions"),
                                   className: `flex w-[54px] flex-none flex-col items-center gap-0.5 rounded-[10px] py-1 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-200"}`,
@@ -24156,7 +26392,7 @@ ${cue.text}`).join("\n\n")}
                               {
                                 type: "button",
                                 ref: moreTriggerRef,
-                                onClick: () => setShowMoreMenu((open) => !open),
+                                onClick: () => setShowMoreMenu((open2) => !open2),
                                 title: t("moreActions"),
                                 "aria-label": t("moreActions"),
                                 className: `flex h-10 flex-none items-center gap-[7px] rounded-full border border-white/[0.12] px-3.5 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300"}`,
@@ -24211,6 +26447,8 @@ ${cue.text}`).join("\n\n")}
                         /* @__PURE__ */ jsx("div", { className: "vp-controls-row flex items-center gap-4 overflow-x-auto whitespace-nowrap", children: (() => {
                           const controls = {
                             barcodeStrip: null,
+                            sleepTimer: null,
+                            companions: null,
                             playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
                             seekBack: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
                             seekForward: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
@@ -24226,7 +26464,7 @@ ${cue.text}`).join("\n\n")}
                                 type: "button",
                                 ref: audioDelayTriggerRef,
                                 "data-f": isTv ? "1" : void 0,
-                                onClick: () => setShowAudioDelayMenu((open) => !open),
+                                onClick: () => setShowAudioDelayMenu((open2) => !open2),
                                 title: t("audioDelayTitle"),
                                 "aria-label": t("audioDelayTitle"),
                                 className: `rounded px-1.5 py-0.5 text-xs font-medium tabular-nums transition ${effectiveAudioDelayMs !== 0 ? "bg-aurora-500/25 text-aurora-200" : "text-slate-300 hover:text-white"}`,
@@ -24241,7 +26479,7 @@ ${cue.text}`).join("\n\n")}
                               {
                                 type: "button",
                                 "data-f": isTv ? "1" : void 0,
-                                onClick: () => setShowEpisodes((open) => !open),
+                                onClick: () => setShowEpisodes((open2) => !open2),
                                 title: t("plNextEpisode"),
                                 "aria-label": t("plNextEpisode"),
                                 className: showEpisodes ? "text-aurora-300" : "text-slate-300 transition hover:text-white",
@@ -24257,7 +26495,7 @@ ${cue.text}`).join("\n\n")}
                                 type: "button",
                                 "data-f": isTv && hasStreamChoice ? "1" : void 0,
                                 disabled: !hasStreamChoice,
-                                onClick: () => setShowStreams((open) => !open),
+                                onClick: () => setShowStreams((open2) => !open2),
                                 title: t("plSwitchStream"),
                                 "aria-label": t("plSwitchStream"),
                                 className: showStreams ? "text-aurora-300" : "text-slate-300 transition hover:text-white disabled:opacity-40",
@@ -24438,7 +26676,7 @@ ${cue.text}`).join("\n\n")}
                       showAudioDelayMenu && useMpv && /* @__PURE__ */ jsxs(
                         "div",
                         {
-                          style: getAnchoredMenuStyle(audioDelayTriggerRef.current, 244),
+                          style: anchoredMenuStyle(audioDelayTriggerRef.current, 244),
                           className: "z-50 w-[244px] rounded-[1.1rem] border border-white/10 bg-base-800/95 p-3 shadow-2xl backdrop-blur-md",
                           onClick: (event) => event.stopPropagation(),
                           children: [
@@ -24672,12 +26910,81 @@ ${cue.text}`).join("\n\n")}
                           ]
                         }
                       ),
+                      showSleepMenu && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("sleep"),
+                          style: pickerStyle(sleepTriggerRef.current, 240),
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plSleepTimer")),
+                            SLEEP_TIMER_OPTIONS.map((mode) => {
+                              const isActive = sleepTimer.mode === mode;
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  onClick: () => {
+                                    setSleepTimer(armSleepTimer(mode, Date.now()));
+                                    setShowSleepMenu(false);
+                                  },
+                                  className: dtMenuRowClass(isActive),
+                                  children: [
+                                    /* @__PURE__ */ jsx("span", { children: sleepModeLabel(mode) }),
+                                    isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                String(mode)
+                              );
+                            })
+                          ]
+                        }
+                      ),
+                      showCompanionsMenu && companionProfiles.length > 0 && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("companions"),
+                          style: pickerStyle(companionsTriggerRef.current, 260),
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plWhoWatches")),
+                            /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => setCompanions([]), className: dtMenuRowClass(companionIds.length === 0), children: [
+                              /* @__PURE__ */ jsx("span", { children: t("plCompanionsJustMe") }),
+                              companionIds.length === 0 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                            ] }),
+                            companionProfiles.map((p) => {
+                              const on = companionIds.includes(p.id);
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  "aria-pressed": on,
+                                  onClick: () => setCompanions(on ? companionIds.filter((x) => x !== p.id) : [...companionIds, p.id]),
+                                  className: dtMenuRowClass(on),
+                                  children: [
+                                    /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-2.5", children: [
+                                      /* @__PURE__ */ jsx(ProfileAvatar, { profile: p, className: "h-6 w-6" }),
+                                      p.name
+                                    ] }),
+                                    on && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                p.id
+                              );
+                            })
+                          ]
+                        }
+                      ),
                       showMoreMenu && /* @__PURE__ */ jsxs(
                         "div",
                         {
                           ref: moreMenuRef,
                           ...tvSurface2("more"),
-                          style: portraitChrome ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "70vh", overflowY: "auto" } : newChrome ? pickerStyle(moreTriggerRef.current, landscapeChrome ? 244 : 262) : getAnchoredMenuStyle(moreTriggerRef.current),
+                          style: portraitChrome ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "70vh", overflowY: "auto" } : newChrome ? pickerStyle(moreTriggerRef.current, landscapeChrome ? 244 : 262) : anchoredMenuStyle(moreTriggerRef.current),
                           className: portraitChrome ? "z-50 rounded-t-2xl border-t border-white/[0.07] bg-base-950/[0.96] px-3 pb-6 pt-3 shadow-[0_-20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : newChrome ? dtMenuSurfaceClass : "z-50 w-64 rounded-[1.6rem] border border-white/10 bg-base-800/95 p-2.5 shadow-2xl backdrop-blur-md",
                           onClick: (e) => e.stopPropagation(),
                           children: [
@@ -24919,6 +27226,11 @@ ${cue.text}`).join("\n\n")}
       import_window = __toESM(require_window());
       init_transparent_webview();
       init_video_progress();
+      init_recorder();
+      init_profile_storage_shim();
+      init_profile_avatar();
+      init_sleep_timer();
+      init_player_open();
       init_use_barcode_recorder();
       init_barcode_settings();
       init_player_barcode_strip();
@@ -24933,6 +27245,8 @@ ${cue.text}`).join("\n\n")}
       init_player_tuning_panel();
       init_video_tuning();
       init_audio_tuning();
+      init_haptics_filter();
+      init_haptics_host();
       init_playback_settings();
       init_scroll_lock();
       init_i18n();
@@ -25168,16 +27482,16 @@ ${cue.text}`).join("\n\n")}
           // error correction level, data codeword bytes, and mask number.
           // This is a low-level API that most users should not use directly.
           // A mid-level API is the encodeSegments() function.
-          constructor(version2, errorCorrectionLevel, dataCodewords, msk) {
-            this.version = version2;
+          constructor(version3, errorCorrectionLevel, dataCodewords, msk) {
+            this.version = version3;
             this.errorCorrectionLevel = errorCorrectionLevel;
             this.modules = [];
             this.isFunction = [];
-            if (version2 < _QrCode2.MIN_VERSION || version2 > _QrCode2.MAX_VERSION)
+            if (version3 < _QrCode2.MIN_VERSION || version3 > _QrCode2.MAX_VERSION)
               throw new RangeError("Version value out of range");
             if (msk < -1 || msk > 7)
               throw new RangeError("Mask value out of range");
-            this.size = version2 * 4 + 17;
+            this.size = version3 * 4 + 17;
             let row = [];
             for (let i = 0; i < this.size; i++)
               row.push(false);
@@ -25238,31 +27552,31 @@ ${cue.text}`).join("\n\n")}
           static encodeSegments(segs, ecl, minVersion = 1, maxVersion = 40, mask = -1, boostEcl = true) {
             if (!(_QrCode2.MIN_VERSION <= minVersion && minVersion <= maxVersion && maxVersion <= _QrCode2.MAX_VERSION) || mask < -1 || mask > 7)
               throw new RangeError("Invalid value");
-            let version2;
+            let version3;
             let dataUsedBits;
-            for (version2 = minVersion; ; version2++) {
-              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version2, ecl) * 8;
-              const usedBits = QrSegment.getTotalBits(segs, version2);
+            for (version3 = minVersion; ; version3++) {
+              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
+              const usedBits = QrSegment.getTotalBits(segs, version3);
               if (usedBits <= dataCapacityBits2) {
                 dataUsedBits = usedBits;
                 break;
               }
-              if (version2 >= maxVersion)
+              if (version3 >= maxVersion)
                 throw new RangeError("Data too long");
             }
             for (const newEcl of [_QrCode2.Ecc.MEDIUM, _QrCode2.Ecc.QUARTILE, _QrCode2.Ecc.HIGH]) {
-              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version2, newEcl) * 8)
+              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version3, newEcl) * 8)
                 ecl = newEcl;
             }
             let bb = [];
             for (const seg of segs) {
               appendBits(seg.mode.modeBits, 4, bb);
-              appendBits(seg.numChars, seg.mode.numCharCountBits(version2), bb);
+              appendBits(seg.numChars, seg.mode.numCharCountBits(version3), bb);
               for (const b of seg.getData())
                 bb.push(b);
             }
             assert(bb.length == dataUsedBits);
-            const dataCapacityBits = _QrCode2.getNumDataCodewords(version2, ecl) * 8;
+            const dataCapacityBits = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
             assert(bb.length <= dataCapacityBits);
             appendBits(0, Math.min(4, dataCapacityBits - bb.length), bb);
             appendBits(0, (8 - bb.length % 8) % 8, bb);
@@ -25273,7 +27587,7 @@ ${cue.text}`).join("\n\n")}
             while (dataCodewords.length * 8 < bb.length)
               dataCodewords.push(0);
             bb.forEach((b, i) => dataCodewords[i >>> 3] |= b << 7 - (i & 7));
-            return new _QrCode2(version2, ecl, dataCodewords, mask);
+            return new _QrCode2(version3, ecl, dataCodewords, mask);
           }
           /*-- Accessor methods --*/
           // Returns the color of the module (pixel) at the given coordinates, which is false
@@ -25789,10 +28103,10 @@ ${cue.text}`).join("\n\n")}
           }
           // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
           // the given version. The result is infinity if a segment has too many characters to fit its length field.
-          static getTotalBits(segs, version2) {
+          static getTotalBits(segs, version3) {
             let result = 0;
             for (const seg of segs) {
-              const ccbits = seg.mode.numCharCountBits(version2);
+              const ccbits = seg.mode.numCharCountBits(version3);
               if (seg.numChars >= 1 << ccbits)
                 return Infinity;
               result += 4 + ccbits + seg.bitData.length;
@@ -26271,7 +28585,7 @@ ${cue.text}`).join("\n\n")}
     compact,
     placeholder
   }) {
-    const [open, setOpen] = useState(false);
+    const [open2, setOpen] = useState(false);
     const ref = useRef(null);
     const menuRef = useRef(null);
     const [menuPos, setMenuPos] = useState(null);
@@ -26285,7 +28599,7 @@ ${cue.text}`).join("\n\n")}
       return () => document.removeEventListener("mousedown", onDoc);
     }, []);
     useEffect(() => {
-      if (!open) {
+      if (!open2) {
         setMenuPos(null);
         return;
       }
@@ -26314,7 +28628,7 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("scroll", update, true);
         window.removeEventListener("resize", update);
       };
-    }, [open]);
+    }, [open2]);
     const normalized = options.map(
       (o) => typeof o === "object" ? o : { value: o, label: String(o) }
     );
@@ -26331,7 +28645,7 @@ ${cue.text}`).join("\n\n")}
             textAlign: "left",
             padding: compact ? "7px 10px" : "10px 12px",
             background: TOKENS.surface2,
-            border: `1px solid ${open ? TOKENS.accent : TOKENS.borderStrong}`,
+            border: `1px solid ${open2 ? TOKENS.accent : TOKENS.borderStrong}`,
             borderRadius: 8,
             color: dim ? TOKENS.textDim : TOKENS.text,
             fontSize: compact ? 13 : 14,
@@ -26351,13 +28665,13 @@ ${cue.text}`).join("\n\n")}
                 name: "chevDown",
                 size: 14,
                 color: TOKENS.textDim,
-                style: { transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }
+                style: { transform: open2 ? "rotate(180deg)" : "none", transition: "transform .15s" }
               }
             )
           ]
         }
       ),
-      open && menuPos ? (0, import_react_dom2.createPortal)(
+      open2 && menuPos ? (0, import_react_dom2.createPortal)(
         /* @__PURE__ */ jsx(
           "div",
           {
@@ -26378,7 +28692,7 @@ ${cue.text}`).join("\n\n")}
               overflowY: "auto"
             },
             children: normalized.map((o) => {
-              const active = o.value === value;
+              const active2 = o.value === value;
               return /* @__PURE__ */ jsxs(
                 "div",
                 {
@@ -26391,21 +28705,21 @@ ${cue.text}`).join("\n\n")}
                     borderRadius: 6,
                     cursor: "pointer",
                     fontSize: TYPE.body,
-                    color: active ? TOKENS.text : TOKENS.textDim,
-                    background: active ? TOKENS.accentSoft : "transparent",
+                    color: active2 ? TOKENS.text : TOKENS.textDim,
+                    background: active2 ? TOKENS.accentSoft : "transparent",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between"
                   },
                   onMouseEnter: (e) => {
-                    if (!active) e.currentTarget.style.background = TOKENS.surface3;
+                    if (!active2) e.currentTarget.style.background = TOKENS.surface3;
                   },
                   onMouseLeave: (e) => {
-                    if (!active) e.currentTarget.style.background = "transparent";
+                    if (!active2) e.currentTarget.style.background = "transparent";
                   },
                   children: [
                     /* @__PURE__ */ jsx("span", { children: o.label }),
-                    active ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
+                    active2 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
                   ]
                 },
                 String(o.value)
@@ -26869,10 +29183,10 @@ ${cue.text}`).join("\n\n")}
     const playButtonRef = useRef(null);
     useEffect(() => {
       if (!isTv) return;
-      let timer = null;
+      let timer3 = null;
       const arm = () => {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => {
+        if (timer3) clearTimeout(timer3);
+        timer3 = setTimeout(() => {
           const btn = playButtonRef.current;
           if (btn && btn.isConnected && document.activeElement !== btn) btn.focus();
         }, 1e4);
@@ -26880,7 +29194,7 @@ ${cue.text}`).join("\n\n")}
       arm();
       window.addEventListener("keydown", arm, true);
       return () => {
-        if (timer) clearTimeout(timer);
+        if (timer3) clearTimeout(timer3);
         window.removeEventListener("keydown", arm, true);
       };
     }, [isTv]);
@@ -27070,6 +29384,18 @@ ${cue.text}`).join("\n\n")}
     const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.runLibraryScan;
     return host ? host(provider, source, options) : runLibraryScan(provider, source, options);
   }
+  function getActiveLibraryScan2() {
+    const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.getActiveLibraryScan;
+    return host ? host() : getActiveLibraryScan();
+  }
+  function onLibraryScanChanged2(listener) {
+    const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.onLibraryScanChanged;
+    return host ? host(listener) : onLibraryScanChanged(listener);
+  }
+  function cancelLibraryScan2() {
+    const host = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.cancelLibraryScan;
+    return host ? host() : cancelLibraryScan();
+  }
   function isPluginDesktopHost() {
     if (typeof window === "undefined") return false;
     const userAgentEarly = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -27190,13 +29516,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     PlexPlugin: () => PlexPlugin
   });
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-storage.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-storage.ts
   init_plugin_sdk();
   var AUTH_KEY2 = "plex_auth";
   var SETTINGS_KEY = "plex_settings";
@@ -27234,7 +29560,7 @@ ${cue.text}`).join("\n\n")}
     }
     return `${prefix}${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   }
-  function emit2(name) {
+  function emit3(name) {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(name));
     }
@@ -27385,7 +29711,7 @@ ${cue.text}`).join("\n\n")}
     if (typeof window === "undefined") return;
     if (!message) {
       removeScopedStorageItem(LIBRARY_ERROR_KEY);
-      emit2(LIBRARY_ERROR_EVENT);
+      emit3(LIBRARY_ERROR_EVENT);
       return;
     }
     const payload = {
@@ -27393,7 +29719,7 @@ ${cue.text}`).join("\n\n")}
       updatedAt: Date.now()
     };
     setScopedStorageItem(LIBRARY_ERROR_KEY, JSON.stringify(payload));
-    emit2(LIBRARY_ERROR_EVENT);
+    emit3(LIBRARY_ERROR_EVENT);
   }
   function onPlexLibraryErrorChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -27405,11 +29731,11 @@ ${cue.text}`).join("\n\n")}
     if (typeof window === "undefined") return;
     if (!auth) {
       removeScopedStorageItem(AUTH_KEY2);
-      emit2(AUTH_EVENT);
+      emit3(AUTH_EVENT);
       return;
     }
     setScopedStorageItem(AUTH_KEY2, JSON.stringify(auth));
-    emit2(AUTH_EVENT);
+    emit3(AUTH_EVENT);
   }
   function clearPlexAuth() {
     setPlexAuth(null);
@@ -27440,7 +29766,7 @@ ${cue.text}`).join("\n\n")}
     const currentRaw = getScopedStorageItem(SETTINGS_KEY);
     if (currentRaw === nextRaw) return;
     setScopedStorageItem(SETTINGS_KEY, nextRaw);
-    emit2(SETTINGS_EVENT);
+    emit3(SETTINGS_EVENT);
   }
   function getCachedPlexLibraryItems(limit) {
     return readItemsCache(LIBRARY_CACHE_KEY, getPlexSettings(), limit)?.items ?? null;
@@ -27475,9 +29801,10 @@ ${cue.text}`).join("\n\n")}
     return () => window.removeEventListener(SETTINGS_EVENT, listener);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-library-provider.ts
   var PAGE_SIZE = 200;
   var EPISODE_CONCURRENCY = 3;
+  var MAX_BATCH_BYTES = 1e6;
   var PLEX_LIBRARY_PROVIDER_ID = "plex";
   function plexLibrarySourceId(settings) {
     return settings.serverId ? `plex-${settings.serverId}` : null;
@@ -27487,8 +29814,19 @@ ${cue.text}`).join("\n\n")}
     if (!id) return null;
     return { id, name: settings.serverName ?? "Plex" };
   }
+  var NETWORK_RETRY_DELAYS_MS = [1e3, 3e3];
   async function postJson(url, body, signal) {
-    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
+    const init = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal };
+    let response;
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        response = await fetch(url, init);
+        break;
+      } catch (err) {
+        if (signal.aborted || !(err instanceof TypeError) || attempt >= NETWORK_RETRY_DELAYS_MS.length) throw err;
+        await new Promise((resolve) => window.setTimeout(resolve, NETWORK_RETRY_DELAYS_MS[attempt]));
+      }
+    }
     if (!response.ok) {
       const text = await response.text().catch(() => "");
       throw new Error(`Plex ${response.status}: ${text.slice(0, 200)}`);
@@ -27507,7 +29845,22 @@ ${cue.text}`).join("\n\n")}
     await Promise.all(workers);
     return out;
   }
-  async function scan(source, updatedAtMin, emit3, progress, signal) {
+  async function emitSized(emit4, titles) {
+    let chunk = [];
+    let bytes = 0;
+    for (const title of titles) {
+      const size = JSON.stringify(title).length;
+      if (chunk.length > 0 && bytes + size > MAX_BATCH_BYTES) {
+        await emit4({ upsert: chunk });
+        chunk = [];
+        bytes = 0;
+      }
+      chunk.push(title);
+      bytes += size;
+    }
+    if (chunk.length > 0) await emit4({ upsert: chunk });
+  }
+  async function scan(source, updatedAtMin, emit4, progress, signal) {
     const auth = getPlexAuth();
     const settings = ensureCanonicalPlexSettings();
     if (!auth || !settings.serverUri || settings.libraries.length === 0) {
@@ -27545,7 +29898,7 @@ ${cue.text}`).join("\n\n")}
             }
           });
         }
-        await emit3({ upsert: items2 });
+        await emitSized(emit4, items2);
         done += items2.length;
         progress({ phase: "titles", section: library.title, done, total: total ?? void 0 });
         if (page.nextStart == null) break;
@@ -27558,10 +29911,10 @@ ${cue.text}`).join("\n\n")}
     id: PLEX_LIBRARY_PROVIDER_ID,
     label: { en: "Plex", sv: "Plex" },
     pluginId: "com.lumio.plex",
-    scanAll: (source, emit3, progress, signal) => scan(source, null, emit3, progress, signal),
-    scanDelta: (source, cursor, emit3, progress, signal) => {
+    scanAll: (source, emit4, progress, signal) => scan(source, null, emit4, progress, signal),
+    scanDelta: (source, cursor, emit4, progress, signal) => {
       const since = cursor ? Number.parseInt(cursor, 10) : NaN;
-      return scan(source, Number.isFinite(since) ? since : null, emit3, progress, signal);
+      return scan(source, Number.isFinite(since) ? since : null, emit4, progress, signal);
     },
     async resolvePlayback(_source, media) {
       const auth = getPlexAuth();
@@ -27593,7 +29946,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-sync.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-sync.ts
   init_plugin_sdk();
   var plexLibraryInFlight = /* @__PURE__ */ new Map();
   var plexLibraryCooldownUntil = /* @__PURE__ */ new Map();
@@ -27936,7 +30289,7 @@ ${cue.text}`).join("\n\n")}
     let lastError = null;
     for (let attempt = 0; attempt <= retries; attempt += 1) {
       const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+      const timer3 = window.setTimeout(() => controller.abort(), timeoutMs);
       try {
         return await fetch(input, {
           ...init,
@@ -27948,7 +30301,7 @@ ${cue.text}`).join("\n\n")}
         if (isLastAttempt) break;
         await new Promise((resolve) => window.setTimeout(resolve, retryDelayMs));
       } finally {
-        window.clearTimeout(timer);
+        window.clearTimeout(timer3);
       }
     }
     throw lastError instanceof Error ? lastError : new Error("Network request failed");
@@ -28222,7 +30575,7 @@ ${cue.text}`).join("\n\n")}
     });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/playback-utils.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/playback-utils.ts
   function normalizeTitle2(value) {
     return (value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   }
@@ -28302,7 +30655,7 @@ ${cue.text}`).join("\n\n")}
     return Boolean(plexItem && plexItem.source === "plex" && isPlexPlaybackReady(plexItem));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/playback-capability-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/playback-capability-provider.ts
   var plexPlaybackCapabilityProvider = {
     id: "plex-playback",
     pluginId: "com.lumio.plex",
@@ -28340,11 +30693,11 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-browse-page.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -28707,7 +31060,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-browse-page.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-browse-page.tsx
   init_jsx_runtime_shim();
   var defaultFilterOptions = {
     providers: [],
@@ -28831,7 +31184,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-home-override.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   var defaultFilterOptions2 = {
@@ -28883,20 +31236,23 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-library-index-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-library-index-panel.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
+  var BUSY_ELSEWHERE = {
+    en: "Another library is being indexed. Try again when it is done.",
+    sv: "Ett annat bibliotek indexeras. F\xF6rs\xF6k igen n\xE4r det \xE4r klart."
+  };
   function PlexLibraryIndexPanel() {
-    const { t } = useLang();
+    const { t, lang } = useLang();
     const [status, setStatus] = useState(null);
-    const [progress, setProgress] = useState(null);
+    const [active2, setActive2] = useState(() => getActiveLibraryScan2());
     const [error, setError] = useState(null);
     const [mode, setMode] = useState(() => getLibraryMode());
-    const abortRef = useRef(null);
     const settings = ensureCanonicalPlexSettings();
     const source = plexLibrarySourceRef(settings);
     const connected = Boolean(getPlexAuth() && settings.serverUri && settings.libraries.length > 0);
@@ -28907,25 +31263,22 @@ ${cue.text}`).join("\n\n")}
       refresh();
       return onLibraryModeChanged(() => setMode(getLibraryMode()));
     }, []);
+    useEffect(() => onLibraryScanChanged2((scan2) => {
+      setActive2(scan2);
+      if (!scan2) refresh();
+    }), []);
     const mine = status?.sources.find((entry) => entry.id === source?.id) ?? null;
-    const running2 = progress !== null && progress.phase !== "done";
+    const progress = active2 && source && active2.sourceId === source.id ? active2.progress : null;
+    const running2 = active2 !== null;
+    const busyElsewhere = active2 !== null && progress === null;
     const run = async (kind) => {
       if (!source || running2) return;
       setError(null);
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setProgress({ phase: "listing", done: 0 });
       try {
-        await runLibraryScan2(plexLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, {
-          mode: kind,
-          signal: controller.signal,
-          onProgress: setProgress
-        });
+        await runLibraryScan2(plexLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, { mode: kind });
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
-        setProgress(null);
-        abortRef.current = null;
         refresh();
       }
     };
@@ -28957,10 +31310,11 @@ ${cue.text}`).join("\n\n")}
             t("plexIndexRunning").replace("{done}", String(progress.done)),
             progress.total ? ` / ${progress.total}` : ""
           ] }),
-          /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => abortRef.current?.abort(), children: t("cancel") })
+          /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => cancelLibraryScan2(), children: t("cancel") })
         ] }),
         /* @__PURE__ */ jsx("div", { style: { marginTop: 8, height: 6, width: "100%", overflow: "hidden", borderRadius: 999, background: TOKENS.surface0 }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", borderRadius: 999, background: TOKENS.accent, width: pct2 != null ? `${pct2}%` : "35%", transition: "width .3s" } }) })
       ] }) : null,
+      busyElsewhere ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: 12, color: TOKENS.textDim }, children: lang === "sv" ? BUSY_ELSEWHERE.sv : BUSY_ELSEWHERE.en }) : null,
       error ? /* @__PURE__ */ jsx("p", { style: { margin: "8px 0 0", fontSize: 12, color: TOKENS.red }, children: error }) : null,
       /* @__PURE__ */ jsxs("div", { style: { marginTop: 12, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }, children: [
         /* @__PURE__ */ jsx(PillBtn, { variant: "accent", disabled: !connected || running2, onClick: () => void run("full"), children: mine ? t("plexIndexRebuild") : t("plexIndexBuild") }),
@@ -28970,7 +31324,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-section.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.plex";
@@ -29484,7 +31838,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/plex-episode-sidebar.tsx
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/plex-episode-sidebar.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -29978,7 +32332,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/episode-sidebar-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/episode-sidebar-provider.ts
   function isPlexItem(item) {
     return item.source === "plex" || item.id?.startsWith("plex-") || (item.providers ?? []).includes("Plex");
   }
@@ -29991,7 +32345,7 @@ ${cue.text}`).join("\n\n")}
     SidebarSection: PlexEpisodeSidebar
   };
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/sync-identity-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/sync-identity-provider.ts
   async function resolvePlexSyncIdentity(item) {
     let resolvedTmdbId = item.id.match(/^(?:movie|tv)-(\d+)$/)?.[1] ?? null;
     let resolvedImdbId = item.imdbId?.trim() ?? null;
@@ -30054,7 +32408,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/tv-low-memory/plugins/plex/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/library-scan-shared-state/plugins/plex/runtime/index.ts
   var PlexPlugin = {
     id: "com.lumio.plex",
     name: { en: "Plex", sv: "Plex" },

@@ -388,7 +388,7 @@
           handler(eventData);
         }, options);
       }
-      async function emit2(event, payload) {
+      async function emit3(event, payload) {
         await core.invoke("plugin:event|emit", {
           event,
           payload
@@ -402,7 +402,7 @@
           payload
         });
       }
-      exports.emit = emit2;
+      exports.emit = emit3;
       exports.emitTo = emitTo;
       exports.listen = listen3;
       exports.once = once;
@@ -883,6 +883,7 @@
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
     const [paused, setPaused] = useState(false);
+    const pendingPauseRef = useRef(null);
     const [ended, setEnded] = useState(false);
     const [sid, setSid] = useState(null);
     const [fileLoaded, setFileLoaded] = useState(false);
@@ -912,7 +913,9 @@
         setTimePos(s.timePos);
         prev.timePos = s.timePos;
         setDuration(s.duration);
-        setPaused(s.paused);
+        const pending5 = pendingPauseRef.current;
+        if (pending5 && (s.paused === pending5.value || Date.now() > pending5.until)) pendingPauseRef.current = null;
+        if (!pendingPauseRef.current) setPaused(s.paused);
         setEnded(s.ended);
         setPausedForCache(s.pausedForCache);
         setExternalDisplay(s.externalDisplay === true);
@@ -972,6 +975,8 @@
       void np({ cmd: "seek", value: Math.max(0, prevRef.current.timePos + delta) });
     }, []);
     const setPlayPause = useCallback((pause) => {
+      pendingPauseRef.current = { value: pause, until: Date.now() + 1500 };
+      setPaused(pause);
       void np({ cmd: "setPause", value: pause });
     }, []);
     const setVolume = useCallback((vol) => {
@@ -1120,7 +1125,7 @@
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-        const emit2 = (patch) => {
+        const emit3 = (patch) => {
           state2 = { ...state2, ...patch };
           for (const l of [...listeners9]) l(state2);
         };
@@ -1145,10 +1150,10 @@
             v.playsInline = true;
             v.style.cssText = "position:absolute;object-fit:contain;background:#000;left:0;top:0;width:0;height:0";
             if (pendingRect) applyRect(v, pendingRect);
-            v.addEventListener("loadeddata", () => emit2({ fileLoaded: true }));
-            v.addEventListener("playing", () => emit2({ firstFrameRendered: true, paused: false }));
-            v.addEventListener("pause", () => emit2({ paused: true }));
-            v.addEventListener("error", () => emit2({ loadFailed: true }));
+            v.addEventListener("loadeddata", () => emit3({ fileLoaded: true }));
+            v.addEventListener("playing", () => emit3({ firstFrameRendered: true, paused: false }));
+            v.addEventListener("pause", () => emit3({ paused: true }));
+            v.addEventListener("error", () => emit3({ loadFailed: true }));
             ensureLayer().appendChild(v);
             video = v;
             const src = sourceCacheUrl(opts.url, opts.requestHeaders) ?? opts.url;
@@ -1202,7 +1207,7 @@
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
-            if (reason) emit2({ loadFailed: true });
+            if (reason) emit3({ loadFailed: true });
             listeners9.clear();
           }
         };
@@ -1231,10 +1236,10 @@
   }
   function teardownSharedListenerIfIdle() {
     if (dispatchersByRustId.size > 0) return;
-    const pending2 = sharedUnlisten;
-    if (!pending2) return;
+    const pending5 = sharedUnlisten;
+    if (!pending5) return;
     closingSharedListener = true;
-    void pending2.then((unlisten) => {
+    void pending5.then((unlisten) => {
       if (!closingSharedListener) return;
       sharedUnlisten = null;
       unlisten();
@@ -1261,7 +1266,7 @@
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit2 = (patch) => {
+    const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
       for (const listener of [...listeners9]) listener(state2);
     };
@@ -1271,7 +1276,7 @@
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
-        if (!destroyed) emit2({ loadFailed: true });
+        if (!destroyed) emit3({ loadFailed: true });
         return null;
       }
       rustId = sid;
@@ -1293,7 +1298,7 @@
             }
           });
         } catch {
-          emit2({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
+          emit3({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
           return;
         }
         if (!opts.muted) {
@@ -1350,7 +1355,7 @@
       },
       async destroy(reason) {
         destroyed = true;
-        if (reason) emit2({ loadFailed: true });
+        if (reason) emit3({ loadFailed: true });
         listeners9.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
@@ -1416,7 +1421,7 @@
   function createDroidSurfaceBackend() {
     const listeners9 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit2 = (patch) => {
+    const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
       for (const listener of [...listeners9]) listener(state2);
     };
@@ -1479,7 +1484,7 @@
       if (!createPromise) {
         createPromise = createNativeSurface().then((id) => {
           if (id === null) {
-            if (!destroyed) emit2({ loadFailed: true });
+            if (!destroyed) emit3({ loadFailed: true });
             return null;
           }
           nativeId = id;
@@ -1540,7 +1545,7 @@
         destroyed = true;
         generation++;
         stopPolling();
-        if (reason) emit2({ loadFailed: true });
+        if (reason) emit3({ loadFailed: true });
         listeners9.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
@@ -2092,12 +2097,16 @@
   });
 
   // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
-  var sdk, getActiveProfile, getActiveProfileId, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged, profileHasPin, checkProfilePin;
+  var sdk, getActiveProfile, getActiveProfileId, getProfiles, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged, profileHasPin, checkProfilePin;
   var init_profile_storage_shim = __esm({
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
       sdk = globalThis.__lumioPluginRuntime?.sdk;
       getActiveProfile = () => sdk.getActiveProfile();
       getActiveProfileId = () => sdk.getActiveProfileId();
+      getProfiles = () => {
+        const p = sdk?.getActiveProfile?.();
+        return p ? [p] : [];
+      };
       getProfileStorageKey = (baseKey, profileId) => sdk.getProfileStorageKey(baseKey, profileId);
       getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
       setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
@@ -2289,6 +2298,7 @@
           watchHistory: "History",
           startNextSource: "The source didn\u2019t respond \u2014 trying the next\u2026",
           startNextSourceNamed: "The source didn\u2019t respond \u2014 trying {stream}\u2026",
+          startNextSourceWaiting: "The source didn\u2019t respond \u2014 waiting for more sources\u2026",
           startSlateNext: "The source sent no film \u2014 trying {stream}\u2026",
           startCancel: "Cancel",
           startNoSourceTitle: "No source started",
@@ -2511,7 +2521,6 @@
           liveTvStreamError: "Could not load stream.",
           liveTvStreamErrorHelp: "The stream may be geo-blocked, offline, or unsupported.",
           allCategories: "All categories",
-          sceneReleases: "Scene Releases",
           activeFiltersTitle: "Active filters",
           activeFiltersHintPrefix: "Provider availability is scoped to Sweden (",
           activeFiltersHintSuffix: "), and multiple selected chips match any of the chosen labels, not all of them at once.",
@@ -2594,6 +2603,8 @@
           movieWatchlistAdded: "My list \u2713",
           moreInfo: "More info",
           watchTrailer: "Watch Trailer",
+          shuffleEpisodes: "Shuffle",
+          shuffleEpisodesOn: "Shuffle on",
           openOnImdb: "Open on IMDb",
           seasons: "Seasons:",
           matchedOnTitle: "Matched on title:",
@@ -2843,9 +2854,6 @@
           subtitleAlignedToReference: "Synced against a subtitle matching your file",
           subtitleHashMatch: "Matches your file",
           subtitleAlignedToAudio: "Synced against the full audio track",
-          subtitleAnchorApplied: "Synced from your tap",
-          subtitleAnchorDrift: "drift corrected too",
-          subtitleManualSync: "Sync by ear",
           vpSecondarySubFailed: "Could not load the second subtitle",
           vpSecondarySubMissing: "No {lang} subtitle found",
           learningModeTitle: "Learning mode",
@@ -2858,13 +2866,6 @@
           secondarySubtitleLanguageDesc: "Shown under the main subtitle when learning mode is on",
           secondarySubtitleColor: "Second subtitle colour",
           secondarySubtitleColorDesc: "Colour of the second line in learning mode",
-          subtitleManualSyncTapPrompt: "Press when you hear a line you recognise",
-          subtitleManualSyncTapButton: "I hear it now",
-          subtitleManualSyncPickPrompt: "Which line did you just hear?",
-          subtitleManualSyncSecondHint: "Repeat this later in the film to also correct drift.",
-          subtitleManualSyncNoCues: "No subtitle lines near this point.",
-          subtitleManualSyncApplying: "Applying your sync\u2026",
-          subtitleManualSyncRefining: "Fine-tuning against the audio\u2026",
           castTitle: "Play on another device",
           castScanning: "Looking for devices\u2026",
           castNoDevices: "No Chromecast or DLNA devices found.",
@@ -2882,7 +2883,6 @@
           castPairConfirm: "Pair",
           castPairing: "Pairing\u2026",
           castPairFailed: "Pairing failed. Try again.",
-          cancel2: "Cancel",
           subtitleAutoSyncNoReference: "Not certain enough from audio alone. Add an OpenSubtitles API key in Settings to sync against a subtitle matching your file.",
           subtitleAutoSyncFailed: "Could not auto-sync subtitles",
           subtitleAutoSyncDriftApplied: "drift corrected ({rate}s/min)",
@@ -3122,12 +3122,40 @@
           plTime: "Time display",
           plSpacer: "Spacer (left/right split)",
           plSegmentBadges: "Intro/outro badges",
+          plEndsAt: "Ends {time}",
+          plGearTitle: "Settings",
+          plGearSkipIntros: "Skip intros & recaps",
+          plSpeedNormal: "Normal",
+          plChapters: "Chapters",
+          plChapterN: "Chapter {n}",
+          plCreditsChapter: "Credits",
+          shortcutsSaveMoment: "Keep this moment",
+          plMoments: "Moments",
+          plMomentKeep: "Keep this moment",
+          plMomentJump: "Jump",
+          plMomentRemove: "Remove moment",
+          plMomentsClear: "Clear moments",
+          plMomentsEmpty: "No moments yet",
+          plMomentSaved: "Moment kept at {time}",
+          plMomentExists: "There's a moment at {time} already",
+          plMomentUnavailable: "Moments can't be kept for this source",
           plMute: "Mute",
           plVolume: "Volume slider",
           plAudioDelay: "Audio delay",
           plNextEpisode: "Next episode",
           plSwitchStream: "Switch stream",
           plStreams: "Streams",
+          plSleepTimer: "Sleep timer",
+          plSleepShort: "Sleep",
+          plSleepOff: "Off",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "End of episode or film",
+          plSleepStillThere: "Are you still there?",
+          plSleepStillThereBody: "The sleep timer paused playback. Move or press anything to keep watching.",
+          plCompanions: "Who's watching",
+          plWhoWatches: "Who's watching with you?",
+          plCompanionsJustMe: "Just me",
+          plCompanionsShort: "With",
           audioDelayTitle: "Audio delay",
           audioDelayHint: "Adjust lip sync. A positive value plays audio later.",
           btAudioAutoOffset: "Compensate for Bluetooth latency",
@@ -3474,6 +3502,8 @@
           tvMenuVariantHint: "The pill opens the menu when you want it; the rail stays along the left edge.",
           tvMenuVariantPill: "Pill",
           tvMenuVariantRail: "Rail",
+          tvButtonScale: "Button size",
+          tvButtonScaleDesc: "Size of the buttons on the home hero and the details page (Play, My list, Follow \u2026) in TV mode.",
           tvMenuScale: "Menu size",
           tvMenuScaleDesc: "Scales the side menu \u2014 icons and labels \u2014 in TV mode.",
           menuScale: "Menu scale",
@@ -3588,6 +3618,107 @@
           profilePinLabel: "PIN",
           profilePinOptionalLabel: "PIN (optional)",
           profilePinEnterTitle: "Enter PIN for {name}",
+          slLockWith: "Lock with\u2026",
+          slEyebrow: "{title} \xB7 Series lock",
+          slCreateTitle: "Lock this series with\u2026",
+          slCreateLead: "None of you sees the next episode until the others have seen the previous one.",
+          slYou: "You",
+          slHasPin: "Has PIN",
+          slNoPin: "No PIN",
+          slMode: "Mode",
+          slTogether: "Together",
+          slTogetherHint: "You watch it together. An episode that counts as watched is marked for everyone, whichever profile was on.",
+          slSolo: "Separately",
+          slSoloHint: "Everyone watches on their own profile. Whoever is ahead waits for the others.",
+          slPinToggle: "Require PIN for Watch anyway",
+          slPinOff: "Off: anyone can choose Watch anyway right away.",
+          slPinOn: "Whoever chooses Watch anyway enters their profile PIN.",
+          slPinNone: "None of the selected profiles has a PIN.",
+          slPinPartialOne: "{names} has no PIN and can watch anyway without a code.",
+          slPinPartialMany: "{names} have no PIN and can watch anyway without a code.",
+          slPosMe: "You're on {code}",
+          slPosOther: "{name} is on {code}",
+          slPosMeNotStarted: "You haven't started",
+          slPosOtherNotStarted: "{name} hasn't started",
+          slWaitOne: "You'll wait until {name} has seen {code}.",
+          slWaitMany: "{ahead} will wait until {name} has caught up to {code}.",
+          slOthersWait: "{names} will wait until you've seen {code}.",
+          slSame: "You're on the same episode, {code}. Good start.",
+          slConfirm: "Lock series",
+          slCreatedTogether: "{title} is locked with {names}. You're watching it together.",
+          slCreatedSolo: "{title} is locked with {names}. You'll wait for each other.",
+          slMarker: "Locked with {names} \xB7 {mode}",
+          slManage: "Manage lock",
+          slParticipants: "Participants",
+          slSeenCode: "Seen {code}",
+          slNotStarted: "Not started",
+          slRemoveMember: "Remove",
+          slAddMember: "+ {name}",
+          slHistoryEntry: "{name} \xB7 {code} \xB7 {when}",
+          slHistoryEmpty: "Nobody has watched ahead yet.",
+          slDone: "Done",
+          slRemoveLock: "Remove lock",
+          slRemoveTitle: "Remove the lock?",
+          slRemoveText: "You'll each watch at your own pace again. Nothing you've watched changes.",
+          slKeep: "Keep the lock",
+          slRemoveLastTitle: "Remove {name}?",
+          slRemoveLastText: "A lock needs at least two. Removing {name} ends the lock on {title} and you'll watch at your own pace again.",
+          slRemovedToast: "The lock is removed. You're back to your own pace.",
+          slLockedTitle: "{code} is locked",
+          slLockedTextOne: "{names} hasn't seen {code} yet.",
+          slLockedTextMany: "{names} haven't seen {code} yet.",
+          slWatchAnyway: "Watch anyway",
+          slFootnote: "{names} will see that you watched ahead.",
+          slFootnotePin: "Watch anyway needs your PIN.",
+          slFootnoteNoPin: "You don't have a PIN, so no code is needed.",
+          slPinTitle: "Enter PIN for {name}",
+          slPinSubtitle: "to watch {code} anyway",
+          slContinueWaiting: "Waiting for {names} \xB7 {code}",
+          slContinueMetaLocked: "Series \xB7 {code} \xB7 Locked",
+          slNextLocked: "Next episode is locked. Waiting for {names}",
+          slClose: "Close",
+          slTogetherToast: "{code} marked as watched for {names}.",
+          slUnlockedToastOne: "{names} has seen {code}. You can carry on.",
+          slUnlockedToastMany: "{names} have seen {code}. You can carry on.",
+          slPlayCode: "Play {code}",
+          slAheadToast: "{name} watched {code} before you.",
+          slOkay: "Okay",
+          slOwnOverrideToast: "You watched {code} before {names}. {names} will see it.",
+          slWaitingForYouOne: "{names} is waiting for you. {next} opens when you've seen {code}.",
+          slWaitingForYouMany: "{names} are waiting for you. {next} opens when you've seen {code}.",
+          slEndedOne: "The lock on {title} has ended. {names} is no longer in the app, and a lock needs at least two. You're watching at your own pace now.",
+          slEndedMany: "The lock on {title} has ended. {names} are no longer in the app, and a lock needs at least two. You're watching at your own pace now.",
+          slNewSeasonOne: "{code} is waiting for {names}. Season {season} starts when {names} has seen {requires}.",
+          slNewSeasonMany: "{code} is waiting for {names}. Season {season} starts when {names} have seen {requires}.",
+          slFinishedTitle: "Finished together",
+          slFinishedText: "You've seen all {count} episodes. The lock isn't needed anymore.",
+          slMyLocksTitle: "Series locks",
+          slMyLocksLead: "Series you've locked with others",
+          slMyLocksEmpty: "Lock a series from its details page with Lock with\u2026",
+          slStatusWaiting: "You're waiting for {names}",
+          slStatusCanContinue: "You can carry on",
+          slStatusInStep: "You're in step",
+          slStatusWaitedOnOne: "{names} is waiting for you",
+          slStatusWaitedOnMany: "{names} are waiting for you",
+          slRowSeenAll: "Seen by everyone",
+          slRowMissingOne: "{names} hasn't seen it",
+          slRowMissingMany: "{names} haven't seen it",
+          slRowNext: "Up next",
+          slRowNextSeenByOne: "Up next \xB7 {names} has seen it",
+          slRowNextSeenByMany: "Up next \xB7 {names} have seen it",
+          slRowWaiting: "Waiting for {names}",
+          slRowLocked: "Locked",
+          slRowAheadOfYou: "{names} watched before you",
+          slRowOverrideMineOne: "You watched anyway \xB7 {names} hasn't seen it",
+          slRowOverrideMineMany: "You watched anyway \xB7 {names} haven't seen it",
+          slGroupMoreOne: "1 more episode waiting",
+          slGroupMoreMany: "{count} more episodes waiting",
+          slGroupMoreHint: "Open one at a time, in step with {names}.",
+          slGroupSeason: "All of season {season} is waiting",
+          slGroupSeasonHint: "Opens one episode at a time after {code}, in step with {names}.",
+          slShow: "Show",
+          slHide: "Hide",
+          slAnd: "and",
           profilePinSetTitle: "Choose a PIN for {name}",
           profilePinCurrentTitle: "Enter the current PIN for {name}",
           profilePinRemoveTitle: "Enter PIN to remove the lock for {name}",
@@ -4122,6 +4253,9 @@
           homeSourceNetworkDisney: "Disney+ Originals",
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestige Drama",
+          homeSourceMoment: "Right now (changes with the moment)",
+          homeSourceMomentMovies: "Right now \xB7 Movies",
+          homeSourceMomentSeries: "Right now \xB7 Series",
           homeSourceAnimeMovies: "Anime Movies",
           homeSourceAnimeTopSeries: "Top Rated Anime",
           homeSourceStreamingServices: "Streaming",
@@ -4162,7 +4296,7 @@
           traktAutoRemoveMovies: "Remove watched movies from the watchlist",
           traktAutoRemoveMoviesHint: "A film you have seen leaves the list automatically \u2014 and frees a slot on Trakt.",
           traktAutoUnfollowSeries: "Unfollow series you have finished",
-          traktAutoUnfollowSeriesHint: "Removes a series once you have watched its final season in full. Your watch history is kept, so a revived show can come back.",
+          traktAutoUnfollowSeriesHint: "Removes a series only when it has ended and you have watched the last episode. Ongoing series are never removed. Your watch history is kept, so a revived show can come back.",
           // Named per operation: a 420 on history and a 420 on the watchlist are
           // different caps with different fixes, and a bare code taught us nothing.
           traktHistoryRefused: "Trakt would not accept your watch history",
@@ -4317,6 +4451,121 @@
           appUpdateChannelHint: "Beta gets test builds before they are released to everyone.",
           exitOnCloseTitle: "Quit fully on close",
           exitOnCloseHint: "Android/TV: end the process when you leave the app instead of keeping it in the background. Frees memory on small boxes.",
+          exitAppAction: "Quit Lumio",
+          exitAppTitle: "Quit Lumio?",
+          exitAppConfirm: "Quit",
+          quizMenuLabel: "Film quiz",
+          couchMenuLabel: "Couch mode",
+          couchOpenButton: "Open Couch mode",
+          couchOpenHint: "Control your TV or computer running Lumio from this phone. Both must be on the same wifi.",
+          quizLobbyTitle: "Who knows their movies?",
+          quizLobbyIntro: "Scan the code with your phone to join. The questions come from movies you have watched.",
+          quizOrGoTo: "Or go to",
+          quizPlayers: "Players",
+          quizWaitingMore: "Waiting for more \u2026",
+          quizSourcesLabel: "Questions from",
+          quizSourceSeen: "Watched movies",
+          quizSourceList: "My list",
+          quizSourceColl: "Whole collections",
+          quizStart: "Start quiz",
+          quizBuilding: "Building questions \xB7 %s movies",
+          quizTooFew: "Too few movies. Watch or save at least four.",
+          quizTooFewGenre: "Too few seen {genre} titles. Try another genre.",
+          quizRateLimited: "TMDB is busy, try again in a moment.",
+          quizLanOff: "Phones can only reach this screen when LAN streaming is on in Settings.",
+          quizCode: "Code",
+          quizQuestionOf: "Question %1 of %2",
+          quizAnswered: "%1 of %2 have answered",
+          quizAnswerShown: "Answer shown",
+          quizShowAnswer: "Show answer",
+          quizStanding: "Standings",
+          quizFinalStanding: "Final standings",
+          quizStandingAfter: "Standings after question %s",
+          quizNextQuestion: "Next question",
+          quizPlayAgain: "Play again",
+          quizExit: "Quit",
+          quizCancelTitle: "Cancel the quiz?",
+          quizCloseTitle: "Close Film quiz?",
+          quizCancelBody: "Players will be disconnected and the standings are not saved.",
+          quizKeepPlaying: "Keep playing",
+          quizKindStill: "Still",
+          quizKindClip: "Clip",
+          quizKindTagline: "Tagline",
+          quizKindAltTitle: "Foreign title",
+          quizKindCast: "Cast",
+          quizKindSort: "Collection",
+          quizPromptStill: "Which movie?",
+          quizPromptClip: "Which movie is this clip from?",
+          quizPromptTagline: "Which movie has this tagline?",
+          quizPromptAltTitle: "Which movie is this?",
+          quizPromptCast: "Who was not in it?",
+          quizPromptSort: "Sort the collection, oldest first",
+          quizSortOnPhone: "Sort on your phone, oldest first.",
+          quizAllRight: "All correct: %s",
+          quizNobodyRight: "Nobody got the order right",
+          quizAudioOnly: "Audio only",
+          quizShowVideo: "Show video",
+          quizLangDE: "German title",
+          quizLangFR: "French title",
+          quizLangSE: "Swedish title",
+          quizKeyHints: "\u2191 \u2193 \u2190 \u2192 Move \xB7 OK Select \xB7 \u27F5 Back",
+          quizCreateFailed: "Could not start the quiz. Try again in a moment.",
+          quizClose: "Close",
+          quizBankError: "Could not build questions. Check the connection and try again.",
+          matchMenuLabel: "Film Match",
+          matchLobbyTitle: "What are we watching?",
+          matchLobbyIntro: "Scan the code and swipe on your phone. When everyone says yes to the same film, it starts.",
+          matchPlayers: "Players",
+          matchPaired: "paired",
+          matchGuest: "Guest",
+          matchRoundLabel: "This round",
+          matchRoundDefault: "20 films from My List and similar titles",
+          matchStart: "Go",
+          matchStartOnPhone: "or press Go on {owner} phone",
+          matchMinTwo: "At least two players",
+          matchRoundEyebrow: "Round %1 \xB7 %2 films",
+          matchOngoing: "In progress",
+          matchSwipeTitle: "Swipe on your phones",
+          matchSwipeIntro: "When everyone says yes to the same film, it's a match. Nobody sees anyone else's answers.",
+          matchNoMatchYet: "No match yet",
+          matchDoneOf: "%1 of %2 have swiped them all",
+          matchPlayerLeft: "Left",
+          matchEyebrow: "Match",
+          matchYouChose: "You chose",
+          matchIt: "It's a match!",
+          matchAllYes: "Everyone said yes",
+          matchPickedBy: "{name} picked \xB7 %1 of %2 said yes",
+          matchStartsIn: "Starting in",
+          matchPreparing: "Getting the stream ready \u2026",
+          matchReady: "Ready",
+          matchPlayNow: "Play now",
+          matchNotThis: "Not this one",
+          matchStarting: "Starting \u2026",
+          matchNone: "No matches this time",
+          matchTop3Intro: "These are the films most of you said yes to. {name} picks on the phone, or pick here.",
+          matchTop3IntroHost: "These are the films most of you said yes to. Pick one here.",
+          matchRank1: "Most yes",
+          matchRank2: "Second",
+          matchRank3: "Third",
+          matchVotes: "%1 of %2 said yes",
+          matchNewRound: "New round",
+          matchCouldNotStart: "Couldn't start",
+          matchNoSource: "Couldn't find a source for {film}",
+          matchBackToCards: "Back to the cards in %1 s",
+          matchEndedTitle: "Film Match ended",
+          matchEndedBody: "The phones have been disconnected from the room.",
+          matchNewMatch: "New Film Match",
+          matchCloseTitle: "Close Film Match?",
+          matchCloseBody: "The phones will be disconnected from the room.",
+          matchKeepGoing: "Keep going",
+          matchCreateFailed: "Could not start Film Match. Try again in a moment.",
+          matchDeckEmpty: "Found no films \u2014 add films to My List and try again.",
+          matchJoinTitle: "What's your name?",
+          matchJoin: "Join",
+          matchWaitingFor: "Waiting for {name} to start",
+          matchUndo: "Undo",
+          matchLeft: "You left Film Match",
+          matchEnded: "Film Match ended on the TV",
           creditsFinishedSeason: "Season %s is over",
           creditsNextSeason: "Season %s",
           creditsFinishedTitle: "You finished",
@@ -4618,6 +4867,19 @@
           defaultAudioTrackDesc: "Tries to choose the language automatically when multiple audio tracks exist.",
           disableSubtitlesWhenAudioMatches: "Turn off subtitles when audio matches",
           disableSubtitlesWhenAudioMatchesDesc: "If your selected default audio language is found, subtitles stay off by default.",
+          subtitleAutoSyncSetting: "Sync subtitles automatically",
+          subtitleAutoSyncHint: "Lines up downloaded subtitles with this file when it can be sure. Your own delay always wins.",
+          subtitleAutoSyncAppliedOffset: "Subtitles synced ({offset})",
+          subtitleAutoSyncSwapped: "Switched to subtitles that fit this file",
+          subtitleAutoSyncUndo: "Undo",
+          subtitleAutoSyncNoReferenceInFile: "Auto-sync: nothing in this file to sync against",
+          subtitleAutoSyncNoFit: "Auto-sync: these subtitles don't match this file",
+          subtitleAutoSyncAmbiguous: "Auto-sync: couldn't tell for sure \u2014 left as is",
+          subtitleAutoSyncChecking: "Auto-sync: checking\u2026",
+          subtitleAutoSyncNoTextTracks: "Auto-sync: this file has no text subtitles to sync against",
+          subtitleAutoSyncReadingTracks: "Auto-sync: reading the file's subtitles\u2026",
+          subtitleAutoSyncFetchFailed: "Auto-sync: couldn't fetch the subtitles \u2014 left as is",
+          subtitleAutoSyncRefined: "Subtitle sync refined ({offset})",
           subtitleSize: "Subtitle size",
           subtitleSizeDesc: "Used by default for new movies and episodes.",
           subtitleVerticalPositionDesc: "How high above the controls bar the subtitles are placed.",
@@ -4927,6 +5189,8 @@
           ptSourcesHint: "External sources you have added yourself are listed here.",
           ptNoSources: "No sources added yet. Add a GitHub repo above to get started.",
           ptInstalledBadge: "Installed",
+          ptInstallFailed: "Could not install the plugin.",
+          ptSourceReaddZip: "Add the ZIP file again to install",
           ptUpdating: "Checking for the latest version\u2026",
           ptUpdatedTo: "Updated to {version} \u2014 restart to apply.",
           ptUpToDate: "Already on the latest version.",
@@ -4970,6 +5234,8 @@
           libraryServerUnreachable: "Could not get a playback address from {source}. Check that the server is running.",
           libraryRowSuffix: "in your library",
           libraryModeTab: "Library",
+          libraryModeChip: "Library mode",
+          libraryTabRowsCaption: "Rows per library:",
           libraryModeTitle: "Library mode",
           libraryModeHint: "When a library is the home page, every row is filtered to what you own. Rows with nothing indexed are hidden; the count shows how many titles each row can offer right now.",
           libraryUseAsHome: "Use as home page",
@@ -4985,6 +5251,30 @@
           localLibraryEmpty: "No folders yet.",
           localLibraryScanning: "Indexing\u2026 {done}",
           localLibraryNotIndexed: "Not indexed yet",
+          webdavLibraryTitle: "Network folders (WebDAV)",
+          webdavLibraryHint: "A folder on a WebDAV server becomes its own library with a menu entry, just like a local folder. Files are matched against TMDB by name and stream through the app \u2014 the password stays on this device.",
+          webdavLibraryAdd: "Add folder",
+          webdavLibraryUrl: "Server address",
+          webdavLibraryUsername: "Username",
+          webdavLibraryPassword: "Password",
+          webdavLibraryPasswordKeep: "Unchanged",
+          webdavLibraryName: "Name in the menu",
+          webdavLibraryNamePlaceholder: "Taken from the address if left empty",
+          webdavLibraryTest: "Test",
+          webdavLibraryTestOk: "Connection works",
+          webdavLibrarySave: "Save and index",
+          webdavLibraryCancel: "Cancel",
+          webdavLibraryEdit: "Edit",
+          webdavLibraryEmpty: "No network folders yet.",
+          webdavLibraryListing: "Listing folders\u2026 {done}/{total}",
+          webdavLibraryErrAuth: "The server rejected the username or password.",
+          webdavLibraryErrNotFound: "The folder was not found on the server.",
+          webdavLibraryErrNetwork: "Could not reach the server.",
+          webdavLibraryErrNotWebdav: "The address answered, but not as a WebDAV folder.",
+          webdavLibraryErrUrl: "Enter a full address starting with http:// or https://, without username or password in it.",
+          webdavLibraryErrTooLarge: "The folder is too large to list in one go. Point the address at a subfolder.",
+          webdavLibraryErrUpstream: "The server answered with an error. Try again in a while.",
+          webdavLibraryErrLocalOnly: "Network folders can only be changed on the device running Lumio.",
           libraryRowUnmatched: "Not identified",
           librarySourceNotIndexed: "Not indexed yet \u2014 build the index in the plugin's settings.",
           libraryModeOff: "No library is set as the home page. Turn it on under the library plugin's settings.",
@@ -5009,6 +5299,13 @@
           libraryEpisodeNotInLibrary: "This episode is not in your library",
           libraryRowNotLoaded: "not loaded yet",
           libraryRowRecent: "Recently added to your library",
+          libraryRowMovies: "Movies in your library",
+          tvLibraryTabRowsLabel: "Library tab",
+          tvLibraryTabRowsDesc: "Edit the rows of a library in the menu instead of a page above.",
+          tvLibraryTabRowsNone: "None",
+          libraryRowSeries: "Series in your library",
+          libraryTabRowsFollowHome: "This library shows the home screen rows until you change them here.",
+          libraryTabRowsUntouched: "Showing the recommended rows for this library. Your changes take over once you edit.",
           libraryRowContinue: "Library progress in Last watched",
           libraryRowUnseen: "Unseen favourites",
           libraryRowGenre: "Genre",
@@ -5478,7 +5775,360 @@
           pluginYoutubeMissingChannelId: "Channel ID is missing.",
           ptNeedsNewerApp: "A newer app version is required for this update.",
           ptScanSummary: "{updated} updated, {uptodate} already current, {failed} failed.",
-          ptScanNoUpdates: "All plugins are on the latest version."
+          ptScanNoUpdates: "All plugins are on the latest version.",
+          // Profile page (profilsida)
+          profKicker: "Lumio \xB7 Profile",
+          profYourProfile: "Your profile",
+          profSince: "Since {date} \xB7 {movies} films \xB7 {series} series",
+          profSwitch: "Switch profile",
+          profViewProfile: "View profile",
+          profMyProfile: "My profile",
+          profTabOverview: "Overview",
+          profTabGalaxy: "Taste galaxy",
+          profTabDiary: "Film diary",
+          profTabHunt: "Filmography hunt",
+          profTabWrapped: "Wrapped",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Move \xB7 OK Select \xB7 Back Close",
+          profEmptyFirstStar: "Watch your first film and the first star lights up.",
+          profGalaxyLine: "{stars} stars, {constellations} constellations and {zones} dark zones",
+          profGalaxyDesc: "Every film you've seen is a star. Directors form constellations.",
+          profViewingN: "Viewing {n}",
+          profSecondViewing: "Second time",
+          profDiaryList: "Diary",
+          profDiaryBook: "Autobiography",
+          profDiaryNote: "Written from what you watch in Lumio.",
+          profDiaryEmpty: "Nothing here yet.",
+          profApprox: "Approximate",
+          profChapters: "Chapters",
+          profChKicker: "Chapter {n} \xB7 {year}",
+          profChKickerOngoing: "Chapter {n} \xB7 {year} (ongoing)",
+          profChShort: "{n}. {year}",
+          profChTitles: "You watched {n} titles, about {h} hours.",
+          profChTop: "{title} was the one you came back to \u2013 {n} times.",
+          profChLate: "{p} % of your evenings started after ten.",
+          profChDirector: "{name} was your director of the year, with {n} films.",
+          profChTitleNight: "The year of late nights",
+          profChTitleDirector: "The year of {name}",
+          profChTitleRewatch: "The year of {title}",
+          profChTitleDefault: "A year in film",
+          profHuntEmpty: "See two films by the same director to start a hunt.",
+          profHuntKicker: "Filmography",
+          profHuntSeen: "You've seen {seen}/{total} {name}",
+          profHuntMissing: "{n} left to find.",
+          profHuntAllSeen: "You've seen them all.",
+          profHuntMakeRow: "Make a row",
+          profHuntMakeCollection: "Make a collection",
+          profHuntRowName: "{name} \u2013 still to see",
+          profHuntHomeRowMade: 'Row "{name}" added to your home screen.',
+          profHuntRowMade: 'Row "{name}" created \u2013 add it to your home screen from Settings.',
+          profHuntRowFailed: "Couldn't create the row \u2013 you may have too many rows.",
+          profHuntNew: "+ Hunt a new director",
+          profHuntSearchPh: "Search director",
+          profHuntDocs: "+ Documentaries",
+          profHuntShorts: "+ Short films",
+          profBadgeFirst: "First step",
+          profBadgeHalf: "Halfway",
+          profBadgeAlmost: "Almost there",
+          profBadgeComplete: "Complete",
+          profBadgeInOrder: "In order",
+          profWrappedTeaser: "{h} hours.\nAnd more.",
+          profWrappedKicker: "Lumio Wrapped {year}",
+          profWrappedPlay: "Play your year \u2192",
+          profMoreAboutYou: "More about you",
+          profClose: "Close",
+          profModColor: "Colour year",
+          profModColorLine: "Your year as a strip of film colours.",
+          profModSlept: "Fell asleep",
+          profModSleptLine: "Everything you drifted off to.",
+          profModCouch: "Couch buddies",
+          profModCouchLine: "Who you watch with, and what you agree on.",
+          profModClock: "Watch clock",
+          profModClockLine: "When in the week you watch.",
+          profModCapsule: "Time capsule",
+          profModCapsuleLine: "Seal a film for your future self.",
+          profModRecords: "Records",
+          profModRecordsLine: "Longest marathon, latest night and more.",
+          profModAbandoned: "Abandoned",
+          profModAbandonedLine: "Films you gave up on early.",
+          profModQuiz: "Quiz profile",
+          profModQuizLine: "What you watch vs what you know.",
+          profModBack: "\u2190 Profile",
+          profModColorTitle: "Your year as a single strip",
+          profModColorDesc: "Every stripe is a film's barcode, in the order you watched. Pick a month to see which films gave the colour.",
+          profModColorNote: "From your barcodes",
+          profModSleptTitle: "Films you fell asleep to",
+          profModSleptDesc: "The sleep timer knows exactly where you drifted off. Continue from there, or start over when you're more awake.",
+          profModSleptNote: "From the sleep timer",
+          profModCouchTitle: "Who you watch with",
+          profModCouchDesc: "Taste match per profile and picks that suit you both, based on what you've watched together and apart.",
+          profModCouchNote: `From "Who's watching?"`,
+          profModClockTitle: "When you watch",
+          profModClockDesc: "Weekday against time of day for everything you started. Pick a day to see your habits.",
+          profModClockNote: "From start times in the diary",
+          profModCapsuleTitle: "Send a film to the future",
+          profModCapsuleDesc: "Pick a film today. Lumio brings it back in a few years, together with today's diary page.",
+          profModCapsuleNote: "Opens on the home screen",
+          profModRecordsTitle: "Your personal records",
+          profModRecordsDesc: "Longest marathon, latest night and more. New records are marked when they fall.",
+          profModRecordsNote: "From the diary",
+          profModAbandonedTitle: "Films you gave up on",
+          profModAbandonedDesc: "Everything you left under 20 %. Give them a second chance, or let go for good.",
+          profModAbandonedNote: "From the diary",
+          profSleptSummary: "You fall asleep most often on {day}, on average {m} minutes in.",
+          profSleptTopGenre: "{genre} accounts for {n} of {total} naps.",
+          profSleptWhen: "{date} \xB7 fell asleep {time}",
+          profSleptResume: "Continue {time}",
+          profSleptRestart: "Start over",
+          profSleptRemove: "Remove",
+          profSleptEmpty: "The list is empty. You woke up for everything.",
+          profAbandonedCount: "{n} films left under 20 %.",
+          profAbandonedWhen: "Stopped at {p} % \xB7 {date}",
+          profAbandonedRetry: "Second chance",
+          profAbandonedAdded: "In Continue watching",
+          profAbandonedLetGo: "Let go",
+          profAbandonedDismissRow: "Remove {title} from the list",
+          profAbandonedEmpty: "Nothing abandoned. You finish what you start.",
+          profModQuizTitle: "What you know, vs what you watch",
+          profModQuizDesc: "Your film quiz results per genre, against how much you actually watch the genre.",
+          profModQuizNote: "From the film quiz",
+          profPrevNoCapsule: "No capsule yet",
+          profPrevOpens: "Opens",
+          profPrevTogether: "{n} films together",
+          profPrevEmpty: "Nothing here yet",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "Longest marathon",
+          profRecLatestNight: "Latest night",
+          profRecMostInDay: "Most films in a day",
+          profRecLongestFilm: "Longest film",
+          profRecMostRewatched: "Most rewatched",
+          profRecStreak: "Longest streak",
+          profRecStreakValue: "{n} days",
+          profDayPl0: "Mondays",
+          profDayPl1: "Tuesdays",
+          profDayPl2: "Wednesdays",
+          profDayPl3: "Thursdays",
+          profDayPl4: "Fridays",
+          profDayPl5: "Saturdays",
+          profDayPl6: "Sundays",
+          profColorMonthCount: "{month}: {n} films",
+          profColorMoodRecord: "The year's record month",
+          profColorMoodDark: "The year's darkest month",
+          profColorMoodBright: "The year's brightest month",
+          profColorUseBg: "Use as profile background",
+          profColorRemoveBg: "Remove profile background",
+          profColorBgSet: "The strip is now behind your profile.",
+          profColorExport: "Export as image",
+          profColorShareTitle: "Colour year {year}",
+          profColorFilms: "{n} films",
+          profColorEmpty: "No movies watched this year yet.",
+          profColorNoBarcodeNote: "Grey stripes = films without a barcode yet. Play them in Lumio to fill in the colour.",
+          profShareSaved: "Image saved.",
+          profShareFailed: "Couldn't create the image.",
+          profShareNoLan: "No network address found for the phone.",
+          profShareScan: "Scan with your phone to save the image.",
+          profClockTopTime: "Top time",
+          profClockFilms: "Films",
+          profClockUsual: "Usually",
+          profClockBigNight: "The week's big night.",
+          profClockWith: "Usually with {name}.",
+          profClockEmpty: "Start a few films and the clock fills in.",
+          profRecNew: "New",
+          profRecMarathonHow: "{n} in a row from {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "in a row, until {date}",
+          profRecEmpty: "Records appear once you have a few evenings behind you.",
+          profPrevMatch: "taste match with {name}",
+          profCouchUsual: "Usually: {day} {time}",
+          profCouchDisagree: "Disagree most on: {genre}",
+          profCouchTonight: "Tonight's film for you both",
+          profCouchReasonBoth: "On both watchlists",
+          profCouchReasonRec: "Like {title}",
+          profCouchStart: "Start an evening together",
+          profCouchSolo: "Add another profile to see who you watch with.",
+          profCouchHint: "Pick who's watching when you start a film, and this fills in.",
+          profCouchNoPicks: "No shared picks yet.",
+          profQuizLegendWatch: "Share of your watching",
+          profQuizLegendRight: "Right answers in the quiz",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "You know most about {best}, though you watch {watched} the most.",
+          profQuizSummarySame: "You know {best} best \u2014 and watch it the most.",
+          profQuizWeak: "{weak} is your weak spot.",
+          profQuizEmpty: "Play a round of the film quiz and your results show up here.",
+          profCapStep1: "1 \xB7 Pick a film",
+          profCapStep2: "2 \xB7 When should it open?",
+          profCapYears: "{n} yr",
+          profCapLine: "{title} opens {date}.",
+          profCapSeal: "Seal the capsule",
+          profCapSealing: "Sealing\u2026",
+          profCapSealed: "Sealed. See you {date}.",
+          profCapAnother: "Seal another",
+          profCapYours: "Your capsules",
+          profCapOpens: "Opens {date}",
+          profCapOpened: "Opened {date}",
+          profCapNone: "No capsules yet.",
+          profCapNoFilms: "Finish a film first \u2014 then you can send it forward.",
+          profCapDueKicker: "Time capsule \xB7 opened today",
+          profCapDueLine: "You sealed {title} on {date}.",
+          profCapOpen: "Open",
+          profDiaryAsleep: "Fell asleep {time} \xB7 {p} %",
+          profGxDirectors: "Directors",
+          profGxGenres: "Genres",
+          profGxWhole: "\u2190 Whole galaxy",
+          profGxExplore: "Explore",
+          profGxPickTitle: "Pick a star or a dark zone",
+          profGxPickBody: "Constellations are directors you've followed for a long time. Dashed circles are genres you've hardly watched.",
+          profGxStar: "Star",
+          profGxSeenTimes: "Seen {n} times \xB7 last {date}",
+          profGxSeenOnce: "Seen once \xB7 {date}",
+          profGxNextStar: "Next star \u2192",
+          profGxDetails: "Details",
+          profGxHunt: "Filmography hunt",
+          profGxDarkZone: "Dark zone",
+          profGxZoneBetween: "{n} seen. Lies between {a} and {b}.",
+          profGxZoneNear: "{n} seen. Lies next to {a}.",
+          profGxZoneEdge: "{n} seen. An unexplored corner.",
+          profGxOkHint: "on the zone to fly there",
+          profGxFly: "Fly there",
+          profGxLightFirst: "Light the first stars",
+          profGxLoading: "Looking for films\u2026",
+          profGxNoSuggestions: "No suggestions right now. Try again later.",
+          profGxPlay: "Play",
+          profGxConstellations: "Constellations",
+          profGxZones: "Dark zones",
+          settingsPageProfilePage: "Profile page",
+          settingsPagePairedPhones: "Paired phones",
+          couchEyebrow: "COUCH MODE",
+          couchTitle: "Phones that control Lumio",
+          couchHint: "Your phone becomes a remote, shows info about what's playing and sends ratings to the profile's Trakt. Home network only.",
+          couchPairNew: "Pair new phone",
+          couchColPhone: "PHONE",
+          couchColProfile: "PROFILE",
+          couchColLastSeen: "LAST CONNECTED",
+          couchBadgePwa: "PWA",
+          couchBadgeAndroid: "ANDROID APP",
+          couchSubPwa: "iPhone \xB7 launched from the home screen",
+          couchSubAndroid: "Lumio for Android \xB7 Feel the bass",
+          couchRemove: "Remove",
+          couchCancel: "Cancel",
+          couchRemoveConfirm: "Remove {name}? The phone stops working right away and has to be paired again with a new code.",
+          couchFootnote: "The profile decides whose Trakt account ratings and history go to. Feel the bass is only available on phones with Lumio for Android.",
+          couchHapticsTitle: "Feel the bass",
+          couchHapticsHint: "The phone vibrates in time with the film's bass hits. Moved here from Playback.",
+          couchHapticsSensHint: "How faint the bass hits that count.",
+          couchHapticsStrength: "Strength",
+          couchHapticsSync: "Early / late",
+          couchHapticsSyncHint: "Shift the vibration if it arrives too early or too late.",
+          couchHapticsLegacy: "Re-pair with Couch mode to control Feel the bass here",
+          couchHapticsLiveHint: "Strength and timing apply when Couch mode is open on the phone.",
+          couchEmptyTitle: "No phones paired yet",
+          couchDialogInstr: "**iPhone:** scan with the camera. **Android:** open the Lumio app and enter the code.",
+          couchWaiting: "Waiting for the phone \u2026",
+          couchClosesIn: "Closes in {time}",
+          couchNewCode: "New code",
+          couchPaired: "{name} is paired",
+          couchPairedSub: "Profile {profile} \xB7 closes by itself",
+          couchExpiredTitle: "The code has expired",
+          couchExpiredBody: "The code window is only open for two minutes so nobody else on the network can pair. Get a new code and try again.",
+          couchNewBadge: "New",
+          couchPortError: "Port 3012 is busy: {error}",
+          couchBundleMissing: "The phone page is missing from this app build.",
+          couchTvPairHint: "Shows a code and a QR code for two minutes",
+          couchTvEyebrow: "PHONES",
+          couchTvSubAndroid: "Android app \xB7 Profile {profile}",
+          couchTvSubPwa: "iPhone \xB7 Profile {profile}",
+          couchTvNoProfile: "no profile",
+          couchTvDetailSub: "{kind} \xB7 Last connected: {when}",
+          couchTvKindAndroid: "Android app",
+          couchTvKindPwa: "iPhone",
+          couchTvCodeLabel: "CODE",
+          couchTvCodeInstr: "iPhone: scan the QR code. Android: enter the code in the app.",
+          couchTvWaiting: "Waiting for the phone",
+          couchTvClosesIn: "Closes in {time}",
+          couchTvClose: "Close",
+          couchTvTrakt: "Trakt: {user}",
+          couchTvNoTrakt: "No Trakt",
+          couchTvRemovePhone: "Remove the phone",
+          couchTvRemoveTitle: "Remove {name}?",
+          couchTvRemoveBody: "The phone stops working right away and has to be paired again with a new code. Ratings already sent to Trakt stay.",
+          couchTvEmptyHint: "No phones paired yet",
+          ppWeatherGroup: "Weather in the diary",
+          ppWeatherToggle: "Record the weather",
+          ppWeatherToggleDesc: "When a film ends, Lumio looks up the current weather for your town once (Open-Meteo, no account). Off: no lookups at all.",
+          ppWeatherPlace: "Town",
+          ppWeatherNoPlace: "No town chosen yet.",
+          ppWeatherSearchPh: "e.g. Gothenburg",
+          ppWeatherSearch: "Search",
+          ppWeatherSearching: "Searching\u2026",
+          ppWeatherNoResults: "No town found.",
+          ppWeatherFailed: "The search failed. Check the connection and try again.",
+          ppWeatherCredit: "Weather data by Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "so far this year",
+          profWrPrev: "Previous",
+          profWrNext: "Next",
+          profWrNotEnough: "Wrapped needs at least 10 sessions in {year}. Keep watching!",
+          profWrIntroTitle: "Your year\nin film.",
+          profWrIntroBody: "{n} stars later. Tap to begin.",
+          profWrIntroBodyTv: "{n} stars later. Press \u25B6 to begin.",
+          profWrGuessKicker: "Guess first",
+          profWrGuessQ: "Which genre did you watch most this year?",
+          profWrGuessRight: "Spot on. {genre}, with {h} hours.",
+          profWrGuessWrong: "Close. It was {genre}, with {h} hours.",
+          profWrNoGenres: "Not enough genre data yet.",
+          profWrHoursKicker: "You watched",
+          profWrHoursUnit: "hours",
+          profWrDays: "= {n} days on the sofa",
+          profWrInterstellar: "= {n} Interstellars in a row",
+          profWrEpisodes: "= {n} episodes of a half-hour show",
+          profWrGenreKicker: "Genre ranking",
+          profWrGenreWon: "{genre} won.",
+          profWrHoursShort: "{h} h",
+          profWrGoldenKicker: "Golden hour",
+          profWrGoldenBody: "The time you most often pressed play.",
+          profWrStarsKicker: "Your stars",
+          profWrStarsTitle: "The actors you saw most.",
+          profWrStarsNone: "Not enough cast data yet.",
+          profWrStarsFilms: "{n} films",
+          profWrRewatchKicker: "Most rewatched",
+          profWrRewatchNone: "No rewatches this year \u2014 always something new.",
+          profWrSleepTitle: "You fell asleep {n} times.",
+          profWrSleepNone: "You stayed awake all year.",
+          profWrBuddyTitle: "You and {name} watched {n} films together.",
+          profWrBuddyNone: "Mostly you and the screen this year.",
+          profWrPersKicker: "Your film personality",
+          profWrTraitNight: "Night owl",
+          profWrTraitNightValue: "starts {time}",
+          profWrTraitGenre: "Genre loyal",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Rewatcher",
+          profWrTraitRewatchValue: "{n} rewatches",
+          profWrTraitNap: "Dozer",
+          profWrTraitNapValue: "at {p} %",
+          profWrShareTitle: "Share your year.",
+          profWrShare: "Share",
+          profWrReplay: "Play again",
+          profWrCardHours: "total",
+          profWrCardGenre: "top genre",
+          profWrCardTitle: "most played",
+          profWrCardNaps: "naps",
+          profWrBNight: "The night owl",
+          profWrBRewatch: "The rewatcher",
+          profWrBNap: "The nap master",
+          profWrBMarathon: "The marathoner",
+          profWrBExplorer: "The explorer",
+          profWrAScifi: "from outer space",
+          profWrADrama: "with a big heart",
+          profWrAHorror: "from the dark",
+          profWrAComedy: "who laughs first",
+          profWrAAnimation: "with a drawn soul",
+          profWrADocumentary: "who wants to know",
+          profWrAThriller: "on the edge",
+          profWrAAction: "at full speed",
+          profWrARomance: "in rose-tinted glasses",
+          profWrACrime: "from the underworld",
+          profWrAFantasy: "from the fairy realm",
+          profWrAOther: "without a map"
         },
         sv: {
           // Nav
@@ -5489,6 +6139,7 @@
           watchHistory: "Historik",
           startNextSource: "K\xE4llan svarade inte \u2014 provar n\xE4sta\u2026",
           startNextSourceNamed: "K\xE4llan svarade inte \u2014 provar {stream}\u2026",
+          startNextSourceWaiting: "K\xE4llan svarade inte \u2014 v\xE4ntar in fler k\xE4llor\u2026",
           startSlateNext: "K\xE4llan skickade ingen film \u2014 provar {stream}\u2026",
           startCancel: "Avbryt",
           startNoSourceTitle: "Ingen k\xE4lla startade",
@@ -5708,7 +6359,6 @@
           liveTvStreamError: "Kunde inte ladda str\xF6mmen.",
           liveTvStreamErrorHelp: "Str\xF6mmen kan vara geoblockerad, offline eller ej st\xF6dd.",
           allCategories: "Alla kategorier",
-          sceneReleases: "Scene-releaser",
           activeFiltersTitle: "Aktiva filter",
           activeFiltersHintPrefix: "Tillg\xE4nglighet f\xF6r tj\xE4nster \xE4r begr\xE4nsad till Sverige (",
           activeFiltersHintSuffix: "), och flera valda chips matchar valfritt av etiketterna, inte alla samtidigt.",
@@ -5791,6 +6441,8 @@
           movieWatchlistAdded: "Min lista \u2713",
           moreInfo: "Mer info",
           watchTrailer: "Se trailer",
+          shuffleEpisodes: "Blanda",
+          shuffleEpisodesOn: "Blandar",
           openOnImdb: "\xD6ppna p\xE5 IMDb",
           seasons: "S\xE4songer:",
           matchedOnTitle: "Matchad p\xE5 titel:",
@@ -6040,9 +6692,6 @@
           subtitleAlignedToReference: "Synkad mot en undertext som matchar din fil",
           subtitleHashMatch: "Matchar din fil",
           subtitleAlignedToAudio: "Synkad mot hela ljudsp\xE5ret",
-          subtitleAnchorApplied: "Synkad fr\xE5n din markering",
-          subtitleAnchorDrift: "drift korrigerad ocks\xE5",
-          subtitleManualSync: "Synka p\xE5 geh\xF6r",
           vpSecondarySubFailed: "Kunde inte ladda andraspr\xE5ket",
           vpSecondarySubMissing: "Inget undertextsp\xE5r p\xE5 {lang} hittades",
           learningModeTitle: "Inl\xE4rningsl\xE4ge",
@@ -6055,13 +6704,6 @@
           secondarySubtitleLanguageDesc: "Visas under huvudtexten n\xE4r inl\xE4rningsl\xE4get \xE4r p\xE5",
           secondarySubtitleColor: "Andraspr\xE5kets f\xE4rg",
           secondarySubtitleColorDesc: "F\xE4rg p\xE5 den andra raden i inl\xE4rningsl\xE4get",
-          subtitleManualSyncTapPrompt: "Tryck n\xE4r du h\xF6r en replik du k\xE4nner igen",
-          subtitleManualSyncTapButton: "Jag h\xF6r den nu",
-          subtitleManualSyncPickPrompt: "Vilken rad h\xF6rde du nyss?",
-          subtitleManualSyncSecondHint: "G\xF6r om det senare i filmen f\xF6r att \xE4ven r\xE4tta driften.",
-          subtitleManualSyncNoCues: "Inga undertextrader n\xE4ra den h\xE4r punkten.",
-          subtitleManualSyncApplying: "Till\xE4mpar din synkning\u2026",
-          subtitleManualSyncRefining: "Finjusterar mot ljudet\u2026",
           castTitle: "Spela p\xE5 annan enhet",
           castScanning: "S\xF6ker efter enheter\u2026",
           castNoDevices: "Inga Chromecast- eller DLNA-enheter hittades.",
@@ -6079,7 +6721,6 @@
           castPairConfirm: "Parkoppla",
           castPairing: "Parkopplar\u2026",
           castPairFailed: "Parkopplingen misslyckades. F\xF6rs\xF6k igen.",
-          cancel2: "Avbryt",
           subtitleAutoSyncNoReference: "Inte s\xE4ker nog utifr\xE5n bara ljudet. L\xE4gg in en OpenSubtitles API-nyckel i Inst\xE4llningar f\xF6r att synka mot en undertext som matchar din fil.",
           subtitleAutoSyncFailed: "Kunde inte auto-synca undertexterna",
           subtitleAutoSyncDriftApplied: "drift korrigerad ({rate}s/min)",
@@ -6318,12 +6959,40 @@
           plTime: "Tidsvisning",
           plSpacer: "Mellanrum (v\xE4nster/h\xF6ger-delning)",
           plSegmentBadges: "Intro/outro-m\xE4rken",
+          plEndsAt: "Slutar {time}",
+          plGearTitle: "Inst\xE4llningar",
+          plGearSkipIntros: "Hoppa \xF6ver intro och recap",
+          plSpeedNormal: "Normal",
+          plChapters: "Kapitel",
+          plChapterN: "Kapitel {n}",
+          plCreditsChapter: "Eftertexter",
+          shortcutsSaveMoment: "Spara \xF6gonblick",
+          plMoments: "\xD6gonblick",
+          plMomentKeep: "Spara detta \xF6gonblick",
+          plMomentJump: "Hoppa",
+          plMomentRemove: "Ta bort \xF6gonblick",
+          plMomentsClear: "Rensa \xF6gonblick",
+          plMomentsEmpty: "Inga \xF6gonblick \xE4n",
+          plMomentSaved: "\xD6gonblick sparat vid {time}",
+          plMomentExists: "Det finns redan ett \xF6gonblick vid {time}",
+          plMomentUnavailable: "\xD6gonblick kan inte sparas f\xF6r den h\xE4r k\xE4llan",
           plMute: "Ljud av",
           plVolume: "Volymreglage",
           plAudioDelay: "Ljudf\xF6rdr\xF6jning",
           plNextEpisode: "N\xE4sta avsnitt",
           plSwitchStream: "Byt str\xF6m",
           plStreams: "Str\xF6mmar",
+          plSleepTimer: "S\xF6mntimer",
+          plSleepShort: "S\xF6mn",
+          plSleepOff: "Av",
+          plSleepMinutes: "{n} min",
+          plSleepEnd: "Slutet av avsnittet/filmen",
+          plSleepStillThere: "\xC4r du kvar?",
+          plSleepStillThereBody: "S\xF6mntimern pausade. R\xF6r musen eller tryck p\xE5 n\xE5got f\xF6r att titta vidare.",
+          plCompanions: "Vem tittar med",
+          plWhoWatches: "Vem tittar med?",
+          plCompanionsJustMe: "Bara jag",
+          plCompanionsShort: "Med",
           audioDelayTitle: "Ljudf\xF6rdr\xF6jning",
           audioDelayHint: "Justera l\xE4ppsynk. Positivt v\xE4rde spelar ljudet senare.",
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
@@ -6667,6 +7336,8 @@
           tvMenuVariantHint: "Pillret \xF6ppnar menyn n\xE4r du vill; listen st\xE5r kvar l\xE4ngs v\xE4nsterkanten.",
           tvMenuVariantPill: "Pillret",
           tvMenuVariantRail: "Ikonlist",
+          tvButtonScale: "Knappstorlek",
+          tvButtonScaleDesc: "Storleken p\xE5 knapparna i startsidans hero och p\xE5 detaljsidan (Spela, Min lista, F\xF6lj \u2026) i TV-l\xE4get.",
           tvMenuScale: "Menystorlek",
           tvMenuScaleDesc: "Skalar sidomenyn \u2014 ikoner och etiketter \u2014 i TV-l\xE4get.",
           menuScale: "Menyskalning",
@@ -6779,6 +7450,107 @@
           profilePinLabel: "PIN",
           profilePinOptionalLabel: "PIN (valfritt)",
           profilePinEnterTitle: "Ange PIN f\xF6r {name}",
+          slLockWith: "L\xE5s med\u2026",
+          slEyebrow: "{title} \xB7 Seriel\xE5s",
+          slCreateTitle: "L\xE5s serien med\u2026",
+          slCreateLead: "Ingen av er ser n\xE4sta avsnitt f\xF6rr\xE4n de andra har sett det f\xF6reg\xE5ende.",
+          slYou: "Du",
+          slHasPin: "Har PIN",
+          slNoPin: "Ingen PIN",
+          slMode: "L\xE4ge",
+          slTogether: "Tillsammans",
+          slTogetherHint: "Ni ser serien ihop. Ett avsnitt som r\xE4knas som sett markeras f\xF6r alla, oavsett vems profil som var p\xE5.",
+          slSolo: "Var f\xF6r sig",
+          slSoloHint: "Var och en tittar p\xE5 sin egen profil. Den som ligger f\xF6re v\xE4ntar in de andra.",
+          slPinToggle: "Kr\xE4v PIN f\xF6r Titta \xE4nd\xE5",
+          slPinOff: "Av: alla kan v\xE4lja Titta \xE4nd\xE5 direkt.",
+          slPinOn: "Den som v\xE4ljer Titta \xE4nd\xE5 anger sin profil-PIN.",
+          slPinNone: "Ingen av de valda profilerna har en PIN.",
+          slPinPartialOne: "{names} har ingen PIN och kan titta \xE4nd\xE5 utan kod.",
+          slPinPartialMany: "{names} har ingen PIN och kan titta \xE4nd\xE5 utan kod.",
+          slPosMe: "Du \xE4r p\xE5 {code}",
+          slPosOther: "{name} \xE4r p\xE5 {code}",
+          slPosMeNotStarted: "Du har inte b\xF6rjat",
+          slPosOtherNotStarted: "{name} har inte b\xF6rjat",
+          slWaitOne: "Du f\xE5r v\xE4nta tills {name} har sett {code}.",
+          slWaitMany: "{ahead} f\xE5r v\xE4nta tills {name} har kommit ikapp till {code}.",
+          slOthersWait: "{names} f\xE5r v\xE4nta tills du har sett {code}.",
+          slSame: "Ni \xE4r p\xE5 samma avsnitt, {code}. Bra start.",
+          slConfirm: "L\xE5s serien",
+          slCreatedTogether: "{title} \xE4r l\xE5st med {names}. Ni ser den tillsammans.",
+          slCreatedSolo: "{title} \xE4r l\xE5st med {names}. Ni v\xE4ntar in varandra.",
+          slMarker: "L\xE5st med {names} \xB7 {mode}",
+          slManage: "Hantera l\xE5s",
+          slParticipants: "Deltagare",
+          slSeenCode: "Har sett {code}",
+          slNotStarted: "Har inte b\xF6rjat",
+          slRemoveMember: "Ta bort",
+          slAddMember: "+ {name}",
+          slHistoryEntry: "{name} \xB7 {code} \xB7 {when}",
+          slHistoryEmpty: "Ingen har tittat \xE4nd\xE5 \xE4n.",
+          slDone: "Klar",
+          slRemoveLock: "Ta bort l\xE5s",
+          slRemoveTitle: "Ta bort l\xE5set?",
+          slRemoveText: "Ni tittar i egen takt igen. Inget ni har sett \xE4ndras.",
+          slKeep: "Beh\xE5ll l\xE5set",
+          slRemoveLastTitle: "Ta bort {name}?",
+          slRemoveLastText: "Ett l\xE5s beh\xF6ver minst tv\xE5. Tar du bort {name} upph\xF6r l\xE5set p\xE5 {title}, och ni tittar i egen takt igen.",
+          slRemovedToast: "L\xE5set \xE4r borttaget. Ni tittar i egen takt igen.",
+          slLockedTitle: "{code} \xE4r l\xE5st",
+          slLockedTextOne: "{names} har inte sett {code} \xE4n.",
+          slLockedTextMany: "{names} har inte sett {code} \xE4n.",
+          slWatchAnyway: "Titta \xE4nd\xE5",
+          slFootnote: "{names} ser att du tittade f\xF6re.",
+          slFootnotePin: "Titta \xE4nd\xE5 kr\xE4ver din PIN.",
+          slFootnoteNoPin: "Du har ingen PIN, s\xE5 ingen kod beh\xF6vs.",
+          slPinTitle: "Ange PIN f\xF6r {name}",
+          slPinSubtitle: "f\xF6r att titta p\xE5 {code} \xE4nd\xE5",
+          slContinueWaiting: "V\xE4ntar p\xE5 {names} \xB7 {code}",
+          slContinueMetaLocked: "Serie \xB7 {code} \xB7 L\xE5st",
+          slNextLocked: "N\xE4sta avsnitt \xE4r l\xE5st. V\xE4ntar p\xE5 {names}",
+          slClose: "St\xE4ng",
+          slTogetherToast: "{code} markerat som sett f\xF6r {names}.",
+          slUnlockedToastOne: "{names} har sett {code}. Ni kan forts\xE4tta.",
+          slUnlockedToastMany: "{names} har sett {code}. Ni kan forts\xE4tta.",
+          slPlayCode: "Spela {code}",
+          slAheadToast: "{name} tittade p\xE5 {code} f\xF6re dig.",
+          slOkay: "Okej",
+          slOwnOverrideToast: "Du tittade p\xE5 {code} f\xF6re {names}. {names} f\xE5r se det.",
+          slWaitingForYouOne: "{names} v\xE4ntar p\xE5 dig. {next} \xF6ppnas n\xE4r du har sett {code}.",
+          slWaitingForYouMany: "{names} v\xE4ntar p\xE5 dig. {next} \xF6ppnas n\xE4r du har sett {code}.",
+          slEndedOne: "L\xE5set p\xE5 {title} har upph\xF6rt. {names} finns inte l\xE4ngre i appen, och ett l\xE5s beh\xF6ver minst tv\xE5. Du tittar i egen takt nu.",
+          slEndedMany: "L\xE5set p\xE5 {title} har upph\xF6rt. {names} finns inte l\xE4ngre i appen, och ett l\xE5s beh\xF6ver minst tv\xE5. Du tittar i egen takt nu.",
+          slNewSeasonOne: "{code} v\xE4ntar p\xE5 {names}. S\xE4song {season} b\xF6rjar n\xE4r {names} har sett {requires}.",
+          slNewSeasonMany: "{code} v\xE4ntar p\xE5 {names}. S\xE4song {season} b\xF6rjar n\xE4r {names} har sett {requires}.",
+          slFinishedTitle: "Klart ihop",
+          slFinishedText: "Ni har sett alla {count} avsnitt. L\xE5set beh\xF6vs inte l\xE4ngre.",
+          slMyLocksTitle: "Seriel\xE5s",
+          slMyLocksLead: "Serier du har l\xE5st med andra",
+          slMyLocksEmpty: "L\xE5s en serie fr\xE5n dess detaljsida med L\xE5s med\u2026",
+          slStatusWaiting: "Du v\xE4ntar p\xE5 {names}",
+          slStatusCanContinue: "Du kan forts\xE4tta",
+          slStatusInStep: "Ni \xE4r i fas",
+          slStatusWaitedOnOne: "{names} v\xE4ntar p\xE5 dig",
+          slStatusWaitedOnMany: "{names} v\xE4ntar p\xE5 dig",
+          slRowSeenAll: "Sett av alla",
+          slRowMissingOne: "{names} har inte sett",
+          slRowMissingMany: "{names} har inte sett",
+          slRowNext: "N\xE4sta",
+          slRowNextSeenByOne: "N\xE4sta \xB7 {names} har sett",
+          slRowNextSeenByMany: "N\xE4sta \xB7 {names} har sett",
+          slRowWaiting: "V\xE4ntar p\xE5 {names}",
+          slRowLocked: "L\xE5st",
+          slRowAheadOfYou: "{names} tittade f\xF6re dig",
+          slRowOverrideMineOne: "Du tittade \xE4nd\xE5 \xB7 {names} har inte sett",
+          slRowOverrideMineMany: "Du tittade \xE4nd\xE5 \xB7 {names} har inte sett",
+          slGroupMoreOne: "1 avsnitt till v\xE4ntar",
+          slGroupMoreMany: "{count} avsnitt till v\xE4ntar",
+          slGroupMoreHint: "\xD6ppnas ett i taget, i takt med {names}.",
+          slGroupSeason: "Hela s\xE4song {season} v\xE4ntar",
+          slGroupSeasonHint: "\xD6ppnas ett avsnitt i taget efter {code}, i takt med {names}.",
+          slShow: "Visa",
+          slHide: "D\xF6lj",
+          slAnd: "och",
           profilePinSetTitle: "V\xE4lj PIN f\xF6r {name}",
           profilePinCurrentTitle: "Ange nuvarande PIN f\xF6r {name}",
           profilePinRemoveTitle: "Ange PIN f\xF6r att ta bort l\xE5set f\xF6r {name}",
@@ -7310,6 +8082,9 @@
           homeSourceNetworkDisney: "Disney+ Originals",
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestigedrama",
+          homeSourceMoment: "Just nu (byter efter stund)",
+          homeSourceMomentMovies: "Just nu \xB7 Filmer",
+          homeSourceMomentSeries: "Just nu \xB7 Serier",
           homeSourceAnimeMovies: "Animefilmer",
           homeSourceAnimeTopSeries: "H\xF6gst betygsatt anime",
           homeSourceStreamingServices: "Streaming",
@@ -7348,7 +8123,7 @@
           traktAutoRemoveMovies: "Ta bort sedda filmer fr\xE5n bevakningslistan",
           traktAutoRemoveMoviesHint: "En film du sett l\xE4mnar listan automatiskt \u2014 och frig\xF6r en plats hos Trakt.",
           traktAutoUnfollowSeries: "Avf\xF6lj serier du sett klart",
-          traktAutoUnfollowSeriesHint: "Tar bort en serie n\xE4r du sett hela sista s\xE4songen. Din sedda-historik beh\xE5lls, s\xE5 en \xE5terupplivad serie kan komma tillbaka.",
+          traktAutoUnfollowSeriesHint: "Tar bara bort en serie n\xE4r den \xE4r helt avslutad och du sett sista avsnittet. P\xE5g\xE5ende serier tas aldrig bort. Din sedda-historik beh\xE5lls, s\xE5 en \xE5terupplivad serie kan komma tillbaka.",
           traktHistoryRefused: "Trakt tog inte emot din sedd-historik",
           traktHistoryRefusedBody: "Bevakningslistan synkade som den ska \u2014 det h\xE4r g\xE4ller bara sedd-historiken. Trakt har ett tak p\xE5 100 000 uppspelningar. Din lokala historik \xE4r intakt och Lumio p\xE5verkas inte.",
           traktRejectedBy: "Avvisat av Trakt",
@@ -7501,6 +8276,121 @@
           appUpdateChannelHint: "Beta f\xE5r testbyggen innan de sl\xE4pps till alla.",
           exitOnCloseTitle: "Avsluta helt vid st\xE4ngning",
           exitOnCloseHint: "Android/TV: avsluta processen n\xE4r du l\xE4mnar appen i st\xE4llet f\xF6r att l\xE5ta den ligga i bakgrunden. Frig\xF6r minne p\xE5 sm\xE5 boxar.",
+          exitAppAction: "Avsluta Lumio",
+          exitAppTitle: "Avsluta Lumio?",
+          exitAppConfirm: "Avsluta",
+          quizMenuLabel: "Filmquiz",
+          couchMenuLabel: "Soffl\xE4ge",
+          couchOpenButton: "\xD6ppna Soffl\xE4ge",
+          couchOpenHint: "Styr TV:n eller datorn som k\xF6r Lumio fr\xE5n den h\xE4r telefonen. B\xE5da m\xE5ste vara p\xE5 samma wifi.",
+          quizLobbyTitle: "Vem kan sin film?",
+          quizLobbyIntro: "Skanna koden med telefonen f\xF6r att vara med. Fr\xE5gorna kommer ur filmer ni har sett.",
+          quizOrGoTo: "Eller g\xE5 till",
+          quizPlayers: "Spelare",
+          quizWaitingMore: "V\xE4ntar p\xE5 fler \u2026",
+          quizSourcesLabel: "Fr\xE5gor ur",
+          quizSourceSeen: "Sedda filmer",
+          quizSourceList: "Min lista",
+          quizSourceColl: "Hela samlingar",
+          quizStart: "Starta quiz",
+          quizBuilding: "Bygger fr\xE5gor \xB7 %s filmer",
+          quizTooFew: "F\xF6r f\xE5 filmer. Se eller spara minst fyra.",
+          quizTooFewGenre: "F\xF6r f\xE5 sedda {genre}-titlar. Prova en annan genre.",
+          quizRateLimited: "TMDB \xE4r upptaget, f\xF6rs\xF6k om en stund.",
+          quizLanOff: "Telefoner n\xE5r den h\xE4r sk\xE4rmen bara n\xE4r LAN-str\xF6mning \xE4r p\xE5 i inst\xE4llningarna.",
+          quizCode: "Kod",
+          quizQuestionOf: "Fr\xE5ga %1 av %2",
+          quizAnswered: "%1 av %2 har svarat",
+          quizAnswerShown: "Svaret visas",
+          quizShowAnswer: "Visa svar",
+          quizStanding: "St\xE4llning",
+          quizFinalStanding: "Slutst\xE4llning",
+          quizStandingAfter: "St\xE4llning efter fr\xE5ga %s",
+          quizNextQuestion: "N\xE4sta fr\xE5ga",
+          quizPlayAgain: "Spela igen",
+          quizExit: "Avsluta",
+          quizCancelTitle: "Avbryta quizet?",
+          quizCloseTitle: "St\xE4nga Filmquiz?",
+          quizCancelBody: "Spelarna kopplas fr\xE5n och st\xE4llningen sparas inte.",
+          quizKeepPlaying: "Forts\xE4tt spela",
+          quizKindStill: "Stillbild",
+          quizKindClip: "Klipp",
+          quizKindTagline: "Tagline",
+          quizKindAltTitle: "Utl\xE4ndsk titel",
+          quizKindCast: "Sk\xE5despelare",
+          quizKindSort: "Samling",
+          quizPromptStill: "Vilken film?",
+          quizPromptClip: "Vilken film \xE4r klippet ur?",
+          quizPromptTagline: "Vilken film har den h\xE4r taglinen?",
+          quizPromptAltTitle: "Vilken film \xE4r det h\xE4r?",
+          quizPromptCast: "Vem var inte med?",
+          quizPromptSort: "Sortera samlingen, \xE4ldst f\xF6rst",
+          quizSortOnPhone: "Sortera p\xE5 telefonen, \xE4ldst f\xF6rst.",
+          quizAllRight: "Helt r\xE4tt: %s",
+          quizNobodyRight: "Ingen fick ordningen r\xE4tt",
+          quizAudioOnly: "Bara ljud",
+          quizShowVideo: "Visa bild",
+          quizLangDE: "Tysk titel",
+          quizLangFR: "Fransk titel",
+          quizLangSE: "Svensk titel",
+          quizKeyHints: "\u2191 \u2193 \u2190 \u2192 Flytta \xB7 OK V\xE4lj \xB7 \u27F5 Tillbaka",
+          quizCreateFailed: "Kunde inte starta quizet. F\xF6rs\xF6k igen om en stund.",
+          quizClose: "St\xE4ng",
+          quizBankError: "Kunde inte bygga fr\xE5gor. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
+          matchMenuLabel: "Filmmatch",
+          matchLobbyTitle: "Vad ska vi se?",
+          matchLobbyIntro: "Skanna koden och svep p\xE5 telefonen. N\xE4r alla har sagt ja till samma film startar den.",
+          matchPlayers: "Deltagare",
+          matchPaired: "kopplad",
+          matchGuest: "G\xE4st",
+          matchRoundLabel: "Omg\xE5ngen",
+          matchRoundDefault: "20 filmer ur Min lista och liknande titlar",
+          matchStart: "K\xF6r",
+          matchStartOnPhone: "eller tryck K\xF6r p\xE5 {owner} telefon",
+          matchMinTwo: "Minst tv\xE5 deltagare",
+          matchRoundEyebrow: "Omg\xE5ng %1 \xB7 %2 filmer",
+          matchOngoing: "P\xE5g\xE5r",
+          matchSwipeTitle: "Svep p\xE5 telefonen",
+          matchSwipeIntro: "N\xE4r alla har sagt ja till samma film blir det match. Ingen f\xE5r se vad de andra har svarat.",
+          matchNoMatchYet: "Ingen match \xE4n",
+          matchDoneOf: "%1 av %2 har svept klart",
+          matchPlayerLeft: "L\xE4mnade",
+          matchEyebrow: "Match",
+          matchYouChose: "Ni valde",
+          matchIt: "Match!",
+          matchAllYes: "Alla sa ja",
+          matchPickedBy: "{name} valde \xB7 %1 av %2 sa ja",
+          matchStartsIn: "Startar om",
+          matchPreparing: "G\xF6r i ordning str\xF6mmen \u2026",
+          matchReady: "Redo",
+          matchPlayNow: "Spela nu",
+          matchNotThis: "Inte den",
+          matchStarting: "Startar \u2026",
+          matchNone: "Inga matchningar den h\xE4r g\xE5ngen",
+          matchTop3Intro: "Det h\xE4r \xE4r filmerna som flest sa ja till. {name} v\xE4ljer p\xE5 telefonen, eller v\xE4lj h\xE4r.",
+          matchTop3IntroHost: "Det h\xE4r \xE4r filmerna som flest sa ja till. V\xE4lj h\xE4r.",
+          matchRank1: "Flest ja",
+          matchRank2: "Tv\xE5a",
+          matchRank3: "Trea",
+          matchVotes: "%1 av %2 sa ja",
+          matchNewRound: "Ny omg\xE5ng",
+          matchCouldNotStart: "Kunde inte starta",
+          matchNoSource: "Hittade ingen k\xE4lla f\xF6r {film}",
+          matchBackToCards: "Tillbaka till korten om %1 s",
+          matchEndedTitle: "Filmmatch avslutades",
+          matchEndedBody: "Telefonerna har kopplats fr\xE5n rummet.",
+          matchNewMatch: "Ny Filmmatch",
+          matchCloseTitle: "St\xE4nga Filmmatch?",
+          matchCloseBody: "Telefonerna kopplas fr\xE5n rummet.",
+          matchKeepGoing: "Forts\xE4tt",
+          matchCreateFailed: "Kunde inte starta Filmmatch. F\xF6rs\xF6k igen om en stund.",
+          matchDeckEmpty: "Hittade inga filmer \u2014 l\xE4gg till filmer i Min lista och f\xF6rs\xF6k igen.",
+          matchJoinTitle: "Vad heter du?",
+          matchJoin: "G\xE5 med",
+          matchWaitingFor: "V\xE4ntar p\xE5 att {name} k\xF6r ig\xE5ng",
+          matchUndo: "\xC5ngra",
+          matchLeft: "Du l\xE4mnade Filmmatch",
+          matchEnded: "Filmmatch avslutades p\xE5 TV:n",
           creditsFinishedSeason: "S\xE4song %s \xE4r slut",
           creditsNextSeason: "S\xE4song %s",
           creditsFinishedTitle: "Du s\xE5g klart",
@@ -7795,6 +8685,19 @@
           defaultAudioTrackDesc: "F\xF6rs\xF6ker v\xE4lja spr\xE5k automatiskt n\xE4r flera ljudsp\xE5r finns.",
           disableSubtitlesWhenAudioMatches: "St\xE4ng av textning n\xE4r ljudspr\xE5ket matchar",
           disableSubtitlesWhenAudioMatchesDesc: "Om ditt valda standardspr\xE5k f\xF6r ljud hittas, h\xE5lls textningen av som standard.",
+          subtitleAutoSyncSetting: "Synka undertexter automatiskt",
+          subtitleAutoSyncHint: "L\xE4gger nedladdade undertexter i takt med filen n\xE4r det g\xE5r att avg\xF6ra s\xE4kert. Din egen f\xF6rdr\xF6jning vinner alltid.",
+          subtitleAutoSyncAppliedOffset: "Undertext synkad ({offset})",
+          subtitleAutoSyncSwapped: "Bytte till en undertext som passar filen",
+          subtitleAutoSyncUndo: "\xC5ngra",
+          subtitleAutoSyncNoReferenceInFile: "Autosynk: inget i filen att synka mot",
+          subtitleAutoSyncNoFit: "Autosynk: undertexten passar inte filen",
+          subtitleAutoSyncAmbiguous: "Autosynk: kunde inte avg\xF6ra s\xE4kert \u2014 l\xE4mnad som den var",
+          subtitleAutoSyncChecking: "Autosynk: kontrollerar\u2026",
+          subtitleAutoSyncNoTextTracks: "Autosynk: filen har inga textundertexter att synka mot",
+          subtitleAutoSyncReadingTracks: "Autosynk: l\xE4ser in filens undertexter\u2026",
+          subtitleAutoSyncFetchFailed: "Autosynk: kunde inte h\xE4mta undertexten \u2014 l\xE4mnad som den var",
+          subtitleAutoSyncRefined: "Undertextsynken finjusterad ({offset})",
           subtitleSize: "Textstorlek",
           subtitleSizeDesc: "Anv\xE4nds som standard f\xF6r nya filmer och avsnitt.",
           subtitleVerticalPositionDesc: "Hur h\xF6gt \xF6ver kontrollbaren textningen placeras.",
@@ -8102,6 +9005,8 @@
           ptSourcesHint: "H\xE4r listas de externa k\xE4llor du sj\xE4lv har lagt till.",
           ptNoSources: "Inga egna k\xE4llor tillagda \xE4n. L\xE4gg till ett GitHub-repo ovan f\xF6r att b\xF6rja.",
           ptInstalledBadge: "Installerad",
+          ptInstallFailed: "Kunde inte installera pluginet.",
+          ptSourceReaddZip: "L\xE4gg till ZIP-filen igen f\xF6r att installera",
           ptUpdating: "H\xE4mtar senaste versionen\u2026",
           ptUpdatedTo: "Uppdaterad till {version} \u2014 starta om f\xF6r att aktivera.",
           ptUpToDate: "Redan senaste versionen.",
@@ -8145,6 +9050,8 @@
           libraryServerUnreachable: "Fick ingen uppspelningsadress fr\xE5n {source}. Kontrollera att servern \xE4r ig\xE5ng.",
           libraryRowSuffix: "i ditt bibliotek",
           libraryModeTab: "Bibliotek",
+          libraryModeChip: "Biblioteksl\xE4ge",
+          libraryTabRowsCaption: "Rader per bibliotek:",
           libraryModeTitle: "Biblioteksl\xE4ge",
           libraryModeHint: "N\xE4r ett bibliotek \xE4r startsida filtreras varje rad mot det du \xE4ger. Rader utan indexerat inneh\xE5ll g\xF6ms; siffran visar hur m\xE5nga titlar raden kan visa just nu.",
           libraryUseAsHome: "Anv\xE4nd som startsida",
@@ -8160,6 +9067,30 @@
           localLibraryEmpty: "Inga mappar \xE4nnu.",
           localLibraryScanning: "Indexerar\u2026 {done}",
           localLibraryNotIndexed: "Inte indexerad \xE4nnu",
+          webdavLibraryTitle: "N\xE4tverksmappar (WebDAV)",
+          webdavLibraryHint: "En mapp p\xE5 en WebDAV-server blir ett eget bibliotek med egen menying\xE5ng, precis som en lokal mapp. Filerna matchas mot TMDB via namnet och str\xF6mmas genom appen \u2014 l\xF6senordet stannar p\xE5 den h\xE4r enheten.",
+          webdavLibraryAdd: "L\xE4gg till mapp",
+          webdavLibraryUrl: "Serveradress",
+          webdavLibraryUsername: "Anv\xE4ndarnamn",
+          webdavLibraryPassword: "L\xF6senord",
+          webdavLibraryPasswordKeep: "Of\xF6r\xE4ndrat",
+          webdavLibraryName: "Namn i menyn",
+          webdavLibraryNamePlaceholder: "H\xE4mtas fr\xE5n adressen om det l\xE4mnas tomt",
+          webdavLibraryTest: "Testa",
+          webdavLibraryTestOk: "Anslutningen fungerar",
+          webdavLibrarySave: "Spara och indexera",
+          webdavLibraryCancel: "Avbryt",
+          webdavLibraryEdit: "\xC4ndra",
+          webdavLibraryEmpty: "Inga n\xE4tverksmappar \xE4nnu.",
+          webdavLibraryListing: "Listar mappar\u2026 {done}/{total}",
+          webdavLibraryErrAuth: "Servern godk\xE4nde inte anv\xE4ndarnamnet eller l\xF6senordet.",
+          webdavLibraryErrNotFound: "Mappen finns inte p\xE5 servern.",
+          webdavLibraryErrNetwork: "Kunde inte n\xE5 servern.",
+          webdavLibraryErrNotWebdav: "Adressen svarade, men inte som en WebDAV-mapp.",
+          webdavLibraryErrUrl: "Skriv en hel adress som b\xF6rjar med http:// eller https://, utan anv\xE4ndarnamn eller l\xF6senord i den.",
+          webdavLibraryErrTooLarge: "Mappen \xE4r f\xF6r stor f\xF6r att listas i ett svep. Peka adressen mot en undermapp.",
+          webdavLibraryErrUpstream: "Servern svarade med ett fel. F\xF6rs\xF6k igen om en stund.",
+          webdavLibraryErrLocalOnly: "N\xE4tverksmappar kan bara \xE4ndras p\xE5 enheten som k\xF6r Lumio.",
           libraryRowUnmatched: "Ej identifierade",
           librarySourceNotIndexed: "Inte indexerat \xE4nnu \u2014 bygg indexet i pluginets inst\xE4llningar.",
           libraryModeOff: "Inget bibliotek \xE4r startsida. Sl\xE5 p\xE5 det under bibliotekspluginets inst\xE4llningar.",
@@ -8183,6 +9114,13 @@
           libraryEpisodeNotInLibrary: "Avsnittet finns inte i ditt bibliotek",
           libraryRowNotLoaded: "inte laddad \xE4nnu",
           libraryRowRecent: "Nyligen tillagt i biblioteket",
+          libraryRowMovies: "Filmer i biblioteket",
+          tvLibraryTabRowsLabel: "Biblioteksflik",
+          tvLibraryTabRowsDesc: "Redigera raderna f\xF6r ett bibliotek i menyn i st\xE4llet f\xF6r en sida ovan.",
+          tvLibraryTabRowsNone: "Ingen",
+          libraryRowSeries: "Serier i biblioteket",
+          libraryTabRowsFollowHome: "Biblioteket visar startsidans rader tills du \xE4ndrar dem h\xE4r.",
+          libraryTabRowsUntouched: "Visar de rekommenderade raderna f\xF6r biblioteket. Dina \xE4ndringar tar \xF6ver n\xE4r du redigerar.",
           libraryRowContinue: "Bibliotekets progress i Senast sedda",
           libraryRowUnseen: "Osedda favoriter",
           libraryRowGenre: "Genre",
@@ -8652,7 +9590,360 @@
           pluginYoutubeMissingChannelId: "Kanalens ID saknas.",
           ptNeedsNewerApp: "Uppdateringen kr\xE4ver en nyare version av appen.",
           ptScanSummary: "{updated} uppdaterade, {uptodate} redan aktuella, {failed} misslyckades.",
-          ptScanNoUpdates: "Alla plugins \xE4r p\xE5 senaste versionen."
+          ptScanNoUpdates: "Alla plugins \xE4r p\xE5 senaste versionen.",
+          // Profilsidan
+          profKicker: "Lumio \xB7 Profil",
+          profYourProfile: "Din profil",
+          profSince: "Sedan {date} \xB7 {movies} filmer \xB7 {series} serier",
+          profSwitch: "Byt profil",
+          profViewProfile: "Visa profil",
+          profMyProfile: "Min profil",
+          profTabOverview: "\xD6versikt",
+          profTabGalaxy: "Smakgalaxen",
+          profTabDiary: "Filmdagbok",
+          profTabHunt: "Filmografijakt",
+          profTabWrapped: "Wrapped",
+          profTvHelp: "\u25C0 \u25B2 \u25BC \u25B6 Flytta \xB7 OK V\xE4lj \xB7 Bak\xE5t St\xE4ng",
+          profEmptyFirstStar: "Titta p\xE5 din f\xF6rsta film s\xE5 t\xE4nds f\xF6rsta stj\xE4rnan.",
+          profGalaxyLine: "{stars} stj\xE4rnor, {constellations} stj\xE4rnbilder och {zones} m\xF6rka zoner",
+          profGalaxyDesc: "Varje film du sett \xE4r en stj\xE4rna. Regiss\xF6rer bildar stj\xE4rnbilder.",
+          profViewingN: "G\xE5ng {n}",
+          profSecondViewing: "Andra g\xE5ngen",
+          profDiaryList: "Dagbok",
+          profDiaryBook: "Sj\xE4lvbiografi",
+          profDiaryNote: "Skrivs utifr\xE5n vad du tittar p\xE5 i Lumio.",
+          profDiaryEmpty: "H\xE4r st\xE5r ingenting \xE4n.",
+          profApprox: "Ungef\xE4rligt",
+          profChapters: "Kapitel",
+          profChKicker: "Kapitel {n} \xB7 {year}",
+          profChKickerOngoing: "Kapitel {n} \xB7 {year} (p\xE5g\xE5r)",
+          profChShort: "{n}. {year}",
+          profChTitles: "Du s\xE5g {n} titlar, ungef\xE4r {h} timmar.",
+          profChTop: "{title} var den du \xE5terv\xE4nde till \u2013 {n} g\xE5nger.",
+          profChLate: "{p} % av kv\xE4llarna b\xF6rjade efter tio.",
+          profChDirector: "{name} var \xE5rets regiss\xF6r, med {n} filmer.",
+          profChTitleNight: "\xC5ret med de sena kv\xE4llarna",
+          profChTitleDirector: "\xC5ret med {name}",
+          profChTitleRewatch: "\xC5ret med {title}",
+          profChTitleDefault: "Ett \xE5r i film",
+          profHuntEmpty: "Se tv\xE5 filmer av samma regiss\xF6r s\xE5 b\xF6rjar en jakt.",
+          profHuntKicker: "Filmografi",
+          profHuntSeen: "Du har sett {seen}/{total} {name}",
+          profHuntMissing: "{n} kvar att hitta.",
+          profHuntAllSeen: "Du har sett alla.",
+          profHuntMakeRow: "G\xF6r en rad",
+          profHuntMakeCollection: "G\xF6r en samling",
+          profHuntRowName: "{name} \u2013 kvar att se",
+          profHuntHomeRowMade: 'Raden "{name}" finns nu p\xE5 startsidan.',
+          profHuntRowMade: 'Raden "{name}" \xE4r skapad \u2013 l\xE4gg till den p\xE5 startsidan via Inst\xE4llningar.',
+          profHuntRowFailed: "Raden gick inte att skapa \u2013 du kanske har f\xF6r m\xE5nga rader.",
+          profHuntNew: "+ Jaga en ny regiss\xF6r",
+          profHuntSearchPh: "S\xF6k regiss\xF6r",
+          profHuntDocs: "+ Dokument\xE4rer",
+          profHuntShorts: "+ Kortfilmer",
+          profBadgeFirst: "F\xF6rsta steget",
+          profBadgeHalf: "Halvv\xE4gs",
+          profBadgeAlmost: "N\xE4stan d\xE4r",
+          profBadgeComplete: "Komplett",
+          profBadgeInOrder: "I ordning",
+          profWrappedTeaser: "{h} timmar.\nOch mer.",
+          profWrappedKicker: "Lumio Wrapped {year}",
+          profWrappedPlay: "Spela upp ditt \xE5r \u2192",
+          profMoreAboutYou: "Mer om dig",
+          profClose: "St\xE4ng",
+          profModColor: "F\xE4rg\xE5ret",
+          profModColorLine: "Ditt \xE5r som en remsa av filmf\xE4rger.",
+          profModSlept: "Somnade-listan",
+          profModSleptLine: "Allt du somnade till.",
+          profModCouch: "Soffkompisar",
+          profModCouchLine: "Vem du tittar med, och vad ni \xE4r \xF6verens om.",
+          profModClock: "Tittarklockan",
+          profModClockLine: "N\xE4r i veckan du tittar.",
+          profModCapsule: "Tidskapseln",
+          profModCapsuleLine: "F\xF6rsegla en film till ditt framtida jag.",
+          profModRecords: "Rekordtavlan",
+          profModRecordsLine: "L\xE4ngsta maraton, senaste natten och mer.",
+          profModAbandoned: "\xD6vergivna",
+          profModAbandonedLine: "Filmer du gav upp tidigt.",
+          profModQuiz: "Quizprofilen",
+          profModQuizLine: "Vad du tittar p\xE5 mot vad du kan.",
+          profModBack: "\u2190 Profil",
+          profModColorTitle: "Ditt \xE5r som en enda remsa",
+          profModColorDesc: "Varje strimma \xE4r en films barcode, i den ordning du s\xE5g dem. V\xE4lj en m\xE5nad f\xF6r att se vilka filmer som gav f\xE4rgen.",
+          profModColorNote: "Fr\xE5n dina barcodes",
+          profModSleptTitle: "Filmer du somnade till",
+          profModSleptDesc: "S\xF6mntimern vet exakt var du slocknade. Forts\xE4tt d\xE4rifr\xE5n, eller b\xF6rja om n\xE4r du \xE4r piggare.",
+          profModSleptNote: "Fr\xE5n s\xF6mntimern",
+          profModCouchTitle: "Vem du tittar med",
+          profModCouchDesc: "Smakmatch per profil och f\xF6rslag som passar er b\xE5da, baserat p\xE5 vad ni sett tillsammans och var f\xF6r sig.",
+          profModCouchNote: 'Fr\xE5n "Vem tittar med?"',
+          profModClockTitle: "N\xE4r du tittar",
+          profModClockDesc: "Veckodag mot klockslag f\xF6r allt du startat. V\xE4lj en dag f\xF6r att se dina vanor.",
+          profModClockNote: "Fr\xE5n starttiderna i dagboken",
+          profModCapsuleTitle: "Skicka en film till framtiden",
+          profModCapsuleDesc: "V\xE4lj en film i dag. Lumio f\xF6resl\xE5r den igen om n\xE5gra \xE5r, tillsammans med dagens dagbokssida.",
+          profModCapsuleNote: "\xD6ppnas p\xE5 startsidan",
+          profModRecordsTitle: "Dina personliga rekord",
+          profModRecordsDesc: "L\xE4ngsta maraton, senaste kv\xE4llen och mer. Nya rekord markeras n\xE4r de sl\xE5s.",
+          profModRecordsNote: "Fr\xE5n dagboken",
+          profModAbandonedTitle: "Filmer du gav upp",
+          profModAbandonedDesc: "Allt du l\xE4mnat under 20 %. Ge dem en andra chans eller sl\xE4pp taget f\xF6r gott.",
+          profModAbandonedNote: "Fr\xE5n dagboken",
+          profSleptSummary: "Du somnar oftast p\xE5 {day}, i snitt {m} minuter in.",
+          profSleptTopGenre: "{genre} st\xE5r f\xF6r {n} av {total} tupplurar.",
+          profSleptWhen: "{date} \xB7 somnade {time}",
+          profSleptResume: "Forts\xE4tt {time}",
+          profSleptRestart: "B\xF6rja om",
+          profSleptRemove: "Ta bort",
+          profSleptEmpty: "Listan \xE4r tom. Du har vaknat till allt.",
+          profAbandonedCount: "{n} filmer l\xE4mnade under 20 %.",
+          profAbandonedWhen: "Slutade vid {p} % \xB7 {date}",
+          profAbandonedRetry: "Andra chans",
+          profAbandonedAdded: "I Forts\xE4tt titta",
+          profAbandonedLetGo: "Sl\xE4pp taget",
+          profAbandonedDismissRow: "Ta bort {title} fr\xE5n listan",
+          profAbandonedEmpty: "Inget \xF6vergivet. Du ser klart det du b\xF6rjar p\xE5.",
+          profModQuizTitle: "Vad du kan, mot vad du ser",
+          profModQuizDesc: "Dina resultat i filmquizet per genre, j\xE4mf\xF6rt med hur mycket du faktiskt tittar p\xE5 genren.",
+          profModQuizNote: "Fr\xE5n filmquizet",
+          profPrevNoCapsule: "Ingen kapsel \xE4n",
+          profPrevOpens: "\xD6ppnas",
+          profPrevTogether: "{n} filmer tillsammans",
+          profPrevEmpty: "Inget h\xE4r \xE4n",
+          profHm: "{h} h {m} min",
+          profMin: "{m} min",
+          profRecMarathon: "L\xE4ngsta maraton",
+          profRecLatestNight: "Senaste kv\xE4llen",
+          profRecMostInDay: "Flest filmer p\xE5 en dag",
+          profRecLongestFilm: "L\xE4ngsta film",
+          profRecMostRewatched: "Flest omtittningar",
+          profRecStreak: "L\xE4ngsta svit",
+          profRecStreakValue: "{n} dagar",
+          profDayPl0: "m\xE5ndagar",
+          profDayPl1: "tisdagar",
+          profDayPl2: "onsdagar",
+          profDayPl3: "torsdagar",
+          profDayPl4: "fredagar",
+          profDayPl5: "l\xF6rdagar",
+          profDayPl6: "s\xF6ndagar",
+          profColorMonthCount: "{month}: {n} filmer",
+          profColorMoodRecord: "\xC5rets rekordm\xE5nad",
+          profColorMoodDark: "\xC5rets m\xF6rkaste m\xE5nad",
+          profColorMoodBright: "\xC5rets ljusaste m\xE5nad",
+          profColorUseBg: "Anv\xE4nd som profilbakgrund",
+          profColorRemoveBg: "Ta bort profilbakgrund",
+          profColorBgSet: "Remsan ligger nu bakom din profil.",
+          profColorExport: "Exportera som bild",
+          profColorShareTitle: "F\xE4rg\xE5ret {year}",
+          profColorFilms: "{n} filmer",
+          profColorEmpty: "Inga sedda filmer i \xE5r \xE4n.",
+          profColorNoBarcodeNote: "Gr\xE5 strimmor = filmer utan barcode \xE4n. Spela dem i Lumio s\xE5 fylls f\xE4rgen i.",
+          profShareSaved: "Bilden \xE4r sparad.",
+          profShareFailed: "Bilden gick inte att skapa.",
+          profShareNoLan: "Hittade ingen n\xE4tverksadress f\xF6r telefonen.",
+          profShareScan: "Skanna med telefonen f\xF6r att spara bilden.",
+          profClockTopTime: "Topptimme",
+          profClockFilms: "Filmer",
+          profClockUsual: "Oftast",
+          profClockBigNight: "Veckans stora kv\xE4ll.",
+          profClockWith: "Oftast med {name}.",
+          profClockEmpty: "Starta n\xE5gra filmer s\xE5 fylls klockan i.",
+          profRecNew: "Nytt",
+          profRecMarathonHow: "{n} i rad fr\xE5n {title}, {date}",
+          profRecNightHow: "{title}, {date}",
+          profRecStreakHow: "i rad, till {date}",
+          profRecEmpty: "Rekorden dyker upp n\xE4r du har n\xE5gra kv\xE4llar bakom dig.",
+          profPrevMatch: "smakmatch med {name}",
+          profCouchUsual: "Oftast: {day} {time}",
+          profCouchDisagree: "Oenigast om: {genre}",
+          profCouchTonight: "Kv\xE4llens film f\xF6r er b\xE5da",
+          profCouchReasonBoth: "P\xE5 b\xE5da listorna",
+          profCouchReasonRec: "Liknar {title}",
+          profCouchStart: "Starta en kv\xE4ll ihop",
+          profCouchSolo: "L\xE4gg till en profil till s\xE5 ser du vem du tittar med.",
+          profCouchHint: "V\xE4lj vem som tittar med n\xE4r du startar en film, s\xE5 fylls det h\xE4r i.",
+          profCouchNoPicks: "Inga gemensamma f\xF6rslag \xE4n.",
+          profQuizLegendWatch: "Andel av ditt tittande",
+          profQuizLegendRight: "R\xE4tt svar i quizet",
+          profQuizStart: "Quiz: {genre}",
+          profQuizSummary: "Du kan mest om {best}, fast du tittar mest p\xE5 {watched}.",
+          profQuizSummarySame: "Du kan {best} b\xE4st \u2014 och tittar mest p\xE5 det.",
+          profQuizWeak: "{weak} \xE4r din svaga punkt.",
+          profQuizEmpty: "Spela en runda filmquiz s\xE5 dyker resultaten upp h\xE4r.",
+          profCapStep1: "1 \xB7 V\xE4lj en film",
+          profCapStep2: "2 \xB7 N\xE4r ska den \xF6ppnas?",
+          profCapYears: "{n} \xE5r",
+          profCapLine: "{title} \xF6ppnas {date}.",
+          profCapSeal: "F\xF6rslut kapseln",
+          profCapSealing: "F\xF6rsluter\u2026",
+          profCapSealed: "F\xF6rseglad. Vi ses {date}.",
+          profCapAnother: "F\xF6rsegla en till",
+          profCapYours: "Dina kapslar",
+          profCapOpens: "\xD6ppnas {date}",
+          profCapOpened: "\xD6ppnad {date}",
+          profCapNone: "Inga kapslar \xE4n.",
+          profCapNoFilms: "Se klart en film f\xF6rst \u2014 sedan kan du skicka den fram\xE5t.",
+          profCapDueKicker: "Tidskapseln \xB7 \xF6ppnad i dag",
+          profCapDueLine: "Du f\xF6rseglade {title} den {date}.",
+          profCapOpen: "\xD6ppna",
+          profDiaryAsleep: "Somnade {time} \xB7 {p} %",
+          profGxDirectors: "Regiss\xF6rer",
+          profGxGenres: "Genrer",
+          profGxWhole: "\u2190 Hela galaxen",
+          profGxExplore: "Utforska",
+          profGxPickTitle: "V\xE4lj en stj\xE4rna eller en m\xF6rk zon",
+          profGxPickBody: "Stj\xE4rnbilder \xE4r regiss\xF6rer du f\xF6ljt l\xE4nge. Streckade cirklar \xE4r genrer du n\xE4stan aldrig tittat p\xE5.",
+          profGxStar: "Stj\xE4rna",
+          profGxSeenTimes: "Sedd {n} g\xE5nger \xB7 senast {date}",
+          profGxSeenOnce: "Sedd en g\xE5ng \xB7 {date}",
+          profGxNextStar: "N\xE4sta stj\xE4rna \u2192",
+          profGxDetails: "Detaljer",
+          profGxHunt: "Filmografijakt",
+          profGxDarkZone: "M\xF6rk zon",
+          profGxZoneBetween: "{n} sedda. Ligger mellan {a} och {b}.",
+          profGxZoneNear: "{n} sedda. Ligger intill {a}.",
+          profGxZoneEdge: "{n} sedda. Ett outforskat h\xF6rn.",
+          profGxOkHint: "p\xE5 zonen f\xF6r att flyga dit",
+          profGxFly: "Flyg dit",
+          profGxLightFirst: "T\xE4nd de f\xF6rsta stj\xE4rnorna",
+          profGxLoading: "Letar filmer\u2026",
+          profGxNoSuggestions: "Inga f\xF6rslag just nu. F\xF6rs\xF6k igen senare.",
+          profGxPlay: "Spela",
+          profGxConstellations: "Stj\xE4rnbilder",
+          profGxZones: "M\xF6rka zoner",
+          settingsPageProfilePage: "Profilsida",
+          settingsPagePairedPhones: "Kopplade telefoner",
+          couchEyebrow: "SOFFL\xC4GE",
+          couchTitle: "Telefoner som styr Lumio",
+          couchHint: "Telefonen blir fj\xE4rrkontroll, visar info om det som spelas och skickar betyg till profilens Trakt. Bara p\xE5 hemman\xE4tet.",
+          couchPairNew: "Koppla ny telefon",
+          couchColPhone: "TELEFON",
+          couchColProfile: "PROFIL",
+          couchColLastSeen: "SENAST ANSLUTEN",
+          couchBadgePwa: "PWA",
+          couchBadgeAndroid: "ANDROID-APP",
+          couchSubPwa: "iPhone \xB7 startas fr\xE5n hemsk\xE4rmen",
+          couchSubAndroid: "Lumio-appen f\xF6r Android \xB7 K\xE4nn basen",
+          couchRemove: "Ta bort",
+          couchCancel: "Avbryt",
+          couchRemoveConfirm: "Ta bort {name}? Telefonen slutar fungera direkt och m\xE5ste kopplas igen med en ny kod.",
+          couchFootnote: "Profilen styr vems Trakt-konto betyg och historik hamnar p\xE5. K\xE4nn basen finns bara f\xF6r telefoner med Lumio-appen f\xF6r Android.",
+          couchHapticsTitle: "K\xE4nn basen",
+          couchHapticsHint: "Telefonen vibrerar i takt med filmens bassm\xE4llar. Flyttad hit fr\xE5n Uppspelning.",
+          couchHapticsSensHint: "Hur svaga bassm\xE4llar som r\xE4knas.",
+          couchHapticsStrength: "Styrka",
+          couchHapticsSync: "F\xF6re / efter",
+          couchHapticsSyncHint: "Flytta vibrationen om den kommer f\xF6r tidigt eller sent.",
+          couchHapticsLegacy: "Koppla om med Soffl\xE4ge f\xF6r att styra K\xE4nn basen h\xE4r",
+          couchHapticsLiveHint: "Styrka och f\xF6re/efter g\xE4ller n\xE4r Soffl\xE4ge \xE4r \xF6ppet p\xE5 telefonen.",
+          couchEmptyTitle: "Inga telefoner kopplade \xE4n",
+          couchDialogInstr: "**iPhone:** skanna med kameran. **Android:** \xF6ppna Lumio-appen och ange koden.",
+          couchWaiting: "V\xE4ntar p\xE5 telefonen \u2026",
+          couchClosesIn: "St\xE4ngs om {time}",
+          couchNewCode: "Ny kod",
+          couchPaired: "{name} \xE4r kopplad",
+          couchPairedSub: "Profil {profile} \xB7 st\xE4ngs av sig sj\xE4lv",
+          couchExpiredTitle: "Koden har g\xE5tt ut",
+          couchExpiredBody: "Kodf\xF6nstret \xE4r bara \xF6ppet i tv\xE5 minuter, s\xE5 ingen annan p\xE5 n\xE4tet kan koppla sig. Ta fram en ny kod och f\xF6rs\xF6k igen.",
+          couchNewBadge: "Ny",
+          couchPortError: "Port 3012 \xE4r upptagen: {error}",
+          couchBundleMissing: "Telefonsidan saknas i den h\xE4r appversionen.",
+          couchTvPairHint: "Visar en kod och en QR-kod i tv\xE5 minuter",
+          couchTvEyebrow: "TELEFONER",
+          couchTvSubAndroid: "Android-app \xB7 Profil {profile}",
+          couchTvSubPwa: "iPhone \xB7 Profil {profile}",
+          couchTvNoProfile: "ingen profil",
+          couchTvDetailSub: "{kind} \xB7 Senast ansluten: {when}",
+          couchTvKindAndroid: "Android-app",
+          couchTvKindPwa: "iPhone",
+          couchTvCodeLabel: "KOD",
+          couchTvCodeInstr: "iPhone: skanna QR-koden. Android: ange koden i appen.",
+          couchTvWaiting: "V\xE4ntar p\xE5 telefonen",
+          couchTvClosesIn: "St\xE4ngs om {time}",
+          couchTvClose: "St\xE4ng",
+          couchTvTrakt: "Trakt: {user}",
+          couchTvNoTrakt: "Ingen Trakt",
+          couchTvRemovePhone: "Ta bort telefonen",
+          couchTvRemoveTitle: "Ta bort {name}?",
+          couchTvRemoveBody: "Telefonen slutar fungera direkt och m\xE5ste kopplas igen med en ny kod. Betyg som redan skickats till Trakt finns kvar.",
+          couchTvEmptyHint: "Inga telefoner kopplade \xE4n",
+          ppWeatherGroup: "V\xE4der i dagboken",
+          ppWeatherToggle: "Spara v\xE4dret",
+          ppWeatherToggleDesc: "N\xE4r en film slutar h\xE4mtar Lumio v\xE4dret f\xF6r din ort en g\xE5ng (Open-Meteo, inget konto). Av: inga uppslag alls.",
+          ppWeatherPlace: "Ort",
+          ppWeatherNoPlace: "Ingen ort vald \xE4n.",
+          ppWeatherSearchPh: "t.ex. G\xF6teborg",
+          ppWeatherSearch: "S\xF6k",
+          ppWeatherSearching: "S\xF6ker\u2026",
+          ppWeatherNoResults: "Ingen ort hittades.",
+          ppWeatherFailed: "S\xF6kningen misslyckades. Kontrollera anslutningen och f\xF6rs\xF6k igen.",
+          ppWeatherCredit: "V\xE4derdata fr\xE5n Open-Meteo.com (CC BY 4.0).",
+          profWrKicker: "Lumio Wrapped \xB7 {year}",
+          profWrSoFar: "hittills i \xE5r",
+          profWrPrev: "F\xF6reg\xE5ende",
+          profWrNext: "N\xE4sta",
+          profWrNotEnough: "Wrapped beh\xF6ver minst 10 sessioner under {year}. Forts\xE4tt titta!",
+          profWrIntroTitle: "Ditt \xE5r\ni film.",
+          profWrIntroBody: "{n} stj\xE4rnor senare. Tryck f\xF6r att b\xF6rja.",
+          profWrIntroBodyTv: "{n} stj\xE4rnor senare. Tryck \u25B6 f\xF6r att b\xF6rja.",
+          profWrGuessKicker: "Gissa f\xF6rst",
+          profWrGuessQ: "Vilken genre tittade du mest p\xE5 i \xE5r?",
+          profWrGuessRight: "Helt r\xE4tt. {genre}, med {h} timmar.",
+          profWrGuessWrong: "N\xE4ra. Det blev {genre}, med {h} timmar.",
+          profWrNoGenres: "Inte tillr\xE4ckligt med genredata \xE4n.",
+          profWrHoursKicker: "Du tittade i",
+          profWrHoursUnit: "timmar",
+          profWrDays: "= {n} dygn i soffan",
+          profWrInterstellar: "= {n} Interstellar i rad",
+          profWrEpisodes: "= {n} avsnitt av en halvtimmesserie",
+          profWrGenreKicker: "Genretopplistan",
+          profWrGenreWon: "{genre} vann.",
+          profWrHoursShort: "{h} tim",
+          profWrGoldenKicker: "Gyllene timmen",
+          profWrGoldenBody: "Klockslaget d\xE5 du oftast tryckte p\xE5 play.",
+          profWrStarsKicker: "Dina stj\xE4rnor",
+          profWrStarsTitle: "Sk\xE5despelarna du s\xE5g mest.",
+          profWrStarsNone: "Inte tillr\xE4ckligt med rollistor \xE4n.",
+          profWrStarsFilms: "{n} filmer",
+          profWrRewatchKicker: "Mest omsedda",
+          profWrRewatchNone: "Inga omtittningar i \xE5r \u2014 alltid n\xE5got nytt.",
+          profWrSleepTitle: "{n} g\xE5nger somnade du.",
+          profWrSleepNone: "Du h\xF6ll dig vaken hela \xE5ret.",
+          profWrBuddyTitle: "Du och {name} s\xE5g {n} filmer ihop.",
+          profWrBuddyNone: "Mest du och sk\xE4rmen i \xE5r.",
+          profWrPersKicker: "Din filmpersonlighet",
+          profWrTraitNight: "Nattuggla",
+          profWrTraitNightValue: "startar {time}",
+          profWrTraitGenre: "Genretrogen",
+          profWrTraitGenreValue: "{p} % {genre}",
+          profWrTraitRewatch: "Omtittare",
+          profWrTraitRewatchValue: "{n} omtittningar",
+          profWrTraitNap: "Somnar",
+          profWrTraitNapValue: "vid {p} %",
+          profWrShareTitle: "Dela ditt \xE5r.",
+          profWrShare: "Dela",
+          profWrReplay: "Spela igen",
+          profWrCardHours: "totalt",
+          profWrCardGenre: "toppgenre",
+          profWrCardTitle: "mest spelad",
+          profWrCardNaps: "tupplurar",
+          profWrBNight: "Nattugglan",
+          profWrBRewatch: "Omtittaren",
+          profWrBNap: "Tupplursm\xE4staren",
+          profWrBMarathon: "Maratonl\xF6paren",
+          profWrBExplorer: "Uppt\xE4ckaren",
+          profWrAScifi: "fr\xE5n rymden",
+          profWrADrama: "med hj\xE4rtat utanp\xE5",
+          profWrAHorror: "fr\xE5n m\xF6rkret",
+          profWrAComedy: "som skrattar f\xF6rst",
+          profWrAAnimation: "med tecknad sj\xE4l",
+          profWrADocumentary: "som vill veta",
+          profWrAThriller: "p\xE5 helsp\xE4nn",
+          profWrAAction: "i full fart",
+          profWrARomance: "med rosa glas\xF6gon",
+          profWrACrime: "fr\xE5n undre v\xE4rlden",
+          profWrAFantasy: "fr\xE5n sagolandet",
+          profWrAOther: "utan karta"
         }
       };
       detachedLangContextValue = {
@@ -8850,13 +10141,22 @@
     return readJson(await fetch("/api/library/status", { cache: "no-store" }));
   }
   async function postLibraryBatch(source, batch) {
-    return readJson(
-      await fetch("/api/library/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] })
-      })
-    );
+    const body = JSON.stringify({ source, upsert: batch.upsert ?? [], remove: batch.remove ?? [] });
+    for (let attempt = 0; ; attempt += 1) {
+      let response;
+      try {
+        response = await fetch("/api/library/batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body
+        });
+      } catch (err) {
+        if (attempt >= BATCH_RETRY_DELAYS_MS.length) throw err;
+        await new Promise((resolve) => setTimeout(resolve, BATCH_RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      return readJson(response);
+    }
   }
   async function fetchLibraryKeys(sourceId) {
     const params = sourceId ? `?sourceId=${encodeURIComponent(sourceId)}` : "";
@@ -8902,24 +10202,26 @@
     const payload = await readJson(response);
     return payload.item;
   }
+  var BATCH_RETRY_DELAYS_MS;
   var init_client = __esm({
     "lib/library/client.ts"() {
       "use client";
       init_ids();
       init_mode();
+      BATCH_RETRY_DELAYS_MS = [1e3, 3e3];
     }
   });
 
   // lib/tv-scene.ts
   function tvSceneBoxScale(element) {
-    const read9 = (raw) => {
+    const read11 = (raw) => {
       const value = parseFloat(raw);
       return Number.isFinite(value) && value > 0 ? value : null;
     };
-    const inline = read9(element.style.getPropertyValue("--tv-scene-box-scale"));
+    const inline = read11(element.style.getPropertyValue("--tv-scene-box-scale"));
     if (inline !== null) return inline;
     if (typeof getComputedStyle === "undefined") return 1;
-    return read9(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
+    return read11(getComputedStyle(element).getPropertyValue("--tv-scene-box-scale")) ?? 1;
   }
   var TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_NARROW_PX, TV_SCENE_PHONE_ATTR;
   var init_tv_scene = __esm({
@@ -8933,29 +10235,260 @@
     }
   });
 
+  // lib/local-episode-files.ts
+  function parseSeasonEpisode(filename) {
+    for (const pattern of SEASON_EPISODE_PATTERNS) {
+      const match = filename.match(pattern);
+      if (!match) continue;
+      const season = Number(match[1]);
+      const episode = Number(match[2]);
+      if (!Number.isFinite(season) || !Number.isFinite(episode)) continue;
+      if (season < 0 || episode < 1) continue;
+      return { season, episode };
+    }
+    return null;
+  }
+  var SEASON_EPISODE_PATTERNS;
+  var init_local_episode_files = __esm({
+    "lib/local-episode-files.ts"() {
+      SEASON_EPISODE_PATTERNS = [
+        // Inget avslutande \b: dubbelavsnitt heter `S01E02E03`, och en gräns där
+        // kräver en icke-bokstav efter numret — så hela filen föll bort.
+        /\bs\s*(\d{1,2})\s*[._\- ]?\s*e\s*(\d{1,3})/i,
+        // Två siffror i avsnittsledet med flit: `4x4` i ett filnamn är en bil, inte
+        // säsong 4 avsnitt 4. `1x02` är ett avsnitt.
+        /\b(\d{1,2})\s*x\s*(\d{2,3})\b/i,
+        /\bseason\s*(\d{1,2})\s*[._\- ]*episode\s*(\d{1,3})\b/i
+      ];
+    }
+  });
+
+  // lib/local-files-storage.ts
+  var init_local_files_storage = __esm({
+    "lib/local-files-storage.ts"() {
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/library/local-folders.ts
+  var init_local_folders = __esm({
+    "lib/library/local-folders.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      init_local_files_storage();
+    }
+  });
+
+  // lib/library/local-folder-provider.ts
+  function parseLocalName(filename, parentFolder) {
+    const stem = filename.replace(/\.[a-z0-9]{2,4}$/i, "");
+    const se = parseSeasonEpisode(stem);
+    let work = stem.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
+    const quality = work.match(QUALITY_TOKENS);
+    const qualityTokens = Array.from(work.matchAll(new RegExp(QUALITY_TOKENS.source, "gi"))).map((m) => m[0].toUpperCase());
+    const cuts = [];
+    const seMatch = work.match(/\bs\s*\d{1,2}\s*[._\- ]?\s*e\s*\d{1,3}|\b\d{1,2}x\d{2,3}\b|\bseason\s*\d{1,2}/i);
+    if (seMatch?.index != null) cuts.push(seMatch.index);
+    let year = null;
+    for (const yearMatch of work.matchAll(/(?:^|[\s(\[])((?:19|20)\d{2})(?=[\s)\]]|$)/g)) {
+      const at = yearMatch.index ?? 0;
+      const digitsAt = at + yearMatch[0].indexOf(yearMatch[1]);
+      if (digitsAt === 0) continue;
+      year = Number.parseInt(yearMatch[1], 10);
+      cuts.push(at);
+      break;
+    }
+    if (quality?.index != null) cuts.push(quality.index);
+    if (cuts.length > 0) work = work.slice(0, Math.min(...cuts));
+    let title = work.replace(/[\s\-–(\[]+$/g, "").trim();
+    if (se && (title.length === 0 || /^(season|säsong|s)\s*\d+/i.test(title)) && parentFolder) {
+      const parsedFolder = parseLocalName(`${parentFolder}.mkv`);
+      title = parsedFolder.title;
+      year = year ?? parsedFolder.year;
+    }
+    return {
+      title: title || stem,
+      year,
+      season: se?.season ?? null,
+      episode: se?.episode ?? null,
+      qualityLabel: qualityTokens.length > 0 ? [...new Set(qualityTokens)].slice(0, 3).join(" \xB7 ") : (filename.split(".").pop() ?? "Video").toUpperCase()
+    };
+  }
+  function normalizeKey(title) {
+    return title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  function readMatchCache() {
+    try {
+      const raw = getScopedStorageItem(MATCH_CACHE_KEY);
+      if (raw) return JSON.parse(raw);
+      const legacy = getScopedStorageItem(LEGACY_MATCH_CACHE_KEY);
+      if (!legacy) return {};
+      const hits = {};
+      for (const [key, entry] of Object.entries(JSON.parse(legacy))) {
+        if (entry?.hit) hits[key] = entry;
+      }
+      return hits;
+    } catch {
+      return {};
+    }
+  }
+  function writeMatchCache(cache8) {
+    try {
+      setScopedStorageItem(MATCH_CACHE_KEY, JSON.stringify(cache8));
+    } catch {
+    }
+  }
+  async function searchTmdb(title, year, kind) {
+    const params = new URLSearchParams({ query: title });
+    if (year) params.set("year", String(year));
+    const response = await fetch(`/api/local-files/search?${params}`);
+    if (!response.ok) return void 0;
+    const data = await response.json();
+    const results = (data.results ?? []).filter((hit) => hit.type === kind);
+    if (results.length === 0 && year) {
+      const retry = await fetch(`/api/local-files/search?${new URLSearchParams({ query: title })}`);
+      if (!retry.ok) return void 0;
+      const retryData = await retry.json();
+      return (retryData.results ?? []).find((hit) => hit.type === kind) ?? null;
+    }
+    return results[0] ?? null;
+  }
+  async function matchCached(title, year, kind, cache8) {
+    const key = `${kind}:${normalizeKey(title)}:${year ?? ""}`;
+    const cached = cache8[key];
+    if (cached && (cached.hit || Date.now() - cached.at < MISS_TTL_MS)) return cached.hit;
+    const hit = await searchTmdb(title, year, kind).catch(() => void 0);
+    if (hit === void 0) return null;
+    cache8[key] = { hit, at: Date.now() };
+    return hit;
+  }
+  async function matchTitlesByName(wanted, signal) {
+    const cache8 = readMatchCache();
+    const out = new Array(wanted.length).fill(null);
+    for (let index = 0; index < wanted.length; index += 2) {
+      if (signal?.aborted) break;
+      await Promise.all(wanted.slice(index, index + 2).map(async (entry, offset) => {
+        const parsed = parseLocalName(`${entry.title}.mkv`);
+        const looksLikeEpisode = parsed.season != null && parsed.episode != null;
+        if (looksLikeEpisode && entry.kind === "movie") return;
+        out[index + offset] = await matchCached(parsed.title || entry.title, entry.year ?? parsed.year, entry.kind, cache8);
+      }));
+    }
+    writeMatchCache(cache8);
+    return out;
+  }
+  var QUALITY_TOKENS, MATCH_CACHE_KEY, LEGACY_MATCH_CACHE_KEY, MISS_TTL_MS;
+  var init_local_folder_provider = __esm({
+    "lib/library/local-folder-provider.ts"() {
+      "use strict";
+      "use client";
+      init_local_episode_files();
+      init_profile_storage_shim();
+      init_local_folders();
+      QUALITY_TOKENS = /\b(2160p|1080p|720p|480p|4k|uhd|hdr|dv|web[- ]?dl|webrip|bluray|blu-ray|bdrip|brrip|hdtv|dvdrip|remux|x264|x265|h\.?264|h\.?265|hevc|avc|aac|ac3|eac3|dts|atmos|truehd|10bit|proper|repack|multi|nordic|swesub|amzn|nf|dsnp|hmax)\b/i;
+      MATCH_CACHE_KEY = "local_library_match_cache_v2";
+      LEGACY_MATCH_CACHE_KEY = "local_library_match_cache_v1";
+      MISS_TTL_MS = 7 * 24 * 60 * 6e4;
+    }
+  });
+
+  // lib/library/name-match.ts
+  async function fillMissingIds(titles, signal, match = matchTitlesByName) {
+    const missing = titles.filter((title) => !title.tmdbId && !title.imdbId);
+    if (missing.length === 0) return titles;
+    const hits = await match(
+      missing.map((title) => ({ title: title.title, year: title.year ?? null, kind: title.kind === "series" ? "tv" : "movie" })),
+      signal
+    );
+    const byKey = /* @__PURE__ */ new Map();
+    missing.forEach((title, index) => {
+      const hit = hits[index];
+      if (hit) byKey.set(title.key, hit);
+    });
+    if (byKey.size === 0) return titles;
+    return titles.map((title) => {
+      const hit = byKey.get(title.key);
+      if (!hit) return title;
+      return {
+        ...title,
+        tmdbId: hit.tmdbId,
+        posterUrl: hit.posterUrl ?? title.posterUrl ?? null,
+        backdropUrl: hit.backdropUrl ?? title.backdropUrl ?? null,
+        overview: title.overview || hit.overview || null,
+        year: title.year ?? hit.year ?? null
+      };
+    });
+  }
+  var init_name_match = __esm({
+    "lib/library/name-match.ts"() {
+      "use strict";
+      "use client";
+      init_local_folder_provider();
+    }
+  });
+
   // lib/library/scan.ts
   function isLibraryScanRunning() {
     return running;
   }
+  function getActiveLibraryScan() {
+    return active;
+  }
+  function onLibraryScanChanged(listener) {
+    scanListeners.add(listener);
+    return () => {
+      scanListeners.delete(listener);
+    };
+  }
+  function setActive(next) {
+    active = next;
+    for (const listener of scanListeners) listener(next);
+  }
+  function cancelLibraryScan() {
+    if (!activeController) return false;
+    activeController.abort();
+    return true;
+  }
   async function runLibraryScan(provider, source, options) {
     if (running) throw new Error("library scan already running");
     running = true;
+    const controller = new AbortController();
+    activeController = controller;
+    const outer = options.signal;
+    const forward = () => controller.abort();
+    if (outer?.aborted) controller.abort();
+    else outer?.addEventListener("abort", forward, { once: true });
+    setActive({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
+    const onProgress = options.onProgress;
     try {
-      return await runLibraryScanInner(provider, source, options);
+      return await runLibraryScanInner(provider, source, {
+        ...options,
+        signal: controller.signal,
+        onProgress: (progress2) => {
+          setActive({ sourceId: source.id, progress: progress2 });
+          onProgress?.(progress2);
+        }
+      });
     } finally {
+      outer?.removeEventListener("abort", forward);
+      activeController = null;
       running = false;
+      setActive(null);
     }
   }
   async function runLibraryScanInner(provider, source, options) {
-    const io = options.io ?? { postBatch: postLibraryBatch, fetchKeys: fetchLibraryKeys };
+    const io = options.io ?? { postBatch: postLibraryBatch, fetchKeys: fetchLibraryKeys, fillIds: fillMissingIds };
+    const fillIds = io.fillIds ?? (async (titles2) => titles2);
     const startedAt = Date.now();
     const sourceRecord = { id: source.id, provider: provider.id, name: source.name, enabled: true };
     const seen = /* @__PURE__ */ new Set();
     let titles = 0;
     let unmatched = 0;
     const report = (progress2) => options.onProgress?.(progress2);
-    const emit2 = async (batch) => {
+    const emit3 = async (incoming) => {
       if (options.signal?.aborted) return;
+      const batch = incoming.upsert?.length ? { ...incoming, upsert: await fillIds(incoming.upsert, options.signal) } : incoming;
       for (const title of batch.upsert ?? []) {
         seen.add(title.key);
         titles += 1;
@@ -8966,7 +10499,7 @@
     };
     report({ phase: "listing", done: 0 });
     const before = options.mode === "full" ? new Set(await io.fetchKeys(source.id)) : /* @__PURE__ */ new Set();
-    const result = options.mode === "full" ? await provider.scanAll(source, emit2, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit2, report, options.signal ?? new AbortController().signal);
+    const result = options.mode === "full" ? await provider.scanAll(source, emit3, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit3, report, options.signal ?? new AbortController().signal);
     let removed = 0;
     if (options.mode === "full" && !options.signal?.aborted) {
       report({ phase: "pruning", done: titles });
@@ -8989,13 +10522,17 @@
     report({ phase: "done", done: titles, total: titles });
     return { titles, removed, unmatched, cursor: result.cursor ?? null, durationMs: Date.now() - startedAt };
   }
-  var running;
+  var running, active, scanListeners, activeController;
   var init_scan = __esm({
     "lib/library/scan.ts"() {
       "use client";
       init_client();
       init_ids();
+      init_name_match();
       running = false;
+      active = null;
+      scanListeners = /* @__PURE__ */ new Set();
+      activeController = null;
     }
   });
 
@@ -9265,6 +10802,11 @@
     const raw = Number(getScopedStorageItem(TV_MENU_SCALE_KEY));
     return TV_MENU_SCALE_OPTIONS.includes(raw) ? raw : 100;
   }
+  function getTvButtonScale() {
+    if (typeof window === "undefined") return 100;
+    const raw = Number(getScopedStorageItem(TV_BUTTON_SCALE_KEY));
+    return TV_BUTTON_SCALE_OPTIONS.includes(raw) ? raw : 100;
+  }
   function getCornerScale() {
     if (typeof window === "undefined") return 100;
     const raw = Number(getScopedStorageItem(CORNER_SCALE_KEY));
@@ -9347,6 +10889,14 @@
     const tvMenuScale = getTvMenuScale();
     if (tvMenuScale === 100) root.style.removeProperty("--tv-menu-scale");
     else root.style.setProperty("--tv-menu-scale", String(tvMenuScale / 100));
+    const tvButtonScale = getTvButtonScale();
+    if (tvButtonScale === 100) {
+      root.style.removeProperty("--tv-button-scale");
+      delete root.dataset.tvButtonScale;
+    } else {
+      root.style.setProperty("--tv-button-scale", String(tvButtonScale / 100));
+      root.dataset.tvButtonScale = String(tvButtonScale);
+    }
     const cornerScale = getCornerScale();
     if (cornerScale === 100) root.style.removeProperty("--corner-scale");
     else root.style.setProperty("--corner-scale", String(cornerScale / 100));
@@ -9357,8 +10907,8 @@
     if (getHeroActionsExpanded()) root.dataset.heroActionLabels = "open";
     else delete root.dataset.heroActionLabels;
     if (getAppTheme() === "custom") {
-      const active2 = getCustomThemes().find((theme) => theme.id === getActiveCustomThemeId());
-      applyCustomThemeVars(active2 ?? null);
+      const active3 = getCustomThemes().find((theme) => theme.id === getActiveCustomThemeId());
+      applyCustomThemeVars(active3 ?? null);
     } else {
       applyCustomThemeVars(null);
     }
@@ -9385,7 +10935,7 @@
       root.style.setProperty("--accent-600", a600);
     }
   }
-  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT2, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
+  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT2, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, TV_BUTTON_SCALE_KEY, TV_BUTTON_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
   var init_appearance_settings = __esm({
     "lib/appearance-settings.ts"() {
       "use strict";
@@ -9408,6 +10958,8 @@
       TV_FONT_SCALE_OPTIONS = [90, 100, 110, 120, 135];
       TV_MENU_SCALE_KEY = "appearance_tv_menu_scale";
       TV_MENU_SCALE_OPTIONS = [100, 115, 130, 150];
+      TV_BUTTON_SCALE_KEY = "appearance_tv_button_scale";
+      TV_BUTTON_SCALE_OPTIONS = [80, 90, 100, 115, 130, 150];
       CORNER_SCALE_KEY = "appearance_corner_scale";
       CORNER_SCALE_OPTIONS = [100, 115, 130, 150];
       HERO_ACTIONS_KEY = "appearance_hero_actions_expanded";
@@ -9626,9 +11178,9 @@
   function tryEnableHomeOverridePlugin(pluginId) {
     const normalized = pluginId.trim();
     if (!normalized) return { ok: true };
-    const current = getHomeOverridePluginId();
-    if (current && current !== normalized) {
-      return { ok: false, activePluginId: current };
+    const current2 = getHomeOverridePluginId();
+    if (current2 && current2 !== normalized) {
+      return { ok: false, activePluginId: current2 };
     }
     setHomeOverridePluginId(normalized);
     return { ok: true };
@@ -10129,8 +11681,8 @@
     const title = entry.title ?? null;
     const year = normalizeYear(entry.year);
     if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) return;
-    const current = readEntries();
-    const next = current.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
+    const current2 = readEntries();
+    const next = current2.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
     const nextEntry = {
       tmdbId,
       imdbId,
@@ -10151,7 +11703,7 @@
   }
   function applyRemoteWatchedMovies(remote, options) {
     if (typeof window === "undefined") return { kept: 0, removed: 0 };
-    const current = readEntries();
+    const current2 = readEntries();
     const next = [];
     for (const movie of remote) {
       const tmdbId = normalizeId(movie.tmdbId);
@@ -10160,7 +11712,7 @@
       const year = normalizeYear(movie.year);
       if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) continue;
       if (next.some((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }))) continue;
-      const existing = current.find((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }));
+      const existing = current2.find((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }));
       next.push({
         tmdbId,
         imdbId,
@@ -10171,7 +11723,7 @@
       });
     }
     let removed = 0;
-    for (const entry of current) {
+    for (const entry of current2) {
       if (next.some((kept) => sameMovie(kept, entry))) continue;
       if (options?.keepLocal?.(entry)) {
         next.push(entry);
@@ -10387,8 +11939,8 @@
       username: nextAuth.username ?? null,
       name: nextAuth.name ?? null
     };
-    const current = getTraktAuth();
-    if (current?.accessToken === merged.accessToken) return merged;
+    const current2 = getTraktAuth();
+    if (current2?.accessToken === merged.accessToken) return merged;
     setTraktAuth(merged);
     return merged;
   }
@@ -10806,35 +12358,36 @@
   }
   function isAutoUnfollowFinishedSeriesEnabled() {
     if (typeof window === "undefined") return false;
-    return getScopedStorageItem(KEY_UNFOLLOW_SERIES) === "true";
+    return getScopedStorageItem(KEY_UNFOLLOW_SERIES) !== "false";
   }
   function setAutoUnfollowFinishedSeriesEnabled(enabled) {
     setScopedStorageItem(KEY_UNFOLLOW_SERIES, enabled ? "true" : "false");
     if (enabled) void sweepFinishedSeriesFromWatchlist();
   }
-  async function hasWatchedFinalSeason(tmdbId) {
+  function isSeriesFinishedForUser(tmdbId, info, watched) {
+    if (!info.status || !ENDED_STATUSES.has(info.status)) return false;
+    const last2 = info.last_episode_to_air;
+    if (!last2 || last2.season_number <= 0 || last2.episode_number <= 0) return false;
+    return watched.has(`${tmdbId}-S${last2.season_number}E${last2.episode_number}`);
+  }
+  async function hasFinishedEndedSeries(tmdbId) {
     try {
       const response = await fetch(`/api/tv-info?tmdbId=${tmdbId}`);
       if (!response.ok) return false;
       const info = await response.json();
-      const aired = (info.seasons ?? []).filter((s) => s.season_number > 0 && s.episode_count > 0);
-      if (aired.length === 0) return false;
-      const final = aired.reduce((a, b) => b.season_number > a.season_number ? b : a);
-      const watched = getWatchedForSeries(tmdbId);
-      for (let episode = 1; episode <= final.episode_count; episode += 1) {
-        if (!watched.has(`${tmdbId}-S${final.season_number}E${episode}`)) return false;
-      }
-      return true;
+      return isSeriesFinishedForUser(tmdbId, info, getWatchedForSeries(tmdbId));
     } catch {
       return false;
     }
   }
-  async function sweepFinishedSeriesFromWatchlist() {
+  async function sweepFinishedSeriesFromWatchlist(onlyIds) {
     if (typeof window === "undefined") return 0;
     if (!isAutoUnfollowFinishedSeriesEnabled()) return 0;
     const removed = [];
     for (const entry of getWatchlist()) {
-      if (await hasWatchedFinalSeason(entry.tmdbId)) {
+      if (onlyIds && !onlyIds.has(entry.tmdbId)) continue;
+      if (getWatchedForSeries(entry.tmdbId).size === 0) continue;
+      if (await hasFinishedEndedSeries(entry.tmdbId)) {
         removeFromWatchlist(entry.tmdbId);
         removed.push(entry.title);
       }
@@ -10883,7 +12436,7 @@
     }
     return removed.length;
   }
-  var KEY_ENABLED2, KEY_UNFOLLOW_SERIES;
+  var KEY_ENABLED2, KEY_UNFOLLOW_SERIES, ENDED_STATUSES, FULL_SWEEP_INTERVAL_MS;
   var init_watchlist_auto_remove = __esm({
     "lib/watchlist-auto-remove.ts"() {
       "use strict";
@@ -10894,6 +12447,8 @@
       init_profile_storage_shim();
       KEY_ENABLED2 = "auto_remove_watched_movies";
       KEY_UNFOLLOW_SERIES = "auto_unfollow_finished_series";
+      ENDED_STATUSES = /* @__PURE__ */ new Set(["Ended", "Canceled"]);
+      FULL_SWEEP_INTERVAL_MS = 24 * 60 * 60 * 1e3;
     }
   });
 
@@ -10948,11 +12503,11 @@
     return new Promise((resolve) => {
       const startedAt = Date.now();
       let done = false;
-      let timer2 = setTimeout(() => finish(), ms);
+      let timer3 = setTimeout(() => finish(), ms);
       const finish = () => {
         if (done) return;
         done = true;
-        clearTimeout(timer2);
+        clearTimeout(timer3);
         document.removeEventListener("visibilitychange", wake);
         window.removeEventListener("focus", wake);
         resolve();
@@ -10965,8 +12520,8 @@
           finish();
           return;
         }
-        clearTimeout(timer2);
-        timer2 = setTimeout(() => finish(), WAKE_MIN_DELAY_MS - elapsed);
+        clearTimeout(timer3);
+        timer3 = setTimeout(() => finish(), WAKE_MIN_DELAY_MS - elapsed);
       };
       document.addEventListener("visibilitychange", wake);
       window.addEventListener("focus", wake);
@@ -11300,9 +12855,17 @@
     if (typeof window === "undefined") return DEFAULT_REMEMBER_ASPECT_RATIO;
     return (getScopedStorageItem(KEY_REMEMBER_ASPECT_RATIO) ?? "0") === "1";
   }
+  function getSubtitleAutoSync() {
+    if (typeof window === "undefined") return true;
+    return (getScopedStorageItem(KEY_SUBTITLE_AUTO_SYNC) ?? "1") === "1";
+  }
   function getAutoSkipIntro() {
     if (typeof window === "undefined") return DEFAULT_AUTO_SKIP_INTRO;
     return (getScopedStorageItem(KEY_AUTO_SKIP_INTRO) ?? "0") === "1";
+  }
+  function setAutoSkipIntro(value) {
+    setScopedStorageItem(KEY_AUTO_SKIP_INTRO, value ? "1" : "0");
+    emitPlaybackSettingsChanged();
   }
   function getHideWatchedMoviesHome() {
     if (typeof window === "undefined") return DEFAULT_HIDE_WATCHED_MOVIES_HOME;
@@ -11482,7 +13045,7 @@
   function getSecondarySubtitleColor() {
     return getStoredString(KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR);
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR;
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
@@ -11501,6 +13064,7 @@
       KEY_DEFAULT_ASPECT_RATIO = "playback_defaultAspectRatio";
       KEY_REMEMBER_ASPECT_RATIO = "playback_rememberAspectRatio";
       KEY_AUTO_SKIP_INTRO = "playback_autoSkipIntro";
+      KEY_SUBTITLE_AUTO_SYNC = "playback_subtitleAutoSync";
       KEY_HIDE_WATCHED_MOVIES_HOME = "playback_hideWatchedMoviesHome";
       KEY_STILL_WATCHING_ENABLED = "playback_stillWatchingEnabled";
       KEY_STILL_WATCHING_MAX_MINUTES = "playback_stillWatchingMaxMinutes";
@@ -11959,7 +13523,7 @@
   }
   async function fetchJsonWithTimeout(input, init, timeoutMs) {
     const controller = new AbortController();
-    const timer2 = setTimeout(() => controller.abort(), timeoutMs);
+    const timer3 = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(input, {
         ...init ?? {},
@@ -11968,7 +13532,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } finally {
-      clearTimeout(timer2);
+      clearTimeout(timer3);
     }
   }
   async function fetchEpisodeStreamResults(imdbId, season, episode) {
@@ -12160,7 +13724,7 @@
   }
   async function fetchJsonWithTimeout2(input, init, timeoutMs) {
     const controller = new AbortController();
-    const timer2 = setTimeout(() => controller.abort(), timeoutMs);
+    const timer3 = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(input, {
         ...init ?? {},
@@ -12169,7 +13733,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } finally {
-      clearTimeout(timer2);
+      clearTimeout(timer3);
     }
   }
   async function fetchStreamResults(imdbId) {
@@ -13095,6 +14659,15 @@
           /* @__PURE__ */ jsx("path", { d: "M2 12.05a9 9 0 0 1 9.95 9.95" }),
           /* @__PURE__ */ jsx("path", { d: "M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" })
         ] });
+      case "sleepTimer":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" }) });
+      case "companions":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "8", r: "3.2" }),
+          /* @__PURE__ */ jsx("path", { d: "M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5" }),
+          /* @__PURE__ */ jsx("circle", { cx: "17", cy: "9", r: "2.4" }),
+          /* @__PURE__ */ jsx("path", { d: "M16 14c2.6.1 4.4 1.6 5 4.5" })
+        ] });
       case "barcodeStrip":
         return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M5 5v14M9 5v14M13 5v14M17 5v14M20 5v14" }) });
       case "tuning":
@@ -13105,13 +14678,65 @@
       case "fullscreen":
         return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) });
       case "more":
-        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: [
-          /* @__PURE__ */ jsx("circle", { cx: "5", cy: "12", r: "1.7" }),
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.7" }),
-          /* @__PURE__ */ jsx("circle", { cx: "19", cy: "12", r: "1.7" })
-        ] });
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M19.14 12.94c.04-.31.06-.62.06-.94s-.02-.63-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.71 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.31-.07.63-.07.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 0 0-.12-.61l-2.01-1.58ZM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2Z" }) });
+      case "moments":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.9", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M6 3h12v18l-6-4.5L6 21z" }) });
+      case "chapters":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M4 6h10M4 12h16M4 18h7" }) });
       default:
         return null;
+    }
+  }
+  function gearRowIcon(name, cls) {
+    const stroke2 = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
+    switch (name) {
+      case "speed":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
+          /* @__PURE__ */ jsx("path", { d: "M12 14l4-4" }),
+          /* @__PURE__ */ jsx("path", { d: "M3.3 17a9 9 0 1 1 17.4 0" })
+        ] });
+      case "aspect":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "6", width: "18", height: "12", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M7 10v4M17 10v4" })
+        ] });
+      case "zoom":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: /* @__PURE__ */ jsx("path", { d: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" }) });
+      case "sleep":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "13", r: "8" }),
+          /* @__PURE__ */ jsx("path", { d: "M12 9v4l2.5 2.5M9 2h6" })
+        ] });
+      case "night":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: /* @__PURE__ */ jsx("path", { d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" }) });
+      case "moments":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: /* @__PURE__ */ jsx("path", { d: "M6 3h12v18l-6-4.5L6 21z" }) });
+      case "link":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
+          /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4" }),
+          /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20" })
+        ] });
+      case "skip":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
+          /* @__PURE__ */ jsx("path", { d: "M5 5l9 7-9 7z" }),
+          /* @__PURE__ */ jsx("path", { d: "M18 5v14" })
+        ] });
+      case "barcode":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: /* @__PURE__ */ jsx("path", { d: "M4 5v14M8 5v14M11 5v14M15 5v14M18 5v14M21 5v14" }) });
+      case "stats":
+        return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: /* @__PURE__ */ jsx("path", { d: "M4 20V10M10 20V4M16 20v-7M22 20H2" }) });
+      case "advanced":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 6h16M4 12h16M4 18h16" }),
+          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "6", r: "1.5", fill: "currentColor" }),
+          /* @__PURE__ */ jsx("circle", { cx: "15", cy: "12", r: "1.5", fill: "currentColor" }),
+          /* @__PURE__ */ jsx("circle", { cx: "7", cy: "18", r: "1.5", fill: "currentColor" })
+        ] });
+      case "dv":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", ...stroke2, children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+          /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
+        ] });
     }
   }
   var init_player_control_icons = __esm({
@@ -13190,10 +14815,6 @@
       setScopedStorageItem(KEY9, JSON.stringify(store2));
     } catch {
     }
-  }
-  function nextPlaybackSpeed(current) {
-    const index = PLAYBACK_SPEED_OPTIONS.indexOf(current);
-    return PLAYBACK_SPEED_OPTIONS[(index + 1) % PLAYBACK_SPEED_OPTIONS.length];
   }
   var PLAYBACK_SPEED_OPTIONS, KEY9, MAX_ENTRIES;
   var init_playback_speed_store = __esm({
@@ -15636,8 +17257,15 @@
   function appendHistoryEntry(entry) {
     const sanitized = sanitizeEntry(entry);
     const incomingKey = historyDedupeKey(sanitized);
-    const filtered = readHistory().filter((existing) => historyDedupeKey(existing) !== incomingKey);
-    const next = [sanitized, ...filtered].slice(0, HISTORY_MAX);
+    const current2 = readHistory();
+    const previous = current2.find((existing) => historyDedupeKey(existing) === incomingKey);
+    const winner = previous && watchedAtMs(previous) > watchedAtMs(sanitized) ? {
+      ...previous,
+      posterUrl: previous.posterUrl ?? sanitized.posterUrl ?? null,
+      backdropUrl: previous.backdropUrl ?? sanitized.backdropUrl ?? null
+    } : sanitized;
+    const filtered = current2.filter((existing) => historyDedupeKey(existing) !== incomingKey);
+    const next = sortByWatchedAtDesc([winner, ...filtered]).slice(0, HISTORY_MAX);
     writeHistory(next);
   }
   function saveStreamProgress(entry) {
@@ -15681,6 +17309,455 @@
       HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
       HISTORY_MAX = 200;
+    }
+  });
+
+  // lib/watch-journal/types.ts
+  function viewingKey(s) {
+    return `${s.mediaId}|${s.season ?? ""}|${s.episode ?? ""}`;
+  }
+  function isCompleteAt(pos, duration) {
+    return duration > 0 && pos / duration >= COMPLETE_RATIO;
+  }
+  var COMPLETE_RATIO, VIEWING_DEDUPE_WINDOW_MS;
+  var init_types = __esm({
+    "lib/watch-journal/types.ts"() {
+      "use strict";
+      COMPLETE_RATIO = 0.9;
+      VIEWING_DEDUPE_WINDOW_MS = 36 * 36e5;
+    }
+  });
+
+  // lib/watch-journal/recorder-core.ts
+  function defaultCompanions(last2, nowMs) {
+    if (!last2 || last2.ids.length === 0) return [];
+    return nowMs - last2.endedAtMs <= COMPANIONS_WINDOW_MS ? [...last2.ids] : [];
+  }
+  function createRecorder(deps) {
+    let open2 = null;
+    let openKey = "";
+    let lastTickMs = 0;
+    let lastPos = 0;
+    let lastPersistMs = null;
+    let chosen = null;
+    let chosenAtMs = 0;
+    function choiceFor(nowMs) {
+      if (chosen && nowMs - chosenAtMs <= COVIEWER_CHOICE_TTL_MS) return [...chosen];
+      chosen = null;
+      return deps.defaultCoViewers?.() ?? [];
+    }
+    function close() {
+      if (open2 && open2.played >= MIN_PLAYED_S) deps.persist({ ...open2 }, true);
+      open2 = null;
+      openKey = "";
+    }
+    function finish() {
+      close();
+      chosen = null;
+    }
+    function tick2(input, final = false) {
+      if (input.type === "audiobook" || !(input.duration > 0)) return;
+      const nowMs = deps.now();
+      const key = viewingKey(input);
+      if (open2 && (openKey !== key || nowMs - lastTickMs > SESSION_GAP_MS)) close();
+      const iso = new Date(nowMs).toISOString();
+      if (!open2) {
+        open2 = {
+          id: deps.newId(),
+          profileId: deps.profileId(),
+          mediaId: input.mediaId,
+          tmdbId: input.tmdbId,
+          type: input.type,
+          ...input.season != null ? { season: input.season } : {},
+          ...input.episode != null ? { episode: input.episode } : {},
+          title: input.title,
+          posterUrl: input.posterUrl ?? null,
+          year: input.year ?? null,
+          startedAt: iso,
+          endedAt: iso,
+          updatedAt: iso,
+          startPos: input.position,
+          endPos: input.position,
+          duration: input.duration,
+          played: 0,
+          completed: isCompleteAt(input.position, input.duration),
+          coViewers: choiceFor(nowMs)
+        };
+        openKey = key;
+        lastPos = input.position;
+        lastPersistMs = null;
+      } else {
+        const advance = input.position - lastPos;
+        if (advance > 0 && advance <= MAX_TICK_ADVANCE_S) open2.played += advance;
+        lastPos = input.position;
+        open2.endPos = input.position;
+        open2.duration = input.duration;
+        open2.endedAt = iso;
+        open2.updatedAt = iso;
+        if (isCompleteAt(input.position, input.duration)) open2.completed = true;
+      }
+      lastTickMs = nowMs;
+      if (chosen) chosenAtMs = nowMs;
+      if (open2.played < MIN_PLAYED_S) {
+        if (final) finish();
+        return;
+      }
+      if (final) {
+        finish();
+        return;
+      }
+      if (lastPersistMs === null || nowMs - lastPersistMs >= PERSIST_EVERY_MS) {
+        lastPersistMs = nowMs;
+        deps.persist({ ...open2 }, false);
+      }
+    }
+    function setCoViewers(ids) {
+      const nowMs = deps.now();
+      chosen = [...new Set(ids)];
+      chosenAtMs = nowMs;
+      if (open2) {
+        open2.coViewers = [...chosen];
+        open2.updatedAt = new Date(nowMs).toISOString();
+      }
+    }
+    function coViewers() {
+      return open2 ? [...open2.coViewers] : choiceFor(deps.now());
+    }
+    function markAsleep(pos, atMs) {
+      if (!open2) return false;
+      open2.fellAsleep = { at: new Date(atMs).toISOString(), pos };
+      open2.updatedAt = new Date(deps.now()).toISOString();
+      return true;
+    }
+    return { tick: tick2, current: () => open2, setCoViewers, coViewers, markAsleep };
+  }
+  var SESSION_GAP_MS, MIN_PLAYED_S, PERSIST_EVERY_MS, MAX_TICK_ADVANCE_S, COVIEWER_CHOICE_TTL_MS, COMPANIONS_WINDOW_MS;
+  var init_recorder_core = __esm({
+    "lib/watch-journal/recorder-core.ts"() {
+      "use strict";
+      init_types();
+      SESSION_GAP_MS = 30 * 6e4;
+      MIN_PLAYED_S = 60;
+      PERSIST_EVERY_MS = 6e4;
+      MAX_TICK_ADVANCE_S = 10;
+      COVIEWER_CHOICE_TTL_MS = 5 * 6e4;
+      COMPANIONS_WINDOW_MS = 12 * 36e5;
+    }
+  });
+
+  // lib/watch-journal/store.ts
+  function emit() {
+    version2++;
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_CHANGED_EVENT));
+  }
+  function scheduleIdle(fn) {
+    const ric = typeof window !== "undefined" ? window.requestIdleCallback : void 0;
+    if (ric) ric(fn, { timeout: 5e3 });
+    else setTimeout(fn, 0);
+  }
+  async function put(s) {
+    try {
+      const r = await fetch(`/api/journal?profile=${encodeURIComponent(s.profileId)}&id=${encodeURIComponent(s.id)}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(s)
+      });
+      return r.ok;
+    } catch {
+      return false;
+    }
+  }
+  async function flushJournal() {
+    flushQueued = false;
+    const batch = [...pending2.values()];
+    pending2.clear();
+    let anyFailed = false;
+    for (const s of batch) {
+      const ok = await put(s);
+      if (!ok) {
+        anyFailed = true;
+        if (!pending2.has(s.id)) pending2.set(s.id, s);
+      }
+    }
+    if (anyFailed && !retryTimer) {
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        void flushJournal();
+      }, RETRY_MS);
+    }
+  }
+  function upsertSession(s) {
+    pending2.set(s.id, { ...s });
+    if (s.profileId === loadedFor) {
+      sessions.set(s.id, { ...s });
+      emit();
+    }
+    if (!flushQueued) {
+      flushQueued = true;
+      scheduleIdle(() => {
+        void flushJournal();
+      });
+    }
+  }
+  var JOURNAL_CHANGED_EVENT, JOURNAL_SYNC_WORTHY_EVENT, sessions, pending2, loadedFor, version2, flushQueued, RETRY_MS, retryTimer;
+  var init_store = __esm({
+    "lib/watch-journal/store.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      JOURNAL_CHANGED_EVENT = "lumio-watch-journal-changed";
+      JOURNAL_SYNC_WORTHY_EVENT = "lumio-journal-sync-worthy";
+      sessions = /* @__PURE__ */ new Map();
+      pending2 = /* @__PURE__ */ new Map();
+      loadedFor = null;
+      version2 = 0;
+      flushQueued = false;
+      RETRY_MS = 3e4;
+      retryTimer = null;
+    }
+  });
+
+  // lib/watch-journal/player-open.ts
+  function setPlayerOpen(value) {
+    open = value;
+  }
+  function isPlayerOpen() {
+    return open;
+  }
+  var open;
+  var init_player_open = __esm({
+    "lib/watch-journal/player-open.ts"() {
+      open = false;
+    }
+  });
+
+  // lib/watch-journal/weather.ts
+  function getWeatherPrefs() {
+    try {
+      const raw = getScopedStorageItem(WEATHER_PREFS_KEY);
+      if (!raw) return OFF;
+      const p = JSON.parse(raw);
+      const place = p.place && typeof p.place.lat === "number" && typeof p.place.lon === "number" ? p.place : null;
+      return { enabled: p.enabled === true, place };
+    } catch {
+      return OFF;
+    }
+  }
+  function forecastUrl(lat, lon) {
+    return `${FORECAST_URL}?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=weather_code,temperature_2m`;
+  }
+  function parseForecast(json) {
+    const c = json?.current;
+    if (!c || typeof c.weather_code !== "number" || typeof c.temperature_2m !== "number") return null;
+    return { code: c.weather_code, tempC: c.temperature_2m };
+  }
+  function schedule(ms) {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      void drain();
+    }, ms);
+  }
+  async function drain() {
+    const nowMs = Date.now();
+    for (let i = pending3.length - 1; i >= 0; i--) {
+      if (nowMs - Date.parse(pending3[i].endedAt) > WEATHER_MAX_AGE_MS) pending3.splice(i, 1);
+    }
+    if (pending3.length === 0) return;
+    if (isPlayerOpen()) {
+      schedule(WEATHER_RETRY_MS);
+      return;
+    }
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place) {
+      pending3.length = 0;
+      return;
+    }
+    let weather = null;
+    try {
+      const r = await fetch(forecastUrl(prefs.place.lat, prefs.place.lon));
+      if (r.ok) weather = parseForecast(await r.json());
+    } catch {
+    }
+    if (!weather) {
+      schedule(WEATHER_RETRY_MS * 5);
+      return;
+    }
+    const iso = (/* @__PURE__ */ new Date()).toISOString();
+    for (const s of pending3.splice(0)) upsertSession({ ...s, weather, updatedAt: iso });
+  }
+  function queueSessionWeather(s) {
+    const prefs = getWeatherPrefs();
+    if (!prefs.enabled || !prefs.place || s.weather || s.seeded) return;
+    if (!pending3.some((p) => p.id === s.id)) pending3.push(s);
+    schedule(0);
+  }
+  var WEATHER_PREFS_KEY, FORECAST_URL, WEATHER_RETRY_MS, WEATHER_MAX_AGE_MS, OFF, pending3, timer;
+  var init_weather = __esm({
+    "lib/watch-journal/weather.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      init_player_open();
+      init_store();
+      WEATHER_PREFS_KEY = "profile_weather_v1";
+      FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+      WEATHER_RETRY_MS = 6e4;
+      WEATHER_MAX_AGE_MS = 3 * 36e5;
+      OFF = { enabled: false, place: null };
+      pending3 = [];
+      timer = null;
+    }
+  });
+
+  // lib/watch-journal/recorder.ts
+  function loadLast() {
+    try {
+      const raw = getScopedStorageItem(LAST_COMPANIONS_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      last = parsed && Array.isArray(parsed.ids) && typeof parsed.endedAtMs === "number" ? { ids: parsed.ids.filter((x) => typeof x === "string"), endedAtMs: parsed.endedAtMs } : null;
+    } catch {
+      last = null;
+    }
+  }
+  function newId() {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+  function journalTick(input, final = false) {
+    try {
+      recorder.tick(input, final);
+    } catch (error) {
+      console.warn("[journal] tick", error);
+    }
+  }
+  function journalSetCoViewers(ids) {
+    try {
+      recorder.setCoViewers(ids);
+    } catch (error) {
+      console.warn("[journal] coViewers", error);
+    }
+  }
+  function journalCoViewers() {
+    try {
+      return recorder.coViewers();
+    } catch {
+      return [];
+    }
+  }
+  function journalMarkAsleep(pos, atMs) {
+    try {
+      recorder.markAsleep(pos, atMs);
+    } catch (error) {
+      console.warn("[journal] asleep", error);
+    }
+  }
+  var LAST_COMPANIONS_KEY, last, recorder;
+  var init_recorder = __esm({
+    "lib/watch-journal/recorder.ts"() {
+      init_profile_storage_shim();
+      init_recorder_core();
+      init_store();
+      init_weather();
+      LAST_COMPANIONS_KEY = "journal_last_companions_v1";
+      last = null;
+      if (typeof window !== "undefined") {
+        scheduleIdle(loadLast);
+        window.addEventListener("lumio-profile-changed", () => {
+          last = null;
+          scheduleIdle(loadLast);
+        });
+      }
+      recorder = createRecorder({
+        now: () => Date.now(),
+        newId,
+        profileId: () => getActiveProfileId() ?? "default",
+        persist: (s, final) => {
+          upsertSession(s);
+          if (!final) return;
+          if (typeof window !== "undefined") window.dispatchEvent(new Event(JOURNAL_SYNC_WORTHY_EVENT));
+          scheduleIdle(() => queueSessionWeather(s));
+          if (s.profileId !== (getActiveProfileId() ?? "default")) return;
+          const record = { ids: [...s.coViewers], endedAtMs: Date.parse(s.endedAt) };
+          last = record;
+          scheduleIdle(() => {
+            try {
+              setScopedStorageItem(LAST_COMPANIONS_KEY, JSON.stringify(record));
+            } catch {
+            }
+          });
+        },
+        defaultCoViewers: () => defaultCompanions(last, Date.now())
+      });
+    }
+  });
+
+  // lib/avatars/catalog.ts
+  var AVATAR_URLS, avatarUrl, PROFILE_COLORS;
+  var init_catalog = __esm({
+    "lib/avatars/catalog.ts"() {
+      AVATAR_URLS = {};
+      avatarUrl = (id) => AVATAR_URLS[`/src/assets/avatars/${id}.webp`] ?? "";
+      PROFILE_COLORS = [
+        "#7dd3fc",
+        "#60a5fa",
+        "#a78bfa",
+        "#f472b6",
+        "#fb7185",
+        "#fb923c",
+        "#fbbf24",
+        "#a3e635",
+        "#34d399",
+        "#22d3ee"
+      ];
+    }
+  });
+
+  // components/ui/profile-avatar.tsx
+  function profileColor(profile) {
+    return profile.color ?? DEFAULT_COLOR;
+  }
+  function ProfileAvatar({
+    profile,
+    className
+  }) {
+    const color = profileColor(profile);
+    return /* @__PURE__ */ jsx(
+      "span",
+      {
+        className: `relative flex items-center justify-center overflow-hidden rounded-full bg-white/[0.06] ${className ?? "h-12 w-12"}`,
+        style: { boxShadow: `0 0 0 2px ${color}` },
+        children: profile.avatar ? /* @__PURE__ */ jsx("img", { src: avatarUrl(profile.avatar), alt: "", className: "h-full w-full object-cover", draggable: false }) : /* @__PURE__ */ jsx("span", { className: "text-lg font-semibold", style: { color }, children: profile.name.trim().charAt(0).toUpperCase() || "?" })
+      }
+    );
+  }
+  var DEFAULT_COLOR;
+  var init_profile_avatar = __esm({
+    "components/ui/profile-avatar.tsx"() {
+      "use client";
+      init_catalog();
+      init_jsx_runtime_shim();
+      DEFAULT_COLOR = PROFILE_COLORS[0];
+    }
+  });
+
+  // lib/sleep-timer.ts
+  function armSleepTimer(mode, nowMs) {
+    return mode === "off" ? DISARMED : { mode, armedAtMs: nowMs };
+  }
+  function sleepTimerRemainingMs(state2, nowMs) {
+    if (typeof state2.mode !== "number" || state2.armedAtMs == null) return null;
+    return Math.max(0, state2.armedAtMs + state2.mode * 6e4 - nowMs);
+  }
+  function sleepTimerDue(state2, c) {
+    if (state2.mode === "off" || state2.armedAtMs == null) return false;
+    if (state2.mode === "end") return c.ended || c.duration > 0 && c.duration - c.position <= SLEEP_END_MARGIN_S;
+    return c.nowMs - state2.armedAtMs >= state2.mode * 6e4;
+  }
+  var SLEEP_TIMER_OPTIONS, SLEEP_PROMPT_SECONDS, SLEEP_END_MARGIN_S, DISARMED;
+  var init_sleep_timer = __esm({
+    "lib/sleep-timer.ts"() {
+      SLEEP_TIMER_OPTIONS = ["off", 15, 30, 45, 60, 90, "end"];
+      SLEEP_PROMPT_SECONDS = 60;
+      SLEEP_END_MARGIN_S = 20;
+      DISARMED = { mode: "off", armedAtMs: null };
     }
   });
 
@@ -15874,11 +17951,11 @@
   function markComplete(b, endAt, now2) {
     let end = endAt;
     if (end == null) {
-      let last = -1;
+      let last2 = -1;
       b.colors.forEach((c, i) => {
-        if (c) last = i;
+        if (c) last2 = i;
       });
-      end = last < 0 ? b.duration : (last + 1) / b.colors.length * b.duration;
+      end = last2 < 0 ? b.duration : (last2 + 1) / b.colors.length * b.duration;
     }
     return { ...b, completedAt: now2, endAt: Math.min(b.duration, Math.max(0, end)), updatedAt: now2 };
   }
@@ -15951,7 +18028,7 @@
   function profileParam() {
     return encodeURIComponent(getActiveProfileId() ?? "default");
   }
-  function emit() {
+  function emit2() {
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODES_CHANGED_EVENT));
   }
   function emitSyncWorthy() {
@@ -15967,13 +18044,13 @@
     lastWrite.clear();
     for (const t of timers.values()) clearTimeout(t);
     timers.clear();
-    loadedFor = null;
+    loadedFor2 = null;
     loading = null;
   }
   function loadBarcodes() {
     const profile = profileParam();
-    if (loadedFor === profile) return Promise.resolve(listBarcodes());
-    if (loadedFor !== null) resetBarcodeCache();
+    if (loadedFor2 === profile) return Promise.resolve(listBarcodes());
+    if (loadedFor2 !== null) resetBarcodeCache();
     if (loading) return loading;
     loading = (async () => {
       try {
@@ -15982,9 +18059,9 @@
         for (const b of data.items ?? []) if (!items.has(b.id)) items.set(b.id, b);
       } catch {
       }
-      loadedFor = profile;
+      loadedFor2 = profile;
       loading = null;
-      emit();
+      emit2();
       return listBarcodes();
     })();
     return loading;
@@ -15995,7 +18072,7 @@
   function getBarcode(id) {
     return items.get(id) ?? null;
   }
-  async function put(id) {
+  async function put2(id) {
     const b = items.get(id);
     if (!b) return;
     dirty.delete(id);
@@ -16010,24 +18087,24 @@
       dirty.add(id);
     }
   }
-  function schedule(id) {
+  function schedule2(id) {
     if (timers.has(id)) return;
     const since = Date.now() - (lastWrite.get(id) ?? 0);
     const wait = Math.max(0, BARCODE_WRITE_INTERVAL_MS - since);
     timers.set(id, setTimeout(() => {
       timers.delete(id);
-      if (dirty.has(id)) void put(id);
+      if (dirty.has(id)) void put2(id);
     }, wait));
   }
   function recordColumn(meta, columns, i, color) {
     const now2 = (/* @__PURE__ */ new Date()).toISOString();
-    const current = items.get(meta.id) ?? createBarcode(meta, columns, now2);
-    const next = withColumn(current, i, color, now2);
-    if (next === current && items.has(meta.id)) return;
+    const current2 = items.get(meta.id) ?? createBarcode(meta, columns, now2);
+    const next = withColumn(current2, i, color, now2);
+    if (next === current2 && items.has(meta.id)) return;
     items.set(meta.id, next);
     dirty.add(meta.id);
-    schedule(meta.id);
-    emit();
+    schedule2(meta.id);
+    emit2();
   }
   async function flushBarcode(id) {
     const t = timers.get(id);
@@ -16035,14 +18112,14 @@
       clearTimeout(t);
       timers.delete(id);
     }
-    if (dirty.has(id)) await put(id);
+    if (dirty.has(id)) await put2(id);
   }
   async function completeBarcode(id, endAt) {
     const b = items.get(id);
     if (!b) return;
     items.set(id, markComplete(b, endAt, (/* @__PURE__ */ new Date()).toISOString()));
     dirty.add(id);
-    emit();
+    emit2();
     await flushBarcode(id);
     emitSyncWorthy();
   }
@@ -16050,8 +18127,8 @@
     const b = items.get(id);
     if (!b) return;
     items.set(id, { ...b, meta });
-    emit();
-    await put(id);
+    emit2();
+    await put2(id);
   }
   function onBarcodesChanged(listener) {
     if (typeof window === "undefined") return () => {
@@ -16068,7 +18145,7 @@
       window.removeEventListener("lumio-profile-changed", onProfile);
     };
   }
-  var BARCODES_CHANGED_EVENT, BARCODE_WRITE_INTERVAL_MS, items, loadedFor, loading, dirty, lastWrite, timers, SYNC_WORTHY_EVENT;
+  var BARCODES_CHANGED_EVENT, BARCODE_WRITE_INTERVAL_MS, items, loadedFor2, loading, dirty, lastWrite, timers, SYNC_WORTHY_EVENT;
   var init_barcode_store = __esm({
     "lib/barcode/barcode-store.ts"() {
       "use strict";
@@ -16077,7 +18154,7 @@
       BARCODES_CHANGED_EVENT = "lumio-barcodes-changed";
       BARCODE_WRITE_INTERVAL_MS = 1e4;
       items = /* @__PURE__ */ new Map();
-      loadedFor = null;
+      loadedFor2 = null;
       loading = null;
       dirty = /* @__PURE__ */ new Set();
       lastWrite = /* @__PURE__ */ new Map();
@@ -16534,11 +18611,11 @@
   function ensureBarcodeMeta(b) {
     if (b.meta !== void 0) return Promise.resolve(b.meta);
     if (b.tmdbId == null) return Promise.resolve(null);
-    const pending2 = inflight4.get(b.id);
-    if (pending2) return pending2;
+    const pending5 = inflight4.get(b.id);
+    if (pending5) return pending5;
     const task = chain.then(async () => {
-      const current = getBarcode(b.id);
-      if (current && current.meta !== void 0) return current.meta;
+      const current2 = getBarcode(b.id);
+      if (current2 && current2.meta !== void 0) return current2.meta;
       const meta = await fetchPosterMeta(b.tmdbId);
       if (meta) await setBarcodeMeta(b.id, meta);
       await new Promise((resolve) => setTimeout(resolve, GAP_MS));
@@ -16618,7 +18695,7 @@
       void loadBarcodes();
       const state2 = createSamplerState();
       const columns = settings.columns;
-      const timer2 = setInterval(() => {
+      const timer3 = setInterval(() => {
         const snap = args.snapshotRef.current;
         const existing = getBarcode(id);
         const n = existing?.columns ?? columns;
@@ -16652,7 +18729,7 @@
         });
       }, TICK_MS);
       return () => {
-        clearInterval(timer2);
+        clearInterval(timer3);
         void endRecording(id);
       };
     }, [applies, id]);
@@ -16819,16 +18896,16 @@
         useEffect(() => {
           if (!state2.id) return;
           const id = state2.id;
-          const read9 = () => setBarcode(getBarcode(id));
-          read9();
-          return onBarcodesChanged(read9);
+          const read11 = () => setBarcode(getBarcode(id));
+          read11();
+          return onBarcodesChanged(read11);
         }, [state2.id]);
         useEffect(() => onBarcodeSettingsChanged(() => setUnseen(getBarcodeSettings().unseenStyle)), []);
         useEffect(() => {
           if (!state2.status) return;
           setChipUntil(Date.now() + CHIP_MS);
-          const timer2 = setTimeout(() => setChipUntil(0), CHIP_MS);
-          return () => clearTimeout(timer2);
+          const timer3 = setTimeout(() => setChipUntil(0), CHIP_MS);
+          return () => clearTimeout(timer3);
         }, [state2.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
@@ -17106,6 +19183,10 @@
         "audioDelay",
         "nextEpisode",
         "switchStream",
+        "chapters",
+        "moments",
+        "sleepTimer",
+        "companions",
         "more",
         "fullscreen"
       ];
@@ -17592,7 +19673,7 @@
     });
   }
   async function tick() {
-    timer = null;
+    timer2 = null;
     if (inFlight) {
       again = true;
       return;
@@ -17607,12 +19688,12 @@
       void tick();
       return;
     }
-    if (listeners4.size > 0 && getHapticsHostEnabled()) timer = setTimeout(() => void tick(), POLL_MS);
+    if (listeners4.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
   }
   function subscribeHapticsHostStatus(listener) {
     listeners4.add(listener);
     listener(latest);
-    if (!timer && !inFlight) void tick();
+    if (!timer2 && !inFlight) void tick();
     return () => {
       listeners4.delete(listener);
     };
@@ -17622,7 +19703,7 @@
     useEffect(() => subscribeHapticsHostStatus(setStatus), []);
     return status;
   }
-  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners4, timer, latest, inFlight, again;
+  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners4, timer2, latest, inFlight, again;
   var init_haptics_host = __esm({
     "lib/haptics-host.ts"() {
       "use client";
@@ -17633,7 +19714,7 @@
       unsupportedReason = null;
       lastSent = "";
       listeners4 = /* @__PURE__ */ new Set();
-      timer = null;
+      timer2 = null;
       latest = null;
       inFlight = false;
       again = false;
@@ -17818,8 +19899,8 @@
         return buildFallbackResult(params);
       }
     })().finally(() => {
-      const active2 = inflightByKey.get(key);
-      if (active2 === request) inflightByKey.delete(key);
+      const active3 = inflightByKey.get(key);
+      if (active3 === request) inflightByKey.delete(key);
     });
     inflightByKey.set(key, request);
     return request;
@@ -17836,6 +19917,15 @@
   });
 
   // lib/core-streams/stream-utils.ts
+  function streamResolution(name) {
+    const normalized = name.toLowerCase();
+    if (normalized.includes("2160p") || /\b4k\b|\buhd\b/.test(normalized)) return 2160;
+    if (normalized.includes("1440p")) return 1440;
+    if (normalized.includes("1080p")) return 1080;
+    if (normalized.includes("720p")) return 720;
+    if (normalized.includes("480p")) return 480;
+    return null;
+  }
   function parseSizeBytes(text) {
     const match = /(\d+(?:[.,]\d+)?)\s*(tib|gib|mib|kib|tb|gb|mb|kb)\b/i.exec(text);
     if (!match) return null;
@@ -17866,6 +19956,13 @@
     if (stream.directUrl && INFORMATIONAL_STREAM_URL.test(stream.directUrl)) return true;
     if (stream.infoHash && !stream.directUrl) return false;
     return INFORMATIONAL_STREAM_TEXT.test(`${stream.name ?? ""} ${stream.title ?? ""} ${stream.description ?? ""}`);
+  }
+  function streamLooksDolbyVision(stream) {
+    const text = `${stream.name} ${stream.title}`;
+    return /(?:^|[.\s_\-\[(])(dv|dovi)(?:$|[.\s_\-\])])/i.test(text) || /dolby[.\s_-]?vision/i.test(text);
+  }
+  function streamLooksLosslessAudio(stream) {
+    return /(true[.\s_-]?hd|dts[.\s_-]?hd|dts[.\s_-]?x|\bdtsma\b)/i.test(`${stream.name} ${stream.title}`);
   }
   var SIZE_UNITS, STREAM_LANGUAGE_PATTERNS, LANG_FLAGS, INFORMATIONAL_STREAM_URL, INFORMATIONAL_STREAM_TEXT;
   var init_stream_utils = __esm({
@@ -17994,7 +20091,7 @@
     const controller = new AbortController();
     const onAbort = () => controller.abort();
     signal?.addEventListener("abort", onAbort);
-    const timer2 = setTimeout(() => controller.abort(), timeoutMs + 500);
+    const timer3 = setTimeout(() => controller.abort(), timeoutMs + 500);
     try {
       const response = await fetch(`/api/streams?${params}`, {
         headers: {
@@ -18008,7 +20105,7 @@
       if (payload.error) throw new Error(payload.error);
       return payload.streams ?? [];
     } finally {
-      clearTimeout(timer2);
+      clearTimeout(timer3);
       signal?.removeEventListener("abort", onAbort);
     }
   }
@@ -18078,8 +20175,8 @@
     };
     const cached = memo2.get(key);
     if (cached && Date.now() - cached.at < MEMO_TTL_MS) return replay(cached.result);
-    const pending2 = inflight5.get(key);
-    if (pending2) return pending2.then(replay);
+    const pending5 = inflight5.get(key);
+    if (pending5) return pending5.then(replay);
     const run = lookupCoreStreamsUncached(target2, options).then((result) => {
       if (result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty")) {
         memo2.set(key, { at: Date.now(), result });
@@ -19494,6 +21591,132 @@
     }
   });
 
+  // lib/couch/host-trakt.ts
+  var init_host_trakt = __esm({
+    "lib/couch/host-trakt.ts"() {
+      "use strict";
+      init_app_storage();
+      init_profile_storage_shim();
+    }
+  });
+
+  // lib/couch/host-bridge.ts
+  function registerCouchPlayer(handlers) {
+    const token = /* @__PURE__ */ Symbol("couch-player");
+    current = { token, handlers };
+    notifyCouchState();
+    return () => {
+      if (current?.token !== token) return;
+      current = null;
+      notifyCouchState();
+    };
+  }
+  function buildStateBody(acks) {
+    let player = null;
+    try {
+      player = current?.handlers.snapshot() ?? null;
+    } catch {
+      player = null;
+    }
+    return { state: { player }, acks };
+  }
+  function notifyCouchState() {
+    if (!post || flushQueued2) return;
+    flushQueued2 = true;
+    queueMicrotask(() => {
+      flushQueued2 = false;
+      const acks = pendingAcks;
+      pendingAcks = [];
+      post?.(buildStateBody(acks));
+    });
+  }
+  var current, pendingAcks, flushQueued2, post;
+  var init_host_bridge = __esm({
+    "lib/couch/host-bridge.ts"() {
+      init_host_trakt();
+      current = null;
+      pendingAcks = [];
+      flushQueued2 = false;
+      post = null;
+    }
+  });
+
+  // lib/couch/player-snapshot.ts
+  function streamKey(s) {
+    return s.directUrl ?? `${s.infoHash}:${s.fileIdx ?? 0}`;
+  }
+  function describeStream(s) {
+    const bytes = getStreamSizeBytes(s);
+    const resolution = streamResolution(s.name);
+    return {
+      key: streamKey(s),
+      label: s.title || s.name,
+      resolution: resolution ? `${resolution}p` : void 0,
+      hdr: streamLooksDolbyVision(s) ? "DV" : void 0,
+      audio: streamLooksLosslessAudio(s) ? "Lossless" : void 0,
+      size: bytes ? formatSize(bytes) : void 0,
+      source: s.source || s.name
+    };
+  }
+  function sleepStateFor(mode, nowMs) {
+    if (mode === "off") return DISARMED;
+    const m = mode === "end" ? "end" : Number(mode);
+    return armSleepTimer(m, nowMs);
+  }
+  function couchSleep(state2, nowMs, pos, dur) {
+    if (state2.mode === "off") return { mode: "off" };
+    if (state2.mode === "end") {
+      const left = Math.max(0, dur - pos - SLEEP_END_MARGIN_S);
+      return { mode: "end", endsAt: nowMs + left * 1e3 };
+    }
+    const remaining2 = sleepTimerRemainingMs(state2, nowMs);
+    const mode = String(state2.mode);
+    return remaining2 == null ? { mode } : { mode, endsAt: nowMs + remaining2 };
+  }
+  function nextEpisodeOf(ep) {
+    if (!ep || ep.current == null) return void 0;
+    const i = ep.items.findIndex((e) => e.number === ep.current);
+    const next = i >= 0 ? ep.items[i + 1] : void 0;
+    return next ? { season: ep.seasonNumber, episode: next.number, title: next.title } : void 0;
+  }
+  function couchVolume(volume, muted) {
+    if (muted) return 0;
+    return Math.max(0, Math.min(100, Math.round(volume * 100)));
+  }
+  function audioLabel(t) {
+    const label = t.title || t.language || "\u2014";
+    const layout = t.channels == null ? "" : t.channels >= 8 ? " 7.1" : t.channels >= 6 ? " 5.1" : t.channels === 1 ? " 1.0" : " 2.0";
+    const format = `${t.codec.toUpperCase()}${layout}`.trim();
+    return { label, format: format || void 0 };
+  }
+  function positionJumped(last2, pos, now2, playing) {
+    if (!last2) return false;
+    const expected = last2.playing ? last2.pos + Math.max(0, now2 - last2.at) / 1e3 : last2.pos;
+    return Math.abs(pos - expected) > 2;
+  }
+  function selectableStreams(streams) {
+    return streams.filter((s) => !!s.directUrl);
+  }
+  function pushCue(buffer, cue, now2) {
+    const text = cue.text.trim();
+    if (!text) return buffer;
+    const last2 = buffer[buffer.length - 1];
+    if (last2 && last2.text === text) return buffer;
+    const base = last2 && last2.start > cue.start ? [] : buffer;
+    const kept = base.filter((c) => c.start >= now2 - SAID_WINDOW_S);
+    kept.push({ text, start: cue.start });
+    return kept.length > SAID_MAX_CUES ? kept.slice(kept.length - SAID_MAX_CUES) : kept;
+  }
+  var SAID_WINDOW_S, SAID_MAX_CUES;
+  var init_player_snapshot = __esm({
+    "lib/couch/player-snapshot.ts"() {
+      init_stream_utils();
+      init_sleep_timer();
+      SAID_WINDOW_S = 30;
+      SAID_MAX_CUES = 40;
+    }
+  });
+
   // lib/homekit-client.ts
   async function emitHomeKitEvent(input) {
     try {
@@ -19584,6 +21807,7 @@
         { id: "seekForward", category: "player", defaultKey: "ArrowRight", labelKey: "shortcutsSeekForward" },
         { id: "mute", category: "player", defaultKey: "m", labelKey: "shortcutsMute" },
         { id: "fullscreen", category: "player", defaultKey: "f", labelKey: "shortcutsToggleFullscreen" },
+        { id: "saveMoment", category: "player", defaultKey: "b", labelKey: "shortcutsSaveMoment" },
         { id: "subtitleCycle", category: "tracks", defaultKey: "s", labelKey: "shortcutsSubtitleCycle" },
         { id: "secondarySubtitleCycle", category: "tracks", defaultKey: "d", labelKey: "shortcutsSecondarySubtitleCycle" },
         { id: "subtitleDelayBack", category: "tracks", defaultKey: "z", labelKey: "shortcutsSubtitleDelayBack" },
@@ -19610,9 +21834,9 @@
   function markPlayerReadyToReveal() {
     if (state().holders > 0) state().ready = true;
   }
-  function captureUserMutedOnce(current) {
+  function captureUserMutedOnce(current2) {
     const s = state();
-    if (s.userMuted === null) s.userMuted = current;
+    if (s.userMuted === null) s.userMuted = current2;
     return s.userMuted;
   }
   var CINEMA_REVEAL_HOLD_MAX_MS, KEY15;
@@ -19650,7 +21874,7 @@
       onInteract();
     }, [onInteract]);
     const count = recommendations.length;
-    const current = recommendations[Math.min(index, Math.max(0, count - 1))] ?? null;
+    const current2 = recommendations[Math.min(index, Math.max(0, count - 1))] ?? null;
     const step = useCallback((direction) => {
       markInteracted();
       setIndex((value) => {
@@ -19687,15 +21911,15 @@
       return () => window.removeEventListener("keydown", onKey);
     }, [step]);
     const metaParts = useMemo(() => {
-      if (!current) return [];
+      if (!current2) return [];
       const parts = [];
-      const genres = current.item.genres?.slice(0, 3) ?? [];
+      const genres = current2.item.genres?.slice(0, 3) ?? [];
       if (genres.length > 0) parts.push(genres.join(" / "));
-      if (current.item.year) parts.push(String(current.item.year));
+      if (current2.item.year) parts.push(String(current2.item.year));
       return parts;
-    }, [current]);
-    if (!current) return null;
-    const backdrop = current.item.backdropUrl ?? current.item.posterUrl ?? null;
+    }, [current2]);
+    if (!current2) return null;
+    const backdrop = current2.item.backdropUrl ?? current2.item.posterUrl ?? null;
     return /* @__PURE__ */ jsxs(
       "div",
       {
@@ -19758,29 +21982,29 @@
           ] }, panelIndex)),
           /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,rgb(var(--base-950))_0%,rgb(var(--base-950)/0.94)_38%,rgb(var(--base-950)/0)_100%)]" }),
           /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex max-w-[58%] flex-col justify-center gap-[clamp(0.4rem,1.5vh,1rem)] px-[clamp(1rem,4vw,3.5rem)] py-[clamp(0.75rem,3vh,2rem)]", children: [
-            current.logoUrl && !failedLogos.has(current.logoUrl) ? /* @__PURE__ */ jsx(
+            current2.logoUrl && !failedLogos.has(current2.logoUrl) ? /* @__PURE__ */ jsx(
               "img",
               {
-                src: current.logoUrl,
-                alt: current.heading,
+                src: current2.logoUrl,
+                alt: current2.heading,
                 className: "max-h-[clamp(2.25rem,10vh,6rem)] w-auto max-w-[min(100%,26rem)] self-start object-contain object-left drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]",
-                onError: () => setFailedLogos((prev) => new Set(prev).add(current.logoUrl))
+                onError: () => setFailedLogos((prev) => new Set(prev).add(current2.logoUrl))
               }
-            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current.heading }),
-            (metaParts.length > 0 || current.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
+            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current2.heading }),
+            (metaParts.length > 0 || current2.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
               metaParts.map((part, partIndex) => /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
                 partIndex > 0 && /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
                 /* @__PURE__ */ jsx("span", { children: part })
               ] }, part)),
-              current.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
+              current2.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
                 /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
                 /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
                   /* @__PURE__ */ jsx("span", { className: "rounded bg-[#f5c518] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-black", children: "IMDb" }),
-                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current.item.ratings.imdb })
+                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current2.item.ratings.imdb })
                 ] })
               ] })
             ] }),
-            current.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current.item.overview }),
+            current2.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current2.item.overview }),
             /* @__PURE__ */ jsxs("div", { className: "mt-1 flex flex-wrap items-center gap-3", children: [
               /* @__PURE__ */ jsxs(
                 "button",
@@ -19790,12 +22014,12 @@
                   "data-init": "",
                   onClick: () => {
                     markInteracted();
-                    current.onPrimary();
+                    current2.onPrimary();
                   },
                   className: "inline-flex h-10 items-center gap-2 rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400",
                   children: [
                     /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
-                    current.primaryLabel
+                    current2.primaryLabel
                   ]
                 }
               ),
@@ -20088,6 +22312,15 @@
     const series = store2[mediaKey];
     return series && Number.isFinite(series.d) ? series.d : null;
   }
+  function getSavedSubtitleDelayEntry(mediaKey, season, episode) {
+    const store2 = readStore();
+    const pick2 = (entry) => entry && Number.isFinite(entry.d) ? { delay: entry.d, userSet: entry.u === 1 } : null;
+    if (season != null && episode != null) {
+      const exact = pick2(store2[`${mediaKey}:s${season}e${episode}`]);
+      if (exact) return exact;
+    }
+    return pick2(store2[mediaKey]);
+  }
   function saveSubtitleDelay(mediaKey, season, episode, delay) {
     const store2 = readStore();
     const exactKey = season != null && episode != null ? `${mediaKey}:s${season}e${episode}` : null;
@@ -20095,7 +22328,7 @@
       if (exactKey) delete store2[exactKey];
       delete store2[mediaKey];
     } else {
-      const entry = { d: delay, t: Date.now() };
+      const entry = { d: delay, t: Date.now(), u: 1 };
       if (exactKey) store2[exactKey] = entry;
       store2[mediaKey] = entry;
     }
@@ -20107,6 +22340,563 @@
       init_profile_storage_shim();
       STORAGE_KEY3 = "lumio_subtitle_delays_v1";
       MAX_ENTRIES2 = 400;
+    }
+  });
+
+  // lib/subtitle-sync/client.ts
+  async function post2(path, body, signal) {
+    try {
+      const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
+      if (!res.ok) return { status: "no_fit", reason: `http_${res.status}` };
+      return await res.json();
+    } catch (err) {
+      if (err.name === "AbortError") throw err;
+      return { status: "no_fit", reason: "network" };
+    }
+  }
+  function requestSubtitleSync(body, signal) {
+    return post2("/api/subtitles/sync", body, signal);
+  }
+  function requestAudioVerification(jobId, url, signal) {
+    return post2("/api/subtitles/sync/verify-audio", { jobId, url }, signal);
+  }
+  async function prefetchSubtitleSyncIndex(url, fileName, extra) {
+    await fetch("/api/subtitles/sync/prefetch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url, fileName, ...extra }) }).catch(() => {
+    });
+  }
+  var init_client2 = __esm({
+    "lib/subtitle-sync/client.ts"() {
+    }
+  });
+
+  // lib/subtitle-sync/loop.ts
+  function awaitsReferenceAudioCheck(r) {
+    return (r.status === "synced" || r.status === "already_synced") && r.provisional === true && r.reason === "rac_pending";
+  }
+  function nextWaitPlayedS(r, pendingRetries, played) {
+    const floor = Math.max(1, r.retryAfterPlayedS ?? 0);
+    if (r.status === "reference_pending" || awaitsReferenceAudioCheck(r)) {
+      if (pendingRetries >= PENDING_RETRY_PLAYED_S.length) return null;
+      return Math.max(PENDING_RETRY_PLAYED_S[pendingRetries] - played, floor);
+    }
+    if ((r.status === "synced" || r.status === "already_synced") && r.provisional) {
+      if (r.retryAfterPlayedS === void 0) return null;
+      const wait = Math.max(PROVISIONAL_RECHECK_PLAYED_S, floor);
+      return played + wait <= PROVISIONAL_RECHECK_UNTIL_PLAYED_S ? wait : null;
+    }
+    return null;
+  }
+  async function driveSync(deps) {
+    let played = 0;
+    let pendingRetries = 0;
+    for (; ; ) {
+      const r = await deps.request();
+      const wait = nextWaitPlayedS(r, pendingRetries, played);
+      await deps.onResult(r, wait === null);
+      if (wait === null) return r;
+      if (!await deps.waitPlayed(wait)) return null;
+      played += wait;
+      if (r.status === "reference_pending" || awaitsReferenceAudioCheck(r)) pendingRetries++;
+    }
+  }
+  var PENDING_RETRY_PLAYED_S, PROVISIONAL_RECHECK_PLAYED_S, PROVISIONAL_RECHECK_UNTIL_PLAYED_S;
+  var init_loop = __esm({
+    "lib/subtitle-sync/loop.ts"() {
+      PENDING_RETRY_PLAYED_S = [30, 60, 120, 300];
+      PROVISIONAL_RECHECK_PLAYED_S = 300;
+      PROVISIONAL_RECHECK_UNTIL_PLAYED_S = 1800;
+    }
+  });
+
+  // lib/subtitle-sync/plan.ts
+  function subtitleLangGroup(value) {
+    const normalized = normalizeLanguageCode(value) ?? "und";
+    const [base] = normalized.split(/[-_]/);
+    return normalizeLanguageCode(base) ?? normalized;
+  }
+  function buildCandidates(selected, all, max = 4) {
+    const lang = subtitleLangGroup(selected.lang3);
+    const sameLang = (c) => subtitleLangGroup(c.lang3) === lang;
+    const same2 = all.filter((c) => c.id !== selected.id && sameLang(c));
+    const rank = (c) => c.hashMatch ? 0 : 1;
+    const targets = same2.map((c, i) => ({ c, i })).sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i).map(({ c }) => c).slice(0, max);
+    const references = all.filter((c) => c.id !== selected.id && !sameLang(c) && c.hashMatch);
+    return [...targets, ...references];
+  }
+  function outcomeMessageKey(r) {
+    if (r.status === "no_reference") return r.reason === "no_text_tracks" ? "subtitleAutoSyncNoTextTracks" : "subtitleAutoSyncNoReferenceInFile";
+    if (r.status === "no_fit") {
+      const fetchFailed = !!r.reason && (FETCH_REASONS.has(r.reason) || r.reason.startsWith("http_"));
+      return fetchFailed ? "subtitleAutoSyncFetchFailed" : "subtitleAutoSyncNoFit";
+    }
+    if (r.status === "ambiguous") return "subtitleAutoSyncAmbiguous";
+    return null;
+  }
+  function isFinalOutcome(r) {
+    if (r.status === "reference_pending") return false;
+    if ((r.status === "synced" || r.status === "already_synced") && r.provisional) return false;
+    return true;
+  }
+  function withdrawsProvisional(r, applied) {
+    return applied && r.status === "no_fit" && (r.reason === "text_veto" || r.reason === "anchor_veto");
+  }
+  function formatCorrection(ms) {
+    const sign = ms < 0 ? "\u2212" : "+";
+    const abs = Math.abs(ms);
+    if (abs >= 6e4) {
+      const secs = Math.round(abs / 1e3);
+      return `${sign}${Math.floor(secs / 60)} min ${secs % 60} s`;
+    }
+    return `${sign}${(abs / 1e3).toFixed(1).replace(".", ",")} s`;
+  }
+  function createSyncGuard() {
+    let current2 = 0;
+    return { begin: () => ++current2, isCurrent: (token) => token === current2 };
+  }
+  function playedDelta(last2, now2) {
+    const d = now2 - last2;
+    return d > 0 && d < 3 ? d : 0;
+  }
+  function createAttemptLedger() {
+    const seen = /* @__PURE__ */ new Set();
+    return {
+      has: (url, subId) => seen.has(`${url}|${subId}`),
+      mark: (url, subId) => {
+        seen.add(`${url}|${subId}`);
+      }
+    };
+  }
+  function userDelayBlocks(ctx) {
+    return ctx.savedDelay !== null || ctx.currentDelay !== (ctx.inheritedDelay ?? 0) || ctx.hasDrift;
+  }
+  function isRunValid(ctx) {
+    return ctx.current && !ctx.userBlocked && ctx.enabled && !ctx.optedOut;
+  }
+  function syncIdentity(a) {
+    const out = {};
+    const name = a.fileName?.trim();
+    if (name) out.fileName = name;
+    const title = a.title?.trim();
+    if (title) out.title = title;
+    if (typeof a.year === "number" && a.year > 0) out.year = a.year;
+    if (typeof a.season === "number" && a.season >= 0) out.season = a.season;
+    if (typeof a.episode === "number" && a.episode >= 0) out.episode = a.episode;
+    return out;
+  }
+  function safeDecode(v) {
+    try {
+      return decodeURIComponent(v);
+    } catch {
+      return v;
+    }
+  }
+  function releaseSegment(url) {
+    let u = url;
+    if (u.startsWith("/api/proxy-stream?url=")) {
+      const v = u.slice("/api/proxy-stream?url=".length).split("&")[0];
+      u = safeDecode(v);
+    }
+    const wrapped = u.split("/api/source-cache?")[1]?.split("&").find((kv) => kv.startsWith("u="));
+    if (wrapped) u = safeDecode(wrapped.slice(2));
+    const path = u.split(/[?#]/)[0];
+    const seg = safeDecode(path.slice(path.lastIndexOf("/") + 1));
+    const lower = seg.trim().toLowerCase();
+    const dot = lower.lastIndexOf(".");
+    const ext = dot >= 0 ? lower.slice(dot + 1) : "";
+    const tokens = lower.split(".").filter((t) => t.trim() !== "").length;
+    return MEDIA_EXTENSIONS.includes(ext) || tokens >= 3 ? seg : null;
+  }
+  function effectiveName(url, id) {
+    if (id.fileName) return id.fileName;
+    const seg = releaseSegment(url);
+    if (seg) return seg;
+    if (!id.title) return "";
+    let name = id.title;
+    if (id.year) name += ` (${id.year})`;
+    if (id.season !== void 0 && id.episode !== void 0) name += ` S${String(id.season).padStart(2, "0")}E${String(id.episode).padStart(2, "0")}`;
+    return name;
+  }
+  function prefetchKey(url, id) {
+    return `${url}
+${effectiveName(url, id)}`;
+  }
+  var PENDING_MESSAGE_KEY, FETCH_REASONS, MEDIA_EXTENSIONS;
+  var init_plan = __esm({
+    "lib/subtitle-sync/plan.ts"() {
+      "use strict";
+      init_playback_settings();
+      PENDING_MESSAGE_KEY = "subtitleAutoSyncReadingTracks";
+      FETCH_REASONS = /* @__PURE__ */ new Set(["fetch", "timeout", "network"]);
+      MEDIA_EXTENSIONS = ["mkv", "mp4", "m4v", "avi", "mov", "webm", "wmv", "mpg", "mpeg", "ts", "m2ts"];
+    }
+  });
+
+  // lib/subtitle-sync/opt-out.ts
+  function read8() {
+    try {
+      const parsed = JSON.parse(getScopedStorageItem(STORAGE_KEY4) ?? "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function isAutoSyncOptedOut(mediaKey, subtitleId) {
+    return `${mediaKey}|${subtitleId}` in read8();
+  }
+  function setAutoSyncOptOut(mediaKey, subtitleId) {
+    const store2 = read8();
+    const key = `${mediaKey}|${subtitleId}`;
+    delete store2[key];
+    const next = Math.max(0, ...Object.values(store2)) + 1;
+    store2[key] = next;
+    const keys2 = Object.keys(store2).sort((a, b) => store2[a] - store2[b]);
+    for (const k of keys2.slice(0, Math.max(0, keys2.length - MAX_ENTRIES3))) delete store2[k];
+    setScopedStorageItem(STORAGE_KEY4, JSON.stringify(store2));
+  }
+  var STORAGE_KEY4, MAX_ENTRIES3;
+  var init_opt_out = __esm({
+    "lib/subtitle-sync/opt-out.ts"() {
+      init_profile_storage_shim();
+      STORAGE_KEY4 = "lumio_subtitle_autosync_optout_v1";
+      MAX_ENTRIES3 = 200;
+    }
+  });
+
+  // lib/subtitle-sync/user-delay.ts
+  function bindingSavedDelay(entry) {
+    return entry && entry.userSet ? entry.delay : null;
+  }
+  function inheritedDelay(entry) {
+    return entry && !entry.userSet ? entry.delay : null;
+  }
+  function clearsInheritedDelay(inherited, current2) {
+    return inherited !== null && inherited !== 0 && current2 === inherited;
+  }
+  function persistAfterRestore(pending5, subDelay) {
+    if (pending5 === null) return { skip: false, pending: null };
+    if (subDelay !== pending5) return { skip: true, pending: pending5 };
+    return { skip: true, pending: null };
+  }
+  function waitsForPlayback(reason) {
+    return reason === "not-first-frame" || reason === "no-url" || reason === "no-subtitle";
+  }
+  function autoSyncSkipReason(g) {
+    if (!g.hasSelection) return "no-subtitle";
+    if (!g.enabled) return "setting";
+    if (g.isLive) return "live";
+    if (g.source !== "opensubtitles") return g.source === "external" ? "external" : "embedded";
+    if (g.ledgerHit) return "ledger";
+    if (g.optedOut) return "opt-out";
+    if (g.savedDelay !== null) return "saved-delay";
+    if (userDelayBlocks({ savedDelay: null, currentDelay: g.currentDelay, hasDrift: g.hasDrift, inheritedDelay: g.inheritedDelay })) return "manual-delay";
+    if (!g.firstFrame) return "not-first-frame";
+    if (!g.hasUrl) return "no-url";
+    return null;
+  }
+  var init_user_delay = __esm({
+    "lib/subtitle-sync/user-delay.ts"() {
+      init_plan();
+    }
+  });
+
+  // lib/subtitle-sync/diag.ts
+  function fileLabel(url, id) {
+    const name = effectiveName(url, id).split(/[?#]/)[0].trim();
+    return name ? name.slice(0, 120) : "-";
+  }
+  function subLabel(id) {
+    const clean = id.split(/[?#]/)[0];
+    const tail = clean.slice(clean.lastIndexOf("/") + 1) || "-";
+    return tail.slice(0, 40);
+  }
+  function describeSkip(reason, ctx) {
+    const delay = ctx.delay !== void 0 && ctx.delay !== null ? ` f\xF6rdr\xF6jning=${ctx.delay}s` : "";
+    return `${CLIENT_PREFIX} ${waitsForPlayback(reason) ? "v\xE4ntar" : "hoppar \xF6ver"}: ${reason} fil=${ctx.file} undertext=${ctx.sub} k\xE4lla=${ctx.source}${delay}`;
+  }
+  function describeResult(r, attempt) {
+    const parts = [`${CLIENT_PREFIX} svar #${attempt} status=${r.status}`];
+    if (r.reason) parts.push(`sk\xE4l=${r.reason}`);
+    if (r.subtitleId) parts.push(`undertext=${subLabel(r.subtitleId)}`);
+    if (typeof r.correctionMs === "number") parts.push(`offset=${r.correctionMs}ms`);
+    if (r.provisional) parts.push("provisoriskt");
+    if (typeof r.retryAfterPlayedS === "number") parts.push(`igen-om=${r.retryAfterPlayedS}s`);
+    return parts.join(" ");
+  }
+  function logSubsyncClient(line) {
+    if (typeof fetch !== "function") return;
+    try {
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(line)}`).catch(() => {
+      });
+    } catch {
+    }
+  }
+  var CLIENT_PREFIX;
+  var init_diag = __esm({
+    "lib/subtitle-sync/diag.ts"() {
+      init_plan();
+      init_user_delay();
+      CLIENT_PREFIX = "[subsync-klient]";
+    }
+  });
+
+  // components/player/use-subtitle-auto-sync.ts
+  function useSubtitleAutoSync(args) {
+    const latest2 = useRef(args);
+    latest2.current = args;
+    const guardRef = useRef(createSyncGuard());
+    const abortRef = useRef(null);
+    const handledTokenRef = useRef(args.selectionToken);
+    const prefetchedUrlRef = useRef(null);
+    const ledgerRef = useRef(createAttemptLedger());
+    const inFlightRef = useRef(false);
+    const loggedSkipRef = useRef(null);
+    useEffect(() => {
+      if (!args.firstFrameRendered || !args.mediaUrl || args.isLive) return;
+      const identity = syncIdentity({ fileName: args.fileName, title: args.title, year: args.year, season: args.season, episode: args.episode });
+      const key = prefetchKey(args.mediaUrl, identity);
+      if (prefetchedUrlRef.current === key || !getSubtitleAutoSync()) return;
+      prefetchedUrlRef.current = key;
+      const { fileName, ...extra } = identity;
+      logSubsyncClient(`${CLIENT_PREFIX} f\xF6rh\xE4mtning skickad fil=${fileLabel(args.mediaUrl, identity)}`);
+      void prefetchSubtitleSyncIndex(args.mediaUrl, fileName, extra);
+    }, [args.firstFrameRendered, args.mediaUrl, args.isLive, args.fileName, args.title, args.year, args.season, args.episode]);
+    useEffect(() => {
+      guardRef.current.begin();
+      return () => {
+        guardRef.current.begin();
+        abortRef.current?.abort();
+        abortRef.current = null;
+        if (inFlightRef.current) {
+          inFlightRef.current = false;
+          latest2.current.setStatus({ type: "idle" });
+        }
+      };
+    }, [args.selected?.id, args.mediaUrl]);
+    useEffect(() => {
+      if (args.selectionToken === handledTokenRef.current) return;
+      const a = latest2.current;
+      const sel = a.selected;
+      const key = a.mediaKey ?? `file:${a.fileName ?? a.mediaUrl}`;
+      const identity = syncIdentity({ fileName: a.fileName, title: a.title, year: a.year, season: a.season, episode: a.episode });
+      const file = fileLabel(a.mediaUrl, identity);
+      const savedDelay = () => {
+        const l = latest2.current;
+        return bindingSavedDelay(l.mediaKey ? getSavedSubtitleDelayEntry(l.mediaKey, l.season ?? null, l.episode ?? null) : null);
+      };
+      const userBlocked = () => {
+        const u2 = latest2.current.getUserDelayState();
+        return userDelayBlocks({ savedDelay: savedDelay(), currentDelay: u2.currentDelay, hasDrift: u2.hasDrift, inheritedDelay: u2.inheritedDelay });
+      };
+      const u = a.getUserDelayState();
+      const saved = savedDelay();
+      const reason = autoSyncSkipReason({
+        enabled: getSubtitleAutoSync(),
+        isLive: a.isLive,
+        hasSelection: !!sel,
+        source: sel?.source ?? "",
+        ledgerHit: !!sel && ledgerRef.current.has(a.mediaUrl, sel.id),
+        optedOut: !!sel && isAutoSyncOptedOut(key, sel.id),
+        savedDelay: saved,
+        inheritedDelay: u.inheritedDelay,
+        currentDelay: u.currentDelay,
+        hasDrift: u.hasDrift,
+        firstFrame: a.firstFrameRendered,
+        hasUrl: !!a.mediaUrl
+      });
+      if (reason) {
+        const logKey = `${args.selectionToken}|${reason}`;
+        if (loggedSkipRef.current !== logKey) {
+          loggedSkipRef.current = logKey;
+          const delay = reason === "saved-delay" ? saved : reason === "manual-delay" ? u.currentDelay : null;
+          logSubsyncClient(describeSkip(reason, { file, sub: sel ? subLabel(sel.id) : "-", source: sel?.source ?? "-", delay }));
+        }
+        if (!waitsForPlayback(reason)) handledTokenRef.current = args.selectionToken;
+        return;
+      }
+      if (!sel) return;
+      handledTokenRef.current = args.selectionToken;
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const token = guardRef.current.begin();
+      const current2 = () => guardRef.current.isCurrent(token) && !controller.signal.aborted;
+      const valid = () => isRunValid({ current: current2(), userBlocked: userBlocked(), enabled: getSubtitleAutoSync(), optedOut: isAutoSyncOptedOut(key, sel.id) });
+      inFlightRef.current = true;
+      let dropLogged = false;
+      const drop = () => {
+        if (!dropLogged) {
+          dropLogged = true;
+          const why = !current2() ? "byte/avbrott" : userBlocked() ? "anv\xE4ndarens f\xF6rdr\xF6jning" : !getSubtitleAutoSync() ? "inst\xE4llningen" : "\xE5ngrad";
+          logSubsyncClient(`${CLIENT_PREFIX} k\xF6rning sl\xE4ppt (${why}) fil=${file} undertext=${subLabel(sel.id)}`);
+        }
+        if (current2() && inFlightRef.current) {
+          inFlightRef.current = false;
+          a.setStatus({ type: "idle" });
+        }
+      };
+      let applied = null;
+      let restored = false;
+      const markIfFinal = (r) => {
+        if (!isFinalOutcome(r)) return;
+        ledgerRef.current.mark(a.mediaUrl, sel.id);
+        if (r.subtitleId && r.subtitleId !== sel.id) ledgerRef.current.mark(a.mediaUrl, r.subtitleId);
+      };
+      const applyResult = async (r, refined) => {
+        if (r.status !== "synced" || !r.vttUrl) return false;
+        if (!valid()) {
+          drop();
+          return true;
+        }
+        const sub = a.options.find((o) => o.id === r.subtitleId) ?? sel;
+        inFlightRef.current = false;
+        await a.applySynced(sub, r.vttUrl);
+        applied = r.vttUrl;
+        logSubsyncClient(`${CLIENT_PREFIX} till\xE4mpad offset=${r.correctionMs ?? 0}ms undertext=${subLabel(sub.id)}${sub.id !== sel.id ? ` (utbytt fr\xE5n ${subLabel(sel.id)})` : ""}${refined ? " (f\xF6rfinad)" : ""}${r.provisional ? " provisoriskt" : ""} fil=${file}`);
+        const offset = formatCorrection(r.correctionMs ?? 0);
+        if (refined) {
+          a.setStatus({ type: "done", message: a.t("subtitleAutoSyncRefined").replace("{offset}", offset) });
+          return true;
+        }
+        const message = sub.id !== sel.id ? a.t("subtitleAutoSyncSwapped") : a.t("subtitleAutoSyncAppliedOffset").replace("{offset}", offset);
+        a.showNotice({
+          message,
+          actionLabel: a.t("subtitleAutoSyncUndo"),
+          onAction: () => {
+            setAutoSyncOptOut(key, sub.id);
+            setAutoSyncOptOut(key, sel.id);
+            logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel.id)} fil=${file}`);
+            controller.abort();
+            void a.restoreOriginal(sel, { undo: true });
+          }
+        });
+        a.setStatus({ type: "done", message });
+        return true;
+      };
+      const finish = (r) => {
+        inFlightRef.current = false;
+        const k = outcomeMessageKey(r);
+        a.setStatus(k ? { type: "done", message: a.t(k) } : { type: "idle" });
+      };
+      const waitPlayed = async (seconds) => {
+        let played = 0;
+        let last2 = a.getPlayTime();
+        while (played < seconds) {
+          await new Promise((resolve) => {
+            const id = setTimeout(done, 1e3);
+            function done() {
+              clearTimeout(id);
+              controller.signal.removeEventListener("abort", done);
+              resolve();
+            }
+            controller.signal.addEventListener("abort", done);
+          });
+          if (!valid()) {
+            drop();
+            return false;
+          }
+          const now2 = a.getPlayTime();
+          played += playedDelta(last2, now2);
+          last2 = now2;
+        }
+        return true;
+      };
+      let attempt = 0;
+      void (async () => {
+        try {
+          a.setStatus({ type: "analyzing", message: a.t("subtitleAutoSyncChecking") });
+          const last2 = await driveSync({
+            request: () => {
+              attempt += 1;
+              const candidates = buildCandidates(toCandidate(sel), a.options.filter((o) => o.source === "opensubtitles").map(toCandidate));
+              logSubsyncClient(`${CLIENT_PREFIX} synkbeg\xE4ran #${attempt} skickad fil=${file} undertext=${subLabel(sel.id)} spr\xE5k=${sel.lang3 || "-"} kandidater=${candidates.length}`);
+              return requestSubtitleSync({
+                url: a.mediaUrl,
+                ...identity,
+                selected: toCandidate(sel),
+                candidates
+              }, controller.signal);
+            },
+            waitPlayed,
+            onResult: async (r) => {
+              logSubsyncClient(describeResult(r, attempt));
+              if (!current2()) return;
+              markIfFinal(r);
+              if (r.status === "reference_pending") {
+                if (applied === null && valid()) a.setStatus({ type: "analyzing", message: a.t(PENDING_MESSAGE_KEY) });
+                return;
+              }
+              if (r.status === "synced" && r.vttUrl && r.vttUrl !== applied) {
+                await applyResult(r, applied !== null);
+                return;
+              }
+              if (withdrawsProvisional(r, applied !== null)) {
+                if (!valid()) {
+                  drop();
+                  return;
+                }
+                applied = null;
+                restored = true;
+                inFlightRef.current = false;
+                logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (veto ${r.reason}) undertext=${subLabel(sel.id)} fil=${file}`);
+                await a.restoreOriginal(sel);
+                a.clearNotice?.();
+                finish(r);
+                return;
+              }
+              if (r.status === "already_synced" && applied !== null) {
+                if (!valid()) {
+                  drop();
+                  return;
+                }
+                applied = null;
+                restored = true;
+                inFlightRef.current = false;
+                logSubsyncClient(`${CLIENT_PREFIX} \xE5terst\xE4lld till originalet (redan synkad) undertext=${subLabel(sel.id)} fil=${file}`);
+                await a.restoreOriginal(sel);
+                a.clearNotice?.();
+                a.setStatus({ type: "done", message: a.t("subtitleAutoSyncRefined").replace("{offset}", formatCorrection(0)) });
+              }
+            }
+          });
+          if (!last2 || !current2()) return;
+          if (last2.status === "ambiguous" && last2.jobId) {
+            if (!await waitPlayed(AUDIO_WAIT_PLAYED_SECONDS)) return;
+            logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file} undertext=${subLabel(sel.id)}`);
+            const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller.signal);
+            logSubsyncClient(describeResult(v, "ljud"));
+            if (!current2()) return;
+            markIfFinal(v);
+            if (await applyResult(v, false)) return;
+            if (!valid()) {
+              drop();
+              return;
+            }
+            finish(v);
+            return;
+          }
+          if (applied === null && !restored) finish(last2);
+        } catch (err) {
+          if (err.name !== "AbortError") logSubsyncClient(`${CLIENT_PREFIX} fel i k\xF6rningen fil=${file} undertext=${subLabel(sel.id)}`);
+          drop();
+        }
+      })();
+    }, [args.selectionToken, args.firstFrameRendered, args.selected?.id]);
+  }
+  var AUDIO_WAIT_PLAYED_SECONDS, toCandidate;
+  var init_use_subtitle_auto_sync = __esm({
+    "components/player/use-subtitle-auto-sync.ts"() {
+      "use strict";
+      init_react_shim();
+      init_subtitle_delay_store();
+      init_playback_settings();
+      init_client2();
+      init_loop();
+      init_plan();
+      init_opt_out();
+      init_user_delay();
+      init_diag();
+      AUDIO_WAIT_PLAYED_SECONDS = 20;
+      toCandidate = (s) => ({ id: s.id, url: s.url, lang3: s.lang3, hashMatch: s.hashMatch, release: s.release });
     }
   });
 
@@ -20273,6 +23063,366 @@
       init_binge_runtime();
       init_sidebar_icons();
       init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/series-locks.ts
+  function isEpisodeRef(value) {
+    const v = value;
+    return !!v && Number.isInteger(v.season) && Number.isInteger(v.episode);
+  }
+  function normalizeLock(tmdbId, value) {
+    const v = value;
+    if (!v || typeof v !== "object") return null;
+    const members = Array.isArray(v.members) ? v.members.filter((m) => !!m && m.kind === "profile" && typeof m.profileId === "string").map((m) => ({ kind: "profile", profileId: m.profileId, nameHint: typeof m.nameHint === "string" ? m.nameHint : "" })) : [];
+    const history = Array.isArray(v.history) ? v.history.filter((h) => !!h && typeof h.profileId === "string" && Number.isInteger(h.season) && Number.isInteger(h.episode)) : [];
+    return {
+      tmdbId,
+      seriesTitle: typeof v.seriesTitle === "string" ? v.seriesTitle : "",
+      posterUrl: typeof v.posterUrl === "string" ? v.posterUrl : null,
+      members,
+      mode: v.mode === "solo" ? "solo" : "together",
+      requirePin: v.requirePin === true,
+      history,
+      createdBy: typeof v.createdBy === "string" ? v.createdBy : "",
+      createdAt: typeof v.createdAt === "string" ? v.createdAt : "",
+      ...isEpisodeRef(v.finale) ? { finale: { season: v.finale.season, episode: v.finale.episode } } : {},
+      ...typeof v.finishedAt === "string" ? { finishedAt: v.finishedAt } : {}
+    };
+  }
+  function readAll2() {
+    const raw = getItem(SERIES_LOCKS_KEY);
+    if (!raw) {
+      lastReadFailed = false;
+      return {};
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("inte ett objekt");
+      lastReadFailed = false;
+      const out = {};
+      for (const [id, value] of Object.entries(parsed)) {
+        const lock = normalizeLock(id, value);
+        if (lock) out[id] = lock;
+      }
+      return out;
+    } catch (error) {
+      lastReadFailed = true;
+      console.warn("[series-lock] ogiltig series_locks, behandlas som tom", error);
+      return {};
+    }
+  }
+  function profileNames() {
+    return new Map(getProfiles().map((p) => [p.id, p.name]));
+  }
+  function liveMembers(lock, names) {
+    return lock.members.filter((m) => names.has(m.profileId));
+  }
+  function withLiveMembers(lock, names) {
+    const members = liveMembers(lock, names);
+    return members.length >= 2 ? { ...lock, members } : null;
+  }
+  function getSeriesLock(tmdbId) {
+    const lock = readAll2()[tmdbId];
+    return lock ? withLiveMembers(lock, profileNames()) : null;
+  }
+  var SERIES_LOCKS_KEY, lastReadFailed;
+  var init_series_locks = __esm({
+    "lib/series-locks.ts"() {
+      "use client";
+      init_app_storage();
+      init_profile_storage_shim();
+      SERIES_LOCKS_KEY = "series_locks";
+      lastReadFailed = false;
+    }
+  });
+
+  // lib/series-lock-gate.ts
+  function epCode(ep) {
+    return `S${ep.season}E${ep.episode}`;
+  }
+  function parseEpCode(code) {
+    const match = /^S(\d+)E(\d+)$/.exec(code);
+    return match ? { season: Number(match[1]), episode: Number(match[2]) } : null;
+  }
+  function hasWatched(input, profileId, ep) {
+    return input.watched[profileId]?.has(epCode(ep)) ?? false;
+  }
+  function hasOverride(input, profileId, ep) {
+    return input.history.some((h) => h.profileId === profileId && h.season === ep.season && h.episode === ep.episode);
+  }
+  function seasonLength(input, season) {
+    const known = input.seasonLengths[season];
+    if (known && known > 0) return known;
+    let max = 0;
+    for (const codes of Object.values(input.watched)) {
+      for (const code of codes) {
+        const parsed = parseEpCode(code);
+        if (parsed && parsed.season === season && parsed.episode > max) max = parsed.episode;
+      }
+    }
+    return max > 0 ? max : null;
+  }
+  function previousEpisode(input, ep) {
+    if (ep.season < 1) return null;
+    if (ep.episode > 1) return { season: ep.season, episode: ep.episode - 1 };
+    if (ep.season === 1) return null;
+    const prev = ep.season - 1;
+    return { season: prev, episode: seasonLength(input, prev) ?? 1 };
+  }
+  function episodeGate(input, profileId, ep) {
+    if (ep.season < 1) return OPEN;
+    if (!input.memberIds.includes(profileId)) return OPEN;
+    if (hasWatched(input, profileId, ep)) return OPEN;
+    if (hasOverride(input, profileId, ep)) return OPEN;
+    const requires = previousEpisode(input, ep);
+    if (!requires) return OPEN;
+    const waitingFor = input.memberIds.filter((id) => id !== profileId && !hasWatched(input, id, requires));
+    return waitingFor.length === 0 ? OPEN : { kind: "blocked", waitingFor, requires };
+  }
+  var OPEN;
+  var init_series_lock_gate = __esm({
+    "lib/series-lock-gate.ts"() {
+      OPEN = { kind: "open" };
+    }
+  });
+
+  // lib/series-lock-runtime.ts
+  function watchedStorageKey(profileId) {
+    return getProfileStorageKey(WATCHED_KEY, profileId);
+  }
+  function watchedCodesFor(profileId, tmdbId) {
+    const out = /* @__PURE__ */ new Set();
+    const raw = getItem(watchedStorageKey(profileId));
+    if (!raw) return out;
+    try {
+      const data = JSON.parse(raw);
+      const prefix = `${tmdbId}-`;
+      for (const [key, value] of Object.entries(data)) {
+        if (value && key.startsWith(prefix)) out.add(key.slice(prefix.length));
+      }
+    } catch {
+    }
+    return out;
+  }
+  function gateInputFor(lock) {
+    const memberIds = lock.members.map((m) => m.profileId);
+    return {
+      memberIds,
+      history: lock.history,
+      watched: Object.fromEntries(memberIds.map((id) => [id, watchedCodesFor(id, lock.tmdbId)])),
+      seasonLengths: seasonLengths.get(lock.tmdbId) ?? {}
+    };
+  }
+  function checkEpisode(tmdbId, season, episode) {
+    if (!tmdbId) return OPEN2;
+    const lock = getSeriesLock(tmdbId);
+    if (!lock) return OPEN2;
+    const active3 = getActiveProfileId();
+    if (!active3) return OPEN2;
+    return episodeGate(gateInputFor(lock), active3, { season, episode });
+  }
+  var WATCHED_KEY, OPEN2, seasonLengths;
+  var init_series_lock_runtime = __esm({
+    "lib/series-lock-runtime.ts"() {
+      "use client";
+      init_react_shim();
+      init_app_storage();
+      init_profile_storage_shim();
+      init_watched_episodes();
+      init_series_locks();
+      init_series_lock_gate();
+      WATCHED_KEY = "watched_episodes";
+      OPEN2 = { kind: "open" };
+      seasonLengths = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // lib/player-status-line.ts
+  function endsAtMs(position, duration, speed, nowMs) {
+    if (!Number.isFinite(duration) || duration <= 0) return null;
+    const kvar = duration - Math.max(0, position);
+    if (!Number.isFinite(kvar) || kvar <= 0) return null;
+    const takt = Number.isFinite(speed) && speed > 0 ? speed : 1;
+    return nowMs + kvar / takt * 1e3;
+  }
+  function statusLineParts(input) {
+    const delar = [];
+    const slut = endsAtMs(input.position, input.duration, input.speed, input.nowMs);
+    if (slut !== null) delar.push(input.endsTemplate.replace("{time}", input.formatClock(slut)));
+    if (input.introLabel) delar.push(input.introLabel);
+    if (input.outroLabel) delar.push(input.outroLabel);
+    return delar;
+  }
+  var init_player_status_line = __esm({
+    "lib/player-status-line.ts"() {
+    }
+  });
+
+  // lib/moment-link.ts
+  function takePendingMomentStart(key, nowMs = Date.now()) {
+    if (!pending4 || !key) return null;
+    if (pending4.expiresAt < nowMs) {
+      pending4 = null;
+      return null;
+    }
+    if (pending4.key !== key) return null;
+    const { seconds } = pending4;
+    pending4 = null;
+    return seconds;
+  }
+  var pending4;
+  var init_moment_link = __esm({
+    "lib/moment-link.ts"() {
+      pending4 = null;
+    }
+  });
+
+  // lib/player-chapters.ts
+  function buildChapterList(input) {
+    const l\u00E4ngd = Number.isFinite(input.durationSec) && input.durationSec > 0 ? input.durationSec : 0;
+    const fil = (input.fileChapters ?? []).filter((c) => Number.isFinite(c.time) && c.time >= 0).sort((a, b) => a.time - b.time);
+    if (fil.length >= 2) {
+      return fil.map((c, i) => {
+        const n\u00E4sta = i + 1 < fil.length ? fil[i + 1].time : l\u00E4ngd;
+        const titel = c.title.trim();
+        return {
+          label: titel && !GENERISK.test(titel) ? titel : input.labels.chapter(i + 1),
+          startSec: c.time,
+          durationSec: Math.max(0, n\u00E4sta - c.time),
+          kind: "chapter"
+        };
+      });
+    }
+    if (l\u00E4ngd <= 0) return [];
+    const delar = [{ start: 0, kind: "main" }];
+    const slutpunkter = [];
+    if (input.intro) {
+      const start2 = input.intro.startMs / 1e3;
+      const slut = input.intro.endMs / 1e3;
+      if (slut > start2 && start2 < l\u00E4ngd) {
+        delar.push({ start: start2, kind: input.introKind === "recap" ? "recap" : "intro" });
+        slutpunkter.push(slut);
+      }
+    }
+    if (input.outro) {
+      const start2 = input.outro.startMs / 1e3;
+      if (start2 > 0 && start2 < l\u00E4ngd) delar.push({ start: start2, kind: "credits" });
+    }
+    if (delar.length === 1) return [];
+    for (const slut of slutpunkter) {
+      if (slut < l\u00E4ngd && !delar.some((d) => Math.abs(d.start - slut) < 1)) delar.push({ start: slut, kind: "main" });
+    }
+    delar.sort((a, b) => a.start - b.start);
+    const rensade = delar.filter((d, i) => i === 0 || d.start - delar[i - 1].start >= 1 || d.kind !== "main");
+    const etikett = (kind) => kind === "intro" ? input.labels.intro : kind === "recap" ? input.labels.recap : kind === "credits" ? input.labels.credits : input.labels.main;
+    return rensade.map((d, i) => ({
+      label: etikett(d.kind),
+      startSec: d.start,
+      durationSec: Math.max(0, (i + 1 < rensade.length ? rensade[i + 1].start : l\u00E4ngd) - d.start),
+      kind: d.kind
+    })).filter((d) => d.kind !== "main" || d.durationSec >= 1);
+  }
+  function currentChapterIndex(list, positionSec) {
+    let index = -1;
+    for (let i = 0; i < list.length; i += 1) {
+      if (list[i].startSec <= positionSec + 0.25) index = i;
+    }
+    return index;
+  }
+  function formatChapterDuration(seconds, lang) {
+    const s = Math.max(0, Math.round(seconds));
+    const min = Math.floor(s / 60);
+    const sek = s % 60;
+    const enhetMin = "min";
+    const enhetSek = lang === "sv" ? "sek" : "sec";
+    if (min === 0) return `${sek} ${enhetSek}`;
+    if (sek === 0 || min >= 10) return `${min} ${enhetMin}`;
+    return `${min} ${enhetMin} ${sek} ${enhetSek}`;
+  }
+  var GENERISK;
+  var init_player_chapters = __esm({
+    "lib/player-chapters.ts"() {
+      GENERISK = /^(chapter|kapitel|chap\.?|ch\.?)?\s*\d+$/i;
+    }
+  });
+
+  // lib/player-moments.ts
+  function momentTitleKey(input) {
+    const id = input.tmdbId?.trim();
+    if (!id) return null;
+    if (input.mediaType === "tv") {
+      if (input.season == null || input.episode == null) return null;
+      return `tv:${id}:s${input.season}e${input.episode}`;
+    }
+    return `movie:${id}`;
+  }
+  function read9() {
+    try {
+      const raw = getScopedStorageItem(KEY16);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  function write5(store2) {
+    const nycklar = Object.keys(store2);
+    if (nycklar.length > MAX_TITLES) {
+      nycklar.sort((a, b) => store2[a].at - store2[b].at);
+      for (const nyckel of nycklar.slice(0, nycklar.length - MAX_TITLES)) delete store2[nyckel];
+    }
+    try {
+      setScopedStorageItem(KEY16, JSON.stringify(store2));
+    } catch {
+    }
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT13));
+  }
+  function getMoments(titleKey) {
+    if (!titleKey) return [];
+    return [...read9()[titleKey]?.t ?? []];
+  }
+  function addMoment(titleKey, seconds, nowMs = Date.now()) {
+    const sekund = Math.max(0, Math.floor(seconds));
+    const store2 = read9();
+    const lista = store2[titleKey]?.t ?? [];
+    const n\u00E4ra = lista.find((t) => Math.abs(t - sekund) < MOMENT_DEDUPE_SECONDS);
+    if (n\u00E4ra !== void 0) return { kind: "exists", seconds: n\u00E4ra };
+    const n\u00E4sta = [...lista, sekund].sort((a, b) => a - b).slice(-MAX_PER_TITLE);
+    store2[titleKey] = { at: nowMs, t: n\u00E4sta };
+    write5(store2);
+    return { kind: "added", seconds: sekund };
+  }
+  function removeMoment(titleKey, seconds) {
+    const store2 = read9();
+    const lista = store2[titleKey]?.t;
+    if (!lista) return;
+    const kvar = lista.filter((t) => t !== seconds);
+    if (kvar.length === 0) delete store2[titleKey];
+    else store2[titleKey] = { at: Date.now(), t: kvar };
+    write5(store2);
+  }
+  function clearMoments(titleKey) {
+    const store2 = read9();
+    if (!store2[titleKey]) return;
+    delete store2[titleKey];
+    write5(store2);
+  }
+  function onMomentsChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT13, listener);
+    return () => window.removeEventListener(EVENT13, listener);
+  }
+  var KEY16, EVENT13, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
+  var init_player_moments = __esm({
+    "lib/player-moments.ts"() {
+      init_profile_storage_shim();
+      KEY16 = "player_moments_v1";
+      EVENT13 = "lumio-player-moments-changed";
+      MOMENT_DEDUPE_SECONDS = 3;
+      MAX_PER_TITLE = 50;
+      MAX_TITLES = 200;
     }
   });
 
@@ -20663,6 +23813,12 @@ ${cue.text}`).join("\n\n")}
   }
   function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, onStartProgress, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
+    useEffect(() => {
+      if (mediaType !== "tv" || season == null || episode == null || !tmdbId) return;
+      if (checkEpisode(tmdbId, season, episode).kind !== "blocked") return;
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[series-lock] ogrindad start ${tmdbId} S${season}E${episode}`)}`).catch(() => {
+      });
+    }, [mediaType, tmdbId, season, episode]);
     const [engineKind, setEngineKind] = useState("none");
     useEffect(() => {
       setEngineKind(isDesktopTauriEnv ? "mpv" : isAndroidTauriEnv ? "droid" : "none");
@@ -20816,9 +23972,9 @@ ${cue.text}`).join("\n\n")}
         }
       };
     }, [endHlsSessionOnServer]);
-    const notifyLanPlaybackState = useCallback((active2) => {
+    const notifyLanPlaybackState = useCallback((active3) => {
       if (!getLanStreamingEnabled() || getLanStreamingMode() !== "playback") return;
-      const body = active2 ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
+      const body = active3 ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
       void fetch("/api/lan-playback-state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -20867,6 +24023,11 @@ ${cue.text}`).join("\n\n")}
     const hideTimerRef = useRef(null);
     const [showStillWatchingPrompt, setShowStillWatchingPrompt] = useState(false);
     const [stillWatchingCountdown, setStillWatchingCountdown] = useState(STILL_WATCHING_CLOSE_SECONDS);
+    const [stillWatchingReason, setStillWatchingReason] = useState("episodes");
+    const [sleepTimer, setSleepTimer] = useState(DISARMED);
+    const sleepFiredAtRef = useRef(0);
+    const [companionIds, setCompanionIds] = useState([]);
+    const [companionProfiles, setCompanionProfiles] = useState([]);
     const stillWatchingEnabledRef = useRef(false);
     const stillWatchingMaxMinutesRef = useRef(90);
     const [disableSubtitlesWhenAudioMatches, setDisableSubtitlesWhenAudioMatches] = useState(() => getDisableSubtitlesWhenAudioMatches());
@@ -20876,7 +24037,10 @@ ${cue.text}`).join("\n\n")}
     const stillWatchingEpisodeCountRef = useRef(0);
     function registerPlaybackInteraction() {
       lastPlaybackInteractionRef.current = realTime;
-      if (showStillWatchingPrompt) setShowStillWatchingPrompt(false);
+      if (showStillWatchingPrompt) {
+        setShowStillWatchingPrompt(false);
+        if (stillWatchingReason === "sleep") resumeAfterSleepPrompt();
+      }
     }
     const creditsModeRef = useRef(false);
     function onMouseActivity() {
@@ -20906,6 +24070,26 @@ ${cue.text}`).join("\n\n")}
     const hapticsActive = Boolean(hapticsStatus?.active);
     const hapticFilterWanted = shouldAddHapticFilter({ active: hapticsActive, firstFrame: hasStarted, droid: isDroidEngine });
     const [openSurface, setOpenSurface] = useState(null);
+    const anchorCacheRef = useRef({ surface: null, w: 0, h: 0, styles: /* @__PURE__ */ new Map() });
+    const anchoredMenuStyle = (trigger, menuWidth = 0) => {
+      if (!trigger || typeof window === "undefined") return getAnchoredMenuStyle(trigger, menuWidth);
+      const cache8 = anchorCacheRef.current;
+      if (cache8.surface !== openSurface || cache8.w !== window.innerWidth || cache8.h !== window.innerHeight) {
+        anchorCacheRef.current = { surface: openSurface, w: window.innerWidth, h: window.innerHeight, styles: /* @__PURE__ */ new Map() };
+      }
+      const byTrigger = anchorCacheRef.current.styles;
+      let byWidth = byTrigger.get(trigger);
+      if (!byWidth) {
+        byWidth = /* @__PURE__ */ new Map();
+        byTrigger.set(trigger, byWidth);
+      }
+      let style = byWidth.get(menuWidth);
+      if (!style) {
+        style = getAnchoredMenuStyle(trigger, menuWidth);
+        byWidth.set(menuWidth, style);
+      }
+      return style;
+    };
     const [statsHud, setStatsHudState] = useState(() => getStatsHud());
     const [stripSdh, setStripSdhState] = useState(() => getStripSdh());
     const [playbackSpeed, setPlaybackSpeedState] = useState(() => getSavedPlaybackSpeed(mediaType, tmdbId ?? null));
@@ -20913,9 +24097,9 @@ ${cue.text}`).join("\n\n")}
     playbackSpeedRef.current = playbackSpeed;
     const openSurfaceRef = useRef(null);
     openSurfaceRef.current = openSurface;
-    const surfaceSetter = (id) => (value) => setOpenSurface((current) => {
-      const next = typeof value === "function" ? value(current === id) : value;
-      return next ? id : current === id ? null : current;
+    const surfaceSetter = (id) => (value) => setOpenSurface((current2) => {
+      const next = typeof value === "function" ? value(current2 === id) : value;
+      return next ? id : current2 === id ? null : current2;
     });
     const showSubMenu = openSurface === "subs";
     const setShowSubMenu = surfaceSetter("subs");
@@ -20923,6 +24107,14 @@ ${cue.text}`).join("\n\n")}
     const setShowAudioMenu = surfaceSetter("audio");
     const showAudioDelayMenu = openSurface === "audioDelay";
     const setShowAudioDelayMenu = surfaceSetter("audioDelay");
+    const showMomentsMenu = openSurface === "moments";
+    const setShowMomentsMenu = surfaceSetter("moments");
+    const showChaptersMenu = openSurface === "chapters";
+    const setShowChaptersMenu = surfaceSetter("chapters");
+    const showSleepMenu = openSurface === "sleep";
+    const setShowSleepMenu = surfaceSetter("sleep");
+    const showCompanionsMenu = openSurface === "companions";
+    const setShowCompanionsMenu = surfaceSetter("companions");
     const showCastMenu = openSurface === "cast";
     const setShowCastMenu = surfaceSetter("cast");
     const showAspectMenu = openSurface === "aspect";
@@ -21056,12 +24248,12 @@ ${cue.text}`).join("\n\n")}
           } catch {
           }
         };
-        const timer2 = window.setTimeout(() => {
+        const timer3 = window.setTimeout(() => {
           void probe();
         }, 1200);
         return () => {
           cancelled = true;
-          window.clearTimeout(timer2);
+          window.clearTimeout(timer3);
         };
       }
       const v = videoRef.current;
@@ -21216,15 +24408,26 @@ ${cue.text}`).join("\n\n")}
     }, [videoSrc]);
     const [subDrift, setSubDrift] = useState(null);
     const subtitleDelayMediaKey = buildSubtitleDelayMediaKey(mediaType, tmdbId, imdbId ?? null);
+    const inheritedSubDelayRef = useRef(null);
+    const clearedInheritedSubDelayRef = useRef(null);
+    const restoringSubDelayRef = useRef(null);
     useEffect(() => {
+      inheritedSubDelayRef.current = null;
+      clearedInheritedSubDelayRef.current = null;
+      restoringSubDelayRef.current = null;
       if (!subtitleDelayMediaKey) return;
       setSubDrift(null);
-      const saved = getSavedSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null);
-      if (saved == null) return;
-      setSubDelay(saved);
+      const entry = getSavedSubtitleDelayEntry(subtitleDelayMediaKey, season ?? null, episode ?? null);
+      if (entry == null) return;
+      inheritedSubDelayRef.current = inheritedDelay(entry);
+      if (entry.delay !== subDelay) restoringSubDelayRef.current = entry.delay;
+      setSubDelay(entry.delay);
     }, [subtitleDelayMediaKey, season, episode, url]);
     useEffect(() => {
       if (!subtitleDelayMediaKey) return;
+      const step = persistAfterRestore(restoringSubDelayRef.current, subDelay);
+      restoringSubDelayRef.current = step.pending;
+      if (step.skip) return;
       const saved = getSavedSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null);
       if ((saved ?? 0) === subDelay) return;
       saveSubtitleDelay(subtitleDelayMediaKey, season ?? null, episode ?? null, subDelay);
@@ -21241,6 +24444,24 @@ ${cue.text}`).join("\n\n")}
       saveSubtitleDelay(secondaryDelayMediaKey, season ?? null, episode ?? null, secondarySubDelay);
     }, [secondarySubDelay]);
     const [subtitleAutoSyncState, setSubtitleAutoSyncState] = useState({ type: "idle" });
+    const [subtitleSelectionToken, setSubtitleSelectionToken] = useState(0);
+    const syncedVttRef = useRef(/* @__PURE__ */ new Map());
+    const applySyncedSubtitleRef = useRef(null);
+    const subDelayRef = useRef(0);
+    const subDriftRef = useRef(null);
+    const [syncNotice, setSyncNotice] = useState(null);
+    const syncNoticeTimerRef = useRef(null);
+    const showSyncNotice = useCallback((n) => {
+      setSyncNotice(n);
+      if (syncNoticeTimerRef.current) window.clearTimeout(syncNoticeTimerRef.current);
+      syncNoticeTimerRef.current = window.setTimeout(() => setSyncNotice(null), 6e3);
+    }, []);
+    useEffect(() => () => {
+      if (syncNoticeTimerRef.current) window.clearTimeout(syncNoticeTimerRef.current);
+    }, []);
+    useEffect(() => {
+      setSyncNotice(null);
+    }, [url]);
     const [subSize, setSubSize] = useState(() => getDefaultSubtitleSize());
     const [externalSubtitles, setExternalSubtitles] = useState([]);
     const externalVttRef = useRef(/* @__PURE__ */ new Map());
@@ -21254,7 +24475,7 @@ ${cue.text}`).join("\n\n")}
     const effectiveProxyAudioMode = proxyTranscodeActive ? "compatible" : audioOutputMode;
     const [nightMode, setNightModeLive] = useState(() => getNightMode());
     useEffect(() => onPlaybackSettingsChanged(() => setNightModeLive(getNightMode())), []);
-    const [autoSkipIntro] = useState(() => getAutoSkipIntro());
+    const [autoSkipIntro, setAutoSkipIntroState] = useState(() => getAutoSkipIntro());
     const [rememberAspectRatio] = useState(() => getRememberAspectRatio());
     const [aspectRatioMode, setAspectRatioMode] = useState(() => getRememberAspectRatio() ? getDefaultAspectRatio() : "auto");
     const [cropZoomMode, setCropZoomMode] = useState("off");
@@ -21294,24 +24515,49 @@ ${cue.text}`).join("\n\n")}
       if (!clientOwnsSplash || startError) return;
       if (hasStarted || hasEverStarted) return;
       if (isDirectLocalFileSource) return;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         void fetch(`/api/debug-log?msg=${encodeURIComponent(
           `[browser-start-timeout] no first playable in ${BROWSER_START_TIMEOUT_MS}ms src=${(videoSrc || "(pending probe)").slice(0, 90)}`
         )}`).catch(() => {
         });
         escalateBrowserFailureRef.current();
       }, BROWSER_START_TIMEOUT_MS);
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [clientOwnsSplash, startError, hasStarted, hasEverStarted, isDirectLocalFileSource, videoSrc]);
     const loadFailHandledTokenRef = useRef(0);
     const [subtitleClockOverride, setSubtitleClockOverride] = useState(null);
     const [defaultAudioLanguage, setDefaultAudioLanguage] = useState(() => getDefaultAudioLanguage() || null);
     const moreMenuRef = useRef(null);
+    const [gearPage, setGearPage] = useState("root");
+    useEffect(() => {
+      if (showMoreMenu) setGearPage("root");
+    }, [showMoreMenu]);
+    const momentKey = momentTitleKey({ mediaType: mediaType ?? null, tmdbId: tmdbId ?? null, season: season ?? null, episode: episode ?? null });
+    const [moments, setMoments] = useState(() => getMoments(momentKey));
+    useEffect(() => {
+      setMoments(getMoments(momentKey));
+      return onMomentsChanged(() => setMoments(getMoments(momentKey)));
+    }, [momentKey]);
+    const [momentNotice, setMomentNotice] = useState(null);
+    useEffect(() => {
+      if (!momentNotice) return;
+      const id = window.setTimeout(() => setMomentNotice(null), 2600);
+      return () => window.clearTimeout(id);
+    }, [momentNotice]);
+    const showMomentNotice = (text) => setMomentNotice({ text, id: Date.now() });
+    useEffect(() => {
+      if (!showMoreMenu || !isTv) return;
+      moreMenuRef.current?.querySelector("[data-f]")?.focus();
+    }, [gearPage, showMoreMenu, isTv]);
     const subTriggerRef = useRef(null);
     const audioTriggerRef = useRef(null);
     const aspectTriggerRef = useRef(null);
     const cropTriggerRef = useRef(null);
     const moreTriggerRef = useRef(null);
+    const sleepTriggerRef = useRef(null);
+    const chaptersTriggerRef = useRef(null);
+    const momentsTriggerRef = useRef(null);
+    const companionsTriggerRef = useRef(null);
     const downloadEsRef = useRef(null);
     const downloadTimerRef = useRef(null);
     const autoSkippedIntroRef = useRef(false);
@@ -21322,11 +24568,6 @@ ${cue.text}`).join("\n\n")}
     const autoSubtitleSuppressedRef = useRef(false);
     const manualSubtitleOverrideRef = useRef(false);
     const subtitlePreferenceRef = useRef({ mode: "default" });
-    const lastAutoSyncedDelayRef = useRef(null);
-    const [manualSyncOpen, setManualSyncOpen] = useState(false);
-    const [manualSyncTapTime, setManualSyncTapTime] = useState(null);
-    const [manualSyncBusy, setManualSyncBusy] = useState(false);
-    const [manualSyncFirstAnchor, setManualSyncFirstAnchor] = useState(null);
     const stallLastProgressSecondsRef = useRef(0);
     const stallLastProgressAtRef = useRef(Date.now());
     const androidStartNudgesRef = useRef(0);
@@ -21447,19 +24688,19 @@ ${cue.text}`).join("\n\n")}
       };
       holdStill();
       markPlayerReadyToReveal();
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           holdStill();
           return;
         }
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
         const target2 = initialTime ?? 0;
         if (Math.abs(cinemaTimePosRef.current - target2) > 1.5) void mpvCommand2(["seek", target2, "absolute"]);
         void mpvCommand2(["set_property", "mute", userMuted ? "yes" : "no"]);
         cinemaMute.held = false;
         setMpvStartupHoldReady(true);
       }, 200);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [isDroidEngine, mpv.firstFrameRendered]);
     const openMpvPlayer2 = isDroidEngine ? async (args) => {
       if (args.shouldAbort?.()) return;
@@ -21721,7 +24962,7 @@ ${cue.text}`).join("\n\n")}
       const userMuted = cinemaMute.userMuted;
       v.muted = true;
       let pausedByUs = false;
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           if (!v.muted) v.muted = true;
           if (hasStartedForUrlRef.current) {
@@ -21733,7 +24974,7 @@ ${cue.text}`).join("\n\n")}
           }
           return;
         }
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
         v.muted = userMuted;
         cinemaMute.held = false;
         if (!pausedByUs) return;
@@ -21745,7 +24986,7 @@ ${cue.text}`).join("\n\n")}
         void v.play().catch(() => {
         });
       }, 120);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [useMpv, videoSrc]);
     useEffect(() => {
       if (!useMpv || !mpvStartupHoldReady) return;
@@ -22249,7 +25490,9 @@ ${cue.text}`).join("\n\n")}
       else onMouseActivity();
     }
     const togglePlay = useCallback(() => {
+      const sleepPromptUp = showStillWatchingPrompt && stillWatchingReason === "sleep";
       registerPlaybackInteraction();
+      if (sleepPromptUp) return;
       if (useMpv) {
         void setMpvPause2(!mpv.paused);
         return;
@@ -22258,7 +25501,7 @@ ${cue.text}`).join("\n\n")}
       if (!v) return;
       if (v.paused) void safePlay(v);
       else v.pause();
-    }, [useMpv, mpv.paused, realTime, showStillWatchingPrompt]);
+    }, [useMpv, mpv.paused, realTime, showStillWatchingPrompt, stillWatchingReason]);
     const attemptHtml5Start = useCallback(async (userGesture) => {
       if (useMpv) return;
       const v = videoRef.current;
@@ -22386,7 +25629,7 @@ ${cue.text}`).join("\n\n")}
         boundsSyncFrameRef.current = null;
         syncPlayerBounds();
       });
-      boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
+      boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
       boundsResyncTimersRef.current = [window.setTimeout(() => {
         syncPlayerBounds();
       }, 220)];
@@ -22497,8 +25740,8 @@ ${cue.text}`).join("\n\n")}
       });
       return () => {
         cancelled = true;
-        const pending2 = openPromise;
-        void (pending2 ? pending2.catch(() => {
+        const pending5 = openPromise;
+        void (pending5 ? pending5.catch(() => {
         }).then(() => closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes")) : closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes"));
         releaseSourceCache(url);
         const v = airplayVideoRef.current;
@@ -22559,8 +25802,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!hasStarted || !getShowTitleOnStart()) return;
       setShowStartTitle(true);
-      const timer2 = window.setTimeout(() => setShowStartTitle(false), 4e3);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setShowStartTitle(false), 4e3);
+      return () => window.clearTimeout(timer3);
     }, [hasStarted, title]);
     useEffect(() => {
       setAutoplayDurationHint(totalDuration > 0 ? totalDuration : null);
@@ -22758,23 +26001,27 @@ ${cue.text}`).join("\n\n")}
       finishClose();
     }, [notifyLanPlaybackState, onClose, realTime, scheduleBoundsResync, skipHomeKitOnClose, syncDesktopFullscreenState, title, totalDuration, tryCloseDesktopPlaybackSession, useMpv]);
     useEffect(() => {
+      const seconds = stillWatchingReason === "sleep" ? SLEEP_PROMPT_SECONDS : STILL_WATCHING_CLOSE_SECONDS;
       if (!showStillWatchingPrompt) {
-        setStillWatchingCountdown(STILL_WATCHING_CLOSE_SECONDS);
+        setStillWatchingCountdown(seconds);
         return;
       }
-      setStillWatchingCountdown(STILL_WATCHING_CLOSE_SECONDS);
+      setStillWatchingCountdown(seconds);
       const interval = window.setInterval(() => {
-        setStillWatchingCountdown((current) => {
-          if (current <= 1) {
+        setStillWatchingCountdown((current2) => {
+          if (current2 <= 1) {
             window.clearInterval(interval);
-            window.setTimeout(() => handleClose(), 0);
+            window.setTimeout(() => {
+              if (stillWatchingReason === "sleep") journalMarkAsleep(realTimeRef.current, sleepFiredAtRef.current);
+              handleClose();
+            }, 0);
             return 0;
           }
-          return current - 1;
+          return current2 - 1;
         });
       }, 1e3);
       return () => window.clearInterval(interval);
-    }, [handleClose, showStillWatchingPrompt, STILL_WATCHING_CLOSE_SECONDS]);
+    }, [handleClose, showStillWatchingPrompt, stillWatchingReason, STILL_WATCHING_CLOSE_SECONDS]);
     const handleCopyStreamLink = useCallback(async () => {
       const direct = resolveDirectStreamUrl2(url) ?? url;
       await writeTextToClipboard(direct);
@@ -22939,7 +26186,7 @@ ${cue.text}`).join("\n\n")}
             window.cancelAnimationFrame(boundsSyncFrameRef.current);
             boundsSyncFrameRef.current = null;
           }
-          boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
+          boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
           boundsResyncTimersRef.current = [];
         };
       }
@@ -22950,7 +26197,7 @@ ${cue.text}`).join("\n\n")}
           window.cancelAnimationFrame(boundsSyncFrameRef.current);
           boundsSyncFrameRef.current = null;
         }
-        boundsResyncTimersRef.current.forEach((timer2) => window.clearTimeout(timer2));
+        boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
         boundsResyncTimersRef.current = [];
       };
     }, [portalEl, scheduleBoundsResync, useMpv]);
@@ -22963,119 +26210,126 @@ ${cue.text}`).join("\n\n")}
       if (!useMpv) return;
       scheduleBoundsResync();
     }, [useMpv, url, hasStarted, scheduleBoundsResync]);
-    useEffect(() => {
-      lockBodyScroll();
-      function onKey(e) {
-        const keyTarget = e.target;
-        const typing = keyTarget?.tagName === "INPUT" || keyTarget?.tagName === "TEXTAREA" || keyTarget?.isContentEditable === true;
-        if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (openSurfaceRef.current !== null) {
-            const surface = openSurfaceRef.current;
-            setOpenSurface(null);
-            onMouseActivityRef.current();
-            if (isTv) {
-              const trigger = surface === "subs" ? subTriggerRef.current : surface === "audio" ? audioTriggerRef.current : surface === "audioDelay" ? audioDelayTriggerRef.current : surface === "aspect" ? aspectTriggerRef.current : surface === "zoom" ? cropTriggerRef.current : surface === "more" ? moreTriggerRef.current : surface === "tuning" ? tuningTriggerRef.current : null;
-              window.requestAnimationFrame(() => {
-                if (trigger && trigger.isConnected) trigger.focus();
-                else tvFocus?.focusInit(playerRootRef.current);
-              });
+    const playerKeyRef = useRef(() => {
+    });
+    playerKeyRef.current = function onKey(e) {
+      const keyTarget = e.target;
+      const typing = keyTarget?.tagName === "INPUT" || keyTarget?.tagName === "TEXTAREA" || keyTarget?.isContentEditable === true;
+      if (e.key === "Escape" || isTv && e.key === "Backspace" && !typing) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (openSurfaceRef.current !== null) {
+          const surface = openSurfaceRef.current;
+          setOpenSurface(null);
+          onMouseActivityRef.current();
+          if (isTv) {
+            const trigger = surface === "subs" ? subTriggerRef.current : surface === "audio" ? audioTriggerRef.current : surface === "audioDelay" ? audioDelayTriggerRef.current : surface === "aspect" ? aspectTriggerRef.current : surface === "zoom" ? cropTriggerRef.current : surface === "more" ? moreTriggerRef.current : surface === "tuning" ? tuningTriggerRef.current : null;
+            window.requestAnimationFrame(() => {
+              if (trigger && trigger.isConnected) trigger.focus();
+              else tvFocus?.focusInit(playerRootRef.current);
+            });
+          }
+          return;
+        }
+        if (isTv && controlsVisibleRef.current) {
+          setControlsVisible(false);
+          return;
+        }
+        if (useMpv) {
+          void syncDesktopFullscreenState().then((fullscreen) => {
+            if (!fullscreen) {
+              handleClose();
+              return;
             }
-            return;
-          }
-          if (isTv && controlsVisibleRef.current) {
-            setControlsVisible(false);
-            return;
-          }
-          if (useMpv) {
-            void syncDesktopFullscreenState().then((fullscreen) => {
-              if (!fullscreen) {
-                handleClose();
-                return;
-              }
-              return setWindowNativeFullscreen2(false).then((nextFullscreen) => {
+            return setWindowNativeFullscreen2(false).then((nextFullscreen) => {
+              setDesktopFullscreen(nextFullscreen);
+              scheduleBoundsResync();
+              showControlsPermanent();
+            });
+          }).catch(() => {
+          });
+          return;
+        }
+        if (typeof document !== "undefined" && document.fullscreenElement) {
+          void document.exitFullscreen().catch(() => {
+          });
+          showControlsPermanent();
+          return;
+        }
+        if (isTauriEnv) {
+          void syncDesktopFullscreenState().then((fullscreen) => {
+            if (fullscreen) {
+              return setWindowFullscreen2(false).then((nextFullscreen) => {
                 setDesktopFullscreen(nextFullscreen);
                 scheduleBoundsResync();
                 showControlsPermanent();
               });
-            }).catch(() => {
-            });
-            return;
-          }
-          if (typeof document !== "undefined" && document.fullscreenElement) {
-            void document.exitFullscreen().catch(() => {
-            });
-            showControlsPermanent();
-            return;
-          }
-          if (isTauriEnv) {
-            void syncDesktopFullscreenState().then((fullscreen) => {
-              if (fullscreen) {
-                return setWindowFullscreen2(false).then((nextFullscreen) => {
-                  setDesktopFullscreen(nextFullscreen);
-                  scheduleBoundsResync();
-                  showControlsPermanent();
-                });
-              }
-              handleClose();
-            }).catch(() => handleClose());
-            return;
-          }
-          handleClose();
+            }
+            handleClose();
+          }).catch(() => handleClose());
           return;
         }
-        if (isTv && e.key.startsWith("Arrow")) return;
-        if (matchesShortcut("playPause", e.key) || e.key === "k") {
-          e.preventDefault();
-          togglePlay();
-          return;
-        }
-        if (matchesShortcut("seekForward", e.key)) {
-          seek(10);
-          return;
-        }
-        if (matchesShortcut("seekBack", e.key)) {
-          seek(-10);
-          return;
-        }
-        if (matchesShortcut("mute", e.key)) {
-          toggleMute();
-          return;
-        }
-        if (matchesShortcut("fullscreen", e.key)) {
-          toggleFullscreen();
-          return;
-        }
-        if (matchesShortcut("secondarySubtitleCycle", e.key)) {
-          secondaryCycleRef.current?.();
-          return;
-        }
-        if (matchesShortcut("subtitleCycle", e.key)) {
-          if (subtitleOptions.length > 0) {
-            const currentIndex = subtitleOptions.findIndex((option) => option.id === activeSubId);
-            const nextIndex = currentIndex + 1;
-            void selectSubtitle(
-              nextIndex >= subtitleOptions.length ? null : subtitleOptions[nextIndex],
-              { manual: true }
-            );
-          }
-          return;
-        }
-        if (matchesShortcut("subtitleDelayBack", e.key)) {
-          setSubDelay((value) => Number((value - SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
-          return;
-        }
-        if (matchesShortcut("subtitleDelayForward", e.key)) {
-          setSubDelay((value) => Number((value + SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
-        }
+        handleClose();
+        return;
       }
+      if (isTv && e.key.startsWith("Arrow")) return;
+      if (matchesShortcut("playPause", e.key) || e.key === "k") {
+        e.preventDefault();
+        togglePlay();
+        return;
+      }
+      if (matchesShortcut("seekForward", e.key)) {
+        seek(10);
+        return;
+      }
+      if (matchesShortcut("seekBack", e.key)) {
+        seek(-10);
+        return;
+      }
+      if (matchesShortcut("mute", e.key)) {
+        toggleMute();
+        return;
+      }
+      if (matchesShortcut("fullscreen", e.key)) {
+        toggleFullscreen();
+        return;
+      }
+      if (matchesShortcut("saveMoment", e.key)) {
+        saveMomentNow();
+        return;
+      }
+      if (matchesShortcut("secondarySubtitleCycle", e.key)) {
+        secondaryCycleRef.current?.();
+        return;
+      }
+      if (matchesShortcut("subtitleCycle", e.key)) {
+        if (subtitleOptions.length > 0) {
+          const currentIndex = subtitleOptions.findIndex((option) => option.id === activeSubId);
+          const nextIndex = currentIndex + 1;
+          void selectSubtitle(
+            nextIndex >= subtitleOptions.length ? null : subtitleOptions[nextIndex],
+            { manual: true }
+          );
+        }
+        return;
+      }
+      if (matchesShortcut("subtitleDelayBack", e.key)) {
+        setSubDelay((value) => Number((value - SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
+        return;
+      }
+      if (matchesShortcut("subtitleDelayForward", e.key)) {
+        setSubDelay((value) => Number((value + SUBTITLE_DELAY_STEP_SECONDS).toFixed(2)));
+      }
+    };
+    useEffect(() => {
+      lockBodyScroll();
+      const onKey = (e) => playerKeyRef.current(e);
       window.addEventListener("keydown", onKey);
       return () => {
         unlockBodyScroll();
         window.removeEventListener("keydown", onKey);
       };
-    }, [handleClose, scheduleBoundsResync, syncDesktopFullscreenState, togglePlay, seek, toggleMute, toggleFullscreen, useMpv, isTv]);
+    }, []);
     useEffect(() => {
       if (!useMpv) return;
       let raf = null;
@@ -23099,6 +26353,9 @@ ${cue.text}`).join("\n\n")}
       const onTvRemoteKey = (e) => {
         const nav = e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Enter";
         if (!nav) return;
+        const target2 = e.target;
+        const root = playerRootRef.current;
+        if (root && target2 instanceof Node && target2 !== document.body && target2 !== document.documentElement && !root.contains(target2)) return;
         if (!controlsVisibleRef.current) {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -23173,6 +26430,11 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       subtitlePreferenceRef.current = { mode: "language", language: sub.language };
+      setActiveSubId(sub.id);
+      if (!options?.noAutoSync) {
+        syncedVttRef.current.delete(sub.id);
+        setSubtitleSelectionToken((v) => v + 1);
+      }
       if (sub.id.startsWith("embedded:") && useMpv) {
         const sidRaw = sub.id.slice("embedded:".length);
         const sid = Number.parseInt(sidRaw, 10);
@@ -23444,7 +26706,7 @@ ${cue.text}`).join("\n\n")}
     }, [wikiTmdbId, imdbId, season, episode]);
     useEffect(() => {
       if (!mediaId || !url) return;
-      function save() {
+      function save(final = false) {
         const snapshot2 = progressSnapshotRef.current;
         if (!mediaId || !url || snapshot2.totalDuration <= 0) return;
         if (watchedMarkedRef.current) return;
@@ -23467,13 +26729,29 @@ ${cue.text}`).join("\n\n")}
           season,
           episode
         });
+        journalTick({
+          mediaId,
+          tmdbId: wikiTmdbId ?? null,
+          type: mediaType ?? "movie",
+          season,
+          episode,
+          title: mediaTitle ?? title,
+          posterUrl: posterUrl ?? null,
+          year: year ?? null,
+          position: snapshot2.realTime,
+          duration: snapshot2.totalDuration
+        }, final);
       }
-      const interval = setInterval(save, 5e3);
+      const interval = setInterval(() => save(), 5e3);
       return () => {
         clearInterval(interval);
-        save();
+        save(true);
       };
     }, [backdropUrl, episode, imdbId, mediaId, mediaSource, mediaTitle, mediaType, posterUrl, season, sourceInfoHash, title, url, wikiTmdbId, year]);
+    useEffect(() => {
+      setPlayerOpen(true);
+      return () => setPlayerOpen(false);
+    }, []);
     const playerBarcode = useBarcodeRecorder({ engine: engineKind, mediaId: mediaId ?? null, mediaType, tmdbId: wikiTmdbId, title: mediaTitle ?? title, year, posterUrl, season, episode, snapshotRef: progressSnapshotRef, videoRef, playing: isPlaying, finished: creditsMode || hasEndedPlayback });
     useEffect(() => {
       if (useMpv) {
@@ -23585,7 +26863,6 @@ ${cue.text}`).join("\n\n")}
       playbackStartedAtRef.current = initialTime ?? 0;
       autoSubtitleSuppressedRef.current = false;
       manualSubtitleOverrideRef.current = false;
-      lastAutoSyncedDelayRef.current = null;
       setSubtitleClockOverride(null);
       setSubtitleAutoSyncState({ type: "idle" });
       setShowStillWatchingPrompt(false);
@@ -23608,7 +26885,7 @@ ${cue.text}`).join("\n\n")}
     }, [playbackSessionIdentity, url, inferredMediaType, mediaType, season, episode, shouldProxyPlayback, useMpv, initialTime, imdbId, tmdbId, wikiTmdbId, mediaId, title]);
     useEffect(() => {
       if (useMpv || hasStarted) return;
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         const v = videoRef.current;
         if (!v) return;
         if (!v.paused && v.currentTime > 0.15) {
@@ -23619,7 +26896,7 @@ ${cue.text}`).join("\n\n")}
           onFirstPlay?.();
         }
       }, 350);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [hasStarted, onFirstPlay, useMpv]);
     useEffect(() => {
       if (imdbId) {
@@ -23720,8 +26997,32 @@ ${cue.text}`).join("\n\n")}
       } else {
         videoRef.current?.pause();
       }
+      setStillWatchingReason("episodes");
       setShowStillWatchingPrompt(true);
     }, [hasEndedPlayback, hasStarted, isPlaying, mediaType, realTime, showStillWatchingPrompt, useMpv]);
+    useEffect(() => {
+      if (sleepTimer.mode === "off" || showStillWatchingPrompt || !hasStarted) return;
+      if (!sleepTimerDue(sleepTimer, { nowMs: Date.now(), position: realTime, duration: totalDuration, ended: hasEndedPlayback })) return;
+      setSleepTimer(DISARMED);
+      sleepFiredAtRef.current = Date.now();
+      if (useMpv) void setMpvPause2(true);
+      else videoRef.current?.pause();
+      setStillWatchingReason("sleep");
+      setShowStillWatchingPrompt(true);
+    }, [hasEndedPlayback, hasStarted, realTime, showStillWatchingPrompt, sleepTimer, totalDuration, useMpv]);
+    useEffect(() => {
+      if (isTv && showStillWatchingPrompt) tvFocus?.focusInit(playerRootRef.current?.querySelector("[data-still-watching]") ?? null);
+    }, [isTv, showStillWatchingPrompt, tvFocus]);
+    useEffect(() => {
+      if (!hasStarted) return;
+      const me = getActiveProfileId();
+      setCompanionProfiles(getProfiles().filter((p) => p.id !== me));
+      setCompanionIds(journalCoViewers());
+    }, [hasStarted]);
+    const setCompanions = (next) => {
+      setCompanionIds(next);
+      journalSetCoViewers(next);
+    };
     useEffect(() => {
       if (mediaType !== "tv") return;
       if (!hasStarted || !hasStartedForUrlRef.current) return;
@@ -23869,54 +27170,70 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [wikiTmdbId, resolvedImdbId, imdbId, mediaType, season, episode, url]);
+    const [mpvChapters, setMpvChapters] = useState(null);
     const chapterProbeKeyRef = useRef(null);
     useEffect(() => {
-      if (!isMpvEngine || !mpv.fileLoaded || !introDataReady || introSegment) return;
+      if (!isMpvEngine || !mpv.fileLoaded) return;
       if (chapterProbeKeyRef.current === url) return;
       chapterProbeKeyRef.current = url;
       let cancelled = false;
       void (async () => {
+        const chapters = [];
         try {
           const count = Number(await mpvCommand2(["get_property", "chapter-list/count"]));
-          if (cancelled || !Number.isFinite(count) || count < 1) return;
-          const chapters = [];
-          for (let i = 0; i < Math.min(count, 40); i++) {
-            const [chapterTitle, chapterTime] = await Promise.all([
-              mpvCommand2(["get_property", `chapter-list/${i}/title`]).catch(() => ""),
-              mpvCommand2(["get_property", `chapter-list/${i}/time`])
-            ]);
-            const time = Number(chapterTime);
-            if (Number.isFinite(time)) chapters.push({ title: String(chapterTitle ?? ""), time });
-          }
-          if (cancelled || chapters.length === 0) return;
-          const INTRO_RE = /\b(intro|opening|op ?\d*|förtexter)\b/i;
-          const OUTRO_RE = /\b(credits|outro|ending|ed ?\d*|eftertexter|sluttexter)\b/i;
-          const introIndex = chapters.findIndex((c) => INTRO_RE.test(c.title));
-          if (introIndex >= 0) {
-            const start2 = chapters[introIndex].time;
-            const end = introIndex + 1 < chapters.length ? chapters[introIndex + 1].time : start2 + 90;
-            if (end > start2 && end - start2 <= 240) {
-              setIntroSegment({ startMs: Math.round(start2 * 1e3), endMs: Math.round(end * 1e3) });
-              setIntroKind("intro");
+          if (!cancelled && Number.isFinite(count) && count > 0) {
+            for (let i = 0; i < Math.min(count, 40); i++) {
+              const [chapterTitle, chapterTime] = await Promise.all([
+                mpvCommand2(["get_property", `chapter-list/${i}/title`]).catch(() => ""),
+                mpvCommand2(["get_property", `chapter-list/${i}/time`])
+              ]);
+              const time = Number(chapterTime);
+              if (Number.isFinite(time)) chapters.push({ title: String(chapterTitle ?? ""), time });
             }
-          }
-          const outroChapter = [...chapters].reverse().find((c) => OUTRO_RE.test(c.title));
-          if (outroChapter) {
-            setOutroSegment((prev) => prev ?? {
-              startMs: Math.round(outroChapter.time * 1e3),
-              endMs: Math.round((outroChapter.time + 600) * 1e3)
-            });
           }
         } catch {
         }
+        if (!cancelled) setMpvChapters({ url, list: chapters });
       })();
       return () => {
         cancelled = true;
       };
-    }, [isMpvEngine, mpv.fileLoaded, introDataReady, introSegment, url]);
+    }, [isMpvEngine, mpv.fileLoaded, url]);
+    useEffect(() => {
+      if (!introDataReady || introSegment) return;
+      if (!mpvChapters || mpvChapters.url !== url || mpvChapters.list.length === 0) return;
+      const chapters = mpvChapters.list;
+      const INTRO_RE = /\b(intro|opening|op ?\d*|förtexter)\b/i;
+      const OUTRO_RE = /\b(credits|outro|ending|ed ?\d*|eftertexter|sluttexter)\b/i;
+      const introIndex = chapters.findIndex((c) => INTRO_RE.test(c.title));
+      if (introIndex >= 0) {
+        const start2 = chapters[introIndex].time;
+        const end = introIndex + 1 < chapters.length ? chapters[introIndex + 1].time : start2 + 90;
+        if (end > start2 && end - start2 <= 240) {
+          setIntroSegment({ startMs: Math.round(start2 * 1e3), endMs: Math.round(end * 1e3) });
+          setIntroKind("intro");
+        }
+      }
+      const outroChapter = [...chapters].reverse().find((c) => OUTRO_RE.test(c.title));
+      if (outroChapter) {
+        setOutroSegment((prev) => prev ?? {
+          startMs: Math.round(outroChapter.time * 1e3),
+          endMs: Math.round((outroChapter.time + 600) * 1e3)
+        });
+      }
+    }, [mpvChapters, introDataReady, introSegment, url]);
+    function resumeAfterSleepPrompt() {
+      setStillWatchingReason("episodes");
+      if (useMpv) {
+        void setMpvPause2(false);
+        return;
+      }
+      void safePlay(videoRef.current);
+    }
     function handleStillWatchingContinue() {
       registerPlaybackInteraction();
       setShowStillWatchingPrompt(false);
+      setStillWatchingReason("episodes");
       if (useMpv) {
         void setMpvPause2(false);
         return;
@@ -24164,7 +27481,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (useMpv || hasStarted || !videoSrc) return;
       if (startupRecoveryAttemptRef.current >= 2) return;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         if (useMpv || hasStarted || startupRecoveryAttemptRef.current >= 2) return;
         if (Date.now() - lastProxyRestartAtRef.current < PROXY_RESTART_MIN_GAP_MS) return;
         const currentReal = (videoRef.current?.currentTime ?? 0) + streamStartRef.current;
@@ -24202,7 +27519,7 @@ ${cue.text}`).join("\n\n")}
         );
       }, 2e4);
       return () => {
-        window.clearTimeout(timer2);
+        window.clearTimeout(timer3);
       };
     }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
     useEffect(() => {
@@ -24310,9 +27627,68 @@ ${cue.text}`).join("\n\n")}
         return true;
       });
     }, [subtitles, embeddedSubtitleOptions, externalSubtitles]);
+    const applySyncedSubtitle = useCallback(async (sub, vttUrl) => {
+      const inherited = inheritedSubDelayRef.current;
+      if (clearsInheritedDelay(inherited, subDelayRef.current)) {
+        clearedInheritedSubDelayRef.current = inherited;
+        inheritedSubDelayRef.current = 0;
+        subDelayRef.current = 0;
+        setSubDelay(0);
+        logSubsyncClient(`${CLIENT_PREFIX} \xE4rvd f\xF6rdr\xF6jning ${inherited}s nollad inf\xF6r synken`);
+      }
+      if (isMpvEngine) {
+        const path = await (0, import_core5.invoke)("download_subtitle_to_temp", { url: `${window.location.origin}${vttUrl}` });
+        await mpvCommand2(["sub-add", path, "select"]);
+        await refreshMpvSubtitleTracks();
+      }
+      setCues(parseVtt(await (await fetch(vttUrl)).text()));
+      setActiveSubId(sub.id);
+      syncedVttRef.current.set(sub.id, { url, vtt: vttUrl });
+    }, [isMpvEngine, refreshMpvSubtitleTracks, url]);
+    applySyncedSubtitleRef.current = applySyncedSubtitle;
+    subDelayRef.current = subDelay;
+    subDriftRef.current = subDrift;
+    const restoreOriginalSubtitle = useCallback(async (sub, opts) => {
+      syncedVttRef.current.clear();
+      const cleared = clearedInheritedSubDelayRef.current;
+      if (opts?.undo && cleared !== null) {
+        clearedInheritedSubDelayRef.current = null;
+        inheritedSubDelayRef.current = cleared;
+        setSubDelay(cleared);
+      }
+      await selectSubtitle(sub, { manual: true });
+    }, [selectSubtitle]);
+    useSubtitleAutoSync({
+      mediaUrl: url,
+      fileName: filename,
+      title: mediaTitle ?? title,
+      year: year ?? null,
+      isLive: isHlsUrl2(url),
+      mediaKey: subtitleDelayMediaKey,
+      season,
+      episode,
+      getUserDelayState: () => ({
+        currentDelay: subDelayRef.current,
+        hasDrift: subDriftRef.current !== null,
+        inheritedDelay: inheritedSubDelayRef.current
+      }),
+      selected: subtitleOptions.find((o) => o.id === activeSubId) ?? null,
+      selectionToken: subtitleSelectionToken,
+      options: subtitleOptions,
+      firstFrameRendered: useMpv ? mpv.firstFrameRendered : hasStarted,
+      getPlayTime: () => realTimeRef.current,
+      applySynced: applySyncedSubtitle,
+      restoreOriginal: restoreOriginalSubtitle,
+      showNotice: showSyncNotice,
+      clearNotice: () => setSyncNotice(null),
+      setStatus: (st) => setSubtitleAutoSyncState(
+        st.type === "idle" ? { type: "idle" } : st.type === "analyzing" ? { type: "analyzing", message: st.message } : { type: st.type, message: st.message ?? "" }
+      ),
+      t
+    });
     useEffect(() => {
       if (embeddedSubtitleOptions.length === 0) return;
-      setSubtitleLoadError((current) => current === t("vpNoSubsFound") ? null : current);
+      setSubtitleLoadError((current2) => current2 === t("vpNoSubsFound") ? null : current2);
     }, [embeddedSubtitleOptions.length]);
     useEffect(() => {
       if (manualSubtitleOverrideRef.current) return;
@@ -24338,6 +27714,7 @@ ${cue.text}`).join("\n\n")}
       const match = orderedPreferredLanguages.map((preferredLanguage2) => searchOrder.find((subtitle) => !isBlocked(subtitle) && (normalizeLanguageCode(subtitle.language) === preferredLanguage2 || subtitleOptionMatchesLanguage(subtitle, preferredLanguage2)))).find((subtitle) => Boolean(subtitle));
       if (match && match.id !== activeSubId) {
         if (activeSubId != null && !getUpgradeSubtitleWhenBetter()) return;
+        if (activeSubId != null && syncedVttRef.current.get(activeSubId)?.url === url) return;
         void selectSubtitle(match);
         return;
       }
@@ -24383,8 +27760,14 @@ ${cue.text}`).join("\n\n")}
       if (mpv.fileLoadedToken === lastSubReapplyTokenRef.current) return;
       lastSubReapplyTokenRef.current = mpv.fileLoadedToken;
       if (!activeSubId || activeSubId.startsWith("embedded:")) return;
-      const current = subtitleOptions.find((subtitle) => subtitle.id === activeSubId);
-      if (current) void selectSubtitle(current);
+      const current2 = subtitleOptions.find((subtitle) => subtitle.id === activeSubId);
+      if (!current2) return;
+      const synced = syncedVttRef.current.get(current2.id);
+      if (synced && synced.url === url) {
+        void applySyncedSubtitleRef.current?.(current2, synced.vtt);
+        return;
+      }
+      void selectSubtitle(current2, { noAutoSync: true });
     }, [useMpv, mpv.fileLoaded, mpv.fileLoadedToken, activeSubId, subtitleOptions]);
     const lastSecondaryReapplyTokenRef = useRef(0);
     useEffect(() => {
@@ -24392,8 +27775,8 @@ ${cue.text}`).join("\n\n")}
       if (mpv.fileLoadedToken === lastSecondaryReapplyTokenRef.current) return;
       lastSecondaryReapplyTokenRef.current = mpv.fileLoadedToken;
       if (!secondarySubId) return;
-      const current = subtitleOptions.find((subtitle) => subtitle.id === secondarySubId);
-      if (current) void selectSecondarySubtitle(current);
+      const current2 = subtitleOptions.find((subtitle) => subtitle.id === secondarySubId);
+      if (current2) void selectSecondarySubtitle(current2);
     }, [isMpvEngine, mpv.fileLoaded, mpv.fileLoadedToken, learningMode, secondarySubId, subtitleOptions]);
     const seekToAbsolute = useCallback((targetTime) => {
       setSubtitleClockOverride(Math.max(0, targetTime));
@@ -24680,7 +28063,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!creditsMode || !useMpv) return;
       const waitMs = creditsCards.length === 0 ? 8e3 : 600;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         const pip = creditsPipRef.current;
         if (pip) {
           const rect = pip.getBoundingClientRect();
@@ -24688,7 +28071,7 @@ ${cue.text}`).join("\n\n")}
         }
         leaveCreditsMode();
       }, waitMs);
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [creditsMode, useMpv, creditsCards.length, leaveCreditsMode]);
     const currentTitleAsItem = useCallback(() => {
       if (!tmdbId) return null;
@@ -24788,7 +28171,7 @@ ${cue.text}`).join("\n\n")}
           `[ext-sub] ${file.name} bytes=${bytes.length} vtt=${payload.vtt ? payload.vtt.length : "null"} cues=${payload.vtt ? parseVtt(payload.vtt).length : 0} mpv=${useMpv}`
         )}`).catch(() => {
         });
-        setExternalSubtitles((current) => [option, ...current]);
+        setExternalSubtitles((current2) => [option, ...current2]);
         void selectSubtitle(option, { manual: true });
       } catch (error) {
         setSubtitleLoadError(
@@ -24802,60 +28185,6 @@ ${cue.text}`).join("\n\n")}
       (acc[_a = s.language] ?? (acc[_a] = [])).push(s);
       return acc;
     }, {});
-    const applyManualAnchor = useCallback(async (cue) => {
-      const tapTime = manualSyncTapTime;
-      if (tapTime == null) return;
-      setManualSyncBusy(true);
-      try {
-        const coarseDelay = Math.round((tapTime - cue.start) * 100) / 100;
-        let finalDelay = coarseDelay;
-        const activeAudioAid = useMpv ? activeAudioTrack ?? audioTracks.find((track) => track.index != null)?.index ?? null : null;
-        const audioTrackIndex = typeof activeAudioAid === "number" && activeAudioAid > 0 ? activeAudioAid - 1 : null;
-        const refined = await fetch("/api/subtitles/refine-offset", {
-          signal: AbortSignal.timeout(9e4),
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url,
-            anchorTime: tapTime,
-            coarseDelay,
-            audioTrackIndex,
-            cues: cues.map((entry) => ({ start: entry.start, end: entry.end, text: entry.text }))
-          })
-        }).catch(() => null);
-        if (refined?.ok) {
-          const data = await refined.json();
-          if (typeof data.refinedDelay === "number" && (data.score ?? 0) > 0.15) {
-            finalDelay = data.refinedDelay;
-          }
-        }
-        lastAutoSyncedDelayRef.current = subDelay;
-        if (manualSyncFirstAnchor && Math.abs(tapTime - manualSyncFirstAnchor.time) >= 180) {
-          const s1 = manualSyncFirstAnchor.cueStart;
-          const t1 = manualSyncFirstAnchor.time;
-          const slope = (cue.start - s1) / (tapTime - t1) - 1;
-          setSubDelay(Math.round((t1 - s1) * 10) / 10);
-          setSubDrift(Math.abs(slope) > 5e-4 ? { slope, anchor: t1 } : null);
-          setSubtitleAutoSyncState({
-            type: "done",
-            message: `${t("subtitleAnchorApplied")} ${t1 - s1 > 0 ? "+" : ""}${(t1 - s1).toFixed(1)}s \xB7 ${t("subtitleAnchorDrift")}`
-          });
-          setManualSyncFirstAnchor(null);
-        } else {
-          setSubDelay(finalDelay);
-          setSubDrift(null);
-          setManualSyncFirstAnchor({ time: tapTime, cueStart: cue.start });
-          setSubtitleAutoSyncState({
-            type: "done",
-            message: `${t("subtitleAnchorApplied")} ${finalDelay > 0 ? "+" : ""}${finalDelay.toFixed(1)}s`
-          });
-        }
-        setManualSyncOpen(false);
-        setManualSyncTapTime(null);
-      } finally {
-        setManualSyncBusy(false);
-      }
-    }, [activeAudioTrack, audioTracks, cues, manualSyncFirstAnchor, manualSyncTapTime, subDelay, t, url, useMpv]);
     const scanCastDevices = useCallback(async () => {
       setCastScanning(true);
       setCastError(null);
@@ -25018,7 +28347,7 @@ ${cue.text}`).join("\n\n")}
     }, [airplaySession, useMpv]);
     useEffect(() => {
       if (!airplaySession || airplayWasExternalRef.current || showCastMenu) return;
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         if (!airplayWasExternalRef.current) {
           stopAirplayVideo();
           void avplayerTeardown();
@@ -25026,26 +28355,41 @@ ${cue.text}`).join("\n\n")}
           setAirplayPrepare("idle");
         }
       }, 1e4);
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [showCastMenu, airplaySession]);
-    const undoSubtitleAutoSync = useCallback(() => {
-      if (lastAutoSyncedDelayRef.current === null) return;
-      setSubDelay(lastAutoSyncedDelayRef.current);
-      setSubDrift(null);
-      lastAutoSyncedDelayRef.current = null;
-      setSubtitleAutoSyncState({ type: "idle" });
-    }, []);
     const dtIconButtonClass = (state2 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
     const dtLabelButtonClass = (state2 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
-    const dtStatusPillClass = "flex-none rounded-full border border-[rgb(var(--player-accent)/0.40)] px-[11px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.12em] text-[rgb(var(--player-accent))]";
+    const [statusNowMs, setStatusNowMs] = useState(() => Date.now());
+    useEffect(() => {
+      const id = window.setInterval(() => setStatusNowMs(Date.now()), 15e3);
+      return () => window.clearInterval(id);
+    }, []);
+    const statusClock = useMemo(
+      () => new Intl.DateTimeFormat(lang === "sv" ? "sv-SE" : "en-US", { hour: "numeric", minute: "2-digit" }),
+      [lang]
+    );
+    const statusParts = statusLineParts({
+      position: realTime,
+      duration: totalDuration,
+      speed: playbackSpeed,
+      nowMs: Math.max(statusNowMs, Date.now() - 15e3),
+      introLabel: mediaType === "tv" && introSegment ? introKind === "recap" ? t("recapFound") : t("introFound") : null,
+      outroLabel: mediaType === "tv" && outroSegment ? t("outroFound") : null,
+      endsTemplate: t("plEndsAt"),
+      formatClock: (ms) => statusClock.format(ms)
+    });
+    const renderStatusLine = (textClass) => statusParts.length === 0 ? null : /* @__PURE__ */ jsx("span", { className: `flex flex-none items-center gap-2 whitespace-nowrap font-medium text-white ${textClass}`, children: statusParts.map((part, index) => /* @__PURE__ */ jsxs(react_shim_default.Fragment, { children: [
+      index > 0 ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "h-[3px] w-[3px] flex-none rounded-full bg-white/80" }) : null,
+      /* @__PURE__ */ jsx("span", { children: part })
+    ] }, part)) });
     const dtDivider = /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "mx-2 h-[22px] w-px flex-none bg-white/[0.12]" });
     const dtMenuSurfaceClass = newChrome ? "z-50 rounded-xl border border-white/10 bg-base-800/95 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : "z-50 rounded-xl border border-white/10 bg-slate-900/95 py-2 shadow-xl backdrop-blur-sm";
     const dtMenuHeadingClass = newChrome ? "px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500" : "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500";
-    const dtMenuRowClass = (active2) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active2 ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active2 ? "text-aurora-300" : "text-slate-300"}`;
+    const dtMenuRowClass = (active3) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active3 ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active3 ? "text-aurora-300" : "text-slate-300"}`;
     const dtMoreRowClass = newChrome ? `flex w-full items-center gap-3 rounded-lg text-left text-slate-100 transition hover:bg-[rgb(var(--player-accent)/0.14)] ${portraitChrome ? "px-3 py-3.5" : "px-3 py-2.5"}` : "flex w-full items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left text-slate-100 transition hover:bg-white/5";
     const dtMoreIconClass = newChrome ? "h-[18px] w-[18px] flex-none text-slate-300" : "h-5 w-5 flex-none text-slate-200";
     const dtMoreTextClass = newChrome ? portraitChrome ? "text-[15px] leading-tight" : "text-sm leading-tight" : "text-[15px] leading-tight";
-    const pickerStyle = (trigger, width) => portraitChrome ? { position: "fixed", left: 12, right: 12, bottom: 172, maxHeight: "55vh", overflowY: "auto" } : { ...getAnchoredMenuStyle(trigger, newChrome ? width : 0), width: newChrome ? width : void 0 };
+    const pickerStyle = (trigger, width) => portraitChrome ? { position: "fixed", left: 12, right: 12, bottom: 172, maxHeight: "55vh", overflowY: "auto" } : { ...anchoredMenuStyle(trigger, newChrome ? width : 0), width: newChrome ? width : void 0 };
     const pickerHeading = (label) => portraitChrome ? /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-3 px-3 pb-1.5 pt-2", children: [
       /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label }),
       /* @__PURE__ */ jsx(
@@ -25062,6 +28406,171 @@ ${cue.text}`).join("\n\n")}
     const portraitPickerOpen = portraitChrome && (openSurface === "subs" || openSurface === "audio" || openSurface === "aspect" || openSurface === "zoom" || openSurface === "cast" || openSurface === "more");
     const dtActiveTextClass = newChrome ? "text-[rgb(var(--player-accent))]" : "text-aurora-300";
     const dtMenuDotClass = newChrome ? "ml-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white" : "ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400";
+    const chapterList = useMemo(() => buildChapterList({
+      fileChapters: mpvChapters && mpvChapters.url === url ? mpvChapters.list : null,
+      intro: introSegment,
+      introKind: introKind === "recap" ? "recap" : introSegment ? "intro" : null,
+      outro: outroSegment,
+      durationSec: totalDuration,
+      labels: {
+        main: mediaType === "tv" && season != null && episode != null ? `S${season} E${episode} \xB7 ${mediaTitle ?? title}` : mediaTitle ?? title,
+        intro: t("introFound"),
+        recap: t("recapFound"),
+        credits: t("plCreditsChapter"),
+        chapter: (n) => t("plChapterN").replace("{n}", String(n))
+      }
+    }), [mpvChapters, url, introSegment, introKind, outroSegment, totalDuration, mediaType, season, episode, mediaTitle, title, t]);
+    const chapterIndexNow = currentChapterIndex(chapterList, realTime);
+    useEffect(() => {
+      if (!hasStarted) return;
+      const sekund = takePendingMomentStart(momentKey);
+      if (sekund !== null && sekund > 0) seekToAbsolute(sekund);
+    }, [hasStarted, momentKey, seekToAbsolute]);
+    const saveMomentNow = () => {
+      if (!momentKey) {
+        showMomentNotice(t("plMomentUnavailable"));
+        return;
+      }
+      const result = addMoment(momentKey, realTime);
+      showMomentNotice((result.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result.seconds)));
+    };
+    const gearChevron = /* @__PURE__ */ jsx("svg", { "aria-hidden": true, className: "h-4 w-4 flex-none text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" }) });
+    const gearValue = (value) => value ? /* @__PURE__ */ jsx("span", { className: "flex-none text-[13px] text-slate-400", children: value }) : null;
+    const gearNavRow = (icon, label, value, page) => /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => setGearPage(page), className: dtMoreRowClass, children: [
+      gearRowIcon(icon, dtMoreIconClass),
+      /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: label }),
+      gearValue(value),
+      gearChevron
+    ] }, page);
+    const gearToggleRow = (key, icon, label, on, toggle) => /* @__PURE__ */ jsxs("button", { type: "button", role: "switch", "aria-checked": on, ...dtStation, onClick: toggle, className: dtMoreRowClass, children: [
+      gearRowIcon(icon, dtMoreIconClass),
+      /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: label }),
+      /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: `relative h-5 w-9 flex-none rounded-full transition ${on ? "bg-[rgb(var(--player-accent))]" : "bg-white/20"}`, children: /* @__PURE__ */ jsx("span", { className: `absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${on ? "left-[18px]" : "left-0.5"}` }) })
+    ] }, key);
+    const gearSubHeader = (label, value) => /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => setGearPage("root"), className: `${dtMoreRowClass} mb-1 border-b border-white/[0.08]`, children: [
+      /* @__PURE__ */ jsx("svg", { "aria-hidden": true, className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "M19 12H5M11 6l-6 6 6 6" }) }),
+      /* @__PURE__ */ jsx("span", { className: `flex-1 text-left font-semibold ${dtMoreTextClass}`, children: label }),
+      gearValue(value)
+    ] });
+    const speedLabel = (speed) => speed === 1 ? t("plSpeedNormal") : `${speed}\xD7`;
+    const nightLabel = (mode) => t(mode === "off" ? "nightModeOff" : mode === "mild" ? "nightModeMenuMild" : "nightModeMenuStrong");
+    const applySpeed = (next) => {
+      setPlaybackSpeedState(next);
+      savePlaybackSpeed(mediaType, tmdbId ?? null, next);
+      mpv.setSpeed(next);
+    };
+    const renderGearRoot = () => /* @__PURE__ */ jsxs(Fragment2, { children: [
+      gearNavRow("speed", t("playbackSpeedMenuLabel"), speedLabel(playbackSpeed), "speed"),
+      gearNavRow("aspect", t("aspectRatio"), aspectLabel, "aspect"),
+      gearNavRow("zoom", t("cropZoom"), cropZoomLabel, "zoom"),
+      gearNavRow("sleep", t("plSleepTimer"), sleepModeLabel(sleepTimer.mode), "sleep"),
+      isMpvEngine ? gearNavRow("night", t("nightModeMenuLabel"), nightLabel(nightMode), "night") : null,
+      mediaType === "tv" ? gearToggleRow("skip", "skip", t("plGearSkipIntros"), autoSkipIntro, () => {
+        const next = !autoSkipIntro;
+        setAutoSkipIntro(next);
+        setAutoSkipIntroState(next);
+      }) : null,
+      playerBarcode.stripToggle ? gearToggleRow(
+        "barcode",
+        "barcode",
+        t("barcodeStripControl"),
+        getBarcodeSettings().showStripInPlayer,
+        () => setBarcodeSettings({ showStripInPlayer: !getBarcodeSettings().showStripInPlayer })
+      ) : null
+    ] });
+    const renderGearSubPage = () => {
+      switch (gearPage) {
+        case "speed":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("playbackSpeedMenuLabel"), speedLabel(playbackSpeed)),
+            gearOptions(PLAYBACK_SPEED_OPTIONS, playbackSpeed, speedLabel, applySpeed)
+          ] });
+        case "aspect":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("aspectRatio"), aspectLabel),
+            gearOptions(["auto", "contain", "fill", "ratio_16_9", "ratio_4_3"], aspectRatioMode, (mode) => getAspectRatioLabel(mode, t), setAspectRatioMode)
+          ] });
+        case "zoom":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("cropZoom"), cropZoomLabel),
+            gearOptions(["off", "crop", "zoom", "zoom_plus"], cropZoomMode, (mode) => getCropZoomLabel(mode, t), setCropZoomMode)
+          ] });
+        case "sleep":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("plSleepTimer"), sleepModeLabel(sleepTimer.mode)),
+            gearOptions(SLEEP_TIMER_OPTIONS, sleepTimer.mode, sleepModeLabel, (mode) => setSleepTimer(armSleepTimer(mode, Date.now())))
+          ] });
+        case "night":
+          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+            gearSubHeader(t("nightModeMenuLabel"), nightLabel(nightMode)),
+            gearOptions(["off", "mild", "strong"], nightMode, nightLabel, setNightMode)
+          ] });
+        default:
+          return null;
+      }
+    };
+    const renderMomentsPanel = () => /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: saveMomentNow, className: dtMoreRowClass, children: [
+        gearRowIcon("moments", dtMoreIconClass),
+        /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plMomentKeep") }),
+        !isTv ? /* @__PURE__ */ jsx("span", { className: "flex-none rounded border border-white/15 px-1.5 text-[11px] uppercase text-slate-400", children: getShortcutKey("saveMoment") }) : null
+      ] }),
+      moments.length === 0 ? /* @__PURE__ */ jsx("p", { className: "px-3 py-2 text-[13px] text-slate-500", children: t("plMomentsEmpty") }) : moments.map((sekund) => /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1", children: [
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            ...dtStation,
+            onClick: () => {
+              seekToAbsolute(sekund);
+              setShowMomentsMenu(false);
+            },
+            className: `${dtMenuRowClass(false)} flex-1`,
+            children: [
+              /* @__PURE__ */ jsx("span", { className: "tabular-nums", children: fmt(sekund) }),
+              /* @__PURE__ */ jsx("span", { className: "text-[13px] text-slate-400", children: t("plMomentJump") })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            ...dtStation,
+            onClick: () => {
+              if (momentKey) removeMoment(momentKey, sekund);
+            },
+            title: t("plMomentRemove"),
+            "aria-label": `${t("plMomentRemove")} ${fmt(sekund)}`,
+            className: "flex h-8 w-8 flex-none items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/10 hover:text-white",
+            children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) })
+          }
+        )
+      ] }, sekund)),
+      moments.length > 0 ? /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => {
+        if (momentKey) clearMoments(momentKey);
+      }, className: dtMoreRowClass, children: [
+        /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) }),
+        /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plMomentsClear") })
+      ] }) : null
+    ] });
+    const gearOptions = (options, current2, label, pick2) => options.map((option) => /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        ...dtStation,
+        onClick: () => {
+          pick2(option);
+          setGearPage("root");
+        },
+        className: dtMenuRowClass(option === current2),
+        children: [
+          /* @__PURE__ */ jsx("span", { children: label(option) }),
+          option === current2 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+        ]
+      },
+      String(option)
+    ));
     const activeSubLangCode = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((s) => s.id === activeSubId)?.language ?? null)?.toUpperCase() ?? "CC" : "CC";
     const activeAudioLangCode = toAudioLangGroup(
       (audioTracks.find((track) => track.index === activeAudioTrack) ?? audioTracks[0])?.language
@@ -25126,7 +28635,7 @@ ${cue.text}`).join("\n\n")}
         {
           type: "button",
           ...dtStation,
-          onClick: () => setShowEpisodes((open) => !open),
+          onClick: () => setShowEpisodes((open2) => !open2),
           title: t("plNextEpisode"),
           "aria-label": t("plNextEpisode"),
           className: dtIconButtonClass(showEpisodes ? "open" : "idle"),
@@ -25139,7 +28648,7 @@ ${cue.text}`).join("\n\n")}
           type: "button",
           ...hasStreamChoice ? dtStation : {},
           disabled: !hasStreamChoice,
-          onClick: () => setShowStreams((open) => !open),
+          onClick: () => setShowStreams((open2) => !open2),
           title: t("plSwitchStream"),
           "aria-label": t("plSwitchStream"),
           className: `${dtIconButtonClass(showStreams ? "open" : "idle")} disabled:opacity-40`,
@@ -25188,10 +28697,7 @@ ${cue.text}`).join("\n\n")}
       /* Rena statusetiketter: de säger ATT segmentet hittats. Åtgärden ligger i
          "Hoppa över intro"-pillret, och "hittades inte" utgår helt — det var en
          rad som aldrig hade något att erbjuda. */
-      segmentBadges: mediaType === "tv" && (introSegment || outroSegment) ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-        introSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: introKind === "recap" ? t("recapFound") : t("introFound") }) : null,
-        outroSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: t("outroFound") }) : null
-      ] }) : null,
+      segmentBadges: renderStatusLine("text-[13px]"),
       subtitles: /* @__PURE__ */ jsxs(
         "button",
         {
@@ -25302,6 +28808,32 @@ ${cue.text}`).join("\n\n")}
           children: playerIcon("cast", "h-[19px] w-[19px]")
         }
       ) : null,
+      sleepTimer: /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: sleepTriggerRef,
+          onClick: () => setShowSleepMenu((open2) => !open2),
+          title: t("plSleepTimer"),
+          "aria-label": t("plSleepTimer"),
+          className: dtIconButtonClass(showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle"),
+          children: playerIcon("sleepTimer", "h-[19px] w-[19px]")
+        }
+      ),
+      companions: companionProfiles.length > 0 ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: companionsTriggerRef,
+          onClick: () => setShowCompanionsMenu((open2) => !open2),
+          title: t("plCompanions"),
+          "aria-label": t("plCompanions"),
+          className: dtIconButtonClass(showCompanionsMenu ? "open" : companionIds.length > 0 ? "active" : "idle"),
+          children: playerIcon("companions", "h-[19px] w-[19px]")
+        }
+      ) : null,
       // Remsan ovanför seekbaren av/på — så länge det finns en remsa att visa.
       barcodeStrip: playerBarcode.stripToggle ? /* @__PURE__ */ jsx(
         "button",
@@ -25314,6 +28846,32 @@ ${cue.text}`).join("\n\n")}
           "aria-pressed": getBarcodeSettings().showStripInPlayer,
           className: dtIconButtonClass(getBarcodeSettings().showStripInPlayer ? "open" : "idle"),
           children: playerIcon("barcodeStrip", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      chapters: chapterList.length > 0 ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: chaptersTriggerRef,
+          onClick: () => setShowChaptersMenu((v) => !v),
+          title: t("plChapters"),
+          "aria-label": t("plChapters"),
+          className: dtIconButtonClass(showChaptersMenu ? "open" : "idle"),
+          children: playerIcon("chapters", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      moments: momentKey ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          ref: momentsTriggerRef,
+          onClick: () => setShowMomentsMenu((v) => !v),
+          title: t("plMoments"),
+          "aria-label": t("plMoments"),
+          className: dtIconButtonClass(showMomentsMenu ? "open" : moments.length > 0 ? "active" : "idle"),
+          children: playerIcon("moments", "h-[19px] w-[19px]")
         }
       ) : null,
       tuning: /* @__PURE__ */ jsx(
@@ -25336,8 +28894,8 @@ ${cue.text}`).join("\n\n")}
           type: "button",
           ...dtStation,
           onClick: () => setShowMoreMenu((value) => !value),
-          title: t("moreActions"),
-          "aria-label": t("moreActions"),
+          title: t("plGearTitle"),
+          "aria-label": t("plGearTitle"),
           className: dtIconButtonClass(showMoreMenu ? "open" : "idle"),
           children: playerIcon("more", "h-[19px] w-[19px]")
         }
@@ -25356,12 +28914,16 @@ ${cue.text}`).join("\n\n")}
       ) : null
     };
     const DESKTOP_ZONES = {
-      left: [["playPause", "nextEpisode", "switchStream"], ["mute", "volume"]],
-      center: [["segmentBadges"]],
+      // Statusraden ("Slutar 22:41 • Intro") direkt efter volymen, som i
+      // referensen — i mitten lämnade den en stor tom yta (Jerry 2026-10-03).
+      left: [["playPause", "nextEpisode", "switchStream"], ["mute", "volume"], ["segmentBadges"]],
+      center: [],
       right: [
-        ["subtitles", "audioTrack", "aspect", "cropZoom"],
-        ["wiki", "soundtrack", "cast"],
-        ["tuning", "barcodeStrip", "more", "fullscreen"]
+        // Bildformat, zoom, sömntimer och barcode-remsan bor i kugghjulet
+        // (`more`) sedan 2026-10-03 — GEAR_CONTROL_IDS i lib/player-layout.
+        ["subtitles", "audioTrack", "tuning"],
+        ["chapters", "moments", "wiki", "soundtrack", "cast"],
+        ["companions", "more", "fullscreen"]
       ]
     };
     const renderDesktopZone = (groups) => {
@@ -25392,13 +28954,16 @@ ${cue.text}`).join("\n\n")}
         togglePlay();
       }
     };
-    useEffect(() => onMediaKey((action) => {
+    const mediaKeyRef = useRef(() => {
+    });
+    mediaKeyRef.current = (action) => {
       switch (action) {
+        // Play växlar, som i Kodi: många TV-fjärrar (och TV:ns egen fjärr via
+        // HDMI-CEC) skickar MEDIA_PLAY på den kombinerade ▶⏸-knappen, och med
+        // "bara spela om pausad" gjorde den ingenting under uppspelning.
         case "playpause":
-          togglePlay();
-          break;
         case "play":
-          if (!isPlaying) togglePlay();
+          togglePlay();
           break;
         case "pause":
           if (isPlaying) togglePlay();
@@ -25422,7 +28987,144 @@ ${cue.text}`).join("\n\n")}
         }
       }
       onMouseActivityRef.current();
-    }), [togglePlay, isPlaying, seek, handleClose, episodes]);
+    };
+    useEffect(() => onMediaKey((action) => mediaKeyRef.current(action)), []);
+    const saidBufferRef = useRef([]);
+    const saidText = isMpvEngine ? mpv.subText : rawSubtitleText;
+    useEffect(() => {
+      const text = (saidText ?? "").trim();
+      if (!text) return;
+      const now2 = realTimeRef.current;
+      saidBufferRef.current = pushCue(saidBufferRef.current, { text, start: now2 }, now2);
+    }, [saidText]);
+    const couchRef = useRef({ snapshot: () => null, run: () => {
+    }, said: () => [] });
+    couchRef.current = {
+      said: () => {
+        const now2 = realTimeRef.current;
+        return saidBufferRef.current.filter((c) => c.start >= now2 - 30 && c.start <= now2 + 1);
+      },
+      snapshot: () => {
+        const epTitle = episodes?.items.find((e) => e.number === episodes.current)?.title;
+        return {
+          kind: mediaType === "tv" ? "episode" : "movie",
+          tmdbId: tmdbId ?? null,
+          title,
+          season,
+          episode,
+          episodeTitle: epTitle,
+          posterUrl: posterUrl ?? null,
+          backdropUrl: backdropUrl ?? null,
+          pos: Math.max(0, realTimeRef.current),
+          dur: totalDuration,
+          playing: isPlaying,
+          volume: couchVolume(volume, muted),
+          audio: audioTracks.map((t2) => ({ id: t2.index, ...audioLabel(t2) })),
+          audioId: activeAudioTrack,
+          subs: subtitleOptions.map((s) => ({ id: s.id, label: s.label || s.language })),
+          subId: activeSubId,
+          // ExoPlayer kan inte förskjuta inbäddad undertext: telefonen döljer Synk vid null.
+          subDelay: isDroidEngine && activeSubId?.startsWith("embedded:") ? null : subDelay,
+          dialogBoost: isMpvEngine ? nightMode !== "off" : null,
+          introUntil: activeIntro ? activeIntro.endMs / 1e3 : void 0,
+          creditsAt: outroSegment ? outroSegment.startMs / 1e3 : void 0,
+          nextEpisode: nextEpisodeOf(episodes),
+          episodes: episodes ? { season: episodes.seasonNumber, items: episodes.items.map((e) => ({ number: e.number, title: e.title, stillUrl: e.stillUrl, runtimeMinutes: e.runtimeMinutes, watched: e.watched })), current: episodes.current } : void 0,
+          streams: selectableStreams(streams?.items ?? []).map(describeStream),
+          streamKey: streams?.currentUrl ?? null,
+          sleep: couchSleep(sleepTimer, Date.now(), realTimeRef.current, totalDuration)
+        };
+      },
+      run: async (cmd) => {
+        const runCouchCommand = async () => {
+          switch (cmd.type) {
+            case "toggle-play":
+              togglePlay();
+              return;
+            case "seek":
+              seekToAbsolute(cmd.to);
+              return;
+            case "seek-rel":
+              seek(cmd.by);
+              return;
+            case "volume":
+              applyVolume(cmd.value / 100);
+              return;
+            case "audio": {
+              const t2 = audioTracks.find((a) => a.index === cmd.audioId);
+              if (!t2) throw new Error("unknown-audio");
+              switchAudioTrack(t2);
+              return;
+            }
+            case "sub": {
+              if (cmd.subId == null) {
+                await selectSubtitle(null, { manual: true });
+                return;
+              }
+              const s = subtitleOptions.find((o) => o.id === cmd.subId);
+              if (!s) throw new Error("unknown-sub");
+              await selectSubtitle(s, { manual: true });
+              return;
+            }
+            case "sub-delay":
+              setSubDelay(Math.max(-180, Math.min(180, Math.round(cmd.value * 10) / 10)));
+              return;
+            case "dialog-boost":
+              if (!isMpvEngine) throw new Error("unsupported");
+              setNightMode(cmd.on ? "mild" : "off");
+              return;
+            case "stream": {
+              const s = streams?.items.find((x) => streamKey(x) === cmd.key);
+              if (!s || !streams) throw new Error("unknown-stream");
+              streams.onSelect(s, Math.max(0, realTimeRef.current));
+              return;
+            }
+            case "episode": {
+              if (!episodes || cmd.season !== episodes.seasonNumber) throw new Error("season-unavailable");
+              episodes.onSelect(cmd.episode);
+              return;
+            }
+            case "next-episode": {
+              const next = nextEpisodeOf(episodes);
+              if (!next || !episodes) throw new Error("no-next");
+              episodes.onSelect(next.episode);
+              return;
+            }
+            case "skip-intro":
+              if (activeIntro) seekToAbsolute(activeIntro.endMs / 1e3);
+              return;
+            case "sleep":
+              setSleepTimer(sleepStateFor(cmd.mode, Date.now()));
+              return;
+            default:
+              throw new Error("unsupported");
+          }
+        };
+        await runCouchCommand();
+        notifyCouchState();
+      }
+    };
+    useEffect(() => registerCouchPlayer({
+      snapshot: () => couchRef.current.snapshot(),
+      run: (cmd) => couchRef.current.run(cmd),
+      said: () => couchRef.current.said()
+    }), []);
+    useEffect(() => {
+      notifyCouchState();
+    }, [isPlaying, title, season, episode, totalDuration, volume, muted, activeAudioTrack, audioTracks.length, activeSubId, subtitleOptions.length, subDelay, nightMode, Boolean(activeIntro), outroSegment, streams?.currentUrl, streams?.items.length, sleepTimer, episodes?.current]);
+    const couchPosRef = useRef(null);
+    useEffect(() => {
+      const now2 = Date.now();
+      const last2 = couchPosRef.current;
+      if (!last2 || last2.playing !== isPlaying) {
+        couchPosRef.current = { pos: realTime, at: now2, playing: isPlaying };
+        return;
+      }
+      if (positionJumped(last2, realTime, now2, isPlaying)) {
+        couchPosRef.current = { pos: realTime, at: now2, playing: isPlaying };
+        notifyCouchState();
+      }
+    }, [realTime, isPlaying]);
     const tvSeekStation = isTv ? {
       "data-f": "1",
       "data-init": "1",
@@ -25465,6 +29167,15 @@ ${cue.text}`).join("\n\n")}
               style: { left: `${outroZone.left}%`, width: `${outroZone.width}%` }
             }
           ) : null,
+          totalDuration > 0 ? moments.map((sekund) => /* @__PURE__ */ jsx(
+            "div",
+            {
+              "aria-hidden": true,
+              className: "pointer-events-none absolute -bottom-[4px] -top-[4px] w-[2px] -translate-x-1/2 rounded-full bg-white shadow-[0_0_4px_rgba(0,0,0,0.6)]",
+              style: { left: `${Math.min(100, sekund / totalDuration * 100)}%` }
+            },
+            `moment-${sekund}`
+          )) : null,
           scrubPercent !== null && totalDuration > 0 ? (() => {
             const thumb = scrubPreview && scrubPreview.intervalMs > 0 && scrubPreview.tileWidth > 0 && scrubPreview.tileHeight > 0 ? (() => {
               const perTile = scrubPreview.tileWidth * scrubPreview.tileHeight;
@@ -25627,8 +29338,8 @@ ${cue.text}`).join("\n\n")}
         if (!pinch.handled && (ratio > 1.25 || ratio < 0.8)) {
           pinch.handled = true;
           const modes = ASPECT_RATIO_MODES;
-          const current = modes.indexOf(aspectRatioMode);
-          const next2 = modes[(current + (ratio > 1 ? 1 : modes.length - 1)) % modes.length];
+          const current2 = modes.indexOf(aspectRatioMode);
+          const next2 = modes[(current2 + (ratio > 1 ? 1 : modes.length - 1)) % modes.length];
           setAspectRatioMode(next2);
           showGestureHud("aspect", 0, getAspectRatioLabel(next2, t));
         }
@@ -25717,7 +29428,7 @@ ${cue.text}`).join("\n\n")}
         const activeLang = activeSubId ? toSubtitleLangGroup(subtitleOptions.find((sub) => sub.id === activeSubId)?.language ?? null) : null;
         setSelectedLang(activeLang);
       }
-      setShowSubMenu((open) => !open);
+      setShowSubMenu((open2) => !open2);
     };
     const toggleCastMenu = () => {
       const opening = !showCastMenu;
@@ -25725,6 +29436,7 @@ ${cue.text}`).join("\n\n")}
       if (opening && castDevices.length === 0) void scanCastDevices();
       if (opening && isMpvEngine && !airplaySession) void prepareAirplaySession();
     };
+    const sleepModeLabel = (mode) => mode === "off" ? t("plSleepOff") : mode === "end" ? t("plSleepEnd") : t("plSleepMinutes").replace("{n}", String(mode));
     const phoneControls = {
       subtitles: {
         label: activeSubLangCode,
@@ -25737,46 +29449,61 @@ ${cue.text}`).join("\n\n")}
         label: activeAudioLangCode,
         title: t("audioLanguage"),
         state: showAudioMenu ? "open" : "idle",
-        onClick: () => setShowAudioMenu((open) => !open),
+        onClick: () => setShowAudioMenu((open2) => !open2),
         triggerRef: audioTriggerRef
       } : void 0,
       nextEpisode: episodes && episodes.items.length > 0 ? {
         label: t("plShortEpisodes"),
         title: t("plNextEpisode"),
         state: showEpisodes ? "open" : "idle",
-        onClick: () => setShowEpisodes((open) => !open)
+        onClick: () => setShowEpisodes((open2) => !open2)
       } : void 0,
       switchStream: hasStreamChoice ? {
         label: t("plStreams"),
         title: t("plSwitchStream"),
         state: showStreams ? "open" : "idle",
-        onClick: () => setShowStreams((open) => !open)
+        onClick: () => setShowStreams((open2) => !open2)
       } : void 0,
       tuning: {
         label: t("plShortPicture"),
         title: t("vtTitle"),
         state: showTuningPanel ? "open" : "idle",
-        onClick: () => setShowTuningPanel((open) => !open),
+        onClick: () => setShowTuningPanel((open2) => !open2),
         triggerRef: tuningTriggerRef
       },
+      moments: momentKey ? {
+        label: t("plMoments"),
+        title: t("plMoments"),
+        value: moments.length > 0 ? String(moments.length) : void 0,
+        state: showMomentsMenu ? "open" : moments.length > 0 ? "active" : "idle",
+        onClick: () => setShowMomentsMenu((open2) => !open2),
+        triggerRef: momentsTriggerRef
+      } : void 0,
+      chapters: chapterList.length > 0 ? {
+        label: t("plChapters"),
+        title: t("plChapters"),
+        state: showChaptersMenu ? "open" : "idle",
+        onClick: () => setShowChaptersMenu((open2) => !open2),
+        triggerRef: chaptersTriggerRef
+      } : void 0,
       wiki: wikiTmdbId || resolvedImdbId ? {
         label: t("plShortWiki"),
         title: t("info"),
         state: showWiki ? "open" : "idle",
-        onClick: () => setShowWiki((open) => !open)
+        onClick: () => setShowWiki((open2) => !open2)
       } : void 0,
       soundtrack: title ? {
         label: t("plShortMusic"),
         title: t("soundtrack"),
         state: showSoundtrack ? "open" : "idle",
-        onClick: () => setShowSoundtrack((open) => !open)
+        onClick: () => setShowSoundtrack((open2) => !open2)
       } : void 0,
       cropZoom: {
         label: t("plShortZoom"),
         title: t("cropZoom"),
         value: cropZoomLabel,
         state: showCropZoomMenu ? "open" : cropZoomMode !== "off" ? "active" : "idle",
-        onClick: () => setShowCropZoomMenu((open) => !open),
+        onClick: () => setShowCropZoomMenu((open2) => !open2),
         triggerRef: cropTriggerRef
       },
       aspect: {
@@ -25784,7 +29511,7 @@ ${cue.text}`).join("\n\n")}
         title: t("aspectRatio"),
         value: aspectLabel,
         state: showAspectMenu ? "open" : aspectRatioMode !== "auto" ? "active" : "idle",
-        onClick: () => setShowAspectMenu((open) => !open),
+        onClick: () => setShowAspectMenu((open2) => !open2),
         triggerRef: aspectTriggerRef
       },
       cast: !isClientSession() ? {
@@ -25793,6 +29520,22 @@ ${cue.text}`).join("\n\n")}
         state: showCastMenu ? "open" : castTarget ? "active" : "idle",
         onClick: toggleCastMenu
       } : void 0,
+      sleepTimer: {
+        label: t("plSleepShort"),
+        title: t("plSleepTimer"),
+        value: sleepTimer.mode === "off" ? void 0 : sleepModeLabel(sleepTimer.mode),
+        state: showSleepMenu ? "open" : sleepTimer.mode !== "off" ? "active" : "idle",
+        onClick: () => setShowSleepMenu((open2) => !open2),
+        triggerRef: sleepTriggerRef
+      },
+      companions: companionProfiles.length > 0 ? {
+        label: t("plCompanionsShort"),
+        title: t("plCompanions"),
+        value: companionIds.length > 0 ? String(companionIds.length) : void 0,
+        state: showCompanionsMenu ? "open" : companionIds.length > 0 ? "active" : "idle",
+        onClick: () => setShowCompanionsMenu((open2) => !open2),
+        triggerRef: companionsTriggerRef
+      } : void 0,
       fullscreen: !isTauriEnv || isDesktopTauriEnv ? {
         label: t("plShortFullscreen"),
         title: t("plFullscreen"),
@@ -25800,7 +29543,7 @@ ${cue.text}`).join("\n\n")}
         onClick: toggleFullscreen
       } : void 0
     };
-    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "cropZoom", "tuning", "wiki", "soundtrack", "switchStream", "aspect", "fullscreen"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "wiki", "soundtrack", "cropZoom", "aspect"];
+    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "tuning", "chapters", "moments", "wiki", "soundtrack", "switchStream", "fullscreen", "companions"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "chapters", "moments", "wiki", "soundtrack", "companions"];
     const LANDSCAPE_ROW_BUDGET = 6;
     const phoneDedicatedIds = landscapeChrome ? ["nextEpisode", "cast"] : ["cast", "fullscreen"];
     const phoneRowCandidates = PHONE_ROW_ORDER.filter((id) => !phoneDedicatedIds.includes(id) && showsControl(id) && Boolean(phoneControls[id]));
@@ -25876,7 +29619,7 @@ ${cue.text}`).join("\n\n")}
       if (isClientSession()) return null;
       const downloading = downloadState.type === "downloading";
       const busy = downloadState.type === "picking-folder";
-      const active2 = downloadLabel !== null;
+      const active3 = downloadLabel !== null;
       return /* @__PURE__ */ jsxs(
         "button",
         {
@@ -25887,7 +29630,7 @@ ${cue.text}`).join("\n\n")}
           disabled: busy,
           title: downloading ? t("cancel") : t("downloadThisVideo"),
           "aria-label": downloading ? t("cancel") : t("downloadThisVideo"),
-          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active2 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active2 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
+          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active3 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active3 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
           children: [
             downloadIcon(variant === "round" ? "h-[19px] w-[19px]" : "h-[17px] w-[17px]"),
             downloadLabel ? /* @__PURE__ */ jsx("span", { className: `font-semibold tabular-nums ${variant === "round" ? "text-[13px]" : "text-xs"}`, children: downloadLabel }) : null
@@ -25896,11 +29639,8 @@ ${cue.text}`).join("\n\n")}
       );
     };
     const renderSegmentPills = () => {
-      if (mediaType !== "tv" || !showsControl("segmentBadges") || !introSegment && !outroSegment) return null;
-      return /* @__PURE__ */ jsxs(Fragment2, { children: [
-        introSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: introKind === "recap" ? t("recapFound") : t("introFound") }) : null,
-        outroSegment ? /* @__PURE__ */ jsx("span", { className: dtStatusPillClass, children: t("outroFound") }) : null
-      ] });
+      if (!showsControl("segmentBadges")) return null;
+      return renderStatusLine("text-[12px]");
     };
     const renderPhoneClock = (bigClass, smallClass) => {
       if (!showsControl("time")) return null;
@@ -26553,81 +30293,6 @@ ${cue.text}`).join("\n\n")}
                     children: t("pressToStart")
                   }
                 ) }),
-                manualSyncOpen && /* @__PURE__ */ jsx(
-                  "div",
-                  {
-                    className: "absolute inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-6 backdrop-blur-sm",
-                    onClick: () => {
-                      setManualSyncOpen(false);
-                      setManualSyncTapTime(null);
-                    },
-                    children: /* @__PURE__ */ jsx(
-                      "div",
-                      {
-                        className: "mb-24 w-full max-w-xl rounded-2xl border border-white/10 bg-slate-900/95 p-5 shadow-2xl",
-                        onClick: (event) => event.stopPropagation(),
-                        children: manualSyncTapTime === null ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-                          /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: t("subtitleManualSyncTapPrompt") }),
-                          /* @__PURE__ */ jsx(
-                            "button",
-                            {
-                              type: "button",
-                              autoFocus: true,
-                              "data-f": isTv ? "1" : void 0,
-                              onClick: () => setManualSyncTapTime(realTimeRef.current),
-                              className: "mt-4 w-full rounded-xl bg-aurora-500/80 px-4 py-3 text-sm font-semibold text-white transition hover:bg-aurora-400/80",
-                              children: t("subtitleManualSyncTapButton")
-                            }
-                          ),
-                          /* @__PURE__ */ jsx("p", { className: "mt-3 text-[11px] text-slate-500", children: t("subtitleManualSyncSecondHint") })
-                        ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
-                          /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-200", children: manualSyncBusy ? t("subtitleManualSyncApplying") : t("subtitleManualSyncPickPrompt") }),
-                          manualSyncBusy && /* @__PURE__ */ jsxs("div", { className: "mt-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3", children: [
-                            /* @__PURE__ */ jsx("span", { className: "h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white/80" }),
-                            /* @__PURE__ */ jsx("span", { className: "text-xs text-slate-300", children: t("subtitleManualSyncRefining") })
-                          ] }),
-                          /* @__PURE__ */ jsx("div", { className: `mt-3 max-h-64 space-y-1 overflow-y-auto ${manualSyncBusy ? "pointer-events-none opacity-40" : ""}`, children: (() => {
-                            const near = cues.filter((cue) => Math.abs(cue.start - manualSyncTapTime) <= 120).sort((a, b) => Math.abs(a.start - manualSyncTapTime) - Math.abs(b.start - manualSyncTapTime)).slice(0, 40).sort((a, b) => a.start - b.start);
-                            if (near.length === 0) {
-                              return /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("subtitleManualSyncNoCues") });
-                            }
-                            return near.map((cue) => /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                "data-f": isTv ? "1" : void 0,
-                                disabled: manualSyncBusy,
-                                onClick: () => {
-                                  void applyManualAnchor(cue);
-                                },
-                                className: "flex w-full items-baseline gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-white/10 disabled:opacity-50",
-                                children: [
-                                  /* @__PURE__ */ jsxs("span", { className: "shrink-0 font-mono text-[11px] text-slate-500", children: [
-                                    Math.floor(cue.start / 60),
-                                    ":",
-                                    String(Math.floor(cue.start % 60)).padStart(2, "0")
-                                  ] }),
-                                  /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: cue.text.replace(/\n/g, " ") })
-                                ]
-                              },
-                              `${cue.start}-${cue.text.slice(0, 12)}`
-                            ));
-                          })() }),
-                          /* @__PURE__ */ jsx(
-                            "button",
-                            {
-                              type: "button",
-                              "data-f": isTv ? "1" : void 0,
-                              onClick: () => setManualSyncTapTime(null),
-                              className: "mt-3 text-xs text-slate-400 underline-offset-2 hover:text-white hover:underline",
-                              children: t("cancel2")
-                            }
-                          )
-                        ] })
-                      }
-                    )
-                  }
-                ),
                 creditsMode && creditsCards.length > 0 && /* @__PURE__ */ jsx(
                   CreditsRecommendations,
                   {
@@ -26651,13 +30316,29 @@ ${cue.text}`).join("\n\n")}
                     children: statsLines.map((line) => /* @__PURE__ */ jsx("div", { children: line }, line.split(" ")[0]))
                   }
                 ),
-                (overlayPrimaryText || overlaySecondaryText || secondaryNotice) && /* @__PURE__ */ jsxs(
+                (overlayPrimaryText || overlaySecondaryText || secondaryNotice || syncNotice) && /* @__PURE__ */ jsxs(
                   "div",
                   {
                     className: "pointer-events-none absolute inset-x-0 z-30 flex flex-col items-center gap-1 px-8",
                     style: { bottom: `calc(${subVerticalPos}% + 3.5rem)` },
                     children: [
                       secondaryNotice && /* @__PURE__ */ jsx("div", { className: "mb-1 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: secondaryNotice }),
+                      syncNotice && /* @__PURE__ */ jsxs("div", { className: "pointer-events-auto mb-1 flex items-center gap-2 rounded-md bg-black/70 px-3 py-1 text-xs text-white/90", children: [
+                        /* @__PURE__ */ jsx("span", { children: syncNotice.message }),
+                        syncNotice.actionLabel && syncNotice.onAction && /* @__PURE__ */ jsx(
+                          "button",
+                          {
+                            type: "button",
+                            "data-f": isTv ? "1" : void 0,
+                            onClick: () => {
+                              syncNotice.onAction?.();
+                              setSyncNotice(null);
+                            },
+                            className: "font-medium text-aurora-300 hover:text-aurora-200",
+                            children: syncNotice.actionLabel
+                          }
+                        )
+                      ] }),
                       [
                         { text: overlayPrimaryText, scale: 1, color: subTextColor, key: "primary" },
                         { text: overlaySecondaryText, scale: 0.85, color: secondarySubColor, key: "secondary" }
@@ -26784,7 +30465,7 @@ ${cue.text}`).join("\n\n")}
                   "div",
                   {
                     ...tvSurface2("subs"),
-                    style: { ...getAnchoredMenuStyle(subTriggerRef.current), right: 16, left: "auto" },
+                    style: { ...anchoredMenuStyle(subTriggerRef.current), right: 16, left: "auto" },
                     className: `z-[70] flex max-h-[75vh] w-[min(calc(100vw-2rem),20rem)] flex-col overflow-y-auto rounded-xl border border-white/10 shadow-xl backdrop-blur-sm sm:max-h-none sm:w-auto sm:flex-row sm:overflow-visible ${desktopChrome ? "bg-base-800/95" : "bg-slate-900/95"}`,
                     onClick: (e) => e.stopPropagation(),
                     children: [
@@ -26932,35 +30613,8 @@ ${cue.text}`).join("\n\n")}
                         ] }),
                         subtitleLoadError && subtitleOptions.length === 0 && /* @__PURE__ */ jsx("div", { className: "px-4 pb-2 text-[11px] leading-5 text-rose-300", children: subtitleLoadError }),
                         /* @__PURE__ */ jsxs("div", { className: "px-4 pb-2", children: [
-                          /* @__PURE__ */ jsx(
-                            "button",
-                            {
-                              type: "button",
-                              "data-f": isTv ? "1" : void 0,
-                              onClick: () => {
-                                setShowSubMenu(false);
-                                setManualSyncTapTime(null);
-                                setManualSyncOpen(true);
-                              },
-                              disabled: cues.length < 2,
-                              className: `mt-2 w-full rounded-lg border px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.18em] transition ${cues.length >= 2 ? "border-white/15 bg-white/5 text-slate-200 hover:border-white/25 hover:bg-white/10" : "border-white/10 bg-white/5 text-slate-500"}`,
-                              children: t("subtitleManualSync")
-                            }
-                          ),
-                          subtitleAutoSyncState.type !== "idle" && subtitleAutoSyncState.type !== "analyzing" && /* @__PURE__ */ jsxs("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: [
-                            subtitleAutoSyncState.message,
-                            subtitleAutoSyncState.type === "done" && lastAutoSyncedDelayRef.current !== null && /* @__PURE__ */ jsx(
-                              "button",
-                              {
-                                type: "button",
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: undoSubtitleAutoSync,
-                                className: `ml-2 transition ${desktopChrome ? "text-[rgb(var(--player-accent))] hover:text-[rgb(var(--player-accent)/0.8)]" : "text-aurora-300 hover:text-aurora-200"}`,
-                                children: t("undo")
-                              }
-                            )
-                          ] }),
-                          subtitleAutoSyncState.type === "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: t("subtitleAutoSyncAnalyzing") })
+                          subtitleAutoSyncState.type !== "idle" && subtitleAutoSyncState.type !== "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: subtitleAutoSyncState.message }),
+                          subtitleAutoSyncState.type === "analyzing" && /* @__PURE__ */ jsx("div", { className: "mt-2 text-[11px] leading-5 text-slate-400", children: subtitleAutoSyncState.message ?? t("subtitleAutoSyncAnalyzing") })
                         ] }),
                         /* @__PURE__ */ jsx("div", { className: "px-4 py-2", children: /* @__PURE__ */ jsxs(
                           "button",
@@ -27018,15 +30672,17 @@ ${cue.text}`).join("\n\n")}
                   }
                 ),
                 overlayContent,
-                showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
+                showStillWatchingPrompt && /* @__PURE__ */ jsx("div", { "data-still-watching": "", ...isTv ? { "data-panel-root": "1" } : {}, className: "absolute inset-0 z-[58] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm", onClick: (e) => e.stopPropagation(), children: /* @__PURE__ */ jsxs("div", { className: "w-full max-w-md rounded-3xl border border-white/10 bg-slate-950/90 p-6 text-center shadow-2xl", children: [
                   /* @__PURE__ */ jsx("p", { className: "text-xs uppercase tracking-[0.24em] text-slate-400", children: t("playbackTitle") }),
-                  /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: t("stillWatching") }),
+                  /* @__PURE__ */ jsx("h3", { className: "mt-3 text-2xl font-semibold text-white", children: stillWatchingReason === "sleep" ? t("plSleepStillThere") : t("stillWatching") }),
+                  stillWatchingReason === "sleep" && /* @__PURE__ */ jsx("p", { className: "mt-2 text-sm text-slate-400", children: t("plSleepStillThereBody") }),
                   /* @__PURE__ */ jsxs("div", { className: "mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center", children: [
                     /* @__PURE__ */ jsx(
                       "button",
                       {
                         type: "button",
                         "data-f": isTv ? "1" : void 0,
+                        "data-init": isTv ? "1" : void 0,
                         onClick: handleStillWatchingContinue,
                         className: "rounded-full bg-accent-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-400",
                         children: t("stillWatchingContinue")
@@ -27049,7 +30705,16 @@ ${cue.text}`).join("\n\n")}
                   setShowTuningPanel(false);
                   if (isTv) requestAnimationFrame(() => tuningTriggerRef.current?.focus());
                 } }),
-                shouldShowSkipIntroButton && activeIntro && /* @__PURE__ */ jsxs(
+                momentNotice ? /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    role: "status",
+                    className: "pointer-events-none absolute left-6 top-16 z-[56] rounded-full border border-white/[0.10] bg-[rgba(13,14,22,0.88)] px-5 py-2.5 text-[15px] font-medium text-white shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-md",
+                    children: momentNotice.text
+                  },
+                  momentNotice.id
+                ) : null,
+                shouldShowSkipIntroButton && activeIntro && openSurface === null && /* @__PURE__ */ jsxs(
                   "div",
                   {
                     inert: !controlsVisible,
@@ -27141,9 +30806,9 @@ ${cue.text}`).join("\n\n")}
                                 {
                                   type: "button",
                                   ref: moreTriggerRef,
-                                  onClick: () => setShowMoreMenu((open) => !open),
-                                  title: t("moreActions"),
-                                  "aria-label": t("moreActions"),
+                                  onClick: () => setShowMoreMenu((open2) => !open2),
+                                  title: t("plGearTitle"),
+                                  "aria-label": t("plGearTitle"),
                                   className: `flex w-[54px] flex-none flex-col items-center gap-0.5 rounded-[10px] py-1 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-200"}`,
                                   children: [
                                     playerIcon("more", "h-[17px] w-[17px]"),
@@ -27174,9 +30839,9 @@ ${cue.text}`).join("\n\n")}
                               {
                                 type: "button",
                                 ref: moreTriggerRef,
-                                onClick: () => setShowMoreMenu((open) => !open),
-                                title: t("moreActions"),
-                                "aria-label": t("moreActions"),
+                                onClick: () => setShowMoreMenu((open2) => !open2),
+                                title: t("plGearTitle"),
+                                "aria-label": t("plGearTitle"),
                                 className: `flex h-10 flex-none items-center gap-[7px] rounded-full border border-white/[0.12] px-3.5 transition ${showMoreMenu ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300"}`,
                                 children: [
                                   playerIcon("more", "h-[17px] w-[17px]"),
@@ -27228,7 +30893,11 @@ ${cue.text}`).join("\n\n")}
                         })(),
                         /* @__PURE__ */ jsx("div", { className: "vp-controls-row flex items-center gap-4 overflow-x-auto whitespace-nowrap", children: (() => {
                           const controls = {
+                            chapters: null,
+                            moments: null,
                             barcodeStrip: null,
+                            sleepTimer: null,
+                            companions: null,
                             playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
                             seekBack: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
                             seekForward: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
@@ -27244,7 +30913,7 @@ ${cue.text}`).join("\n\n")}
                                 type: "button",
                                 ref: audioDelayTriggerRef,
                                 "data-f": isTv ? "1" : void 0,
-                                onClick: () => setShowAudioDelayMenu((open) => !open),
+                                onClick: () => setShowAudioDelayMenu((open2) => !open2),
                                 title: t("audioDelayTitle"),
                                 "aria-label": t("audioDelayTitle"),
                                 className: `rounded px-1.5 py-0.5 text-xs font-medium tabular-nums transition ${effectiveAudioDelayMs !== 0 ? "bg-aurora-500/25 text-aurora-200" : "text-slate-300 hover:text-white"}`,
@@ -27259,7 +30928,7 @@ ${cue.text}`).join("\n\n")}
                               {
                                 type: "button",
                                 "data-f": isTv ? "1" : void 0,
-                                onClick: () => setShowEpisodes((open) => !open),
+                                onClick: () => setShowEpisodes((open2) => !open2),
                                 title: t("plNextEpisode"),
                                 "aria-label": t("plNextEpisode"),
                                 className: showEpisodes ? "text-aurora-300" : "text-slate-300 transition hover:text-white",
@@ -27275,7 +30944,7 @@ ${cue.text}`).join("\n\n")}
                                 type: "button",
                                 "data-f": isTv && hasStreamChoice ? "1" : void 0,
                                 disabled: !hasStreamChoice,
-                                onClick: () => setShowStreams((open) => !open),
+                                onClick: () => setShowStreams((open2) => !open2),
                                 title: t("plSwitchStream"),
                                 "aria-label": t("plSwitchStream"),
                                 className: showStreams ? "text-aurora-300" : "text-slate-300 transition hover:text-white disabled:opacity-40",
@@ -27456,7 +31125,7 @@ ${cue.text}`).join("\n\n")}
                       showAudioDelayMenu && useMpv && /* @__PURE__ */ jsxs(
                         "div",
                         {
-                          style: getAnchoredMenuStyle(audioDelayTriggerRef.current, 244),
+                          style: anchoredMenuStyle(audioDelayTriggerRef.current, 244),
                           className: "z-50 w-[244px] rounded-[1.1rem] border border-white/10 bg-base-800/95 p-3 shadow-2xl backdrop-blur-md",
                           onClick: (event) => event.stopPropagation(),
                           children: [
@@ -27690,173 +31359,234 @@ ${cue.text}`).join("\n\n")}
                           ]
                         }
                       ),
+                      showMomentsMenu && momentKey && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("moments"),
+                          style: { ...pickerStyle(momentsTriggerRef.current, 280), maxHeight: "60vh", overflowY: "auto" },
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plMoments")),
+                            renderMomentsPanel()
+                          ]
+                        }
+                      ),
+                      showChaptersMenu && chapterList.length > 0 && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("chapters"),
+                          style: { ...pickerStyle(chaptersTriggerRef.current, 300), maxHeight: "60vh", overflowY: "auto" },
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plChapters")),
+                            chapterList.map((chapter, index) => {
+                              const isNow = index === chapterIndexNow;
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  onClick: () => {
+                                    seekToAbsolute(chapter.startSec);
+                                    setShowChaptersMenu(false);
+                                  },
+                                  className: `flex w-full items-start justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition ${isNow ? "bg-white/[0.10] text-white" : "text-slate-300 hover:bg-white/[0.06] hover:text-white"}`,
+                                  children: [
+                                    /* @__PURE__ */ jsxs("span", { className: "min-w-0", children: [
+                                      /* @__PURE__ */ jsx("span", { className: "block truncate text-sm", children: chapter.label }),
+                                      /* @__PURE__ */ jsx("span", { className: "mt-0.5 block text-[12px] text-slate-500", children: formatChapterDuration(chapter.durationSec, lang === "sv" ? "sv" : "en") })
+                                    ] }),
+                                    /* @__PURE__ */ jsx("span", { className: "flex-none rounded bg-white/[0.07] px-1.5 py-0.5 text-[12px] tabular-nums text-slate-300", children: fmt(chapter.startSec) })
+                                  ]
+                                },
+                                `${chapter.startSec}-${index}`
+                              );
+                            })
+                          ]
+                        }
+                      ),
+                      showSleepMenu && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("sleep"),
+                          style: pickerStyle(sleepTriggerRef.current, 240),
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plSleepTimer")),
+                            SLEEP_TIMER_OPTIONS.map((mode) => {
+                              const isActive = sleepTimer.mode === mode;
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  onClick: () => {
+                                    setSleepTimer(armSleepTimer(mode, Date.now()));
+                                    setShowSleepMenu(false);
+                                  },
+                                  className: dtMenuRowClass(isActive),
+                                  children: [
+                                    /* @__PURE__ */ jsx("span", { children: sleepModeLabel(mode) }),
+                                    isActive && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                String(mode)
+                              );
+                            })
+                          ]
+                        }
+                      ),
+                      showCompanionsMenu && companionProfiles.length > 0 && /* @__PURE__ */ jsxs(
+                        "div",
+                        {
+                          ...tvSurface2("companions"),
+                          style: pickerStyle(companionsTriggerRef.current, 260),
+                          className: dtMenuSurfaceClass,
+                          onClick: (e) => e.stopPropagation(),
+                          children: [
+                            pickerHeading(t("plWhoWatches")),
+                            /* @__PURE__ */ jsxs("button", { type: "button", ...dtStation, onClick: () => setCompanions([]), className: dtMenuRowClass(companionIds.length === 0), children: [
+                              /* @__PURE__ */ jsx("span", { children: t("plCompanionsJustMe") }),
+                              companionIds.length === 0 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                            ] }),
+                            companionProfiles.map((p) => {
+                              const on = companionIds.includes(p.id);
+                              return /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  "aria-pressed": on,
+                                  onClick: () => setCompanions(on ? companionIds.filter((x) => x !== p.id) : [...companionIds, p.id]),
+                                  className: dtMenuRowClass(on),
+                                  children: [
+                                    /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-2.5", children: [
+                                      /* @__PURE__ */ jsx(ProfileAvatar, { profile: p, className: "h-6 w-6" }),
+                                      p.name
+                                    ] }),
+                                    on && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+                                  ]
+                                },
+                                p.id
+                              );
+                            })
+                          ]
+                        }
+                      ),
                       showMoreMenu && /* @__PURE__ */ jsxs(
                         "div",
                         {
                           ref: moreMenuRef,
                           ...tvSurface2("more"),
-                          style: portraitChrome ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "70vh", overflowY: "auto" } : newChrome ? pickerStyle(moreTriggerRef.current, landscapeChrome ? 244 : 262) : getAnchoredMenuStyle(moreTriggerRef.current),
+                          style: portraitChrome ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "70vh", overflowY: "auto" } : newChrome ? pickerStyle(moreTriggerRef.current, landscapeChrome ? 244 : 262) : anchoredMenuStyle(moreTriggerRef.current),
                           className: portraitChrome ? "z-50 rounded-t-2xl border-t border-white/[0.07] bg-base-950/[0.96] px-3 pb-6 pt-3 shadow-[0_-20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : newChrome ? dtMenuSurfaceClass : "z-50 w-64 rounded-[1.6rem] border border-white/10 bg-base-800/95 p-2.5 shadow-2xl backdrop-blur-md",
                           onClick: (e) => e.stopPropagation(),
                           children: [
-                            portraitChrome ? pickerHeading(t("moreActions")) : null,
-                            phoneOverflowIds.map((id) => renderPhoneOverflowRow(id, phoneControls[id])),
-                            dvColorFallback && /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => setDvColorFallbackMuted((current) => !current),
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                                    /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
-                                    /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
-                                  ] }),
-                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
-                                    t("dvColorLabel"),
-                                    ": ",
-                                    dvColorFallbackActive ? t("dvColorAuto") : t("dvColorOff")
-                                  ] })
-                                ]
-                              }
-                            ),
-                            /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => {
-                                  const next = nextPlaybackSpeed(playbackSpeed);
-                                  setPlaybackSpeedState(next);
-                                  savePlaybackSpeed(mediaType, tmdbId ?? null, next);
-                                  mpv.setSpeed(next);
-                                },
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M13 3 4 14h7l-1 7 9-11h-7l1-7Z", strokeLinecap: "round", strokeLinejoin: "round" }) }),
-                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
-                                    t("playbackSpeedMenuLabel"),
-                                    ": ",
-                                    playbackSpeed,
-                                    "\xD7"
-                                  ] })
-                                ]
-                              }
-                            ),
-                            /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => {
-                                  const next = !statsHud;
-                                  setStatsHudState(next);
-                                  setStatsHud(next);
-                                },
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M4 20V10M10 20V4M16 20v-7M22 20H2", strokeLinecap: "round", strokeLinejoin: "round" }) }),
-                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
-                                    t("statsHudMenuLabel"),
-                                    ": ",
-                                    t(statsHud ? "on" : "off")
-                                  ] })
-                                ]
-                              }
-                            ),
-                            isMpvEngine && /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => {
-                                  const next = nightMode === "off" ? "mild" : nightMode === "mild" ? "strong" : "off";
-                                  setNightMode(next);
-                                },
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsx("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z", strokeLinecap: "round", strokeLinejoin: "round" }) }),
-                                  /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
-                                    t("nightModeMenuLabel"),
-                                    ": ",
-                                    t(nightMode === "off" ? "nightModeOff" : nightMode === "mild" ? "nightModeMenuMild" : "nightModeMenuStrong")
-                                  ] })
-                                ]
-                              }
-                            ),
-                            !(desktopChrome || portraitChrome) && /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => void handleCopyStreamLink(),
-                                className: dtMoreRowClass,
-                                children: [
-                                  /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                                    /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4", strokeLinecap: "round", strokeLinejoin: "round" }),
-                                    /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20", strokeLinecap: "round", strokeLinejoin: "round" })
-                                  ] }),
-                                  /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: copiedLink ? t("copied") : t("copyStreamLink") })
-                                ]
-                              }
-                            ),
-                            !isClientSession() && !phoneChrome && /* @__PURE__ */ jsxs("div", { className: `flex items-center gap-2 transition ${newChrome ? "rounded-lg hover:bg-[rgb(var(--player-accent)/0.14)]" : "rounded-[1.15rem] hover:bg-white/5"}`, children: [
-                              /* @__PURE__ */ jsxs(
+                            portraitChrome && gearPage === "root" ? pickerHeading(t("plGearTitle")) : null,
+                            gearPage === "root" && /* @__PURE__ */ jsxs(Fragment2, { children: [
+                              phoneOverflowIds.map((id) => renderPhoneOverflowRow(id, phoneControls[id])),
+                              renderGearRoot()
+                            ] }),
+                            gearPage === "root" && /* @__PURE__ */ jsxs(Fragment2, { children: [
+                              dvColorFallback && /* @__PURE__ */ jsxs(
                                 "button",
                                 {
                                   type: "button",
                                   ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
-                                  onClick: () => void handleDownload(),
-                                  disabled: downloadState.type === "picking-folder" || downloadState.type === "downloading",
-                                  className: `flex min-w-0 flex-1 items-center gap-3 text-left text-slate-100 disabled:cursor-wait disabled:opacity-70 ${desktopChrome ? "px-3 py-2.5" : "px-4 py-3"}`,
+                                  onClick: () => setDvColorFallbackMuted((current2) => !current2),
+                                  className: dtMoreRowClass,
                                   children: [
                                     /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-                                      /* @__PURE__ */ jsx("path", { d: "M12 3v12", strokeLinecap: "round" }),
-                                      /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5", strokeLinecap: "round", strokeLinejoin: "round" }),
-                                      /* @__PURE__ */ jsx("path", { d: "M5 21h14", strokeLinecap: "round" })
+                                      /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "9" }),
+                                      /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
                                     ] }),
-                                    /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: downloadState.type === "picking-folder" ? t("preparingDownload") : downloadState.type === "downloading" ? `${t("downloading")} ${downloadState.progress}%` : downloadState.type === "done" ? t("downloadComplete") : downloadState.type === "cancelled" ? t("cancel") : t("downloadThisVideo") })
+                                    /* @__PURE__ */ jsxs("span", { className: dtMoreTextClass, children: [
+                                      t("dvColorLabel"),
+                                      ": ",
+                                      dvColorFallbackActive ? t("dvColorAuto") : t("dvColorOff")
+                                    ] })
                                   ]
                                 }
                               ),
-                              downloadState.type === "downloading" && /* @__PURE__ */ jsx(
+                              gearToggleRow("stats", "stats", t("statsHudMenuLabel"), statsHud, () => {
+                                const next = !statsHud;
+                                setStatsHudState(next);
+                                setStatsHud(next);
+                              }),
+                              !(desktopChrome || portraitChrome) && /* @__PURE__ */ jsxs(
                                 "button",
                                 {
                                   type: "button",
                                   ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
-                                  onClick: () => void handleCancelDownload(),
-                                  className: "mr-3 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/10 text-slate-300 transition hover:border-red-400/40 hover:text-red-300",
-                                  title: t("cancel"),
-                                  children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12", strokeLinecap: "round" }) })
+                                  onClick: () => void handleCopyStreamLink(),
+                                  className: dtMoreRowClass,
+                                  children: [
+                                    /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                                      /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4", strokeLinecap: "round", strokeLinejoin: "round" }),
+                                      /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20", strokeLinecap: "round", strokeLinejoin: "round" })
+                                    ] }),
+                                    /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: copiedLink ? t("copied") : t("copyStreamLink") })
+                                  ]
+                                }
+                              ),
+                              !isClientSession() && !phoneChrome && /* @__PURE__ */ jsxs("div", { className: `flex items-center gap-2 transition ${newChrome ? "rounded-lg hover:bg-[rgb(var(--player-accent)/0.14)]" : "rounded-[1.15rem] hover:bg-white/5"}`, children: [
+                                /* @__PURE__ */ jsxs(
+                                  "button",
+                                  {
+                                    type: "button",
+                                    ...dtStation,
+                                    "data-f": isTv ? "1" : void 0,
+                                    onClick: () => void handleDownload(),
+                                    disabled: downloadState.type === "picking-folder" || downloadState.type === "downloading",
+                                    className: `flex min-w-0 flex-1 items-center gap-3 text-left text-slate-100 disabled:cursor-wait disabled:opacity-70 ${desktopChrome ? "px-3 py-2.5" : "px-4 py-3"}`,
+                                    children: [
+                                      /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                                        /* @__PURE__ */ jsx("path", { d: "M12 3v12", strokeLinecap: "round" }),
+                                        /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5", strokeLinecap: "round", strokeLinejoin: "round" }),
+                                        /* @__PURE__ */ jsx("path", { d: "M5 21h14", strokeLinecap: "round" })
+                                      ] }),
+                                      /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: downloadState.type === "picking-folder" ? t("preparingDownload") : downloadState.type === "downloading" ? `${t("downloading")} ${downloadState.progress}%` : downloadState.type === "done" ? t("downloadComplete") : downloadState.type === "cancelled" ? t("cancel") : t("downloadThisVideo") })
+                                    ]
+                                  }
+                                ),
+                                downloadState.type === "downloading" && /* @__PURE__ */ jsx(
+                                  "button",
+                                  {
+                                    type: "button",
+                                    ...dtStation,
+                                    "data-f": isTv ? "1" : void 0,
+                                    onClick: () => void handleCancelDownload(),
+                                    className: "mr-3 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-white/10 text-slate-300 transition hover:border-red-400/40 hover:text-red-300",
+                                    title: t("cancel"),
+                                    children: /* @__PURE__ */ jsx("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12", strokeLinecap: "round" }) })
+                                  }
+                                )
+                              ] }),
+                              !isClientSession() && /* @__PURE__ */ jsxs(
+                                "button",
+                                {
+                                  type: "button",
+                                  ...dtStation,
+                                  "data-f": isTv ? "1" : void 0,
+                                  onClick: () => void handleOpenExternal(),
+                                  onMouseDown: (e) => e.stopPropagation(),
+                                  className: `relative z-10 mt-1 flex w-full items-center gap-3 bg-white/5 text-left text-slate-100 transition hover:bg-white/10 ${desktopChrome ? "rounded-lg px-3 py-2.5" : "rounded-[1.15rem] px-4 py-3"}`,
+                                  children: [
+                                    /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "currentColor", children: [
+                                      /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }),
+                                      /* @__PURE__ */ jsx("path", { d: "M4 5h3v14H4z", opacity: ".55" })
+                                    ] }),
+                                    /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: isDesktopTauriEnv ? `${t("openInExternalPrefix")} ${getExternalPlayerApp()}` : t("openInExternalPlayer") })
+                                  ]
                                 }
                               )
                             ] }),
-                            !isClientSession() && /* @__PURE__ */ jsxs(
-                              "button",
-                              {
-                                type: "button",
-                                ...dtStation,
-                                "data-f": isTv ? "1" : void 0,
-                                onClick: () => void handleOpenExternal(),
-                                onMouseDown: (e) => e.stopPropagation(),
-                                className: `relative z-10 mt-1 flex w-full items-center gap-3 bg-white/5 text-left text-slate-100 transition hover:bg-white/10 ${desktopChrome ? "rounded-lg px-3 py-2.5" : "rounded-[1.15rem] px-4 py-3"}`,
-                                children: [
-                                  /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "currentColor", children: [
-                                    /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }),
-                                    /* @__PURE__ */ jsx("path", { d: "M4 5h3v14H4z", opacity: ".55" })
-                                  ] }),
-                                  /* @__PURE__ */ jsx("span", { className: dtMoreTextClass, children: isDesktopTauriEnv ? `${t("openInExternalPrefix")} ${getExternalPlayerApp()}` : t("openInExternalPlayer") })
-                                ]
-                              }
-                            ),
+                            gearPage !== "root" && renderGearSubPage(),
                             downloadState.type === "error" && /* @__PURE__ */ jsx("div", { className: "px-4 pb-1 pt-3 text-xs text-red-300", children: downloadState.message })
                           ]
                         }
@@ -27937,6 +31667,11 @@ ${cue.text}`).join("\n\n")}
       import_window = __toESM(require_window());
       init_transparent_webview();
       init_video_progress();
+      init_recorder();
+      init_profile_storage_shim();
+      init_profile_avatar();
+      init_sleep_timer();
+      init_player_open();
       init_use_barcode_recorder();
       init_barcode_settings();
       init_player_barcode_strip();
@@ -27968,6 +31703,8 @@ ${cue.text}`).join("\n\n")}
       init_player_soundtrack_panel();
       init_player_episodes_panel();
       init_player_streams_panel();
+      init_host_bridge();
+      init_player_snapshot();
       init_homekit_client();
       init_plugin_sdk();
       init_playback_session_client();
@@ -27984,12 +31721,20 @@ ${cue.text}`).join("\n\n")}
       init_tauri_native_player();
       init_playback_settings();
       init_lan_streaming_settings();
+      init_use_subtitle_auto_sync();
       init_subtitle_delay_store();
+      init_user_delay();
+      init_diag();
       init_tauri_mpv();
       init_tauri_native_player();
       init_tauri_avplayer();
       init_app_storage();
       init_binge_zap_button();
+      init_series_lock_runtime();
+      init_player_status_line();
+      init_moment_link();
+      init_player_chapters();
+      init_player_moments();
       init_jsx_runtime_shim();
       EMBEDDED_SUBTITLES_ENABLED = true;
       PLAYER_UI_TICK_MS = 250;
@@ -28188,16 +31933,16 @@ ${cue.text}`).join("\n\n")}
           // error correction level, data codeword bytes, and mask number.
           // This is a low-level API that most users should not use directly.
           // A mid-level API is the encodeSegments() function.
-          constructor(version2, errorCorrectionLevel, dataCodewords, msk) {
-            this.version = version2;
+          constructor(version3, errorCorrectionLevel, dataCodewords, msk) {
+            this.version = version3;
             this.errorCorrectionLevel = errorCorrectionLevel;
             this.modules = [];
             this.isFunction = [];
-            if (version2 < _QrCode2.MIN_VERSION || version2 > _QrCode2.MAX_VERSION)
+            if (version3 < _QrCode2.MIN_VERSION || version3 > _QrCode2.MAX_VERSION)
               throw new RangeError("Version value out of range");
             if (msk < -1 || msk > 7)
               throw new RangeError("Mask value out of range");
-            this.size = version2 * 4 + 17;
+            this.size = version3 * 4 + 17;
             let row = [];
             for (let i = 0; i < this.size; i++)
               row.push(false);
@@ -28258,31 +32003,31 @@ ${cue.text}`).join("\n\n")}
           static encodeSegments(segs, ecl, minVersion = 1, maxVersion = 40, mask = -1, boostEcl = true) {
             if (!(_QrCode2.MIN_VERSION <= minVersion && minVersion <= maxVersion && maxVersion <= _QrCode2.MAX_VERSION) || mask < -1 || mask > 7)
               throw new RangeError("Invalid value");
-            let version2;
+            let version3;
             let dataUsedBits;
-            for (version2 = minVersion; ; version2++) {
-              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version2, ecl) * 8;
-              const usedBits = QrSegment.getTotalBits(segs, version2);
+            for (version3 = minVersion; ; version3++) {
+              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
+              const usedBits = QrSegment.getTotalBits(segs, version3);
               if (usedBits <= dataCapacityBits2) {
                 dataUsedBits = usedBits;
                 break;
               }
-              if (version2 >= maxVersion)
+              if (version3 >= maxVersion)
                 throw new RangeError("Data too long");
             }
             for (const newEcl of [_QrCode2.Ecc.MEDIUM, _QrCode2.Ecc.QUARTILE, _QrCode2.Ecc.HIGH]) {
-              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version2, newEcl) * 8)
+              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version3, newEcl) * 8)
                 ecl = newEcl;
             }
             let bb = [];
             for (const seg of segs) {
               appendBits(seg.mode.modeBits, 4, bb);
-              appendBits(seg.numChars, seg.mode.numCharCountBits(version2), bb);
+              appendBits(seg.numChars, seg.mode.numCharCountBits(version3), bb);
               for (const b of seg.getData())
                 bb.push(b);
             }
             assert(bb.length == dataUsedBits);
-            const dataCapacityBits = _QrCode2.getNumDataCodewords(version2, ecl) * 8;
+            const dataCapacityBits = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
             assert(bb.length <= dataCapacityBits);
             appendBits(0, Math.min(4, dataCapacityBits - bb.length), bb);
             appendBits(0, (8 - bb.length % 8) % 8, bb);
@@ -28293,7 +32038,7 @@ ${cue.text}`).join("\n\n")}
             while (dataCodewords.length * 8 < bb.length)
               dataCodewords.push(0);
             bb.forEach((b, i) => dataCodewords[i >>> 3] |= b << 7 - (i & 7));
-            return new _QrCode2(version2, ecl, dataCodewords, mask);
+            return new _QrCode2(version3, ecl, dataCodewords, mask);
           }
           /*-- Accessor methods --*/
           // Returns the color of the module (pixel) at the given coordinates, which is false
@@ -28809,10 +32554,10 @@ ${cue.text}`).join("\n\n")}
           }
           // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
           // the given version. The result is infinity if a segment has too many characters to fit its length field.
-          static getTotalBits(segs, version2) {
+          static getTotalBits(segs, version3) {
             let result = 0;
             for (const seg of segs) {
-              const ccbits = seg.mode.numCharCountBits(version2);
+              const ccbits = seg.mode.numCharCountBits(version3);
               if (seg.numChars >= 1 << ccbits)
                 return Infinity;
               result += 4 + ccbits + seg.bitData.length;
@@ -29219,7 +32964,7 @@ ${cue.text}`).join("\n\n")}
     size = 18,
     color,
     style,
-    fill
+    fill: fill2
   }) {
     const path = ICON_PATHS[name];
     if (!path) return null;
@@ -29229,7 +32974,7 @@ ${cue.text}`).join("\n\n")}
         width: size,
         height: size,
         viewBox: "0 0 24 24",
-        fill: fill || "none",
+        fill: fill2 || "none",
         stroke: color || "currentColor",
         strokeWidth: "1.6",
         strokeLinecap: "round",
@@ -29350,7 +33095,7 @@ ${cue.text}`).join("\n\n")}
     compact,
     placeholder
   }) {
-    const [open, setOpen] = useState(false);
+    const [open2, setOpen] = useState(false);
     const ref = useRef(null);
     const menuRef = useRef(null);
     const [menuPos, setMenuPos] = useState(null);
@@ -29364,7 +33109,7 @@ ${cue.text}`).join("\n\n")}
       return () => document.removeEventListener("mousedown", onDoc);
     }, []);
     useEffect(() => {
-      if (!open) {
+      if (!open2) {
         setMenuPos(null);
         return;
       }
@@ -29393,12 +33138,12 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("scroll", update, true);
         window.removeEventListener("resize", update);
       };
-    }, [open]);
+    }, [open2]);
     const normalized = options.map(
       (o) => typeof o === "object" ? o : { value: o, label: String(o) }
     );
-    const current = normalized.find((o) => o.value === value);
-    const label = current ? current.label : placeholder ?? String(value);
+    const current2 = normalized.find((o) => o.value === value);
+    const label = current2 ? current2.label : placeholder ?? String(value);
     return /* @__PURE__ */ jsxs("div", { ref, style: { position: "relative", width: width || "100%" }, children: [
       /* @__PURE__ */ jsxs(
         "button",
@@ -29410,7 +33155,7 @@ ${cue.text}`).join("\n\n")}
             textAlign: "left",
             padding: compact ? "7px 10px" : "10px 12px",
             background: TOKENS.surface2,
-            border: `1px solid ${open ? TOKENS.accent : TOKENS.borderStrong}`,
+            border: `1px solid ${open2 ? TOKENS.accent : TOKENS.borderStrong}`,
             borderRadius: 8,
             color: dim ? TOKENS.textDim : TOKENS.text,
             fontSize: compact ? 13 : 14,
@@ -29430,13 +33175,13 @@ ${cue.text}`).join("\n\n")}
                 name: "chevDown",
                 size: 14,
                 color: TOKENS.textDim,
-                style: { transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }
+                style: { transform: open2 ? "rotate(180deg)" : "none", transition: "transform .15s" }
               }
             )
           ]
         }
       ),
-      open && menuPos ? (0, import_react_dom2.createPortal)(
+      open2 && menuPos ? (0, import_react_dom2.createPortal)(
         /* @__PURE__ */ jsx(
           "div",
           {
@@ -29457,7 +33202,7 @@ ${cue.text}`).join("\n\n")}
               overflowY: "auto"
             },
             children: normalized.map((o) => {
-              const active2 = o.value === value;
+              const active3 = o.value === value;
               return /* @__PURE__ */ jsxs(
                 "div",
                 {
@@ -29470,21 +33215,21 @@ ${cue.text}`).join("\n\n")}
                     borderRadius: 6,
                     cursor: "pointer",
                     fontSize: TYPE.body,
-                    color: active2 ? TOKENS.text : TOKENS.textDim,
-                    background: active2 ? TOKENS.accentSoft : "transparent",
+                    color: active3 ? TOKENS.text : TOKENS.textDim,
+                    background: active3 ? TOKENS.accentSoft : "transparent",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between"
                   },
                   onMouseEnter: (e) => {
-                    if (!active2) e.currentTarget.style.background = TOKENS.surface3;
+                    if (!active3) e.currentTarget.style.background = TOKENS.surface3;
                   },
                   onMouseLeave: (e) => {
-                    if (!active2) e.currentTarget.style.background = "transparent";
+                    if (!active3) e.currentTarget.style.background = "transparent";
                   },
                   children: [
                     /* @__PURE__ */ jsx("span", { children: o.label }),
-                    active2 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
+                    active3 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
                   ]
                 },
                 String(o.value)
@@ -29907,7 +33652,7 @@ ${cue.text}`).join("\n\n")}
   // lib/tv-keyboard-settings.ts
   function getTvKeyboardMode() {
     if (typeof window === "undefined") return "auto";
-    const raw = getScopedStorageItem(KEY16);
+    const raw = getScopedStorageItem(KEY17);
     return raw === "lumio" || raw === "system" ? raw : "auto";
   }
   function prefersSystemKeyboard(field, options) {
@@ -29916,12 +33661,12 @@ ${cue.text}`).join("\n\n")}
     if (mode === "system") return !options?.numeric;
     return field !== "short" && !options?.numeric;
   }
-  var KEY16;
+  var KEY17;
   var init_tv_keyboard_settings = __esm({
     "lib/tv-keyboard-settings.ts"() {
       "use client";
       init_profile_storage_shim();
-      KEY16 = "tv_keyboard_mode_v1";
+      KEY17 = "tv_keyboard_mode_v1";
     }
   });
 
@@ -30004,8 +33749,8 @@ ${cue.text}`).join("\n\n")}
     const nativeInputRef = useRef(null);
     useEffect(() => {
       if (!nativeInput) return;
-      const timer2 = window.setTimeout(() => nativeInputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => nativeInputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer3);
     }, [nativeInput]);
     const [shift, setShift] = useState(initial.length === 0);
     const ref = useRef(null);
@@ -30026,7 +33771,7 @@ ${cue.text}`).join("\n\n")}
     const insert = (text) => {
       const cleaned = numeric ? text.replace(/\D/g, "") : text.replace(/\s+/g, " ");
       if (!cleaned) return;
-      setValue((current) => clamp3(current + cleaned));
+      setValue((current2) => clamp3(current2 + cleaned));
     };
     useEffect(() => {
       const onKeyDown = (event) => {
@@ -30158,7 +33903,7 @@ ${cue.text}`).join("\n\n")}
       aside ? /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }, children: aside }) : null
     ] }) });
   }
-  function Key({ label, onSelect, primary, active: active2, init }) {
+  function Key({ label, onSelect, primary, active: active3, init }) {
     const [focused, setFocused] = useState(false);
     return /* @__PURE__ */ jsx(
       "div",
@@ -30194,7 +33939,7 @@ ${cue.text}`).join("\n\n")}
           cursor: "pointer",
           font: `500 ${TYPE.body}/1 ${TV_FONT}`,
           color: primary ? TV.accent100 : TV.text,
-          background: focused ? TV.accent900 : primary ? TV.accent800 : active2 ? TV.accent900 : TV.neutral900
+          background: focused ? TV.accent900 : primary ? TV.accent800 : active3 ? TV.accent900 : TV.neutral900
         },
         children: label
       }
@@ -30324,8 +34069,8 @@ ${cue.text}`).join("\n\n")}
       };
     }, [tmdbId, mediaType, reloadToken]);
     useEffect(() => {
-      const timer2 = window.setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 200);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 200);
+      return () => window.clearTimeout(timer3);
     }, [query]);
     useEffect(() => {
       if (personId == null) {
@@ -30457,9 +34202,9 @@ ${cue.text}`).join("\n\n")}
     const [stillIndex, setStillIndex] = useState(null);
     const stillLightbox = stillIndex != null ? stills[stillIndex] ?? null : null;
     const setStillLightbox = (still) => setStillIndex(still ? Math.max(0, stills.indexOf(still)) : null);
-    const stepStill = (delta) => setStillIndex((current) => {
-      if (current == null || stills.length === 0) return current;
-      return (current + delta + stills.length) % stills.length;
+    const stepStill = (delta) => setStillIndex((current2) => {
+      if (current2 == null || stills.length === 0) return current2;
+      return (current2 + delta + stills.length) % stills.length;
     });
     const swipeStartRef = useRef(null);
     useEffect(() => {
@@ -30586,7 +34331,7 @@ ${cue.text}`).join("\n\n")}
                 ...station2,
                 "data-cast-sort": "",
                 "data-f-left": "[data-cast-search]",
-                onClick: () => setSort((current) => current === "billing" ? "name" : current === "name" ? "popularity" : "billing"),
+                onClick: () => setSort((current2) => current2 === "billing" ? "name" : current2 === "name" ? "popularity" : "billing"),
                 className: `flex items-center gap-2 rounded-full bg-[#fcfcff14] text-slate-100 transition hover:bg-[#fcfcff22] h-10 px-4 text-sm`,
                 children: [
                   sortLabel,
@@ -30862,7 +34607,7 @@ ${cue.text}`).join("\n\n")}
       init_tv_settings_rows();
       init_jsx_runtime_shim();
       KEY_CREW_JOBS = ["Director", "Screenplay", "Writer", "Director of Photography", "Original Music Composer"];
-      pillClass = (active2, tv) => `flex shrink-0 items-center whitespace-nowrap rounded-full transition ${tv ? "h-11 px-5 text-lg" : "h-9 px-4 text-sm"} ${active2 ? "bg-[#fcfcff2e] font-semibold text-accent-400" : "bg-[#fcfcff14] text-slate-300 hover:bg-[#fcfcff22] hover:text-white"}`;
+      pillClass = (active3, tv) => `flex shrink-0 items-center whitespace-nowrap rounded-full transition ${tv ? "h-11 px-5 text-lg" : "h-9 px-4 text-sm"} ${active3 ? "bg-[#fcfcff2e] font-semibold text-accent-400" : "bg-[#fcfcff14] text-slate-300 hover:bg-[#fcfcff22] hover:text-white"}`;
       backPillClass = "menu-glass flex h-9 shrink-0 items-center gap-1.5 rounded-full border-0 bg-[#fcfcff14] backdrop-blur-md pl-3 pr-4 text-xs font-normal text-slate-200 transition-all hover:bg-[#fcfcff22] hover:text-white focus-visible:ring-2 focus-visible:ring-accent-400/60 focus-visible:text-white focus-visible:outline-none sm:text-sm";
     }
   });
@@ -30890,12 +34635,36 @@ ${cue.text}`).join("\n\n")}
       desc: s.blurDescriptions
     };
   }
-  var CLEAR, SPOILER_THUMB_CLASS, SPOILER_TEXT_CLASS;
+  var CLEAR, SPOILER_THUMB_CLASS, SPOILER_TEXT_CLASS, LOCKED_THUMB_CLASS, LOCKED_TEXT_CLASS;
   var init_spoilers = __esm({
     "lib/spoilers.ts"() {
       CLEAR = { thumb: false, title: false, desc: false };
       SPOILER_THUMB_CLASS = "blur-[14px] scale-[1.04] transition-[filter,transform] duration-200 group-hover:blur-[0px] group-hover:scale-100 group-focus-within:blur-[0px] group-focus-within:scale-100";
       SPOILER_TEXT_CLASS = "blur-[5px] select-none transition-[filter] duration-200 group-hover:blur-[0px] group-focus-within:blur-[0px]";
+      LOCKED_THUMB_CLASS = "blur-[14px] scale-[1.04]";
+      LOCKED_TEXT_CLASS = "blur-[5px] select-none";
+    }
+  });
+
+  // components/series-lock/copy.ts
+  function fill(text, vars) {
+    return text.replace(/\{(\w+)\}/g, (match, name) => name in vars ? String(vars[name]) : match);
+  }
+  function joinNames(names, t) {
+    if (names.length <= 1) return names[0] ?? "";
+    return `${names.slice(0, -1).join(", ")} ${t("slAnd")} ${names[names.length - 1]}`;
+  }
+  function useProfileNames() {
+    return useCallback((ids) => {
+      const byId = new Map(getProfiles().map((p) => [p.id, p.name]));
+      return ids.map((id) => byId.get(id)).filter((name) => Boolean(name));
+    }, []);
+  }
+  var init_copy = __esm({
+    "components/series-lock/copy.ts"() {
+      "use client";
+      init_react_shim();
+      init_profile_storage_shim();
     }
   });
 
@@ -30911,15 +34680,20 @@ ${cue.text}`).join("\n\n")}
     autoPlaySeconds = 5,
     binge = false,
     onPlaySameSeries,
+    locked = null,
     onDismiss,
     onPlayNow
   }) {
     const { t } = useLang();
+    const profileNames2 = useProfileNames();
+    const isLocked = Boolean(locked);
+    const countdownSeconds = isLocked ? null : autoPlaySeconds;
     const isTv = useTvMode();
     const tvStation = isTv ? { "data-f": "" } : {};
-    const [skipStraightToNext] = useState(
+    const [advanceAtOutroArmed] = useState(
       () => getAdvanceAtOutro() && getAutoPlayNextEpisode() && hasOutroFired()
     );
+    const skipStraightToNext = advanceAtOutroArmed && !isLocked;
     const [spoilerMask] = useState(
       () => spoilerMaskFor(getSpoilerMaskSettings(), { watched: false, isNextUp: true })
     );
@@ -30932,10 +34706,10 @@ ${cue.text}`).join("\n\n")}
     const playButtonRef = useRef(null);
     useEffect(() => {
       if (!isTv) return;
-      let timer2 = null;
+      let timer3 = null;
       const arm = () => {
-        if (timer2) clearTimeout(timer2);
-        timer2 = setTimeout(() => {
+        if (timer3) clearTimeout(timer3);
+        timer3 = setTimeout(() => {
           const btn = playButtonRef.current;
           if (btn && btn.isConnected && document.activeElement !== btn) btn.focus();
         }, 1e4);
@@ -30943,7 +34717,7 @@ ${cue.text}`).join("\n\n")}
       arm();
       window.addEventListener("keydown", arm, true);
       return () => {
-        if (timer2) clearTimeout(timer2);
+        if (timer3) clearTimeout(timer3);
         window.removeEventListener("keydown", arm, true);
       };
     }, [isTv]);
@@ -30958,8 +34732,11 @@ ${cue.text}`).join("\n\n")}
       return () => clearTimeout(t2);
     }, []);
     useEffect(() => {
-      if (autoPlaySeconds == null) return;
-      setCountdown(autoPlaySeconds);
+      if (countdownSeconds == null) {
+        setCountdown(null);
+        return;
+      }
+      setCountdown(countdownSeconds);
       intervalRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev === null || prev <= 1) {
@@ -30972,7 +34749,7 @@ ${cue.text}`).join("\n\n")}
       return () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
       };
-    }, [autoPlaySeconds]);
+    }, [countdownSeconds]);
     useEffect(() => {
       if (countdown !== 0 || didAutoPlayRef.current) return;
       if (urlReady || allowManualPlayWhenNotReady) {
@@ -31001,7 +34778,7 @@ ${cue.text}`).join("\n\n")}
               {
                 src: stillUrl,
                 alt: episodeTitle,
-                className: `h-full w-full object-cover ${spoilerMask.thumb ? SPOILER_THUMB_CLASS : ""}`
+                className: `h-full w-full object-cover ${isLocked ? LOCKED_THUMB_CLASS : spoilerMask.thumb ? SPOILER_THUMB_CLASS : ""}`
               }
             ) : /* @__PURE__ */ jsx("div", { className: "flex h-full w-full items-center justify-center", children: /* @__PURE__ */ jsxs("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", className: "text-slate-600", children: [
               /* @__PURE__ */ jsx("rect", { x: "2", y: "3", width: "20", height: "14", rx: "2" }),
@@ -31031,16 +34808,17 @@ ${cue.text}`).join("\n\n")}
                   ")"
                 ] })
               ] }),
-              /* @__PURE__ */ jsx("p", { className: `mt-0.5 line-clamp-1 text-[11px] text-slate-500 ${spoilerMask.title ? SPOILER_TEXT_CLASS : ""}`, children: episodeTitle })
+              /* @__PURE__ */ jsx("p", { className: `mt-0.5 line-clamp-1 text-[11px] text-slate-500 ${isLocked ? LOCKED_TEXT_CLASS : spoilerMask.title ? SPOILER_TEXT_CLASS : ""}`, children: episodeTitle }),
+              locked ? /* @__PURE__ */ jsx(LockedLine, { waitingFor: locked.waitingFor, text: fill(t("slNextLocked"), { names: joinNames(profileNames2(locked.waitingFor), t) }) }) : null
             ] })
           ] }),
           /* @__PURE__ */ jsx("div", { className: "relative h-1 w-full bg-white/5", children: urlReady && countdown !== null ? /* @__PURE__ */ jsx(
             "div",
             {
               className: "h-full bg-aurora-400 transition-none",
-              style: { width: `${countdown / (autoPlaySeconds ?? 5) * 100}%` }
+              style: { width: `${countdown / (countdownSeconds ?? 5) * 100}%` }
             }
-          ) : !urlReady ? /* @__PURE__ */ jsx("div", { className: "h-full w-full animate-pulse bg-white/10" }) : /* @__PURE__ */ jsx("div", { className: "h-full w-full bg-white/10" }) }),
+          ) : !urlReady && !isLocked ? /* @__PURE__ */ jsx("div", { className: "h-full w-full animate-pulse bg-white/10" }) : /* @__PURE__ */ jsx("div", { className: "h-full w-full bg-white/10" }) }),
           /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2 px-3 py-2", children: [
             /* @__PURE__ */ jsxs(
               "button",
@@ -31051,7 +34829,7 @@ ${cue.text}`).join("\n\n")}
                 className: "flex items-center gap-1.5 text-xs text-slate-500 transition hover:text-slate-300",
                 children: [
                   /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12", strokeLinecap: "round" }) }),
-                  t("dismiss")
+                  isLocked ? t("slClose") : t("dismiss")
                 ]
               }
             ),
@@ -31066,7 +34844,17 @@ ${cue.text}`).join("\n\n")}
                 children: t("bingeOneMoreSame")
               }
             ),
-            urlReady ? /* @__PURE__ */ jsxs(
+            isLocked ? /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                ...tvStation,
+                ref: playButtonRef,
+                onClick: handlePlayNow,
+                className: "flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white transition hover:bg-white/10",
+                children: t("slWatchAnyway")
+              }
+            ) : urlReady ? /* @__PURE__ */ jsxs(
               "button",
               {
                 type: "button",
@@ -31102,6 +34890,13 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
+  function LockedLine({ waitingFor, text }) {
+    const avatar = getProfiles().find((p) => p.id === waitingFor[0]);
+    return /* @__PURE__ */ jsxs("p", { "data-series-lock-next": "", className: "mt-1 flex items-center gap-1.5 text-[0.6875rem] text-slate-300", children: [
+      avatar ? /* @__PURE__ */ jsx(ProfileAvatar, { profile: avatar, className: "h-[1.125rem] w-[1.125rem] shrink-0 text-[0.5rem]" }) : null,
+      /* @__PURE__ */ jsx("span", { className: "line-clamp-2", children: text })
+    ] });
+  }
   var init_next_episode_card = __esm({
     "components/player/next-episode-card.tsx"() {
       "use strict";
@@ -31112,6 +34907,9 @@ ${cue.text}`).join("\n\n")}
       init_autoplay_settings();
       init_spoiler_settings();
       init_spoilers();
+      init_profile_storage_shim();
+      init_profile_avatar();
+      init_copy();
       init_jsx_runtime_shim();
     }
   });
@@ -31434,7 +35232,7 @@ ${cue.text}`).join("\n\n")}
           });
         }
       };
-      async function open(path, openWith) {
+      async function open2(path, openWith) {
         await core.invoke("plugin:shell|open", {
           path,
           with: openWith
@@ -31443,7 +35241,7 @@ ${cue.text}`).join("\n\n")}
       exports.Child = Child;
       exports.Command = Command;
       exports.EventEmitter = EventEmitter;
-      exports.open = open;
+      exports.open = open2;
     }
   });
 
@@ -31483,6 +35281,7 @@ ${cue.text}`).join("\n\n")}
     addToWatchlist: () => addToWatchlist,
     applyFilters: () => applyFilters,
     cancelDesktopPlaybackSessions: () => cancelDesktopPlaybackSessions,
+    cancelLibraryScan: () => cancelLibraryScan2,
     capturePlayerFrame: () => capturePlayerFrame,
     checkEpisodeHasStream: () => checkEpisodeHasStream,
     checkMovieHasStream: () => checkMovieHasStream,
@@ -31507,6 +35306,7 @@ ${cue.text}`).join("\n\n")}
     fetchLibraryStatus: () => fetchLibraryStatus,
     fetchTraktProfile: () => fetchTraktProfile,
     getAccent: () => getAccent,
+    getActiveLibraryScan: () => getActiveLibraryScan2,
     getActiveProfile: () => getActiveProfile,
     getActiveProfileId: () => getActiveProfileId,
     getAutoPlayNextEpisode: () => getAutoPlayNextEpisode,
@@ -31569,6 +35369,7 @@ ${cue.text}`).join("\n\n")}
     onAuthCapabilitiesChanged: () => onAuthCapabilitiesChanged,
     onHomeOverridePluginChanged: () => onHomeOverridePluginChanged,
     onLibraryModeChanged: () => onLibraryModeChanged,
+    onLibraryScanChanged: () => onLibraryScanChanged2,
     onLibretroStopped: () => onLibretroStopped,
     onOpenBrowsePageRequested: () => onOpenBrowsePageRequested,
     onOpenMediaItemRequested: () => onOpenMediaItemRequested,
@@ -31688,6 +35489,18 @@ ${cue.text}`).join("\n\n")}
   function isLibraryScanRunning2() {
     const host2 = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.isLibraryScanRunning;
     return host2 ? host2() : isLibraryScanRunning();
+  }
+  function getActiveLibraryScan2() {
+    const host2 = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.getActiveLibraryScan;
+    return host2 ? host2() : getActiveLibraryScan();
+  }
+  function onLibraryScanChanged2(listener) {
+    const host2 = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.onLibraryScanChanged;
+    return host2 ? host2(listener) : onLibraryScanChanged(listener);
+  }
+  function cancelLibraryScan2() {
+    const host2 = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.cancelLibraryScan;
+    return host2 ? host2() : cancelLibraryScan();
   }
   function resolvePluginText(text, lang) {
     if (typeof text === "string") return text;
@@ -31921,8 +35734,8 @@ ${cue.text}`).join("\n\n")}
     if (layout === "slider") return PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS;
     return options?.gridClassName?.trim() || PLUGIN_HOME_ROW_GRID_TRACK_CLASS;
   }
-  function playerFrameUrl(key, version2) {
-    const v = version2 == null ? "" : `&v=${encodeURIComponent(String(version2))}`;
+  function playerFrameUrl(key, version3) {
+    const v = version3 == null ? "" : `&v=${encodeURIComponent(String(version3))}`;
     return `/api/player-frame?key=${playerFrameId(key)}${v}`;
   }
   async function capturePlayerFrame(key, video) {
@@ -32011,7 +35824,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -32185,7 +35998,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       INDEX_CHANGED_EVENT = "lumio-live-tv-index-changed";
@@ -32196,7 +36009,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -32273,14 +36086,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/list-curation.ts
   function splitGroups(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -32371,12 +36184,12 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -32645,14 +36458,14 @@ ${cue.text}`).join("\n\n")}
     let outcome = "not-custom";
     writeLists(readLists().map((list) => {
       if (list.id !== listId || list.kind !== "custom") return list;
-      const current = list.channels ?? [];
-      if (current.length >= MAX_CUSTOM_LIST_CHANNELS) {
+      const current2 = list.channels ?? [];
+      if (current2.length >= MAX_CUSTOM_LIST_CHANNELS) {
         outcome = "full";
         return list;
       }
       const { archive: _archive, ...withoutArchive } = channel;
-      const channels = dedupeChannels([...current, withoutArchive]);
-      if (channels.length === current.length) {
+      const channels = dedupeChannels([...current2, withoutArchive]);
+      if (channels.length === current2.length) {
         outcome = "duplicate";
         return list;
       }
@@ -32683,18 +36496,18 @@ ${cue.text}`).join("\n\n")}
   }
   function togglePinnedLiveTvChannel(channel) {
     const key = channelKey(channel);
-    const current = getPinnedLiveTvKeys();
-    const next = current.includes(key) ? current.filter((entry) => entry !== key) : [...current, key];
+    const current2 = getPinnedLiveTvKeys();
+    const next = current2.includes(key) ? current2.filter((entry) => entry !== key) : [...current2, key];
     setPinnedLiveTvKeys(next);
     return next;
   }
   function movePinnedLiveTvChannel(key, delta) {
-    const current = getPinnedLiveTvKeys();
-    const index = current.indexOf(key);
-    if (index === -1) return current;
+    const current2 = getPinnedLiveTvKeys();
+    const index = current2.indexOf(key);
+    if (index === -1) return current2;
     const target2 = index + delta;
-    if (target2 < 0 || target2 >= current.length) return current;
-    const next = [...current];
+    if (target2 < 0 || target2 >= current2.length) return current2;
+    const next = [...current2];
     next.splice(index, 1);
     next.splice(target2, 0, key);
     setPinnedLiveTvKeys(next);
@@ -32967,7 +36780,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -32992,7 +36805,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = lang === "sv" ? SV2 : EN2;
     let out = table[key] ?? EN2[key];
@@ -33008,7 +36821,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -33744,7 +37557,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       activeLogoLoads += 1;
@@ -33824,7 +37637,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -33837,7 +37650,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
     const words = name.trim().split(/\s+/).filter(Boolean);
     const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
@@ -33970,7 +37783,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { style: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: LT.accent }, children });
   }
   function PinGate({
-    open,
+    open: open2,
     title,
     wrongText,
     unlockLabel,
@@ -33984,13 +37797,13 @@ ${cue.text}`).join("\n\n")}
     const [busy, setBusy] = useState(false);
     const inputRef = useRef(null);
     useEffect(() => {
-      if (!open) return;
+      if (!open2) return;
       setPin("");
       setWrong(false);
-      const timer2 = window.setTimeout(() => inputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer2);
-    }, [open]);
-    if (!open) return null;
+      const timer3 = window.setTimeout(() => inputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer3);
+    }, [open2]);
+    if (!open2) return null;
     const submit = async () => {
       if (pin.length < 4 || busy) return;
       setBusy(true);
@@ -34054,7 +37867,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -34094,17 +37907,17 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read9 = () => {
+      const read11 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
         return box !== null;
       };
-      const sync = () => setInBox(read9());
+      const sync = () => setInBox(read11());
       sync();
       const observer = new MutationObserver(sync);
       observer.observe(document.documentElement, {
@@ -34117,24 +37930,24 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read9 = () => {
+      const read11 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
         return box?.getAttribute(TV_SCENE_NARROW_ATTR) === "1";
       };
-      const sync = () => setNarrow(read9());
+      const sync = () => setNarrow(read11());
       sync();
       const observer = new MutationObserver(sync);
       observer.observe(document.documentElement, {
@@ -34147,19 +37960,19 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read9 = () => {
+      const read11 = () => {
         const getScale = tvSceneBoxScale2;
         if (typeof getScale !== "function") return null;
         const box = document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
@@ -34167,7 +37980,7 @@ ${cue.text}`).join("\n\n")}
         const value = getScale(box);
         return Number.isFinite(value) && value > 0 ? value : null;
       };
-      const sync = () => setScale(read9());
+      const sync = () => setScale(read11());
       sync();
       const observer = new MutationObserver(sync);
       observer.observe(document.documentElement, {
@@ -34180,7 +37993,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -34188,7 +38001,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -34257,6 +38070,18 @@ ${cue.text}`).join("\n\n")}
   max-width: 9rem;
   padding-right: 1rem;
   opacity: 1;
+}
+
+/* Knappstorlek (appens Tema och skala \u2192 Knappstorlek): glyferna i VOD-
+   titelns knapprad f\xF6ljer --tv-button-scale som knapparna sj\xE4lva. Vilande
+   n\xE4r appen inte s\xE4tter data-tv-button-scale (100 % eller \xE4ldre app). */
+:root[data-tv="1"][data-tv-button-scale] [data-live-tv-tv-root] [data-vod-actions] [data-hero-icon-action] svg {
+  width: calc(30px * var(--tv-button-scale));
+  height: calc(30px * var(--tv-button-scale));
+}
+:root[data-tv="1"][data-tv-button-scale] [data-live-tv-tv-root] [data-vod-actions] [data-testid="title-play"] svg {
+  width: calc(28px * var(--tv-button-scale));
+  height: calc(28px * var(--tv-button-scale));
 }
 ` });
   }
@@ -34336,14 +38161,14 @@ ${cue.text}`).join("\n\n")}
       children
     ] });
   }
-  function Chip({ active: active2, children, style, glass = false, ...rest }) {
+  function Chip({ active: active3, children, style, glass = false, ...rest }) {
     return /* @__PURE__ */ jsx(
       "div",
       {
         "data-live-tv-chip": "",
         "data-live-tv-chip-glass": glass ? "" : void 0,
         ...rest,
-        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active2 ? TV2.s16 : TV2.s05, color: active2 ? TV2.text : TV2.muted, fontWeight: active2 ? 600 : 400, border: `1px solid ${glass ? active2 ? TV2.lineStrong : TV2.line : active2 ? TV2.lineStrong : "transparent"}`, ...style },
+        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active3 ? TV2.s16 : TV2.s05, color: active3 ? TV2.text : TV2.muted, fontWeight: active3 ? 600 : 400, border: `1px solid ${glass ? active3 ? TV2.lineStrong : TV2.line : active3 ? TV2.lineStrong : "transparent"}`, ...style },
         children
       }
     );
@@ -34388,14 +38213,14 @@ ${cue.text}`).join("\n\n")}
     const [now2, setNow] = useState(() => /* @__PURE__ */ new Date());
     useEffect(() => {
       if (useHostClock) return;
-      let timer2 = 0;
+      let timer3 = 0;
       const tick2 = () => {
         const next = /* @__PURE__ */ new Date();
         setNow(next);
-        timer2 = window.setTimeout(tick2, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
+        timer3 = window.setTimeout(tick2, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
       };
       tick2();
-      return () => window.clearTimeout(timer2);
+      return () => window.clearTimeout(timer3);
     }, [useHostClock]);
     if (useHostClock) {
       if (inSceneBox) {
@@ -34418,7 +38243,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -34471,7 +38296,7 @@ ${cue.text}`).join("\n\n")}
       };
       USE_PLAYER_FRAMES = false;
       sw = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
-      svg = (size, children, fill) => createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", ...sw, fill: fill ? "currentColor" : "none" }, children);
+      svg = (size, children, fill2) => createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", ...sw, fill: fill2 ? "currentColor" : "none" }, children);
       Icons = {
         Search: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
@@ -34541,19 +38366,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
@@ -34598,11 +38423,11 @@ ${cue.text}`).join("\n\n")}
     return request;
   }
   function publish2(next) {
-    active = next;
+    active2 = next;
     for (const listener of [...listeners7]) listener();
   }
   function getActiveNowSnapshot() {
-    return active;
+    return active2;
   }
   function subscribeNowSnapshot(listener) {
     listeners7.add(listener);
@@ -34610,9 +38435,9 @@ ${cue.text}`).join("\n\n")}
       listeners7.delete(listener);
     };
   }
-  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active, listeners7;
+  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active2, listeners7;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -34621,15 +38446,15 @@ ${cue.text}`).join("\n\n")}
       snapshots = /* @__PURE__ */ new Map();
       inflight8 = /* @__PURE__ */ new Map();
       NOW_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1e3;
-      active = { snapshot: null, failed: false };
+      active2 = { snapshot: null, failed: false };
       listeners7 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
-    while (memo3.size > MAX_ENTRIES3) {
+    while (memo3.size > MAX_ENTRIES4) {
       const oldest = memo3.keys().next();
       if (oldest.done) break;
       memo3.delete(oldest.value);
@@ -34656,18 +38481,18 @@ ${cue.text}`).join("\n\n")}
   function clearResolvedChannels() {
     memo3.clear();
   }
-  var MAX_ENTRIES3, memo3;
+  var MAX_ENTRIES4, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
-      MAX_ENTRIES3 = 1e3;
+      MAX_ENTRIES4 = 1e3;
       memo3 = /* @__PURE__ */ new Map();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -34682,14 +38507,14 @@ ${cue.text}`).join("\n\n")}
     return stored;
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -34734,7 +38559,7 @@ ${cue.text}`).join("\n\n")}
     try {
       if (migrated > 0) {
         const rewrittenById = new Map(rewritten.map((entry) => [entry.id, entry]));
-        const merged = getLiveTvLists().map((current) => rewrittenById.get(current.id) ?? current);
+        const merged = getLiveTvLists().map((current2) => rewrittenById.get(current2.id) ?? current2);
         replaceLiveTvLists(merged);
         emitIndexChanged();
       }
@@ -34747,7 +38572,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -34757,7 +38582,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-history.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-history.ts
   function sanitize(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -34804,7 +38629,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -34814,7 +38639,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
@@ -34845,7 +38670,7 @@ ${cue.text}`).join("\n\n")}
   function getReminders(now2 = Date.now()) {
     return sanitize2(readPluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, [])).filter((r) => r.start + REMINDER_GRACE_MS > now2);
   }
-  function write5(list) {
+  function write6(list) {
     writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, list);
   }
   function isReminded(channel, programme) {
@@ -34854,9 +38679,9 @@ ${cue.text}`).join("\n\n")}
   }
   function toggleReminder(channel, programme, now2 = Date.now()) {
     const id = reminderId(channel, programme);
-    const current = getReminders(now2);
-    const next = current.some((r) => r.id === id) ? current.filter((r) => r.id !== id) : [
-      ...current,
+    const current2 = getReminders(now2);
+    const next = current2.some((r) => r.id === id) ? current2.filter((r) => r.id !== id) : [
+      ...current2,
       {
         id,
         channelKey: channelKey(channel),
@@ -34871,11 +38696,11 @@ ${cue.text}`).join("\n\n")}
         createdAt: now2
       }
     ].sort((left, right) => left.start - right.start);
-    write5(next);
+    write6(next);
     return next;
   }
   function markReminderNotified(id, now2 = Date.now()) {
-    write5(getReminders(now2).map((r) => r.id === id ? { ...r, notifiedAt: now2 } : r));
+    write6(getReminders(now2).map((r) => r.id === id ? { ...r, notifiedAt: now2 } : r));
   }
   function onRemindersChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, listener);
@@ -34897,11 +38722,11 @@ ${cue.text}`).join("\n\n")}
       }
     };
     tick2();
-    const timer2 = window.setInterval(tick2, 3e4);
+    const timer3 = window.setInterval(tick2, 3e4);
     const off = onRemindersChanged(tick2);
     return () => {
       stopped = true;
-      window.clearInterval(timer2);
+      window.clearInterval(timer3);
       off();
     };
   }
@@ -34924,17 +38749,17 @@ ${cue.text}`).join("\n\n")}
       const sync = () => setList(getReminders());
       sync();
       const off = onRemindersChanged(sync);
-      const timer2 = window.setInterval(sync, 6e4);
+      const timer3 = window.setInterval(sync, 6e4);
       return () => {
         off();
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
       };
     }, []);
     return list;
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -34946,7 +38771,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -34979,8 +38804,8 @@ ${cue.text}`).join("\n\n")}
   }
   function toggleChannelLock(channel) {
     const key = channelKey(channel);
-    const current = getLockedChannelKeys();
-    const next = current.includes(key) ? current.filter((entry) => entry !== key) : [...current, key];
+    const current2 = getLockedChannelKeys();
+    const next = current2.includes(key) ? current2.filter((entry) => entry !== key) : [...current2, key];
     writePluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, next);
     return next;
   }
@@ -35000,7 +38825,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -35012,7 +38837,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
@@ -35067,7 +38892,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -35094,7 +38919,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -35418,7 +39243,7 @@ ${cue.text}`).join("\n\n")}
     const [epgTick, setEpgTick] = useState(0);
     useEffect(() => {
       const visible = () => typeof document === "undefined" || document.visibilityState === "visible";
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         setNowMs(Date.now());
         if (visible()) setEpgTick((tick2) => tick2 + 1);
       }, tickMs);
@@ -35429,7 +39254,7 @@ ${cue.text}`).join("\n\n")}
       };
       document.addEventListener("visibilitychange", onVisibility);
       return () => {
-        window.clearInterval(timer2);
+        window.clearInterval(timer3);
         document.removeEventListener("visibilitychange", onVisibility);
       };
     }, [tickMs]);
@@ -35550,7 +39375,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY3, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -35583,7 +39408,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -35636,7 +39461,7 @@ ${cue.text}`).join("\n\n")}
     for (const [key, entry] of cache7) {
       if (now2 - entry.storedAt >= TTL_MS2) cache7.delete(key);
     }
-    while (cache7.size > MAX_ENTRIES4) {
+    while (cache7.size > MAX_ENTRIES5) {
       const oldest = cache7.keys().next();
       if (oldest.done) break;
       cache7.delete(oldest.value);
@@ -35669,8 +39494,8 @@ ${cue.text}`).join("\n\n")}
     const waiting = /* @__PURE__ */ new Set();
     const queue2 = [];
     for (const key of missing) {
-      const pending2 = inflight9.get(entryKey2(listId, key, from, to));
-      if (pending2) waiting.add(pending2);
+      const pending5 = inflight9.get(entryKey2(listId, key, from, to));
+      if (pending5) waiting.add(pending5);
       else queue2.push(key);
     }
     if (queue2.length > 0) waiting.add(queueBatch(listId, queue2, from, to));
@@ -35692,15 +39517,15 @@ ${cue.text}`).join("\n\n")}
     const anchor = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
     return { from: anchor - Math.max(0, hoursBack) * HOUR_MS, to: anchor + Math.max(1, hoursAhead) * HOUR_MS };
   }
-  var TTL_MS2, MAX_ENTRIES4, cache7, batches, inflight9, HOUR_MS;
+  var TTL_MS2, MAX_ENTRIES5, cache7, batches, inflight9, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
       init_store_id();
       TTL_MS2 = 5 * 60 * 1e3;
-      MAX_ENTRIES4 = 600;
+      MAX_ENTRIES5 = 600;
       cache7 = /* @__PURE__ */ new Map();
       batches = /* @__PURE__ */ new Map();
       inflight9 = /* @__PURE__ */ new Map();
@@ -35708,7 +39533,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -35737,13 +39562,13 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY4;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY4 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
@@ -35773,7 +39598,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY6;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -35783,7 +39608,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -35803,10 +39628,10 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!enabled) return;
       if (videoRef.current) return;
-      const timer2 = window.setInterval(() => {
+      const timer3 = window.setInterval(() => {
         if (videoRef.current) setAttachTick((tick2) => tick2 + 1);
       }, 60);
-      return () => window.clearInterval(timer2);
+      return () => window.clearInterval(timer3);
     }, [enabled, videoRef, attachTick]);
     useEffect(() => {
       if (!enabled) return;
@@ -35932,19 +39757,19 @@ ${cue.text}`).join("\n\n")}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts
-  function read8() {
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useOrientation.ts
+  function read10() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
   }
   function useOrientation() {
-    const [orientation, setOrientation] = useState(read8);
+    const [orientation, setOrientation] = useState(read10);
     useEffect(() => {
       if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
       const mql = window.matchMedia(QUERY);
@@ -35957,22 +39782,22 @@ ${cue.text}`).join("\n\n")}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
     return candidate && typeof candidate.request === "function" ? candidate : null;
   }
-  function useWakeLock(active2) {
+  function useWakeLock(active3) {
     useEffect(() => {
-      if (!active2) return;
+      if (!active3) return;
       const wakeLock = wakeLockOf();
       if (!wakeLock) return;
       let cancelled = false;
@@ -36010,16 +39835,16 @@ ${cue.text}`).join("\n\n")}
           });
         }
       };
-    }, [active2]);
+    }, [active3]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -36030,16 +39855,16 @@ ${cue.text}`).join("\n\n")}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis, clamp2, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         bg: "#000",
@@ -36118,10 +39943,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -36191,7 +40016,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -36211,7 +40036,7 @@ ${cue.text}`).join("\n\n")}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -36224,7 +40049,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -36268,7 +40093,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -36281,7 +40106,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
   function MobileSheet({ title, subtitle, art, body, items: items2, onClose, pushLayer, testId }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
@@ -36353,7 +40178,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -36363,7 +40188,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -36427,11 +40252,11 @@ ${cue.text}`).join("\n\n")}
     const closeSheet = useCallback(() => setSheet(null), []);
     const pinnedSet = useMemo(() => new Set(tv.pinnedKeys), [tv.pinnedKeys]);
     const zap = useMemo(() => {
-      const current = channelKey(channel);
+      const current2 = channelKey(channel);
       const pinned = [];
       const rest = [];
       tv.neighbours.forEach((c, i) => (pinnedSet.has(channelKey(c)) ? pinned : rest).push({ channel: c, number: i + 1 }));
-      const index = rest.findIndex((entry) => channelKey(entry.channel) === current);
+      const index = rest.findIndex((entry) => channelKey(entry.channel) === current2);
       const window2 = index < 0 ? rest.slice(0, ZAP_WINDOW * 2) : rest.slice(Math.max(0, index - ZAP_WINDOW), index + ZAP_WINDOW + 1);
       return [...pinned, ...window2];
     }, [tv.neighbours, pinnedSet, channel]);
@@ -36555,7 +40380,7 @@ ${cue.text}`).join("\n\n")}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -36578,11 +40403,11 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
-  function ctlStyle(ps, active2 = false) {
+  function ctlStyle(ps, active3 = false) {
     return {
       height: ps(44),
       minHeight: ps(44),
@@ -36591,8 +40416,8 @@ ${cue.text}`).join("\n\n")}
       borderRadius: 999,
       boxSizing: "border-box",
       flexShrink: 0,
-      background: active2 ? "rgba(252,252,255,0.20)" : "rgba(252,252,255,0.10)",
-      border: `1px solid ${active2 ? TV2.lineStrong : "rgba(255,255,255,0.15)"}`,
+      background: active3 ? "rgba(252,252,255,0.20)" : "rgba(252,252,255,0.10)",
+      border: `1px solid ${active3 ? TV2.lineStrong : "rgba(255,255,255,0.15)"}`,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -36785,31 +40610,31 @@ ${cue.text}`).join("\n\n")}
   }
   function favouriteRowChannels(channel, tv) {
     const pinnedSet = new Set(tv.pinnedKeys);
-    const current = channelKey(channel);
+    const current2 = channelKey(channel);
     const pinned = [];
     const rest = [];
     for (const c of tv.neighbours) (pinnedSet.has(channelKey(c)) ? pinned : rest).push(c);
-    const index = rest.findIndex((c) => channelKey(c) === current);
+    const index = rest.findIndex((c) => channelKey(c) === current2);
     const window2 = index < 0 ? rest.slice(0, FAV_WINDOW * 2) : rest.slice(Math.max(0, index - FAV_WINDOW), index + FAV_WINDOW + 1);
     const list = [...pinned, ...window2];
-    return list.some((c) => channelKey(c) === current) ? list : [channel, ...list];
+    return list.some((c) => channelKey(c) === current2) ? list : [channel, ...list];
   }
   function PlayerFavouritesRow({ channel, tv, ps, onSwitch, onHold, style }) {
     const { tt } = useTvText();
     const items2 = useMemo(() => favouriteRowChannels(channel, tv), [channel, tv]);
     const currentKey = channelKey(channel);
     return /* @__PURE__ */ jsx("div", { "data-testid": "favourites-row", "data-row": "", style: { display: "flex", gap: ps(8), overflowX: "auto", scrollbarWidth: "none", padding: `${ps(8)}px 0 ${ps(2)}px`, ...style }, children: items2.map((c) => {
-      const current = channelKey(c) === currentKey;
+      const current2 = channelKey(c) === currentKey;
       const n = tv.nowFor(c);
       return /* @__PURE__ */ jsxs(
         "div",
         {
           "data-testid": "favourite-chip",
           "data-guide-row": "",
-          "aria-current": current ? "true" : void 0,
+          "aria-current": current2 ? "true" : void 0,
           ...station(() => onSwitch(c), onHold ? (el) => onHold(c, el) : void 0, { title: c.name }),
           onFocus: (event) => event.currentTarget.scrollIntoView?.({ inline: "nearest", block: "nearest" }),
-          style: { width: ps(190), flexShrink: 0, display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(6)}px ${ps(10)}px`, borderRadius: ps(10), boxSizing: "border-box", background: current ? TV2.accMix(16) : "rgba(252,252,255,0.08)", border: `1px solid ${current ? TV2.accMix(45) : TV2.line}`, color: TV2.text, cursor: "pointer", textAlign: "left" },
+          style: { width: ps(190), flexShrink: 0, display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(6)}px ${ps(10)}px`, borderRadius: ps(10), boxSizing: "border-box", background: current2 ? TV2.accMix(16) : "rgba(252,252,255,0.08)", border: `1px solid ${current2 ? TV2.accMix(45) : TV2.line}`, color: TV2.text, cursor: "pointer", textAlign: "left" },
           children: [
             /* @__PURE__ */ jsx(SmallLogo, { channel: c, size: ps(26), radius: ps(5) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
@@ -36822,10 +40647,10 @@ ${cue.text}`).join("\n\n")}
       );
     }) });
   }
-  function PlayerScheduleOverlay({ channel, tv, ps, open, onClose, onSwitch, onHoldChip, overlayRef }) {
+  function PlayerScheduleOverlay({ channel, tv, ps, open: open2, onClose, onSwitch, onHoldChip, overlayRef }) {
     const { tt } = useTvText();
     const dayStart = startOfLocalDay(tv.nowMs);
-    const scheduleChannels = useMemo(() => open ? [channel] : [], [open, channel]);
+    const scheduleChannels = useMemo(() => open2 ? [channel] : [], [open2, channel]);
     const { schedules, loading: loading2 } = useSchedules(scheduleChannels, dayStart, dayStart + DAY_MS);
     const programmes = useMemo(() => sliceSchedule(schedules[channelKey(channel)] ?? [], dayStart, dayStart + DAY_MS), [schedules, channel, dayStart]);
     const [tick2, setTick] = useState(0);
@@ -36834,13 +40659,13 @@ ${cue.text}`).join("\n\n")}
     const nowMs = tv.nowMs;
     const nowIndex = programmes.findIndex((p) => p.start <= nowMs && p.stop > nowMs);
     useEffect(() => {
-      if (!open) return;
+      if (!open2) return;
       const root = overlayRef.current;
       const target2 = root?.querySelector("[data-now]") ?? root?.querySelector('[data-testid="schedule-row"]') ?? root?.querySelector("[data-f]");
       target2?.focus({ preventScroll: true });
       target2?.scrollIntoView?.({ block: "start" });
-    }, [open, nowIndex, overlayRef]);
-    if (!open) return null;
+    }, [open2, nowIndex, overlayRef]);
+    if (!open2) return null;
     return /* @__PURE__ */ jsxs("div", { ref: overlayRef, "data-testid": "schedule-overlay", "data-live-tv-layer": "", style: { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 40, pointerEvents: "auto", maxHeight: "55%", display: "flex", flexDirection: "column", borderTop: `1px solid ${TV2.lineCard}`, borderRadius: `${ps(24)}px ${ps(24)}px 0 0`, background: "rgba(0,0,0,0.88)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 -20px 60px rgba(0,0,0,0.5)", fontFamily: TV2.font, color: TV2.text }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: ps(12), padding: `${ps(12)}px ${ps(20)}px`, borderBottom: `1px solid ${TV2.line}`, flexShrink: 0 }, children: [
         /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
@@ -36894,7 +40719,7 @@ ${cue.text}`).join("\n\n")}
   }
   var FAV_WINDOW, DAY_MS, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -36912,7 +40737,7 @@ ${cue.text}`).join("\n\n")}
       DAY_MS = 864e5;
       VOLUME_STEP = 0.1;
       stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
-      CtlIcon = ({ size, children, fill }) => /* @__PURE__ */ jsx("svg", { width: size, height: size, viewBox: "0 0 24 24", ...stroke, fill: fill ? "currentColor" : "none", stroke: fill ? "none" : "currentColor", children });
+      CtlIcon = ({ size, children, fill: fill2 }) => /* @__PURE__ */ jsx("svg", { width: size, height: size, viewBox: "0 0 24 24", ...stroke, fill: fill2 ? "currentColor" : "none", stroke: fill2 ? "none" : "currentColor", children });
       PlayIcon = ({ size }) => /* @__PURE__ */ jsx(CtlIcon, { size, fill: true, children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) });
       PauseIcon = ({ size }) => /* @__PURE__ */ jsx(CtlIcon, { size, fill: true, children: /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }) });
       FullscreenIcon = ({ size }) => /* @__PURE__ */ jsx(CtlIcon, { size, children: /* @__PURE__ */ jsx("path", { d: "M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" }) });
@@ -36938,7 +40763,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -37012,9 +40837,9 @@ ${cue.text}`).join("\n\n")}
       const deadline = Date.now() + 4e3;
       const tick2 = () => {
         if (!node.isConnected) return;
-        const active2 = document.activeElement;
+        const active3 = document.activeElement;
         const inLayer = layerRef.current.menuOpen || layerRef.current.guideOpen || layerRef.current.gateOpen;
-        if (active2 === node) {
+        if (active3 === node) {
           if (++held >= 5) return;
         } else if (inLayer) {
           held = 0;
@@ -37132,7 +40957,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37146,7 +40971,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
@@ -37206,7 +41031,7 @@ ${cue.text}`).join("\n\n")}
   }
   var cutouts, listeners8, snapshot;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37216,7 +41041,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -37506,7 +41331,7 @@ ${cue.text}`).join("\n\n")}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37524,7 +41349,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer
@@ -37770,6 +41595,34 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("keydown", onKey, isTv);
       };
     }, [isTv, mpvPaused, hasNativeSurface, tvChrome]);
+    const mediaKeyRef = useRef(() => {
+    });
+    mediaKeyRef.current = (action) => {
+      switch (action) {
+        case "playpause":
+        case "play":
+          void mpv.setPlayPause(!mpvPaused);
+          break;
+        case "pause":
+          if (!mpvPaused) void mpv.setPlayPause(true);
+          break;
+        case "stop":
+          handleCloseRef.current();
+          break;
+        case "next":
+        case "previous":
+          if (tvChrome) window.dispatchEvent(new KeyboardEvent("keydown", { key: action === "next" ? "ChannelUp" : "ChannelDown" }));
+          break;
+      }
+    };
+    useEffect(() => {
+      const onMediaKey2 = (event) => {
+        const action = event.detail?.action;
+        if (action) mediaKeyRef.current(action);
+      };
+      window.addEventListener("lumio-media-key", onMediaKey2);
+      return () => window.removeEventListener("lumio-media-key", onMediaKey2);
+    }, []);
     useEffect(() => {
       if (!isTv) return;
       return onTvFocusEdge((dir, meta) => {
@@ -37862,7 +41715,7 @@ ${cue.text}`).join("\n\n")}
         });
         return () => {
           cancelled2 = true;
-          boundsTimers.forEach((timer2) => window.clearTimeout(timer2));
+          boundsTimers.forEach((timer3) => window.clearTimeout(timer3));
           resizeObs?.disconnect();
           window.removeEventListener("resize", sync);
           window.removeEventListener("scroll", sync, true);
@@ -37914,8 +41767,8 @@ ${cue.text}`).join("\n\n")}
           const segmentGone = data.details === "fragLoadError" && data.response?.code === 404;
           if (segmentGone && renditionFallbacks < 3) {
             const levels = hls.levels ?? [];
-            const current = hls.currentLevel;
-            const next = levels.length > 1 ? (current + 1) % levels.length : -1;
+            const current2 = hls.currentLevel;
+            const next = levels.length > 1 ? (current2 + 1) % levels.length : -1;
             renditionFallbacks += 1;
             hls.currentLevel = next;
             hls.startLoad();
@@ -38252,7 +42105,7 @@ ${cue.text}`).join("\n\n")}
   }
   var import_react_dom4, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -38273,7 +42126,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -38283,11 +42136,11 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -38343,8 +42196,8 @@ ${cue.text}`).join("\n\n")}
   function LtAutoBadge() {
     return /* @__PURE__ */ jsx("span", { style: { flex: "none", borderRadius: 999, background: UI.greenSoft, padding: "2px 8px", fontSize: 10.5, fontWeight: 500, letterSpacing: "0.08em", color: UI.green }, children: "AUTO" });
   }
-  function LtBtn({ children, onClick, variant = "default", size = "sm", disabled, testId, style, active: active2 = false, title }) {
-    const colors = active2 ? { background: UI.accent900, borderColor: UI.accent, color: UI.text } : variant === "accent" ? { background: "transparent", borderColor: UI.accent, color: UI.text } : variant === "danger" ? { background: "transparent", borderColor: UI.dangerLine, color: UI.danger } : { background: "transparent", borderColor: size === "md" ? UI.lineDialog : UI.line, color: UI.soft };
+  function LtBtn({ children, onClick, variant = "default", size = "sm", disabled, testId, style, active: active3 = false, title }) {
+    const colors = active3 ? { background: UI.accent900, borderColor: UI.accent, color: UI.text } : variant === "accent" ? { background: "transparent", borderColor: UI.accent, color: UI.text } : variant === "danger" ? { background: "transparent", borderColor: UI.dangerLine, color: UI.danger } : { background: "transparent", borderColor: size === "md" ? UI.lineDialog : UI.line, color: UI.soft };
     return /* @__PURE__ */ jsx(
       "button",
       {
@@ -38483,14 +42336,14 @@ ${cue.text}`).join("\n\n")}
     if (!el || typeof el.tagName !== "string") return false;
     return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable === true;
   }
-  function useBackLayer(active2, onBack, rootRef) {
+  function useBackLayer(active3, onBack, rootRef) {
     const isTv = useTvMode();
     const onBackRef = useRef(onBack);
     useEffect(() => {
       onBackRef.current = onBack;
     });
     useEffect(() => {
-      if (!active2) return;
+      if (!active3) return;
       const opener = document.activeElement;
       const onKey = (event) => {
         if (!BACK_KEYS.has(event.key)) return;
@@ -38514,7 +42367,7 @@ ${cue.text}`).join("\n\n")}
           if (opener && opener.isConnected && opener !== document.body) opener.focus({ preventScroll: true });
         }, 0);
       };
-    }, [active2, isTv]);
+    }, [active3, isTv]);
   }
   function LtDialog({ title, body, width = 400, onClose, children, testId }) {
     const rootRef = useRef(null);
@@ -38565,17 +42418,17 @@ ${cue.text}`).join("\n\n")}
   }
   function ToastRoot({ children }) {
     const [text, setText] = useState(null);
-    const timer2 = useRef(null);
+    const timer3 = useRef(null);
     const toast = useCallback((next) => {
       setText(next);
-      if (timer2.current !== null) window.clearTimeout(timer2.current);
-      timer2.current = window.setTimeout(() => {
-        timer2.current = null;
+      if (timer3.current !== null) window.clearTimeout(timer3.current);
+      timer3.current = window.setTimeout(() => {
+        timer3.current = null;
         setText(null);
       }, 2400);
     }, []);
     useEffect(() => () => {
-      if (timer2.current !== null) window.clearTimeout(timer2.current);
+      if (timer3.current !== null) window.clearTimeout(timer3.current);
     }, []);
     const node = useMemo(() => text ? /* @__PURE__ */ jsxs("div", { role: "status", style: { position: "fixed", left: "50%", bottom: 32, transform: "translateX(-50%)", zIndex: 1100, display: "flex", alignItems: "center", gap: 9, borderRadius: 999, background: UI.dialog, padding: "11px 20px", boxShadow: "0 18px 40px rgba(0,0,0,0.55)", pointerEvents: "none" }, children: [
       /* @__PURE__ */ jsx("span", { style: { height: 5, width: 5, borderRadius: 999, background: UI.green } }),
@@ -38600,7 +42453,7 @@ ${cue.text}`).join("\n\n")}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -38648,16 +42501,16 @@ ${cue.text}`).join("\n\n")}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -38722,7 +42575,7 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
     categories: "Categories",
@@ -39175,10 +43028,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -39215,10 +43068,10 @@ ${cue.text}`).join("\n\n")}
       refreshingRef.current = true;
       setRefreshing(true);
       try {
-        const current = getLiveTvLists();
-        setLists(current);
-        const sources = current.map((list) => list.source).filter((source) => Boolean(source));
-        const job = await refreshEpg(LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls(current), sources, true);
+        const current2 = getLiveTvLists();
+        setLists(current2);
+        const sources = current2.map((list) => list.source).filter((source) => Boolean(source));
+        const job = await refreshEpg(LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls(current2), sources, true);
         await waitForJob(job);
       } catch {
       } finally {
@@ -39230,7 +43083,7 @@ ${cue.text}`).join("\n\n")}
     return { status, urls, refreshing, refresh, reload };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms, locale) {
     if (!ms) return null;
@@ -39322,7 +43175,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -39482,18 +43335,18 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -39566,7 +43419,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -39588,7 +43441,7 @@ ${cue.text}`).join("\n\n")}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
@@ -39597,7 +43450,7 @@ ${cue.text}`).join("\n\n")}
     return libraryId.startsWith(prefix) ? libraryId.slice(prefix.length) || null : null;
   }
   var defaultDeps = { query: queryVod, status: vodStatus };
-  async function scanVodSource(libraryId, emit2, progress2, signal, deps = defaultDeps) {
+  async function scanVodSource(libraryId, emit3, progress2, signal, deps = defaultDeps) {
     const source = vodSourceFromLibraryId(libraryId);
     if (!source) return { titles: 0, cursor: null };
     const sources = await deps.status();
@@ -39610,7 +43463,7 @@ ${cue.text}`).join("\n\n")}
       const page = await deps.query({ source, offset, limit: VOD_SCAN_PAGE, sort: "new", signal });
       const upsert = page.items.map((item) => vodItemToLibraryTitle(item, source)).filter((title) => title !== null);
       if (upsert.length > 0) {
-        await emit2({ upsert });
+        await emit3({ upsert });
         titles += upsert.length;
         progress2({ phase: "titles", done: titles });
       }
@@ -39633,15 +43486,15 @@ ${cue.text}`).join("\n\n")}
     id: VOD_LIBRARY_PROVIDER_ID,
     label: { en: "Xtream VOD", sv: "Xtream VOD" },
     pluginId: "com.lumio.live-tv",
-    async scanAll(source, emit2, progress2, signal) {
-      const out = await scanVodSource(source.id, emit2, progress2, signal);
+    async scanAll(source, emit3, progress2, signal) {
+      const out = await scanVodSource(source.id, emit3, progress2, signal);
       return { titles: out.titles, cursor: out.cursor };
     },
-    async scanDelta(source, cursor, emit2, progress2, signal) {
+    async scanDelta(source, cursor, emit3, progress2, signal) {
       const account = vodSourceFromLibraryId(source.id);
       const updatedAt = account ? (await vodStatus()).find((entry) => entry.id === account)?.updatedAt ?? null : null;
       if (!vodDeltaNeeded(cursor, updatedAt)) return { titles: 0, cursor };
-      const out = await scanVodSource(source.id, emit2, progress2, signal);
+      const out = await scanVodSource(source.id, emit3, progress2, signal);
       return { titles: out.titles, cursor: out.cursor };
     },
     /**
@@ -39685,7 +43538,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -39733,7 +43586,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-card.tsx
   init_jsx_runtime_shim();
   function VodLibraryCard() {
     const { h, locale } = useHubText();
@@ -39768,16 +43621,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -39882,7 +43735,7 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -40018,7 +43871,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/category-curation-panel.tsx
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -40180,11 +44033,11 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -40371,7 +44224,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv-settings-views.tsx
   init_index_client();
   init_tv_strings();
   init_index_client();
@@ -40388,11 +44241,11 @@ ${cue.text}`).join("\n\n")}
   function TvTextRow({ label, hint, value, placeholder, secret = false, onChange, testId }) {
     const { h } = useHubText();
     const Keyboard = getTvKeyboardPanel();
-    const [open, setOpen] = useState(false);
+    const [open2, setOpen] = useState(false);
     const shown = value ? secret ? "\u2022".repeat(Math.min(value.length, 24)) : value : h("tvNotSet");
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx(TvRow, { label, hint: Keyboard ? hint : h("tvNoKeyboard"), value: shown, valueTone: value ? "accent" : "muted", glyph: "\u2328", onOk: () => setOpen(true), disabled: !Keyboard, testId }),
-      open && Keyboard ? /* @__PURE__ */ jsx(Keyboard, { title: label, placeholder: placeholder ?? "", initial: value, onDone: (next) => {
+      open2 && Keyboard ? /* @__PURE__ */ jsx(Keyboard, { title: label, placeholder: placeholder ?? "", initial: value, onDone: (next) => {
         onChange(next);
         setOpen(false);
       }, onClose: () => setOpen(false) }) : null
@@ -40806,7 +44659,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text) {
@@ -41037,36 +44890,36 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_logo_image();
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
     };
     const delay = Math.max(0, target2 - Date.now());
-    const timer2 = setTimeout(onBoundary, delay);
-    return () => clearTimeout(timer2);
+    const timer3 = setTimeout(onBoundary, delay);
+    return () => clearTimeout(timer3);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY5 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -41099,7 +44952,7 @@ ${cue.text}`).join("\n\n")}
     return data;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }) {
@@ -41132,7 +44985,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -41162,11 +45015,11 @@ ${cue.text}`).join("\n\n")}
     ) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-shell.tsx
   var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
   function encodeChannelParams(channel) {
     return {
@@ -41178,10 +45031,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -41209,7 +45062,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -41274,14 +45127,14 @@ ${cue.text}`).join("\n\n")}
     return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -41298,11 +45151,11 @@ ${cue.text}`).join("\n\n")}
     const minutes = Math.max(1, Math.round(durationMs / 6e4));
     return `${a.base}/timeshift/${encodeURIComponent(a.username)}/${encodeURIComponent(a.password)}/${minutes}/${stamp}/${a.streamId}.ts`;
   }
-  function catchUpForChannel(channel, schedule2, nowMs, limit = 12) {
-    if (!schedule2 || schedule2.length === 0 || !channelSupportsCatchUp(channel)) return [];
+  function catchUpForChannel(channel, schedule3, nowMs, limit = 12) {
+    if (!schedule3 || schedule3.length === 0 || !channelSupportsCatchUp(channel)) return [];
     const days = channel.archive.days;
     const windowStart = nowMs - days * 864e5;
-    const programmes = schedule2.filter((p) => p.stop > windowStart && p.start < nowMs);
+    const programmes = schedule3.filter((p) => p.stop > windowStart && p.start < nowMs);
     const out = [];
     for (const programme of programmes) {
       if (programme.stop > nowMs || programme.start < windowStart) continue;
@@ -41321,7 +45174,7 @@ ${cue.text}`).join("\n\n")}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -41475,7 +45328,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
   var CHANNELS_PER_PAGE = 28;
@@ -41576,10 +45429,10 @@ ${cue.text}`).join("\n\n")}
       const syncLists = () => {
         const nextLists = getLiveTvLists();
         setLists(nextLists);
-        setActiveListId((current) => {
-          if (current === FAVORITES_LIST_ID) return current;
-          if (current === null) return null;
-          if (current && nextLists.some((list) => list.id === current)) return current;
+        setActiveListId((current2) => {
+          if (current2 === FAVORITES_LIST_ID) return current2;
+          if (current2 === null) return null;
+          if (current2 && nextLists.some((list) => list.id === current2)) return current2;
           return null;
         });
       };
@@ -41630,10 +45483,10 @@ ${cue.text}`).join("\n\n")}
       const onKeyDown = (event) => {
         if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
         if (document.querySelector("[data-panel-root]")) return;
-        const active2 = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        const current = active2?.hasAttribute("data-f") ? active2 : document.querySelector('[data-fcur="1"]');
-        if (!current) return;
-        if (event.key === "ArrowDown" && current === tvMenuButtonRef.current) {
+        const active3 = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        const current2 = active3?.hasAttribute("data-f") ? active3 : document.querySelector('[data-fcur="1"]');
+        if (!current2) return;
+        if (event.key === "ArrowDown" && current2 === tvMenuButtonRef.current) {
           const target2 = document.querySelector(".live-tv-channel-grid > div:first-child[data-f]") ?? document.querySelector(".live-tv-channel-grid > div:first-child [data-f]");
           if (!target2) return;
           event.preventDefault();
@@ -41642,8 +45495,8 @@ ${cue.text}`).join("\n\n")}
           return;
         }
         if (event.key === "ArrowUp") {
-          const grid = current.closest(".live-tv-channel-grid");
-          const card2 = current.closest(".live-tv-channel-grid > div");
+          const grid = current2.closest(".live-tv-channel-grid");
+          const card2 = current2.closest(".live-tv-channel-grid > div");
           const menuButton = tvMenuButtonRef.current;
           if (!grid || !card2 || !menuButton) return;
           const firstCard = grid.firstElementChild;
@@ -41754,7 +45607,7 @@ ${cue.text}`).join("\n\n")}
         setCreateListOpen(true);
         return;
       }
-      setListPickerChannelKey((current) => current === key ? null : key);
+      setListPickerChannelKey((current2) => current2 === key ? null : key);
     }
     useEffect(() => {
       logLiveTvStage("live tv sources", { count: urls.length, loaded: channels.length });
@@ -41904,7 +45757,7 @@ ${cue.text}`).join("\n\n")}
         }).filter((pair) => pair !== null)
       );
       Object.entries(initialLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src));
-      setLoadedLogoUrls((current) => ({ ...current, ...initialLoaded }));
+      setLoadedLogoUrls((current2) => ({ ...current2, ...initialLoaded }));
       void (async () => {
         const pendingEntries = logoEntries.filter((entry) => !initialLoaded[entry.key]);
         const batchSize = isTauriEnv ? 3 : 8;
@@ -41928,7 +45781,7 @@ ${cue.text}`).join("\n\n")}
           );
           Object.entries(batchLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src));
           if (Object.keys(batchLoaded).length > 0) {
-            setLoadedLogoUrls((current) => ({ ...current, ...batchLoaded }));
+            setLoadedLogoUrls((current2) => ({ ...current2, ...batchLoaded }));
           }
           if (isTauriEnv && i + batchSize < pendingEntries.length) {
             await new Promise((resolve) => setTimeout(resolve, 40));
@@ -42136,7 +45989,7 @@ ${cue.text}`).join("\n\n")}
                     ...tvStation,
                     onClick: () => {
                       if (categories.length === 0) return;
-                      setGroupDropdownOpen((open) => !open);
+                      setGroupDropdownOpen((open2) => !open2);
                     },
                     disabled: categories.length === 0,
                     className: isTv ? `flex w-full items-center justify-between ${tvControlClass} ${groupDropdownOpen ? "!border-accent-400/50 !bg-accent-400/10 !text-accent-300" : ""} disabled:cursor-default disabled:opacity-60` : `flex h-9 w-full items-center justify-between rounded-full border px-4 text-[0.6rem] font-normal uppercase tracking-[0.2em] transition-all whitespace-nowrap ${groupDropdownOpen ? activePillClass : neutralPillClass} disabled:cursor-default disabled:opacity-60`,
@@ -42548,7 +46401,7 @@ ${cue.text}`).join("\n\n")}
                                       type: "button",
                                       tabIndex: -1,
                                       title: t("liveTvFetchEpgForChannel"),
-                                      onClick: () => setTvEpgRequested((current) => ({ ...current, [channel.url]: true })),
+                                      onClick: () => setTvEpgRequested((current2) => ({ ...current2, [channel.url]: true })),
                                       className: `${tvRoundControlClass} ${epgRequestedForCard ? "!border-emerald-300/40 !bg-emerald-400/10 !text-emerald-200" : ""}`,
                                       children: /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.14em]", children: "EPG" })
                                     }
@@ -42950,11 +46803,11 @@ ${cue.text}`).join("\n\n")}
     const { nowMs } = model;
     const scheduleChannels = useMemo(() => channel ? [channel] : [], [channel]);
     const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, startOfLocalDay(nowMs), startOfLocalDay(nowMs, 1));
-    const schedule2 = channel ? schedules[channelKey(channel)] ?? [] : [];
+    const schedule3 = channel ? schedules[channelKey(channel)] ?? [] : [];
     const info = channel ? model.nowFor(channel) : { now: null, next: null, later: null };
     useEffect(() => {
       nowRef.current?.scrollIntoView({ block: "center" });
-    }, [channel?.url, schedule2.length]);
+    }, [channel?.url, schedule3.length]);
     if (!channel) return null;
     return /* @__PURE__ */ jsxs("div", { style: { background: "rgba(255,255,255,0.04)", border: `1px solid ${LT.line}`, borderRadius: LT.radiusLg, padding: 16, display: "flex", flexDirection: "column", gap: 12, maxHeight: "calc(100vh - 140px)" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
@@ -42973,10 +46826,10 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("div", { style: { marginTop: 6 }, children: /* @__PURE__ */ jsx(ProgressBar, { value: progressOf(info.now.start, info.now.stop, nowMs), height: 3 }) })
       ] }) : null,
       /* @__PURE__ */ jsx(Kicker, { children: h("hubGuideKicker") }),
-      schedule2.length === 0 ? (
+      schedule3.length === 0 ? (
         // Tablån hämtas från appen: tomt betyder "hämtar" tills svaret kommit.
         /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 13, color: LT.muted }, children: scheduleLoading ? h("hubLoadingEpg") : h("hubNoProgramme") })
-      ) : /* @__PURE__ */ jsx("div", { style: { overflowY: "auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 2 }, children: schedule2.map((programme) => {
+      ) : /* @__PURE__ */ jsx("div", { style: { overflowY: "auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 2 }, children: schedule3.map((programme) => {
         const isNow = programme.start <= nowMs && programme.stop > nowMs;
         const past = programme.stop <= nowMs;
         return /* @__PURE__ */ jsxs(
@@ -42995,13 +46848,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -43018,7 +46871,7 @@ ${cue.text}`).join("\n\n")}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/now-next-later-row.tsx
   init_jsx_runtime_shim();
   function formatTime(ms) {
     return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -43080,7 +46933,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_tv_settings_store();
@@ -43298,7 +47151,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
@@ -43316,8 +47169,8 @@ ${cue.text}`).join("\n\n")}
     );
     useEffect(() => {
       if (!banner) return;
-      const timer2 = window.setTimeout(() => setBanner(null), 2e4);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setBanner(null), 2e4);
+      return () => window.clearTimeout(timer3);
     }, [banner]);
     if (!banner) return null;
     const channel = reminderToChannel(banner);
@@ -43364,7 +47217,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -43373,19 +47226,19 @@ ${cue.text}`).join("\n\n")}
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
     const [phone, setPhone] = useState(false);
     useEffect(() => {
       if (typeof document === "undefined") return;
-      const read9 = () => {
+      const read11 = () => {
         const from = ref?.current ?? null;
         const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
         return box?.getAttribute(TV_SCENE_PHONE_ATTR) === "1";
       };
-      const sync = () => setPhone(read9());
+      const sync = () => setPhone(read11());
       sync();
       const observer = new MutationObserver(sync);
       observer.observe(document.documentElement, {
@@ -43398,7 +47251,7 @@ ${cue.text}`).join("\n\n")}
     return phone;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -43450,12 +47303,12 @@ ${cue.text}`).join("\n\n")}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -43471,7 +47324,7 @@ ${cue.text}`).join("\n\n")}
     const stationRef = useRef(null);
     const hide = useCallback(() => {
       stationRef.current = null;
-      setSpot((current) => current === null ? current : null);
+      setSpot((current2) => current2 === null ? current2 : null);
     }, []);
     useEffect(() => {
       if (typeof window.matchMedia !== "function") return;
@@ -43481,9 +47334,9 @@ ${cue.text}`).join("\n\n")}
       query.addEventListener?.("change", onChange);
       return () => query.removeEventListener?.("change", onChange);
     }, []);
-    const active2 = enabled && finePointer;
+    const active3 = enabled && finePointer;
     useEffect(() => {
-      if (!active2) {
+      if (!active3) {
         hide();
         return;
       }
@@ -43520,8 +47373,8 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("scroll", hide, true);
         window.removeEventListener("resize", hide);
       };
-    }, [active2, hide, rootRef]);
-    if (!active2 || !spot) return null;
+    }, [active3, hide, rootRef]);
+    if (!active3 || !spot) return null;
     return /* @__PURE__ */ jsx(
       "button",
       {
@@ -43570,10 +47423,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -43583,10 +47436,10 @@ ${cue.text}`).join("\n\n")}
   var ZAP_MAX_DIGITS = 4;
   function createZapBuffer(opts) {
     let digits = "";
-    let timer2 = null;
+    let timer3 = null;
     const clearTimer = () => {
-      if (timer2 !== null) window.clearTimeout(timer2);
-      timer2 = null;
+      if (timer3 !== null) window.clearTimeout(timer3);
+      timer3 = null;
     };
     const commit = () => {
       clearTimer();
@@ -43603,7 +47456,7 @@ ${cue.text}`).join("\n\n")}
         digits += digit;
         opts.onChange(digits);
         clearTimer();
-        timer2 = window.setTimeout(commit, opts.timeoutMs);
+        timer3 = window.setTimeout(commit, opts.timeoutMs);
       },
       commit,
       clear() {
@@ -43617,11 +47470,11 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_video_surface();
   init_surface_cutouts();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -43630,12 +47483,12 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -43683,7 +47536,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 36;
   var MAX_CHIPS = 12;
   var REPLAY_DAYS = 3;
@@ -43712,7 +47565,7 @@ ${cue.text}`).join("\n\n")}
     return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -43723,7 +47576,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_ui();
@@ -43780,10 +47633,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
@@ -43826,14 +47679,14 @@ ${cue.text}`).join("\n\n")}
     const reload = useCallback(() => setNonce((n) => n + 1), []);
     useEffect(() => {
       let cancelled = false;
-      let timer2 = null;
+      let timer3 = null;
       const controller = new AbortController();
       const load = async () => {
         try {
           const result = await listVodCategories(source, controller.signal);
           if (cancelled) return;
           setState({ ...result, loading: false, error: null });
-          if (result.importing) timer2 = setTimeout(load, IMPORT_POLL_MS);
+          if (result.importing) timer3 = setTimeout(load, IMPORT_POLL_MS);
         } catch (err) {
           if (cancelled || controller.signal.aborted) return;
           setState((prev) => ({
@@ -43848,7 +47701,7 @@ ${cue.text}`).join("\n\n")}
       return () => {
         cancelled = true;
         controller.abort();
-        if (timer2) clearTimeout(timer2);
+        if (timer3) clearTimeout(timer3);
         off();
       };
     }, [source, nonce]);
@@ -43922,7 +47775,7 @@ ${cue.text}`).join("\n\n")}
     return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -44041,7 +47894,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-data.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-data.ts
   init_plugin_sdk();
   init_live_tv_data();
   var VOD_MODE_DEFAULT = "link";
@@ -44127,24 +47980,24 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileChips({ items: items2, value, onChange, testId, emphasisKey, dimKeys }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: items2.map(({ key, label, id }) => {
-      const active2 = key === value;
+      const active3 = key === value;
       const emphasis = emphasisKey !== void 0 && key === emphasisKey;
       const dim = dimKeys?.includes(key) ?? false;
       return /* @__PURE__ */ jsx(
         "div",
         {
           "data-testid": `chip-${id}`,
-          ...station(() => onChange(key), void 0, { "aria-pressed": String(active2) }),
+          ...station(() => onChange(key), void 0, { "aria-pressed": String(active3) }),
           style: {
             minHeight: 34,
             padding: "0 14px",
@@ -44166,10 +48019,10 @@ ${cue.text}`).join("\n\n")}
                             Kanten sitter kvar på BÅDA lägena nu: en osynlig kant på det
                             ovalda gjorde att chippen bytte storlek när man valde dem.
                           */
-            background: emphasis ? "#f3f4f8" : active2 ? MT.s16 : MT.s12,
-            border: emphasis ? "1px solid transparent" : `1px solid ${active2 ? MT.line20 : MT.line10}`,
-            color: emphasis ? "#111" : active2 ? MT.text : MT.muted70,
-            fontWeight: active2 ? 600 : 400,
+            background: emphasis ? "#f3f4f8" : active3 ? MT.s16 : MT.s12,
+            border: emphasis ? "1px solid transparent" : `1px solid ${active3 ? MT.line20 : MT.line10}`,
+            color: emphasis ? "#111" : active3 ? MT.text : MT.muted70,
+            fontWeight: active3 ? 600 : 400,
             opacity: dim ? 0.65 : void 0,
             cursor: "pointer"
           },
@@ -44180,7 +48033,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
   var RECENT_MAX = 8;
@@ -44355,7 +48208,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-vod-hub.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-vod-hub.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -44432,7 +48285,7 @@ ${cue.text}`).join("\n\n")}
   }
   function VodRowCard({ item, nav }) {
     const { tt } = useTvText();
-    const open = () => nav.go("title", { key: item.key });
+    const open2 = () => nav.go("title", { key: item.key });
     const hold = (element) => {
       const actions = [
         ...item.url ? [{
@@ -44457,7 +48310,7 @@ ${cue.text}`).join("\n\n")}
       "div",
       {
         "data-testid": "hub-vod-card",
-        ...station(open, hold),
+        ...station(open2, hold),
         style: {
           width: dp(190),
           flexShrink: 0,
@@ -44505,7 +48358,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_DESKTOP = 3;
   var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
@@ -44565,14 +48418,14 @@ ${cue.text}`).join("\n\n")}
           ] }),
           playlistOpen ? /* @__PURE__ */ jsxs("div", { ref: menuRef, role: "menu", "data-panel-root": "", "data-scroll": "", "data-live-tv-layer": "", style: { position: "absolute", top: `calc(100% + ${dp(8)}px)`, left: 0, zIndex: 60, width: dp(380), padding: dp(8), borderRadius: dp(16), background: "rgba(58,59,66,0.98)", boxShadow: "0 24px 64px rgba(0,0,0,0.55)", maxHeight: dp(560), overflowY: "auto" }, children: [
             [{ id: null, name: tt("allPlaylists"), count: model.allChannels.length }, ...model.playlists].map((p) => {
-              const active2 = (model.activePlaylistId ?? null) === p.id;
+              const active3 = (model.activePlaylistId ?? null) === p.id;
               return /* @__PURE__ */ jsxs("div", { "data-testid": `playlist-${p.id ?? "all"}`, "data-live-tv-menu-item": "", ...station(() => {
                 model.setActivePlaylist(p.id);
                 setPlaylistOpen(false);
                 setGroup(null);
                 setVisible(ALL_STEP);
                 window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0);
-              }, void 0, active2 ? { "data-init": "" } : {}), style: { height: dp(56), minHeight: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? TV2.s12 : "transparent", cursor: "pointer" }, children: [
+              }, void 0, active3 ? { "data-init": "" } : {}), style: { height: dp(56), minHeight: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active3 ? TV2.s12 : "transparent", cursor: "pointer" }, children: [
                 /* @__PURE__ */ jsx("span", { style: { fontSize: dp(19), fontWeight: 600 }, children: p.name }),
                 /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)" }, children: tt("channelsCount", { count: p.count }) })
               ] }, p.id ?? "__all");
@@ -44724,7 +48577,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -44733,7 +48586,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -44758,12 +48611,12 @@ ${cue.text}`).join("\n\n")}
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS * 100));
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -44792,18 +48645,18 @@ ${cue.text}`).join("\n\n")}
     } };
   }
   function useHoverSelect(enabled, onSelect) {
-    const timer2 = useRef(null);
+    const timer3 = useRef(null);
     const clear = () => {
-      if (timer2.current !== null) window.clearTimeout(timer2.current);
-      timer2.current = null;
+      if (timer3.current !== null) window.clearTimeout(timer3.current);
+      timer3.current = null;
     };
     useEffect(() => clear, []);
     if (!enabled) return { enter: void 0, leave: void 0 };
     return {
       enter: (sel) => {
         clear();
-        timer2.current = window.setTimeout(() => {
-          timer2.current = null;
+        timer3.current = window.setTimeout(() => {
+          timer3.current = null;
           onSelect(sel);
         }, HOVER_MS);
       },
@@ -44819,13 +48672,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms = 300) {
     const [value, setValue] = useState(channel);
     useEffect(() => {
-      const timer2 = window.setTimeout(() => setValue(channel), ms);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setValue(channel), ms);
+      return () => window.clearTimeout(timer3);
     }, [channel, ms]);
     return value;
   }
@@ -44868,9 +48721,9 @@ ${cue.text}`).join("\n\n")}
     const width = GUIDE_CELL_WIDTH[variant];
     return { flex: `0 0 ${width}px`, width, minWidth: 0, boxSizing: "border-box" };
   }
-  function GuideChannelCell({ channel, number, pinned, locked, variant, fill = false }) {
+  function GuideChannelCell({ channel, number, pinned, locked, variant, fill: fill2 = false }) {
     const art = variant === "timeline" ? null : GUIDE_ART_SIZE[variant];
-    const box = fill ? { flex: 1, minWidth: 0, height: "100%", boxSizing: "border-box" } : guideCellStyle(variant);
+    const box = fill2 ? { flex: 1, minWidth: 0, height: "100%", boxSizing: "border-box" } : guideCellStyle(variant);
     return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-cell", style: { ...box, display: "flex", alignItems: "center", gap: gp(10), padding: `0 ${gp(12)}px` }, children: [
       /* @__PURE__ */ jsx("span", { style: { width: gp(26), flexShrink: 0, fontSize: gp(14), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number ?? "" }),
       art ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: art.width, flexShrink: 0 }, height: art.height, radius: gp(6) }) : null,
@@ -44883,7 +48736,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -44913,7 +48766,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -44922,7 +48775,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -44956,7 +48809,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -44965,25 +48818,25 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileSegment({ options, value, onChange, height = 36, testId }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { display: "flex", padding: 3, borderRadius: 999, background: MT.s08 }, children: options.map(({ key, label }) => {
-      const active2 = key === value;
+      const active3 = key === value;
       return /* @__PURE__ */ jsx(
         "div",
         {
           "data-testid": `segment-${key}`,
-          ...station(() => onChange(key), void 0, { "aria-pressed": String(active2) }),
+          ...station(() => onChange(key), void 0, { "aria-pressed": String(active3) }),
           style: {
             flex: 1,
             minHeight: height,
@@ -44992,9 +48845,9 @@ ${cue.text}`).join("\n\n")}
             alignItems: "center",
             justifyContent: "center",
             fontSize: 14,
-            fontWeight: active2 ? 600 : 400,
-            background: active2 ? MT.s16 : "transparent",
-            color: active2 ? MT.text : MT.muted,
+            fontWeight: active3 ? 600 : 400,
+            background: active3 ? MT.s16 : "transparent",
+            color: active3 ? MT.text : MT.muted,
             cursor: "pointer"
           },
           children: label
@@ -45004,7 +48857,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -45073,7 +48926,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -45206,7 +49059,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_jsx_runtime_shim();
   var MAX_GROUPS2 = 12;
   var ROW_STEP3 = 40;
@@ -45260,7 +49113,7 @@ ${cue.text}`).join("\n\n")}
       );
     };
     const noRows = rows.length === 0;
-    const colItem = (key, active2, label, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active2 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active2 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
+    const colItem = (key, active3, label, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active3 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active3 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
       /* @__PURE__ */ jsx("span", { style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.45)" }, children: count })
     ] }, key);
@@ -45331,7 +49184,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -45341,7 +49194,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -45379,7 +49232,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -45387,7 +49240,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
@@ -45458,7 +49311,7 @@ ${cue.text}`).join("\n\n")}
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_jsx_runtime_shim();
@@ -45580,7 +49433,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
@@ -45830,11 +49683,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -45843,7 +49696,7 @@ ${cue.text}`).join("\n\n")}
   init_guide_surface();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -46006,7 +49859,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-control-row.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -46022,12 +49875,12 @@ ${cue.text}`).join("\n\n")}
   }
   function ControlSegment({ options, value, onChange, testId, activeStyle }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: SEGMENT, children: options.map((option) => {
-      const active2 = option.key === value;
+      const active3 = option.key === value;
       return /* @__PURE__ */ jsx(
         "div",
         {
-          ...station(() => onChange(option.key), void 0, active2 ? { "data-active": "" } : void 0),
-          style: { ...SEGMENT_BTN, background: active2 ? TV2.s16 : "transparent", color: active2 ? TV2.text : TV2.muted, fontWeight: active2 ? 600 : 400, ...active2 ? activeStyle : void 0 },
+          ...station(() => onChange(option.key), void 0, active3 ? { "data-active": "" } : void 0),
+          style: { ...SEGMENT_BTN, background: active3 ? TV2.s16 : "transparent", color: active3 ? TV2.text : TV2.muted, fontWeight: active3 ? 600 : 400, ...active3 ? activeStyle : void 0 },
           children: option.label
         },
         option.key
@@ -46101,7 +49954,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -46110,11 +49963,11 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -46159,7 +50012,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -46227,7 +50080,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
   var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
@@ -46457,7 +50310,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -46662,7 +50515,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
@@ -46777,7 +50630,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
   function TvGuide(props) {
@@ -47016,7 +50869,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -47024,7 +50877,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -47034,7 +50887,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -47095,7 +50948,7 @@ ${cue.text}`).join("\n\n")}
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
   function TvFavouritesPhone({ model, nav }) {
@@ -47191,7 +51044,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
@@ -47271,13 +51124,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
   init_channel_locks();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -47315,16 +51168,16 @@ ${cue.text}`).join("\n\n")}
     const windowTo = dayStart + DAY_MS2;
     const scheduleChannels = useMemo(() => channel ? [channel] : [], [channel]);
     const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, windowFrom, windowTo);
-    const schedule2 = channel ? schedules[channelKey(channel)] ?? [] : [];
+    const schedule3 = channel ? schedules[channelKey(channel)] ?? [] : [];
     const programmes = useMemo(
-      () => sliceSchedule(schedule2, dayStart, dayStart + DAY_MS2),
+      () => sliceSchedule(schedule3, dayStart, dayStart + DAY_MS2),
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [schedule2, dayStart]
+      [schedule3, dayStart]
     );
     const yesterday = useMemo(
-      () => dayOffset === 0 ? sliceSchedule(schedule2, dayStart - DAY_MS2, dayStart).slice(-2) : [],
+      () => dayOffset === 0 ? sliceSchedule(schedule3, dayStart - DAY_MS2, dayStart).slice(-2) : [],
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [schedule2, dayStart, dayOffset]
+      [schedule3, dayStart, dayOffset]
     );
     const rows = useMemo(
       () => [...yesterday.map((p) => ({ p, day: "yesterday" })), ...programmes.map((p) => ({ p, day: "today" }))],
@@ -47332,9 +51185,9 @@ ${cue.text}`).join("\n\n")}
     );
     const catchUpByStart = useMemo(() => {
       if (!channel) return /* @__PURE__ */ new Map();
-      const items2 = catchUpForChannel(channel, schedule2, model.nowMs, 500);
+      const items2 = catchUpForChannel(channel, schedule3, model.nowMs, 500);
       return new Map(items2.map((item) => [item.programme.start, true]));
-    }, [channel, schedule2, model.nowMs]);
+    }, [channel, schedule3, model.nowMs]);
     const selected = useMemo(
       () => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === "now")?.p ?? rows[0]?.p ?? null,
       [rows, selectedStart, model.nowMs]
@@ -47398,12 +51251,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_tv_ui();
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -47582,7 +51435,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_jsx_runtime_shim();
   function TvChannel(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
@@ -47653,9 +51506,9 @@ ${cue.text}`).join("\n\n")}
         ] })
       ] }),
       /* @__PURE__ */ jsx("div", { "data-testid": "day-picker", style: dayPickerStyle, children: DAY_OFFSETS.map((offset) => {
-        const active2 = offset === dayOffset;
+        const active3 = offset === dayOffset;
         const label = dayLabel(offset);
-        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active2 ? "#f3f4f8" : "transparent", color: active2 ? "#111" : offset > 0 ? TV2.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
+        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active3 ? "#f3f4f8" : "transparent", color: active3 ? "#111" : offset > 0 ? TV2.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: label.top }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.75 }, children: label.bottom })
         ] }) }, offset);
@@ -47712,7 +51565,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -47721,13 +51574,13 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-keyboard.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -47758,7 +51611,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_jsx_runtime_shim();
   function isComposing(event) {
     return event.nativeEvent.isComposing === true || event.keyCode === 229;
@@ -47768,16 +51621,16 @@ ${cue.text}`).join("\n\n")}
     const Panel = getTvKeyboardPanel();
     const [prompt, setPrompt] = useState(null);
     const promptId = useRef(0);
-    const open = prompt !== null;
+    const open2 = prompt !== null;
     const openerRef = useRef(null);
     useEffect(() => {
-      if (!open) return;
+      if (!open2) return;
       openerRef.current = document.activeElement;
       return () => {
         const opener = openerRef.current;
         window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
       };
-    }, [open]);
+    }, [open2]);
     const ask = (title, initial, onDone, kind = "text") => {
       promptId.current += 1;
       setPrompt({ id: promptId.current, title, initial, kind, onDone });
@@ -47793,7 +51646,7 @@ ${cue.text}`).join("\n\n")}
             setPrompt(null);
             prompt.onDone(value);
           },
-          onClose: () => setPrompt((current) => current === prompt ? null : current)
+          onClose: () => setPrompt((current2) => current2 === prompt ? null : current2)
         },
         prompt.id
       ) }) : null;
@@ -47809,7 +51662,7 @@ ${cue.text}`).join("\n\n")}
             setPrompt(null);
             prompt.onDone(value);
           },
-          onCancel: () => setPrompt((current) => current === prompt ? null : current)
+          onCancel: () => setPrompt((current2) => current2 === prompt ? null : current2)
         },
         prompt.id
       );
@@ -47897,7 +51750,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -47931,7 +51784,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -47951,7 +51804,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       setState((prev) => ({ hits: prev.hits, loading: true }));
-      const timer2 = window.setTimeout(() => {
+      const timer3 = window.setTimeout(() => {
         epgSearch(listId, q, dayStart, dayEnd, limit).then(async (items2) => {
           const channels = await resolveChannelKeys(items2.map((item) => item.key));
           const byKey = new Map(channels.map((channel) => [channel.key, channel]));
@@ -47967,13 +51820,13 @@ ${cue.text}`).join("\n\n")}
         });
       }, DEBOUNCE_MS);
       return () => {
-        window.clearTimeout(timer2);
+        window.clearTimeout(timer3);
       };
     }, [query, dayStart, dayEnd, listId, limit]);
     return state2;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -48111,7 +51964,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
     return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
@@ -48226,14 +52079,14 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -48242,10 +52095,10 @@ ${cue.text}`).join("\n\n")}
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -48295,7 +52148,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -48463,7 +52316,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
     2: { columns: "1fr 1fr", rows: "1fr" },
@@ -48489,8 +52342,8 @@ ${cue.text}`).join("\n\n")}
       if (!narrow) return;
       const root = rootRef.current;
       if (!root) return;
-      const active2 = document.activeElement;
-      if (active2 && root.contains(active2)) return;
+      const active3 = document.activeElement;
+      if (active3 && root.contains(active3)) return;
       root.querySelector("[data-init]")?.focus({ preventScroll: true });
     }, [narrow]);
     const liveBudget = Math.max(0, caps.maxLive - 1);
@@ -48595,7 +52448,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -48675,8 +52528,8 @@ ${cue.text}`).join("\n\n")}
     const [query, setQuery] = useState("");
     const [q, setQ] = useState("");
     useEffect(() => {
-      const timer2 = window.setTimeout(() => setQ(query.trim()), 250);
-      return () => window.clearTimeout(timer2);
+      const timer3 = window.setTimeout(() => setQ(query.trim()), 250);
+      return () => window.clearTimeout(timer3);
     }, [query]);
     const validSelected = useMemo(() => {
       if (selected === ALL_CATEGORY || cats.categories.length === 0) return ALL_CATEGORY;
@@ -48686,7 +52539,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       setSelected(getVodCategory(playlistId) ?? ALL_CATEGORY);
     }, [playlistId]);
-    const active2 = cats.categories.find((c) => c.id === validSelected) ?? null;
+    const active3 = cats.categories.find((c) => c.id === validSelected) ?? null;
     const page = useVodPage({
       source,
       // Söken håller sig inom vald kategori; Alla söker hela indexet (Jerry
@@ -49015,7 +52868,7 @@ ${cue.text}`).join("\n\n")}
       ),
       /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(14), padding: `${dp(30)}px ${dp(48)}px ${dp(16)}px` }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }, children: active2?.name ?? allKindLabel }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }, children: active3?.name ?? allKindLabel }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 20 : 17), color: "rgba(243,244,248,0.5)" }, children: tt("libraryTitlesCount", { count: page.total }) }),
           /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(10) }, children: [
             SORTS.map((key) => /* @__PURE__ */ jsx(
@@ -49123,13 +52976,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -49187,7 +53040,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -49200,6 +53053,7 @@ ${cue.text}`).join("\n\n")}
     const isTv = useTvMode();
     const narrow = useNarrowSurface();
     const iconSize = isTv ? ICON_SIZE_TV : ICON_SIZE;
+    const bs = (px) => isTv ? `calc(${px}px * var(--tv-button-scale, 1))` : dp(px);
     const itemKey = params.key ?? "";
     const source = model.activeSource;
     const [item, setItem2] = useState(null);
@@ -49256,13 +53110,13 @@ ${cue.text}`).join("\n\n")}
     const [watched, setWatched2] = useState(false);
     useEffect(() => {
       if (!watchKey) return;
-      const read9 = () => {
+      const read11 = () => {
         setInList(isWatching(watchKey));
         setWatched2(isMovieWatched({ tmdbId: watchKey }));
       };
-      read9();
-      const offList = onWatchlistChanged(read9);
-      const offWatched = onWatchedMoviesChanged(read9);
+      read11();
+      const offList = onWatchlistChanged(read11);
+      const offWatched = onWatchedMoviesChanged(read11);
       return () => {
         offList();
         offWatched();
@@ -49305,17 +53159,18 @@ ${cue.text}`).join("\n\n")}
         ...episode ? { season: episode.season, episode: episode.episode } : {}
       });
     };
+    const glyph = isTv ? dp(30) : void 0;
     const actions = [
       ...item.tmdbId ? [{
         key: "cast",
         label: tt("fullCast"),
-        icon: /* @__PURE__ */ jsx(Icons.Users, {}),
+        icon: /* @__PURE__ */ jsx(Icons.Users, { size: glyph }),
         run: () => nav.go("cast", { key: item.key, tmdbId: String(item.tmdbId), type: mediaType })
       }] : [],
       ...watchKey ? [{
         key: "list",
         label: inList ? tt("inMyList") : tt("addToMyList"),
-        icon: /* @__PURE__ */ jsx(Icons.Bookmark, { filled: inList }),
+        icon: /* @__PURE__ */ jsx(Icons.Bookmark, { size: glyph, filled: inList }),
         active: inList,
         run: () => {
           toggleWatchlist({
@@ -49330,7 +53185,7 @@ ${cue.text}`).join("\n\n")}
       ...watchKey && item.kind === "movie" ? [{
         key: "watched",
         label: watched ? tt("watched") : tt("markWatched"),
-        icon: /* @__PURE__ */ jsx(Icons.Eye, { filled: watched }),
+        icon: /* @__PURE__ */ jsx(Icons.Eye, { size: glyph, filled: watched }),
         active: watched,
         run: () => {
           toggleMovieWatched({ tmdbId: watchKey, imdbId: info?.imdbId ?? null, title, year });
@@ -49338,6 +53193,11 @@ ${cue.text}`).join("\n\n")}
         }
       }] : []
     ];
+    const actionCount = (canPlay ? 1 : 0) + actions.length;
+    const actionLink = (position) => ({
+      "data-vod-act": String(position),
+      ...position + 1 < actionCount ? { "data-f-right": `[data-vod-act="${position + 1}"]` } : {}
+    });
     const infoBlock = /* @__PURE__ */ jsxs(Fragment2, { children: [
       logoUrl ? /* @__PURE__ */ jsx(
         "img",
@@ -49367,19 +53227,19 @@ ${cue.text}`).join("\n\n")}
           children: info.overview
         }
       ) : null,
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", flexWrap: phone ? "wrap" : void 0, gap: dp(10), marginTop: dp(20) }, children: [
+      /* @__PURE__ */ jsxs("div", { "data-vod-actions": "", style: { display: "flex", alignItems: "center", flexWrap: phone ? "wrap" : void 0, gap: dp(10), marginTop: dp(20) }, children: [
         canPlay ? /* @__PURE__ */ jsxs(
           "div",
           {
             "data-testid": "title-play",
-            ...station(() => openPlayer(playUrl, item.kind === "series" ? firstEpisode ?? void 0 : void 0), void 0, { "data-init": "" }),
+            ...station(() => openPlayer(playUrl, item.kind === "series" ? firstEpisode ?? void 0 : void 0), void 0, { "data-init": "", ...actionLink(0) }),
             style: {
-              height: dp(iconSize),
-              padding: `0 ${dp(isTv ? 34 : 24)}px`,
+              height: bs(iconSize),
+              padding: isTv ? `0 calc(34px * var(--tv-button-scale, 1))` : `0 ${dp(24)}px`,
               borderRadius: 999,
               background: TV2.acc,
               color: "#fff",
-              fontSize: dp(isTv ? 22 : 18),
+              fontSize: bs(isTv ? 22 : 18),
               fontWeight: 600,
               display: "inline-flex",
               alignItems: "center",
@@ -49387,7 +53247,7 @@ ${cue.text}`).join("\n\n")}
               cursor: "pointer"
             },
             children: [
-              /* @__PURE__ */ jsx(Icons.Play, { size: dp(isTv ? 22 : 18) }),
+              /* @__PURE__ */ jsx(Icons.Play, { size: dp(isTv ? 28 : 18) }),
               playLabel
             ]
           }
@@ -49400,10 +53260,10 @@ ${cue.text}`).join("\n\n")}
             "data-active": action.active ? "" : void 0,
             title: action.label,
             "aria-label": action.label,
-            ...station(action.run, void 0, !canPlay && index === 0 ? { "data-init": "" } : void 0),
+            ...station(action.run, void 0, { ...!canPlay && index === 0 ? { "data-init": "" } : {}, ...actionLink(canPlay ? index + 1 : index) }),
             style: {
-              height: dp(iconSize),
-              minWidth: dp(iconSize),
+              height: bs(iconSize),
+              minWidth: bs(iconSize),
               borderRadius: 999,
               background: action.active ? TV2.accMix(18) : TV2.s10,
               border: `1px solid ${action.active ? TV2.acc : "transparent"}`,
@@ -49419,8 +53279,8 @@ ${cue.text}`).join("\n\n")}
                 "span",
                 {
                   style: {
-                    width: dp(iconSize),
-                    height: dp(iconSize),
+                    width: bs(iconSize),
+                    height: bs(iconSize),
                     flexShrink: 0,
                     display: "inline-flex",
                     alignItems: "center",
@@ -49429,7 +53289,7 @@ ${cue.text}`).join("\n\n")}
                   children: action.icon
                 }
               ),
-              /* @__PURE__ */ jsx("span", { "data-hero-icon-label": "", style: { fontSize: dp(isTv ? 20 : 16), fontWeight: 500 }, children: action.label })
+              /* @__PURE__ */ jsx("span", { "data-hero-icon-label": "", style: { fontSize: bs(isTv ? 20 : 16), fontWeight: 500 }, children: action.label })
             ]
           },
           action.key
@@ -49637,7 +53497,7 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -49672,21 +53532,21 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_live_tv_data();
   init_index_client();
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -49841,19 +53701,19 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileToggle({ on }) {
     return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_jsx_runtime_shim();
   function Row({ label, right, onOk, testId, phone = false }) {
     if (phone) {
@@ -50164,8 +54024,8 @@ ${cue.text}`).join("\n\n")}
       const key = channelKey(channel);
       if (members.has(key)) {
         removeChannelFromLiveTvList(pickerListId, channel);
-        setMembers((current) => {
-          const next = new Set(current);
+        setMembers((current2) => {
+          const next = new Set(current2);
           next.delete(key);
           return next;
         });
@@ -50176,7 +54036,7 @@ ${cue.text}`).join("\n\n")}
         toast(tt("listFull"));
         return;
       }
-      if (outcome === "added" || outcome === "duplicate") setMembers((current) => new Set(current).add(key));
+      if (outcome === "added" || outcome === "duplicate") setMembers((current2) => new Set(current2).add(key));
     };
     const createList = () => keyboard.ask(tt("listName"), "", (value) => {
       const name = value.trim();
@@ -50284,9 +54144,9 @@ ${cue.text}`).join("\n\n")}
       if (pickerLogin) pendingRef.current = { login: pickerLogin, dirty: dirty2 };
     });
     useEffect(() => () => {
-      const pending2 = pendingRef.current;
-      if (!pending2.dirty || !pending2.login?.id) return;
-      const list = getLiveTvLists().find((entry) => entry.xtreamLoginId === pending2.login.id);
+      const pending5 = pendingRef.current;
+      if (!pending5.dirty || !pending5.login?.id) return;
+      const list = getLiveTvLists().find((entry) => entry.xtreamLoginId === pending5.login.id);
       if (!list) return;
       void importList(list).catch((err) => recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err)));
     }, []);
@@ -50394,14 +54254,14 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 12 : dp(14) }, "data-testid": "settings-content", children: [
       /* @__PURE__ */ jsx(Heading, { phone, hint: cats.total > 0 ? tt("vodHint", { count: cats.total }) : tt("vodHintEmpty"), children: tt("vodHeading") }),
       /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: phone ? 10 : dp(16), flexWrap: "wrap" }, children: options.map((option) => {
-        const active2 = option.key === mode;
+        const active3 = option.key === mode;
         return /* @__PURE__ */ jsxs(
           "div",
           {
             "data-testid": `vod-mode-${option.key}`,
-            "data-active": active2 ? "" : void 0,
+            "data-active": active3 ? "" : void 0,
             ...station(() => choose(option.key)),
-            style: phone ? { width: "100%", padding: "12px 14px", borderRadius: 12, background: MT.s07, border: `1px solid ${active2 ? TV2.acc : MT.line10}`, cursor: "pointer" } : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV2.s07, border: `1px solid ${active2 ? TV2.acc : TV2.lineCard}`, cursor: "pointer", textAlign: "left" },
+            style: phone ? { width: "100%", padding: "12px 14px", borderRadius: 12, background: MT.s07, border: `1px solid ${active3 ? TV2.acc : MT.line10}`, cursor: "pointer" } : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV2.s07, border: `1px solid ${active3 ? TV2.acc : TV2.lineCard}`, cursor: "pointer", textAlign: "left" },
             children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), fontWeight: 600 }, children: option.title }),
               /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : "rgba(243,244,248,0.6)", marginTop: 4 }, children: option.body })
@@ -50549,7 +54409,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -50619,7 +54479,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_jsx_runtime_shim();
   var TABS = ["appearance", "content", "playlists", "epg", "parental"];
@@ -50653,7 +54513,7 @@ ${cue.text}`).join("\n\n")}
     const [accent, setAccentState] = useState(() => hasAccent ? accentApi.getAccent() : "");
     const newGuide = useNewGuideSurface(false);
     const modes = newGuide ? [{ key: "grid", label: tt("modeGrid") }, { key: "nownext", label: tt("modeNowNext") }, { key: "timeline", label: tt("modeTimelineDay") }] : [{ key: "now", label: tt("modeNow") }, { key: "tl", label: tt("modeTimeline") }, { key: "grid", label: tt("modeGrid") }, { key: "playlists", label: tt("modePlaylists") }];
-    const nextBanner = (current) => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current) + 1) % BANNER_HIDE_OPTIONS.length];
+    const nextBanner = (current2) => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current2) + 1) % BANNER_HIDE_OPTIONS.length];
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       hasAccent ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
         /* @__PURE__ */ jsx(Heading, { children: tt("accentColour") }),
@@ -50686,7 +54546,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -50700,7 +54560,7 @@ ${cue.text}`).join("\n\n")}
     settings: TvSettingsView
   };
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -50725,7 +54585,7 @@ ${cue.text}`).join("\n\n")}
   }
   function MobileTabBar({ view, onGo, onMore, showLibrary = false }) {
     const { tt } = useTvText();
-    const active2 = tabForView(view);
+    const active3 = tabForView(view);
     const tabs = tabsFor(showLibrary);
     return /* @__PURE__ */ jsx(
       "nav",
@@ -50748,7 +54608,7 @@ ${cue.text}`).join("\n\n")}
           display: "flex"
         },
         children: tabs.map(({ key, icon: Icon2, label }) => {
-          const isActive = key === active2;
+          const isActive = key === active3;
           return /* @__PURE__ */ jsxs(
             "div",
             {
@@ -50779,7 +54639,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_mobile_sheet();
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
@@ -50841,10 +54701,10 @@ ${cue.text}`).join("\n\n")}
     const view = viewFromParams(params);
     const viewParams = useMemo(() => params ?? {}, [params]);
     const [Player, setPlayer] = useState(null);
-    const [active2, setActive] = useState(null);
+    const [active3, setActive2] = useState(null);
     const [stream, setStream] = useState(null);
     const [StreamPlayer, setStreamPlayer] = useState(null);
-    const [pending2, setPending] = useState(null);
+    const [pending5, setPending] = useState(null);
     const [menu, setMenu] = useState(null);
     const [zapDigits, setZapDigits] = useState("");
     const [toastText, setToastText] = useState(null);
@@ -50861,7 +54721,7 @@ ${cue.text}`).join("\n\n")}
     const railItemSize = narrow ? RAIL_ITEM_NARROW : railLabels ? RAIL_ITEM_WIDE : RAIL_ITEM_COMPACT;
     const [moreOpen, setMoreOpen] = useState(false);
     useEffect(() => {
-      if (active2) return;
+      if (active3) return;
       let frame = 0;
       const focusInit = () => {
         const main = mainRef.current;
@@ -50873,19 +54733,19 @@ ${cue.text}`).join("\n\n")}
         frame = window.requestAnimationFrame(focusInit);
       });
       return () => window.cancelAnimationFrame(frame);
-    }, [view, active2]);
+    }, [view, active3]);
     useEffect(() => {
-      if (!active2 || Player) return;
+      if (!active3 || Player) return;
       let cancelled = false;
       void Promise.resolve().then(() => (init_live_tv_player(), live_tv_player_exports)).then((mod) => {
         if (!cancelled) setPlayer(() => mod.LiveTvPlayer);
       }).catch(() => {
-        if (!cancelled) setActive(null);
+        if (!cancelled) setActive2(null);
       });
       return () => {
         cancelled = true;
       };
-    }, [active2, Player]);
+    }, [active3, Player]);
     useEffect(() => {
       if (!stream || StreamPlayer) return;
       let cancelled = false;
@@ -50909,7 +54769,7 @@ ${cue.text}`).join("\n\n")}
     }, [onNavigate]);
     const toast = useCallback((text) => {
       setToastText(text);
-      window.setTimeout(() => setToastText((current) => current === text ? null : current), 1800);
+      window.setTimeout(() => setToastText((current2) => current2 === text ? null : current2), 1800);
     }, []);
     const modelRef = useRef(model);
     useEffect(() => {
@@ -50921,7 +54781,7 @@ ${cue.text}`).join("\n\n")}
         setPending({ kind: "play", request });
         return;
       }
-      void releaseAllSurfaces().finally(() => setActive(request));
+      void releaseAllSurfaces().finally(() => setActive2(request));
     }, []);
     const openChannel = useCallback((channel, programmeStart) => {
       go("channel", { ...encodeChannelParams(channel), ...programmeStart ? { programme: String(programmeStart) } : {} });
@@ -50966,12 +54826,12 @@ ${cue.text}`).join("\n\n")}
         setMenu(null);
         return;
       }
-      if (pending2) {
+      if (pending5) {
         setPending(null);
         return;
       }
-      if (active2) {
-        setActive(null);
+      if (active3) {
+        setActive2(null);
         return;
       }
       const top = layersRef.current[layersRef.current.length - 1];
@@ -50988,18 +54848,18 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       requestBrowseBack();
-    }, [menu, pending2, active2, view, go]);
+    }, [menu, pending5, active3, view, go]);
     useEffect(() => {
       const onKey = (event) => {
         if (!BACK_KEYS2.has(event.key)) return;
         if (menu && !phone) return;
-        if (pending2) {
+        if (pending5) {
           event.preventDefault();
           event.stopPropagation();
           back();
           return;
         }
-        if (active2 && Player) return;
+        if (active3 && Player) return;
         const target2 = event.target;
         if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
         if (target2?.closest?.("[data-live-tv-host-ui]")) return;
@@ -51009,7 +54869,7 @@ ${cue.text}`).join("\n\n")}
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [back, menu, phone, active2, Player, pending2]);
+    }, [back, menu, phone, active3, Player, pending5]);
     const favourites = model.favouriteChannels;
     const channels = model.channels;
     const zapDepsRef = useRef({ favourites, channels, play, toast, tt });
@@ -51058,8 +54918,8 @@ ${cue.text}`).join("\n\n")}
     const startedRef = useRef(false);
     useEffect(() => {
       if (startedRef.current || !settings.startOnLastChannel || view !== "hub" || params?.url) return;
-      const last = model.history[0];
-      const channel = last ? model.byUrl.get(last.url) : null;
+      const last2 = model.history[0];
+      const channel = last2 ? model.byUrl.get(last2.url) : null;
       if (!channel) return;
       startedRef.current = true;
       play({ channel });
@@ -51077,11 +54937,11 @@ ${cue.text}`).join("\n\n")}
       addToMultiview,
       pushLayer,
       toast,
-      playerOpen: active2 !== null
-    }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active2]);
-    useSwipeBack(back, (!menu || phone) && pending2 === null);
+      playerOpen: active3 !== null
+    }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active3]);
+    useSwipeBack(back, (!menu || phone) && pending5 === null);
     const View = TV_VIEWS[view];
-    const activeChannel = active2 ? active2.url ? { ...active2.channel, url: active2.url, name: active2.label ?? active2.channel.name } : active2.channel : null;
+    const activeChannel = active3 ? active3.url ? { ...active3.channel, url: active3.url, name: active3.label ?? active3.channel.name } : active3.channel : null;
     const rail = [
       { key: "search", label: tt("railSearch"), icon: /* @__PURE__ */ jsx(Icons.Search, {}) },
       { key: "hub", label: tt("railHome"), icon: /* @__PURE__ */ jsx(Icons.Home, {}) },
@@ -51114,17 +54974,17 @@ ${cue.text}`).join("\n\n")}
       // Kanalbyte till en LÅST kanal lämnar `active` orörd och öppnar
       // grinden ovanpå spelaren (se `play` ovan) — kromet måste då stå
       // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
-      gateOpen: pending2 !== null,
+      gateOpen: pending5 !== null,
       onOpenChannelDetails: () => {
-        setActive(null);
+        setActive2(null);
         openChannel(activeChannel);
       },
       onOpenMultiview: () => {
-        setActive(null);
+        setActive2(null);
         go("multi");
       },
       onOpenGuide: () => {
-        setActive(null);
+        setActive2(null);
         go("guide");
       },
       onAddToMultiview: addToMultiview,
@@ -51159,7 +55019,7 @@ ${cue.text}`).join("\n\n")}
             ] })
           ),
           /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone }, view) }),
-          phone && active2 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
+          phone && active3 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
           phone && moreOpen ? /* @__PURE__ */ jsx(
             MobileSheet,
             {
@@ -51173,7 +55033,7 @@ ${cue.text}`).join("\n\n")}
               testId: "more-sheet"
             }
           ) : null,
-          activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => play({ channel }), tv: tvPlayerProps }) : null,
+          activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive2(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => play({ channel }), tv: tvPlayerProps }) : null,
           stream && StreamPlayer ? /* @__PURE__ */ jsx("div", { "data-testid": "tv-stream-player", "data-live-tv-layer": "", children: /* @__PURE__ */ jsx(
             StreamPlayer,
             {
@@ -51194,7 +55054,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx(
             PinGate,
             {
-              open: pending2 !== null,
+              open: pending5 !== null,
               title: tt("enterPin"),
               wrongText: tt("pinWrong"),
               unlockLabel: tt("unlock"),
@@ -51202,7 +55062,7 @@ ${cue.text}`).join("\n\n")}
               onVerify: verifyActiveProfilePin2,
               onClose: () => setPending(null),
               onUnlocked: () => {
-                const gate = pending2;
+                const gate = pending5;
                 setPending(null);
                 if (!gate) return;
                 if (gate.kind === "lock") {
@@ -51210,7 +55070,7 @@ ${cue.text}`).join("\n\n")}
                   return;
                 }
                 markUnlockedThisSession();
-                void releaseAllSurfaces().finally(() => setActive(gate.request));
+                void releaseAllSurfaces().finally(() => setActive2(gate.request));
               }
             }
           ),
@@ -51223,7 +55083,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -51244,13 +55104,22 @@ ${cue.text}`).join("\n\n")}
     }
     return null;
   }
+  async function findMovieByTmdb(tmdbId) {
+    const sources = getLiveTvLists().filter((list) => list.kind === "xtream" && list.source).map((list) => list.source);
+    for (const source of new Set(sources)) {
+      const page = await queryVod({ source, tmdbId, kind: "movie", offset: 0, limit: 1 }).catch(() => null);
+      const item = page?.items[0];
+      if (item) return item;
+    }
+    return null;
+  }
   async function getVodStreams(query) {
     const tmdbId = Number.parseInt(String(query.tmdbId ?? ""), 10);
     if (!Number.isFinite(tmdbId) || tmdbId <= 0) return [];
     if (query.mediaType === "movie") {
-      const hit2 = await findByTmdb(tmdbId, "movie");
-      if (!hit2?.item.url) return [];
-      return [{ id: `xtream-vod:${hit2.item.key}`, label: labelFor(hit2.item), directUrl: hit2.item.url }];
+      const item = await findMovieByTmdb(tmdbId);
+      if (!item?.url) return [];
+      return [{ id: `xtream-vod:${item.key}`, label: labelFor(item), directUrl: item.url }];
     }
     if (query.season == null || query.episode == null) return [];
     const hit = await findByTmdb(tmdbId, "series");
@@ -51271,7 +55140,7 @@ ${cue.text}`).join("\n\n")}
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -51307,19 +55176,19 @@ ${cue.text}`).join("\n\n")}
       timers2.push(window.setTimeout(tick2, msToNextMinute));
       return () => {
         cancelled = true;
-        for (const timer2 of timers2) window.clearTimeout(timer2);
+        for (const timer3 of timers2) window.clearTimeout(timer3);
       };
     }, [key, listId, urls.join("|"), hoursAhead, hoursBack]);
     return programmes;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/index.ts
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.13.0"
+      version: "0.13.2"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -51333,7 +55202,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.13.0",
+    version: "0.13.2",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

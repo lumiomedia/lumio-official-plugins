@@ -55,6 +55,25 @@ async function findByTmdb(tmdbId: number, kind: 'movie' | 'series'): Promise<{ i
   return null
 }
 
+/**
+ * Filmer behöver ingen inloggning: indexets URL är redan spelbar. Varje
+ * Xtream-lista räknas alltså, även en vars inloggning saknas i profilen
+ * (2026-10-01: listan fanns, `xtream_logins` var tom, och VOD-knappen
+ * försvann). Serier går fortfarande via `findByTmdb`, för avsnitten hämtas ur
+ * panelen med inloggningen.
+ */
+async function findMovieByTmdb(tmdbId: number): Promise<VodItem | null> {
+  const sources = getLiveTvLists()
+    .filter((list: LiveTvList) => list.kind === 'xtream' && list.source)
+    .map((list) => list.source as string)
+  for (const source of new Set(sources)) {
+    const page = await queryVod({ source, tmdbId, kind: 'movie', offset: 0, limit: 1 }).catch(() => null)
+    const item = page?.items[0]
+    if (item) return item
+  }
+  return null
+}
+
 export interface VodStreamCandidate {
   id: string
   label: string
@@ -75,9 +94,9 @@ export async function getVodStreams(query: {
   if (!Number.isFinite(tmdbId) || tmdbId <= 0) return []
 
   if (query.mediaType === 'movie') {
-    const hit = await findByTmdb(tmdbId, 'movie')
-    if (!hit?.item.url) return []
-    return [{ id: `xtream-vod:${hit.item.key}`, label: labelFor(hit.item), directUrl: hit.item.url }]
+    const item = await findMovieByTmdb(tmdbId)
+    if (!item?.url) return []
+    return [{ id: `xtream-vod:${item.key}`, label: labelFor(item), directUrl: item.url }]
   }
 
   // Serier: panelens avsnitt är numrerade som TMDB:s, så säsong och avsnitt

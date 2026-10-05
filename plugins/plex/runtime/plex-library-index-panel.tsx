@@ -1,23 +1,46 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Card, PillBtn, TOKENS, fetchLibraryStatus, getLibraryMode, onLibraryModeChanged, resetLibrarySource, runLibraryScan, setLibraryMode, useLang } from '@/lib/plugin-sdk'
+import { useEffect, useState } from 'react'
+import {
+  Card,
+  PillBtn,
+  TOKENS,
+  cancelLibraryScan,
+  fetchLibraryStatus,
+  getActiveLibraryScan,
+  getLibraryMode,
+  onLibraryModeChanged,
+  onLibraryScanChanged,
+  resetLibrarySource,
+  runLibraryScan,
+  setLibraryMode,
+  useLang,
+} from '@/lib/plugin-sdk'
 import type { LibraryScanProgress, LibraryStatus } from '@/lib/plugin-sdk'
 import { ensureCanonicalPlexSettings } from './plex-storage'
 import { getPlexAuth } from './plex-storage'
 import { plexLibraryProvider, plexLibrarySourceRef } from './plex-library-provider'
+
+/** Pluginlokal: värdens strängtabell följer appens version, inte pluginets. */
+const BUSY_ELSEWHERE = {
+  en: 'Another library is being indexed. Try again when it is done.',
+  sv: 'Ett annat bibliotek indexeras. Försök igen när det är klart.',
+}
 
 /**
  * Inställningsvy: bygg/uppdatera Plex-indexet med förlopp, se status, och
  * välj om Plex ska ta över startsidan (kärnans biblioteksläge).
  */
 export function PlexLibraryIndexPanel() {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const [status, setStatus] = useState<LibraryStatus | null>(null)
-  const [progress, setProgress] = useState<LibraryScanProgress | null>(null)
+  // Förloppet läses ur värdens delade skanning, inte ur egen state:
+  // skanningen överlever panelen. Med egen state tappades den vid
+  // navigering medan låset satt kvar, och nästa knapptryck svarade
+  // "library scan already running" (Emby-rapporten 2026-10-02).
+  const [active, setActive] = useState(() => getActiveLibraryScan())
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState(() => getLibraryMode())
-  const abortRef = useRef<AbortController | null>(null)
   const settings = ensureCanonicalPlexSettings()
   const source = plexLibrarySourceRef(settings)
   const connected = Boolean(getPlexAuth() && settings.serverUri && settings.libraries.length > 0)
@@ -29,27 +52,25 @@ export function PlexLibraryIndexPanel() {
     refresh()
     return onLibraryModeChanged(() => setMode(getLibraryMode()))
   }, [])
+  useEffect(() => onLibraryScanChanged((scan) => {
+    setActive(scan)
+    if (!scan) refresh()
+  }), [])
 
   const mine = status?.sources.find((entry) => entry.id === source?.id) ?? null
-  const running = progress !== null && progress.phase !== 'done'
+  const progress: LibraryScanProgress | null = active && source && active.sourceId === source.id ? active.progress : null
+  // Låset är ett för alla bibliotek: en Jellyfin-skanning håller det också.
+  const running = active !== null
+  const busyElsewhere = active !== null && progress === null
 
   const run = async (kind: 'full' | 'delta') => {
     if (!source || running) return
     setError(null)
-    const controller = new AbortController()
-    abortRef.current = controller
-    setProgress({ phase: 'listing', done: 0 })
     try {
-      await runLibraryScan(plexLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, {
-        mode: kind,
-        signal: controller.signal,
-        onProgress: setProgress,
-      })
+      await runLibraryScan(plexLibraryProvider, { ...source, cursor: mine?.cursor ?? null }, { mode: kind })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
-      setProgress(null)
-      abortRef.current = null
       refresh()
     }
   }
@@ -94,13 +115,14 @@ export function PlexLibraryIndexPanel() {
               {t('plexIndexRunning').replace('{done}', String(progress.done))}
               {progress.total ? ` / ${progress.total}` : ''}
             </span>
-            <PillBtn size="sm" onClick={() => abortRef.current?.abort()}>{t('cancel')}</PillBtn>
+            <PillBtn size="sm" onClick={() => cancelLibraryScan()}>{t('cancel')}</PillBtn>
           </div>
           <div style={{ marginTop: 8, height: 6, width: '100%', overflow: 'hidden', borderRadius: 999, background: TOKENS.surface0 }}>
             <div style={{ height: '100%', borderRadius: 999, background: TOKENS.accent, width: pct != null ? `${pct}%` : '35%', transition: 'width .3s' }} />
           </div>
         </div>
       ) : null}
+      {busyElsewhere ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.textDim }}>{lang === 'sv' ? BUSY_ELSEWHERE.sv : BUSY_ELSEWHERE.en}</p> : null}
       {error ? <p style={{ margin: '8px 0 0', fontSize: 12, color: TOKENS.red }}>{error}</p> : null}
 
       <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>

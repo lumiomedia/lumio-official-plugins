@@ -1,0 +1,31 @@
+{
+  "api_requests": 1000,
+  "api_requests_count": 0,
+  "user_id": "<scrubbed>",
+  "username": "<scrubbed>",
+  "name": "<scrubbed>",
+  "avatar_url": "<scrubbed>",
+  "date_joined": "<scrubbed>",
+  "patron_status": null,
+  "patreon_pledge": null,
+  "reward_tier": 0,
+  "is_supporter": false,
+  "supporter_source": [],
+  "plan": "Free",
+  "store_account_token": "<scrubbed>",
+  "limits": {
+    "lists": 4,
+    "lists_items": 10000,
+    "external_lists": 1,
+    "ai_lists": 0,
+    "catalog_queries": 4,
+    "favorite_people": 20,
+    "catalog_queries_used": 0,
+    "catalog_queries_remaining": 4,
+    "catalog_queries_first_expires_at": null
+  },
+  "rate_limit": 1000,
+  "rate_limit_remaining": 1000,
+  "rate_limit_reset": 1791244800,
+  "auth_method": "apikey"
+}

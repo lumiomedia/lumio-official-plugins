@@ -30,6 +30,7 @@ See [docs/runtime-boundary.md](./docs/runtime-boundary.md).
 - `live-tv`
 - `plex`
 - `jellyfin`
+- `emby`
 - `trakt`
 - `homekit`
 - `twitch`

@@ -1,0 +1,85 @@
+{
+  "movies": [
+    {
+      "id": 1204680,
+      "mediatype": "movie",
+      "imdb_id": "tt1756855",
+      "tvdb_id": 365739,
+      "ids": {
+        "mdblist": "3bk4j",
+        "imdb": "tt1756855",
+        "tmdb": 1204680,
+        "tvdb": 365739
+      },
+      "title": "Coyote vs. Acme",
+      "language": "en",
+      "spoken_language": "en",
+      "country": "us",
+      "release_year": 2026,
+      "adult": 0,
+      "release_date": "2026-08-17",
+      "status": "Released",
+      "runtime": 103,
+      "added_at": null,
+      "rank": 0,
+      "rank_change": 0
+    }
+  ],
+  "shows": [
+    {
+      "id": 95350,
+      "mediatype": "show",
+      "imdb_id": "tt26545992",
+      "tvdb_id": 376098,
+      "ids": {
+        "mdblist": "kvl0",
+        "imdb": "tt26545992",
+        "tmdb": 95350,
+        "tvdb": 376098
+      },
+      "title": "Lanterns",
+      "language": "en",
+      "spoken_language": "en",
+      "country": "us",
+      "release_year": 2026,
+      "adult": 0,
+      "release_date": "2026-08-16",
+      "status": "Returning Series",
+      "runtime": 424,
+      "added_at": null,
+      "rank": 0,
+      "rank_change": 0
+    },
+    {
+      "id": 97546,
+      "mediatype": "show",
+      "imdb_id": "tt10986410",
+      "tvdb_id": 383203,
+      "ids": {
+        "mdblist": "8ic8",
+        "imdb": "tt10986410",
+        "tmdb": 97546,
+        "tvdb": 383203
+      },
+      "title": "Ted Lasso",
+      "language": "en",
+      "spoken_language": "en",
+      "country": "us",
+      "release_year": 2020,
+      "adult": 0,
+      "release_date": "2020-08-14",
+      "status": "Returning Series",
+      "runtime": 1980,
+      "added_at": null,
+      "rank": 1,
+      "rank_change": 0
+    }
+  ],
+  "pagination": {
+    "offset": 0,
+    "limit": 3,
+    "total": 100,
+    "has_more": true,
+    "next_cursor": "eyJzIjogMSwgImkiOiAyMTIwOTQ1ODY5LCAiciI6IDF9"
+  }
+}

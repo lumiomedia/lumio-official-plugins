@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.36
+
+- The index card keeps showing a running scan after you leave Settings and come back, and Cancel stops it. Rebuild and Update no longer answer "library scan already running" while a scan you can't see holds the lock; if another library is indexing, the card says so.
+
+## 1.0.35
+
+- Indexing a large Plex library no longer stops on a single dropped connection ("Failed to fetch"); the request is retried before giving up.
+
+## 1.0.34
+
+- Loads again on Lumio 0.1.617. The copy of the plugin that ships inside that app version stopped at startup, so the plugin never appeared; this version replaces it automatically.
+
+## 1.0.33
+
+- Large libraries with many series can be indexed without the scan stopping halfway. Series were sent to Lumio 200 at a time with every episode included, which could be several megabytes per request. That was more than Lumio accepts, so the scan stopped with "Failed to fetch". Titles are now sent in smaller batches.
+
 ## 1.0.32
 
 - Uses much less memory and responds faster to the remote. The plugin no longer carries its own copy of a large UI library it barely used, which made it several megabytes smaller and removed dozens of duplicate keyboard and focus listeners that ran on every key press.

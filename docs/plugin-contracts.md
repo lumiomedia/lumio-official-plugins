@@ -93,7 +93,8 @@ with the section id and the page where it belongs.
 | `registerHomeOverride` | A full custom Home view replacing native rows (user-armed). |
 | `registerBrowsePage` | A browsable page owned by the plugin. |
 | `registerMainMenuItem` / `registerTopbarItem` | Navigation entries. |
-| `registerBootstrap` | A background mount rendered once at startup (headless logic, syncing, listeners). |
+| `registerBootstrap` | A background mount rendered once at startup (headless logic, syncing, listeners). Unmounted when the plugin is disabled. |
+| `registerListSource` | Lists from a service shown as ordinary home rows (`plugin_list:<id>`). The host stores the chosen list in the row and draws the cards on desktop, phone and TV. *App 0.1.622+.* |
 
 #### Main menu entries
 
@@ -157,6 +158,14 @@ useful before the first sync as well.
 | `registerAuthCapabilityProvider` | Connect/disconnect state for the generic plugin-auth settings UI. |
 | `registerManagedAuthConsumer` | Declares the plugin consumes a core-managed auth provider. |
 | `registerSyncIdentityProvider` | Identity used by watch-state/watchlist sync flows. |
+| `registerTracker` | Receives the player's scrobbles: start, pause, stop and the 30-second pulse. The host gates on a usable id and drops repeats within 5 s. *App 0.1.622+.* |
+
+A tracker that syncs watched titles or a watchlist writes the remote state
+locally with `source: 'tracker'`, and pushes only changes for which
+`isUserMutation(source)` is true. This keeps two services that sync with each
+other from echoing through Lumio. `planWatchlistSync` (the built-in three-way
+merge) and `waitForStartIdle` (the host's start gate, reached through the
+bridge) are exported for this. See [sdk.md](./sdk.md#trackers-and-list-sources).
 
 ## 3. The player: what plugins can and cannot do
 

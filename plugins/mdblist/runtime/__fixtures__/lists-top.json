@@ -1,0 +1,47 @@
+[
+  {
+    "id": 2194,
+    "user_id": "<scrubbed>",
+    "user_name": "<scrubbed>",
+    "user_avatar_url": "https://media.trakt.tv/images/users/001/518/426/avatars/large/20a5080f31.jpg",
+    "name": "Latest TV Shows",
+    "slug": "latest-tv-shows",
+    "description": "",
+    "mediatype": "show",
+    "items": 300,
+    "likes": 2682,
+    "private": false,
+    "dynamic": true,
+    "liked": false
+  },
+  {
+    "id": 14,
+    "user_id": "<scrubbed>",
+    "user_name": "<scrubbed>",
+    "user_avatar_url": "https://media.trakt.tv/images/users/000/264/489/avatars/large/0a79971efc.png",
+    "name": "Top Watched Movies of The Week / >60",
+    "slug": "top-watched-movies-of-the-week",
+    "description": "",
+    "mediatype": "movie",
+    "items": 42,
+    "likes": 1237,
+    "private": false,
+    "dynamic": true,
+    "liked": false
+  },
+  {
+    "id": 86934,
+    "user_id": "<scrubbed>",
+    "user_name": "<scrubbed>",
+    "user_avatar_url": "https://walter-r2.trakt.tv/images/users/012/951/664/avatars/large/0654df10e3.jpg",
+    "name": "Latest Streaming Movies",
+    "slug": "latest-movies-digital-release",
+    "description": "",
+    "mediatype": "movie",
+    "items": 200,
+    "likes": 846,
+    "private": false,
+    "dynamic": true,
+    "liked": false
+  }
+]
