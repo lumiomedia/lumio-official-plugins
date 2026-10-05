@@ -1,7 +1,10 @@
 {
   "id": "com.lumio.mdblist",
   "slug": "mdblist",
-  "name": { "en": "MDBList", "sv": "MDBList" },
+  "name": {
+    "en": "MDBList",
+    "sv": "MDBList"
+  },
   "version": "0.1.0",
   "description": {
     "en": "Scrobble playback, sync watched titles and watchlists, and show MDBList lists as rows.",
@@ -11,5 +14,8 @@
   "bundled": true,
   "removable": true,
   "runtimeBundlePath": "dist/runtime.js",
-  "sdkCapabilities": ["settings-section"]
+  "sdkCapabilities": [
+    "settings-section"
+  ],
+  "minAppVersion": "0.1.622"
 }
