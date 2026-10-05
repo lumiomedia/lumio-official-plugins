@@ -66,6 +66,10 @@ export const S = {
 
   // Vad som synkas
   whatSyncs: { en: 'WHAT SYNCS', sv: 'VAD SOM SYNKAS' },
+  connectFirst: {
+    en: 'Connect MDBList under Accounts to choose what syncs.',
+    sv: 'Anslut MDBList under Konton för att välja vad som synkas.',
+  },
   scrobble: { en: 'Scrobble playback', sv: 'Scrobbla uppspelning' },
   scrobbleHint: {
     en: 'Start, pause and stop are sent to MDBList while you watch — the same moments as for Trakt.',

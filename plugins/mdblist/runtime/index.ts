@@ -8,7 +8,7 @@ import {
   scrobbler, startBackground, status, syncNow,
 } from './host'
 import { buildTvRows } from './rows'
-import { MdblistSettingsSection } from './settings-section'
+import { MdblistSettingsSection, MdblistSyncSection } from './settings-section'
 import { S } from './strings'
 
 function getStatus(): AuthCapabilityStatus {
@@ -80,6 +80,14 @@ export const MdblistPlugin: LumioPlugin = {
         const offs = [status.subscribe(listener), device.subscribe(listener), onTick(listener), onAuthChanged(listener), onProfileChanged(listener)]
         return () => { for (const off of offs) off() }
       },
+    })
+    // Efter 'mdblist': Plugins-genvägen går till pluginets första sektion (anslutningen).
+    // Synkvalen på fliken Vad som synkas (claimad av värden som 'mdblist-sync').
+    // Inga TV-rader: på TV ligger allt i MDBList-panelen under 'mdblist'.
+    ctx.registerSettingsSection({
+      id: 'mdblist-sync',
+      label: S.pluginName,
+      Section: MdblistSyncSection,
     })
   },
 }

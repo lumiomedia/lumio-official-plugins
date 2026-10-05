@@ -16482,6 +16482,10 @@
     },
     // Vad som synkas
     whatSyncs: { en: "WHAT SYNCS", sv: "VAD SOM SYNKAS" },
+    connectFirst: {
+      en: "Connect MDBList under Accounts to choose what syncs.",
+      sv: "Anslut MDBList under Konton f\xF6r att v\xE4lja vad som synkas."
+    },
     scrobble: { en: "Scrobble playback", sv: "Scrobbla uppspelning" },
     scrobbleHint: {
       en: "Start, pause and stop are sent to MDBList while you watch \u2014 the same moments as for Trakt.",
@@ -16647,18 +16651,32 @@
   init_jsx_runtime_shim();
   var MINT = "#3CD6A3";
   var RED = "#FF5A6A";
+  function useLive() {
+    const [, rerender] = useState(0);
+    const bump = () => rerender((n) => n + 1);
+    useEffect(() => {
+      const offs = [status.subscribe(bump), device.subscribe(bump), onTick(bump), onProfileChanged(bump)];
+      return () => {
+        for (const off of offs) off();
+      };
+    }, []);
+    const pausedUntil = status.get().pausedUntil;
+    useEffect(() => {
+      const left = pausedUntil - Date.now();
+      if (left <= 0) return;
+      const timer2 = window.setTimeout(bump, left + 50);
+      return () => window.clearTimeout(timer2);
+    }, [pausedUntil]);
+    return bump;
+  }
   function MdblistSettingsSection() {
     const { lang } = useLang();
     const tx = (text) => resolvePluginText(text, lang);
-    const [, rerender] = useState(0);
-    const bump = () => rerender((n) => n + 1);
+    useLive();
     const [key, setKey] = useState(() => getMdblistApiKey());
     const [showKey, setShowKey] = useState(() => getMdblistApiKey().trim().length > 0 && !device.hasToken());
     useEffect(() => {
       const offs = [
-        status.subscribe(bump),
-        device.subscribe(bump),
-        onTick(bump),
         onRatingSourcesChanged(() => setKey(getMdblistApiKey())),
         // Profilbyte: fältet ska visa den nya profilens nyckel, och en osparad
         // ändring får inte sparas in i den nya profilen vid blur.
@@ -16671,102 +16689,101 @@
         for (const off of offs) off();
       };
     }, []);
-    const pausedUntil = status.get().pausedUntil;
-    useEffect(() => {
-      const left = pausedUntil - Date.now();
-      if (left <= 0) return;
-      const timer2 = window.setTimeout(bump, left + 50);
-      return () => window.clearTimeout(timer2);
-    }, [pausedUntil]);
     const state = status.get();
     const flow = device.state();
+    const authed = hasAuth();
+    const ok = authed && state.connection === "ok";
+    const badge = !authed ? { text: S.badgeNotConnected, bg: "rgba(255,255,255,.06)", fg: "#8b8e99" } : state.connection === "bad-key" ? { text: S.badgeBadKey, bg: "rgba(255,90,106,.14)", fg: RED } : { text: S.badgeConnected, bg: "rgba(60,214,163,.14)", fg: MINT };
+    const body = !authed ? S.notConnectedBody : state.connection === "bad-key" ? S.badKeyBody : S.connectedBody;
+    return /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 14 }, children: /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 14 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }, children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: 14.5, fontWeight: 600, color: TOKENS.text }, children: tx(connectionTitle(state, authed)) }),
+          /* @__PURE__ */ jsxs("div", { style: { fontSize: 12.5, lineHeight: 1.5, color: TOKENS.textMute, maxWidth: "62ch", marginTop: 4 }, children: [
+            ok && state.supporter ? "MDBList Supporter \xB7 " : "",
+            tx(body)
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 10, fontWeight: 600, letterSpacing: ".08em", padding: "3px 7px", borderRadius: 4, background: badge.bg, color: badge.fg, whiteSpace: "nowrap" }, children: tx(badge.text) })
+      ] }),
+      /* @__PURE__ */ jsx(DeviceFlow, { tx }),
+      flow.phase === "idle" || flow.phase === "done" ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" }, children: [
+        !device.hasToken() ? /* @__PURE__ */ jsx(PillBtn, { variant: "accent", onClick: () => {
+          void device.start();
+        }, children: tx(S.connect) }) : /* @__PURE__ */ jsx(PillBtn, { onClick: () => {
+          void disconnect();
+        }, children: tx(S.disconnect) }),
+        !device.hasToken() && !showKey ? /* @__PURE__ */ jsx(PillBtn, { onClick: () => setShowKey(true), children: tx(S.useApiKey) }) : null
+      ] }) : null,
+      showKey && !device.hasToken() ? /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: tx(S.apiKeyEyebrow) }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "password",
+              value: key,
+              placeholder: tx(S.apiKeyPlaceholder),
+              onChange: (e) => setKey(e.target.value),
+              onBlur: () => {
+                if (key.trim() !== getMdblistApiKey().trim()) setMdblistApiKey(key.trim());
+              },
+              onKeyDown: (e) => {
+                if (e.key === "Enter") {
+                  setMdblistApiKey(key.trim());
+                  void checkConnection();
+                }
+              },
+              style: {
+                ...inputStyle,
+                flex: 1,
+                minWidth: 0,
+                fontFamily: monoFont,
+                fontSize: 14,
+                ...state.connection === "bad-key" ? { borderColor: "rgba(255,90,106,.5)" } : null
+              }
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            PillBtn,
+            {
+              onClick: () => {
+                setMdblistApiKey(key.trim());
+                void checkConnection();
+              },
+              disabled: state.connection === "checking",
+              children: tx(state.connection === "checking" ? S.checking : S.check)
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", gap: 16, marginTop: 8, fontSize: 12.5, color: TOKENS.textMute }, children: [
+          /* @__PURE__ */ jsx("span", { children: tx(S.keyHint) }),
+          /* @__PURE__ */ jsx("a", { href: "https://mdblist.com/preferences/", target: "_blank", rel: "noreferrer", style: { color: TOKENS.accent, whiteSpace: "nowrap" }, children: tx(S.getKey) })
+        ] })
+      ] }) : null
+    ] }) }) });
+  }
+  function MdblistSyncSection() {
+    const { lang } = useLang();
+    const tx = (text) => resolvePluginText(text, lang);
+    const bump = useLive();
+    const state = status.get();
     const authed = hasAuth();
     const connected = authed && state.connection !== "bad-key";
     const ok = connected && state.connection === "ok";
     const on = prefsSnapshot();
     const paused = state.pausedUntil > Date.now();
-    const badge = !authed ? { text: S.badgeNotConnected, bg: "rgba(255,255,255,.06)", fg: "#8b8e99" } : state.connection === "bad-key" ? { text: S.badgeBadKey, bg: "rgba(255,90,106,.14)", fg: RED } : { text: S.badgeConnected, bg: "rgba(60,214,163,.14)", fg: MINT };
-    const body = !authed ? S.notConnectedBody : state.connection === "bad-key" ? S.badKeyBody : S.connectedBody;
     const toggle = (kind) => (value) => {
       prefs.setOn(kind, value);
       bump();
     };
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 14 }, children: [
-      /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 14 }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }, children: [
-          /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 14.5, fontWeight: 600, color: TOKENS.text }, children: tx(connectionTitle(state, authed)) }),
-            /* @__PURE__ */ jsxs("div", { style: { fontSize: 12.5, lineHeight: 1.5, color: TOKENS.textMute, maxWidth: "62ch", marginTop: 4 }, children: [
-              ok && state.supporter ? "MDBList Supporter \xB7 " : "",
-              tx(body)
-            ] })
-          ] }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: 10, fontWeight: 600, letterSpacing: ".08em", padding: "3px 7px", borderRadius: 4, background: badge.bg, color: badge.fg, whiteSpace: "nowrap" }, children: tx(badge.text) })
-        ] }),
-        /* @__PURE__ */ jsx(DeviceFlow, { tx }),
-        flow.phase === "idle" || flow.phase === "done" ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" }, children: [
-          !device.hasToken() ? /* @__PURE__ */ jsx(PillBtn, { variant: "accent", onClick: () => {
-            void device.start();
-          }, children: tx(S.connect) }) : /* @__PURE__ */ jsx(PillBtn, { onClick: () => {
-            void disconnect();
-          }, children: tx(S.disconnect) }),
-          !device.hasToken() && !showKey ? /* @__PURE__ */ jsx(PillBtn, { onClick: () => setShowKey(true), children: tx(S.useApiKey) }) : null
-        ] }) : null,
-        showKey && !device.hasToken() ? /* @__PURE__ */ jsxs("div", { children: [
-          /* @__PURE__ */ jsx("div", { style: { ...eyebrowStyle, marginBottom: 6 }, children: tx(S.apiKeyEyebrow) }),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
-            /* @__PURE__ */ jsx(
-              "input",
-              {
-                type: "password",
-                value: key,
-                placeholder: tx(S.apiKeyPlaceholder),
-                onChange: (e) => setKey(e.target.value),
-                onBlur: () => {
-                  if (key.trim() !== getMdblistApiKey().trim()) setMdblistApiKey(key.trim());
-                },
-                onKeyDown: (e) => {
-                  if (e.key === "Enter") {
-                    setMdblistApiKey(key.trim());
-                    void checkConnection();
-                  }
-                },
-                style: {
-                  ...inputStyle,
-                  flex: 1,
-                  minWidth: 0,
-                  fontFamily: monoFont,
-                  fontSize: 14,
-                  ...state.connection === "bad-key" ? { borderColor: "rgba(255,90,106,.5)" } : null
-                }
-              }
-            ),
-            /* @__PURE__ */ jsx(
-              PillBtn,
-              {
-                onClick: () => {
-                  setMdblistApiKey(key.trim());
-                  void checkConnection();
-                },
-                disabled: state.connection === "checking",
-                children: tx(state.connection === "checking" ? S.checking : S.check)
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", gap: 16, marginTop: 8, fontSize: 12.5, color: TOKENS.textMute }, children: [
-            /* @__PURE__ */ jsx("span", { children: tx(S.keyHint) }),
-            /* @__PURE__ */ jsx("a", { href: "https://mdblist.com/preferences/", target: "_blank", rel: "noreferrer", style: { color: TOKENS.accent, whiteSpace: "nowrap" }, children: tx(S.getKey) })
-          ] })
-        ] }) : null
+      !connected ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: TOKENS.textDim }, children: tx(S.connectFirst) }) : null,
+      /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs("div", { style: { background: "var(--st-box)", borderRadius: 10, padding: "0 18px" }, children: [
+        /* @__PURE__ */ jsx(ToggleRow, { first: true, title: tx(S.scrobble), hint: tx(S.scrobbleHint), checked: on.scrobble, disabled: !ok, onChange: toggle("scrobble") }),
+        /* @__PURE__ */ jsx(ToggleRow, { title: tx(S.syncWatched), hint: tx(S.syncWatchedHint), checked: on.watched, disabled: !ok, onChange: toggle("watched") }),
+        /* @__PURE__ */ jsx(ToggleRow, { title: tx(S.syncWatchlist), hint: tx(S.syncWatchlistHint), checked: on.watchlist, disabled: !ok, onChange: toggle("watchlist") })
       ] }) }),
-      /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: 11.5, fontWeight: 500, letterSpacing: ".16em", color: "#e8e8ec", paddingTop: 12, marginBottom: 6 }, children: tx(S.whatSyncs) }),
-        /* @__PURE__ */ jsxs("div", { style: { background: "var(--st-box)", borderRadius: 10, padding: "0 18px" }, children: [
-          /* @__PURE__ */ jsx(ToggleRow, { first: true, title: tx(S.scrobble), hint: tx(S.scrobbleHint), checked: on.scrobble, disabled: !ok, onChange: toggle("scrobble") }),
-          /* @__PURE__ */ jsx(ToggleRow, { title: tx(S.syncWatched), hint: tx(S.syncWatchedHint), checked: on.watched, disabled: !ok, onChange: toggle("watched") }),
-          /* @__PURE__ */ jsx(ToggleRow, { title: tx(S.syncWatchlist), hint: tx(S.syncWatchlistHint), checked: on.watchlist, disabled: !ok, onChange: toggle("watchlist") })
-        ] })
-      ] }),
       connected && paused ? /* @__PURE__ */ jsxs("div", { style: { padding: "10px 14px", borderRadius: 12, border: `1px solid ${TOKENS.warn}`, background: "rgba(243,201,105,.08)" }, children: [
         /* @__PURE__ */ jsx("div", { style: { fontSize: 13, fontWeight: 600, color: TOKENS.warn }, children: tx(syncText(state, Date.now())) }),
         /* @__PURE__ */ jsx("div", { style: { fontSize: 12, lineHeight: 1.5, color: TOKENS.textDim, marginTop: 2 }, children: tx(S.pausedBody) })
@@ -16922,6 +16939,11 @@
             for (const off of offs) off();
           };
         }
+      });
+      ctx.registerSettingsSection({
+        id: "mdblist-sync",
+        label: S.pluginName,
+        Section: MdblistSyncSection
       });
     }
   };

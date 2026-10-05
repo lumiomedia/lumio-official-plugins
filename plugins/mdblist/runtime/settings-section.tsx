@@ -13,18 +13,34 @@ import { fillBoth, S, type Text } from './strings'
 const MINT = '#3CD6A3'
 const RED = '#FF5A6A'
 
-/** Värdens statuspunkt + kort, ritat enligt designhandoffen (Spårningstjänster → Konton). */
+/** Ritar om när status, enhetsflöde, nedräkning eller profil ändras — och när en paus tar slut. */
+function useLive(): () => void {
+  const [, rerender] = useState(0)
+  const bump = () => rerender((n) => n + 1)
+  useEffect(() => {
+    const offs = [status.subscribe(bump), device.subscribe(bump), onTick(bump), onProfileChanged(bump)]
+    return () => { for (const off of offs) off() }
+  }, [])
+  const pausedUntil = status.get().pausedUntil
+  useEffect(() => {
+    const left = pausedUntil - Date.now()
+    if (left <= 0) return
+    const timer = window.setTimeout(bump, left + 50)
+    return () => window.clearTimeout(timer)
+  }, [pausedUntil])
+  return bump
+}
+
+/** Anslutningen, under Spårningstjänster → Konton (designhandoffen). */
 export function MdblistSettingsSection() {
   const { lang } = useLang()
   const tx = (text: Text) => resolvePluginText(text, lang)
-  const [, rerender] = useState(0)
-  const bump = () => rerender((n) => n + 1)
+  useLive()
   const [key, setKey] = useState(() => getMdblistApiKey())
   const [showKey, setShowKey] = useState(() => getMdblistApiKey().trim().length > 0 && !device.hasToken())
 
   useEffect(() => {
     const offs = [
-      status.subscribe(bump), device.subscribe(bump), onTick(bump),
       onRatingSourcesChanged(() => setKey(getMdblistApiKey())),
       // Profilbyte: fältet ska visa den nya profilens nyckel, och en osparad
       // ändring får inte sparas in i den nya profilen vid blur.
@@ -36,22 +52,10 @@ export function MdblistSettingsSection() {
     return () => { for (const off of offs) off() }
   }, [])
 
-  // Pausrutan försvinner av sig själv när pausen är slut.
-  const pausedUntil = status.get().pausedUntil
-  useEffect(() => {
-    const left = pausedUntil - Date.now()
-    if (left <= 0) return
-    const timer = window.setTimeout(bump, left + 50)
-    return () => window.clearTimeout(timer)
-  }, [pausedUntil])
-
   const state = status.get()
   const flow = device.state()
   const authed = hasAuth()
-  const connected = authed && state.connection !== 'bad-key'
-  const ok = connected && state.connection === 'ok'
-  const on = prefsSnapshot()
-  const paused = state.pausedUntil > Date.now()
+  const ok = authed && state.connection === 'ok'
 
   const badge = !authed
     ? { text: S.badgeNotConnected, bg: 'rgba(255,255,255,.06)', fg: '#8b8e99' }
@@ -59,11 +63,6 @@ export function MdblistSettingsSection() {
       ? { text: S.badgeBadKey, bg: 'rgba(255,90,106,.14)', fg: RED }
       : { text: S.badgeConnected, bg: 'rgba(60,214,163,.14)', fg: MINT }
   const body = !authed ? S.notConnectedBody : state.connection === 'bad-key' ? S.badKeyBody : S.connectedBody
-
-  const toggle = (kind: PrefKind) => (value: boolean) => {
-    prefs.setOn(kind, value)
-    bump()
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -130,10 +129,34 @@ export function MdblistSettingsSection() {
         </div>
       </Card>
 
+    </div>
+  )
+}
+
+/**
+ * Synkvalen, under Spårningstjänster → Vad som synkas — bredvid Trakts egna,
+ * så att fliken samlar alla tjänsters synkval och Konton bara anslutningarna.
+ */
+export function MdblistSyncSection() {
+  const { lang } = useLang()
+  const tx = (text: Text) => resolvePluginText(text, lang)
+  const bump = useLive()
+  const state = status.get()
+  const authed = hasAuth()
+  const connected = authed && state.connection !== 'bad-key'
+  const ok = connected && state.connection === 'ok'
+  const on = prefsSnapshot()
+  const paused = state.pausedUntil > Date.now()
+  const toggle = (kind: PrefKind) => (value: boolean) => {
+    prefs.setOn(kind, value)
+    bump()
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {!connected ? (
+        <div style={{ fontSize: 13, color: TOKENS.textDim }}>{tx(S.connectFirst)}</div>
+      ) : null}
       <div>
-        <div style={{ fontSize: 11.5, fontWeight: 500, letterSpacing: '.16em', color: '#e8e8ec', paddingTop: 12, marginBottom: 6 }}>
-          {tx(S.whatSyncs)}
-        </div>
         <div style={{ background: 'var(--st-box)', borderRadius: 10, padding: '0 18px' }}>
           <ToggleRow first title={tx(S.scrobble)} hint={tx(S.scrobbleHint)} checked={on.scrobble} disabled={!ok} onChange={toggle('scrobble')} />
           <ToggleRow title={tx(S.syncWatched)} hint={tx(S.syncWatchedHint)} checked={on.watched} disabled={!ok} onChange={toggle('watched')} />
