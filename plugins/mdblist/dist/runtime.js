@@ -583,7 +583,7 @@
       },
       registerBootstrap(bootstrap) {
         if (bootstraps.find((entry) => entry.id === bootstrap.id)) return;
-        bootstraps.push(bootstrap);
+        bootstraps.push({ ...bootstrap, pluginId });
       },
       registerHero(hero) {
         if (heroes.find((entry) => entry.id === hero.id)) return;
@@ -707,7 +707,7 @@
     return homeSources;
   }
   function getBootstraps() {
-    return bootstraps;
+    return bootstraps.filter((entry) => !entry.pluginId || isPluginEnabled(entry.pluginId, 0, { installed: true, active: true }));
   }
   function getHeroes() {
     return heroes;
@@ -15360,6 +15360,7 @@
         const retryAfter = typeof json?.retryAfter === "number" ? json.retryAfter : null;
         if (response.status === 429) {
           pausedUntil = deps.now() + (retryAfter ?? DEFAULT_PAUSE_S) * 1e3;
+          deps.onPause?.(pausedUntil);
           deps.log(`429 p\xE5 ${method} ${path} \u2014 pausar MDBList i ${retryAfter ?? DEFAULT_PAUSE_S} s`);
         } else {
           deps.log(`${method} ${path}: HTTP ${response.status} ${json?.error ?? ""}`.trim());
@@ -15374,6 +15375,7 @@
     async function getAllPages(path, query = {}) {
       const merged = {};
       let next = {};
+      let complete = false;
       for (let page = 0; page < MAX_PAGES; page += 1) {
         const result = await call("GET", path, { query: { ...query, ...next } });
         if (!result.ok) return result;
@@ -15381,9 +15383,13 @@
         if (Array.isArray(data)) {
           ;
           (merged.items ?? (merged.items = [])).push(...data);
+          complete = true;
           break;
         }
-        if (!data || typeof data !== "object") break;
+        if (!data || typeof data !== "object") {
+          complete = true;
+          break;
+        }
         for (const [key, value] of Object.entries(data)) {
           if (key === "pagination" || !Array.isArray(value)) continue;
           (merged[key] ?? (merged[key] = [])).push(...value);
@@ -15393,11 +15399,19 @@
           next = { cursor: pagination.next_cursor };
         } else if (pagination?.has_more) {
           const limit = pagination.limit ?? Number(query.limit ?? 0);
-          if (!limit) break;
+          if (!limit) {
+            complete = true;
+            break;
+          }
           next = { offset: (pagination.offset ?? 0) + limit };
         } else {
+          complete = true;
           break;
         }
+      }
+      if (!complete) {
+        deps.log(`${path}: fler \xE4n ${MAX_PAGES} sidor \u2014 avbryter hellre \xE4n returnerar en halv lista`);
+        return { ok: false, status: 0, retryAfter: null, error: "too many pages" };
       }
       return { ok: true, data: merged };
     }
@@ -15458,64 +15472,97 @@
 
   // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/bridge.ts
   var FLUSH_MS = 3e3;
+  var RETRY_MS2 = 6e4;
   function startBridge(deps) {
-    const queue = {
-      showAdd: [],
-      showRemove: [],
-      movieAdd: [],
-      movieRemove: [],
-      watched: [],
-      unwatched: []
-    };
+    const queue = /* @__PURE__ */ new Map();
     let timer2 = null;
+    let flushing = false;
     const toRemote = (e) => ({ tmdbId: e.tmdbId, imdbId: e.imdbId ?? null, title: e.title, posterUrl: null });
-    async function flush() {
-      timer2 = null;
-      const batch = { ...queue };
-      for (const key of Object.keys(queue)) queue[key] = [];
-      const send = async (path, body, what, critical) => {
-        const result = await deps.api.call("POST", path, { body });
-        if (!result.ok) deps.log(`brygga: ${what} misslyckades (${result.error})${critical ? " \u2014 BORTTAGNINGEN N\xC5DDE INTE MDBLIST" : ""}`);
-      };
-      if (batch.showAdd.length) await send("/watchlist/items/add", buildWatchlistPayload(batch.showAdd, "show"), "serier +", false);
-      if (batch.movieAdd.length) await send("/watchlist/items/add", buildWatchlistPayload(batch.movieAdd, "movie"), "filmer +", false);
-      if (batch.showRemove.length) await send("/watchlist/items/remove", buildWatchlistPayload(batch.showRemove, "show"), "serier -", true);
-      if (batch.movieRemove.length) await send("/watchlist/items/remove", buildWatchlistPayload(batch.movieRemove, "movie"), "filmer -", true);
-      if (batch.watched.length) await send("/sync/watched", buildWatchedPayload(batch.watched), "sedda +", false);
-      if (batch.unwatched.length) await send("/sync/watched/remove", buildWatchedPayload(batch.unwatched), "sedda -", true);
-    }
-    function arm() {
+    const watchedKey = (p) => p.kind === "episode" ? `e:${p.tmdbId}:${p.season}:${p.episode}` : `m:${p.tmdbId ?? p.imdbId}`;
+    function arm(ms) {
       if (timer2 != null) deps.cancel(timer2);
       timer2 = deps.schedule(() => {
         void flush();
-      }, FLUSH_MS);
+      }, ms);
+    }
+    function enqueue(key, pending3) {
+      queue.set(key, pending3);
+      arm(FLUSH_MS);
+    }
+    async function flush() {
+      timer2 = null;
+      if (flushing) {
+        arm(FLUSH_MS);
+        return;
+      }
+      flushing = true;
+      const batch = new Map(queue);
+      queue.clear();
+      const retry = [];
+      const send = async (path, body, entries, what, critical) => {
+        const result = await deps.api.call("POST", path, { body });
+        if (result.ok) return;
+        if (critical) {
+          deps.log(`brygga: ${what} misslyckades (${result.error}) \u2014 f\xF6rs\xF6ker igen`);
+          retry.push(...entries);
+        } else {
+          deps.log(`brygga: ${what} misslyckades (${result.error}) \u2014 n\xE4sta synk tar det`);
+        }
+      };
+      try {
+        const pick2 = (kind, add) => [...batch].filter(([, p]) => p.kind === kind && p.add === add);
+        for (const kind of ["show", "movie"]) {
+          for (const add of [true, false]) {
+            const entries = pick2(kind, add);
+            if (entries.length === 0) continue;
+            const list = entries.map(([, p]) => p.entry);
+            await send(
+              add ? "/watchlist/items/add" : "/watchlist/items/remove",
+              buildWatchlistPayload(list, kind),
+              entries,
+              `${kind === "show" ? "serier" : "filmer"} ${add ? "+" : "-"}`,
+              !add
+            );
+          }
+        }
+        for (const add of [true, false]) {
+          const entries = pick2("watched", add);
+          if (entries.length === 0) continue;
+          const pushes = entries.map(([, p]) => p.push);
+          await send(add ? "/sync/watched" : "/sync/watched/remove", buildWatchedPayload(pushes), entries, `sedda ${add ? "+" : "-"}`, !add);
+        }
+      } finally {
+        flushing = false;
+      }
+      for (const [key, pending3] of retry) if (!queue.has(key)) queue.set(key, pending3);
+      if (queue.size > 0) {
+        const wait = Math.max(retry.length > 0 ? RETRY_MS2 : FLUSH_MS, deps.api.pausedUntil() - deps.now());
+        arm(wait);
+      }
     }
     const offs = [
       deps.subscribe.onShow((m) => {
         if (!deps.isUserMutation(m.source) || !deps.prefs.isOn("watchlist")) return;
-        (m.action === "add" ? queue.showAdd : queue.showRemove).push(toRemote(m.entry));
-        arm();
+        enqueue(`s:${m.entry.tmdbId}`, { kind: "show", add: m.action === "add", entry: toRemote(m.entry) });
       }),
       deps.subscribe.onMovie((m) => {
         if (!deps.isUserMutation(m.source) || !deps.prefs.isOn("watchlist")) return;
-        (m.action === "add" ? queue.movieAdd : queue.movieRemove).push(toRemote(m.entry));
-        arm();
+        enqueue(`f:${m.entry.tmdbId}`, { kind: "movie", add: m.action === "add", entry: toRemote(m.entry) });
       }),
       deps.subscribe.onEpisodeWatched((m) => {
         if (!deps.isUserMutation(m.source) || !deps.prefs.isOn("watched")) return;
-        const push = { kind: "episode", tmdbId: m.tmdbId, season: m.season, episode: m.episode, watchedAt: m.watchedAt ?? (/* @__PURE__ */ new Date()).toISOString() };
-        (m.watched ? queue.watched : queue.unwatched).push(push);
-        arm();
+        const push = { kind: "episode", tmdbId: m.tmdbId, season: m.season, episode: m.episode, watchedAt: m.watchedAt ?? new Date(deps.now()).toISOString() };
+        enqueue(watchedKey(push), { kind: "watched", add: m.watched, push });
       }),
       deps.subscribe.onMovieWatched((m) => {
         if (!deps.isUserMutation(m.source) || !deps.prefs.isOn("watched")) return;
         const push = { kind: "movie", tmdbId: m.entry.tmdbId ?? null, imdbId: m.entry.imdbId ?? null, watchedAt: m.entry.watchedAt };
-        (m.action === "add" ? queue.watched : queue.unwatched).push(push);
-        arm();
+        enqueue(watchedKey(push), { kind: "watched", add: m.action === "add", push });
       })
     ];
     return () => {
       if (timer2 != null) deps.cancel(timer2);
+      queue.clear();
       for (const off of offs) off();
     };
   }
@@ -15523,16 +15570,20 @@
   // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/device-auth.ts
   var DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
   var REFRESH_MARGIN_MS = 24 * 60 * 6e4;
+  var REFRESH_BACKOFF_MS = 5 * 6e4;
   var DEFAULT_INTERVAL_S = 5;
   var DEFAULT_EXPIRES_S = 300;
   var DEFAULT_TOKEN_LIFETIME_S = 30 * 24 * 60 * 60;
   var str = (v) => typeof v === "string" && v ? v : null;
   var num = (v, fallback) => typeof v === "number" && Number.isFinite(v) ? v : fallback;
   function createDeviceAuth(deps) {
+    const scopeNow = () => deps.scopeId?.() ?? "";
     let state = { phase: "idle" };
     let timer2 = null;
     let generation = 0;
     let refreshing = null;
+    let authEpoch = 0;
+    let lastRefreshFailAt = -Infinity;
     const listeners = /* @__PURE__ */ new Set();
     const set = (next) => {
       state = next;
@@ -15551,9 +15602,13 @@
       if (timer2 != null) deps.cancel(timer2);
       timer2 = null;
     }
-    async function poll(run, deviceCode, intervalS, expiresAt) {
+    async function poll(run, deviceCode, intervalS, expiresAt, scope) {
       timer2 = null;
       if (run !== generation) return;
+      if (scopeNow() !== scope) {
+        cancel();
+        return;
+      }
       if (deps.now() >= expiresAt) {
         deps.log("enhetskod: gick ut utan godk\xE4nnande");
         set({ ...state, phase: "expired" });
@@ -15561,6 +15616,10 @@
       }
       const reply = await deps.oauth("token", { grant_type: DEVICE_GRANT, device_code: deviceCode, client_id: deps.clientId });
       if (run !== generation) return;
+      if (scopeNow() !== scope) {
+        cancel();
+        return;
+      }
       const token = tokenFrom(reply.data);
       if (token) {
         deps.writeToken(token);
@@ -15584,7 +15643,7 @@
       }
       const nextInterval = error === "slow_down" ? intervalS + 5 : intervalS;
       timer2 = deps.schedule(() => {
-        void poll(run, deviceCode, nextInterval, expiresAt);
+        void poll(run, deviceCode, nextInterval, expiresAt, scope);
       }, nextInterval * 1e3);
     }
     async function start() {
@@ -15612,8 +15671,9 @@
         verificationUriComplete: str(reply.data.verification_uri_complete) ?? `${verificationUri}?user_code=${encodeURIComponent(userCode)}`,
         expiresAt
       });
+      const scope = scopeNow();
       timer2 = deps.schedule(() => {
-        void poll(run, deviceCode, intervalS, expiresAt);
+        void poll(run, deviceCode, intervalS, expiresAt, scope);
       }, intervalS * 1e3);
     }
     function cancel() {
@@ -15622,7 +15682,10 @@
       set({ phase: "idle" });
     }
     async function refresh(token) {
+      const scope = scopeNow();
+      const epoch = authEpoch;
       const reply = await deps.oauth("token", { grant_type: "refresh_token", refresh_token: token.refreshToken, client_id: deps.clientId });
+      if (epoch !== authEpoch || scopeNow() !== scope) return null;
       const next = tokenFrom(reply.data, token.refreshToken);
       if (next) {
         deps.writeToken(next);
@@ -15630,23 +15693,33 @@
         return next.accessToken;
       }
       if (str(reply.data.error) === "invalid_grant") {
+        const stored = deps.readToken();
+        if (stored && stored.refreshToken !== token.refreshToken) {
+          deps.log("token: f\xF6rnyad p\xE5 en annan enhet \u2014 anv\xE4nder den");
+          return stored.accessToken;
+        }
         deps.log("token: f\xF6rnyelsen avvisades (invalid_grant) \u2014 kopplar fr\xE5n");
         deps.writeToken(null);
         return null;
       }
-      deps.log(`token: f\xF6rnyelsen misslyckades (HTTP ${reply.status}) \u2014 f\xF6rs\xF6ker igen senare`);
+      lastRefreshFailAt = deps.now();
+      deps.log(`token: f\xF6rnyelsen misslyckades (HTTP ${reply.status}) \u2014 nytt f\xF6rs\xF6k om 5 min`);
       return deps.now() < token.expiresAt ? token.accessToken : null;
     }
     async function getAccessToken() {
       const token = deps.readToken();
       if (!token) return null;
       if (token.expiresAt - deps.now() > REFRESH_MARGIN_MS) return token.accessToken;
+      if (deps.now() - lastRefreshFailAt < REFRESH_BACKOFF_MS) {
+        return deps.now() < token.expiresAt ? token.accessToken : null;
+      }
       refreshing ?? (refreshing = refresh(token).finally(() => {
         refreshing = null;
       }));
       return refreshing;
     }
-    async function disconnect() {
+    async function disconnect2() {
+      authEpoch += 1;
       const token = deps.readToken();
       if (token) {
         await deps.oauth("revoke_token", { token: token.accessToken, client_id: deps.clientId }).catch(() => null);
@@ -15657,7 +15730,7 @@
     return {
       start,
       cancel,
-      disconnect,
+      disconnect: disconnect2,
       getAccessToken,
       hasToken: () => deps.readToken() != null,
       state: () => state,
@@ -15683,10 +15756,13 @@
   var str2 = (v) => typeof v === "string" && v.trim() ? v : null;
   var idStr = (v) => typeof v === "number" && Number.isFinite(v) ? String(v) : typeof v === "string" && /^\d+$/.test(v) ? v : null;
   function parseUser(data) {
-    if (!isObj(data)) return { username: null, supporter: false };
+    if (!isObj(data)) return { username: null, supporter: false, accountKey: null };
+    const username = str2(data.username) ?? str2(data.user_name) ?? str2(data.name);
+    const id = idStr(data.user_id);
     return {
-      username: str2(data.username) ?? str2(data.user_name) ?? str2(data.name),
-      supporter: data.is_supporter === true
+      username,
+      supporter: data.is_supporter === true,
+      accountKey: id ? `id:${id}` : username ? `user:${username}` : null
     };
   }
   function parseActivities(data) {
@@ -15867,6 +15943,7 @@
       connection: "none",
       username: null,
       supporter: false,
+      accountKey: null,
       lastSyncAt: null,
       lastChanges: 0,
       pausedUntil: 0,
@@ -15891,21 +15968,56 @@
 
   // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/sync-engine.ts
   var SNAPSHOT_KEY = "mdblist_sync_snapshot";
+  var SNAPSHOT_VERSION = 2;
   var WATCHED_PUSH_LIMIT_PER_RUN = 100;
   var WATCHED_BATCH = 100;
   var FULL_RUN_EVERY_MS = 24 * 60 * 6e4;
   var EMPTY_REMOTE_GUARD = 15;
+  var UNCONFIRMED_MAX_ATTEMPTS = 2;
+  var UNCONFIRMED_COOLDOWN_MS = 7 * 24 * 60 * 6e4;
+  var GATE_KEYS = {
+    watched: ["watched_at", "season_watched_at", "episode_watched_at"],
+    watchlist: ["watchlisted_at"]
+  };
   var SyncAbort = class extends Error {
     constructor(result) {
       super(result.error);
       __publicField(this, "result", result);
     }
   };
+  var ScopeChanged = class extends Error {
+  };
   function must(result) {
     if (!result.ok) throw new SyncAbort(result);
     return result.data;
   }
-  var running = false;
+  var episodeKey = (tmdbId, season, episode) => `e:${tmdbId}:${season}:${episode}`;
+  var movieKeys = (m) => [m.tmdbId ? `m:tmdb:${m.tmdbId}` : null, m.imdbId ? `m:imdb:${m.imdbId}` : null].filter((k) => k != null);
+  function hashKeys(keys2) {
+    let sum = 0;
+    for (const key of keys2) {
+      let h = 0;
+      for (let i = 0; i < key.length; i += 1) h = Math.imul(h, 31) + key.charCodeAt(i) | 0;
+      sum = (sum + (h >>> 0)) % 4294967296;
+    }
+    return `${keys2.length}:${sum}`;
+  }
+  function localWatchedKeys(host) {
+    return [
+      ...host.getWatchedEpisodes().map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
+      ...host.getWatchedMovies().map((m) => movieKeys(m)[0]).filter((k) => k != null)
+    ];
+  }
+  function readSnapshot(host, accountKey) {
+    const snap = host.readJson(SNAPSHOT_KEY);
+    if (!snap || snap.version !== SNAPSHOT_VERSION) return null;
+    if (snap.accountKey !== accountKey) {
+      host.log("synk: snapshoten h\xF6r till ett annat MDBList-konto \u2014 b\xF6rjar om som f\xF6rsta synk");
+      return null;
+    }
+    return snap;
+  }
+  var running = /* @__PURE__ */ new Set();
   async function runMdblistSync(deps, opts) {
     const { host, api: api2, prefs: prefs2 } = deps;
     const skip = (reason) => {
@@ -15913,32 +16025,41 @@
       return { status: "skipped", reason };
     };
     await host.waitForStartIdle();
-    if (running) return skip("en k\xF6rning p\xE5g\xE5r redan");
+    const scope = host.scopeId() ?? "";
+    if (running.has(scope)) return skip("en k\xF6rning p\xE5g\xE5r redan");
     const wantWatched = prefs2.isOn("watched");
     const wantWatchlist = prefs2.isOn("watchlist");
     if (!wantWatched && !wantWatchlist) return skip("inga reglage p\xE5slagna");
     if (!api2.hasAuth()) return skip("inte ansluten");
     if (api2.pausedUntil() > host.now()) return skip("MDBList har bett oss v\xE4nta (429)");
-    running = true;
+    const accountKey = host.accountKey();
+    if (!accountKey) return skip("kontot \xE4r inte bekr\xE4ftat \xE4n");
+    const guard = () => {
+      if ((host.scopeId() ?? "") !== scope) throw new ScopeChanged();
+    };
+    running.add(scope);
     try {
       const activities = parseActivities(must(await api2.call("GET", "/sync/last_activities")));
-      const snapshot = host.readJson(SNAPSHOT_KEY);
-      const remoteChanged = !snapshot || Object.entries(activities).some(([key, value]) => snapshot.activities[key] !== value);
+      const snapshot = readSnapshot(host, accountKey);
+      const changed = (keys2) => !snapshot || keys2.some((key) => snapshot.activities[key] !== activities[key]);
       const localShows = host.getShows();
       const localMovies = host.getMovies();
       const sameSet = (a, b) => a.length === b.length && a.every((id) => b.includes(id));
-      const watchlistDirty = wantWatchlist && (!snapshot || !sameSet(localShows.map((e) => e.tmdbId), snapshot.shows) || !sameSet(localMovies.map((e) => e.tmdbId), snapshot.movies));
-      const localWatchedCount = host.getWatchedEpisodes().length + host.getWatchedMovies().length;
-      const watchedDirty = wantWatched && opts.pushWatched && localWatchedCount !== (snapshot?.watchedLocalCount ?? -1);
-      const fullDue = !snapshot || host.now() - snapshot.fullAt > FULL_RUN_EVERY_MS;
-      if (!remoteChanged && !watchlistDirty && !watchedDirty && !fullDue) {
+      const newlyOn = (kind) => !snapshot || !snapshot.syncedKinds[kind];
+      const watchlistDue = wantWatchlist && (newlyOn("watchlist") || changed(GATE_KEYS.watchlist) || !sameSet(localShows.map((e) => e.tmdbId), snapshot?.shows ?? []) || !sameSet(localMovies.map((e) => e.tmdbId), snapshot?.movies ?? []));
+      const localHash = hashKeys(localWatchedKeys(host));
+      const watchedDue = wantWatched && (newlyOn("watched") || changed(GATE_KEYS.watched) || opts.pushWatched && (snapshot?.watchedPending === true || localHash !== snapshot?.watchedHash));
+      const fullDue = !snapshot || Math.abs(host.now() - snapshot.fullAt) > FULL_RUN_EVERY_MS;
+      if (!watchlistDue && !watchedDue && !fullDue) {
         host.log(`synk (${opts.reason}): inget nytt \u2014 ett anrop`);
         return { status: "unchanged" };
       }
+      const doWatchlist = wantWatchlist && (watchlistDue || fullDue);
+      const doWatched = wantWatched && (watchedDue || fullDue);
       let changes = 0;
       let nextShows = snapshot?.shows ?? [];
       let nextMovies = snapshot?.movies ?? [];
-      if (wantWatchlist) {
+      if (doWatchlist) {
         const remote = parseWatchlist(must(await api2.getAllPages("/watchlist/items", { limit: 100 })));
         const snapCount = (snapshot?.shows.length ?? 0) + (snapshot?.movies.length ?? 0);
         if (remote.shows.length + remote.movies.length === 0 && snapCount > EMPTY_REMOTE_GUARD) {
@@ -15946,56 +16067,116 @@
         } else {
           const showPlan = host.planWatchlistSync(localShows, remote.shows, snapshot?.shows ?? null, "merge", { keepLocal: true });
           const moviePlan = host.planWatchlistSync(localMovies, remote.movies, snapshot?.movies ?? null, "merge");
+          let pushed = false;
           for (const [kind, plan] of [["show", showPlan], ["movie", moviePlan]]) {
-            if (plan.pushAdds.length) must(await api2.call("POST", "/watchlist/items/add", { body: buildWatchlistPayload(plan.pushAdds, kind) }));
-            if (plan.pushRemoves.length) must(await api2.call("POST", "/watchlist/items/remove", { body: buildWatchlistPayload(plan.pushRemoves, kind) }));
+            if (plan.pushAdds.length) {
+              must(await api2.call("POST", "/watchlist/items/add", { body: buildWatchlistPayload(plan.pushAdds, kind) }));
+              pushed = true;
+            }
+            if (plan.pushRemoves.length) {
+              must(await api2.call("POST", "/watchlist/items/remove", { body: buildWatchlistPayload(plan.pushRemoves, kind) }));
+              pushed = true;
+            }
+            guard();
             for (const entry of plan.localAdds) (kind === "show" ? host.addShow : host.addMovie)(entry);
             for (const id of plan.localRemoveIds) (kind === "show" ? host.removeShow : host.removeMovie)(id);
             changes += plan.pushAdds.length + plan.pushRemoves.length + plan.localAdds.length + plan.localRemoveIds.length;
             host.log(`watchlist ${kind}: upp +${plan.pushAdds.length}/-${plan.pushRemoves.length}, ner +${plan.localAdds.length}/-${plan.localRemoveIds.length}`);
           }
-          const confirmed = parseWatchlist(must(await api2.getAllPages("/watchlist/items", { limit: 100 })));
+          const confirmed = pushed ? parseWatchlist(must(await api2.getAllPages("/watchlist/items", { limit: 100 }))) : remote;
           const confirmedShows = new Set(confirmed.shows.map((e) => e.tmdbId));
           const confirmedMovies = new Set(confirmed.movies.map((e) => e.tmdbId));
           nextShows = showPlan.nextIds.filter((id) => confirmedShows.has(id));
           nextMovies = moviePlan.nextIds.filter((id) => confirmedMovies.has(id));
         }
       }
-      if (wantWatched) {
+      let watchedPending = snapshot?.watchedPending ?? false;
+      const unconfirmed = { ...snapshot?.unconfirmed ?? {} };
+      if (doWatched) {
         const remote = parseWatched(must(await api2.getAllPages("/sync/watched", { limit: 1e3 })));
-        for (const ep of remote.episodes) host.markEpisodeWatched(ep.tmdbId, ep.season, ep.episode, ep.watchedAt);
-        for (const movie of remote.movies) host.markMovieWatched(movie);
+        const remoteKeys = /* @__PURE__ */ new Set([
+          ...remote.episodes.map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
+          ...remote.movies.flatMap((m) => movieKeys(m))
+        ]);
+        for (const key of Object.keys(unconfirmed)) if (remoteKeys.has(key)) delete unconfirmed[key];
+        const localEpisodes = host.getWatchedEpisodes();
+        const localMovieList = host.getWatchedMovies();
+        const localKeys = /* @__PURE__ */ new Set([
+          ...localEpisodes.map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
+          ...localMovieList.flatMap((m) => movieKeys(m))
+        ]);
+        guard();
+        let pulled = 0;
+        for (const ep of remote.episodes) {
+          if (localKeys.has(episodeKey(ep.tmdbId, ep.season, ep.episode))) continue;
+          host.markEpisodeWatched(ep.tmdbId, ep.season, ep.episode, ep.watchedAt);
+          pulled += 1;
+        }
+        for (const movie of remote.movies) {
+          if (movieKeys(movie).some((key) => localKeys.has(key))) continue;
+          host.markMovieWatched(movie);
+          pulled += 1;
+        }
+        changes += pulled;
+        const now = host.now();
+        const blocked = (key) => {
+          const entry = unconfirmed[key];
+          return entry != null && entry.attempts >= UNCONFIRMED_MAX_ATTEMPTS && now - entry.lastAt < UNCONFIRMED_COOLDOWN_MS;
+        };
+        const candidates = [
+          ...localEpisodes.flatMap((e) => {
+            const key = episodeKey(e.tmdbId, e.season, e.episode);
+            if (!e.watchedAt || remoteKeys.has(key) || blocked(key)) return [];
+            return [{ key, push: { kind: "episode", tmdbId: e.tmdbId, season: e.season, episode: e.episode, watchedAt: e.watchedAt } }];
+          }),
+          ...localMovieList.flatMap((m) => {
+            const keys2 = movieKeys(m);
+            if (keys2.length === 0 || !m.watchedAt || keys2.some((k) => remoteKeys.has(k)) || blocked(keys2[0])) return [];
+            return [{ key: keys2[0], push: { kind: "movie", tmdbId: m.tmdbId ?? null, imdbId: m.imdbId ?? null, watchedAt: m.watchedAt } }];
+          })
+        ];
         if (opts.pushWatched) {
-          const remoteEp = new Set(remote.episodes.map((e) => `${e.tmdbId}-${e.season}-${e.episode}`));
-          const remoteMovie = new Set(remote.movies.flatMap((m) => [m.tmdbId && `tmdb:${m.tmdbId}`, m.imdbId && `imdb:${m.imdbId}`].filter(Boolean)));
-          const now = new Date(host.now()).toISOString();
-          const pushes = [
-            ...host.getWatchedEpisodes().filter((e) => !remoteEp.has(`${e.tmdbId}-${e.season}-${e.episode}`)).map((e) => ({ kind: "episode", tmdbId: e.tmdbId, season: e.season, episode: e.episode, watchedAt: e.watchedAt ?? now })),
-            ...host.getWatchedMovies().filter((m) => (m.tmdbId || m.imdbId) && !remoteMovie.has(`tmdb:${m.tmdbId}`) && !remoteMovie.has(`imdb:${m.imdbId}`)).map((m) => ({ kind: "movie", tmdbId: m.tmdbId ?? null, imdbId: m.imdbId ?? null, watchedAt: m.watchedAt }))
-          ].slice(0, WATCHED_PUSH_LIMIT_PER_RUN);
-          for (let i = 0; i < pushes.length; i += WATCHED_BATCH) {
-            must(await api2.call("POST", "/sync/watched", { body: buildWatchedPayload(pushes.slice(i, i + WATCHED_BATCH)) }));
+          const batch = candidates.slice(0, WATCHED_PUSH_LIMIT_PER_RUN);
+          for (let i = 0; i < batch.length; i += WATCHED_BATCH) {
+            must(await api2.call("POST", "/sync/watched", { body: buildWatchedPayload(batch.slice(i, i + WATCHED_BATCH).map((c) => c.push)) }));
           }
-          changes += pushes.length;
-          host.log(`sedda: h\xE4mtade ${remote.episodes.length} avsnitt/${remote.movies.length} filmer, skickade ${pushes.length}`);
+          for (const { key } of batch) {
+            const prev = unconfirmed[key];
+            unconfirmed[key] = { attempts: (prev?.attempts ?? 0) + 1, lastAt: now };
+          }
+          changes += batch.length;
+          watchedPending = candidates.length > batch.length;
+          host.log(`sedda: h\xE4mtade ${pulled} nya, skickade ${batch.length}${watchedPending ? `, ${candidates.length - batch.length} v\xE4ntar` : ""}`);
         } else {
-          host.log(`sedda: h\xE4mtade ${remote.episodes.length} avsnitt/${remote.movies.length} filmer (bara h\xE4mtning)`);
+          watchedPending = candidates.length > 0;
+          host.log(`sedda: h\xE4mtade ${pulled} nya (bara h\xE4mtning${watchedPending ? `, ${candidates.length} v\xE4ntar p\xE5 att skickas` : ""})`);
         }
       }
-      const finalActivities = parseActivities(must(await api2.call("GET", "/sync/last_activities")));
+      guard();
       host.writeJson(SNAPSHOT_KEY, {
+        version: SNAPSHOT_VERSION,
+        accountKey,
         shows: nextShows,
         movies: nextMovies,
-        activities: finalActivities,
-        watchedLocalCount: host.getWatchedEpisodes().length + host.getWatchedMovies().length,
-        fullAt: host.now(),
+        // De FÖRSTA stämplarna: en ändring på mdblist.com under körningen syns
+        // då nästa gång. Våra egna skrivningar kostar som mest en extra hämtning.
+        activities,
+        syncedKinds: { watched: wantWatched, watchlist: wantWatchlist },
+        watchedHash: hashKeys(localWatchedKeys(host)),
+        watchedPending,
+        unconfirmed,
+        fullAt: fullDue ? host.now() : snapshot?.fullAt ?? host.now(),
         syncedAt: host.now()
       });
       host.log(`synk (${opts.reason}) klar: ${changes} \xE4ndringar`);
       return { status: "done", changes };
     } catch (error) {
+      if (error instanceof ScopeChanged) {
+        host.log(`synk (${opts.reason}) AVBRUTEN: profilen byttes mitt i k\xF6rningen \u2014 inget mer skrivs`);
+        return { status: "skipped", reason: "profilbyte" };
+      }
       if (error instanceof SyncAbort) {
-        const authFailed = error.result.status === 401 || error.result.status === 403;
+        const authFailed = error.result.status === 401;
         host.log(`synk (${opts.reason}) AVBRUTEN: ${error.result.error} \u2014 snapshot or\xF6rd, samma diff f\xF6rs\xF6ks igen`);
         return { status: "failed", error: error.result.error, authFailed };
       }
@@ -16003,7 +16184,7 @@
       host.log(`synk (${opts.reason}) AVBRUTEN: ${message}`);
       return { status: "failed", error: message, authFailed: false };
     } finally {
-      running = false;
+      running.delete(scope);
     }
   }
 
@@ -16094,8 +16275,14 @@
     cancel: (handle) => window.clearTimeout(handle),
     clientId: MDBLIST_CLIENT_ID,
     log,
-    onConnected: () => checkConnection()
+    onConnected: () => checkConnection(),
+    scopeId: () => getActiveProfileId()
   });
+  async function disconnect() {
+    await device.disconnect();
+    removeScopedStorageItem(SNAPSHOT_KEY);
+    await checkConnection();
+  }
   var hasApiKey = () => getMdblistApiKey().trim().length > 0;
   var hasAuth = () => device.hasToken() || hasApiKey();
   var api = createMdblistApi({
@@ -16108,7 +16295,8 @@
     },
     hasAuth,
     now: () => Date.now(),
-    log
+    log,
+    onPause: (until) => status.set({ pausedUntil: until })
   });
   var scrobbler = createScrobbler({ api, prefs, now: () => Date.now(), log });
   var listSource = createListSource({ api, readJson, writeJson, now: () => Date.now(), log });
@@ -16129,22 +16317,29 @@
     writeJson,
     waitForStartIdle: () => waitForStartIdle2(),
     log,
-    now: () => Date.now()
+    now: () => Date.now(),
+    accountKey: () => status.get().accountKey,
+    scopeId: () => getActiveProfileId()
   };
   async function checkConnection() {
     if (!hasAuth()) {
-      status.set({ connection: "none", username: null, supporter: false });
+      status.set({ connection: "none", username: null, supporter: false, accountKey: null });
       return;
     }
-    status.set({ connection: "checking" });
+    const scope = getActiveProfileId();
+    const previous = status.get().connection;
+    if (previous === "none" || previous === "bad-key") status.set({ connection: "checking" });
     const result = await api.call("GET", "/user");
+    if (getActiveProfileId() !== scope) return;
     if (result.ok) {
       const user = parseUser(result.data);
-      status.set({ connection: "ok", username: user.username, supporter: user.supporter });
-    } else if (result.status === 401 || result.status === 403) {
-      status.set({ connection: "bad-key", username: null, supporter: false });
+      status.set({ connection: "ok", username: user.username, supporter: user.supporter, accountKey: user.accountKey });
+    } else if (result.status === 401) {
+      status.set({ connection: "bad-key", username: null, supporter: false, accountKey: null });
+    } else if (result.status === 429) {
+      status.set({ connection: previous === "checking" ? "ok" : previous, pausedUntil: api.pausedUntil() });
     } else {
-      status.set({ connection: "offline", pausedUntil: api.pausedUntil() });
+      status.set({ connection: "offline" });
     }
   }
   async function syncNow(opts) {
@@ -16184,6 +16379,9 @@
       void checkConnection();
     });
     const offProfileCheck = onProfileChanged(() => {
+      device.cancel();
+      status.set({ connection: "none", username: null, supporter: false, accountKey: null });
+      restartBridge();
       void checkConnection();
     });
     const stopScheduler = startScheduler({
@@ -16192,7 +16390,7 @@
       onPrefsChanged: (l) => onPrefsChanged(l),
       onProfileChanged: (l) => onProfileChanged(l)
     });
-    const stopBridge = startBridge({
+    const makeBridge = () => startBridge({
       subscribe: {
         onShow: (l) => onWatchlistMutation(l),
         onMovie: (l) => onMovieWatchlistMutation(l),
@@ -16203,14 +16401,21 @@
       prefs,
       isUserMutation,
       log,
+      now: () => Date.now(),
       schedule: (fn, ms) => window.setTimeout(fn, ms),
       cancel: (h) => window.clearTimeout(h)
     });
+    let stopBridge = makeBridge();
+    function restartBridge() {
+      stopBridge();
+      stopBridge = makeBridge();
+    }
     return () => {
       offAuthCheck();
       offProfileCheck();
       stopScheduler();
       stopBridge();
+      device.cancel();
     };
   }
 
@@ -16450,11 +16655,29 @@
     const [key, setKey] = useState(() => getMdblistApiKey());
     const [showKey, setShowKey] = useState(() => getMdblistApiKey().trim().length > 0 && !device.hasToken());
     useEffect(() => {
-      const offs = [status.subscribe(bump), device.subscribe(bump), onTick(bump), onRatingSourcesChanged(() => setKey(getMdblistApiKey()))];
+      const offs = [
+        status.subscribe(bump),
+        device.subscribe(bump),
+        onTick(bump),
+        onRatingSourcesChanged(() => setKey(getMdblistApiKey())),
+        // Profilbyte: fältet ska visa den nya profilens nyckel, och en osparad
+        // ändring får inte sparas in i den nya profilen vid blur.
+        onProfileChanged(() => {
+          setKey(getMdblistApiKey());
+          setShowKey(getMdblistApiKey().trim().length > 0 && !device.hasToken());
+        })
+      ];
       return () => {
         for (const off of offs) off();
       };
     }, []);
+    const pausedUntil = status.get().pausedUntil;
+    useEffect(() => {
+      const left = pausedUntil - Date.now();
+      if (left <= 0) return;
+      const timer2 = window.setTimeout(bump, left + 50);
+      return () => window.clearTimeout(timer2);
+    }, [pausedUntil]);
     const state = status.get();
     const flow = device.state();
     const authed = hasAuth();
@@ -16485,7 +16708,7 @@
           !device.hasToken() ? /* @__PURE__ */ jsx(PillBtn, { variant: "accent", onClick: () => {
             void device.start();
           }, children: tx(S.connect) }) : /* @__PURE__ */ jsx(PillBtn, { onClick: () => {
-            void device.disconnect().then(() => checkConnection());
+            void disconnect();
           }, children: tx(S.disconnect) }),
           !device.hasToken() && !showKey ? /* @__PURE__ */ jsx(PillBtn, { onClick: () => setShowKey(true), children: tx(S.useApiKey) }) : null
         ] }) : null,
@@ -16499,7 +16722,9 @@
                 value: key,
                 placeholder: tx(S.apiKeyPlaceholder),
                 onChange: (e) => setKey(e.target.value),
-                onBlur: () => setMdblistApiKey(key.trim()),
+                onBlur: () => {
+                  if (key.trim() !== getMdblistApiKey().trim()) setMdblistApiKey(key.trim());
+                },
                 onKeyDown: (e) => {
                   if (e.key === "Enter") {
                     setMdblistApiKey(key.trim());
@@ -16542,7 +16767,7 @@
           /* @__PURE__ */ jsx(ToggleRow, { title: tx(S.syncWatchlist), hint: tx(S.syncWatchlistHint), checked: on.watchlist, disabled: !ok, onChange: toggle("watchlist") })
         ] })
       ] }),
-      ok && paused ? /* @__PURE__ */ jsxs("div", { style: { padding: "10px 14px", borderRadius: 12, border: `1px solid ${TOKENS.warn}`, background: "rgba(243,201,105,.08)" }, children: [
+      connected && paused ? /* @__PURE__ */ jsxs("div", { style: { padding: "10px 14px", borderRadius: 12, border: `1px solid ${TOKENS.warn}`, background: "rgba(243,201,105,.08)" }, children: [
         /* @__PURE__ */ jsx("div", { style: { fontSize: 13, fontWeight: 600, color: TOKENS.warn }, children: tx(syncText(state, Date.now())) }),
         /* @__PURE__ */ jsx("div", { style: { fontSize: 12, lineHeight: 1.5, color: TOKENS.textDim, marginTop: 2 }, children: tx(S.pausedBody) })
       ] }) : ok ? /* @__PURE__ */ jsx(Card, { padding: "14px 18px", children: /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 16 }, children: [
@@ -16635,8 +16860,7 @@
     label: S.pluginName,
     getStatus,
     async disconnect() {
-      await device.disconnect();
-      await checkConnection();
+      await disconnect();
     },
     async trySilentReconnect() {
       return hasAuth() ? "success" : "needs_user_action";
@@ -16688,7 +16912,7 @@
             },
             cancelConnect: () => device.cancel(),
             disconnect: () => {
-              void device.disconnect().then(() => checkConnection());
+              void disconnect();
             }
           }
         ),
