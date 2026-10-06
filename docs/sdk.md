@@ -228,7 +228,9 @@ ctx.registerTracker?.({
 ```
 
 The host only calls a tracker with a usable id (and season and episode for
-episodes). It drops repeats of the same event within five seconds, and skips
+episodes). `event.pulse` is `true` for the player's 30-second pause pulse,
+which is not a user action. Trakt needs it to save a resume point, but a
+service that wants one call per action (SIMKL) should ignore pulses. It drops repeats of the same event within five seconds, and skips
 the tracker while its plugin is disabled. Scrobbling is fire-and-forget:
 nothing a tracker does can affect playback.
 
