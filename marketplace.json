@@ -164,6 +164,28 @@
       "minAppVersion": "0.1.622"
     },
     {
+      "id": "com.lumio.simkl",
+      "slug": "simkl",
+      "name": {
+        "en": "SIMKL",
+        "sv": "SIMKL"
+      },
+      "version": "0.1.0",
+      "description": {
+        "en": "Scrobble playback, sync watched titles and your watchlist with SIMKL, and show SIMKL lists as rows.",
+        "sv": "Scrobbla uppspelning, synka sedda titlar och watchlist med SIMKL, och visa SIMKL-listor som rader."
+      },
+      "path": "plugins/simkl",
+      "runtimeBundlePath": "dist/runtime.js",
+      "readmePath": "plugins/simkl/README.md",
+      "changelogPath": "plugins/simkl/CHANGELOG.md",
+      "official": true,
+      "bundled": true,
+      "removable": true,
+      "repoPath": "plugins/simkl",
+      "minAppVersion": "0.1.622"
+    },
+    {
       "id": "com.lumio.twitch",
       "slug": "twitch",
       "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
