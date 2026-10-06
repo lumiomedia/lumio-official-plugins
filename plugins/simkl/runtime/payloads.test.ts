@@ -22,7 +22,7 @@ describe('SIMKL-payloads', () => {
       { kind: 'episode', tmdbId: '1399', season: 1, episode: 2, watchedAt: 'T3' },
     ])).toEqual({
       movies: [{ ids: { tmdb: 603 }, watched_at: 'T1' }],
-      shows: [{ ids: { tmdb: 1399 }, seasons: [{ number: 1, episodes: [{ number: 1, watched_at: 'T2' }, { number: 2, watched_at: 'T3' }] }] }],
+      shows: [{ ids: { tmdb: 1399 }, use_tvdb_anime_seasons: true, seasons: [{ number: 1, episodes: [{ number: 1, watched_at: 'T2' }, { number: 2, watched_at: 'T3' }] }] }],
     })
   })
 

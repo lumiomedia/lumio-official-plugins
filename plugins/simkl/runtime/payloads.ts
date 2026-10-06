@@ -40,8 +40,11 @@ export function buildHistoryPayload(items: WatchedPush[]): { movies: object[]; s
   }
   return {
     movies,
+    // use_tvdb_anime_seasons: Lumio numrerar som TMDb/TVDB. Utan flaggan läser
+    // SIMKL anime-säsonger enligt AniDB, och fel avsnitt markeras.
     shows: [...shows.entries()].map(([tmdbId, seasons]) => ({
       ids: { tmdb: Number(tmdbId) },
+      use_tvdb_anime_seasons: true,
       seasons: [...seasons.entries()].map(([number, episodes]) => ({ number, episodes })),
     })),
   }
