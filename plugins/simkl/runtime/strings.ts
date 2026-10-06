@@ -36,6 +36,10 @@ export const S = {
   badgeNotConnected: { en: 'NOT CONNECTED', sv: 'EJ ANSLUTEN' },
   connect: { en: 'Connect with SIMKL', sv: 'Anslut med SIMKL' },
   disconnect: { en: 'Disconnect', sv: 'Koppla från' },
+  onboardingConnected: {
+    en: 'Connected. Your history and watchlist sync as soon as you finish setup.',
+    sv: 'Ansluten. Historik och watchlist synkas direkt när du är klar med guiden.',
+  },
   onboardingHint: {
     en: 'Scrobble playback and sync watched titles and your watchlist with SIMKL — movies, series and anime.',
     sv: 'Scrobbla uppspelning och synka sedda titlar och watchlist med SIMKL — filmer, serier och anime.',

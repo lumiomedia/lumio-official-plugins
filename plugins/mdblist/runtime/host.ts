@@ -217,6 +217,7 @@ export function startBackground(): () => void {
   })
   const stopScheduler = startScheduler({
     run: (opts) => syncNow(opts),
+    neverSynced: () => hasAuth() && status.get().lastSyncAt == null,
     onKeyChanged: (l) => onAuthChanged(l),
     onPrefsChanged: (l) => onPrefsChanged(l),
     onProfileChanged: (l) => onProfileChanged(l),

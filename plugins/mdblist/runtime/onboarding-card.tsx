@@ -35,7 +35,7 @@ export function MdblistOnboardingCard({ init }: PluginOnboardingCardProps) {
         <div style={{ minWidth: 0 }}>
           <p className="onb-card-title">MDBList</p>
           <p className="onb-hint" style={{ marginTop: 'calc(2 * var(--u))' }}>
-            {tx(connected ? S.connectedBody : S.onboardingHint)}
+            {tx(connected ? S.onboardingConnected : S.onboardingHint)}
           </p>
         </div>
         {connected ? (

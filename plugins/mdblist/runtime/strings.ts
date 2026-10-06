@@ -37,6 +37,10 @@ export const S = {
   badgeBadKey: { en: 'LOGGED OUT', sv: 'UTLOGGAD' },
   badgeNotConnected: { en: 'NOT CONNECTED', sv: 'EJ ANSLUTEN' },
   connect: { en: 'Connect with MDBList', sv: 'Anslut med MDBList' },
+  onboardingConnected: {
+    en: 'Connected. Your history and watchlist sync as soon as you finish setup.',
+    sv: 'Ansluten. Historik och watchlist synkas direkt när du är klar med guiden.',
+  },
   onboardingHint: {
     en: 'Scrobble playback and sync watched titles and your watchlist with MDBList. Lists from MDBList can become rows on Home.',
     sv: 'Scrobbla uppspelning och synka sedda titlar och watchlist med MDBList. Listor från MDBList kan bli rader på startsidan.',
