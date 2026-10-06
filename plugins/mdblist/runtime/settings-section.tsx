@@ -6,7 +6,7 @@ import {
   onProfileChanged, openExternalUrl, resolvePluginText, useLang,
 } from '@/lib/plugin-sdk'
 import { device, disconnect, hasAuth, isTraktConnected, onTick, prefs, prefsSnapshot, status, syncNow } from './host'
-import type { PrefKind } from './prefs'
+import type { PrefKind } from '../../_shared/tracker-kit/prefs'
 import { connectionTitle, countdown, syncText } from './rows'
 import { fillBoth, S, type Text } from './strings'
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ApiResult, MdblistApi } from './api'
-import { createPrefs } from './prefs'
+import { createPrefs } from '../../_shared/tracker-kit/prefs'
 import { runMdblistSync, SNAPSHOT_KEY, type SyncHost } from './sync-engine'
 import type { LocalEntry, RemoteEntry } from './types'
 
@@ -71,7 +71,7 @@ const prefsOn = (watched = true, watchlist = true) => {
   const data: Record<string, string> = {}
   if (watched) data.mdblist_sync_watched_enabled = '1'
   if (watchlist) data.mdblist_sync_watchlist_enabled = '1'
-  return createPrefs({ get: (k) => data[k] ?? null, set: (k, v) => { data[k] = v } }, () => {})
+  return createPrefs({ get: (k) => data[k] ?? null, set: (k, v) => { data[k] = v } }, () => {}, 'mdblist')
 }
 
 const ok = (data: unknown): ApiResult<unknown> => ({ ok: true, data })

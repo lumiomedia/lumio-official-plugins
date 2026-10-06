@@ -1,7 +1,7 @@
 import type { PluginSettingsRow } from '@/lib/plugin-sdk'
-import type { DeviceState } from './device-auth'
-import type { PrefKind } from './prefs'
-import type { StatusState } from './status'
+import type { DeviceState } from '../../_shared/tracker-kit/device-auth'
+import type { PrefKind } from '../../_shared/tracker-kit/prefs'
+import type { StatusState } from '../../_shared/tracker-kit/status'
 import { fillBoth, S, type Text } from './strings'
 
 export interface TvView {

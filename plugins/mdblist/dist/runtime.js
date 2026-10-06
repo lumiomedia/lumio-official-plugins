@@ -1788,6 +1788,11 @@
           plEditorHiddenEmpty: "Nothing hidden \u2014 click a control and use the eye to hide it.",
           plEditorControl: "Control",
           plEditorOrder: "Order",
+          plEditorFixedPlace: "Has a fixed place in this layout \u2014 it can only be hidden.",
+          plEditorLayoutDesktop: "Desktop",
+          plEditorLayoutTv: "TV",
+          plEditorLayoutLandscape: "Phone, landscape",
+          plEditorLayoutPortrait: "Phone, portrait",
           plEditorVisible: "Visible",
           plTimeFormatTitle: "Time format on the seek bar",
           plTimeElapsedTotal: "Elapsed and total",
@@ -5634,6 +5639,11 @@
           plEditorHiddenEmpty: "Inget dolt \u2014 klicka p\xE5 en kontroll och anv\xE4nd \xF6gat f\xF6r att d\xF6lja den.",
           plEditorControl: "Kontroll",
           plEditorOrder: "Ordning",
+          plEditorFixedPlace: "Har en fast plats i det h\xE4r lagret \u2014 den kan bara d\xF6ljas.",
+          plEditorLayoutDesktop: "Skrivbord",
+          plEditorLayoutTv: "TV",
+          plEditorLayoutLandscape: "Telefon, liggande",
+          plEditorLayoutPortrait: "Telefon, st\xE5ende",
           plEditorVisible: "Synlig",
           plTimeFormatTitle: "Tidsformat p\xE5 s\xF6kraden",
           plTimeElapsedTotal: "F\xF6rfluten och total",
@@ -13700,6 +13710,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -15344,7 +15355,7 @@
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     MdblistPlugin: () => MdblistPlugin
@@ -15352,10 +15363,10 @@
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/host.ts
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/api.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/api.ts
   var PROXY = "/api/plugins/mdblist/call";
   var DEFAULT_PAUSE_S = 60;
   var MAX_PAGES = 50;
@@ -15445,7 +15456,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/payloads.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/payloads.ts
   function toIds(tmdbId, imdbId) {
     const ids = {};
     const tmdb = tmdbId != null && /^\d+$/.test(tmdbId) ? Number(tmdbId) : null;
@@ -15492,7 +15503,7 @@
     return mediaType === "show" ? { shows: ids } : { movies: ids };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/bridge.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/bridge.ts
   var FLUSH_MS = 3e3;
   var RETRY_MS2 = 6e4;
   function startBridge(deps) {
@@ -15589,7 +15600,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/device-auth.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/_shared/tracker-kit/device-auth.ts
   var DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
   var REFRESH_MARGIN_MS = 24 * 60 * 6e4;
   var REFRESH_BACKOFF_MS = 5 * 6e4;
@@ -15636,13 +15647,19 @@
         set({ ...state, phase: "expired" });
         return;
       }
-      const reply = await deps.oauth("token", { grant_type: DEVICE_GRANT, device_code: deviceCode, client_id: deps.clientId });
+      const reply = await deps.transport.token({ grant_type: DEVICE_GRANT, device_code: deviceCode, client_id: deps.clientId });
       if (run !== generation) return;
       if (scopeNow() !== scope) {
         cancel();
         return;
       }
       const token = tokenFrom(reply.data);
+      const rejected = token ? deps.acceptToken?.(reply.data) ?? null : null;
+      if (token && rejected) {
+        deps.log(`enhetskod: token avvisad \u2014 ${rejected}`);
+        set({ phase: "error", error: rejected });
+        return;
+      }
       if (token) {
         deps.writeToken(token);
         deps.log("enhetskod: godk\xE4nd, token sparad");
@@ -15673,7 +15690,7 @@
       generation += 1;
       const run = generation;
       set({ phase: "waiting" });
-      const reply = await deps.oauth("device-authorization", { client_id: deps.clientId, scope: "write" });
+      const reply = await deps.transport.device({ client_id: deps.clientId, scope: deps.scope });
       if (run !== generation) return;
       const deviceCode = str(reply.data.device_code);
       const userCode = str(reply.data.user_code);
@@ -15706,7 +15723,7 @@
     async function refresh(token) {
       const scope = scopeNow();
       const epoch = authEpoch;
-      const reply = await deps.oauth("token", { grant_type: "refresh_token", refresh_token: token.refreshToken, client_id: deps.clientId });
+      const reply = await deps.transport.token({ grant_type: "refresh_token", refresh_token: token.refreshToken, client_id: deps.clientId });
       if (epoch !== authEpoch || scopeNow() !== scope) return null;
       const next = tokenFrom(reply.data, token.refreshToken);
       if (next) {
@@ -15744,7 +15761,7 @@
       authEpoch += 1;
       const token = deps.readToken();
       if (token) {
-        await deps.oauth("revoke_token", { token: token.accessToken, client_id: deps.clientId }).catch(() => null);
+        await deps.transport.revoke({ token: token.accessToken, client_id: deps.clientId }).catch(() => null);
       }
       deps.writeToken(null);
       cancel();
@@ -15765,7 +15782,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/list-ref.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/list-ref.ts
   function parseListRef(input) {
     const text = input.trim();
     if (/^\d+$/.test(text)) return { kind: "id", id: text };
@@ -15773,7 +15790,7 @@
     return match ? { kind: "slug", user: match[1], slug: match[2] } : null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/parse.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/parse.ts
   var isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
   var str2 = (v) => typeof v === "string" && v.trim() ? v : null;
   var idStr = (v) => typeof v === "number" && Number.isFinite(v) ? String(v) : typeof v === "string" && /^\d+$/.test(v) ? v : null;
@@ -15863,7 +15880,7 @@
     });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/strings.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/strings.ts
   var S = {
     pluginName: { en: "MDBList", sv: "MDBList" },
     listSourceLabel: { en: "MDBList list", sv: "MDBList-lista" },
@@ -15995,7 +16012,7 @@
     return { en: fill2(text.en, values), sv: fill2(text.sv, values) };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/list-source.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/list-source.ts
   var FRESH_MS = 6 * 60 * 6e4;
   var WATCHLIST_ID = "watchlist";
   function itemsPath(id) {
@@ -16093,23 +16110,26 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/prefs.ts
-  var PREF_KEYS = {
-    scrobble: "mdblist_scrobble_enabled",
-    watched: "mdblist_sync_watched_enabled",
-    watchlist: "mdblist_sync_watchlist_enabled"
-  };
-  function createPrefs(storage, onChange) {
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/_shared/tracker-kit/prefs.ts
+  function prefKeys(prefix) {
     return {
-      isOn: (kind) => storage.get(PREF_KEYS[kind]) === "1",
+      scrobble: `${prefix}_scrobble_enabled`,
+      watched: `${prefix}_sync_watched_enabled`,
+      watchlist: `${prefix}_sync_watchlist_enabled`
+    };
+  }
+  function createPrefs(storage, onChange, prefix) {
+    const keys2 = prefKeys(prefix);
+    return {
+      isOn: (kind) => storage.get(keys2[kind]) === "1",
       setOn: (kind, on) => {
-        storage.set(PREF_KEYS[kind], on ? "1" : "0");
+        storage.set(keys2[kind], on ? "1" : "0");
         onChange();
       }
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/scheduler.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/_shared/tracker-kit/scheduler.ts
   var INITIAL_DELAY_MS = 5e4;
   var INTERVAL_MS = 15 * 6e4;
   function startScheduler(deps) {
@@ -16137,7 +16157,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/status.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/_shared/tracker-kit/status.ts
   function createStatus(initial) {
     let state = {
       connection: "none",
@@ -16166,7 +16186,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/sync-engine.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/sync-engine.ts
   var SNAPSHOT_KEY = "mdblist_sync_snapshot";
   var SNAPSHOT_VERSION = 2;
   var WATCHED_PUSH_LIMIT_PER_RUN = 100;
@@ -16388,7 +16408,7 @@
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/tracker.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/tracker.ts
   var DUPLICATE_WINDOW_MS = 5e3;
   function createScrobbler(deps) {
     let lastKey = "";
@@ -16407,7 +16427,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/host.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/host.ts
   var MDBLIST_CLIENT_ID = "COMQozk02g5TQOKSNLV3Xwccb675R0c1SycYHM0j";
   var PREFS_EVENT = "lumio-mdblist-prefs-changed";
   var AUTH_EVENT = "lumio-mdblist-auth-changed";
@@ -16433,7 +16453,8 @@
   };
   var prefs = createPrefs(
     { get: (k) => getScopedStorageItem(k), set: (k, v) => setScopedStorageItem(k, v) },
-    () => emit3(PREFS_EVENT)
+    () => emit3(PREFS_EVENT),
+    "mdblist"
   );
   var onPrefsChanged = (listener) => listen3(PREFS_EVENT, listener);
   var onAuthChanged = (listener) => listen3(AUTH_EVENT, listener);
@@ -16458,7 +16479,12 @@
     }
   }
   var device = createDeviceAuth({
-    oauth,
+    transport: {
+      device: (form) => oauth("device-authorization", form),
+      token: (form) => oauth("token", form),
+      revoke: (form) => oauth("revoke_token", form)
+    },
+    scope: "write",
     readToken: () => readJson(TOKEN_KEY),
     writeToken: (token) => {
       if (token) writeJson(TOKEN_KEY, token);
@@ -16611,7 +16637,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/rows.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/rows.ts
   var clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   function countdown(msLeft) {
     const s = Math.max(0, Math.ceil(msLeft / 1e3));
@@ -16705,11 +16731,11 @@
     return rows;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/onboarding-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/onboarding-card.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -16876,7 +16902,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/onboarding-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/onboarding-card.tsx
   init_jsx_runtime_shim();
   function MdblistOnboardingCard({ init }) {
     const { lang } = useLang();
@@ -16939,7 +16965,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/mdblist/plugins/mdblist/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/mdblist/runtime/index.ts
   function getStatus() {
     const state = status.get();
     const base = { canConnect: true, requiresUserGesture: true, supportsSilentReconnect: false };

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { MdblistApi } from './api'
-import { createPrefs } from './prefs'
+import { createPrefs } from '../../_shared/tracker-kit/prefs'
 import { createScrobbler } from './tracker'
 import type { ScrobbleEvent } from './types'
 
@@ -16,7 +16,7 @@ const ev = (over: Partial<ScrobbleEvent> = {}): ScrobbleEvent => ({
 function setup(on = true) {
   let clock = 0
   const call = vi.fn(async () => ({ ok: true as const, data: null }))
-  const prefs = createPrefs(memoryStorage(on ? { mdblist_scrobble_enabled: '1' } : {}), () => {})
+  const prefs = createPrefs(memoryStorage(on ? { mdblist_scrobble_enabled: '1' } : {}), () => {}, 'mdblist')
   const scrobble = createScrobbler({
     api: { call: call as unknown as MdblistApi['call'], getAllPages: vi.fn(), pausedUntil: () => 0, hasAuth: () => true },
     prefs, now: () => clock, log: () => {},
@@ -26,7 +26,7 @@ function setup(on = true) {
 
 describe('scrobble-trackern', () => {
   it('reglagen är av som standard', () => {
-    const prefs = createPrefs(memoryStorage(), () => {})
+    const prefs = createPrefs(memoryStorage(), () => {}, 'mdblist')
     expect(prefs.isOn('scrobble')).toBe(false)
     expect(prefs.isOn('watched')).toBe(false)
     expect(prefs.isOn('watchlist')).toBe(false)

@@ -1,6 +1,6 @@
 import type { MdblistApi } from './api'
 import { buildScrobblePayload } from './payloads'
-import type { Prefs } from './prefs'
+import type { Prefs } from '../../_shared/tracker-kit/prefs'
 import type { ScrobbleEvent } from './types'
 
 const DUPLICATE_WINDOW_MS = 5_000

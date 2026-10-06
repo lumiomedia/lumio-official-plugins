@@ -10,12 +10,12 @@ import {
 } from '@/lib/plugin-sdk'
 import { createMdblistApi, type ApiAuth } from './api'
 import { startBridge } from './bridge'
-import { createDeviceAuth, type OauthToken } from './device-auth'
+import { createDeviceAuth, type OauthToken } from '../../_shared/tracker-kit/device-auth'
 import { createListSource } from './list-source'
 import { parseUser } from './parse'
-import { createPrefs, type PrefKind } from './prefs'
-import { startScheduler } from './scheduler'
-import { createStatus } from './status'
+import { createPrefs, type PrefKind } from '../../_shared/tracker-kit/prefs'
+import { startScheduler } from '../../_shared/tracker-kit/scheduler'
+import { createStatus } from '../../_shared/tracker-kit/status'
 import { runMdblistSync, SNAPSHOT_KEY, type SyncHost } from './sync-engine'
 import { createScrobbler } from './tracker'
 
@@ -50,6 +50,7 @@ const listen = (name: string, listener: () => void) => {
 export const prefs = createPrefs(
   { get: (k) => getScopedStorageItem(k), set: (k, v) => setScopedStorageItem(k, v) },
   () => emit(PREFS_EVENT),
+  'mdblist',
 )
 export const onPrefsChanged = (listener: () => void) => listen(PREFS_EVENT, listener)
 
@@ -78,7 +79,12 @@ async function oauth(endpoint: 'device-authorization' | 'token' | 'revoke_token'
 }
 
 export const device = createDeviceAuth({
-  oauth,
+  transport: {
+    device: (form) => oauth('device-authorization', form),
+    token: (form) => oauth('token', form),
+    revoke: (form) => oauth('revoke_token', form),
+  },
+  scope: 'write',
   readToken: () => readJson<OauthToken>(TOKEN_KEY),
   writeToken: (token) => {
     if (token) writeJson(TOKEN_KEY, token)

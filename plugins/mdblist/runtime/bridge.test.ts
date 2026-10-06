@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MdblistApi } from './api'
 import { startBridge, type BridgeDeps } from './bridge'
-import { createPrefs } from './prefs'
+import { createPrefs } from '../../_shared/tracker-kit/prefs'
 
 type Listener<T> = (m: T) => void
 
@@ -17,7 +17,7 @@ function setup(callImpl?: (path: string) => { ok: boolean }) {
       onMovieWatched: (l) => { listeners.mw = l; return () => {} },
     },
     api: { call: call as unknown as MdblistApi['call'], getAllPages: vi.fn(), pausedUntil: () => 0, hasAuth: () => true },
-    prefs: createPrefs({ get: (k) => data[k] ?? null, set: (k, v) => { data[k] = v } }, () => {}),
+    prefs: createPrefs({ get: (k) => data[k] ?? null, set: (k, v) => { data[k] = v } }, () => {}, 'mdblist'),
     isUserMutation: (s) => s === 'local',
     log: () => {},
     now: () => Date.now(),

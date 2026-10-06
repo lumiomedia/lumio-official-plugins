@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: false,
-    include: ['runtime/**/*.test.{ts,tsx}'],
+    include: ['runtime/**/*.test.{ts,tsx}', '../_shared/tracker-kit/**/*.test.ts'],
   },
 })

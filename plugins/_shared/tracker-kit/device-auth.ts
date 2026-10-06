@@ -1,10 +1,17 @@
-/// Anslutning med enhetskod (OAuth Device Code), som Trakt: MDBList ger en
-/// kod, användaren godkänner på mdblist.com (QR-koden har koden ifylld), och
-/// vi pollar tills token kommer. Token gäller i 30 dagar och förnyas när
-/// mindre än ett dygn återstår. Se specen, "Anslutning".
+/// Anslutning med enhetskod (OAuth 2.0 Device Code, RFC 8628) — delad av
+/// tracker-pluginen (MDBList, SIMKL). Tjänsten ger en kod, användaren godkänner
+/// på tjänstens sida (QR-koden har koden ifylld), och vi pollar tills token
+/// kommer. Token förnyas när mindre än ett dygn återstår. Hur anropen når
+/// tjänsten (proxy eller direkt) är pluginets sak: `transport`.
 
-export type OauthEndpoint = 'device-authorization' | 'token' | 'revoke_token'
 export type OauthReply = { status: number; data: Record<string, unknown> }
+
+/** Tjänstens tre OAuth-anrop, som formulär. */
+export interface OauthTransport {
+  device(form: Record<string, string>): Promise<OauthReply>
+  token(form: Record<string, string>): Promise<OauthReply>
+  revoke(form: Record<string, string>): Promise<OauthReply>
+}
 
 export interface OauthToken {
   accessToken: string
@@ -34,7 +41,14 @@ const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : nul
 const num = (v: unknown, fallback: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
 
 export function createDeviceAuth(deps: {
-  oauth(endpoint: OauthEndpoint, form: Record<string, string>): Promise<OauthReply>
+  transport: OauthTransport
+  /** Begärd behörighet (MDBList: `write`, SIMKL: `media:read media:write`). */
+  scope: string
+  /**
+   * Godtas token? Returnerar ett felmeddelande om inte — t.ex. när tjänsten
+   * gav lägre behörighet än begärt. Fasen blir då `error`, inget sparas.
+   */
+  acceptToken?(data: Record<string, unknown>): string | null
   readToken(): OauthToken | null
   writeToken(token: OauthToken | null): void
   now(): number
@@ -86,10 +100,16 @@ export function createDeviceAuth(deps: {
       set({ ...state, phase: 'expired' })
       return
     }
-    const reply = await deps.oauth('token', { grant_type: DEVICE_GRANT, device_code: deviceCode, client_id: deps.clientId })
+    const reply = await deps.transport.token({ grant_type: DEVICE_GRANT, device_code: deviceCode, client_id: deps.clientId })
     if (run !== generation) return
     if (scopeNow() !== scope) { cancel(); return }
     const token = tokenFrom(reply.data)
+    const rejected = token ? deps.acceptToken?.(reply.data) ?? null : null
+    if (token && rejected) {
+      deps.log(`enhetskod: token avvisad — ${rejected}`)
+      set({ phase: 'error', error: rejected })
+      return
+    }
     if (token) {
       deps.writeToken(token)
       deps.log('enhetskod: godkänd, token sparad')
@@ -114,7 +134,7 @@ export function createDeviceAuth(deps: {
     generation += 1
     const run = generation
     set({ phase: 'waiting' })
-    const reply = await deps.oauth('device-authorization', { client_id: deps.clientId, scope: 'write' })
+    const reply = await deps.transport.device({ client_id: deps.clientId, scope: deps.scope })
     if (run !== generation) return
     const deviceCode = str(reply.data.device_code)
     const userCode = str(reply.data.user_code)
@@ -147,7 +167,7 @@ export function createDeviceAuth(deps: {
   async function refresh(token: OauthToken): Promise<string | null> {
     const scope = scopeNow()
     const epoch = authEpoch
-    const reply = await deps.oauth('token', { grant_type: 'refresh_token', refresh_token: token.refreshToken, client_id: deps.clientId })
+    const reply = await deps.transport.token({ grant_type: 'refresh_token', refresh_token: token.refreshToken, client_id: deps.clientId })
     // Frånkopplad eller annan profil under tiden: svaret hör inte hit längre.
     if (epoch !== authEpoch || scopeNow() !== scope) return null
     const next = tokenFrom(reply.data, token.refreshToken)
@@ -193,7 +213,7 @@ export function createDeviceAuth(deps: {
     authEpoch += 1
     const token = deps.readToken()
     if (token) {
-      await deps.oauth('revoke_token', { token: token.accessToken, client_id: deps.clientId }).catch(() => null)
+      await deps.transport.revoke({ token: token.accessToken, client_id: deps.clientId }).catch(() => null)
     }
     deps.writeToken(null)
     cancel()

@@ -1,6 +1,6 @@
 import type { MdblistApi } from './api'
 import { buildWatchedPayload, buildWatchlistPayload, type WatchedPush } from './payloads'
-import type { Prefs } from './prefs'
+import type { Prefs } from '../../_shared/tracker-kit/prefs'
 import type { RemoteEntry } from './types'
 
 type Source = 'local' | 'trakt' | 'tracker'

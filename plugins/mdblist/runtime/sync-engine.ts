@@ -1,7 +1,7 @@
 import type { ApiResult, MdblistApi } from './api'
 import { parseActivities, parseWatched, parseWatchlist } from './parse'
 import { buildWatchedPayload, buildWatchlistPayload, type WatchedPush } from './payloads'
-import type { Prefs } from './prefs'
+import type { Prefs } from '../../_shared/tracker-kit/prefs'
 import type { LocalEntry, RemoteEntry } from './types'
 
 export const SNAPSHOT_KEY = 'mdblist_sync_snapshot'

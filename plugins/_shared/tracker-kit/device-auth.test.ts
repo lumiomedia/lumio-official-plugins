@@ -1,17 +1,24 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createDeviceAuth, type OauthToken } from './device-auth'
+import { prefKeys } from './prefs'
 
 type Reply = { status: number; data: Record<string, unknown> }
 
-function setup(replies: Reply[], initialToken: OauthToken | null = null) {
+function setup(replies: Reply[], initialToken: OauthToken | null = null, acceptToken?: (data: Record<string, unknown>) => string | null) {
   let clock = 1_000_000
   let token = initialToken
   let scope = 'p1'
   const scheduled: Array<{ fn: () => void; ms: number }> = []
-  const oauth = vi.fn(async () => replies.shift() ?? { status: 500, data: {} })
+  const oauth = vi.fn(async (_endpoint: string, _form: Record<string, string>) => replies.shift() ?? { status: 500, data: {} })
   const onConnected = vi.fn(async () => {})
   const auth = createDeviceAuth({
-    oauth,
+    transport: {
+      device: (form) => oauth('device-authorization', form),
+      token: (form) => oauth('token', form),
+      revoke: (form) => oauth('revoke_token', form),
+    },
+    scope: 'write',
+    acceptToken,
     readToken: () => token,
     writeToken: (next) => { token = next },
     now: () => clock,
@@ -187,5 +194,24 @@ describe('token', () => {
     release({ status: 200, data: { access_token: 'A2', refresh_token: 'R2', expires_in: 100 } })
     await pending
     expect(s.token()).toBeNull()
+  })
+})
+
+describe('tracker-kit: delade tillägg', () => {
+  it('en token med för låg behörighet godtas inte och sparas inte', async () => {
+    const { auth, runNext, token } = setup([
+      deviceReply,
+      { status: 200, data: { access_token: 'A', refresh_token: 'R', expires_in: 604800, scope: 'media:read' } },
+    ], null, (data) => (String(data.scope ?? '').includes('media:write') ? null : 'bara läsrättighet'))
+    await auth.start()
+    await runNext()
+    expect(token()).toBeNull()
+    expect(auth.state()).toMatchObject({ phase: 'error', error: 'bara läsrättighet' })
+  })
+
+  it('reglagens nycklar får pluginets prefix', () => {
+    expect(prefKeys('simkl')).toEqual({
+      scrobble: 'simkl_scrobble_enabled', watched: 'simkl_sync_watched_enabled', watchlist: 'simkl_sync_watchlist_enabled',
+    })
   })
 })
