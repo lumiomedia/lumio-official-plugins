@@ -376,6 +376,16 @@
     if (host === "tauri.localhost" || host.endsWith(".tauri.localhost")) return true;
     return false;
   }
+  function isLanClientHost(hostname) {
+    return !isLocalAppHost(hostname);
+  }
+  function isLanClientSession() {
+    if (typeof window === "undefined") return false;
+    return isLanClientHost(window.location.hostname);
+  }
+  function isClientSession() {
+    return isLanClientSession();
+  }
   var init_session_host = __esm({
     "lib/session-host.ts"() {
     }
@@ -1849,6 +1859,8 @@
           btAudioAutoOffset: "Compensate for Bluetooth latency",
           btAudioAutoOffsetDesc: "Wireless audio arrives 100\u2013300 ms late depending on codec. Added to your own delay when the output is wireless.",
           plFullscreen: "Fullscreen",
+          plPip: "Picture-in-picture",
+          plPipMobileOnly: "Phone only",
           plShow: "Show",
           plHide: "Hide",
           settingsTabTheme: "Theme",
@@ -3509,6 +3521,7 @@
           plShortMusic: "Music",
           plShortZoom: "Zoom",
           plShortCast: "Cast",
+          plShortPip: "PiP",
           plShortFullscreen: "Fullscreen",
           plShortMore: "More",
           recapFound: "Recap",
@@ -5700,6 +5713,8 @@
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
           btAudioAutoOffsetDesc: "Tr\xE5dl\xF6st ljud kommer 100\u2013300 ms f\xF6r sent beroende p\xE5 kodek. L\xE4ggs p\xE5 din egen f\xF6rdr\xF6jning n\xE4r utg\xE5ngen \xE4r tr\xE5dl\xF6s.",
           plFullscreen: "Helsk\xE4rm",
+          plPip: "Bild-i-bild",
+          plPipMobileOnly: "Bara mobil",
           plShow: "Visa",
           plHide: "D\xF6lj",
           settingsTabTheme: "Tema",
@@ -7341,6 +7356,7 @@
           plShortMusic: "Musik",
           plShortZoom: "Zoom",
           plShortCast: "Casta",
+          plShortPip: "Bild-i-bild",
           plShortFullscreen: "Fullsk\xE4rm",
           plShortMore: "Mer",
           recapFound: "Recap",
@@ -8675,6 +8691,101 @@
     }
   });
 
+  // lib/tauri-native-player.ts
+  var isAndroidTauriEnv;
+  var init_tauri_native_player = __esm({
+    "lib/tauri-native-player.ts"() {
+      "use strict";
+      init_react_shim();
+      init_tauri_mpv();
+      isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+    }
+  });
+
+  // lib/player-layout.ts
+  var DESKTOP_CHROME_QUERY;
+  var init_player_layout = __esm({
+    "lib/player-layout.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      DESKTOP_CHROME_QUERY = "(min-width: 768px) and (min-height: 520px)";
+    }
+  });
+
+  // lib/pip.ts
+  function notify() {
+    for (const fn of listeners) fn();
+  }
+  function isTvDocument() {
+    if (typeof document === "undefined") return false;
+    return document.documentElement.getAttribute("data-tv") === "1";
+  }
+  function backend() {
+    if (backendOverride) return backendOverride;
+    if (typeof window === "undefined" || isTvDocument()) return "none";
+    if (isAndroidTauriEnv) return "droid";
+    if (!isClientSession()) return "none";
+    if (typeof window.matchMedia === "function" && window.matchMedia(DESKTOP_CHROME_QUERY).matches) return "none";
+    return "web";
+  }
+  function setActive(next) {
+    if (active === next) return;
+    active = next;
+    if (typeof document !== "undefined" && backend() === "droid") {
+      if (next) document.documentElement.setAttribute("data-pip", "on");
+      else document.documentElement.removeAttribute("data-pip");
+    }
+    notify();
+  }
+  function onNative(msg) {
+    const reg = current;
+    if (!reg) return false;
+    if (msg.mode === "on") {
+      setActive(true);
+      return true;
+    }
+    if (msg.mode === "off") {
+      setActive(false);
+      return true;
+    }
+    if (msg.mode === "closed") {
+      setActive(false);
+      reg.actions.onClosed();
+      return true;
+    }
+    switch (msg.action) {
+      case "prev":
+        reg.actions.onPrev();
+        return true;
+      case "next":
+        reg.actions.onNext();
+        return true;
+      case "playPause":
+        reg.actions.onPlayPause();
+        return true;
+    }
+    return false;
+  }
+  var backendOverride, current, active, listeners;
+  var init_pip = __esm({
+    "lib/pip.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tauri_native_player();
+      init_session_host();
+      init_player_layout();
+      backendOverride = null;
+      current = null;
+      active = false;
+      listeners = /* @__PURE__ */ new Set();
+      if (typeof window !== "undefined") {
+        ;
+        window.__lumioPip = onNative;
+      }
+    }
+  });
+
   // lib/library/mode.ts
   var init_mode = __esm({
     "lib/library/mode.ts"() {
@@ -9218,8 +9329,8 @@
     const title = entry.title ?? null;
     const year = normalizeYear(entry.year);
     if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) return;
-    const current = readEntries();
-    const next = current.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
+    const current2 = readEntries();
+    const next = current2.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
     const nextEntry = {
       tmdbId,
       imdbId,
@@ -10773,17 +10884,6 @@
     }
   });
 
-  // lib/tauri-native-player.ts
-  var isAndroidTauriEnv;
-  var init_tauri_native_player = __esm({
-    "lib/tauri-native-player.ts"() {
-      "use strict";
-      init_react_shim();
-      init_tauri_mpv();
-      isAndroidTauriEnv = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
-    }
-  });
-
   // lib/plugin-hls.ts
   var init_plugin_hls = __esm({
     "lib/plugin-hls.ts"() {
@@ -11540,8 +11640,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners = this.listeners[event$1];
-              listeners.splice(listeners.indexOf(handler), 1);
+              const listeners2 = this.listeners[event$1];
+              listeners2.splice(listeners2.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -11570,8 +11670,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners = this.listeners[event$1];
-              listeners.splice(listeners.indexOf(handler), 1);
+              const listeners2 = this.listeners[event$1];
+              listeners2.splice(listeners2.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -14088,14 +14188,6 @@
     }
   });
 
-  // lib/player-layout.ts
-  var init_player_layout = __esm({
-    "lib/player-layout.ts"() {
-      "use client";
-      init_profile_storage_shim();
-    }
-  });
-
   // lib/video-tuning.ts
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
@@ -14653,6 +14745,7 @@
       init_tv_focus_shim();
       init_download_target();
       init_session_host();
+      init_pip();
       init_vlc_deep_link();
       init_fetch_client();
       init_wiki_request_cache();
@@ -15296,6 +15389,7 @@
       init_profile_storage_shim();
       init_i18n();
       init_tv_focus_shim();
+      init_pip();
       init_plugin_registry();
       init_client();
       init_mode();
@@ -15617,10 +15711,10 @@
     let refreshing = null;
     let authEpoch = 0;
     let lastRefreshFailAt = -Infinity;
-    const listeners = /* @__PURE__ */ new Set();
+    const listeners2 = /* @__PURE__ */ new Set();
     const set = (next) => {
       state = next;
-      for (const listener of listeners) listener();
+      for (const listener of listeners2) listener();
     };
     const tokenFrom = (data, previousRefresh) => {
       const accessToken = str(data.access_token);
@@ -15789,9 +15883,9 @@
       hasToken: () => deps.readToken() != null,
       state: () => state,
       subscribe(listener) {
-        listeners.add(listener);
+        listeners2.add(listener);
         return () => {
-          listeners.delete(listener);
+          listeners2.delete(listener);
         };
       }
     };
@@ -16185,17 +16279,17 @@
       syncing: false,
       ...initial
     };
-    const listeners = /* @__PURE__ */ new Set();
+    const listeners2 = /* @__PURE__ */ new Set();
     return {
       get: () => state,
       set(patch) {
         state = { ...state, ...patch };
-        for (const listener of listeners) listener();
+        for (const listener of listeners2) listener();
       },
       subscribe(listener) {
-        listeners.add(listener);
+        listeners2.add(listener);
         return () => {
-          listeners.delete(listener);
+          listeners2.delete(listener);
         };
       }
     };
