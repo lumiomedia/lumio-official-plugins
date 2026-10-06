@@ -237,6 +237,9 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
           <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
             {muteBtn(40)}
             <ProgressBar value={progress} height={4} />
+            {controls?.onEnterPip ? (
+              <Round size={40} label={tt('playerPip')} onPress={controls.onEnterPip}><MIcons.Pip size={22} /></Round>
+            ) : null}
             {controls ? (
               <Round size={40} label={tt('playerFullscreen')} onPress={controls.onToggleFullscreen}><MIcons.ArrowsOut size={22} /></Round>
             ) : null}
