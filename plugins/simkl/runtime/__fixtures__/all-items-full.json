@@ -1,0 +1,45 @@
+{
+  "shows": [
+    {
+      "added_to_watchlist_at": "2026-05-15T00:35:15Z",
+      "last_watched_at": "2026-05-15T00:35:15Z",
+      "user_rated_at": null,
+      "user_rating": null,
+      "status": "watching",
+      "last_watched": "S01E01",
+      "next_to_watch": null,
+      "watched_episodes_count": 176,
+      "total_episodes_count": 177,
+      "not_aired_episodes_count": 0,
+      "show": {
+        "title": "The Walking Dead",
+        "poster": "16/16913426086fc13",
+        "year": 2010,
+        "runtime": 43,
+        "ids": {
+          "simkl": 2090,
+          "slug": "the-walking-dead",
+          "imdb": "tt1520211",
+          "tvdb": "153021"
+        }
+      },
+      "seasons": [
+        {
+          "number": 1,
+          "episodes": [
+            {
+              "number": 2,
+              "watched_at": "2026-05-15T00:32:20Z",
+              "runtime": 44
+            },
+            {
+              "number": 3,
+              "watched_at": "2026-05-15T00:32:21Z",
+              "runtime": 45
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

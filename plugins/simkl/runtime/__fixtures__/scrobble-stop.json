@@ -1,0 +1,111 @@
+{
+  "scrobble_stop_movie_pause_threshold": {
+    "id": 35148632,
+    "action": "pause",
+    "progress": 30,
+    "movie": {
+      "title": "The Matrix",
+      "year": 1999,
+      "ids": {
+        "simkl": 53992,
+        "slug": "the-matrix",
+        "imdb": "tt0133093",
+        "tmdb": "603",
+        "tvdb": "169",
+        "tvdbslug": "the-matrix",
+        "traktslug": "the-matrix-1999",
+        "letterboxd": "the-matrix"
+      }
+    }
+  },
+  "scrobble_stop_movie_watched": {
+    "id": 35145454,
+    "action": "scrobble",
+    "progress": 95,
+    "movie": {
+      "title": "Inception",
+      "year": 2010,
+      "ids": {
+        "simkl": 472214,
+        "slug": "inception",
+        "imdb": "tt1375666",
+        "tmdb": "27205",
+        "tvdb": "113",
+        "tvdbslug": "inception",
+        "traktslug": "inception-2010",
+        "letterboxd": "inception"
+      }
+    }
+  },
+  "scrobble_stop_rewatch_first_watch": {
+    "id": 35148724,
+    "action": "scrobble",
+    "progress": 95,
+    "episode": {
+      "season": 1,
+      "number": 1,
+      "title": "Yankee White"
+    },
+    "show": {
+      "title": "NCIS",
+      "year": 2003,
+      "ids": {
+        "simkl": 8986,
+        "slug": "ncis",
+        "imdb": "tt0364845",
+        "tmdb": "4614",
+        "tvdb": "72108",
+        "tvdbslug": "ncis",
+        "traktslug": "ncis"
+      }
+    },
+    "rewatch_id": null,
+    "rewatch_status": "first_watch"
+  },
+  "scrobble_stop_rewatch_movie": {
+    "id": 35148710,
+    "action": "scrobble",
+    "progress": 95,
+    "movie": {
+      "title": "The Godfather",
+      "year": 1972,
+      "ids": {
+        "simkl": 53434,
+        "slug": "the-godfather",
+        "imdb": "tt0068646",
+        "tmdb": "238",
+        "tvdb": "275",
+        "tvdbslug": "the-godfather",
+        "traktslug": "the-godfather-1972",
+        "letterboxd": "the-godfather"
+      }
+    },
+    "rewatch_id": 265600,
+    "rewatch_status": "completed"
+  },
+  "scrobble_stop_rewatch_show_episode": {
+    "id": 35148720,
+    "action": "scrobble",
+    "progress": 95,
+    "episode": {
+      "season": 1,
+      "number": 1,
+      "title": "Pilot"
+    },
+    "show": {
+      "title": "The Sopranos",
+      "year": 1999,
+      "ids": {
+        "simkl": 4836,
+        "slug": "the-sopranos",
+        "imdb": "tt0141842",
+        "tmdb": "1398",
+        "tvdb": "75299",
+        "tvdbslug": "the-sopranos",
+        "traktslug": "the-sopranos"
+      }
+    },
+    "rewatch_id": 265602,
+    "rewatch_status": "active"
+  }
+}

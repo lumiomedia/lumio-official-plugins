@@ -1,0 +1,32 @@
+{
+  "shows": [
+    {
+      "show": {
+        "ids": {
+          "simkl": 297,
+          "slug": "charmed"
+        }
+      }
+    }
+  ],
+  "anime": [
+    {
+      "show": {
+        "ids": {
+          "simkl": 37089,
+          "slug": "cowboy-bebop"
+        }
+      }
+    }
+  ],
+  "movies": [
+    {
+      "movie": {
+        "ids": {
+          "simkl": 53434,
+          "slug": "the-godfather"
+        }
+      }
+    }
+  ]
+}

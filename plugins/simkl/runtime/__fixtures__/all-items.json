@@ -1,0 +1,55 @@
+{
+  "shows": [
+    {
+      "added_to_watchlist_at": "2018-02-24T23:55:13Z",
+      "last_watched_at": null,
+      "user_rated_at": null,
+      "user_rating": null,
+      "status": "plantowatch",
+      "last_watched": null,
+      "next_to_watch": "S01E01",
+      "watched_episodes_count": 0,
+      "total_episodes_count": 178,
+      "not_aired_episodes_count": 0,
+      "show": {
+        "title": "Charmed",
+        "poster": "24/24273cee77f9d9f",
+        "year": 1998,
+        "ids": {
+          "simkl": 297,
+          "slug": "charmed",
+          "imdb": "tt0158552",
+          "tvdb": "70626",
+          "tmdb": "1981"
+        }
+      }
+    }
+  ],
+  "anime": [
+    {
+      "added_to_watchlist_at": "2026-05-15T00:13:09Z",
+      "last_watched_at": "2026-05-15T00:13:09Z",
+      "user_rated_at": null,
+      "user_rating": null,
+      "status": "completed",
+      "last_watched": null,
+      "next_to_watch": null,
+      "watched_episodes_count": 26,
+      "total_episodes_count": 26,
+      "not_aired_episodes_count": 0,
+      "show": {
+        "title": "Cowboy Bebop",
+        "poster": "36/36842f1bceb6b39",
+        "year": 1998,
+        "ids": {
+          "simkl": 37089,
+          "slug": "cowboy-bebop",
+          "mal": "1",
+          "anidb": "23",
+          "anilist": "1"
+        }
+      },
+      "anime_type": "tv"
+    }
+  ]
+}

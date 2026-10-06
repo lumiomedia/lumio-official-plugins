@@ -1,0 +1,330 @@
+[
+  {
+    "title": "Mushoku Tensei: Jobless Reincarnation Season 3",
+    "url": "/anime/2832226/mushoku-tensei-iii-isekai-ittara-honki-dasu",
+    "title_romaji": "Mushoku Tensei III: Isekai Ittara Honki Dasu",
+    "alt_titles": [
+      {
+        "name": "\u7121\u8077\u8ee2\u751fIII ~\u7570\u4e16\u754c\u884c\u3063\u305f\u3089\u672c\u6c17\u3060\u3059~",
+        "lang": 25,
+        "type": "official"
+      },
+      {
+        "name": "Mushoku Tensei III: Jobless Reincarnation",
+        "lang": 7,
+        "type": "official"
+      }
+    ],
+    "poster": "20/2021633876c3baf055",
+    "fanart": null,
+    "ids": {
+      "simkl_id": 2832226,
+      "slug": "mushoku-tensei-iii-isekai-ittara-honki-dasu",
+      "mal": "59193",
+      "anilist": "178789",
+      "kitsu": "49002",
+      "anidb": "18727",
+      "imdb": "tt13293588",
+      "tmdb": "94664",
+      "tvdb": "371310"
+    },
+    "release_date": "07/03/2026",
+    "rank": 67,
+    "drop_rate": "0.8%",
+    "watched": 1831,
+    "plan_to_watch": 2406,
+    "watching": 4987,
+    "completed": 1510,
+    "ratings": {
+      "simkl": {
+        "rating": 8.77,
+        "votes": 679
+      },
+      "mal": {
+        "rating": 8.7,
+        "votes": 128634
+      }
+    },
+    "country": null,
+    "original_language": null,
+    "runtime": "25m",
+    "status": "ended",
+    "anime_type": "tv",
+    "total_episodes": 14,
+    "network": null,
+    "metadata": "2026 - 2026 \u2022 14 episodes",
+    "overview": "Note: The first two episodes received an early screening at a special event on 20 June 2026 at TOHO Cinemas Roppongi Hills and TOHO Cinemas Ikebukuro in Tokyo, TOHO Cinemas Nagoya Sakae in Nagoya, and TOHO Cinemas Umeda in Osaka. The regular TV broadcast started on 4 July 2026.",
+    "genres": [
+      "Adventure",
+      "Drama",
+      "Fantasy",
+      "Isekai",
+      "Magic",
+      "Reincarnation",
+      "School",
+      "Seinen"
+    ],
+    "trailer": "SUZNsBQP4uI"
+  },
+  {
+    "title": "Re:Zero - Starting Life in Another World",
+    "url": "/anime/2743422/rezero-kara-hajimeru-isekai-seikatsu",
+    "title_romaji": "Re:Zero kara Hajimeru Isekai Seikatsu",
+    "alt_titles": [
+      {
+        "name": "Re:\u30bc\u30ed\u304b\u3089\u59cb\u3081\u308b\u7570\u4e16\u754c\u751f\u6d3b 4",
+        "lang": 25,
+        "type": "official"
+      },
+      {
+        "name": "Re:\u30bc\u30ed\u304b\u3089\u59cb\u3081\u308b\u7570\u4e16\u754c\u751f\u6d3b",
+        "lang": 25,
+        "type": "official"
+      },
+      {
+        "name": "Re\uff1a\u4ece\u96f6\u5f00\u59cb\u7684\u5f02\u4e16\u754c\u751f\u6d3b \u7b2c\u56db\u5b63",
+        "lang": 27,
+        "type": "official"
+      }
+    ],
+    "poster": "20/203238555561052fb6",
+    "fanart": null,
+    "ids": {
+      "simkl_id": 2743422,
+      "slug": "rezero-kara-hajimeru-isekai-seikatsu",
+      "mal": "61316",
+      "anilist": "189046",
+      "kitsu": "49746",
+      "anidb": "19242",
+      "imdb": "tt5607616",
+      "tmdb": "328061",
+      "tvdb": "305089",
+      "traktslug": "re-zero-starting-life-in-another-world-season-4"
+    },
+    "release_date": "04/08/2026",
+    "rank": 2,
+    "drop_rate": "1%",
+    "watched": 1749,
+    "plan_to_watch": 2349,
+    "watching": 4749,
+    "completed": 887,
+    "ratings": {
+      "simkl": {
+        "rating": 9.05,
+        "votes": 720
+      },
+      "mal": {
+        "rating": 9.1,
+        "votes": 149760
+      }
+    },
+    "country": "jp",
+    "original_language": "ja",
+    "runtime": "25m",
+    "status": "ended",
+    "anime_type": "tv",
+    "total_episodes": 19,
+    "network": null,
+    "metadata": "2026 - 2026 \u2022 19 episodes",
+    "overview": "Note: The first episode received an early screening at a special event on 1 November 2025 at Lucca Comics & Games 2025 in Italy. The regular TV broadcast started sometime in 2026.",
+    "genres": [
+      "Drama",
+      "Fantasy",
+      "Isekai",
+      "Psychological"
+    ],
+    "trailer": "Ndi1vPKZ4g4"
+  },
+  {
+    "title": "One Piece",
+    "url": "/anime/38636/one-piece",
+    "title_romaji": null,
+    "alt_titles": [
+      {
+        "name": "\u0411\u043e\u043b\u044c\u0448\u043e\u0439 \u043a\u0443\u0448",
+        "lang": 22,
+        "type": "official"
+      },
+      {
+        "name": "\u6d77\u8d3c\u738b",
+        "lang": 27,
+        "type": "official"
+      }
+    ],
+    "poster": "15/1511453300c778c741",
+    "fanart": "87/8794026388394ac66",
+    "ids": {
+      "simkl_id": 38636,
+      "slug": "one-piece",
+      "mal": "21",
+      "imdb": "tt0388629",
+      "anilist": "21",
+      "kitsu": "12",
+      "anidb": "69",
+      "tmdb": "37854",
+      "tvdb": "81797",
+      "tvdbslug": "one-piece",
+      "traktslug": "one-piece"
+    },
+    "release_date": "10/20/1999",
+    "rank": 50,
+    "drop_rate": "2.5%",
+    "watched": 1555,
+    "plan_to_watch": 20649,
+    "watching": 90864,
+    "completed": 32,
+    "ratings": {
+      "simkl": {
+        "rating": 8.9,
+        "votes": 8681
+      },
+      "mal": {
+        "rating": 8.7,
+        "votes": 1560936
+      }
+    },
+    "country": "jp",
+    "original_language": "ja",
+    "runtime": "25m",
+    "status": "ongoing",
+    "anime_type": "tv",
+    "total_episodes": 1184,
+    "network": "Fuji TV",
+    "metadata": "1999 - Now \u2022 Fuji TV \u2022 1184 episodes",
+    "overview": "It was a time when pirates ruled the seas. Several bands of pirates were battling over the great hidden treasure, One Piece, which was left by the now legendary pirate captain, Gold Roger. There was a young boy who admired the pirates, his name was Monkey D. Luffy. One day, he mistakenly eats the devil`s fruit and turns himself into a rubber human being.<br><br>Ten years have passed since that incident. Luffy sets out to sail all alone. He sets out to become a great pirate captain and that`s when his great adventure begins. \"I`m going to be the Pirate King! I`m going to get One Piece!\".<br><br>Note: Starting in 2026, the series ended its continuous year-round broadcast schedule and shifted to a split-cour format, with two 13-episode cours per each year.",
+    "genres": [
+      "Action",
+      "Adventure",
+      "Comedy",
+      "Fantasy",
+      "Martial Arts",
+      "Shounen",
+      "Super Power"
+    ],
+    "trailer": "tnj5YOZpCyo"
+  },
+  {
+    "title": "The Exiled Heavy Knight Knows How to Game the System",
+    "url": "/anime/2573730/tsuihou-sareta-tensei-juu-kishi-wa-game-chishiki-de-musou-suru",
+    "title_romaji": "Tsuihou Sareta Tensei Juu Kishi wa Game Chishiki de Musou Suru",
+    "alt_titles": [
+      {
+        "name": "\u8ffd\u653e\u3055\u308c\u305f\u8ee2\u751f\u91cd\u9a0e\u58eb\u306f\u30b2\u30fc\u30e0\u77e5\u8b58\u3067\u7121\u53cc\u3059\u308b",
+        "lang": 25,
+        "type": "official"
+      },
+      {
+        "name": "\u906d\u5230\u6d41\u653e\u7684\u8f6c\u751f\u91cd\u9a91\u58eb\u51ed\u501f\u6e38\u620f\u77e5\u8bc6\u5927\u5f00\u65e0\u53cc",
+        "lang": 27,
+        "type": "official"
+      }
+    ],
+    "poster": "20/20276613600d378d41",
+    "fanart": "16/16365735cca3c0acee",
+    "ids": {
+      "simkl_id": 2573730,
+      "slug": "tsuihou-sareta-tensei-juu-kishi-wa-game-chishiki-de-musou-suru",
+      "mal": "59741",
+      "anilist": "180136",
+      "kitsu": "49183",
+      "imdb": "tt33334216",
+      "anidb": "18854",
+      "tmdb": "270603",
+      "tvdb": "453028",
+      "tvdbslug": "tsuihou-sareta-tensei-juu-kishi-wa-game-chishiki-de-musou-suru",
+      "traktslug": "the-exiled-heavy-knight-knows-how-to-game-the-system"
+    },
+    "release_date": "07/02/2026",
+    "rank": 4512,
+    "drop_rate": "2.8%",
+    "watched": 1300,
+    "plan_to_watch": 1153,
+    "watching": 3249,
+    "completed": 0,
+    "ratings": {
+      "simkl": {
+        "rating": 6.93,
+        "votes": 206
+      },
+      "mal": {
+        "rating": 6.8,
+        "votes": 18962
+      }
+    },
+    "country": "jp",
+    "original_language": "ja",
+    "runtime": "25m",
+    "status": "ongoing",
+    "anime_type": "tv",
+    "total_episodes": 26,
+    "network": "TBS (JP)",
+    "metadata": "2026 - Now \u2022 TBS (JP) \u2022 26 episodes",
+    "overview": "Born into a prestigious family of master swordsmen, Elymas Edvaughn`s future shatters when he awakens the so-called \"defective\" Heavy Knight class. Disowned and cast out, he regains memories of another life\u2014and realizes this world mirrors a VR game he once mastered. Armed with knowledge no one else possesses, he sets out to rewrite his fate and prove the strength of the \"weakest\" class.",
+    "genres": [
+      "Action",
+      "Adventure",
+      "Fantasy",
+      "Isekai",
+      "Reincarnation"
+    ],
+    "trailer": "mcZRE6a2XgU"
+  },
+  {
+    "title": "Clevatess II",
+    "url": "/anime/2884094/clevatess-ii-majuu-no-ou-to-itsuwari-no-yuusha-denshou",
+    "title_romaji": "Clevatess II: Majuu no Ou to Itsuwari no Yuusha Denshou",
+    "alt_titles": [
+      {
+        "name": "\u30af\u30ec\u30d0\u30c6\u30b9II-\u9b54\u7363\u306e\u738b\u3068\u507d\u308a\u306e\u52c7\u8005\u4f1d\u627f-",
+        "lang": 25,
+        "type": "official"
+      }
+    ],
+    "poster": "20/20216336d3b214c566",
+    "fanart": null,
+    "ids": {
+      "simkl_id": 2884094,
+      "slug": "clevatess-ii-majuu-no-ou-to-itsuwari-no-yuusha-denshou",
+      "mal": "62513",
+      "kitsu": "50154",
+      "anilist": "198946",
+      "anidb": "19581",
+      "imdb": "tt32991344",
+      "tmdb": "258348",
+      "tvdb": "451793"
+    },
+    "release_date": "07/08/2026",
+    "rank": 993,
+    "drop_rate": "1.3%",
+    "watched": 1090,
+    "plan_to_watch": 945,
+    "watching": 2063,
+    "completed": 552,
+    "ratings": {
+      "simkl": {
+        "rating": 8,
+        "votes": 226
+      },
+      "mal": {
+        "rating": 7.8,
+        "votes": 30468
+      }
+    },
+    "country": null,
+    "original_language": null,
+    "runtime": "25m",
+    "status": "ended",
+    "anime_type": "tv",
+    "total_episodes": 13,
+    "network": null,
+    "metadata": "2026 - 2026 \u2022 13 episodes",
+    "overview": "Second season of Clevatess.",
+    "genres": [
+      "Action",
+      "Fantasy",
+      "School",
+      "Shounen"
+    ],
+    "trailer": null
+  }
+]
