@@ -809,3 +809,25 @@ export function __resetLibraryStubForTests(): void {
   tappa data tyst. `export type *` ger noll körtidskoppling.
 */
 export type * from '../../../../../Moviefinder/lib/library/types'
+
+/* Bild-i-bild (appens lib/pip.ts). Testerna läser registreringarna här. */
+export interface PipActions {
+  prevNextKind: 'seek' | 'channel'
+  onPlayPause(): void
+  onPrev(): void
+  onNext(): void
+  onClosed(): void
+  isPlaying(): boolean
+}
+export const pipRegistrations: PipActions[] = []
+export function registerPip(actions: PipActions, _video?: HTMLVideoElement | null): () => void {
+  pipRegistrations.push(actions)
+  return () => {
+    const i = pipRegistrations.indexOf(actions)
+    if (i >= 0) pipRegistrations.splice(i, 1)
+  }
+}
+export function canPip(_video?: HTMLVideoElement | null): boolean { return true }
+export function usePipAvailable(_video?: HTMLVideoElement | null): boolean { return true }
+export async function enterPip(_video?: HTMLVideoElement | null): Promise<boolean> { return true }
+export function notifyPipPlaying(_playing: boolean): void {}

@@ -27,9 +27,18 @@ import {
   useLang,
   useTvMode,
   capturePlayerFrame,
+  enterPip,
+  notifyPipPlaying,
+  registerPip,
+  usePipAvailable,
 } from '@/lib/plugin-sdk'
 import { recordChannelWatch } from './channel-history'
 import { channelKey } from './live-tv-data'
+
+/* Äldre appar saknar PiP i SDK:t — en stabil ersättare per modul, så att
+   hookordningen är densamma i varje rendering. */
+const usePipAvailableSafe: (video?: HTMLVideoElement | null) => boolean =
+  typeof usePipAvailable === 'function' ? usePipAvailable : () => false
 import { useHtmlVideoPlayer } from './hooks/useHtmlVideoPlayer'
 import { useOrientation } from './hooks/useOrientation'
 import { useWakeLock } from './hooks/useWakeLock'
@@ -946,6 +955,42 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     void mpv.setPlayPause(true)
   }
 
+  /* Bild-i-bild på telefon (appens lib/pip.ts): kanalbyte som PiP-fönstrets
+     föregående/nästa, X stänger som Tillbaka. Bara telefonens krom — TV och
+     skrivbord registrerar inte. Mot en äldre app utan PiP i SDK:t saknas
+     funktionerna och allt blir no-op. */
+  const pipPhone = Boolean(tvChrome?.phone) && !isTv && typeof registerPip === 'function'
+  const pipStateRef = useRef({ tv: tvChrome, channel, paused: mpvPaused, toggle: toggleMpvPause })
+  pipStateRef.current = { tv: tvChrome, channel, paused: mpvPaused, toggle: toggleMpvPause }
+  // <video> finns först efter första målningen; elementet måste med i
+  // registreringen så att webbläsarens PiP-händelser kopplas på.
+  const [pipVideoEl, setPipVideoEl] = useState<HTMLVideoElement | null>(null)
+  useEffect(() => { setPipVideoEl(isHtmlEngine ? videoRef.current : null) })
+  // Prenumererar: på Android vet appen först efter en fråga till enheten om
+  // den klarar PiP, och knappen ska dyka upp när svaret kommer.
+  const pipAvailable = usePipAvailableSafe(pipVideoEl)
+  useEffect(() => {
+    if (!pipPhone) return
+    const stepChannel = (delta: 1 | -1) => {
+      const { tv: shell, channel: current } = pipStateRef.current
+      if (!shell || shell.neighbours.length === 0) return
+      const index = shell.neighbours.findIndex((c) => channelKey(c) === channelKey(current))
+      const next = shell.neighbours[(index + delta + shell.neighbours.length) % shell.neighbours.length]
+      if (next) shell.onSwitchChannel(next)
+    }
+    return registerPip({
+      prevNextKind: 'channel',
+      onPlayPause: () => pipStateRef.current.toggle(),
+      onPrev: () => stepChannel(-1),
+      onNext: () => stepChannel(1),
+      onClosed: () => handleCloseRef.current(),
+      isPlaying: () => !pipStateRef.current.paused,
+    }, pipVideoEl)
+  }, [pipPhone, pipVideoEl])
+  useEffect(() => {
+    if (pipPhone && typeof notifyPipPlaying === 'function') notifyPipPlaying(!mpvPaused)
+  }, [pipPhone, mpvPaused])
+
   const syncMpvBounds = () => {
     const rect = stageRef.current?.getBoundingClientRect()
     if (rect) engineSetBounds(rect)
@@ -1038,6 +1083,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     onVolume: updateVolume,
     onToggleFullscreen: toggleFullscreen,
     onCycleAspect: cycleAspect,
+    onEnterPip: pipPhone && pipAvailable
+      ? () => { void enterPip(pipVideoEl) }
+      : undefined,
   }
 
   // Snurra och felruta hör till VIDEON, inte hela skärmen: i staplat läge

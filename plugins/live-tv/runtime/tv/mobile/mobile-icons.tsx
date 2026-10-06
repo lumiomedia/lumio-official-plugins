@@ -33,6 +33,7 @@ export const MIcons = {
   FilmStrip: ({ size = 22 }: { size?: number }) => svg(size, <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" /></>),
   SquaresFour: ({ size = 22 }: IconProps) => svg(size, <><rect x="4" y="4" width="7" height="7" rx="1.5" /><rect x="13" y="4" width="7" height="7" rx="1.5" /><rect x="4" y="13" width="7" height="7" rx="1.5" /><rect x="13" y="13" width="7" height="7" rx="1.5" /></>),
   ArrowsOut: ({ size = 22 }: IconProps) => svg(size, <><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" /></>),
+  Pip: ({ size = 22 }: IconProps) => svg(size, <><rect x="3" y="5" width="18" height="14" rx="2" /><rect x="12" y="12" width="7" height="5" rx="1" fill="currentColor" stroke="none" /></>),
   DotsThree: ({ size = 22 }: IconProps) => svg(size, <><circle cx="6" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="18" cy="12" r="1.6" /></>, true),
   /** Handtaget för dragbara listor: tre korta horisontella streck. */
   ListHandle: ({ size = 22 }: IconProps) => svg(size, <><path d="M7 7h10M7 12h10M7 17h10" /></>),
