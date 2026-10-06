@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseActivities, parseAllItems, parseTrending } from './parse'
+import { parseActivities, parseAllItems, parseTrending, parseUser } from './parse'
 import activities from './__fixtures__/activities.json'
 import full from './__fixtures__/all-items-full.json'
 import idsOnly from './__fixtures__/all-items-ids-only-externals.json'
@@ -42,5 +42,12 @@ describe('SIMKL-parsning', () => {
 
   it('trendande anime-film slås upp som film', () => {
     expect(parseTrending([{ title: 'A', anime_type: 'movie', ids: { tmdb: '5' } }], 'tv')[0].mediaType).toBe('movie')
+  })
+
+  it('kontot ur /users/settings: namn, id och plan', () => {
+    expect(parseUser({ user: { name: 'jane_doe' }, account: { id: 12345, type: 'free' } }))
+      .toEqual({ username: 'jane_doe', accountKey: 'id:12345', supporter: false })
+    expect(parseUser({ user: { name: 'x' }, account: { id: 1, type: 'vip' } }).supporter).toBe(true)
+    expect(parseUser(null)).toEqual({ username: null, accountKey: null, supporter: false })
   })
 })

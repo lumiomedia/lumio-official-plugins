@@ -81,3 +81,17 @@ export function parseTrending(data: unknown, mediaType: 'movie' | 'tv'): ListIte
     return [{ mediaType: type, tmdbId, imdbId: str(ids.imdb), title: str(entry.title) ?? tmdbId, posterUrl: null }]
   })
 }
+
+/** `/users/settings`: namnet, kontots id (binder synkens snapshot) och planen. */
+export function parseUser(data: unknown): { username: string | null; accountKey: string | null; supporter: boolean } {
+  if (!isObj(data)) return { username: null, accountKey: null, supporter: false }
+  const user = isObj(data.user) ? data.user : {}
+  const account = isObj(data.account) ? data.account : {}
+  const id = idStr(account.id)
+  const username = str(user.name)
+  return {
+    username,
+    accountKey: id ? `id:${id}` : username ? `user:${username}` : null,
+    supporter: typeof account.type === 'string' && account.type !== 'free',
+  }
+}
