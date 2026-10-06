@@ -15731,6 +15731,7 @@
       const rejected = token ? deps.acceptToken?.(reply.data) ?? null : null;
       if (token && rejected) {
         deps.log(`enhetskod: token avvisad \u2014 ${rejected}`);
+        void deps.transport.revoke({ token: token.accessToken, client_id: deps.clientId }).catch(() => null);
         set({ phase: "error", error: rejected });
         return;
       }
@@ -15774,7 +15775,12 @@
         set({ phase: "error", error });
         return;
       }
-      const verificationUri = str(reply.data.verification_uri) ?? "https://mdblist.com/oauth/device/";
+      const verificationUri = str(reply.data.verification_uri) ?? deps.fallbackVerificationUri ?? null;
+      if (!verificationUri) {
+        deps.log("enhetskod: svaret saknar verification_uri");
+        set({ phase: "error", error: "verification_uri" });
+        return;
+      }
       const intervalS = num(reply.data.interval, DEFAULT_INTERVAL_S);
       const expiresAt = deps.now() + num(reply.data.expires_in, DEFAULT_EXPIRES_S) * 1e3;
       set({
@@ -15900,6 +15906,7 @@
         }
         out.push({
           kind,
+          animeType: str2(entry.anime_type) ?? str2(media.anime_type),
           status: str2(entry.status),
           simkl: num2(ids.simkl) ?? num2(ids.simkl_id),
           tmdbId: idStr(ids.tmdb),
@@ -16096,6 +16103,9 @@
   var REMOVED_BUCKETS = ["tv_shows", "anime", "movies"].map((t) => `${t}.removed_from_list`);
   var EPISODE_QUERY = { extended: "full", episode_watched_at: "yes", include_all_episodes: "original" };
   var remoteKey = (kind, tmdbId) => `${kind === "movie" ? "m" : "s"}:${tmdbId}`;
+  var isFilm = (item) => item.kind === "movie" || item.kind === "anime" && item.animeType === "movie";
+  var itemKey = (item) => remoteKey(isFilm(item) ? "movie" : "show", item.tmdbId);
+  var MANUAL_BASELINE_MIN_MS = 10 * 6e4;
   var NO_EPISODE_PUSH = /* @__PURE__ */ new Set(["completed", "dropped", "hold"]);
   var SyncAbort = class extends Error {
     constructor(result) {
@@ -16136,7 +16146,7 @@
       if (!item.tmdbId || !item.status) continue;
       const row = { st: item.status, k: item.kind === "movie" ? "m" : item.kind === "anime" ? "a" : "s", t: item.title };
       if (item.imdbId) row.i = item.imdbId;
-      map[remoteKey(item.kind === "movie" ? "movie" : "show", item.tmdbId)] = row;
+      map[itemKey(item)] = row;
     }
     return map;
   }
@@ -16207,7 +16217,8 @@
       const localMovies = host.getMovies();
       const sameSet = (a, b) => a.length === b.length && a.every((id) => b.includes(id));
       const newlyOn = (kind) => !snapshot || !snapshot.syncedKinds[kind];
-      const baseline = opts.full === true || !snapshot || !snapshot.all || Math.abs(host.now() - snapshot.fullAt) > FULL_RUN_EVERY_MS || wantWatched && newlyOn("watched");
+      const manualBaseline = opts.full === true && !(snapshot && Math.abs(host.now() - snapshot.fullAt) < MANUAL_BASELINE_MIN_MS);
+      const baseline = manualBaseline || !snapshot || !snapshot.all || Math.abs(host.now() - snapshot.fullAt) > FULL_RUN_EVERY_MS || wantWatched && newlyOn("watched");
       const remoteMoved = moved([...WATCHLIST_BUCKETS, ...WATCHED_BUCKETS]);
       const localChanged = wantWatchlist && (newlyOn("watchlist") || !sameSet(localShows.map((e) => e.tmdbId), snapshot?.shows ?? []) || !sameSet(localMovies.map((e) => e.tmdbId), snapshot?.movies ?? []));
       if (!baseline && !remoteMoved && !localChanged) {
@@ -16245,7 +16256,7 @@
         if (moved(REMOVED_BUCKETS)) {
           const listed = resolveTmdb(parseAllItems(must(await api2.call("GET", "/sync/all-items/all/all", { query: { extended: "ids_only" } }))), byImdb);
           if (trustedListing(listed, Object.keys(remote).length)) {
-            const present = new Set(listed.filter((i) => i.tmdbId).map((i) => remoteKey(i.kind === "movie" ? "movie" : "show", i.tmdbId)));
+            const present = new Set(listed.filter((i) => i.tmdbId).map(itemKey));
             remote = Object.fromEntries(Object.entries(remote).filter(([key]) => {
               if (present.has(key)) return true;
               removedNow.add(key);
@@ -16490,7 +16501,7 @@
     async function statusItems(type, status2) {
       const remote = deps.readRemote() ?? await libraryMap();
       if (!remote) return [];
-      return Object.entries(remote).flatMap(([key, row]) => row.k === KIND[type] && row.st === status2 ? [{ mediaType: row.k === "m" ? "movie" : "tv", tmdbId: key.slice(2), imdbId: row.i ?? null, title: row.t, posterUrl: null }] : []);
+      return Object.entries(remote).flatMap(([key, row]) => row.k === KIND[type] && row.st === status2 ? [{ mediaType: key.startsWith("m:") ? "movie" : "tv", tmdbId: key.slice(2), imdbId: row.i ?? null, title: row.t, posterUrl: null }] : []);
     }
     async function fetchTrending(id, type, period) {
       const running2 = inflight.get(id);
@@ -16566,7 +16577,7 @@
     }, INITIAL_DELAY_MS);
     const interval = setInterval(() => {
       void deps.run({ pushWatched: true, reason: "intervall" });
-    }, INTERVAL_MS);
+    }, deps.intervalMs ?? INTERVAL_MS);
     const offs = [
       deps.onKeyChanged(() => {
         void deps.run({ pushWatched: false, reason: "ny nyckel" });
@@ -16855,6 +16866,9 @@
     });
     const stopScheduler = startScheduler({
       run: (opts) => syncNow(opts),
+      // Kvoten är per användare och delas av användarens enheter — var 30:e minut
+      // ger fem enheter plats i gratiskontots 500. Egna ändringar går direkt via bryggan.
+      intervalMs: 30 * 6e4,
       onKeyChanged: (l) => onAuthChanged(l),
       onPrefsChanged: (l) => onPrefsChanged(l),
       onProfileChanged: (l) => onProfileChanged(l)

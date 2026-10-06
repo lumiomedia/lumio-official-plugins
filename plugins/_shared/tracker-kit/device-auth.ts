@@ -49,6 +49,8 @@ export function createDeviceAuth(deps: {
    * gav lägre behörighet än begärt. Fasen blir då `error`, inget sparas.
    */
   acceptToken?(data: Record<string, unknown>): string | null
+  /** Om tjänstens svar saknar verification_uri. Utan den blir det ett fel. */
+  fallbackVerificationUri?: string
   readToken(): OauthToken | null
   writeToken(token: OauthToken | null): void
   now(): number
@@ -107,6 +109,8 @@ export function createDeviceAuth(deps: {
     const rejected = token ? deps.acceptToken?.(reply.data) ?? null : null
     if (token && rejected) {
       deps.log(`enhetskod: token avvisad — ${rejected}`)
+      // Lämna inte en oanvändbar grant kvar hos tjänsten.
+      void deps.transport.revoke({ token: token.accessToken, client_id: deps.clientId }).catch(() => null)
       set({ phase: 'error', error: rejected })
       return
     }
@@ -144,7 +148,12 @@ export function createDeviceAuth(deps: {
       set({ phase: 'error', error })
       return
     }
-    const verificationUri = str(reply.data.verification_uri) ?? 'https://mdblist.com/oauth/device/'
+    const verificationUri = str(reply.data.verification_uri) ?? deps.fallbackVerificationUri ?? null
+    if (!verificationUri) {
+      deps.log('enhetskod: svaret saknar verification_uri')
+      set({ phase: 'error', error: 'verification_uri' })
+      return
+    }
     const intervalS = num(reply.data.interval, DEFAULT_INTERVAL_S)
     const expiresAt = deps.now() + num(reply.data.expires_in, DEFAULT_EXPIRES_S) * 1000
     set({
@@ -177,9 +186,10 @@ export function createDeviceAuth(deps: {
       return next.accessToken
     }
     if (str(reply.data.error) === 'invalid_grant') {
-      // Token synkas mellan enheter: har en annan enhet hunnit förnya är
-      // refresh-token roterad här också. Använd den i stället för att koppla
-      // från — en radering hade synkats tillbaka och kopplat från båda.
+      // Där token synkas mellan enheter (MDBList) kan en annan enhet ha hunnit
+      // förnya, och refresh-token är då roterad här också. Använd den i stället
+      // för att koppla från — en radering hade synkats tillbaka och kopplat
+      // från båda. (SIMKL:s token är enhetslokal; där når vi aldrig hit.)
       const stored = deps.readToken()
       if (stored && stored.refreshToken !== token.refreshToken) {
         deps.log('token: förnyad på en annan enhet — använder den')

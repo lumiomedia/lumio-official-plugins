@@ -4,7 +4,7 @@ import { prefKeys } from './prefs'
 
 type Reply = { status: number; data: Record<string, unknown> }
 
-function setup(replies: Reply[], initialToken: OauthToken | null = null, acceptToken?: (data: Record<string, unknown>) => string | null) {
+function setup(replies: Reply[], initialToken: OauthToken | null = null, acceptToken?: (data: Record<string, unknown>) => string | null, fallbackVerificationUri?: string) {
   let clock = 1_000_000
   let token = initialToken
   let scope = 'p1'
@@ -19,6 +19,7 @@ function setup(replies: Reply[], initialToken: OauthToken | null = null, acceptT
     },
     scope: 'write',
     acceptToken,
+    fallbackVerificationUri,
     readToken: () => token,
     writeToken: (next) => { token = next },
     now: () => clock,
@@ -230,5 +231,26 @@ describe('tracker-kit: delade tillägg', () => {
     expect(prefKeys('simkl')).toEqual({
       scrobble: 'simkl_scrobble_enabled', watched: 'simkl_sync_watched_enabled', watchlist: 'simkl_sync_watchlist_enabled',
     })
+  })
+
+  it('M5: en token med för låg behörighet återkallas direkt', async () => {
+    const { auth, runNext, oauth } = setup([
+      deviceReply,
+      { status: 200, data: { access_token: 'RO', refresh_token: 'R', expires_in: 604800, scope: 'media:read' } },
+      { status: 200, data: {} },
+    ], null, (data) => (String(data.scope ?? '').includes('media:write') ? null : 'bara läsrättighet'))
+    await auth.start()
+    await runNext()
+    expect(oauth).toHaveBeenCalledWith('revoke_token', { token: 'RO', client_id: 'cid' })
+  })
+
+  it('M6: verifieringsadressen saknas i svaret — pluginets egen reserv, ingen hårdkodad', async () => {
+    const reply = { status: 200, data: { device_code: 'DEV', user_code: 'ABCD', expires_in: 300, interval: 5 } }
+    const a = setup([reply], null, undefined, 'https://example.test/activate')
+    await a.auth.start()
+    expect(a.auth.state()).toMatchObject({ verificationUri: 'https://example.test/activate' })
+    const b = setup([reply])
+    await b.auth.start()
+    expect(b.auth.state()).toMatchObject({ phase: 'error' })
   })
 })

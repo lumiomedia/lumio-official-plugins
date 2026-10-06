@@ -236,6 +236,9 @@ export function startBackground(): () => void {
   })
   const stopScheduler = startScheduler({
     run: (opts) => syncNow(opts),
+    // Kvoten är per användare och delas av användarens enheter — var 30:e minut
+    // ger fem enheter plats i gratiskontots 500. Egna ändringar går direkt via bryggan.
+    intervalMs: 30 * 60_000,
     onKeyChanged: (l) => onAuthChanged(l),
     onPrefsChanged: (l) => onPrefsChanged(l),
     onProfileChanged: (l) => onProfileChanged(l),

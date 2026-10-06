@@ -88,4 +88,9 @@ describe('SIMKL-listkällan', () => {
     expect(source.describeList('status:shows:plantowatch')?.name).toBe('Planerar att se · Serier')
     expect(await source.loadList('nonsens')).toEqual([])
   })
+
+  it('M9: en anime-film i en statusrad öppnas som film', async () => {
+    const { source } = setup({ remote: { 'm:149': { st: 'plantowatch', k: 'a', t: 'Akira' } } })
+    expect((await source.loadList('status:anime:plantowatch')).map((i) => [i.tmdbId, i.mediaType])).toEqual([['149', 'movie']])
+  })
 })

@@ -5,11 +5,12 @@ describe('schemaläggaren', () => {
   beforeEach(() => { vi.useFakeTimers() })
   afterEach(() => { vi.useRealTimers() })
 
-  function setup() {
+  function setup(intervalMs?: number) {
     const run = vi.fn(async (_opts: { pushWatched: boolean; reason: string }) => {})
     const fire: Record<string, () => void> = {}
     const stop = startScheduler({
       run,
+      intervalMs,
       onKeyChanged: (l) => { fire.key = l; return () => {} },
       onPrefsChanged: (l) => { fire.prefs = l; return () => {} },
       onProfileChanged: (l) => { fire.profile = l; return () => {} },
@@ -42,5 +43,13 @@ describe('schemaläggaren', () => {
     stop()
     await vi.advanceTimersByTimeAsync(60 * 60_000)
     expect(run).not.toHaveBeenCalled()
+  })
+
+  it('M3: pluginet kan välja längre intervall (SIMKL: 30 min)', async () => {
+    const { run } = setup(30 * 60_000)
+    await vi.advanceTimersByTimeAsync(50_000 + 15 * 60_000)
+    expect(run).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(15 * 60_000)
+    expect(run).toHaveBeenLastCalledWith({ pushWatched: true, reason: 'intervall' })
   })
 })

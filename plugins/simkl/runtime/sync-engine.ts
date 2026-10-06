@@ -40,6 +40,11 @@ const EPISODE_QUERY = { extended: 'full', episode_watched_at: 'yes', include_all
 export type RemoteRow = { st: string; k: 'm' | 's' | 'a'; t: string; i?: string }
 export type RemoteMap = Record<string, RemoteRow>
 export const remoteKey = (kind: 'movie' | 'show', tmdbId: string) => `${kind === 'movie' ? 'm' : 's'}:${tmdbId}`
+/** TMDb har skilda id-serier för filmer och serier — en anime-film är en film. */
+const isFilm = (item: SimklItem) => item.kind === 'movie' || (item.kind === 'anime' && item.animeType === 'movie')
+const itemKey = (item: SimklItem) => remoteKey(isFilm(item) ? 'movie' : 'show', item.tmdbId!)
+/** Synka nu gör ingen ny baslinje om den senaste är färskare än så här. */
+const MANUAL_BASELINE_MIN_MS = 10 * 60_000
 
 /** Statusar där en serie inte ska få sina lokala avsnitt skickade (de skulle flytta den till Tittar på). */
 const NO_EPISODE_PUSH = new Set(['completed', 'dropped', 'hold'])
@@ -155,7 +160,7 @@ function toRows(items: SimklItem[]): RemoteMap {
     if (!item.tmdbId || !item.status) continue
     const row: RemoteRow = { st: item.status, k: item.kind === 'movie' ? 'm' : item.kind === 'anime' ? 'a' : 's', t: item.title }
     if (item.imdbId) row.i = item.imdbId
-    map[remoteKey(item.kind === 'movie' ? 'movie' : 'show', item.tmdbId)] = row
+    map[itemKey(item)] = row
   }
   return map
 }
@@ -244,7 +249,10 @@ export async function runSimklSync(
 
     // Grundhämtning: första synken, en gång per dygn, Synka nu, eller när
     // sedda just slagits på (avsnitten behöver en baslinje). Annars deltan.
-    const baseline = opts.full === true || !snapshot || !snapshot.all
+    // Synka nu tätt efter en baslinje blir en vanlig deltakörning — upprepade
+    // tryck ska inte hämta hela biblioteket gång på gång.
+    const manualBaseline = opts.full === true && !(snapshot && Math.abs(host.now() - snapshot.fullAt) < MANUAL_BASELINE_MIN_MS)
+    const baseline = manualBaseline || !snapshot || !snapshot.all
       || Math.abs(host.now() - snapshot.fullAt) > FULL_RUN_EVERY_MS
       || (wantWatched && newlyOn('watched'))
     const remoteMoved = moved([...WATCHLIST_BUCKETS, ...WATCHED_BUCKETS])
@@ -288,7 +296,7 @@ export async function runSimklSync(
       if (moved(REMOVED_BUCKETS)) {
         const listed = resolveTmdb(parseAllItems(must(await api.call<unknown>('GET', '/sync/all-items/all/all', { query: { extended: 'ids_only' } }))), byImdb)
         if (trustedListing(listed, Object.keys(remote).length)) {
-          const present = new Set(listed.filter((i) => i.tmdbId).map((i) => remoteKey(i.kind === 'movie' ? 'movie' : 'show', i.tmdbId!)))
+          const present = new Set(listed.filter((i) => i.tmdbId).map(itemKey))
           remote = Object.fromEntries(Object.entries(remote).filter(([key]) => {
             if (present.has(key)) return true
             removedNow.add(key)

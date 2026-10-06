@@ -391,4 +391,28 @@ describe('SIMKL-synkmotorn', () => {
     expect(host.removeShow).toHaveBeenCalledWith('2')
     expect(gets(call)).toHaveLength(3)
   })
+
+  it('M9: en anime-film hamnar som film i kartan (TMDb skiljer film- och serie-id)', async () => {
+    const { host, store } = makeHost({ now: () => NOW })
+    const { api } = makeApi((m, p) => {
+      if (p === '/sync/activities') return ok({ all: 'A1' })
+      if (m === 'GET' && p === '/sync/all-items/all/all') return ok({ anime: [{ status: 'plantowatch', anime_type: 'movie', show: { title: 'Akira', ids: { simkl: 1, tmdb: '149' } } }] })
+      return ok({})
+    })
+    await runSimklSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 't' })
+    const remote = (store[SNAPSHOT_KEY] as { remote: Record<string, { k: string }> }).remote
+    expect(remote['m:149']).toMatchObject({ k: 'a', st: 'plantowatch' })
+    expect(remote['s:149']).toBeUndefined()
+  })
+
+  it('M7: Synka nu igen inom 10 minuter gör ingen ny baslinje', async () => {
+    let clock = NOW
+    const { host } = makeHost({ now: () => clock })
+    const { api, call } = makeApi((m, p) => (p === '/sync/activities' ? ok({ all: 'A1' }) : ok({})))
+    await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'Synka nu', full: true })
+    clock += 2 * 60_000
+    const before = call.mock.calls.length
+    await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'Synka nu', full: true })
+    expect(call.mock.calls.slice(before).map(([, p]) => p)).toEqual(['/sync/activities'])
+  })
 })

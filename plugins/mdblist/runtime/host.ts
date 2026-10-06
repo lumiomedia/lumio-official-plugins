@@ -85,6 +85,7 @@ export const device = createDeviceAuth({
     revoke: (form) => oauth('revoke_token', form),
   },
   scope: 'write',
+  fallbackVerificationUri: 'https://mdblist.com/oauth/device/',
   readToken: () => readJson<OauthToken>(TOKEN_KEY),
   writeToken: (token) => {
     if (token) writeJson(TOKEN_KEY, token)

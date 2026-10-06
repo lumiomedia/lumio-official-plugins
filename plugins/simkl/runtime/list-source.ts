@@ -112,7 +112,7 @@ export function createListSource(deps: {
     const remote = deps.readRemote() ?? (await libraryMap())
     if (!remote) return []
     return Object.entries(remote).flatMap(([key, row]) => (row.k === KIND[type] && row.st === status
-      ? [{ mediaType: row.k === 'm' ? 'movie' as const : 'tv' as const, tmdbId: key.slice(2), imdbId: row.i ?? null, title: row.t, posterUrl: null }]
+      ? [{ mediaType: key.startsWith('m:') ? 'movie' as const : 'tv' as const, tmdbId: key.slice(2), imdbId: row.i ?? null, title: row.t, posterUrl: null }]
       : []))
   }
 

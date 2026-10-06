@@ -25,6 +25,8 @@ export function parseActivities(data: unknown): Activities {
 
 export interface SimklItem {
   kind: 'movie' | 'show' | 'anime'
+  /** Anime: `tv`, `movie`, `ova` … — en anime-film har ett TMDb-film-id. */
+  animeType: string | null
   status: string | null
   simkl: number | null
   tmdbId: string | null
@@ -55,6 +57,7 @@ export function parseAllItems(data: unknown): SimklItem[] {
       }
       out.push({
         kind,
+        animeType: str(entry.anime_type) ?? str(media.anime_type),
         status: str(entry.status),
         simkl: num(ids.simkl) ?? num(ids.simkl_id),
         tmdbId: idStr(ids.tmdb),

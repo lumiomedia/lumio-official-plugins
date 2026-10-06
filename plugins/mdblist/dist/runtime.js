@@ -15657,6 +15657,7 @@
       const rejected = token ? deps.acceptToken?.(reply.data) ?? null : null;
       if (token && rejected) {
         deps.log(`enhetskod: token avvisad \u2014 ${rejected}`);
+        void deps.transport.revoke({ token: token.accessToken, client_id: deps.clientId }).catch(() => null);
         set({ phase: "error", error: rejected });
         return;
       }
@@ -15700,7 +15701,12 @@
         set({ phase: "error", error });
         return;
       }
-      const verificationUri = str(reply.data.verification_uri) ?? "https://mdblist.com/oauth/device/";
+      const verificationUri = str(reply.data.verification_uri) ?? deps.fallbackVerificationUri ?? null;
+      if (!verificationUri) {
+        deps.log("enhetskod: svaret saknar verification_uri");
+        set({ phase: "error", error: "verification_uri" });
+        return;
+      }
       const intervalS = num(reply.data.interval, DEFAULT_INTERVAL_S);
       const expiresAt = deps.now() + num(reply.data.expires_in, DEFAULT_EXPIRES_S) * 1e3;
       set({
@@ -16147,7 +16153,7 @@
     }, INITIAL_DELAY_MS);
     const interval = setInterval(() => {
       void deps.run({ pushWatched: true, reason: "intervall" });
-    }, INTERVAL_MS);
+    }, deps.intervalMs ?? INTERVAL_MS);
     const offs = [
       deps.onKeyChanged(() => {
         void deps.run({ pushWatched: false, reason: "ny nyckel" });
@@ -16494,6 +16500,7 @@
       revoke: (form) => oauth("revoke_token", form)
     },
     scope: "write",
+    fallbackVerificationUri: "https://mdblist.com/oauth/device/",
     readToken: () => readJson(TOKEN_KEY),
     writeToken: (token) => {
       if (token) writeJson(TOKEN_KEY, token);
