@@ -13,6 +13,8 @@ export interface ScrobbleEvent {
   season: number | null
   episode: number | null
   progress: number
+  /** Spelarens periodiska puls — ingen användarhandling. SIMKL vill inte ha dem. */
+  pulse?: boolean
 }
 
 /** En post på fjärrsidan av en watchlist (samma form som värdens RemoteEntry). */
