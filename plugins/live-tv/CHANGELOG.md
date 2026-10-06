@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.14.0
 
-- Picture-in-picture on phones: Live TV keeps playing in a small window when you leave the app, with channel switching and play/pause right in the window (Android). On iPhone via the button in the player. Needs the app version that ships picture-in-picture in the plugin SDK — set `minAppVersion` to it when releasing.
+- Picture-in-picture on phones: Live TV keeps playing in a small window when you leave the app, with channel switching and play/pause right in the window (Android). On iPhone via the button in the player. Requires Lumio 0.1.622.
 
 ## 0.13.2
 

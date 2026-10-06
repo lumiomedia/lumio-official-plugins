@@ -138,9 +138,9 @@
     }
   });
 
-  // node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
+  // ../../node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs
   var require_tslib_es6 = __commonJS({
-    "node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
+    "../../node_modules/@tauri-apps/api/external/tslib/tslib.es6.cjs"(exports) {
       "use strict";
       function __classPrivateFieldGet(receiver, state, kind, f) {
         if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
@@ -158,9 +158,9 @@
     }
   });
 
-  // node_modules/@tauri-apps/api/core.cjs
+  // ../../node_modules/@tauri-apps/api/core.cjs
   var require_core = __commonJS({
-    "node_modules/@tauri-apps/api/core.cjs"(exports) {
+    "../../node_modules/@tauri-apps/api/core.cjs"(exports) {
       "use strict";
       var tslib_es6 = require_tslib_es6();
       var _Channel_onmessage;
@@ -298,9 +298,9 @@
     }
   });
 
-  // node_modules/@tauri-apps/api/event.cjs
+  // ../../node_modules/@tauri-apps/api/event.cjs
   var require_event = __commonJS({
-    "node_modules/@tauri-apps/api/event.cjs"(exports) {
+    "../../node_modules/@tauri-apps/api/event.cjs"(exports) {
       "use strict";
       var core = require_core();
       exports.TauriEvent = void 0;
@@ -3602,8 +3602,23 @@
           subtitleOutlineColorDesc: "Used for the text outline/shadow.",
           resetSubtitleAppearance: "Reset subtitle appearance",
           resetSubtitleAppearanceDesc: "Restores size, position, opacity, colors, background, and outline to defaults.",
-          subtitlePreviewText: "This is how your subtitles will look",
+          subtitlePreviewText: "This is how your subtitles\nwill look",
           subtitlePreviewCaption: "Preview of the default look",
+          subtitleFont: "Font",
+          subtitleFontDesc: "Easier-to-read fonts for subtitles. Picking one also widens the letter spacing, which helps the most. Picture-based subtitles (PGS/VobSub from Blu-ray and DVD) keep their own look.",
+          subtitleFontDefault: "Standard",
+          subtitleFontAtkinson: "Atkinson Hyperlegible (recommended)",
+          subtitleFontOpenDyslexic: "OpenDyslexic",
+          subtitleLetterSpacing: "Letter spacing",
+          subtitleLetterSpacingDesc: "The setting that helps most with dyslexia: letters that sit close together crowd each other. Wider or Widest is a good start.",
+          subtitleLineSpacing: "Line spacing",
+          subtitleLineSpacingDesc: "Space between the lines of a two-line subtitle. In the desktop app it only applies in learning mode \u2014 the built-in player cannot change it.",
+          subtitleSpacingNormal: "Normal",
+          subtitleSpacingWide: "Wide",
+          subtitleSpacingWider: "Wider",
+          subtitleSpacingWidest: "Widest",
+          subtitleBold: "Bold text",
+          subtitleBoldDesc: "Turned off when you pick an easier-to-read font, which reads better at normal weight.",
           skipIntro: "Skip intro",
           originalFirst: "Original / first",
           noFallback: "No fallback",
@@ -7437,8 +7452,23 @@
           subtitleOutlineColorDesc: "Anv\xE4nds f\xF6r textens outline/skugga.",
           resetSubtitleAppearance: "\xC5terst\xE4ll textutseende",
           resetSubtitleAppearanceDesc: "\xC5terst\xE4ller storlek, position, opacitet, f\xE4rger, bakgrund och kontur till standard.",
-          subtitlePreviewText: "S\xE5 h\xE4r kommer din textning att se ut",
+          subtitlePreviewText: "S\xE5 h\xE4r kommer din textning\natt se ut",
           subtitlePreviewCaption: "F\xF6rhandsvisning av standardutseende",
+          subtitleFont: "Typsnitt",
+          subtitleFontDesc: "L\xE4ttl\xE4sta typsnitt f\xF6r undertexter. V\xE4ljer du ett blir teckenavst\xE5ndet ocks\xE5 luftigare, och det \xE4r det som hj\xE4lper mest. Bildbaserade undertexter (PGS/VobSub fr\xE5n Blu-ray och dvd) beh\xE5ller sitt eget utseende.",
+          subtitleFontDefault: "Standard",
+          subtitleFontAtkinson: "Atkinson Hyperlegible (rekommenderas)",
+          subtitleFontOpenDyslexic: "OpenDyslexic",
+          subtitleLetterSpacing: "Teckenavst\xE5nd",
+          subtitleLetterSpacingDesc: "Det reglage som hj\xE4lper mest vid dyslexi: bokst\xE4ver som st\xE5r t\xE4tt tr\xE4ngs med varandra. Luftigare eller Luftigast \xE4r en bra b\xF6rjan.",
+          subtitleLineSpacing: "Radavst\xE5nd",
+          subtitleLineSpacingDesc: "Luft mellan raderna i en tv\xE5radig undertext. I skrivbordsappen g\xE4ller det bara i inl\xE4rningsl\xE4get \u2014 den inbyggda spelaren kan inte \xE4ndra det.",
+          subtitleSpacingNormal: "Normalt",
+          subtitleSpacingWide: "Luftigt",
+          subtitleSpacingWider: "Luftigare",
+          subtitleSpacingWidest: "Luftigast",
+          subtitleBold: "Fet text",
+          subtitleBoldDesc: "St\xE4ngs av n\xE4r du v\xE4ljer ett l\xE4ttl\xE4st typsnitt, som l\xE4ses b\xE4st i normal vikt.",
           skipIntro: "Skippa intro",
           originalFirst: "Original / f\xF6rsta",
           noFallback: "Ingen fallback",
@@ -9519,7 +9549,7 @@
     }
   });
 
-  // node_modules/qrcode.react/lib/esm/index.js
+  // ../../node_modules/qrcode.react/lib/esm/index.js
   function generatePath(modules, margin = 0) {
     const ops = [];
     modules.forEach(function(row, y) {
@@ -9646,7 +9676,7 @@
   }
   var __defProp2, __getOwnPropSymbols, __hasOwnProp2, __propIsEnum, __defNormalProp2, __spreadValues, __objRest, qrcodegen, qrcodegen_default, ERROR_LEVEL_MAP, DEFAULT_SIZE, DEFAULT_LEVEL, DEFAULT_BGCOLOR, DEFAULT_FGCOLOR, DEFAULT_INCLUDEMARGIN, DEFAULT_MINVERSION, SPEC_MARGIN_SIZE, DEFAULT_MARGIN_SIZE, DEFAULT_IMG_SCALE, SUPPORTS_PATH2D, QRCodeCanvas, QRCodeSVG;
   var init_esm = __esm({
-    "node_modules/qrcode.react/lib/esm/index.js"() {
+    "../../node_modules/qrcode.react/lib/esm/index.js"() {
       init_react_shim();
       __defProp2 = Object.defineProperty;
       __getOwnPropSymbols = Object.getOwnPropertySymbols;
@@ -10668,12 +10698,26 @@
     }
   });
 
+  // lib/subtitle-legibility.ts
+  var HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
+  var init_subtitle_legibility = __esm({
+    "lib/subtitle-legibility.ts"() {
+      HELVETICA_WIN_EM = 1.175;
+      ASS_SIZE_FACTOR = {
+        default: 1,
+        atkinson: 1.24 / HELVETICA_WIN_EM,
+        opendyslexic: 2.136 / HELVETICA_WIN_EM
+      };
+    }
+  });
+
   // lib/playback-settings.ts
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
       init_app_storage();
       init_profile_storage_shim();
+      init_subtitle_legibility();
     }
   });
 
@@ -11014,9 +11058,9 @@
     }
   });
 
-  // node_modules/react-dom/cjs/react-dom.production.js
+  // ../../node_modules/react-dom/cjs/react-dom.production.js
   var require_react_dom_production = __commonJS({
-    "node_modules/react-dom/cjs/react-dom.production.js"(exports) {
+    "../../node_modules/react-dom/cjs/react-dom.production.js"(exports) {
       "use strict";
       var React = (init_react_shim(), __toCommonJS(react_shim_exports));
       function formatProdErrorMessage(code) {
@@ -11163,9 +11207,9 @@
     }
   });
 
-  // node_modules/react-dom/index.js
+  // ../../node_modules/react-dom/index.js
   var require_react_dom = __commonJS({
-    "node_modules/react-dom/index.js"(exports, module) {
+    "../../node_modules/react-dom/index.js"(exports, module) {
       "use strict";
       function checkDCE() {
         if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ === "undefined" || typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.checkDCE !== "function") {
@@ -11189,9 +11233,9 @@
     }
   });
 
-  // node_modules/@tauri-apps/api/dpi.cjs
+  // ../../node_modules/@tauri-apps/api/dpi.cjs
   var require_dpi = __commonJS({
-    "node_modules/@tauri-apps/api/dpi.cjs"(exports) {
+    "../../node_modules/@tauri-apps/api/dpi.cjs"(exports) {
       "use strict";
       var core = require_core();
       var LogicalSize = class {
@@ -11419,9 +11463,9 @@
     }
   });
 
-  // node_modules/@tauri-apps/api/image.cjs
+  // ../../node_modules/@tauri-apps/api/image.cjs
   var require_image = __commonJS({
-    "node_modules/@tauri-apps/api/image.cjs"(exports) {
+    "../../node_modules/@tauri-apps/api/image.cjs"(exports) {
       "use strict";
       var core = require_core();
       var Image2 = class _Image extends core.Resource {
@@ -11494,9 +11538,9 @@
     }
   });
 
-  // node_modules/@tauri-apps/api/window.cjs
+  // ../../node_modules/@tauri-apps/api/window.cjs
   var require_window = __commonJS({
-    "node_modules/@tauri-apps/api/window.cjs"(exports) {
+    "../../node_modules/@tauri-apps/api/window.cjs"(exports) {
       "use strict";
       var dpi = require_dpi();
       var event = require_event();
@@ -14709,6 +14753,8 @@
       init_player_control_icons();
       init_playback_settings();
       init_playback_settings();
+      init_playback_settings();
+      init_subtitle_legibility();
       init_dual_subtitles();
       init_playback_speed_store();
       init_react_shim();
@@ -15449,7 +15495,7 @@
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/index.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     SimklPlugin: () => SimklPlugin
@@ -15457,10 +15503,10 @@
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/host.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/host.ts
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/api.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/api.ts
   var API = "https://api.simkl.com";
   var CDN = "https://data.simkl.in";
   var APP_NAME = "lumio";
@@ -15569,7 +15615,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/payloads.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/payloads.ts
   function toIds(tmdbId, imdbId) {
     const ids = {};
     if (tmdbId != null && /^\d+$/.test(tmdbId)) ids.tmdb = Number(tmdbId);
@@ -15625,7 +15671,7 @@
     return kind === "show" ? { shows: list } : { movies: list };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/bridge.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/bridge.ts
   var FLUSH_MS = 3e3;
   var RETRY_MS2 = 6e4;
   var MAX_ATTEMPTS = 5;
@@ -15768,7 +15814,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/_shared/tracker-kit/device-auth.ts
+  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/device-auth.ts
   var DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
   var REFRESH_MARGIN_MS = 24 * 60 * 6e4;
   var REFRESH_BACKOFF_MS = 5 * 6e4;
@@ -15965,7 +16011,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/parse.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/parse.ts
   var isObj = (v) => v != null && typeof v === "object" && !Array.isArray(v);
   var str2 = (v) => typeof v === "string" && v.trim() ? v : null;
   var idStr = (v) => typeof v === "number" && Number.isFinite(v) ? String(v) : typeof v === "string" && /^\d+$/.test(v) ? v : null;
@@ -16036,7 +16082,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/strings.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/strings.ts
   var S = {
     pluginName: { en: "SIMKL", sv: "SIMKL" },
     listSourceLabel: { en: "SIMKL list", sv: "SIMKL-lista" },
@@ -16072,6 +16118,10 @@
     badgeNotConnected: { en: "NOT CONNECTED", sv: "EJ ANSLUTEN" },
     connect: { en: "Connect with SIMKL", sv: "Anslut med SIMKL" },
     disconnect: { en: "Disconnect", sv: "Koppla fr\xE5n" },
+    onboardingConnected: {
+      en: "Connected. Your history and watchlist sync as soon as you finish setup.",
+      sv: "Ansluten. Historik och watchlist synkas direkt n\xE4r du \xE4r klar med guiden."
+    },
     onboardingHint: {
       en: "Scrobble playback and sync watched titles and your watchlist with SIMKL \u2014 movies, series and anime.",
       sv: "Scrobbla uppspelning och synka sedda titlar och watchlist med SIMKL \u2014 filmer, serier och anime."
@@ -16175,7 +16225,7 @@
     return { en: fill2(text.en, values), sv: fill2(text.sv, values) };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/sync-engine.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/sync-engine.ts
   var SNAPSHOT_KEY = "simkl_sync_snapshot";
   var FAILURE_KEY = "simkl_sync_failure";
   var SNAPSHOT_VERSION = 2;
@@ -16516,7 +16566,7 @@
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/list-source.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/list-source.ts
   var HOUR = 60 * 6e4;
   var itemsKey = (id) => `simkl_list_items_${id}`;
   var LIBRARY_KEY = itemsKey("library");
@@ -16643,7 +16693,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/_shared/tracker-kit/prefs.ts
+  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/prefs.ts
   function prefKeys(prefix) {
     return {
       scrobble: `${prefix}_scrobble_enabled`,
@@ -16662,11 +16712,15 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/_shared/tracker-kit/scheduler.ts
+  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/scheduler.ts
   var INITIAL_DELAY_MS = 5e4;
+  var FIRST_SYNC_DELAY_MS = 5e3;
   var INTERVAL_MS = 15 * 6e4;
   function startScheduler(deps) {
-    const initial = setTimeout(() => {
+    const first = deps.neverSynced?.() ?? false;
+    const initial = first ? setTimeout(() => {
+      void deps.run({ pushWatched: true, reason: "f\xF6rsta synk" });
+    }, FIRST_SYNC_DELAY_MS) : setTimeout(() => {
       void deps.run({ pushWatched: false, reason: "start" });
     }, INITIAL_DELAY_MS);
     const interval = setInterval(() => {
@@ -16690,7 +16744,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/_shared/tracker-kit/status.ts
+  // ../../../lumio-official-plugins/plugins/_shared/tracker-kit/status.ts
   function createStatus(initial) {
     let state = {
       connection: "none",
@@ -16719,7 +16773,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/tracker.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/tracker.ts
   var LOCK_MS = 2e4;
   var WATCHED_AT = 80;
   function createScrobbler(deps) {
@@ -16769,7 +16823,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/host.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/host.ts
   var SIMKL_CLIENT_ID = "b28530cfc06b97379bfc3c00ac4560354052567e6713ccc3db70fca8a8573e40";
   var PLUGIN_VERSION = "0.1.0";
   var API2 = "https://api.simkl.com";
@@ -16960,6 +17014,7 @@
     });
     const stopScheduler = startScheduler({
       run: (opts) => syncNow(opts),
+      neverSynced: () => hasAuth() && status.get().lastSyncAt == null,
       // Kvoten är per användare och delas av användarens enheter — var 30:e minut
       // ger fem enheter plats i gratiskontots 500. Egna ändringar går direkt via bryggan.
       intervalMs: 30 * 6e4,
@@ -16999,7 +17054,7 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/rows.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/rows.ts
   var clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   function countdown(msLeft) {
     const s = Math.max(0, Math.ceil(msLeft / 1e3));
@@ -17096,11 +17151,11 @@
     return rows;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/onboarding-card.tsx
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/onboarding-card.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/settings-section.tsx
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
@@ -17267,7 +17322,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/onboarding-card.tsx
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/onboarding-card.tsx
   init_jsx_runtime_shim();
   function SimklOnboardingCard({ init }) {
     const { lang } = useLang();
@@ -17285,7 +17340,7 @@
       /* @__PURE__ */ jsxs("div", { className: "onb-row", children: [
         /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
           /* @__PURE__ */ jsx("p", { className: "onb-card-title", children: "SIMKL" }),
-          /* @__PURE__ */ jsx("p", { className: "onb-hint", style: { marginTop: "calc(2 * var(--u))" }, children: tx(connected ? S.connectedBody : S.onboardingHint) })
+          /* @__PURE__ */ jsx("p", { className: "onb-hint", style: { marginTop: "calc(2 * var(--u))" }, children: tx(connected ? S.onboardingConnected : S.onboardingHint) })
         ] }),
         connected ? /* @__PURE__ */ jsx("p", { className: "onb-status", style: { color: "var(--onb-ok)", fontWeight: 500 }, children: tx(connectionTitle(state, true)) }) : /* @__PURE__ */ jsx(
           "button",
@@ -17330,7 +17385,7 @@
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/index.ts
+  // ../../../lumio-official-plugins/plugins/simkl/runtime/index.ts
   function getStatus() {
     const state = status.get();
     const base = { canConnect: true, requiresUserGesture: true, supportsSilentReconnect: false };

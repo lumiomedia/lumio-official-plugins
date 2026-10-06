@@ -435,6 +435,72 @@
     }
   });
 
+  // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
+  var sdk, getActiveProfile, getActiveProfileId, getProfiles, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged, profileHasPin, checkProfilePin;
+  var init_profile_storage_shim = __esm({
+    "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
+      sdk = globalThis.__lumioPluginRuntime?.sdk;
+      getActiveProfile = () => sdk.getActiveProfile();
+      getActiveProfileId = () => sdk.getActiveProfileId();
+      getProfiles = () => {
+        const p = sdk?.getActiveProfile?.();
+        return p ? [p] : [];
+      };
+      getProfileStorageKey = (baseKey, profileId) => sdk.getProfileStorageKey(baseKey, profileId);
+      getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
+      setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
+      removeScopedStorageItem = (baseKey) => sdk.removeScopedStorageItem(baseKey);
+      onProfileChanged = (listener) => sdk.onProfileChanged(listener);
+      profileHasPin = () => typeof sdk?.activeProfileHasPin === "function" ? sdk.activeProfileHasPin() : false;
+      checkProfilePin = (_profileId, pin) => typeof sdk?.verifyActiveProfilePin === "function" ? sdk.verifyActiveProfilePin(pin) : Promise.resolve(false);
+    }
+  });
+
+  // lib/plugin-state.ts
+  function normalizeState(state2, fallback) {
+    return {
+      ...fallback,
+      ...state2,
+      installed: state2?.installed ?? fallback.installed,
+      active: state2?.active ?? fallback.active,
+      order: state2?.order ?? fallback.order,
+      sourceType: state2?.sourceType ?? fallback.sourceType,
+      runtimeAvailable: state2?.runtimeAvailable ?? fallback.runtimeAvailable
+    };
+  }
+  function readAll() {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = getScopedStorageItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+  function getPluginPersistedState(pluginId, defaultOrder, defaults = {}) {
+    const all = readAll();
+    return normalizeState(all[pluginId], {
+      installed: true,
+      active: true,
+      sourceType: "builtin",
+      runtimeAvailable: true,
+      ...defaults,
+      order: defaults.order ?? defaultOrder
+    });
+  }
+  function isPluginEnabled(pluginId, defaultOrder = 0, defaults = {}) {
+    const state2 = getPluginPersistedState(pluginId, defaultOrder, defaults);
+    return Boolean(state2.installed && state2.active);
+  }
+  var STORAGE_KEY;
+  var init_plugin_state = __esm({
+    "lib/plugin-state.ts"() {
+      "use strict";
+      init_profile_storage_shim();
+      STORAGE_KEY = "lumio:plugin-state";
+    }
+  });
+
   // lib/plugin-registry.ts
   var plugin_registry_exports = {};
   __export(plugin_registry_exports, {
@@ -448,6 +514,8 @@
     getHomeSources: () => getHomeSources,
     getInstantPlayProviders: () => getInstantPlayProviders,
     getLibraryProviders: () => getLibraryProviders,
+    getListSource: () => getListSource,
+    getListSources: () => getListSources,
     getMainMenuItems: () => getMainMenuItems,
     getManagedAuthConsumers: () => getManagedAuthConsumers,
     getMediaDetailsActions: () => getMediaDetailsActions,
@@ -464,6 +532,7 @@
     getStreamRequestConfigProviders: () => getStreamRequestConfigProviders,
     getSyncIdentityProviders: () => getSyncIdentityProviders,
     getTopbarItems: () => getTopbarItems,
+    getTrackers: () => getTrackers,
     hasStreamProviders: () => hasStreamProviders,
     notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
     registerPlugin: () => registerPlugin,
@@ -538,6 +607,15 @@
         if (authCapabilityProviders.find((entry) => entry.id === provider.id)) return;
         authCapabilityProviders.push(provider);
       },
+      registerTracker(tracker) {
+        if (trackers.find((entry) => entry.id === tracker.id)) return;
+        trackers.push({ ...tracker, pluginId });
+      },
+      registerListSource(source) {
+        if (listSources.find((entry) => entry.id === source.id)) return;
+        listSources.push({ ...source, pluginId });
+        scheduleRegistryNotify();
+      },
       registerOverviewStatusProvider(provider) {
         if (overviewStatusProviders.find((entry) => entry.id === provider.id)) return;
         overviewStatusProviders.push({ ...provider, pluginId });
@@ -567,7 +645,7 @@
       },
       registerBootstrap(bootstrap) {
         if (bootstraps.find((entry) => entry.id === bootstrap.id)) return;
-        bootstraps.push(bootstrap);
+        bootstraps.push({ ...bootstrap, pluginId });
       },
       registerHero(hero) {
         if (heroes.find((entry) => entry.id === hero.id)) return;
@@ -666,6 +744,15 @@
   function getAuthCapabilityProviders() {
     return authCapabilityProviders;
   }
+  function getTrackers() {
+    return trackers;
+  }
+  function getListSources() {
+    return listSources.filter((source) => !source.pluginId || isPluginEnabled(source.pluginId, 0, { installed: true, active: true }));
+  }
+  function getListSource(id) {
+    return getListSources().find((source) => source.id === id) ?? null;
+  }
   function getSettingsSections() {
     return settingsSections;
   }
@@ -682,7 +769,7 @@
     return homeSources;
   }
   function getBootstraps() {
-    return bootstraps;
+    return bootstraps.filter((entry) => !entry.pluginId || isPluginEnabled(entry.pluginId, 0, { installed: true, active: true }));
   }
   function getHeroes() {
     return heroes;
@@ -728,10 +815,11 @@
   function notifyPluginRegistryChanged() {
     notifyRegistryChanged();
   }
-  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
+  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, trackers, listSources, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
   var init_plugin_registry = __esm({
     "lib/plugin-registry.ts"() {
       "use strict";
+      init_plugin_state();
       streamProviders = [];
       libraryProviders = [];
       mediaStreamCatalogProviders = [];
@@ -757,6 +845,8 @@
       mainMenuItems = [];
       topbarItems = [];
       managedAuthConsumers = [];
+      trackers = [];
+      listSources = [];
       registeredPluginIds = /* @__PURE__ */ new Set();
       registryRevision = 0;
       registryListeners = /* @__PURE__ */ new Set();
@@ -1120,14 +1210,14 @@
       captureSupported: true,
       maxSurfaces: () => MAX_HTML,
       create(id) {
-        const listeners9 = /* @__PURE__ */ new Set();
+        const listeners10 = /* @__PURE__ */ new Set();
         let video = null;
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
         const emit3 = (patch) => {
           state2 = { ...state2, ...patch };
-          for (const l of [...listeners9]) l(state2);
+          for (const l of [...listeners10]) l(state2);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -1200,15 +1290,15 @@
             return res.ok;
           },
           onState(l) {
-            listeners9.add(l);
-            return () => listeners9.delete(l);
+            listeners10.add(l);
+            return () => listeners10.delete(l);
           },
           // Värdstängning (yta 0 öppnas) ger ett sista loadFailed; en
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
             if (reason) emit3({ loadFailed: true });
-            listeners9.clear();
+            listeners10.clear();
           }
         };
       }
@@ -1262,17 +1352,17 @@
     }
   }
   function createMpvSurfaceBackend() {
-    const listeners9 = /* @__PURE__ */ new Set();
+    const listeners10 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners9]) listener(state2);
+      for (const listener of [...listeners10]) listener(state2);
     };
     const dispatch = (next) => {
       state2 = next;
-      for (const listener of [...listeners9]) listener(next);
+      for (const listener of [...listeners10]) listener(next);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
@@ -1348,15 +1438,15 @@
         }
       },
       onState(listener) {
-        listeners9.add(listener);
+        listeners10.add(listener);
         return () => {
-          listeners9.delete(listener);
+          listeners10.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
         if (reason) emit3({ loadFailed: true });
-        listeners9.clear();
+        listeners10.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
           dispatchersByRustId.delete(surface);
@@ -1419,11 +1509,11 @@
     };
   }
   function createDroidSurfaceBackend() {
-    const listeners9 = /* @__PURE__ */ new Set();
+    const listeners10 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners9]) listener(state2);
+      for (const listener of [...listeners10]) listener(state2);
     };
     let nativeId = null;
     let destroyed = false;
@@ -1463,7 +1553,7 @@
           const next = toSurfaceState(value);
           if (!next) return;
           state2 = next;
-          for (const listener of [...listeners9]) listener(next);
+          for (const listener of [...listeners10]) listener(next);
         });
       }, 250);
     }
@@ -1536,9 +1626,9 @@
         return false;
       },
       onState(listener) {
-        listeners9.add(listener);
+        listeners10.add(listener);
         return () => {
-          listeners9.delete(listener);
+          listeners10.delete(listener);
         };
       },
       async destroy(reason) {
@@ -1546,7 +1636,7 @@
         generation++;
         stopPolling();
         if (reason) emit3({ loadFailed: true });
-        listeners9.clear();
+        listeners10.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
         await np({ cmd: "surfaceDestroy", surface }).catch(() => {
@@ -1687,7 +1777,7 @@
     if (live.size + 1 >= engine.maxSurfaces()) return null;
     let id = 1;
     while (live.has(id)) id++;
-    const backend = engine.create(id);
+    const backend2 = engine.create(id);
     const holdsTransparency = isNativeEngine(kind);
     let releaseTransparency = null;
     const holdTransparentWebview = () => {
@@ -1704,7 +1794,7 @@
       open: async (o) => {
         holdTransparentWebview();
         try {
-          await backend.open(o);
+          await backend2.open(o);
         } catch (error) {
           dropTransparentWebview();
           throw error;
@@ -1712,27 +1802,27 @@
       },
       close: async () => {
         try {
-          await backend.close();
+          await backend2.close();
         } finally {
           dropTransparentWebview();
         }
       },
-      setBounds: (r) => backend.setBounds(r),
-      setMuted: (m) => backend.setMuted(m),
-      setPaused: (p) => backend.setPaused(p),
-      captureFrame: (k) => backend.captureFrame(k),
-      onState: (l) => backend.onState(l),
+      setBounds: (r) => backend2.setBounds(r),
+      setMuted: (m) => backend2.setMuted(m),
+      setPaused: (p) => backend2.setPaused(p),
+      captureFrame: (k) => backend2.captureFrame(k),
+      onState: (l) => backend2.onState(l),
       destroy: async (reason) => {
         if (live.get(id) === surface) live.delete(id);
         try {
-          await backend.destroy(reason);
+          await backend2.destroy(reason);
         } finally {
           dropTransparentWebview();
         }
       }
     };
     live.set(id, surface);
-    backend.onState((s) => {
+    backend2.onState((s) => {
       if (!s.closedByHost) return;
       if (live.get(id) === surface) live.delete(id);
       dropTransparentWebview();
@@ -2096,45 +2186,53 @@
     }
   });
 
-  // ../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts
-  var sdk, getActiveProfile, getActiveProfileId, getProfiles, getProfileStorageKey, getScopedStorageItem, setScopedStorageItem, removeScopedStorageItem, onProfileChanged, profileHasPin, checkProfilePin;
-  var init_profile_storage_shim = __esm({
-    "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/profile-storage-shim.ts"() {
-      sdk = globalThis.__lumioPluginRuntime?.sdk;
-      getActiveProfile = () => sdk.getActiveProfile();
-      getActiveProfileId = () => sdk.getActiveProfileId();
-      getProfiles = () => {
-        const p = sdk?.getActiveProfile?.();
-        return p ? [p] : [];
-      };
-      getProfileStorageKey = (baseKey, profileId) => sdk.getProfileStorageKey(baseKey, profileId);
-      getScopedStorageItem = (baseKey) => sdk.getScopedStorageItem(baseKey);
-      setScopedStorageItem = (baseKey, value) => sdk.setScopedStorageItem(baseKey, value);
-      removeScopedStorageItem = (baseKey) => sdk.removeScopedStorageItem(baseKey);
-      onProfileChanged = (listener) => sdk.onProfileChanged(listener);
-      profileHasPin = () => typeof sdk?.activeProfileHasPin === "function" ? sdk.activeProfileHasPin() : false;
-      checkProfilePin = (_profileId, pin) => typeof sdk?.verifyActiveProfilePin === "function" ? sdk.verifyActiveProfilePin(pin) : Promise.resolve(false);
+  // lib/storage-cache-keys.ts
+  var init_storage_cache_keys = __esm({
+    "lib/storage-cache-keys.ts"() {
     }
   });
 
   // lib/storage-quota.ts
+  var lastEmptyPassAt;
   var init_storage_quota = __esm({
     "lib/storage-quota.ts"() {
       "use client";
       init_app_storage();
+      init_storage_cache_keys();
+      lastEmptyPassAt = Number.NEGATIVE_INFINITY;
     }
   });
 
   // lib/app-storage.ts
+  function tauriInternals() {
+    if (typeof window === "undefined") return null;
+    const internals = window.__TAURI_INTERNALS__;
+    return internals && typeof internals.invoke === "function" ? internals : null;
+  }
+  function isMissingCommandError(error) {
+    const message = error instanceof Error ? error.message : String(error ?? "");
+    return /not found|unknown command|no such command|command .* not (registered|allowed)/i.test(message);
+  }
+  function markRejected(error) {
+    if (isMissingCommandError(error)) markNative("absent");
+  }
+  function markNative(state2) {
+    if (nativeState === state2) return;
+    nativeState = state2;
+    if (state2 === "absent" && tauriInternals()) {
+      console.warn("[app-storage] ingen nativ lagring bakom invoke \u2014 localStorage \xE4r den enda durabla kopian");
+    }
+  }
   function nativeInvoke(command, payload) {
-    if (typeof window === "undefined") return false;
+    const internals = tauriInternals();
+    if (!internals) return false;
     try {
-      const internals = window.__TAURI_INTERNALS__;
-      if (!internals || typeof internals.invoke !== "function") return false;
       const result = internals.invoke(command, payload);
       if (result && typeof result.then === "function") {
-        const tracked = result.catch(() => {
-        });
+        const tracked = result.then(
+          () => markNative("durable"),
+          markRejected
+        );
         pending.add(tracked);
         void tracked.finally(() => pending.delete(tracked));
       }
@@ -2149,6 +2247,7 @@
     if (typeof window !== "undefined") {
       const snapshot2 = window.__lumioNativeStorageSnapshot;
       if (snapshot2) {
+        if (nativeState === "unknown") nativeState = "durable";
         for (const [key, value] of Object.entries(snapshot2)) {
           seeded.set(key, String(value));
         }
@@ -2216,12 +2315,14 @@
     } catch {
     }
   }
-  var pending, store;
+  var pending, nativeState, store;
   var init_app_storage = __esm({
     "lib/app-storage.ts"() {
       "use client";
       init_storage_quota();
+      init_storage_cache_keys();
       pending = /* @__PURE__ */ new Set();
+      nativeState = "unknown";
       store = null;
     }
   });
@@ -2242,8 +2343,8 @@
   function readStoredLang() {
     if (typeof window === "undefined") return DEFAULT_LANG;
     try {
-      const scoped = getScopedStorageItem(STORAGE_KEY);
-      const legacy = getItem(STORAGE_KEY);
+      const scoped = getScopedStorageItem(STORAGE_KEY2);
+      const legacy = getItem(STORAGE_KEY2);
       const value = scoped ?? legacy;
       if (value === "sv" || value === "en") return value;
     } catch {
@@ -2268,7 +2369,7 @@
     const detachedValue = useMemo(() => ({
       lang: detachedLang,
       setLang: (l) => {
-        setScopedStorageItem(STORAGE_KEY, l);
+        setScopedStorageItem(STORAGE_KEY2, l);
         setDetachedLang(l);
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent(LANG_CHANGED_EVENT));
@@ -2279,7 +2380,7 @@
     if (!detached) return ctx;
     return detachedValue;
   }
-  var strings, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY, DEFAULT_LANG;
+  var strings, detachedLangContextValue, LangContext, LANG_CHANGED_EVENT, STORAGE_KEY2, DEFAULT_LANG;
   var init_i18n = __esm({
     "lib/i18n.tsx"() {
       "use strict";
@@ -2635,6 +2736,7 @@
           allSources: "All sources",
           tvSearchTypeTab: "Type",
           tvSearchSpace: "Space",
+          tvSearchSystemKeyboard: "System keyboard",
           tvSearchDelete: "Delete",
           sourcesStillSearching: "Still searching:",
           sourceFilter: "Source",
@@ -3105,6 +3207,11 @@
           plEditorHiddenEmpty: "Nothing hidden \u2014 click a control and use the eye to hide it.",
           plEditorControl: "Control",
           plEditorOrder: "Order",
+          plEditorFixedPlace: "Has a fixed place in this layout \u2014 it can only be hidden.",
+          plEditorLayoutDesktop: "Desktop",
+          plEditorLayoutTv: "TV",
+          plEditorLayoutLandscape: "Phone, landscape",
+          plEditorLayoutPortrait: "Phone, portrait",
           plEditorVisible: "Visible",
           plTimeFormatTitle: "Time format on the seek bar",
           plTimeElapsedTotal: "Elapsed and total",
@@ -3161,6 +3268,8 @@
           btAudioAutoOffset: "Compensate for Bluetooth latency",
           btAudioAutoOffsetDesc: "Wireless audio arrives 100\u2013300 ms late depending on codec. Added to your own delay when the output is wireless.",
           plFullscreen: "Fullscreen",
+          plPip: "Picture-in-picture",
+          plPipMobileOnly: "Phone only",
           plShow: "Show",
           plHide: "Hide",
           settingsTabTheme: "Theme",
@@ -4654,9 +4763,17 @@
           upgradeSubtitleWhenBetter: "Upgrade subtitles when better ones load",
           upgradeSubtitleWhenBetterDesc: "Swap to a higher-priority subtitle if one arrives after playback starts. Manual picks are never overridden.",
           ipDescRpdb: "Posters with the rating burned in, on every card. Free key at ratingposterdb.com.",
-          ipDescMdblist: "Aggregated scores from Trakt, Letterboxd and more on the details page. Free key at mdblist.com.",
+          ipDescMdblist: "Aggregated scores from Trakt, Letterboxd and more on the details page. Uses your MDBList login, or a free key.",
           ipRpdbHint: "With a key set, card posters swap to RPDB rated posters (IMDb-keyed).",
           ipMdblistHint: "Shown as extra badges next to the year on the details page.",
+          ipMdblistViaLogin: "Uses your MDBList login (Tracking services \u2192 Accounts) \u2014 no key needed.",
+          ipMdblistLoginHint: "Easier: connect MDBList under Tracking services \u2192 Accounts, then no key is needed.",
+          hpListChoose: "Choose a list",
+          hpListCategory: "Category",
+          hpListPasteLabel: "Or paste a link or id",
+          hpListLookup: "Find",
+          hpListNotFound: "Couldn't find that list",
+          hpListLoadError: "Couldn't load your lists",
           ratingBadgePosition: "Rating badge position",
           ratingBadgePositionDesc: "Which corner of the poster the score badge sits in.",
           badgePosTr: "Top right",
@@ -4813,6 +4930,7 @@
           plShortMusic: "Music",
           plShortZoom: "Zoom",
           plShortCast: "Cast",
+          plShortPip: "PiP",
           plShortFullscreen: "Fullscreen",
           plShortMore: "More",
           recapFound: "Recap",
@@ -4893,8 +5011,23 @@
           subtitleOutlineColorDesc: "Used for the text outline/shadow.",
           resetSubtitleAppearance: "Reset subtitle appearance",
           resetSubtitleAppearanceDesc: "Restores size, position, opacity, colors, background, and outline to defaults.",
-          subtitlePreviewText: "This is how your subtitles will look",
+          subtitlePreviewText: "This is how your subtitles\nwill look",
           subtitlePreviewCaption: "Preview of the default look",
+          subtitleFont: "Font",
+          subtitleFontDesc: "Easier-to-read fonts for subtitles. Picking one also widens the letter spacing, which helps the most. Picture-based subtitles (PGS/VobSub from Blu-ray and DVD) keep their own look.",
+          subtitleFontDefault: "Standard",
+          subtitleFontAtkinson: "Atkinson Hyperlegible (recommended)",
+          subtitleFontOpenDyslexic: "OpenDyslexic",
+          subtitleLetterSpacing: "Letter spacing",
+          subtitleLetterSpacingDesc: "The setting that helps most with dyslexia: letters that sit close together crowd each other. Wider or Widest is a good start.",
+          subtitleLineSpacing: "Line spacing",
+          subtitleLineSpacingDesc: "Space between the lines of a two-line subtitle. In the desktop app it only applies in learning mode \u2014 the built-in player cannot change it.",
+          subtitleSpacingNormal: "Normal",
+          subtitleSpacingWide: "Wide",
+          subtitleSpacingWider: "Wider",
+          subtitleSpacingWidest: "Widest",
+          subtitleBold: "Bold text",
+          subtitleBoldDesc: "Turned off when you pick an easier-to-read font, which reads better at normal weight.",
           skipIntro: "Skip intro",
           originalFirst: "Original / first",
           noFallback: "No fallback",
@@ -6022,7 +6155,7 @@
           couchHapticsLegacy: "Re-pair with Couch mode to control Feel the bass here",
           couchHapticsLiveHint: "Strength and timing apply when Couch mode is open on the phone.",
           couchEmptyTitle: "No phones paired yet",
-          couchDialogInstr: "**iPhone:** scan with the camera. **Android:** open the Lumio app and enter the code.",
+          couchDialogInstr: "**Scan with the phone camera** and open the page \u2014 on iPhone, add it to the Home Screen. **Lumio app on Android:** open Couch mode, pick this computer and enter the code.",
           couchWaiting: "Waiting for the phone \u2026",
           couchClosesIn: "Closes in {time}",
           couchNewCode: "New code",
@@ -6473,6 +6606,7 @@
           allSources: "Alla k\xE4llor",
           tvSearchTypeTab: "Skriv",
           tvSearchSpace: "Mellanslag",
+          tvSearchSystemKeyboard: "Systemets tangentbord",
           tvSearchDelete: "Radera",
           sourcesStillSearching: "S\xF6ker fortfarande:",
           sourceFilter: "K\xE4lla",
@@ -6942,6 +7076,11 @@
           plEditorHiddenEmpty: "Inget dolt \u2014 klicka p\xE5 en kontroll och anv\xE4nd \xF6gat f\xF6r att d\xF6lja den.",
           plEditorControl: "Kontroll",
           plEditorOrder: "Ordning",
+          plEditorFixedPlace: "Har en fast plats i det h\xE4r lagret \u2014 den kan bara d\xF6ljas.",
+          plEditorLayoutDesktop: "Skrivbord",
+          plEditorLayoutTv: "TV",
+          plEditorLayoutLandscape: "Telefon, liggande",
+          plEditorLayoutPortrait: "Telefon, st\xE5ende",
           plEditorVisible: "Synlig",
           plTimeFormatTitle: "Tidsformat p\xE5 s\xF6kraden",
           plTimeElapsedTotal: "F\xF6rfluten och total",
@@ -6998,6 +7137,8 @@
           btAudioAutoOffset: "Kompensera f\xF6r Bluetooth-latens",
           btAudioAutoOffsetDesc: "Tr\xE5dl\xF6st ljud kommer 100\u2013300 ms f\xF6r sent beroende p\xE5 kodek. L\xE4ggs p\xE5 din egen f\xF6rdr\xF6jning n\xE4r utg\xE5ngen \xE4r tr\xE5dl\xF6s.",
           plFullscreen: "Helsk\xE4rm",
+          plPip: "Bild-i-bild",
+          plPipMobileOnly: "Bara mobil",
           plShow: "Visa",
           plHide: "D\xF6lj",
           settingsTabTheme: "Tema",
@@ -8479,9 +8620,17 @@
           upgradeSubtitleWhenBetter: "Uppgradera undertext n\xE4r b\xE4ttre laddas",
           upgradeSubtitleWhenBetterDesc: "Byt till en h\xF6gre prioriterad undertext om en dyker upp efter uppspelningsstart. Manuella val skrivs aldrig \xF6ver.",
           ipDescRpdb: "Posters med betyget inbr\xE4nt, p\xE5 varje kort. Gratis nyckel p\xE5 ratingposterdb.com.",
-          ipDescMdblist: "Aggregerade betyg fr\xE5n Trakt, Letterboxd m.fl. p\xE5 detaljsidan. Gratis nyckel p\xE5 mdblist.com.",
+          ipDescMdblist: "Aggregerade betyg fr\xE5n Trakt, Letterboxd m.fl. p\xE5 detaljsidan. Anv\xE4nder din MDBList-inloggning, eller en gratis nyckel.",
           ipRpdbHint: "Med nyckel satt byts kortens posters till RPDB:s betygsposters (IMDb-nycklade).",
           ipMdblistHint: "Visas som extra badges bredvid \xE5rtalet p\xE5 detaljsidan.",
+          ipMdblistViaLogin: "Anv\xE4nder din MDBList-inloggning (Sp\xE5rningstj\xE4nster \u2192 Konton) \u2014 ingen nyckel beh\xF6vs.",
+          ipMdblistLoginHint: "Enklare: anslut MDBList under Sp\xE5rningstj\xE4nster \u2192 Konton, d\xE5 beh\xF6vs ingen nyckel.",
+          hpListChoose: "V\xE4lj en lista",
+          hpListCategory: "Kategori",
+          hpListPasteLabel: "Eller klistra in l\xE4nk eller id",
+          hpListLookup: "H\xE4mta",
+          hpListNotFound: "Hittade ingen s\xE5dan lista",
+          hpListLoadError: "Kunde inte h\xE4mta dina listor",
           ratingBadgePosition: "Betygsbadgens position",
           ratingBadgePositionDesc: "Vilket h\xF6rn av postern betygsbadgen sitter i.",
           badgePosTr: "Uppe till h\xF6ger",
@@ -8631,6 +8780,7 @@
           plShortMusic: "Musik",
           plShortZoom: "Zoom",
           plShortCast: "Casta",
+          plShortPip: "Bild-i-bild",
           plShortFullscreen: "Fullsk\xE4rm",
           plShortMore: "Mer",
           recapFound: "Recap",
@@ -8711,8 +8861,23 @@
           subtitleOutlineColorDesc: "Anv\xE4nds f\xF6r textens outline/skugga.",
           resetSubtitleAppearance: "\xC5terst\xE4ll textutseende",
           resetSubtitleAppearanceDesc: "\xC5terst\xE4ller storlek, position, opacitet, f\xE4rger, bakgrund och kontur till standard.",
-          subtitlePreviewText: "S\xE5 h\xE4r kommer din textning att se ut",
+          subtitlePreviewText: "S\xE5 h\xE4r kommer din textning\natt se ut",
           subtitlePreviewCaption: "F\xF6rhandsvisning av standardutseende",
+          subtitleFont: "Typsnitt",
+          subtitleFontDesc: "L\xE4ttl\xE4sta typsnitt f\xF6r undertexter. V\xE4ljer du ett blir teckenavst\xE5ndet ocks\xE5 luftigare, och det \xE4r det som hj\xE4lper mest. Bildbaserade undertexter (PGS/VobSub fr\xE5n Blu-ray och dvd) beh\xE5ller sitt eget utseende.",
+          subtitleFontDefault: "Standard",
+          subtitleFontAtkinson: "Atkinson Hyperlegible (rekommenderas)",
+          subtitleFontOpenDyslexic: "OpenDyslexic",
+          subtitleLetterSpacing: "Teckenavst\xE5nd",
+          subtitleLetterSpacingDesc: "Det reglage som hj\xE4lper mest vid dyslexi: bokst\xE4ver som st\xE5r t\xE4tt tr\xE4ngs med varandra. Luftigare eller Luftigast \xE4r en bra b\xF6rjan.",
+          subtitleLineSpacing: "Radavst\xE5nd",
+          subtitleLineSpacingDesc: "Luft mellan raderna i en tv\xE5radig undertext. I skrivbordsappen g\xE4ller det bara i inl\xE4rningsl\xE4get \u2014 den inbyggda spelaren kan inte \xE4ndra det.",
+          subtitleSpacingNormal: "Normalt",
+          subtitleSpacingWide: "Luftigt",
+          subtitleSpacingWider: "Luftigare",
+          subtitleSpacingWidest: "Luftigast",
+          subtitleBold: "Fet text",
+          subtitleBoldDesc: "St\xE4ngs av n\xE4r du v\xE4ljer ett l\xE4ttl\xE4st typsnitt, som l\xE4ses b\xE4st i normal vikt.",
           skipIntro: "Skippa intro",
           originalFirst: "Original / f\xF6rsta",
           noFallback: "Ingen fallback",
@@ -9837,7 +10002,7 @@
           couchHapticsLegacy: "Koppla om med Soffl\xE4ge f\xF6r att styra K\xE4nn basen h\xE4r",
           couchHapticsLiveHint: "Styrka och f\xF6re/efter g\xE4ller n\xE4r Soffl\xE4ge \xE4r \xF6ppet p\xE5 telefonen.",
           couchEmptyTitle: "Inga telefoner kopplade \xE4n",
-          couchDialogInstr: "**iPhone:** skanna med kameran. **Android:** \xF6ppna Lumio-appen och ange koden.",
+          couchDialogInstr: "**Skanna med telefonens kamera** och \xF6ppna sidan \u2014 p\xE5 iPhone l\xE4gger du den p\xE5 hemsk\xE4rmen. **Lumio-appen p\xE5 Android:** \xF6ppna Soffl\xE4ge, v\xE4lj den h\xE4r datorn och ange koden.",
           couchWaiting: "V\xE4ntar p\xE5 telefonen \u2026",
           couchClosesIn: "St\xE4ngs om {time}",
           couchNewCode: "Ny kod",
@@ -9954,7 +10119,7 @@
       };
       LangContext = createContext(detachedLangContextValue);
       LANG_CHANGED_EVENT = "lumio-app-lang-changed";
-      STORAGE_KEY = "app_lang";
+      STORAGE_KEY2 = "app_lang";
       DEFAULT_LANG = "en";
     }
   });
@@ -9988,6 +10153,354 @@
       hostSdk = () => globalThis.__lumioPluginRuntime?.sdk;
       domTvMode = () => typeof document !== "undefined" && document.documentElement.getAttribute("data-tv") === "1";
       TV_FOCUS_EDGE_EVENT = "lumio-tv-focus-edge";
+    }
+  });
+
+  // lib/player-layout.ts
+  function readPlayerChromeViewport() {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "desktop";
+    if (window.matchMedia(DESKTOP_CHROME_QUERY).matches) return "desktop";
+    if (window.matchMedia(LANDSCAPE_PHONE_QUERY).matches) return "landscape";
+    return "portrait";
+  }
+  function defaultLayout() {
+    return {
+      order: [...PLAYER_CONTROL_IDS],
+      hidden: [],
+      timeFormat: "elapsed-total",
+      volumeStyle: "slider",
+      seekBarStyle: "flat",
+      seekBarHeight: "standard",
+      seekBarColor: "accent",
+      seekBarDot: true
+    };
+  }
+  function getPlayerLayout() {
+    if (typeof window === "undefined") return defaultLayout();
+    try {
+      const raw = getScopedStorageItem(LAYOUT_KEY);
+      if (!raw) return defaultLayout();
+      const parsed = JSON.parse(raw);
+      const known = new Set(PLAYER_CONTROL_IDS);
+      const order = (Array.isArray(parsed.order) ? parsed.order : []).filter(
+        (id) => known.has(id)
+      );
+      for (const id of PLAYER_CONTROL_IDS) {
+        if (order.includes(id)) continue;
+        const defaultIndex = PLAYER_CONTROL_IDS.indexOf(id);
+        let insertAt = order.length;
+        for (let i = defaultIndex - 1; i >= 0; i--) {
+          const at = order.indexOf(PLAYER_CONTROL_IDS[i]);
+          if (at >= 0) {
+            insertAt = at + 1;
+            break;
+          }
+          if (i === 0) insertAt = 0;
+        }
+        order.splice(insertAt, 0, id);
+      }
+      const hidden = (Array.isArray(parsed.hidden) ? parsed.hidden : []).filter(
+        (id) => known.has(id) && id !== "playPause"
+      );
+      const timeFormat = parsed.timeFormat === "remaining" || parsed.timeFormat === "elapsed" ? parsed.timeFormat : "elapsed-total";
+      const volumeStyle = parsed.volumeStyle === "stepper" || parsed.volumeStyle === "icon" ? parsed.volumeStyle : "slider";
+      const seekBarStyle = parsed.seekBarStyle === "glass" || parsed.seekBarStyle === "pinstripe" ? parsed.seekBarStyle : "flat";
+      const seekBarHeight = parsed.seekBarHeight === "slim" || parsed.seekBarHeight === "chunky" ? parsed.seekBarHeight : "standard";
+      const seekBarColor = parsed.seekBarColor === "white" || parsed.seekBarColor === "red" || parsed.seekBarColor === "amber" ? parsed.seekBarColor : "accent";
+      const seekBarDot = parsed.seekBarDot !== false;
+      return { order, hidden, timeFormat, volumeStyle, seekBarStyle, seekBarHeight, seekBarColor, seekBarDot };
+    } catch {
+      return defaultLayout();
+    }
+  }
+  function onPlayerLayoutChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT, listener);
+    return () => window.removeEventListener(EVENT, listener);
+  }
+  function seekBarAppearance(layout) {
+    return {
+      heightClass: layout.seekBarHeight === "slim" ? "h-1" : layout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5",
+      // Färgen ligger i variabeln, inte i en klass: hela spelarlagret läser samma
+      // värde, och förhandsvisningen sätter den på sin egen låda.
+      fillClass: "bg-[rgb(var(--player-accent))]",
+      overlayClass: layout.seekBarStyle === "glass" ? "shadow-[0_0_14px_rgba(255,255,255,0.35)]" : layout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "",
+      dot: layout.seekBarDot
+    };
+  }
+  function playerAccentRgb(layout, themeAccentRgb2) {
+    switch (layout.seekBarColor) {
+      case "white":
+        return "255 255 255";
+      case "red":
+        return "239 68 68";
+      case "amber":
+        return "251 191 36";
+      default:
+        return themeAccentRgb2;
+    }
+  }
+  function themeAccentRgb() {
+    if (typeof document === "undefined") return "244 132 95";
+    return getComputedStyle(document.documentElement).getPropertyValue("--accent-500").trim() || "244 132 95";
+  }
+  var PLAYER_CONTROL_IDS, DESKTOP_CHROME_QUERY, LANDSCAPE_PHONE_QUERY, DESKTOP_CONTROL_ZONES, PHONE_ROW_ORDER, LANDSCAPE_ROW_BUDGET, PHONE_DEDICATED_IDS, LAYOUT_KEY, EVENT;
+  var init_player_layout = __esm({
+    "lib/player-layout.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      PLAYER_CONTROL_IDS = [
+        "playPause",
+        "seekBack",
+        "seekForward",
+        "time",
+        "spacer",
+        "subtitles",
+        "pip",
+        "cast",
+        "audioTrack",
+        "aspect",
+        "cropZoom",
+        "audioOutput",
+        "segmentBadges",
+        "mute",
+        "volume",
+        "wiki",
+        "soundtrack",
+        "tuning",
+        "barcodeStrip",
+        "audioDelay",
+        "nextEpisode",
+        "switchStream",
+        "chapters",
+        "moments",
+        "sleepTimer",
+        "companions",
+        "more",
+        "fullscreen"
+      ];
+      DESKTOP_CHROME_QUERY = "(min-width: 768px) and (min-height: 520px)";
+      LANDSCAPE_PHONE_QUERY = "(max-height: 519px) and (orientation: landscape)";
+      DESKTOP_CONTROL_ZONES = {
+        // Statusraden ("Slutar 22:41 • Intro") direkt efter volymen, som i
+        // referensen — i mitten lämnade den en stor tom yta (Jerry 2026-10-03).
+        left: [["playPause", "nextEpisode", "switchStream"], ["mute", "volume"], ["segmentBadges"]],
+        center: [],
+        right: [
+          // Bildformat, zoom, sömntimer och barcode-remsan bor i kugghjulet
+          // (`more`) sedan 2026-10-03 — GEAR_CONTROL_IDS nedan.
+          ["subtitles", "audioTrack", "tuning"],
+          ["chapters", "moments", "wiki", "soundtrack", "cast"],
+          ["companions", "more", "fullscreen"]
+        ]
+      };
+      PHONE_ROW_ORDER = {
+        landscape: ["subtitles", "audioTrack", "tuning", "chapters", "moments", "wiki", "soundtrack", "switchStream", "fullscreen", "companions"],
+        portrait: ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "chapters", "moments", "wiki", "soundtrack", "companions"]
+      };
+      LANDSCAPE_ROW_BUDGET = 6;
+      PHONE_DEDICATED_IDS = {
+        landscape: ["nextEpisode", "pip", "cast"],
+        portrait: ["pip", "cast", "fullscreen"]
+      };
+      LAYOUT_KEY = "player_layout";
+      EVENT = "lumio-player-layout-changed";
+    }
+  });
+
+  // lib/pip.ts
+  function notify() {
+    for (const fn of listeners) fn();
+  }
+  function isTvDocument() {
+    if (typeof document === "undefined") return false;
+    return document.documentElement.getAttribute("data-tv") === "1";
+  }
+  function backend() {
+    if (backendOverride) return backendOverride;
+    if (typeof window === "undefined" || isTvDocument()) return "none";
+    if (isAndroidTauriEnv) return "droid";
+    if (!isClientSession()) return "none";
+    if (typeof window.matchMedia === "function" && window.matchMedia(DESKTOP_CHROME_QUERY).matches) return "none";
+    return "web";
+  }
+  function setActive(next) {
+    if (active === next) return;
+    active = next;
+    if (typeof document !== "undefined" && backend() === "droid") {
+      if (next) document.documentElement.setAttribute("data-pip", "on");
+      else document.documentElement.removeAttribute("data-pip");
+    }
+    notify();
+  }
+  function sendConfig(enabled) {
+    const reg = current;
+    void np({
+      cmd: "pipConfig",
+      enabled,
+      kind: reg?.actions.prevNextKind ?? "seek",
+      playing: enabled && reg ? reg.actions.isPlaying() : false
+    });
+  }
+  function webSupports(video) {
+    if (!video) return false;
+    if (typeof video.webkitSupportsPresentationMode === "function") {
+      return video.webkitSupportsPresentationMode("picture-in-picture");
+    }
+    return typeof video.requestPictureInPicture === "function";
+  }
+  function resolveDroidSupport() {
+    if (droidPipSupported !== null || droidPipResolving) return;
+    droidPipResolving = getDeviceCapabilities().then((caps) => caps?.pip === true, () => false).then((ok) => {
+      droidPipResolving = null;
+      droidPipSupported = ok;
+      if (ok && current && backend() === "droid") sendConfig(true);
+      notify();
+    });
+  }
+  function canPip(video) {
+    const b = backend();
+    if (b === "droid") return current !== null && droidPipSupported === true;
+    if (b === "web") return webSupports(video);
+    return false;
+  }
+  async function enterPip(video) {
+    const b = backend();
+    try {
+      if (b === "droid") {
+        if (!current) return false;
+        const res = await np({ cmd: "pipEnter" });
+        return Boolean(res?.ok);
+      }
+      if (b === "web") {
+        const v = video;
+        if (!v || !webSupports(v)) return false;
+        const std = v.requestPictureInPicture;
+        if (typeof std === "function") {
+          await std.call(v);
+          return true;
+        }
+        v.webkitSetPresentationMode?.("picture-in-picture");
+        return true;
+      }
+    } catch (e) {
+      console.warn("[pip] kunde inte g\xE5 in i PiP", e);
+    }
+    return false;
+  }
+  function attachWeb(video, actions) {
+    const onEnter = () => setActive(true);
+    const onLeave = () => {
+      const wasActive = active;
+      setActive(false);
+      if (wasActive && video.paused && document.visibilityState === "hidden") actions.onClosed();
+    };
+    const onWebkitMode = () => {
+      if (video.webkitPresentationMode === "picture-in-picture") onEnter();
+      else if (active) onLeave();
+    };
+    video.setAttribute("autopictureinpicture", "");
+    video.addEventListener("enterpictureinpicture", onEnter);
+    video.addEventListener("leavepictureinpicture", onLeave);
+    video.addEventListener("webkitpresentationmodechanged", onWebkitMode);
+    return () => {
+      video.removeAttribute("autopictureinpicture");
+      video.removeEventListener("enterpictureinpicture", onEnter);
+      video.removeEventListener("leavepictureinpicture", onLeave);
+      video.removeEventListener("webkitpresentationmodechanged", onWebkitMode);
+    };
+  }
+  function registerPip(actions, video) {
+    const b = backend();
+    current?.detach();
+    const v = video ?? null;
+    const reg = { actions, video: v, detach: () => {
+    } };
+    current = reg;
+    if (b === "droid") {
+      if (droidPipSupported === null) resolveDroidSupport();
+      else if (droidPipSupported) sendConfig(true);
+      notify();
+    } else if (b === "web" && v) {
+      reg.detach = attachWeb(v, actions);
+    }
+    return () => {
+      if (current !== reg) return;
+      reg.detach();
+      current = null;
+      if (b === "droid" && droidPipSupported === true) sendConfig(false);
+      setActive(false);
+      notify();
+    };
+  }
+  function notifyPipPlaying(_playing) {
+    if (!current || backend() !== "droid" || droidPipSupported !== true) return;
+    sendConfig(true);
+  }
+  function isPipActive() {
+    return active;
+  }
+  function subscribe(fn) {
+    listeners.add(fn);
+    return () => {
+      listeners.delete(fn);
+    };
+  }
+  function usePipMode() {
+    return useSyncExternalStore(subscribe, isPipActive, () => false);
+  }
+  function usePipAvailable(video) {
+    return useSyncExternalStore(subscribe, () => canPip(video), () => false);
+  }
+  function onNative(msg) {
+    const reg = current;
+    if (!reg) return false;
+    if (msg.mode === "on") {
+      setActive(true);
+      return true;
+    }
+    if (msg.mode === "off") {
+      setActive(false);
+      return true;
+    }
+    if (msg.mode === "closed") {
+      setActive(false);
+      reg.actions.onClosed();
+      return true;
+    }
+    switch (msg.action) {
+      case "prev":
+        reg.actions.onPrev();
+        return true;
+      case "next":
+        reg.actions.onNext();
+        return true;
+      case "playPause":
+        reg.actions.onPlayPause();
+        return true;
+    }
+    return false;
+  }
+  var backendOverride, current, active, listeners, droidPipSupported, droidPipResolving;
+  var init_pip = __esm({
+    "lib/pip.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tauri_native_player();
+      init_session_host();
+      init_player_layout();
+      backendOverride = null;
+      current = null;
+      active = false;
+      listeners = /* @__PURE__ */ new Set();
+      droidPipSupported = null;
+      droidPipResolving = null;
+      if (typeof window !== "undefined") {
+        ;
+        window.__lumioPip = onNative;
+      }
     }
   });
 
@@ -10025,22 +10538,22 @@
   function setLibraryMode(mode) {
     const ids = mode ? normalizeIds(mode.sourceIds) : [];
     setScopedStorageItem(KEY, ids.length > 0 ? JSON.stringify({ sourceIds: ids }) : "");
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT2));
   }
   function onLibraryModeChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT, listener);
-    return () => window.removeEventListener(EVENT, listener);
+    window.addEventListener(EVENT2, listener);
+    return () => window.removeEventListener(EVENT2, listener);
   }
-  var KEY, EVENT, libraryScope;
+  var KEY, EVENT2, libraryScope;
   var init_mode = __esm({
     "lib/library/mode.ts"() {
       "use client";
       init_react_shim();
       init_profile_storage_shim();
       KEY = "library_mode_v1";
-      EVENT = "lumio-library-mode";
+      EVENT2 = "lumio-library-mode";
       libraryScope = null;
     }
   });
@@ -10065,7 +10578,7 @@
           total: payload.total,
           loadedAt: Date.now()
         };
-        for (const listener of listeners) listener();
+        for (const listener of listeners2) listener();
         return cache2;
       } catch {
         return cache2 ?? EMPTY;
@@ -10103,16 +10616,16 @@
       sync();
       const onChanged = () => sync();
       window.addEventListener(LIBRARY_INDEX_CHANGED_EVENT, onChanged);
-      listeners.add(onChanged);
+      listeners2.add(onChanged);
       return () => {
         cancelled = true;
         window.removeEventListener(LIBRARY_INDEX_CHANGED_EVENT, onChanged);
-        listeners.delete(onChanged);
+        listeners2.delete(onChanged);
       };
     }, [mode]);
     return mode ? sets : null;
   }
-  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, cache2, inflight, listeners;
+  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, cache2, inflight, listeners2;
   var init_ids = __esm({
     "lib/library/ids.ts"() {
       "use strict";
@@ -10128,7 +10641,7 @@
       };
       cache2 = null;
       inflight = null;
-      listeners = /* @__PURE__ */ new Set();
+      listeners2 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -10433,7 +10946,7 @@
     return running;
   }
   function getActiveLibraryScan() {
-    return active;
+    return active2;
   }
   function onLibraryScanChanged(listener) {
     scanListeners.add(listener);
@@ -10441,8 +10954,8 @@
       scanListeners.delete(listener);
     };
   }
-  function setActive(next) {
-    active = next;
+  function setActive2(next) {
+    active2 = next;
     for (const listener of scanListeners) listener(next);
   }
   function cancelLibraryScan() {
@@ -10459,14 +10972,14 @@
     const forward = () => controller.abort();
     if (outer?.aborted) controller.abort();
     else outer?.addEventListener("abort", forward, { once: true });
-    setActive({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
+    setActive2({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
     const onProgress = options.onProgress;
     try {
       return await runLibraryScanInner(provider, source, {
         ...options,
         signal: controller.signal,
         onProgress: (progress2) => {
-          setActive({ sourceId: source.id, progress: progress2 });
+          setActive2({ sourceId: source.id, progress: progress2 });
           onProgress?.(progress2);
         }
       });
@@ -10474,7 +10987,7 @@
       outer?.removeEventListener("abort", forward);
       activeController = null;
       running = false;
-      setActive(null);
+      setActive2(null);
     }
   }
   async function runLibraryScanInner(provider, source, options) {
@@ -10522,7 +11035,7 @@
     report({ phase: "done", done: titles, total: titles });
     return { titles, removed, unmatched, cursor: result.cursor ?? null, durationMs: Date.now() - startedAt };
   }
-  var running, active, scanListeners, activeController;
+  var running, active2, scanListeners, activeController;
   var init_scan = __esm({
     "lib/library/scan.ts"() {
       "use client";
@@ -10530,7 +11043,7 @@
       init_ids();
       init_name_match();
       running = false;
-      active = null;
+      active2 = null;
       scanListeners = /* @__PURE__ */ new Set();
       activeController = null;
     }
@@ -10856,13 +11369,13 @@
     return CARD_RADIUS_OPTIONS.includes(raw) ? raw : 8;
   }
   function emitChanged() {
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT2));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT3));
   }
   function onAppearanceChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT2, listener);
-    return () => window.removeEventListener(EVENT2, listener);
+    window.addEventListener(EVENT3, listener);
+    return () => window.removeEventListener(EVENT3, listener);
   }
   function resolveTheme(theme) {
     if (theme === "custom") return "midnight";
@@ -10907,8 +11420,8 @@
     if (getHeroActionsExpanded()) root.dataset.heroActionLabels = "open";
     else delete root.dataset.heroActionLabels;
     if (getAppTheme() === "custom") {
-      const active3 = getCustomThemes().find((theme) => theme.id === getActiveCustomThemeId());
-      applyCustomThemeVars(active3 ?? null);
+      const active4 = getCustomThemes().find((theme) => theme.id === getActiveCustomThemeId());
+      applyCustomThemeVars(active4 ?? null);
     } else {
       applyCustomThemeVars(null);
     }
@@ -10935,7 +11448,7 @@
       root.style.setProperty("--accent-600", a600);
     }
   }
-  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT2, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, TV_BUTTON_SCALE_KEY, TV_BUTTON_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
+  var THEME_KEY, SCALE_KEY, MOTION_KEY, PERF_KEY, ACCENT_KEY, FONT_KEY, RADIUS_KEY, RADIUS_KEY_V2, EVENT3, UI_SCALE_OPTIONS, MENU_SCALE_KEY, MENU_SCALE_OPTIONS, TV_FONT_SCALE_KEY, TV_FONT_SCALE_OPTIONS, TV_MENU_SCALE_KEY, TV_MENU_SCALE_OPTIONS, TV_BUTTON_SCALE_KEY, TV_BUTTON_SCALE_OPTIONS, CORNER_SCALE_KEY, CORNER_SCALE_OPTIONS, HERO_ACTIONS_KEY, ACCENT_PRESETS, FONT_PAIRS, CARD_RADIUS_OPTIONS;
   var init_appearance_settings = __esm({
     "lib/appearance-settings.ts"() {
       "use strict";
@@ -10950,7 +11463,7 @@
       FONT_KEY = "appearance_font_pair";
       RADIUS_KEY = "appearance_card_radius";
       RADIUS_KEY_V2 = "appearance_card_radius_v2";
-      EVENT2 = "lumio-appearance-changed";
+      EVENT3 = "lumio-appearance-changed";
       UI_SCALE_OPTIONS = [75, 85, 90, 100, 110, 125, 140, 150];
       MENU_SCALE_KEY = "appearance_menu_scale";
       MENU_SCALE_OPTIONS = [70, 80, 90, 100];
@@ -11154,7 +11667,7 @@
   // lib/home-override-settings.ts
   function emitChanged2() {
     if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(EVENT3));
+    window.dispatchEvent(new CustomEvent(EVENT4));
   }
   function getHomeOverridePluginId() {
     if (typeof window === "undefined") return null;
@@ -11178,9 +11691,9 @@
   function tryEnableHomeOverridePlugin(pluginId) {
     const normalized = pluginId.trim();
     if (!normalized) return { ok: true };
-    const current2 = getHomeOverridePluginId();
-    if (current2 && current2 !== normalized) {
-      return { ok: false, activePluginId: current2 };
+    const current3 = getHomeOverridePluginId();
+    if (current3 && current3 !== normalized) {
+      return { ok: false, activePluginId: current3 };
     }
     setHomeOverridePluginId(normalized);
     return { ok: true };
@@ -11189,21 +11702,21 @@
     if (typeof window === "undefined") return () => {
     };
     const wrapped = () => listener();
-    window.addEventListener(EVENT3, wrapped);
+    window.addEventListener(EVENT4, wrapped);
     const offProfile = onProfileChanged(wrapped);
     return () => {
-      window.removeEventListener(EVENT3, wrapped);
+      window.removeEventListener(EVENT4, wrapped);
       offProfile();
     };
   }
-  var KEY2, EVENT3;
+  var KEY2, EVENT4;
   var init_home_override_settings = __esm({
     "lib/home-override-settings.ts"() {
       "use strict";
       "use client";
       init_profile_storage_shim();
       KEY2 = "custom_home_override_plugin";
-      EVENT3 = "lumio-home-override-changed";
+      EVENT4 = "lumio-home-override-changed";
     }
   });
 
@@ -11281,7 +11794,7 @@
   }
   function emitChanged3() {
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT4));
+      window.dispatchEvent(new CustomEvent(EVENT5));
     }
   }
   function setTraktAuth(auth) {
@@ -11300,14 +11813,14 @@
   function onTraktAuthChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT4, listener);
-    return () => window.removeEventListener(EVENT4, listener);
+    window.addEventListener(EVENT5, listener);
+    return () => window.removeEventListener(EVENT5, listener);
   }
   function getTraktScrobbleEnabled() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(SCROBBLE_KEY) !== "0";
   }
-  var AUTH_KEY, EVENT4, SCROBBLE_KEY;
+  var AUTH_KEY, EVENT5, SCROBBLE_KEY;
   var init_trakt_storage = __esm({
     "lib/trakt-storage.ts"() {
       "use strict";
@@ -11315,7 +11828,7 @@
       init_profile_storage_shim();
       init_spoiler_settings();
       AUTH_KEY = "trakt_auth";
-      EVENT4 = "lumio-trakt-auth-changed";
+      EVENT5 = "lumio-trakt-auth-changed";
       SCROBBLE_KEY = "trakt_scrobble_enabled";
     }
   });
@@ -11357,7 +11870,7 @@
   function write(entries) {
     setScopedStorageItem(KEY3, JSON.stringify(entries));
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT5));
+      window.dispatchEvent(new CustomEvent(EVENT6));
     }
   }
   function emitMutation(mutation) {
@@ -11384,12 +11897,35 @@
       source: options?.source ?? "local"
     });
   }
-  var KEY3, EVENT5, DETAIL_EVENT;
+  function removeFromMovieWatchlist(tmdbId, options) {
+    const normalizedTmdbId = normalizeTmdbId(tmdbId);
+    const existing = read().find((entry) => entry.tmdbId === normalizedTmdbId) ?? null;
+    write(read().filter((e) => e.tmdbId !== normalizedTmdbId));
+    if (existing) {
+      emitMutation({
+        action: "remove",
+        entry: existing,
+        source: options?.source ?? "local"
+      });
+    }
+  }
+  function onMovieWatchlistMutation(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handler = (event) => {
+      const detail = event.detail;
+      if (detail) listener(detail);
+    };
+    window.addEventListener(DETAIL_EVENT, handler);
+    return () => window.removeEventListener(DETAIL_EVENT, handler);
+  }
+  var KEY3, EVENT6, DETAIL_EVENT;
   var init_movie_watchlist = __esm({
     "lib/movie-watchlist.ts"() {
+      "use strict";
       init_profile_storage_shim();
       KEY3 = "movie_watchlist";
-      EVENT5 = "lumio-movie-watchlist-changed";
+      EVENT6 = "lumio-movie-watchlist-changed";
       DETAIL_EVENT = "lumio-movie-watchlist-mutated";
     }
   });
@@ -11424,7 +11960,7 @@
   function write2(entries) {
     setScopedStorageItem(KEY4, JSON.stringify(entries));
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT6));
+      window.dispatchEvent(new CustomEvent(EVENT7));
     }
   }
   function emitMutation2(mutation) {
@@ -11472,17 +12008,27 @@
   function onWatchlistChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT6, listener);
-    return () => window.removeEventListener(EVENT6, listener);
+    window.addEventListener(EVENT7, listener);
+    return () => window.removeEventListener(EVENT7, listener);
   }
-  var KEY4, LEGACY_KEY, EVENT6, DETAIL_EVENT2;
+  function onWatchlistMutation(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handler = (event) => {
+      const detail = event.detail;
+      if (detail) listener(detail);
+    };
+    window.addEventListener(DETAIL_EVENT2, handler);
+    return () => window.removeEventListener(DETAIL_EVENT2, handler);
+  }
+  var KEY4, LEGACY_KEY, EVENT7, DETAIL_EVENT2;
   var init_watchlist = __esm({
     "lib/watchlist.ts"() {
       "use strict";
       init_profile_storage_shim();
       KEY4 = "watchlist_items";
       LEGACY_KEY = "rd_watchlist";
-      EVENT6 = "lumio-watchlist-changed";
+      EVENT7 = "lumio-watchlist-changed";
       DETAIL_EVENT2 = "lumio-watchlist-mutated";
     }
   });
@@ -11508,7 +12054,7 @@
   function write3(data) {
     setScopedStorageItem(KEY5, JSON.stringify(data));
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT7));
+      window.dispatchEvent(new CustomEvent(EVENT8));
     }
   }
   function timestampOf(value) {
@@ -11521,7 +12067,7 @@
     const source = options?.source ?? "local";
     let next;
     if (watched) {
-      next = options?.watchedAt ?? (source === "trakt" ? previous ?? true : (/* @__PURE__ */ new Date()).toISOString());
+      next = options?.watchedAt ?? (source !== "local" ? previous ?? true : (/* @__PURE__ */ new Date()).toISOString());
     }
     if (previous === next || !watched && previous === void 0) return;
     if (next === void 0) delete data[key];
@@ -11585,16 +12131,26 @@
   function onWatchedEpisodesChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT7, listener);
-    return () => window.removeEventListener(EVENT7, listener);
+    window.addEventListener(EVENT8, listener);
+    return () => window.removeEventListener(EVENT8, listener);
   }
-  var KEY5, EVENT7, DETAIL_EVENT3;
+  function onWatchedEpisodeMutation(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handler = (event) => {
+      const detail = event.detail;
+      if (detail) listener(detail);
+    };
+    window.addEventListener(DETAIL_EVENT3, handler);
+    return () => window.removeEventListener(DETAIL_EVENT3, handler);
+  }
+  var KEY5, EVENT8, DETAIL_EVENT3;
   var init_watched_episodes = __esm({
     "lib/watched-episodes.ts"() {
       "use strict";
       init_profile_storage_shim();
       KEY5 = "watched_episodes";
-      EVENT7 = "lumio-watched-episodes-changed";
+      EVENT8 = "lumio-watched-episodes-changed";
       DETAIL_EVENT3 = "lumio-watched-episode-mutated";
     }
   });
@@ -11681,8 +12237,8 @@
     const title = entry.title ?? null;
     const year = normalizeYear(entry.year);
     if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) return;
-    const current2 = readEntries();
-    const next = current2.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
+    const current3 = readEntries();
+    const next = current3.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
     const nextEntry = {
       tmdbId,
       imdbId,
@@ -11703,7 +12259,7 @@
   }
   function applyRemoteWatchedMovies(remote, options) {
     if (typeof window === "undefined") return { kept: 0, removed: 0 };
-    const current2 = readEntries();
+    const current3 = readEntries();
     const next = [];
     for (const movie of remote) {
       const tmdbId = normalizeId(movie.tmdbId);
@@ -11712,7 +12268,7 @@
       const year = normalizeYear(movie.year);
       if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) continue;
       if (next.some((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }))) continue;
-      const existing = current2.find((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }));
+      const existing = current3.find((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }));
       next.push({
         tmdbId,
         imdbId,
@@ -11723,7 +12279,7 @@
       });
     }
     let removed = 0;
-    for (const entry of current2) {
+    for (const entry of current3) {
       if (next.some((kept) => sameMovie(kept, entry))) continue;
       if (options?.keepLocal?.(entry)) {
         next.push(entry);
@@ -11748,6 +12304,16 @@
     };
     window.addEventListener(EVENT_WATCHED_MOVIES_CHANGED, handle);
     return () => window.removeEventListener(EVENT_WATCHED_MOVIES_CHANGED, handle);
+  }
+  function onWatchedMovieMutation(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    const handle = (event) => {
+      const detail = event.detail;
+      if (detail) listener(detail);
+    };
+    window.addEventListener(DETAIL_EVENT_WATCHED_MOVIE_MUTATED, handle);
+    return () => window.removeEventListener(DETAIL_EVENT_WATCHED_MOVIE_MUTATED, handle);
   }
   var KEY_WATCHED_MOVIES, EVENT_WATCHED_MOVIES_CHANGED, DETAIL_EVENT_WATCHED_MOVIE_MUTATED;
   var init_watched_movies = __esm({
@@ -11930,17 +12496,17 @@
   }
   function applyAuthUpdate(nextAuth) {
     if (!nextAuth) return getTraktAuth();
+    const current3 = getTraktAuth();
     const merged = {
       accessToken: nextAuth.accessToken,
       refreshToken: nextAuth.refreshToken,
       expiresAt: nextAuth.expiresAt,
       scope: nextAuth.scope ?? "",
       tokenType: nextAuth.tokenType ?? "bearer",
-      username: nextAuth.username ?? null,
-      name: nextAuth.name ?? null
+      username: nextAuth.username ?? current3?.username ?? null,
+      name: nextAuth.name ?? current3?.name ?? null
     };
-    const current2 = getTraktAuth();
-    if (current2?.accessToken === merged.accessToken) return merged;
+    if (current3?.accessToken === merged.accessToken && (current3.username ?? null) === merged.username && (current3.name ?? null) === merged.name) return merged;
     setTraktAuth(merged);
     return merged;
   }
@@ -12347,6 +12913,1266 @@
     }
   });
 
+  // lib/watchlist-merge.ts
+  function planWatchlistSync(local, remote, snapshotIds, conflictRule, options) {
+    const keepLocal = options?.keepLocal === true;
+    const localById = new Map(local.map((e) => [e.tmdbId, e]));
+    const remoteById = new Map(remote.map((e) => [e.tmdbId, e]));
+    const plan = { pushAdds: [], pushRemoves: [], localAdds: [], localRemoveIds: [], nextIds: [] };
+    const asRemoteEntry = (e) => ({
+      tmdbId: e.tmdbId,
+      imdbId: e.imdbId ?? null,
+      title: e.title,
+      posterUrl: e.posterUrl ?? null
+    });
+    if (snapshotIds === null) {
+      for (const [id, entry] of localById) {
+        if (remoteById.has(id)) continue;
+        if (conflictRule === "trakt" && !keepLocal) plan.localRemoveIds.push(id);
+        else plan.pushAdds.push(asRemoteEntry(entry));
+      }
+      for (const [id, entry] of remoteById) {
+        if (localById.has(id)) continue;
+        if (conflictRule === "local") plan.pushRemoves.push(entry);
+        else plan.localAdds.push(entry);
+      }
+    } else {
+      const snap = new Set(snapshotIds);
+      for (const [id, entry] of localById) {
+        if (remoteById.has(id)) continue;
+        if (snap.has(id) && !keepLocal) plan.localRemoveIds.push(id);
+        else plan.pushAdds.push(asRemoteEntry(entry));
+      }
+      for (const [id, entry] of remoteById) {
+        if (localById.has(id)) continue;
+        if (snap.has(id)) plan.pushRemoves.push(entry);
+        else plan.localAdds.push(entry);
+      }
+    }
+    const removedLocally = new Set(plan.localRemoveIds);
+    const pushedRemoves = new Set(plan.pushRemoves.map((e) => e.tmdbId));
+    const next = /* @__PURE__ */ new Set();
+    for (const id of localById.keys()) if (!removedLocally.has(id)) next.add(id);
+    for (const e of plan.localAdds) next.add(e.tmdbId);
+    for (const id of remoteById.keys()) if (!pushedRemoves.has(id) && !removedLocally.has(id)) next.add(id);
+    plan.nextIds = [...next];
+    return plan;
+  }
+  var init_watchlist_merge = __esm({
+    "lib/watchlist-merge.ts"() {
+      "use strict";
+    }
+  });
+
+  // lib/mutation-source.ts
+  function isUserMutation(source) {
+    return source === "local";
+  }
+  var init_mutation_source = __esm({
+    "lib/mutation-source.ts"() {
+      "use strict";
+      "use client";
+    }
+  });
+
+  // lib/rating-sources.ts
+  function getMdblistApiKey() {
+    if (typeof window === "undefined") return "";
+    return getScopedStorageItem(KEY_MDBLIST) ?? "";
+  }
+  function setMdblistApiKey(value) {
+    if (value) setScopedStorageItem(KEY_MDBLIST, value);
+    else removeScopedStorageItem(KEY_MDBLIST);
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
+  }
+  function onRatingSourcesChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT9, listener);
+    window.addEventListener(MDBLIST_AUTH_EVENT, listener);
+    return () => {
+      window.removeEventListener(EVENT9, listener);
+      window.removeEventListener(MDBLIST_AUTH_EVENT, listener);
+    };
+  }
+  var KEY_MDBLIST, EVENT9, MDBLIST_AUTH_EVENT;
+  var init_rating_sources = __esm({
+    "lib/rating-sources.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      KEY_MDBLIST = "mdblist_api_key";
+      EVENT9 = "lumio-rating-sources-changed";
+      MDBLIST_AUTH_EVENT = "lumio-mdblist-auth-changed";
+    }
+  });
+
+  // lib/open-external.ts
+  async function openAndroidUrl(url) {
+    try {
+      const response = await fetch("/api/native-player", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cmd: "openUrl", url })
+      });
+      if (!response.ok) return false;
+      const payload = await response.json();
+      return payload?.ok === true;
+    } catch {
+      return false;
+    }
+  }
+  async function openExternalUrl(url) {
+    if (!url) return;
+    if (isAndroidTauri) {
+      if (await openAndroidUrl(url)) return;
+      console.warn("[open-external] Android intent failed, not falling back to window.open", url);
+      return;
+    }
+    if (isTauriEnv) {
+      try {
+        const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
+        await invoke6("open_external_url", { url });
+        return;
+      } catch {
+      }
+    }
+    if (typeof window !== "undefined") {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  }
+  var isAndroidTauri;
+  var init_open_external = __esm({
+    "lib/open-external.ts"() {
+      "use strict";
+      "use client";
+      init_tauri_mpv();
+      isAndroidTauri = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+    }
+  });
+
+  // ../../node_modules/qrcode.react/lib/esm/index.js
+  function generatePath(modules, margin = 0) {
+    const ops = [];
+    modules.forEach(function(row, y) {
+      let start2 = null;
+      row.forEach(function(cell, x) {
+        if (!cell && start2 !== null) {
+          ops.push(
+            `M${start2 + margin} ${y + margin}h${x - start2}v1H${start2 + margin}z`
+          );
+          start2 = null;
+          return;
+        }
+        if (x === row.length - 1) {
+          if (!cell) {
+            return;
+          }
+          if (start2 === null) {
+            ops.push(`M${x + margin},${y + margin} h1v1H${x + margin}z`);
+          } else {
+            ops.push(
+              `M${start2 + margin},${y + margin} h${x + 1 - start2}v1H${start2 + margin}z`
+            );
+          }
+          return;
+        }
+        if (cell && start2 === null) {
+          start2 = x;
+        }
+      });
+    });
+    return ops.join("");
+  }
+  function excavateModules(modules, excavation) {
+    return modules.slice().map((row, y) => {
+      if (y < excavation.y || y >= excavation.y + excavation.h) {
+        return row;
+      }
+      return row.map((cell, x) => {
+        if (x < excavation.x || x >= excavation.x + excavation.w) {
+          return cell;
+        }
+        return false;
+      });
+    });
+  }
+  function getImageSettings(cells, size, margin, imageSettings) {
+    if (imageSettings == null) {
+      return null;
+    }
+    const numCells = cells.length + margin * 2;
+    const defaultSize = Math.floor(size * DEFAULT_IMG_SCALE);
+    const scale = numCells / size;
+    const w = (imageSettings.width || defaultSize) * scale;
+    const h = (imageSettings.height || defaultSize) * scale;
+    const x = imageSettings.x == null ? cells.length / 2 - w / 2 : imageSettings.x * scale;
+    const y = imageSettings.y == null ? cells.length / 2 - h / 2 : imageSettings.y * scale;
+    const opacity = imageSettings.opacity == null ? 1 : imageSettings.opacity;
+    let excavation = null;
+    if (imageSettings.excavate) {
+      let floorX = Math.floor(x);
+      let floorY = Math.floor(y);
+      let ceilW = Math.ceil(w + x - floorX);
+      let ceilH = Math.ceil(h + y - floorY);
+      excavation = { x: floorX, y: floorY, w: ceilW, h: ceilH };
+    }
+    const crossOrigin = imageSettings.crossOrigin;
+    return { x, y, h, w, excavation, opacity, crossOrigin };
+  }
+  function getMarginSize(includeMargin, marginSize) {
+    if (marginSize != null) {
+      return Math.max(Math.floor(marginSize), 0);
+    }
+    return includeMargin ? SPEC_MARGIN_SIZE : DEFAULT_MARGIN_SIZE;
+  }
+  function useQRCode({
+    value,
+    level,
+    minVersion,
+    includeMargin,
+    marginSize,
+    imageSettings,
+    size,
+    boostLevel
+  }) {
+    let qrcode = react_shim_default.useMemo(() => {
+      const values = Array.isArray(value) ? value : [value];
+      const segments = values.reduce((accum, v) => {
+        accum.push(...qrcodegen_default.QrSegment.makeSegments(v));
+        return accum;
+      }, []);
+      return qrcodegen_default.QrCode.encodeSegments(
+        segments,
+        ERROR_LEVEL_MAP[level],
+        minVersion,
+        void 0,
+        void 0,
+        boostLevel
+      );
+    }, [value, level, minVersion, boostLevel]);
+    const { cells, margin, numCells, calculatedImageSettings } = react_shim_default.useMemo(() => {
+      let cells2 = qrcode.getModules();
+      const margin2 = getMarginSize(includeMargin, marginSize);
+      const numCells2 = cells2.length + margin2 * 2;
+      const calculatedImageSettings2 = getImageSettings(
+        cells2,
+        size,
+        margin2,
+        imageSettings
+      );
+      return {
+        cells: cells2,
+        margin: margin2,
+        numCells: numCells2,
+        calculatedImageSettings: calculatedImageSettings2
+      };
+    }, [qrcode, size, imageSettings, includeMargin, marginSize]);
+    return {
+      qrcode,
+      margin,
+      cells,
+      numCells,
+      calculatedImageSettings
+    };
+  }
+  var __defProp2, __getOwnPropSymbols, __hasOwnProp2, __propIsEnum, __defNormalProp2, __spreadValues, __objRest, qrcodegen, qrcodegen_default, ERROR_LEVEL_MAP, DEFAULT_SIZE, DEFAULT_LEVEL, DEFAULT_BGCOLOR, DEFAULT_FGCOLOR, DEFAULT_INCLUDEMARGIN, DEFAULT_MINVERSION, SPEC_MARGIN_SIZE, DEFAULT_MARGIN_SIZE, DEFAULT_IMG_SCALE, SUPPORTS_PATH2D, QRCodeCanvas, QRCodeSVG;
+  var init_esm = __esm({
+    "../../node_modules/qrcode.react/lib/esm/index.js"() {
+      init_react_shim();
+      __defProp2 = Object.defineProperty;
+      __getOwnPropSymbols = Object.getOwnPropertySymbols;
+      __hasOwnProp2 = Object.prototype.hasOwnProperty;
+      __propIsEnum = Object.prototype.propertyIsEnumerable;
+      __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+      __spreadValues = (a, b) => {
+        for (var prop in b || (b = {}))
+          if (__hasOwnProp2.call(b, prop))
+            __defNormalProp2(a, prop, b[prop]);
+        if (__getOwnPropSymbols)
+          for (var prop of __getOwnPropSymbols(b)) {
+            if (__propIsEnum.call(b, prop))
+              __defNormalProp2(a, prop, b[prop]);
+          }
+        return a;
+      };
+      __objRest = (source, exclude) => {
+        var target2 = {};
+        for (var prop in source)
+          if (__hasOwnProp2.call(source, prop) && exclude.indexOf(prop) < 0)
+            target2[prop] = source[prop];
+        if (source != null && __getOwnPropSymbols)
+          for (var prop of __getOwnPropSymbols(source)) {
+            if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
+              target2[prop] = source[prop];
+          }
+        return target2;
+      };
+      ((qrcodegen2) => {
+        const _QrCode = class _QrCode2 {
+          /*-- Constructor (low level) and fields --*/
+          // Creates a new QR Code with the given version number,
+          // error correction level, data codeword bytes, and mask number.
+          // This is a low-level API that most users should not use directly.
+          // A mid-level API is the encodeSegments() function.
+          constructor(version3, errorCorrectionLevel, dataCodewords, msk) {
+            this.version = version3;
+            this.errorCorrectionLevel = errorCorrectionLevel;
+            this.modules = [];
+            this.isFunction = [];
+            if (version3 < _QrCode2.MIN_VERSION || version3 > _QrCode2.MAX_VERSION)
+              throw new RangeError("Version value out of range");
+            if (msk < -1 || msk > 7)
+              throw new RangeError("Mask value out of range");
+            this.size = version3 * 4 + 17;
+            let row = [];
+            for (let i = 0; i < this.size; i++)
+              row.push(false);
+            for (let i = 0; i < this.size; i++) {
+              this.modules.push(row.slice());
+              this.isFunction.push(row.slice());
+            }
+            this.drawFunctionPatterns();
+            const allCodewords = this.addEccAndInterleave(dataCodewords);
+            this.drawCodewords(allCodewords);
+            if (msk == -1) {
+              let minPenalty = 1e9;
+              for (let i = 0; i < 8; i++) {
+                this.applyMask(i);
+                this.drawFormatBits(i);
+                const penalty = this.getPenaltyScore();
+                if (penalty < minPenalty) {
+                  msk = i;
+                  minPenalty = penalty;
+                }
+                this.applyMask(i);
+              }
+            }
+            assert(0 <= msk && msk <= 7);
+            this.mask = msk;
+            this.applyMask(msk);
+            this.drawFormatBits(msk);
+            this.isFunction = [];
+          }
+          /*-- Static factory functions (high level) --*/
+          // Returns a QR Code representing the given Unicode text string at the given error correction level.
+          // As a conservative upper bound, this function is guaranteed to succeed for strings that have 738 or fewer
+          // Unicode code points (not UTF-16 code units) if the low error correction level is used. The smallest possible
+          // QR Code version is automatically chosen for the output. The ECC level of the result may be higher than the
+          // ecl argument if it can be done without increasing the version.
+          static encodeText(text, ecl) {
+            const segs = qrcodegen2.QrSegment.makeSegments(text);
+            return _QrCode2.encodeSegments(segs, ecl);
+          }
+          // Returns a QR Code representing the given binary data at the given error correction level.
+          // This function always encodes using the binary segment mode, not any text mode. The maximum number of
+          // bytes allowed is 2953. The smallest possible QR Code version is automatically chosen for the output.
+          // The ECC level of the result may be higher than the ecl argument if it can be done without increasing the version.
+          static encodeBinary(data, ecl) {
+            const seg = qrcodegen2.QrSegment.makeBytes(data);
+            return _QrCode2.encodeSegments([seg], ecl);
+          }
+          /*-- Static factory functions (mid level) --*/
+          // Returns a QR Code representing the given segments with the given encoding parameters.
+          // The smallest possible QR Code version within the given range is automatically
+          // chosen for the output. Iff boostEcl is true, then the ECC level of the result
+          // may be higher than the ecl argument if it can be done without increasing the
+          // version. The mask number is either between 0 to 7 (inclusive) to force that
+          // mask, or -1 to automatically choose an appropriate mask (which may be slow).
+          // This function allows the user to create a custom sequence of segments that switches
+          // between modes (such as alphanumeric and byte) to encode text in less space.
+          // This is a mid-level API; the high-level API is encodeText() and encodeBinary().
+          static encodeSegments(segs, ecl, minVersion = 1, maxVersion = 40, mask = -1, boostEcl = true) {
+            if (!(_QrCode2.MIN_VERSION <= minVersion && minVersion <= maxVersion && maxVersion <= _QrCode2.MAX_VERSION) || mask < -1 || mask > 7)
+              throw new RangeError("Invalid value");
+            let version3;
+            let dataUsedBits;
+            for (version3 = minVersion; ; version3++) {
+              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
+              const usedBits = QrSegment.getTotalBits(segs, version3);
+              if (usedBits <= dataCapacityBits2) {
+                dataUsedBits = usedBits;
+                break;
+              }
+              if (version3 >= maxVersion)
+                throw new RangeError("Data too long");
+            }
+            for (const newEcl of [_QrCode2.Ecc.MEDIUM, _QrCode2.Ecc.QUARTILE, _QrCode2.Ecc.HIGH]) {
+              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version3, newEcl) * 8)
+                ecl = newEcl;
+            }
+            let bb = [];
+            for (const seg of segs) {
+              appendBits(seg.mode.modeBits, 4, bb);
+              appendBits(seg.numChars, seg.mode.numCharCountBits(version3), bb);
+              for (const b of seg.getData())
+                bb.push(b);
+            }
+            assert(bb.length == dataUsedBits);
+            const dataCapacityBits = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
+            assert(bb.length <= dataCapacityBits);
+            appendBits(0, Math.min(4, dataCapacityBits - bb.length), bb);
+            appendBits(0, (8 - bb.length % 8) % 8, bb);
+            assert(bb.length % 8 == 0);
+            for (let padByte = 236; bb.length < dataCapacityBits; padByte ^= 236 ^ 17)
+              appendBits(padByte, 8, bb);
+            let dataCodewords = [];
+            while (dataCodewords.length * 8 < bb.length)
+              dataCodewords.push(0);
+            bb.forEach((b, i) => dataCodewords[i >>> 3] |= b << 7 - (i & 7));
+            return new _QrCode2(version3, ecl, dataCodewords, mask);
+          }
+          /*-- Accessor methods --*/
+          // Returns the color of the module (pixel) at the given coordinates, which is false
+          // for light or true for dark. The top left corner has the coordinates (x=0, y=0).
+          // If the given coordinates are out of bounds, then false (light) is returned.
+          getModule(x, y) {
+            return 0 <= x && x < this.size && 0 <= y && y < this.size && this.modules[y][x];
+          }
+          // Modified to expose modules for easy access
+          getModules() {
+            return this.modules;
+          }
+          /*-- Private helper methods for constructor: Drawing function modules --*/
+          // Reads this object's version field, and draws and marks all function modules.
+          drawFunctionPatterns() {
+            for (let i = 0; i < this.size; i++) {
+              this.setFunctionModule(6, i, i % 2 == 0);
+              this.setFunctionModule(i, 6, i % 2 == 0);
+            }
+            this.drawFinderPattern(3, 3);
+            this.drawFinderPattern(this.size - 4, 3);
+            this.drawFinderPattern(3, this.size - 4);
+            const alignPatPos = this.getAlignmentPatternPositions();
+            const numAlign = alignPatPos.length;
+            for (let i = 0; i < numAlign; i++) {
+              for (let j = 0; j < numAlign; j++) {
+                if (!(i == 0 && j == 0 || i == 0 && j == numAlign - 1 || i == numAlign - 1 && j == 0))
+                  this.drawAlignmentPattern(alignPatPos[i], alignPatPos[j]);
+              }
+            }
+            this.drawFormatBits(0);
+            this.drawVersion();
+          }
+          // Draws two copies of the format bits (with its own error correction code)
+          // based on the given mask and this object's error correction level field.
+          drawFormatBits(mask) {
+            const data = this.errorCorrectionLevel.formatBits << 3 | mask;
+            let rem = data;
+            for (let i = 0; i < 10; i++)
+              rem = rem << 1 ^ (rem >>> 9) * 1335;
+            const bits = (data << 10 | rem) ^ 21522;
+            assert(bits >>> 15 == 0);
+            for (let i = 0; i <= 5; i++)
+              this.setFunctionModule(8, i, getBit(bits, i));
+            this.setFunctionModule(8, 7, getBit(bits, 6));
+            this.setFunctionModule(8, 8, getBit(bits, 7));
+            this.setFunctionModule(7, 8, getBit(bits, 8));
+            for (let i = 9; i < 15; i++)
+              this.setFunctionModule(14 - i, 8, getBit(bits, i));
+            for (let i = 0; i < 8; i++)
+              this.setFunctionModule(this.size - 1 - i, 8, getBit(bits, i));
+            for (let i = 8; i < 15; i++)
+              this.setFunctionModule(8, this.size - 15 + i, getBit(bits, i));
+            this.setFunctionModule(8, this.size - 8, true);
+          }
+          // Draws two copies of the version bits (with its own error correction code),
+          // based on this object's version field, iff 7 <= version <= 40.
+          drawVersion() {
+            if (this.version < 7)
+              return;
+            let rem = this.version;
+            for (let i = 0; i < 12; i++)
+              rem = rem << 1 ^ (rem >>> 11) * 7973;
+            const bits = this.version << 12 | rem;
+            assert(bits >>> 18 == 0);
+            for (let i = 0; i < 18; i++) {
+              const color = getBit(bits, i);
+              const a = this.size - 11 + i % 3;
+              const b = Math.floor(i / 3);
+              this.setFunctionModule(a, b, color);
+              this.setFunctionModule(b, a, color);
+            }
+          }
+          // Draws a 9*9 finder pattern including the border separator,
+          // with the center module at (x, y). Modules can be out of bounds.
+          drawFinderPattern(x, y) {
+            for (let dy = -4; dy <= 4; dy++) {
+              for (let dx = -4; dx <= 4; dx++) {
+                const dist = Math.max(Math.abs(dx), Math.abs(dy));
+                const xx = x + dx;
+                const yy = y + dy;
+                if (0 <= xx && xx < this.size && 0 <= yy && yy < this.size)
+                  this.setFunctionModule(xx, yy, dist != 2 && dist != 4);
+              }
+            }
+          }
+          // Draws a 5*5 alignment pattern, with the center module
+          // at (x, y). All modules must be in bounds.
+          drawAlignmentPattern(x, y) {
+            for (let dy = -2; dy <= 2; dy++) {
+              for (let dx = -2; dx <= 2; dx++)
+                this.setFunctionModule(x + dx, y + dy, Math.max(Math.abs(dx), Math.abs(dy)) != 1);
+            }
+          }
+          // Sets the color of a module and marks it as a function module.
+          // Only used by the constructor. Coordinates must be in bounds.
+          setFunctionModule(x, y, isDark) {
+            this.modules[y][x] = isDark;
+            this.isFunction[y][x] = true;
+          }
+          /*-- Private helper methods for constructor: Codewords and masking --*/
+          // Returns a new byte string representing the given data with the appropriate error correction
+          // codewords appended to it, based on this object's version and error correction level.
+          addEccAndInterleave(data) {
+            const ver = this.version;
+            const ecl = this.errorCorrectionLevel;
+            if (data.length != _QrCode2.getNumDataCodewords(ver, ecl))
+              throw new RangeError("Invalid argument");
+            const numBlocks = _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
+            const blockEccLen = _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver];
+            const rawCodewords = Math.floor(_QrCode2.getNumRawDataModules(ver) / 8);
+            const numShortBlocks = numBlocks - rawCodewords % numBlocks;
+            const shortBlockLen = Math.floor(rawCodewords / numBlocks);
+            let blocks = [];
+            const rsDiv = _QrCode2.reedSolomonComputeDivisor(blockEccLen);
+            for (let i = 0, k = 0; i < numBlocks; i++) {
+              let dat = data.slice(k, k + shortBlockLen - blockEccLen + (i < numShortBlocks ? 0 : 1));
+              k += dat.length;
+              const ecc = _QrCode2.reedSolomonComputeRemainder(dat, rsDiv);
+              if (i < numShortBlocks)
+                dat.push(0);
+              blocks.push(dat.concat(ecc));
+            }
+            let result = [];
+            for (let i = 0; i < blocks[0].length; i++) {
+              blocks.forEach((block, j) => {
+                if (i != shortBlockLen - blockEccLen || j >= numShortBlocks)
+                  result.push(block[i]);
+              });
+            }
+            assert(result.length == rawCodewords);
+            return result;
+          }
+          // Draws the given sequence of 8-bit codewords (data and error correction) onto the entire
+          // data area of this QR Code. Function modules need to be marked off before this is called.
+          drawCodewords(data) {
+            if (data.length != Math.floor(_QrCode2.getNumRawDataModules(this.version) / 8))
+              throw new RangeError("Invalid argument");
+            let i = 0;
+            for (let right = this.size - 1; right >= 1; right -= 2) {
+              if (right == 6)
+                right = 5;
+              for (let vert = 0; vert < this.size; vert++) {
+                for (let j = 0; j < 2; j++) {
+                  const x = right - j;
+                  const upward = (right + 1 & 2) == 0;
+                  const y = upward ? this.size - 1 - vert : vert;
+                  if (!this.isFunction[y][x] && i < data.length * 8) {
+                    this.modules[y][x] = getBit(data[i >>> 3], 7 - (i & 7));
+                    i++;
+                  }
+                }
+              }
+            }
+            assert(i == data.length * 8);
+          }
+          // XORs the codeword modules in this QR Code with the given mask pattern.
+          // The function modules must be marked and the codeword bits must be drawn
+          // before masking. Due to the arithmetic of XOR, calling applyMask() with
+          // the same mask value a second time will undo the mask. A final well-formed
+          // QR Code needs exactly one (not zero, two, etc.) mask applied.
+          applyMask(mask) {
+            if (mask < 0 || mask > 7)
+              throw new RangeError("Mask value out of range");
+            for (let y = 0; y < this.size; y++) {
+              for (let x = 0; x < this.size; x++) {
+                let invert;
+                switch (mask) {
+                  case 0:
+                    invert = (x + y) % 2 == 0;
+                    break;
+                  case 1:
+                    invert = y % 2 == 0;
+                    break;
+                  case 2:
+                    invert = x % 3 == 0;
+                    break;
+                  case 3:
+                    invert = (x + y) % 3 == 0;
+                    break;
+                  case 4:
+                    invert = (Math.floor(x / 3) + Math.floor(y / 2)) % 2 == 0;
+                    break;
+                  case 5:
+                    invert = x * y % 2 + x * y % 3 == 0;
+                    break;
+                  case 6:
+                    invert = (x * y % 2 + x * y % 3) % 2 == 0;
+                    break;
+                  case 7:
+                    invert = ((x + y) % 2 + x * y % 3) % 2 == 0;
+                    break;
+                  default:
+                    throw new Error("Unreachable");
+                }
+                if (!this.isFunction[y][x] && invert)
+                  this.modules[y][x] = !this.modules[y][x];
+              }
+            }
+          }
+          // Calculates and returns the penalty score based on state of this QR Code's current modules.
+          // This is used by the automatic mask choice algorithm to find the mask pattern that yields the lowest score.
+          getPenaltyScore() {
+            let result = 0;
+            for (let y = 0; y < this.size; y++) {
+              let runColor = false;
+              let runX = 0;
+              let runHistory = [0, 0, 0, 0, 0, 0, 0];
+              for (let x = 0; x < this.size; x++) {
+                if (this.modules[y][x] == runColor) {
+                  runX++;
+                  if (runX == 5)
+                    result += _QrCode2.PENALTY_N1;
+                  else if (runX > 5)
+                    result++;
+                } else {
+                  this.finderPenaltyAddHistory(runX, runHistory);
+                  if (!runColor)
+                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
+                  runColor = this.modules[y][x];
+                  runX = 1;
+                }
+              }
+              result += this.finderPenaltyTerminateAndCount(runColor, runX, runHistory) * _QrCode2.PENALTY_N3;
+            }
+            for (let x = 0; x < this.size; x++) {
+              let runColor = false;
+              let runY = 0;
+              let runHistory = [0, 0, 0, 0, 0, 0, 0];
+              for (let y = 0; y < this.size; y++) {
+                if (this.modules[y][x] == runColor) {
+                  runY++;
+                  if (runY == 5)
+                    result += _QrCode2.PENALTY_N1;
+                  else if (runY > 5)
+                    result++;
+                } else {
+                  this.finderPenaltyAddHistory(runY, runHistory);
+                  if (!runColor)
+                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
+                  runColor = this.modules[y][x];
+                  runY = 1;
+                }
+              }
+              result += this.finderPenaltyTerminateAndCount(runColor, runY, runHistory) * _QrCode2.PENALTY_N3;
+            }
+            for (let y = 0; y < this.size - 1; y++) {
+              for (let x = 0; x < this.size - 1; x++) {
+                const color = this.modules[y][x];
+                if (color == this.modules[y][x + 1] && color == this.modules[y + 1][x] && color == this.modules[y + 1][x + 1])
+                  result += _QrCode2.PENALTY_N2;
+              }
+            }
+            let dark = 0;
+            for (const row of this.modules)
+              dark = row.reduce((sum, color) => sum + (color ? 1 : 0), dark);
+            const total = this.size * this.size;
+            const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1;
+            assert(0 <= k && k <= 9);
+            result += k * _QrCode2.PENALTY_N4;
+            assert(0 <= result && result <= 2568888);
+            return result;
+          }
+          /*-- Private helper functions --*/
+          // Returns an ascending list of positions of alignment patterns for this version number.
+          // Each position is in the range [0,177), and are used on both the x and y axes.
+          // This could be implemented as lookup table of 40 variable-length lists of integers.
+          getAlignmentPatternPositions() {
+            if (this.version == 1)
+              return [];
+            else {
+              const numAlign = Math.floor(this.version / 7) + 2;
+              const step = this.version == 32 ? 26 : Math.ceil((this.version * 4 + 4) / (numAlign * 2 - 2)) * 2;
+              let result = [6];
+              for (let pos = this.size - 7; result.length < numAlign; pos -= step)
+                result.splice(1, 0, pos);
+              return result;
+            }
+          }
+          // Returns the number of data bits that can be stored in a QR Code of the given version number, after
+          // all function modules are excluded. This includes remainder bits, so it might not be a multiple of 8.
+          // The result is in the range [208, 29648]. This could be implemented as a 40-entry lookup table.
+          static getNumRawDataModules(ver) {
+            if (ver < _QrCode2.MIN_VERSION || ver > _QrCode2.MAX_VERSION)
+              throw new RangeError("Version number out of range");
+            let result = (16 * ver + 128) * ver + 64;
+            if (ver >= 2) {
+              const numAlign = Math.floor(ver / 7) + 2;
+              result -= (25 * numAlign - 10) * numAlign - 55;
+              if (ver >= 7)
+                result -= 36;
+            }
+            assert(208 <= result && result <= 29648);
+            return result;
+          }
+          // Returns the number of 8-bit data (i.e. not error correction) codewords contained in any
+          // QR Code of the given version number and error correction level, with remainder bits discarded.
+          // This stateless pure function could be implemented as a (40*4)-cell lookup table.
+          static getNumDataCodewords(ver, ecl) {
+            return Math.floor(_QrCode2.getNumRawDataModules(ver) / 8) - _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver] * _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
+          }
+          // Returns a Reed-Solomon ECC generator polynomial for the given degree. This could be
+          // implemented as a lookup table over all possible parameter values, instead of as an algorithm.
+          static reedSolomonComputeDivisor(degree) {
+            if (degree < 1 || degree > 255)
+              throw new RangeError("Degree out of range");
+            let result = [];
+            for (let i = 0; i < degree - 1; i++)
+              result.push(0);
+            result.push(1);
+            let root = 1;
+            for (let i = 0; i < degree; i++) {
+              for (let j = 0; j < result.length; j++) {
+                result[j] = _QrCode2.reedSolomonMultiply(result[j], root);
+                if (j + 1 < result.length)
+                  result[j] ^= result[j + 1];
+              }
+              root = _QrCode2.reedSolomonMultiply(root, 2);
+            }
+            return result;
+          }
+          // Returns the Reed-Solomon error correction codeword for the given data and divisor polynomials.
+          static reedSolomonComputeRemainder(data, divisor) {
+            let result = divisor.map((_) => 0);
+            for (const b of data) {
+              const factor = b ^ result.shift();
+              result.push(0);
+              divisor.forEach((coef, i) => result[i] ^= _QrCode2.reedSolomonMultiply(coef, factor));
+            }
+            return result;
+          }
+          // Returns the product of the two given field elements modulo GF(2^8/0x11D). The arguments and result
+          // are unsigned 8-bit integers. This could be implemented as a lookup table of 256*256 entries of uint8.
+          static reedSolomonMultiply(x, y) {
+            if (x >>> 8 != 0 || y >>> 8 != 0)
+              throw new RangeError("Byte out of range");
+            let z = 0;
+            for (let i = 7; i >= 0; i--) {
+              z = z << 1 ^ (z >>> 7) * 285;
+              z ^= (y >>> i & 1) * x;
+            }
+            assert(z >>> 8 == 0);
+            return z;
+          }
+          // Can only be called immediately after a light run is added, and
+          // returns either 0, 1, or 2. A helper function for getPenaltyScore().
+          finderPenaltyCountPatterns(runHistory) {
+            const n = runHistory[1];
+            assert(n <= this.size * 3);
+            const core = n > 0 && runHistory[2] == n && runHistory[3] == n * 3 && runHistory[4] == n && runHistory[5] == n;
+            return (core && runHistory[0] >= n * 4 && runHistory[6] >= n ? 1 : 0) + (core && runHistory[6] >= n * 4 && runHistory[0] >= n ? 1 : 0);
+          }
+          // Must be called at the end of a line (row or column) of modules. A helper function for getPenaltyScore().
+          finderPenaltyTerminateAndCount(currentRunColor, currentRunLength, runHistory) {
+            if (currentRunColor) {
+              this.finderPenaltyAddHistory(currentRunLength, runHistory);
+              currentRunLength = 0;
+            }
+            currentRunLength += this.size;
+            this.finderPenaltyAddHistory(currentRunLength, runHistory);
+            return this.finderPenaltyCountPatterns(runHistory);
+          }
+          // Pushes the given value to the front and drops the last value. A helper function for getPenaltyScore().
+          finderPenaltyAddHistory(currentRunLength, runHistory) {
+            if (runHistory[0] == 0)
+              currentRunLength += this.size;
+            runHistory.pop();
+            runHistory.unshift(currentRunLength);
+          }
+        };
+        _QrCode.MIN_VERSION = 1;
+        _QrCode.MAX_VERSION = 40;
+        _QrCode.PENALTY_N1 = 3;
+        _QrCode.PENALTY_N2 = 3;
+        _QrCode.PENALTY_N3 = 40;
+        _QrCode.PENALTY_N4 = 10;
+        _QrCode.ECC_CODEWORDS_PER_BLOCK = [
+          // Version: (note that index 0 is for padding, and is set to an illegal value)
+          //0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
+          [-1, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+          // Low
+          [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
+          // Medium
+          [-1, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+          // Quartile
+          [-1, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30]
+          // High
+        ];
+        _QrCode.NUM_ERROR_CORRECTION_BLOCKS = [
+          // Version: (note that index 0 is for padding, and is set to an illegal value)
+          //0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
+          [-1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
+          // Low
+          [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
+          // Medium
+          [-1, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68],
+          // Quartile
+          [-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81]
+          // High
+        ];
+        let QrCode = _QrCode;
+        qrcodegen2.QrCode = _QrCode;
+        function appendBits(val, len, bb) {
+          if (len < 0 || len > 31 || val >>> len != 0)
+            throw new RangeError("Value out of range");
+          for (let i = len - 1; i >= 0; i--)
+            bb.push(val >>> i & 1);
+        }
+        function getBit(x, i) {
+          return (x >>> i & 1) != 0;
+        }
+        function assert(cond) {
+          if (!cond)
+            throw new Error("Assertion error");
+        }
+        const _QrSegment = class _QrSegment2 {
+          /*-- Constructor (low level) and fields --*/
+          // Creates a new QR Code segment with the given attributes and data.
+          // The character count (numChars) must agree with the mode and the bit buffer length,
+          // but the constraint isn't checked. The given bit buffer is cloned and stored.
+          constructor(mode, numChars, bitData) {
+            this.mode = mode;
+            this.numChars = numChars;
+            this.bitData = bitData;
+            if (numChars < 0)
+              throw new RangeError("Invalid argument");
+            this.bitData = bitData.slice();
+          }
+          /*-- Static factory functions (mid level) --*/
+          // Returns a segment representing the given binary data encoded in
+          // byte mode. All input byte arrays are acceptable. Any text string
+          // can be converted to UTF-8 bytes and encoded as a byte mode segment.
+          static makeBytes(data) {
+            let bb = [];
+            for (const b of data)
+              appendBits(b, 8, bb);
+            return new _QrSegment2(_QrSegment2.Mode.BYTE, data.length, bb);
+          }
+          // Returns a segment representing the given string of decimal digits encoded in numeric mode.
+          static makeNumeric(digits) {
+            if (!_QrSegment2.isNumeric(digits))
+              throw new RangeError("String contains non-numeric characters");
+            let bb = [];
+            for (let i = 0; i < digits.length; ) {
+              const n = Math.min(digits.length - i, 3);
+              appendBits(parseInt(digits.substring(i, i + n), 10), n * 3 + 1, bb);
+              i += n;
+            }
+            return new _QrSegment2(_QrSegment2.Mode.NUMERIC, digits.length, bb);
+          }
+          // Returns a segment representing the given text string encoded in alphanumeric mode.
+          // The characters allowed are: 0 to 9, A to Z (uppercase only), space,
+          // dollar, percent, asterisk, plus, hyphen, period, slash, colon.
+          static makeAlphanumeric(text) {
+            if (!_QrSegment2.isAlphanumeric(text))
+              throw new RangeError("String contains unencodable characters in alphanumeric mode");
+            let bb = [];
+            let i;
+            for (i = 0; i + 2 <= text.length; i += 2) {
+              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)) * 45;
+              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i + 1));
+              appendBits(temp, 11, bb);
+            }
+            if (i < text.length)
+              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)), 6, bb);
+            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text.length, bb);
+          }
+          // Returns a new mutable list of zero or more segments to represent the given Unicode text string.
+          // The result may use various segment modes and switch modes to optimize the length of the bit stream.
+          static makeSegments(text) {
+            if (text == "")
+              return [];
+            else if (_QrSegment2.isNumeric(text))
+              return [_QrSegment2.makeNumeric(text)];
+            else if (_QrSegment2.isAlphanumeric(text))
+              return [_QrSegment2.makeAlphanumeric(text)];
+            else
+              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text))];
+          }
+          // Returns a segment representing an Extended Channel Interpretation
+          // (ECI) designator with the given assignment value.
+          static makeEci(assignVal) {
+            let bb = [];
+            if (assignVal < 0)
+              throw new RangeError("ECI assignment value out of range");
+            else if (assignVal < 1 << 7)
+              appendBits(assignVal, 8, bb);
+            else if (assignVal < 1 << 14) {
+              appendBits(2, 2, bb);
+              appendBits(assignVal, 14, bb);
+            } else if (assignVal < 1e6) {
+              appendBits(6, 3, bb);
+              appendBits(assignVal, 21, bb);
+            } else
+              throw new RangeError("ECI assignment value out of range");
+            return new _QrSegment2(_QrSegment2.Mode.ECI, 0, bb);
+          }
+          // Tests whether the given string can be encoded as a segment in numeric mode.
+          // A string is encodable iff each character is in the range 0 to 9.
+          static isNumeric(text) {
+            return _QrSegment2.NUMERIC_REGEX.test(text);
+          }
+          // Tests whether the given string can be encoded as a segment in alphanumeric mode.
+          // A string is encodable iff each character is in the following set: 0 to 9, A to Z
+          // (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
+          static isAlphanumeric(text) {
+            return _QrSegment2.ALPHANUMERIC_REGEX.test(text);
+          }
+          /*-- Methods --*/
+          // Returns a new copy of the data bits of this segment.
+          getData() {
+            return this.bitData.slice();
+          }
+          // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
+          // the given version. The result is infinity if a segment has too many characters to fit its length field.
+          static getTotalBits(segs, version3) {
+            let result = 0;
+            for (const seg of segs) {
+              const ccbits = seg.mode.numCharCountBits(version3);
+              if (seg.numChars >= 1 << ccbits)
+                return Infinity;
+              result += 4 + ccbits + seg.bitData.length;
+            }
+            return result;
+          }
+          // Returns a new array of bytes representing the given string encoded in UTF-8.
+          static toUtf8ByteArray(str) {
+            str = encodeURI(str);
+            let result = [];
+            for (let i = 0; i < str.length; i++) {
+              if (str.charAt(i) != "%")
+                result.push(str.charCodeAt(i));
+              else {
+                result.push(parseInt(str.substring(i + 1, i + 3), 16));
+                i += 2;
+              }
+            }
+            return result;
+          }
+        };
+        _QrSegment.NUMERIC_REGEX = /^[0-9]*$/;
+        _QrSegment.ALPHANUMERIC_REGEX = /^[A-Z0-9 $%*+.\/:-]*$/;
+        _QrSegment.ALPHANUMERIC_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
+        let QrSegment = _QrSegment;
+        qrcodegen2.QrSegment = _QrSegment;
+      })(qrcodegen || (qrcodegen = {}));
+      ((qrcodegen2) => {
+        let QrCode;
+        ((QrCode2) => {
+          const _Ecc = class _Ecc {
+            // The QR Code can tolerate about 30% erroneous codewords
+            /*-- Constructor and fields --*/
+            constructor(ordinal, formatBits) {
+              this.ordinal = ordinal;
+              this.formatBits = formatBits;
+            }
+          };
+          _Ecc.LOW = new _Ecc(0, 1);
+          _Ecc.MEDIUM = new _Ecc(1, 0);
+          _Ecc.QUARTILE = new _Ecc(2, 3);
+          _Ecc.HIGH = new _Ecc(3, 2);
+          let Ecc = _Ecc;
+          QrCode2.Ecc = _Ecc;
+        })(QrCode = qrcodegen2.QrCode || (qrcodegen2.QrCode = {}));
+      })(qrcodegen || (qrcodegen = {}));
+      ((qrcodegen2) => {
+        let QrSegment;
+        ((QrSegment2) => {
+          const _Mode = class _Mode {
+            /*-- Constructor and fields --*/
+            constructor(modeBits, numBitsCharCount) {
+              this.modeBits = modeBits;
+              this.numBitsCharCount = numBitsCharCount;
+            }
+            /*-- Method --*/
+            // (Package-private) Returns the bit width of the character count field for a segment in
+            // this mode in a QR Code at the given version number. The result is in the range [0, 16].
+            numCharCountBits(ver) {
+              return this.numBitsCharCount[Math.floor((ver + 7) / 17)];
+            }
+          };
+          _Mode.NUMERIC = new _Mode(1, [10, 12, 14]);
+          _Mode.ALPHANUMERIC = new _Mode(2, [9, 11, 13]);
+          _Mode.BYTE = new _Mode(4, [8, 16, 16]);
+          _Mode.KANJI = new _Mode(8, [8, 10, 12]);
+          _Mode.ECI = new _Mode(7, [0, 0, 0]);
+          let Mode = _Mode;
+          QrSegment2.Mode = _Mode;
+        })(QrSegment = qrcodegen2.QrSegment || (qrcodegen2.QrSegment = {}));
+      })(qrcodegen || (qrcodegen = {}));
+      qrcodegen_default = qrcodegen;
+      ERROR_LEVEL_MAP = {
+        L: qrcodegen_default.QrCode.Ecc.LOW,
+        M: qrcodegen_default.QrCode.Ecc.MEDIUM,
+        Q: qrcodegen_default.QrCode.Ecc.QUARTILE,
+        H: qrcodegen_default.QrCode.Ecc.HIGH
+      };
+      DEFAULT_SIZE = 128;
+      DEFAULT_LEVEL = "L";
+      DEFAULT_BGCOLOR = "#FFFFFF";
+      DEFAULT_FGCOLOR = "#000000";
+      DEFAULT_INCLUDEMARGIN = false;
+      DEFAULT_MINVERSION = 1;
+      SPEC_MARGIN_SIZE = 4;
+      DEFAULT_MARGIN_SIZE = 0;
+      DEFAULT_IMG_SCALE = 0.1;
+      SUPPORTS_PATH2D = (function() {
+        try {
+          new Path2D().addPath(new Path2D());
+        } catch (e) {
+          return false;
+        }
+        return true;
+      })();
+      QRCodeCanvas = react_shim_default.forwardRef(
+        function QRCodeCanvas2(props, forwardedRef) {
+          const _a = props, {
+            value,
+            size = DEFAULT_SIZE,
+            level = DEFAULT_LEVEL,
+            bgColor = DEFAULT_BGCOLOR,
+            fgColor = DEFAULT_FGCOLOR,
+            includeMargin = DEFAULT_INCLUDEMARGIN,
+            minVersion = DEFAULT_MINVERSION,
+            boostLevel,
+            marginSize,
+            imageSettings
+          } = _a, extraProps = __objRest(_a, [
+            "value",
+            "size",
+            "level",
+            "bgColor",
+            "fgColor",
+            "includeMargin",
+            "minVersion",
+            "boostLevel",
+            "marginSize",
+            "imageSettings"
+          ]);
+          const _b = extraProps, { style } = _b, otherProps = __objRest(_b, ["style"]);
+          const imgSrc = imageSettings == null ? void 0 : imageSettings.src;
+          const _canvas = react_shim_default.useRef(null);
+          const _image = react_shim_default.useRef(null);
+          const setCanvasRef = react_shim_default.useCallback(
+            (node) => {
+              _canvas.current = node;
+              if (typeof forwardedRef === "function") {
+                forwardedRef(node);
+              } else if (forwardedRef) {
+                forwardedRef.current = node;
+              }
+            },
+            [forwardedRef]
+          );
+          const [isImgLoaded, setIsImageLoaded] = react_shim_default.useState(false);
+          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
+            value,
+            level,
+            minVersion,
+            boostLevel,
+            includeMargin,
+            marginSize,
+            imageSettings,
+            size
+          });
+          react_shim_default.useEffect(() => {
+            if (_canvas.current != null) {
+              const canvas2 = _canvas.current;
+              const ctx = canvas2.getContext("2d");
+              if (!ctx) {
+                return;
+              }
+              let cellsToDraw = cells;
+              const image = _image.current;
+              const haveImageToRender = calculatedImageSettings != null && image !== null && image.complete && image.naturalHeight !== 0 && image.naturalWidth !== 0;
+              if (haveImageToRender) {
+                if (calculatedImageSettings.excavation != null) {
+                  cellsToDraw = excavateModules(
+                    cells,
+                    calculatedImageSettings.excavation
+                  );
+                }
+              }
+              const pixelRatio = window.devicePixelRatio || 1;
+              canvas2.height = canvas2.width = size * pixelRatio;
+              const scale = size / numCells * pixelRatio;
+              ctx.scale(scale, scale);
+              ctx.fillStyle = bgColor;
+              ctx.fillRect(0, 0, numCells, numCells);
+              ctx.fillStyle = fgColor;
+              if (SUPPORTS_PATH2D) {
+                ctx.fill(new Path2D(generatePath(cellsToDraw, margin)));
+              } else {
+                cells.forEach(function(row, rdx) {
+                  row.forEach(function(cell, cdx) {
+                    if (cell) {
+                      ctx.fillRect(cdx + margin, rdx + margin, 1, 1);
+                    }
+                  });
+                });
+              }
+              if (calculatedImageSettings) {
+                ctx.globalAlpha = calculatedImageSettings.opacity;
+              }
+              if (haveImageToRender) {
+                ctx.drawImage(
+                  image,
+                  calculatedImageSettings.x + margin,
+                  calculatedImageSettings.y + margin,
+                  calculatedImageSettings.w,
+                  calculatedImageSettings.h
+                );
+              }
+            }
+          });
+          react_shim_default.useEffect(() => {
+            setIsImageLoaded(false);
+          }, [imgSrc]);
+          const canvasStyle = __spreadValues({ height: size, width: size }, style);
+          let img = null;
+          if (imgSrc != null) {
+            img = /* @__PURE__ */ react_shim_default.createElement(
+              "img",
+              {
+                src: imgSrc,
+                key: imgSrc,
+                style: { display: "none" },
+                onLoad: () => {
+                  setIsImageLoaded(true);
+                },
+                ref: _image,
+                crossOrigin: calculatedImageSettings == null ? void 0 : calculatedImageSettings.crossOrigin
+              }
+            );
+          }
+          return /* @__PURE__ */ react_shim_default.createElement(react_shim_default.Fragment, null, /* @__PURE__ */ react_shim_default.createElement(
+            "canvas",
+            __spreadValues({
+              style: canvasStyle,
+              height: size,
+              width: size,
+              ref: setCanvasRef,
+              role: "img"
+            }, otherProps)
+          ), img);
+        }
+      );
+      QRCodeCanvas.displayName = "QRCodeCanvas";
+      QRCodeSVG = react_shim_default.forwardRef(
+        function QRCodeSVG2(props, forwardedRef) {
+          const _a = props, {
+            value,
+            size = DEFAULT_SIZE,
+            level = DEFAULT_LEVEL,
+            bgColor = DEFAULT_BGCOLOR,
+            fgColor = DEFAULT_FGCOLOR,
+            includeMargin = DEFAULT_INCLUDEMARGIN,
+            minVersion = DEFAULT_MINVERSION,
+            boostLevel,
+            title,
+            marginSize,
+            imageSettings
+          } = _a, otherProps = __objRest(_a, [
+            "value",
+            "size",
+            "level",
+            "bgColor",
+            "fgColor",
+            "includeMargin",
+            "minVersion",
+            "boostLevel",
+            "title",
+            "marginSize",
+            "imageSettings"
+          ]);
+          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
+            value,
+            level,
+            minVersion,
+            boostLevel,
+            includeMargin,
+            marginSize,
+            imageSettings,
+            size
+          });
+          let cellsToDraw = cells;
+          let image = null;
+          if (imageSettings != null && calculatedImageSettings != null) {
+            if (calculatedImageSettings.excavation != null) {
+              cellsToDraw = excavateModules(
+                cells,
+                calculatedImageSettings.excavation
+              );
+            }
+            image = /* @__PURE__ */ react_shim_default.createElement(
+              "image",
+              {
+                href: imageSettings.src,
+                height: calculatedImageSettings.h,
+                width: calculatedImageSettings.w,
+                x: calculatedImageSettings.x + margin,
+                y: calculatedImageSettings.y + margin,
+                preserveAspectRatio: "none",
+                opacity: calculatedImageSettings.opacity,
+                crossOrigin: calculatedImageSettings.crossOrigin
+              }
+            );
+          }
+          const fgPath = generatePath(cellsToDraw, margin);
+          return /* @__PURE__ */ react_shim_default.createElement(
+            "svg",
+            __spreadValues({
+              height: size,
+              width: size,
+              viewBox: `0 0 ${numCells} ${numCells}`,
+              ref: forwardedRef,
+              role: "img"
+            }, otherProps),
+            !!title && /* @__PURE__ */ react_shim_default.createElement("title", null, title),
+            /* @__PURE__ */ react_shim_default.createElement(
+              "path",
+              {
+                fill: bgColor,
+                d: `M0,0 h${numCells}v${numCells}H0z`,
+                shapeRendering: "crispEdges"
+              }
+            ),
+            /* @__PURE__ */ react_shim_default.createElement("path", { fill: fgColor, d: fgPath, shapeRendering: "crispEdges" }),
+            image
+          );
+        }
+      );
+      QRCodeSVG.displayName = "QRCodeSVG";
+    }
+  });
+
+  // lib/playback-start-gate.ts
+  function waitForStartIdle() {
+    if (holders === 0) return Promise.resolve();
+    return new Promise((resolve) => {
+      waiters.push(resolve);
+    });
+  }
+  var holders, waiters;
+  var init_playback_start_gate = __esm({
+    "lib/playback-start-gate.ts"() {
+      "use strict";
+      holders = 0;
+      waiters = [];
+    }
+  });
+
   // lib/watchlist-auto-remove.ts
   function isAutoRemoveWatchedMoviesEnabled() {
     if (typeof window === "undefined") return false;
@@ -12449,49 +14275,6 @@
       KEY_UNFOLLOW_SERIES = "auto_unfollow_finished_series";
       ENDED_STATUSES = /* @__PURE__ */ new Set(["Ended", "Canceled"]);
       FULL_SWEEP_INTERVAL_MS = 24 * 60 * 60 * 1e3;
-    }
-  });
-
-  // lib/open-external.ts
-  async function openAndroidUrl(url) {
-    try {
-      const response = await fetch("/api/native-player", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ cmd: "openUrl", url })
-      });
-      if (!response.ok) return false;
-      const payload = await response.json();
-      return payload?.ok === true;
-    } catch {
-      return false;
-    }
-  }
-  async function openExternalUrl(url) {
-    if (!url) return;
-    if (isAndroidTauri) {
-      if (await openAndroidUrl(url)) return;
-      console.warn("[open-external] Android intent failed, not falling back to window.open", url);
-      return;
-    }
-    if (isTauriEnv) {
-      try {
-        const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
-        await invoke6("open_external_url", { url });
-        return;
-      } catch {
-      }
-    }
-    if (typeof window !== "undefined") {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
-  }
-  var isAndroidTauri;
-  var init_open_external = __esm({
-    "lib/open-external.ts"() {
-      "use client";
-      init_tauri_mpv();
-      isAndroidTauri = isTauriEnv && typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
     }
   });
 
@@ -12777,6 +14560,57 @@
     }
   });
 
+  // lib/subtitle-legibility.ts
+  function isSubtitleFont(value) {
+    return typeof value === "string" && SUBTITLE_FONTS.includes(value);
+  }
+  function domSubtitleTypography(prefs) {
+    return {
+      fontFamily: prefs.font === "default" ? void 0 : `'${FAMILY[prefs.font]}', sans-serif`,
+      // 500 är vad överlägget alltid ritat med (font-medium).
+      fontWeight: prefs.bold ? 500 : 400,
+      letterSpacing: prefs.letterSpacing > 0 ? `${prefs.letterSpacing / 100}em` : void 0,
+      lineHeight: Math.round(BASE_LINE_HEIGHT * prefs.lineSpacing * 10) / 1e3
+    };
+  }
+  function assSubtitleTypography(prefs, fontSize, nativeFontSize) {
+    const factor = ASS_SIZE_FACTOR[prefs.font];
+    const em = prefs.letterSpacing / 100 / HELVETICA_WIN_EM;
+    const round1 = (value) => Math.round(value * 10) / 10;
+    return {
+      fontName: prefs.font === "default" ? DEFAULT_ASS_FONT : FAMILY[prefs.font],
+      bold: prefs.bold,
+      assFontSize: round1(fontSize * factor),
+      nativeFontSize: Math.round(nativeFontSize * factor),
+      assSpacing: round1(fontSize * em),
+      nativeSpacing: round1(nativeFontSize * em)
+    };
+  }
+  var SUBTITLE_FONTS, SUBTITLE_LETTER_SPACING_OPTIONS, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_FONT, DEFAULT_SUBTITLE_LETTER_SPACING, DEFAULT_SUBTITLE_LINE_SPACING, DEFAULT_SUBTITLE_BOLD, BASE_LINE_HEIGHT, DEFAULT_ASS_FONT, FAMILY, HELVETICA_WIN_EM, ASS_SIZE_FACTOR;
+  var init_subtitle_legibility = __esm({
+    "lib/subtitle-legibility.ts"() {
+      SUBTITLE_FONTS = ["default", "atkinson", "opendyslexic"];
+      SUBTITLE_LETTER_SPACING_OPTIONS = [0, 4, 8, 12];
+      SUBTITLE_LINE_SPACING_OPTIONS = [100, 120, 140, 160];
+      DEFAULT_SUBTITLE_FONT = "default";
+      DEFAULT_SUBTITLE_LETTER_SPACING = 0;
+      DEFAULT_SUBTITLE_LINE_SPACING = 100;
+      DEFAULT_SUBTITLE_BOLD = true;
+      BASE_LINE_HEIGHT = 1.375;
+      DEFAULT_ASS_FONT = "Helvetica";
+      FAMILY = {
+        atkinson: "Atkinson Hyperlegible",
+        opendyslexic: "OpenDyslexic"
+      };
+      HELVETICA_WIN_EM = 1.175;
+      ASS_SIZE_FACTOR = {
+        default: 1,
+        atkinson: 1.24 / HELVETICA_WIN_EM,
+        opendyslexic: 2.136 / HELVETICA_WIN_EM
+      };
+    }
+  });
+
   // lib/playback-settings.ts
   function getStoredString(key, fallback = "") {
     if (typeof window === "undefined") return fallback;
@@ -13045,12 +14879,27 @@
   function getSecondarySubtitleColor() {
     return getStoredString(KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR);
   }
-  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR;
+  function getStoredOption(key, options, fallback) {
+    const raw = Number(getStoredString(key, ""));
+    return options.includes(raw) ? raw : fallback;
+  }
+  function getSubtitleLegibility() {
+    const font = getStoredString(KEY_SUBTITLE_FONT, DEFAULT_SUBTITLE_FONT);
+    const bold = getStoredString(KEY_SUBTITLE_BOLD, "");
+    return {
+      font: isSubtitleFont(font) ? font : DEFAULT_SUBTITLE_FONT,
+      letterSpacing: getStoredOption(KEY_SUBTITLE_LETTER_SPACING, SUBTITLE_LETTER_SPACING_OPTIONS, DEFAULT_SUBTITLE_LETTER_SPACING),
+      lineSpacing: getStoredOption(KEY_SUBTITLE_LINE_SPACING, SUBTITLE_LINE_SPACING_OPTIONS, DEFAULT_SUBTITLE_LINE_SPACING),
+      bold: bold === "" ? DEFAULT_SUBTITLE_BOLD : bold === "1"
+    };
+  }
+  var KEY_DEFAULT_SUBTITLE_LANGUAGE, KEY_FALLBACK_SUBTITLE_LANGUAGE, KEY_DEFAULT_AUDIO_LANGUAGE, KEY_AUDIO_OUTPUT_MODE, KEY_DEFAULT_SUBTITLE_SIZE, KEY_DEFAULT_SUBTITLE_VERTICAL_POSITION, KEY_DEFAULT_SUBTITLE_OPACITY, KEY_SUBTITLE_TEXT_COLOR, KEY_SUBTITLE_BACKGROUND_COLOR, KEY_SUBTITLE_OUTLINE_COLOR, KEY_DEFAULT_ASPECT_RATIO, KEY_REMEMBER_ASPECT_RATIO, KEY_AUTO_SKIP_INTRO, KEY_SUBTITLE_AUTO_SYNC, KEY_HIDE_WATCHED_MOVIES_HOME, KEY_STILL_WATCHING_ENABLED, KEY_STILL_WATCHING_MAX_MINUTES, KEY_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, KEY_CREDITS_RECOMMENDATIONS, KEY_CREDITS_THRESHOLD_MINUTES, KEY_CREDITS_RECOMMENDATIONS_TV, KEY_CREDITS_THRESHOLD_MINUTES_TV, KEY_NIGHT_MODE, KEY_AUDIO_DELAY_MS, KEY_BT_AUTO_OFFSET, KEY_STAY_FULLSCREEN_ON_CLOSE, KEY_HIDE_SKIP_BUTTON_AFTER, KEY_CONTROLS_HIDE_AFTER, KEY_SHOW_TITLE_ON_START, KEY_SERIES_NAME_FIRST, HIDE_SKIP_BUTTON_OPTIONS, CONTROLS_HIDE_OPTIONS, CONTROLS_HIDE_DEFAULT_SECONDS, PLAYBACK_SETTINGS_CHANGED_EVENT, LANG_NAMES, NIGHT_MODE_OPTIONS, ASPECT_RATIO_MODES, LANG3_TO_2, DEFAULT_SUBTITLE_SIZE, DEFAULT_AUDIO_OUTPUT_MODE, DEFAULT_SUBTITLE_VERTICAL_POSITION, DEFAULT_SUBTITLE_OPACITY, DEFAULT_SUBTITLE_TEXT_COLOR, DEFAULT_SUBTITLE_BACKGROUND_COLOR, DEFAULT_SUBTITLE_OUTLINE_COLOR, DEFAULT_ASPECT_RATIO, DEFAULT_REMEMBER_ASPECT_RATIO, DEFAULT_AUTO_SKIP_INTRO, DEFAULT_HIDE_WATCHED_MOVIES_HOME, DEFAULT_STILL_WATCHING_ENABLED, DEFAULT_STILL_WATCHING_MAX_MINUTES, DEFAULT_DISABLE_SUBTITLES_WHEN_AUDIO_MATCHES, DEFAULT_CREDITS_RECOMMENDATIONS, DEFAULT_CREDITS_THRESHOLD_MINUTES, DEFAULT_CREDITS_RECOMMENDATIONS_TV, DEFAULT_CREDITS_THRESHOLD_MINUTES_TV, DEFAULT_NIGHT_MODE, KEY_UPGRADE_SUBTITLE_WHEN_BETTER, KEY_FORCED_SUBS_WHEN_AUDIO_MATCHES, KEY_EXTRA_SUBTITLE_LANGUAGES, KEY_RAW_MPV_CONF, KEY_PREFER_EMBEDDED_SUBTITLES, KEY_EXTERNAL_PLAYER_APP, AUDIO_DELAY_STEP_MS, AUDIO_DELAY_LIMIT_MS, KEY_EXTERNAL_DISPLAY_VIDEO_ONLY, BLUETOOTH_AUDIO_OFFSET_MS, KEY_STATS_HUD, KEY_STRIP_SDH, KEY_LEARNING_MODE, KEY_SECONDARY_SUBTITLE_LANGUAGE, KEY_SECONDARY_SUBTITLE_COLOR, DEFAULT_SECONDARY_SUBTITLE_COLOR, KEY_SUBTITLE_FONT, KEY_SUBTITLE_LETTER_SPACING, KEY_SUBTITLE_LINE_SPACING, KEY_SUBTITLE_BOLD;
   var init_playback_settings = __esm({
     "lib/playback-settings.ts"() {
       "use strict";
       init_app_storage();
       init_profile_storage_shim();
+      init_subtitle_legibility();
       KEY_DEFAULT_SUBTITLE_LANGUAGE = "playback_defaultSubtitleLanguage";
       KEY_FALLBACK_SUBTITLE_LANGUAGE = "playback_fallbackSubtitleLanguage";
       KEY_DEFAULT_AUDIO_LANGUAGE = "playback_defaultAudioLanguage";
@@ -13197,6 +15046,10 @@
       KEY_SECONDARY_SUBTITLE_LANGUAGE = "playback_secondarySubtitleLanguage";
       KEY_SECONDARY_SUBTITLE_COLOR = "playback_secondarySubtitleColor";
       DEFAULT_SECONDARY_SUBTITLE_COLOR = "#e8d9a0";
+      KEY_SUBTITLE_FONT = "playback_subtitleFont";
+      KEY_SUBTITLE_LETTER_SPACING = "playback_subtitleLetterSpacing";
+      KEY_SUBTITLE_LINE_SPACING = "playback_subtitleLineSpacing";
+      KEY_SUBTITLE_BOLD = "playback_subtitleBold";
     }
   });
 
@@ -13220,50 +15073,6 @@
   }
   var init_async_utils = __esm({
     "lib/async-utils.ts"() {
-    }
-  });
-
-  // lib/plugin-state.ts
-  function normalizeState(state2, fallback) {
-    return {
-      ...fallback,
-      ...state2,
-      installed: state2?.installed ?? fallback.installed,
-      active: state2?.active ?? fallback.active,
-      order: state2?.order ?? fallback.order,
-      sourceType: state2?.sourceType ?? fallback.sourceType,
-      runtimeAvailable: state2?.runtimeAvailable ?? fallback.runtimeAvailable
-    };
-  }
-  function readAll() {
-    if (typeof window === "undefined") return {};
-    try {
-      const raw = getScopedStorageItem(STORAGE_KEY2);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  }
-  function getPluginPersistedState(pluginId, defaultOrder, defaults = {}) {
-    const all = readAll();
-    return normalizeState(all[pluginId], {
-      installed: true,
-      active: true,
-      sourceType: "builtin",
-      runtimeAvailable: true,
-      ...defaults,
-      order: defaults.order ?? defaultOrder
-    });
-  }
-  function isPluginEnabled(pluginId, defaultOrder = 0, defaults = {}) {
-    const state2 = getPluginPersistedState(pluginId, defaultOrder, defaults);
-    return Boolean(state2.installed && state2.active);
-  }
-  var STORAGE_KEY2;
-  var init_plugin_state = __esm({
-    "lib/plugin-state.ts"() {
-      init_profile_storage_shim();
-      STORAGE_KEY2 = "lumio:plugin-state";
     }
   });
 
@@ -13341,21 +15150,6 @@
         hideScr: true,
         hideBelow720p: true
       };
-    }
-  });
-
-  // lib/playback-start-gate.ts
-  function waitForStartIdle() {
-    if (holders === 0) return Promise.resolve();
-    return new Promise((resolve) => {
-      waiters.push(resolve);
-    });
-  }
-  var holders, waiters;
-  var init_playback_start_gate = __esm({
-    "lib/playback-start-gate.ts"() {
-      holders = 0;
-      waiters = [];
     }
   });
 
@@ -14524,7 +16318,7 @@
 
   // lib/zapp-runtime.ts
   function requestZappLaunch(request = {}) {
-    for (const listener of listeners2) {
+    for (const listener of listeners3) {
       try {
         listener(request);
       } catch {
@@ -14532,17 +16326,17 @@
     }
   }
   function onZappLaunchRequested(listener) {
-    listeners2.add(listener);
+    listeners3.add(listener);
     return () => {
-      listeners2.delete(listener);
+      listeners3.delete(listener);
     };
   }
-  var listeners2;
+  var listeners3;
   var init_zapp_runtime = __esm({
     "lib/zapp-runtime.ts"() {
       "use strict";
       "use client";
-      listeners2 = /* @__PURE__ */ new Set();
+      listeners3 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -14653,6 +16447,11 @@
           /* @__PURE__ */ jsx("circle", { cx: "18", cy: "15", r: "3" }),
           /* @__PURE__ */ jsx("path", { d: "M10 18V7l11-3v11" })
         ] });
+      case "pip":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
+          /* @__PURE__ */ jsx("rect", { x: "12", y: "12", width: "7", height: "5", rx: "1", fill: "currentColor", stroke: "none" })
+        ] });
       case "cast":
         return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
           /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
@@ -14739,10 +16538,13 @@
         ] });
     }
   }
+  var playerIconButtonClass, playerLabelButtonClass;
   var init_player_control_icons = __esm({
     "components/player/player-control-icons.tsx"() {
       "use client";
       init_jsx_runtime_shim();
+      playerIconButtonClass = (state2 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+      playerLabelButtonClass = (state2 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
     }
   });
 
@@ -15453,8 +17255,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners9 = this.listeners[event$1];
-              listeners9.splice(listeners9.indexOf(handler), 1);
+              const listeners10 = this.listeners[event$1];
+              listeners10.splice(listeners10.indexOf(handler), 1);
             };
           }
           return event.listen(event$1, handler, {
@@ -15483,8 +17285,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners9 = this.listeners[event$1];
-              listeners9.splice(listeners9.indexOf(handler), 1);
+              const listeners10 = this.listeners[event$1];
+              listeners10.splice(listeners10.indexOf(handler), 1);
             };
           }
           return event.once(event$1, handler, {
@@ -17257,14 +19059,14 @@
   function appendHistoryEntry(entry) {
     const sanitized = sanitizeEntry(entry);
     const incomingKey = historyDedupeKey(sanitized);
-    const current2 = readHistory();
-    const previous = current2.find((existing) => historyDedupeKey(existing) === incomingKey);
+    const current3 = readHistory();
+    const previous = current3.find((existing) => historyDedupeKey(existing) === incomingKey);
     const winner = previous && watchedAtMs(previous) > watchedAtMs(sanitized) ? {
       ...previous,
       posterUrl: previous.posterUrl ?? sanitized.posterUrl ?? null,
       backdropUrl: previous.backdropUrl ?? sanitized.backdropUrl ?? null
     } : sanitized;
-    const filtered = current2.filter((existing) => historyDedupeKey(existing) !== incomingKey);
+    const filtered = current3.filter((existing) => historyDedupeKey(existing) !== incomingKey);
     const next = sortByWatchedAtDesc([winner, ...filtered]).slice(0, HISTORY_MAX);
     writeHistory(next);
   }
@@ -17272,7 +19074,7 @@
     const sanitizedEntry = sanitizeEntry(entry);
     const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...read6()])).slice(0, MAX);
     setScopedStorageItem(KEY10, JSON.stringify(list));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
     appendHistoryEntry(sanitizedEntry);
     reportLibraryProgress(sanitizedEntry);
   }
@@ -17285,20 +19087,20 @@
       return entryLookupKey !== key && entryLookupKey !== prefixedMovieKey && entryLookupKey !== prefixedTvKey;
     });
     setScopedStorageItem(KEY10, JSON.stringify(list));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT8));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
   }
-  var EVENT8, KEY10, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
+  var EVENT10, KEY10, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
       init_profile_storage_shim();
       init_watched_episodes();
       init_playback_availability();
-      EVENT8 = "lumio-stream-progress-changed";
+      EVENT10 = "lumio-stream-progress-changed";
       if (typeof window !== "undefined") {
         void Promise.resolve().then(() => (init_plugin_registry(), plugin_registry_exports)).then(({ subscribePluginRegistry: subscribePluginRegistry2 }) => {
           subscribePluginRegistry2(() => {
-            window.dispatchEvent(new CustomEvent(EVENT8));
+            window.dispatchEvent(new CustomEvent(EVENT10));
             window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
           });
         }).catch(() => {
@@ -18098,9 +19900,9 @@
   }
   function recordColumn(meta, columns, i, color) {
     const now2 = (/* @__PURE__ */ new Date()).toISOString();
-    const current2 = items.get(meta.id) ?? createBarcode(meta, columns, now2);
-    const next = withColumn(current2, i, color, now2);
-    if (next === current2 && items.has(meta.id)) return;
+    const current3 = items.get(meta.id) ?? createBarcode(meta, columns, now2);
+    const next = withColumn(current3, i, color, now2);
+    if (next === current3 && items.has(meta.id)) return;
     items.set(meta.id, next);
     dirty.add(meta.id);
     schedule2(meta.id);
@@ -18614,8 +20416,8 @@
     const pending5 = inflight4.get(b.id);
     if (pending5) return pending5;
     const task = chain.then(async () => {
-      const current2 = getBarcode(b.id);
-      if (current2 && current2.meta !== void 0) return current2.meta;
+      const current3 = getBarcode(b.id);
+      if (current3 && current3.meta !== void 0) return current3.meta;
       const meta = await fetchPosterMeta(b.tmdbId);
       if (meta) await setBarcodeMeta(b.id, meta);
       await new Promise((resolve) => setTimeout(resolve, GAP_MS));
@@ -18967,19 +20769,19 @@
       const detail = event.detail;
       if (detail?.action) listener(detail.action);
     };
-    listeners3 += 1;
-    window.addEventListener(EVENT9, handler);
+    listeners4 += 1;
+    window.addEventListener(EVENT11, handler);
     return () => {
-      listeners3 -= 1;
-      window.removeEventListener(EVENT9, handler);
+      listeners4 -= 1;
+      window.removeEventListener(EVENT11, handler);
     };
   }
-  var EVENT9, listeners3;
+  var EVENT11, listeners4;
   var init_android_media_keys = __esm({
     "lib/android-media-keys.ts"() {
       "use client";
-      EVENT9 = "lumio-media-key";
-      listeners3 = 0;
+      EVENT11 = "lumio-media-key";
+      listeners4 = 0;
     }
   });
 
@@ -19073,125 +20875,55 @@
     }
   });
 
-  // lib/player-layout.ts
-  function defaultLayout() {
+  // lib/scrobble-fanout.ts
+  function buildTrackerEvent(action, identity, progressPercent, opts) {
     return {
-      order: [...PLAYER_CONTROL_IDS],
-      hidden: [],
-      timeFormat: "elapsed-total",
-      volumeStyle: "slider",
-      seekBarStyle: "flat",
-      seekBarHeight: "standard",
-      seekBarColor: "accent",
-      seekBarDot: true
+      action,
+      mediaType: identity.mediaType,
+      tmdbId: identity.tmdbId != null && identity.tmdbId !== "" ? String(identity.tmdbId) : null,
+      imdbId: identity.imdbId ?? null,
+      season: identity.season ?? null,
+      episode: identity.episode ?? null,
+      progress: Math.min(100, Math.max(0, Math.round(progressPercent * 10) / 10)),
+      pulse: opts?.pulse === true
     };
   }
-  function getPlayerLayout() {
-    if (typeof window === "undefined") return defaultLayout();
-    try {
-      const raw = getScopedStorageItem(LAYOUT_KEY);
-      if (!raw) return defaultLayout();
-      const parsed = JSON.parse(raw);
-      const known = new Set(PLAYER_CONTROL_IDS);
-      const order = (Array.isArray(parsed.order) ? parsed.order : []).filter(
-        (id) => known.has(id)
-      );
-      for (const id of PLAYER_CONTROL_IDS) {
-        if (order.includes(id)) continue;
-        const defaultIndex = PLAYER_CONTROL_IDS.indexOf(id);
-        let insertAt = order.length;
-        for (let i = defaultIndex - 1; i >= 0; i--) {
-          const at = order.indexOf(PLAYER_CONTROL_IDS[i]);
-          if (at >= 0) {
-            insertAt = at + 1;
-            break;
-          }
-          if (i === 0) insertAt = 0;
+  function trackerEventKey(event) {
+    if (!event.tmdbId && !event.imdbId) return null;
+    if (event.mediaType === "episode" && (event.season == null || event.episode == null)) return null;
+    return `${event.action}${event.pulse ? "~" : ""}:${event.tmdbId ?? event.imdbId}:${event.season ?? ""}:${event.episode ?? ""}:${Math.round(event.progress)}`;
+  }
+  async function scrobbleAll(action, identity, progressPercent, opts) {
+    const event = buildTrackerEvent(action, identity, progressPercent, opts);
+    const key = trackerEventKey(event);
+    const now2 = Date.now();
+    const duplicate = key !== null && key === lastTrackerKey && now2 - lastTrackerAt < DUPLICATE_WINDOW_MS2;
+    if (key !== null && !duplicate) {
+      lastTrackerKey = key;
+      lastTrackerAt = now2;
+    }
+    const active4 = key === null || duplicate ? [] : getTrackers().filter((tracker) => !tracker.pluginId || isPluginEnabled(tracker.pluginId, 0, { installed: true, active: true }));
+    await Promise.all([
+      scrobble(action, identity, progressPercent),
+      ...active4.map(async (tracker) => {
+        try {
+          await tracker.scrobble?.(event);
+        } catch (error) {
+          console.warn(`[scrobble] tracker ${tracker.id} kastade`, error);
         }
-        order.splice(insertAt, 0, id);
-      }
-      const hidden = (Array.isArray(parsed.hidden) ? parsed.hidden : []).filter(
-        (id) => known.has(id) && id !== "playPause"
-      );
-      const timeFormat = parsed.timeFormat === "remaining" || parsed.timeFormat === "elapsed" ? parsed.timeFormat : "elapsed-total";
-      const volumeStyle = parsed.volumeStyle === "stepper" || parsed.volumeStyle === "icon" ? parsed.volumeStyle : "slider";
-      const seekBarStyle = parsed.seekBarStyle === "glass" || parsed.seekBarStyle === "pinstripe" ? parsed.seekBarStyle : "flat";
-      const seekBarHeight = parsed.seekBarHeight === "slim" || parsed.seekBarHeight === "chunky" ? parsed.seekBarHeight : "standard";
-      const seekBarColor = parsed.seekBarColor === "white" || parsed.seekBarColor === "red" || parsed.seekBarColor === "amber" ? parsed.seekBarColor : "accent";
-      const seekBarDot = parsed.seekBarDot !== false;
-      return { order, hidden, timeFormat, volumeStyle, seekBarStyle, seekBarHeight, seekBarColor, seekBarDot };
-    } catch {
-      return defaultLayout();
-    }
+      })
+    ]);
   }
-  function onPlayerLayoutChanged(listener) {
-    if (typeof window === "undefined") return () => {
-    };
-    window.addEventListener(EVENT10, listener);
-    return () => window.removeEventListener(EVENT10, listener);
-  }
-  function seekBarAppearance(layout) {
-    return {
-      heightClass: layout.seekBarHeight === "slim" ? "h-1" : layout.seekBarHeight === "chunky" ? "h-2.5" : "h-1.5",
-      // Färgen ligger i variabeln, inte i en klass: hela spelarlagret läser samma
-      // värde, och förhandsvisningen sätter den på sin egen låda.
-      fillClass: "bg-[rgb(var(--player-accent))]",
-      overlayClass: layout.seekBarStyle === "glass" ? "shadow-[0_0_14px_rgba(255,255,255,0.35)]" : layout.seekBarStyle === "pinstripe" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.25)_4px,rgba(0,0,0,0.25)_8px)]" : "",
-      dot: layout.seekBarDot
-    };
-  }
-  function playerAccentRgb(layout, themeAccentRgb2) {
-    switch (layout.seekBarColor) {
-      case "white":
-        return "255 255 255";
-      case "red":
-        return "239 68 68";
-      case "amber":
-        return "251 191 36";
-      default:
-        return themeAccentRgb2;
-    }
-  }
-  function themeAccentRgb() {
-    if (typeof document === "undefined") return "244 132 95";
-    return getComputedStyle(document.documentElement).getPropertyValue("--accent-500").trim() || "244 132 95";
-  }
-  var PLAYER_CONTROL_IDS, LAYOUT_KEY, EVENT10;
-  var init_player_layout = __esm({
-    "lib/player-layout.ts"() {
+  var DUPLICATE_WINDOW_MS2, lastTrackerKey, lastTrackerAt;
+  var init_scrobble_fanout = __esm({
+    "lib/scrobble-fanout.ts"() {
       "use client";
-      init_profile_storage_shim();
-      PLAYER_CONTROL_IDS = [
-        "playPause",
-        "seekBack",
-        "seekForward",
-        "time",
-        "spacer",
-        "subtitles",
-        "cast",
-        "audioTrack",
-        "aspect",
-        "cropZoom",
-        "audioOutput",
-        "segmentBadges",
-        "mute",
-        "volume",
-        "wiki",
-        "soundtrack",
-        "tuning",
-        "barcodeStrip",
-        "audioDelay",
-        "nextEpisode",
-        "switchStream",
-        "chapters",
-        "moments",
-        "sleepTimer",
-        "companions",
-        "more",
-        "fullscreen"
-      ];
-      LAYOUT_KEY = "player_layout";
-      EVENT10 = "lumio-player-layout-changed";
+      init_plugin_registry();
+      init_plugin_state();
+      init_trakt_scrobble();
+      DUPLICATE_WINDOW_MS2 = 5e3;
+      lastTrackerKey = "";
+      lastTrackerAt = -Infinity;
     }
   });
 
@@ -19219,13 +20951,13 @@
   }
   function setVideoTuning(tuning) {
     setScopedStorageItem(KEY12, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT11));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT12));
   }
   function onVideoTuningChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT11, listener);
-    return () => window.removeEventListener(EVENT11, listener);
+    window.addEventListener(EVENT12, listener);
+    return () => window.removeEventListener(EVENT12, listener);
   }
   function getRenderTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_RENDER_TUNING };
@@ -19248,7 +20980,7 @@
   }
   function setRenderTuning(tuning) {
     setScopedStorageItem(RENDER_KEY, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT11));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT12));
   }
   function renderTuningProperties(t, isNetworkStream = false) {
     const props = [
@@ -19284,7 +21016,7 @@
     const mul = (v) => (1 + v / 100).toFixed(3);
     return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
   }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY12, EVENT11, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY12, EVENT12, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
       "use client";
@@ -19298,7 +21030,7 @@
         sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
       };
       KEY12 = "video_tuning";
-      EVENT11 = "lumio-video-tuning-changed";
+      EVENT12 = "lumio-video-tuning-changed";
       TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
       DEFAULT_RENDER_TUNING = {
         toneMapping: "auto",
@@ -19332,13 +21064,13 @@
   }
   function setAudioTuning(tuning) {
     setScopedStorageItem(KEY13, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT12));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
   }
   function onAudioTuningChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT12, listener);
-    return () => window.removeEventListener(EVENT12, listener);
+    window.addEventListener(EVENT13, listener);
+    return () => window.removeEventListener(EVENT13, listener);
   }
   function audioTuningFilters(t) {
     const filters = [];
@@ -19347,7 +21079,7 @@
     if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
     return filters;
   }
-  var DEFAULT_AUDIO_TUNING, KEY13, EVENT12;
+  var DEFAULT_AUDIO_TUNING, KEY13, EVENT13;
   var init_audio_tuning = __esm({
     "lib/audio-tuning.ts"() {
       "use client";
@@ -19359,7 +21091,7 @@
         downmixStereo: false
       };
       KEY13 = "audio_tuning";
-      EVENT12 = "lumio-audio-tuning-changed";
+      EVENT13 = "lumio-audio-tuning-changed";
     }
   });
 
@@ -19678,24 +21410,24 @@
       again = true;
       return;
     }
-    if (listeners4.size === 0) return;
+    if (listeners5.size === 0) return;
     inFlight = true;
     latest = getHapticsHostEnabled() ? await fetchHapticsHostStatus() : null;
     inFlight = false;
-    listeners4.forEach((l) => l(latest));
+    listeners5.forEach((l) => l(latest));
     if (again) {
       again = false;
       void tick();
       return;
     }
-    if (listeners4.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
+    if (listeners5.size > 0 && getHapticsHostEnabled()) timer2 = setTimeout(() => void tick(), POLL_MS);
   }
   function subscribeHapticsHostStatus(listener) {
-    listeners4.add(listener);
+    listeners5.add(listener);
     listener(latest);
     if (!timer2 && !inFlight) void tick();
     return () => {
-      listeners4.delete(listener);
+      listeners5.delete(listener);
     };
   }
   function useHapticsHostStatus() {
@@ -19703,7 +21435,7 @@
     useEffect(() => subscribeHapticsHostStatus(setStatus), []);
     return status;
   }
-  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners4, timer2, latest, inFlight, again;
+  var HAPTICS_HOST_ENABLED_KEY, POLL_MS, unsupportedReason, lastSent, listeners5, timer2, latest, inFlight, again;
   var init_haptics_host = __esm({
     "lib/haptics-host.ts"() {
       "use client";
@@ -19713,7 +21445,7 @@
       POLL_MS = 1e3;
       unsupportedReason = null;
       lastSent = "";
-      listeners4 = /* @__PURE__ */ new Set();
+      listeners5 = /* @__PURE__ */ new Set();
       timer2 = null;
       latest = null;
       inFlight = false;
@@ -19899,8 +21631,8 @@
         return buildFallbackResult(params);
       }
     })().finally(() => {
-      const active3 = inflightByKey.get(key);
-      if (active3 === request) inflightByKey.delete(key);
+      const active4 = inflightByKey.get(key);
+      if (active4 === request) inflightByKey.delete(key);
     });
     inflightByKey.set(key, request);
     return request;
@@ -21603,18 +23335,18 @@
   // lib/couch/host-bridge.ts
   function registerCouchPlayer(handlers) {
     const token = /* @__PURE__ */ Symbol("couch-player");
-    current = { token, handlers };
+    current2 = { token, handlers };
     notifyCouchState();
     return () => {
-      if (current?.token !== token) return;
-      current = null;
+      if (current2?.token !== token) return;
+      current2 = null;
       notifyCouchState();
     };
   }
   function buildStateBody(acks) {
     let player = null;
     try {
-      player = current?.handlers.snapshot() ?? null;
+      player = current2?.handlers.snapshot() ?? null;
     } catch {
       player = null;
     }
@@ -21630,11 +23362,11 @@
       post?.(buildStateBody(acks));
     });
   }
-  var current, pendingAcks, flushQueued2, post;
+  var current2, pendingAcks, flushQueued2, post;
   var init_host_bridge = __esm({
     "lib/couch/host-bridge.ts"() {
       init_host_trakt();
-      current = null;
+      current2 = null;
       pendingAcks = [];
       flushQueued2 = false;
       post = null;
@@ -21834,9 +23566,9 @@
   function markPlayerReadyToReveal() {
     if (state().holders > 0) state().ready = true;
   }
-  function captureUserMutedOnce(current2) {
+  function captureUserMutedOnce(current3) {
     const s = state();
-    if (s.userMuted === null) s.userMuted = current2;
+    if (s.userMuted === null) s.userMuted = current3;
     return s.userMuted;
   }
   var CINEMA_REVEAL_HOLD_MAX_MS, KEY15;
@@ -21874,7 +23606,7 @@
       onInteract();
     }, [onInteract]);
     const count = recommendations.length;
-    const current2 = recommendations[Math.min(index, Math.max(0, count - 1))] ?? null;
+    const current3 = recommendations[Math.min(index, Math.max(0, count - 1))] ?? null;
     const step = useCallback((direction) => {
       markInteracted();
       setIndex((value) => {
@@ -21911,15 +23643,15 @@
       return () => window.removeEventListener("keydown", onKey);
     }, [step]);
     const metaParts = useMemo(() => {
-      if (!current2) return [];
+      if (!current3) return [];
       const parts = [];
-      const genres = current2.item.genres?.slice(0, 3) ?? [];
+      const genres = current3.item.genres?.slice(0, 3) ?? [];
       if (genres.length > 0) parts.push(genres.join(" / "));
-      if (current2.item.year) parts.push(String(current2.item.year));
+      if (current3.item.year) parts.push(String(current3.item.year));
       return parts;
-    }, [current2]);
-    if (!current2) return null;
-    const backdrop = current2.item.backdropUrl ?? current2.item.posterUrl ?? null;
+    }, [current3]);
+    if (!current3) return null;
+    const backdrop = current3.item.backdropUrl ?? current3.item.posterUrl ?? null;
     return /* @__PURE__ */ jsxs(
       "div",
       {
@@ -21982,29 +23714,29 @@
           ] }, panelIndex)),
           /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,rgb(var(--base-950))_0%,rgb(var(--base-950)/0.94)_38%,rgb(var(--base-950)/0)_100%)]" }),
           /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex max-w-[58%] flex-col justify-center gap-[clamp(0.4rem,1.5vh,1rem)] px-[clamp(1rem,4vw,3.5rem)] py-[clamp(0.75rem,3vh,2rem)]", children: [
-            current2.logoUrl && !failedLogos.has(current2.logoUrl) ? /* @__PURE__ */ jsx(
+            current3.logoUrl && !failedLogos.has(current3.logoUrl) ? /* @__PURE__ */ jsx(
               "img",
               {
-                src: current2.logoUrl,
-                alt: current2.heading,
+                src: current3.logoUrl,
+                alt: current3.heading,
                 className: "max-h-[clamp(2.25rem,10vh,6rem)] w-auto max-w-[min(100%,26rem)] self-start object-contain object-left drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]",
-                onError: () => setFailedLogos((prev) => new Set(prev).add(current2.logoUrl))
+                onError: () => setFailedLogos((prev) => new Set(prev).add(current3.logoUrl))
               }
-            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current2.heading }),
-            (metaParts.length > 0 || current2.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
+            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current3.heading }),
+            (metaParts.length > 0 || current3.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
               metaParts.map((part, partIndex) => /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
                 partIndex > 0 && /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
                 /* @__PURE__ */ jsx("span", { children: part })
               ] }, part)),
-              current2.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
+              current3.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
                 /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
                 /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
                   /* @__PURE__ */ jsx("span", { className: "rounded bg-[#f5c518] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-black", children: "IMDb" }),
-                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current2.item.ratings.imdb })
+                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current3.item.ratings.imdb })
                 ] })
               ] })
             ] }),
-            current2.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current2.item.overview }),
+            current3.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current3.item.overview }),
             /* @__PURE__ */ jsxs("div", { className: "mt-1 flex flex-wrap items-center gap-3", children: [
               /* @__PURE__ */ jsxs(
                 "button",
@@ -22014,12 +23746,12 @@
                   "data-init": "",
                   onClick: () => {
                     markInteracted();
-                    current2.onPrimary();
+                    current3.onPrimary();
                   },
                   className: "inline-flex h-10 items-center gap-2 rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400",
                   children: [
                     /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
-                    current2.primaryLabel
+                    current3.primaryLabel
                   ]
                 }
               ),
@@ -22450,8 +24182,8 @@
     return `${sign}${(abs / 1e3).toFixed(1).replace(".", ",")} s`;
   }
   function createSyncGuard() {
-    let current2 = 0;
-    return { begin: () => ++current2, isCurrent: (token) => token === current2 };
+    let current3 = 0;
+    return { begin: () => ++current3, isCurrent: (token) => token === current3 };
   }
   function playedDelta(last2, now2) {
     const d = now2 - last2;
@@ -22569,8 +24301,8 @@ ${effectiveName(url, id)}`;
   function inheritedDelay(entry) {
     return entry && !entry.userSet ? entry.delay : null;
   }
-  function clearsInheritedDelay(inherited, current2) {
-    return inherited !== null && inherited !== 0 && current2 === inherited;
+  function clearsInheritedDelay(inherited, current3) {
+    return inherited !== null && inherited !== 0 && current3 === inherited;
   }
   function persistAfterRestore(pending5, subDelay) {
     if (pending5 === null) return { skip: false, pending: null };
@@ -22719,17 +24451,17 @@ ${effectiveName(url, id)}`;
       const controller = new AbortController();
       abortRef.current = controller;
       const token = guardRef.current.begin();
-      const current2 = () => guardRef.current.isCurrent(token) && !controller.signal.aborted;
-      const valid = () => isRunValid({ current: current2(), userBlocked: userBlocked(), enabled: getSubtitleAutoSync(), optedOut: isAutoSyncOptedOut(key, sel.id) });
+      const current3 = () => guardRef.current.isCurrent(token) && !controller.signal.aborted;
+      const valid = () => isRunValid({ current: current3(), userBlocked: userBlocked(), enabled: getSubtitleAutoSync(), optedOut: isAutoSyncOptedOut(key, sel.id) });
       inFlightRef.current = true;
       let dropLogged = false;
       const drop = () => {
         if (!dropLogged) {
           dropLogged = true;
-          const why = !current2() ? "byte/avbrott" : userBlocked() ? "anv\xE4ndarens f\xF6rdr\xF6jning" : !getSubtitleAutoSync() ? "inst\xE4llningen" : "\xE5ngrad";
+          const why = !current3() ? "byte/avbrott" : userBlocked() ? "anv\xE4ndarens f\xF6rdr\xF6jning" : !getSubtitleAutoSync() ? "inst\xE4llningen" : "\xE5ngrad";
           logSubsyncClient(`${CLIENT_PREFIX} k\xF6rning sl\xE4ppt (${why}) fil=${file} undertext=${subLabel(sel.id)}`);
         }
-        if (current2() && inFlightRef.current) {
+        if (current3() && inFlightRef.current) {
           inFlightRef.current = false;
           a.setStatus({ type: "idle" });
         }
@@ -22819,7 +24551,7 @@ ${effectiveName(url, id)}`;
             waitPlayed,
             onResult: async (r) => {
               logSubsyncClient(describeResult(r, attempt));
-              if (!current2()) return;
+              if (!current3()) return;
               markIfFinal(r);
               if (r.status === "reference_pending") {
                 if (applied === null && valid()) a.setStatus({ type: "analyzing", message: a.t(PENDING_MESSAGE_KEY) });
@@ -22858,13 +24590,13 @@ ${effectiveName(url, id)}`;
               }
             }
           });
-          if (!last2 || !current2()) return;
+          if (!last2 || !current3()) return;
           if (last2.status === "ambiguous" && last2.jobId) {
             if (!await waitPlayed(AUDIO_WAIT_PLAYED_SECONDS)) return;
             logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file} undertext=${subLabel(sel.id)}`);
             const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller.signal);
             logSubsyncClient(describeResult(v, "ljud"));
-            if (!current2()) return;
+            if (!current3()) return;
             markIfFinal(v);
             if (await applyResult(v, false)) return;
             if (!valid()) {
@@ -22935,17 +24667,17 @@ ${effectiveName(url, id)}`;
     return session;
   }
   function onBingeSessionChanged(listener) {
-    listeners5.add(listener);
+    listeners6.add(listener);
     return () => {
-      listeners5.delete(listener);
+      listeners6.delete(listener);
     };
   }
-  var session, listeners5;
+  var session, listeners6;
   var init_binge_session = __esm({
     "lib/binge-session.ts"() {
       "use client";
       session = null;
-      listeners5 = /* @__PURE__ */ new Set();
+      listeners6 = /* @__PURE__ */ new Set();
     }
   });
 
@@ -23218,9 +24950,9 @@ ${effectiveName(url, id)}`;
     if (!tmdbId) return OPEN2;
     const lock = getSeriesLock(tmdbId);
     if (!lock) return OPEN2;
-    const active3 = getActiveProfileId();
-    if (!active3) return OPEN2;
-    return episodeGate(gateInputFor(lock), active3, { season, episode });
+    const active4 = getActiveProfileId();
+    if (!active4) return OPEN2;
+    return episodeGate(gateInputFor(lock), active4, { season, episode });
   }
   var WATCHED_KEY, OPEN2, seasonLengths;
   var init_series_lock_runtime = __esm({
@@ -23376,7 +25108,7 @@ ${effectiveName(url, id)}`;
       setScopedStorageItem(KEY16, JSON.stringify(store2));
     } catch {
     }
-    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT13));
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT14));
   }
   function getMoments(titleKey) {
     if (!titleKey) return [];
@@ -23411,15 +25143,15 @@ ${effectiveName(url, id)}`;
   function onMomentsChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT13, listener);
-    return () => window.removeEventListener(EVENT13, listener);
+    window.addEventListener(EVENT14, listener);
+    return () => window.removeEventListener(EVENT14, listener);
   }
-  var KEY16, EVENT13, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
+  var KEY16, EVENT14, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
   var init_player_moments = __esm({
     "lib/player-moments.ts"() {
       init_profile_storage_shim();
       KEY16 = "player_moments_v1";
-      EVENT13 = "lumio-player-moments-changed";
+      EVENT14 = "lumio-player-moments-changed";
       MOMENT_DEDUPE_SECONDS = 3;
       MAX_PER_TITLE = 50;
       MAX_TITLES = 200;
@@ -23469,12 +25201,6 @@ ${cue.text}
 ${cues.map((cue) => `${stamp(cue.start)} --> ${stamp(cue.end)}
 ${cue.text}`).join("\n\n")}
 `;
-  }
-  function readChromeViewport() {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "desktop";
-    if (window.matchMedia(DESKTOP_CHROME_QUERY).matches) return "desktop";
-    if (window.matchMedia(LANDSCAPE_PHONE_QUERY).matches) return "landscape";
-    return "portrait";
   }
   function buildIntroDbCacheKey(mediaType, tmdbId, imdbId, season, episode) {
     return [
@@ -23972,9 +25698,9 @@ ${cue.text}`).join("\n\n")}
         }
       };
     }, [endHlsSessionOnServer]);
-    const notifyLanPlaybackState = useCallback((active3) => {
+    const notifyLanPlaybackState = useCallback((active4) => {
       if (!getLanStreamingEnabled() || getLanStreamingMode() !== "playback") return;
-      const body = active3 ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
+      const body = active4 ? { active: true, url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode } : { active: false };
       void fetch("/api/lan-playback-state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -24097,9 +25823,9 @@ ${cue.text}`).join("\n\n")}
     playbackSpeedRef.current = playbackSpeed;
     const openSurfaceRef = useRef(null);
     openSurfaceRef.current = openSurface;
-    const surfaceSetter = (id) => (value) => setOpenSurface((current2) => {
-      const next = typeof value === "function" ? value(current2 === id) : value;
-      return next ? id : current2 === id ? null : current2;
+    const surfaceSetter = (id) => (value) => setOpenSurface((current3) => {
+      const next = typeof value === "function" ? value(current3 === id) : value;
+      return next ? id : current3 === id ? null : current3;
     });
     const showSubMenu = openSurface === "subs";
     const setShowSubMenu = surfaceSetter("subs");
@@ -24139,11 +25865,11 @@ ${cue.text}`).join("\n\n")}
     const [hasEverStarted, setHasEverStarted] = useState(false);
     const [playerLayout, setPlayerLayout] = useState(() => getPlayerLayout());
     useEffect(() => onPlayerLayoutChanged(() => setPlayerLayout(getPlayerLayout())), []);
-    const [chromeViewport, setChromeViewport] = useState(readChromeViewport);
+    const [chromeViewport, setChromeViewport] = useState(readPlayerChromeViewport);
     useEffect(() => {
       if (typeof window.matchMedia !== "function") return;
       const queries = [DESKTOP_CHROME_QUERY, LANDSCAPE_PHONE_QUERY].map((q) => window.matchMedia(q));
-      const sync = () => setChromeViewport(readChromeViewport());
+      const sync = () => setChromeViewport(readPlayerChromeViewport());
       sync();
       queries.forEach((mq) => mq.addEventListener("change", sync));
       return () => queries.forEach((mq) => mq.removeEventListener("change", sync));
@@ -24471,6 +26197,7 @@ ${cue.text}`).join("\n\n")}
     const [subTextColor, setSubTextColor] = useState(() => getSubtitleTextColor());
     const [subBackgroundColor, setSubBackgroundColor] = useState(() => getSubtitleBackgroundColor());
     const [subOutlineColor, setSubOutlineColor] = useState(() => getSubtitleOutlineColor());
+    const [subLegibility, setSubLegibility] = useState(() => getSubtitleLegibility());
     const [audioOutputMode] = useState(() => getAudioOutputMode());
     const effectiveProxyAudioMode = proxyTranscodeActive ? "compatible" : audioOutputMode;
     const [nightMode, setNightModeLive] = useState(() => getNightMode());
@@ -25123,6 +26850,7 @@ ${cue.text}`).join("\n\n")}
     ) : null;
     const overlayPrimaryText = dualLines ? dualLines.primary : renderedSubtitleText;
     const overlaySecondaryText = dualLines?.secondary ?? null;
+    const subDomTypography = domSubtitleTypography(subLegibility);
     const editingSecondary = learningMode && subMenuSlot === "secondary";
     const parsedEpisodeFromFilename = useMemo(() => filename ? parseEpisodeIdentifier(filename) : null, [filename]);
     const parsedEpisodeFromTitle = useMemo(() => parseEpisodeIdentifier(title), [title]);
@@ -25186,9 +26914,12 @@ ${cue.text}`).join("\n\n")}
       const fontSize = Math.max(14, 20 * (subSize / 100));
       const marginBottom = Math.max(18, Math.round(subVerticalPos / 100 * containerSize.height + 56));
       const usesBoxBackground = subBackgroundColor !== "transparent";
+      const scale = Math.max(0.5, subSize / 100);
+      const nativeFontSize = Math.max(18, Math.round(42 * scale));
+      const typo = assSubtitleTypography(subLegibility, fontSize, nativeFontSize);
       const style = [
-        "FontName=Helvetica",
-        `FontSize=${fontSize.toFixed(1)}`,
+        `FontName=${typo.fontName}`,
+        `FontSize=${typo.assFontSize.toFixed(1)}`,
         `PrimaryColour=${primaryColor}`,
         `OutlineColour=${outlineColor}`,
         `BackColour=${backgroundColor}`,
@@ -25197,9 +26928,11 @@ ${cue.text}`).join("\n\n")}
         usesBoxBackground ? "BorderStyle=3" : "BorderStyle=1",
         usesBoxBackground ? "Outline=0" : "Outline=1.6",
         usesBoxBackground ? "Shadow=0" : "Shadow=0.8",
-        "Bold=1"
+        typo.bold ? "Bold=1" : "Bold=0",
+        // Bara när det är valt: force skriver över filens egna stilar, och ett
+        // ASS-spår med eget teckenavstånd ska behålla det i standardläget.
+        ...typo.assSpacing ? [`Spacing=${typo.assSpacing}`] : []
       ].join(",");
-      const scale = Math.max(0.5, subSize / 100);
       const driftSlope = subDrift?.slope ?? 0;
       const speed = 1 / (1 + driftSlope);
       const delayWithDrift = subDrift ? (subDelay + driftSlope * subDrift.anchor) * speed : subDelay;
@@ -25208,14 +26941,17 @@ ${cue.text}`).join("\n\n")}
         speed,
         scale,
         pos: Math.max(0, Math.min(100, 100 - subVerticalPos)),
-        fontSize: Math.max(18, Math.round(42 * scale)),
+        fontSize: typo.nativeFontSize,
+        font: subLegibility.font === "default" ? void 0 : typo.fontName,
+        bold: typo.bold,
+        spacing: typo.nativeSpacing,
         marginY: Math.max(12, Math.round(subVerticalPos / 100 * containerSize.height)),
         color: toMpvNativeColor(subTextColor, subOpacity),
         outlineColor: toMpvNativeColor(subOutlineColor, subOpacity),
         backColor: subBackgroundColor === "transparent" ? "#00000000" : toMpvNativeColor(subBackgroundColor, Math.max(35, subOpacity)),
         assStyle: style
       });
-    }, [useMpv, subDelay, subDrift, subTextColor, subOutlineColor, subBackgroundColor, subOpacity, subSize, subVerticalPos, containerSize.height, activeSubId, mpv.sid]);
+    }, [useMpv, subDelay, subDrift, subTextColor, subOutlineColor, subBackgroundColor, subOpacity, subSize, subVerticalPos, subLegibility, containerSize.height, activeSubId, mpv.sid]);
     useEffect(() => {
       if (!isMpvEngine || !mpv.fileLoaded) return;
       const on = learningMode;
@@ -26000,6 +27736,35 @@ ${cue.text}`).join("\n\n")}
       }
       finishClose();
     }, [notifyLanPlaybackState, onClose, realTime, scheduleBoundsResync, skipHomeKitOnClose, syncDesktopFullscreenState, title, totalDuration, tryCloseDesktopPlaybackSession, useMpv]);
+    const pipMode = usePipMode();
+    const pipSeekRef = useRef(seek);
+    pipSeekRef.current = seek;
+    const pipToggleRef = useRef(togglePlay);
+    pipToggleRef.current = togglePlay;
+    const pipCloseRef = useRef(handleClose);
+    pipCloseRef.current = handleClose;
+    const pipPlayingRef = useRef(isPlaying);
+    pipPlayingRef.current = isPlaying;
+    const pipEligible = !isTv && !isMpvEngine && (isDroidEngine || isClientSession());
+    const [pipVideoEl, setPipVideoEl] = useState(null);
+    useEffect(() => {
+      setPipVideoEl(isDroidEngine ? null : videoRef.current);
+    });
+    const pipAvailable = usePipAvailable(pipVideoEl);
+    useEffect(() => {
+      if (!pipEligible) return;
+      return registerPip({
+        prevNextKind: "seek",
+        onPlayPause: () => pipToggleRef.current(),
+        onPrev: () => pipSeekRef.current(-10),
+        onNext: () => pipSeekRef.current(10),
+        onClosed: () => pipCloseRef.current(),
+        isPlaying: () => pipPlayingRef.current
+      }, pipVideoEl);
+    }, [pipEligible, pipVideoEl]);
+    useEffect(() => {
+      if (pipEligible) notifyPipPlaying(isPlaying);
+    }, [pipEligible, isPlaying]);
     useEffect(() => {
       const seconds = stillWatchingReason === "sleep" ? SLEEP_PROMPT_SECONDS : STILL_WATCHING_CLOSE_SECONDS;
       if (!showStillWatchingPrompt) {
@@ -26008,8 +27773,8 @@ ${cue.text}`).join("\n\n")}
       }
       setStillWatchingCountdown(seconds);
       const interval = window.setInterval(() => {
-        setStillWatchingCountdown((current2) => {
-          if (current2 <= 1) {
+        setStillWatchingCountdown((current3) => {
+          if (current3 <= 1) {
             window.clearInterval(interval);
             window.setTimeout(() => {
               if (stillWatchingReason === "sleep") journalMarkAsleep(realTimeRef.current, sleepFiredAtRef.current);
@@ -26017,7 +27782,7 @@ ${cue.text}`).join("\n\n")}
             }, 0);
             return 0;
           }
-          return current2 - 1;
+          return current3 - 1;
         });
       }, 1e3);
       return () => window.clearInterval(interval);
@@ -26406,6 +28171,8 @@ ${cue.text}`).join("\n\n")}
         setSubTextColor(getSubtitleTextColor());
         setSubBackgroundColor(getSubtitleBackgroundColor());
         setSubOutlineColor(getSubtitleOutlineColor());
+        const nextLegibility = getSubtitleLegibility();
+        setSubLegibility((prev) => JSON.stringify(prev) === JSON.stringify(nextLegibility) ? prev : nextLegibility);
         setLearningModeState(getLearningMode());
         setSecondarySubtitleLang(getSecondarySubtitleLanguage());
         setSecondarySubColor(getSecondarySubtitleColor());
@@ -26679,20 +28446,20 @@ ${cue.text}`).join("\n\n")}
       if (!durationConfirmed) return;
       if (isPlaying) {
         scrobbleStartedRef.current = true;
-        void scrobble("start", scrobbleIdentityRef.current, scrobbleProgress());
+        void scrobbleAll("start", scrobbleIdentityRef.current, scrobbleProgress());
         const pulse = window.setInterval(() => {
           if (!scrobbleStartedRef.current) return;
-          void scrobble("pause", scrobbleIdentityRef.current, scrobbleProgress());
+          void scrobbleAll("pause", scrobbleIdentityRef.current, scrobbleProgress(), { pulse: true });
         }, 3e4);
         return () => window.clearInterval(pulse);
       } else if (scrobbleStartedRef.current) {
-        void scrobble("pause", scrobbleIdentityRef.current, scrobbleProgress());
+        void scrobbleAll("pause", scrobbleIdentityRef.current, scrobbleProgress());
       }
     }, [isPlaying, hasStarted, scrobbleProgress, durationConfirmed]);
     useEffect(() => {
       if (!isPlaying || !hasStarted || !durationConfirmed) return;
       const interval = setInterval(() => {
-        void scrobble("pause", scrobbleIdentityRef.current, scrobbleProgress());
+        void scrobbleAll("pause", scrobbleIdentityRef.current, scrobbleProgress(), { pulse: true });
       }, 3e4);
       return () => clearInterval(interval);
     }, [isPlaying, hasStarted, scrobbleProgress, durationConfirmed]);
@@ -26701,7 +28468,7 @@ ${cue.text}`).join("\n\n")}
       return () => {
         if (!scrobbleStartedRef.current) return;
         scrobbleStartedRef.current = false;
-        void scrobble("stop", scrobbleIdentityRef.current, scrobbleProgress());
+        void scrobbleAll("stop", scrobbleIdentityRef.current, scrobbleProgress());
       };
     }, [wikiTmdbId, imdbId, season, episode]);
     useEffect(() => {
@@ -27688,7 +29455,7 @@ ${cue.text}`).join("\n\n")}
     });
     useEffect(() => {
       if (embeddedSubtitleOptions.length === 0) return;
-      setSubtitleLoadError((current2) => current2 === t("vpNoSubsFound") ? null : current2);
+      setSubtitleLoadError((current3) => current3 === t("vpNoSubsFound") ? null : current3);
     }, [embeddedSubtitleOptions.length]);
     useEffect(() => {
       if (manualSubtitleOverrideRef.current) return;
@@ -27760,14 +29527,14 @@ ${cue.text}`).join("\n\n")}
       if (mpv.fileLoadedToken === lastSubReapplyTokenRef.current) return;
       lastSubReapplyTokenRef.current = mpv.fileLoadedToken;
       if (!activeSubId || activeSubId.startsWith("embedded:")) return;
-      const current2 = subtitleOptions.find((subtitle) => subtitle.id === activeSubId);
-      if (!current2) return;
-      const synced = syncedVttRef.current.get(current2.id);
+      const current3 = subtitleOptions.find((subtitle) => subtitle.id === activeSubId);
+      if (!current3) return;
+      const synced = syncedVttRef.current.get(current3.id);
       if (synced && synced.url === url) {
-        void applySyncedSubtitleRef.current?.(current2, synced.vtt);
+        void applySyncedSubtitleRef.current?.(current3, synced.vtt);
         return;
       }
-      void selectSubtitle(current2, { noAutoSync: true });
+      void selectSubtitle(current3, { noAutoSync: true });
     }, [useMpv, mpv.fileLoaded, mpv.fileLoadedToken, activeSubId, subtitleOptions]);
     const lastSecondaryReapplyTokenRef = useRef(0);
     useEffect(() => {
@@ -27775,8 +29542,8 @@ ${cue.text}`).join("\n\n")}
       if (mpv.fileLoadedToken === lastSecondaryReapplyTokenRef.current) return;
       lastSecondaryReapplyTokenRef.current = mpv.fileLoadedToken;
       if (!secondarySubId) return;
-      const current2 = subtitleOptions.find((subtitle) => subtitle.id === secondarySubId);
-      if (current2) void selectSecondarySubtitle(current2);
+      const current3 = subtitleOptions.find((subtitle) => subtitle.id === secondarySubId);
+      if (current3) void selectSecondarySubtitle(current3);
     }, [isMpvEngine, mpv.fileLoaded, mpv.fileLoadedToken, learningMode, secondarySubId, subtitleOptions]);
     const seekToAbsolute = useCallback((targetTime) => {
       setSubtitleClockOverride(Math.max(0, targetTime));
@@ -28171,7 +29938,7 @@ ${cue.text}`).join("\n\n")}
           `[ext-sub] ${file.name} bytes=${bytes.length} vtt=${payload.vtt ? payload.vtt.length : "null"} cues=${payload.vtt ? parseVtt(payload.vtt).length : 0} mpv=${useMpv}`
         )}`).catch(() => {
         });
-        setExternalSubtitles((current2) => [option, ...current2]);
+        setExternalSubtitles((current3) => [option, ...current3]);
         void selectSubtitle(option, { manual: true });
       } catch (error) {
         setSubtitleLoadError(
@@ -28357,8 +30124,8 @@ ${cue.text}`).join("\n\n")}
       }, 1e4);
       return () => window.clearTimeout(timer3);
     }, [showCastMenu, airplaySession]);
-    const dtIconButtonClass = (state2 = "idle") => `flex h-[38px] w-[38px] flex-none items-center justify-center rounded-lg transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
-    const dtLabelButtonClass = (state2 = "idle") => `flex h-[34px] flex-none items-center gap-[7px] rounded-lg px-3 text-[13px] font-semibold transition ${state2 === "open" ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : state2 === "active" ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-300 hover:bg-[rgb(var(--player-accent)/0.16)] hover:text-white"}`;
+    const dtIconButtonClass = playerIconButtonClass;
+    const dtLabelButtonClass = playerLabelButtonClass;
     const [statusNowMs, setStatusNowMs] = useState(() => Date.now());
     useEffect(() => {
       const id = window.setInterval(() => setStatusNowMs(Date.now()), 15e3);
@@ -28385,7 +30152,7 @@ ${cue.text}`).join("\n\n")}
     const dtDivider = /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "mx-2 h-[22px] w-px flex-none bg-white/[0.12]" });
     const dtMenuSurfaceClass = newChrome ? "z-50 rounded-xl border border-white/10 bg-base-800/95 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-md" : "z-50 rounded-xl border border-white/10 bg-slate-900/95 py-2 shadow-xl backdrop-blur-sm";
     const dtMenuHeadingClass = newChrome ? "px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500" : "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500";
-    const dtMenuRowClass = (active3) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active3 ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active3 ? "text-aurora-300" : "text-slate-300"}`;
+    const dtMenuRowClass = (active4) => newChrome ? `flex w-full items-center justify-between gap-2.5 rounded-lg transition ${portraitChrome ? "px-3 py-3 text-[15px]" : "px-3 py-2.5 text-sm"} ${active4 ? "bg-[rgb(var(--player-accent)/0.22)] text-white" : "text-slate-100 hover:bg-[rgb(var(--player-accent)/0.14)]"}` : `flex w-full items-center justify-between px-3 py-2 text-sm transition hover:bg-white/5 ${active4 ? "text-aurora-300" : "text-slate-300"}`;
     const dtMoreRowClass = newChrome ? `flex w-full items-center gap-3 rounded-lg text-left text-slate-100 transition hover:bg-[rgb(var(--player-accent)/0.14)] ${portraitChrome ? "px-3 py-3.5" : "px-3 py-2.5"}` : "flex w-full items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left text-slate-100 transition hover:bg-white/5";
     const dtMoreIconClass = newChrome ? "h-[18px] w-[18px] flex-none text-slate-300" : "h-5 w-5 flex-none text-slate-200";
     const dtMoreTextClass = newChrome ? portraitChrome ? "text-[15px] leading-tight" : "text-sm leading-tight" : "text-[15px] leading-tight";
@@ -28554,7 +30321,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plMomentsClear") })
       ] }) : null
     ] });
-    const gearOptions = (options, current2, label, pick2) => options.map((option) => /* @__PURE__ */ jsxs(
+    const gearOptions = (options, current3, label, pick2) => options.map((option) => /* @__PURE__ */ jsxs(
       "button",
       {
         type: "button",
@@ -28563,10 +30330,10 @@ ${cue.text}`).join("\n\n")}
           pick2(option);
           setGearPage("root");
         },
-        className: dtMenuRowClass(option === current2),
+        className: dtMenuRowClass(option === current3),
         children: [
           /* @__PURE__ */ jsx("span", { children: label(option) }),
-          option === current2 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+          option === current3 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
         ]
       },
       String(option)
@@ -28912,19 +30679,6 @@ ${cue.text}`).join("\n\n")}
           children: cssFullscreen ? /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-[18px] w-[18px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" }) })
         }
       ) : null
-    };
-    const DESKTOP_ZONES = {
-      // Statusraden ("Slutar 22:41 • Intro") direkt efter volymen, som i
-      // referensen — i mitten lämnade den en stor tom yta (Jerry 2026-10-03).
-      left: [["playPause", "nextEpisode", "switchStream"], ["mute", "volume"], ["segmentBadges"]],
-      center: [],
-      right: [
-        // Bildformat, zoom, sömntimer och barcode-remsan bor i kugghjulet
-        // (`more`) sedan 2026-10-03 — GEAR_CONTROL_IDS i lib/player-layout.
-        ["subtitles", "audioTrack", "tuning"],
-        ["chapters", "moments", "wiki", "soundtrack", "cast"],
-        ["companions", "more", "fullscreen"]
-      ]
     };
     const renderDesktopZone = (groups) => {
       const filled = groups.map((group) => group.filter((id) => showsControl(id) && Boolean(desktopControls[id])).sort((a, b) => playerLayout.order.indexOf(a) - playerLayout.order.indexOf(b))).filter((group) => group.length > 0);
@@ -29338,8 +31092,8 @@ ${cue.text}`).join("\n\n")}
         if (!pinch.handled && (ratio > 1.25 || ratio < 0.8)) {
           pinch.handled = true;
           const modes = ASPECT_RATIO_MODES;
-          const current2 = modes.indexOf(aspectRatioMode);
-          const next2 = modes[(current2 + (ratio > 1 ? 1 : modes.length - 1)) % modes.length];
+          const current3 = modes.indexOf(aspectRatioMode);
+          const next2 = modes[(current3 + (ratio > 1 ? 1 : modes.length - 1)) % modes.length];
           setAspectRatioMode(next2);
           showGestureHud("aspect", 0, getAspectRatioLabel(next2, t));
         }
@@ -29514,6 +31268,14 @@ ${cue.text}`).join("\n\n")}
         onClick: () => setShowAspectMenu((open2) => !open2),
         triggerRef: aspectTriggerRef
       },
+      pip: pipEligible && pipAvailable ? {
+        label: t("plShortPip"),
+        title: t("plPip"),
+        state: pipMode ? "active" : "idle",
+        onClick: () => {
+          void enterPip(pipVideoEl);
+        }
+      } : void 0,
       cast: !isClientSession() ? {
         label: t("plShortCast"),
         title: t("castTitle"),
@@ -29543,10 +31305,10 @@ ${cue.text}`).join("\n\n")}
         onClick: toggleFullscreen
       } : void 0
     };
-    const PHONE_ROW_ORDER = landscapeChrome ? ["subtitles", "audioTrack", "tuning", "chapters", "moments", "wiki", "soundtrack", "switchStream", "fullscreen", "companions"] : ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "chapters", "moments", "wiki", "soundtrack", "companions"];
-    const LANDSCAPE_ROW_BUDGET = 6;
-    const phoneDedicatedIds = landscapeChrome ? ["nextEpisode", "cast"] : ["cast", "fullscreen"];
-    const phoneRowCandidates = PHONE_ROW_ORDER.filter((id) => !phoneDedicatedIds.includes(id) && showsControl(id) && Boolean(phoneControls[id]));
+    const phoneSurface = landscapeChrome ? "landscape" : "portrait";
+    const phoneRowOrder = PHONE_ROW_ORDER[phoneSurface];
+    const phoneDedicatedIds = PHONE_DEDICATED_IDS[phoneSurface];
+    const phoneRowCandidates = phoneRowOrder.filter((id) => !phoneDedicatedIds.includes(id) && showsControl(id) && Boolean(phoneControls[id]));
     const phoneRowIds = landscapeChrome ? phoneRowCandidates.slice(0, LANDSCAPE_ROW_BUDGET) : phoneRowCandidates;
     const phoneOverflowIds = landscapeChrome ? phoneRowCandidates.slice(LANDSCAPE_ROW_BUDGET) : [];
     const phoneClusterIds = phoneDedicatedIds.filter((id) => showsControl(id) && Boolean(phoneControls[id]));
@@ -29619,7 +31381,7 @@ ${cue.text}`).join("\n\n")}
       if (isClientSession()) return null;
       const downloading = downloadState.type === "downloading";
       const busy = downloadState.type === "picking-folder";
-      const active3 = downloadLabel !== null;
+      const active4 = downloadLabel !== null;
       return /* @__PURE__ */ jsxs(
         "button",
         {
@@ -29630,7 +31392,7 @@ ${cue.text}`).join("\n\n")}
           disabled: busy,
           title: downloading ? t("cancel") : t("downloadThisVideo"),
           "aria-label": downloading ? t("cancel") : t("downloadThisVideo"),
-          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active3 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active3 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
+          className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active4 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active4 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
           children: [
             downloadIcon(variant === "round" ? "h-[19px] w-[19px]" : "h-[17px] w-[17px]"),
             downloadLabel ? /* @__PURE__ */ jsx("span", { className: `font-semibold tabular-nums ${variant === "round" ? "text-[13px]" : "text-xs"}`, children: downloadLabel }) : null
@@ -30345,8 +32107,9 @@ ${cue.text}`).join("\n\n")}
                       ].filter((line) => line.text).map((line) => /* @__PURE__ */ jsx(
                         "div",
                         {
-                          className: "rounded px-3 py-1 text-center font-medium leading-snug",
+                          className: "rounded px-3 py-1 text-center",
                           style: {
+                            ...subDomTypography,
                             fontSize: `${subSize / 100 * 1.25 * line.scale}rem`,
                             color: line.color,
                             backgroundColor: subBackgroundColor,
@@ -30786,9 +32549,9 @@ ${cue.text}`).join("\n\n")}
                             showsControl("time") && totalLabel ? /* @__PURE__ */ jsx("span", { className: timePillClass, children: totalLabel }) : null
                           ] }),
                           /* @__PURE__ */ jsxs("div", { className: "mt-3.5 flex items-center justify-between gap-6", children: [
-                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_ZONES.left) }),
-                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-2.5", children: renderDesktopZone(DESKTOP_ZONES.center) }),
-                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_ZONES.right) })
+                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_CONTROL_ZONES.left) }),
+                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-2.5", children: renderDesktopZone(DESKTOP_CONTROL_ZONES.center) }),
+                            /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_CONTROL_ZONES.right) })
                           ] })
                         ] });
                       })() : landscapeChrome ? (
@@ -30896,6 +32659,8 @@ ${cue.text}`).join("\n\n")}
                             chapters: null,
                             moments: null,
                             barcodeStrip: null,
+                            // PiP finns bara i telefonens ikonkluster, inte i skrivbordets rad.
+                            pip: null,
                             sleepTimer: null,
                             companions: null,
                             playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
@@ -31497,7 +33262,7 @@ ${cue.text}`).join("\n\n")}
                                   type: "button",
                                   ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
-                                  onClick: () => setDvColorFallbackMuted((current2) => !current2),
+                                  onClick: () => setDvColorFallbackMuted((current3) => !current3),
                                   className: dtMoreRowClass,
                                   children: [
                                     /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
@@ -31650,7 +33415,7 @@ ${cue.text}`).join("\n\n")}
     );
     return portalEl ? (0, import_react_dom.createPortal)(content, portalEl) : content;
   }
-  var import_react_dom, import_core5, import_window, EMBEDDED_SUBTITLES_ENABLED, PLAYER_UI_TICK_MS, BROWSER_START_TIMEOUT_MS, BROWSER_MAX_FALLBACK_ATTEMPTS, PLAYER_PARENT_TIMEUPDATE_TICK_MS, PROXY_RESTART_MIN_GAP_MS, DESKTOP_CHROME_QUERY, LANDSCAPE_PHONE_QUERY, PHONE_TOP_INSET, PHONE_LEFT_INSET, PHONE_RIGHT_INSET, INTRODB_CACHE, NEEDS_PROXY, NEEDS_PROXY_AUDIO, isProxyUrl, isHlsUrl2, isServerStreamUrl, MPV_TRANSITION_COVER_ATTR;
+  var import_react_dom, import_core5, import_window, EMBEDDED_SUBTITLES_ENABLED, PLAYER_UI_TICK_MS, BROWSER_START_TIMEOUT_MS, BROWSER_MAX_FALLBACK_ATTEMPTS, PLAYER_PARENT_TIMEUPDATE_TICK_MS, PROXY_RESTART_MIN_GAP_MS, PHONE_TOP_INSET, PHONE_LEFT_INSET, PHONE_RIGHT_INSET, INTRODB_CACHE, NEEDS_PROXY, NEEDS_PROXY_AUDIO, isProxyUrl, isHlsUrl2, isServerStreamUrl, MPV_TRANSITION_COVER_ATTR;
   var init_video_player_modal = __esm({
     "components/player/video-player-modal.tsx"() {
       "use strict";
@@ -31658,6 +33423,8 @@ ${cue.text}`).join("\n\n")}
       init_player_control_icons();
       init_playback_settings();
       init_playback_settings();
+      init_playback_settings();
+      init_subtitle_legibility();
       init_dual_subtitles();
       init_playback_speed_store();
       init_react_shim();
@@ -31681,7 +33448,7 @@ ${cue.text}`).join("\n\n")}
       init_resume_playback();
       init_watched_episodes();
       init_watched_movies();
-      init_trakt_scrobble();
+      init_scrobble_fanout();
       init_player_layout();
       init_player_tuning_panel();
       init_video_tuning();
@@ -31694,6 +33461,7 @@ ${cue.text}`).join("\n\n")}
       init_tv_focus_shim();
       init_download_target();
       init_session_host();
+      init_pip();
       init_vlc_deep_link();
       init_fetch_client();
       init_wiki_request_cache();
@@ -31742,8 +33510,6 @@ ${cue.text}`).join("\n\n")}
       BROWSER_MAX_FALLBACK_ATTEMPTS = 3;
       PLAYER_PARENT_TIMEUPDATE_TICK_MS = 1e3;
       PROXY_RESTART_MIN_GAP_MS = 3e4;
-      DESKTOP_CHROME_QUERY = "(min-width: 768px) and (min-height: 520px)";
-      LANDSCAPE_PHONE_QUERY = "(max-height: 519px) and (orientation: landscape)";
       PHONE_TOP_INSET = "max(env(safe-area-inset-top), var(--android-inset-top, 0px))";
       PHONE_LEFT_INSET = "env(safe-area-inset-left)";
       PHONE_RIGHT_INSET = "env(safe-area-inset-right)";
@@ -31766,1112 +33532,6 @@ ${cue.text}`).join("\n\n")}
     "../../../../../../var/folders/lc/1hd2j0b57z10tx5mflylq4r80000gp/T/lumio-plugin-build/video-player-modal-shim.ts"() {
       init_react_shim();
       init_video_player_modal();
-    }
-  });
-
-  // ../../node_modules/qrcode.react/lib/esm/index.js
-  function generatePath(modules, margin = 0) {
-    const ops = [];
-    modules.forEach(function(row, y) {
-      let start2 = null;
-      row.forEach(function(cell, x) {
-        if (!cell && start2 !== null) {
-          ops.push(
-            `M${start2 + margin} ${y + margin}h${x - start2}v1H${start2 + margin}z`
-          );
-          start2 = null;
-          return;
-        }
-        if (x === row.length - 1) {
-          if (!cell) {
-            return;
-          }
-          if (start2 === null) {
-            ops.push(`M${x + margin},${y + margin} h1v1H${x + margin}z`);
-          } else {
-            ops.push(
-              `M${start2 + margin},${y + margin} h${x + 1 - start2}v1H${start2 + margin}z`
-            );
-          }
-          return;
-        }
-        if (cell && start2 === null) {
-          start2 = x;
-        }
-      });
-    });
-    return ops.join("");
-  }
-  function excavateModules(modules, excavation) {
-    return modules.slice().map((row, y) => {
-      if (y < excavation.y || y >= excavation.y + excavation.h) {
-        return row;
-      }
-      return row.map((cell, x) => {
-        if (x < excavation.x || x >= excavation.x + excavation.w) {
-          return cell;
-        }
-        return false;
-      });
-    });
-  }
-  function getImageSettings(cells, size, margin, imageSettings) {
-    if (imageSettings == null) {
-      return null;
-    }
-    const numCells = cells.length + margin * 2;
-    const defaultSize = Math.floor(size * DEFAULT_IMG_SCALE);
-    const scale = numCells / size;
-    const w = (imageSettings.width || defaultSize) * scale;
-    const h = (imageSettings.height || defaultSize) * scale;
-    const x = imageSettings.x == null ? cells.length / 2 - w / 2 : imageSettings.x * scale;
-    const y = imageSettings.y == null ? cells.length / 2 - h / 2 : imageSettings.y * scale;
-    const opacity = imageSettings.opacity == null ? 1 : imageSettings.opacity;
-    let excavation = null;
-    if (imageSettings.excavate) {
-      let floorX = Math.floor(x);
-      let floorY = Math.floor(y);
-      let ceilW = Math.ceil(w + x - floorX);
-      let ceilH = Math.ceil(h + y - floorY);
-      excavation = { x: floorX, y: floorY, w: ceilW, h: ceilH };
-    }
-    const crossOrigin = imageSettings.crossOrigin;
-    return { x, y, h, w, excavation, opacity, crossOrigin };
-  }
-  function getMarginSize(includeMargin, marginSize) {
-    if (marginSize != null) {
-      return Math.max(Math.floor(marginSize), 0);
-    }
-    return includeMargin ? SPEC_MARGIN_SIZE : DEFAULT_MARGIN_SIZE;
-  }
-  function useQRCode({
-    value,
-    level,
-    minVersion,
-    includeMargin,
-    marginSize,
-    imageSettings,
-    size,
-    boostLevel
-  }) {
-    let qrcode = react_shim_default.useMemo(() => {
-      const values = Array.isArray(value) ? value : [value];
-      const segments = values.reduce((accum, v) => {
-        accum.push(...qrcodegen_default.QrSegment.makeSegments(v));
-        return accum;
-      }, []);
-      return qrcodegen_default.QrCode.encodeSegments(
-        segments,
-        ERROR_LEVEL_MAP[level],
-        minVersion,
-        void 0,
-        void 0,
-        boostLevel
-      );
-    }, [value, level, minVersion, boostLevel]);
-    const { cells, margin, numCells, calculatedImageSettings } = react_shim_default.useMemo(() => {
-      let cells2 = qrcode.getModules();
-      const margin2 = getMarginSize(includeMargin, marginSize);
-      const numCells2 = cells2.length + margin2 * 2;
-      const calculatedImageSettings2 = getImageSettings(
-        cells2,
-        size,
-        margin2,
-        imageSettings
-      );
-      return {
-        cells: cells2,
-        margin: margin2,
-        numCells: numCells2,
-        calculatedImageSettings: calculatedImageSettings2
-      };
-    }, [qrcode, size, imageSettings, includeMargin, marginSize]);
-    return {
-      qrcode,
-      margin,
-      cells,
-      numCells,
-      calculatedImageSettings
-    };
-  }
-  var __defProp2, __getOwnPropSymbols, __hasOwnProp2, __propIsEnum, __defNormalProp2, __spreadValues, __objRest, qrcodegen, qrcodegen_default, ERROR_LEVEL_MAP, DEFAULT_SIZE, DEFAULT_LEVEL, DEFAULT_BGCOLOR, DEFAULT_FGCOLOR, DEFAULT_INCLUDEMARGIN, DEFAULT_MINVERSION, SPEC_MARGIN_SIZE, DEFAULT_MARGIN_SIZE, DEFAULT_IMG_SCALE, SUPPORTS_PATH2D, QRCodeCanvas, QRCodeSVG;
-  var init_esm = __esm({
-    "../../node_modules/qrcode.react/lib/esm/index.js"() {
-      init_react_shim();
-      __defProp2 = Object.defineProperty;
-      __getOwnPropSymbols = Object.getOwnPropertySymbols;
-      __hasOwnProp2 = Object.prototype.hasOwnProperty;
-      __propIsEnum = Object.prototype.propertyIsEnumerable;
-      __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-      __spreadValues = (a, b) => {
-        for (var prop in b || (b = {}))
-          if (__hasOwnProp2.call(b, prop))
-            __defNormalProp2(a, prop, b[prop]);
-        if (__getOwnPropSymbols)
-          for (var prop of __getOwnPropSymbols(b)) {
-            if (__propIsEnum.call(b, prop))
-              __defNormalProp2(a, prop, b[prop]);
-          }
-        return a;
-      };
-      __objRest = (source, exclude) => {
-        var target2 = {};
-        for (var prop in source)
-          if (__hasOwnProp2.call(source, prop) && exclude.indexOf(prop) < 0)
-            target2[prop] = source[prop];
-        if (source != null && __getOwnPropSymbols)
-          for (var prop of __getOwnPropSymbols(source)) {
-            if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-              target2[prop] = source[prop];
-          }
-        return target2;
-      };
-      ((qrcodegen2) => {
-        const _QrCode = class _QrCode2 {
-          /*-- Constructor (low level) and fields --*/
-          // Creates a new QR Code with the given version number,
-          // error correction level, data codeword bytes, and mask number.
-          // This is a low-level API that most users should not use directly.
-          // A mid-level API is the encodeSegments() function.
-          constructor(version3, errorCorrectionLevel, dataCodewords, msk) {
-            this.version = version3;
-            this.errorCorrectionLevel = errorCorrectionLevel;
-            this.modules = [];
-            this.isFunction = [];
-            if (version3 < _QrCode2.MIN_VERSION || version3 > _QrCode2.MAX_VERSION)
-              throw new RangeError("Version value out of range");
-            if (msk < -1 || msk > 7)
-              throw new RangeError("Mask value out of range");
-            this.size = version3 * 4 + 17;
-            let row = [];
-            for (let i = 0; i < this.size; i++)
-              row.push(false);
-            for (let i = 0; i < this.size; i++) {
-              this.modules.push(row.slice());
-              this.isFunction.push(row.slice());
-            }
-            this.drawFunctionPatterns();
-            const allCodewords = this.addEccAndInterleave(dataCodewords);
-            this.drawCodewords(allCodewords);
-            if (msk == -1) {
-              let minPenalty = 1e9;
-              for (let i = 0; i < 8; i++) {
-                this.applyMask(i);
-                this.drawFormatBits(i);
-                const penalty = this.getPenaltyScore();
-                if (penalty < minPenalty) {
-                  msk = i;
-                  minPenalty = penalty;
-                }
-                this.applyMask(i);
-              }
-            }
-            assert(0 <= msk && msk <= 7);
-            this.mask = msk;
-            this.applyMask(msk);
-            this.drawFormatBits(msk);
-            this.isFunction = [];
-          }
-          /*-- Static factory functions (high level) --*/
-          // Returns a QR Code representing the given Unicode text string at the given error correction level.
-          // As a conservative upper bound, this function is guaranteed to succeed for strings that have 738 or fewer
-          // Unicode code points (not UTF-16 code units) if the low error correction level is used. The smallest possible
-          // QR Code version is automatically chosen for the output. The ECC level of the result may be higher than the
-          // ecl argument if it can be done without increasing the version.
-          static encodeText(text, ecl) {
-            const segs = qrcodegen2.QrSegment.makeSegments(text);
-            return _QrCode2.encodeSegments(segs, ecl);
-          }
-          // Returns a QR Code representing the given binary data at the given error correction level.
-          // This function always encodes using the binary segment mode, not any text mode. The maximum number of
-          // bytes allowed is 2953. The smallest possible QR Code version is automatically chosen for the output.
-          // The ECC level of the result may be higher than the ecl argument if it can be done without increasing the version.
-          static encodeBinary(data, ecl) {
-            const seg = qrcodegen2.QrSegment.makeBytes(data);
-            return _QrCode2.encodeSegments([seg], ecl);
-          }
-          /*-- Static factory functions (mid level) --*/
-          // Returns a QR Code representing the given segments with the given encoding parameters.
-          // The smallest possible QR Code version within the given range is automatically
-          // chosen for the output. Iff boostEcl is true, then the ECC level of the result
-          // may be higher than the ecl argument if it can be done without increasing the
-          // version. The mask number is either between 0 to 7 (inclusive) to force that
-          // mask, or -1 to automatically choose an appropriate mask (which may be slow).
-          // This function allows the user to create a custom sequence of segments that switches
-          // between modes (such as alphanumeric and byte) to encode text in less space.
-          // This is a mid-level API; the high-level API is encodeText() and encodeBinary().
-          static encodeSegments(segs, ecl, minVersion = 1, maxVersion = 40, mask = -1, boostEcl = true) {
-            if (!(_QrCode2.MIN_VERSION <= minVersion && minVersion <= maxVersion && maxVersion <= _QrCode2.MAX_VERSION) || mask < -1 || mask > 7)
-              throw new RangeError("Invalid value");
-            let version3;
-            let dataUsedBits;
-            for (version3 = minVersion; ; version3++) {
-              const dataCapacityBits2 = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
-              const usedBits = QrSegment.getTotalBits(segs, version3);
-              if (usedBits <= dataCapacityBits2) {
-                dataUsedBits = usedBits;
-                break;
-              }
-              if (version3 >= maxVersion)
-                throw new RangeError("Data too long");
-            }
-            for (const newEcl of [_QrCode2.Ecc.MEDIUM, _QrCode2.Ecc.QUARTILE, _QrCode2.Ecc.HIGH]) {
-              if (boostEcl && dataUsedBits <= _QrCode2.getNumDataCodewords(version3, newEcl) * 8)
-                ecl = newEcl;
-            }
-            let bb = [];
-            for (const seg of segs) {
-              appendBits(seg.mode.modeBits, 4, bb);
-              appendBits(seg.numChars, seg.mode.numCharCountBits(version3), bb);
-              for (const b of seg.getData())
-                bb.push(b);
-            }
-            assert(bb.length == dataUsedBits);
-            const dataCapacityBits = _QrCode2.getNumDataCodewords(version3, ecl) * 8;
-            assert(bb.length <= dataCapacityBits);
-            appendBits(0, Math.min(4, dataCapacityBits - bb.length), bb);
-            appendBits(0, (8 - bb.length % 8) % 8, bb);
-            assert(bb.length % 8 == 0);
-            for (let padByte = 236; bb.length < dataCapacityBits; padByte ^= 236 ^ 17)
-              appendBits(padByte, 8, bb);
-            let dataCodewords = [];
-            while (dataCodewords.length * 8 < bb.length)
-              dataCodewords.push(0);
-            bb.forEach((b, i) => dataCodewords[i >>> 3] |= b << 7 - (i & 7));
-            return new _QrCode2(version3, ecl, dataCodewords, mask);
-          }
-          /*-- Accessor methods --*/
-          // Returns the color of the module (pixel) at the given coordinates, which is false
-          // for light or true for dark. The top left corner has the coordinates (x=0, y=0).
-          // If the given coordinates are out of bounds, then false (light) is returned.
-          getModule(x, y) {
-            return 0 <= x && x < this.size && 0 <= y && y < this.size && this.modules[y][x];
-          }
-          // Modified to expose modules for easy access
-          getModules() {
-            return this.modules;
-          }
-          /*-- Private helper methods for constructor: Drawing function modules --*/
-          // Reads this object's version field, and draws and marks all function modules.
-          drawFunctionPatterns() {
-            for (let i = 0; i < this.size; i++) {
-              this.setFunctionModule(6, i, i % 2 == 0);
-              this.setFunctionModule(i, 6, i % 2 == 0);
-            }
-            this.drawFinderPattern(3, 3);
-            this.drawFinderPattern(this.size - 4, 3);
-            this.drawFinderPattern(3, this.size - 4);
-            const alignPatPos = this.getAlignmentPatternPositions();
-            const numAlign = alignPatPos.length;
-            for (let i = 0; i < numAlign; i++) {
-              for (let j = 0; j < numAlign; j++) {
-                if (!(i == 0 && j == 0 || i == 0 && j == numAlign - 1 || i == numAlign - 1 && j == 0))
-                  this.drawAlignmentPattern(alignPatPos[i], alignPatPos[j]);
-              }
-            }
-            this.drawFormatBits(0);
-            this.drawVersion();
-          }
-          // Draws two copies of the format bits (with its own error correction code)
-          // based on the given mask and this object's error correction level field.
-          drawFormatBits(mask) {
-            const data = this.errorCorrectionLevel.formatBits << 3 | mask;
-            let rem = data;
-            for (let i = 0; i < 10; i++)
-              rem = rem << 1 ^ (rem >>> 9) * 1335;
-            const bits = (data << 10 | rem) ^ 21522;
-            assert(bits >>> 15 == 0);
-            for (let i = 0; i <= 5; i++)
-              this.setFunctionModule(8, i, getBit(bits, i));
-            this.setFunctionModule(8, 7, getBit(bits, 6));
-            this.setFunctionModule(8, 8, getBit(bits, 7));
-            this.setFunctionModule(7, 8, getBit(bits, 8));
-            for (let i = 9; i < 15; i++)
-              this.setFunctionModule(14 - i, 8, getBit(bits, i));
-            for (let i = 0; i < 8; i++)
-              this.setFunctionModule(this.size - 1 - i, 8, getBit(bits, i));
-            for (let i = 8; i < 15; i++)
-              this.setFunctionModule(8, this.size - 15 + i, getBit(bits, i));
-            this.setFunctionModule(8, this.size - 8, true);
-          }
-          // Draws two copies of the version bits (with its own error correction code),
-          // based on this object's version field, iff 7 <= version <= 40.
-          drawVersion() {
-            if (this.version < 7)
-              return;
-            let rem = this.version;
-            for (let i = 0; i < 12; i++)
-              rem = rem << 1 ^ (rem >>> 11) * 7973;
-            const bits = this.version << 12 | rem;
-            assert(bits >>> 18 == 0);
-            for (let i = 0; i < 18; i++) {
-              const color = getBit(bits, i);
-              const a = this.size - 11 + i % 3;
-              const b = Math.floor(i / 3);
-              this.setFunctionModule(a, b, color);
-              this.setFunctionModule(b, a, color);
-            }
-          }
-          // Draws a 9*9 finder pattern including the border separator,
-          // with the center module at (x, y). Modules can be out of bounds.
-          drawFinderPattern(x, y) {
-            for (let dy = -4; dy <= 4; dy++) {
-              for (let dx = -4; dx <= 4; dx++) {
-                const dist = Math.max(Math.abs(dx), Math.abs(dy));
-                const xx = x + dx;
-                const yy = y + dy;
-                if (0 <= xx && xx < this.size && 0 <= yy && yy < this.size)
-                  this.setFunctionModule(xx, yy, dist != 2 && dist != 4);
-              }
-            }
-          }
-          // Draws a 5*5 alignment pattern, with the center module
-          // at (x, y). All modules must be in bounds.
-          drawAlignmentPattern(x, y) {
-            for (let dy = -2; dy <= 2; dy++) {
-              for (let dx = -2; dx <= 2; dx++)
-                this.setFunctionModule(x + dx, y + dy, Math.max(Math.abs(dx), Math.abs(dy)) != 1);
-            }
-          }
-          // Sets the color of a module and marks it as a function module.
-          // Only used by the constructor. Coordinates must be in bounds.
-          setFunctionModule(x, y, isDark) {
-            this.modules[y][x] = isDark;
-            this.isFunction[y][x] = true;
-          }
-          /*-- Private helper methods for constructor: Codewords and masking --*/
-          // Returns a new byte string representing the given data with the appropriate error correction
-          // codewords appended to it, based on this object's version and error correction level.
-          addEccAndInterleave(data) {
-            const ver = this.version;
-            const ecl = this.errorCorrectionLevel;
-            if (data.length != _QrCode2.getNumDataCodewords(ver, ecl))
-              throw new RangeError("Invalid argument");
-            const numBlocks = _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
-            const blockEccLen = _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver];
-            const rawCodewords = Math.floor(_QrCode2.getNumRawDataModules(ver) / 8);
-            const numShortBlocks = numBlocks - rawCodewords % numBlocks;
-            const shortBlockLen = Math.floor(rawCodewords / numBlocks);
-            let blocks = [];
-            const rsDiv = _QrCode2.reedSolomonComputeDivisor(blockEccLen);
-            for (let i = 0, k = 0; i < numBlocks; i++) {
-              let dat = data.slice(k, k + shortBlockLen - blockEccLen + (i < numShortBlocks ? 0 : 1));
-              k += dat.length;
-              const ecc = _QrCode2.reedSolomonComputeRemainder(dat, rsDiv);
-              if (i < numShortBlocks)
-                dat.push(0);
-              blocks.push(dat.concat(ecc));
-            }
-            let result = [];
-            for (let i = 0; i < blocks[0].length; i++) {
-              blocks.forEach((block, j) => {
-                if (i != shortBlockLen - blockEccLen || j >= numShortBlocks)
-                  result.push(block[i]);
-              });
-            }
-            assert(result.length == rawCodewords);
-            return result;
-          }
-          // Draws the given sequence of 8-bit codewords (data and error correction) onto the entire
-          // data area of this QR Code. Function modules need to be marked off before this is called.
-          drawCodewords(data) {
-            if (data.length != Math.floor(_QrCode2.getNumRawDataModules(this.version) / 8))
-              throw new RangeError("Invalid argument");
-            let i = 0;
-            for (let right = this.size - 1; right >= 1; right -= 2) {
-              if (right == 6)
-                right = 5;
-              for (let vert = 0; vert < this.size; vert++) {
-                for (let j = 0; j < 2; j++) {
-                  const x = right - j;
-                  const upward = (right + 1 & 2) == 0;
-                  const y = upward ? this.size - 1 - vert : vert;
-                  if (!this.isFunction[y][x] && i < data.length * 8) {
-                    this.modules[y][x] = getBit(data[i >>> 3], 7 - (i & 7));
-                    i++;
-                  }
-                }
-              }
-            }
-            assert(i == data.length * 8);
-          }
-          // XORs the codeword modules in this QR Code with the given mask pattern.
-          // The function modules must be marked and the codeword bits must be drawn
-          // before masking. Due to the arithmetic of XOR, calling applyMask() with
-          // the same mask value a second time will undo the mask. A final well-formed
-          // QR Code needs exactly one (not zero, two, etc.) mask applied.
-          applyMask(mask) {
-            if (mask < 0 || mask > 7)
-              throw new RangeError("Mask value out of range");
-            for (let y = 0; y < this.size; y++) {
-              for (let x = 0; x < this.size; x++) {
-                let invert;
-                switch (mask) {
-                  case 0:
-                    invert = (x + y) % 2 == 0;
-                    break;
-                  case 1:
-                    invert = y % 2 == 0;
-                    break;
-                  case 2:
-                    invert = x % 3 == 0;
-                    break;
-                  case 3:
-                    invert = (x + y) % 3 == 0;
-                    break;
-                  case 4:
-                    invert = (Math.floor(x / 3) + Math.floor(y / 2)) % 2 == 0;
-                    break;
-                  case 5:
-                    invert = x * y % 2 + x * y % 3 == 0;
-                    break;
-                  case 6:
-                    invert = (x * y % 2 + x * y % 3) % 2 == 0;
-                    break;
-                  case 7:
-                    invert = ((x + y) % 2 + x * y % 3) % 2 == 0;
-                    break;
-                  default:
-                    throw new Error("Unreachable");
-                }
-                if (!this.isFunction[y][x] && invert)
-                  this.modules[y][x] = !this.modules[y][x];
-              }
-            }
-          }
-          // Calculates and returns the penalty score based on state of this QR Code's current modules.
-          // This is used by the automatic mask choice algorithm to find the mask pattern that yields the lowest score.
-          getPenaltyScore() {
-            let result = 0;
-            for (let y = 0; y < this.size; y++) {
-              let runColor = false;
-              let runX = 0;
-              let runHistory = [0, 0, 0, 0, 0, 0, 0];
-              for (let x = 0; x < this.size; x++) {
-                if (this.modules[y][x] == runColor) {
-                  runX++;
-                  if (runX == 5)
-                    result += _QrCode2.PENALTY_N1;
-                  else if (runX > 5)
-                    result++;
-                } else {
-                  this.finderPenaltyAddHistory(runX, runHistory);
-                  if (!runColor)
-                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
-                  runColor = this.modules[y][x];
-                  runX = 1;
-                }
-              }
-              result += this.finderPenaltyTerminateAndCount(runColor, runX, runHistory) * _QrCode2.PENALTY_N3;
-            }
-            for (let x = 0; x < this.size; x++) {
-              let runColor = false;
-              let runY = 0;
-              let runHistory = [0, 0, 0, 0, 0, 0, 0];
-              for (let y = 0; y < this.size; y++) {
-                if (this.modules[y][x] == runColor) {
-                  runY++;
-                  if (runY == 5)
-                    result += _QrCode2.PENALTY_N1;
-                  else if (runY > 5)
-                    result++;
-                } else {
-                  this.finderPenaltyAddHistory(runY, runHistory);
-                  if (!runColor)
-                    result += this.finderPenaltyCountPatterns(runHistory) * _QrCode2.PENALTY_N3;
-                  runColor = this.modules[y][x];
-                  runY = 1;
-                }
-              }
-              result += this.finderPenaltyTerminateAndCount(runColor, runY, runHistory) * _QrCode2.PENALTY_N3;
-            }
-            for (let y = 0; y < this.size - 1; y++) {
-              for (let x = 0; x < this.size - 1; x++) {
-                const color = this.modules[y][x];
-                if (color == this.modules[y][x + 1] && color == this.modules[y + 1][x] && color == this.modules[y + 1][x + 1])
-                  result += _QrCode2.PENALTY_N2;
-              }
-            }
-            let dark = 0;
-            for (const row of this.modules)
-              dark = row.reduce((sum, color) => sum + (color ? 1 : 0), dark);
-            const total = this.size * this.size;
-            const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1;
-            assert(0 <= k && k <= 9);
-            result += k * _QrCode2.PENALTY_N4;
-            assert(0 <= result && result <= 2568888);
-            return result;
-          }
-          /*-- Private helper functions --*/
-          // Returns an ascending list of positions of alignment patterns for this version number.
-          // Each position is in the range [0,177), and are used on both the x and y axes.
-          // This could be implemented as lookup table of 40 variable-length lists of integers.
-          getAlignmentPatternPositions() {
-            if (this.version == 1)
-              return [];
-            else {
-              const numAlign = Math.floor(this.version / 7) + 2;
-              const step = this.version == 32 ? 26 : Math.ceil((this.version * 4 + 4) / (numAlign * 2 - 2)) * 2;
-              let result = [6];
-              for (let pos = this.size - 7; result.length < numAlign; pos -= step)
-                result.splice(1, 0, pos);
-              return result;
-            }
-          }
-          // Returns the number of data bits that can be stored in a QR Code of the given version number, after
-          // all function modules are excluded. This includes remainder bits, so it might not be a multiple of 8.
-          // The result is in the range [208, 29648]. This could be implemented as a 40-entry lookup table.
-          static getNumRawDataModules(ver) {
-            if (ver < _QrCode2.MIN_VERSION || ver > _QrCode2.MAX_VERSION)
-              throw new RangeError("Version number out of range");
-            let result = (16 * ver + 128) * ver + 64;
-            if (ver >= 2) {
-              const numAlign = Math.floor(ver / 7) + 2;
-              result -= (25 * numAlign - 10) * numAlign - 55;
-              if (ver >= 7)
-                result -= 36;
-            }
-            assert(208 <= result && result <= 29648);
-            return result;
-          }
-          // Returns the number of 8-bit data (i.e. not error correction) codewords contained in any
-          // QR Code of the given version number and error correction level, with remainder bits discarded.
-          // This stateless pure function could be implemented as a (40*4)-cell lookup table.
-          static getNumDataCodewords(ver, ecl) {
-            return Math.floor(_QrCode2.getNumRawDataModules(ver) / 8) - _QrCode2.ECC_CODEWORDS_PER_BLOCK[ecl.ordinal][ver] * _QrCode2.NUM_ERROR_CORRECTION_BLOCKS[ecl.ordinal][ver];
-          }
-          // Returns a Reed-Solomon ECC generator polynomial for the given degree. This could be
-          // implemented as a lookup table over all possible parameter values, instead of as an algorithm.
-          static reedSolomonComputeDivisor(degree) {
-            if (degree < 1 || degree > 255)
-              throw new RangeError("Degree out of range");
-            let result = [];
-            for (let i = 0; i < degree - 1; i++)
-              result.push(0);
-            result.push(1);
-            let root = 1;
-            for (let i = 0; i < degree; i++) {
-              for (let j = 0; j < result.length; j++) {
-                result[j] = _QrCode2.reedSolomonMultiply(result[j], root);
-                if (j + 1 < result.length)
-                  result[j] ^= result[j + 1];
-              }
-              root = _QrCode2.reedSolomonMultiply(root, 2);
-            }
-            return result;
-          }
-          // Returns the Reed-Solomon error correction codeword for the given data and divisor polynomials.
-          static reedSolomonComputeRemainder(data, divisor) {
-            let result = divisor.map((_) => 0);
-            for (const b of data) {
-              const factor = b ^ result.shift();
-              result.push(0);
-              divisor.forEach((coef, i) => result[i] ^= _QrCode2.reedSolomonMultiply(coef, factor));
-            }
-            return result;
-          }
-          // Returns the product of the two given field elements modulo GF(2^8/0x11D). The arguments and result
-          // are unsigned 8-bit integers. This could be implemented as a lookup table of 256*256 entries of uint8.
-          static reedSolomonMultiply(x, y) {
-            if (x >>> 8 != 0 || y >>> 8 != 0)
-              throw new RangeError("Byte out of range");
-            let z = 0;
-            for (let i = 7; i >= 0; i--) {
-              z = z << 1 ^ (z >>> 7) * 285;
-              z ^= (y >>> i & 1) * x;
-            }
-            assert(z >>> 8 == 0);
-            return z;
-          }
-          // Can only be called immediately after a light run is added, and
-          // returns either 0, 1, or 2. A helper function for getPenaltyScore().
-          finderPenaltyCountPatterns(runHistory) {
-            const n = runHistory[1];
-            assert(n <= this.size * 3);
-            const core = n > 0 && runHistory[2] == n && runHistory[3] == n * 3 && runHistory[4] == n && runHistory[5] == n;
-            return (core && runHistory[0] >= n * 4 && runHistory[6] >= n ? 1 : 0) + (core && runHistory[6] >= n * 4 && runHistory[0] >= n ? 1 : 0);
-          }
-          // Must be called at the end of a line (row or column) of modules. A helper function for getPenaltyScore().
-          finderPenaltyTerminateAndCount(currentRunColor, currentRunLength, runHistory) {
-            if (currentRunColor) {
-              this.finderPenaltyAddHistory(currentRunLength, runHistory);
-              currentRunLength = 0;
-            }
-            currentRunLength += this.size;
-            this.finderPenaltyAddHistory(currentRunLength, runHistory);
-            return this.finderPenaltyCountPatterns(runHistory);
-          }
-          // Pushes the given value to the front and drops the last value. A helper function for getPenaltyScore().
-          finderPenaltyAddHistory(currentRunLength, runHistory) {
-            if (runHistory[0] == 0)
-              currentRunLength += this.size;
-            runHistory.pop();
-            runHistory.unshift(currentRunLength);
-          }
-        };
-        _QrCode.MIN_VERSION = 1;
-        _QrCode.MAX_VERSION = 40;
-        _QrCode.PENALTY_N1 = 3;
-        _QrCode.PENALTY_N2 = 3;
-        _QrCode.PENALTY_N3 = 40;
-        _QrCode.PENALTY_N4 = 10;
-        _QrCode.ECC_CODEWORDS_PER_BLOCK = [
-          // Version: (note that index 0 is for padding, and is set to an illegal value)
-          //0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
-          [-1, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
-          // Low
-          [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
-          // Medium
-          [-1, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
-          // Quartile
-          [-1, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30]
-          // High
-        ];
-        _QrCode.NUM_ERROR_CORRECTION_BLOCKS = [
-          // Version: (note that index 0 is for padding, and is set to an illegal value)
-          //0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40    Error correction level
-          [-1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
-          // Low
-          [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
-          // Medium
-          [-1, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68],
-          // Quartile
-          [-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81]
-          // High
-        ];
-        let QrCode = _QrCode;
-        qrcodegen2.QrCode = _QrCode;
-        function appendBits(val, len, bb) {
-          if (len < 0 || len > 31 || val >>> len != 0)
-            throw new RangeError("Value out of range");
-          for (let i = len - 1; i >= 0; i--)
-            bb.push(val >>> i & 1);
-        }
-        function getBit(x, i) {
-          return (x >>> i & 1) != 0;
-        }
-        function assert(cond) {
-          if (!cond)
-            throw new Error("Assertion error");
-        }
-        const _QrSegment = class _QrSegment2 {
-          /*-- Constructor (low level) and fields --*/
-          // Creates a new QR Code segment with the given attributes and data.
-          // The character count (numChars) must agree with the mode and the bit buffer length,
-          // but the constraint isn't checked. The given bit buffer is cloned and stored.
-          constructor(mode, numChars, bitData) {
-            this.mode = mode;
-            this.numChars = numChars;
-            this.bitData = bitData;
-            if (numChars < 0)
-              throw new RangeError("Invalid argument");
-            this.bitData = bitData.slice();
-          }
-          /*-- Static factory functions (mid level) --*/
-          // Returns a segment representing the given binary data encoded in
-          // byte mode. All input byte arrays are acceptable. Any text string
-          // can be converted to UTF-8 bytes and encoded as a byte mode segment.
-          static makeBytes(data) {
-            let bb = [];
-            for (const b of data)
-              appendBits(b, 8, bb);
-            return new _QrSegment2(_QrSegment2.Mode.BYTE, data.length, bb);
-          }
-          // Returns a segment representing the given string of decimal digits encoded in numeric mode.
-          static makeNumeric(digits) {
-            if (!_QrSegment2.isNumeric(digits))
-              throw new RangeError("String contains non-numeric characters");
-            let bb = [];
-            for (let i = 0; i < digits.length; ) {
-              const n = Math.min(digits.length - i, 3);
-              appendBits(parseInt(digits.substring(i, i + n), 10), n * 3 + 1, bb);
-              i += n;
-            }
-            return new _QrSegment2(_QrSegment2.Mode.NUMERIC, digits.length, bb);
-          }
-          // Returns a segment representing the given text string encoded in alphanumeric mode.
-          // The characters allowed are: 0 to 9, A to Z (uppercase only), space,
-          // dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static makeAlphanumeric(text) {
-            if (!_QrSegment2.isAlphanumeric(text))
-              throw new RangeError("String contains unencodable characters in alphanumeric mode");
-            let bb = [];
-            let i;
-            for (i = 0; i + 2 <= text.length; i += 2) {
-              let temp = _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)) * 45;
-              temp += _QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i + 1));
-              appendBits(temp, 11, bb);
-            }
-            if (i < text.length)
-              appendBits(_QrSegment2.ALPHANUMERIC_CHARSET.indexOf(text.charAt(i)), 6, bb);
-            return new _QrSegment2(_QrSegment2.Mode.ALPHANUMERIC, text.length, bb);
-          }
-          // Returns a new mutable list of zero or more segments to represent the given Unicode text string.
-          // The result may use various segment modes and switch modes to optimize the length of the bit stream.
-          static makeSegments(text) {
-            if (text == "")
-              return [];
-            else if (_QrSegment2.isNumeric(text))
-              return [_QrSegment2.makeNumeric(text)];
-            else if (_QrSegment2.isAlphanumeric(text))
-              return [_QrSegment2.makeAlphanumeric(text)];
-            else
-              return [_QrSegment2.makeBytes(_QrSegment2.toUtf8ByteArray(text))];
-          }
-          // Returns a segment representing an Extended Channel Interpretation
-          // (ECI) designator with the given assignment value.
-          static makeEci(assignVal) {
-            let bb = [];
-            if (assignVal < 0)
-              throw new RangeError("ECI assignment value out of range");
-            else if (assignVal < 1 << 7)
-              appendBits(assignVal, 8, bb);
-            else if (assignVal < 1 << 14) {
-              appendBits(2, 2, bb);
-              appendBits(assignVal, 14, bb);
-            } else if (assignVal < 1e6) {
-              appendBits(6, 3, bb);
-              appendBits(assignVal, 21, bb);
-            } else
-              throw new RangeError("ECI assignment value out of range");
-            return new _QrSegment2(_QrSegment2.Mode.ECI, 0, bb);
-          }
-          // Tests whether the given string can be encoded as a segment in numeric mode.
-          // A string is encodable iff each character is in the range 0 to 9.
-          static isNumeric(text) {
-            return _QrSegment2.NUMERIC_REGEX.test(text);
-          }
-          // Tests whether the given string can be encoded as a segment in alphanumeric mode.
-          // A string is encodable iff each character is in the following set: 0 to 9, A to Z
-          // (uppercase only), space, dollar, percent, asterisk, plus, hyphen, period, slash, colon.
-          static isAlphanumeric(text) {
-            return _QrSegment2.ALPHANUMERIC_REGEX.test(text);
-          }
-          /*-- Methods --*/
-          // Returns a new copy of the data bits of this segment.
-          getData() {
-            return this.bitData.slice();
-          }
-          // (Package-private) Calculates and returns the number of bits needed to encode the given segments at
-          // the given version. The result is infinity if a segment has too many characters to fit its length field.
-          static getTotalBits(segs, version3) {
-            let result = 0;
-            for (const seg of segs) {
-              const ccbits = seg.mode.numCharCountBits(version3);
-              if (seg.numChars >= 1 << ccbits)
-                return Infinity;
-              result += 4 + ccbits + seg.bitData.length;
-            }
-            return result;
-          }
-          // Returns a new array of bytes representing the given string encoded in UTF-8.
-          static toUtf8ByteArray(str) {
-            str = encodeURI(str);
-            let result = [];
-            for (let i = 0; i < str.length; i++) {
-              if (str.charAt(i) != "%")
-                result.push(str.charCodeAt(i));
-              else {
-                result.push(parseInt(str.substring(i + 1, i + 3), 16));
-                i += 2;
-              }
-            }
-            return result;
-          }
-        };
-        _QrSegment.NUMERIC_REGEX = /^[0-9]*$/;
-        _QrSegment.ALPHANUMERIC_REGEX = /^[A-Z0-9 $%*+.\/:-]*$/;
-        _QrSegment.ALPHANUMERIC_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
-        let QrSegment = _QrSegment;
-        qrcodegen2.QrSegment = _QrSegment;
-      })(qrcodegen || (qrcodegen = {}));
-      ((qrcodegen2) => {
-        let QrCode;
-        ((QrCode2) => {
-          const _Ecc = class _Ecc {
-            // The QR Code can tolerate about 30% erroneous codewords
-            /*-- Constructor and fields --*/
-            constructor(ordinal, formatBits) {
-              this.ordinal = ordinal;
-              this.formatBits = formatBits;
-            }
-          };
-          _Ecc.LOW = new _Ecc(0, 1);
-          _Ecc.MEDIUM = new _Ecc(1, 0);
-          _Ecc.QUARTILE = new _Ecc(2, 3);
-          _Ecc.HIGH = new _Ecc(3, 2);
-          let Ecc = _Ecc;
-          QrCode2.Ecc = _Ecc;
-        })(QrCode = qrcodegen2.QrCode || (qrcodegen2.QrCode = {}));
-      })(qrcodegen || (qrcodegen = {}));
-      ((qrcodegen2) => {
-        let QrSegment;
-        ((QrSegment2) => {
-          const _Mode = class _Mode {
-            /*-- Constructor and fields --*/
-            constructor(modeBits, numBitsCharCount) {
-              this.modeBits = modeBits;
-              this.numBitsCharCount = numBitsCharCount;
-            }
-            /*-- Method --*/
-            // (Package-private) Returns the bit width of the character count field for a segment in
-            // this mode in a QR Code at the given version number. The result is in the range [0, 16].
-            numCharCountBits(ver) {
-              return this.numBitsCharCount[Math.floor((ver + 7) / 17)];
-            }
-          };
-          _Mode.NUMERIC = new _Mode(1, [10, 12, 14]);
-          _Mode.ALPHANUMERIC = new _Mode(2, [9, 11, 13]);
-          _Mode.BYTE = new _Mode(4, [8, 16, 16]);
-          _Mode.KANJI = new _Mode(8, [8, 10, 12]);
-          _Mode.ECI = new _Mode(7, [0, 0, 0]);
-          let Mode = _Mode;
-          QrSegment2.Mode = _Mode;
-        })(QrSegment = qrcodegen2.QrSegment || (qrcodegen2.QrSegment = {}));
-      })(qrcodegen || (qrcodegen = {}));
-      qrcodegen_default = qrcodegen;
-      ERROR_LEVEL_MAP = {
-        L: qrcodegen_default.QrCode.Ecc.LOW,
-        M: qrcodegen_default.QrCode.Ecc.MEDIUM,
-        Q: qrcodegen_default.QrCode.Ecc.QUARTILE,
-        H: qrcodegen_default.QrCode.Ecc.HIGH
-      };
-      DEFAULT_SIZE = 128;
-      DEFAULT_LEVEL = "L";
-      DEFAULT_BGCOLOR = "#FFFFFF";
-      DEFAULT_FGCOLOR = "#000000";
-      DEFAULT_INCLUDEMARGIN = false;
-      DEFAULT_MINVERSION = 1;
-      SPEC_MARGIN_SIZE = 4;
-      DEFAULT_MARGIN_SIZE = 0;
-      DEFAULT_IMG_SCALE = 0.1;
-      SUPPORTS_PATH2D = (function() {
-        try {
-          new Path2D().addPath(new Path2D());
-        } catch (e) {
-          return false;
-        }
-        return true;
-      })();
-      QRCodeCanvas = react_shim_default.forwardRef(
-        function QRCodeCanvas2(props, forwardedRef) {
-          const _a = props, {
-            value,
-            size = DEFAULT_SIZE,
-            level = DEFAULT_LEVEL,
-            bgColor = DEFAULT_BGCOLOR,
-            fgColor = DEFAULT_FGCOLOR,
-            includeMargin = DEFAULT_INCLUDEMARGIN,
-            minVersion = DEFAULT_MINVERSION,
-            boostLevel,
-            marginSize,
-            imageSettings
-          } = _a, extraProps = __objRest(_a, [
-            "value",
-            "size",
-            "level",
-            "bgColor",
-            "fgColor",
-            "includeMargin",
-            "minVersion",
-            "boostLevel",
-            "marginSize",
-            "imageSettings"
-          ]);
-          const _b = extraProps, { style } = _b, otherProps = __objRest(_b, ["style"]);
-          const imgSrc = imageSettings == null ? void 0 : imageSettings.src;
-          const _canvas = react_shim_default.useRef(null);
-          const _image = react_shim_default.useRef(null);
-          const setCanvasRef = react_shim_default.useCallback(
-            (node) => {
-              _canvas.current = node;
-              if (typeof forwardedRef === "function") {
-                forwardedRef(node);
-              } else if (forwardedRef) {
-                forwardedRef.current = node;
-              }
-            },
-            [forwardedRef]
-          );
-          const [isImgLoaded, setIsImageLoaded] = react_shim_default.useState(false);
-          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
-            value,
-            level,
-            minVersion,
-            boostLevel,
-            includeMargin,
-            marginSize,
-            imageSettings,
-            size
-          });
-          react_shim_default.useEffect(() => {
-            if (_canvas.current != null) {
-              const canvas2 = _canvas.current;
-              const ctx = canvas2.getContext("2d");
-              if (!ctx) {
-                return;
-              }
-              let cellsToDraw = cells;
-              const image = _image.current;
-              const haveImageToRender = calculatedImageSettings != null && image !== null && image.complete && image.naturalHeight !== 0 && image.naturalWidth !== 0;
-              if (haveImageToRender) {
-                if (calculatedImageSettings.excavation != null) {
-                  cellsToDraw = excavateModules(
-                    cells,
-                    calculatedImageSettings.excavation
-                  );
-                }
-              }
-              const pixelRatio = window.devicePixelRatio || 1;
-              canvas2.height = canvas2.width = size * pixelRatio;
-              const scale = size / numCells * pixelRatio;
-              ctx.scale(scale, scale);
-              ctx.fillStyle = bgColor;
-              ctx.fillRect(0, 0, numCells, numCells);
-              ctx.fillStyle = fgColor;
-              if (SUPPORTS_PATH2D) {
-                ctx.fill(new Path2D(generatePath(cellsToDraw, margin)));
-              } else {
-                cells.forEach(function(row, rdx) {
-                  row.forEach(function(cell, cdx) {
-                    if (cell) {
-                      ctx.fillRect(cdx + margin, rdx + margin, 1, 1);
-                    }
-                  });
-                });
-              }
-              if (calculatedImageSettings) {
-                ctx.globalAlpha = calculatedImageSettings.opacity;
-              }
-              if (haveImageToRender) {
-                ctx.drawImage(
-                  image,
-                  calculatedImageSettings.x + margin,
-                  calculatedImageSettings.y + margin,
-                  calculatedImageSettings.w,
-                  calculatedImageSettings.h
-                );
-              }
-            }
-          });
-          react_shim_default.useEffect(() => {
-            setIsImageLoaded(false);
-          }, [imgSrc]);
-          const canvasStyle = __spreadValues({ height: size, width: size }, style);
-          let img = null;
-          if (imgSrc != null) {
-            img = /* @__PURE__ */ react_shim_default.createElement(
-              "img",
-              {
-                src: imgSrc,
-                key: imgSrc,
-                style: { display: "none" },
-                onLoad: () => {
-                  setIsImageLoaded(true);
-                },
-                ref: _image,
-                crossOrigin: calculatedImageSettings == null ? void 0 : calculatedImageSettings.crossOrigin
-              }
-            );
-          }
-          return /* @__PURE__ */ react_shim_default.createElement(react_shim_default.Fragment, null, /* @__PURE__ */ react_shim_default.createElement(
-            "canvas",
-            __spreadValues({
-              style: canvasStyle,
-              height: size,
-              width: size,
-              ref: setCanvasRef,
-              role: "img"
-            }, otherProps)
-          ), img);
-        }
-      );
-      QRCodeCanvas.displayName = "QRCodeCanvas";
-      QRCodeSVG = react_shim_default.forwardRef(
-        function QRCodeSVG2(props, forwardedRef) {
-          const _a = props, {
-            value,
-            size = DEFAULT_SIZE,
-            level = DEFAULT_LEVEL,
-            bgColor = DEFAULT_BGCOLOR,
-            fgColor = DEFAULT_FGCOLOR,
-            includeMargin = DEFAULT_INCLUDEMARGIN,
-            minVersion = DEFAULT_MINVERSION,
-            boostLevel,
-            title,
-            marginSize,
-            imageSettings
-          } = _a, otherProps = __objRest(_a, [
-            "value",
-            "size",
-            "level",
-            "bgColor",
-            "fgColor",
-            "includeMargin",
-            "minVersion",
-            "boostLevel",
-            "title",
-            "marginSize",
-            "imageSettings"
-          ]);
-          const { margin, cells, numCells, calculatedImageSettings } = useQRCode({
-            value,
-            level,
-            minVersion,
-            boostLevel,
-            includeMargin,
-            marginSize,
-            imageSettings,
-            size
-          });
-          let cellsToDraw = cells;
-          let image = null;
-          if (imageSettings != null && calculatedImageSettings != null) {
-            if (calculatedImageSettings.excavation != null) {
-              cellsToDraw = excavateModules(
-                cells,
-                calculatedImageSettings.excavation
-              );
-            }
-            image = /* @__PURE__ */ react_shim_default.createElement(
-              "image",
-              {
-                href: imageSettings.src,
-                height: calculatedImageSettings.h,
-                width: calculatedImageSettings.w,
-                x: calculatedImageSettings.x + margin,
-                y: calculatedImageSettings.y + margin,
-                preserveAspectRatio: "none",
-                opacity: calculatedImageSettings.opacity,
-                crossOrigin: calculatedImageSettings.crossOrigin
-              }
-            );
-          }
-          const fgPath = generatePath(cellsToDraw, margin);
-          return /* @__PURE__ */ react_shim_default.createElement(
-            "svg",
-            __spreadValues({
-              height: size,
-              width: size,
-              viewBox: `0 0 ${numCells} ${numCells}`,
-              ref: forwardedRef,
-              role: "img"
-            }, otherProps),
-            !!title && /* @__PURE__ */ react_shim_default.createElement("title", null, title),
-            /* @__PURE__ */ react_shim_default.createElement(
-              "path",
-              {
-                fill: bgColor,
-                d: `M0,0 h${numCells}v${numCells}H0z`,
-                shapeRendering: "crispEdges"
-              }
-            ),
-            /* @__PURE__ */ react_shim_default.createElement("path", { fill: fgColor, d: fgPath, shapeRendering: "crispEdges" }),
-            image
-          );
-        }
-      );
-      QRCodeSVG.displayName = "QRCodeSVG";
     }
   });
 
@@ -33142,8 +33802,8 @@ ${cue.text}`).join("\n\n")}
     const normalized = options.map(
       (o) => typeof o === "object" ? o : { value: o, label: String(o) }
     );
-    const current2 = normalized.find((o) => o.value === value);
-    const label = current2 ? current2.label : placeholder ?? String(value);
+    const current3 = normalized.find((o) => o.value === value);
+    const label = current3 ? current3.label : placeholder ?? String(value);
     return /* @__PURE__ */ jsxs("div", { ref, style: { position: "relative", width: width || "100%" }, children: [
       /* @__PURE__ */ jsxs(
         "button",
@@ -33202,7 +33862,7 @@ ${cue.text}`).join("\n\n")}
               overflowY: "auto"
             },
             children: normalized.map((o) => {
-              const active3 = o.value === value;
+              const active4 = o.value === value;
               return /* @__PURE__ */ jsxs(
                 "div",
                 {
@@ -33215,21 +33875,21 @@ ${cue.text}`).join("\n\n")}
                     borderRadius: 6,
                     cursor: "pointer",
                     fontSize: TYPE.body,
-                    color: active3 ? TOKENS.text : TOKENS.textDim,
-                    background: active3 ? TOKENS.accentSoft : "transparent",
+                    color: active4 ? TOKENS.text : TOKENS.textDim,
+                    background: active4 ? TOKENS.accentSoft : "transparent",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between"
                   },
                   onMouseEnter: (e) => {
-                    if (!active3) e.currentTarget.style.background = TOKENS.surface3;
+                    if (!active4) e.currentTarget.style.background = TOKENS.surface3;
                   },
                   onMouseLeave: (e) => {
-                    if (!active3) e.currentTarget.style.background = "transparent";
+                    if (!active4) e.currentTarget.style.background = "transparent";
                   },
                   children: [
                     /* @__PURE__ */ jsx("span", { children: o.label }),
-                    active3 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
+                    active4 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
                   ]
                 },
                 String(o.value)
@@ -33651,9 +34311,9 @@ ${cue.text}`).join("\n\n")}
 
   // lib/tv-keyboard-settings.ts
   function getTvKeyboardMode() {
-    if (typeof window === "undefined") return "auto";
+    if (typeof window === "undefined") return DEFAULT_TV_KEYBOARD_MODE;
     const raw = getScopedStorageItem(KEY17);
-    return raw === "lumio" || raw === "system" ? raw : "auto";
+    return raw === "auto" || raw === "lumio" || raw === "system" ? raw : DEFAULT_TV_KEYBOARD_MODE;
   }
   function prefersSystemKeyboard(field, options) {
     const mode = options?.mode ?? getTvKeyboardMode();
@@ -33661,12 +34321,13 @@ ${cue.text}`).join("\n\n")}
     if (mode === "system") return !options?.numeric;
     return field !== "short" && !options?.numeric;
   }
-  var KEY17;
+  var KEY17, DEFAULT_TV_KEYBOARD_MODE;
   var init_tv_keyboard_settings = __esm({
     "lib/tv-keyboard-settings.ts"() {
       "use client";
       init_profile_storage_shim();
       KEY17 = "tv_keyboard_mode_v1";
+      DEFAULT_TV_KEYBOARD_MODE = "system";
     }
   });
 
@@ -33771,7 +34432,7 @@ ${cue.text}`).join("\n\n")}
     const insert = (text) => {
       const cleaned = numeric ? text.replace(/\D/g, "") : text.replace(/\s+/g, " ");
       if (!cleaned) return;
-      setValue((current2) => clamp3(current2 + cleaned));
+      setValue((current3) => clamp3(current3 + cleaned));
     };
     useEffect(() => {
       const onKeyDown = (event) => {
@@ -33903,7 +34564,7 @@ ${cue.text}`).join("\n\n")}
       aside ? /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }, children: aside }) : null
     ] }) });
   }
-  function Key({ label, onSelect, primary, active: active3, init }) {
+  function Key({ label, onSelect, primary, active: active4, init }) {
     const [focused, setFocused] = useState(false);
     return /* @__PURE__ */ jsx(
       "div",
@@ -33939,7 +34600,7 @@ ${cue.text}`).join("\n\n")}
           cursor: "pointer",
           font: `500 ${TYPE.body}/1 ${TV_FONT}`,
           color: primary ? TV.accent100 : TV.text,
-          background: focused ? TV.accent900 : primary ? TV.accent800 : active3 ? TV.accent900 : TV.neutral900
+          background: focused ? TV.accent900 : primary ? TV.accent800 : active4 ? TV.accent900 : TV.neutral900
         },
         children: label
       }
@@ -34202,9 +34863,9 @@ ${cue.text}`).join("\n\n")}
     const [stillIndex, setStillIndex] = useState(null);
     const stillLightbox = stillIndex != null ? stills[stillIndex] ?? null : null;
     const setStillLightbox = (still) => setStillIndex(still ? Math.max(0, stills.indexOf(still)) : null);
-    const stepStill = (delta) => setStillIndex((current2) => {
-      if (current2 == null || stills.length === 0) return current2;
-      return (current2 + delta + stills.length) % stills.length;
+    const stepStill = (delta) => setStillIndex((current3) => {
+      if (current3 == null || stills.length === 0) return current3;
+      return (current3 + delta + stills.length) % stills.length;
     });
     const swipeStartRef = useRef(null);
     useEffect(() => {
@@ -34331,7 +34992,7 @@ ${cue.text}`).join("\n\n")}
                 ...station2,
                 "data-cast-sort": "",
                 "data-f-left": "[data-cast-search]",
-                onClick: () => setSort((current2) => current2 === "billing" ? "name" : current2 === "name" ? "popularity" : "billing"),
+                onClick: () => setSort((current3) => current3 === "billing" ? "name" : current3 === "name" ? "popularity" : "billing"),
                 className: `flex items-center gap-2 rounded-full bg-[#fcfcff14] text-slate-100 transition hover:bg-[#fcfcff22] h-10 px-4 text-sm`,
                 children: [
                   sortLabel,
@@ -34607,7 +35268,7 @@ ${cue.text}`).join("\n\n")}
       init_tv_settings_rows();
       init_jsx_runtime_shim();
       KEY_CREW_JOBS = ["Director", "Screenplay", "Writer", "Director of Photography", "Original Music Composer"];
-      pillClass = (active3, tv) => `flex shrink-0 items-center whitespace-nowrap rounded-full transition ${tv ? "h-11 px-5 text-lg" : "h-9 px-4 text-sm"} ${active3 ? "bg-[#fcfcff2e] font-semibold text-accent-400" : "bg-[#fcfcff14] text-slate-300 hover:bg-[#fcfcff22] hover:text-white"}`;
+      pillClass = (active4, tv) => `flex shrink-0 items-center whitespace-nowrap rounded-full transition ${tv ? "h-11 px-5 text-lg" : "h-9 px-4 text-sm"} ${active4 ? "bg-[#fcfcff2e] font-semibold text-accent-400" : "bg-[#fcfcff14] text-slate-300 hover:bg-[#fcfcff22] hover:text-white"}`;
       backPillClass = "menu-glass flex h-9 shrink-0 items-center gap-1.5 rounded-full border-0 bg-[#fcfcff14] backdrop-blur-md pl-3 pr-4 text-xs font-normal text-slate-200 transition-all hover:bg-[#fcfcff22] hover:text-white focus-visible:ring-2 focus-visible:ring-accent-400/60 focus-visible:text-white focus-visible:outline-none sm:text-sm";
     }
   });
@@ -35022,8 +35683,8 @@ ${cue.text}`).join("\n\n")}
          */
         emit(eventName, arg) {
           if (eventName in this.eventListeners) {
-            const listeners9 = this.eventListeners[eventName];
-            for (const listener of listeners9)
+            const listeners10 = this.eventListeners[eventName];
+            for (const listener of listeners10)
               listener(arg);
             return true;
           }
@@ -35262,6 +35923,7 @@ ${cue.text}`).join("\n\n")}
     PLUGIN_HOME_ROW_GRID_TRACK_CLASS: () => PLUGIN_HOME_ROW_GRID_TRACK_CLASS,
     PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS: () => PLUGIN_HOME_ROW_SLIDER_TRACK_CLASS,
     PillBtn: () => PillBtn,
+    QRCodeSVG: () => QRCodeSVG,
     ResultsLoadingIndicator: () => ResultsLoadingIndicator,
     ResultsPagination: () => ResultsPagination,
     ResultsState: () => ResultsState,
@@ -35278,8 +35940,10 @@ ${cue.text}`).join("\n\n")}
     TraktDeviceCodePanel: () => TraktDeviceCodePanel,
     VideoPlayerModal: () => VideoPlayerModal2,
     activeProfileHasPin: () => activeProfileHasPin,
+    addToMovieWatchlist: () => addToMovieWatchlist,
     addToWatchlist: () => addToWatchlist,
     applyFilters: () => applyFilters,
+    canPip: () => canPip,
     cancelDesktopPlaybackSessions: () => cancelDesktopPlaybackSessions,
     cancelLibraryScan: () => cancelLibraryScan2,
     capturePlayerFrame: () => capturePlayerFrame,
@@ -35299,6 +35963,7 @@ ${cue.text}`).join("\n\n")}
     disableHomeOverridePlugin: () => disableHomeOverridePlugin,
     emitDesktopPlaybackTelemetry: () => emitDesktopPlaybackTelemetry,
     emitPluginStorageChanged: () => emitPluginStorageChanged,
+    enterPip: () => enterPip,
     executePluginDesktopCommand: () => executePluginDesktopCommand,
     eyebrowStyle: () => eyebrowStyle,
     fetchDesktopApiJson: () => fetchDesktopApiJson,
@@ -35315,6 +35980,8 @@ ${cue.text}`).join("\n\n")}
     getHls: () => getHls,
     getHomeOverridePluginId: () => getHomeOverridePluginId,
     getLibraryMode: () => getLibraryMode,
+    getMdblistApiKey: () => getMdblistApiKey,
+    getMovieWatchlist: () => getMovieWatchlist,
     getNextEpPopupSeconds: () => getNextEpPopupSeconds,
     getNextEpPreloadLeadSeconds: () => getNextEpPreloadLeadSeconds,
     getPluginHomeRowTrackClass: () => getPluginHomeRowTrackClass,
@@ -35330,6 +35997,7 @@ ${cue.text}`).join("\n\n")}
     getTvGlassMenu: () => getTvGlassMenu,
     getTvKeyboardPanel: () => getTvKeyboardPanel,
     getVideoSurfaceCapabilities: () => getVideoSurfaceCapabilities2,
+    getWatchedEpisodes: () => getWatchedEpisodes,
     getWatchedForSeries: () => getWatchedForSeries,
     getWatchedMovies: () => getWatchedMovies,
     getWatchlist: () => getWatchlist,
@@ -35349,6 +36017,7 @@ ${cue.text}`).join("\n\n")}
     isTauriEnv: () => isTauriEnv,
     isTraktAccountLimitError: () => isTraktAccountLimitError,
     isTraktUnsynced: () => isTraktUnsynced,
+    isUserMutation: () => isUserMutation,
     isWatching: () => isWatching,
     launchLibretroGame: () => launchLibretroGame,
     launchPluginProgram: () => launchPluginProgram,
@@ -35364,6 +36033,7 @@ ${cue.text}`).join("\n\n")}
     nativeSetBounds: () => nativeSetBounds,
     nativeSetVideoGeometry: () => nativeSetVideoGeometry,
     notifyAuthCapabilitiesChanged: () => notifyAuthCapabilitiesChanged,
+    notifyPipPlaying: () => notifyPipPlaying,
     notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
     onAppearanceChanged: () => onAppearanceChanged,
     onAuthCapabilitiesChanged: () => onAuthCapabilitiesChanged,
@@ -35371,28 +36041,38 @@ ${cue.text}`).join("\n\n")}
     onLibraryModeChanged: () => onLibraryModeChanged,
     onLibraryScanChanged: () => onLibraryScanChanged2,
     onLibretroStopped: () => onLibretroStopped,
+    onMovieWatchlistMutation: () => onMovieWatchlistMutation,
     onOpenBrowsePageRequested: () => onOpenBrowsePageRequested,
     onOpenMediaItemRequested: () => onOpenMediaItemRequested,
     onPlaySeriesEpisodeRequested: () => onPlaySeriesEpisodeRequested,
     onPlaybackSettingsChanged: () => onPlaybackSettingsChanged,
     onPluginStorageChanged: () => onPluginStorageChanged,
     onProfileChanged: () => onProfileChanged,
+    onRatingSourcesChanged: () => onRatingSourcesChanged,
     onTraktAuthChanged: () => onTraktAuthChanged,
     onTvFocusEdge: () => onTvFocusEdge,
+    onWatchedEpisodeMutation: () => onWatchedEpisodeMutation,
     onWatchedEpisodesChanged: () => onWatchedEpisodesChanged,
+    onWatchedMovieMutation: () => onWatchedMovieMutation,
     onWatchedMoviesChanged: () => onWatchedMoviesChanged,
     onWatchlistChanged: () => onWatchlistChanged,
+    onWatchlistMutation: () => onWatchlistMutation,
     onZappLaunchRequested: () => onZappLaunchRequested,
+    openExternalUrl: () => openExternalUrl,
     openMpvPlayer: () => openMpvPlayer,
     openNativePlayer: () => openNativePlayer,
     pickPluginFiles: () => pickPluginFiles,
     pickPluginFolder: () => pickPluginFolder,
+    planWatchlistSync: () => planWatchlistSync,
     playerFrameId: () => playerFrameId,
     playerFrameUrl: () => playerFrameUrl,
     preloadPluginImage: () => preloadPluginImage,
     queryLibrary: () => queryLibrary,
     readPluginJson: () => readPluginJson,
     readPluginStorageItem: () => readPluginStorageItem,
+    readStoredLang: () => readStoredLang,
+    registerPip: () => registerPip,
+    removeFromMovieWatchlist: () => removeFromMovieWatchlist,
     removeFromWatchlist: () => removeFromWatchlist,
     removePluginStorageByPrefix: () => removePluginStorageByPrefix,
     removePluginStorageItem: () => removePluginStorageItem,
@@ -35417,6 +36097,8 @@ ${cue.text}`).join("\n\n")}
     setHomeOverridePluginId: () => setHomeOverridePluginId,
     setLibraryMode: () => setLibraryMode,
     setLibretroBounds: () => setLibretroBounds,
+    setMdblistApiKey: () => setMdblistApiKey,
+    setMovieWatched: () => setMovieWatched,
     setMpvAspect: () => setMpvAspect,
     setMpvPause: () => setMpvPause,
     setMpvVideoGeometry: () => setMpvVideoGeometry,
@@ -35444,9 +36126,12 @@ ${cue.text}`).join("\n\n")}
     useLang: () => useLang,
     useMpvPlayer: () => useMpvPlayer,
     useNativePlayer: () => useNativePlayer,
+    usePipAvailable: () => usePipAvailable,
+    usePipMode: () => usePipMode,
     useTraktDeviceLogin: () => useTraktDeviceLogin,
     useTvMode: () => useTvMode,
     verifyActiveProfilePin: () => verifyActiveProfilePin,
+    waitForStartIdle: () => waitForStartIdle2,
     writePluginJson: () => writePluginJson,
     writePluginStorageItem: () => writePluginStorageItem
   });
@@ -35501,6 +36186,10 @@ ${cue.text}`).join("\n\n")}
   function cancelLibraryScan2() {
     const host2 = typeof window === "undefined" ? void 0 : window.__lumioPluginRuntime?.sdk?.cancelLibraryScan;
     return host2 ? host2() : cancelLibraryScan();
+  }
+  function waitForStartIdle2() {
+    const host2 = typeof window !== "undefined" ? window.__lumioPluginRuntime?.sdk?.waitForStartIdle : void 0;
+    return host2 ? host2() : waitForStartIdle();
   }
   function resolvePluginText(text, lang) {
     if (typeof text === "string") return text;
@@ -35768,6 +36457,7 @@ ${cue.text}`).join("\n\n")}
       init_profile_storage_shim();
       init_i18n();
       init_tv_focus_shim();
+      init_pip();
       init_plugin_registry();
       init_client();
       init_mode();
@@ -35788,6 +36478,13 @@ ${cue.text}`).join("\n\n")}
       init_trakt_sync();
       init_trakt_watchlist_limit();
       init_watchlist();
+      init_movie_watchlist();
+      init_watchlist_merge();
+      init_mutation_source();
+      init_rating_sources();
+      init_open_external();
+      init_esm();
+      init_playback_start_gate();
       init_watchlist_auto_remove();
       init_trakt_device_login();
       init_playback_settings();
@@ -35824,7 +36521,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -35998,7 +36695,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       INDEX_CHANGED_EVENT = "lumio-live-tv-index-changed";
@@ -36009,7 +36706,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -36086,14 +36783,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts
   function splitGroups(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -36184,12 +36881,12 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -36458,14 +37155,14 @@ ${cue.text}`).join("\n\n")}
     let outcome = "not-custom";
     writeLists(readLists().map((list) => {
       if (list.id !== listId || list.kind !== "custom") return list;
-      const current2 = list.channels ?? [];
-      if (current2.length >= MAX_CUSTOM_LIST_CHANNELS) {
+      const current3 = list.channels ?? [];
+      if (current3.length >= MAX_CUSTOM_LIST_CHANNELS) {
         outcome = "full";
         return list;
       }
       const { archive: _archive, ...withoutArchive } = channel;
-      const channels = dedupeChannels([...current2, withoutArchive]);
-      if (channels.length === current2.length) {
+      const channels = dedupeChannels([...current3, withoutArchive]);
+      if (channels.length === current3.length) {
         outcome = "duplicate";
         return list;
       }
@@ -36496,18 +37193,18 @@ ${cue.text}`).join("\n\n")}
   }
   function togglePinnedLiveTvChannel(channel) {
     const key = channelKey(channel);
-    const current2 = getPinnedLiveTvKeys();
-    const next = current2.includes(key) ? current2.filter((entry) => entry !== key) : [...current2, key];
+    const current3 = getPinnedLiveTvKeys();
+    const next = current3.includes(key) ? current3.filter((entry) => entry !== key) : [...current3, key];
     setPinnedLiveTvKeys(next);
     return next;
   }
   function movePinnedLiveTvChannel(key, delta) {
-    const current2 = getPinnedLiveTvKeys();
-    const index = current2.indexOf(key);
-    if (index === -1) return current2;
+    const current3 = getPinnedLiveTvKeys();
+    const index = current3.indexOf(key);
+    if (index === -1) return current3;
     const target2 = index + delta;
-    if (target2 < 0 || target2 >= current2.length) return current2;
-    const next = [...current2];
+    if (target2 < 0 || target2 >= current3.length) return current3;
+    const next = [...current3];
     next.splice(index, 1);
     next.splice(target2, 0, key);
     setPinnedLiveTvKeys(next);
@@ -36780,7 +37477,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -36805,7 +37502,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = lang === "sv" ? SV2 : EN2;
     let out = table[key] ?? EN2[key];
@@ -36821,7 +37518,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37097,6 +37794,7 @@ ${cue.text}`).join("\n\n")}
         playerUnmute: "Unmute",
         playerVolume: "Volume",
         playerFullscreen: "Fullscreen",
+        playerPip: "Picture-in-picture",
         playerExitFullscreen: "Exit fullscreen",
         playerAspect: "Aspect ratio",
         playerGuide: "Guide",
@@ -37452,6 +38150,7 @@ ${cue.text}`).join("\n\n")}
         playerUnmute: "Ljud p\xE5",
         playerVolume: "Volym",
         playerFullscreen: "Fullsk\xE4rm",
+        playerPip: "Bild-i-bild",
         playerExitFullscreen: "L\xE4mna fullsk\xE4rm",
         playerAspect: "Bildf\xF6rh\xE5llande",
         playerGuide: "Guide",
@@ -37557,7 +38256,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       activeLogoLoads += 1;
@@ -37637,7 +38336,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37650,7 +38349,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
     const words = name.trim().split(/\s+/).filter(Boolean);
     const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
@@ -37867,7 +38566,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37907,7 +38606,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
@@ -37930,14 +38629,14 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
@@ -37960,14 +38659,14 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
@@ -37993,7 +38692,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -38001,7 +38700,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -38161,14 +38860,14 @@ ${cue.text}`).join("\n\n")}
       children
     ] });
   }
-  function Chip({ active: active3, children, style, glass = false, ...rest }) {
+  function Chip({ active: active4, children, style, glass = false, ...rest }) {
     return /* @__PURE__ */ jsx(
       "div",
       {
         "data-live-tv-chip": "",
         "data-live-tv-chip-glass": glass ? "" : void 0,
         ...rest,
-        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active3 ? TV2.s16 : TV2.s05, color: active3 ? TV2.text : TV2.muted, fontWeight: active3 ? 600 : 400, border: `1px solid ${glass ? active3 ? TV2.lineStrong : TV2.line : active3 ? TV2.lineStrong : "transparent"}`, ...style },
+        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active4 ? TV2.s16 : TV2.s05, color: active4 ? TV2.text : TV2.muted, fontWeight: active4 ? 600 : 400, border: `1px solid ${glass ? active4 ? TV2.lineStrong : TV2.line : active4 ? TV2.lineStrong : "transparent"}`, ...style },
         children
       }
     );
@@ -38243,7 +38942,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -38366,19 +39065,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
@@ -38423,21 +39122,21 @@ ${cue.text}`).join("\n\n")}
     return request;
   }
   function publish2(next) {
-    active2 = next;
-    for (const listener of [...listeners7]) listener();
+    active3 = next;
+    for (const listener of [...listeners8]) listener();
   }
   function getActiveNowSnapshot() {
-    return active2;
+    return active3;
   }
   function subscribeNowSnapshot(listener) {
-    listeners7.add(listener);
+    listeners8.add(listener);
     return () => {
-      listeners7.delete(listener);
+      listeners8.delete(listener);
     };
   }
-  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active2, listeners7;
+  var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active3, listeners8;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -38446,12 +39145,12 @@ ${cue.text}`).join("\n\n")}
       snapshots = /* @__PURE__ */ new Map();
       inflight8 = /* @__PURE__ */ new Map();
       NOW_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1e3;
-      active2 = { snapshot: null, failed: false };
-      listeners7 = /* @__PURE__ */ new Set();
+      active3 = { snapshot: null, failed: false };
+      listeners8 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
     while (memo3.size > MAX_ENTRIES4) {
@@ -38483,7 +39182,7 @@ ${cue.text}`).join("\n\n")}
   }
   var MAX_ENTRIES4, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -38492,7 +39191,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -38507,14 +39206,14 @@ ${cue.text}`).join("\n\n")}
     return stored;
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -38559,7 +39258,7 @@ ${cue.text}`).join("\n\n")}
     try {
       if (migrated > 0) {
         const rewrittenById = new Map(rewritten.map((entry) => [entry.id, entry]));
-        const merged = getLiveTvLists().map((current2) => rewrittenById.get(current2.id) ?? current2);
+        const merged = getLiveTvLists().map((current3) => rewrittenById.get(current3.id) ?? current3);
         replaceLiveTvLists(merged);
         emitIndexChanged();
       }
@@ -38572,7 +39271,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -38582,7 +39281,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-history.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-history.ts
   function sanitize(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -38629,7 +39328,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -38639,7 +39338,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
@@ -38679,9 +39378,9 @@ ${cue.text}`).join("\n\n")}
   }
   function toggleReminder(channel, programme, now2 = Date.now()) {
     const id = reminderId(channel, programme);
-    const current2 = getReminders(now2);
-    const next = current2.some((r) => r.id === id) ? current2.filter((r) => r.id !== id) : [
-      ...current2,
+    const current3 = getReminders(now2);
+    const next = current3.some((r) => r.id === id) ? current3.filter((r) => r.id !== id) : [
+      ...current3,
       {
         id,
         channelKey: channelKey(channel),
@@ -38759,7 +39458,7 @@ ${cue.text}`).join("\n\n")}
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -38771,7 +39470,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -38804,8 +39503,8 @@ ${cue.text}`).join("\n\n")}
   }
   function toggleChannelLock(channel) {
     const key = channelKey(channel);
-    const current2 = getLockedChannelKeys();
-    const next = current2.includes(key) ? current2.filter((entry) => entry !== key) : [...current2, key];
+    const current3 = getLockedChannelKeys();
+    const next = current3.includes(key) ? current3.filter((entry) => entry !== key) : [...current3, key];
     writePluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, next);
     return next;
   }
@@ -38825,7 +39524,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -38837,7 +39536,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
@@ -38892,7 +39591,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -38919,7 +39618,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -39375,7 +40074,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY3, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -39408,7 +40107,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -39519,7 +40218,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS2, MAX_ENTRIES5, cache7, batches, inflight9, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -39533,7 +40232,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -39562,13 +40261,13 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY4;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY4 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
@@ -39598,7 +40297,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY6;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -39608,7 +40307,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -39757,13 +40456,13 @@ ${cue.text}`).join("\n\n")}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useOrientation.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts
   function read10() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
@@ -39782,22 +40481,22 @@ ${cue.text}`).join("\n\n")}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
     return candidate && typeof candidate.request === "function" ? candidate : null;
   }
-  function useWakeLock(active3) {
+  function useWakeLock(active4) {
     useEffect(() => {
-      if (!active3) return;
+      if (!active4) return;
       const wakeLock = wakeLockOf();
       if (!wakeLock) return;
       let cancelled = false;
@@ -39835,16 +40534,16 @@ ${cue.text}`).join("\n\n")}
           });
         }
       };
-    }, [active3]);
+    }, [active4]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -39855,16 +40554,16 @@ ${cue.text}`).join("\n\n")}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis, clamp2, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         bg: "#000",
@@ -39943,10 +40642,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -40003,6 +40702,10 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
         ] })),
         ArrowsOut: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" }) })),
+        Pip: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
+          /* @__PURE__ */ jsx("rect", { x: "12", y: "12", width: "7", height: "5", rx: "1", fill: "currentColor", stroke: "none" })
+        ] })),
         DotsThree: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx("circle", { cx: "6", cy: "12", r: "1.6" }),
           /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.6" }),
@@ -40016,7 +40719,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -40036,7 +40739,7 @@ ${cue.text}`).join("\n\n")}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -40049,7 +40752,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -40093,7 +40796,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -40106,7 +40809,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
   function MobileSheet({ title, subtitle, art, body, items: items2, onClose, pushLayer, testId }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
@@ -40178,7 +40881,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -40188,7 +40891,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -40252,11 +40955,11 @@ ${cue.text}`).join("\n\n")}
     const closeSheet = useCallback(() => setSheet(null), []);
     const pinnedSet = useMemo(() => new Set(tv.pinnedKeys), [tv.pinnedKeys]);
     const zap = useMemo(() => {
-      const current2 = channelKey(channel);
+      const current3 = channelKey(channel);
       const pinned = [];
       const rest = [];
       tv.neighbours.forEach((c, i) => (pinnedSet.has(channelKey(c)) ? pinned : rest).push({ channel: c, number: i + 1 }));
-      const index = rest.findIndex((entry) => channelKey(entry.channel) === current2);
+      const index = rest.findIndex((entry) => channelKey(entry.channel) === current3);
       const window2 = index < 0 ? rest.slice(0, ZAP_WINDOW * 2) : rest.slice(Math.max(0, index - ZAP_WINDOW), index + ZAP_WINDOW + 1);
       return [...pinned, ...window2];
     }, [tv.neighbours, pinnedSet, channel]);
@@ -40335,6 +41038,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", alignItems: "center", gap: 12 }, children: [
           muteBtn(40),
           /* @__PURE__ */ jsx(ProgressBar2, { value: progress2, height: 4 }),
+          controls?.onEnterPip ? /* @__PURE__ */ jsx(Round, { size: 40, label: tt("playerPip"), onPress: controls.onEnterPip, children: /* @__PURE__ */ jsx(MIcons.Pip, { size: 22 }) }) : null,
           controls ? /* @__PURE__ */ jsx(Round, { size: 40, label: tt("playerFullscreen"), onPress: controls.onToggleFullscreen, children: /* @__PURE__ */ jsx(MIcons.ArrowsOut, { size: 22 }) }) : null
         ] })
       ] }) }),
@@ -40380,7 +41084,7 @@ ${cue.text}`).join("\n\n")}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40403,11 +41107,11 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
-  function ctlStyle(ps, active3 = false) {
+  function ctlStyle(ps, active4 = false) {
     return {
       height: ps(44),
       minHeight: ps(44),
@@ -40416,8 +41120,8 @@ ${cue.text}`).join("\n\n")}
       borderRadius: 999,
       boxSizing: "border-box",
       flexShrink: 0,
-      background: active3 ? "rgba(252,252,255,0.20)" : "rgba(252,252,255,0.10)",
-      border: `1px solid ${active3 ? TV2.lineStrong : "rgba(255,255,255,0.15)"}`,
+      background: active4 ? "rgba(252,252,255,0.20)" : "rgba(252,252,255,0.10)",
+      border: `1px solid ${active4 ? TV2.lineStrong : "rgba(255,255,255,0.15)"}`,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -40610,31 +41314,31 @@ ${cue.text}`).join("\n\n")}
   }
   function favouriteRowChannels(channel, tv) {
     const pinnedSet = new Set(tv.pinnedKeys);
-    const current2 = channelKey(channel);
+    const current3 = channelKey(channel);
     const pinned = [];
     const rest = [];
     for (const c of tv.neighbours) (pinnedSet.has(channelKey(c)) ? pinned : rest).push(c);
-    const index = rest.findIndex((c) => channelKey(c) === current2);
+    const index = rest.findIndex((c) => channelKey(c) === current3);
     const window2 = index < 0 ? rest.slice(0, FAV_WINDOW * 2) : rest.slice(Math.max(0, index - FAV_WINDOW), index + FAV_WINDOW + 1);
     const list = [...pinned, ...window2];
-    return list.some((c) => channelKey(c) === current2) ? list : [channel, ...list];
+    return list.some((c) => channelKey(c) === current3) ? list : [channel, ...list];
   }
   function PlayerFavouritesRow({ channel, tv, ps, onSwitch, onHold, style }) {
     const { tt } = useTvText();
     const items2 = useMemo(() => favouriteRowChannels(channel, tv), [channel, tv]);
     const currentKey = channelKey(channel);
     return /* @__PURE__ */ jsx("div", { "data-testid": "favourites-row", "data-row": "", style: { display: "flex", gap: ps(8), overflowX: "auto", scrollbarWidth: "none", padding: `${ps(8)}px 0 ${ps(2)}px`, ...style }, children: items2.map((c) => {
-      const current2 = channelKey(c) === currentKey;
+      const current3 = channelKey(c) === currentKey;
       const n = tv.nowFor(c);
       return /* @__PURE__ */ jsxs(
         "div",
         {
           "data-testid": "favourite-chip",
           "data-guide-row": "",
-          "aria-current": current2 ? "true" : void 0,
+          "aria-current": current3 ? "true" : void 0,
           ...station(() => onSwitch(c), onHold ? (el) => onHold(c, el) : void 0, { title: c.name }),
           onFocus: (event) => event.currentTarget.scrollIntoView?.({ inline: "nearest", block: "nearest" }),
-          style: { width: ps(190), flexShrink: 0, display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(6)}px ${ps(10)}px`, borderRadius: ps(10), boxSizing: "border-box", background: current2 ? TV2.accMix(16) : "rgba(252,252,255,0.08)", border: `1px solid ${current2 ? TV2.accMix(45) : TV2.line}`, color: TV2.text, cursor: "pointer", textAlign: "left" },
+          style: { width: ps(190), flexShrink: 0, display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(6)}px ${ps(10)}px`, borderRadius: ps(10), boxSizing: "border-box", background: current3 ? TV2.accMix(16) : "rgba(252,252,255,0.08)", border: `1px solid ${current3 ? TV2.accMix(45) : TV2.line}`, color: TV2.text, cursor: "pointer", textAlign: "left" },
           children: [
             /* @__PURE__ */ jsx(SmallLogo, { channel: c, size: ps(26), radius: ps(5) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
@@ -40719,7 +41423,7 @@ ${cue.text}`).join("\n\n")}
   }
   var FAV_WINDOW, DAY_MS, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40763,7 +41467,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -40837,9 +41541,9 @@ ${cue.text}`).join("\n\n")}
       const deadline = Date.now() + 4e3;
       const tick2 = () => {
         if (!node.isConnected) return;
-        const active3 = document.activeElement;
+        const active4 = document.activeElement;
         const inLayer = layerRef.current.menuOpen || layerRef.current.guideOpen || layerRef.current.gateOpen;
-        if (active3 === node) {
+        if (active4 === node) {
           if (++held >= 5) return;
         } else if (inLayer) {
           held = 0;
@@ -40957,7 +41661,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40971,13 +41675,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
   function publish3() {
     snapshot = [...cutouts.values()];
-    for (const listener of [...listeners8]) listener();
+    for (const listener of [...listeners9]) listener();
   }
   function registerSurfaceCutout(key, cutout) {
     const previous = cutouts.get(key);
@@ -40993,9 +41697,9 @@ ${cue.text}`).join("\n\n")}
     return snapshot;
   }
   function subscribeSurfaceCutouts(listener) {
-    listeners8.add(listener);
+    listeners9.add(listener);
     return () => {
-      listeners8.delete(listener);
+      listeners9.delete(listener);
     };
   }
   function useSurfaceCutouts() {
@@ -41029,19 +41733,19 @@ ${cue.text}`).join("\n\n")}
   function round(value) {
     return Math.round(value * 100) / 100;
   }
-  var cutouts, listeners8, snapshot;
+  var cutouts, listeners9, snapshot;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
       cutouts = /* @__PURE__ */ new Map();
-      listeners8 = /* @__PURE__ */ new Set();
+      listeners9 = /* @__PURE__ */ new Set();
       snapshot = [];
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -41331,7 +42035,7 @@ ${cue.text}`).join("\n\n")}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41349,7 +42053,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer
@@ -41767,8 +42471,8 @@ ${cue.text}`).join("\n\n")}
           const segmentGone = data.details === "fragLoadError" && data.response?.code === 404;
           if (segmentGone && renditionFallbacks < 3) {
             const levels = hls.levels ?? [];
-            const current2 = hls.currentLevel;
-            const next = levels.length > 1 ? (current2 + 1) % levels.length : -1;
+            const current3 = hls.currentLevel;
+            const next = levels.length > 1 ? (current3 + 1) % levels.length : -1;
             renditionFallbacks += 1;
             hls.currentLevel = next;
             hls.startLoad();
@@ -41968,6 +42672,35 @@ ${cue.text}`).join("\n\n")}
       }
       void mpv.setPlayPause(true);
     };
+    const pipPhone = Boolean(tvChrome?.phone) && !isTv && typeof registerPip === "function";
+    const pipStateRef = useRef({ tv: tvChrome, channel, paused: mpvPaused, toggle: toggleMpvPause });
+    pipStateRef.current = { tv: tvChrome, channel, paused: mpvPaused, toggle: toggleMpvPause };
+    const [pipVideoEl, setPipVideoEl] = useState(null);
+    useEffect(() => {
+      setPipVideoEl(isHtmlEngine ? videoRef.current : null);
+    });
+    const pipAvailable = usePipAvailableSafe(pipVideoEl);
+    useEffect(() => {
+      if (!pipPhone) return;
+      const stepChannel = (delta) => {
+        const { tv: shell, channel: current3 } = pipStateRef.current;
+        if (!shell || shell.neighbours.length === 0) return;
+        const index = shell.neighbours.findIndex((c) => channelKey(c) === channelKey(current3));
+        const next = shell.neighbours[(index + delta + shell.neighbours.length) % shell.neighbours.length];
+        if (next) shell.onSwitchChannel(next);
+      };
+      return registerPip({
+        prevNextKind: "channel",
+        onPlayPause: () => pipStateRef.current.toggle(),
+        onPrev: () => stepChannel(-1),
+        onNext: () => stepChannel(1),
+        onClosed: () => handleCloseRef.current(),
+        isPlaying: () => !pipStateRef.current.paused
+      }, pipVideoEl);
+    }, [pipPhone, pipVideoEl]);
+    useEffect(() => {
+      if (pipPhone && typeof notifyPipPlaying === "function") notifyPipPlaying(!mpvPaused);
+    }, [pipPhone, mpvPaused]);
     const syncMpvBounds = () => {
       const rect = stageRef.current?.getBoundingClientRect();
       if (rect) engineSetBounds(rect);
@@ -42034,7 +42767,10 @@ ${cue.text}`).join("\n\n")}
       onToggleMute: toggleMute,
       onVolume: updateVolume,
       onToggleFullscreen: toggleFullscreen,
-      onCycleAspect: cycleAspect
+      onCycleAspect: cycleAspect,
+      onEnterPip: pipPhone && pipAvailable ? () => {
+        void enterPip(pipVideoEl);
+      } : void 0
     };
     const stackedOverlayStyle = phoneStacked ? { bottom: "auto", ...PHONE_STAGE_BOX } : void 0;
     const content = /* @__PURE__ */ jsxs(
@@ -42103,9 +42839,9 @@ ${cue.text}`).join("\n\n")}
     );
     return portalEl ? (0, import_react_dom4.createPortal)(content, portalEl) : content;
   }
-  var import_react_dom4, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
+  var import_react_dom4, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42121,12 +42857,13 @@ ${cue.text}`).join("\n\n")}
       init_player_chrome_phone();
       init_video_surface();
       init_jsx_runtime_shim();
+      usePipAvailableSafe = typeof usePipAvailable === "function" ? usePipAvailable : () => false;
       MPV_STARTUP_TIMEOUT_MS = 18e3;
       MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9e3;
     }
   });
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -42136,11 +42873,11 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -42196,8 +42933,8 @@ ${cue.text}`).join("\n\n")}
   function LtAutoBadge() {
     return /* @__PURE__ */ jsx("span", { style: { flex: "none", borderRadius: 999, background: UI.greenSoft, padding: "2px 8px", fontSize: 10.5, fontWeight: 500, letterSpacing: "0.08em", color: UI.green }, children: "AUTO" });
   }
-  function LtBtn({ children, onClick, variant = "default", size = "sm", disabled, testId, style, active: active3 = false, title }) {
-    const colors = active3 ? { background: UI.accent900, borderColor: UI.accent, color: UI.text } : variant === "accent" ? { background: "transparent", borderColor: UI.accent, color: UI.text } : variant === "danger" ? { background: "transparent", borderColor: UI.dangerLine, color: UI.danger } : { background: "transparent", borderColor: size === "md" ? UI.lineDialog : UI.line, color: UI.soft };
+  function LtBtn({ children, onClick, variant = "default", size = "sm", disabled, testId, style, active: active4 = false, title }) {
+    const colors = active4 ? { background: UI.accent900, borderColor: UI.accent, color: UI.text } : variant === "accent" ? { background: "transparent", borderColor: UI.accent, color: UI.text } : variant === "danger" ? { background: "transparent", borderColor: UI.dangerLine, color: UI.danger } : { background: "transparent", borderColor: size === "md" ? UI.lineDialog : UI.line, color: UI.soft };
     return /* @__PURE__ */ jsx(
       "button",
       {
@@ -42336,14 +43073,14 @@ ${cue.text}`).join("\n\n")}
     if (!el || typeof el.tagName !== "string") return false;
     return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable === true;
   }
-  function useBackLayer(active3, onBack, rootRef) {
+  function useBackLayer(active4, onBack, rootRef) {
     const isTv = useTvMode();
     const onBackRef = useRef(onBack);
     useEffect(() => {
       onBackRef.current = onBack;
     });
     useEffect(() => {
-      if (!active3) return;
+      if (!active4) return;
       const opener = document.activeElement;
       const onKey = (event) => {
         if (!BACK_KEYS.has(event.key)) return;
@@ -42367,7 +43104,7 @@ ${cue.text}`).join("\n\n")}
           if (opener && opener.isConnected && opener !== document.body) opener.focus({ preventScroll: true });
         }, 0);
       };
-    }, [active3, isTv]);
+    }, [active4, isTv]);
   }
   function LtDialog({ title, body, width = 400, onClose, children, testId }) {
     const rootRef = useRef(null);
@@ -42453,7 +43190,7 @@ ${cue.text}`).join("\n\n")}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -42501,16 +43238,16 @@ ${cue.text}`).join("\n\n")}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -42521,17 +43258,17 @@ ${cue.text}`).join("\n\n")}
     jobProgress: null
   };
   var progress = IDLE;
-  var listeners6 = /* @__PURE__ */ new Set();
+  var listeners7 = /* @__PURE__ */ new Set();
   function publish(next) {
     progress = next;
-    for (const listener of [...listeners6]) listener();
+    for (const listener of [...listeners7]) listener();
   }
   function getM3uFetchProgress() {
     return progress;
   }
   function subscribeM3uFetch(listener) {
-    listeners6.add(listener);
-    return () => listeners6.delete(listener);
+    listeners7.add(listener);
+    return () => listeners7.delete(listener);
   }
   function reportM3uFetchJobProgress(received, total) {
     if (progress.status !== "fetching") return;
@@ -42575,7 +43312,7 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
     categories: "Categories",
@@ -43028,10 +43765,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -43068,10 +43805,10 @@ ${cue.text}`).join("\n\n")}
       refreshingRef.current = true;
       setRefreshing(true);
       try {
-        const current2 = getLiveTvLists();
-        setLists(current2);
-        const sources = current2.map((list) => list.source).filter((source) => Boolean(source));
-        const job = await refreshEpg(LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls(current2), sources, true);
+        const current3 = getLiveTvLists();
+        setLists(current3);
+        const sources = current3.map((list) => list.source).filter((source) => Boolean(source));
+        const job = await refreshEpg(LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls(current3), sources, true);
         await waitForJob(job);
       } catch {
       } finally {
@@ -43083,7 +43820,7 @@ ${cue.text}`).join("\n\n")}
     return { status, urls, refreshing, refresh, reload };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms, locale) {
     if (!ms) return null;
@@ -43175,7 +43912,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -43335,18 +44072,18 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -43419,7 +44156,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -43441,7 +44178,7 @@ ${cue.text}`).join("\n\n")}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
@@ -43538,7 +44275,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -43586,7 +44323,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
   init_jsx_runtime_shim();
   function VodLibraryCard() {
     const { h, locale } = useHubText();
@@ -43621,16 +44358,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -43735,7 +44472,7 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -43871,7 +44608,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -44033,11 +44770,11 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -44224,7 +44961,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
   init_index_client();
   init_tv_strings();
   init_index_client();
@@ -44659,7 +45396,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text) {
@@ -44890,26 +45627,26 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_logo_image();
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
@@ -44919,7 +45656,7 @@ ${cue.text}`).join("\n\n")}
     return () => clearTimeout(timer3);
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY5 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -44952,7 +45689,7 @@ ${cue.text}`).join("\n\n")}
     return data;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }) {
@@ -44985,7 +45722,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -45015,11 +45752,11 @@ ${cue.text}`).join("\n\n")}
     ) });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-shell.tsx
   var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
   function encodeChannelParams(channel) {
     return {
@@ -45031,10 +45768,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -45062,7 +45799,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -45127,14 +45864,14 @@ ${cue.text}`).join("\n\n")}
     return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -45174,7 +45911,7 @@ ${cue.text}`).join("\n\n")}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -45328,7 +46065,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
   var CHANNELS_PER_PAGE = 28;
@@ -45429,10 +46166,10 @@ ${cue.text}`).join("\n\n")}
       const syncLists = () => {
         const nextLists = getLiveTvLists();
         setLists(nextLists);
-        setActiveListId((current2) => {
-          if (current2 === FAVORITES_LIST_ID) return current2;
-          if (current2 === null) return null;
-          if (current2 && nextLists.some((list) => list.id === current2)) return current2;
+        setActiveListId((current3) => {
+          if (current3 === FAVORITES_LIST_ID) return current3;
+          if (current3 === null) return null;
+          if (current3 && nextLists.some((list) => list.id === current3)) return current3;
           return null;
         });
       };
@@ -45483,10 +46220,10 @@ ${cue.text}`).join("\n\n")}
       const onKeyDown = (event) => {
         if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
         if (document.querySelector("[data-panel-root]")) return;
-        const active3 = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        const current2 = active3?.hasAttribute("data-f") ? active3 : document.querySelector('[data-fcur="1"]');
-        if (!current2) return;
-        if (event.key === "ArrowDown" && current2 === tvMenuButtonRef.current) {
+        const active4 = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        const current3 = active4?.hasAttribute("data-f") ? active4 : document.querySelector('[data-fcur="1"]');
+        if (!current3) return;
+        if (event.key === "ArrowDown" && current3 === tvMenuButtonRef.current) {
           const target2 = document.querySelector(".live-tv-channel-grid > div:first-child[data-f]") ?? document.querySelector(".live-tv-channel-grid > div:first-child [data-f]");
           if (!target2) return;
           event.preventDefault();
@@ -45495,8 +46232,8 @@ ${cue.text}`).join("\n\n")}
           return;
         }
         if (event.key === "ArrowUp") {
-          const grid = current2.closest(".live-tv-channel-grid");
-          const card2 = current2.closest(".live-tv-channel-grid > div");
+          const grid = current3.closest(".live-tv-channel-grid");
+          const card2 = current3.closest(".live-tv-channel-grid > div");
           const menuButton = tvMenuButtonRef.current;
           if (!grid || !card2 || !menuButton) return;
           const firstCard = grid.firstElementChild;
@@ -45607,7 +46344,7 @@ ${cue.text}`).join("\n\n")}
         setCreateListOpen(true);
         return;
       }
-      setListPickerChannelKey((current2) => current2 === key ? null : key);
+      setListPickerChannelKey((current3) => current3 === key ? null : key);
     }
     useEffect(() => {
       logLiveTvStage("live tv sources", { count: urls.length, loaded: channels.length });
@@ -45757,7 +46494,7 @@ ${cue.text}`).join("\n\n")}
         }).filter((pair) => pair !== null)
       );
       Object.entries(initialLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src));
-      setLoadedLogoUrls((current2) => ({ ...current2, ...initialLoaded }));
+      setLoadedLogoUrls((current3) => ({ ...current3, ...initialLoaded }));
       void (async () => {
         const pendingEntries = logoEntries.filter((entry) => !initialLoaded[entry.key]);
         const batchSize = isTauriEnv ? 3 : 8;
@@ -45781,7 +46518,7 @@ ${cue.text}`).join("\n\n")}
           );
           Object.entries(batchLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src));
           if (Object.keys(batchLoaded).length > 0) {
-            setLoadedLogoUrls((current2) => ({ ...current2, ...batchLoaded }));
+            setLoadedLogoUrls((current3) => ({ ...current3, ...batchLoaded }));
           }
           if (isTauriEnv && i + batchSize < pendingEntries.length) {
             await new Promise((resolve) => setTimeout(resolve, 40));
@@ -46401,7 +47138,7 @@ ${cue.text}`).join("\n\n")}
                                       type: "button",
                                       tabIndex: -1,
                                       title: t("liveTvFetchEpgForChannel"),
-                                      onClick: () => setTvEpgRequested((current2) => ({ ...current2, [channel.url]: true })),
+                                      onClick: () => setTvEpgRequested((current3) => ({ ...current3, [channel.url]: true })),
                                       className: `${tvRoundControlClass} ${epgRequestedForCard ? "!border-emerald-300/40 !bg-emerald-400/10 !text-emerald-200" : ""}`,
                                       children: /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.14em]", children: "EPG" })
                                     }
@@ -46848,13 +47585,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -46871,7 +47608,7 @@ ${cue.text}`).join("\n\n")}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-next-later-row.tsx
   init_jsx_runtime_shim();
   function formatTime(ms) {
     return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -46933,7 +47670,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_tv_settings_store();
@@ -47151,7 +47888,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
@@ -47217,7 +47954,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -47226,7 +47963,7 @@ ${cue.text}`).join("\n\n")}
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
@@ -47251,7 +47988,7 @@ ${cue.text}`).join("\n\n")}
     return phone;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -47303,12 +48040,12 @@ ${cue.text}`).join("\n\n")}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -47324,7 +48061,7 @@ ${cue.text}`).join("\n\n")}
     const stationRef = useRef(null);
     const hide = useCallback(() => {
       stationRef.current = null;
-      setSpot((current2) => current2 === null ? current2 : null);
+      setSpot((current3) => current3 === null ? current3 : null);
     }, []);
     useEffect(() => {
       if (typeof window.matchMedia !== "function") return;
@@ -47334,9 +48071,9 @@ ${cue.text}`).join("\n\n")}
       query.addEventListener?.("change", onChange);
       return () => query.removeEventListener?.("change", onChange);
     }, []);
-    const active3 = enabled && finePointer;
+    const active4 = enabled && finePointer;
     useEffect(() => {
-      if (!active3) {
+      if (!active4) {
         hide();
         return;
       }
@@ -47373,8 +48110,8 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("scroll", hide, true);
         window.removeEventListener("resize", hide);
       };
-    }, [active3, hide, rootRef]);
-    if (!active3 || !spot) return null;
+    }, [active4, hide, rootRef]);
+    if (!active4 || !spot) return null;
     return /* @__PURE__ */ jsx(
       "button",
       {
@@ -47423,10 +48160,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -47470,11 +48207,11 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_video_surface();
   init_surface_cutouts();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -47483,12 +48220,12 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -47536,7 +48273,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 36;
   var MAX_CHIPS = 12;
   var REPLAY_DAYS = 3;
@@ -47565,7 +48302,7 @@ ${cue.text}`).join("\n\n")}
     return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -47576,7 +48313,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_ui();
@@ -47633,10 +48370,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
@@ -47775,7 +48512,7 @@ ${cue.text}`).join("\n\n")}
     return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -47894,7 +48631,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-data.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-data.ts
   init_plugin_sdk();
   init_live_tv_data();
   var VOD_MODE_DEFAULT = "link";
@@ -47980,24 +48717,24 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileChips({ items: items2, value, onChange, testId, emphasisKey, dimKeys }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: items2.map(({ key, label, id }) => {
-      const active3 = key === value;
+      const active4 = key === value;
       const emphasis = emphasisKey !== void 0 && key === emphasisKey;
       const dim = dimKeys?.includes(key) ?? false;
       return /* @__PURE__ */ jsx(
         "div",
         {
           "data-testid": `chip-${id}`,
-          ...station(() => onChange(key), void 0, { "aria-pressed": String(active3) }),
+          ...station(() => onChange(key), void 0, { "aria-pressed": String(active4) }),
           style: {
             minHeight: 34,
             padding: "0 14px",
@@ -48019,10 +48756,10 @@ ${cue.text}`).join("\n\n")}
                             Kanten sitter kvar på BÅDA lägena nu: en osynlig kant på det
                             ovalda gjorde att chippen bytte storlek när man valde dem.
                           */
-            background: emphasis ? "#f3f4f8" : active3 ? MT.s16 : MT.s12,
-            border: emphasis ? "1px solid transparent" : `1px solid ${active3 ? MT.line20 : MT.line10}`,
-            color: emphasis ? "#111" : active3 ? MT.text : MT.muted70,
-            fontWeight: active3 ? 600 : 400,
+            background: emphasis ? "#f3f4f8" : active4 ? MT.s16 : MT.s12,
+            border: emphasis ? "1px solid transparent" : `1px solid ${active4 ? MT.line20 : MT.line10}`,
+            color: emphasis ? "#111" : active4 ? MT.text : MT.muted70,
+            fontWeight: active4 ? 600 : 400,
             opacity: dim ? 0.65 : void 0,
             cursor: "pointer"
           },
@@ -48033,7 +48770,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
   var RECENT_MAX = 8;
@@ -48208,7 +48945,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-vod-hub.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-vod-hub.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -48358,7 +49095,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_DESKTOP = 3;
   var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
@@ -48418,14 +49155,14 @@ ${cue.text}`).join("\n\n")}
           ] }),
           playlistOpen ? /* @__PURE__ */ jsxs("div", { ref: menuRef, role: "menu", "data-panel-root": "", "data-scroll": "", "data-live-tv-layer": "", style: { position: "absolute", top: `calc(100% + ${dp(8)}px)`, left: 0, zIndex: 60, width: dp(380), padding: dp(8), borderRadius: dp(16), background: "rgba(58,59,66,0.98)", boxShadow: "0 24px 64px rgba(0,0,0,0.55)", maxHeight: dp(560), overflowY: "auto" }, children: [
             [{ id: null, name: tt("allPlaylists"), count: model.allChannels.length }, ...model.playlists].map((p) => {
-              const active3 = (model.activePlaylistId ?? null) === p.id;
+              const active4 = (model.activePlaylistId ?? null) === p.id;
               return /* @__PURE__ */ jsxs("div", { "data-testid": `playlist-${p.id ?? "all"}`, "data-live-tv-menu-item": "", ...station(() => {
                 model.setActivePlaylist(p.id);
                 setPlaylistOpen(false);
                 setGroup(null);
                 setVisible(ALL_STEP);
                 window.setTimeout(() => pillRef.current?.focus({ preventScroll: true }), 0);
-              }, void 0, active3 ? { "data-init": "" } : {}), style: { height: dp(56), minHeight: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active3 ? TV2.s12 : "transparent", cursor: "pointer" }, children: [
+              }, void 0, active4 ? { "data-init": "" } : {}), style: { height: dp(56), minHeight: dp(56), padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active4 ? TV2.s12 : "transparent", cursor: "pointer" }, children: [
                 /* @__PURE__ */ jsx("span", { style: { fontSize: dp(19), fontWeight: 600 }, children: p.name }),
                 /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.5)" }, children: tt("channelsCount", { count: p.count }) })
               ] }, p.id ?? "__all");
@@ -48577,7 +49314,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -48586,7 +49323,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -48611,12 +49348,12 @@ ${cue.text}`).join("\n\n")}
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS * 100));
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -48672,7 +49409,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms = 300) {
     const [value, setValue] = useState(channel);
@@ -48736,7 +49473,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -48766,7 +49503,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -48775,7 +49512,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -48809,7 +49546,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -48818,25 +49555,25 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileSegment({ options, value, onChange, height = 36, testId }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { display: "flex", padding: 3, borderRadius: 999, background: MT.s08 }, children: options.map(({ key, label }) => {
-      const active3 = key === value;
+      const active4 = key === value;
       return /* @__PURE__ */ jsx(
         "div",
         {
           "data-testid": `segment-${key}`,
-          ...station(() => onChange(key), void 0, { "aria-pressed": String(active3) }),
+          ...station(() => onChange(key), void 0, { "aria-pressed": String(active4) }),
           style: {
             flex: 1,
             minHeight: height,
@@ -48845,9 +49582,9 @@ ${cue.text}`).join("\n\n")}
             alignItems: "center",
             justifyContent: "center",
             fontSize: 14,
-            fontWeight: active3 ? 600 : 400,
-            background: active3 ? MT.s16 : "transparent",
-            color: active3 ? MT.text : MT.muted,
+            fontWeight: active4 ? 600 : 400,
+            background: active4 ? MT.s16 : "transparent",
+            color: active4 ? MT.text : MT.muted,
             cursor: "pointer"
           },
           children: label
@@ -48857,7 +49594,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -48926,7 +49663,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -49059,7 +49796,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_jsx_runtime_shim();
   var MAX_GROUPS2 = 12;
   var ROW_STEP3 = 40;
@@ -49113,7 +49850,7 @@ ${cue.text}`).join("\n\n")}
       );
     };
     const noRows = rows.length === 0;
-    const colItem = (key, active3, label, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active3 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active3 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
+    const colItem = (key, active4, label, count, indent, onOk, testId, extra) => /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk, void 0, { "data-live-tv-col": "left", ...extra ?? {} }), style: { height: dp(indent ? 48 : 56), minHeight: dp(indent ? 48 : 56), marginLeft: indent ? dp(28) : 0, padding: `0 ${dp(16)}px`, borderRadius: dp(12), display: "flex", alignItems: "center", justifyContent: "space-between", background: active4 ? indent ? TV2.accMix(18) : TV2.s12 : "transparent", color: active4 ? TV2.text : indent ? "rgba(243,244,248,0.6)" : TV2.text, fontSize: dp(indent ? 18 : 19), fontWeight: indent ? 400 : 600, cursor: "pointer" }, children: [
       /* @__PURE__ */ jsx("span", { style: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: "rgba(243,244,248,0.45)" }, children: count })
     ] }, key);
@@ -49184,7 +49921,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -49194,7 +49931,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -49232,7 +49969,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -49240,7 +49977,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
@@ -49311,7 +50048,7 @@ ${cue.text}`).join("\n\n")}
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_jsx_runtime_shim();
@@ -49433,7 +50170,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
@@ -49683,11 +50420,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -49696,7 +50433,7 @@ ${cue.text}`).join("\n\n")}
   init_guide_surface();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -49859,7 +50596,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-control-row.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -49875,12 +50612,12 @@ ${cue.text}`).join("\n\n")}
   }
   function ControlSegment({ options, value, onChange, testId, activeStyle }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: SEGMENT, children: options.map((option) => {
-      const active3 = option.key === value;
+      const active4 = option.key === value;
       return /* @__PURE__ */ jsx(
         "div",
         {
-          ...station(() => onChange(option.key), void 0, active3 ? { "data-active": "" } : void 0),
-          style: { ...SEGMENT_BTN, background: active3 ? TV2.s16 : "transparent", color: active3 ? TV2.text : TV2.muted, fontWeight: active3 ? 600 : 400, ...active3 ? activeStyle : void 0 },
+          ...station(() => onChange(option.key), void 0, active4 ? { "data-active": "" } : void 0),
+          style: { ...SEGMENT_BTN, background: active4 ? TV2.s16 : "transparent", color: active4 ? TV2.text : TV2.muted, fontWeight: active4 ? 600 : 400, ...active4 ? activeStyle : void 0 },
           children: option.label
         },
         option.key
@@ -49954,7 +50691,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -49963,11 +50700,11 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -50012,7 +50749,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -50080,7 +50817,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
   var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
@@ -50310,7 +51047,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -50515,7 +51252,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
@@ -50630,7 +51367,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
   function TvGuide(props) {
@@ -50869,7 +51606,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -50877,7 +51614,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -50887,7 +51624,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -50948,7 +51685,7 @@ ${cue.text}`).join("\n\n")}
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
   function TvFavouritesPhone({ model, nav }) {
@@ -51044,7 +51781,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
@@ -51124,13 +51861,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
   init_channel_locks();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -51251,12 +51988,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_tv_ui();
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -51435,7 +52172,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_jsx_runtime_shim();
   function TvChannel(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
@@ -51506,9 +52243,9 @@ ${cue.text}`).join("\n\n")}
         ] })
       ] }),
       /* @__PURE__ */ jsx("div", { "data-testid": "day-picker", style: dayPickerStyle, children: DAY_OFFSETS.map((offset) => {
-        const active3 = offset === dayOffset;
+        const active4 = offset === dayOffset;
         const label = dayLabel(offset);
-        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active3 ? "#f3f4f8" : "transparent", color: active3 ? "#111" : offset > 0 ? TV2.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
+        return /* @__PURE__ */ jsx("div", { "data-testid": offset === 0 ? "day-btn-0" : void 0, children: /* @__PURE__ */ jsxs("div", { ...station(() => setDayOffset(offset), void 0, { "data-testid": "day-btn" }), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: active4 ? "#f3f4f8" : "transparent", color: active4 ? "#111" : offset > 0 ? TV2.accText : "rgba(243,244,248,0.6)", cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: label.top }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.75 }, children: label.bottom })
         ] }) }, offset);
@@ -51565,7 +52302,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -51574,13 +52311,13 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-keyboard.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -51611,7 +52348,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_jsx_runtime_shim();
   function isComposing(event) {
     return event.nativeEvent.isComposing === true || event.keyCode === 229;
@@ -51646,7 +52383,7 @@ ${cue.text}`).join("\n\n")}
             setPrompt(null);
             prompt.onDone(value);
           },
-          onClose: () => setPrompt((current2) => current2 === prompt ? null : current2)
+          onClose: () => setPrompt((current3) => current3 === prompt ? null : current3)
         },
         prompt.id
       ) }) : null;
@@ -51662,7 +52399,7 @@ ${cue.text}`).join("\n\n")}
             setPrompt(null);
             prompt.onDone(value);
           },
-          onCancel: () => setPrompt((current2) => current2 === prompt ? null : current2)
+          onCancel: () => setPrompt((current3) => current3 === prompt ? null : current3)
         },
         prompt.id
       );
@@ -51750,7 +52487,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -51784,7 +52521,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -51826,7 +52563,7 @@ ${cue.text}`).join("\n\n")}
     return state2;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -51964,7 +52701,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
     return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
@@ -52079,14 +52816,14 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -52095,10 +52832,10 @@ ${cue.text}`).join("\n\n")}
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -52148,7 +52885,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -52316,7 +53053,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
     2: { columns: "1fr 1fr", rows: "1fr" },
@@ -52342,8 +53079,8 @@ ${cue.text}`).join("\n\n")}
       if (!narrow) return;
       const root = rootRef.current;
       if (!root) return;
-      const active3 = document.activeElement;
-      if (active3 && root.contains(active3)) return;
+      const active4 = document.activeElement;
+      if (active4 && root.contains(active4)) return;
       root.querySelector("[data-init]")?.focus({ preventScroll: true });
     }, [narrow]);
     const liveBudget = Math.max(0, caps.maxLive - 1);
@@ -52448,7 +53185,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -52539,7 +53276,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       setSelected(getVodCategory(playlistId) ?? ALL_CATEGORY);
     }, [playlistId]);
-    const active3 = cats.categories.find((c) => c.id === validSelected) ?? null;
+    const active4 = cats.categories.find((c) => c.id === validSelected) ?? null;
     const page = useVodPage({
       source,
       // Söken håller sig inom vald kategori; Alla söker hela indexet (Jerry
@@ -52868,7 +53605,7 @@ ${cue.text}`).join("\n\n")}
       ),
       /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(14), padding: `${dp(30)}px ${dp(48)}px ${dp(16)}px` }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }, children: active3?.name ?? allKindLabel }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 34 : 28), fontWeight: 600 }, children: active4?.name ?? allKindLabel }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(isTv ? 20 : 17), color: "rgba(243,244,248,0.5)" }, children: tt("libraryTitlesCount", { count: page.total }) }),
           /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(10) }, children: [
             SORTS.map((key) => /* @__PURE__ */ jsx(
@@ -52976,13 +53713,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -53040,7 +53777,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -53497,7 +54234,7 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -53532,21 +54269,21 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_live_tv_data();
   init_index_client();
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -53701,19 +54438,19 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileToggle({ on }) {
     return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_jsx_runtime_shim();
   function Row({ label, right, onOk, testId, phone = false }) {
     if (phone) {
@@ -54024,8 +54761,8 @@ ${cue.text}`).join("\n\n")}
       const key = channelKey(channel);
       if (members.has(key)) {
         removeChannelFromLiveTvList(pickerListId, channel);
-        setMembers((current2) => {
-          const next = new Set(current2);
+        setMembers((current3) => {
+          const next = new Set(current3);
           next.delete(key);
           return next;
         });
@@ -54036,7 +54773,7 @@ ${cue.text}`).join("\n\n")}
         toast(tt("listFull"));
         return;
       }
-      if (outcome === "added" || outcome === "duplicate") setMembers((current2) => new Set(current2).add(key));
+      if (outcome === "added" || outcome === "duplicate") setMembers((current3) => new Set(current3).add(key));
     };
     const createList = () => keyboard.ask(tt("listName"), "", (value) => {
       const name = value.trim();
@@ -54254,14 +54991,14 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 12 : dp(14) }, "data-testid": "settings-content", children: [
       /* @__PURE__ */ jsx(Heading, { phone, hint: cats.total > 0 ? tt("vodHint", { count: cats.total }) : tt("vodHintEmpty"), children: tt("vodHeading") }),
       /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: phone ? 10 : dp(16), flexWrap: "wrap" }, children: options.map((option) => {
-        const active3 = option.key === mode;
+        const active4 = option.key === mode;
         return /* @__PURE__ */ jsxs(
           "div",
           {
             "data-testid": `vod-mode-${option.key}`,
-            "data-active": active3 ? "" : void 0,
+            "data-active": active4 ? "" : void 0,
             ...station(() => choose(option.key)),
-            style: phone ? { width: "100%", padding: "12px 14px", borderRadius: 12, background: MT.s07, border: `1px solid ${active3 ? TV2.acc : MT.line10}`, cursor: "pointer" } : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV2.s07, border: `1px solid ${active3 ? TV2.acc : TV2.lineCard}`, cursor: "pointer", textAlign: "left" },
+            style: phone ? { width: "100%", padding: "12px 14px", borderRadius: 12, background: MT.s07, border: `1px solid ${active4 ? TV2.acc : MT.line10}`, cursor: "pointer" } : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV2.s07, border: `1px solid ${active4 ? TV2.acc : TV2.lineCard}`, cursor: "pointer", textAlign: "left" },
             children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), fontWeight: 600 }, children: option.title }),
               /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : "rgba(243,244,248,0.6)", marginTop: 4 }, children: option.body })
@@ -54409,7 +55146,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -54479,7 +55216,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_jsx_runtime_shim();
   var TABS = ["appearance", "content", "playlists", "epg", "parental"];
@@ -54513,7 +55250,7 @@ ${cue.text}`).join("\n\n")}
     const [accent, setAccentState] = useState(() => hasAccent ? accentApi.getAccent() : "");
     const newGuide = useNewGuideSurface(false);
     const modes = newGuide ? [{ key: "grid", label: tt("modeGrid") }, { key: "nownext", label: tt("modeNowNext") }, { key: "timeline", label: tt("modeTimelineDay") }] : [{ key: "now", label: tt("modeNow") }, { key: "tl", label: tt("modeTimeline") }, { key: "grid", label: tt("modeGrid") }, { key: "playlists", label: tt("modePlaylists") }];
-    const nextBanner = (current2) => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current2) + 1) % BANNER_HIDE_OPTIONS.length];
+    const nextBanner = (current3) => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current3) + 1) % BANNER_HIDE_OPTIONS.length];
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       hasAccent ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
         /* @__PURE__ */ jsx(Heading, { children: tt("accentColour") }),
@@ -54546,7 +55283,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -54560,7 +55297,7 @@ ${cue.text}`).join("\n\n")}
     settings: TvSettingsView
   };
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -54585,7 +55322,7 @@ ${cue.text}`).join("\n\n")}
   }
   function MobileTabBar({ view, onGo, onMore, showLibrary = false }) {
     const { tt } = useTvText();
-    const active3 = tabForView(view);
+    const active4 = tabForView(view);
     const tabs = tabsFor(showLibrary);
     return /* @__PURE__ */ jsx(
       "nav",
@@ -54608,7 +55345,7 @@ ${cue.text}`).join("\n\n")}
           display: "flex"
         },
         children: tabs.map(({ key, icon: Icon2, label }) => {
-          const isActive = key === active3;
+          const isActive = key === active4;
           return /* @__PURE__ */ jsxs(
             "div",
             {
@@ -54639,7 +55376,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_mobile_sheet();
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
@@ -54701,7 +55438,7 @@ ${cue.text}`).join("\n\n")}
     const view = viewFromParams(params);
     const viewParams = useMemo(() => params ?? {}, [params]);
     const [Player, setPlayer] = useState(null);
-    const [active3, setActive2] = useState(null);
+    const [active4, setActive3] = useState(null);
     const [stream, setStream] = useState(null);
     const [StreamPlayer, setStreamPlayer] = useState(null);
     const [pending5, setPending] = useState(null);
@@ -54721,7 +55458,7 @@ ${cue.text}`).join("\n\n")}
     const railItemSize = narrow ? RAIL_ITEM_NARROW : railLabels ? RAIL_ITEM_WIDE : RAIL_ITEM_COMPACT;
     const [moreOpen, setMoreOpen] = useState(false);
     useEffect(() => {
-      if (active3) return;
+      if (active4) return;
       let frame = 0;
       const focusInit = () => {
         const main = mainRef.current;
@@ -54733,19 +55470,19 @@ ${cue.text}`).join("\n\n")}
         frame = window.requestAnimationFrame(focusInit);
       });
       return () => window.cancelAnimationFrame(frame);
-    }, [view, active3]);
+    }, [view, active4]);
     useEffect(() => {
-      if (!active3 || Player) return;
+      if (!active4 || Player) return;
       let cancelled = false;
       void Promise.resolve().then(() => (init_live_tv_player(), live_tv_player_exports)).then((mod) => {
         if (!cancelled) setPlayer(() => mod.LiveTvPlayer);
       }).catch(() => {
-        if (!cancelled) setActive2(null);
+        if (!cancelled) setActive3(null);
       });
       return () => {
         cancelled = true;
       };
-    }, [active3, Player]);
+    }, [active4, Player]);
     useEffect(() => {
       if (!stream || StreamPlayer) return;
       let cancelled = false;
@@ -54769,7 +55506,7 @@ ${cue.text}`).join("\n\n")}
     }, [onNavigate]);
     const toast = useCallback((text) => {
       setToastText(text);
-      window.setTimeout(() => setToastText((current2) => current2 === text ? null : current2), 1800);
+      window.setTimeout(() => setToastText((current3) => current3 === text ? null : current3), 1800);
     }, []);
     const modelRef = useRef(model);
     useEffect(() => {
@@ -54781,7 +55518,7 @@ ${cue.text}`).join("\n\n")}
         setPending({ kind: "play", request });
         return;
       }
-      void releaseAllSurfaces().finally(() => setActive2(request));
+      void releaseAllSurfaces().finally(() => setActive3(request));
     }, []);
     const openChannel = useCallback((channel, programmeStart) => {
       go("channel", { ...encodeChannelParams(channel), ...programmeStart ? { programme: String(programmeStart) } : {} });
@@ -54830,8 +55567,8 @@ ${cue.text}`).join("\n\n")}
         setPending(null);
         return;
       }
-      if (active3) {
-        setActive2(null);
+      if (active4) {
+        setActive3(null);
         return;
       }
       const top = layersRef.current[layersRef.current.length - 1];
@@ -54848,7 +55585,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       requestBrowseBack();
-    }, [menu, pending5, active3, view, go]);
+    }, [menu, pending5, active4, view, go]);
     useEffect(() => {
       const onKey = (event) => {
         if (!BACK_KEYS2.has(event.key)) return;
@@ -54859,7 +55596,7 @@ ${cue.text}`).join("\n\n")}
           back();
           return;
         }
-        if (active3 && Player) return;
+        if (active4 && Player) return;
         const target2 = event.target;
         if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
         if (target2?.closest?.("[data-live-tv-host-ui]")) return;
@@ -54869,7 +55606,7 @@ ${cue.text}`).join("\n\n")}
       };
       window.addEventListener("keydown", onKey, true);
       return () => window.removeEventListener("keydown", onKey, true);
-    }, [back, menu, phone, active3, Player, pending5]);
+    }, [back, menu, phone, active4, Player, pending5]);
     const favourites = model.favouriteChannels;
     const channels = model.channels;
     const zapDepsRef = useRef({ favourites, channels, play, toast, tt });
@@ -54937,11 +55674,11 @@ ${cue.text}`).join("\n\n")}
       addToMultiview,
       pushLayer,
       toast,
-      playerOpen: active3 !== null
-    }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active3]);
+      playerOpen: active4 !== null
+    }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active4]);
     useSwipeBack(back, (!menu || phone) && pending5 === null);
     const View = TV_VIEWS[view];
-    const activeChannel = active3 ? active3.url ? { ...active3.channel, url: active3.url, name: active3.label ?? active3.channel.name } : active3.channel : null;
+    const activeChannel = active4 ? active4.url ? { ...active4.channel, url: active4.url, name: active4.label ?? active4.channel.name } : active4.channel : null;
     const rail = [
       { key: "search", label: tt("railSearch"), icon: /* @__PURE__ */ jsx(Icons.Search, {}) },
       { key: "hub", label: tt("railHome"), icon: /* @__PURE__ */ jsx(Icons.Home, {}) },
@@ -54976,15 +55713,15 @@ ${cue.text}`).join("\n\n")}
       // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
       gateOpen: pending5 !== null,
       onOpenChannelDetails: () => {
-        setActive2(null);
+        setActive3(null);
         openChannel(activeChannel);
       },
       onOpenMultiview: () => {
-        setActive2(null);
+        setActive3(null);
         go("multi");
       },
       onOpenGuide: () => {
-        setActive2(null);
+        setActive3(null);
         go("guide");
       },
       onAddToMultiview: addToMultiview,
@@ -55019,7 +55756,7 @@ ${cue.text}`).join("\n\n")}
             ] })
           ),
           /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone }, view) }),
-          phone && active3 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
+          phone && active4 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
           phone && moreOpen ? /* @__PURE__ */ jsx(
             MobileSheet,
             {
@@ -55033,7 +55770,7 @@ ${cue.text}`).join("\n\n")}
               testId: "more-sheet"
             }
           ) : null,
-          activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive2(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => play({ channel }), tv: tvPlayerProps }) : null,
+          activeChannel && Player ? /* @__PURE__ */ jsx(Player, { channel: activeChannel, onClose: () => setActive3(null), listId: model.epgListId, epgUrls: model.epgUrls, onSwitchChannel: (channel) => play({ channel }), tv: tvPlayerProps }) : null,
           stream && StreamPlayer ? /* @__PURE__ */ jsx("div", { "data-testid": "tv-stream-player", "data-live-tv-layer": "", children: /* @__PURE__ */ jsx(
             StreamPlayer,
             {
@@ -55070,7 +55807,7 @@ ${cue.text}`).join("\n\n")}
                   return;
                 }
                 markUnlockedThisSession();
-                void releaseAllSurfaces().finally(() => setActive2(gate.request));
+                void releaseAllSurfaces().finally(() => setActive3(gate.request));
               }
             }
           ),
@@ -55083,7 +55820,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -55140,7 +55877,7 @@ ${cue.text}`).join("\n\n")}
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -55182,13 +55919,13 @@ ${cue.text}`).join("\n\n")}
     return programmes;
   }
 
-  // ../../../lumio-official-plugins-released/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index.ts
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.13.2"
+      version: "0.14.0"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -55202,7 +55939,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.13.2",
+    version: "0.14.0",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
@@ -55243,8 +55980,8 @@ ${cue.text}`).join("\n\n")}
       }
       if (typeof window !== "undefined") {
         onLiveTvHideHeroChanged(() => {
-          const notify = notifyPluginRegistryChanged;
-          if (typeof notify === "function") notify();
+          const notify2 = notifyPluginRegistryChanged;
+          if (typeof notify2 === "function") notify2();
         });
       }
     }
@@ -55259,17 +55996,6 @@ ${cue.text}`).join("\n\n")}
 })();
 /*! Bundled license information:
 
-react-dom/cjs/react-dom.production.js:
-  (**
-   * @license React
-   * react-dom.production.js
-   *
-   * Copyright (c) Meta Platforms, Inc. and affiliates.
-   *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
-   *)
-
 qrcode.react/lib/esm/index.js:
   (**
    * @license QR Code generator library (TypeScript)
@@ -55280,5 +56006,16 @@ qrcode.react/lib/esm/index.js:
    * @license qrcode.react
    * Copyright (c) Paul O'Shannessy
    * SPDX-License-Identifier: ISC
+   *)
+
+react-dom/cjs/react-dom.production.js:
+  (**
+   * @license React
+   * react-dom.production.js
+   *
+   * Copyright (c) Meta Platforms, Inc. and affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
    *)
 */
