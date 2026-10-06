@@ -27,13 +27,18 @@ import {
   useLang,
   useTvMode,
   capturePlayerFrame,
-  canPip,
   enterPip,
   notifyPipPlaying,
   registerPip,
+  usePipAvailable,
 } from '@/lib/plugin-sdk'
 import { recordChannelWatch } from './channel-history'
 import { channelKey } from './live-tv-data'
+
+/* Äldre appar saknar PiP i SDK:t — en stabil ersättare per modul, så att
+   hookordningen är densamma i varje rendering. */
+const usePipAvailableSafe: (video?: HTMLVideoElement | null) => boolean =
+  typeof usePipAvailable === 'function' ? usePipAvailable : () => false
 import { useHtmlVideoPlayer } from './hooks/useHtmlVideoPlayer'
 import { useOrientation } from './hooks/useOrientation'
 import { useWakeLock } from './hooks/useWakeLock'
@@ -961,6 +966,9 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
   // registreringen så att webbläsarens PiP-händelser kopplas på.
   const [pipVideoEl, setPipVideoEl] = useState<HTMLVideoElement | null>(null)
   useEffect(() => { setPipVideoEl(isHtmlEngine ? videoRef.current : null) })
+  // Prenumererar: på Android vet appen först efter en fråga till enheten om
+  // den klarar PiP, och knappen ska dyka upp när svaret kommer.
+  const pipAvailable = usePipAvailableSafe(pipVideoEl)
   useEffect(() => {
     if (!pipPhone) return
     const stepChannel = (delta: 1 | -1) => {
@@ -1075,7 +1083,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     onVolume: updateVolume,
     onToggleFullscreen: toggleFullscreen,
     onCycleAspect: cycleAspect,
-    onEnterPip: pipPhone && typeof canPip === 'function' && canPip(pipVideoEl)
+    onEnterPip: pipPhone && pipAvailable
       ? () => { void enterPip(pipVideoEl) }
       : undefined,
   }

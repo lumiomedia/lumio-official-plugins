@@ -828,5 +828,6 @@ export function registerPip(actions: PipActions, _video?: HTMLVideoElement | nul
   }
 }
 export function canPip(_video?: HTMLVideoElement | null): boolean { return true }
+export function usePipAvailable(_video?: HTMLVideoElement | null): boolean { return true }
 export async function enterPip(_video?: HTMLVideoElement | null): Promise<boolean> { return true }
 export function notifyPipPlaying(_playing: boolean): void {}
