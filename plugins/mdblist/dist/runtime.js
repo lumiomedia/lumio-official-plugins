@@ -15757,6 +15757,14 @@
       }));
       return refreshing;
     }
+    async function forceRefresh() {
+      const token = deps.readToken();
+      if (!token || deps.now() - lastRefreshFailAt < REFRESH_BACKOFF_MS) return null;
+      refreshing ?? (refreshing = refresh(token).finally(() => {
+        refreshing = null;
+      }));
+      return refreshing;
+    }
     async function disconnect2() {
       authEpoch += 1;
       const token = deps.readToken();
@@ -15771,6 +15779,7 @@
       cancel,
       disconnect: disconnect2,
       getAccessToken,
+      forceRefresh,
       hasToken: () => deps.readToken() != null,
       state: () => state,
       subscribe(listener) {

@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ApiResult, SimklApi } from './api'
 import { createListSource } from './list-source'
+import type { RemoteMap } from './sync-engine'
 
-function setup(opts: { auth?: boolean; call?: (path: string) => ApiResult<unknown>; cdn?: (path: string) => ApiResult<unknown> } = {}) {
+function setup(opts: { auth?: boolean; remote?: RemoteMap | null; call?: (path: string) => ApiResult<unknown>; cdn?: (path: string) => ApiResult<unknown> } = {}) {
   let clock = 0
   const store: Record<string, unknown> = {}
   const call = vi.fn(async (_m: string, path: string) => (opts.call ?? (() => ({ ok: true, data: {} })))(path))
@@ -13,7 +14,7 @@ function setup(opts: { auth?: boolean; call?: (path: string) => ApiResult<unknow
   }
   const source = createListSource({
     api, readJson: <T>(k: string) => (store[k] as T) ?? null, writeJson: (k, v) => { store[k] = v },
-    now: () => clock, log: () => {}, lang: () => 'sv',
+    now: () => clock, log: () => {}, lang: () => 'sv', readRemote: () => opts.remote ?? null,
   })
   return { source, call, cdn, tick: (ms: number) => { clock += ms } }
 }
@@ -37,26 +38,41 @@ describe('SIMKL-listkällan', () => {
     expect((await source.listLists()).every((l) => l.group?.id === 'trending')).toBe(true)
   })
 
-  it('statuslista hämtas med auth från all-items, trendande från CDN utan auth', async () => {
-    const { source, call, cdn } = setup({
-      call: () => ({ ok: true, data: { shows: [{ status: 'watching', show: { title: 'GoT', ids: { simkl: 1, tmdb: '1399' } } }] } }),
-      cdn: () => ({ ok: true, data: [{ title: 'M', ids: { tmdb: '603' } }] }),
+  it('I5: statuslistor läses ur synkens statuskarta — inget anrop', async () => {
+    const { source, call } = setup({
+      remote: {
+        's:1399': { st: 'watching', k: 's', t: 'GoT' },
+        's:37854': { st: 'watching', k: 'a', t: 'One Piece' },
+        'm:603': { st: 'plantowatch', k: 'm', t: 'Matrix', i: 'tt0133093' },
+      },
     })
     expect((await source.loadList('status:shows:watching')).map((i) => [i.tmdbId, i.mediaType])).toEqual([['1399', 'tv']])
-    expect((call.mock.calls[0] as unknown as [string, string])[1]).toBe('/sync/all-items/shows/watching')
-    expect((await source.loadList('trending:movies:week')).map((i) => [i.tmdbId, i.mediaType])).toEqual([['603', 'movie']])
-    expect(cdn).toHaveBeenCalledWith('/discover/trending/movies/week_100.json')
+    expect((await source.loadList('status:anime:watching')).map((i) => i.tmdbId)).toEqual(['37854'])
+    expect(await source.loadList('status:movies:plantowatch')).toEqual([{ mediaType: 'movie', tmdbId: '603', imdbId: 'tt0133093', title: 'Matrix', posterUrl: null }])
+    expect(call).not.toHaveBeenCalled()
   })
 
-  it('cache: en timme för statuslistor, sedan omhämtning i bakgrunden', async () => {
-    let n = 0
-    const { source, tick } = setup({ call: () => { n += 1; return { ok: true, data: {} } } })
+  it('I5: utan karta (synken av) — en gemensam statushämtning för alla rader, högst var sjätte timme', async () => {
+    const { source, call, tick } = setup({
+      call: () => ({ ok: true, data: { shows: [{ status: 'watching', show: { title: 'GoT', ids: { simkl: 1, tmdb: '1399' } } }] } }),
+    })
+    expect((await source.loadList('status:shows:watching')).map((i) => i.tmdbId)).toEqual(['1399'])
     await source.loadList('status:movies:plantowatch')
-    await source.loadList('status:movies:plantowatch')
-    expect(n).toBe(1)
+    await source.loadList('status:shows:hold')
+    expect(call).toHaveBeenCalledTimes(1)
+    expect((call.mock.calls[0] as unknown as [string, string])[1]).toBe('/sync/all-items/all/all')
     tick(60 * 60_000 + 1)
-    await source.loadList('status:movies:plantowatch')
-    expect(n).toBe(2)
+    await source.loadList('status:shows:watching')
+    expect(call).toHaveBeenCalledTimes(1)
+    tick(6 * 60 * 60_000)
+    await source.loadList('status:shows:watching')
+    expect(call).toHaveBeenCalledTimes(2)
+  })
+
+  it('trendande från CDN utan auth', async () => {
+    const { source, cdn } = setup({ cdn: () => ({ ok: true, data: [{ title: 'M', ids: { tmdb: '603' } }] }) })
+    expect((await source.loadList('trending:movies:week')).map((i) => [i.tmdbId, i.mediaType])).toEqual([['603', 'movie']])
+    expect(cdn).toHaveBeenCalledWith('/discover/trending/movies/week_100.json')
   })
 
   it('två samtidiga hämtningar av samma lista blir en', async () => {

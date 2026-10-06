@@ -16,7 +16,7 @@ import { parseUser } from './parse'
 import { createPrefs, type PrefKind } from '../../_shared/tracker-kit/prefs'
 import { startScheduler } from '../../_shared/tracker-kit/scheduler'
 import { createStatus } from '../../_shared/tracker-kit/status'
-import { runSimklSync, SNAPSHOT_KEY, type SyncHost } from './sync-engine'
+import { FAILURE_KEY, runSimklSync, SNAPSHOT_KEY, type SyncHost, type SyncSnapshot } from './sync-engine'
 import { S } from './strings'
 import { createScrobbler } from './tracker'
 
@@ -57,7 +57,7 @@ export const prefs = createPrefs(
 )
 export const onPrefsChanged = (listener: () => void) => listen(PREFS_EVENT, listener)
 
-/** Ny token eller frånkoppling — det som byter vem vi är hos MDBList. */
+/** Ny token eller frånkoppling — det som byter vem vi är hos SIMKL. */
 export const onAuthChanged = (listener: () => void) => listen(AUTH_EVENT, listener)
 
 export const prefsSnapshot = (): Record<PrefKind, boolean> => ({
@@ -114,6 +114,8 @@ export const device = createDeviceAuth({
 export async function disconnect(): Promise<void> {
   await device.disconnect()
   removeScopedStorageItem(SNAPSHOT_KEY)
+  removeScopedStorageItem(FAILURE_KEY)
+  removeScopedStorageItem('simkl_list_items_library')
   await checkConnection()
 }
 
@@ -129,10 +131,15 @@ export const api = createSimklApi({
   now: () => Date.now(),
   log,
   onPause: (until) => status.set({ pausedUntil: until }),
+  // Spec: 401 user_token_failed förnyar en gång — klockan kan ljuga, eller grant återkallats.
+  onUnauthorized: () => device.forceRefresh(),
 })
 
+/** Synkens statuskarta — bryggan och listraderna läser SIMKL-statusar härifrån. */
+const readRemote = () => readJson<SyncSnapshot>(SNAPSHOT_KEY)?.remote ?? null
+
 export const scrobbler = createScrobbler({ api, prefs, log })
-export const listSource = createListSource({ api, readJson, writeJson, now: () => Date.now(), log, lang: () => readStoredLang() })
+export const listSource = createListSource({ api, readJson, writeJson, now: () => Date.now(), log, lang: () => readStoredLang(), readRemote })
 export const isTraktConnected = () => Boolean(getTraktAuth())
 
 const syncHost: SyncHost = {
@@ -158,7 +165,7 @@ const syncHost: SyncHost = {
   scopeId: () => getActiveProfileId(),
 }
 
-/** Vem är vi hos MDBList? `GET /user` — också beviset att nyckeln eller token gäller. */
+/** Vem är vi hos SIMKL? `GET /users/settings` — också beviset att token gäller. */
 export async function checkConnection(): Promise<void> {
   if (!hasAuth()) { status.set({ connection: 'none', username: null, supporter: false, accountKey: null }); return }
   const scope = getActiveProfileId()
@@ -180,6 +187,9 @@ export async function checkConnection(): Promise<void> {
 }
 
 export async function syncNow(opts: { pushWatched: boolean; reason: string; full?: boolean }): Promise<void> {
+  // Kontrollen vid start kan ha fallit (offline, 429, väckning ur vila) — utan
+  // konto binds ingen snapshot, så försök igen här i stället för att stå still.
+  if (hasAuth() && !status.get().accountKey) await checkConnection()
   status.set({ syncing: true })
   const out = await runSimklSync({ host: syncHost, api, prefs }, opts)
   const patch: Parameters<typeof status.set>[0] = { syncing: false, pausedUntil: api.pausedUntil() }
@@ -187,6 +197,7 @@ export async function syncNow(opts: { pushWatched: boolean; reason: string; full
     patch.lastSyncAt = Date.now()
     patch.lastChanges = out.status === 'done' ? out.changes : 0
     writeJson(LAST_SYNC_KEY, { at: patch.lastSyncAt, changes: patch.lastChanges })
+    if (status.get().connection === 'bad-key') patch.connection = 'ok'
   }
   if (out.status === 'failed' && out.authFailed) patch.connection = 'bad-key'
   status.set(patch)
@@ -239,6 +250,7 @@ export function startBackground(): () => void {
     api, prefs, isUserMutation, log,
     isShowStarted: (tmdbId) => getWatchedEpisodes().some((e) => e.tmdbId === tmdbId),
     isMovieWatched: (tmdbId) => getWatchedMovies().some((m) => m.tmdbId === tmdbId),
+    remoteStatus: (key) => readRemote()?.[key]?.st ?? null,
     now: () => Date.now(),
     schedule: (fn, ms) => window.setTimeout(fn, ms),
     cancel: (h) => window.clearTimeout(h as number),

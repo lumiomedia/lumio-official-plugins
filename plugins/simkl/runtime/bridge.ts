@@ -20,6 +20,8 @@ export interface BridgeDeps {
   isShowStarted(tmdbId: string): boolean
   /** Är filmen lokalt sedd? Då blir en borttagen film "Klar" i stället för att raderas. */
   isMovieWatched(tmdbId: string): boolean
+  /** SIMKL-status ur synkens statuskarta (`s:<tmdb>`/`m:<tmdb>`), eller null om okänd. */
+  remoteStatus(key: string): string | null
   log(message: string): void
   now(): number
   schedule(fn: () => void, ms: number): unknown
@@ -28,18 +30,28 @@ export interface BridgeDeps {
 
 const FLUSH_MS = 3_000
 const RETRY_MS = 60_000
+const MAX_ATTEMPTS = 5
+/** Bara fel som kan gå över försöks igen; resten tar nästa dygnskörning. */
+const retryable = (status: number) => status === 0 || status === 408 || status === 429 || status >= 500
 
-type Pending =
-  | { kind: 'show' | 'movie'; add: boolean; entry: RemoteEntry }
-  | { kind: 'watched'; add: boolean; push: WatchedPush }
+type Pending = ({ kind: 'show' | 'movie'; add: boolean; entry: RemoteEntry } | { kind: 'watched'; add: boolean; push: WatchedPush }) & { attempts?: number }
 
-type Send = { path: string; body: object; entries: Array<[string, Pending]>; what: string; critical: boolean }
+type Send = { path: string; body: object; entries: Array<[string, Pending]>; what: string; critical: boolean; to?: ListStatus }
 
 /// Användarens egna ändringar till SIMKL direkt (3 s-batch, senaste ändringen
 /// per titel vinner, borttagningar och avmarkeringar försöks igen). Bara
 /// `source: 'local'`. Mappningen mot SIMKL:s statusar följer specen.
+///
+/// Borttagningar är det enda som kan förstöra något hos SIMKL, så de skickas
+/// bara när statusen är känd: en påbörjad serie lämnas åt synken (den kan vara
+/// Klar hos SIMKL — Lumios auto-avföljning får inte göra den Avbruten), och en
+/// film tas bara bort när den bevisligen bara är planerad (history/remove på en
+/// sedd film raderar historik och betyg).
 export function startBridge(deps: BridgeDeps): () => void {
   const queue = new Map<string, Pending>()
+  /** Status bryggan själv satt i den här sessionen — nyare än synkens karta. */
+  const sent = new Map<string, string>()
+  const statusOf = (key: string) => sent.get(key) ?? deps.remoteStatus(key)
   let timer: unknown = null
   let flushing = false
 
@@ -66,10 +78,19 @@ export function startBridge(deps: BridgeDeps): () => void {
       const [, p] = item
       if (p.kind === 'watched') { (p.add ? watched : unwatched).push(item); continue }
       let to: ListStatus
-      if (p.kind === 'show') to = p.add ? (deps.isShowStarted(p.entry.tmdbId) ? 'watching' : 'plantowatch') : 'dropped'
-      else if (p.add) to = 'plantowatch'
+      if (p.kind === 'show') {
+        if (p.add) to = deps.isShowStarted(p.entry.tmdbId) ? 'watching' : 'plantowatch'
+        else if (deps.isShowStarted(p.entry.tmdbId) || statusOf(`s:${p.entry.tmdbId}`) === 'completed') {
+          deps.log(`brygga: serie ${p.entry.tmdbId} avföljd — synken avgör mot SIMKL:s status`)
+          continue
+        } else to = 'dropped'
+      } else if (p.add) to = 'plantowatch'
       else if (deps.isMovieWatched(p.entry.tmdbId)) to = 'completed'
-      else { movieRemovals.push(item); continue }
+      else if (statusOf(`m:${p.entry.tmdbId}`) === 'plantowatch') { movieRemovals.push(item); continue }
+      else {
+        deps.log(`brygga: film ${p.entry.tmdbId} borttagen — okänd status hos SIMKL, synken avgör`)
+        continue
+      }
       const groupKey = `${p.kind}:${to}`
       const group = lists.get(groupKey) ?? { kind: p.kind, to, entries: [] }
       group.entries.push(item)
@@ -80,7 +101,7 @@ export function startBridge(deps: BridgeDeps): () => void {
       const entries = group.entries.map(([, p]) => (p as Extract<Pending, { kind: 'show' | 'movie' }>).entry)
       sends.push({
         path: '/sync/add-to-list', body: buildAddToListPayload(entries, group.kind, group.to), entries: group.entries,
-        what: `${group.kind === 'show' ? 'serier' : 'filmer'} → ${group.to}`, critical: group.to === 'dropped',
+        what: `${group.kind === 'show' ? 'serier' : 'filmer'} → ${group.to}`, critical: group.to === 'dropped', to: group.to,
       })
     }
     if (movieRemovals.length) {
@@ -103,19 +124,32 @@ export function startBridge(deps: BridgeDeps): () => void {
     try {
       for (const send of plan(batch)) {
         const result = await deps.api.call('POST', send.path, { body: send.body })
-        if (result.ok) continue
-        if (send.critical) {
-          deps.log(`brygga: ${send.what} misslyckades (${result.error}) — försöker igen`)
-          retry.push(...send.entries)
+        if (result.ok) {
+          for (const [, p] of send.entries) {
+            if (p.kind === 'watched') continue
+            const key = `${p.kind === 'show' ? 's' : 'm'}:${p.entry.tmdbId}`
+            if (send.to) sent.set(key, send.to)
+            else sent.delete(key)
+          }
+          continue
+        }
+        const attempts = Math.max(...send.entries.map(([, p]) => p.attempts ?? 0)) + 1
+        if (send.critical && retryable(result.status) && attempts < MAX_ATTEMPTS) {
+          deps.log(`brygga: ${send.what} misslyckades (${result.error}) — försök ${attempts + 1} senare`)
+          retry.push(...send.entries.map(([key, p]): [string, Pending] => [key, { ...p, attempts }]))
         } else {
-          deps.log(`brygga: ${send.what} misslyckades (${result.error}) — nästa synk tar det`)
+          deps.log(`brygga: ${send.what} misslyckades (${result.status} ${result.error}) — släpps, synken tar det`)
         }
       }
     } finally {
       flushing = false
     }
     for (const [key, pending] of retry) if (!queue.has(key)) queue.set(key, pending)
-    if (queue.size > 0) arm(Math.max(retry.length > 0 ? RETRY_MS : FLUSH_MS, deps.api.pausedUntil() - deps.now()))
+    if (queue.size > 0) {
+      const attempts = Math.max(0, ...retry.map(([, p]) => p.attempts ?? 0))
+      const delay = retry.length > 0 ? Math.min(RETRY_MS * 2 ** (attempts - 1), 30 * 60_000) : FLUSH_MS
+      arm(Math.max(delay, deps.api.pausedUntil() - deps.now()))
+    }
   }
 
   const offs = [

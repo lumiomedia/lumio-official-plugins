@@ -5,7 +5,7 @@ function res(status: number, body: unknown, headers: Record<string, string> = {}
   return new Response(body === undefined ? null : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...headers } })
 }
 
-function setup(responses: Response[], token: string | null = 'T') {
+function setup(responses: Response[], token: string | null = 'T', onUnauthorized?: () => Promise<string | null>) {
   let clock = 1_000_000
   const slept: number[] = []
   const onPause = vi.fn()
@@ -20,6 +20,7 @@ function setup(responses: Response[], token: string | null = 'T') {
     sleep: async (ms) => { slept.push(ms); clock += ms },
     log: () => {},
     onPause,
+    onUnauthorized,
   })
   const call = (n = 0) => fetchImpl.mock.calls[n] as unknown as [string, RequestInit]
   return { api, fetchImpl, call, slept, onPause, tick: (ms: number) => { clock += ms } }
@@ -93,5 +94,28 @@ describe('SIMKL-klienten', () => {
   it('ett tomt svar (201 utan kropp) är ok med null', async () => {
     const { api } = setup([new Response(null, { status: 201 })])
     expect(await api.call('POST', '/scrobble/pause', { body: {} })).toEqual({ ok: true, data: null })
+  })
+
+  it('I8: kvoten glöms efter en timme — en låg siffra spärrar inte för evigt', async () => {
+    const { api, tick } = setup([res(200, {}, { 'X-RateLimit-Remaining': '10' })])
+    await api.call('GET', '/sync/activities')
+    expect(api.remaining()).toBe(10)
+    tick(60 * 60_000 + 1)
+    expect(api.remaining()).toBeNull()
+  })
+
+  it('I7: 401 förnyar token en gång och försöker igen', async () => {
+    const refresh = vi.fn(async () => 'T2')
+    const { api, call } = setup([res(401, { error: 'user_token_failed' }), res(200, { ok: 1 })], 'T', refresh)
+    expect(await api.call('GET', '/users/settings')).toEqual({ ok: true, data: { ok: 1 } })
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect((call(1)[1].headers as Record<string, string>).Authorization).toBe('Bearer T2')
+  })
+
+  it('I7: misslyckas förnyelsen blir det 401 utan nytt försök', async () => {
+    const refresh = vi.fn(async () => null)
+    const { api, fetchImpl } = setup([res(401, { error: 'user_token_failed' })], 'T', refresh)
+    expect((await api.call('GET', '/users/settings')).ok).toBe(false)
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
 })

@@ -5,13 +5,19 @@ import { buildAddToListPayload, buildHistoryPayload, buildRemovePayload, type Wa
 import type { LocalEntry, RemoteEntry } from './types'
 
 export const SNAPSHOT_KEY = 'simkl_sync_snapshot'
-const SNAPSHOT_VERSION = 1
+/** Misslyckade körningar i rad — styr backoffen. Enhetslokal, som snapshoten. */
+export const FAILURE_KEY = 'simkl_sync_failure'
+const SNAPSHOT_VERSION = 2
 const WATCHED_PUSH_LIMIT_PER_RUN = 100
 const WATCHED_BATCH = 100
 const FULL_RUN_EVERY_MS = 24 * 60 * 60_000
 const EMPTY_REMOTE_GUARD = 15
+/** Under så här stor andel poster med tmdb litar vi inte på att en saknad post är borttagen. */
+const MIN_TMDB_COVERAGE = 0.9
 const UNCONFIRMED_MAX_ATTEMPTS = 2
 const UNCONFIRMED_COOLDOWN_MS = 7 * 24 * 60 * 60_000
+const BACKOFF_BASE_MS = 15 * 60_000
+const BACKOFF_MAX_MS = 6 * 60 * 60_000
 /** Under så här många kvarvarande dagsanrop avstår synken — scrobble får resten. */
 const QUOTA_FLOOR = 50
 
@@ -21,6 +27,22 @@ const WATCHLIST_BUCKETS = [
   ...['plantowatch', 'completed', 'dropped', 'removed_from_list'].map((s) => `movies.${s}`),
 ]
 const WATCHED_BUCKETS = ['tv_shows.all', 'anime.all', 'movies.all']
+const REMOVED_BUCKETS = ['tv_shows', 'anime', 'movies'].map((t) => `${t}.removed_from_list`)
+
+/** Avsnitt för alla statusar, men bara de som faktiskt registrerats (inga påhittade rader). */
+const EPISODE_QUERY = { extended: 'full', episode_watched_at: 'yes', include_all_episodes: 'original' }
+
+/**
+ * SIMKL:s status per titel, nyckel `m:<tmdb>` eller `s:<tmdb>` (serier och
+ * anime). Hålls ajour med deltan — följlistan, bryggan och listraderna läser
+ * härifrån i stället för att hämta hela biblioteket.
+ */
+export type RemoteRow = { st: string; k: 'm' | 's' | 'a'; t: string; i?: string }
+export type RemoteMap = Record<string, RemoteRow>
+export const remoteKey = (kind: 'movie' | 'show', tmdbId: string) => `${kind === 'movie' ? 'm' : 's'}:${tmdbId}`
+
+/** Statusar där en serie inte ska få sina lokala avsnitt skickade (de skulle flytta den till Tittar på). */
+const NO_EPISODE_PUSH = new Set(['completed', 'dropped', 'hold'])
 
 export interface WatchlistPlanLike {
   pushAdds: RemoteEntry[]
@@ -66,6 +88,7 @@ export interface SyncSnapshot {
   /** Topptiden ur /sync/activities — `date_from` för nästa löpande hämtning. */
   all: string | null
   buckets: Record<string, string>
+  remote: RemoteMap
   syncedKinds: { watched: boolean; watchlist: boolean }
   watchedHash: string
   watchedPending: boolean
@@ -119,22 +142,60 @@ function localWatchedKeys(host: SyncHost): string[] {
   ]
 }
 
-const toRemote = (item: SimklItem): RemoteEntry => ({ tmdbId: item.tmdbId ?? '', imdbId: item.imdbId, title: item.title, posterUrl: null })
+const rowEntry = (tmdbId: string, row: RemoteRow): RemoteEntry => ({ tmdbId, imdbId: row.i ?? null, title: row.t, posterUrl: null })
+
+/** Poster utan tmdb får det via imdb, ur lokala listor eller kartan. Resten kan Lumio inte para ihop. */
+function resolveTmdb(items: SimklItem[], byImdb: Map<string, string>): SimklItem[] {
+  return items.map((item) => (item.tmdbId || !item.imdbId || !byImdb.has(item.imdbId) ? item : { ...item, tmdbId: byImdb.get(item.imdbId)! }))
+}
+
+function toRows(items: SimklItem[]): RemoteMap {
+  const map: RemoteMap = {}
+  for (const item of items) {
+    if (!item.tmdbId || !item.status) continue
+    const row: RemoteRow = { st: item.status, k: item.kind === 'movie' ? 'm' : item.kind === 'anime' ? 'a' : 's', t: item.title }
+    if (item.imdbId) row.i = item.imdbId
+    map[remoteKey(item.kind === 'movie' ? 'movie' : 'show', item.tmdbId)] = row
+  }
+  return map
+}
+
+/** Litar vi på att det som saknas i en hel lista verkligen är borttaget hos SIMKL? */
+function trustedListing(items: SimklItem[], previous: number): boolean {
+  if (items.length === 0) return previous <= EMPTY_REMOTE_GUARD
+  return items.filter((i) => i.tmdbId).length / items.length >= MIN_TMDB_COVERAGE
+}
+
+/** Statuskartan ur en baslinje-hämtning (alla statusar, utan avsnitt). Ett anrop. */
+export function buildRemoteMap(data: unknown): RemoteMap {
+  return toRows(parseAllItems(data))
+}
 
 const running = new Set<string>()
 
 /**
- * Hela biblioteket i ett anrop (`/sync/all-items/all/all`). Är det för stort
- * för SIMKL (400 max_items) delas det per typ — tre anrop.
+ * Hela biblioteket — bara på första synken, en gång per dygn och vid Synka nu.
+ * Med avsnitt om sedda synkas; säger SIMKL 400 max_items delas det per typ, och
+ * räcker inte det blir det statusar utan avsnitt (sedda väntar till nästa dygn).
  */
-async function fetchLibrary(api: SimklApi, withEpisodes: boolean): Promise<SimklItem[]> {
-  const query: Record<string, string> = withEpisodes ? { extended: 'full', episode_watched_at: 'yes' } : {}
-  const all = await api.call<unknown>('GET', '/sync/all-items/all/all', { query })
-  if (all.ok) return parseAllItems(all.data)
-  if (all.status !== 400) throw new SyncAbort(all)
-  const parts = []
-  for (const type of ['movies', 'shows', 'anime']) parts.push(...parseAllItems(must(await api.call<unknown>('GET', `/sync/all-items/${type}/all`, { query }))))
-  return parts
+async function fetchBaseline(api: SimklApi, withEpisodes: boolean, log: (m: string) => void): Promise<{ items: SimklItem[]; episodes: boolean }> {
+  if (withEpisodes) {
+    const all = await api.call<unknown>('GET', '/sync/all-items/all/all', { query: EPISODE_QUERY })
+    if (all.ok) return { items: parseAllItems(all.data), episodes: true }
+    if (all.status !== 400) throw new SyncAbort(all)
+    const parts: SimklItem[] = []
+    let complete = true
+    for (const type of ['movies', 'shows', 'anime']) {
+      const part = await api.call<unknown>('GET', `/sync/all-items/${type}/all`, { query: EPISODE_QUERY })
+      if (part.ok) { parts.push(...parseAllItems(part.data)); continue }
+      if (part.status !== 400) throw new SyncAbort(part)
+      complete = false
+      break
+    }
+    if (complete) return { items: parts, episodes: true }
+    log('synk: biblioteket är för stort för avsnitt (max_items) — bara statusar den här gången')
+  }
+  return { items: parseAllItems(must(await api.call<unknown>('GET', '/sync/all-items/all/all'))), episodes: false }
 }
 
 export async function runSimklSync(
@@ -158,6 +219,13 @@ export async function runSimklSync(
   if (left != null && left < QUOTA_FLOOR) return skip(`dagens kvot nästan slut (${left} kvar)`)
   const accountKey = host.accountKey()
   if (!accountKey) return skip('kontot är inte bekräftat än')
+  // Ett fel som består (500, max_items, 401) ska inte kosta två anrop per tick
+  // hela dygnet. Synka nu går förbi — det är ett enstaka, avsiktligt försök.
+  const failure = host.readJson<{ count: number; at: number }>(FAILURE_KEY)
+  if (failure && !opts.full) {
+    const wait = Math.min(BACKOFF_BASE_MS * 2 ** failure.count, BACKOFF_MAX_MS)
+    if (host.now() - failure.at < wait) return skip(`${failure.count} misslyckade körningar i rad — väntar`)
+  }
 
   const guard = () => { if ((host.scopeId() ?? '') !== scope) throw new ScopeChanged() }
 
@@ -173,88 +241,146 @@ export async function runSimklSync(
     const localMovies = host.getMovies()
     const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((id) => b.includes(id))
     const newlyOn = (kind: 'watched' | 'watchlist') => !snapshot || !snapshot.syncedKinds[kind]
-    const localHash = hashKeys(localWatchedKeys(host))
 
-    const fullDue = opts.full === true || !snapshot || Math.abs(host.now() - snapshot.fullAt) > FULL_RUN_EVERY_MS
-    const watchlistDue = wantWatchlist && (newlyOn('watchlist') || moved(WATCHLIST_BUCKETS)
+    // Grundhämtning: första synken, en gång per dygn, Synka nu, eller när
+    // sedda just slagits på (avsnitten behöver en baslinje). Annars deltan.
+    const baseline = opts.full === true || !snapshot || !snapshot.all
+      || Math.abs(host.now() - snapshot.fullAt) > FULL_RUN_EVERY_MS
+      || (wantWatched && newlyOn('watched'))
+    const remoteMoved = moved([...WATCHLIST_BUCKETS, ...WATCHED_BUCKETS])
+    const localChanged = wantWatchlist && (newlyOn('watchlist')
       || !sameSet(localShows.map((e) => e.tmdbId), snapshot?.shows ?? [])
       || !sameSet(localMovies.map((e) => e.tmdbId), snapshot?.movies ?? []))
-    const watchedDue = wantWatched && (newlyOn('watched') || moved(WATCHED_BUCKETS)
-      || (opts.pushWatched && (snapshot?.watchedPending === true || localHash !== snapshot?.watchedHash)))
-    if (!fullDue && !watchlistDue && !watchedDue) {
+    if (!baseline && !remoteMoved && !localChanged) {
       host.log(`synk (${opts.reason}): inget nytt — ett anrop`)
       return { status: 'unchanged' }
     }
 
-    // Full körning: ett anrop ger både statusar och sedda avsnitt. Löpande:
-    // följlistan läses hel (statusar, utan avsnitt), sedda bara det som ändrats.
-    const full = fullDue || (watchlistDue && watchedDue)
-    const library = full || watchlistDue ? await fetchLibrary(api, full && wantWatched) : null
-    const changedSince = !full && watchedDue && snapshot?.all
-      ? parseAllItems(must(await api.call<unknown>('GET', '/sync/all-items', { query: { date_from: snapshot.all, extended: 'full', episode_watched_at: 'yes' } })))
-      : null
+    const previous = snapshot?.remote ?? {}
+    const byImdb = new Map<string, string>()
+    for (const e of [...localShows, ...localMovies]) if (e.imdbId) byImdb.set(e.imdbId, e.tmdbId)
+    for (const [key, row] of Object.entries(previous)) if (row.i) byImdb.set(row.i, key.slice(2))
+
+    let remote: RemoteMap = previous
+    /** Nycklar som en betrodd hel lista visade är borttagna hos SIMKL just nu. */
+    const removedNow = new Set<string>()
+    let episodeItems: SimklItem[] | null = null
+    let episodesComplete = false
+
+    if (baseline) {
+      const fetched = await fetchBaseline(api, wantWatched, host.log)
+      const items = resolveTmdb(fetched.items, byImdb)
+      const rows = toRows(items)
+      if (trustedListing(items, Object.keys(previous).length)) {
+        for (const key of Object.keys(previous)) if (!rows[key]) removedNow.add(key)
+        remote = rows
+      } else {
+        host.log(`synk: ${items.length} poster, för få med tmdb — inget räknas som borttaget`)
+        remote = { ...previous, ...rows }
+      }
+      if (fetched.episodes) { episodeItems = items; episodesComplete = true }
+    } else if (remoteMoved) {
+      const query: Record<string, string> = { date_from: snapshot!.all!, ...(wantWatched ? EPISODE_QUERY : {}) }
+      const delta = resolveTmdb(parseAllItems(must(await api.call<unknown>('GET', '/sync/all-items', { query }))), byImdb)
+      remote = { ...previous, ...toRows(delta) }
+      if (wantWatched) episodeItems = delta
+      // Det som tagits bort helt syns inte i ett delta — bara i en id-lista.
+      if (moved(REMOVED_BUCKETS)) {
+        const listed = resolveTmdb(parseAllItems(must(await api.call<unknown>('GET', '/sync/all-items/all/all', { query: { extended: 'ids_only' } }))), byImdb)
+        if (trustedListing(listed, Object.keys(remote).length)) {
+          const present = new Set(listed.filter((i) => i.tmdbId).map((i) => remoteKey(i.kind === 'movie' ? 'movie' : 'show', i.tmdbId!)))
+          remote = Object.fromEntries(Object.entries(remote).filter(([key]) => {
+            if (present.has(key)) return true
+            removedNow.add(key)
+            return false
+          }))
+        }
+      }
+    }
 
     let changes = 0
     let nextShows = snapshot?.shows ?? []
     let nextMovies = snapshot?.movies ?? []
 
-    if (wantWatchlist && library) {
-      const shows = library.filter((i) => (i.kind === 'show' || i.kind === 'anime') && i.tmdbId)
-      const movies = library.filter((i) => i.kind === 'movie' && i.tmdbId)
+    if (wantWatchlist) {
       const localShowIds = new Set(localShows.map((e) => e.tmdbId))
+      const rows = Object.entries(remote)
       // Följlistan hos SIMKL: Tittar på + Planerar. En KLAR serie räknas som kvar
       // om den redan följs lokalt (raderas inte, skickas inte tillbaka) men
       // importeras inte. Avbruten eller pausad hos SIMKL = ett aktivt val, och
       // serien lämnar följlistan — därför ingen keepLocal här, till skillnad från
       // Trakt, som tar bort serier av sig själv när man tittar.
-      const remoteShows = shows
-        .filter((i) => i.status === 'watching' || i.status === 'plantowatch' || (i.status === 'completed' && localShowIds.has(i.tmdbId!)))
-        .map(toRemote)
-      const remoteMovies = movies.filter((i) => i.status === 'plantowatch').map(toRemote)
-      const snapCount = (snapshot?.shows.length ?? 0) + (snapshot?.movies.length ?? 0)
-      if (library.length === 0 && snapCount > EMPTY_REMOTE_GUARD) {
-        host.log(`watchlist: SIMKL svarade tomt men snapshoten har ${snapCount} — hoppar över, raderar inget`)
-      } else {
-        const showPlan = host.planWatchlistSync(localShows, remoteShows, snapshot?.shows ?? null, 'merge')
-        const moviePlan = host.planWatchlistSync(localMovies, remoteMovies, snapshot?.movies ?? null, 'merge')
-        const watchedShowIds = new Set(host.getWatchedEpisodes().map((e) => e.tmdbId))
-        const locallyWatchedMovie = (e: RemoteEntry) => host.getWatchedMovies().some((m) => m.tmdbId === e.tmdbId || (e.imdbId && m.imdbId === e.imdbId))
+      const remoteShows = rows
+        .filter(([key, r]) => key.startsWith('s:') && (r.st === 'watching' || r.st === 'plantowatch' || (r.st === 'completed' && localShowIds.has(key.slice(2)))))
+        .map(([key, r]) => rowEntry(key.slice(2), r))
+      const remoteMovies = rows.filter(([key, r]) => key.startsWith('m:') && r.st === 'plantowatch').map(([key, r]) => rowEntry(key.slice(2), r))
 
-        const started = showPlan.pushAdds.filter((e) => watchedShowIds.has(e.tmdbId))
-        const planned = showPlan.pushAdds.filter((e) => !watchedShowIds.has(e.tmdbId))
-        if (started.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(started, 'show', 'watching') }))
-        if (planned.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(planned, 'show', 'plantowatch') }))
-        if (showPlan.pushRemoves.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(showPlan.pushRemoves, 'show', 'dropped') }))
-        if (moviePlan.pushAdds.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(moviePlan.pushAdds, 'movie', 'plantowatch') }))
-        const watchedRemoved = moviePlan.pushRemoves.filter(locallyWatchedMovie)
-        const plainRemoved = moviePlan.pushRemoves.filter((e) => !locallyWatchedMovie(e))
-        if (watchedRemoved.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(watchedRemoved, 'movie', 'completed') }))
-        if (plainRemoved.length) must(await api.call('POST', '/sync/history/remove', { body: buildRemovePayload(plainRemoved, 'movie') }))
+      const showPlan = host.planWatchlistSync(localShows, remoteShows, snapshot?.shows ?? null, 'merge')
+      const moviePlan = host.planWatchlistSync(localMovies, remoteMovies, snapshot?.movies ?? null, 'merge')
+      // Första synken: det SIMKL redan har med en annan status (pausad, klar
+      // film …) är inte "saknat" — att skicka det hade skrivit över valet.
+      // Lokalt tas bara bort det SIMKL faktiskt visat med en annan status eller
+      // som en betrodd lista visat borttaget — aldrig det SIMKL inte kan para ihop.
+      const firstSync = !snapshot
+      const known = (kind: 'movie' | 'show') => (e: RemoteEntry) => !firstSync || !remote[remoteKey(kind, e.tmdbId)]
+      const removable = (kind: 'movie' | 'show') => (id: string) => remote[remoteKey(kind, id)] != null || removedNow.has(remoteKey(kind, id))
+      showPlan.pushAdds = showPlan.pushAdds.filter(known('show'))
+      moviePlan.pushAdds = moviePlan.pushAdds.filter(known('movie'))
+      const keptShows = showPlan.localRemoveIds.filter((id) => !removable('show')(id))
+      const keptMovies = moviePlan.localRemoveIds.filter((id) => !removable('movie')(id))
+      showPlan.localRemoveIds = showPlan.localRemoveIds.filter(removable('show'))
+      moviePlan.localRemoveIds = moviePlan.localRemoveIds.filter(removable('movie'))
+      if (keptShows.length + keptMovies.length) host.log(`watchlist: ${keptShows.length + keptMovies.length} saknas hos SIMKL utan att kunna paras ihop — ligger kvar`)
 
-        guard()
-        for (const entry of showPlan.localAdds) host.addShow(entry)
-        for (const id of showPlan.localRemoveIds) host.removeShow(id)
-        for (const entry of moviePlan.localAdds) host.addMovie(entry)
-        for (const id of moviePlan.localRemoveIds) host.removeMovie(id)
-        for (const [kind, plan] of [['serier', showPlan], ['filmer', moviePlan]] as const) {
-          changes += plan.pushAdds.length + plan.pushRemoves.length + plan.localAdds.length + plan.localRemoveIds.length
-          host.log(`watchlist ${kind}: upp +${plan.pushAdds.length}/-${plan.pushRemoves.length}, ner +${plan.localAdds.length}/-${plan.localRemoveIds.length}`)
-        }
-        nextShows = showPlan.nextIds
-        nextMovies = moviePlan.nextIds
+      const watchedShowIds = new Set(host.getWatchedEpisodes().map((e) => e.tmdbId))
+      const locallyWatchedMovie = (e: RemoteEntry) => host.getWatchedMovies().some((m) => m.tmdbId === e.tmdbId || (e.imdbId && m.imdbId === e.imdbId))
+
+      const started = showPlan.pushAdds.filter((e) => watchedShowIds.has(e.tmdbId))
+      const planned = showPlan.pushAdds.filter((e) => !watchedShowIds.has(e.tmdbId))
+      if (started.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(started, 'show', 'watching') }))
+      if (planned.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(planned, 'show', 'plantowatch') }))
+      if (showPlan.pushRemoves.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(showPlan.pushRemoves, 'show', 'dropped') }))
+      if (moviePlan.pushAdds.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(moviePlan.pushAdds, 'movie', 'plantowatch') }))
+      // pushRemoves kommer ur kartan med status Planerar — en history/remove
+      // raderar alltså bara ett osett watchlist-tillägg, aldrig historik.
+      const watchedRemoved = moviePlan.pushRemoves.filter(locallyWatchedMovie)
+      const plainRemoved = moviePlan.pushRemoves.filter((e) => !locallyWatchedMovie(e))
+      if (watchedRemoved.length) must(await api.call('POST', '/sync/add-to-list', { body: buildAddToListPayload(watchedRemoved, 'movie', 'completed') }))
+      if (plainRemoved.length) must(await api.call('POST', '/sync/history/remove', { body: buildRemovePayload(plainRemoved, 'movie') }))
+
+      // Det vi just skickat speglas i kartan, så att nästa delta inte tolkas fel.
+      const pushed = remote === previous ? { ...remote } : remote
+      for (const e of started) pushed[remoteKey('show', e.tmdbId)] = { st: 'watching', k: 's', t: e.title, ...(e.imdbId ? { i: e.imdbId } : {}) }
+      for (const e of planned) pushed[remoteKey('show', e.tmdbId)] = { st: 'plantowatch', k: 's', t: e.title, ...(e.imdbId ? { i: e.imdbId } : {}) }
+      for (const e of showPlan.pushRemoves) if (pushed[remoteKey('show', e.tmdbId)]) pushed[remoteKey('show', e.tmdbId)] = { ...pushed[remoteKey('show', e.tmdbId)], st: 'dropped' }
+      for (const e of moviePlan.pushAdds) pushed[remoteKey('movie', e.tmdbId)] = { st: 'plantowatch', k: 'm', t: e.title, ...(e.imdbId ? { i: e.imdbId } : {}) }
+      for (const e of watchedRemoved) if (pushed[remoteKey('movie', e.tmdbId)]) pushed[remoteKey('movie', e.tmdbId)] = { ...pushed[remoteKey('movie', e.tmdbId)], st: 'completed' }
+      for (const e of plainRemoved) delete pushed[remoteKey('movie', e.tmdbId)]
+      remote = pushed
+
+      guard()
+      for (const entry of showPlan.localAdds) host.addShow(entry)
+      for (const id of showPlan.localRemoveIds) host.removeShow(id)
+      for (const entry of moviePlan.localAdds) host.addMovie(entry)
+      for (const id of moviePlan.localRemoveIds) host.removeMovie(id)
+      for (const [kind, plan] of [['serier', showPlan], ['filmer', moviePlan]] as const) {
+        changes += plan.pushAdds.length + plan.pushRemoves.length + plan.localAdds.length + plan.localRemoveIds.length
+        host.log(`watchlist ${kind}: upp +${plan.pushAdds.length}/-${plan.pushRemoves.length}, ner +${plan.localAdds.length}/-${plan.localRemoveIds.length}`)
       }
+      // Det som inte kunde paras ihop ligger kvar lokalt och därmed i snapshoten.
+      nextShows = [...showPlan.nextIds, ...keptShows.filter((id) => !showPlan.nextIds.includes(id))]
+      nextMovies = [...moviePlan.nextIds, ...keptMovies.filter((id) => !moviePlan.nextIds.includes(id))]
     }
 
     let watchedPending = snapshot?.watchedPending ?? false
     const unconfirmed = { ...(snapshot?.unconfirmed ?? {}) }
-    const remoteItems = full ? library : changedSince
-    if (wantWatched && remoteItems) {
+    if (wantWatched && episodeItems) {
       // Anime-avsnitt numreras av SIMKL enligt AniDB — de skulle markera fel
       // avsnitt lokalt och hämtas därför inte (v1). Filmer och serier gör det.
-      const remoteEpisodes = remoteItems.filter((i) => i.kind === 'show' && i.tmdbId)
+      const remoteEpisodes = episodeItems.filter((i) => i.kind === 'show' && i.tmdbId)
         .flatMap((i) => i.episodes.map((ep) => ({ tmdbId: i.tmdbId!, ...ep })))
-      const remoteMovies = remoteItems.filter((i) => i.kind === 'movie' && i.status === 'completed')
-      const skippedAnime = remoteItems.filter((i) => i.kind === 'anime' && i.episodes.length > 0).length
+      const remoteMovies = episodeItems.filter((i) => i.kind === 'movie' && i.status === 'completed')
+      const skippedAnime = episodeItems.filter((i) => i.kind === 'anime' && i.episodes.length > 0).length
       const remoteKeys = new Set<string>([
         ...remoteEpisodes.map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
         ...remoteMovies.flatMap((m) => movieKeys(m)),
@@ -282,22 +408,26 @@ export async function runSimklSync(
       changes += pulled
       if (skippedAnime) host.log(`sedda: ${skippedAnime} anime-titlar hoppades över (AniDB-numrering)`)
 
-      // Skicka bara i fulla körningar: bara de ser hela fjärrbilden.
-      if (full) {
+      // Skicka bara efter en hel baslinje med avsnitt: bara den ser hela fjärrbilden.
+      if (episodesComplete) {
         const now = host.now()
         const blocked = (key: string) => {
           const entry = unconfirmed[key]
           return entry != null && entry.attempts >= UNCONFIRMED_MAX_ATTEMPTS && now - entry.lastAt < UNCONFIRMED_COOLDOWN_MS
         }
+        // En klar, pausad eller avbruten serie hos SIMKL får inga avsnitt: en
+        // history-post hade flyttat den till Tittar på och ångrat användarens val.
+        const settled = (tmdbId: string) => NO_EPISODE_PUSH.has(remote[remoteKey('show', tmdbId)]?.st ?? '')
         const candidates: Array<{ key: string; push: WatchedPush }> = [
           ...localEpisodes.flatMap((e) => {
             const key = episodeKey(e.tmdbId, e.season, e.episode)
-            if (!e.watchedAt || remoteKeys.has(key) || blocked(key)) return []
+            if (!e.watchedAt || remoteKeys.has(key) || blocked(key) || settled(e.tmdbId)) return []
             return [{ key, push: { kind: 'episode' as const, tmdbId: e.tmdbId, season: e.season, episode: e.episode, watchedAt: e.watchedAt } }]
           }),
           ...localMovieList.flatMap((m) => {
             const keys = movieKeys(m)
             if (keys.length === 0 || !m.watchedAt || keys.some((k) => remoteKeys.has(k)) || blocked(keys[0])) return []
+            if (m.tmdbId && remote[remoteKey('movie', m.tmdbId)]?.st === 'dropped') return []
             return [{ key: keys[0], push: { kind: 'movie' as const, tmdbId: m.tmdbId ?? null, imdbId: m.imdbId ?? null, watchedAt: m.watchedAt } }]
           }),
         ]
@@ -327,22 +457,25 @@ export async function runSimklSync(
       movies: nextMovies,
       all: activities.all,
       buckets: activities.buckets,
-      syncedKinds: { watched: wantWatched, watchlist: wantWatchlist },
+      remote,
+      syncedKinds: { watched: wantWatched && (episodesComplete || (snapshot?.syncedKinds.watched ?? false)), watchlist: wantWatchlist },
       watchedHash: hashKeys(localWatchedKeys(host)),
       watchedPending,
       unconfirmed,
-      fullAt: full ? host.now() : snapshot?.fullAt ?? host.now(),
+      fullAt: baseline ? host.now() : snapshot?.fullAt ?? host.now(),
       syncedAt: host.now(),
     } satisfies SyncSnapshot)
-    host.log(`synk (${opts.reason}) klar: ${changes} ändringar${full ? ' (full)' : ''}`)
+    if (failure) host.writeJson(FAILURE_KEY, null)
+    host.log(`synk (${opts.reason}) klar: ${changes} ändringar${baseline ? ' (baslinje)' : ''}`)
     return { status: 'done', changes }
   } catch (error) {
     if (error instanceof ScopeChanged) {
       host.log(`synk (${opts.reason}) AVBRUTEN: profilen byttes mitt i körningen — inget mer skrivs`)
       return { status: 'skipped', reason: 'profilbyte' }
     }
+    host.writeJson(FAILURE_KEY, { count: (failure?.count ?? 0) + 1, at: host.now() })
     if (error instanceof SyncAbort) {
-      host.log(`synk (${opts.reason}) AVBRUTEN: ${error.result.error} — snapshot orörd, samma diff försöks igen`)
+      host.log(`synk (${opts.reason}) AVBRUTEN: ${error.result.error} — snapshot orörd, nytt försök efter backoff`)
       return { status: 'failed', error: error.result.error, authFailed: error.result.status === 401 }
     }
     const message = error instanceof Error ? error.message : String(error)

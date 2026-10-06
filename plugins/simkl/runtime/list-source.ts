@@ -1,9 +1,15 @@
 import type { SimklApi } from './api'
-import { parseAllItems, parseTrending, type ListItem } from './parse'
+import { parseTrending, type ListItem } from './parse'
 import { S, type Text } from './strings'
+import { buildRemoteMap, type RemoteMap } from './sync-engine'
 
 const HOUR = 60 * 60_000
 const itemsKey = (id: string) => `simkl_list_items_${id}`
+/** Statuskartan när synken är av — en hämtning för alla statusrader. */
+const LIBRARY_KEY = itemsKey('library')
+const LIBRARY_MAX_AGE = 6 * HOUR
+const QUOTA_FLOOR = 50
+const KIND: Record<'movies' | 'shows' | 'anime', 'm' | 's' | 'a'> = { movies: 'm', shows: 's', anime: 'a' }
 
 type Lang = 'en' | 'sv'
 type ListType = 'movies' | 'shows' | 'anime'
@@ -46,9 +52,10 @@ function parseId(id: string): Parsed | null {
 
 /**
  * SIMKL:s listor som hemrader (`plugin_list:simkl`). Listorna är fasta
- * definitioner — väljaren kostar inga anrop. Statuslistor kräver inloggning
- * (en timmes cache); trendande kommer från SIMKL:s CDN utan inloggning och
- * utan kvot. SIMKL kräver "Simkl" i trendande-rubriken (regel 6).
+ * definitioner — väljaren kostar inga anrop. Statuslistor läses ur synkens
+ * statuskarta (inga egna anrop); är synken av hämtas statusarna en gång för
+ * alla rader, högst var sjätte timme. Trendande kommer från SIMKL:s CDN utan
+ * inloggning och utan kvot. SIMKL kräver "Simkl" i trendande-rubriken (regel 6).
  */
 export function createListSource(deps: {
   api: SimklApi
@@ -57,6 +64,8 @@ export function createListSource(deps: {
   now(): number
   log(message: string): void
   lang(): Lang
+  /** Synkens statuskarta, eller null om synken inte körts. */
+  readRemote(): RemoteMap | null
 }) {
   const inflight = new Map<string, Promise<ListItem[] | null>>()
 
@@ -82,22 +91,38 @@ export function createListSource(deps: {
     }
   }
 
-  async function fetchItems(id: string, parsed: Parsed): Promise<ListItem[] | null> {
+  /** Statuskartan när synken inte har någon: en gemensam hämtning, statusar utan avsnitt. */
+  let libraryJob: Promise<RemoteMap | null> | null = null
+  async function libraryMap(): Promise<RemoteMap | null> {
+    const cached = deps.readJson<{ fetchedAt: number; remote: RemoteMap }>(LIBRARY_KEY)
+    if (cached && deps.now() - cached.fetchedAt < LIBRARY_MAX_AGE) return cached.remote
+    const left = deps.api.remaining()
+    if (left != null && left < QUOTA_FLOOR) return cached?.remote ?? null
+    libraryJob ??= (async () => {
+      const result = await deps.api.call<unknown>('GET', '/sync/all-items/all/all')
+      if (!result.ok) { deps.log(`statuslistor: ${result.error}`); return cached?.remote ?? null }
+      const remote = buildRemoteMap(result.data)
+      deps.writeJson(LIBRARY_KEY, { fetchedAt: deps.now(), remote })
+      return remote
+    })().finally(() => { libraryJob = null })
+    return libraryJob
+  }
+
+  async function statusItems(type: ListType, status: Status): Promise<ListItem[]> {
+    const remote = deps.readRemote() ?? (await libraryMap())
+    if (!remote) return []
+    return Object.entries(remote).flatMap(([key, row]) => (row.k === KIND[type] && row.st === status
+      ? [{ mediaType: row.k === 'm' ? 'movie' as const : 'tv' as const, tmdbId: key.slice(2), imdbId: row.i ?? null, title: row.t, posterUrl: null }]
+      : []))
+  }
+
+  async function fetchTrending(id: string, type: ListType, period: Period): Promise<ListItem[] | null> {
     const running = inflight.get(id)
     if (running) return running
     const job = (async () => {
-      let items: ListItem[]
-      if (parsed.kind === 'status') {
-        const result = await deps.api.call<unknown>('GET', `/sync/all-items/${parsed.type}/${parsed.status}`)
-        if (!result.ok) { deps.log(`lista ${id}: ${result.error}`); return null }
-        items = parseAllItems(result.data).flatMap((item) => item.tmdbId
-          ? [{ mediaType: item.kind === 'movie' ? 'movie' as const : 'tv' as const, tmdbId: item.tmdbId, imdbId: item.imdbId, title: item.title, posterUrl: null }]
-          : [])
-      } else {
-        const result = await deps.api.cdn<unknown>(`/discover/trending/${TRENDING_DIR[parsed.type]}/${parsed.period}_100.json`)
-        if (!result.ok) { deps.log(`lista ${id}: ${result.error}`); return null }
-        items = parseTrending(result.data, parsed.type === 'movies' ? 'movie' : 'tv')
-      }
+      const result = await deps.api.cdn<unknown>(`/discover/trending/${TRENDING_DIR[type]}/${period}_100.json`)
+      if (!result.ok) { deps.log(`lista ${id}: ${result.error}`); return null }
+      const items = parseTrending(result.data, type === 'movies' ? 'movie' : 'tv')
       deps.writeJson(itemsKey(id), { fetchedAt: deps.now(), items })
       return items
     })().finally(() => { inflight.delete(id) })
@@ -115,17 +140,18 @@ export function createListSource(deps: {
       return ids.map((id) => describe(id)!).filter(Boolean)
     },
 
-    /** Ur cache direkt; för gammal hämtas om i bakgrunden. En okänd eller saknad lista är tom. */
+    /** Statuslistor ur kartan; trendande ur cache, för gammal hämtas om i bakgrunden. Okänt id är tomt. */
     async loadList(id: string): Promise<ListItem[]> {
       const parsed = parseId(id)
       if (!parsed) return []
-      const maxAge = parsed.kind === 'status' || parsed.period === 'today' ? HOUR : 6 * HOUR
+      if (parsed.kind === 'status') return deps.api.hasAuth() ? statusItems(parsed.type, parsed.status) : []
+      const maxAge = parsed.period === 'today' ? HOUR : 6 * HOUR
       const cached = deps.readJson<{ fetchedAt: number; items: ListItem[] }>(itemsKey(id))
       if (cached) {
-        if (deps.now() - cached.fetchedAt > maxAge) void fetchItems(id, parsed)
+        if (deps.now() - cached.fetchedAt > maxAge) void fetchTrending(id, parsed.type, parsed.period)
         return cached.items
       }
-      return (await fetchItems(id, parsed)) ?? []
+      return (await fetchTrending(id, parsed.type, parsed.period)) ?? []
     },
 
     describeList(id: string): ListInfo | null {

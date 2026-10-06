@@ -15373,11 +15373,13 @@
   var POST_INTERVAL_MS = 1e3;
   var GET_INTERVAL_MS = 200;
   var DEFAULT_PAUSE_S = 60;
+  var REMAINING_TTL_MS = 60 * 6e4;
   function createSimklApi(deps) {
     const sleep = deps.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     let pausedUntil = 0;
     let fatal = null;
     let remaining = null;
+    let remainingAt = 0;
     let nextPost = 0;
     let nextGet = 0;
     async function pace(method) {
@@ -15404,6 +15406,14 @@
       const useAuth = opts?.auth !== false;
       const token = useAuth ? await deps.getToken() : null;
       if (useAuth && !token) return { ok: false, status: 0, retryAfter: null, error: "not connected" };
+      const result = await send(method, path, opts, token);
+      if (result.ok || result.status !== 401 || !useAuth || !deps.onUnauthorized) return result;
+      const fresh = await deps.onUnauthorized();
+      if (!fresh || fresh === token) return result;
+      deps.log(`401 p\xE5 ${path} \u2014 token f\xF6rnyad, f\xF6rs\xF6ker igen`);
+      return send(method, path, opts, fresh);
+    }
+    async function send(method, path, opts, token) {
       const url = new URL(API + path);
       url.searchParams.set("client_id", deps.clientId);
       url.searchParams.set("app-name", APP_NAME);
@@ -15420,7 +15430,10 @@
           body: method === "POST" ? JSON.stringify(opts?.body ?? {}) : void 0
         });
         const left = Number(response.headers.get("X-RateLimit-Remaining"));
-        if (response.headers.get("X-RateLimit-Remaining") != null && Number.isFinite(left)) remaining = left;
+        if (response.headers.get("X-RateLimit-Remaining") != null && Number.isFinite(left)) {
+          remaining = left;
+          remainingAt = deps.now();
+        }
         const data = await read4(response);
         if (response.ok) return { ok: true, data };
         const error = data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : `HTTP ${response.status}`;
@@ -15458,7 +15471,7 @@
       cdn,
       pausedUntil: () => pausedUntil,
       hasAuth: () => deps.hasToken(),
-      remaining: () => remaining
+      remaining: () => remaining != null && deps.now() - remainingAt <= REMAINING_TTL_MS ? remaining : null
     };
   }
 
@@ -15521,11 +15534,15 @@
   // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/bridge.ts
   var FLUSH_MS = 3e3;
   var RETRY_MS2 = 6e4;
+  var MAX_ATTEMPTS = 5;
+  var retryable = (status2) => status2 === 0 || status2 === 408 || status2 === 429 || status2 >= 500;
   function startBridge(deps) {
     const queue = /* @__PURE__ */ new Map();
+    const sent = /* @__PURE__ */ new Map();
+    const statusOf = (key) => sent.get(key) ?? deps.remoteStatus(key);
     let timer2 = null;
     let flushing = false;
-    const toRemote2 = (e) => ({ tmdbId: e.tmdbId, imdbId: e.imdbId ?? null, title: e.title, posterUrl: null });
+    const toRemote = (e) => ({ tmdbId: e.tmdbId, imdbId: e.imdbId ?? null, title: e.title, posterUrl: null });
     const watchedKey = (p) => p.kind === "episode" ? `e:${p.tmdbId}:${p.season}:${p.episode}` : `m:${p.tmdbId ?? p.imdbId}`;
     function arm(ms) {
       if (timer2 != null) deps.cancel(timer2);
@@ -15549,11 +15566,19 @@
           continue;
         }
         let to;
-        if (p.kind === "show") to = p.add ? deps.isShowStarted(p.entry.tmdbId) ? "watching" : "plantowatch" : "dropped";
-        else if (p.add) to = "plantowatch";
+        if (p.kind === "show") {
+          if (p.add) to = deps.isShowStarted(p.entry.tmdbId) ? "watching" : "plantowatch";
+          else if (deps.isShowStarted(p.entry.tmdbId) || statusOf(`s:${p.entry.tmdbId}`) === "completed") {
+            deps.log(`brygga: serie ${p.entry.tmdbId} avf\xF6ljd \u2014 synken avg\xF6r mot SIMKL:s status`);
+            continue;
+          } else to = "dropped";
+        } else if (p.add) to = "plantowatch";
         else if (deps.isMovieWatched(p.entry.tmdbId)) to = "completed";
-        else {
+        else if (statusOf(`m:${p.entry.tmdbId}`) === "plantowatch") {
           movieRemovals.push(item);
+          continue;
+        } else {
+          deps.log(`brygga: film ${p.entry.tmdbId} borttagen \u2014 ok\xE4nd status hos SIMKL, synken avg\xF6r`);
           continue;
         }
         const groupKey = `${p.kind}:${to}`;
@@ -15569,7 +15594,8 @@
           body: buildAddToListPayload(entries, group.kind, group.to),
           entries: group.entries,
           what: `${group.kind === "show" ? "serier" : "filmer"} \u2192 ${group.to}`,
-          critical: group.to === "dropped"
+          critical: group.to === "dropped",
+          to: group.to
         });
       }
       if (movieRemovals.length) {
@@ -15594,28 +15620,41 @@
       try {
         for (const send of plan(batch)) {
           const result = await deps.api.call("POST", send.path, { body: send.body });
-          if (result.ok) continue;
-          if (send.critical) {
-            deps.log(`brygga: ${send.what} misslyckades (${result.error}) \u2014 f\xF6rs\xF6ker igen`);
-            retry.push(...send.entries);
+          if (result.ok) {
+            for (const [, p] of send.entries) {
+              if (p.kind === "watched") continue;
+              const key = `${p.kind === "show" ? "s" : "m"}:${p.entry.tmdbId}`;
+              if (send.to) sent.set(key, send.to);
+              else sent.delete(key);
+            }
+            continue;
+          }
+          const attempts = Math.max(...send.entries.map(([, p]) => p.attempts ?? 0)) + 1;
+          if (send.critical && retryable(result.status) && attempts < MAX_ATTEMPTS) {
+            deps.log(`brygga: ${send.what} misslyckades (${result.error}) \u2014 f\xF6rs\xF6k ${attempts + 1} senare`);
+            retry.push(...send.entries.map(([key, p]) => [key, { ...p, attempts }]));
           } else {
-            deps.log(`brygga: ${send.what} misslyckades (${result.error}) \u2014 n\xE4sta synk tar det`);
+            deps.log(`brygga: ${send.what} misslyckades (${result.status} ${result.error}) \u2014 sl\xE4pps, synken tar det`);
           }
         }
       } finally {
         flushing = false;
       }
       for (const [key, pending3] of retry) if (!queue.has(key)) queue.set(key, pending3);
-      if (queue.size > 0) arm(Math.max(retry.length > 0 ? RETRY_MS2 : FLUSH_MS, deps.api.pausedUntil() - deps.now()));
+      if (queue.size > 0) {
+        const attempts = Math.max(0, ...retry.map(([, p]) => p.attempts ?? 0));
+        const delay = retry.length > 0 ? Math.min(RETRY_MS2 * 2 ** (attempts - 1), 30 * 6e4) : FLUSH_MS;
+        arm(Math.max(delay, deps.api.pausedUntil() - deps.now()));
+      }
     }
     const offs = [
       deps.subscribe.onShow((m) => {
         if (!deps.isUserMutation(m.source) || !deps.prefs.isOn("watchlist")) return;
-        enqueue(`s:${m.entry.tmdbId}`, { kind: "show", add: m.action === "add", entry: toRemote2(m.entry) });
+        enqueue(`s:${m.entry.tmdbId}`, { kind: "show", add: m.action === "add", entry: toRemote(m.entry) });
       }),
       deps.subscribe.onMovie((m) => {
         if (!deps.isUserMutation(m.source) || !deps.prefs.isOn("watchlist")) return;
-        enqueue(`f:${m.entry.tmdbId}`, { kind: "movie", add: m.action === "add", entry: toRemote2(m.entry) });
+        enqueue(`f:${m.entry.tmdbId}`, { kind: "movie", add: m.action === "add", entry: toRemote(m.entry) });
       }),
       deps.subscribe.onEpisodeWatched((m) => {
         if (!deps.isUserMutation(m.source) || !deps.prefs.isOn("watched")) return;
@@ -15792,6 +15831,14 @@
       }));
       return refreshing;
     }
+    async function forceRefresh() {
+      const token = deps.readToken();
+      if (!token || deps.now() - lastRefreshFailAt < REFRESH_BACKOFF_MS) return null;
+      refreshing ?? (refreshing = refresh(token).finally(() => {
+        refreshing = null;
+      }));
+      return refreshing;
+    }
     async function disconnect2() {
       authEpoch += 1;
       const token = deps.readToken();
@@ -15806,6 +15853,7 @@
       cancel,
       disconnect: disconnect2,
       getAccessToken,
+      forceRefresh,
       hasToken: () => deps.readToken() != null,
       state: () => state,
       subscribe(listener) {
@@ -16026,9 +16074,350 @@
     return { en: fill2(text.en, values), sv: fill2(text.sv, values) };
   }
 
+  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/sync-engine.ts
+  var SNAPSHOT_KEY = "simkl_sync_snapshot";
+  var FAILURE_KEY = "simkl_sync_failure";
+  var SNAPSHOT_VERSION = 2;
+  var WATCHED_PUSH_LIMIT_PER_RUN = 100;
+  var WATCHED_BATCH = 100;
+  var FULL_RUN_EVERY_MS = 24 * 60 * 6e4;
+  var EMPTY_REMOTE_GUARD = 15;
+  var MIN_TMDB_COVERAGE = 0.9;
+  var UNCONFIRMED_MAX_ATTEMPTS = 2;
+  var UNCONFIRMED_COOLDOWN_MS = 7 * 24 * 60 * 6e4;
+  var BACKOFF_BASE_MS = 15 * 6e4;
+  var BACKOFF_MAX_MS = 6 * 60 * 6e4;
+  var QUOTA_FLOOR = 50;
+  var WATCHLIST_BUCKETS = [
+    ...["tv_shows", "anime"].flatMap((t) => ["watching", "plantowatch", "completed", "hold", "dropped", "removed_from_list"].map((s) => `${t}.${s}`)),
+    ...["plantowatch", "completed", "dropped", "removed_from_list"].map((s) => `movies.${s}`)
+  ];
+  var WATCHED_BUCKETS = ["tv_shows.all", "anime.all", "movies.all"];
+  var REMOVED_BUCKETS = ["tv_shows", "anime", "movies"].map((t) => `${t}.removed_from_list`);
+  var EPISODE_QUERY = { extended: "full", episode_watched_at: "yes", include_all_episodes: "original" };
+  var remoteKey = (kind, tmdbId) => `${kind === "movie" ? "m" : "s"}:${tmdbId}`;
+  var NO_EPISODE_PUSH = /* @__PURE__ */ new Set(["completed", "dropped", "hold"]);
+  var SyncAbort = class extends Error {
+    constructor(result) {
+      super(result.error);
+      __publicField(this, "result", result);
+    }
+  };
+  var ScopeChanged = class extends Error {
+  };
+  function must(result) {
+    if (!result.ok) throw new SyncAbort(result);
+    return result.data;
+  }
+  var episodeKey = (tmdbId, season, episode) => `e:${tmdbId}:${season}:${episode}`;
+  var movieKeys = (m) => [m.tmdbId ? `m:tmdb:${m.tmdbId}` : null, m.imdbId ? `m:imdb:${m.imdbId}` : null].filter((k) => k != null);
+  function hashKeys(keys2) {
+    let sum = 0;
+    for (const key of keys2) {
+      let h = 0;
+      for (let i = 0; i < key.length; i += 1) h = Math.imul(h, 31) + key.charCodeAt(i) | 0;
+      sum = (sum + (h >>> 0)) % 4294967296;
+    }
+    return `${keys2.length}:${sum}`;
+  }
+  function localWatchedKeys(host) {
+    return [
+      ...host.getWatchedEpisodes().map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
+      ...host.getWatchedMovies().map((m) => movieKeys(m)[0]).filter((k) => k != null)
+    ];
+  }
+  var rowEntry = (tmdbId, row) => ({ tmdbId, imdbId: row.i ?? null, title: row.t, posterUrl: null });
+  function resolveTmdb(items2, byImdb) {
+    return items2.map((item) => item.tmdbId || !item.imdbId || !byImdb.has(item.imdbId) ? item : { ...item, tmdbId: byImdb.get(item.imdbId) });
+  }
+  function toRows(items2) {
+    const map = {};
+    for (const item of items2) {
+      if (!item.tmdbId || !item.status) continue;
+      const row = { st: item.status, k: item.kind === "movie" ? "m" : item.kind === "anime" ? "a" : "s", t: item.title };
+      if (item.imdbId) row.i = item.imdbId;
+      map[remoteKey(item.kind === "movie" ? "movie" : "show", item.tmdbId)] = row;
+    }
+    return map;
+  }
+  function trustedListing(items2, previous) {
+    if (items2.length === 0) return previous <= EMPTY_REMOTE_GUARD;
+    return items2.filter((i) => i.tmdbId).length / items2.length >= MIN_TMDB_COVERAGE;
+  }
+  function buildRemoteMap(data) {
+    return toRows(parseAllItems(data));
+  }
+  var running = /* @__PURE__ */ new Set();
+  async function fetchBaseline(api2, withEpisodes, log2) {
+    if (withEpisodes) {
+      const all = await api2.call("GET", "/sync/all-items/all/all", { query: EPISODE_QUERY });
+      if (all.ok) return { items: parseAllItems(all.data), episodes: true };
+      if (all.status !== 400) throw new SyncAbort(all);
+      const parts = [];
+      let complete = true;
+      for (const type of ["movies", "shows", "anime"]) {
+        const part = await api2.call("GET", `/sync/all-items/${type}/all`, { query: EPISODE_QUERY });
+        if (part.ok) {
+          parts.push(...parseAllItems(part.data));
+          continue;
+        }
+        if (part.status !== 400) throw new SyncAbort(part);
+        complete = false;
+        break;
+      }
+      if (complete) return { items: parts, episodes: true };
+      log2("synk: biblioteket \xE4r f\xF6r stort f\xF6r avsnitt (max_items) \u2014 bara statusar den h\xE4r g\xE5ngen");
+    }
+    return { items: parseAllItems(must(await api2.call("GET", "/sync/all-items/all/all"))), episodes: false };
+  }
+  async function runSimklSync(deps, opts) {
+    const { host, api: api2, prefs: prefs2 } = deps;
+    const skip = (reason) => {
+      host.log(`synk (${opts.reason}): avst\xE5r \u2014 ${reason}`);
+      return { status: "skipped", reason };
+    };
+    await host.waitForStartIdle();
+    const scope = host.scopeId() ?? "";
+    if (running.has(scope)) return skip("en k\xF6rning p\xE5g\xE5r redan");
+    const wantWatched = prefs2.isOn("watched");
+    const wantWatchlist = prefs2.isOn("watchlist");
+    if (!wantWatched && !wantWatchlist) return skip("inga reglage p\xE5slagna");
+    if (!api2.hasAuth()) return skip("inte ansluten");
+    if (api2.pausedUntil() > host.now()) return skip("SIMKL har bett oss v\xE4nta (429)");
+    const left = api2.remaining();
+    if (left != null && left < QUOTA_FLOOR) return skip(`dagens kvot n\xE4stan slut (${left} kvar)`);
+    const accountKey = host.accountKey();
+    if (!accountKey) return skip("kontot \xE4r inte bekr\xE4ftat \xE4n");
+    const failure = host.readJson(FAILURE_KEY);
+    if (failure && !opts.full) {
+      const wait = Math.min(BACKOFF_BASE_MS * 2 ** failure.count, BACKOFF_MAX_MS);
+      if (host.now() - failure.at < wait) return skip(`${failure.count} misslyckade k\xF6rningar i rad \u2014 v\xE4ntar`);
+    }
+    const guard = () => {
+      if ((host.scopeId() ?? "") !== scope) throw new ScopeChanged();
+    };
+    running.add(scope);
+    try {
+      const activities = parseActivities(must(await api2.call("GET", "/sync/activities")));
+      const stored = host.readJson(SNAPSHOT_KEY);
+      const snapshot = stored && stored.version === SNAPSHOT_VERSION && stored.accountKey === accountKey ? stored : null;
+      if (stored && !snapshot) host.log("synk: snapshoten h\xF6r till ett annat konto eller en \xE4ldre version \u2014 f\xF6rsta synk");
+      const moved = (keys2) => !snapshot || keys2.some((key) => snapshot.buckets[key] !== activities.buckets[key]);
+      const localShows = host.getShows();
+      const localMovies = host.getMovies();
+      const sameSet = (a, b) => a.length === b.length && a.every((id) => b.includes(id));
+      const newlyOn = (kind) => !snapshot || !snapshot.syncedKinds[kind];
+      const baseline = opts.full === true || !snapshot || !snapshot.all || Math.abs(host.now() - snapshot.fullAt) > FULL_RUN_EVERY_MS || wantWatched && newlyOn("watched");
+      const remoteMoved = moved([...WATCHLIST_BUCKETS, ...WATCHED_BUCKETS]);
+      const localChanged = wantWatchlist && (newlyOn("watchlist") || !sameSet(localShows.map((e) => e.tmdbId), snapshot?.shows ?? []) || !sameSet(localMovies.map((e) => e.tmdbId), snapshot?.movies ?? []));
+      if (!baseline && !remoteMoved && !localChanged) {
+        host.log(`synk (${opts.reason}): inget nytt \u2014 ett anrop`);
+        return { status: "unchanged" };
+      }
+      const previous = snapshot?.remote ?? {};
+      const byImdb = /* @__PURE__ */ new Map();
+      for (const e of [...localShows, ...localMovies]) if (e.imdbId) byImdb.set(e.imdbId, e.tmdbId);
+      for (const [key, row] of Object.entries(previous)) if (row.i) byImdb.set(row.i, key.slice(2));
+      let remote = previous;
+      const removedNow = /* @__PURE__ */ new Set();
+      let episodeItems = null;
+      let episodesComplete = false;
+      if (baseline) {
+        const fetched = await fetchBaseline(api2, wantWatched, host.log);
+        const items2 = resolveTmdb(fetched.items, byImdb);
+        const rows = toRows(items2);
+        if (trustedListing(items2, Object.keys(previous).length)) {
+          for (const key of Object.keys(previous)) if (!rows[key]) removedNow.add(key);
+          remote = rows;
+        } else {
+          host.log(`synk: ${items2.length} poster, f\xF6r f\xE5 med tmdb \u2014 inget r\xE4knas som borttaget`);
+          remote = { ...previous, ...rows };
+        }
+        if (fetched.episodes) {
+          episodeItems = items2;
+          episodesComplete = true;
+        }
+      } else if (remoteMoved) {
+        const query = { date_from: snapshot.all, ...wantWatched ? EPISODE_QUERY : {} };
+        const delta = resolveTmdb(parseAllItems(must(await api2.call("GET", "/sync/all-items", { query }))), byImdb);
+        remote = { ...previous, ...toRows(delta) };
+        if (wantWatched) episodeItems = delta;
+        if (moved(REMOVED_BUCKETS)) {
+          const listed = resolveTmdb(parseAllItems(must(await api2.call("GET", "/sync/all-items/all/all", { query: { extended: "ids_only" } }))), byImdb);
+          if (trustedListing(listed, Object.keys(remote).length)) {
+            const present = new Set(listed.filter((i) => i.tmdbId).map((i) => remoteKey(i.kind === "movie" ? "movie" : "show", i.tmdbId)));
+            remote = Object.fromEntries(Object.entries(remote).filter(([key]) => {
+              if (present.has(key)) return true;
+              removedNow.add(key);
+              return false;
+            }));
+          }
+        }
+      }
+      let changes = 0;
+      let nextShows = snapshot?.shows ?? [];
+      let nextMovies = snapshot?.movies ?? [];
+      if (wantWatchlist) {
+        const localShowIds = new Set(localShows.map((e) => e.tmdbId));
+        const rows = Object.entries(remote);
+        const remoteShows = rows.filter(([key, r]) => key.startsWith("s:") && (r.st === "watching" || r.st === "plantowatch" || r.st === "completed" && localShowIds.has(key.slice(2)))).map(([key, r]) => rowEntry(key.slice(2), r));
+        const remoteMovies = rows.filter(([key, r]) => key.startsWith("m:") && r.st === "plantowatch").map(([key, r]) => rowEntry(key.slice(2), r));
+        const showPlan = host.planWatchlistSync(localShows, remoteShows, snapshot?.shows ?? null, "merge");
+        const moviePlan = host.planWatchlistSync(localMovies, remoteMovies, snapshot?.movies ?? null, "merge");
+        const firstSync = !snapshot;
+        const known = (kind) => (e) => !firstSync || !remote[remoteKey(kind, e.tmdbId)];
+        const removable = (kind) => (id) => remote[remoteKey(kind, id)] != null || removedNow.has(remoteKey(kind, id));
+        showPlan.pushAdds = showPlan.pushAdds.filter(known("show"));
+        moviePlan.pushAdds = moviePlan.pushAdds.filter(known("movie"));
+        const keptShows = showPlan.localRemoveIds.filter((id) => !removable("show")(id));
+        const keptMovies = moviePlan.localRemoveIds.filter((id) => !removable("movie")(id));
+        showPlan.localRemoveIds = showPlan.localRemoveIds.filter(removable("show"));
+        moviePlan.localRemoveIds = moviePlan.localRemoveIds.filter(removable("movie"));
+        if (keptShows.length + keptMovies.length) host.log(`watchlist: ${keptShows.length + keptMovies.length} saknas hos SIMKL utan att kunna paras ihop \u2014 ligger kvar`);
+        const watchedShowIds = new Set(host.getWatchedEpisodes().map((e) => e.tmdbId));
+        const locallyWatchedMovie = (e) => host.getWatchedMovies().some((m) => m.tmdbId === e.tmdbId || e.imdbId && m.imdbId === e.imdbId);
+        const started = showPlan.pushAdds.filter((e) => watchedShowIds.has(e.tmdbId));
+        const planned = showPlan.pushAdds.filter((e) => !watchedShowIds.has(e.tmdbId));
+        if (started.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(started, "show", "watching") }));
+        if (planned.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(planned, "show", "plantowatch") }));
+        if (showPlan.pushRemoves.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(showPlan.pushRemoves, "show", "dropped") }));
+        if (moviePlan.pushAdds.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(moviePlan.pushAdds, "movie", "plantowatch") }));
+        const watchedRemoved = moviePlan.pushRemoves.filter(locallyWatchedMovie);
+        const plainRemoved = moviePlan.pushRemoves.filter((e) => !locallyWatchedMovie(e));
+        if (watchedRemoved.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(watchedRemoved, "movie", "completed") }));
+        if (plainRemoved.length) must(await api2.call("POST", "/sync/history/remove", { body: buildRemovePayload(plainRemoved, "movie") }));
+        const pushed = remote === previous ? { ...remote } : remote;
+        for (const e of started) pushed[remoteKey("show", e.tmdbId)] = { st: "watching", k: "s", t: e.title, ...e.imdbId ? { i: e.imdbId } : {} };
+        for (const e of planned) pushed[remoteKey("show", e.tmdbId)] = { st: "plantowatch", k: "s", t: e.title, ...e.imdbId ? { i: e.imdbId } : {} };
+        for (const e of showPlan.pushRemoves) if (pushed[remoteKey("show", e.tmdbId)]) pushed[remoteKey("show", e.tmdbId)] = { ...pushed[remoteKey("show", e.tmdbId)], st: "dropped" };
+        for (const e of moviePlan.pushAdds) pushed[remoteKey("movie", e.tmdbId)] = { st: "plantowatch", k: "m", t: e.title, ...e.imdbId ? { i: e.imdbId } : {} };
+        for (const e of watchedRemoved) if (pushed[remoteKey("movie", e.tmdbId)]) pushed[remoteKey("movie", e.tmdbId)] = { ...pushed[remoteKey("movie", e.tmdbId)], st: "completed" };
+        for (const e of plainRemoved) delete pushed[remoteKey("movie", e.tmdbId)];
+        remote = pushed;
+        guard();
+        for (const entry of showPlan.localAdds) host.addShow(entry);
+        for (const id of showPlan.localRemoveIds) host.removeShow(id);
+        for (const entry of moviePlan.localAdds) host.addMovie(entry);
+        for (const id of moviePlan.localRemoveIds) host.removeMovie(id);
+        for (const [kind, plan] of [["serier", showPlan], ["filmer", moviePlan]]) {
+          changes += plan.pushAdds.length + plan.pushRemoves.length + plan.localAdds.length + plan.localRemoveIds.length;
+          host.log(`watchlist ${kind}: upp +${plan.pushAdds.length}/-${plan.pushRemoves.length}, ner +${plan.localAdds.length}/-${plan.localRemoveIds.length}`);
+        }
+        nextShows = [...showPlan.nextIds, ...keptShows.filter((id) => !showPlan.nextIds.includes(id))];
+        nextMovies = [...moviePlan.nextIds, ...keptMovies.filter((id) => !moviePlan.nextIds.includes(id))];
+      }
+      let watchedPending = snapshot?.watchedPending ?? false;
+      const unconfirmed = { ...snapshot?.unconfirmed ?? {} };
+      if (wantWatched && episodeItems) {
+        const remoteEpisodes = episodeItems.filter((i) => i.kind === "show" && i.tmdbId).flatMap((i) => i.episodes.map((ep) => ({ tmdbId: i.tmdbId, ...ep })));
+        const remoteMovies = episodeItems.filter((i) => i.kind === "movie" && i.status === "completed");
+        const skippedAnime = episodeItems.filter((i) => i.kind === "anime" && i.episodes.length > 0).length;
+        const remoteKeys = /* @__PURE__ */ new Set([
+          ...remoteEpisodes.map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
+          ...remoteMovies.flatMap((m) => movieKeys(m))
+        ]);
+        for (const key of Object.keys(unconfirmed)) if (remoteKeys.has(key)) delete unconfirmed[key];
+        const localEpisodes = host.getWatchedEpisodes();
+        const localMovieList = host.getWatchedMovies();
+        const localKeys = /* @__PURE__ */ new Set([
+          ...localEpisodes.map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
+          ...localMovieList.flatMap((m) => movieKeys(m))
+        ]);
+        guard();
+        let pulled = 0;
+        for (const ep of remoteEpisodes) {
+          if (localKeys.has(episodeKey(ep.tmdbId, ep.season, ep.episode))) continue;
+          host.markEpisodeWatched(ep.tmdbId, ep.season, ep.episode, ep.watchedAt);
+          pulled += 1;
+        }
+        for (const movie of remoteMovies) {
+          if (movieKeys(movie).some((k) => localKeys.has(k))) continue;
+          host.markMovieWatched({ tmdbId: movie.tmdbId, imdbId: movie.imdbId, watchedAt: movie.lastWatchedAt });
+          pulled += 1;
+        }
+        changes += pulled;
+        if (skippedAnime) host.log(`sedda: ${skippedAnime} anime-titlar hoppades \xF6ver (AniDB-numrering)`);
+        if (episodesComplete) {
+          const now = host.now();
+          const blocked = (key) => {
+            const entry = unconfirmed[key];
+            return entry != null && entry.attempts >= UNCONFIRMED_MAX_ATTEMPTS && now - entry.lastAt < UNCONFIRMED_COOLDOWN_MS;
+          };
+          const settled = (tmdbId) => NO_EPISODE_PUSH.has(remote[remoteKey("show", tmdbId)]?.st ?? "");
+          const candidates = [
+            ...localEpisodes.flatMap((e) => {
+              const key = episodeKey(e.tmdbId, e.season, e.episode);
+              if (!e.watchedAt || remoteKeys.has(key) || blocked(key) || settled(e.tmdbId)) return [];
+              return [{ key, push: { kind: "episode", tmdbId: e.tmdbId, season: e.season, episode: e.episode, watchedAt: e.watchedAt } }];
+            }),
+            ...localMovieList.flatMap((m) => {
+              const keys2 = movieKeys(m);
+              if (keys2.length === 0 || !m.watchedAt || keys2.some((k) => remoteKeys.has(k)) || blocked(keys2[0])) return [];
+              if (m.tmdbId && remote[remoteKey("movie", m.tmdbId)]?.st === "dropped") return [];
+              return [{ key: keys2[0], push: { kind: "movie", tmdbId: m.tmdbId ?? null, imdbId: m.imdbId ?? null, watchedAt: m.watchedAt } }];
+            })
+          ];
+          if (opts.pushWatched) {
+            const batch = candidates.slice(0, WATCHED_PUSH_LIMIT_PER_RUN);
+            for (let i = 0; i < batch.length; i += WATCHED_BATCH) {
+              must(await api2.call("POST", "/sync/history", { body: buildHistoryPayload(batch.slice(i, i + WATCHED_BATCH).map((c) => c.push)) }));
+            }
+            for (const { key } of batch) unconfirmed[key] = { attempts: (unconfirmed[key]?.attempts ?? 0) + 1, lastAt: now };
+            changes += batch.length;
+            watchedPending = candidates.length > batch.length;
+            host.log(`sedda: h\xE4mtade ${pulled} nya, skickade ${batch.length}${watchedPending ? `, ${candidates.length - batch.length} v\xE4ntar` : ""}`);
+          } else {
+            watchedPending = candidates.length > 0;
+            host.log(`sedda: h\xE4mtade ${pulled} nya (bara h\xE4mtning${watchedPending ? `, ${candidates.length} v\xE4ntar` : ""})`);
+          }
+        } else {
+          host.log(`sedda: h\xE4mtade ${pulled} nya (l\xF6pande)`);
+        }
+      }
+      guard();
+      host.writeJson(SNAPSHOT_KEY, {
+        version: SNAPSHOT_VERSION,
+        accountKey,
+        shows: nextShows,
+        movies: nextMovies,
+        all: activities.all,
+        buckets: activities.buckets,
+        remote,
+        syncedKinds: { watched: wantWatched && (episodesComplete || (snapshot?.syncedKinds.watched ?? false)), watchlist: wantWatchlist },
+        watchedHash: hashKeys(localWatchedKeys(host)),
+        watchedPending,
+        unconfirmed,
+        fullAt: baseline ? host.now() : snapshot?.fullAt ?? host.now(),
+        syncedAt: host.now()
+      });
+      if (failure) host.writeJson(FAILURE_KEY, null);
+      host.log(`synk (${opts.reason}) klar: ${changes} \xE4ndringar${baseline ? " (baslinje)" : ""}`);
+      return { status: "done", changes };
+    } catch (error) {
+      if (error instanceof ScopeChanged) {
+        host.log(`synk (${opts.reason}) AVBRUTEN: profilen byttes mitt i k\xF6rningen \u2014 inget mer skrivs`);
+        return { status: "skipped", reason: "profilbyte" };
+      }
+      host.writeJson(FAILURE_KEY, { count: (failure?.count ?? 0) + 1, at: host.now() });
+      if (error instanceof SyncAbort) {
+        host.log(`synk (${opts.reason}) AVBRUTEN: ${error.result.error} \u2014 snapshot or\xF6rd, nytt f\xF6rs\xF6k efter backoff`);
+        return { status: "failed", error: error.result.error, authFailed: error.result.status === 401 };
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      host.log(`synk (${opts.reason}) AVBRUTEN: ${message}`);
+      return { status: "failed", error: message, authFailed: false };
+    } finally {
+      running.delete(scope);
+    }
+  }
+
   // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/list-source.ts
   var HOUR = 60 * 6e4;
   var itemsKey = (id) => `simkl_list_items_${id}`;
+  var LIBRARY_KEY = itemsKey("library");
+  var LIBRARY_MAX_AGE = 6 * HOUR;
+  var QUOTA_FLOOR2 = 50;
+  var KIND = { movies: "m", shows: "s", anime: "a" };
   var TYPE_TEXT = { movies: S.typeMovies, shows: S.typeShows, anime: S.typeAnime };
   var STATUS_TEXT = {
     watching: S.statusWatching,
@@ -16078,26 +16467,41 @@
         group: { id: "trending", label: S.groupTrending }
       };
     }
-    async function fetchItems(id, parsed) {
+    let libraryJob = null;
+    async function libraryMap() {
+      const cached = deps.readJson(LIBRARY_KEY);
+      if (cached && deps.now() - cached.fetchedAt < LIBRARY_MAX_AGE) return cached.remote;
+      const left = deps.api.remaining();
+      if (left != null && left < QUOTA_FLOOR2) return cached?.remote ?? null;
+      libraryJob ?? (libraryJob = (async () => {
+        const result = await deps.api.call("GET", "/sync/all-items/all/all");
+        if (!result.ok) {
+          deps.log(`statuslistor: ${result.error}`);
+          return cached?.remote ?? null;
+        }
+        const remote = buildRemoteMap(result.data);
+        deps.writeJson(LIBRARY_KEY, { fetchedAt: deps.now(), remote });
+        return remote;
+      })().finally(() => {
+        libraryJob = null;
+      }));
+      return libraryJob;
+    }
+    async function statusItems(type, status2) {
+      const remote = deps.readRemote() ?? await libraryMap();
+      if (!remote) return [];
+      return Object.entries(remote).flatMap(([key, row]) => row.k === KIND[type] && row.st === status2 ? [{ mediaType: row.k === "m" ? "movie" : "tv", tmdbId: key.slice(2), imdbId: row.i ?? null, title: row.t, posterUrl: null }] : []);
+    }
+    async function fetchTrending(id, type, period) {
       const running2 = inflight.get(id);
       if (running2) return running2;
       const job = (async () => {
-        let items2;
-        if (parsed.kind === "status") {
-          const result = await deps.api.call("GET", `/sync/all-items/${parsed.type}/${parsed.status}`);
-          if (!result.ok) {
-            deps.log(`lista ${id}: ${result.error}`);
-            return null;
-          }
-          items2 = parseAllItems(result.data).flatMap((item) => item.tmdbId ? [{ mediaType: item.kind === "movie" ? "movie" : "tv", tmdbId: item.tmdbId, imdbId: item.imdbId, title: item.title, posterUrl: null }] : []);
-        } else {
-          const result = await deps.api.cdn(`/discover/trending/${TRENDING_DIR[parsed.type]}/${parsed.period}_100.json`);
-          if (!result.ok) {
-            deps.log(`lista ${id}: ${result.error}`);
-            return null;
-          }
-          items2 = parseTrending(result.data, parsed.type === "movies" ? "movie" : "tv");
+        const result = await deps.api.cdn(`/discover/trending/${TRENDING_DIR[type]}/${period}_100.json`);
+        if (!result.ok) {
+          deps.log(`lista ${id}: ${result.error}`);
+          return null;
         }
+        const items2 = parseTrending(result.data, type === "movies" ? "movie" : "tv");
         deps.writeJson(itemsKey(id), { fetchedAt: deps.now(), items: items2 });
         return items2;
       })().finally(() => {
@@ -16115,17 +16519,18 @@
         for (const type of ["movies", "shows", "anime"]) for (const period of ["today", "week", "month"]) ids.push(`trending:${type}:${period}`);
         return ids.map((id) => describe(id)).filter(Boolean);
       },
-      /** Ur cache direkt; för gammal hämtas om i bakgrunden. En okänd eller saknad lista är tom. */
+      /** Statuslistor ur kartan; trendande ur cache, för gammal hämtas om i bakgrunden. Okänt id är tomt. */
       async loadList(id) {
         const parsed = parseId(id);
         if (!parsed) return [];
-        const maxAge = parsed.kind === "status" || parsed.period === "today" ? HOUR : 6 * HOUR;
+        if (parsed.kind === "status") return deps.api.hasAuth() ? statusItems(parsed.type, parsed.status) : [];
+        const maxAge = parsed.period === "today" ? HOUR : 6 * HOUR;
         const cached = deps.readJson(itemsKey(id));
         if (cached) {
-          if (deps.now() - cached.fetchedAt > maxAge) void fetchItems(id, parsed);
+          if (deps.now() - cached.fetchedAt > maxAge) void fetchTrending(id, parsed.type, parsed.period);
           return cached.items;
         }
-        return await fetchItems(id, parsed) ?? [];
+        return await fetchTrending(id, parsed.type, parsed.period) ?? [];
       },
       describeList(id) {
         return describe(id);
@@ -16209,262 +16614,53 @@
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/sync-engine.ts
-  var SNAPSHOT_KEY = "simkl_sync_snapshot";
-  var SNAPSHOT_VERSION = 1;
-  var WATCHED_PUSH_LIMIT_PER_RUN = 100;
-  var WATCHED_BATCH = 100;
-  var FULL_RUN_EVERY_MS = 24 * 60 * 6e4;
-  var EMPTY_REMOTE_GUARD = 15;
-  var UNCONFIRMED_MAX_ATTEMPTS = 2;
-  var UNCONFIRMED_COOLDOWN_MS = 7 * 24 * 60 * 6e4;
-  var QUOTA_FLOOR = 50;
-  var WATCHLIST_BUCKETS = [
-    ...["tv_shows", "anime"].flatMap((t) => ["watching", "plantowatch", "completed", "hold", "dropped", "removed_from_list"].map((s) => `${t}.${s}`)),
-    ...["plantowatch", "completed", "dropped", "removed_from_list"].map((s) => `movies.${s}`)
-  ];
-  var WATCHED_BUCKETS = ["tv_shows.all", "anime.all", "movies.all"];
-  var SyncAbort = class extends Error {
-    constructor(result) {
-      super(result.error);
-      __publicField(this, "result", result);
-    }
-  };
-  var ScopeChanged = class extends Error {
-  };
-  function must(result) {
-    if (!result.ok) throw new SyncAbort(result);
-    return result.data;
-  }
-  var episodeKey = (tmdbId, season, episode) => `e:${tmdbId}:${season}:${episode}`;
-  var movieKeys = (m) => [m.tmdbId ? `m:tmdb:${m.tmdbId}` : null, m.imdbId ? `m:imdb:${m.imdbId}` : null].filter((k) => k != null);
-  function hashKeys(keys2) {
-    let sum = 0;
-    for (const key of keys2) {
-      let h = 0;
-      for (let i = 0; i < key.length; i += 1) h = Math.imul(h, 31) + key.charCodeAt(i) | 0;
-      sum = (sum + (h >>> 0)) % 4294967296;
-    }
-    return `${keys2.length}:${sum}`;
-  }
-  function localWatchedKeys(host) {
-    return [
-      ...host.getWatchedEpisodes().map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
-      ...host.getWatchedMovies().map((m) => movieKeys(m)[0]).filter((k) => k != null)
-    ];
-  }
-  var toRemote = (item) => ({ tmdbId: item.tmdbId ?? "", imdbId: item.imdbId, title: item.title, posterUrl: null });
-  var running = /* @__PURE__ */ new Set();
-  async function fetchLibrary(api2, withEpisodes) {
-    const query = withEpisodes ? { extended: "full", episode_watched_at: "yes" } : {};
-    const all = await api2.call("GET", "/sync/all-items/all/all", { query });
-    if (all.ok) return parseAllItems(all.data);
-    if (all.status !== 400) throw new SyncAbort(all);
-    const parts = [];
-    for (const type of ["movies", "shows", "anime"]) parts.push(...parseAllItems(must(await api2.call("GET", `/sync/all-items/${type}/all`, { query }))));
-    return parts;
-  }
-  async function runSimklSync(deps, opts) {
-    const { host, api: api2, prefs: prefs2 } = deps;
-    const skip = (reason) => {
-      host.log(`synk (${opts.reason}): avst\xE5r \u2014 ${reason}`);
-      return { status: "skipped", reason };
-    };
-    await host.waitForStartIdle();
-    const scope = host.scopeId() ?? "";
-    if (running.has(scope)) return skip("en k\xF6rning p\xE5g\xE5r redan");
-    const wantWatched = prefs2.isOn("watched");
-    const wantWatchlist = prefs2.isOn("watchlist");
-    if (!wantWatched && !wantWatchlist) return skip("inga reglage p\xE5slagna");
-    if (!api2.hasAuth()) return skip("inte ansluten");
-    if (api2.pausedUntil() > host.now()) return skip("SIMKL har bett oss v\xE4nta (429)");
-    const left = api2.remaining();
-    if (left != null && left < QUOTA_FLOOR) return skip(`dagens kvot n\xE4stan slut (${left} kvar)`);
-    const accountKey = host.accountKey();
-    if (!accountKey) return skip("kontot \xE4r inte bekr\xE4ftat \xE4n");
-    const guard = () => {
-      if ((host.scopeId() ?? "") !== scope) throw new ScopeChanged();
-    };
-    running.add(scope);
-    try {
-      const activities = parseActivities(must(await api2.call("GET", "/sync/activities")));
-      const stored = host.readJson(SNAPSHOT_KEY);
-      const snapshot = stored && stored.version === SNAPSHOT_VERSION && stored.accountKey === accountKey ? stored : null;
-      if (stored && !snapshot) host.log("synk: snapshoten h\xF6r till ett annat konto eller en \xE4ldre version \u2014 f\xF6rsta synk");
-      const moved = (keys2) => !snapshot || keys2.some((key) => snapshot.buckets[key] !== activities.buckets[key]);
-      const localShows = host.getShows();
-      const localMovies = host.getMovies();
-      const sameSet = (a, b) => a.length === b.length && a.every((id) => b.includes(id));
-      const newlyOn = (kind) => !snapshot || !snapshot.syncedKinds[kind];
-      const localHash = hashKeys(localWatchedKeys(host));
-      const fullDue = opts.full === true || !snapshot || Math.abs(host.now() - snapshot.fullAt) > FULL_RUN_EVERY_MS;
-      const watchlistDue = wantWatchlist && (newlyOn("watchlist") || moved(WATCHLIST_BUCKETS) || !sameSet(localShows.map((e) => e.tmdbId), snapshot?.shows ?? []) || !sameSet(localMovies.map((e) => e.tmdbId), snapshot?.movies ?? []));
-      const watchedDue = wantWatched && (newlyOn("watched") || moved(WATCHED_BUCKETS) || opts.pushWatched && (snapshot?.watchedPending === true || localHash !== snapshot?.watchedHash));
-      if (!fullDue && !watchlistDue && !watchedDue) {
-        host.log(`synk (${opts.reason}): inget nytt \u2014 ett anrop`);
-        return { status: "unchanged" };
-      }
-      const full = fullDue || watchlistDue && watchedDue;
-      const library = full || watchlistDue ? await fetchLibrary(api2, full && wantWatched) : null;
-      const changedSince = !full && watchedDue && snapshot?.all ? parseAllItems(must(await api2.call("GET", "/sync/all-items", { query: { date_from: snapshot.all, extended: "full", episode_watched_at: "yes" } }))) : null;
-      let changes = 0;
-      let nextShows = snapshot?.shows ?? [];
-      let nextMovies = snapshot?.movies ?? [];
-      if (wantWatchlist && library) {
-        const shows = library.filter((i) => (i.kind === "show" || i.kind === "anime") && i.tmdbId);
-        const movies = library.filter((i) => i.kind === "movie" && i.tmdbId);
-        const localShowIds = new Set(localShows.map((e) => e.tmdbId));
-        const remoteShows = shows.filter((i) => i.status === "watching" || i.status === "plantowatch" || i.status === "completed" && localShowIds.has(i.tmdbId)).map(toRemote);
-        const remoteMovies = movies.filter((i) => i.status === "plantowatch").map(toRemote);
-        const snapCount = (snapshot?.shows.length ?? 0) + (snapshot?.movies.length ?? 0);
-        if (library.length === 0 && snapCount > EMPTY_REMOTE_GUARD) {
-          host.log(`watchlist: SIMKL svarade tomt men snapshoten har ${snapCount} \u2014 hoppar \xF6ver, raderar inget`);
-        } else {
-          const showPlan = host.planWatchlistSync(localShows, remoteShows, snapshot?.shows ?? null, "merge");
-          const moviePlan = host.planWatchlistSync(localMovies, remoteMovies, snapshot?.movies ?? null, "merge");
-          const watchedShowIds = new Set(host.getWatchedEpisodes().map((e) => e.tmdbId));
-          const locallyWatchedMovie = (e) => host.getWatchedMovies().some((m) => m.tmdbId === e.tmdbId || e.imdbId && m.imdbId === e.imdbId);
-          const started = showPlan.pushAdds.filter((e) => watchedShowIds.has(e.tmdbId));
-          const planned = showPlan.pushAdds.filter((e) => !watchedShowIds.has(e.tmdbId));
-          if (started.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(started, "show", "watching") }));
-          if (planned.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(planned, "show", "plantowatch") }));
-          if (showPlan.pushRemoves.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(showPlan.pushRemoves, "show", "dropped") }));
-          if (moviePlan.pushAdds.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(moviePlan.pushAdds, "movie", "plantowatch") }));
-          const watchedRemoved = moviePlan.pushRemoves.filter(locallyWatchedMovie);
-          const plainRemoved = moviePlan.pushRemoves.filter((e) => !locallyWatchedMovie(e));
-          if (watchedRemoved.length) must(await api2.call("POST", "/sync/add-to-list", { body: buildAddToListPayload(watchedRemoved, "movie", "completed") }));
-          if (plainRemoved.length) must(await api2.call("POST", "/sync/history/remove", { body: buildRemovePayload(plainRemoved, "movie") }));
-          guard();
-          for (const entry of showPlan.localAdds) host.addShow(entry);
-          for (const id of showPlan.localRemoveIds) host.removeShow(id);
-          for (const entry of moviePlan.localAdds) host.addMovie(entry);
-          for (const id of moviePlan.localRemoveIds) host.removeMovie(id);
-          for (const [kind, plan] of [["serier", showPlan], ["filmer", moviePlan]]) {
-            changes += plan.pushAdds.length + plan.pushRemoves.length + plan.localAdds.length + plan.localRemoveIds.length;
-            host.log(`watchlist ${kind}: upp +${plan.pushAdds.length}/-${plan.pushRemoves.length}, ner +${plan.localAdds.length}/-${plan.localRemoveIds.length}`);
-          }
-          nextShows = showPlan.nextIds;
-          nextMovies = moviePlan.nextIds;
-        }
-      }
-      let watchedPending = snapshot?.watchedPending ?? false;
-      const unconfirmed = { ...snapshot?.unconfirmed ?? {} };
-      const remoteItems = full ? library : changedSince;
-      if (wantWatched && remoteItems) {
-        const remoteEpisodes = remoteItems.filter((i) => i.kind === "show" && i.tmdbId).flatMap((i) => i.episodes.map((ep) => ({ tmdbId: i.tmdbId, ...ep })));
-        const remoteMovies = remoteItems.filter((i) => i.kind === "movie" && i.status === "completed");
-        const skippedAnime = remoteItems.filter((i) => i.kind === "anime" && i.episodes.length > 0).length;
-        const remoteKeys = /* @__PURE__ */ new Set([
-          ...remoteEpisodes.map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
-          ...remoteMovies.flatMap((m) => movieKeys(m))
-        ]);
-        for (const key of Object.keys(unconfirmed)) if (remoteKeys.has(key)) delete unconfirmed[key];
-        const localEpisodes = host.getWatchedEpisodes();
-        const localMovieList = host.getWatchedMovies();
-        const localKeys = /* @__PURE__ */ new Set([
-          ...localEpisodes.map((e) => episodeKey(e.tmdbId, e.season, e.episode)),
-          ...localMovieList.flatMap((m) => movieKeys(m))
-        ]);
-        guard();
-        let pulled = 0;
-        for (const ep of remoteEpisodes) {
-          if (localKeys.has(episodeKey(ep.tmdbId, ep.season, ep.episode))) continue;
-          host.markEpisodeWatched(ep.tmdbId, ep.season, ep.episode, ep.watchedAt);
-          pulled += 1;
-        }
-        for (const movie of remoteMovies) {
-          if (movieKeys(movie).some((k) => localKeys.has(k))) continue;
-          host.markMovieWatched({ tmdbId: movie.tmdbId, imdbId: movie.imdbId, watchedAt: movie.lastWatchedAt });
-          pulled += 1;
-        }
-        changes += pulled;
-        if (skippedAnime) host.log(`sedda: ${skippedAnime} anime-titlar hoppades \xF6ver (AniDB-numrering)`);
-        if (full) {
-          const now = host.now();
-          const blocked = (key) => {
-            const entry = unconfirmed[key];
-            return entry != null && entry.attempts >= UNCONFIRMED_MAX_ATTEMPTS && now - entry.lastAt < UNCONFIRMED_COOLDOWN_MS;
-          };
-          const candidates = [
-            ...localEpisodes.flatMap((e) => {
-              const key = episodeKey(e.tmdbId, e.season, e.episode);
-              if (!e.watchedAt || remoteKeys.has(key) || blocked(key)) return [];
-              return [{ key, push: { kind: "episode", tmdbId: e.tmdbId, season: e.season, episode: e.episode, watchedAt: e.watchedAt } }];
-            }),
-            ...localMovieList.flatMap((m) => {
-              const keys2 = movieKeys(m);
-              if (keys2.length === 0 || !m.watchedAt || keys2.some((k) => remoteKeys.has(k)) || blocked(keys2[0])) return [];
-              return [{ key: keys2[0], push: { kind: "movie", tmdbId: m.tmdbId ?? null, imdbId: m.imdbId ?? null, watchedAt: m.watchedAt } }];
-            })
-          ];
-          if (opts.pushWatched) {
-            const batch = candidates.slice(0, WATCHED_PUSH_LIMIT_PER_RUN);
-            for (let i = 0; i < batch.length; i += WATCHED_BATCH) {
-              must(await api2.call("POST", "/sync/history", { body: buildHistoryPayload(batch.slice(i, i + WATCHED_BATCH).map((c) => c.push)) }));
-            }
-            for (const { key } of batch) unconfirmed[key] = { attempts: (unconfirmed[key]?.attempts ?? 0) + 1, lastAt: now };
-            changes += batch.length;
-            watchedPending = candidates.length > batch.length;
-            host.log(`sedda: h\xE4mtade ${pulled} nya, skickade ${batch.length}${watchedPending ? `, ${candidates.length - batch.length} v\xE4ntar` : ""}`);
-          } else {
-            watchedPending = candidates.length > 0;
-            host.log(`sedda: h\xE4mtade ${pulled} nya (bara h\xE4mtning${watchedPending ? `, ${candidates.length} v\xE4ntar` : ""})`);
-          }
-        } else {
-          host.log(`sedda: h\xE4mtade ${pulled} nya (l\xF6pande)`);
-        }
-      }
-      guard();
-      host.writeJson(SNAPSHOT_KEY, {
-        version: SNAPSHOT_VERSION,
-        accountKey,
-        shows: nextShows,
-        movies: nextMovies,
-        all: activities.all,
-        buckets: activities.buckets,
-        syncedKinds: { watched: wantWatched, watchlist: wantWatchlist },
-        watchedHash: hashKeys(localWatchedKeys(host)),
-        watchedPending,
-        unconfirmed,
-        fullAt: full ? host.now() : snapshot?.fullAt ?? host.now(),
-        syncedAt: host.now()
-      });
-      host.log(`synk (${opts.reason}) klar: ${changes} \xE4ndringar${full ? " (full)" : ""}`);
-      return { status: "done", changes };
-    } catch (error) {
-      if (error instanceof ScopeChanged) {
-        host.log(`synk (${opts.reason}) AVBRUTEN: profilen byttes mitt i k\xF6rningen \u2014 inget mer skrivs`);
-        return { status: "skipped", reason: "profilbyte" };
-      }
-      if (error instanceof SyncAbort) {
-        host.log(`synk (${opts.reason}) AVBRUTEN: ${error.result.error} \u2014 snapshot or\xF6rd, samma diff f\xF6rs\xF6ks igen`);
-        return { status: "failed", error: error.result.error, authFailed: error.result.status === 401 };
-      }
-      const message = error instanceof Error ? error.message : String(error);
-      host.log(`synk (${opts.reason}) AVBRUTEN: ${message}`);
-      return { status: "failed", error: message, authFailed: false };
-    } finally {
-      running.delete(scope);
-    }
-  }
-
   // ../../../lumio-official-plugins/.worktrees/simkl/plugins/simkl/runtime/tracker.ts
+  var LOCK_MS = 2e4;
+  var WATCHED_AT = 80;
   function createScrobbler(deps) {
+    const now = deps.now ?? (() => Date.now());
+    const sleep = deps.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     const state = /* @__PURE__ */ new Map();
-    return async (event) => {
-      if (event.pulse) return;
-      if (!deps.prefs.isOn("scrobble") || !deps.api.hasAuth()) return;
+    const latest = /* @__PURE__ */ new Map();
+    let seq = 0;
+    let lastSentAt = -Infinity;
+    let chain2 = Promise.resolve();
+    async function send(event, body, key, mine) {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const wait = lastSentAt + LOCK_MS - now();
+        if (wait > 0) await sleep(wait);
+        if (event.action !== "stop" && latest.get(key) !== mine) return;
+        if (!deps.prefs.isOn("scrobble") || !deps.api.hasAuth()) return;
+        lastSentAt = now();
+        const result = await deps.api.call("POST", `/scrobble/${event.action}`, { body });
+        if (result.ok) {
+          if (event.action === "stop") state.delete(key);
+          else state.set(key, event.action === "start" ? "playing" : "paused");
+        }
+        const locked = !result.ok && (result.status === 429 || /RATE_LIMIT/i.test(result.error));
+        deps.log(`scrobble ${event.action} ${event.mediaType} ${event.tmdbId ?? event.imdbId} @ ${Math.round(event.progress)}%: ${result.ok ? "ok" : `${result.status} ${result.error}${locked && attempt === 0 ? " (f\xF6rs\xF6ker igen efter l\xE5set)" : " (sl\xE4pps)"}`}`);
+        if (!locked) return;
+        lastSentAt = now();
+      }
+    }
+    return (event) => {
+      if (event.pulse) return Promise.resolve();
+      if (!deps.prefs.isOn("scrobble") || !deps.api.hasAuth()) return Promise.resolve();
       const body = buildScrobblePayload(event);
-      if (!body) return;
+      if (!body) return Promise.resolve();
       const key = `${event.tmdbId ?? event.imdbId}:${event.season ?? ""}:${event.episode ?? ""}`;
-      const current = state.get(key);
-      if (event.action === "pause" && current !== "playing") return;
-      if (event.action === "stop" && current == null) return;
-      if (event.action === "start" && current === "playing") return;
-      if (event.action === "stop") state.delete(key);
-      else state.set(key, event.action === "start" ? "playing" : "paused");
-      const result = await deps.api.call("POST", `/scrobble/${event.action}`, { body });
-      deps.log(`scrobble ${event.action} ${event.mediaType} ${event.tmdbId ?? event.imdbId} @ ${Math.round(event.progress)}%: ${result.ok ? "ok" : `${result.status} ${result.error} (sl\xE4pps)`}`);
+      const mine = ++seq;
+      latest.set(key, mine);
+      chain2 = chain2.then(async () => {
+        const current = state.get(key);
+        if (event.action === "pause" && (current !== "playing" || event.progress >= WATCHED_AT)) return;
+        if (event.action === "stop" && current == null) return;
+        if (event.action === "start" && current === "playing") return;
+        await send(event, body, key, mine);
+      }).catch((error) => {
+        deps.log(`scrobble: ${error instanceof Error ? error.message : String(error)}`);
+      });
+      return chain2;
     };
   }
 
@@ -16551,6 +16747,8 @@
   async function disconnect() {
     await device.disconnect();
     removeScopedStorageItem(SNAPSHOT_KEY);
+    removeScopedStorageItem(FAILURE_KEY);
+    removeScopedStorageItem("simkl_list_items_library");
     await checkConnection();
   }
   var hasAuth = () => device.hasToken();
@@ -16562,10 +16760,13 @@
     appVersion: PLUGIN_VERSION,
     now: () => Date.now(),
     log,
-    onPause: (until) => status.set({ pausedUntil: until })
+    onPause: (until) => status.set({ pausedUntil: until }),
+    // Spec: 401 user_token_failed förnyar en gång — klockan kan ljuga, eller grant återkallats.
+    onUnauthorized: () => device.forceRefresh()
   });
+  var readRemote = () => readJson(SNAPSHOT_KEY)?.remote ?? null;
   var scrobbler = createScrobbler({ api, prefs, log });
-  var listSource = createListSource({ api, readJson, writeJson, now: () => Date.now(), log, lang: () => readStoredLang() });
+  var listSource = createListSource({ api, readJson, writeJson, now: () => Date.now(), log, lang: () => readStoredLang(), readRemote });
   var isTraktConnected = () => Boolean(getTraktAuth());
   var syncHost = {
     getShows: () => getWatchlist(),
@@ -16609,6 +16810,7 @@
     }
   }
   async function syncNow(opts) {
+    if (hasAuth() && !status.get().accountKey) await checkConnection();
     status.set({ syncing: true });
     const out = await runSimklSync({ host: syncHost, api, prefs }, opts);
     const patch = { syncing: false, pausedUntil: api.pausedUntil() };
@@ -16616,6 +16818,7 @@
       patch.lastSyncAt = Date.now();
       patch.lastChanges = out.status === "done" ? out.changes : 0;
       writeJson(LAST_SYNC_KEY, { at: patch.lastSyncAt, changes: patch.lastChanges });
+      if (status.get().connection === "bad-key") patch.connection = "ok";
     }
     if (out.status === "failed" && out.authFailed) patch.connection = "bad-key";
     status.set(patch);
@@ -16669,6 +16872,7 @@
       log,
       isShowStarted: (tmdbId) => getWatchedEpisodes().some((e) => e.tmdbId === tmdbId),
       isMovieWatched: (tmdbId) => getWatchedMovies().some((m) => m.tmdbId === tmdbId),
+      remoteStatus: (key) => readRemote()?.[key]?.st ?? null,
       now: () => Date.now(),
       schedule: (fn, ms) => window.setTimeout(fn, ms),
       cancel: (h) => window.clearTimeout(h)

@@ -209,6 +209,14 @@ export function createDeviceAuth(deps: {
     return refreshing
   }
 
+  /** Servern sa 401 fast klockan säger att token gäller: förnya nu (en gång per backoff). */
+  async function forceRefresh(): Promise<string | null> {
+    const token = deps.readToken()
+    if (!token || deps.now() - lastRefreshFailAt < REFRESH_BACKOFF_MS) return null
+    refreshing ??= refresh(token).finally(() => { refreshing = null })
+    return refreshing
+  }
+
   async function disconnect(): Promise<void> {
     authEpoch += 1
     const token = deps.readToken()
@@ -224,6 +232,7 @@ export function createDeviceAuth(deps: {
     cancel,
     disconnect,
     getAccessToken,
+    forceRefresh,
     hasToken: () => deps.readToken() != null,
     state: () => state,
     subscribe(listener: () => void) {

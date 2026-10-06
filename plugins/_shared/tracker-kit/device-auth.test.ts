@@ -198,6 +198,23 @@ describe('token', () => {
 })
 
 describe('tracker-kit: delade tillägg', () => {
+  it('forceRefresh förnyar en token som enligt klockan gäller (401 från servern), högst var 5:e minut', async () => {
+    const { auth, oauth, token } = setup(
+      [{ status: 200, data: { access_token: 'A2', refresh_token: 'R', expires_in: 604800 } }],
+      { accessToken: 'A', refreshToken: 'R', expiresAt: 1_000_000 + 5 * 86_400_000 },
+    )
+    expect(await auth.forceRefresh()).toBe('A2')
+    expect(token()?.accessToken).toBe('A2')
+    expect(oauth).toHaveBeenCalledTimes(1)
+  })
+
+  it('forceRefresh efter en misslyckad förnyelse väntar ut backoffen', async () => {
+    const { auth, oauth } = setup([{ status: 502, data: {} }], { accessToken: 'A', refreshToken: 'R', expiresAt: 1_000_000 + 5 * 86_400_000 })
+    await auth.forceRefresh()
+    expect(await auth.forceRefresh()).toBeNull()
+    expect(oauth).toHaveBeenCalledTimes(1)
+  })
+
   it('en token med för låg behörighet godtas inte och sparas inte', async () => {
     const { auth, runNext, token } = setup([
       deviceReply,

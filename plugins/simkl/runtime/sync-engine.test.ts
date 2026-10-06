@@ -74,7 +74,7 @@ const prefsOn = (watched = true, watchlist = true) => {
 const ok = (data: unknown): ApiResult<unknown> => ({ ok: true, data })
 const NOW = 1_000_000_000
 const snap = (over: Record<string, unknown> = {}) => ({
-  version: 1, accountKey: 'acct-1', shows: [], movies: [], all: 'A0', buckets: {},
+  version: 2, accountKey: 'acct-1', shows: [], movies: [], all: 'A0', buckets: {}, remote: {},
   syncedKinds: { watched: true, watchlist: true }, watchedHash: '0:0', watchedPending: false,
   unconfirmed: {}, fullAt: NOW, syncedAt: 1, ...over,
 })
@@ -176,10 +176,10 @@ describe('SIMKL-synkmotorn', () => {
   it('löpande körning hämtar med date_from och skickar inte sedda', async () => {
     const local = [{ tmdbId: '9', season: 1, episode: 1, watchedAt: 'T' }]
     const { host, store } = makeHost({ now: () => NOW, getWatchedEpisodes: () => local })
-    store[SNAPSHOT_KEY] = snap({ all: 'A0', fullAt: NOW, watchedHash: 'x' })
+    store[SNAPSHOT_KEY] = snap({ all: 'A0', fullAt: NOW, watchedHash: 'x', buckets: { 'tv_shows.all': 'B0' } })
     const queries: Array<Record<string, string | number> | undefined> = []
     const { api, call } = makeApi((m, p, q) => {
-      if (p === '/sync/activities') return ok({ all: 'A1' })
+      if (p === '/sync/activities') return ok({ all: 'A1', tv_shows: { all: 'B1' } })
       if (m === 'GET' && p === '/sync/all-items') { queries.push(q); return ok({}) }
       return ok({})
     })
@@ -241,5 +241,154 @@ describe('SIMKL-synkmotorn', () => {
     const { api } = makeApi((m, p) => (p === '/sync/activities' ? ok({ all: 'A1' }) : ok({})))
     await runSimklSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 't' })
     expect(host.removeShow).not.toHaveBeenCalled()
+  })
+
+  // --- granskningsfynd -------------------------------------------------------
+
+  const gets = (call: ReturnType<typeof makeApi>['call']) => call.mock.calls.filter(([m]) => m === 'GET').map(([, p]) => p)
+
+  it('C2: efter en ändring hos SIMKL hämtas bara deltat med date_from, aldrig hela biblioteket', async () => {
+    const { host, store } = makeHost({ now: () => NOW, getShows: () => [{ tmdbId: '1', imdbId: null, title: 'A' }] })
+    store[SNAPSHOT_KEY] = snap({ shows: ['1'], buckets: { 'tv_shows.watching': 'B0' }, remote: { 's:1': { st: 'watching', k: 's', t: 'A' } } })
+    const queries: Array<Record<string, string | number> | undefined> = []
+    const { api, call } = makeApi((m, p, q) => {
+      if (p === '/sync/activities') return ok({ all: 'A1', tv_shows: { watching: 'B1' } })
+      if (p === '/sync/all-items') { queries.push(q); return ok({ shows: [show('2', 'watching')] }) }
+      return ok({})
+    })
+    await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'intervall' })
+    expect(gets(call)).toEqual(['/sync/activities', '/sync/all-items'])
+    expect(queries[0]).toEqual(expect.objectContaining({ date_from: 'A0' }))
+    expect(host.addShow).toHaveBeenCalledWith(expect.objectContaining({ tmdbId: '2' }))
+    expect((store[SNAPSHOT_KEY] as { remote: Record<string, unknown> }).remote).toHaveProperty('s:2')
+  })
+
+  it('C2: bara en lokal ändring — ingen hämtning alls, statuskartan räcker', async () => {
+    const h = makeHost({ now: () => NOW, getShows: () => [{ tmdbId: '1', imdbId: null, title: 'A' }, { tmdbId: '2', imdbId: null, title: 'B' }] })
+    h.store[SNAPSHOT_KEY] = snap({ shows: ['1'], remote: { 's:1': { st: 'watching', k: 's', t: 'A' } } })
+    const { api, call } = makeApi((m, p) => (p === '/sync/activities' ? ok({ all: 'A0' }) : ok({})))
+    await runSimklSync({ host: h.host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'intervall' })
+    expect(gets(call)).toEqual(['/sync/activities'])
+    expect(call).toHaveBeenCalledWith('POST', '/sync/add-to-list', { body: { shows: [{ to: 'plantowatch', ids: { tmdb: 2 } }] } })
+  })
+
+  it('C3: en misslyckad körning backar av — nästa tick gör inga anrop', async () => {
+    let clock = NOW
+    const { host } = makeHost({ now: () => clock })
+    const { api, call } = makeApi((m, p) => (p === '/sync/activities' ? ok({ all: 'A1' }) : { ok: false, status: 500, retryAfter: null, error: 'boom' }))
+    expect((await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'intervall' })).status).toBe('failed')
+    const before = call.mock.calls.length
+    clock += 15 * 60_000
+    expect((await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'intervall' })).status).toBe('skipped')
+    expect(call.mock.calls.length).toBe(before)
+    clock += 6 * 60 * 60_000
+    await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'intervall' })
+    expect(call.mock.calls.length).toBeGreaterThan(before)
+  })
+
+  it('C3: 400 max_items även per typ — statusar utan avsnitt, följlistan synkas ändå, inga sedda skickas', async () => {
+    const { host } = makeHost({ now: () => NOW, getWatchedEpisodes: () => [{ tmdbId: '9', season: 1, episode: 1, watchedAt: 'T' }] })
+    const { api, call } = makeApi((m, p, q) => {
+      if (p === '/sync/activities') return ok({ all: 'A1' })
+      if (m === 'GET' && q?.extended === 'full') return { ok: false, status: 400, retryAfter: null, error: 'max_items' }
+      if (m === 'GET' && p === '/sync/all-items/all/all') return ok({ shows: [show('1399', 'watching')] })
+      return ok({})
+    })
+    const out = await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'start' })
+    expect(out.status).toBe('done')
+    expect(host.addShow).toHaveBeenCalledWith(expect.objectContaining({ tmdbId: '1399' }))
+    expect(call).not.toHaveBeenCalledWith('POST', '/sync/history', expect.anything())
+    expect(gets(call).length).toBeLessThanOrEqual(4)
+  })
+
+  it('I1: grundhämtningen tar med avsnitt i klara och avbrutna serier (include_all_episodes=original)', async () => {
+    const { host } = makeHost({ now: () => NOW })
+    const queries: Array<Record<string, string | number> | undefined> = []
+    const { api } = makeApi((m, p, q) => {
+      if (p === '/sync/activities') return ok({ all: 'A1' })
+      if (m === 'GET' && p === '/sync/all-items/all/all') { queries.push(q); return ok({}) }
+      return ok({})
+    })
+    await runSimklSync({ host, api, prefs: prefsOn() }, { pushWatched: true, reason: 'start' })
+    expect(queries[0]).toEqual(expect.objectContaining({ extended: 'full', include_all_episodes: 'original' }))
+  })
+
+  it('I1: lokala avsnitt i en serie som är avbruten, pausad eller klar hos SIMKL skickas inte', async () => {
+    const { host } = makeHost({
+      now: () => NOW,
+      getWatchedEpisodes: () => [
+        { tmdbId: '5', season: 1, episode: 1, watchedAt: 'T' },
+        { tmdbId: '6', season: 1, episode: 1, watchedAt: 'T' },
+        { tmdbId: '7', season: 1, episode: 1, watchedAt: 'T' },
+        { tmdbId: '8', season: 1, episode: 1, watchedAt: 'T' },
+      ],
+    })
+    const posted: unknown[] = []
+    const { api } = makeApi((m, p, _q, body) => {
+      if (p === '/sync/activities') return ok({ all: 'A1' })
+      if (m === 'GET' && p === '/sync/all-items/all/all') return ok({ shows: [show('5', 'dropped'), show('6', 'hold'), show('7', 'completed')] })
+      if (m === 'POST' && p === '/sync/history') { posted.push(body); return ok({}) }
+      return ok({})
+    })
+    await runSimklSync({ host, api, prefs: prefsOn(true, false) }, { pushWatched: true, reason: 'Synka nu', full: true })
+    const ids = posted.flatMap((b) => (b as { shows: Array<{ ids: { tmdb: number } }> }).shows.map((s) => s.ids.tmdb))
+    expect(ids).toEqual([8])
+  })
+
+  it('I2: första synken skriver inte över en status hos SIMKL (pausad serie, klar film)', async () => {
+    const { host } = makeHost({
+      now: () => NOW,
+      getShows: () => [{ tmdbId: '5', imdbId: null, title: 'Pausad' }],
+      getMovies: () => [{ tmdbId: '603', imdbId: null, title: 'Klar' }],
+    })
+    const { api, call } = makeApi((m, p) => {
+      if (p === '/sync/activities') return ok({ all: 'A1' })
+      if (m === 'GET' && p === '/sync/all-items/all/all') return ok({ shows: [show('5', 'hold')], movies: [movie('603', 'completed')] })
+      return ok({})
+    })
+    await runSimklSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 'start' })
+    expect(call).not.toHaveBeenCalledWith('POST', '/sync/add-to-list', expect.anything())
+  })
+
+  it('I3: en post utan tmdb matchas via imdb och följningen ligger kvar', async () => {
+    const { host, store } = makeHost({ now: () => NOW, getShows: () => [{ tmdbId: '1399', imdbId: 'tt0944947', title: 'GoT' }] })
+    store[SNAPSHOT_KEY] = snap({ shows: ['1399'], fullAt: 0, remote: { 's:1399': { st: 'watching', k: 's', t: 'GoT', i: 'tt0944947' } } })
+    const { api, call } = makeApi((m, p) => {
+      if (p === '/sync/activities') return ok({ all: 'A1' })
+      if (m === 'GET' && p === '/sync/all-items/all/all') return ok({ shows: [{ status: 'watching', show: { title: 'GoT', ids: { simkl: 17465, imdb: 'tt0944947' } } }] })
+      return ok({})
+    })
+    await runSimklSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 't' })
+    expect(host.removeShow).not.toHaveBeenCalled()
+    expect(call).not.toHaveBeenCalledWith('POST', '/sync/add-to-list', expect.anything())
+  })
+
+  it('I3: ett id som SIMKL aldrig visat med tmdb tas inte bort lokalt', async () => {
+    const { host, store } = makeHost({ now: () => NOW, getShows: () => [{ tmdbId: '37854', imdbId: null, title: 'One Piece' }] })
+    store[SNAPSHOT_KEY] = snap({ shows: ['37854'], fullAt: 0, remote: {} })
+    const { api } = makeApi((m, p) => {
+      if (p === '/sync/activities') return ok({ all: 'A1' })
+      if (m === 'GET' && p === '/sync/all-items/all/all') return ok({ anime: [{ status: 'watching', show: { title: 'One Piece', ids: { simkl: 38636 } } }] })
+      return ok({})
+    })
+    await runSimklSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 't' })
+    expect(host.removeShow).not.toHaveBeenCalled()
+  })
+
+  it('borttagen ur listan hos SIMKL: ids-listan tar bort den ur kartan och ur följlistan', async () => {
+    const { host, store } = makeHost({ now: () => NOW, getShows: () => [{ tmdbId: '1', imdbId: null, title: 'A' }, { tmdbId: '2', imdbId: null, title: 'B' }] })
+    store[SNAPSHOT_KEY] = snap({
+      shows: ['1', '2'], buckets: { 'tv_shows.removed_from_list': 'R0' },
+      remote: { 's:1': { st: 'watching', k: 's', t: 'A' }, 's:2': { st: 'watching', k: 's', t: 'B' } },
+    })
+    const { api, call } = makeApi((m, p, q) => {
+      if (p === '/sync/activities') return ok({ all: 'A1', tv_shows: { removed_from_list: 'R1' } })
+      if (p === '/sync/all-items') return ok({})
+      if (p === '/sync/all-items/all/all' && q?.extended === 'ids_only') return ok({ shows: [show('1', 'watching')] })
+      return ok({})
+    })
+    await runSimklSync({ host, api, prefs: prefsOn(false, true) }, { pushWatched: false, reason: 'intervall' })
+    expect(host.removeShow).toHaveBeenCalledWith('2')
+    expect(gets(call)).toHaveLength(3)
   })
 })

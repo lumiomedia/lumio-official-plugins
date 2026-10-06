@@ -5,12 +5,12 @@ import { startBridge, type BridgeDeps } from './bridge'
 
 type Listener = (m: never) => void
 
-function setup(opts: { fail?: (path: string) => boolean; started?: string[]; watchedMovies?: string[] } = {}) {
+function setup(opts: { fail?: (path: string) => boolean; failStatus?: number; started?: string[]; watchedMovies?: string[]; remote?: Record<string, string> } = {}) {
   const listeners: Record<string, Listener> = {}
   const posts: Array<[string, unknown]> = []
   const call = vi.fn(async (_m: string, path: string, o?: { body?: unknown }) => {
     posts.push([path, o?.body])
-    return opts.fail?.(path) ? { ok: false as const, status: 500, retryAfter: null, error: 'x' } : { ok: true as const, data: null }
+    return opts.fail?.(path) ? { ok: false as const, status: opts.failStatus ?? 500, retryAfter: null, error: 'x' } : { ok: true as const, data: null }
   })
   const data: Record<string, string> = { simkl_sync_watched_enabled: '1', simkl_sync_watchlist_enabled: '1' }
   const deps: BridgeDeps = {
@@ -25,6 +25,7 @@ function setup(opts: { fail?: (path: string) => boolean; started?: string[]; wat
     isUserMutation: (s) => s === 'local',
     isShowStarted: (id) => (opts.started ?? []).includes(id),
     isMovieWatched: (id) => (opts.watchedMovies ?? []).includes(id),
+    remoteStatus: (key) => opts.remote?.[key] ?? null,
     log: () => {},
     now: () => Date.now(),
     schedule: (fn, ms) => setTimeout(fn, ms),
@@ -53,7 +54,7 @@ describe('SIMKL-bryggan', () => {
   })
 
   it('sluta följa: serie blir dropped, osedd film tas bort, sedd film blir completed', async () => {
-    const { fire, posts } = setup({ watchedMovies: ['604'] })
+    const { fire, posts } = setup({ watchedMovies: ['604'], remote: { 'm:603': 'plantowatch' } })
     fire('show', { action: 'remove', entry: entry('1'), source: 'local' })
     fire('movie', { action: 'remove', entry: entry('603'), source: 'local' })
     fire('movie', { action: 'remove', entry: entry('604'), source: 'local' })
@@ -95,5 +96,52 @@ describe('SIMKL-bryggan', () => {
     fire('mw', { action: 'add', entry: { tmdbId: '603', watchedAt: 'T' }, source: 'tracker', entries: [] })
     await vi.advanceTimersByTimeAsync(3_000)
     expect(call).not.toHaveBeenCalled()
+  })
+
+  it('C1: en påbörjad serie som slutar följas skickas inte som dropped — synken avgör med statusen', async () => {
+    const { fire, call } = setup({ started: ['1399'] })
+    fire('show', { action: 'remove', entry: entry('1399'), source: 'local' })
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(call).not.toHaveBeenCalled()
+  })
+
+  it('C1: en serie som är klar hos SIMKL blir aldrig dropped', async () => {
+    const { fire, call } = setup({ remote: { 's:1': 'completed' } })
+    fire('show', { action: 'remove', entry: entry('1'), source: 'local' })
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(call).not.toHaveBeenCalled()
+  })
+
+  it('I4: en film tas bara bort hos SIMKL när den bevisligen bara är planerad', async () => {
+    const { fire, posts } = setup({ remote: { 'm:604': 'completed' } })
+    fire('movie', { action: 'remove', entry: entry('603'), source: 'local' })
+    fire('movie', { action: 'remove', entry: entry('604'), source: 'local' })
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(posts.filter(([p]) => p === '/sync/history/remove')).toEqual([])
+  })
+
+  it('I4: en film bryggan själv lagt till i sessionen kan tas bort igen', async () => {
+    const { fire, posts } = setup()
+    fire('movie', { action: 'add', entry: entry('603'), source: 'local' })
+    await vi.advanceTimersByTimeAsync(3_000)
+    fire('movie', { action: 'remove', entry: entry('603'), source: 'local' })
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(posts).toContainEqual(['/sync/history/remove', { movies: [{ ids: { tmdb: 603 } }] }])
+  })
+
+  it('I6: ett bestående 400 försöks inte igen', async () => {
+    const { fire, call } = setup({ fail: (p) => p === '/sync/history/remove', failStatus: 400 })
+    fire('ep', { tmdbId: '1399', season: 1, episode: 1, watched: false, source: 'local', watchedAt: 'T' })
+    await vi.advanceTimersByTimeAsync(3_000)
+    await vi.advanceTimersByTimeAsync(60 * 60_000)
+    expect(call).toHaveBeenCalledTimes(1)
+  })
+
+  it('I6: nätverksfel försöks med växande paus och högst fem gånger', async () => {
+    const { fire, call } = setup({ fail: (p) => p === '/sync/history/remove', failStatus: 0 })
+    fire('ep', { tmdbId: '1399', season: 1, episode: 1, watched: false, source: 'local', watchedAt: 'T' })
+    await vi.advanceTimersByTimeAsync(3_000)
+    await vi.advanceTimersByTimeAsync(24 * 60 * 60_000)
+    expect(call).toHaveBeenCalledTimes(5)
   })
 })

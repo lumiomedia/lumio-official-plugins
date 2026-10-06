@@ -9,7 +9,7 @@ export interface SimklApi {
   cdn<T>(path: string): Promise<ApiResult<T>>
   pausedUntil(): number
   hasAuth(): boolean
-  /** Senaste `X-RateLimit-Remaining` (dagens kvot), eller null om okänt. */
+  /** Senaste `X-RateLimit-Remaining` (dagens kvot), eller null om okänt eller äldre än en timme. */
   remaining(): number | null
 }
 
@@ -20,6 +20,8 @@ const APP_NAME = 'lumio'
 const POST_INTERVAL_MS = 1_000
 const GET_INTERVAL_MS = 200
 const DEFAULT_PAUSE_S = 60
+/** Kvoten nollställs vid dygnsskiftet — en gammal siffra får inte spärra synken för gott. */
+const REMAINING_TTL_MS = 60 * 60_000
 
 /// SIMKL skickar CORS `*`, så pluginet anropar API:t direkt — ingen proxy.
 /// Takten, 429-pausen och kvoten (500 anrop/dygn på gratis, delat mellan
@@ -34,11 +36,14 @@ export function createSimklApi(deps: {
   sleep?: (ms: number) => Promise<void>
   log: (message: string) => void
   onPause?: (until: number) => void
+  /** 401 på ett användaranrop: förnya token (en gång) och ge den nya, eller null. */
+  onUnauthorized?: () => Promise<string | null>
 }): SimklApi {
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
   let pausedUntil = 0
   let fatal: string | null = null
   let remaining: number | null = null
+  let remainingAt = 0
   let nextPost = 0
   let nextGet = 0
 
@@ -68,7 +73,20 @@ export function createSimklApi(deps: {
     const useAuth = opts?.auth !== false
     const token = useAuth ? await deps.getToken() : null
     if (useAuth && !token) return { ok: false, status: 0, retryAfter: null, error: 'not connected' }
+    const result = await send<T>(method, path, opts, token)
+    if (result.ok || result.status !== 401 || !useAuth || !deps.onUnauthorized) return result
+    const fresh = await deps.onUnauthorized()
+    if (!fresh || fresh === token) return result
+    deps.log(`401 på ${path} — token förnyad, försöker igen`)
+    return send<T>(method, path, opts, fresh)
+  }
 
+  async function send<T>(
+    method: 'GET' | 'POST',
+    path: string,
+    opts: { query?: Record<string, string | number>; body?: unknown } | undefined,
+    token: string | null,
+  ): Promise<ApiResult<T>> {
     const url = new URL(API + path)
     url.searchParams.set('client_id', deps.clientId)
     url.searchParams.set('app-name', APP_NAME)
@@ -86,7 +104,7 @@ export function createSimklApi(deps: {
         body: method === 'POST' ? JSON.stringify(opts?.body ?? {}) : undefined,
       })
       const left = Number(response.headers.get('X-RateLimit-Remaining'))
-      if (response.headers.get('X-RateLimit-Remaining') != null && Number.isFinite(left)) remaining = left
+      if (response.headers.get('X-RateLimit-Remaining') != null && Number.isFinite(left)) { remaining = left; remainingAt = deps.now() }
       const data = await read<T & { error?: string }>(response)
       if (response.ok) return { ok: true, data: data as T }
       const error = (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') ? data.error : `HTTP ${response.status}`
@@ -126,6 +144,6 @@ export function createSimklApi(deps: {
     cdn,
     pausedUntil: () => pausedUntil,
     hasAuth: () => deps.hasToken(),
-    remaining: () => remaining,
+    remaining: () => (remaining != null && deps.now() - remainingAt <= REMAINING_TTL_MS ? remaining : null),
   }
 }
