@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Picture-in-picture on phones: Live TV keeps playing in a small window when you leave the app, with channel switching and play/pause right in the window (Android). On iPhone via the button in the player. Needs the app version that ships picture-in-picture in the plugin SDK — set `minAppVersion` to it when releasing.
+
 ## 0.13.2
 
 - The VOD button on a film's detail page shows again when the playlist's login is missing on this profile. Films play straight from the library's own link, so only series still need the login.

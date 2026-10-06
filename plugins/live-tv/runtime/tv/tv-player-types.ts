@@ -54,4 +54,6 @@ export interface LiveTvPlayerControls {
   onVolume(next: number): void
   onToggleFullscreen(): void
   onCycleAspect(): void
+  /** Bild-i-bild (telefon). Saknas när plattformen inte kan. */
+  onEnterPip?(): void
 }
