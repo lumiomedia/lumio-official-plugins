@@ -112,7 +112,9 @@ reachability becomes your problem.
 stations (`data-f`, `data-init`, `data-panel-root`, `data-f-left/right`,
 `data-scroll`). Text input on a remote goes through `getTvKeyboardPanel()`,
 hold-OK menus through `getTvGlassMenu()` with `tvHoldHandlers(onShort, onHold)`
-(650 ms, `TV_HOLD_MS`), and the clock through `getTvClock()`. These resolve
+(650 ms, `TV_HOLD_MS`), and the clock through `getTvClock()`. A glass menu
+target may set `initialKey` to start focus on that action (for example the
+selected option); without it focus starts on the first action. These resolve
 against the host at runtime; never import a copy of the host's TV modules by
 another path — a bundled copy has its own React context and reads `false`
 forever.
@@ -179,7 +181,20 @@ orientation when your page closes.
   `lookupPluginStreamsBatchRanked`, `checkMovieHasStream`,
   `checkEpisodeHasStream`. A stream sidebar receives `runtimeMinutes` in its
   `StreamSidebarProps`; the host uses it to swap away a file that is far
-  shorter than the film.
+  shorter than the film. Two optional fields were added with the source
+  selector: `libraryKey` (the library title key when it can't be read from
+  `mediaId`, e.g. an unmatched Plex grid hit) and `preferredSourceGroup`
+  (the source group the title was opened from, e.g. `plex`; preselected when
+  the title is there, but a source the user saved for the title still wins).
+  A sidebar that doesn't care can ignore both.
+- Source groups: the detail page shows one stream list with a source menu.
+  Library versions are grouped per library provider id (`plex`, `jellyfin`,
+  `emby`, `webdav` …, labelled with the provider's `label`), Xtream sources
+  and every `registerMediaStreamCatalogProvider` hit are grouped as `vod`,
+  and core-stream addons as `debrid`. A catalog candidate whose `directUrl`
+  equals an indexed library version is dropped, so the same file isn't
+  listed twice. Play starts the chosen group first and uses the others as
+  reserves.
 - Appearance: `getAccent` / `setAccent` / `onAppearanceChanged`,
   `ACCENT_PRESETS`; `useTvMode`, `isTauriEnv`, `isDesktopTauriEnv`,
   `isAndroidTauriEnv`.
