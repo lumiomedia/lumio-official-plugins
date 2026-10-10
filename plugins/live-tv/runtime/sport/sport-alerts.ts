@@ -70,17 +70,37 @@ export async function syncKickoffReminders(now: number = Date.now()): Promise<vo
   replaceSportReminders(kickoffReminders(days, follows, alert, getOverrides(), now), now)
 }
 
+/** Första synken väntar så att appstarten (och en film som startas direkt) inte delar tid med EPG-läsningen. */
+export const SPORT_ALERT_START_DELAY_MS = 60_000
+
+const hidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden'
+
+/*
+  `/sport/day` läser hela EPG-lagret till minnet. Därför: aldrig medan appen
+  ligger i bakgrunden (Android släpper lagret där — en tick skulle läsa in det
+  igen), och inte förrän en stund efter start. Blir appen synlig igen körs en
+  ikappsynk.
+*/
 export function startSportAlertSync(): () => void {
   let stopped = false
+  let ready = false
   const run = () => {
-    if (!stopped) void syncKickoffReminders().catch(() => {})
+    if (stopped || !ready || hidden()) return
+    void syncKickoffReminders().catch(() => {})
   }
-  run()
+  const startTimer = window.setTimeout(() => {
+    ready = true
+    run()
+  }, SPORT_ALERT_START_DELAY_MS)
   const timer = window.setInterval(run, SPORT_ALERT_SYNC_MS)
+  const onVisibility = () => { if (!hidden()) run() }
+  document.addEventListener('visibilitychange', onVisibility)
   const offs = [SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, SPORT_OVERRIDES_KEY].map((key) => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, run))
   return () => {
     stopped = true
+    window.clearTimeout(startTimer)
     window.clearInterval(timer)
+    document.removeEventListener('visibilitychange', onVisibility)
     for (const off of offs) off()
   }
 }

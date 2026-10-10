@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { __resetForTests } from '@/lib/plugin-sdk'
 import { dueReminders, getReminders, reminderId, replaceSportReminders, toggleReminder } from '../reminders'
-import { KICKOFF_LEAD_MS, kickoffReminders, syncKickoffReminders } from './sport-alerts'
+import { KICKOFF_LEAD_MS, SPORT_ALERT_START_DELAY_MS, kickoffReminders, startSportAlertSync, syncKickoffReminders } from './sport-alerts'
 import { setSportSettings, toggleFollow } from './sport-store'
 import { sourceChannel } from './sport-model'
 import { HOUR, MIN, fxDay, fxMatch, stubSportDays } from './__sport-fixture'
@@ -66,5 +66,54 @@ describe('syncKickoffReminders', () => {
     await syncKickoffReminders(now)
     expect(spy).toHaveBeenCalledTimes(2)
     expect(getReminders(now).filter((r) => r.origin === 'sport')).toHaveLength(1)
+  })
+})
+
+describe('startSportAlertSync', () => {
+  const setVisibility = (state: 'visible' | 'hidden') => {
+    Object.defineProperty(document, 'visibilityState', { value: state, configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+  }
+  afterEach(() => {
+    vi.useRealTimers()
+    Reflect.deleteProperty(document, 'visibilityState')
+  })
+
+  it('väntar en stund efter start innan dagen läses', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    toggleFollow(hammarby)
+    const spy = stubSportDays({})
+    const stop = startSportAlertSync()
+    await vi.advanceTimersByTimeAsync(SPORT_ALERT_START_DELAY_MS - 1000)
+    expect(spy).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(spy).toHaveBeenCalledTimes(2)
+    stop()
+  })
+  it('läser aldrig i bakgrunden — körs igen när appen blir synlig', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    toggleFollow(hammarby)
+    const spy = stubSportDays({})
+    setVisibility('hidden')
+    const stop = startSportAlertSync()
+    await vi.advanceTimersByTimeAsync(SPORT_ALERT_START_DELAY_MS + 3 * 30 * MIN)
+    setSportSettings({ alert: 'kickoff' })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(spy).not.toHaveBeenCalled()
+    setVisibility('visible')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(spy).toHaveBeenCalledTimes(2)
+    stop()
+  })
+  it('synlig före fördröjningen startar inget i förtid', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    toggleFollow(hammarby)
+    const spy = stubSportDays({})
+    const stop = startSportAlertSync()
+    setVisibility('hidden')
+    setVisibility('visible')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(spy).not.toHaveBeenCalled()
+    stop()
   })
 })
