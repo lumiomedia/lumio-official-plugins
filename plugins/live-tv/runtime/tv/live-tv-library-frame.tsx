@@ -11,6 +11,8 @@ import { listVodCategories } from '../vod-client'
 import { getVodMode } from '../vod-data'
 import { isDesktopTauri } from './guide-surface'
 
+const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
+
 /**
  * Telefonens flikrad med samma Bibliotek-villkor som tv-shell.tsx (VOD-kategorier
  * finns och läget är inte `off`) — men utan att montera hela modellen: det
@@ -65,6 +67,25 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset }: Li
     observer?.observe(el)
     return () => observer?.disconnect()
   }, [phone, onInset])
+
+  // Bakåt på rälsen lämnar Live TV. Värdens fokusmotor tar annars Back för
+  // [data-col="side"] och skickar den till bläddringsbakåt (gör inget på VOD-hemmet).
+  // Capture-fas på window, som tv-shell.tsx, så vi hinner före motorn. Bara när
+  // trycket kommer inifrån ramen — står fokus i hemmets innehåll äger värden Back.
+  useEffect(() => {
+    if (phone) return
+    const onKey = (event: KeyboardEvent) => {
+      if (!BACK_KEYS.has(event.key)) return
+      const el = rootRef.current
+      const target = event.target as Node | null
+      if (!el || !target || !el.contains(target)) return
+      event.preventDefault()
+      event.stopPropagation()
+      onExit()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [phone, onExit])
 
   if (phone) {
     return <PhoneTabBar select={select} />
