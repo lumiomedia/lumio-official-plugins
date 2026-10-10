@@ -6,6 +6,9 @@ import { useTvSettings } from './tv-settings-store'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { TV } from './tv-ui'
 import { LIVE_TV_BROWSE_PAGE_ID } from '../live-tv-shell'
+import { useLiveTvModel } from '../live-tv-model'
+import { useVodCategories } from '../hooks/useVodLibrary'
+import { getVodMode } from '../vod-data'
 
 /**
  * Live TV:s räls runt appens VOD-hem (spec 2026-10-10). Samma `TvRail` som
@@ -20,6 +23,10 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset }: Li
   const isTv = platform === 'tv'
   const phone = platform === 'phone'
   const narrow = useNarrowSurface(rootRef) && !isTv
+  // Samma villkor som tv-shell.tsx: flikraden ska vara identisk med den inne i Live TV.
+  const model = useLiveTvModel()
+  const vodCats = useVodCategories(phone ? model.activeSource : null)
+  const showLibraryTab = phone && vodCats.total > 0 && getVodMode(model.activePlaylistId) !== 'off'
   const select = (key: RailKey | 'hub' | 'guide' | 'favs' | 'search' | 'library' | 'home') => {
     if (key === 'back') { onExit(); return }
     if (key === 'home') return
@@ -40,7 +47,7 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset }: Li
 
   if (phone) {
     // "Mer" går till Multiview-vyn: arket hör till Live TV-sidan.
-    return <MobileTabBar view="hub" activeOverride="home" onGo={select} onMore={() => select('multi')} />
+    return <MobileTabBar view="hub" activeOverride="home" showLibrary={showLibraryTab} onGo={select} onMore={() => select('multi')} />
   }
   return (
     <div ref={rootRef} style={{ height: '100%', display: 'flex', background: TV.bg, color: TV.text, fontFamily: TV.font }}>

@@ -26,7 +26,7 @@ import { TV_VIEWS } from './tv-views'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
-import { hasVodIndex, vodHomeTarget } from '../vod-home'
+import { hasVodIndex, markVodHomeRedirect, shouldRedirectToVodHome, vodHomeTarget } from '../vod-home'
 import { MobileSheet } from './mobile/mobile-sheet'
 
 /**
@@ -291,6 +291,24 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   const go = useCallback((next: TvView, extra: Record<string, string> = {}) => {
     onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: next, ...extra } })
   }, [onNavigate])
+
+  /*
+    LIVE TV ÖPPNAR I HEM (Jerry 2026-10-10). Menyvalet öppnar sidan utan
+    params; finns ett VOD-index går vi vidare till appens hem med rälsen som
+    ram. Saknas det visas Kanaler (och P5 startar indexeringen). Spärren
+    hindrar att värdens reserv och vi studsar mellan varandra.
+  */
+  useEffect(() => {
+    if (!shouldRedirectToVodHome(params, Date.now())) return
+    let cancelled = false
+    void hasVodIndex().then((ok) => {
+      if (cancelled || !ok) return
+      markVodHomeRedirect(Date.now())
+      onNavigate(vodHomeTarget())
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const toast = useCallback((text: string) => {
     setToastText(text)

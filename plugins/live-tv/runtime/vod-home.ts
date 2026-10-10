@@ -21,3 +21,19 @@ export async function hasVodIndex(): Promise<boolean> {
     return false
   }
 }
+
+const REDIRECT_COOLDOWN_MS = 10_000
+let lastRedirect = -Infinity
+
+/**
+ * Ska Live TV hoppa vidare till Hem? Bara när sidan öppnas utan params
+ * (menyvalet / värdens reserv), och högst en gång per 10 s: reserven öppnar
+ * sidan utan params, så om vi tror att index finns men värden inte gör det
+ * skulle vi annars studsa för evigt.
+ */
+export function shouldRedirectToVodHome(params: Record<string, string> | undefined, now: number): boolean {
+  if (params && (params.view || params.url)) return false
+  return now - lastRedirect >= REDIRECT_COOLDOWN_MS
+}
+
+export function markVodHomeRedirect(now: number): void { lastRedirect = now }

@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, fireEvent } from '@testing-library/react'
+const vodState = vi.hoisted(() => ({ total: 0 }))
+vi.mock('../hooks/useVodLibrary', async (orig) => ({
+  ...(await orig<object>()),
+  useVodCategories: () => ({ categories: [], total: vodState.total, known: true, importing: false, loading: false, error: null, reload: () => {} }),
+}))
 import { LiveTvLibraryFrame } from './live-tv-library-frame'
 
 const base = { onNavigate: vi.fn(), onExit: vi.fn(), onInset: vi.fn() }
@@ -25,5 +30,16 @@ describe('LiveTvLibraryFrame', () => {
     expect(getByTestId('mobile-tab-bar')).toBeTruthy()
     expect(queryByTestId('tv-rail')).toBeNull()
     expect(props.onInset).toHaveBeenCalledWith(0)
+  })
+  it('telefon: Bibliotek-fliken syns när VOD finns, annars inte', () => {
+    const props = { ...base, platform: 'phone' as const }
+    vodState.total = 0
+    const none = render(<LiveTvLibraryFrame {...props} />)
+    expect(none.queryByTestId('tab-library')).toBeNull()
+    none.unmount()
+    vodState.total = 5
+    const some = render(<LiveTvLibraryFrame {...props} />)
+    expect(some.getByTestId('tab-library')).toBeTruthy()
+    vodState.total = 0
   })
 })
