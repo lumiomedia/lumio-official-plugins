@@ -290,9 +290,11 @@ höjdpunkter (fas 3), spelarprofil från uppställningen.
 1. (Besvarad 2026-10-10: kvoten är per sport-API, 100/dag var.) Senare,
    valfritt: sportapi.ai (bara fotboll, 2 000/dag gratis) som extra
    fotbollskälla bakom samma providergränssnitt — inte i v1.
-2. Vilka sporter ska ha egna knappar från start? Förslaget är Fotboll,
-   Ishockey, Basket, Handboll, Motorsport och Tennis (bara EPG).
-3. Ska "Sänds på X, som inte finns i dina spellistor" vara med? API-Sports
-   har inga tv-kanaler, så raden kräver en egen tabell (liga → svensk
-   rättighetsinnehavare) eller tas bort.
-4. Sport ikväll på Hem: ska det ingå nu, eller vänta på Hem-handoffen?
+2. (Beslut 2026-10-10, Jerry: "kör på vad du rekommenderar") Sportknappar
+   från start: Fotboll, Ishockey, Basket, Handboll, Motorsport, Tennis (bara EPG).
+3. (Beslut) Raden "Sänds på X, som inte finns i dina spellistor" **tas bort**
+   i v1 — ingen egen rättighetstabell att underhålla.
+4. (Beslut) Sport ikväll på Hem **väntar** på Hem-handoffen; ingår inte i v1.
+5. **Öppen:** valet av källa. API-Sports premium kostar per sport, vilket är
+   krångligt för användaren; andra API:er med ett abonnemang för alla
+   sporter utreds (`sport-api-jamforelse.md`) innan planen skrivs.
