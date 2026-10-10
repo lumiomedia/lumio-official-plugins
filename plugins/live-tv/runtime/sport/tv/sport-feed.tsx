@@ -1,0 +1,141 @@
+'use client'
+
+import type { CSSProperties } from 'react'
+import { formatClock, progressOf } from '../../live-tv-ui'
+import { Progress, TV, cardStyle, dp, station } from '../../tv/tv-ui'
+import { localDayKey } from '../sport-epg'
+import { matchTitle, type SportDay, type SportMatch } from '../sport-model'
+import { clashes, followState, leagueColor, nextMatchFor, splitSections, teamRing } from '../sport-day-model'
+import { alertLabel, sourceChip, type SportCtx } from '../sport-ctx'
+import type { SportFollow } from '../sport-store'
+import { Crest, ellipsis, overline, sectionTitle } from './sport-parts'
+import { SportIcons } from './sport-icons'
+
+const avatarCol: CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(8), width: dp(150), flexShrink: 0, cursor: 'pointer' }
+
+export function SportFeed({ ctx, matches, days }: { ctx: SportCtx; matches: SportMatch[]; days: (SportDay | null)[] }) {
+  const { live, later, finished } = splitSections(matches, ctx.now)
+  const planned = later.filter((m) => ctx.isReminded(m))
+  const clash = clashes(planned)
+  const dayMatches = days[0]?.matches ?? []
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: dp(32) }}>
+      <section data-testid="feed-teams" style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
+          <span style={sectionTitle}>{ctx.tt('sportYourTeams')}</span>
+          <span style={{ fontSize: dp(16), color: TV.dim }}>{ctx.tt('sportYourTeamsHint')}</span>
+        </div>
+        <div data-row="" style={{ display: 'flex', gap: dp(24), overflowX: 'auto', padding: `${dp(8)}px ${dp(6)}px` }}>
+          {ctx.follows.map((f) => <TeamAvatar key={`${f.kind}:${f.key}`} ctx={ctx} follow={f} dayMatches={dayMatches} days={days} />)}
+          <div data-testid="feed-add" {...station(ctx.openFollowPicker)} style={avatarCol}>
+            <span style={{ width: dp(108), height: dp(108), borderRadius: 999, border: `2px dashed ${TV.lineStrong}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><SportIcons.Plus size={dp(36)} /></span>
+            <span style={{ fontSize: dp(17), fontWeight: 600 }}>{ctx.tt('sportAddTeam')}</span>
+          </div>
+        </div>
+      </section>
+
+      {live.length > 0 ? (
+        <section data-testid="feed-now" style={{ display: 'flex', flexDirection: 'column', gap: dp(12) }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
+            <span style={sectionTitle}>{ctx.tt('sportJustNow')}</span>
+            <span style={{ fontSize: dp(16), color: TV.dim }}>{ctx.tt('sportJustNowSub', { n: live.length })}</span>
+          </div>
+          {live.map((m) => (
+            <div key={m.id} data-testid="feed-now-row" style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: dp(18), padding: `${dp(14)}px ${dp(18)}px`, borderLeft: `${dp(6)}px solid ${leagueColor(m.leagueKey || m.kind)}` }}>
+              <div style={{ width: dp(80), display: 'flex', flexDirection: 'column', gap: dp(6), flexShrink: 0 }}>
+                <span style={{ color: TV.live, fontWeight: 700, fontSize: dp(16) }}>{ctx.tt('live')}</span>
+                <Progress value={progressOf(m.start, m.stop, ctx.now)} height={dp(4)} />
+              </div>
+              <div {...station(() => ctx.openMatch(m))} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: dp(16), cursor: 'pointer' }}>
+                {m.home && m.away ? (
+                  <span style={{ display: 'flex', flexShrink: 0 }}>
+                    <Crest name={m.home} colorKey={m.homeKey ?? m.home} size={dp(48)} />
+                    <span style={{ marginLeft: -dp(14) }}><Crest name={m.away} colorKey={m.awayKey ?? m.away} size={dp(48)} /></span>
+                  </span>
+                ) : null}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: dp(21), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
+                  <div style={{ fontSize: dp(15), color: TV.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), followState(m, ctx.follows).any ? ctx.tt('sportYouFollow').toLowerCase() : null].filter(Boolean).join(' · ')}</div>
+                </div>
+              </div>
+              <span data-testid="feed-source-chip" style={{ fontSize: dp(15), padding: `${dp(6)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.s12, whiteSpace: 'nowrap' }}>{sourceChip(m, ctx)}</span>
+              <div data-testid="feed-play" {...station(() => ctx.watch(m))} aria-label={ctx.tt('sportWatch')} style={{ width: dp(56), height: dp(56), minHeight: dp(56), borderRadius: 999, background: TV.acc, color: TV.onAcc, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                <SportIcons.Play size={dp(22)} />
+              </div>
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      {later.length > 0 ? (
+        <section data-testid="feed-plan" style={{ display: 'flex', gap: dp(20), alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+            <span style={sectionTitle}>{ctx.tt('sportEveningPlan')}</span>
+            {later.map((m) => {
+              const reminded = ctx.isReminded(m)
+              const best = m.sources[0]
+              return (
+                <div key={m.id} data-testid="feed-plan-row" style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: dp(16), padding: `${dp(12)}px ${dp(16)}px` }}>
+                  <div data-testid="feed-plan-check" {...station(() => ctx.toggleRemind(m))} role="checkbox" aria-checked={reminded ? 'true' : 'false'} aria-label={ctx.tt('sportRemindMe')} style={{ width: dp(34), height: dp(34), minHeight: dp(34), borderRadius: dp(8), border: `2px solid ${reminded ? TV.acc : TV.lineStrong}`, background: reminded ? TV.acc : 'transparent', color: TV.onAcc, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: dp(20), cursor: 'pointer', flexShrink: 0 }}>{reminded ? '✓' : ''}</div>
+                  <span style={{ fontSize: dp(22), fontWeight: 700, width: dp(84), flexShrink: 0 }}>{formatClock(m.start, ctx.locale)}</span>
+                  <div {...station(() => ctx.openMatch(m))} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
+                    <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
+                    <div style={{ fontSize: dp(15), color: TV.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(' · ')}</div>
+                  </div>
+                  {followState(m, ctx.follows).any ? <span style={{ color: '#fbbf24', display: 'inline-flex' }}><SportIcons.Star size={dp(22)} filled /></span> : null}
+                </div>
+              )
+            })}
+          </div>
+          <div data-testid="sport-evening" style={{ ...cardStyle, width: dp(420), flexShrink: 0, padding: dp(20), display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+            <span style={overline}>{ctx.tt('sportYourEvening')}</span>
+            <span style={{ fontSize: dp(20), fontWeight: 600 }}>{ctx.tt('sportEveningCount', { n: planned.length })}</span>
+            <span style={{ fontSize: dp(15), color: TV.muted }}>{`${ctx.tt('sportKickoffAlert')}: ${alertLabel(ctx)}`}</span>
+            {planned.map((m) => (
+              <div key={m.id} data-testid="evening-row" style={{ display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(16) }}>
+                <span style={{ fontWeight: 700 }}>{formatClock(m.start, ctx.locale)}</span>
+                <span style={{ ...ellipsis, flex: 1 }}>{matchTitle(m)}</span>
+                {clash.has(m.id) ? <span data-testid="evening-clash" title={ctx.tt('sportClash')} style={{ color: '#fbbf24' }}>⚠ {ctx.tt('sportClash')}</span> : null}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {finished.length > 0 ? (
+        <section data-testid="feed-finished" style={{ display: 'flex', flexDirection: 'column', gap: dp(12) }}>
+          <span style={sectionTitle}>{ctx.tt('sportFinished')}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: dp(12) }}>
+            {finished.map((m) => (
+              <div key={m.id} {...station(() => ctx.openMatch(m))} style={{ ...cardStyle, padding: `${dp(12)}px ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(17), cursor: 'pointer' }}>
+                <span style={{ ...ellipsis, flex: 1 }}>{matchTitle(m)}</span>
+                <span style={{ fontSize: dp(14), color: TV.dim }}>{ctx.tt('sportEnded')}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </div>
+  )
+}
+
+function TeamAvatar({ ctx, follow, dayMatches, days }: { ctx: SportCtx; follow: SportFollow; dayMatches: SportMatch[]; days: (SportDay | null)[] }) {
+  const ring = teamRing(follow, dayMatches, ctx.now)
+  const next = nextMatchFor(follow, days, ctx.now)
+  const status = ring === 'live'
+    ? ctx.tt('live')
+    : next
+      ? localDayKey(next.start) === localDayKey(ctx.now) ? formatClock(next.start, ctx.locale) : ctx.tt('sportTomorrow')
+      : ''
+  const ringShadow = ring === 'live' ? `0 0 0 ${dp(4)}px #ef4444` : ring === 'today' ? `0 0 0 ${dp(3)}px ${TV.text}` : `0 0 0 ${dp(2)}px ${TV.s14}`
+  return (
+    <div data-testid="feed-team" data-ring={ring} {...station(() => { if (next) ctx.openMatch(next) })} style={avatarCol}>
+      <span style={{ position: 'relative', borderRadius: 999, boxShadow: ringShadow, display: 'inline-flex' }}>
+        <Crest name={follow.name} colorKey={follow.key} size={dp(108)} />
+        {ring === 'live' ? <span style={{ position: 'absolute', left: '50%', bottom: -dp(10), transform: 'translateX(-50%)', padding: `${dp(2)}px ${dp(8)}px`, borderRadius: dp(6), background: '#ef4444', color: '#fff', fontSize: dp(12), fontWeight: 700, letterSpacing: '0.1em' }}>{ctx.tt('live')}</span> : null}
+      </span>
+      <span style={{ fontSize: dp(17), fontWeight: 600, maxWidth: '100%', textAlign: 'center', ...ellipsis, marginTop: dp(6) }}>{follow.name}</span>
+      <span style={{ fontSize: dp(15), color: ring === 'live' ? TV.live : TV.muted }}>{status}</span>
+    </div>
+  )
+}
