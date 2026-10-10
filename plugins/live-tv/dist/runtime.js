@@ -10858,6 +10858,9 @@
     const mode = getLibraryMode();
     return mode ? mode.sourceIds.join(",") : void 0;
   }
+  function framedLibraryScopeActive() {
+    return Boolean(libraryScope?.frame);
+  }
   function getStoredLibraryMode() {
     if (typeof window === "undefined") return null;
     try {
@@ -10899,29 +10902,43 @@
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(LIBRARY_INDEX_CHANGED_EVENT));
   }
   async function loadLibraryIdSets(force = false) {
-    if (cache2 && !force) return cache2;
-    if (inflight) return inflight;
-    inflight = (async () => {
+    const key = librarySourceParam() ?? "";
+    if (cache2 && cacheKey === key && !force) return cache2;
+    if (inflight && inflightKey === key) return inflight;
+    inflightKey = key;
+    let run = null;
+    run = (async () => {
       try {
-        const sourceParam = librarySourceParam();
+        const sourceParam = key || void 0;
         const response = await fetch(`/api/library/query?kind=ids${sourceParam ? `&sourceId=${encodeURIComponent(sourceParam)}` : ""}`, { cache: "no-store" });
-        if (!response.ok) return cache2 ?? EMPTY;
+        if (!response.ok) return cache2 && cacheKey === key ? cache2 : EMPTY;
         const payload = await response.json();
-        cache2 = {
+        const next = {
           movies: { tmdb: new Set(payload.movies.tmdb), imdb: new Set(payload.movies.imdb) },
           series: { tmdb: new Set(payload.series.tmdb), imdb: new Set(payload.series.imdb) },
           total: payload.total,
           loadedAt: Date.now()
         };
-        for (const listener of listeners2) listener();
-        return cache2;
+        if ((librarySourceParam() ?? "") === key) {
+          cache2 = next;
+          cacheKey = key;
+          for (const listener of listeners2) listener();
+        }
+        return next;
       } catch {
-        return cache2 ?? EMPTY;
+        return cache2 && cacheKey === key ? cache2 : EMPTY;
       } finally {
-        inflight = null;
+        if (inflight === run) {
+          inflight = null;
+          inflightKey = null;
+        }
       }
     })();
-    return inflight;
+    inflight = run;
+    return run;
+  }
+  function cachedLibraryIdSetsFor(key) {
+    return cache2 && cacheKey === key ? cache2 : null;
   }
   function tmdbIdOf(item) {
     const match = /^(?:movie|tv)-(\d+)$/.exec(item.id);
@@ -10933,19 +10950,26 @@
     if (tmdb != null && bucket.tmdb.has(tmdb)) return true;
     return Boolean(item.imdbId && bucket.imdb.has(item.imdbId));
   }
+  function modeKey(mode) {
+    return mode ? mode.sourceIds.join(",") : null;
+  }
   function useLibraryIdSets() {
     const [mode, setMode] = useState(() => getLibraryMode());
-    const [sets, setSets] = useState(() => getLibraryMode() ? cache2 : null);
+    const key = modeKey(mode);
+    const [state2, setState] = useState(() => {
+      const cached = key != null ? cachedLibraryIdSetsFor(key) : null;
+      return key != null && cached ? { key, sets: cached } : null;
+    });
     useEffect(() => onLibraryModeChanged(() => setMode(getLibraryMode())), []);
     useEffect(() => {
-      if (!mode) {
-        setSets(null);
+      if (key == null) {
+        setState(null);
         return;
       }
       let cancelled = false;
       const sync = () => {
         void loadLibraryIdSets(true).then((next) => {
-          if (!cancelled) setSets(next);
+          if (!cancelled) setState({ key, sets: next });
         });
       };
       sync();
@@ -10957,10 +10981,11 @@
         window.removeEventListener(LIBRARY_INDEX_CHANGED_EVENT, onChanged);
         listeners2.delete(onChanged);
       };
-    }, [mode]);
-    return mode ? sets : null;
+    }, [key]);
+    if (key == null) return null;
+    return state2 && state2.key === key ? state2.sets : LIBRARY_ID_SETS_LOADING;
   }
-  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, cache2, inflight, listeners2;
+  var LIBRARY_INDEX_CHANGED_EVENT, EMPTY, LIBRARY_ID_SETS_LOADING, cache2, cacheKey, inflight, inflightKey, listeners2;
   var init_ids = __esm({
     "lib/library/ids.ts"() {
       "use strict";
@@ -10974,8 +10999,16 @@
         total: 0,
         loadedAt: 0
       };
+      LIBRARY_ID_SETS_LOADING = {
+        movies: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
+        series: { tmdb: /* @__PURE__ */ new Set(), imdb: /* @__PURE__ */ new Set() },
+        total: 0,
+        loadedAt: 0
+      };
       cache2 = null;
+      cacheKey = null;
       inflight = null;
+      inflightKey = null;
       listeners2 = /* @__PURE__ */ new Set();
     }
   });
@@ -11913,8 +11946,8 @@
   function clearPluginMemoryCache(pluginId, key) {
     if (!key) {
       const prefix = `${pluginId}:`;
-      for (const cacheKey2 of pluginMemoryCache.keys()) {
-        if (cacheKey2.startsWith(prefix)) pluginMemoryCache.delete(cacheKey2);
+      for (const cacheKey3 of pluginMemoryCache.keys()) {
+        if (cacheKey3.startsWith(prefix)) pluginMemoryCache.delete(cacheKey3);
       }
       return;
     }
@@ -11922,8 +11955,8 @@
   }
   function clearPluginMemoryCacheByPrefix(pluginId, keyPrefix) {
     const prefix = `${pluginId}:${keyPrefix}`;
-    for (const cacheKey2 of pluginMemoryCache.keys()) {
-      if (cacheKey2.startsWith(prefix)) pluginMemoryCache.delete(cacheKey2);
+    for (const cacheKey3 of pluginMemoryCache.keys()) {
+      if (cacheKey3.startsWith(prefix)) pluginMemoryCache.delete(cacheKey3);
     }
   }
   var PLUGIN_STORAGE_PREFIX, pluginMemoryCache;
@@ -15670,6 +15703,7 @@
   }
   async function fetchEpisodeStreamResults(imdbId, season, episode) {
     if (availabilityRateLimited()) throw new Error("source cooling down");
+    if (framedLibraryScopeActive()) throw new Error("framed library view");
     const addons = getEnabledCoreStreamAddons();
     const source = buildSourceRequest(addons);
     if (!source) return [];
@@ -15764,50 +15798,51 @@
   }
   async function checkEpisodeHasStream(imdbId, season, episode) {
     if (typeof window === "undefined" || !imdbId) return null;
-    const cacheKey2 = getCacheKey(imdbId, season, episode);
+    const cacheKey3 = getCacheKey(imdbId, season, episode);
     const cache8 = readStreamCache();
-    const cached = cache8[cacheKey2];
+    const cached = cache8[cacheKey3];
     if (cached && Date.now() - cached.checkedAt < streamCacheTtl(cached.hasStream)) {
       return cached.hasStream;
     }
-    const retryAt = failedCheckRetryAt.get(cacheKey2);
+    const retryAt = failedCheckRetryAt.get(cacheKey3);
     if (retryAt && Date.now() < retryAt) return null;
-    const existing = streamCheckInFlight.get(cacheKey2);
+    const existing = streamCheckInFlight.get(cacheKey3);
     if (existing) return existing;
     const filters = getStreamFilters();
     const request = (async () => {
-      if (!providerLookupInProgress.has(cacheKey2)) {
-        providerLookupInProgress.add(cacheKey2);
+      if (!providerLookupInProgress.has(cacheKey3)) {
+        providerLookupInProgress.add(cacheKey3);
         try {
           const providerResult = await resolveEpisodeStreamAvailabilityFromProviders(imdbId, season, episode);
           if (providerResult === true) {
-            cache8[cacheKey2] = { checkedAt: Date.now(), hasStream: true };
+            cache8[cacheKey3] = { checkedAt: Date.now(), hasStream: true };
             writeStreamCache(cache8);
             return true;
           }
         } finally {
-          providerLookupInProgress.delete(cacheKey2);
+          providerLookupInProgress.delete(cacheKey3);
         }
       }
       const streams = await fetchEpisodeStreamResults(imdbId, season, episode);
       const visibility = applyStreamFilters(streams, filters);
       const hasStream = streams.some((_, index) => visibility[index]);
-      cache8[cacheKey2] = { checkedAt: Date.now(), hasStream };
+      cache8[cacheKey3] = { checkedAt: Date.now(), hasStream };
       writeStreamCache(cache8);
       return hasStream;
     })().catch(() => {
-      rememberFailedCheck(cacheKey2, Date.now() + FAILED_CHECK_RETRY_MS);
+      rememberFailedCheck(cacheKey3, Date.now() + FAILED_CHECK_RETRY_MS);
       return null;
     }).finally(() => {
-      streamCheckInFlight.delete(cacheKey2);
+      streamCheckInFlight.delete(cacheKey3);
     });
-    streamCheckInFlight.set(cacheKey2, request);
+    streamCheckInFlight.set(cacheKey3, request);
     return request;
   }
   var STREAM_CACHE_KEY, STREAM_CACHE_TTL_MS, STREAM_CACHE_POSITIVE_TTL_MS, SERIES_STATUS_CACHE_TTL_MS, streamCheckInFlight, providerLookupInProgress, FAILED_CHECK_RETRY_MS, failedCheckRetryAt;
   var init_series_watchlist_feed = __esm({
     "lib/series-watchlist-feed.ts"() {
       "use strict";
+      init_mode();
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
@@ -15871,6 +15906,7 @@
   }
   async function fetchStreamResults(imdbId) {
     if (availabilityRateLimited()) throw new Error("source cooling down");
+    if (framedLibraryScopeActive()) throw new Error("framed library view");
     const addons = getEnabledCoreStreamAddons();
     const source = buildSourceRequest(addons);
     if (!source) return [];
@@ -15960,50 +15996,51 @@
   }
   async function checkMovieHasStream(imdbId) {
     if (typeof window === "undefined" || !imdbId) return null;
-    const cacheKey2 = getCacheKey2(imdbId);
+    const cacheKey3 = getCacheKey2(imdbId);
     const cache8 = readStreamCache2();
-    const cached = cache8[cacheKey2];
+    const cached = cache8[cacheKey3];
     if (cached && Date.now() - cached.checkedAt < streamCacheTtl2(cached.hasStream)) {
       return cached.hasStream;
     }
-    const retryAt = failedCheckRetryAt2.get(cacheKey2);
+    const retryAt = failedCheckRetryAt2.get(cacheKey3);
     if (retryAt && Date.now() < retryAt) return null;
-    const existing = movieStreamInFlight.get(cacheKey2);
+    const existing = movieStreamInFlight.get(cacheKey3);
     if (existing) return existing;
     const filters = getStreamFilters();
     const request = (async () => {
-      if (!providerLookupInProgress2.has(cacheKey2)) {
-        providerLookupInProgress2.add(cacheKey2);
+      if (!providerLookupInProgress2.has(cacheKey3)) {
+        providerLookupInProgress2.add(cacheKey3);
         try {
           const providerResult = await resolveMovieStreamAvailabilityFromProviders(imdbId);
           if (providerResult !== null) {
-            cache8[cacheKey2] = { checkedAt: Date.now(), hasStream: providerResult };
+            cache8[cacheKey3] = { checkedAt: Date.now(), hasStream: providerResult };
             writeStreamCache2(cache8);
             return providerResult;
           }
         } finally {
-          providerLookupInProgress2.delete(cacheKey2);
+          providerLookupInProgress2.delete(cacheKey3);
         }
       }
       const streams = await fetchStreamResults(imdbId);
       const visibility = applyStreamFilters(streams, filters);
       const hasStream = streams.some((_, index) => visibility[index]);
-      cache8[cacheKey2] = { checkedAt: Date.now(), hasStream };
+      cache8[cacheKey3] = { checkedAt: Date.now(), hasStream };
       writeStreamCache2(cache8);
       return hasStream;
     })().catch(() => {
-      rememberFailedCheck2(cacheKey2, Date.now() + FAILED_CHECK_RETRY_MS2);
+      rememberFailedCheck2(cacheKey3, Date.now() + FAILED_CHECK_RETRY_MS2);
       return null;
     }).finally(() => {
-      movieStreamInFlight.delete(cacheKey2);
+      movieStreamInFlight.delete(cacheKey3);
     });
-    movieStreamInFlight.set(cacheKey2, request);
+    movieStreamInFlight.set(cacheKey3, request);
     return request;
   }
   var STREAM_CACHE_KEY2, STREAM_CACHE_TTL_MS2, STREAM_CACHE_POSITIVE_TTL_MS2, movieStreamInFlight, providerLookupInProgress2, FAILED_CHECK_RETRY_MS2, failedCheckRetryAt2;
   var init_release_watchlist_feed = __esm({
     "lib/release-watchlist-feed.ts"() {
       "use strict";
+      init_mode();
       init_async_utils();
       init_plugin_registry();
       init_plugin_state();
@@ -22299,6 +22336,7 @@
     const startedAt = Date.now();
     if (sourceInCooldown(addon)) return { report: { addon, outcome: { kind: "cooldown" } }, streams: [] };
     const attempt = async () => {
+      if (framedLibraryScopeActive()) return { report: { addon, outcome: { kind: "cooldown", framed: true } }, streams: [] };
       try {
         let raw = null;
         if (isPluginDesktopHost()) raw = await fetchViaDesktop(addon, target2, timeoutMs);
@@ -22337,6 +22375,7 @@
     memo2.clear();
   }
   async function lookupCoreStreams(target2, options = {}) {
+    if (framedLibraryScopeActive()) return { streams: [], reports: [] };
     const key = memoKey(target2);
     const replay = (result) => {
       if (options.onSource) {
@@ -22354,7 +22393,9 @@
     const pending5 = inflight5.get(key);
     if (pending5) return pending5.then(replay);
     const run = lookupCoreStreamsUncached(target2, options).then((result) => {
-      if (result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty")) {
+      const answered = result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
+      const framedSkip = result.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
+      if (answered && !framedSkip) {
         memo2.set(key, { at: Date.now(), result });
       }
       return result;
@@ -22393,6 +22434,7 @@
       init_plugin_sdk();
       init_async_utils();
       init_stream_utils();
+      init_mode();
       cooldownUntil = /* @__PURE__ */ new Map();
       COOLDOWN_MS = 9e4;
       FRESH_SOURCE_MS = 10 * 6e4;
@@ -22596,10 +22638,10 @@
     if (osApiKey) searchParams.set("os_api_key", osApiKey);
     if (osApiKey && mediaUrl) searchParams.set("media_url", mediaUrl);
     const url = `/api/subtitles?${searchParams.toString()}`;
-    const cacheKey2 = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
-    const cached = resultCache.get(cacheKey2);
+    const cacheKey3 = `${stremioType}:${videoId}:${osApiKey ? "rest" : "addon"}:${mediaUrl ? "hash" : "nohash"}`;
+    const cached = resultCache.get(cacheKey3);
     if (cached && cached.expiresAt > Date.now()) return cached.subtitles;
-    const running2 = inflight7.get(cacheKey2);
+    const running2 = inflight7.get(cacheKey3);
     if (running2) return running2;
     const parseSubtitles = (payload) => {
       const subtitles = payload?.subtitles;
@@ -22650,15 +22692,15 @@
         release: s.release
       }));
       pruneCache();
-      resultCache.set(cacheKey2, {
+      resultCache.set(cacheKey3, {
         expiresAt: Date.now() + (subtitles.length > 0 ? NON_EMPTY_CACHE_TTL_MS : EMPTY_CACHE_TTL_MS),
         subtitles
       });
       return subtitles;
     })().finally(() => {
-      inflight7.delete(cacheKey2);
+      inflight7.delete(cacheKey3);
     });
-    inflight7.set(cacheKey2, request);
+    inflight7.set(cacheKey3, request);
     return request;
   }
   var NON_EMPTY_CACHE_TTL_MS, EMPTY_CACHE_TTL_MS, FETCH_TIMEOUT_MS, MAX_CACHE_ENTRIES, resultCache, inflight7, LANG3_TO_22;
@@ -40512,9 +40554,9 @@ ${cue.text}`).join("\n\n")}
         vodHint: "{count} titles in this playlist are film and series (VOD), not channels.",
         vodHintEmpty: "This playlist has no film or series.",
         vodModeLinkTitle: "Live TV only",
-        vodModeLinkBody: "VOD is filtered out. A row in the hub shows how many titles there are and links to the Library.",
+        vodModeLinkBody: "VOD is filtered out of the channel lists. Film and series open from Home and the Library.",
         vodModeRowsTitle: "Show film & series here",
-        vodModeRowsBody: "Film and series get their own rows in the hub, below the channels.",
+        vodModeRowsBody: "Film and series also show up in Live TV, in Home, search and the Library.",
         vodModeOffTitle: "Hide VOD entirely",
         vodModeOffBody: "Nothing about film and series appears in Live TV.",
         // Biblioteksläget: VOD som en källa bland Plex, Jellyfin och egna mappar.
@@ -40531,6 +40573,7 @@ ${cue.text}`).join("\n\n")}
         vodLibraryFailed: "Could not build the library: {error}",
         // Hubben
         vodHomeIndexing: "Film & series are being prepared \u2014 showing channels meanwhile",
+        vodHomeHidden: "Film & series are hidden in the Live TV settings",
         // Sökets omfång
         scopeAll: "All",
         scopeChannels: "Channels",
@@ -40864,9 +40907,9 @@ ${cue.text}`).join("\n\n")}
         vodHint: "{count} titlar i den h\xE4r spellistan \xE4r film och serier (VOD), inte kanaler.",
         vodHintEmpty: "Den h\xE4r spellistan inneh\xE5ller ingen film eller serie.",
         vodModeLinkTitle: "Endast Live TV",
-        vodModeLinkBody: "VOD filtreras bort. En rad i hubben visar hur m\xE5nga titlar som finns och l\xE4nkar till Biblioteket.",
+        vodModeLinkBody: "VOD filtreras bort ur kanallistorna. Film och serier \xF6ppnas fr\xE5n Hem och Biblioteket.",
         vodModeRowsTitle: "Visa film & serier h\xE4r",
-        vodModeRowsBody: "Film och serier f\xE5r egna rader i hubben, under kanalerna.",
+        vodModeRowsBody: "Film och serier syns ocks\xE5 i Live TV: i Hem, s\xF6kningen och Biblioteket.",
         vodModeOffTitle: "D\xF6lj VOD helt",
         vodModeOffBody: "Inget om film och serier syns i Live TV.",
         vodLibraryHeading: "Anv\xE4nd som bibliotek",
@@ -40881,6 +40924,7 @@ ${cue.text}`).join("\n\n")}
         vodLibraryWhereToEnable: "Sl\xE5 p\xE5 det under Inst\xE4llningar \u2192 Hem \u2192 Startsida.",
         vodLibraryFailed: "Kunde inte bygga biblioteket: {error}",
         vodHomeIndexing: "Film och serier f\xF6rbereds \u2014 kanalerna visas s\xE5 l\xE4nge",
+        vodHomeHidden: "Film och serier \xE4r dolda i Live TV-inst\xE4llningarna",
         scopeAll: "Allt",
         scopeChannels: "Kanaler",
         scopeVod: "Film & serier",
@@ -42440,25 +42484,25 @@ ${cue.text}`).join("\n\n")}
   function loadChannelsShared(source) {
     ensureLogoFallbackSwitchSubscription();
     ensureCurationSubscription();
-    const cacheKey2 = channelsCacheKey(source);
-    const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey2);
+    const cacheKey3 = channelsCacheKey(source);
+    const cached = getPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey3);
     if (cached) return Promise.resolve(cached);
-    const existing = channelLoads.get(cacheKey2);
+    const existing = channelLoads.get(cacheKey3);
     if (existing) return existing;
     const controller = typeof AbortController === "function" ? new AbortController() : null;
-    if (controller) channelAborts.set(cacheKey2, controller);
+    if (controller) channelAborts.set(cacheKey3, controller);
     const request = (async () => {
       await ensureBootstrap();
       const items2 = source === null ? await loadEveryChannel(controller?.signal) : await loadAllChannels(source, void 0, controller?.signal);
       if (source !== null) applyLogoFallbackSwitch(source, items2);
       const curated = source !== null ? applyCuration(items2, curationForSource(source)) : items2;
-      setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey2, curated);
+      setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey3, curated);
       return curated;
     })().finally(() => {
-      if (channelLoads.get(cacheKey2) === request) channelLoads.delete(cacheKey2);
-      if (channelAborts.get(cacheKey2) === controller) channelAborts.delete(cacheKey2);
+      if (channelLoads.get(cacheKey3) === request) channelLoads.delete(cacheKey3);
+      if (channelAborts.get(cacheKey3) === controller) channelAborts.delete(cacheKey3);
     });
-    channelLoads.set(cacheKey2, request);
+    channelLoads.set(cacheKey3, request);
     return request;
   }
   function subscribeChannelGeneration(listener) {
@@ -47045,15 +47089,15 @@ ${cue.text}`).join("\n\n")}
   init_jsx_runtime_shim();
   var categoriesCache = /* @__PURE__ */ new Map();
   var cacheListeners = /* @__PURE__ */ new Set();
-  function cacheKey(login) {
+  function cacheKey2(login) {
     return `${login.base}|${login.username}`;
   }
   function knownXtreamCategoryCount(login) {
     if (!login) return null;
-    return categoriesCache.get(cacheKey(login))?.length ?? null;
+    return categoriesCache.get(cacheKey2(login))?.length ?? null;
   }
   function useXtreamCategories(login) {
-    const key = cacheKey(login);
+    const key = cacheKey2(login);
     const [categories, setCategories] = useState(() => categoriesCache.get(key) ?? null);
     useEffect(() => {
       let live2 = true;
@@ -54946,15 +54990,15 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
   var ALL_PLAYLISTS_KEY = "*";
-  function modeKey(playlistId) {
+  function modeKey2(playlistId) {
     return playlistId || ALL_PLAYLISTS_KEY;
   }
   function getVodMode(playlistId) {
-    const value = readRecord(VOD_MODE_KEY)[modeKey(playlistId)];
+    const value = readRecord(VOD_MODE_KEY)[modeKey2(playlistId)];
     return isVodMode(value) ? value : VOD_MODE_DEFAULT;
   }
   function setVodMode(playlistId, mode) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [modeKey(playlistId)]: mode });
+    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [modeKey2(playlistId)]: mode });
   }
   function getVodSort() {
     const raw = readPluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, VOD_SORT_DEFAULT);
@@ -54964,12 +55008,12 @@ ${cue.text}`).join("\n\n")}
     writePluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, sort);
   }
   function getVodCategory(playlistId) {
-    return readRecord(VOD_CATEGORY_KEY)[modeKey(playlistId)] ?? null;
+    return readRecord(VOD_CATEGORY_KEY)[modeKey2(playlistId)] ?? null;
   }
   function setVodCategory(playlistId, categoryId) {
     writePluginJson(LIVE_TV_PLUGIN_ID, VOD_CATEGORY_KEY, {
       ...readRecord(VOD_CATEGORY_KEY),
-      [modeKey(playlistId)]: categoryId
+      [modeKey2(playlistId)]: categoryId
     });
   }
   function mediaItemIdFor(item) {
@@ -57820,10 +57864,51 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_live_tv_data();
   init_vod_client();
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-home.ts
+  init_plugin_sdk();
+  init_tv_settings_store();
+  var LIVE_TV_FRAME_ID = "live-tv";
+  function vodHomeTarget() {
+    return {
+      pageId: "library",
+      params: { provider: VOD_LIBRARY_PROVIDER_ID, frame: LIVE_TV_FRAME_ID, fallbackPageId: LIVE_TV_BROWSE_PAGE_ID }
+    };
+  }
+  function vodHiddenForActivePlaylist() {
+    return getVodMode(getActivePlaylistId()) === "off";
+  }
+  var VOD_INDEX_TIMEOUT_MS = 1500;
+  async function hasVodIndex(timeoutMs = VOD_INDEX_TIMEOUT_MS) {
+    let timer3;
+    try {
+      const timeout = new Promise((resolve) => {
+        timer3 = setTimeout(() => resolve(null), timeoutMs);
+      });
+      const status = await Promise.race([fetchLibraryStatus(), timeout]);
+      return Boolean(status?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync));
+    } catch {
+      return false;
+    } finally {
+      if (timer3 !== void 0) clearTimeout(timer3);
+    }
+  }
+  var REDIRECT_COOLDOWN_MS = 1e4;
+  var lastRedirect = -Infinity;
+  function shouldRedirectToVodHome(params, now2) {
+    if (params && (params.view || params.url)) return false;
+    return now2 - lastRedirect >= REDIRECT_COOLDOWN_MS;
+  }
+  function markVodHomeRedirect(now2) {
+    lastRedirect = now2;
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-autoscan.ts
   var AUTOSCAN_KEY = "live_tv_vod_autoscan_v1";
   var inFlight2 = false;
   async function maybeAutoScanVod() {
     if (inFlight2) return "skipped";
+    if (vodHiddenForActivePlaylist()) return "skipped";
     if (readPluginJson(LIVE_TV_PLUGIN_ID, AUTOSCAN_KEY, false)) return "skipped";
     if (isLibraryScanRunning2()) return "skipped";
     inFlight2 = true;
@@ -57849,33 +57934,6 @@ ${cue.text}`).join("\n\n")}
     } finally {
       inFlight2 = false;
     }
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-home.ts
-  init_plugin_sdk();
-  var LIVE_TV_FRAME_ID = "live-tv";
-  function vodHomeTarget() {
-    return {
-      pageId: "library",
-      params: { provider: VOD_LIBRARY_PROVIDER_ID, frame: LIVE_TV_FRAME_ID, fallbackPageId: LIVE_TV_BROWSE_PAGE_ID }
-    };
-  }
-  async function hasVodIndex() {
-    try {
-      const status = await fetchLibraryStatus();
-      return Boolean(status?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync));
-    } catch {
-      return false;
-    }
-  }
-  var REDIRECT_COOLDOWN_MS = 1e4;
-  var lastRedirect = -Infinity;
-  function shouldRedirectToVodHome(params, now2) {
-    if (params && (params.view || params.url)) return false;
-    return now2 - lastRedirect >= REDIRECT_COOLDOWN_MS;
-  }
-  function markVodHomeRedirect(now2) {
-    lastRedirect = now2;
   }
 
   // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-shell.tsx
@@ -57995,7 +58053,7 @@ ${cue.text}`).join("\n\n")}
     const go = useCallback((next, extra = {}) => {
       onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: next, ...extra } });
     }, [onNavigate]);
-    const [redirectCheck, setRedirectCheck] = useState(() => params === void 0 && shouldRedirectToVodHome(params, Date.now()));
+    const [redirectCheck, setRedirectCheck] = useState(() => params === void 0 && !vodHiddenForActivePlaylist() && shouldRedirectToVodHome(params, Date.now()));
     useEffect(() => {
       if (!redirectCheck) return;
       let cancelled = false;
@@ -58018,6 +58076,10 @@ ${cue.text}`).join("\n\n")}
       window.setTimeout(() => setToastText((current3) => current3 === text ? null : current3), 1800);
     }, []);
     const goVodHome = useCallback(() => {
+      if (vodHiddenForActivePlaylist()) {
+        toast(tt("vodHomeHidden"));
+        return;
+      }
       void hasVodIndex().then((ok) => {
         if (ok) onNavigate(vodHomeTarget());
         else toast(tt("vodHomeIndexing"));
@@ -58422,9 +58484,24 @@ ${cue.text}`).join("\n\n")}
   init_vod_client();
   init_guide_surface();
   init_jsx_runtime_shim();
-  function PhoneTabBar({ select }) {
+  var BACK_KEYS3 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
+  function PhoneTabBar({ select, onInsetBottom }) {
     const tvMode = useTvMode();
     const [showLibrary, setShowLibrary] = useState(false);
+    const wrapRef = useRef(null);
+    useEffect(() => {
+      if (!onInsetBottom) return;
+      const nav = wrapRef.current?.querySelector('[data-testid="mobile-tab-bar"]');
+      if (!nav) return;
+      const report = () => onInsetBottom(nav.getBoundingClientRect().height);
+      report();
+      const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(report) : null;
+      observer?.observe(nav);
+      return () => {
+        observer?.disconnect();
+        onInsetBottom(0);
+      };
+    }, [onInsetBottom]);
     useEffect(() => {
       let cancelled = false;
       const playlistId = getActivePlaylistId();
@@ -58438,9 +58515,9 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [tvMode]);
-    return /* @__PURE__ */ jsx(MobileTabBar, { view: "hub", activeOverride: "home", showLibrary, onGo: select, onMore: () => select("multi") });
+    return /* @__PURE__ */ jsx("div", { ref: wrapRef, children: /* @__PURE__ */ jsx(MobileTabBar, { view: "hub", activeOverride: "home", showLibrary, onGo: select, onMore: () => select("multi") }) });
   }
-  function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset }) {
+  function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onInsetBottom }) {
     const settings = useTvSettings();
     const rootRef = useRef(null);
     const isTv = platform === "tv";
@@ -58467,8 +58544,22 @@ ${cue.text}`).join("\n\n")}
       observer?.observe(el);
       return () => observer?.disconnect();
     }, [phone, onInset]);
+    useEffect(() => {
+      if (phone) return;
+      const onKey = (event) => {
+        if (!BACK_KEYS3.has(event.key)) return;
+        const el = rootRef.current;
+        const target2 = event.target;
+        if (!el || !target2 || !el.contains(target2)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onExit();
+      };
+      window.addEventListener("keydown", onKey, true);
+      return () => window.removeEventListener("keydown", onKey, true);
+    }, [phone, onExit]);
     if (phone) {
-      return /* @__PURE__ */ jsx(PhoneTabBar, { select });
+      return /* @__PURE__ */ jsx(PhoneTabBar, { select, onInsetBottom });
     }
     return /* @__PURE__ */ jsx("div", { ref: rootRef, style: { height: "100%", display: "flex", background: TV2.bg, color: TV2.text, fontFamily: TV2.font }, children: /* @__PURE__ */ jsx(TvRail, { active: "home", isTv, narrow, labels: settings.railLabels && !narrow, onSelect: select }) });
   }
@@ -58479,7 +58570,7 @@ ${cue.text}`).join("\n\n")}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.14.0"
+      version: "0.15.0"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -58493,7 +58584,7 @@ ${cue.text}`).join("\n\n")}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.14.0",
+    version: "0.15.0",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
