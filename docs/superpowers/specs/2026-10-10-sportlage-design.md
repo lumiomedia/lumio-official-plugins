@@ -23,7 +23,8 @@ anrop görs som inte behövs.
 2. **Ingen hosting.** Ingen egen server, worker eller proxy. Alla externa
    anrop går från användarens app med **användarens egen nyckel**.
 3. **Extern källa: API-Sports** (api-sports.io). Gratisnivån ger 100 anrop
-   per dag och alla endpoints. Betald nivå kostar från 19 USD/mån och ger
+   per dag **per sport-API** (fotboll 100, hockey 100 … med samma nyckel;
+   bekräftat av Jerry 2026-10-10) och alla endpoints. Betald nivå kostar från 19 USD/mån och ger
    7 500 anrop per dag. Märken hämtas från media-URL:er, som inte räknas mot
    kvoten. Källan ligger bakom ett providergränssnitt men bara API-Sports
    byggs. Ingen TheSportsDB eller ESPN i v1.
@@ -190,10 +191,10 @@ inte.
 Hanteraren äger **varje** anrop mot källan. Inget annat i koden får anropa
 adaptern direkt.
 
-- **Bokföring per kvotdygn**, som återställs 00:00 UTC, och per kvothink.
-  Jerry har fått uppgiften att en nyckel delar kvoten mellan alla sporter.
-  Hanteraren klarar också en kvot per sport-API, om testet med riktig nyckel
-  visar det. Sanningen är svarets kvotheaders (resterande/gräns). Lokal
+- **Bokföring per kvotdygn**, som återställs 00:00 UTC, och **per sport-API**
+  (en egen hink per sport; gratis = 100 per sport och dygn). Hela dygnsplanen
+  nedan räknas per hink, så hockey tar aldrig fotbollens kvot. Sanningen är
+  svarets kvotheaders (resterande/gräns). Lokal
   räkning används bara mellan svaren. Minutgränsen respekteras också.
 - **Dygnsplan**, med anrop i prioritetsordning:
   1. Dagsprogram **idag** per sport med matcher i EPG eller bland följda
@@ -286,9 +287,9 @@ höjdpunkter (fas 3), spelarprofil från uppställningen.
 
 ## Öppna frågor till Jerry
 
-1. Är kvoten delad mellan alla sporter eller satt per sport-API? Det ska
-   verifieras med din nyckel vid inspelningen. Hanteraren klarar båda
-   fallen.
+1. (Besvarad 2026-10-10: kvoten är per sport-API, 100/dag var.) Senare,
+   valfritt: sportapi.ai (bara fotboll, 2 000/dag gratis) som extra
+   fotbollskälla bakom samma providergränssnitt — inte i v1.
 2. Vilka sporter ska ha egna knappar från start? Förslaget är Fotboll,
    Ishockey, Basket, Handboll, Motorsport och Tennis (bara EPG).
 3. Ska "Sänds på X, som inte finns i dina spellistor" vara med? API-Sports
