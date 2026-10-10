@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { requestOpenBrowsePage } from '@/lib/plugin-sdk'
 import { encodeChannelParams } from './live-tv-shell'
 import { reminderToChannel, startReminderScheduler, tryNativeNotification, type Reminder } from './reminders'
+import { startSportAlertSync } from './sport/sport-alerts'
 import { useHubText } from './hub-strings'
 import { Btn, LT } from './live-tv-ui'
 
@@ -24,6 +25,8 @@ export function LiveTvRemindersMount() {
       }),
     [h],
   )
+  // Avsparksnotisen: följda lags matcher blir påminnelser (spec: Följer).
+  useEffect(() => startSportAlertSync(), [])
   useEffect(() => {
     if (!banner) return
     const timer = window.setTimeout(() => setBanner(null), 20_000)

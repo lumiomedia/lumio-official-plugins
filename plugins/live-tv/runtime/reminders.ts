@@ -28,6 +28,10 @@ export interface Reminder {
   createdAt: number
   /** Satt när bannern visats så den inte visas igen. */
   notifiedAt?: number
+  /** Egen förvarning i ms (avsparksnotisen: 15 min eller 0). Saknas = REMINDER_LEAD_MS. */
+  leadMs?: number
+  /** 'sport' = skapad av avsparksnotisen; byts ut av `replaceSportReminders`, aldrig av användarens egna. */
+  origin?: 'sport'
 }
 
 export function reminderId(channel: Pick<M3uChannel, 'name' | 'url'>, programme: Pick<EpgProgramme, 'start'>): string {
@@ -54,6 +58,8 @@ function sanitize(raw: unknown): Reminder[] {
       stop: typeof r.stop === 'number' ? r.stop : r.start,
       createdAt: typeof r.createdAt === 'number' ? r.createdAt : 0,
       notifiedAt: typeof r.notifiedAt === 'number' ? r.notifiedAt : undefined,
+      leadMs: typeof r.leadMs === 'number' && r.leadMs >= 0 ? r.leadMs : undefined,
+      origin: r.origin === 'sport' ? 'sport' : undefined,
     })
   }
   return out.sort((left, right) => left.start - right.start)
@@ -103,6 +109,26 @@ export function removeReminder(id: string): Reminder[] {
   return next
 }
 
+/**
+ * Byt ut avsparksnotisens automatiska påminnelser mot `next`.
+ *
+ * Manuella påminnelser rörs aldrig. Har användaren själv satt en påminnelse
+ * på samma program (samma id) vinner den — ingen dubblett. En automatisk som
+ * redan visats behåller `notifiedAt`, så synken inte visar bannern igen.
+ */
+export function replaceSportReminders(next: Reminder[], now: number = Date.now()): Reminder[] {
+  const current = getReminders(now)
+  const manual = current.filter((r) => r.origin !== 'sport')
+  const manualIds = new Set(manual.map((r) => r.id))
+  const previous = new Map(current.filter((r) => r.origin === 'sport').map((r) => [r.id, r]))
+  const auto = next
+    .filter((r) => !manualIds.has(r.id))
+    .map((r) => ({ ...r, origin: 'sport' as const, notifiedAt: previous.get(r.id)?.notifiedAt }))
+  const merged = [...manual, ...auto].sort((left, right) => left.start - right.start)
+  if (JSON.stringify(merged) !== JSON.stringify(current)) write(merged)
+  return merged
+}
+
 export function markReminderNotified(id: string, now: number = Date.now()): void {
   write(getReminders(now).map((r) => (r.id === id ? { ...r, notifiedAt: now } : r)))
 }
@@ -113,7 +139,7 @@ export function onRemindersChanged(listener: () => void): () => void {
 
 /** Påminnelser vars förvarningsfönster (start − lead) har passerat och som inte visats. */
 export function dueReminders(now: number = Date.now(), leadMs: number = REMINDER_LEAD_MS): Reminder[] {
-  return getReminders(now).filter((r) => r.notifiedAt === undefined && r.start - leadMs <= now)
+  return getReminders(now).filter((r) => r.notifiedAt === undefined && r.start - (r.leadMs ?? leadMs) <= now)
 }
 
 export function reminderToChannel(r: Reminder): M3uChannel {
