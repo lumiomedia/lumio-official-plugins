@@ -9,7 +9,7 @@ import { useTvText, type TvStringKey } from '../tv/tv-strings'
 import { localDayKey } from './sport-epg'
 import { matchTitle, sourceChannel, type MatchSource, type SportKind, type SportMatch } from './sport-model'
 import { rankedSources, statusAt } from './sport-day-model'
-import { teamKeysMatch, useFollows, useOverrides, useSportSettings, type SportFollow, type SportOverrides, type SportSettings } from './sport-store'
+import { setAlertSkip, teamKeysMatch, useFollows, useOverrides, useSportSettings, type SportFollow, type SportOverrides, type SportSettings } from './sport-store'
 
 /*
   ALLT EN SPORTVY BEHÖVER, I ETT OBJEKT.
@@ -84,7 +84,15 @@ export function buildSportCtx(input: {
     },
     toggleRemind: (m) => {
       const chosen = best(m)
-      if (chosen) toggleReminder(sourceChannel(chosen), { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop })
+      if (!chosen) return
+      const channel = sourceChannel(chosen)
+      const id = reminderId(channel, { start: chosen.programmeStart })
+      const existing = reminders.find((r) => r.id === id)
+      // En automatisk (följd) påminnelse som bockas av måste kommas ihåg,
+      // annars skapar nästa avsparkssynk den igen. På igen = manuell påminnelse.
+      if (existing?.origin === 'sport') setAlertSkip(m.id, m.start, true)
+      else if (!existing) setAlertSkip(m.id, m.start, false)
+      toggleReminder(channel, { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop })
     },
     isReminded: (m) => {
       const chosen = best(m)

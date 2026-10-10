@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { __resetForTests } from '@/lib/plugin-sdk'
 import { dueReminders, getReminders, reminderId, replaceSportReminders, toggleReminder } from '../reminders'
 import { KICKOFF_LEAD_MS, SPORT_ALERT_START_DELAY_MS, kickoffReminders, startSportAlertSync, syncKickoffReminders } from './sport-alerts'
-import { setSportSettings, toggleFollow } from './sport-store'
+import { getFollows, getSportSettings, setSportSettings, toggleFollow } from './sport-store'
+import { buildSportCtx } from './sport-ctx'
+import type { LiveTvModel } from '../live-tv-model'
+import type { TvNav } from '../tv/tv-shell'
 import { sourceChannel } from './sport-model'
 import { HOUR, MIN, fxDay, fxMatch, stubSportDays } from './__sport-fixture'
 import { localDayKey } from './sport-epg'
@@ -115,5 +118,35 @@ describe('startSportAlertSync', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(spy).not.toHaveBeenCalled()
     stop()
+  })
+})
+
+describe('avbockad automatisk påminnelse', () => {
+  it('Påminn av på en följd match överlever nästa synk, och på igen ger en påminnelse', async () => {
+    toggleFollow(hammarby)
+    setSportSettings({ alert: '15' })
+    const m = fxMatch({ start: now + 2 * HOUR })
+    stubSportDays({ [localDayKey(now)]: [m] })
+    await syncKickoffReminders(now)
+    const ctxFor = () => buildSportCtx({
+      model: { nowMs: now, lists: [] } as unknown as LiveTvModel,
+      nav: {} as TvNav,
+      tt: (k) => k,
+      locale: 'sv',
+      follows: getFollows(),
+      overrides: {},
+      settings: getSportSettings(),
+      reminders: getReminders(now),
+      openMatch: () => {},
+      openFollowPicker: () => {},
+    })
+    expect(ctxFor().isReminded(m)).toBe(true)
+    ctxFor().toggleRemind(m)
+    expect(ctxFor().isReminded(m)).toBe(false)
+    await syncKickoffReminders(now)
+    expect(ctxFor().isReminded(m)).toBe(false)
+    ctxFor().toggleRemind(m)
+    await syncKickoffReminders(now)
+    expect(ctxFor().isReminded(m)).toBe(true)
   })
 })

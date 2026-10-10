@@ -156,3 +156,29 @@ export function setOverride(matchId: string, channel: OverrideChannel | null): S
 export function useOverrides(): SportOverrides {
   return useStored(SPORT_OVERRIDES_KEY, getOverrides)
 }
+
+/*
+  AVBOCKADE AUTOMATISKA PÅMINNELSER. En följd match får en påminnelse av
+  synken; bockar användaren av den sparas matchens id här så att nästa synk
+  inte skapar den igen. Värdet är matchens start — posterna rensas när
+  matchen är ett dygn gammal (nyckeln synkas, Android har ett lagringstak).
+*/
+export const SPORT_ALERT_SKIP_KEY = 'sport_alert_skip_v1'
+const SKIP_KEEP_MS = 24 * 60 * 60_000
+
+export function getAlertSkips(): Record<string, number> {
+  const raw = readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, {})
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out: Record<string, number> = {}
+  for (const [id, start] of Object.entries(raw as Record<string, unknown>)) if (typeof start === 'number') out[id] = start
+  return out
+}
+
+export function setAlertSkip(matchId: string, start: number, skip: boolean, now: number = Date.now()): void {
+  const current = getAlertSkips()
+  if (!skip && !(matchId in current)) return
+  const next: Record<string, number> = {}
+  for (const [id, s] of Object.entries(current)) if (s + SKIP_KEEP_MS > now && id !== matchId) next[id] = s
+  if (skip) next[matchId] = start
+  writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, next)
+}

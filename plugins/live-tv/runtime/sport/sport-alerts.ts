@@ -7,7 +7,7 @@ import { fetchSportDay, localDayKey, shiftDay } from './sport-epg'
 import { matchTitle, sourceChannel, type SportDay } from './sport-model'
 import { followState, rankedSources, statusAt } from './sport-day-model'
 import {
-  SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, SPORT_SETTINGS_KEY, getFollows, getOverrides, getSportSettings,
+  SPORT_ALERT_SKIP_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, SPORT_SETTINGS_KEY, getAlertSkips, getFollows, getOverrides, getSportSettings,
   type KickoffAlert, type SportFollow, type SportOverrides,
 } from './sport-store'
 
@@ -29,12 +29,14 @@ export function kickoffReminders(
   alert: KickoffAlert,
   overrides: SportOverrides,
   now: number,
+  /** Matcher där användaren bockat av påminnelsen (`sport_alert_skip_v1`). */
+  skip: Record<string, number> = {},
 ): Reminder[] {
   if (alert === 'off' || follows.length === 0) return []
   const out: Reminder[] = []
   for (const day of days) {
     for (const m of day?.matches ?? []) {
-      if (m.rerun || statusAt(m, now) !== 'upcoming' || !followState(m, follows).any) continue
+      if (m.rerun || m.id in skip || statusAt(m, now) !== 'upcoming' || !followState(m, follows).any) continue
       const source = rankedSources(m, overrides)[0]
       if (!source) continue
       const channel = sourceChannel(source)
@@ -67,7 +69,7 @@ export async function syncKickoffReminders(now: number = Date.now()): Promise<vo
   }
   const today = localDayKey(now)
   const days = await Promise.all([today, shiftDay(today, 1)].map((day) => fetchSportDay(day, now).catch(() => null)))
-  replaceSportReminders(kickoffReminders(days, follows, alert, getOverrides(), now), now)
+  replaceSportReminders(kickoffReminders(days, follows, alert, getOverrides(), now, getAlertSkips()), now)
 }
 
 /** Första synken väntar så att appstarten (och en film som startas direkt) inte delar tid med EPG-läsningen. */
@@ -95,7 +97,7 @@ export function startSportAlertSync(): () => void {
   const timer = window.setInterval(run, SPORT_ALERT_SYNC_MS)
   const onVisibility = () => { if (!hidden()) run() }
   document.addEventListener('visibilitychange', onVisibility)
-  const offs = [SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, SPORT_OVERRIDES_KEY].map((key) => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, run))
+  const offs = [SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, SPORT_OVERRIDES_KEY, SPORT_ALERT_SKIP_KEY].map((key) => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, run))
   return () => {
     stopped = true
     window.clearTimeout(startTimer)
