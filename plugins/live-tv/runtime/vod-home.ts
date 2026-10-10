@@ -37,3 +37,6 @@ export function shouldRedirectToVodHome(params: Record<string, string> | undefin
 }
 
 export function markVodHomeRedirect(now: number): void { lastRedirect = now }
+
+/** Bara för tester: nollställ spärren. */
+export function resetVodHomeRedirectForTests(): void { lastRedirect = -Infinity }

@@ -298,11 +298,15 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     ram. Saknas det visas Kanaler (och P5 startar indexeringen). Spärren
     hindrar att värdens reserv och vi studsar mellan varandra.
   */
+  // Bara när värden öppnar sidan helt utan params (undefined). Medan kollen pågår ritas ingen vy: hubben hade annars startat sina
+  // kanal-/EPG-laddningar bara för att kastas vid omdirigeringen.
+  const [redirectCheck, setRedirectCheck] = useState(() => params === undefined && shouldRedirectToVodHome(params, Date.now()))
   useEffect(() => {
-    if (!shouldRedirectToVodHome(params, Date.now())) return
+    if (!redirectCheck) return
     let cancelled = false
     void hasVodIndex().then((ok) => {
-      if (cancelled || !ok) return
+      if (cancelled) return
+      if (!ok) { setRedirectCheck(false); return }
       markVodHomeRedirect(Date.now())
       onNavigate(vodHomeTarget())
     })
@@ -608,7 +612,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         />
       )}
       <main ref={mainRef} style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-        <View key={view} model={model} nav={nav} params={viewParams} settings={settings} phone={phone} />
+        {redirectCheck ? null : <View key={view} model={model} nav={nav} params={viewParams} settings={settings} phone={phone} />}
       </main>
       {/* Flik-raden (telefon): borta medan spelaren är öppen — den ligger
           `position: fixed` och hade annars legat över bilden. */}

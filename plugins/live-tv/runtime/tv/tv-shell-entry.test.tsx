@@ -8,7 +8,7 @@ vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => null }))
 vi.mock('../vod-home', async (orig) => ({ ...(await orig<object>()), hasVodIndex: vi.fn() }))
 
 import { LiveTvTvShell } from './tv-shell'
-import { hasVodIndex, markVodHomeRedirect, vodHomeTarget } from '../vod-home'
+import { hasVodIndex, resetVodHomeRedirectForTests, vodHomeTarget } from '../vod-home'
 
 const ch = (name: string, group: string) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch('A', 'Sport'), ch('B', 'News')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
@@ -20,7 +20,7 @@ beforeEach(() => {
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   seedLiveTvIndex()
-  markVodHomeRedirect(-Infinity) // nollställ spärren mellan testerna
+  resetVodHomeRedirectForTests()
   vi.mocked(hasVodIndex).mockReset()
 })
 
@@ -42,6 +42,15 @@ describe('Live TV öppnar i Hem', () => {
     await waitFor(() => expect(hasVodIndex).toHaveBeenCalled())
     expect(onNavigate).not.toHaveBeenCalled()
     expect(screen.getByTestId('rail-hub')).toHaveAttribute('data-current')
+  })
+  it('hubben ritas inte medan kollen pågår, och ritas när den svarar nej', async () => {
+    let resolve!: (ok: boolean) => void
+    vi.mocked(hasVodIndex).mockReturnValue(new Promise<boolean>((r) => { resolve = r }))
+    mount(undefined)
+    expect(screen.queryByTestId('hub-spotlight')).toBeNull()
+    expect(document.querySelector('main')?.childElementCount).toBe(0)
+    resolve(false)
+    await waitFor(() => expect(document.querySelector('main')?.childElementCount).toBeGreaterThan(0))
   })
   it('med view-param: aldrig omdirigering', async () => {
     vi.mocked(hasVodIndex).mockResolvedValue(true)

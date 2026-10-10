@@ -1,14 +1,39 @@
-import { useEffect, useRef } from 'react'
-import type { LibraryFrameProps } from '@/lib/plugin-sdk'
+import { useEffect, useRef, useState } from 'react'
+import { useTvMode, type LibraryFrameProps } from '@/lib/plugin-sdk'
 import { TvRail, type RailKey } from './tv-rail'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
-import { useTvSettings } from './tv-settings-store'
+import { getActivePlaylistId, useTvSettings } from './tv-settings-store'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { TV } from './tv-ui'
 import { LIVE_TV_BROWSE_PAGE_ID } from '../live-tv-shell'
-import { useLiveTvModel } from '../live-tv-model'
-import { useVodCategories } from '../hooks/useVodLibrary'
+import { getLiveTvLists } from '../live-tv-data'
+import { listVodCategories } from '../vod-client'
 import { getVodMode } from '../vod-data'
+import { isDesktopTauri } from './guide-surface'
+
+/**
+ * Telefonens flikrad med samma Bibliotek-villkor som tv-shell.tsx (VOD-kategorier
+ * finns och läget är inte `off`) — men utan att montera hela modellen: det
+ * hade dragit in kanal-/EPG-laddning i en ram som ligger ovanpå uppspelningsstart.
+ * Aktiv källa läses ur lagringen precis som modellen gör, ett enda anrop, ingen polling.
+ * Monteras bara på telefon.
+ */
+function PhoneTabBar({ select }: { select: (key: RailKey | 'hub' | 'guide' | 'favs' | 'search' | 'library' | 'home') => void }) {
+  const tvMode = useTvMode()
+  const [showLibrary, setShowLibrary] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    const playlistId = getActivePlaylistId()
+    const source = tvMode || isDesktopTauri() ? getLiveTvLists().find((list) => list.id === playlistId)?.source ?? null : null
+    if (getVodMode(playlistId) === 'off') return
+    listVodCategories(source)
+      .then((result) => { if (!cancelled) setShowLibrary(result.total > 0) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [tvMode])
+  // "Mer" går till Multiview-vyn: arket hör till Live TV-sidan.
+  return <MobileTabBar view="hub" activeOverride="home" showLibrary={showLibrary} onGo={select} onMore={() => select('multi')} />
+}
 
 /**
  * Live TV:s räls runt appens VOD-hem (spec 2026-10-10). Samma `TvRail` som
@@ -23,10 +48,6 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset }: Li
   const isTv = platform === 'tv'
   const phone = platform === 'phone'
   const narrow = useNarrowSurface(rootRef) && !isTv
-  // Samma villkor som tv-shell.tsx: flikraden ska vara identisk med den inne i Live TV.
-  const model = useLiveTvModel()
-  const vodCats = useVodCategories(phone ? model.activeSource : null)
-  const showLibraryTab = phone && vodCats.total > 0 && getVodMode(model.activePlaylistId) !== 'off'
   const select = (key: RailKey | 'hub' | 'guide' | 'favs' | 'search' | 'library' | 'home') => {
     if (key === 'back') { onExit(); return }
     if (key === 'home') return
@@ -46,8 +67,7 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset }: Li
   }, [phone, onInset])
 
   if (phone) {
-    // "Mer" går till Multiview-vyn: arket hör till Live TV-sidan.
-    return <MobileTabBar view="hub" activeOverride="home" showLibrary={showLibraryTab} onGo={select} onMore={() => select('multi')} />
+    return <PhoneTabBar select={select} />
   }
   return (
     <div ref={rootRef} style={{ height: '100%', display: 'flex', background: TV.bg, color: TV.text, fontFamily: TV.font }}>

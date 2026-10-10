@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/plugin-sdk', async (orig) => ({ ...(await orig<object>()), fetchLibraryStatus: vi.fn() }))
 import { fetchLibraryStatus } from '@/lib/plugin-sdk'
-import { hasVodIndex, markVodHomeRedirect, shouldRedirectToVodHome, vodHomeTarget } from './vod-home'
+import { resetVodHomeRedirectForTests, hasVodIndex, markVodHomeRedirect, shouldRedirectToVodHome, vodHomeTarget } from './vod-home'
 
 describe('vod-home', () => {
   it('målet är kärnans biblioteksvy med ram och Kanaler som reserv', () => {
@@ -20,6 +20,7 @@ describe('vod-home', () => {
 })
 
 describe('omdirigering till Hem', () => {
+  afterEach(() => resetVodHomeRedirectForTests())
   it('bara utan params', () => {
     expect(shouldRedirectToVodHome(undefined, 100_000)).toBe(true)
     expect(shouldRedirectToVodHome({}, 100_000)).toBe(true)
