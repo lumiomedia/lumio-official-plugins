@@ -5,6 +5,7 @@ import { seedLiveTvIndex } from '../../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey } from '../../live-tv-data'
 import type { LiveTvModel } from '../../live-tv-model'
 import { TvPlayerChrome } from '../../tv/tv-player-chrome'
+import { playerScale } from '../../tv/player-chrome-parts'
 import type { LiveTvPlayerTvProps, PlayerSportProps } from '../../tv/tv-player-types'
 import { PLAYER_SPORT_DELAY_MS, PlayerMatchesDrawer, matchesForPlayer, multiviewFor, usePlayerSport } from './player-sport'
 import { HOUR, MIN, fxList, fxMatch, fxSource, stubSportDays } from '../__sport-fixture'
@@ -73,9 +74,17 @@ describe('usePlayerSport vid kanalstart', () => {
 })
 
 describe('Matcher-lådan', () => {
+  it('mäter med spelarens ps() — 1,4× i TV-läget som kromet runt den', () => {
+    render(<PlayerMatchesDrawer sport={sportProps()} channel={channelB} nowMs={now} locale="en-GB" onClose={() => {}} ps={playerScale(true)} />)
+    const drawer = screen.getByTestId('player-matches-drawer')
+    expect(drawer.style.padding).toBe('39px')
+    expect(within(drawer).getByText('Matches').style.fontSize).toBe('42px')
+    const row = within(drawer).getAllByTestId('pm-row')[0]!
+    expect((row.querySelector('[data-crest]') as HTMLElement).style.width).toBe('62px')
+  })
   it('sektioner med NU, klick byter match', () => {
     const sport = sportProps()
-    render(<PlayerMatchesDrawer sport={sport} channel={channelB} nowMs={now} locale="en-GB" onClose={() => {}} />)
+    render(<PlayerMatchesDrawer sport={sport} channel={channelB} nowMs={now} locale="en-GB" onClose={() => {}} ps={playerScale(false)} />)
     const drawer = screen.getByTestId('player-matches-drawer')
     expect(drawer).toHaveTextContent('On this channel')
     expect(drawer).toHaveTextContent('Live on your channels')
@@ -88,7 +97,7 @@ describe('Matcher-lådan', () => {
   })
   it('Välj flera → högst fyra → Öppna i Multiview med valda källor', () => {
     const sport = sportProps()
-    render(<PlayerMatchesDrawer sport={sport} channel={channelB} nowMs={now} locale="en-GB" onClose={() => {}} />)
+    render(<PlayerMatchesDrawer sport={sport} channel={channelB} nowMs={now} locale="en-GB" onClose={() => {}} ps={playerScale(false)} />)
     fireEvent.click(screen.getByTestId('pm-pick'))
     const rows = screen.getAllByTestId('pm-row')
     fireEvent.click(rows[0]!)

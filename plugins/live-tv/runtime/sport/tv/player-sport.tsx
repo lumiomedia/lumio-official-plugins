@@ -8,7 +8,7 @@ import { formatClock } from '../../live-tv-ui'
 import type { MultiviewLayout, MultiviewState } from '../../tv/tv-multiview-store'
 import type { PlayerSportProps } from '../../tv/tv-player-types'
 import { useTvText } from '../../tv/tv-strings'
-import { TV, dp, station } from '../../tv/tv-ui'
+import { TV, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, sourceChannel, type SportDay, type SportMatch } from '../sport-model'
 import { localDayKey, useSportDay } from '../sport-epg'
 import { pickMultiviewKeys, rankedSources, statusAt, visibleMatches } from '../sport-day-model'
@@ -105,7 +105,8 @@ export function PlayerSportTicker({ sport, channel, nowMs, variant, ps }: { spor
   )
 }
 
-export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose }: { sport: PlayerSportProps; channel: M3uChannel; nowMs: number; locale: string; onClose: () => void }) {
+/** Lådan ligger i spelarportalen utanför scenlådan — alla mått via spelarens `ps()` (1,4× på TV). */
+export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps }: { sport: PlayerSportProps; channel: M3uChannel; nowMs: number; locale: string; onClose: () => void; ps: (n: number) => number }) {
   const { tt } = useTvText()
   const [picking, setPicking] = useState(false)
   const [picked, setPicked] = useState<string[]>([])
@@ -123,35 +124,35 @@ export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose }: 
     const on = picked.includes(m.id)
     const meta = [m.league, statusAt(m, nowMs) === 'live' ? tt('live') : formatClock(m.start, locale), best?.name].filter(Boolean).join(' · ')
     return (
-      <div key={m.id} data-testid="pm-row" data-picked={on ? '1' : '0'} {...station(() => (picking ? toggle(m) : sport.onSwitchMatch(m)), undefined, index === 0 ? { 'data-init': '' } : undefined)} style={{ display: 'flex', alignItems: 'center', gap: dp(14), padding: `${dp(12)}px ${dp(14)}px`, borderRadius: dp(12), cursor: 'pointer', background: now ? TV.accMix(16) : TV.s08, border: `1px solid ${now ? TV.accMix(60) : TV.line}` }}>
-        {picking ? <span style={{ width: dp(30), height: dp(30), borderRadius: dp(8), border: `2px solid ${on ? TV.acc : TV.lineStrong}`, background: on ? TV.acc : 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span> : null}
+      <div key={m.id} data-testid="pm-row" data-picked={on ? '1' : '0'} {...station(() => (picking ? toggle(m) : sport.onSwitchMatch(m)), undefined, index === 0 ? { 'data-init': '' } : undefined)} style={{ display: 'flex', alignItems: 'center', gap: ps(14), padding: `${ps(12)}px ${ps(14)}px`, borderRadius: ps(12), cursor: 'pointer', background: now ? TV.accMix(16) : TV.s08, border: `1px solid ${now ? TV.accMix(60) : TV.line}` }}>
+        {picking ? <span style={{ width: ps(30), height: ps(30), borderRadius: ps(8), border: `2px solid ${on ? TV.acc : TV.lineStrong}`, background: on ? TV.acc : 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span> : null}
         <span style={{ display: 'flex', flexShrink: 0 }}>
-          {m.home ? <Crest name={m.home} colorKey={m.homeKey ?? m.home} size={dp(44)} /> : null}
-          {m.away ? <span style={{ marginLeft: -dp(12) }}><Crest name={m.away} colorKey={m.awayKey ?? m.away} size={dp(44)} /></span> : null}
+          {m.home ? <Crest name={m.home} colorKey={m.homeKey ?? m.home} size={ps(44)} /> : null}
+          {m.away ? <span style={{ marginLeft: -ps(12) }}><Crest name={m.away} colorKey={m.awayKey ?? m.away} size={ps(44)} /></span> : null}
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: dp(19), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
-          <div style={{ fontSize: dp(15), color: TV.muted, ...ellipsis }}>{meta}</div>
+          <div style={{ fontSize: ps(19), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
+          <div style={{ fontSize: ps(15), color: TV.muted, ...ellipsis }}>{meta}</div>
         </div>
-        {now ? <span data-testid="pm-now" style={{ padding: `${dp(3)}px ${dp(10)}px`, borderRadius: 999, border: `1px solid ${TV.accMix(80)}`, color: TV.accText, fontSize: dp(13), fontWeight: 700 }}>{tt('sportNowPill')}</span> : null}
+        {now ? <span data-testid="pm-now" style={{ padding: `${ps(3)}px ${ps(10)}px`, borderRadius: 999, border: `1px solid ${TV.accMix(80)}`, color: TV.accText, fontSize: ps(13), fontWeight: 700 }}>{tt('sportNowPill')}</span> : null}
       </div>
     )
   }
   const section = (title: string, list: SportMatch[], now: boolean) => (list.length === 0 ? null : (
-    <div key={title} style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
-      <span style={overline}>{title}</span>
+    <div key={title} style={{ display: 'flex', flexDirection: 'column', gap: ps(8) }}>
+      <span style={{ ...overline, fontSize: ps(15) }}>{title}</span>
       {list.map((m) => row(m, now))}
     </div>
   ))
   return (
-    <div ref={rootRef} data-testid="player-matches-drawer" data-panel-root="" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: `min(${dp(780)}px, 100%)`, zIndex: 40, background: '#141519', borderLeft: '1px solid rgba(255,255,255,0.16)', padding: dp(28), boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: dp(14), color: TV.text }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: dp(12) }}>
-        <span style={{ fontSize: dp(30), fontWeight: 600 }}>{tt('sportMatches')}</span>
-        <div data-testid="pm-pick" {...station(() => { setPicking((v) => !v); setPicked([]) })} aria-pressed={picking ? 'true' : 'false'} style={{ marginLeft: 'auto', height: dp(48), minHeight: dp(48), padding: `0 ${dp(16)}px`, borderRadius: dp(12), border: `1px solid ${TV.lineCard}`, background: picking ? TV.s16 : TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), fontWeight: 600, cursor: 'pointer' }}>{tt('sportPickSeveral')}</div>
-        <div data-testid="pm-close" {...station(onClose)} aria-label={tt('sportClose')} style={{ width: dp(48), height: dp(48), minHeight: dp(48), borderRadius: dp(12), border: `1px solid ${TV.lineCard}`, background: TV.s08, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>✕</div>
+    <div ref={rootRef} data-testid="player-matches-drawer" data-panel-root="" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: `min(${ps(780)}px, 100%)`, zIndex: 40, background: '#141519', borderLeft: '1px solid rgba(255,255,255,0.16)', padding: ps(28), boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: ps(14), color: TV.text }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: ps(12) }}>
+        <span style={{ fontSize: ps(30), fontWeight: 600 }}>{tt('sportMatches')}</span>
+        <div data-testid="pm-pick" {...station(() => { setPicking((v) => !v); setPicked([]) })} aria-pressed={picking ? 'true' : 'false'} style={{ marginLeft: 'auto', height: ps(48), minHeight: ps(48), padding: `0 ${ps(16)}px`, borderRadius: ps(12), border: `1px solid ${TV.lineCard}`, background: picking ? TV.s16 : TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: ps(16), fontWeight: 600, cursor: 'pointer' }}>{tt('sportPickSeveral')}</div>
+        <div data-testid="pm-close" {...station(onClose)} aria-label={tt('sportClose')} style={{ width: ps(48), height: ps(48), minHeight: ps(48), borderRadius: ps(12), border: `1px solid ${TV.lineCard}`, background: TV.s08, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>✕</div>
       </div>
-      <span style={{ fontSize: dp(16), color: TV.muted }}>{tt('sportMatchesHint')}</span>
-      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: dp(16) }}>
+      <span style={{ fontSize: ps(16), color: TV.muted }}>{tt('sportMatchesHint')}</span>
+      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: ps(16) }}>
         {section(tt('sportOnThisChannel'), lists.onChannel, true)}
         {section(tt('sportLiveOnChannels'), lists.live, false)}
         {section(tt('sportLaterOnChannels'), lists.later, false)}
@@ -164,7 +165,7 @@ export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose }: 
             if (chosen.length > 0) sport.onOpenMultiview(pickMultiviewKeys(chosen, sport.overrides, sport.isKnownChannel))
           })}
           aria-disabled={picked.length === 0 ? 'true' : 'false'}
-          style={{ height: dp(60), minHeight: dp(60), borderRadius: dp(14), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: dp(20), fontWeight: 600, cursor: 'pointer', opacity: picked.length === 0 ? 0.5 : 1 }}
+          style={{ height: ps(60), minHeight: ps(60), borderRadius: ps(14), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: ps(20), fontWeight: 600, cursor: 'pointer', opacity: picked.length === 0 ? 0.5 : 1 }}
         >
           {tt('sportOpenMultiview', { n: picked.length })}
         </div>

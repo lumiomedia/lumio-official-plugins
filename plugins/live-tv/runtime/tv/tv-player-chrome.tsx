@@ -276,7 +276,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
       {tv.sport && sportHere && tv.sport.view === 'feed' && visible ? <PlayerSportTicker sport={tv.sport} channel={channel} nowMs={tv.nowMs} variant="column" ps={ps} /> : null}
       {matchesOpen && tv.sport ? (
         <div style={{ pointerEvents: 'auto' }}>
-          <PlayerMatchesDrawer sport={tv.sport} channel={channel} nowMs={tv.nowMs} locale={tv.locale} onClose={closeMatches} />
+          <PlayerMatchesDrawer sport={tv.sport} channel={channel} nowMs={tv.nowMs} locale={tv.locale} onClose={closeMatches} ps={ps} />
         </div>
       ) : null}
       {/* Roten släpper igenom pekaren; menyn måste ta den själv. */}
