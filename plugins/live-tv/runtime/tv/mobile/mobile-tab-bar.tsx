@@ -42,9 +42,9 @@ export function tabForView(view: TvView): MobileTab {
   return view
 }
 
-export function MobileTabBar({ view, onGo, onMore, showLibrary = false }: { view: TvView; onGo: (view: 'home' | 'hub' | 'guide' | 'favs' | 'search' | 'library') => void; onMore: () => void; showLibrary?: boolean }) {
+export function MobileTabBar({ view, activeOverride, onGo, onMore, showLibrary = false }: { view: TvView; /** Vinner över `tabForView(view)` — ramen runt VOD-hemmet saknar en riktig vy. */ activeOverride?: MobileTab; onGo: (view: 'home' | 'hub' | 'guide' | 'favs' | 'search' | 'library') => void; onMore: () => void; showLibrary?: boolean }) {
   const { tt } = useTvText()
-  const active = tabForView(view)
+  const active = activeOverride ?? tabForView(view)
   const tabs = tabsFor(showLibrary)
   return (
     <nav

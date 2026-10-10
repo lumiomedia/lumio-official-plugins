@@ -831,3 +831,16 @@ export function canPip(_video?: HTMLVideoElement | null): boolean { return true 
 export function usePipAvailable(_video?: HTMLVideoElement | null): boolean { return true }
 export async function enterPip(_video?: HTMLVideoElement | null): Promise<boolean> { return true }
 export function notifyPipPlaying(_playing: boolean): void {}
+
+// Ramen runt appens VOD-hem — speglar värdens lib/plugin-sdk.ts.
+export interface BrowsePageTarget {
+  pageId: string
+  params?: Record<string, string>
+}
+export interface LibraryFrameProps {
+  platform: 'tv' | 'desktop' | 'phone'
+  onNavigate: (target: BrowsePageTarget) => void
+  onExit: () => void
+  /** Ramens bredd i SKÄRMpixlar; 0 = ingen sidoräls (telefon). */
+  onInset: (px: number) => void
+}

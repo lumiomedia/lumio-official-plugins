@@ -11,6 +11,8 @@ import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
 import { useChannelSchedule } from './hooks/useChannelSchedule'
 import { vodLibraryProvider } from './vod-library-provider'
+import { LiveTvLibraryFrame } from './tv/live-tv-library-frame'
+import { LIVE_TV_FRAME_ID } from './vod-home'
 
 declare global {
   interface Window {
@@ -131,6 +133,15 @@ export const LiveTvPlugin: LumioPlugin = {
       registerLibraryProvider?: (provider: unknown) => void
     }).registerLibraryProvider
     if (typeof registerLibrary === 'function') registerLibrary.call(ctx, vodLibraryProvider)
+
+    /*
+      RAMEN RUNT VOD-HEMMET (app 0.1.624+). Valfri som biblioteksleverantören:
+      en äldre värd saknar facket och öppnar då VOD-hemmet utan räls.
+    */
+    const registerFrame = (ctx as unknown as {
+      registerLibraryFrame?: (frame: { id: string; Frame: unknown }) => void
+    }).registerLibraryFrame
+    if (typeof registerFrame === 'function') registerFrame.call(ctx, { id: LIVE_TV_FRAME_ID, Frame: LiveTvLibraryFrame })
 
     const registerStreams = (ctx as unknown as {
       registerMediaStreamCatalogProvider?: (provider: {
