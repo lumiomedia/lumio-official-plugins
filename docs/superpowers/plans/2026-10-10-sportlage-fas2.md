@@ -4,7 +4,7 @@
 
 **Goal:** Med en nyckel som användaren själv klistrar in (API-Sports eller TheSportsDB premium) får Sport-fliken ställning, minut, status, märken, Resultat med tabeller, matchcenter, "Bara resultat", MÅL!-overlay och målnotis. Kvothanteraren äger varje anrop, och utan nyckel görs inga anrop.
 
-**Architecture:** Appen (Rust) får en lokal genomkoppling, `/api/live-tv/sport/fetch`. Den lägger på nyckelheadern, läser kvotheaders, för en delad kvotbok per källa och hink, svarar ur en diskcache i `live-tv-sport/` och spärrar hårt vid slut kvot. Ingenting hostas av oss. Appen får också `/sport/link` (fixtur ↔ EPG-match) och en nyckelöverlämning från telefonen via Soffläges port 3012 (QR). I pluginet ligger providergränssnittet. Adaptrarna är **rena** (de bygger förfrågningar och tolkar svar men har inget nät). Allt nät går genom `Budget` (`budget.ts`), som tillämpar dygnsplanen, reserven, minutgränsen och spärrarna. En livepoller kör bara medan sportvyn, matchcentret eller en sportsändning i spelaren har registrerat "efterfrågan" och fönstret syns. `merge.ts` lägger fixturerna på fas 1:s EPG-matcher. Vyerna läser den sammanslagna `Match`.
+**Architecture:** Appen (Rust) får en lokal genomkoppling, `/api/live-tv/sport/fetch`. Den lägger på nyckelheadern, läser kvotheaders, för en delad kvotbok per källa och hink, svarar ur en diskcache i `live-tv-sport/` och spärrar hårt vid slut kvot. Ingenting hostas av oss. Appen får också `/sport/link` (fixtur ↔ EPG-match) och en nyckelöverlämning från telefonen via Soffläges port 3012 (QR). I pluginet ligger providergränssnittet. Adaptrarna är **rena** (de bygger förfrågningar och tolkar svar men har inget nät). Allt nät går genom `Budget` (`budget.ts`), som tillämpar dygnsplanen, reserven, minutgränsen och spärrarna. En livepoller kör bara medan sportvyn, matchcentret eller en sportsändning i spelaren har registrerat "efterfrågan" och fönstret syns. `merge.ts` lägger fixturerna på fas 1:s EPG-matcher. Vyerna läser den sammanslagna `SportMatch`.
 
 **Tech Stack:** Rust (axum, reqwest, serde_json, sha2, wiremock i tester), TypeScript/React 19, Vitest/happy-dom, plugin-SDK (`readPluginJson`/`writePluginJson`, `getPluginHttpAssetUrl`, `QRCodeSVG`, `useTvMode`).
 
@@ -39,28 +39,46 @@
 4. **En nyckel med mellanslag eller radbrytning** (inklistrad från telefonen eller mejlet) ska trimmas. En nyckel som inte går igenom valideringen sparas aldrig och skriver inte över en fungerande nyckel. Test: Task 13 `rejected_key_never_overwrites_saved_key` och `whitespace_is_stripped`.
 5. **Första inläsningen med en befintlig ställning, eller en ställning som går ned (VAR)**, ska aldrig ge MÅL! eller en notis. Test: Task 12 `first_observation_is_not_a_goal` och `score_decrease_is_not_a_goal`.
 
-## Fas 1-gränssnitt som den här planen konsumerar
+## Gränssnitt från fas 1 (avstämda)
 
-Fas 1-planen (`docs/superpowers/plans/2026-10-10-sportlage-fas1.md`) skrevs parallellt. Namnen nedan är härledda ur specen. **Stäm av mot fas 1-koden innan Task 3, 11, 13, 14, 15 och 17–20**, och byt namn i den här planens kod om fas 1 valde andra. Semantiken ska inte ändras.
+Avstämt mot `docs/superpowers/plans/2026-10-10-sportlage-fas1.md` (Task 8–20). Planen använder fas 1:s faktiska namn och former. Det som fas 1 saknar läggs till additivt av den task som behöver det, och står i listan nedan.
 
-- PLG `runtime/sport/sport-model.ts`:
+**Konflikter som inte gick att lösa med namnbyte** (löst med en liten, uttrycklig ändring i fas 1-kod, utom punkt 6 som är öppen):
+1. Fas 1:s `statusAt(m, now)` räknar status ur EPG-klockan och kan inte uttrycka paus, uppskjuten eller en källa som säger live efter EPG-slut. Task 11 lägger `phase` på `SportMatch` och en regel i `statusAt` (en match med `fixture` och `status !== 'upcoming'` litar på `m.status`), med två nya fall i fas 1:s `sport-day-model.test.ts`.
+2. Fas 1:s `SportSettings` har bara `view` och `alert`, och `sanitizeSettings` släpper allt annat. Fas 1:s test `toEqual({ view: 'matchday', alert: '15' })` bryts. Task 13 lägger `apiKey`, `goalAlerts` (standard `true`), `provider`, `keyPlan`, `keyCardDismissed` och `goalAlertMatches`, och byter testet till `toMatchObject`.
+3. Fas 1:s `SportFollow` saknar `providerIds`, och `sanitizeFollows` släpper det. Task 13 gör fältet valfritt och bevarar det.
+4. Fas 1 har ingen `day_matches` eller `normalize_team`. `day_handler` samlar och grupperar inline, och `parse_day`, `now_ms` och `collect_entries` är privata. Task 3 gör dem `pub(crate)` och bygger `day_matches` ovanpå. Lagnyckeln heter `team_key`.
+5. Fas 1:s `keys_match` kopplar `city` till `manchester city`. Kopplingen får inte göra det. `team_keys_match` (Task 3) lägger alias och minst fem tecken ovanpå `keys_match`.
+6. **Öppen:** fas 1:s telefonträd (`sport/mobile/sport-phone.tsx`) får inte importera ur `sport/tv/*` (importcykelregeln). Ställning och status på telefonens rader görs med de rena hjälparna i `sport/score-model.ts`, men en Resultat-vy och en sökning i källan för telefonen ingår inte i fas 2 och behöver ett eget beslut av Jerry.
+7. Fas 1:s följväljare har ingen fritext ("ingen fritext i fas 1"). Task 15 lägger ett sökfält i `FollowPicker`.
+
+Fas 1 har ingen statisk täckningstabell (`epgOnlySport` finns inte). `coverageFor(provider, sport)` är nytt i fas 2 (Task 7), och `SportMatch.coverage` är ett nytt valfritt fält där `undefined` betyder `'epg'`. Specens `sport_overrides_v1 {matchKey → channelKey}` blev i fas 1 `{ [matchId]: OverrideChannel }` (hela kanalen). Fas 2 följer fas 1.
+
+**PLG (`plugins/live-tv/runtime/`):**
+- `sport/sport-model.ts` (Task 9):
   ```ts
   export type SportKind = 'football' | 'hockey' | 'basketball' | 'handball' | 'motorsport' | 'tennis' | 'other'
-  export type MatchStatus = 'scheduled' | 'live' | 'ht' | 'finished' | 'postponed'
-  export interface Team { name: string; key: string; providerIds?: Record<string, string>; crest?: string | null }
-  export interface Source { channelKey: string; channelName: string; listId: string; listName: string; logo: string | null; quality: string; rank: number; url: string; group?: string; tvgId?: string | null }
-  export interface Match {
-    id: string; sport: SportKind; league: string; leagueKey: string; home: Team; away: Team
-    kickoff: number; end: number; status: MatchStatus; minute?: number; score?: { home: number; away: number }
-    round?: number; venue?: string; sources: Source[]; fixture?: { provider: string; id: string }
-    coverage: 'full' | 'epg'; live: boolean; rerun: boolean
+  export type MatchStatus = 'live' | 'upcoming' | 'finished'
+  export interface MatchSource { channelKey: string; name: string; url: string; logo: string | null; group: string; tvgId: string | null; sourceId: string; quality: Quality | null; programmeStart: number; programmeStop: number; liveFlag: boolean }
+  export interface SportMatch {
+    id: string; kind: SportKind; league: string; leagueKey: string
+    home: string | null; away: string | null; homeKey: string | null; awayKey: string | null; event: string | null
+    start: number; stop: number; status: MatchStatus; rerun: boolean; round: number | null; venue: string | null
+    sources: MatchSource[]
   }
-  export function sourceToChannel(source: Source): M3uChannel
+  export interface SportDay { day: string; from: number; to: number; at: number; fetchedAt: number | null; matches: SportMatch[]; counts: Partial<Record<SportKind, number>> }
+  export function matchTitle(m): string; export function crestText(name: string): string
+  export function sourceChannel(s: MatchSource): M3uChannel
   ```
-- PLG `runtime/sport/sport-epg.ts`: `fetchSportDay(opts: { listIds: string[]; day: string; tz: string }): Promise<Match[]>`
-- PLG `runtime/sport/sport-store.ts`: `SPORT_SETTINGS_KEY = 'sport_settings_v1'`, `interface SportSettings { apiKey: string | null; view: 'matchday' | 'feed'; alert: 'off' | '15' | 'kickoff'; goalAlerts: boolean }`, `getSportSettings(): SportSettings`, `setSportSettings(patch: Partial<SportSettings>): void`, `useSportSettings(): SportSettings`, `interface SportFollow { sport: SportKind; kind: 'team' | 'league'; key: string; name: string; providerIds?: Record<string, string> }`, `getFollows(): SportFollow[]`, `isMatchFollowed(match: Match, follows: SportFollow[]): boolean`, `getOverrides(): Record<string, string>`, `useOverrides(): Record<string, string>`.
-- PLG vyer: `tv/sport-shell.tsx` (flikar inklusive `'results'`, dagbrickor, sportknappar), `tv/sport-matchday.tsx`, `tv/sport-feed.tsx`, `tv/sport-follows.tsx`, `tv/sport-match-center.tsx` (låda 560 med "Välj annan kanal…" som skriver `sport_overrides_v1[match.id]`), `tv/sport-match-card.tsx` (kort), `tv/sport-hero.tsx` (hero-tavla), `tv/player-sport-ticker.tsx`, `tv/player-matches-drawer.tsx`. En statisk täckningstabell, `epgOnlySport(sport)` eller motsvarande, som fas 2 ersätter med `coverageFor(provider, sport)`.
-- APP `src-tauri/src/live_tv_sport.rs`: `pub fn normalize_team(s: &str) -> String` och `pub async fn day_matches(state: &AxumState, list_ids: &[String], day: &str, tz: &str) -> Vec<SportDayMatch>`, där `SportDayMatch { id: String, sport: String, home_key: String, away_key: String, start: u64 /*ms*/, stop: u64, rerun: bool, live: bool }`.
+  Tid är `start`/`stop` (ms), lag är `home`/`away` (strängar) med nycklarna `homeKey`/`awayKey`, och källan heter `MatchSource` (inte `Match`, `Source`, `kickoff`, `end` eller `sourceToChannel`). Task 11 lägger de valfria fälten `coverage`, `phase`, `minute`, `score`, `homeCrest`, `awayCrest`, `homeIds`, `awayIds`, `fixture`, `resultOnly` och `lastGoal` på `SportMatch`.
+- `sport/sport-epg.ts` (Task 9): `fetchSportDay(day: string, now?: number): Promise<SportDay>` (frågar `GET /api/live-tv/sport/day?listId=global&day=YYYY-MM-DD&tzOffset=<min>`), `useSportDay(day: string | null, nowMs: number): { data: SportDay | null; state: 'loading' | 'ready' | 'missing' | 'error' }`, `localDayKey`, `shiftDay`, `tzOffsetFor(day)`, `dayStartMs`. `LIVE_TV_GLOBAL_EPG_ID` (`'global'`) kommer ur `live-tv-data.ts`.
+- `sport/sport-store.ts` (Task 10): `SPORT_SETTINGS_KEY`, `SPORT_FOLLOWS_KEY`, `SPORT_OVERRIDES_KEY`, `interface SportSettings { view: 'matchday' | 'feed'; alert: 'off' | '15' | 'kickoff' }` (fas 2 lägger resten), `getSportSettings()`, `setSportSettings(patch): SportSettings`, `useSportSettings()`, `interface SportFollow { sport: SportKind; kind: 'team' | 'league'; key: string; name: string }`, `getFollows()`, `isFollowing(follows, f)`, `toggleFollow(f)`, `useFollows()`, `interface OverrideChannel { key; name; url; logo: string | null; group; tvgId: string | null }`, `type SportOverrides = Record<string, OverrideChannel>` (match-id → hela kanalen), `getOverrides()`, `setOverride(matchId, channel | null)`, `useOverrides(): SportOverrides`, `teamKeysMatch`, `sportsCompatible`.
+- `sport/sport-day-model.ts` (Task 11): `statusAt(m, now)`, `followState(m, follows): { home; away; league; any }` (ersätter `isMatchFollowed`), `rankedSources(m, overrides): MatchSource[]` (åsidosättningen först, även en kanal utanför matchens källor), `visibleMatches`, `splitSections`.
+- `sport/sport-ctx.ts` (Task 13): `SportCtx { model; nav: TvNav; now; locale; tt; follows; overrides; settings; reminders; kindLabel; playlistName; openMatch; openFollowPicker; watch(m, source?); toggleRemind(m); isReminded(m) }`, `useSportCtx`, `timeLine(m, ctx)`, `sourceLine`, `sourceChip`.
+- Vyer (alla under `sport/`, inte `tv/`): `sport/tv/sport-shell.tsx` (`TvSport`; flikarna är `'foryou' | 'follows'`, Resultat finns inte i fas 1), `sport/tv/sport-parts.tsx` (`Crest`, `StatusTag`, `MatchCard`, `CardRow`), `sport/tv/sport-matchday.tsx` (`SportMatchday`, hero = `SportHero`, tidslinjen), `sport/tv/sport-feed.tsx`, `sport/tv/sport-follows.tsx` (`SportFollows`, `FollowPicker`), `sport/tv/sport-match-center.tsx` (`SportMatchCenter({ ctx, match, onClose })`, "Välj annan kanal…" skriver `setOverride(match.id, kanal)`), `sport/tv/player-sport.tsx` (`usePlayerSport`, `PlayerSportTicker`, `PlayerMatchesDrawer`, `matchesForPlayer`), `sport/mobile/sport-phone.tsx` (`SportPhone`). Testhjälp: `sport/__sport-fixture.tsx` (`fxMatch`, `fxSource`, `fxDay`, `fakeCtx`, `mountSport`, `stubSportDays`).
+- Strängar som fas 1 redan äger och som fas 2 återanvänder: `sportEnded` (SLUT), `sportRound`, `sportWatch`, `live`.
+
+**APP:** `src-tauri/src/live_tv_sport.rs` har `pub fn fold`, `pub fn team_key(name: &str) -> String`, `pub fn keys_match(a: &str, b: &str) -> bool`, `pub enum SportKind` (serde `lowercase`), `pub struct SportMatch { id, kind, league, league_key, home: Option<String>, away: Option<String>, home_key: Option<String>, away_key: Option<String>, event, start: i64, stop: i64, status, rerun, round, venue, sources }`, `pub fn group_entries(entries: Vec<SportEntry>, at: i64) -> Vec<SportMatch>` och `pub async fn day_handler(State<Arc<AxumState>>, Query<SportDayQuery>)` för `GET /api/live-tv/sport/day?listId=&day=YYYY-MM-DD&tzOffset=<min>[&at=ms]`. Tider är `i64` (ms). EPG-butiken nås med `live_tv_epg::sport_ready_store(&state, list_id)` och kanalindexet med `live_tv_index::shared(&state)`.
 
 ## File Structure
 
@@ -69,7 +87,8 @@ Fas 1-planen (`docs/superpowers/plans/2026-10-10-sportlage-fas1.md`) skrevs para
 | Fil | Ansvar |
 |---|---|
 | `src-tauri/src/live_tv_sport_fetch.rs` (ny) | Genomkopplingen: vitlista per källa och sport, uppströms-URL och nyckelheader, kvotheaders, klassning av svarskroppar, kvotbok per hink (dygn UTC och minut), diskcache med TTL och `finalAfter`, handlarna `fetch` och `quota` |
-| `src-tauri/src/live_tv_sport_link.rs` (ny) | `/sport/link`: lagjämförelse (alias, genitiv-s, ord-suffix), tidsfönster, girig koppling fixtur → EPG-match med `swapped` |
+| `src-tauri/src/live_tv_sport_link.rs` (ny) | `/sport/link`: lagjämförelse (alias ovanpå fas 1:s `keys_match`), tidsfönster, girig koppling fixtur → EPG-match med `swapped` |
+| `src-tauri/src/live_tv_sport.rs` (fas 1, ändras) | `parse_day`, `now_ms` och `collect_entries` blir `pub(crate)` |
 | `src-tauri/src/live_tv_sport_key.rs` (ny) | Nyckelöverlämning: väntande koder (10 min, engångs), värdrutter på 3011 (bara lokalt), telefonsida och POST på 3012 |
 | `src-tauri/src/lib.rs`, `axum_server.rs`, `couch/phone_routes.rs`, `couch/host_routes.rs`, `haptics/server.rs` | Registrering av moduler och rutter, `ensure_listener` görs `pub(crate)`, och 3012 hålls uppe medan ett överlämningsfönster är öppet |
 | `lib/__tests__/sync-key-selection.test.ts` | Bevisar att `sport_settings_v1` synkas |
@@ -90,14 +109,15 @@ Fas 1-planen (`docs/superpowers/plans/2026-10-10-sportlage-fas1.md`) skrevs para
 | `sport/goal-events.ts` (ny) | Ställningsdiff → `GoalEvent`, och målbussen |
 | `sport/results-controller.ts`, `sport/rate-line.ts` (nya) | Resultatlagret per (källa, nyckel), `useSportResults`, takt-raden |
 | `sport/key-flow.ts`, `sport/key-handoff.ts` (nya) | Rensa, maskera, validera och spara nyckeln, samt telefonöverlämningen |
-| `sport/sport-store.ts` (fas 1, ändras) | `provider`, `keyPlan`, `keyCardDismissed`, `goalAlertMatches` |
+| `sport/sport-store.ts`, `sport/sport-model.ts`, `sport/sport-day-model.ts` (fas 1, ändras) | `SportSettings` får `apiKey`, `goalAlerts`, `provider`, `keyPlan`, `keyCardDismissed`, `goalAlertMatches`, `SportFollow` får `providerIds?`, `SportMatch` får fälten för resultat, och `statusAt` litar på källan |
 | `sport/key-card.tsx`, `sport/sport-key-settings.tsx` (nya) | Nyckelkortet och nyckelraderna i inställningarna |
 | `sport/goal-alerts.ts`, `sport/sport-goal-mount.tsx` (nya) | Målnotis (native och banner) medan appen körs |
-| `tv/sport-score.tsx` (ny) | `TeamCrest`, `MatchScore`, `matchStatusLabel`, `ResultOnlyTag` |
-| `tv/sport-results.tsx` (ny) | Resultat-fliken: ligagrupper, Omgång N, filter, HOPPA TILL och Tabell med form |
-| `tv/sport-match-center-data.tsx` (ny) | Händelser, Statistik och Laguppställningar (döljs när de är tomma), takt-raden, Notis vid mål |
-| `tv/player-goal-overlay.tsx` (ny) | MÅL!-overlay och Hoppa dit |
-| `tv/tv-strings.ts`, `src/__test-stubs__/plugin-sdk.ts`, `index.ts`, `live-tv-player.tsx`, `live-tv-settings-section.tsx`, `tv/tv-settings.tsx`, `tv/mobile/settings-phone.tsx` + fas 1-vyerna | Strängar, QR-stubben, registrering och inkoppling |
+| `sport/score-model.ts` (ny) | Rena hjälpare för ställning och status (`showsScore`, `matchStatusLabel`, `heroStatusLine`, `scoreText`), delade med telefonträdet |
+| `sport/tv/sport-score.tsx` (ny) | `MatchScore`, `ResultOnlyTag`, `useGoalBlink`, `RateLineView` (märket är fas 1:s `Crest` med ny `src`) |
+| `sport/tv/sport-results.tsx` (ny) | Resultat-fliken: ligagrupper, Omgång N, filter, HOPPA TILL och Tabell med form |
+| `sport/tv/sport-match-center-data.tsx` (ny) | Händelser, Statistik och Laguppställningar (döljs när de är tomma), takt-raden, Notis vid mål |
+| `sport/tv/player-goal-overlay.tsx` (ny) | MÅL!-overlay och Hoppa dit |
+| `tv/tv-strings.ts`, `src/__test-stubs__/plugin-sdk.ts`, `index.ts`, `live-tv-player.tsx`, `live-tv-settings-section.tsx`, `tv/tv-settings.tsx`, `tv/mobile/settings-phone.tsx` + fas 1-vyerna under `sport/tv/` och `sport/mobile/` | Strängar, QR-stubben, registrering och inkoppling |
 
 ---
 
@@ -962,11 +982,12 @@ git commit -m "live-tv sport: local passthrough with shared quota ledger and dis
 **Files:**
 - Create: `$APP/src-tauri/src/live_tv_sport_link.rs`
 - Modify: `$APP/src-tauri/src/lib.rs` (`pub mod live_tv_sport_link;`), `$APP/src-tauri/src/axum_server.rs` (rutt efter `/sport/quota`)
+- Modify: `$APP/src-tauri/src/live_tv_sport.rs` (fas 1: `parse_day`, `now_ms` och `collect_entries` blir `pub(crate)`)
 
 **Interfaces:**
-- Consumes: fas 1 `crate::live_tv_sport::{normalize_team, day_matches, SportDayMatch}` (se avsnittet om fas 1-gränssnitt).
+- Consumes: fas 1 `crate::live_tv_sport::{team_key, keys_match, parse_day, now_ms, collect_entries, group_entries, SportKind}` (de tre mellersta görs `pub(crate)` i Step 3), `live_tv_epg::sport_ready_store`, `live_tv_index::shared` (se "Gränssnitt från fas 1 (avstämda)").
 - Produces:
-  - HTTP `POST /api/live-tv/sport/link`, body `{ listIds: string[], day: "YYYY-MM-DD", tz: string, fixtures: [{ id, sport, home, away, league, kickoff /*ms*/ }] }` → `{ links: { [fixtureId]: { matchId: string, swapped: bool } | null } }`
+  - HTTP `POST /api/live-tv/sport/link`, body `{ listId: string /* pluginets globala EPG-id, som /sport/day */, day: "YYYY-MM-DD", tzOffset: number /* minuter öster om UTC den dagen, som /sport/day */, fixtures: [{ id, sport, home, away, league, kickoff /*ms*/ }] }` → `{ links: { [fixtureId]: { matchId: string, swapped: bool } | null } }`
   - Rust: `pub fn team_keys_match(a: &str, b: &str) -> bool` (båda redan normaliserade), `pub fn link(fixtures: &[LinkFixture], epg: &[Candidate]) -> HashMap<String, Option<(String, bool)>>`
 
 Fönstret är "förstudio −15/+60 min": EPG-programmet får börja upp till 60 min före avspark (förstudio) och högst 15 min efter. Live går före repris. Varje EPG-match kopplas till högst en fixtur, och den närmaste i tid vinner.
@@ -978,12 +999,12 @@ Fönstret är "förstudio −15/+60 min": EPG-programmet får börja upp till 60
 mod tests {
     use super::*;
 
-    const KO: u64 = 1_791_660_600_000; // 2026-10-10T19:30:00Z
+    const KO: i64 = 1_791_660_600_000; // 2026-10-10T19:30:00Z
 
     fn fx(id: &str, sport: &str, home: &str, away: &str) -> LinkFixture {
         LinkFixture { id: id.into(), sport: sport.into(), home: home.into(), away: away.into(), league: String::new(), kickoff: KO }
     }
-    fn cand(id: &str, sport: &str, home: &str, away: &str, start: u64, rerun: bool) -> Candidate {
+    fn cand(id: &str, sport: &str, home: &str, away: &str, start: i64, rerun: bool) -> Candidate {
         Candidate { id: id.into(), sport: sport.into(), home_key: home.into(), away_key: away.into(), start, rerun }
     }
 
@@ -1062,10 +1083,12 @@ use serde::Deserialize;
 use serde_json::{json, Map, Value};
 
 use crate::axum_server::AxumState;
-use crate::live_tv_sport::{day_matches, normalize_team};
+use crate::live_tv_epg;
+use crate::live_tv_index;
+use crate::live_tv_sport::{self, keys_match, team_key};
 
-const BEFORE_MS: u64 = 60 * 60_000; // förstudio
-const AFTER_MS: u64 = 15 * 60_000;
+const BEFORE_MS: i64 = 60 * 60_000; // förstudio
+const AFTER_MS: i64 = 15 * 60_000;
 
 /// Källans korta namn → EPG:ns (båda sidor redan normaliserade). Utökas efter
 /// verkliga missar; varje rad ska ha ett testfall.
@@ -1087,34 +1110,34 @@ fn canonical(s: &str) -> &str {
     ALIASES.iter().find(|(from, _)| *from == s).map(|(_, to)| *to).unwrap_or(s)
 }
 
+/// Fas 1:s `keys_match` (lika, genitiv-s, kortform = början/slut av den långa) med alias före
+/// och ett golv: den korta formen måste vara minst fem tecken, så att "city" inte räcker till
+/// "manchester city". Kopplingen är strängare än grupperingen eftersom den bara har lagen att gå på.
 pub fn team_keys_match(a: &str, b: &str) -> bool {
-    if a.is_empty() || b.is_empty() { return false; }
     let (a, b) = (canonical(a), canonical(b));
+    if a.is_empty() || b.is_empty() { return false; }
     if a == b { return true; }
-    let (ta, tb) = (a.trim_end_matches('s'), b.trim_end_matches('s'));
-    if ta.len() >= 4 && ta == tb { return true; }
-    let (short, long) = if a.len() <= b.len() { (a, b) } else { (b, a) };
-    short.len() >= 5 && (long.ends_with(&format!(" {short}")) || long.starts_with(&format!("{short} ")))
+    a.len().min(b.len()) >= 5 && keys_match(a, b)
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct LinkFixture { pub id: String, pub sport: String, pub home: String, pub away: String, #[serde(default)] pub league: String, pub kickoff: u64 }
+pub struct LinkFixture { pub id: String, pub sport: String, pub home: String, pub away: String, #[serde(default)] pub league: String, pub kickoff: i64 }
 
 #[derive(Debug, Clone)]
-pub struct Candidate { pub id: String, pub sport: String, pub home_key: String, pub away_key: String, pub start: u64, pub rerun: bool }
+pub struct Candidate { pub id: String, pub sport: String, pub home_key: String, pub away_key: String, pub start: i64, pub rerun: bool }
 
 fn sport_ok(fixture: &str, epg: &str) -> bool { epg == fixture || epg == "other" || epg.is_empty() }
 
-fn in_window(kickoff: u64, start: u64) -> bool {
+fn in_window(kickoff: i64, start: i64) -> bool {
     start + BEFORE_MS >= kickoff && start <= kickoff + AFTER_MS
 }
 
-/// Fixturernas lagnamn normaliseras här, med samma funktion som EPG:n.
+/// Fixturernas lagnamn normaliseras här med fas 1:s `team_key`, samma funktion som EPG:n.
 pub fn link(fixtures: &[LinkFixture], epg: &[Candidate]) -> HashMap<String, Option<(String, bool)>> {
     let mut used: HashSet<&str> = HashSet::new();
     let mut out = HashMap::new();
     for f in fixtures {
-        let (h, a) = (normalize_team(&f.home), normalize_team(&f.away));
+        let (h, a) = (team_key(&f.home), team_key(&f.away));
         let best = epg.iter()
             .filter(|c| !used.contains(c.id.as_str()) && sport_ok(&f.sport, &c.sport) && in_window(f.kickoff, c.start))
             .filter_map(|c| {
@@ -1132,16 +1155,37 @@ pub fn link(fixtures: &[LinkFixture], epg: &[Candidate]) -> HashMap<String, Opti
 }
 
 #[derive(Debug, Deserialize)]
-pub struct LinkBody { #[serde(rename = "listIds")] pub list_ids: Vec<String>, pub day: String, pub tz: String, pub fixtures: Vec<LinkFixture> }
+pub struct LinkBody { #[serde(rename = "listId")] pub list_id: String, pub day: String, #[serde(rename = "tzOffset")] pub tz_offset: i32, pub fixtures: Vec<LinkFixture> }
+
+fn kind_name(kind: live_tv_sport::SportKind) -> String {
+    serde_json::to_value(kind).ok().and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default()
+}
+
+/// Dagens grupperade EPG-matcher som kopplingskandidater: fas 1:s `collect_entries` och
+/// `group_entries`, samma fönster som `/sport/day`. Matcher utan båda lagnycklarna (event) kan inte kopplas.
+async fn candidates(state: &AxumState, list_id: &str, day: &str, tz_offset: i32) -> Vec<Candidate> {
+    let Some(day_num) = live_tv_sport::parse_day(day) else { return Vec::new() };
+    let tz = tz_offset.clamp(-14 * 60, 14 * 60);
+    let at = live_tv_sport::now_ms();
+    let from = day_num * 86_400_000 - tz as i64 * 60_000;
+    let to = from + 86_400_000;
+    let store = live_tv_epg::sport_ready_store(state, list_id).await;
+    let index = live_tv_index::shared(state);
+    let entries = {
+        let guard = index.read().await;
+        live_tv_sport::collect_entries(&guard, store.as_deref(), from, to, at, tz)
+    };
+    live_tv_sport::group_entries(entries, at)
+        .into_iter()
+        .filter_map(|m| Some(Candidate { id: m.id, sport: kind_name(m.kind), home_key: m.home_key?, away_key: m.away_key?, start: m.start, rerun: m.rerun }))
+        .collect()
+}
 
 pub async fn link_handler(State(state): State<Arc<AxumState>>, Json(body): Json<LinkBody>) -> Response {
     if body.fixtures.len() > 2_000 {
         return (StatusCode::PAYLOAD_TOO_LARGE, Json(json!({ "error": "too-many-fixtures" }))).into_response();
     }
-    let candidates: Vec<Candidate> = day_matches(&state, &body.list_ids, &body.day, &body.tz).await
-        .into_iter()
-        .map(|m| Candidate { id: m.id, sport: m.sport, home_key: m.home_key, away_key: m.away_key, start: m.start, rerun: m.rerun })
-        .collect();
+    let candidates = candidates(&state, body.list_id.trim(), &body.day, body.tz_offset).await;
     let links = link(&body.fixtures, &candidates);
     let mut map = Map::new();
     for (id, l) in links {
@@ -1151,13 +1195,15 @@ pub async fn link_handler(State(state): State<Arc<AxumState>>, Json(body): Json<
 }
 ```
 
+I `live_tv_sport.rs` (fas 1): gör `fn parse_day`, `fn now_ms` och `fn collect_entries` till `pub(crate) fn`. Inget annat i filen ändras.
+
 Rutt i `axum_server.rs`:
 
 ```rust
         .route("/api/live-tv/sport/link", axum::routing::post(crate::live_tv_sport_link::link_handler))
 ```
 
-Testerna i Step 1 ger redan normaliserade nycklar. Kolla att fas 1:s `normalize_team("djurgardens")` ger `"djurgardens"`, det vill säga är idempotent på normaliserad text. Om den inte är det ska testet anropa `normalize_team` på båda sidor, så att testet följer produktionsvägen.
+Testerna i Step 1 ger redan normaliserade nycklar. Kolla att fas 1:s `team_key("djurgardens")` ger `"djurgardens"`, det vill säga är idempotent på normaliserad text. Om den inte är det ska testet anropa `team_key` på båda sidor, så att testet följer produktionsvägen. Kopplingen frågar `/sport/day`-samlingen direkt (`collect_entries` och `group_entries`), så en match utan båda lagnycklarna, till exempel en eventkanal, kan aldrig kopplas.
 
 - [ ] **Step 4: Kör testerna och se dem gå igenom**
 
@@ -1167,7 +1213,7 @@ Expected: PASS (5 tester).
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "$APP" && git add src-tauri/src/live_tv_sport_link.rs src-tauri/src/lib.rs src-tauri/src/axum_server.rs
+cd "$APP" && git add src-tauri/src/live_tv_sport_link.rs src-tauri/src/live_tv_sport.rs src-tauri/src/lib.rs src-tauri/src/axum_server.rs
 git commit -m "live-tv sport: link provider fixtures to EPG matches"
 ```
 
@@ -1449,15 +1495,16 @@ git commit -m "live-tv sport: hand the API key over from the phone via QR"
 - Test: `$PLG/runtime/sport/sport-fetch.test.ts`
 
 **Interfaces:**
-- Consumes: fas 1 `SportKind`, `MatchStatus` från `./sport-model`.
+- Consumes: fas 1 `SportKind` från `./sport-model`. Fas 1:s `MatchStatus` (`live | upcoming | finished`) räcker inte för källans paus och uppskjutna matcher, så källans status är en egen typ, `FixtureStatus`. `merge.ts` (Task 11) översätter den.
 - Produces (`./provider`):
   ```ts
   export type ProviderId = 'api-sports' | 'thesportsdb'
+  export type FixtureStatus = 'scheduled' | 'live' | 'ht' | 'finished' | 'postponed'
   export interface FixtureTeam { id: string; name: string; crest: string | null }
   export interface Fixture {
     provider: ProviderId; id: string; sport: SportKind
     league: { id: string; name: string; season: string; round: number | null; country: string | null }
-    kickoff: number; status: MatchStatus; statusShort: string; minute: number | null
+    kickoff: number; status: FixtureStatus; statusShort: string; minute: number | null
     home: FixtureTeam; away: FixtureTeam; score: { home: number; away: number } | null; venue: string | null
     lastGoal: { side: 'home' | 'away' | null; player: string | null; minute: number | null } | null
   }
@@ -1564,7 +1611,7 @@ Expected: FAIL med "Failed to resolve import './sport-fetch'".
  * (`budget.ts`) utför förfrågningar, så "budgeten äger varje anrop" gäller
  * per konstruktion och inte som en konvention.
  */
-import type { MatchStatus, SportKind } from './sport-model'
+import type { SportKind } from './sport-model'
 ```
 
 `runtime/sport/sport-fetch.ts`:
@@ -1671,7 +1718,7 @@ git commit -m "live-tv sport: provider interface and the single passthrough clie
 - Test: `$PLG/runtime/sport/api-sports.test.ts`
 
 **Interfaces:**
-- Consumes: Task 5 (`SportsProvider` med flera). Fas 1 `SportKind`, `MatchStatus`.
+- Consumes: Task 5 (`SportsProvider`, `FixtureStatus` med flera). Fas 1 `SportKind`.
 - Produces: `export const apiSports: SportsProvider`, `export const API_SPORTS_REGISTER_URL = 'https://dashboard.api-football.com/register'`, `export function roundNumber(r: unknown): number | null`.
 
 Täckning: fotboll, ishockey, basket och handboll. Övriga sporter (motorsport, tennis, other) har `epg`. Gratisnivån har också en minutgräns (10/min enligt headern `x-ratelimit-limit`), och Rust spärrar då i 60 s.
@@ -1926,10 +1973,10 @@ Expected: FAIL med "Failed to resolve import './api-sports'".
 ```ts
 // runtime/sport/api-sports.ts
 /* eslint-disable @typescript-eslint/no-explicit-any -- tolkar extern JSON fält för fält */
-import type { MatchStatus, SportKind } from './sport-model'
+import type { SportKind } from './sport-model'
 import type {
   DayOpts, Fixture, FixtureDetail, FixtureEvent, FixtureLineup, FixtureStat, FixtureTeam, KeyCheck,
-  LineupEntry, LiveOpts, ProviderCall, SportsProvider, StandingRow, TeamHit,
+  FixtureStatus, LineupEntry, LiveOpts, ProviderCall, SportsProvider, StandingRow, TeamHit,
 } from './provider'
 
 /**
@@ -1942,12 +1989,12 @@ export const API_SPORTS_REGISTER_URL = 'https://dashboard.api-football.com/regis
 
 const COVERED = new Set<SportKind>(['football', 'hockey', 'basketball', 'handball'])
 
-const FOOTBALL_STATUS: Record<string, MatchStatus> = {
+const FOOTBALL_STATUS: Record<string, FixtureStatus> = {
   TBD: 'scheduled', NS: 'scheduled', '1H': 'live', HT: 'ht', '2H': 'live', ET: 'live', BT: 'ht', P: 'live',
   SUSP: 'live', INT: 'live', LIVE: 'live', FT: 'finished', AET: 'finished', PEN: 'finished',
   PST: 'postponed', CANC: 'postponed', ABD: 'postponed', AWD: 'finished', WO: 'finished',
 }
-const GAMES_STATUS: Record<string, MatchStatus> = {
+const GAMES_STATUS: Record<string, FixtureStatus> = {
   NS: 'scheduled', P1: 'live', P2: 'live', P3: 'live', OT: 'live', PT: 'live', BT: 'ht',
   Q1: 'live', Q2: 'live', Q3: 'live', Q4: 'live', HT: 'ht', '1H': 'live', '2H': 'live', ET: 'live', INTR: 'live',
   FT: 'finished', AOT: 'finished', AP: 'finished', AW: 'finished', AET: 'finished', AWO: 'finished',
@@ -2342,8 +2389,8 @@ Expected: FAIL med "Failed to resolve import './thesportsdb'".
 ```ts
 // runtime/sport/thesportsdb.ts
 /* eslint-disable @typescript-eslint/no-explicit-any -- tolkar extern JSON fält för fält */
-import type { MatchStatus, SportKind } from './sport-model'
-import type { DayOpts, Fixture, FixtureDetail, FixtureEvent, FixtureLineup, KeyCheck, LineupEntry, ProviderCall, SportsProvider, StandingRow, TeamHit } from './provider'
+import type { SportKind } from './sport-model'
+import type { DayOpts, Fixture, FixtureDetail, FixtureEvent, FixtureLineup, FixtureStatus, KeyCheck, LineupEntry, ProviderCall, SportsProvider, StandingRow, TeamHit } from './provider'
 
 /**
  * TheSportsDB premium (9 USD/mån, alla sporter, 100 anrop/min, ingen
@@ -2374,7 +2421,7 @@ function utc(ts: unknown, date: unknown, time: unknown): number {
   return d ? Date.parse(`${d}T${t.length === 5 ? `${t}:00` : t}Z`) : 0
 }
 
-export function tsdbStatus(status: unknown, postponed: unknown): MatchStatus {
+export function tsdbStatus(status: unknown, postponed: unknown): FixtureStatus {
   const v = String(status ?? '').trim().toLowerCase()
   if (String(postponed ?? '').toLowerCase() === 'yes' || v.includes('postponed') || v.includes('cancel') || v === 'abd') return 'postponed'
   if (['ft', 'aet', 'pen', 'aot', 'ap', 'match finished', 'finished', 'after over time', 'after penalties'].includes(v)) return 'finished'
@@ -2527,7 +2574,7 @@ git commit -m "live-tv sport: TheSportsDB premium adapter and provider registry"
 - Test: `$PLG/runtime/sport/budget.test.ts`
 
 **Interfaces:**
-- Consumes: Task 5 (`sportFetch`, `SportQuota`, `FetchMode`), Task 7 (`providerFor`). Fas 1 `getSportSettings`, `onPluginStorageChanged`. Task 13 lägger fältet `provider` i `SportSettings`. Tills dess läser `currentBudget()` det med `(s as { provider?: ProviderId }).provider ?? 'api-sports'`. Byt till direkt fältåtkomst i Task 13.
+- Consumes: Task 5 (`sportFetch`, `SportQuota`, `FetchMode`), Task 7 (`providerFor`). Fas 1 `getSportSettings`, `SPORT_SETTINGS_KEY`, `onPluginStorageChanged`. Fas 1:s `SportSettings` har bara `view` och `alert`. Task 13 lägger `apiKey` och `provider`. Tills dess läser `currentBudget()` dem med en cast (se koden). Byt till direkt fältåtkomst i Task 13.
 - Produces:
   ```ts
   export type CallKind = 'validate' | 'fixture' | 'day' | 'standings' | 'search' | 'live'
@@ -2926,11 +2973,13 @@ let current: { id: string; budget: Budget | null } | null = null
 
 /** EN kvothanterare per (källa, nyckel). `null` utan nyckel: då görs inga anrop. */
 export function currentBudget(): Budget | null {
-  const s = getSportSettings()
-  const provider: ProviderId = (s as { provider?: ProviderId }).provider ?? 'api-sports'
-  const id = `${provider}|${s.apiKey ?? ''}`
+  // Fas 1:s SportSettings saknar apiKey och provider tills Task 13 lägger dem. Castas bort i Task 13.
+  const s = getSportSettings() as { apiKey?: string | null; provider?: ProviderId }
+  const provider: ProviderId = s.provider ?? 'api-sports'
+  const apiKey = s.apiKey ?? null
+  const id = `${provider}|${apiKey ?? ''}`
   if (current?.id === id) return current.budget
-  current = { id, budget: s.apiKey ? new Budget(providerFor(provider), s.apiKey) : null }
+  current = { id, budget: apiKey ? new Budget(providerFor(provider), apiKey) : null }
   return current.budget
 }
 
@@ -3411,17 +3460,19 @@ git commit -m "live-tv sport: live polling only on demand, visible and hot"
 **Files:**
 - Create: `$PLG/runtime/sport/sport-link.ts`
 - Create: `$PLG/runtime/sport/merge.ts`
-- Modify: `$PLG/runtime/sport/sport-model.ts` (fas 1): utöka `Match`
-- Test: `$PLG/runtime/sport/merge.test.ts`
+- Modify: `$PLG/runtime/sport/sport-model.ts` (fas 1): utöka `SportMatch` med valfria fält
+- Modify: `$PLG/runtime/sport/sport-day-model.ts` (fas 1): `statusAt` litar på källan
+- Test: `$PLG/runtime/sport/merge.test.ts`, `$PLG/runtime/sport/sport-day-model.test.ts` (fas 1, två nya fall)
 
 **Interfaces:**
-- Consumes: Task 3 (`POST /api/live-tv/sport/link`), Task 5 (`Fixture`). Fas 1 `Match`, `Source`, `SportKind`, `sport_overrides_v1` (`matchKey → channelKey`).
+- Consumes: Task 3 (`POST /api/live-tv/sport/link`), Task 5 (`Fixture`, `FixtureStatus`). Fas 1: `SportMatch`, `MatchSource`, `SportKind` (`sport-model.ts`), `SportOverrides` (`sport_overrides_v1`: match-id → hela kanalen, `OverrideChannel`), `rankedSources` (`sport-day-model.ts`), `LIVE_TV_GLOBAL_EPG_ID` (`live-tv-data.ts`), `tzOffsetFor` (`sport-epg.ts`), testhjälparna `fxMatch` och `fxSource` (`__sport-fixture.tsx`).
 - Produces:
-  - `sport-model.ts`: `Match.fixture?: { provider: string; id: string; leagueId?: string; season?: string }`, `Match.resultOnly?: boolean`, `Match.lastGoal?: Fixture['lastGoal']`
-  - `sport-link.ts`: `export type LinkMap = Record<string, { matchId: string; swapped: boolean } | null>`, `export async function linkFixtures(args: { listIds: string[]; day: string; tz: string; fixtures: Fixture[] }): Promise<LinkMap>` (lokalt anrop till värden, ingen kvot)
-  - `merge.ts`: `export function fixtureMatchKey(f: Pick<Fixture, 'provider' | 'id'>): string` (`fx:<provider>:<id>`), `export interface MergeArgs { epg: Match[]; fixtures: Fixture[]; links: LinkMap; overrides: Record<string, string>; channelSource(channelKey: string): Source | null; coverage(sport: SportKind): 'full' | 'epg' }`, `export function mergeLinked(a: MergeArgs): Match[]`
+  - `sport-model.ts`: valfria fält på `SportMatch`: `coverage?: 'full' | 'epg'` (`undefined` = `'epg'`), `phase?: 'ht' | 'postponed'`, `minute?: number | null`, `score?: { home: number; away: number }`, `homeCrest?: string | null`, `awayCrest?: string | null`, `homeIds?: Record<string, string>`, `awayIds?: Record<string, string>`, `fixture?: { provider: string; id: string; leagueId?: string; season?: string }`, `resultOnly?: boolean`, `lastGoal?: Fixture['lastGoal']`
+  - `sport-day-model.ts`: `statusAt` returnerar `'upcoming'` för `phase === 'postponed'`, och `m.status` för en match med `fixture` vars `status !== 'upcoming'`. Annars som i fas 1.
+  - `sport-link.ts`: `export type LinkMap = Record<string, { matchId: string; swapped: boolean } | null>`, `export async function linkFixtures(args: { day: string; fixtures: Fixture[] }): Promise<LinkMap>` (lokalt anrop till värden, ingen kvot)
+  - `merge.ts`: `export function fixtureMatchKey(f: Pick<Fixture, 'provider' | 'id'>): string` (`fx:<provider>:<id>`), `export function foldTeamKey(name: string): string`, `export interface MergeArgs { epg: SportMatch[]; fixtures: Fixture[]; links: LinkMap; overrides: SportOverrides; coverage(sport: SportKind): 'full' | 'epg' }`, `export function mergeLinked(a: MergeArgs): SportMatch[]`
 
-En match som bara finns som fixtur har `id = fixtureMatchKey(f)`. Fas 1:s "Välj annan kanal…" skriver `sport_overrides_v1[match.id]`, så samma väljare fungerar utan ändringar för "Bara resultat". När en kanal har valts får matchen den kanalen som enda källa och slutar vara "Bara resultat".
+En match som bara finns som fixtur har `id = fixtureMatchKey(f)`. Fas 1:s "Välj annan kanal…" skriver `sport_overrides_v1[match.id]` (hela kanalen), så samma väljare fungerar utan ändringar för "Bara resultat". När en kanal har valts får matchen den kanalen som enda källa (via fas 1:s `rankedSources`) och slutar vara "Bara resultat". Källans status översätts: `scheduled` och `postponed` blir `upcoming` (uppskjuten bär `phase`), `live` och `ht` blir `live` (paus bär `phase`), `finished` är `finished`.
 
 - [ ] **Step 1: Skriv de fallerande testerna**
 
@@ -3430,15 +3481,17 @@ En match som bara finns som fixtur har `id = fixtureMatchKey(f)`. Fas 1:s "Välj
 import { describe, expect, it } from 'vitest'
 import { fixtureMatchKey, mergeLinked } from './merge'
 import type { Fixture } from './provider'
-import type { Match, Source } from './sport-model'
+import type { SportMatch } from './sport-model'
+import type { OverrideChannel } from './sport-store'
+import { fxMatch, fxSource } from './__sport-fixture'
 
 const KO = Date.UTC(2026, 9, 10, 17)
-const src = (key: string): Source => ({ channelKey: key, channelName: key.toUpperCase(), listId: 'l1', listName: 'Lista', logo: null, quality: 'HD', rank: 1, url: `http://x/${key}` })
+const src = (key: string) => fxSource(key)
+const tv4: OverrideChannel = { key: 'tv4', name: 'TV4', url: 'http://x/tv4', logo: null, group: 'Sport', tvgId: null }
 
-const epgMatch = (over: Partial<Match> = {}): Match => ({
-  id: 'm1', sport: 'football', league: 'Allsvenskan', leagueKey: 'allsvenskan',
-  home: { name: 'Malmö FF', key: 'malmo' }, away: { name: 'Djurgården', key: 'djurgarden' },
-  kickoff: KO, end: KO + 7_200_000, status: 'live', sources: [src('cmore1')], coverage: 'full', live: true, rerun: false, ...over,
+const epgMatch = (over: Partial<SportMatch> = {}): SportMatch => fxMatch({
+  id: 'm1', home: 'Malmö FF', away: 'Djurgården', homeKey: 'malmo', awayKey: 'djurgarden',
+  start: KO, stop: KO + 7_200_000, status: 'live', sources: [src('cmore1')], ...over,
 })
 
 const fixture = (over: Partial<Fixture> = {}): Fixture => ({
@@ -3450,88 +3503,147 @@ const fixture = (over: Partial<Fixture> = {}): Fixture => ({
 })
 
 const coverage = (s: string) => (s === 'tennis' ? 'epg' : 'full') as 'full' | 'epg'
+const base = { overrides: {}, coverage }
 
 describe('mergeLinked', () => {
   it('kopplad fixtur ger ställning, minut, märken och källans id:n; EPG:ns källor behålls', () => {
-    const [m] = mergeLinked({ epg: [epgMatch()], fixtures: [fixture()], links: { '1180001': { matchId: 'm1', swapped: false } }, overrides: {}, channelSource: () => null, coverage })
+    const [m] = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [fixture()], links: { '1180001': { matchId: 'm1', swapped: false } } })
     expect(m).toMatchObject({
       id: 'm1', status: 'live', minute: 67, score: { home: 2, away: 1 }, round: 27, venue: 'Eleda Stadion',
       fixture: { provider: 'api-sports', id: '1180001', leagueId: '113', season: '2026' }, coverage: 'full',
-      home: { name: 'Malmo FF', key: 'malmo', crest: 'https://m/375.png', providerIds: { 'api-sports': '375' } },
+      home: 'Malmo FF', homeKey: 'malmo', homeCrest: 'https://m/375.png', homeIds: { 'api-sports': '375' },
+      away: 'Djurgardens IF', awayKey: 'djurgarden', awayCrest: 'https://m/377.png', awayIds: { 'api-sports': '377' },
       sources: [src('cmore1')],
     })
     expect(m.resultOnly).toBeFalsy()
   })
 
   it('omvänd ordning i EPG: källans ordning gäller, EPG-nycklarna följer rätt lag', () => {
-    const [m] = mergeLinked({ epg: [epgMatch({ home: { name: 'Djurgården', key: 'djurgarden' }, away: { name: 'Malmö FF', key: 'malmo' } })], fixtures: [fixture()], links: { '1180001': { matchId: 'm1', swapped: true } }, overrides: {}, channelSource: () => null, coverage })
-    expect([m.home.name, m.home.key, m.away.name, m.away.key]).toEqual(['Malmo FF', 'malmo', 'Djurgardens IF', 'djurgarden'])
+    const [m] = mergeLinked({ ...base, epg: [epgMatch({ home: 'Djurgården', homeKey: 'djurgarden', away: 'Malmö FF', awayKey: 'malmo' })], fixtures: [fixture()], links: { '1180001': { matchId: 'm1', swapped: true } } })
+    expect([m.home, m.homeKey, m.away, m.awayKey]).toEqual(['Malmo FF', 'malmo', 'Djurgardens IF', 'djurgarden'])
+  })
+
+  it('källans status översätts: paus är live med phase, uppskjuten är upcoming med phase', () => {
+    const link = { '1180001': { matchId: 'm1', swapped: false } }
+    const [ht] = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [fixture({ status: 'ht', minute: 45 })], links: link })
+    expect(ht).toMatchObject({ status: 'live', phase: 'ht' })
+    const [pst] = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [fixture({ status: 'postponed', minute: null, score: null })], links: link })
+    expect(pst).toMatchObject({ status: 'upcoming', phase: 'postponed' })
+    expect(pst.score).toBeUndefined()
+    const [done] = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [fixture({ status: 'finished' })], links: link })
+    expect(done).toMatchObject({ status: 'finished' })
+    expect(done.phase).toBeUndefined()
   })
 
   it('fixtur utan koppling blir "Bara resultat"; override till en kanal gör den tittbar', () => {
     const f = fixture({ id: '9', home: { id: '1', name: 'Hammarby', crest: null }, away: { id: '2', name: 'AIK', crest: null } })
-    const [, only] = mergeLinked({ epg: [epgMatch()], fixtures: [f], links: { '9': null }, overrides: {}, channelSource: () => null, coverage })
-    expect(only).toMatchObject({ id: fixtureMatchKey(f), resultOnly: true, sources: [], coverage: 'full', score: { home: 2, away: 1 } })
-    const [, picked] = mergeLinked({ epg: [epgMatch()], fixtures: [f], links: { '9': null }, overrides: { [fixtureMatchKey(f)]: 'tv4' }, channelSource: (k) => (k === 'tv4' ? src('tv4') : null), coverage })
-    expect(picked).toMatchObject({ resultOnly: false, sources: [src('tv4')] })
+    const [, only] = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [f], links: { '9': null } })
+    expect(only).toMatchObject({ id: fixtureMatchKey(f), kind: 'football', resultOnly: true, sources: [], coverage: 'full', score: { home: 2, away: 1 }, start: KO, home: 'Hammarby', homeKey: 'hammarby' })
+    const [, picked] = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [f], links: { '9': null }, overrides: { [fixtureMatchKey(f)]: tv4 } })
+    expect(picked).toMatchObject({ resultOnly: false, sources: [expect.objectContaining({ channelKey: 'tv4', url: 'http://x/tv4' })] })
   })
 
   it('EPG-match utan fixtur: ingen gissad ställning', () => {
-    const [m] = mergeLinked({ epg: [epgMatch()], fixtures: [], links: {}, overrides: {}, channelSource: () => null, coverage })
+    const [m] = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [], links: {} })
     expect(m.score).toBeUndefined()
     expect(m.fixture).toBeUndefined()
   })
 
   it('tennis: alltid bara EPG, även om något skulle länkas', () => {
-    const t = epgMatch({ id: 't1', sport: 'tennis' })
-    const [m] = mergeLinked({ epg: [t], fixtures: [fixture({ sport: 'tennis', id: 'x' })], links: { x: { matchId: 't1', swapped: false } }, overrides: {}, channelSource: () => null, coverage })
+    const t = epgMatch({ id: 't1', kind: 'tennis' })
+    const [m] = mergeLinked({ ...base, epg: [t], fixtures: [fixture({ sport: 'tennis', id: 'x' })], links: { x: { matchId: 't1', swapped: false } } })
     expect(m).toMatchObject({ coverage: 'epg' })
     expect(m.score).toBeUndefined()
   })
 
   it('två fixturer mot samma EPG-match: den andra blir "Bara resultat"', () => {
-    const out = mergeLinked({ epg: [epgMatch()], fixtures: [fixture(), fixture({ id: '2' })], links: { '1180001': { matchId: 'm1', swapped: false }, '2': { matchId: 'm1', swapped: false } }, overrides: {}, channelSource: () => null, coverage })
+    const out = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [fixture(), fixture({ id: '2' })], links: { '1180001': { matchId: 'm1', swapped: false }, '2': { matchId: 'm1', swapped: false } } })
     expect(out.map((m) => [m.id, !!m.resultOnly])).toEqual([['m1', false], ['fx:api-sports:2', true]])
+  })
+})
+```
+
+Lägg också två fall sist i fas 1:s `runtime/sport/sport-day-model.test.ts` (`fxMatch` och `statusAt` finns redan där):
+
+```ts
+describe('statusAt med källfixtur (fas 2)', () => {
+  it('källans status gäller även när EPG-klockan säger något annat', () => {
+    const start = Date.now() - 3 * HOUR
+    const m = fxMatch({ start, stop: start + 2 * HOUR, status: 'live', fixture: { provider: 'api-sports', id: '1' } })
+    expect(statusAt(m, Date.now())).toBe('live')
+    expect(statusAt({ ...m, status: 'finished' }, start)).toBe('finished')
+  })
+  it('uppskjuten är upcoming även efter EPG-slut; okänd källstatus faller tillbaka på klockan', () => {
+    const start = Date.now() - 3 * HOUR
+    const m = fxMatch({ start, stop: start + 2 * HOUR, status: 'upcoming', phase: 'postponed', fixture: { provider: 'api-sports', id: '1' } })
+    expect(statusAt(m, Date.now())).toBe('upcoming')
+    expect(statusAt({ ...m, phase: undefined }, Date.now())).toBe('finished')
   })
 })
 ```
 
 - [ ] **Step 2: Kör testerna och se dem falla**
 
-Run: `cd "$PLG" && npx vitest run runtime/sport/merge.test.ts`
-Expected: FAIL med "Failed to resolve import './merge'".
+Run: `cd "$PLG" && npx vitest run runtime/sport/merge.test.ts runtime/sport/sport-day-model.test.ts`
+Expected: FAIL med "Failed to resolve import './merge'" och typfel på `phase`.
 
 - [ ] **Step 3: Implementera**
 
-I `sport-model.ts` (fas 1), i `interface Match`:
+I `sport-model.ts` (fas 1), i `interface SportMatch`, efter `sources`:
 
 ```ts
-  /** Fas 2: källans fixtur. `leagueId`/`season` behövs för tabellen. */
+  /** Fas 2: allt nedan sätts bara av `merge.ts` ur en källfixtur. Utan `coverage: 'full'` är matchen bara EPG. */
+  coverage?: 'full' | 'epg'
+  /** Paus (live) eller uppskjuten (upcoming); `status` har bara fas 1:s tre värden. */
+  phase?: 'ht' | 'postponed'
+  minute?: number | null
+  score?: { home: number; away: number }
+  homeCrest?: string | null
+  awayCrest?: string | null
+  /** Källans lag-id per källa, för följda lag och tabeller. */
+  homeIds?: Record<string, string>
+  awayIds?: Record<string, string>
+  /** Källans fixtur. `leagueId`/`season` behövs för tabellen. */
   fixture?: { provider: string; id: string; leagueId?: string; season?: string }
-  /** Fas 2: fixtur utan kopplad kanal ("Bara resultat"). Visas bara med nyckel. */
+  /** Fixtur utan kopplad kanal ("Bara resultat"). Visas bara med nyckel. */
   resultOnly?: boolean
-  /** Fas 2: senaste målet om källan skickar händelser (målskytt i MÅL!). */
+  /** Senaste målet om källan skickar händelser (målskytt i MÅL!). */
   lastGoal?: { side: 'home' | 'away' | null; player: string | null; minute: number | null } | null
+```
+
+I `sport-day-model.ts` (fas 1), överst i `statusAt`:
+
+```ts
+export function statusAt(m: SportMatch, now: number): MatchStatus {
+  // Fas 2: en match med källfixtur litar på källans status (live efter EPG-slut, avslutad före).
+  if (m.phase === 'postponed') return 'upcoming'
+  if (m.fixture && m.status !== 'upcoming') return m.status
+  if (m.status === 'finished' || now >= m.stop) return 'finished'
+  if (now >= m.start) return 'live'
+  return 'upcoming'
+}
 ```
 
 ```ts
 // runtime/sport/sport-link.ts
 'use client'
 
+import { LIVE_TV_GLOBAL_EPG_ID } from '../live-tv-data'
 import type { Fixture } from './provider'
+import { tzOffsetFor } from './sport-epg'
 
 /** fixtureId → EPG-matchens id (fas 1:s gruppering) och om hemma/borta är omvända. */
 export type LinkMap = Record<string, { matchId: string; swapped: boolean } | null>
 
-/** Lokalt anrop till den egna värden (`/sport/link`). Kostar ingen kvot. */
-export async function linkFixtures(args: { listIds: string[]; day: string; tz: string; fixtures: Fixture[] }): Promise<LinkMap> {
-  if (args.fixtures.length === 0 || args.listIds.length === 0) return {}
+/** Lokalt anrop till den egna värden (`/sport/link`, samma dag och tidszon som `/sport/day`). Kostar ingen kvot. */
+export async function linkFixtures(args: { day: string; fixtures: Fixture[] }): Promise<LinkMap> {
+  if (args.fixtures.length === 0) return {}
   try {
     const res = await fetch('/api/live-tv/sport/link', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        listIds: args.listIds, day: args.day, tz: args.tz,
+        listId: LIVE_TV_GLOBAL_EPG_ID, day: args.day, tzOffset: tzOffsetFor(args.day),
         fixtures: args.fixtures.map((f) => ({ id: f.id, sport: f.sport, home: f.home.name, away: f.away.name, league: f.league.name, kickoff: f.kickoff })),
       }),
     })
@@ -3546,77 +3658,90 @@ export async function linkFixtures(args: { listIds: string[]; day: string; tz: s
 
 ```ts
 // runtime/sport/merge.ts
-import type { Fixture } from './provider'
+import { rankedSources } from './sport-day-model'
+import type { Fixture, FixtureStatus } from './provider'
 import type { LinkMap } from './sport-link'
-import type { Match, Source, SportKind, Team } from './sport-model'
+import type { MatchStatus, SportKind, SportMatch } from './sport-model'
+import type { SportOverrides } from './sport-store'
 
 export function fixtureMatchKey(f: Pick<Fixture, 'provider' | 'id'>): string {
   return `fx:${f.provider}:${f.id}`
 }
 
+/** Som Rusts `team_key`, men bara det ett källnamn behöver: gemener, diakritik bort, skiljetecken till mellanslag. */
+export function foldTeamKey(name: string): string {
+  return name.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
+}
+
 export interface MergeArgs {
-  epg: Match[]
+  epg: SportMatch[]
   fixtures: Fixture[]
   links: LinkMap
-  overrides: Record<string, string>
-  channelSource(channelKey: string): Source | null
+  overrides: SportOverrides
   coverage(sport: SportKind): 'full' | 'epg'
 }
 
 const TWO_HOURS = 2 * 3_600_000
+const STATUS: Record<FixtureStatus, MatchStatus> = { scheduled: 'upcoming', postponed: 'upcoming', live: 'live', ht: 'live', finished: 'finished' }
+const phaseOf = (s: FixtureStatus): SportMatch['phase'] => (s === 'ht' || s === 'postponed' ? s : undefined)
 
-function team(base: Team | null, f: Fixture['home'], provider: string): Team {
+function fromFixture(f: Fixture): Partial<SportMatch> {
   return {
-    name: f.name,
-    key: base?.key ?? f.name.toLowerCase(),
-    crest: f.crest,
-    providerIds: { ...(base?.providerIds ?? {}), [provider]: f.id },
-  }
-}
-
-function applyFixture(m: Match, f: Fixture, swapped: boolean): Match {
-  const homeBase = swapped ? m.away : m.home
-  const awayBase = swapped ? m.home : m.away
-  return {
-    ...m,
-    league: f.league.name || m.league,
-    home: team(homeBase, f.home, f.provider),
-    away: team(awayBase, f.away, f.provider),
-    status: f.status,
-    minute: f.minute ?? undefined,
+    home: f.home.name,
+    away: f.away.name,
+    homeCrest: f.home.crest,
+    awayCrest: f.away.crest,
+    homeIds: { [f.provider]: f.home.id },
+    awayIds: { [f.provider]: f.away.id },
+    status: STATUS[f.status],
+    phase: phaseOf(f.status),
+    minute: f.minute,
     score: f.score ?? undefined,
-    round: f.league.round ?? m.round,
-    venue: f.venue ?? m.venue,
     fixture: { provider: f.provider, id: f.id, leagueId: f.league.id, season: f.league.season },
     lastGoal: f.lastGoal,
     coverage: 'full',
+  }
+}
+
+function applyFixture(m: SportMatch, f: Fixture, swapped: boolean): SportMatch {
+  // Källans lag ligger i källans ordning. EPG-nycklarna följer det lag de hör till.
+  const homeKey = swapped ? m.awayKey : m.homeKey
+  const awayKey = swapped ? m.homeKey : m.awayKey
+  return {
+    ...m,
+    ...fromFixture(f),
+    league: f.league.name || m.league,
+    homeKey: homeKey ?? foldTeamKey(f.home.name),
+    awayKey: awayKey ?? foldTeamKey(f.away.name),
+    round: f.league.round ?? m.round,
+    venue: f.venue ?? m.venue,
     resultOnly: false,
   }
 }
 
-function fixtureOnly(f: Fixture, source: Source | null): Match {
-  return {
+function fixtureOnly(f: Fixture, overrides: SportOverrides): SportMatch {
+  const match: SportMatch = {
     id: fixtureMatchKey(f),
-    sport: f.sport,
+    kind: f.sport,
     league: f.league.name,
     leagueKey: `fx:${f.provider}:${f.league.id}`,
-    home: team(null, f.home, f.provider),
-    away: team(null, f.away, f.provider),
-    kickoff: f.kickoff,
-    end: f.kickoff + TWO_HOURS,
-    status: f.status,
-    minute: f.minute ?? undefined,
-    score: f.score ?? undefined,
-    round: f.league.round ?? undefined,
-    venue: f.venue ?? undefined,
-    sources: source ? [source] : [],
-    fixture: { provider: f.provider, id: f.id, leagueId: f.league.id, season: f.league.season },
-    lastGoal: f.lastGoal,
-    coverage: 'full',
-    live: f.status === 'live' || f.status === 'ht',
+    home: f.home.name,
+    away: f.away.name,
+    homeKey: foldTeamKey(f.home.name),
+    awayKey: foldTeamKey(f.away.name),
+    event: null,
+    start: f.kickoff,
+    stop: f.kickoff + TWO_HOURS,
+    status: 'upcoming',
     rerun: false,
-    resultOnly: !source,
+    round: f.league.round,
+    venue: f.venue,
+    sources: [],
+    ...fromFixture(f),
+    resultOnly: true,
   }
+  // Fas 1:s "Välj annan kanal…" skriver sport_overrides_v1[match.id]: en vald kanal gör matchen tittbar.
+  return overrides[match.id] ? { ...match, sources: rankedSources(match, overrides), resultOnly: false } : match
 }
 
 /**
@@ -3625,8 +3750,8 @@ function fixtureOnly(f: Fixture, source: Source | null): Match {
  * sporter läggs sist som "Bara resultat". En override (fas 1:s "Välj annan
  * kanal…") vinner alltid.
  */
-export function mergeLinked(a: MergeArgs): Match[] {
-  const out = a.epg.map((m) => ({ ...m, coverage: a.coverage(m.sport) }))
+export function mergeLinked(a: MergeArgs): SportMatch[] {
+  const out = a.epg.map((m) => ({ ...m, coverage: a.coverage(m.kind) }))
   const index = new Map(out.map((m, i) => [m.id, i]))
   const used = new Set<string>()
   for (const f of a.fixtures) {
@@ -3638,8 +3763,7 @@ export function mergeLinked(a: MergeArgs): Match[] {
       out[i] = applyFixture(out[i], f, link.swapped)
       continue
     }
-    const channel = a.overrides[fixtureMatchKey(f)]
-    out.push(fixtureOnly(f, channel ? a.channelSource(channel) : null))
+    out.push(fixtureOnly(f, a.overrides))
   }
   return out
 }
@@ -3647,13 +3771,13 @@ export function mergeLinked(a: MergeArgs): Match[] {
 
 - [ ] **Step 4: Kör testerna och se dem gå igenom**
 
-Run: `cd "$PLG" && npx vitest run runtime/sport/merge.test.ts && npx tsc --noEmit -p tsconfig.json`
-Expected: PASS (6 tester). tsc visar inga nya fel (fas 1-vyer som bygger `Match` utan de valfria fälten påverkas inte).
+Run: `cd "$PLG" && npx vitest run runtime/sport/merge.test.ts runtime/sport/sport-day-model.test.ts && npx tsc --noEmit -p tsconfig.json`
+Expected: PASS (merge 7 tester, day-model två nya fall och alla fas 1-fall). tsc visar inga nya fel (fas 1-vyer som bygger `SportMatch` utan de valfria fälten påverkas inte).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "$PLG" && git add runtime/sport/sport-link.ts runtime/sport/merge.ts runtime/sport/merge.test.ts runtime/sport/sport-model.ts
+cd "$PLG" && git add runtime/sport/sport-link.ts runtime/sport/merge.ts runtime/sport/merge.test.ts runtime/sport/sport-model.ts runtime/sport/sport-day-model.ts runtime/sport/sport-day-model.test.ts
 git commit -m "live-tv sport: merge provider fixtures onto EPG matches"
 ```
 
@@ -3793,7 +3917,7 @@ git commit -m "live-tv sport: goal detection from score diffs"
 ### Task 13: Nyckeln i lagringen, validera och spara, och överlämning från telefonen
 
 **Files:**
-- Modify: `$PLG/runtime/sport/sport-store.ts` (fas 1)
+- Modify: `$PLG/runtime/sport/sport-store.ts` (fas 1) och `$PLG/runtime/sport/sport-store.test.ts` (fas 1: `toEqual` på hela `SportSettings` blir `toMatchObject`, och ett nytt fall)
 - Create: `$PLG/runtime/sport/key-flow.ts`
 - Create: `$PLG/runtime/sport/key-handoff.ts`
 - Modify: `$PLG/runtime/sport/budget.ts` (`currentBudget` läser `s.provider` direkt)
@@ -3802,7 +3926,7 @@ git commit -m "live-tv sport: goal detection from score diffs"
 **Interfaces:**
 - Consumes: Task 8 (`Budget`), Task 7 (`providerFor`), Task 4 (värdrutterna för överlämningen). Fas 1 `getSportSettings`, `setSportSettings`.
 - Produces:
-  - `SportSettings` får `provider: ProviderId` (standard `'api-sports'`), `keyPlan: string | null`, `keyCardDismissed: boolean` och `goalAlertMatches: Record<string, number>` (match-id → utgår, ms).
+  - `SportSettings` (fas 1: `view`, `alert`) får `apiKey: string | null` (standard `null`), `goalAlerts: boolean` (standard `true`), `provider: ProviderId` (standard `'api-sports'`), `keyPlan: string | null`, `keyCardDismissed: boolean` och `goalAlertMatches: Record<string, number>` (match-id → utgår, ms). `SportFollow` får valfria `providerIds?: Record<string, string>`.
   - `key-flow.ts`: `cleanKey(raw: string): string | null`, `maskKey(key: string): string`, `type KeyFlowResult = { ok: true; key: string; check: KeyCheck } | { ok: false; reason: 'empty' | 'rejected' | 'network' }`, `validateKey(provider, raw, deps?: { fetch?: BudgetDeps['fetch'] }): Promise<KeyFlowResult>`, `saveValidatedKey(provider, raw, deps?): Promise<KeyFlowResult>`, `removeKey(): void`, `isPaidPlan(plan: string | null, provider: ProviderId): boolean`
   - `key-handoff.ts`: `startKeyHandoff(): Promise<{ code: string; url: string | null } | null>`, `pollKeyHandoff(code): Promise<{ state: 'waiting' | 'received' | 'expired'; key?: string }>`, `cancelKeyHandoff(code): Promise<void>`, `useKeyHandoff(active: boolean, onKey: (key: string) => void): { url: string | null; expired: boolean; restart(): void }`
 
@@ -3918,13 +4042,18 @@ Expected: FAIL med "Failed to resolve import './key-flow'" och "./key-handoff".
 
 - [ ] **Step 3: Implementera**
 
-I `sport-store.ts` (fas 1), utöka `SportSettings` och dess `sanitize`/standardvärden:
+I `sport-store.ts` (fas 1) utökas `SportSettings`, `DEFAULT_SETTINGS`, `sanitizeSettings`, `SportFollow` och `sanitizeFollows`. Fas 1:s `sanitizeSettings` bygger ett nytt objekt av `view` och `alert` och släpper allt annat, så fälten måste in där, annars sparas de aldrig.
 
 ```ts
 import type { ProviderId } from './provider'
 
 export interface SportSettings {
-  // … fas 1-fälten (apiKey, view, alert, goalAlerts) oförändrade …
+  view: SportViewMode // fas 1
+  alert: KickoffAlert // fas 1
+  /** Fas 2: användarens egen nyckel. `null` = inga anrop. */
+  apiKey: string | null
+  /** Fas 2: målnotis. På som standard, och gäller bara följda matcher eller matcher med "Notis vid mål". */
+  goalAlerts: boolean
   /** Fas 2: vilken källa nyckeln hör till. */
   provider: ProviderId
   /** Fas 2: källans plan vid senaste validering ("Free", "Pro", "Premium"). */
@@ -3934,11 +4063,23 @@ export interface SportSettings {
   /** Fas 2: "Notis vid mål" per match (matchens id → utgår ms, avspark + 4 h). */
   goalAlertMatches: Record<string, number>
 }
+
+const DEFAULT_SETTINGS: SportSettings = {
+  view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {},
+}
+
+export interface SportFollow {
+  // … fas 1-fälten (sport, kind, key, name) oförändrade …
+  /** Fas 2: källans id per källa, känt när laget följdes ur en sökning i källan. */
+  providerIds?: Record<string, string>
+}
 ```
 
-och i `sanitize(raw)` (där `r` är råobjektet):
+och i fas 1:s `sanitizeSettings(raw)` (där `r` är råobjektet) läggs fälten till i det returnerade objektet, efter `alert`:
 
 ```ts
+    apiKey: typeof r.apiKey === 'string' && r.apiKey ? r.apiKey : null,
+    goalAlerts: r.goalAlerts !== false,
     provider: r.provider === 'thesportsdb' ? 'thesportsdb' : 'api-sports',
     keyPlan: typeof r.keyPlan === 'string' ? r.keyPlan : null,
     keyCardDismissed: r.keyCardDismissed === true,
@@ -3948,7 +4089,29 @@ och i `sanitize(raw)` (där `r` är råobjektet):
     ),
 ```
 
-I `budget.ts` `currentBudget()`: byt `(s as { provider?: ProviderId }).provider ?? 'api-sports'` mot `s.provider`.
+och i fas 1:s `sanitizeFollows` bevaras `providerIds` (strängvärden), efter `name` i `out.push({ … })`:
+
+```ts
+    const ids = f.providerIds && typeof f.providerIds === 'object'
+      ? Object.fromEntries(Object.entries(f.providerIds).filter((e): e is [string, string] => typeof e[1] === 'string'))
+      : null
+    out.push({ sport: f.sport as SportKind, kind: f.kind, key: f.key, name: typeof f.name === 'string' && f.name ? f.name : f.key, ...(ids && Object.keys(ids).length > 0 ? { providerIds: ids } : {}) })
+```
+
+I fas 1:s `sport-store.test.ts` byts de fyra `toEqual` som jämför en hel `SportSettings` (`getSportSettings()` och returvärdena från `setSportSettings(...)`) mot `toMatchObject`, och ett fall läggs till:
+
+```ts
+describe('fas 2-fälten', () => {
+  it('standardvärden, och providerIds bevaras på följda lag', () => {
+    expect(getSportSettings()).toMatchObject({ apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {} })
+    const f = { sport: 'football' as const, kind: 'team' as const, key: 'malmo', name: 'Malmö FF', providerIds: { 'api-sports': '375' } }
+    toggleFollow(f)
+    expect(getFollows()).toEqual([f])
+  })
+})
+```
+
+I `budget.ts` `currentBudget()`: ta bort casten från Task 8 och läs `s.provider` och `s.apiKey` direkt.
 
 ```ts
 // runtime/sport/key-flow.ts
@@ -4084,7 +4247,7 @@ Expected: PASS (9 + 2 tester, budget fortfarande grön).
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "$PLG" && git add runtime/sport/sport-store.ts runtime/sport/key-flow.ts runtime/sport/key-handoff.ts runtime/sport/budget.ts runtime/sport/key-flow.test.ts runtime/sport/key-handoff.test.ts
+cd "$PLG" && git add runtime/sport/sport-store.ts runtime/sport/sport-store.test.ts runtime/sport/key-flow.ts runtime/sport/key-handoff.ts runtime/sport/budget.ts runtime/sport/key-flow.test.ts runtime/sport/key-handoff.test.ts
 git commit -m "live-tv sport: validate-then-save key flow and phone hand-over"
 ```
 
@@ -4099,7 +4262,7 @@ git commit -m "live-tv sport: validate-then-save key flow and phone hand-over"
 - Test: `$PLG/runtime/sport/results-controller.test.ts`, `$PLG/runtime/sport/rate-line.test.ts`
 
 **Interfaces:**
-- Consumes: Task 8 (`Budget`, `currentBudget`), Task 9 (`planDay`, `plannedPerBucket`, `planKey`, `localDates`, `LeagueRef`), Task 10 (`createLivePoller`, `LiveTarget`), Task 11 (`linkFixtures`, `mergeLinked`, `LinkMap`), Task 12 (`diffGoals`, `emitGoals`, `Score`), Task 7 (`coverageFor`). Fas 1 `Match`, `Source`, `useOverrides`, `getFollows`, `isMatchFollowed`, `useSportSettings`.
+- Consumes: Task 8 (`Budget`, `currentBudget`), Task 9 (`planDay`, `plannedPerBucket`, `planKey`, `localDates`, `LeagueRef`), Task 10 (`createLivePoller`, `LiveTarget`), Task 11 (`linkFixtures`, `mergeLinked`, `LinkMap`), Task 12 (`diffGoals`, `emitGoals`, `Score`), Task 7 (`coverageFor`). Fas 1 `SportMatch`, `useOverrides`, `getFollows`, `followState`, `useSportSettings`.
 - Produces:
   ```ts
   export interface RateStatus { provider: ProviderId | null; state: 'no-key' | 'invalid-key' | 'ok' | 'paused' | 'rate-limited'; intervalMs: number | null; remainingToday: number | null; pausedUntil: number | null; paid: boolean }
@@ -4114,14 +4277,14 @@ git commit -m "live-tv sport: validate-then-save key flow and phone hand-over"
     loadStandings(sport: SportKind, leagueId: string, season: string): Promise<StandingRow[] | null>
     liveTargets(): LiveTarget[]
     status(): RateStatus
-    setMerged(m: Match[]): void; merged(): Match[]
+    setMerged(m: SportMatch[]): void; merged(): SportMatch[]
     subscribe(cb: () => void): () => void
     dispose(): void
   }
   export function currentResults(): ResultsController | null
   export function useResultsController(): ResultsController | null
-  export function useSportResults(opts: { day: string; epg: Match[]; listIds: string[]; channelSource: (channelKey: string) => Source | null }): { matches: Match[]; status: RateStatus; controller: ResultsController | null }
-  export function useChannelSportLive(channelKey: string | null): Match | null
+  export function useSportResults(opts: { day: string | null; epg: SportMatch[] }): { matches: SportMatch[]; status: RateStatus; controller: ResultsController | null } // day null = planera och länka inget
+  export function useChannelSportLive(channelKey: string | null): SportMatch | null
   // rate-line.ts
   export function everyText(ms: number, lang: string): string
   export function rateLine(s: RateStatus, tt: (k: TvStringKey, v?: Record<string, string | number>) => string, opts: { lang: string; locale: string; tz?: string }): { text: string; showPaidLink: boolean } | null
@@ -4327,9 +4490,10 @@ import { isPaidPlan } from './key-flow'
 import { linkFixtures, type LinkMap } from './sport-link'
 import { mergeLinked } from './merge'
 import { coverageFor } from './providers'
-import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, isMatchFollowed, useOverrides } from './sport-store'
+import { followState } from './sport-day-model'
+import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, useOverrides } from './sport-store'
 import type { Fixture, FixtureDetail, ProviderId, StandingRow } from './provider'
-import type { Match, Source, SportKind } from './sport-model'
+import type { SportKind, SportMatch } from './sport-model'
 
 export interface RateStatus {
   provider: ProviderId | null
@@ -4356,7 +4520,7 @@ export class ResultsController {
   private doneDay = ''
   private details = new Map<string, { at: number; detail: FixtureDetail }>()
   private tables = new Map<string, StandingRow[]>()
-  private mergedById = new Map<string, Match>()
+  private mergedById = new Map<string, SportMatch>()
   private listeners = new Set<() => void>()
   private poller: LivePoller | null = null
   private unsubBudget: () => void
@@ -4516,14 +4680,14 @@ export class ResultsController {
    * meddelar BARA `onMerged`-lyssnare och aldrig datalyssnarna. Annars hade
    * useSportResults → setMerged → emit → omritning → setMerged blivit en loop.
    */
-  setMerged(m: Match[]): void {
+  setMerged(m: SportMatch[]): void {
     // Lägg till/uppdatera per id: spelarens ticker och Sport-vyn skriver var sin delmängd.
     const cutoff = this.now() - 36 * 3_600_000
     for (const x of m) this.mergedById.set(x.id, x)
-    for (const [id, x] of this.mergedById) if (x.end < cutoff) this.mergedById.delete(id)
+    for (const [id, x] of this.mergedById) if (x.stop < cutoff) this.mergedById.delete(id)
     for (const cb of [...this.mergedListeners]) cb()
   }
-  merged(): Match[] { return [...this.mergedById.values()] }
+  merged(): SportMatch[] { return [...this.mergedById.values()] }
   onMerged(cb: () => void): () => void { this.mergedListeners.add(cb); return () => { this.mergedListeners.delete(cb) } }
 
   dispose(): void {
@@ -4561,57 +4725,60 @@ export function useResultsController(): ResultsController | null {
 
 const NO_KEY: RateStatus = { provider: null, state: 'no-key', intervalMs: null, remainingToday: null, pausedUntil: null, paid: false }
 
-export function useSportResults(opts: { day: string; epg: Match[]; listIds: string[]; channelSource: (channelKey: string) => Source | null }): { matches: Match[]; status: RateStatus; controller: ResultsController | null } {
+/**
+ * EPG-dagen (fas 1:s `useSportDay`) plus källans fixturer. `day: null` = ingen plan, ingen länkning och ingen
+ * skrivning till den sammanslagna listan (spelarens ticker är avstängd när spelaren är stängd).
+ */
+export function useSportResults(opts: { day: string | null; epg: SportMatch[] }): { matches: SportMatch[]; status: RateStatus; controller: ResultsController | null } {
   const controller = useResultsController()
   const overrides = useOverrides()
   const [links, setLinks] = useState<LinkMap>({})
-  const tz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, [])
   const providerId = controller?.budget.provider.id ?? null
 
   const sports = useMemo(() => {
     const follows = getFollows()
-    return [...new Set([...opts.epg.map((m) => m.sport), ...follows.map((f) => f.sport)])].sort()
+    return [...new Set([...opts.epg.map((m) => m.kind), ...follows.map((f) => f.sport)])].sort()
   }, [opts.epg])
 
   useEffect(() => {
-    if (!controller) return
+    if (!controller || !opts.day) return
     // Tabeller i dygnsplanen: ligor för följda lag och ligor bland redan kopplade matcher.
     const follows = getFollows()
     const leagues = controller.merged()
-      .filter((m) => m.fixture?.leagueId && m.fixture.season && isMatchFollowed(m, follows))
-      .map((m) => ({ sport: m.sport, leagueId: m.fixture!.leagueId!, season: m.fixture!.season! }))
+      .filter((m) => m.fixture?.leagueId && m.fixture.season && followState(m, follows).any)
+      .map((m) => ({ sport: m.kind, leagueId: m.fixture!.leagueId!, season: m.fixture!.season! }))
     void controller.runPlan({ sports, leagues })
   }, [controller, opts.day, sports.join(',')])
 
   const version = controller?.version ?? 0
-  const fixtures = useMemo(() => (controller ? controller.allFixtures(opts.day) : []), [controller, opts.day, version])
+  const fixtures = useMemo(() => (controller && opts.day ? controller.allFixtures(opts.day) : []), [controller, opts.day, version])
   const fixtureIds = fixtures.map((f) => f.id).sort().join(',')
 
   useEffect(() => {
-    if (!controller || fixtures.length === 0) { setLinks({}); return }
+    if (!controller || !opts.day || fixtures.length === 0) { setLinks({}); return }
     let cancelled = false
-    void linkFixtures({ listIds: opts.listIds, day: opts.day, tz, fixtures }).then((l) => { if (!cancelled) setLinks(l) })
+    void linkFixtures({ day: opts.day, fixtures }).then((l) => { if (!cancelled) setLinks(l) })
     return () => { cancelled = true }
     // Länka om bara när mängden fixturer ändras, inte vid varje ställningsuppdatering.
-  }, [controller, opts.day, opts.listIds.join(','), fixtureIds])
+  }, [controller, opts.day, fixtureIds])
 
   const matches = useMemo(() => {
-    if (!controller) return opts.epg.map((m) => ({ ...m, coverage: coverageFor(null, m.sport) }))
-    return mergeLinked({ epg: opts.epg, fixtures, links, overrides, channelSource: opts.channelSource, coverage: (s) => coverageFor(providerId, s) })
-  }, [controller, opts.epg, fixtures, links, overrides, opts.channelSource, providerId])
+    if (!controller) return opts.epg.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }))
+    return mergeLinked({ epg: opts.epg, fixtures, links, overrides, coverage: (s) => coverageFor(providerId, s) })
+  }, [controller, opts.epg, fixtures, links, overrides, providerId])
 
-  useEffect(() => { controller?.setMerged(matches) }, [controller, matches])
+  useEffect(() => { if (opts.day) controller?.setMerged(matches) }, [controller, opts.day, matches])
 
   return { matches, status: controller ? controller.status() : NO_KEY, controller }
 }
 
 /** Matchen som går på kanalen just nu, om den är live i en täckt sport. Driver spelarens efterfrågan och MÅL!. */
-export function useChannelSportLive(channelKey: string | null): Match | null {
+export function useChannelSportLive(channelKey: string | null): SportMatch | null {
   const controller = useResultsController()
   const [, bump] = useReducer((n: number) => n + 1, 0)
   useEffect(() => (controller ? controller.onMerged(bump) : undefined), [controller])
   if (!controller || !channelKey) return null
-  return controller.merged().find((m) => m.coverage === 'full' && (m.status === 'live' || m.status === 'ht') && m.sources.some((s) => s.channelKey === channelKey)) ?? null
+  return controller.merged().find((m) => m.coverage === 'full' && !!m.fixture && m.status === 'live' && m.sources.some((s) => s.channelKey === channelKey)) ?? null
 }
 ```
 
@@ -4635,30 +4802,37 @@ git commit -m "live-tv sport: results layer, merged matches and visible update r
 ### Task 15: Ställning, minut, status och märken på alla matchytor
 
 **Files:**
-- Create: `$PLG/runtime/tv/sport-score.tsx`
+- Create: `$PLG/runtime/sport/score-model.ts` (rena hjälpare, delas med telefonträdet)
+- Create: `$PLG/runtime/sport/tv/sport-score.tsx`
 - Create: `$PLG/runtime/sport/follow-search.ts` (Följer: sök i källan)
-- Modify (fas 1): `$PLG/runtime/tv/sport-shell.tsx`, `tv/sport-hero.tsx`, `tv/sport-match-card.tsx`, `tv/sport-matchday.tsx`, `tv/sport-feed.tsx`, `tv/sport-follows.tsx`, `tv/player-sport-ticker.tsx`, `tv/player-matches-drawer.tsx`
+- Modify (fas 1): `$PLG/runtime/sport/tv/sport-shell.tsx`, `sport/tv/sport-parts.tsx` (`Crest`, `StatusTag`, `MatchCard`), `sport/tv/sport-matchday.tsx` (`SportHero` och tidslinjen), `sport/tv/sport-feed.tsx`, `sport/tv/sport-follows.tsx` (`FollowPicker`), `sport/tv/sport-match-center.tsx` (rubriken), `sport/tv/player-sport.tsx` (`usePlayerSport`, ticker, låda), `sport/mobile/sport-phone.tsx` (raderna)
 - Modify: `$PLG/runtime/tv/tv-strings.ts`
-- Test: `$PLG/runtime/tv/sport-score.test.tsx`
+- Test: `$PLG/runtime/sport/tv/sport-score.test.tsx`
 
 **Interfaces:**
-- Consumes: Task 14 (`useSportResults`, `RateStatus`, `rateLine`), Task 10 (`usePollDemand`), Task 12 (`onGoal`), Task 7 (`API_SPORTS_REGISTER_URL`). Fas 1: vyernas `Match`-listor, `channelKeyToSource(model, key): Source | null` (fas 1:s väg från kanalnyckel till `Source` för overrides; byt namn om fas 1 valde ett annat).
-- Produces (`tv/sport-score.tsx`):
+- Consumes: Task 14 (`useSportResults`, `RateStatus`, `rateLine`), Task 10 (`usePollDemand`), Task 12 (`onGoal`), Task 7 (`API_SPORTS_REGISTER_URL`), Task 11 (fälten på `SportMatch`). Fas 1: `Crest`, `StatusTag`, `MatchCard` (`sport-parts.tsx`), `SportCtx` (`tt`, `overrides`, `watch`), `timeLine`, `sourceLine`, `statusAt`, `rankedSources`, `teamKeysMatch`, `useSportDay`, testfixturen `fxMatch`.
+- Produces (`sport/score-model.ts`, inga TV-importer, så att telefonträdet får importera den):
   ```ts
-  export function showsScore(m: Match): boolean
-  export function matchStatusLabel(m: Match, tt: TT): string | null      // "67'", "Paus", "SLUT", "Uppskjuten"; null = fas 1:s egen
-  export function heroStatusLine(m: Match, tt: TT): string | null        // "31' · pågår"
-  export function TeamCrest(props: { team: Team; size: number }): JSX.Element
-  export function MatchScore(props: { match: Match; size?: 'hero' | 'card' | 'row' }): JSX.Element | null
+  export function showsScore(m: SportMatch): boolean
+  export function scoreText(m: SportMatch): string | null                    // "2–1" när showsScore, annars null
+  export function matchStatusLabel(m: SportMatch, tt: TT): string | null      // "67'", "Paus", "SLUT" (fas 1:s sportEnded), "Uppskjuten"; null = fas 1:s egen
+  export function heroStatusLine(m: SportMatch, tt: TT): string | null        // "31' · pågår"
+  export function crestForFollow(f: { key: string }, matches: SportMatch[]): string | null  // märket för ett följt lag, om en match bär det
+  ```
+- Produces (`sport/tv/sport-score.tsx`):
+  ```ts
+  export { showsScore, scoreText, matchStatusLabel, heroStatusLine } from '../score-model'
+  export function MatchScore(props: { match: SportMatch; size?: 'hero' | 'card' | 'row' }): JSX.Element | null
   export function ResultOnlyTag(): JSX.Element
-  export function useGoalBlink(match: Match): boolean                    // sant i 10 s efter ett mål
+  export function useGoalBlink(match: SportMatch): boolean                    // sant i 10 s efter ett mål
   export function RateLineView(props: { status: RateStatus; tv: boolean }): JSX.Element | null
   ```
+- Ändrar (`sport/tv/sport-parts.tsx`, fas 1): `Crest({ name, colorKey, size?, src? })`. Med `src` (källans märke) ritas märket via appens bildcache, annars fas 1:s initialcirkel (`crestText`). Det finns därför ingen separat märkeskomponent i fas 2.
 - Produces (`sport/follow-search.ts`): `export async function searchProviderTeams(sport: SportKind, q: string): Promise<TeamHit[]>` (tom lista utan nyckel, under tre tecken eller i en otäckt sport, och då görs inget anrop)
 
 Den här tasken lägger också `__setLangForTests` i SDK-stubben, eftersom stubbens `useLang()` alltid svarar `en`. UI-testerna i Task 15–20 sätter `sv` i `beforeEach` och `en` i `afterEach`.
 
-Strängar: `sportLiveShort` (LIVE / LIVE), `sportHalfTime` (HT / Paus), `sportFinished` (FT / SLUT), `sportPostponed` (Postponed / Uppskjuten), `sportInProgress` (in progress / pågår), `sportResultOnly` (Results only / Bara resultat). Task 14 la redan `sportRateFaster`.
+Strängar: `sportLiveShort` (LIVE / LIVE), `sportHalfTime` (HT / Paus), `sportPostponed` (Postponed / Uppskjuten), `sportInProgress` (in progress / pågår), `sportResultOnly` (Results only / Bara resultat), `sportFollowSearch` (Search teams / Sök lag). Fas 1 äger redan `sportEnded` (SLUT), som är statusen för en avslutad match, och `live`. Task 14 la redan `sportRateFaster`.
 
 - [ ] **Step 1: Språk i SDK-stubben**
 
@@ -4683,24 +4857,25 @@ och i `__resetForTests()`: `langForTests = 'en'`.
 - [ ] **Step 2: Skriv de fallerande testerna**
 
 ```tsx
-// runtime/tv/sport-score.test.tsx
+// runtime/sport/tv/sport-score.test.tsx
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, renderHook, screen } from '@testing-library/react'
 import { __resetPluginStorageForTests, __setLangForTests } from '@/lib/plugin-sdk'
-import { MatchScore, ResultOnlyTag, TeamCrest, heroStatusLine, matchStatusLabel, useGoalBlink } from './sport-score'
-import { searchProviderTeams } from '../sport/follow-search'
-import { setSportSettings } from '../sport/sport-store'
-import { __resetBudgetForTests } from '../sport/budget'
-import { tvText } from './tv-strings'
-import { emitGoals } from '../sport/goal-events'
-import type { Match } from '../sport/sport-model'
+import { MatchScore, ResultOnlyTag, heroStatusLine, matchStatusLabel, scoreText, useGoalBlink } from './sport-score'
+import { Crest } from './sport-parts'
+import { searchProviderTeams } from '../follow-search'
+import { crestForFollow } from '../score-model'
+import { setSportSettings } from '../sport-store'
+import { __resetBudgetForTests } from '../budget'
+import { tvText } from '../../tv/tv-strings'
+import { emitGoals } from '../goal-events'
+import { fxMatch } from '../__sport-fixture'
+import type { SportMatch } from '../sport-model'
 
 const tt = (k: Parameters<typeof tvText>[1], v?: Record<string, string | number>) => tvText('sv', k, v)
-const m = (over: Partial<Match> = {}): Match => ({
-  id: 'm1', sport: 'football', league: 'Allsvenskan', leagueKey: 'allsvenskan',
-  home: { name: 'Malmo FF', key: 'malmo', crest: 'https://m/375.png' }, away: { name: 'AIK', key: 'aik', crest: null },
-  kickoff: 0, end: 1, status: 'live', minute: 31, score: { home: 2, away: 1 }, sources: [], coverage: 'full', live: true, rerun: false,
-  fixture: { provider: 'api-sports', id: '1180001' }, ...over,
+const m = (over: Partial<SportMatch> = {}): SportMatch => fxMatch({
+  id: 'm1', home: 'Malmo FF', away: 'AIK', homeKey: 'malmo', awayKey: 'aik', homeCrest: 'https://m/375.png', awayCrest: null,
+  status: 'live', minute: 31, score: { home: 2, away: 1 }, coverage: 'full', fixture: { provider: 'api-sports', id: '1180001' }, ...over,
 })
 
 beforeEach(() => { __setLangForTests('sv'); __resetPluginStorageForTests(); __resetBudgetForTests() })
@@ -4710,20 +4885,23 @@ describe('ställning och status', () => {
   it('täckt sport: "2–1" och minut', () => {
     render(<MatchScore match={m()} />)
     expect(screen.getByTestId('match-score').textContent).toBe('2–1')
+    expect(scoreText(m())).toBe('2–1')
     expect(matchStatusLabel(m(), tt)).toBe("31'")
     expect(heroStatusLine(m(), tt)).toBe("31' · pågår")
   })
   it('tennis (bara EPG): inget ställningsfält, ingen status från källan, även om data råkar finnas', () => {
-    const t = m({ sport: 'tennis', coverage: 'epg' })
+    const t = m({ kind: 'tennis', coverage: 'epg' })
     const { container } = render(<MatchScore match={t} />)
     expect(container.innerHTML).toBe('')
+    expect(scoreText(t)).toBeNull()
     expect(matchStatusLabel(t, tt)).toBeNull()
   })
-  it('inte startad: ingen ställning; avslutad: SLUT; paus: Paus', () => {
-    const { container } = render(<MatchScore match={m({ status: 'scheduled', score: undefined })} />)
+  it('inte startad: ingen ställning; avslutad: SLUT; paus: Paus; uppskjuten: Uppskjuten', () => {
+    const { container } = render(<MatchScore match={m({ status: 'upcoming', score: undefined })} />)
     expect(container.innerHTML).toBe('')
     expect(matchStatusLabel(m({ status: 'finished' }), tt)).toBe('SLUT')
-    expect(matchStatusLabel(m({ status: 'ht' }), tt)).toBe('Paus')
+    expect(matchStatusLabel(m({ phase: 'ht' }), tt)).toBe('Paus')
+    expect(matchStatusLabel(m({ status: 'upcoming', phase: 'postponed', score: undefined }), tt)).toBe('Uppskjuten')
   })
   it('EPG-match utan fixtur: fas 1:s egen status gäller (null)', () => {
     expect(matchStatusLabel(m({ fixture: undefined, score: undefined }), tt)).toBeNull()
@@ -4731,10 +4909,14 @@ describe('ställning och status', () => {
 })
 
 describe('märken', () => {
-  it('märket går genom appens bildcache; utan märke initialer', () => {
-    const { container } = render(<><TeamCrest team={m().home} size={40} /><TeamCrest team={m().away} size={40} /></>)
+  it('märket går genom appens bildcache; utan märke fas 1:s initialer', () => {
+    const { container } = render(<><Crest name="Malmo FF" colorKey="malmo" src="https://m/375.png" size={40} /><Crest name="AIK" colorKey="aik" size={40} /></>)
     expect(container.querySelector('img')!.getAttribute('src')).toBe('/api/m3u-logo?src=' + encodeURIComponent('https://m/375.png'))
-    expect(screen.getByText('AI')).toBeTruthy()
+    expect(screen.getByText('AIK')).toBeTruthy()
+  })
+  it('följt lag får märket ur en match som bär det', () => {
+    expect(crestForFollow({ key: 'malmo' }, [m()])).toBe('https://m/375.png')
+    expect(crestForFollow({ key: 'aik' }, [m()])).toBeNull()
   })
   it('"Bara resultat"', () => {
     render(<ResultOnlyTag />)
@@ -4771,70 +4953,72 @@ describe('målblink', () => {
 
 - [ ] **Step 3: Kör testerna och se dem falla**
 
-Run: `cd "$PLG" && npx vitest run runtime/tv/sport-score.test.tsx`
+Run: `cd "$PLG" && npx vitest run runtime/sport/tv/sport-score.test.tsx`
 Expected: FAIL med "Failed to resolve import './sport-score'".
 
-- [ ] **Step 4: Implementera komponenterna**
+- [ ] **Step 4: Implementera hjälparna och komponenterna**
 
-```tsx
-// runtime/tv/sport-score.tsx
-'use client'
-
-import { useEffect, useState } from 'react'
-import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
-import { TV, dp } from './tv-ui'
-import { useTvText, type TvStringKey } from './tv-strings'
-import { onGoal } from '../sport/goal-events'
-import { rateLine } from '../sport/rate-line'
-import { API_SPORTS_REGISTER_URL } from '../sport/api-sports'
-import type { RateStatus } from '../sport/results-controller'
-import type { Match, Team } from '../sport/sport-model'
+```ts
+// runtime/sport/score-model.ts
+import type { TvStringKey } from '../tv/tv-strings'
+import type { SportMatch } from './sport-model'
+import { teamKeysMatch } from './sport-store'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 
 /** Ställning visas BARA för en täckt sport med en ställning från källan. Ingenting gissas ur EPG:n. */
-export function showsScore(m: Match): boolean {
-  return m.coverage === 'full' && !!m.fixture && !!m.score && m.status !== 'scheduled' && m.status !== 'postponed'
+export function showsScore(m: SportMatch): boolean {
+  return m.coverage === 'full' && !!m.fixture && !!m.score && m.status !== 'upcoming'
 }
 
-export function matchStatusLabel(m: Match, tt: TT): string | null {
-  if (m.coverage !== 'full' || !m.fixture) return null
-  switch (m.status) {
-    case 'live': return m.minute != null ? `${m.minute}'` : tt('sportLiveShort')
-    case 'ht': return tt('sportHalfTime')
-    case 'finished': return tt('sportFinished')
-    case 'postponed': return tt('sportPostponed')
-    default: return null
-  }
+export function scoreText(m: SportMatch): string | null {
+  return showsScore(m) && m.score ? `${m.score.home}–${m.score.away}` : null
 }
 
-export function heroStatusLine(m: Match, tt: TT): string | null {
+/** Null = fas 1:s egen status (klockslag eller EPG-fönster). */
+export function matchStatusLabel(m: SportMatch, tt: TT): string | null {
   if (m.coverage !== 'full' || !m.fixture) return null
-  if (m.status === 'live' && m.minute != null) return `${m.minute}' · ${tt('sportInProgress')}`
+  if (m.phase === 'postponed') return tt('sportPostponed')
+  if (m.phase === 'ht') return tt('sportHalfTime')
+  if (m.status === 'live') return m.minute != null ? `${m.minute}'` : tt('sportLiveShort')
+  if (m.status === 'finished') return tt('sportEnded')
+  return null
+}
+
+export function heroStatusLine(m: SportMatch, tt: TT): string | null {
+  if (m.coverage !== 'full' || !m.fixture) return null
+  if (m.status === 'live' && !m.phase && m.minute != null) return `${m.minute}' · ${tt('sportInProgress')}`
   return matchStatusLabel(m, tt)
 }
 
-function initials(name: string): string {
-  const words = name.replace(/[^\p{L}\p{N} ]/gu, '').split(/\s+/).filter(Boolean)
-  return (words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? '?').slice(0, 2)).toUpperCase()
-}
-
-export function TeamCrest({ team, size }: { team: Team; size: number }) {
-  const [broken, setBroken] = useState(false)
-  const src = team.crest && !broken ? getPluginHttpAssetUrl('/api/m3u-logo', team.crest) : null
-  if (src) {
-    return <img src={src} alt="" width={size} height={size} onError={() => setBroken(true)} style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
+export function crestForFollow(f: { key: string }, matches: SportMatch[]): string | null {
+  for (const m of matches) {
+    if (m.homeCrest && teamKeysMatch(f.key, m.homeKey)) return m.homeCrest
+    if (m.awayCrest && teamKeysMatch(f.key, m.awayKey)) return m.awayCrest
   }
-  return (
-    <span aria-hidden style={{ width: size, height: size, borderRadius: '50%', background: TV.s12, color: TV.text, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: Math.round(size * 0.38), fontWeight: 600, flexShrink: 0 }}>
-      {initials(team.name)}
-    </span>
-  )
+  return null
 }
+```
+
+```tsx
+// runtime/sport/tv/sport-score.tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+import { TV, dp } from '../../tv/tv-ui'
+import { useTvText } from '../../tv/tv-strings'
+import { onGoal } from '../goal-events'
+import { rateLine } from '../rate-line'
+import { API_SPORTS_REGISTER_URL } from '../api-sports'
+import { showsScore } from '../score-model'
+import type { RateStatus } from '../results-controller'
+import type { SportMatch } from '../sport-model'
+
+export { showsScore, scoreText, matchStatusLabel, heroStatusLine } from '../score-model'
 
 const SCORE_SIZE = { hero: dp(64), card: dp(28), row: dp(20) } as const
 
-export function MatchScore({ match, size = 'card' }: { match: Match; size?: 'hero' | 'card' | 'row' }) {
+export function MatchScore({ match, size = 'card' }: { match: SportMatch; size?: 'hero' | 'card' | 'row' }) {
   const blink = useGoalBlink(match)
   if (!showsScore(match) || !match.score) return null
   return (
@@ -4851,7 +5035,7 @@ export function ResultOnlyTag() {
 
 const BLINK_MS = 10_000
 
-export function useGoalBlink(match: Match): boolean {
+export function useGoalBlink(match: SportMatch): boolean {
   const [until, setUntil] = useState(0)
   const id = match.fixture?.id ?? null
   useEffect(() => (id ? onGoal((e) => { if (e.fixtureId === id) setUntil(Date.now() + BLINK_MS) }) : undefined), [id])
@@ -4881,7 +5065,33 @@ export function RateLineView({ status, tv }: { status: RateStatus; tv: boolean }
 }
 ```
 
-Och sökhjälpen:
+I `sport/tv/sport-parts.tsx` (fas 1) får `Crest` en valfri `src`. `StatusTag` och `MatchCard` byter ut sina fas 1-delar mot de nya, och filen importerar de rena hjälparna och `MatchScore` (sport-score importerar aldrig sport-parts, så det blir ingen cykel):
+
+```tsx
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
+import { matchStatusLabel, showsScore } from '../score-model'
+import { MatchScore, ResultOnlyTag } from './sport-score'
+
+/** Handoffens initialcirkel. Med `src` (källans märke) ritas märket via appens bildcache i stället. */
+export function Crest({ name, colorKey, size = dp(56), src }: { name: string; colorKey: string; size?: number; src?: string | null }) {
+  const [broken, setBroken] = useState(false)
+  if (src && !broken) {
+    return <img data-crest="" src={getPluginHttpAssetUrl('/api/m3u-logo', src)} alt="" width={size} height={size} onError={() => setBroken(true)} style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
+  }
+  // … fas 1:s initialcirkel (span med crestText) oförändrad …
+}
+
+export function StatusTag({ match, ctx }: { match: SportMatch; ctx: SportCtx }) {
+  const st = statusAt(match, ctx.now)
+  const label = matchStatusLabel(match, ctx.tt) // null utan fixtur: fas 1:s egen status
+  if (st === 'live') return <Tag variant="live">{label ?? ctx.tt('live')}</Tag>
+  if (st === 'finished') return <Tag variant="neutral">{label ?? ctx.tt('sportEnded')}</Tag>
+  return <Tag variant="neutral">{label ?? formatClock(match.start, ctx.locale)}</Tag>
+}
+```
+
+`TeamCell` i `MatchCard` får `crest?: string | null` och skickar det som `src` till `Crest`. I `MatchCard`: lagcellerna får `crest={match.homeCrest}` och `crest={match.awayCrest}`, mittenspannet `–` byts mot `{showsScore(match) ? <MatchScore match={match} size="card" /> : <span style={{ fontSize: dp(16), color: TV.dim }}>–</span>}`, och källraden blir `{match.resultOnly ? <ResultOnlyTag /> : sourceLine(match, ctx)}`.
 
 ```ts
 // runtime/sport/follow-search.ts
@@ -4906,29 +5116,38 @@ export async function searchProviderTeams(sport: SportKind, q: string): Promise<
 
 - [ ] **Step 5: Koppla in i fas 1-ytorna** (en ändring per yta; behåll fas 1:s utseende när fälten saknas)
 
-1. `tv/sport-shell.tsx`: där fas 1 hämtar dagens EPG-matcher (`fetchSportDay(...)` → `epgMatches`):
+1. `sport/tv/sport-shell.tsx`: efter `const selected = useSportDay(day, model.nowMs)` (fas 1:s hämtning av dagens EPG-matcher), med `const NO_MATCHES: SportMatch[] = []` överst i filen:
    ```tsx
-   const channelSource = useCallback((key: string) => channelKeyToSource(model, key), [model])
-   const { matches, status } = useSportResults({ day, epg: epgMatches, listIds, channelSource })
+   const { matches: mergedMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
+   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
+   const tvMode = useTvMode()
    usePollDemand('sport-view', true)
    ```
-   Skicka `matches` (inte `epgMatches`) till alla underflikar. I huvudet: räkna "N live" ur `matches` (`m.status === 'live' || m.status === 'ht' || m.live`), och rendera `<RateLineView status={status} tv={tvMode} />` direkt under raden "Idag · N matcher · N live · N på dina kanaler".
-2. `tv/sport-hero.tsx`: byt initialcirklarna mot `<TeamCrest team={match.home} size={dp(72)} />` och `<TeamCrest team={match.away} size={dp(72)} />`. Lägg `<MatchScore match={match} size="hero" />` mellan lagen. Statusraden blir `heroStatusLine(match, tt) ?? <fas 1:s "LIVE · 19:00–21:00">`. Progressen: när `match.minute != null` och sporten är fotboll, `minute / 90`. Annars fas 1:s EPG-progress.
-3. `tv/sport-match-card.tsx`: lagrader med `<TeamCrest size={dp(28)} />`, `<MatchScore match={match} />` till höger, och statusetiketten `matchStatusLabel(match, tt) ?? <fas 1:s>`. Kanalraden: `match.resultOnly ? <ResultOnlyTag /> : <fas 1:s kanal + "N källor">`.
-4. `tv/sport-matchday.tsx`: blocket i tidslinjen får "SLUT" via `matchStatusLabel` när `status === 'finished'`, och målblinket via `useGoalBlink(match)` (ram i `TV.live` medan den är sann). Avslutade sorteras efter EPG-slut som i fas 1.
-5. `tv/sport-feed.tsx`, "Dina lag": avataren blir `<TeamCrest>`. Statusen blir `LIVE ${score.home}–${score.away}` när `showsScore(match)`, annars fas 1:s.
-6. `tv/player-sport-ticker.tsx` och `tv/player-matches-drawer.tsx`: `<MatchScore size="row">` och `matchStatusLabel`. Lådan får en fjärde grupp sist, "Bara resultat" (`matches.filter((m) => m.resultOnly)`), som bara visas när listan inte är tom. Tickern kör `useSportResults({ day: today, epg: tickerMatches, listIds: [listId], channelSource })`, så att spelaren får sammanslagna matcher även om Sport inte öppnats.
-7. `tv/sport-follows.tsx`: fas 1:s sökning i EPG-lag ligger kvar. När sökningen **skickas** (OK eller Enter, inte per tecken) och `useSportSettings().apiKey` finns: `const hits = await searchProviderTeams(sport, q)`. Träffarna läggs under EPG-träffarna, med `TeamCrest` och landet. En följd träff sparas som fas 1:s `SportFollow`: `{ sport, kind: 'team', key: <normaliserat namn>, name: hit.name, providerIds: { [provider]: hit.id } }`.
+   Byt `selected.data` mot `mergedDay` i `sportCounts(...)`, `visibleMatches(...)` och i `open`-uppslagningen (matchcentret ska hitta "Bara resultat"-matcher). `selected.state` används kvar. `SportFeed` får `days={[mergedDay, tomorrowDay.data]}`. Fas 1:s `headerSummary(matches, ctx.now)` räknar redan "N live" rätt, eftersom `statusAt` litar på källan. Rendera `<RateLineView status={status} tv={tvMode} />` direkt under raden med `sport-summary`. Exportera `controller` vidare till Resultat-fliken (Task 18).
+2. `sport/tv/sport-parts.tsx`: se Step 4 (`Crest`, `StatusTag`, `MatchCard`).
+3. `sport/tv/sport-matchday.tsx`, `SportHero`: båda `Crest` får `src={match.homeCrest}` och `src={match.awayCrest}`. Mittkolumnens `timeLine(match, ctx)` blir
+   ```tsx
+   <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(4) }}>
+     {showsScore(match) ? <MatchScore match={match} size="hero" /> : null}
+     <span style={{ fontSize: dp(22), fontWeight: 600, color: st === 'live' ? TV.liveText : TV.muted, whiteSpace: 'nowrap' }}>{heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)}</span>
+   </span>
+   ```
+   Progressen: `match.minute != null && match.kind === 'football' ? Math.min(match.minute / 90, 1) : progressOf(match.start, match.stop, ctx.now)`. Raden "N källor" blir `match.resultOnly ? <ResultOnlyTag /> : <fas 1:s källtext>`. Tidslinjen: blocket flyttas ur `lane.map` till en egen komponent `TimelineBlock` (en hook får inte ligga i en `map`) som kör `useGoalBlink(match)` och lägger `outline: 2px solid ${TV.live}` medan den är sann. Etiketten blir `[label, scoreText(match) ?? (st === 'finished' ? matchStatusLabel(match, ctx.tt) : null)].filter(Boolean).join(' ')` för pågående och avslutade block, och klockslag plus etikett för kommande, som i fas 1.
+4. `sport/tv/sport-feed.tsx`: "Just nu"-raderna får `src` på båda `Crest`, `<MatchScore match={m} size="row" />` efter titeln, och `LIVE` följs av `matchStatusLabel(m, ctx.tt)` (minuten) när den finns. `TeamAvatar` ("Dina lag") skickar `src={crestForFollow(follow, [...dayMatches])}` till `Crest`, och statustexten för ett pågående lag blir `` `${ctx.tt('live')} ${scoreText(match)}` `` när `scoreText(match)` finns, annars fas 1:s. Raderna i Avslutade visar `scoreText(m) ?? ctx.tt('sportEnded')`.
+5. `sport/tv/sport-follows.tsx`, `FollowPicker`: fas 1 har ingen fritext. Lägg ett sökfält överst (`data-testid="follow-search"`): på TV `useTextPrompt({ pushLayer: ctx.nav.pushLayer })` (som i Task 16), på skrivbord ett `<input>`. Sökningen **skickas** med OK eller Enter, inte per tecken, och bara när `ctx.settings.apiKey` finns: `const hits = await searchProviderTeams(selectedSport === 'all' ? 'football' : selectedSport, q)` (`selectedSport` är den valda sport-chippen `follow-chip-<sport>`). Träffarna listas under fas 1:s kandidater, med `Crest src={hit.crest}` och landet, som `follow-hit-<id>`. En följd träff sparas som fas 1:s `SportFollow`: `toggleFollow({ sport, kind: 'team', key: foldTeamKey(hit.name), name: hit.name, providerIds: { [ctx.settings.provider]: hit.id } })` (`foldTeamKey` från `merge.ts`, Task 11). Strängen `sportFollowSearch` är fältets placeholder. Lägg ett fall i fas 1:s `sport-follows.test.tsx` som mockar `../follow-search` och bevisar att en träff sparas med `providerIds`.
+6. `sport/tv/sport-match-center.tsx`: rubrikens initialcirklar får `src`, och klockslaget i mitten blir `<MatchScore match={match} size="hero" />` när `showsScore(match)`. Statusraden blir `heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)`, och arenan är `match.venue` (fas 1 visar den redan).
+7. `sport/tv/player-sport.tsx`: `usePlayerSport` kör `useSportResults({ day: active ? localDayKey(model.nowMs) : null, epg: data?.matches ?? NO_MATCHES })` direkt efter `useSportDay`, och `matches` i `PlayerSportProps` blir `visibleMatches({ ...data, matches: mergedMatches }, 'all')`, så att spelaren får sammanslagna matcher även om Sport aldrig öppnats (`day: null` när spelaren är stängd: inga anrop). Tickern lägger `scoreText(m)` efter `shortLabel(m)`, och lådan visar `<MatchScore match={m} size="row" />` i raden samt `matchStatusLabel(m, tt) ?? fas 1:s meta`. `matchesForPlayer` filtrerar bort matcher utan källa och lämnas orörd. Lådan får en fjärde grupp sist, "Bara resultat" (`sport.matches.filter((m) => m.resultOnly)`, rubrik `tt('sportResultOnly')`), som bara visas när listan inte är tom. Raderna i gruppen är inte valbara för Multiview.
+8. `sport/mobile/sport-phone.tsx`: raderna visar `scoreText(m)` och `matchStatusLabel(m, tt)` i stället för klockslaget när `showsScore(m)`, importerade från `../score-model` (aldrig ur `sport/tv/*`). `SportPhone` gör samma `useSportResults`/`mergedDay`-steg som skalet i punkt 1 och anropar `usePollDemand('sport-view', true)`. Märken och Resultat-vy ingår inte på telefon i fas 2.
 
 - [ ] **Step 6: Kör testerna**
 
-Run: `cd "$PLG" && npx vitest run runtime/tv/sport-score.test.tsx runtime/tv && npx tsc --noEmit -p tsconfig.json`
-Expected: sport-score PASS (8 tester). Fas 1:s vytester ska vara gröna. Faller ett av dem för att det väntar sig initialer där det nu finns ett märke, ändras testet så att det ger matchen `crest: null`. Matchen ska inte ändras.
+Run: `cd "$PLG" && npx vitest run runtime/sport && npx tsc --noEmit -p tsconfig.json`
+Expected: sport-score PASS (9 tester). Fas 1:s vytester ska vara gröna. Faller ett av dem för att det väntar sig initialer där det nu finns ett märke, ändras testet så att matchen får `homeCrest: null`. Matchen ska inte ändras.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd "$PLG" && git add src/__test-stubs__/plugin-sdk.ts runtime/tv/sport-score.tsx runtime/tv/sport-score.test.tsx runtime/sport/follow-search.ts runtime/tv/sport-follows.tsx runtime/tv/tv-strings.ts runtime/tv/sport-shell.tsx runtime/tv/sport-hero.tsx runtime/tv/sport-match-card.tsx runtime/tv/sport-matchday.tsx runtime/tv/sport-feed.tsx runtime/tv/player-sport-ticker.tsx runtime/tv/player-matches-drawer.tsx
+cd "$PLG" && git add src/__test-stubs__/plugin-sdk.ts runtime/sport/score-model.ts runtime/sport/tv/sport-score.tsx runtime/sport/tv/sport-score.test.tsx runtime/sport/follow-search.ts runtime/sport/tv/sport-parts.tsx runtime/sport/tv/sport-follows.tsx runtime/sport/tv/sport-follows.test.tsx runtime/tv/tv-strings.ts runtime/sport/tv/sport-shell.tsx runtime/sport/tv/sport-matchday.tsx runtime/sport/tv/sport-feed.tsx runtime/sport/tv/sport-match-center.tsx runtime/sport/tv/player-sport.tsx runtime/sport/mobile/sport-phone.tsx
 git commit -m "live-tv sport: scores, minute, status and crests on every match surface"
 ```
 
@@ -4939,7 +5158,7 @@ git commit -m "live-tv sport: scores, minute, status and crests on every match s
 **Files:**
 - Create: `$PLG/runtime/sport/key-card.tsx`
 - Modify: `$PLG/src/__test-stubs__/plugin-sdk.ts` (`QRCodeSVG`)
-- Modify (fas 1): `$PLG/runtime/tv/sport-shell.tsx` (kortet överst när nyckel saknas)
+- Modify (fas 1): `$PLG/runtime/sport/tv/sport-shell.tsx` (kortet överst när nyckel saknas)
 - Modify: `$PLG/runtime/tv/tv-strings.ts`
 - Test: `$PLG/runtime/sport/key-card.test.tsx`
 
@@ -5184,13 +5403,13 @@ export function KeyCard({ variant, onDone, pushLayer }: { variant: 'banner' | 't
 
 `Segment` i `tv-ui.tsx` tar `options`, `value` och `onChange`, och valet ritas som klickbara poster med etiketten som text (testet klickar på "TheSportsDB"). Om `Segment` saknar `role`/klickyta i stubbmiljön: använd två `btn(...)` i stället, med samma etiketter.
 
-I `tv/sport-shell.tsx` (fas 1), överst i Sport-innehållet:
+I `sport/tv/sport-shell.tsx` (fas 1) läser skalet redan inställningarna via `ctx.settings` (`useSportCtx`), så ingen ny hook behövs. Direkt ovanför `{body()}`:
 
 ```tsx
-const sportSettings = useSportSettings()
-// …
-{shouldShowKeyBanner(sportSettings) ? <KeyCard variant="banner" pushLayer={nav.pushLayer} /> : null}
+{shouldShowKeyBanner(ctx.settings) && tab !== 'results' ? <KeyCard variant="banner" pushLayer={nav.pushLayer} /> : null}
 ```
+
+Fliken Resultat (Task 18) har sitt eget kort och visar inte bannern.
 
 - [ ] **Step 5: Kör testerna och se dem gå igenom**
 
@@ -5200,7 +5419,7 @@ Expected: PASS (5 tester). Inga nya tsc-fel.
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "$PLG" && git add runtime/sport/key-card.tsx runtime/sport/key-card.test.tsx src/__test-stubs__/plugin-sdk.ts runtime/tv/sport-shell.tsx runtime/tv/tv-strings.ts
+cd "$PLG" && git add runtime/sport/key-card.tsx runtime/sport/key-card.test.tsx src/__test-stubs__/plugin-sdk.ts runtime/sport/tv/sport-shell.tsx runtime/tv/tv-strings.ts
 git commit -m "live-tv sport: key card with provider choice, QR and instant validation"
 ```
 
@@ -5365,45 +5584,47 @@ git commit -m "live-tv sport: masked key, change and remove in both settings sur
 ### Task 18: Resultat-fliken med tabell och form
 
 **Files:**
-- Create: `$PLG/runtime/tv/sport-results.tsx`
-- Modify (fas 1): `$PLG/runtime/tv/sport-shell.tsx` (fliken `results` renderar `SportResults`)
+- Create: `$PLG/runtime/sport/tv/sport-results.tsx`
+- Modify (fas 1): `$PLG/runtime/sport/tv/sport-shell.tsx` (fliken `results` läggs till och renderar `SportResults`)
+- Modify (fas 1): `$PLG/runtime/sport/tv/sport-shell.test.tsx` (fliktestet räknar nu tre flikar)
 - Modify: `$PLG/runtime/tv/tv-strings.ts`
-- Test: `$PLG/runtime/tv/sport-results.test.tsx`
+- Test: `$PLG/runtime/sport/tv/sport-results.test.tsx`
 
 **Interfaces:**
-- Consumes: Task 14 (`ResultsController.loadStandings`, `standings`), Task 15 (`TeamCrest`, `MatchScore`, `matchStatusLabel`), Task 16 (`KeyCard`), Fas 1 `Match`, `useSportSettings`.
+- Consumes: Task 14 (`ResultsController.loadStandings`, `standings`), Task 15 (`MatchScore`, `matchStatusLabel`, `Crest` med `src`), Task 16 (`KeyCard`), Fas 1 `SportMatch`, `useSportSettings`, fliken `SportTab` och dagbrickorna i `sport-shell.tsx`, testfixturen `fxMatch`.
 - Produces:
   ```ts
   export type ResultsFilter = 'all' | 'live' | 'mine'
-  export interface ResultGroup { key: string; sport: SportKind; league: string; leagueId: string; season: string; round: number | null; matches: Match[] }
-  export function groupResults(matches: Match[], filter: ResultsFilter): { groups: ResultGroup[]; liveCount: number; mineCount: number }
+  export interface ResultGroup { key: string; sport: SportKind; league: string; leagueId: string; season: string; round: number | null; matches: SportMatch[] }
+  export function groupResults(matches: SportMatch[], filter: ResultsFilter): { groups: ResultGroup[]; liveCount: number; mineCount: number }
   export function formLetters(form: string | null, tt: TT): Array<{ letter: string; kind: 'W' | 'D' | 'L' }>
-  export function SportResults(props: { matches: Match[]; controller: ResultsController | null; onOpenMatch(m: Match): void; tv: boolean }): JSX.Element
+  export function SportResults(props: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; tv: boolean }): JSX.Element
   ```
 
-Resultat listar bara matcher med fixtur i en täckt sport. Tennis och EPG-matcher utan fixtur listas aldrig. "Mina kanaler" är matcher med källor som inte är "Bara resultat".
+Resultat listar bara matcher med fixtur i en täckt sport. Tennis och EPG-matcher utan fixtur listas aldrig. "Mina kanaler" är matcher med källor som inte är "Bara resultat". Fas 1 har ingen Resultat-flik (`SportTab = 'foryou' | 'follows'`), så fliken läggs till här.
 
-Strängar: `sportResultsAll` (All / Alla), `sportResultsLive` (Live only / Bara live), `sportResultsMine` (My channels ({n}) / Mina kanaler ({n})), `sportJumpTo` (JUMP TO / HOPPA TILL), `sportRound` (Round {n} / Omgång {n}), `sportTable` (Table / Tabell), `sportColTeam` (Team / Lag), `sportColPlayed` (P / M), `sportColPoints` (Pts / P), `sportColForm` (Form / Form), `sportResultsEmpty` (No results for this day. / Inga resultat den här dagen.), `sportFormW` (W / V), `sportFormD` (D / O), `sportFormL` (L / F).
+Strängar: `sportTabResults` (Results / Resultat), `sportResultsAll` (All / Alla), `sportResultsLive` (Live only / Bara live), `sportResultsMine` (My channels ({n}) / Mina kanaler ({n})), `sportJumpTo` (JUMP TO / HOPPA TILL), `sportTable` (Table / Tabell), `sportColTeam` (Team / Lag), `sportColPlayed` (P / M), `sportColPoints` (Pts / P), `sportColForm` (Form / Form), `sportResultsEmpty` (No results for this day. / Inga resultat den här dagen.), `sportFormW` (W / V), `sportFormD` (D / O), `sportFormL` (L / F). `sportRound` (Omgång {n}) finns redan i fas 1.
 
 - [ ] **Step 1: Skriv de fallerande testerna**
 
 ```tsx
-// runtime/tv/sport-results.test.tsx
+// runtime/sport/tv/sport-results.test.tsx
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { __resetPluginStorageForTests, __setLangForTests } from '@/lib/plugin-sdk'
 import { SportResults, formLetters, groupResults } from './sport-results'
-import { tvText } from './tv-strings'
-import { setSportSettings } from '../sport/sport-store'
-import type { Match } from '../sport/sport-model'
+import { tvText } from '../../tv/tv-strings'
+import { setSportSettings } from '../sport-store'
+import { fxMatch } from '../__sport-fixture'
+import type { SportMatch } from '../sport-model'
 
 const tt = (k: Parameters<typeof tvText>[1], v?: Record<string, string | number>) => tvText('sv', k, v)
 let n = 0
-const m = (over: Partial<Match> = {}): Match => ({
-  id: `m${++n}`, sport: 'football', league: 'Allsvenskan', leagueKey: 'allsvenskan',
-  home: { name: 'Malmo FF', key: 'malmo' }, away: { name: 'AIK', key: 'aik' }, kickoff: n, end: n + 1,
-  status: 'finished', score: { home: 1, away: 0 }, round: 27, sources: [{ channelKey: 'c', channelName: 'C', listId: 'l', listName: 'L', logo: null, quality: 'HD', rank: 1, url: 'u' }],
-  coverage: 'full', live: false, rerun: false, fixture: { provider: 'api-sports', id: `f${n}`, leagueId: '113', season: '2026' }, ...over,
+// fxMatch ger Allsvenskan, AIK - Hammarby och en källa (TV4); fixturen och ställningen läggs på här.
+const m = (over: Partial<SportMatch> = {}): SportMatch => fxMatch({
+  id: `m${++n}`, home: 'Malmo FF', away: 'AIK', homeKey: 'malmo', awayKey: 'aik', start: n, stop: n + 1,
+  status: 'finished', score: { home: 1, away: 0 }, round: 27, coverage: 'full',
+  fixture: { provider: 'api-sports', id: `f${n}`, leagueId: '113', season: '2026' }, ...over,
 })
 
 beforeEach(() => { __resetPluginStorageForTests(); __setLangForTests('sv') })
@@ -5411,7 +5632,7 @@ afterEach(() => { cleanup(); __setLangForTests('en') })
 
 describe('groupResults', () => {
   it('ligagrupper med omgång; tennis och EPG utan fixtur listas aldrig', () => {
-    const list = [m(), m({ status: 'live' }), m({ sport: 'hockey', league: 'SHL', fixture: { provider: 'api-sports', id: 'h', leagueId: '47', season: '2026' } }), m({ sport: 'tennis', coverage: 'epg' }), m({ fixture: undefined })]
+    const list = [m(), m({ status: 'live' }), m({ kind: 'hockey', league: 'SHL', fixture: { provider: 'api-sports', id: 'h', leagueId: '47', season: '2026' } }), m({ kind: 'tennis', coverage: 'epg' }), m({ fixture: undefined })]
     const r = groupResults(list, 'all')
     expect(r.groups.map((g) => [g.league, g.round, g.matches.length])).toEqual([['Allsvenskan', 27, 2], ['SHL', 27, 1]])
     expect(r.liveCount).toBe(1)
@@ -5453,43 +5674,45 @@ describe('SportResults', () => {
 
 - [ ] **Step 2: Kör testerna och se dem falla**
 
-Run: `cd "$PLG" && npx vitest run runtime/tv/sport-results.test.tsx`
+Run: `cd "$PLG" && npx vitest run runtime/sport/tv/sport-results.test.tsx`
 Expected: FAIL med "Failed to resolve import './sport-results'".
 
 - [ ] **Step 3: Implementera**
 
 ```tsx
-// runtime/tv/sport-results.tsx
+// runtime/sport/tv/sport-results.tsx
 'use client'
 
 import { useRef, useState } from 'react'
-import { TV, dp, station, Chip } from './tv-ui'
-import { useTvText, type TvStringKey } from './tv-strings'
-import { MatchScore, TeamCrest, matchStatusLabel } from './sport-score'
-import { KeyCard } from '../sport/key-card'
-import { useSportSettings } from '../sport/sport-store'
-import type { ResultsController } from '../sport/results-controller'
-import type { StandingRow } from '../sport/provider'
-import type { Match, SportKind } from '../sport/sport-model'
+import { TV, dp, station, Chip } from '../../tv/tv-ui'
+import { useTvText, type TvStringKey } from '../../tv/tv-strings'
+import { Crest } from './sport-parts'
+import { MatchScore, matchStatusLabel } from './sport-score'
+import { KeyCard } from '../key-card'
+import { useSportSettings } from '../sport-store'
+import type { ResultsController } from '../results-controller'
+import type { StandingRow } from '../provider'
+import type { SportKind, SportMatch } from '../sport-model'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 export type ResultsFilter = 'all' | 'live' | 'mine'
-export interface ResultGroup { key: string; sport: SportKind; league: string; leagueId: string; season: string; round: number | null; matches: Match[] }
+export interface ResultGroup { key: string; sport: SportKind; league: string; leagueId: string; season: string; round: number | null; matches: SportMatch[] }
 
-const isLive = (m: Match) => m.status === 'live' || m.status === 'ht'
-const isMine = (m: Match) => m.sources.length > 0 && !m.resultOnly
+// Matcher med fixtur bär källans status i `status` (live omfattar paus), så klockan behövs inte här.
+const isLive = (m: SportMatch) => m.status === 'live'
+const isMine = (m: SportMatch) => m.sources.length > 0 && !m.resultOnly
 
-export function groupResults(matches: Match[], filter: ResultsFilter): { groups: ResultGroup[]; liveCount: number; mineCount: number } {
+export function groupResults(matches: SportMatch[], filter: ResultsFilter): { groups: ResultGroup[]; liveCount: number; mineCount: number } {
   const eligible = matches.filter((m) => m.coverage === 'full' && m.fixture?.leagueId)
   const shown = eligible.filter((m) => (filter === 'live' ? isLive(m) : filter === 'mine' ? isMine(m) : true))
   const groups = new Map<string, ResultGroup>()
   for (const m of shown) {
-    const key = `${m.sport}|${m.fixture!.leagueId}`
-    const g = groups.get(key) ?? { key, sport: m.sport, league: m.league, leagueId: m.fixture!.leagueId!, season: m.fixture!.season ?? '', round: m.round ?? null, matches: [] }
+    const key = `${m.kind}|${m.fixture!.leagueId}`
+    const g = groups.get(key) ?? { key, sport: m.kind, league: m.league, leagueId: m.fixture!.leagueId!, season: m.fixture!.season ?? '', round: m.round ?? null, matches: [] }
     g.matches.push(m)
     groups.set(key, g)
   }
-  for (const g of groups.values()) g.matches.sort((a, b) => a.kickoff - b.kickoff)
+  for (const g of groups.values()) g.matches.sort((a, b) => a.start - b.start)
   return { groups: [...groups.values()], liveCount: eligible.filter(isLive).length, mineCount: eligible.filter(isMine).length }
 }
 
@@ -5509,7 +5732,7 @@ function StandingsTable({ rows, tt }: { rows: StandingRow[]; tt: TT }) {
         {rows.map((r) => (
           <tr key={`${r.group ?? ''}-${r.rank}-${r.team.id}`} style={{ borderTop: `1px solid ${TV.line}` }}>
             <td style={cell}>{r.rank}</td>
-            <td style={{ ...cell, display: 'flex', alignItems: 'center', gap: dp(8) }}><TeamCrest team={{ name: r.team.name, key: r.team.id, crest: r.team.crest }} size={dp(20)} />{r.team.name}</td>
+            <td style={{ ...cell, display: 'flex', alignItems: 'center', gap: dp(8) }}><Crest name={r.team.name} colorKey={r.team.id} src={r.team.crest} size={dp(20)} />{r.team.name}</td>
             <td style={cell}>{r.played}</td>
             <td style={{ ...cell, fontWeight: 600 }}>{r.points}</td>
             <td style={cell}><span style={{ display: 'inline-flex', gap: dp(4) }}>{formLetters(r.form, tt).map((f, i) => <span key={i} style={{ width: dp(18), height: dp(18), borderRadius: dp(4), background: FORM_COLOR[f.kind], color: '#0e0f13', fontSize: dp(11), fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{f.letter}</span>)}</span></td>
@@ -5520,7 +5743,7 @@ function StandingsTable({ rows, tt }: { rows: StandingRow[]; tt: TT }) {
   )
 }
 
-export function SportResults({ matches, controller, onOpenMatch, tv }: { matches: Match[]; controller: ResultsController | null; onOpenMatch(m: Match): void; tv: boolean }) {
+export function SportResults({ matches, controller, onOpenMatch, tv }: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; tv: boolean }) {
   const { tt } = useTvText()
   const settings = useSportSettings()
   const [filter, setFilter] = useState<ResultsFilter>('all')
@@ -5546,7 +5769,7 @@ export function SportResults({ matches, controller, onOpenMatch, tv }: { matches
   return (
     <div data-testid="sport-results" style={{ display: 'flex', flexDirection: 'column', gap: dp(20) }}>
       <div style={{ display: 'flex', gap: dp(10), flexWrap: 'wrap' }}>
-        <Chip active={filter === 'all'} {...station(() => setFilter('all'))}>{tt('sportResultsAll')}</Chip>
+        <Chip active={filter === 'all'} {...station(() => setFilter('all'), undefined, tv ? { 'data-init': '' } : undefined)}>{tt('sportResultsAll')}</Chip>
         <Chip active={filter === 'live'} {...station(() => setFilter('live'))}>{`${tt('sportResultsLive')} (${liveCount})`}</Chip>
         <Chip active={filter === 'mine'} {...station(() => setFilter('mine'))}>{tt('sportResultsMine', { n: mineCount })}</Chip>
       </div>
@@ -5568,9 +5791,9 @@ export function SportResults({ matches, controller, onOpenMatch, tv }: { matches
           {g.matches.map((m) => (
             <div key={m.id} {...station(() => onOpenMatch(m))} style={{ display: 'grid', gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: 'center', gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, borderRadius: dp(10), background: TV.s05, cursor: 'pointer' }}>
               <span style={{ fontSize: dp(14), color: m.status === 'live' ? TV.live : TV.dim }}>{matchStatusLabel(m, tt) ?? ''}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: dp(8), justifyContent: 'flex-end' }}>{m.home.name}<TeamCrest team={m.home} size={dp(22)} /></span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: dp(8), justifyContent: 'flex-end' }}>{m.home}<Crest name={m.home ?? ''} colorKey={m.homeKey ?? ''} src={m.homeCrest} size={dp(22)} /></span>
               <MatchScore match={m} size="row" />
-              <span style={{ display: 'flex', alignItems: 'center', gap: dp(8) }}><TeamCrest team={m.away} size={dp(22)} />{m.away.name}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: dp(8) }}><Crest name={m.away ?? ''} colorKey={m.awayKey ?? ''} src={m.awayCrest} size={dp(22)} />{m.away}</span>
             </div>
           ))}
           {tables[g.key] && tables[g.key] !== 'loading' ? <StandingsTable rows={tables[g.key] as StandingRow[]} tt={tt} /> : null}
@@ -5581,25 +5804,25 @@ export function SportResults({ matches, controller, onOpenMatch, tv }: { matches
 }
 ```
 
-`tv` tas emot för TV-specifik fokushantering, som fas 1:s skal kan behöva (`data-init` på första filtret). Om fas 1:s övriga flikar sätter `data-init` på första stationen gör vi likadant här: lägg `{ 'data-init': '' }` som tredje argument till `station` för "Alla" när `tv` är sant.
+`tv` styr fokus: första filtret får `data-init` på TV, som fas 1:s flikar. Fas 1:s övriga vyer är rena bodyfunktioner i skalet, så `SportResults` får `ctx.openMatch` som `onOpenMatch`.
 
-I `tv/sport-shell.tsx` (fas 1), fliken `results`:
+I `sport/tv/sport-shell.tsx` (fas 1) läggs fliken till. `SportTab` blir `'foryou' | 'results' | 'follows'`, flikraden mappar `(['foryou', 'results', 'follows'] as const)` med etiketten `key === 'foryou' ? tt('sportTabForYou') : key === 'results' ? tt('sportTabResults') : tt('sportTabFollows')` (testid `sport-tab-results`, samma `station`-mönster som de andra), och i `body()` efter grenarna för `missing` och `error`:
 
 ```tsx
-{tab === 'results' ? <SportResults matches={matches} controller={controller} onOpenMatch={openMatchCenter} tv={tvMode} /> : null}
+if (tab === 'results') return <SportResults matches={mergedMatches} controller={controller} onOpenMatch={ctx.openMatch} tv={tvMode} />
 ```
 
-`controller` kommer från `useSportResults` i Task 15 Step 4 (destrukturera `controller` där).
+`mergedMatches`, `controller` och `tvMode` kommer från Task 15 punkt 1. "Visa som"-segmentet visas fortfarande bara på För dig. Fas 1:s skaltest som räknar flikarna höjs med en, och ett fall öppnar Resultat och väntar sig `sport-key-card-tab` utan nyckel.
 
 - [ ] **Step 4: Kör testerna och se dem gå igenom**
 
-Run: `cd "$PLG" && npx vitest run runtime/tv/sport-results.test.tsx && npx tsc --noEmit -p tsconfig.json`
-Expected: PASS (5 tester).
+Run: `cd "$PLG" && npx vitest run runtime/sport/tv/sport-results.test.tsx runtime/sport/tv/sport-shell.test.tsx && npx tsc --noEmit -p tsconfig.json`
+Expected: PASS (resultat 5 tester).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "$PLG" && git add runtime/tv/sport-results.tsx runtime/tv/sport-results.test.tsx runtime/tv/sport-shell.tsx runtime/tv/tv-strings.ts
+cd "$PLG" && git add runtime/sport/tv/sport-results.tsx runtime/sport/tv/sport-results.test.tsx runtime/sport/tv/sport-shell.tsx runtime/sport/tv/sport-shell.test.tsx runtime/tv/tv-strings.ts
 git commit -m "live-tv sport: Results tab with league groups, filters and form tables"
 ```
 
@@ -5608,14 +5831,14 @@ git commit -m "live-tv sport: Results tab with league groups, filters and form t
 ### Task 19: Matchcentret: händelser, statistik, uppställningar och notis vid mål
 
 **Files:**
-- Create: `$PLG/runtime/tv/sport-match-center-data.tsx`
-- Modify (fas 1): `$PLG/runtime/tv/sport-match-center.tsx` (rendera `MatchCenterData` under "Var kan jag se den")
+- Create: `$PLG/runtime/sport/tv/sport-match-center-data.tsx`
+- Modify (fas 1): `$PLG/runtime/sport/tv/sport-match-center.tsx` (rendera `MatchCenterData` under "Var kan jag se den")
 - Modify: `$PLG/runtime/tv/tv-strings.ts`
-- Test: `$PLG/runtime/tv/sport-match-center-data.test.tsx`
+- Test: `$PLG/runtime/sport/tv/sport-match-center-data.test.tsx`
 
 **Interfaces:**
-- Consumes: Task 14 (`useResultsController`, `loadFixture`), Task 10 (`usePollDemand`), Task 15 (`RateLineView`), Task 6/7 (`FixtureDetail`), Fas 1 `setSportSettings`, `useSportSettings`.
-- Produces: `export function MatchCenterData(props: { match: Match }): JSX.Element | null`, `export function eventLabel(e: FixtureEvent, tt: TT): string`, `export function statLabel(label: string, tt: TT): string`, `export function toggleGoalAlert(match: Match): void`.
+- Consumes: Task 14 (`useResultsController`, `loadFixture`), Task 10 (`usePollDemand`), Task 15 (`RateLineView`), Task 6/7 (`FixtureDetail`), Fas 1 `SportMatch`, `setSportSettings`, `useSportSettings`, `fxMatch`.
+- Produces: `export function MatchCenterData(props: { match: SportMatch }): JSX.Element | null`, `export function eventLabel(e: FixtureEvent, tt: TT): string`, `export function statLabel(label: string, tt: TT): string`, `export function toggleGoalAlert(match: SportMatch): void`.
 
 Matchcentret hämtar fixturen en gång när det öppnas. Medan en match pågår hämtas den igen när ställningen eller minuten ändras, det vill säga i pollningstakten, och 60 s TTL i både minnet och på disk avdubblar. Tomma delar döljs. Utan fixtur, eller i en otäckt sport, renderas ingenting och inga anrop görs.
 
@@ -5624,27 +5847,28 @@ Strängar: `sportEvents` (Events / Händelser), `sportStats` (Statistics / Stati
 - [ ] **Step 1: Skriv de fallerande testerna**
 
 ```tsx
-// runtime/tv/sport-match-center-data.test.tsx
+// runtime/sport/tv/sport-match-center-data.test.tsx
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { __resetPluginStorageForTests, __setLangForTests } from '@/lib/plugin-sdk'
 import { MatchCenterData } from './sport-match-center-data'
-import { apiSports } from '../sport/api-sports'
-import { getSportSettings } from '../sport/sport-store'
-import footballId from '../sport/__fixtures__/api-sports/football-fixture-id.json'
-import hockeyDate from '../sport/__fixtures__/api-sports/hockey-games-date.json'
-import hockeyEvents from '../sport/__fixtures__/api-sports/hockey-games-events.json'
-import type { Match } from '../sport/sport-model'
+import { apiSports } from '../api-sports'
+import { getSportSettings } from '../sport-store'
+import { fxMatch } from '../__sport-fixture'
+import footballId from '../__fixtures__/api-sports/football-fixture-id.json'
+import hockeyDate from '../__fixtures__/api-sports/hockey-games-date.json'
+import hockeyEvents from '../__fixtures__/api-sports/hockey-games-events.json'
+import type { SportMatch } from '../sport-model'
 
-const match = (over: Partial<Match> = {}): Match => ({
-  id: 'm1', sport: 'football', league: 'Allsvenskan', leagueKey: 'a', home: { name: 'Malmo FF', key: 'malmo' }, away: { name: 'Djurgardens IF', key: 'dif' },
-  kickoff: Date.now(), end: Date.now() + 1, status: 'live', minute: 67, score: { home: 2, away: 1 }, sources: [], coverage: 'full', live: true, rerun: false,
+const match = (over: Partial<SportMatch> = {}): SportMatch => fxMatch({
+  id: 'm1', home: 'Malmo FF', away: 'Djurgardens IF', homeKey: 'malmo', awayKey: 'dif', league: 'Allsvenskan', leagueKey: 'a',
+  start: Date.now(), stop: Date.now() + 1, status: 'live', minute: 67, score: { home: 2, away: 1 }, coverage: 'full',
   fixture: { provider: 'api-sports', id: '1180001' }, ...over,
 })
 
 const h = vi.hoisted(() => ({ controller: null as unknown }))
-vi.mock('../sport/results-controller', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../sport/results-controller')>()),
+vi.mock('../results-controller', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../results-controller')>()),
   useResultsController: () => h.controller,
 }))
 
@@ -5671,7 +5895,7 @@ describe('MatchCenterData', () => {
   })
   it('hockey: tom statistik och tomma uppställningar döljs', async () => {
     fakeController(apiSports.fixture('hockey', '51001', { finished: false }).parse([{ response: [hockeyDate.response[0]] }, hockeyEvents]))
-    render(<MatchCenterData match={match({ sport: 'hockey', fixture: { provider: 'api-sports', id: '51001' } })} />)
+    render(<MatchCenterData match={match({ kind: 'hockey', fixture: { provider: 'api-sports', id: '51001' } })} />)
     await waitFor(() => expect(screen.getByText('Händelser')).toBeTruthy())
     expect(screen.getByText('Utvisning')).toBeTruthy()
     expect(screen.queryByText('Statistik')).toBeNull()
@@ -5679,7 +5903,7 @@ describe('MatchCenterData', () => {
   })
   it('otäckt sport eller ingen fixtur: ingenting och inga anrop', () => {
     const c = fakeController(null)
-    const { container } = render(<MatchCenterData match={match({ sport: 'tennis', coverage: 'epg', fixture: undefined })} />)
+    const { container } = render(<MatchCenterData match={match({ kind: 'tennis', coverage: 'epg', fixture: undefined })} />)
     expect(container.innerHTML).toBe('')
     expect(c.loadFixture).not.toHaveBeenCalled()
   })
@@ -5695,25 +5919,25 @@ describe('MatchCenterData', () => {
 
 - [ ] **Step 2: Kör testerna och se dem falla**
 
-Run: `cd "$PLG" && npx vitest run runtime/tv/sport-match-center-data.test.tsx`
+Run: `cd "$PLG" && npx vitest run runtime/sport/tv/sport-match-center-data.test.tsx`
 Expected: FAIL med "Failed to resolve import './sport-match-center-data'".
 
 - [ ] **Step 3: Implementera**
 
 ```tsx
-// runtime/tv/sport-match-center-data.tsx
+// runtime/sport/tv/sport-match-center-data.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
-import { TV, dp, station, Toggle } from './tv-ui'
-import { useTvText, type TvStringKey } from './tv-strings'
+import { TV, dp, station, Toggle } from '../../tv/tv-ui'
+import { useTvText, type TvStringKey } from '../../tv/tv-strings'
 import { RateLineView } from './sport-score'
-import { useResultsController } from '../sport/results-controller'
-import { usePollDemand } from '../sport/live-poller'
-import { getSportSettings, setSportSettings, useSportSettings } from '../sport/sport-store'
-import type { FixtureDetail, FixtureEvent } from '../sport/provider'
-import type { Match } from '../sport/sport-model'
+import { useResultsController } from '../results-controller'
+import { usePollDemand } from '../live-poller'
+import { getSportSettings, setSportSettings, useSportSettings } from '../sport-store'
+import type { FixtureDetail, FixtureEvent } from '../provider'
+import type { SportMatch } from '../sport-model'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 const FOUR_HOURS = 4 * 3_600_000
@@ -5736,35 +5960,35 @@ export function statLabel(label: string, tt: TT): string {
   return STAT_KEYS[label] ? tt(STAT_KEYS[label]) : label
 }
 
-export function toggleGoalAlert(match: Match): void {
+export function toggleGoalAlert(match: SportMatch): void {
   const current = { ...getSportSettings().goalAlertMatches }
   if (current[match.id]) delete current[match.id]
-  else current[match.id] = match.kickoff + FOUR_HOURS
+  else current[match.id] = match.start + FOUR_HOURS
   setSportSettings({ goalAlertMatches: current })
 }
 
-export function MatchCenterData({ match }: { match: Match }) {
+export function MatchCenterData({ match }: { match: SportMatch }) {
   const { tt } = useTvText()
   const tv = useTvMode()
   const controller = useResultsController()
   const settings = useSportSettings()
   const [detail, setDetail] = useState<FixtureDetail | null>(null)
   const covered = match.coverage === 'full' && !!match.fixture
-  const live = match.status === 'live' || match.status === 'ht'
+  const live = match.status === 'live'
   usePollDemand('match-center', covered && live)
 
   useEffect(() => {
     if (!covered || !controller || !match.fixture) return
     let cancelled = false
-    void controller.loadFixture(match.sport, match.fixture.id, match.status === 'finished').then((d) => { if (!cancelled) setDetail(d) })
+    void controller.loadFixture(match.kind, match.fixture.id, match.status === 'finished').then((d) => { if (!cancelled) setDetail(d) })
     return () => { cancelled = true }
     // Pågående match: hämta om när ställning eller minut ändras (pollningstakten).
-  }, [covered, controller, match.sport, match.fixture?.id, match.status, match.score?.home, match.score?.away, match.minute])
+  }, [covered, controller, match.kind, match.fixture?.id, match.status, match.score?.home, match.score?.away, match.minute])
 
   if (!covered) return null
   const alertOn = !!settings.goalAlertMatches[match.id]
   const h2 = { fontSize: dp(18), fontWeight: 600, marginTop: dp(12) } as const
-  const sideName = (s: 'home' | 'away' | null) => (s === 'home' ? match.home.name : s === 'away' ? match.away.name : '')
+  const sideName = (s: 'home' | 'away' | null) => (s === 'home' ? match.home ?? '' : s === 'away' ? match.away ?? '' : '')
 
   return (
     <div data-testid="sport-match-center-data" style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
@@ -5815,17 +6039,17 @@ export function MatchCenterData({ match }: { match: Match }) {
 }
 ```
 
-I `tv/sport-match-center.tsx` (fas 1): rendera `<MatchCenterData match={match} />` direkt under "Var kan jag se den". Fas 1:s dolda rader för Händelser, Statistik och Laguppställningar tas bort, eftersom `MatchCenterData` äger dem nu. Rubrikens status och arena tar `heroStatusLine(match, tt)` och `match.venue` (Task 15).
+I `sport/tv/sport-match-center.tsx` (fas 1): rendera `<MatchCenterData match={match} />` direkt under "Var kan jag se den". Fas 1:s matchcenter har ingen rad för Händelser, Statistik eller Laguppställningar (bara Påminn mig och källorna), så inget tas bort. Rubrikens status, märken och ställning är Task 15 punkt 6.
 
 - [ ] **Step 4: Kör testerna och se dem gå igenom**
 
-Run: `cd "$PLG" && npx vitest run runtime/tv/sport-match-center-data.test.tsx runtime/tv && npx tsc --noEmit -p tsconfig.json`
-Expected: PASS (4 nya tester). Fas 1:s matchcentertester är fortfarande gröna. Ett test som väntade sig de dolda raderna ändras till att vänta sig `sport-match-center-data` eller ingenting, för otäckt sport.
+Run: `cd "$PLG" && npx vitest run runtime/sport/tv/sport-match-center-data.test.tsx runtime/sport && npx tsc --noEmit -p tsconfig.json`
+Expected: PASS (4 nya tester). Fas 1:s matchcentertester är fortfarande gröna.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "$PLG" && git add runtime/tv/sport-match-center-data.tsx runtime/tv/sport-match-center-data.test.tsx runtime/tv/sport-match-center.tsx runtime/tv/tv-strings.ts
+cd "$PLG" && git add runtime/sport/tv/sport-match-center-data.tsx runtime/sport/tv/sport-match-center-data.test.tsx runtime/sport/tv/sport-match-center.tsx runtime/tv/tv-strings.ts
 git commit -m "live-tv sport: match center events, statistics, line-ups and goal alerts"
 ```
 
@@ -5836,19 +6060,19 @@ git commit -m "live-tv sport: match center events, statistics, line-ups and goal
 **Files:**
 - Create: `$PLG/runtime/sport/goal-alerts.ts`
 - Create: `$PLG/runtime/sport/sport-goal-mount.tsx`
-- Create: `$PLG/runtime/tv/player-goal-overlay.tsx`
+- Create: `$PLG/runtime/sport/tv/player-goal-overlay.tsx`
 - Modify: `$PLG/runtime/live-tv-player.tsx` (efterfrågan, overlay, spelande kanal)
 - Modify: `$PLG/runtime/index.ts` (bootstrap)
 - Modify: `$PLG/runtime/tv/tv-strings.ts`
-- Test: `$PLG/runtime/sport/goal-alerts.test.ts`, `$PLG/runtime/tv/player-goal-overlay.test.tsx`
+- Test: `$PLG/runtime/sport/goal-alerts.test.ts`, `$PLG/runtime/sport/tv/player-goal-overlay.test.tsx`
 
 **Interfaces:**
-- Consumes: Task 12 (`onGoal`, `GoalEvent`), Task 14 (`useResultsController`, `useChannelSportLive`, `currentResults`), Task 10 (`usePollDemand`). `tryNativeNotification` från `reminders.ts`, `requestOpenBrowsePage` från SDK:t, `encodeChannelParams` från `live-tv-shell.tsx`. Fas 1 `isMatchFollowed`, `getFollows`, `sourceToChannel`.
+- Consumes: Task 12 (`onGoal`, `GoalEvent`), Task 14 (`useResultsController`, `useChannelSportLive`, `currentResults`), Task 10 (`usePollDemand`). `tryNativeNotification` från `reminders.ts`, `requestOpenBrowsePage` från SDK:t, `encodeChannelParams` från `live-tv-shell.tsx`. Fas 1 `SportMatch`, `followState`, `rankedSources` (`sport-day-model.ts`), `getFollows`, `getOverrides`, `sourceChannel` (`sport-model.ts`), `fxMatch` och `fxSource`.
 - Produces:
   ```ts
   // goal-alerts.ts
-  export function matchForGoal(e: GoalEvent, merged: Match[]): Match | null
-  export function goalAlertWanted(match: Match | null, settings: SportSettings, follows: SportFollow[], now?: number): boolean
+  export function matchForGoal(e: GoalEvent, merged: SportMatch[]): SportMatch | null
+  export function goalAlertWanted(match: SportMatch | null, settings: SportSettings, follows: SportFollow[], now?: number): boolean
   export function goalTitle(e: GoalEvent, tt: TT): string      // "MÅL! Malmo FF 3–1 AIK"
   export function goalBody(e: GoalEvent): string               // "S. Larsson 67'"
   export function setPlayingChannel(key: string | null): void
@@ -5864,7 +6088,7 @@ Regler:
 - **Notis** (native och banner, via bootstrapen): `settings.goalAlerts` och (följd match eller "Notis vid mål" för matchen), men inte när spelaren redan visar den matchens kanal, eftersom overlayn täcker det. Bara medan appen körs.
 - Spelaren registrerar efterfrågan `'player'` när den spelade kanalen har en pågående match i en täckt sport (`useChannelSportLive`).
 
-Strängar: `sportGoal` (GOAL! / MÅL!), `sportJumpThere` (Jump there / Hoppa dit), `sportWatch` (Watch / Titta).
+Strängar: `sportGoal` (GOAL! / MÅL!), `sportJumpThere` (Jump there / Hoppa dit). `sportWatch` (Titta) finns redan i fas 1.
 
 - [ ] **Step 1: Skriv de fallerande testerna**
 
@@ -5874,12 +6098,12 @@ import { describe, expect, it } from 'vitest'
 import { goalAlertWanted, goalBody, goalTitle, matchForGoal } from './goal-alerts'
 import { tvText } from '../tv/tv-strings'
 import type { GoalEvent } from './goal-events'
-import type { Match } from './sport-model'
 import type { SportSettings } from './sport-store'
+import { fxMatch } from './__sport-fixture'
 
 const tt = (k: Parameters<typeof tvText>[1], v?: Record<string, string | number>) => tvText('sv', k, v)
 const e: GoalEvent = { fixtureId: '1', provider: 'api-sports', sport: 'football', side: 'home', score: { home: 3, away: 1 }, scorer: 'S. Larsson', minute: 67, at: 0, home: 'Malmo FF', away: 'AIK' }
-const match = { id: 'm1', sport: 'football', home: { name: 'Malmo FF', key: 'malmo' }, away: { name: 'AIK', key: 'aik' }, leagueKey: 'a', fixture: { provider: 'api-sports', id: '1' }, kickoff: 0 } as unknown as Match
+const match = fxMatch({ id: 'm1', home: 'Malmo FF', away: 'AIK', homeKey: 'malmo', awayKey: 'aik', leagueKey: 'a', fixture: { provider: 'api-sports', id: '1' } })
 const settings = (over: Partial<SportSettings> = {}) => ({ apiKey: 'k', view: 'matchday', alert: 'off', goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {}, ...over }) as SportSettings
 
 describe('goal-alerts', () => {
@@ -5903,26 +6127,27 @@ describe('goal-alerts', () => {
 ```
 
 ```tsx
-// runtime/tv/player-goal-overlay.test.tsx
+// runtime/sport/tv/player-goal-overlay.test.tsx
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { __resetPluginStorageForTests, __setLangForTests } from '@/lib/plugin-sdk'
 import { PlayerGoalOverlay } from './player-goal-overlay'
-import { emitGoals, type GoalEvent } from '../sport/goal-events'
-import { setSportSettings } from '../sport/sport-store'
-import type { Match } from '../sport/sport-model'
+import { emitGoals, type GoalEvent } from '../goal-events'
+import { setSportSettings } from '../sport-store'
+import { fxMatch, fxSource } from '../__sport-fixture'
+import type { SportMatch } from '../sport-model'
 
-const src = (key: string) => ({ channelKey: key, channelName: key.toUpperCase(), listId: 'l', listName: 'L', logo: null, quality: 'HD', rank: 1, url: `http://x/${key}` })
-const mk = (id: string, fixtureId: string, channel: string, home = 'Malmo FF'): Match => ({
-  id, sport: 'football', league: 'A', leagueKey: 'a', home: { name: home, key: home.toLowerCase() }, away: { name: 'AIK', key: 'aik' },
-  kickoff: Date.now(), end: Date.now() + 1, status: 'live', minute: 67, score: { home: 3, away: 1 }, sources: [src(channel)], coverage: 'full', live: true, rerun: false,
+const src = (key: string) => fxSource(key, { channelKey: key })
+const mk = (id: string, fixtureId: string, channel: string, home = 'Malmo FF'): SportMatch => fxMatch({
+  id, league: 'A', leagueKey: 'a', home, away: 'AIK', homeKey: home.toLowerCase(), awayKey: 'aik',
+  status: 'live', minute: 67, score: { home: 3, away: 1 }, sources: [src(channel)], coverage: 'full',
   fixture: { provider: 'api-sports', id: fixtureId },
 })
 const goal = (fixtureId: string): GoalEvent => ({ fixtureId, provider: 'api-sports', sport: 'football', side: 'home', score: { home: 3, away: 1 }, scorer: 'S. Larsson', minute: 67, at: 0, home: 'Malmo FF', away: 'AIK' })
 
 const h = vi.hoisted(() => ({ controller: null as unknown }))
-vi.mock('../sport/results-controller', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../sport/results-controller')>()),
+vi.mock('../results-controller', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../results-controller')>()),
   useResultsController: () => h.controller,
 }))
 
@@ -5964,27 +6189,28 @@ describe('PlayerGoalOverlay', () => {
 
 - [ ] **Step 2: Kör testerna och se dem falla**
 
-Run: `cd "$PLG" && npx vitest run runtime/sport/goal-alerts.test.ts runtime/tv/player-goal-overlay.test.tsx`
+Run: `cd "$PLG" && npx vitest run runtime/sport/goal-alerts.test.ts runtime/sport/tv/player-goal-overlay.test.tsx`
 Expected: FAIL med "Failed to resolve import './goal-alerts'" och "./player-goal-overlay".
 
 - [ ] **Step 3: Implementera**
 
 ```ts
 // runtime/sport/goal-alerts.ts
-import { isMatchFollowed, type SportFollow, type SportSettings } from './sport-store'
+import { followState } from './sport-day-model'
+import type { SportFollow, SportSettings } from './sport-store'
 import type { GoalEvent } from './goal-events'
-import type { Match } from './sport-model'
+import type { SportMatch } from './sport-model'
 import type { TvStringKey } from '../tv/tv-strings'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 
-export function matchForGoal(e: GoalEvent, merged: Match[]): Match | null {
+export function matchForGoal(e: GoalEvent, merged: SportMatch[]): SportMatch | null {
   return merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId) ?? null
 }
 
-export function goalAlertWanted(match: Match | null, settings: SportSettings, follows: SportFollow[], now: number = Date.now()): boolean {
+export function goalAlertWanted(match: SportMatch | null, settings: SportSettings, follows: SportFollow[], now: number = Date.now()): boolean {
   if (!match || !settings.goalAlerts) return false
-  return isMatchFollowed(match, follows) || (settings.goalAlertMatches[match.id] ?? 0) > now
+  return followState(match, follows).any || (settings.goalAlertMatches[match.id] ?? 0) > now
 }
 
 export function goalTitle(e: GoalEvent, tt: TT): string {
@@ -6003,25 +6229,26 @@ export function playingChannel(): string | null { return playing }
 ```
 
 ```tsx
-// runtime/tv/player-goal-overlay.tsx
+// runtime/sport/tv/player-goal-overlay.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
-import { TV, dp, station } from './tv-ui'
-import { useTvText } from './tv-strings'
-import { onGoal, type GoalEvent } from '../sport/goal-events'
-import { goalAlertWanted, goalBody, matchForGoal } from '../sport/goal-alerts'
-import { useResultsController } from '../sport/results-controller'
-import { getFollows, getSportSettings } from '../sport/sport-store'
-import { sourceToChannel, type Match } from '../sport/sport-model'
-import type { M3uChannel } from '../live-tv-data'
+import { TV, dp, station } from '../../tv/tv-ui'
+import { useTvText } from '../../tv/tv-strings'
+import { onGoal, type GoalEvent } from '../goal-events'
+import { goalAlertWanted, goalBody, matchForGoal } from '../goal-alerts'
+import { useResultsController } from '../results-controller'
+import { rankedSources } from '../sport-day-model'
+import { getFollows, getOverrides, getSportSettings } from '../sport-store'
+import { sourceChannel, type SportMatch } from '../sport-model'
+import type { M3uChannel } from '../../live-tv-data'
 
 const SHOW_MS = 6_000
 
 export function PlayerGoalOverlay({ channelKey, onJump }: { channelKey: string; onJump(channel: M3uChannel): void }) {
   const { tt } = useTvText()
   const controller = useResultsController()
-  const [shown, setShown] = useState<{ e: GoalEvent; match: Match; here: boolean } | null>(null)
+  const [shown, setShown] = useState<{ e: GoalEvent; match: SportMatch; here: boolean } | null>(null)
 
   useEffect(() => onGoal((e) => {
     const match = controller ? matchForGoal(e, controller.merged()) : null
@@ -6039,7 +6266,7 @@ export function PlayerGoalOverlay({ channelKey, onJump }: { channelKey: string; 
 
   if (!shown) return null
   const { e, match, here } = shown
-  const target = !here ? match.sources[0] : undefined
+  const target = !here ? rankedSources(match, getOverrides())[0] : undefined
   return (
     <div data-live-tv-goal-overlay="" role="status" style={{ position: 'absolute', top: dp(40), left: '50%', transform: 'translateX(-50%)', zIndex: 30, display: 'flex', alignItems: 'center', gap: dp(20), padding: `${dp(16)}px ${dp(24)}px`, borderRadius: dp(16), background: 'rgba(11,16,32,0.92)', border: `1px solid ${TV.lineStrong}`, color: TV.text }}>
       <span style={{ fontSize: dp(34), fontWeight: 800, color: TV.live, letterSpacing: '0.04em' }}>{tt('sportGoal')}</span>
@@ -6048,14 +6275,14 @@ export function PlayerGoalOverlay({ channelKey, onJump }: { channelKey: string; 
         {goalBody(e) ? <span style={{ fontSize: dp(16), color: TV.muted }}>{goalBody(e)}</span> : null}
       </span>
       {target ? (
-        <div {...station(() => { setShown(null); onJump(sourceToChannel(target)) })} style={{ padding: `${dp(8)}px ${dp(14)}px`, borderRadius: dp(10), background: TV.text, color: '#0e0f13', fontWeight: 600, cursor: 'pointer' }}>{tt('sportJumpThere')}</div>
+        <div {...station(() => { setShown(null); onJump(sourceChannel(target)) })} style={{ padding: `${dp(8)}px ${dp(14)}px`, borderRadius: dp(10), background: TV.text, color: '#0e0f13', fontWeight: 600, cursor: 'pointer' }}>{tt('sportJumpThere')}</div>
       ) : null}
     </div>
   )
 }
 ```
 
-`sourceToChannel` kommer från fas 1 (`sport-model.ts` enligt avsnittet om fas 1-gränssnitt). Flytta importen om fas 1 lade den någon annanstans.
+`sourceChannel` (fas 1, `sport-model.ts`) gör en `MatchSource` till en `M3uChannel`, och `rankedSources` (fas 1, `sport-day-model.ts`) ger åsidosättningen först, så "Hoppa dit" väljer samma källa som "Titta".
 
 ```tsx
 // runtime/sport/sport-goal-mount.tsx
@@ -6070,13 +6297,14 @@ import { useTvText } from '../tv/tv-strings'
 import { onGoal, type GoalEvent } from './goal-events'
 import { goalAlertWanted, goalBody, goalTitle, matchForGoal, playingChannel } from './goal-alerts'
 import { currentResults } from './results-controller'
-import { getFollows, getSportSettings } from './sport-store'
-import { sourceToChannel, type Match } from './sport-model'
+import { rankedSources } from './sport-day-model'
+import { getFollows, getOverrides, getSportSettings } from './sport-store'
+import { sourceChannel, type SportMatch } from './sport-model'
 
 /** Målnotis medan appen körs (native och banner), på samma sätt som påminnelserna. */
 export function SportGoalMount() {
   const { tt } = useTvText()
-  const [banner, setBanner] = useState<{ e: GoalEvent; match: Match } | null>(null)
+  const [banner, setBanner] = useState<{ e: GoalEvent; match: SportMatch } | null>(null)
   useEffect(() => onGoal((e) => {
     const match = matchForGoal(e, currentResults()?.merged() ?? [])
     if (!match || !goalAlertWanted(match, getSportSettings(), getFollows())) return
@@ -6090,7 +6318,7 @@ export function SportGoalMount() {
     return () => window.clearTimeout(t)
   }, [banner])
   if (!banner) return null
-  const source = banner.match.sources[0]
+  const source = rankedSources(banner.match, getOverrides())[0]
   return (
     <div role="status" style={{ position: 'fixed', right: 20, bottom: 24, zIndex: 400, maxWidth: 380, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: LT.radiusLg, background: 'rgba(11,16,32,0.96)', border: `1px solid ${LT.line}`, color: LT.text }}>
       <div style={{ minWidth: 0, flex: 1 }}>
@@ -6098,7 +6326,7 @@ export function SportGoalMount() {
         {goalBody(banner.e) ? <div style={{ fontSize: 12, color: LT.dim }}>{goalBody(banner.e)}</div> : null}
       </div>
       {source ? (
-        <Btn variant="primary" small onClick={() => { setBanner(null); requestOpenBrowsePage({ pageId: 'live-tv-browse', params: { view: 'channel', autoplay: '1', ...encodeChannelParams(sourceToChannel(source)) } }) }}>{tt('sportWatch')}</Btn>
+        <Btn variant="primary" small onClick={() => { setBanner(null); requestOpenBrowsePage({ pageId: 'live-tv-browse', params: { view: 'channel', autoplay: '1', ...encodeChannelParams(sourceChannel(source)) } }) }}>{tt('sportWatch')}</Btn>
       ) : null}
     </div>
   )
@@ -6128,13 +6356,13 @@ och i JSX före `{tvChrome ? <TvPlayerChrome … /> : null}`:
 
 - [ ] **Step 4: Kör testerna och se dem gå igenom**
 
-Run: `cd "$PLG" && npx vitest run runtime/sport/goal-alerts.test.ts runtime/tv/player-goal-overlay.test.tsx runtime/sport/results-controller.test.ts runtime/live-tv-player-chrome.test.tsx runtime/tv/tv-shell-player.test.tsx && npx tsc --noEmit -p tsconfig.json`
+Run: `cd "$PLG" && npx vitest run runtime/sport/goal-alerts.test.ts runtime/sport/tv/player-goal-overlay.test.tsx runtime/sport/results-controller.test.ts runtime/live-tv-player-chrome.test.tsx runtime/tv/tv-shell-player.test.tsx && npx tsc --noEmit -p tsconfig.json`
 Expected: PASS (goal-alerts 3, overlay 3, och spelarens befintliga tester är fortfarande gröna).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "$PLG" && git add runtime/sport/goal-alerts.ts runtime/sport/goal-alerts.test.ts runtime/sport/sport-goal-mount.tsx runtime/tv/player-goal-overlay.tsx runtime/tv/player-goal-overlay.test.tsx runtime/live-tv-player.tsx runtime/index.ts runtime/tv/tv-strings.ts
+cd "$PLG" && git add runtime/sport/goal-alerts.ts runtime/sport/goal-alerts.test.ts runtime/sport/sport-goal-mount.tsx runtime/sport/tv/player-goal-overlay.tsx runtime/sport/tv/player-goal-overlay.test.tsx runtime/live-tv-player.tsx runtime/index.ts runtime/tv/tv-strings.ts
 git commit -m "live-tv sport: GOAL overlay with jump, and goal alerts while the app runs"
 ```
 
@@ -6195,9 +6423,9 @@ Ingen versionsbump, ingen push och inget släpp. Det avgör Jerry.
 
 ## Spec-luckor och beslut som planen tog
 
-1. **Motorsport (formula-1)** finns som värd i specens adapterrad, men `Match` saknar en race-modell utan hemma/borta. I fas 2 är motorsport bara EPG (`coverage: 'epg'`) för båda källorna. Ska Jerry vilja ha F1-resultat behövs en egen modell.
+1. **Motorsport (formula-1)** finns som värd i specens adapterrad, men `SportMatch` saknar en race-modell utan hemma/borta. I fas 2 är motorsport bara EPG (`coverage: 'epg'`) för båda källorna. Ska Jerry vilja ha F1-resultat behövs en egen modell.
 2. **Hockeyns, baskets och handbollens live hos API-Sports**: `live=all` är bara dokumenterat för fotboll. Planen pollar `games?date=idag`, som kostar ett anrop, och det ska verifieras med nyckel.
-3. **`/sport/link` svarar `{ matchId, swapped }`** i stället för specens `{fixtureId → [källor]}`. Källorna finns redan på fas 1:s grupperade match, och `swapped` behövs för att märkena ska hamna på rätt lag.
+3. **`/sport/link` svarar `{ matchId, swapped }`** i stället för specens `{fixtureId → [källor]}`, och frågar med `listId` och `tzOffset` på samma sätt som fas 1:s `/sport/day`. Källorna finns redan på fas 1:s grupperade match, och `swapped` behövs för att märkena ska hamna på rätt lag.
 4. **Fönstret "förstudio −15/+60 min"** tolkas som att EPG-start får ligga 60 min före och 15 min efter avspark.
 5. **Målnotis "medan appen körs"** krockar med att pollningen bara sker med en öppen sportvy, ett öppet matchcenter eller en öppen spelare. Med Sport stängd och spelaren stängd kommer inga mål, även om appen är igång. Planen följer kvotregeln, som går först. Vill Jerry ha notiser i bakgrunden kostar det polling utan öppen vy.
 6. **"Bara resultat · {kanal}"** på kortet: kanalen saknas när raden "Sänds på X" har strukits (beslut 3), så kortet visar bara "Bara resultat".
