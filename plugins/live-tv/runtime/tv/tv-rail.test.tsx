@@ -7,9 +7,18 @@ describe('TvRail', () => {
   it('ritar dagens poster i dagens ordning, aktiv post markerad', () => {
     const { getByTestId } = render(<TvRail active="guide" onSelect={() => {}} isTv={false} narrow={false} labels />)
     const keys = Array.from(getByTestId('tv-rail').querySelectorAll('[data-testid^="rail-"]')).map((n) => n.getAttribute('data-testid'))
-    expect(keys).toEqual(['rail-back', 'rail-search', 'rail-hub', 'rail-guide', 'rail-library', 'rail-multi', 'rail-favs', 'rail-settings'])
+    expect(keys).toEqual(['rail-back', 'rail-search', 'rail-home', 'rail-hub', 'rail-guide', 'rail-library', 'rail-multi', 'rail-favs', 'rail-settings'])
     expect(getByTestId('rail-guide').hasAttribute('data-current')).toBe(true)
     expect(getByTestId('rail-favs').hasAttribute('data-current')).toBe(false)
+  })
+  it('Kanaler är dagens hubb och heter Kanaler på svenska', () => {
+    const { getByTestId } = render(<TvRail active="hub" onSelect={() => {}} isTv={false} narrow={false} labels />)
+    expect(getByTestId('rail-hub').getAttribute('aria-label')).toMatch(/Channels|Kanaler/)
+    expect(getByTestId('rail-home').getAttribute('aria-label')).toMatch(/Home|Hem/)
+  })
+  it('Kanaler och Guide har olika ikoner', () => {
+    const { getByTestId } = render(<TvRail active={null} onSelect={() => {}} isTv={false} narrow={false} labels />)
+    expect(getByTestId('rail-hub').querySelector('svg')!.innerHTML).not.toBe(getByTestId('rail-guide').querySelector('svg')!.innerHTML)
   })
   it('klick skickar nyckeln', () => {
     const onSelect = vi.fn()

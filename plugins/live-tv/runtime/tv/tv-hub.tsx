@@ -12,8 +12,6 @@ import { useTvText } from './tv-strings'
 import type { SpotlightReason } from './tv-spotlight'
 import { ALL_STEP, useHubData } from './hub-data'
 import { TvHubPhone } from './mobile/hub-phone'
-import { TvVodHubSection } from './tv-vod-hub'
-import { getVodMode } from '../vod-data'
 
 // Datahooken bor i `hub-data.ts` (ingen importcykel mot telefongrenen) men
 // hör hit: det är hubbens urval, filter och steg.
@@ -215,14 +213,6 @@ function TvHubDesktop({ model, nav }: TvViewProps) {
           </div>
         </section>
       ) : null}
-
-      {/* Film & serier (VOD) — under Fortsätt titta, över Alla kanaler */}
-      <TvVodHubSection
-        mode={getVodMode(model.activePlaylistId)}
-        source={model.activeSource}
-        playlistName={model.activePlaylistName ?? ''}
-        nav={nav}
-      />
 
       {/* Alla kanaler */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>

@@ -31,6 +31,7 @@ const EN = {
   // Ikonrad
   railSearch: 'Search',
   railHome: 'Home',
+  railChannels: 'Channels',
   railGuide: 'Guide',
   railMultiview: 'Multiview',
   railFavourites: 'Favourites',
@@ -338,6 +339,7 @@ const EN = {
   vodLibraryFailed: 'Could not build the library: {error}',
   // Hubben
   vodRowTitle: 'Film & series',
+  vodHomeIndexing: 'Film & series are being prepared — showing channels meanwhile',
   vodRowSub: 'From {playlist} · {count} titles',
   vodLinkTitle: 'Film & series are in the Library',
   vodLinkBody: '{count} titles from {playlist} are not shown here. Want them as rows in Live TV?',
@@ -367,6 +369,7 @@ const EN = {
   guideEmpty: 'No channels in this category',
   // Telefonens flik-rad + bottenark (fas 3)
   tabHome: 'Home',
+  tabChannels: 'Channels',
   tabGuide: 'Guide',
   tabFavourites: 'Favourites',
   tabSearch: 'Search',
@@ -416,6 +419,7 @@ const SV: Record<keyof typeof EN, string> = {
   curationIntro: 'Välj vilka kategorier som ska visas. Du kan ändra det senare under spellistans inställningar.',
   railSearch: 'Sök',
   railHome: 'Hem',
+  railChannels: 'Kanaler',
   railGuide: 'Guide',
   railMultiview: 'Multivy',
   railFavourites: 'Favoriter',
@@ -689,6 +693,7 @@ const SV: Record<keyof typeof EN, string> = {
   vodLibraryWhereToEnable: 'Slå på det under Inställningar → Hem → Startsida.',
   vodLibraryFailed: 'Kunde inte bygga biblioteket: {error}',
   vodRowTitle: 'Film & serier',
+  vodHomeIndexing: 'Film och serier förbereds — kanalerna visas så länge',
   vodRowSub: 'Från {playlist} · {count} titlar',
   vodLinkTitle: 'Film & serier ligger i Biblioteket',
   vodLinkBody: '{count} titlar från {playlist} visas inte här. Vill du ha dem som rader i Live TV?',
@@ -714,6 +719,7 @@ const SV: Record<keyof typeof EN, string> = {
   guideEmpty: 'Inga kanaler i kategorin',
   // Telefonens flik-rad + bottenark (fas 3)
   tabHome: 'Hem',
+  tabChannels: 'Kanaler',
   tabGuide: 'Guide',
   tabFavourites: 'Favoriter',
   tabSearch: 'Sök',

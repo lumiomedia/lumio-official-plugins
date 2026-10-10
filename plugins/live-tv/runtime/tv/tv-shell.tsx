@@ -26,6 +26,7 @@ import { TV_VIEWS } from './tv-views'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
+import { hasVodIndex, vodHomeTarget } from '../vod-home'
 import { MobileSheet } from './mobile/mobile-sheet'
 
 /**
@@ -295,6 +296,11 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     setToastText(text)
     window.setTimeout(() => setToastText((current) => (current === text ? null : current)), 1800)
   }, [])
+
+  /** Hem = VOD-startsidan i kärnan när indexet finns, annars ett besked och kanalerna kvar. */
+  const goVodHome = useCallback(() => {
+    void hasVodIndex().then((ok) => { if (ok) onNavigate(vodHomeTarget()); else toast(tt('vodHomeIndexing')) })
+  }, [onNavigate, toast, tt])
 
   /**
    * Färskaste modellen i en ref.
@@ -578,6 +584,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
           labels={railLabels}
           onSelect={(key) => {
             if (key === 'back') requestBrowseBack()
+            else if (key === 'home') goVodHome()
             else go(key as TvView)
           }}
         />
@@ -587,7 +594,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       </main>
       {/* Flik-raden (telefon): borta medan spelaren är öppen — den ligger
           `position: fixed` och hade annars legat över bilden. */}
-      {phone && active === null ? <MobileTabBar view={view} onGo={(v) => go(v)} onMore={() => setMoreOpen(true)} showLibrary={showLibraryTab} /> : null}
+      {phone && active === null ? <MobileTabBar view={view} onGo={(v) => (v === 'home' ? goVodHome() : go(v))} onMore={() => setMoreOpen(true)} showLibrary={showLibraryTab} /> : null}
       {phone && moreOpen ? (
         <MobileSheet
           title={tt('moreActions')}

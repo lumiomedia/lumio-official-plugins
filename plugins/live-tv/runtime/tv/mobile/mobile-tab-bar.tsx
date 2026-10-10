@@ -5,12 +5,13 @@ import type { TvView } from '../tv-shell'
 import { MT } from './mobile-tokens'
 import { MIcons } from './mobile-icons'
 
-export type MobileTab = 'hub' | 'guide' | 'favs' | 'search' | 'library' | 'more'
+export type MobileTab = 'home' | 'hub' | 'guide' | 'favs' | 'search' | 'library' | 'more'
 
 type TabDef = { key: MobileTab; icon: ComponentType<{ size?: number }>; label: TvStringKey }
 
 const BASE_TABS: TabDef[] = [
-  { key: 'hub', icon: MIcons.House, label: 'tabHome' },
+  { key: 'home', icon: MIcons.House, label: 'tabHome' },
+  { key: 'hub', icon: MIcons.SquaresFour, label: 'tabChannels' },
   { key: 'guide', icon: MIcons.List, label: 'tabGuide' },
   { key: 'favs', icon: MIcons.Heart, label: 'tabFavourites' },
   { key: 'search', icon: MIcons.MagnifyingGlass, label: 'tabSearch' },
@@ -41,7 +42,7 @@ export function tabForView(view: TvView): MobileTab {
   return view
 }
 
-export function MobileTabBar({ view, onGo, onMore, showLibrary = false }: { view: TvView; onGo: (view: 'hub' | 'guide' | 'favs' | 'search' | 'library') => void; onMore: () => void; showLibrary?: boolean }) {
+export function MobileTabBar({ view, onGo, onMore, showLibrary = false }: { view: TvView; onGo: (view: 'home' | 'hub' | 'guide' | 'favs' | 'search' | 'library') => void; onMore: () => void; showLibrary?: boolean }) {
   const { tt } = useTvText()
   const active = tabForView(view)
   const tabs = tabsFor(showLibrary)
@@ -64,7 +65,7 @@ export function MobileTabBar({ view, onGo, onMore, showLibrary = false }: { view
           <div
             key={key}
             data-testid={`tab-${key}`}
-            {...station(() => (key === 'more' ? onMore() : onGo(key as 'hub' | 'guide' | 'favs' | 'search' | 'library')), undefined, { ...(isActive ? { 'aria-current': 'page' } : {}), 'aria-label': tt(label) })}
+            {...station(() => (key === 'more' ? onMore() : onGo(key as 'home' | 'hub' | 'guide' | 'favs' | 'search' | 'library')), undefined, { ...(isActive ? { 'aria-current': 'page' } : {}), 'aria-label': tt(label) })}
             style={{
               flex: 1, minHeight: MT.TAB_BAR, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
               color: isActive ? MT.acc : 'rgba(243,244,248,0.55)', fontSize: 11, fontWeight: isActive ? 600 : 400, cursor: 'pointer',

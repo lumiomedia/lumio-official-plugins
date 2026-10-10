@@ -782,7 +782,7 @@ export const LIBRARY_STUB: {
 export function isLibraryScanRunning(): boolean {
   return LIBRARY_STUB.scanning
 }
-export async function fetchLibraryStatus(): Promise<{ sources: Array<{ id: string; provider: string; titles: number; cursor?: string | null }>; movies: number; series: number; unmatched: number; total: number }> {
+export async function fetchLibraryStatus(): Promise<{ sources: Array<{ id: string; provider: string; titles: number; cursor?: string | null; lastFullSync?: number | null }>; movies: number; series: number; unmatched: number; total: number }> {
   return { ...LIBRARY_STUB.status, movies: 0, series: 0, unmatched: 0, total: 0 }
 }
 export async function runLibraryScan(

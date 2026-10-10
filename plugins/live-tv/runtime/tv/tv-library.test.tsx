@@ -258,33 +258,11 @@ describe('Hubbens VOD-avsnitt', () => {
     return onNavigate
   }
 
-  it('visar hänvisningsraden som standard, inte titlarna', async () => {
+  it('Kanaler har ingen VOD-rad längre: Hem (VOD) bor i kärnans startsida (spec 2026-10-10)', async () => {
     mountHub(LIBRARY)
-    await waitFor(() => expect(screen.getByTestId('hub-vod-link')).toBeTruthy())
-    expect(screen.queryByTestId('hub-vod-row')).toBeNull()
-    expect(screen.getByTestId('hub-vod-link').textContent).toContain('4')
-  })
-
-  it('hänvisningsraden går till Inställningar → Innehåll', async () => {
-    const onNavigate = mountHub(LIBRARY)
-    await waitFor(() => expect(screen.getByTestId('hub-vod-link')).toBeTruthy())
-    fireEvent.click(screen.getByTestId('hub-vod-link').firstElementChild as HTMLElement)
-    expect(onNavigate).toHaveBeenCalledWith({
-      pageId: 'live-tv-browse',
-      params: { view: 'settings', tab: 'content' },
-    })
-  })
-
-  it('läget rows ger en rad med film före serier', async () => {
-    setVodMode('l1', 'rows')
-    mountHub(LIBRARY)
-    await waitFor(() => expect(screen.getByTestId('hub-vod-row')).toBeTruthy())
-    const cards = screen.getAllByTestId('hub-vod-card')
-    expect(cards).toHaveLength(4)
-    // Film först, serier sist — raden ska kännas ordnad.
-    expect(cards[3].querySelector('[data-vod-kind="series"]')).toBeTruthy()
-    expect(cards[0].querySelector('[data-vod-kind="movie"]')).toBeTruthy()
+    await waitFor(() => expect(screen.getByTestId('rail-hub')).toBeTruthy())
     expect(screen.queryByTestId('hub-vod-link')).toBeNull()
+    expect(screen.queryByTestId('hub-vod-row')).toBeNull()
   })
 
   it('läget off döljer allt om VOD i Live TV', async () => {
@@ -477,15 +455,6 @@ describe('Biblioteket utanför TV-läget (skrivbord och telefon)', () => {
     await waitFor(() => expect(screen.getAllByTestId('library-card').length).toBeGreaterThan(0), { timeout: 4000 })
   })
 
-  it('hubbens hänvisningsrad hittar också titlarna', async () => {
-    seedLiveTvIndex({ vod: { [SOURCE]: LIBRARY } })
-    render(
-      <LiveTvTvShell pageId="live-tv-browse" params={{ view: 'hub' }} onNavigate={vi.fn()} onOpenDetails={() => {}} />,
-    )
-    await waitFor(() => expect(screen.getByTestId('hub-vod-link')).toBeTruthy())
-    expect(screen.getByTestId('hub-vod-link').textContent).toContain('4')
-  })
-
   it('inställningen går att ändra utan aktiv spellista', async () => {
     // setVodMode returnerade tidigare utan att skriva när playlistId var null,
     // så valet gick inte att göra alls på skrivbordet.
@@ -533,34 +502,5 @@ describe('Rutnätet i TV-läge kontra skrivbord', () => {
     // på översta raden — korten såg ut att sakna överkant.
     expect(gridOf().style.paddingTop).not.toBe('0px')
     expect(parseInt(gridOf().style.paddingTop, 10)).toBeGreaterThanOrEqual(8)
-  })
-})
-
-describe('Hubbens VOD-rad öppnar samma detaljvy som Biblioteket', () => {
-  it('OK på ett kort i raden stannar i Live TV', async () => {
-    // Regressionen Jerry såg: kortet i Biblioteket gick till Live TV:s egen
-    // detaljvy, men samma titel i hubbens rad kastade ut honom till appens
-    // detaljsida. Två vägar in ska landa på samma ställe.
-    setVodMode('l1', 'rows')
-    seedLiveTvIndex({ vod: { [SOURCE]: LIBRARY } })
-    const onNavigate = vi.fn()
-    render(
-      <LiveTvTvShell pageId="live-tv-browse" params={{ view: 'hub' }} onNavigate={onNavigate} onOpenDetails={() => {}} />,
-    )
-    await waitFor(() => expect(screen.getAllByTestId('hub-vod-card').length).toBeGreaterThan(0))
-
-    const opened: unknown[] = []
-    const handler = () => opened.push(1)
-    window.addEventListener('lumio-open-media-item', handler)
-    try {
-      fireEvent.click(screen.getAllByTestId('hub-vod-card')[0])
-    } finally {
-      window.removeEventListener('lumio-open-media-item', handler)
-    }
-    expect(opened).toHaveLength(0)
-    expect(onNavigate).toHaveBeenCalledWith({
-      pageId: 'live-tv-browse',
-      params: { view: 'title', key: expect.any(String) },
-    })
   })
 })

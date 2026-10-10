@@ -72,7 +72,9 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
   type RailItem = { key: RailKey; label: string; icon: ReactNode }
   const rail: RailItem[] = [
     { key: 'search', label: tt('railSearch'), icon: <Icons.Search /> },
-    { key: 'hub', label: tt('railHome'), icon: <Icons.Home /> },
+    { key: 'home', label: tt('railHome'), icon: <Icons.Home /> },
+    // Kanaler (dagens Hem): egen ikon, skild från Guides Tv-ikon.
+    { key: 'hub', label: tt('railChannels'), icon: <Icons.Eye /> },
     { key: 'guide', label: tt('railGuide'), icon: <Icons.Tv /> },
     { key: 'library', label: tt('railLibrary'), icon: <Icons.FilmStrip /> },
     { key: 'multi', label: tt('railMultiview'), icon: <Icons.SquaresFour /> },

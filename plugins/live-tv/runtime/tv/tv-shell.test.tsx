@@ -44,9 +44,9 @@ function mount(params: Record<string, string> = {}) {
 }
 
 describe('LiveTvTvShell', () => {
-  it('ritar ikonraden med åtta stationer och exakt en data-init', () => {
+  it('ritar ikonraden med nio stationer och exakt en data-init', () => {
     mount()
-    expect(screen.getAllByTestId(/rail-/)).toHaveLength(8)
+    expect(screen.getAllByTestId(/rail-/)).toHaveLength(9)
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
   it('ikonradens Bibliotek ligger mellan Kanalguide och Multivy', () => {
@@ -55,6 +55,7 @@ describe('LiveTvTvShell', () => {
     expect(keys).toEqual([
       'rail-back',
       'rail-search',
+      'rail-home',
       'rail-hub',
       'rail-guide',
       'rail-library',

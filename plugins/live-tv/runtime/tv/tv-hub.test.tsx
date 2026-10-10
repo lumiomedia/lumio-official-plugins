@@ -153,3 +153,23 @@ describe('TvHub i porträtt (telefon)', () => {
     expect(screen.getByTestId('all-channels')).toHaveStyle({ gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' })
   })
 })
+
+// Hem (VOD) bor sedan 2026-10-10 i kärnans startsida med rälsen som ram —
+// Kanaler visar bara live-innehåll, aldrig någon film- och serierad.
+describe('TvHub utan VOD-rad (spec 2026-10-10)', () => {
+  it('ingen film- och serierad i Kanaler, inte ens med läget rows och ett VOD-bibliotek', async () => {
+    const { getLiveTvUrlsKey } = await import('../live-tv-data')
+    const { setVodMode } = await import('../vod-data')
+    const url = 'http://panel/get.php'
+    const source = getLiveTvUrlsKey([url])
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [{ ...list, kind: 'm3u', source, url }])
+    const { ACTIVE_PLAYLIST_KEY } = await import('./tv-settings-store')
+    writePluginJson(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, 'l1')
+    setVodMode('l1', 'rows')
+    seedLiveTvIndex({ vod: { [source]: [{ key: 'vod:1', kind: 'movie', title: 'Dune', categoryId: '5', categoryName: 'MOVIE: Swedish', addedAt: 1, url: 'http://panel/movie/u/p/1.mkv' }] } })
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(screen.queryByTestId('hub-vod-row')).not.toBeInTheDocument()
+    expect(screen.queryByText('Film & series')).not.toBeInTheDocument()
+  })
+})
