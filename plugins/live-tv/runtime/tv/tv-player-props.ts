@@ -1,7 +1,7 @@
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { qualityFromName, type LiveTvModel } from '../live-tv-model'
 import type { TvSettings } from './tv-settings-store'
-import type { LiveTvPlayerTvProps } from './tv-player-types'
+import type { LiveTvPlayerTvProps, PlayerSportProps } from './tv-player-types'
 
 /**
  * TV-kromets props, byggda ur modellen.
@@ -32,6 +32,7 @@ export function buildTvPlayerProps(args: {
   onOpenChannelDetails: () => void
   onAddToMultiview: (channel: M3uChannel) => void
   onSwitchChannel: (channel: M3uChannel) => void
+  sport?: PlayerSportProps
 }): LiveTvPlayerTvProps {
   const { model, settings, channel, locale, gateOpen, phone } = args
   return {
@@ -54,5 +55,6 @@ export function buildTvPlayerProps(args: {
     onOpenGuide: args.onOpenGuide,
     onAddToMultiview: args.onAddToMultiview,
     onSwitchChannel: args.onSwitchChannel,
+    sport: args.sport,
   }
 }

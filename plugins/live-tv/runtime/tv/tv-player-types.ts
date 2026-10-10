@@ -1,5 +1,22 @@
 import type { M3uChannel } from '../live-tv-data'
 import type { NowNextLater } from '../epg/types'
+import type { SportMatch } from '../sport/sport-model'
+import type { SportOverrides, SportViewMode } from '../sport/sport-store'
+
+/** Sportläget i spelaren (fas 1): dagens matcher ur EPG:t, inga resultat. */
+export interface PlayerSportProps {
+  /** Dagens matcher utan repriser, sorterade på start. */
+  matches: SportMatch[]
+  overrides: SportOverrides
+  /** Visa som: Matchdag = ticker, Flöde = kolumn. */
+  view: SportViewMode
+  /** Byt till matchens bästa källa; spelaren står kvar öppen. */
+  onSwitchMatch(match: SportMatch): void
+  /** Öppna kanalerna i Multiview (stänger spelaren). */
+  onOpenMultiview(channelKeys: string[]): void
+  /** Finns kanalen i den aktiva spellistan? Multiview kan bara visa sådana. */
+  isKnownChannel(key: string): boolean
+}
 
 /** Det TV-skalet ger spelaren utöver kanalen: numrering, grannar, menyval. */
 export interface LiveTvPlayerTvProps {
@@ -28,6 +45,8 @@ export interface LiveTvPlayerTvProps {
   onOpenGuide(): void
   onAddToMultiview(channel: M3uChannel): void
   onSwitchChannel(channel: M3uChannel): void
+  /** Saknas = ingen sport i spelaren (telefon, stängd spelare, äldre app). */
+  sport?: PlayerSportProps
 }
 
 /**

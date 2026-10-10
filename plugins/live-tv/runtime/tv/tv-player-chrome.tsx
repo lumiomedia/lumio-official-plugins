@@ -7,6 +7,7 @@ import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv-player-type
 import { TvFocusStyle } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvPlayerChromePhone } from './mobile/player-chrome-phone'
+import { PlayerMatchesDrawer, PlayerSportTicker, matchesForPlayer } from '../sport/tv/player-sport'
 import { PlayerControlRow, PlayerFavouritesRow, PlayerScheduleOverlay, PlayerTopBar, playerScale } from './player-chrome-parts'
 
 export interface TvPlayerChromeProps {
@@ -57,6 +58,8 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
   const ps = useMemo(() => playerScale(isTv), [isTv])
   const [visible, setVisible] = useState(true)
   const [guideOpen, setGuideOpen] = useState(false)
+  const [matchesOpen, setMatchesOpen] = useState(false)
+  const sportHere = tv.sport ? matchesForPlayer(tv.sport.matches, channelKey(channel), tv.nowMs).onChannel.length > 0 : false
   const [menu, setMenu] = useState<TvGlassMenuTarget | null>(null)
   const timerRef = useRef<number | null>(null)
   const initRef = useRef<HTMLDivElement | null>(null)
@@ -79,8 +82,8 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
   const reveal = useCallback(() => {
     setVisible(true)
     clearTimer()
-    if (hideMs > 0 && !guideOpen && !menu && !hoverRef.current) timerRef.current = window.setTimeout(() => setVisible(false), hideMs)
-  }, [hideMs, guideOpen, menu, clearTimer])
+    if (hideMs > 0 && !guideOpen && !matchesOpen && !menu && !hoverRef.current) timerRef.current = window.setTimeout(() => setVisible(false), hideMs)
+  }, [hideMs, guideOpen, matchesOpen, menu, clearTimer])
   /**
    * Fälten stannar kvar medan musen vilar på dem (gamla `keepControlsVisible`).
    * Flaggan och inte bara en rensad timer: fönstrets pointermove-lyssnare
@@ -121,7 +124,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
    * lager öppnas och stjäl då fokus från just det lagret.
    */
   const layerRef = useRef({ menuOpen: false, guideOpen: false, gateOpen: false })
-  useEffect(() => { layerRef.current = { menuOpen: menu !== null, guideOpen, gateOpen: tv.gateOpen } })
+  useEffect(() => { layerRef.current = { menuOpen: menu !== null, guideOpen: guideOpen || matchesOpen, gateOpen: tv.gateOpen } })
 
   /**
    * Spela/paus tar fokus när spelaren öppnas — kromets enda `data-init`.
@@ -167,6 +170,10 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
    * från. Spela/paus är kromets data-init-station och den rätta platsen att landa på.
    * setTimeout 0: fokus måste sättas EFTER att React tagit bort raderna.
    */
+  const closeMatches = useCallback(() => {
+    setMatchesOpen(false)
+    window.setTimeout(() => initRef.current?.focus({ preventScroll: true }), 0)
+  }, [])
   const closeGuide = useCallback(() => {
     setGuideOpen(false)
     window.setTimeout(() => initRef.current?.focus({ preventScroll: true }), 0)
@@ -200,6 +207,10 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
       if (event.key === 'Escape' || event.key === 'Backspace') {
         event.preventDefault()
         event.stopImmediatePropagation()
+        if (matchesOpen) {
+          closeMatches()
+          return
+        }
         if (guideOpen) {
           closeGuide()
           return
@@ -228,7 +239,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [menu, guideOpen, step, reveal, onClose, closeGuide, tv.gateOpen])
+  }, [menu, guideOpen, matchesOpen, closeMatches, step, reveal, onClose, closeGuide, tv.gateOpen])
 
   const openMenu = (element: HTMLElement) => {
     setMenu({
@@ -257,10 +268,17 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
         onMouseLeave={release}
         style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 30, padding: `${ps(48)}px ${ps(20)}px ${ps(20)}px`, background: 'linear-gradient(0deg, rgba(0,0,0,0.85), rgba(0,0,0,0.55) 55%, transparent)', opacity: visible ? 1 : 0, transition: 'opacity 200ms', pointerEvents: visible ? 'auto' : 'none', color: '#f3f4f8' }}
       >
-        <PlayerControlRow channel={channel} tv={tv} info={info} ps={ps} isTv={isTv} paused={paused} onTogglePause={onTogglePause} controls={controls} guideOpen={guideOpen} onToggleGuide={toggleGuide} dotsRef={initRef} onOpenMenu={openMenu} volumeRef={volumeRef} />
+        {tv.sport && sportHere && tv.sport.view === 'matchday' ? <PlayerSportTicker sport={tv.sport} channel={channel} nowMs={tv.nowMs} variant="ticker" ps={ps} /> : null}
+        <PlayerControlRow channel={channel} tv={tv} info={info} ps={ps} isTv={isTv} paused={paused} onTogglePause={onTogglePause} controls={controls} guideOpen={guideOpen} onToggleGuide={toggleGuide} dotsRef={initRef} onOpenMenu={openMenu} volumeRef={volumeRef} sportAvailable={sportHere} matchesOpen={matchesOpen} onToggleMatches={() => { if (matchesOpen) closeMatches(); else { setMatchesOpen(true); setVisible(true); clearTimer() } }} />
         <PlayerFavouritesRow channel={channel} tv={tv} ps={ps} onSwitch={switchChannel} onHold={holdChip} />
       </div>
       <PlayerScheduleOverlay channel={channel} tv={tv} ps={ps} open={guideOpen} onClose={closeGuide} onSwitch={switchChannel} onHoldChip={holdChip} overlayRef={overlayRef} />
+      {tv.sport && sportHere && tv.sport.view === 'feed' && visible ? <PlayerSportTicker sport={tv.sport} channel={channel} nowMs={tv.nowMs} variant="column" ps={ps} /> : null}
+      {matchesOpen && tv.sport ? (
+        <div style={{ pointerEvents: 'auto' }}>
+          <PlayerMatchesDrawer sport={tv.sport} channel={channel} nowMs={tv.nowMs} locale={tv.locale} onClose={closeMatches} />
+        </div>
+      ) : null}
       {/* Roten släpper igenom pekaren; menyn måste ta den själv. */}
       {TvGlassMenu && menu ? <div style={{ pointerEvents: 'auto' }}><TvGlassMenu target={menu} onClose={() => { setMenu(null); reveal() }} /></div> : null}
     </div>

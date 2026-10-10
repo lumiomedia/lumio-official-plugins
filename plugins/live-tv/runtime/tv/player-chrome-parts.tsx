@@ -178,7 +178,7 @@ export function PlayerNextUpCard({ channel, next, nowMs, locale, ps }: {
 
 /* ---------------------------------------------------------------- Kontrollrad */
 
-export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide, dotsRef, onOpenMenu, volumeRef }: {
+export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide, dotsRef, onOpenMenu, volumeRef, sportAvailable, matchesOpen, onToggleMatches }: {
   channel: M3uChannel
   tv: LiveTvPlayerTvProps
   info: NowNextLater
@@ -192,6 +192,10 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
   dotsRef: RefObject<HTMLDivElement | null>
   onOpenMenu: (element: HTMLElement) => void
   volumeRef: RefObject<HTMLDivElement | null>
+  /** Kanalen sänder en sportmatch just nu (fas 1-sportläget). */
+  sportAvailable?: boolean
+  matchesOpen?: boolean
+  onToggleMatches?: () => void
 }) {
   const { tt } = useTvText()
   const icon = ps(20)
@@ -235,6 +239,11 @@ export function PlayerControlRow({ channel, tv, info, ps, isTv, paused, onToggle
         <div {...station(onToggleGuide, undefined, { 'aria-label': tt('playerGuide'), 'aria-pressed': guideOpen ? 'true' : 'false', 'data-guide-row': '' })} style={{ ...ctlStyle(ps, guideOpen), padding: 0 }}>
           <GuideIcon size={icon} />
         </div>
+        {sportAvailable && onToggleMatches ? (
+          <div data-testid="player-matches" {...station(onToggleMatches, undefined, { 'aria-label': tt('sportMatches'), 'aria-pressed': matchesOpen ? 'true' : 'false', 'data-guide-row': '' })} style={{ ...ctlStyle(ps, matchesOpen), padding: `0 ${ps(14)}px`, fontSize: ps(14) }}>
+            {tt('sportMatches')}
+          </div>
+        ) : null}
         {controls ? (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: ps(8), flexShrink: 0 }}>
             <div {...station(controls.onToggleMute, undefined, { 'aria-label': controls.muted ? tt('playerUnmute') : tt('playerMute'), 'aria-pressed': controls.muted ? 'true' : 'false', 'data-guide-row': '' })} style={{ ...ctlStyle(ps), padding: 0 }}>

@@ -21,6 +21,7 @@ import { createZapBuffer, resolveZap } from './tv-zap'
 import { releaseAllSurfaces } from './video-surface'
 import { cutoutClipPath, useSurfaceCutouts, type SurfaceCutout } from './surface-cutouts'
 import { buildTvPlayerProps } from './tv-player-props'
+import { multiviewFor, usePlayerSport } from '../sport/tv/player-sport'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { TV_VIEWS } from './tv-views'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
@@ -549,6 +550,15 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
    */
   useSwipeBack(back, (!menu || phone) && pending === null)
 
+  // Matcher-lådans "Öppna i Multiview": rutorna fylls med de valda kanalerna
+  // och spelaren stängs. Telefonen har ingen sportdel i spelaren (fas 1).
+  const openSportMultiview = useCallback((keys: string[]) => {
+    setMultiviewState(multiviewFor(keys))
+    setActive(null)
+    go('multi')
+  }, [go])
+  const playerSport = usePlayerSport({ active: active !== null && !phone, model, play, openMultiview: openSportMultiview })
+
   const View = TV_VIEWS[view]
   const activeChannel: M3uChannel | null = active
     ? active.url ? { ...active.channel, url: active.url, name: active.label ?? active.channel.name } : active.channel
@@ -574,6 +584,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         // `play` lämnar `active` orörd tills grinden är klar, så spelaren
         // blinkar inte bort under bytet.
         onSwitchChannel: (channel) => play({ channel }),
+        sport: playerSport,
       })
     : undefined
 
