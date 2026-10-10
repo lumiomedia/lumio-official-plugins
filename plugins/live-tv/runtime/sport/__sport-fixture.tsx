@@ -1,6 +1,10 @@
 import { vi } from 'vitest'
 import { __resetSportDayCache } from './sport-epg'
 import type { MatchSource, SportDay, SportKind, SportMatch } from './sport-model'
+import type { LiveTvModel } from '../live-tv-model'
+import type { TvNav } from '../tv/tv-shell'
+import { tvText } from '../tv/tv-strings'
+import { buildSportCtx, type SportCtx } from './sport-ctx'
 
 /*
   Testhjälp för sportvyerna. Importeras BARA av *.test.ts(x) — aldrig av
@@ -60,4 +64,23 @@ export function stubSportDays(days: Record<string, SportMatch[]> | 'missing') {
   })
   globalThis.fetch = spy as unknown as typeof fetch
   return spy
+}
+
+/** En kontext utan skal: engelska texter, en spellista "Xtream" (källa `src-a`), åtgärder som vi.fn(). */
+export function fakeCtx(over: Partial<SportCtx> = {}): SportCtx {
+  const nav = { play: vi.fn(), pushLayer: vi.fn(() => () => {}), toast: vi.fn(), go: vi.fn() } as unknown as TvNav
+  const model = { nowMs: over.now ?? Date.now(), lists: [{ id: 'l1', name: 'Xtream', source: 'src-a' }], byKey: new Map(), allChannels: [] } as unknown as LiveTvModel
+  const base = buildSportCtx({
+    model,
+    nav,
+    tt: (key, vars) => tvText('en', key, vars),
+    locale: 'en-GB',
+    follows: over.follows ?? [],
+    overrides: over.overrides ?? {},
+    settings: over.settings ?? { view: 'matchday', alert: '15' },
+    reminders: over.reminders ?? [],
+    openMatch: vi.fn(),
+    openFollowPicker: vi.fn(),
+  })
+  return { ...base, watch: vi.fn(), toggleRemind: vi.fn(), ...over }
 }
