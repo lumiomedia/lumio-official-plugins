@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { useTvText } from './tv-strings'
 import { TV, dp, station, Icons } from './tv-ui'
 import type { TvView } from './tv-shell'
+import { SportIcons } from '../sport/tv/sport-icons'
 
 /**
  * IKONRADENS MÅTT — allt på ETT ställe, i designpixlar.
@@ -42,7 +43,7 @@ const RAIL_ITEM_NARROW = 48
 
 export { RAIL_ITEM_NARROW, RAIL_ITEM_WIDE, RAIL_W_DESKTOP, RAIL_W_NARROW, RAIL_W_TV }
 
-export type RailKey = 'back' | 'search' | 'home' | 'hub' | 'guide' | 'library' | 'multi' | 'favs' | 'settings'
+export type RailKey = 'back' | 'search' | 'home' | 'hub' | 'guide' | 'sport' | 'library' | 'multi' | 'favs' | 'settings'
 
 export interface TvRailProps {
   active: RailKey | null
@@ -56,7 +57,7 @@ export interface TvRailProps {
 /** Vilken radpost som lyser för en vy. Kanalvyn hör till Guide; vyer utan egen post lyser ingen. */
 export function railKeyForView(view: TvView): RailKey | null {
   if (view === 'channel') return 'guide'
-  if (view === 'hub' || view === 'search' || view === 'guide' || view === 'library' || view === 'multi' || view === 'favs' || view === 'settings') return view
+  if (view === 'hub' || view === 'search' || view === 'guide' || view === 'sport' || view === 'library' || view === 'multi' || view === 'favs' || view === 'settings') return view
   return null
 }
 
@@ -76,6 +77,7 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
     // Kanaler (dagens Hem): egen ikon, skild från Guides Tv-ikon.
     { key: 'hub', label: tt('railChannels'), icon: <Icons.Eye /> },
     { key: 'guide', label: tt('railGuide'), icon: <Icons.Tv /> },
+    { key: 'sport', label: tt('railSport'), icon: <SportIcons.Ball /> },
     { key: 'library', label: tt('railLibrary'), icon: <Icons.FilmStrip /> },
     { key: 'multi', label: tt('railMultiview'), icon: <Icons.SquaresFour /> },
     { key: 'favs', label: tt('railFavourites'), icon: <Icons.Heart /> },

@@ -7,7 +7,7 @@ describe('TvRail', () => {
   it('ritar dagens poster i dagens ordning, aktiv post markerad', () => {
     const { getByTestId } = render(<TvRail active="guide" onSelect={() => {}} isTv={false} narrow={false} labels />)
     const keys = Array.from(getByTestId('tv-rail').querySelectorAll('[data-testid^="rail-"]')).map((n) => n.getAttribute('data-testid'))
-    expect(keys).toEqual(['rail-back', 'rail-search', 'rail-home', 'rail-hub', 'rail-guide', 'rail-library', 'rail-multi', 'rail-favs', 'rail-settings'])
+    expect(keys).toEqual(['rail-back', 'rail-search', 'rail-home', 'rail-hub', 'rail-guide', 'rail-sport', 'rail-library', 'rail-multi', 'rail-favs', 'rail-settings'])
     expect(getByTestId('rail-guide').hasAttribute('data-current')).toBe(true)
     expect(getByTestId('rail-favs').hasAttribute('data-current')).toBe(false)
   })
@@ -31,6 +31,7 @@ describe('TvRail', () => {
   it('railKeyForView: kanalvyn lyser upp Guide, övriga som förut', () => {
     expect(railKeyForView('channel')).toBe('guide')
     expect(railKeyForView('hub')).toBe('hub')
+    expect(railKeyForView('sport')).toBe('sport')
     expect(railKeyForView('settings')).toBe('settings')
     expect(railKeyForView('title')).toBeNull()
   })

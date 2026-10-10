@@ -16,6 +16,7 @@ describe('MobileTabBar', () => {
     expect(tabForView('channel')).toBe('guide')
     expect(tabForView('multi')).toBe('more')
     expect(tabForView('settings')).toBe('more')
+    expect(tabForView('sport')).toBe('more')
     expect(tabForView('hub')).toBe('hub')
   })
   it('tryck går till vyn, More ropar onMore', () => {

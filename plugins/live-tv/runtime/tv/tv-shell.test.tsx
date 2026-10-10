@@ -63,9 +63,9 @@ describe('Hem i rälsen (VOD)', () => {
 })
 
 describe('LiveTvTvShell', () => {
-  it('ritar ikonraden med nio stationer och exakt en data-init', () => {
+  it('ritar ikonraden med tio stationer och exakt en data-init', () => {
     mount()
-    expect(screen.getAllByTestId(/rail-/)).toHaveLength(9)
+    expect(screen.getAllByTestId(/rail-/)).toHaveLength(10)
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
   it('ikonradens Bibliotek ligger mellan Kanalguide och Multivy', () => {
@@ -77,6 +77,7 @@ describe('LiveTvTvShell', () => {
       'rail-home',
       'rail-hub',
       'rail-guide',
+      'rail-sport',
       'rail-library',
       'rail-multi',
       'rail-favs',

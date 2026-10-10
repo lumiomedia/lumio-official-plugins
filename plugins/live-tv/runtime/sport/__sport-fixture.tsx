@@ -1,4 +1,10 @@
-import { vi } from 'vitest'
+import { afterEach, vi } from 'vitest'
+import { cleanup, render } from '@testing-library/react'
+import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
+import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
+import { LiveTvTvShell } from '../tv/tv-shell'
+import { SPORT_FOLLOWS_KEY, type SportFollow } from './sport-store'
 import { __resetSportDayCache } from './sport-epg'
 import type { MatchSource, SportDay, SportKind, SportMatch } from './sport-model'
 import type { LiveTvModel } from '../live-tv-model'
@@ -83,4 +89,36 @@ export function fakeCtx(over: Partial<SportCtx> = {}): SportCtx {
     openFollowPicker: vi.fn(),
   })
   return { ...base, watch: vi.fn(), toggleRemind: vi.fn(), ...over }
+}
+
+const fxChannel = (name: string) => ({ name, logo: null, group: 'Sport', url: `http://x/${name}`, tvgId: null })
+/** Spellistan i skalets tester. "TV4 Fotboll FHD SE" har samma nyckel som `fxMatch`s standardkälla. */
+export const fxList: LiveTvList = { id: 'l1', name: 'Xtream', channels: [fxChannel('A'), fxChannel('B'), fxChannel('TV4 Fotboll FHD SE')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+
+const boxes: HTMLElement[] = []
+afterEach(() => {
+  cleanup()
+  for (const box of boxes.splice(0)) box.remove()
+})
+
+/** Monterar skalet på Sport-vyn. TV-läge som standard; `phone: true` märker lådan som värdens telefonscen. */
+export function mountSport(params: Record<string, string> = {}, opts: { days?: Record<string, SportMatch[]> | 'missing'; phone?: boolean; follows?: SportFollow[] } = {}) {
+  __resetForTests()
+  __setTvModeForTests(!opts.phone)
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [fxList])
+  writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
+  if (opts.follows) writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, opts.follows)
+  seedLiveTvIndex()
+  const fetchSpy = stubSportDays(opts.days ?? {})
+  const onNavigate = vi.fn()
+  const box = document.createElement('div')
+  box.setAttribute(TV_SCENE_BOX_ATTR, '1')
+  if (opts.phone) {
+    box.setAttribute(TV_SCENE_NARROW_ATTR, '1')
+    box.setAttribute(TV_SCENE_PHONE_ATTR, '1')
+  }
+  document.body.appendChild(box)
+  boxes.push(box)
+  const view = render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'sport', ...params }} onNavigate={onNavigate} onOpenDetails={() => {}} />, { container: box })
+  return { ...view, onNavigate, fetchSpy, box }
 }

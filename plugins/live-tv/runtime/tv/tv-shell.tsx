@@ -79,8 +79,8 @@ function SurfaceBackdrop({ cutouts }: { cutouts: SurfaceCutout[] }) {
   )
 }
 
-export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'title' | 'cast' | 'settings'
-const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'title', 'cast', 'settings']
+export type TvView = 'hub' | 'guide' | 'favs' | 'channel' | 'search' | 'multi' | 'library' | 'title' | 'cast' | 'settings' | 'sport'
+const VIEWS: TvView[] = ['hub', 'guide', 'favs', 'channel', 'search', 'multi', 'library', 'title', 'cast', 'settings', 'sport']
 
 /**
  * En VOD-uppspelning i APPENS spelare, inte Live TV:s.
@@ -624,6 +624,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         <MobileSheet
           title={tt('moreActions')}
           items={[
+            { key: 'sport', label: tt('sheetSport'), run: () => go('sport') },
             { key: 'multi', label: tt('sheetMultiview'), run: () => go('multi') },
             { key: 'settings', label: tt('sheetSettings'), run: () => go('settings') },
           ]}
