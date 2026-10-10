@@ -35,6 +35,27 @@ describe('LiveTvLibraryFrame', () => {
     expect(queryByTestId('tv-rail')).toBeNull()
     expect(props.onInset).toHaveBeenCalledWith(0)
   })
+  it('telefon: flikradens höjd rapporteras till värden, och 0 när ramen tas bort', () => {
+    const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ height: 83, width: 390 } as DOMRect)
+    try {
+      const props = { ...base, platform: 'phone' as const, onInsetBottom: vi.fn() }
+      const view = render(<LiveTvLibraryFrame {...props} />)
+      expect(props.onInsetBottom).toHaveBeenLastCalledWith(83)
+      view.unmount()
+      expect(props.onInsetBottom).toHaveBeenLastCalledWith(0)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+  it('telefon: en äldre värd utan onInsetBottom går bra', () => {
+    const props = { ...base, platform: 'phone' as const }
+    expect(() => render(<LiveTvLibraryFrame {...props} />)).not.toThrow()
+  })
+  it('skrivbord: ingen nederkantsrapport', () => {
+    const props = { ...base, platform: 'desktop' as const, onInsetBottom: vi.fn() }
+    render(<LiveTvLibraryFrame {...props} />)
+    expect(props.onInsetBottom).not.toHaveBeenCalled()
+  })
   it('telefon: Bibliotek-fliken syns när VOD finns, annars inte', async () => {
     const props = { ...base, platform: 'phone' as const }
     vodState.total = 0

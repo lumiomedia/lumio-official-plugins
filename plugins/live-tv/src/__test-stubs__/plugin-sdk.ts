@@ -843,4 +843,6 @@ export interface LibraryFrameProps {
   onExit: () => void
   /** Ramens bredd i SKÄRMpixlar; 0 = ingen sidoräls (telefon). */
   onInset: (px: number) => void
+  /** Telefon: flikradens höjd i skärmpixlar. Valfri (app ≥ 0.1.624). */
+  onInsetBottom?: (px: number) => void
 }

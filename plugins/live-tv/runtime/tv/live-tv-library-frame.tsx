@@ -20,9 +20,25 @@ const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
  * Aktiv källa läses ur lagringen precis som modellen gör, ett enda anrop, ingen polling.
  * Monteras bara på telefon.
  */
-function PhoneTabBar({ select }: { select: (key: RailKey | 'hub' | 'guide' | 'favs' | 'search' | 'library' | 'home') => void }) {
+function PhoneTabBar({ select, onInsetBottom }: { select: (key: RailKey | 'hub' | 'guide' | 'favs' | 'search' | 'library' | 'home') => void; onInsetBottom?: (px: number) => void }) {
   const tvMode = useTvMode()
   const [showLibrary, setShowLibrary] = useState(false)
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+  /*
+    Flikradens höjd (rad + säkerhetsmarginal) till värden, så hemmet och
+    detaljsidan slutar ovanför den och raden syns hela tiden. Mäts på själva
+    <nav>:en; 0 när ramen avmonteras. Valfri i SDK:t (app före 0.1.624).
+  */
+  useEffect(() => {
+    if (!onInsetBottom) return
+    const nav = wrapRef.current?.querySelector<HTMLElement>('[data-testid="mobile-tab-bar"]')
+    if (!nav) return
+    const report = () => onInsetBottom(nav.getBoundingClientRect().height)
+    report()
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(report) : null
+    observer?.observe(nav)
+    return () => { observer?.disconnect(); onInsetBottom(0) }
+  }, [onInsetBottom])
   useEffect(() => {
     let cancelled = false
     const playlistId = getActivePlaylistId()
@@ -34,7 +50,11 @@ function PhoneTabBar({ select }: { select: (key: RailKey | 'hub' | 'guide' | 'fa
     return () => { cancelled = true }
   }, [tvMode])
   // "Mer" går till Multiview-vyn: arket hör till Live TV-sidan.
-  return <MobileTabBar view="hub" activeOverride="home" showLibrary={showLibrary} onGo={select} onMore={() => select('multi')} />
+  return (
+    <div ref={wrapRef}>
+      <MobileTabBar view="hub" activeOverride="home" showLibrary={showLibrary} onGo={select} onMore={() => select('multi')} />
+    </div>
+  )
 }
 
 /**
@@ -44,7 +64,7 @@ function PhoneTabBar({ select }: { select: (key: RailKey | 'hub' | 'guide' | 'fa
  * narrow-mätningen och designpixlarna är desamma som i sidans egen låda.
  * Ramen lindar sig inte i någon egen scenlåda.
  */
-export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset }: LibraryFrameProps) {
+export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onInsetBottom }: LibraryFrameProps) {
   const settings = useTvSettings()
   const rootRef = useRef<HTMLDivElement | null>(null)
   const isTv = platform === 'tv'
@@ -88,7 +108,7 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset }: Li
   }, [phone, onExit])
 
   if (phone) {
-    return <PhoneTabBar select={select} />
+    return <PhoneTabBar select={select} onInsetBottom={onInsetBottom} />
   }
   return (
     <div ref={rootRef} style={{ height: '100%', display: 'flex', background: TV.bg, color: TV.text, fontFamily: TV.font }}>

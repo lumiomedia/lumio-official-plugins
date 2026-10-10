@@ -226,6 +226,13 @@ for a catalogue but your own navigation around it. Guard the call
 - `onInset(px)`: report the frame's width in SCREEN pixels (after scaling).
   The host pushes its content right by that much. `0` means no side rail
   (phones).
+- `onInsetBottom?(px)` (optional, app 0.1.624 and later): on phones, report
+  the height in SCREEN pixels of a bar the frame draws along the bottom edge
+  (for example a tab bar), and `0` when it goes away. The host ends its home
+  and the details page above that height and draws the frame above the
+  details page, so the bar stays visible. The host ignores it on TV and
+  desktop. Call it guarded (`onInsetBottom?.(px)`), since older hosts don't
+  pass it.
 
 Open the frame by navigating to `pageId: 'library'` with `params.frame` set
 to the frame's `id`. The host then renders its regular home scoped to the
