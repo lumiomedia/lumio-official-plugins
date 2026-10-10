@@ -557,7 +557,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     setActive(null)
     go('multi')
   }, [go])
-  const playerSport = usePlayerSport({ active: active !== null && !phone, model, play, openMultiview: openSportMultiview })
+  const playerSport = usePlayerSport({ playingKey: active !== null && !phone ? channelKey(active.channel) : null, model, play, openMultiview: openSportMultiview })
 
   const View = TV_VIEWS[view]
   const activeChannel: M3uChannel | null = active

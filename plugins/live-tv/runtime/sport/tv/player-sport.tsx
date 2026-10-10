@@ -9,7 +9,7 @@ import type { MultiviewLayout, MultiviewState } from '../../tv/tv-multiview-stor
 import type { PlayerSportProps } from '../../tv/tv-player-types'
 import { useTvText } from '../../tv/tv-strings'
 import { TV, dp, station } from '../../tv/tv-ui'
-import { crestText, matchTitle, sourceChannel, type SportMatch } from '../sport-model'
+import { crestText, matchTitle, sourceChannel, type SportDay, type SportMatch } from '../sport-model'
 import { localDayKey, useSportDay } from '../sport-epg'
 import { pickMultiviewKeys, rankedSources, statusAt, visibleMatches } from '../sport-day-model'
 import { useOverrides, useSportSettings } from '../sport-store'
@@ -33,12 +33,33 @@ export function matchesForPlayer(matches: SportMatch[], currentKey: string, now:
   }
 }
 
-/** Dagens matcher till spelaren — ett lokalt anrop, och bara medan spelaren är öppen. */
-export function usePlayerSport(args: { active: boolean; model: LiveTvModel; play: (request: PlayRequest) => void; openMultiview: (keys: string[]) => void }): PlayerSportProps | undefined {
+/** Hur länge en kanal ska ha spelat innan spelaren frågar efter dagens matcher. */
+export const PLAYER_SPORT_DELAY_MS = 4000
+
+/**
+  Dagens matcher till spelaren — ett lokalt anrop, bara medan spelaren är
+  öppen och först när kanalen spelat en stund: `/sport/day` kan läsa in hela
+  EPG-lagret, och det får inte dela tid med uppspelningsstarten. Byts kanalen
+  innan dess börjar väntan om. `playingKey` är null när spelaren är stängd.
+*/
+export function usePlayerSport(args: { playingKey: string | null; model: LiveTvModel; play: (request: PlayRequest) => void; openMultiview: (keys: string[]) => void }): PlayerSportProps | undefined {
   const settings = useSportSettings()
   const overrides = useOverrides()
-  const { active, model, play, openMultiview } = args
-  const { data } = useSportDay(active ? localDayKey(model.nowMs) : null, model.nowMs)
+  const { playingKey, model, play, openMultiview } = args
+  const active = playingKey !== null
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    setArmed(false)
+    if (playingKey === null) return
+    const timer = window.setTimeout(() => setArmed(true), PLAYER_SPORT_DELAY_MS)
+    return () => window.clearTimeout(timer)
+  }, [playingKey])
+  const { data: fresh } = useSportDay(active && armed ? localDayKey(model.nowMs) : null, model.nowMs)
+  // Vid kanalbyte ligger förra svaret kvar medan väntan pågår — tickern blinkar inte bort.
+  const last = useRef<SportDay | null>(null)
+  if (!active) last.current = null
+  else if (fresh) last.current = fresh
+  const data = active ? fresh ?? last.current : null
   return useMemo(() => {
     if (!active || !data) return undefined
     return {

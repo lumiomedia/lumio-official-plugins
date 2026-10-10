@@ -6,7 +6,7 @@ import { LIVE_TV_PLUGIN_ID, channelKey } from '../../live-tv-data'
 import type { LiveTvModel } from '../../live-tv-model'
 import { TvPlayerChrome } from '../../tv/tv-player-chrome'
 import type { LiveTvPlayerTvProps, PlayerSportProps } from '../../tv/tv-player-types'
-import { PlayerMatchesDrawer, matchesForPlayer, multiviewFor, usePlayerSport } from './player-sport'
+import { PLAYER_SPORT_DELAY_MS, PlayerMatchesDrawer, matchesForPlayer, multiviewFor, usePlayerSport } from './player-sport'
 import { HOUR, MIN, fxList, fxMatch, fxSource, stubSportDays } from '../__sport-fixture'
 
 afterEach(cleanup)
@@ -48,10 +48,27 @@ describe('rena delar', () => {
   it('usePlayerSport hämtar ingenting medan spelaren är stängd', async () => {
     const spy = stubSportDays({})
     const model = { nowMs: now, byKey: new Map() } as unknown as LiveTvModel
-    const { result } = renderHook(() => usePlayerSport({ active: false, model, play: vi.fn(), openMultiview: vi.fn() }))
+    const { result } = renderHook(() => usePlayerSport({ playingKey: null, model, play: vi.fn(), openMultiview: vi.fn() }))
     await act(async () => {})
     expect(result.current).toBeUndefined()
     expect(spy).not.toHaveBeenCalled()
+  })
+})
+
+describe('usePlayerSport vid kanalstart', () => {
+  afterEach(() => vi.useRealTimers())
+  it('hämtar först en stund efter att kanalen börjat spela, och börjar om när kanalen byts', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const spy = stubSportDays({})
+    const model = { nowMs: now, byKey: new Map() } as unknown as LiveTvModel
+    const { rerender } = renderHook(({ key }: { key: string }) => usePlayerSport({ playingKey: key, model, play: vi.fn(), openMultiview: vi.fn() }), { initialProps: { key: 'A' } })
+    await act(async () => { await vi.advanceTimersByTimeAsync(PLAYER_SPORT_DELAY_MS - 500) })
+    expect(spy).not.toHaveBeenCalled()
+    rerender({ key: 'B' })
+    await act(async () => { await vi.advanceTimersByTimeAsync(PLAYER_SPORT_DELAY_MS - 500) })
+    expect(spy).not.toHaveBeenCalled()
+    await act(async () => { await vi.advanceTimersByTimeAsync(500) })
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 })
 
