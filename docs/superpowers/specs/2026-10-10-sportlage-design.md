@@ -26,8 +26,8 @@ anrop görs som inte behövs.
    per dag **per sport-API** (fotboll 100, hockey 100 … med samma nyckel;
    bekräftat av Jerry 2026-10-10) och alla endpoints. Betald nivå kostar från 19 USD/mån och ger
    7 500 anrop per dag. Märken hämtas från media-URL:er, som inte räknas mot
-   kvoten. Källan ligger bakom ett providergränssnitt men bara API-Sports
-   byggs. Ingen TheSportsDB eller ESPN i v1.
+   kvoten. Källan ligger bakom ett providergränssnitt; v1 bygger
+   API-Sports **och** TheSportsDB premium (se öppna frågor, punkt 5). Ingen ESPN.
 4. Sportfliken fungerar **utan nyckel** (fas 1, bara EPG). Med nyckel
    tillkommer resultat. Användaren ombeds aldrig om något annat än den här
    nyckeln.
@@ -295,6 +295,12 @@ höjdpunkter (fas 3), spelarprofil från uppställningen.
 3. (Beslut) Raden "Sänds på X, som inte finns i dina spellistor" **tas bort**
    i v1 — ingen egen rättighetstabell att underhålla.
 4. (Beslut) Sport ikväll på Hem **väntar** på Hem-handoffen; ingår inte i v1.
-5. **Öppen:** valet av källa. API-Sports premium kostar per sport, vilket är
-   krångligt för användaren; andra API:er med ett abonnemang för alla
-   sporter utreds (`sport-api-jamforelse.md`) innan planen skrivs.
+5. (Beslut 2026-10-10) **Två källor, användaren väljer vilken nyckel:**
+   **API-Sports** (gratis: 100 anrop/dag per sport, premium 19 USD per sport)
+   och **TheSportsDB premium** (9 USD/mån för alla sporter, 100 anrop/minut,
+   livescore ~var 2:a min, ingen dygnskvot). Båda adaptrarna byggs bakom
+   samma providergränssnitt; nyckelkortet förklarar valet i en mening.
+   TheSportsDB har SHL, HockeyAllsvenskan och SDHL (kontrollerat 2026-10-10,
+   slutresultat samma kväll); om SHL uppdateras *under* match i deras
+   livescore är overifierat. TheSportsDB gratis används inte (ger inga
+   resultat). SportsAPIPro (45 USD) och sportapi.ai väljs bort i v1.
