@@ -38,6 +38,8 @@ Surfaces:
 
 - settings sections, on desktop as a React component and on TV as typed rows
 - home rows, home sources, hero contributions and full home overrides
+- library frames (`registerLibraryFrame`): a plugin-drawn side frame next to
+  the host's own library-scoped home
 - browse pages, main menu items, topbar items
 - bootstrap mounts (headless logic that runs once at startup)
 - media detail actions and download actions
@@ -205,6 +207,36 @@ orientation when your page closes.
 Every host-side helper added after some app version must be called guarded
 (`ctx.registerX?.()`, `getTvGlassMenu()` may return `null`), or the plugin
 raises `minAppVersion`.
+
+## registerLibraryFrame
+
+`ctx.registerLibraryFrame({ id, Frame })` lets a plugin draw a frame (for
+example a side rail) next to the host's regular home, scoped to one library
+provider. Use it when you want the app's own home, details, search and player
+for a catalogue but your own navigation around it. Guard the call
+(`ctx.registerLibraryFrame?.()`) and raise `minAppVersion`.
+
+`Frame` receives `LibraryFrameProps`:
+
+- `platform`: `'tv' | 'desktop' | 'phone'`, the platform the host draws for.
+- `onNavigate(target)`: navigate as a browse page (same as
+  `openPluginBrowsePage`).
+- `onExit()`: leave the library view and go back to the app's normal home
+  (the rail's Back).
+- `onInset(px)`: report the frame's width in SCREEN pixels (after scaling).
+  The host pushes its content right by that much. `0` means no side rail
+  (phones).
+
+Open the frame by navigating to `pageId: 'library'` with `params.frame` set
+to the frame's `id`. The host then renders its regular home scoped to the
+library and draws the frame fixed on the left.
+
+The frame is drawn inside a box scaled in the 1920 design space, so lay it out
+in design pixels. The box carries `data-tv-scene-box="frame"`; the TV focus
+engine ignores it, so the frame handles its own key navigation.
+
+With `params.frame`, all indexed sources of the provider are in scope (for
+example every `xtream-vod:<source>`), not just one.
 
 ## Playback capabilities
 

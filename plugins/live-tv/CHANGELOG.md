@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.0
+
+- Home shows films and series from VOD like the rest of the app; the old Home is now called Channels; VOD is indexed automatically the first time. Requires Lumio 0.1.624.
+
 ## 0.14.0
 
 - Picture-in-picture on phones: Live TV keeps playing in a small window when you leave the app, with channel switching and play/pause right in the window (Android). On iPhone via the button in the player. Requires Lumio 0.1.622.

@@ -513,6 +513,7 @@
     getHomeRows: () => getHomeRows,
     getHomeSources: () => getHomeSources,
     getInstantPlayProviders: () => getInstantPlayProviders,
+    getLibraryFrame: () => getLibraryFrame,
     getLibraryProviders: () => getLibraryProviders,
     getListSource: () => getListSource,
     getListSources: () => getListSources,
@@ -658,6 +659,11 @@
           pluginId
         });
       },
+      registerLibraryFrame(frame) {
+        if (libraryFrames.find((entry) => entry.id === frame.id)) return;
+        libraryFrames.push({ ...frame, pluginId });
+        scheduleRegistryNotify();
+      },
       registerBrowsePage(page) {
         if (browsePages.find((entry) => entry.id === page.id)) return;
         browsePages.push(page);
@@ -774,6 +780,9 @@
   function getHeroes() {
     return heroes;
   }
+  function getLibraryFrame(id) {
+    return libraryFrames.find((entry) => entry.id === id) ?? null;
+  }
   function getHomeOverrides() {
     return homeOverrides;
   }
@@ -815,7 +824,7 @@
   function notifyPluginRegistryChanged() {
     notifyRegistryChanged();
   }
-  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, trackers, listSources, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
+  var streamProviders, libraryProviders, mediaStreamCatalogProviders, mediaStreamAvailabilityProviders, instantPlayProviders, resumeRefreshProviders, playableUrlRewriters, streamRequestConfigProviders, episodeSidebarProviders, playbackCapabilityProviders, syncIdentityProviders, authCapabilityProviders, overviewStatusProviders, settingsSections, mediaDownloadActions, mediaDetailsActions, homeRows, homeSources, bootstraps, heroes, homeOverrides, libraryFrames, browsePages, mainMenuItems, topbarItems, managedAuthConsumers, trackers, listSources, registeredPluginIds, registryRevision, registryListeners, registryNotifyScheduled, ownedMainMenuItemIds;
   var init_plugin_registry = __esm({
     "lib/plugin-registry.ts"() {
       "use strict";
@@ -841,6 +850,7 @@
       bootstraps = [];
       heroes = [];
       homeOverrides = [];
+      libraryFrames = [];
       browsePages = [];
       mainMenuItems = [];
       topbarItems = [];
@@ -945,8 +955,8 @@
     const data = await np({ cmd: "getAudioOutput" });
     return { bluetooth: Boolean(data?.bluetooth), name: data?.name ?? null };
   }
-  async function nativeSetAudioDelay(ms) {
-    await np({ cmd: "setAudioDelay", ms: Math.max(-2e3, Math.min(2e3, Math.round(ms))) });
+  async function nativeSetAudioDelay(ms2) {
+    await np({ cmd: "setAudioDelay", ms: Math.max(-2e3, Math.min(2e3, Math.round(ms2))) });
   }
   async function nativeSetVideoTuning(t) {
     await np({ cmd: "setTuning", brightness: t.brightness, contrast: t.contrast, saturation: t.saturation });
@@ -2602,6 +2612,8 @@
           showAllMovies: "Show all movies",
           showAllSeries: "Show all series",
           searchPlaceholder: "Search titles or cast names",
+          searchInLibrary: "Search in {name}",
+          searchInYourLibrary: "Search your library",
           searchTitlePlaceholder: "Search title",
           sampleData: "Sample data",
           tmdbLive: "TMDb live",
@@ -2676,7 +2688,7 @@
           listenedAt: "at",
           streamAvailable: "Cached",
           streamDeviceUnsupported: "unsupported",
-          streamDeviceUnsupportedHint: "This device lacks a decoder for this stream (lossless audio or Dolby Vision) \u2014 expect no sound, or no playback.",
+          streamDeviceUnsupportedHint: "This device lacks a decoder for this stream (lossless audio, Dolby Vision, 4K or HDR) \u2014 expect no sound, no picture, or no playback.",
           streamDownload: "Download",
           startingMovie: "Starting movie...",
           findingMovie: "Finding movie...",
@@ -2821,18 +2833,14 @@
           dtSeasonsN: "{n} seasons",
           settingsDetailsEyebrow: "Details page",
           sideMenuTitle: "Side menu",
-          sideMenuDesc: "A floating icon rail on the left instead of the horizontal menu. Search moves into the rail. Desktop only.",
-          sideMenuLockedByPill: "Turned off while the menu pill is on \u2014 the pill is the menu then.",
-          sideMenuOn: "Side menu",
           menuChipTitle: "Menu pill (TV style)",
-          menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the side menu and the top bar on desktop, and the top bar on mobile.",
+          menuChipDesc: "The TV mode menu pill in the top-left corner, with search inside the menu. Replaces the top bar on desktop and mobile.",
           menuPillPlaceTitle: "Menu pill position",
           menuPillPlaceDesc: "Pick a corner, or hold the pill until it wiggles and drag it anywhere. It snaps to the nearest edge and keeps the height you dropped it at.",
           menuPillTopLeft: "Top left",
           menuPillTopRight: "Top right",
           menuPillBottomLeft: "Bottom left",
           menuPillBottomRight: "Bottom right",
-          sideMenuOff: "Horizontal menu",
           vlcToggleOn: "VLC on",
           vlcToggleOff: "VLC off",
           vlcToggleTitle: "Open streams directly in VLC",
@@ -2925,6 +2933,37 @@
           sortHighestTmdb: "Highest TMDb rating",
           sortNewest: "Newest to Oldest",
           sortOldest: "Oldest to Newest",
+          // Bläddra-raden under heron på Filmer/Serier (Jerry 2026-10-10), lib/browse-summary.ts
+          browseHeading: "Browse",
+          browseSummary: "Showing {scope} on {services}, {sort}",
+          browseKindMovies: "movies",
+          browseKindSeries: "series",
+          browseKindTitles: "titles",
+          browseKindAnime: "anime",
+          browseScopeAll: "all {kind}",
+          browseScopeGenres: "{genres} {kind}",
+          browseScopeManyGenres: "{n} genres of {kind}",
+          browseGenresAnd: " and ",
+          browseYearFrom: "from {year}",
+          browseYearTo: "up to {year}",
+          browseYearRange: "from {min}\u2013{max}",
+          browseRatedAtLeast: "rated {n}+",
+          browseEveryService: "every service",
+          browseManyServices: "{n} services",
+          browseSortPopular: "most popular first",
+          browseSortRelevant: "most relevant first",
+          browseSortRating: "highest rated first",
+          browseSortNewest: "newest first",
+          browseSortOldest: "oldest first",
+          // Bläddra-raden i biblioteksläget (Jerry 2026-10-10)
+          browseSummaryLibrary: "Showing {scope} in {services}, {sort}",
+          browseYourLibrary: "your library",
+          browseManySources: "{n} sources",
+          browseSortAdded: "recently added first",
+          browseSortTitle: "by title A\u2013Z",
+          sortRecentlyAdded: "Recently added",
+          sortTitleAZ: "Title A\u2013Z",
+          filterSource: "Source",
           // Results
           aboutResults: "About",
           results: "results",
@@ -3237,6 +3276,34 @@
           plChapterN: "Chapter {n}",
           plCreditsChapter: "Credits",
           shortcutsSaveMoment: "Keep this moment",
+          clipTitle: "Clip",
+          clipNew: "New clip",
+          clipZoomed: "Zoomed \xB7 4 min",
+          clipShare: "Share clip",
+          clipShareSection: "Share",
+          clipCopyLink: "Copy link",
+          clipCopyImage: "Copy image",
+          clipSaveFile: "Save file",
+          clipSaveMoment: "Save to moments",
+          clipFrom: "From {time}",
+          clipSavePhotos: "Save to Photos",
+          clipCancel: "Cancel clip",
+          clipShareNow: "Share now",
+          clipTileLink: "Link",
+          clipTileSave: "Save",
+          clipTileMoment: "Moment",
+          clipSavedPhotos: "Saved to Photos",
+          clipSaveNeedsAndroid10: "Saving to Photos needs Android 10 \u2014 share it instead",
+          clipNewWithLength: "New clip \xB7 {len}",
+          clipRenderingIndeterminate: "Creating clip \u2026",
+          clipFormatStill: "Image",
+          clipRendering: "Creating clip \xB7 {pct} %",
+          clipFailed: "The clip couldn't be created",
+          clipLinkCopied: "Link copied",
+          clipImageCopied: "Image copied",
+          clipSaved: "Clip saved",
+          clipClose: "Close clip",
+          shortcutsClip: "Clip",
           plMoments: "Moments",
           plMomentKeep: "Keep this moment",
           plMomentJump: "Jump",
@@ -3585,6 +3652,8 @@
           homeRowSpoilersDesc: "Follow the spoiler settings on this row. Off shows episode titles and stills unmasked \u2014 useful where you have already watched, like Continue watching.",
           cardShapePoster: "Poster",
           cardShapeLandscape: "Landscape",
+          homeExpandCards: "Expand card on focus",
+          homeExpandCardsHint: "The card in focus widens into a backdrop with logo and facts. Portrait cards only.",
           qrAddonOpen: "Add via phone",
           qrAddonTitle: "Scan with your phone",
           qrAddonHint: "Open the page, paste a Stremio manifest URL and send \u2014 it installs right here.",
@@ -4319,6 +4388,7 @@
           tvRowFailed: "Could not be loaded",
           tvRowNoRenderer: "Not available in TV mode yet",
           tvQuickPlay: "Play",
+          tvQuickSource: "Source: {source} \u203A",
           tvQuickMarkWatched: "Mark as watched",
           tvQuickUnmarkWatched: "Mark as unwatched",
           tvQuickMoreInfo: "More info",
@@ -4363,6 +4433,26 @@
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestige Drama",
           homeSourceMoment: "Right now (changes with the moment)",
+          homeSourceComingUp: "Coming up",
+          comingUpTitle: "Coming up",
+          comingUpSubtitle: "From series you follow \xB7 {n}",
+          comingUpAvailableOne: "1 episode available now",
+          comingUpAvailableMany: "{n} episodes available now",
+          comingUpNothingNew: "nothing new right now",
+          comingUpOpenCalendar: "Open calendar",
+          comingUpMissed: "Missed",
+          comingUpToday: "Today",
+          comingUpTomorrow: "Tomorrow",
+          comingUpEpisodesCount: "{n} episodes",
+          comingUpInDays: "in {n} days",
+          comingUpPillAvailable: "Available",
+          comingUpPillMissedAvailable: "Missed \xB7 Available",
+          comingUpPillTonight: "Tonight {time}",
+          comingUpPillWatched: "Watched",
+          comingUpTagPremiere: "Premiere",
+          comingUpTagFinale: "Finale",
+          comingUpShowMissedSetting: "Show missed episodes in Coming up",
+          comingUpShowMissedHint: "Episodes from yesterday you haven't watched yet.",
           homeSourceMomentMovies: "Right now \xB7 Movies",
           homeSourceMomentSeries: "Right now \xB7 Series",
           homeSourceAnimeMovies: "Anime Movies",
@@ -4817,6 +4907,21 @@
              en engelsk profil. */
           advBackupSavedTitle: "Settings copy saved",
           advBackupOpenOnOtherDevice: "Open this address on the other device, download the file, and press Import there.",
+          dailyPosterTitle: "Poster of the day",
+          dailyPosterHint: "Your lock screen shows a poster from your watchlist, changed every morning at 6.",
+          dailyPosterToggleTitle: "Poster of the day on the lock screen",
+          dailyPosterToggleDesc: "A quiet morning notification opens the title. When you turn it off, the lock screen shows your home screen wallpaper \u2014 the previous lock screen image can\u2019t be restored. Some manufacturers (Xiaomi, Oppo) may override the lock screen.",
+          dailyPosterOn: "On",
+          dailyPosterOff: "Off",
+          dailyPosterRunNowTitle: "Change now",
+          dailyPosterRunNowDesc: "Pick the next poster right away.",
+          dailyPosterRunNow: "Change now",
+          dailyPosterQueued: "The lock screen changes in a moment.",
+          dailyPosterEmpty: "Your watchlist has no titles with a poster yet.",
+          dailyPosterError: "Could not change: {e}",
+          dailyPosterNotAllowed: "This phone doesn\u2019t let apps change the wallpaper (manufacturer or work policy).",
+          dailyPosterNotificationTitle: "Poster of the day",
+          dailyPosterChannelName: "Poster of the day",
           hapticsTitle: "Feel the bass",
           hapticsHint: "Your phone vibrates with the film\u2019s bass hits.",
           hapticsHostToggleTitle: "Allow Feel the bass from a phone",
@@ -5361,6 +5466,13 @@
           coreStreamsHidden: "{count} streams hidden by quality filters",
           coreStreamsSelectEpisode: "Pick an episode to see its streams.",
           coreStreamsSource: "Source",
+          streamSourceAllSources: "All sources",
+          streamSourceVod: "VOD",
+          streamSourceDebrid: "Debrid",
+          streamSourceEpisodeCount: "{n}/{total} ep",
+          streamSourceSeriesHint: "Applies to every episode in this series",
+          streamSourceSeriesMenuTitle: "Source \xB7 all episodes",
+          streamSourceFallback: "E{episode} isn't in {source} \u2014 showing {fallback}",
           coreStreamsCached: "Cached",
           coreStreamsLoading: "Checking sources\u2026",
           streamNotServingMedia: "The source did not deliver playable media. Try another stream.",
@@ -5420,6 +5532,8 @@
           continueLayoutGrid: "Grid",
           /* Settings → Display → Continue watching */
           cwSectionHint: "The view has two modes, switched with the button next to the filter. Each mode has its own card format and count.",
+          cwFramesTitle: "Scene preview on hover",
+          cwFramesDesc: "Saves a frame when you pause or leave a title and shows it when you hover over the card (or focus it on TV).",
           cwModeRows: "Side-scrolling rows",
           cwModeRowsDesc: "All, Series and Movies as rows you swipe sideways.",
           cwModeGrid: "Grid",
@@ -5676,11 +5790,69 @@
           hpHomeEyebrow: "Home page",
           hpSearchFieldTitle: "Search field",
           hpTopSlotTitle: "Top row",
-          hpTopSlotHint: "What sits at the top centre: the filter row or a search field. Filters always win on pages that have them, so the two can never share the spot.",
+          hpTopSlotHint: "What sits at the top centre: a search field, the quick menu or nothing. Movies, Series and the other filter pages always show their filters in a Browse row under the hero.",
+          qmEyebrow: "Quick menu",
+          qmShow: "Show quick menu",
+          qmStyle: "Style",
+          qmStyleHint: "Horizon and Sentence scroll and hold up to 10 items. The others hold 6.",
+          qmScrollsTen: "Scrolls \xB7 up to 10 items",
+          qmUpToSix: "Up to 6 items",
+          qmItems: "Items",
+          qmItemsHint: "Pages in the quick menu, in order.",
+          qmItemsPanelHint: "OK on an item to move or remove it.",
+          qmAddPage: "Add page",
+          qmSlotsLeft: "{n} slots left",
+          qmFull: "{style} holds 6. Horizon and Sentence hold 10.",
+          qmHiddenWarn: "{n} items are hidden with {style}. Pick a scrolling style or remove items.",
+          qmHidden: "Hidden",
+          qmReset: "Reset to default",
+          qmOffTitle: "Off",
+          qmOffHint: "Turn it on by choosing Quick menu under Top row.",
+          qmUse: "Use quick menu",
+          qmStyleCurrent: "Style: {style}",
+          qmStyleWhere: "Change the style, or switch to search or filters, under Top row.",
+          hpTopSlotQuick: "Quick menu",
+          qmStyle_horizon: "Horizon",
+          qmStyle_initials: "Initials",
+          qmStyle_constellation: "Constellation",
+          qmStyle_dark: "Dusk",
+          "qmStyle_focus-depth": "Depth of field",
+          qmStyle_sentence: "Sentence",
+          qmStyle_viewfinder: "Viewfinder",
+          qmStyle_tracking: "Tracking",
+          qmStyle_numbers: "Number keys",
+          qmStyle_italic: "Italic",
+          qmSentenceLead: "Show me",
+          qmSentence_search: "to search",
+          qmSentence_movies: "movies",
+          qmSentence_series: "series",
+          qmSentence_continue: "where I left off",
+          qmSentence_live: "live TV",
+          qmSentence_home: "home",
+          qmSentence_anime: "anime",
+          qmSentence_streaming: "streaming",
+          qmSentence_watchlist: "my watchlist",
+          qmSentence_calendar: "the calendar",
+          qmSentence_releases: "new releases",
+          qmSourceBuiltIn: "Built-in",
+          qmSourceCustomPage: "Custom page",
+          qmSourcePlugin: "Plugin",
+          qmPositionOf: "Position {i} of {n}",
+          qmHiddenWith: "hidden with {style}",
+          qmDone: "Done",
+          qmGroupFilters: "Filters",
+          qmGroupSearch: "Search",
+          qmGroupOther: "Other",
+          qmNew: "New",
+          qmUpTo10: "up to 10",
+          qmResetHint: "Restores the default items for this menu. The style stays.",
+          qmSectionHint: "Shortcuts centred at the top of the home screen.",
+          qmItemsCount: "{n} of {max}",
+          qmHiddenCount: "{n} hidden",
           hpTopSlotFilterPages: "Filters where they apply",
           hpTopSlotFilterAll: "Filters on every page",
           hpTopSlotSearch: "Search field",
-          hpTopSlotNone: "Nothing (filters sit above the grid)",
+          hpTopSlotNone: "Nothing",
           hpSearchFieldHint: "Show or hide the large search field at the top of the home page.",
           hpSearchStaysHint: "Search remains available in the top menu",
           hpSearchTopChosenHint: "The search field sits in the top row (see Top row above), so the large field is hidden.",
@@ -6472,6 +6644,8 @@
           showAllMovies: "Visa alla filmer",
           showAllSeries: "Visa alla serier",
           searchPlaceholder: "S\xF6k titlar eller sk\xE5despelarnamn",
+          searchInLibrary: "S\xF6k i {name}",
+          searchInYourLibrary: "S\xF6k i ditt bibliotek",
           searchTitlePlaceholder: "S\xF6k titel",
           sampleData: "Exempeldata",
           tmdbLive: "TMDb live",
@@ -6546,7 +6720,7 @@
           listenedAt: "vid",
           streamAvailable: "Cachad",
           streamDeviceUnsupported: "st\xF6ds ej",
-          streamDeviceUnsupportedHint: "Enheten saknar avkodare f\xF6r den h\xE4r str\xF6mmen (f\xF6rlustfritt ljud eller Dolby Vision) \u2014 r\xE4kna med inget ljud, eller ingen uppspelning.",
+          streamDeviceUnsupportedHint: "Enheten saknar avkodare f\xF6r den h\xE4r str\xF6mmen (f\xF6rlustfritt ljud, Dolby Vision, 4K eller HDR) \u2014 r\xE4kna med inget ljud, ingen bild eller ingen uppspelning.",
           streamDownload: "Ladda ned",
           startingMovie: "Startar film...",
           findingMovie: "Hittar film...",
@@ -6691,18 +6865,14 @@
           dtSeasonsN: "{n} s\xE4songer",
           settingsDetailsEyebrow: "Detaljsidan",
           sideMenuTitle: "Sidomeny",
-          sideMenuDesc: "En flytande ikonrad till v\xE4nster i st\xE4llet f\xF6r den horisontella menyn. S\xF6ket flyttar in i raden. Endast skrivbord.",
-          sideMenuLockedByPill: "Avst\xE4ngt s\xE5 l\xE4nge menypillret \xE4r p\xE5 \u2014 d\xE5 \xE4r pillret menyn.",
-          sideMenuOn: "Sidomeny",
           menuChipTitle: "Menypill (TV-stil)",
-          menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter sidomenyn och toppraden p\xE5 skrivbord, och toppraden p\xE5 mobil.",
+          menuChipDesc: "TV-l\xE4gets menypill uppe till v\xE4nster, med s\xF6k inne i menyn. Ers\xE4tter toppraden p\xE5 skrivbord och mobil.",
           menuPillPlaceTitle: "Menypillrets placering",
           menuPillPlaceDesc: "V\xE4lj ett h\xF6rn, eller h\xE5ll in pillret tills det skakar och dra det dit du vill. Det dras till n\xE4rmaste kant och beh\xE5ller h\xF6jden du sl\xE4ppte p\xE5.",
           menuPillTopLeft: "Uppe till v\xE4nster",
           menuPillTopRight: "Uppe till h\xF6ger",
           menuPillBottomLeft: "Nere till v\xE4nster",
           menuPillBottomRight: "Nere till h\xF6ger",
-          sideMenuOff: "Horisontell meny",
           vlcToggleOn: "VLC p\xE5",
           vlcToggleOff: "VLC av",
           vlcToggleTitle: "\xD6ppna streams direkt i VLC",
@@ -6795,6 +6965,37 @@
           sortHighestTmdb: "H\xF6gst TMDb-betyg",
           sortNewest: "Nyast till \xE4ldst",
           sortOldest: "\xC4ldst till nyast",
+          // Bläddra-raden under heron på Filmer/Serier (Jerry 2026-10-10), lib/browse-summary.ts
+          browseHeading: "Bl\xE4ddra",
+          browseSummary: "Visar {scope} p\xE5 {services}, {sort}",
+          browseKindMovies: "filmer",
+          browseKindSeries: "serier",
+          browseKindTitles: "titlar",
+          browseKindAnime: "animetitlar",
+          browseScopeAll: "alla {kind}",
+          browseScopeGenres: "{kind} inom {genres}",
+          browseScopeManyGenres: "{kind} inom {n} genrer",
+          browseGenresAnd: " och ",
+          browseYearFrom: "fr\xE5n {year}",
+          browseYearTo: "till och med {year}",
+          browseYearRange: "fr\xE5n {min}\u2013{max}",
+          browseRatedAtLeast: "med betyg {n}+",
+          browseEveryService: "alla tj\xE4nster",
+          browseManyServices: "{n} tj\xE4nster",
+          browseSortPopular: "mest popul\xE4ra f\xF6rst",
+          browseSortRelevant: "mest relevanta f\xF6rst",
+          browseSortRating: "h\xF6gst betyg f\xF6rst",
+          browseSortNewest: "nyast f\xF6rst",
+          browseSortOldest: "\xE4ldst f\xF6rst",
+          // Bläddra-raden i biblioteksläget (Jerry 2026-10-10)
+          browseSummaryLibrary: "Visar {scope} i {services}, {sort}",
+          browseYourLibrary: "ditt bibliotek",
+          browseManySources: "{n} k\xE4llor",
+          browseSortAdded: "senast tillagda f\xF6rst",
+          browseSortTitle: "efter titel A\u2013\xD6",
+          sortRecentlyAdded: "Senast tillagda",
+          sortTitleAZ: "Titel A\u2013\xD6",
+          filterSource: "K\xE4lla",
           // Results
           aboutResults: "Ungef\xE4r",
           results: "resultat",
@@ -7106,6 +7307,34 @@
           plChapterN: "Kapitel {n}",
           plCreditsChapter: "Eftertexter",
           shortcutsSaveMoment: "Spara \xF6gonblick",
+          clipTitle: "Klipp",
+          clipNew: "Nytt klipp",
+          clipZoomed: "Inzoomat \xB7 4 min",
+          clipShare: "Dela klipp",
+          clipShareSection: "Dela",
+          clipCopyLink: "Kopiera l\xE4nk",
+          clipCopyImage: "Kopiera bild",
+          clipSaveFile: "Spara fil",
+          clipSaveMoment: "Spara bland \xF6gonblick",
+          clipFrom: "Fr\xE5n {time}",
+          clipSavePhotos: "Spara i Bilder",
+          clipCancel: "Avbryt klipp",
+          clipShareNow: "Dela nu",
+          clipTileLink: "L\xE4nk",
+          clipTileSave: "Spara",
+          clipTileMoment: "\xD6gonblick",
+          clipSavedPhotos: "Sparat i Bilder",
+          clipSaveNeedsAndroid10: "Spara i Bilder kr\xE4ver Android 10 \u2014 dela i st\xE4llet",
+          clipNewWithLength: "Nytt klipp \xB7 {len}",
+          clipRenderingIndeterminate: "Skapar klipp \u2026",
+          clipFormatStill: "Bild",
+          clipRendering: "Skapar klipp \xB7 {pct} %",
+          clipFailed: "Klippet kunde inte skapas",
+          clipLinkCopied: "L\xE4nk kopierad",
+          clipImageCopied: "Bild kopierad",
+          clipSaved: "Klippet sparat",
+          clipClose: "St\xE4ng klipp",
+          shortcutsClip: "Klipp",
           plMoments: "\xD6gonblick",
           plMomentKeep: "Spara detta \xF6gonblick",
           plMomentJump: "Hoppa",
@@ -7451,6 +7680,8 @@
           homeRowSpoilersDesc: "F\xF6lj spoilerinst\xE4llningarna p\xE5 den h\xE4r raden. Av visar avsnittstitlar och bilder omaskerade \u2014 bra d\xE4r du redan sett, som Forts\xE4tt titta.",
           cardShapePoster: "St\xE5ende",
           cardShapeLandscape: "Liggande",
+          homeExpandCards: "F\xE4ll ut kort vid fokus",
+          homeExpandCardsHint: "Kortet i fokus breddas till en bakgrundsbild med logga och fakta. Bara st\xE5ende kort.",
           qrAddonOpen: "L\xE4gg till via mobilen",
           qrAddonTitle: "Skanna med mobilen",
           qrAddonHint: "\xD6ppna sidan, klistra in en Stremio-manifest-URL och skicka \u2014 den installeras direkt h\xE4r.",
@@ -8180,6 +8411,7 @@
           tvRowFailed: "Kunde inte h\xE4mtas",
           tvRowNoRenderer: "Finns inte i TV-l\xE4get \xE4nnu",
           tvQuickPlay: "Spela",
+          tvQuickSource: "K\xE4lla: {source} \u203A",
           tvQuickMarkWatched: "Markera som sedd",
           tvQuickUnmarkWatched: "Markera som osedd",
           tvQuickMoreInfo: "Mer info",
@@ -8224,6 +8456,26 @@
           homeSourceNetworkPrime: "Prime Video",
           homeSourcePrestigeDrama: "Prestigedrama",
           homeSourceMoment: "Just nu (byter efter stund)",
+          homeSourceComingUp: "Kommer snart",
+          comingUpTitle: "Kommer snart",
+          comingUpSubtitle: "Fr\xE5n serier du f\xF6ljer \xB7 {n}",
+          comingUpAvailableOne: "1 avsnitt tillg\xE4ngligt nu",
+          comingUpAvailableMany: "{n} avsnitt tillg\xE4ngliga nu",
+          comingUpNothingNew: "inget nytt just nu",
+          comingUpOpenCalendar: "\xD6ppna kalender",
+          comingUpMissed: "Missade",
+          comingUpToday: "Idag",
+          comingUpTomorrow: "Imorgon",
+          comingUpEpisodesCount: "{n} avsnitt",
+          comingUpInDays: "om {n} dagar",
+          comingUpPillAvailable: "Tillg\xE4nglig",
+          comingUpPillMissedAvailable: "Missad \xB7 Tillg\xE4nglig",
+          comingUpPillTonight: "Ikv\xE4ll {time}",
+          comingUpPillWatched: "Sedd",
+          comingUpTagPremiere: "Premi\xE4r",
+          comingUpTagFinale: "Final",
+          comingUpShowMissedSetting: "Visa missade avsnitt i Kommer snart",
+          comingUpShowMissedHint: "Avsnitt fr\xE5n ig\xE5r som du inte har sett \xE4n.",
           homeSourceMomentMovies: "Just nu \xB7 Filmer",
           homeSourceMomentSeries: "Just nu \xB7 Serier",
           homeSourceAnimeMovies: "Animefilmer",
@@ -8671,6 +8923,21 @@
           introDebugMissing: "Ingen introtr\xE4ff",
           advBackupSavedTitle: "Kopia av inst\xE4llningarna sparad",
           advBackupOpenOnOtherDevice: "\xD6ppna adressen p\xE5 den andra enheten, h\xE4mta filen och tryck Importera d\xE4r.",
+          dailyPosterTitle: "Dagens affisch",
+          dailyPosterHint: "L\xE5ssk\xE4rmen visar en affisch ur din watchlist och byts varje morgon kl. 6.",
+          dailyPosterToggleTitle: "Dagens affisch p\xE5 l\xE5ssk\xE4rmen",
+          dailyPosterToggleDesc: "En tyst morgonavisering \xF6ppnar titeln. N\xE4r du st\xE4nger av visar l\xE5ssk\xE4rmen hemsk\xE4rmens bakgrund \u2014 den tidigare l\xE5ssk\xE4rmsbilden g\xE5r inte att f\xE5 tillbaka. Vissa tillverkare (Xiaomi, Oppo) kan skriva \xF6ver l\xE5ssk\xE4rmen.",
+          dailyPosterOn: "P\xE5",
+          dailyPosterOff: "Av",
+          dailyPosterRunNowTitle: "Byt nu",
+          dailyPosterRunNowDesc: "V\xE4lj n\xE4sta affisch direkt.",
+          dailyPosterRunNow: "Byt nu",
+          dailyPosterQueued: "L\xE5ssk\xE4rmen byts om en liten stund.",
+          dailyPosterEmpty: "Watchlisten har inga titlar med affisch \xE4n.",
+          dailyPosterError: "Det gick inte: {e}",
+          dailyPosterNotAllowed: "Telefonen l\xE5ter inte appar byta bakgrund (tillverkaren eller en jobbpolicy).",
+          dailyPosterNotificationTitle: "Dagens affisch",
+          dailyPosterChannelName: "Dagens affisch",
           hapticsTitle: "K\xE4nn basen",
           hapticsHint: "Telefonen vibrerar i takt med filmens bassm\xE4llar.",
           hapticsHostToggleTitle: "Till\xE5t K\xE4nn basen fr\xE5n telefon",
@@ -9209,6 +9476,13 @@
           coreStreamsHidden: "{count} str\xF6mmar dolda av kvalitetsfilter",
           coreStreamsSelectEpisode: "V\xE4lj ett avsnitt f\xF6r att se dess str\xF6mmar.",
           coreStreamsSource: "K\xE4lla",
+          streamSourceAllSources: "Alla k\xE4llor",
+          streamSourceVod: "VOD",
+          streamSourceDebrid: "Debrid",
+          streamSourceEpisodeCount: "{n}/{total} avs",
+          streamSourceSeriesHint: "G\xE4ller alla avsnitt i serien",
+          streamSourceSeriesMenuTitle: "K\xE4lla \xB7 alla avsnitt",
+          streamSourceFallback: "E{episode} finns inte i {source} \u2014 visar {fallback}",
           coreStreamsCached: "Cachad",
           coreStreamsLoading: "Fr\xE5gar k\xE4llorna\u2026",
           streamNotServingMedia: "K\xE4llan levererade ingen spelbar media. Prova en annan str\xF6m.",
@@ -9267,6 +9541,8 @@
           continueLayoutRows: "Rader",
           continueLayoutGrid: "Rutn\xE4t",
           cwSectionHint: "Vyn har tv\xE5 l\xE4gen som du v\xE4xlar med knappen bredvid filtret. Varje l\xE4ge har sitt eget kortformat och antal.",
+          cwFramesTitle: "Scenbild vid hovring",
+          cwFramesDesc: "Sparar en bildruta n\xE4r du pausar eller l\xE4mnar en titel och visar den n\xE4r du h\xE5ller muspekaren \xF6ver kortet (eller fokuserar det p\xE5 TV).",
           cwModeRows: "Rullande rader",
           cwModeRowsDesc: "Alla, Serier och Filmer som rader du bl\xE4ddrar i sidled.",
           cwModeGrid: "Rutn\xE4t",
@@ -9523,11 +9799,69 @@
           hpHomeEyebrow: "Startsida",
           hpSearchFieldTitle: "S\xF6kf\xE4lt",
           hpTopSlotTitle: "Toppraden",
-          hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: filterraden eller ett s\xF6kf\xE4lt. Filtret vinner alltid p\xE5 sidor som har filter, s\xE5 de tv\xE5 kan aldrig dela platsen.",
+          hpTopSlotHint: "Vad som st\xE5r h\xF6gst upp i mitten: ett s\xF6kf\xE4lt, snabbmenyn eller ingenting. Filmer, Serier och de andra filtersidorna visar alltid filtren i en Bl\xE4ddra-rad under heron.",
+          qmEyebrow: "Snabbmeny",
+          qmShow: "Visa snabbmeny",
+          qmStyle: "Stil",
+          qmStyleHint: "Horisont och Mening scrollar och rymmer upp till 10 poster. \xD6vriga rymmer 6.",
+          qmScrollsTen: "Scrollar \xB7 upp till 10 poster",
+          qmUpToSix: "Upp till 6 poster",
+          qmItems: "Poster",
+          qmItemsHint: "Sidor i snabbmenyn, i ordning.",
+          qmItemsPanelHint: "OK p\xE5 en post f\xF6r att flytta eller ta bort den.",
+          qmAddPage: "L\xE4gg till sida",
+          qmSlotsLeft: "{n} platser kvar",
+          qmFull: "{style} rymmer 6. Horisont och Mening rymmer 10.",
+          qmHiddenWarn: "{n} poster d\xF6ljs med {style}. V\xE4lj en stil som scrollar eller ta bort poster.",
+          qmHidden: "Dold",
+          qmReset: "\xC5terst\xE4ll standard",
+          qmOffTitle: "Av",
+          qmOffHint: "Sl\xE5 p\xE5 genom att v\xE4lja Snabbmeny under Toppraden.",
+          qmUse: "Anv\xE4nd snabbmeny",
+          qmStyleCurrent: "Stil: {style}",
+          qmStyleWhere: "Byt stil, eller v\xE4xla till s\xF6k eller filter, under Toppraden.",
+          hpTopSlotQuick: "Snabbmeny",
+          qmStyle_horizon: "Horisont",
+          qmStyle_initials: "Initialer",
+          qmStyle_constellation: "Stj\xE4rnbild",
+          qmStyle_dark: "M\xF6rkret",
+          "qmStyle_focus-depth": "Sk\xE4rpedjup",
+          qmStyle_sentence: "Mening",
+          qmStyle_viewfinder: "S\xF6karen",
+          qmStyle_tracking: "Sp\xE4rrning",
+          qmStyle_numbers: "Sifferknappar",
+          qmStyle_italic: "Kursiv",
+          qmSentenceLead: "Visa mig",
+          qmSentence_search: "s\xF6ka",
+          qmSentence_movies: "filmer",
+          qmSentence_series: "serier",
+          qmSentence_continue: "d\xE4r jag slutade",
+          qmSentence_live: "live-tv",
+          qmSentence_home: "hem",
+          qmSentence_anime: "anime",
+          qmSentence_streaming: "streaming",
+          qmSentence_watchlist: "min bevakningslista",
+          qmSentence_calendar: "kalendern",
+          qmSentence_releases: "nya sl\xE4pp",
+          qmSourceBuiltIn: "Inbyggd",
+          qmSourceCustomPage: "Egen sida",
+          qmSourcePlugin: "Plugin",
+          qmPositionOf: "Plats {i} av {n}",
+          qmHiddenWith: "dold med {style}",
+          qmDone: "Klar",
+          qmGroupFilters: "Filter",
+          qmGroupSearch: "S\xF6k",
+          qmGroupOther: "\xD6vrigt",
+          qmNew: "Ny",
+          qmUpTo10: "upp till 10",
+          qmResetHint: "\xC5terst\xE4ller standardposterna f\xF6r den h\xE4r menyn. Stilen ligger kvar.",
+          qmSectionHint: "Genv\xE4gar centrerade h\xF6gst upp p\xE5 startsidan.",
+          qmItemsCount: "{n} av {max}",
+          qmHiddenCount: "{n} dolda",
           hpTopSlotFilterPages: "Filter d\xE4r de h\xF6r hemma",
           hpTopSlotFilterAll: "Filter p\xE5 alla sidor",
           hpTopSlotSearch: "S\xF6kf\xE4lt",
-          hpTopSlotNone: "Ingenting (filtren ligger vid rutn\xE4tet)",
+          hpTopSlotNone: "Ingenting",
           hpSearchFieldHint: "Visa eller d\xF6lj det stora s\xF6kf\xE4ltet h\xF6gst upp p\xE5 startsidan.",
           hpSearchStaysHint: "S\xF6kfunktionen finns kvar i topp-menyn",
           hpSearchTopChosenHint: "S\xF6kf\xE4ltet ligger i toppraden (se Toppraden ovan), s\xE5 det stora f\xE4ltet \xE4r dolt.",
@@ -10259,6 +10593,7 @@
         "subtitles",
         "pip",
         "cast",
+        "clip",
         "audioTrack",
         "aspect",
         "cropZoom",
@@ -10291,13 +10626,13 @@
           // Bildformat, zoom, sömntimer och barcode-remsan bor i kugghjulet
           // (`more`) sedan 2026-10-03 — GEAR_CONTROL_IDS nedan.
           ["subtitles", "audioTrack", "tuning"],
-          ["chapters", "moments", "wiki", "soundtrack", "cast"],
+          ["chapters", "moments", "wiki", "soundtrack", "cast", "clip"],
           ["companions", "more", "fullscreen"]
         ]
       };
       PHONE_ROW_ORDER = {
-        landscape: ["subtitles", "audioTrack", "tuning", "chapters", "moments", "wiki", "soundtrack", "switchStream", "fullscreen", "companions"],
-        portrait: ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "chapters", "moments", "wiki", "soundtrack", "companions"]
+        landscape: ["subtitles", "audioTrack", "tuning", "chapters", "moments", "clip", "wiki", "soundtrack", "switchStream", "fullscreen", "companions"],
+        portrait: ["subtitles", "audioTrack", "nextEpisode", "switchStream", "tuning", "chapters", "moments", "clip", "wiki", "soundtrack", "companions"]
       };
       LANDSCAPE_ROW_BUDGET = 6;
       PHONE_DEDICATED_IDS = {
@@ -10687,6 +11022,10 @@
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(query)) {
       if (value === void 0 || value === null || value === "") continue;
+      if (Array.isArray(value)) {
+        if (value.length > 0) params.set(key, value.join(","));
+        continue;
+      }
       params.set(key, String(value));
     }
     return params.toString();
@@ -14282,11 +14621,11 @@
   function traktActivationUrl(verificationUrl) {
     return (verificationUrl || DEFAULT_VERIFICATION_URL).trim().replace(/\/+$/, "");
   }
-  function waitForNextPoll(ms) {
+  function waitForNextPoll(ms2) {
     return new Promise((resolve) => {
       const startedAt = Date.now();
       let done = false;
-      let timer3 = setTimeout(() => finish(), ms);
+      let timer3 = setTimeout(() => finish(), ms2);
       const finish = () => {
         if (done) return;
         done = true;
@@ -16452,6 +16791,12 @@
           /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
           /* @__PURE__ */ jsx("rect", { x: "12", y: "12", width: "7", height: "5", rx: "1", fill: "currentColor", stroke: "none" })
         ] });
+      case "clip":
+        return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: [
+          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "6", r: "3" }),
+          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "18", r: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" })
+        ] });
       case "cast":
         return /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", children: [
           /* @__PURE__ */ jsx("path", { d: "M2 16.1a5 5 0 0 1 5.9 5.9" }),
@@ -16537,6 +16882,9 @@
           /* @__PURE__ */ jsx("path", { d: "M12 3a9 9 0 0 1 0 18z", fill: "currentColor", stroke: "none" })
         ] });
     }
+  }
+  function clipUploadIcon(cls) {
+    return /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" }) });
   }
   var playerIconButtonClass, playerLabelButtonClass;
   var init_player_control_icons = __esm({
@@ -18850,7 +19198,7 @@
         }).then(mapMonitor);
       }
       async function availableMonitors() {
-        return core.invoke("plugin:window|available_monitors").then((ms) => ms.map(mapMonitor));
+        return core.invoke("plugin:window|available_monitors").then((ms2) => ms2.map(mapMonitor));
       }
       async function cursorPosition() {
         return core.invoke("plugin:window|cursor_position").then((v) => new dpi.PhysicalPosition(v));
@@ -18959,6 +19307,80 @@
     }
   });
 
+  // lib/sync/webdav-credentials.ts
+  function getWebdavConfig() {
+    const raw = getScopedStorageItem(SYNC_WEBDAV_CONFIG_KEY);
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed.baseUrl !== "string" || typeof parsed.username !== "string" || typeof parsed.password !== "string") return null;
+      return { baseUrl: parsed.baseUrl, username: parsed.username, password: parsed.password };
+    } catch {
+      return null;
+    }
+  }
+  var SYNC_WEBDAV_CONFIG_KEY;
+  var init_webdav_credentials = __esm({
+    "lib/sync/webdav-credentials.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      SYNC_WEBDAV_CONFIG_KEY = "sync_webdav_config";
+    }
+  });
+
+  // lib/continue-frames.ts
+  function getContinueFramesEnabled() {
+    if (typeof window === "undefined") return true;
+    return getScopedStorageItem(KEY10) !== "0";
+  }
+  function continueFrameKey(ref) {
+    const profile = getActiveProfileId() ?? "";
+    return playerFrameId(`cw:${profile}:${ref.id}:${ref.season ?? ""}:${ref.episode ?? ""}`);
+  }
+  function deleteContinueFrame(ref) {
+    if (typeof fetch !== "function") return;
+    const key = continueFrameKey(ref);
+    try {
+      void fetch(`${ENDPOINT}?key=${key}`, { method: "DELETE" }).catch(() => {
+      });
+      const config = getWebdavConfig();
+      if (config) {
+        void fetch(`${ENDPOINT}/remote-delete`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ config, key })
+        }).catch(() => {
+        });
+      }
+    } catch {
+    }
+  }
+  async function pushContinueFrame(ref) {
+    const config = getWebdavConfig();
+    if (!config) return false;
+    try {
+      const res = await fetch(`${ENDPOINT}/push`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ config, key: continueFrameKey(ref) })
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+  var KEY10, ENDPOINT;
+  var init_continue_frames = __esm({
+    "lib/continue-frames.ts"() {
+      "use client";
+      init_profile_storage_shim();
+      init_player_frame_id();
+      init_webdav_credentials();
+      KEY10 = "continue_watching_frames_v1";
+      ENDPOINT = "/api/player-frame";
+    }
+  });
+
   // lib/playback-availability.ts
   var init_playback_availability = __esm({
     "lib/playback-availability.ts"() {
@@ -18982,7 +19404,7 @@
   function read6() {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(getScopedStorageItem(KEY10) ?? "[]");
+      return JSON.parse(getScopedStorageItem(KEY11) ?? "[]");
     } catch {
       return [];
     }
@@ -19070,10 +19492,19 @@
     const next = sortByWatchedAtDesc([winner, ...filtered]).slice(0, HISTORY_MAX);
     writeHistory(next);
   }
+  function deleteFramesForDropped(before, after) {
+    const kept = new Set(after.map((entry) => entryKey(entry.id, entry.season, entry.episode)));
+    for (const entry of before) {
+      if (entry.type === "audiobook") continue;
+      if (!kept.has(entryKey(entry.id, entry.season, entry.episode))) deleteContinueFrame(entry);
+    }
+  }
   function saveStreamProgress(entry) {
     const sanitizedEntry = sanitizeEntry(entry);
-    const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...read6()])).slice(0, MAX);
-    setScopedStorageItem(KEY10, JSON.stringify(list));
+    const before = read6();
+    const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...before])).slice(0, MAX);
+    setScopedStorageItem(KEY11, JSON.stringify(list));
+    deleteFramesForDropped(before, list);
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
     appendHistoryEntry(sanitizedEntry);
     reportLibraryProgress(sanitizedEntry);
@@ -19082,18 +19513,21 @@
     const key = entryKey(id, season, episode);
     const prefixedMovieKey = entryKey(id.startsWith("movie-") ? id : `movie-${id}`, season, episode);
     const prefixedTvKey = entryKey(id.startsWith("tv-") ? id : `tv-${id}`, season, episode);
-    const list = read6().filter((entry) => {
+    const before = read6();
+    const list = before.filter((entry) => {
       const entryLookupKey = entryKey(entry.id, entry.season, entry.episode);
       return entryLookupKey !== key && entryLookupKey !== prefixedMovieKey && entryLookupKey !== prefixedTvKey;
     });
-    setScopedStorageItem(KEY10, JSON.stringify(list));
+    setScopedStorageItem(KEY11, JSON.stringify(list));
+    deleteFramesForDropped(before, list);
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
   }
-  var EVENT10, KEY10, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
+  var EVENT10, KEY11, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
       init_profile_storage_shim();
+      init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
       EVENT10 = "lumio-stream-progress-changed";
@@ -19106,7 +19540,7 @@
         }).catch(() => {
         });
       }
-      KEY10 = "stream_progress_list";
+      KEY11 = "stream_progress_list";
       MAX = 20;
       HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
@@ -19352,12 +19786,12 @@
     if (!c || typeof c.weather_code !== "number" || typeof c.temperature_2m !== "number") return null;
     return { code: c.weather_code, tempC: c.temperature_2m };
   }
-  function schedule(ms) {
+  function schedule(ms2) {
     if (timer) return;
     timer = setTimeout(() => {
       timer = null;
       void drain();
-    }, ms);
+    }, ms2);
   }
   async function drain() {
     const nowMs = Date.now();
@@ -19637,7 +20071,7 @@
     const d = DEFAULT_BARCODE_SETTINGS;
     let raw = {};
     try {
-      const stored = getScopedStorageItem(KEY11);
+      const stored = getScopedStorageItem(KEY12);
       if (stored) raw = JSON.parse(stored) ?? {};
     } catch {
       raw = {};
@@ -19659,7 +20093,7 @@
     };
   }
   function setBarcodeSettings(patch) {
-    setScopedStorageItem(KEY11, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
+    setScopedStorageItem(KEY12, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODE_SETTINGS_CHANGED_EVENT));
   }
   function onBarcodeSettingsChanged(listener) {
@@ -19672,11 +20106,11 @@
       window.removeEventListener("lumio-profile-changed", listener);
     };
   }
-  var KEY11, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
+  var KEY12, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
   var init_barcode_settings = __esm({
     "lib/barcode/barcode-settings.ts"() {
       init_profile_storage_shim();
-      KEY11 = "barcode_settings_v1";
+      KEY12 = "barcode_settings_v1";
       BARCODE_SETTINGS_CHANGED_EVENT = "lumio-barcode-settings-changed";
       DEFAULT_BARCODE_SETTINGS = {
         enabled: true,
@@ -19982,9 +20416,9 @@
   function isAbortError(error) {
     return error instanceof DOMException && error.name === "AbortError";
   }
-  function sleep(ms) {
+  function sleep(ms2) {
     return new Promise((resolve) => {
-      window.setTimeout(resolve, ms);
+      window.setTimeout(resolve, ms2);
     });
   }
   async function fetchWithTimeout(input, init = {}, timeoutMs = 5e3, signal) {
@@ -20399,6 +20833,16 @@
     } catch {
       return null;
     }
+  }
+  function posterRuntime(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = Math.round(minutes % 60);
+    return h > 0 ? `${h}h ${m}min` : `${m}min`;
+  }
+  function posterReleaseDate(iso, lang) {
+    const d = /* @__PURE__ */ new Date(`${iso}T12:00:00Z`);
+    if (Number.isNaN(d.getTime())) return "";
+    return new Intl.DateTimeFormat(lang === "sv" ? "sv-SE" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(d);
   }
   var SYNOPSIS_MAX;
   var init_barcode_poster = __esm({
@@ -20931,26 +21375,26 @@
   function getVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY12);
+      const raw = getScopedStorageItem(KEY13);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed = JSON.parse(raw);
-      const clamp3 = (v, lo, hi, dflt) => {
+      const clamp4 = (v, lo, hi, dflt) => {
         const n = Number(v);
         return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
       };
       return {
-        brightness: clamp3(parsed.brightness, -50, 50, 0),
-        contrast: clamp3(parsed.contrast, -50, 50, 0),
-        saturation: clamp3(parsed.saturation, -50, 50, 0),
-        gamma: clamp3(parsed.gamma, -50, 50, 0),
-        sharpen: clamp3(parsed.sharpen, 0, 2, 0)
+        brightness: clamp4(parsed.brightness, -50, 50, 0),
+        contrast: clamp4(parsed.contrast, -50, 50, 0),
+        saturation: clamp4(parsed.saturation, -50, 50, 0),
+        gamma: clamp4(parsed.gamma, -50, 50, 0),
+        sharpen: clamp4(parsed.sharpen, 0, 2, 0)
       };
     } catch {
       return { ...DEFAULT_TUNING };
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY12, JSON.stringify(tuning));
+    setScopedStorageItem(KEY13, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT12));
   }
   function onVideoTuningChanged(listener) {
@@ -21016,7 +21460,7 @@
     const mul = (v) => (1 + v / 100).toFixed(3);
     return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
   }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY12, EVENT12, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY13, EVENT12, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
       "use client";
@@ -21029,7 +21473,7 @@
         cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
         sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
       };
-      KEY12 = "video_tuning";
+      KEY13 = "video_tuning";
       EVENT12 = "lumio-video-tuning-changed";
       TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
       DEFAULT_RENDER_TUNING = {
@@ -21049,7 +21493,7 @@
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY13);
+      const raw = getScopedStorageItem(KEY14);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed = JSON.parse(raw);
       return {
@@ -21063,7 +21507,7 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY13, JSON.stringify(tuning));
+    setScopedStorageItem(KEY14, JSON.stringify(tuning));
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
   }
   function onAudioTuningChanged(listener) {
@@ -21079,7 +21523,7 @@
     if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
     return filters;
   }
-  var DEFAULT_AUDIO_TUNING, KEY13, EVENT13;
+  var DEFAULT_AUDIO_TUNING, KEY14, EVENT13;
   var init_audio_tuning = __esm({
     "lib/audio-tuning.ts"() {
       "use client";
@@ -21090,7 +21534,7 @@
         voiceClarity: false,
         downmixStereo: false
       };
-      KEY13 = "audio_tuning";
+      KEY14 = "audio_tuning";
       EVENT13 = "lumio-audio-tuning-changed";
     }
   });
@@ -21501,8 +21945,8 @@
     }
   }
   function positionExtra(startSeconds) {
-    const ms = Math.round((startSeconds ?? 0) * 1e3);
-    return ms > 0 ? `;l.position=${ms}` : "";
+    const ms2 = Math.round((startSeconds ?? 0) * 1e3);
+    return ms2 > 0 ? `;l.position=${ms2}` : "";
   }
   function openInVlc(url, startSeconds) {
     if (typeof window === "undefined") return false;
@@ -21792,8 +22236,8 @@
     }
     return true;
   }
-  function markSourceCooldown(addon, ms = COOLDOWN_MS, now2 = Date.now()) {
-    cooldownUntil.set(canonicalAddonUrl(addon.url), now2 + ms);
+  function markSourceCooldown(addon, ms2 = COOLDOWN_MS, now2 = Date.now()) {
+    cooldownUntil.set(canonicalAddonUrl(addon.url), now2 + ms2);
   }
   function looksRateLimited(message) {
     return /\b429\b|rate.?limit|too many requests/i.test(message);
@@ -21861,19 +22305,19 @@
         if (raw === null) raw = await fetchViaApi(addon, target2, timeoutMs);
         const streams = keepPlayable(tagSource(raw, addon));
         rememberFreshSources(streams);
-        const ms = Date.now() - startedAt;
+        const ms2 = Date.now() - startedAt;
         return {
-          report: { addon, outcome: streams.length > 0 ? { kind: "ok", streams: streams.length, ms } : { kind: "empty", ms } },
+          report: { addon, outcome: streams.length > 0 ? { kind: "ok", streams: streams.length, ms: ms2 } : { kind: "empty", ms: ms2 } },
           streams
         };
       } catch (error) {
-        const ms = Date.now() - startedAt;
+        const ms2 = Date.now() - startedAt;
         const message = error instanceof Error ? error.message : String(error);
         if (error instanceof DOMException && error.name === "AbortError") {
-          return { report: { addon, outcome: { kind: "timeout", ms } }, streams: [] };
+          return { report: { addon, outcome: { kind: "timeout", ms: ms2 } }, streams: [] };
         }
         if (looksRateLimited(message)) markSourceCooldown(addon);
-        return { report: { addon, outcome: { kind: "error", message, ms } }, streams: [] };
+        return { report: { addon, outcome: { kind: "error", message, ms: ms2 } }, streams: [] };
       }
     };
     const first = await attempt();
@@ -22126,8 +22570,8 @@
   });
 
   // lib/opensubtitles/os-client.ts
-  function sleep2(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  function sleep2(ms2) {
+    return new Promise((resolve) => setTimeout(resolve, ms2));
   }
   function pruneCache(now2 = Date.now()) {
     for (const [key, entry] of resultCache) {
@@ -23467,6 +23911,103 @@
     }
   });
 
+  // lib/continue-frame-capture.ts
+  async function captureContinueFrame(engine, ref, video) {
+    const key = continueFrameKey(ref);
+    try {
+      if (engine === "mpv") {
+        await mpvCaptureFrame(key);
+        return true;
+      }
+      if (engine === "droid") {
+        const res = await np({ cmd: "captureFrame", path: `/api/player-frame?key=${key}` });
+        return res?.started === true;
+      }
+      if (!video || video.readyState < 2 || video.videoWidth === 0) return false;
+      const scale = Math.min(1, 640 / video.videoWidth);
+      const canvas2 = document.createElement("canvas");
+      canvas2.width = Math.max(1, Math.round(video.videoWidth * scale));
+      canvas2.height = Math.max(1, Math.round(video.videoHeight * scale));
+      const context = canvas2.getContext("2d");
+      if (!context) return false;
+      context.drawImage(video, 0, 0, canvas2.width, canvas2.height);
+      const blob = await new Promise((resolve) => canvas2.toBlob(resolve, "image/jpeg", 0.82));
+      if (!blob) return false;
+      const response = await fetch(`/api/player-frame?key=${key}`, { method: "PUT", body: blob, headers: { "content-type": "image/jpeg" } });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+  var init_continue_frame_capture = __esm({
+    "lib/continue-frame-capture.ts"() {
+      "use client";
+      init_continue_frames();
+      init_tauri_mpv();
+      init_tauri_native_player();
+    }
+  });
+
+  // lib/use-continue-frame-capture.ts
+  function shouldCaptureContinueFrame(input) {
+    if (!input.armed || input.skip || !input.enabled || !input.hasRef) return false;
+    return input.now - input.lastAt >= CONTINUE_FRAME_MIN_GAP_MS;
+  }
+  function useContinueFrameCapture(options) {
+    const latest2 = useRef(options);
+    latest2.current = options;
+    const lastAtRef = useRef(0);
+    const captureNow = useCallback(() => {
+      const now2 = latest2.current;
+      const at = Date.now();
+      const go = shouldCaptureContinueFrame({
+        armed: now2.armed,
+        skip: now2.shouldSkip(),
+        enabled: getContinueFramesEnabled(),
+        hasRef: now2.ref !== null,
+        lastAt: lastAtRef.current,
+        now: at
+      });
+      if (!go || !now2.ref) return;
+      lastAtRef.current = at;
+      const ref = now2.ref;
+      const engine = now2.engine;
+      void captureContinueFrame(engine, ref, now2.videoRef.current).then((ok) => {
+        if (!ok) return;
+        window.setTimeout(() => {
+          void pushContinueFrame(ref);
+        }, engine === "none" ? 0 : CONTINUE_FRAME_PUSH_DELAY_MS);
+      }).catch(() => {
+      });
+    }, []);
+    const wasPlayingRef = useRef(false);
+    const { playing, armed } = options;
+    useEffect(() => {
+      if (!armed) {
+        wasPlayingRef.current = false;
+        return;
+      }
+      if (wasPlayingRef.current && !playing) captureNow();
+      wasPlayingRef.current = playing;
+      if (!playing) return;
+      const interval = window.setInterval(captureNow, CONTINUE_FRAME_PERIOD_MS);
+      return () => window.clearInterval(interval);
+    }, [playing, armed, captureNow]);
+    return captureNow;
+  }
+  var CONTINUE_FRAME_MIN_GAP_MS, CONTINUE_FRAME_PERIOD_MS, CONTINUE_FRAME_PUSH_DELAY_MS;
+  var init_use_continue_frame_capture = __esm({
+    "lib/use-continue-frame-capture.ts"() {
+      "use client";
+      init_react_shim();
+      init_continue_frames();
+      init_continue_frame_capture();
+      CONTINUE_FRAME_MIN_GAP_MS = 1500;
+      CONTINUE_FRAME_PERIOD_MS = 6e4;
+      CONTINUE_FRAME_PUSH_DELAY_MS = 2500;
+    }
+  });
+
   // lib/playback/playback-session-client.ts
   async function invokeDesktop(command, payload) {
     if (!isPluginDesktopHost()) return null;
@@ -23510,7 +24051,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY14);
+      const raw = getScopedStorageItem(KEY15);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -23528,11 +24069,22 @@
   function matchesShortcut(commandId, eventKey) {
     return normalizeShortcutKey(eventKey) === getShortcutKey(commandId);
   }
-  var KEY14, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS;
+  function isTextEntryTarget2(el) {
+    if (!el) return false;
+    if (el.isContentEditable) return true;
+    if (el.tagName === "TEXTAREA") return true;
+    if (el.tagName !== "INPUT") return false;
+    const type = (el.type || "text").toLowerCase();
+    return !NON_TEXT_INPUT_TYPES.has(type);
+  }
+  function hasCommandModifier(e) {
+    return e.metaKey || e.ctrlKey || e.altKey;
+  }
+  var KEY15, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
   var init_keyboard_shortcuts = __esm({
     "lib/keyboard-shortcuts.ts"() {
       init_profile_storage_shim();
-      KEY14 = "keyboard_shortcuts";
+      KEY15 = "keyboard_shortcuts";
       SHORTCUT_COMMANDS = [
         { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
         { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
@@ -23540,6 +24092,7 @@
         { id: "mute", category: "player", defaultKey: "m", labelKey: "shortcutsMute" },
         { id: "fullscreen", category: "player", defaultKey: "f", labelKey: "shortcutsToggleFullscreen" },
         { id: "saveMoment", category: "player", defaultKey: "b", labelKey: "shortcutsSaveMoment" },
+        { id: "clip", category: "player", defaultKey: "c", labelKey: "shortcutsClip" },
         { id: "subtitleCycle", category: "tracks", defaultKey: "s", labelKey: "shortcutsSubtitleCycle" },
         { id: "secondarySubtitleCycle", category: "tracks", defaultKey: "d", labelKey: "shortcutsSecondarySubtitleCycle" },
         { id: "subtitleDelayBack", category: "tracks", defaultKey: "z", labelKey: "shortcutsSubtitleDelayBack" },
@@ -23551,14 +24104,15 @@
         (acc, command) => ({ ...acc, [command.id]: command.defaultKey }),
         {}
       );
+      NON_TEXT_INPUT_TYPES = /* @__PURE__ */ new Set(["range", "checkbox", "radio", "button", "submit", "reset", "file", "color", "image"]);
     }
   });
 
   // lib/player-reveal-hold.ts
   function state() {
     const g = globalThis;
-    if (!g[KEY15]) g[KEY15] = { holders: 0, ready: false, userMuted: null };
-    return g[KEY15];
+    if (!g[KEY16]) g[KEY16] = { holders: 0, ready: false, userMuted: null };
+    return g[KEY16];
   }
   function isPlayerRevealHeld() {
     return state().holders > 0;
@@ -23571,11 +24125,54 @@
     if (s.userMuted === null) s.userMuted = current3;
     return s.userMuted;
   }
-  var CINEMA_REVEAL_HOLD_MAX_MS, KEY15;
+  var CINEMA_REVEAL_HOLD_MAX_MS, KEY16;
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
       CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
-      KEY15 = "__lumioRevealHold";
+      KEY16 = "__lumioRevealHold";
+    }
+  });
+
+  // lib/core-streams/start-watchdog.ts
+  var SILENT_RELOAD_AFTER_AUDIO_MS, DEFAULT_START_BUDGETS;
+  var init_start_watchdog = __esm({
+    "lib/core-streams/start-watchdog.ts"() {
+      SILENT_RELOAD_AFTER_AUDIO_MS = 3e3;
+      DEFAULT_START_BUDGETS = { resolvingMs: 8e3, openingMs: 2e4, audioOnlyMs: SILENT_RELOAD_AFTER_AUDIO_MS + 4e3 };
+    }
+  });
+
+  // lib/player-silent-start.ts
+  function createAudioOnlyTracker(reloadAfterMs = SILENT_RELOAD_AFTER_AUDIO_MS) {
+    let url = "";
+    let firstPos = Number.NaN;
+    let done = false;
+    return {
+      observe(o) {
+        if (o.url !== url) {
+          url = o.url;
+          firstPos = Number.NaN;
+          done = false;
+        }
+        if (done) return false;
+        if (o.firstFrame) {
+          done = true;
+          return false;
+        }
+        if (!Number.isFinite(o.timePos) || o.timePos <= 0) return false;
+        if (!Number.isFinite(firstPos)) {
+          firstPos = o.timePos;
+          return false;
+        }
+        if ((o.timePos - firstPos) * 1e3 < reloadAfterMs) return false;
+        done = true;
+        return true;
+      }
+    };
+  }
+  var init_player_silent_start = __esm({
+    "lib/player-silent-start.ts"() {
+      init_start_watchdog();
     }
   });
 
@@ -24172,9 +24769,9 @@
   function withdrawsProvisional(r, applied) {
     return applied && r.status === "no_fit" && (r.reason === "text_veto" || r.reason === "anchor_veto");
   }
-  function formatCorrection(ms) {
-    const sign = ms < 0 ? "\u2212" : "+";
-    const abs = Math.abs(ms);
+  function formatCorrection(ms2) {
+    const sign = ms2 < 0 ? "\u2212" : "+";
+    const abs = Math.abs(ms2);
     if (abs >= 6e4) {
       const secs = Math.round(abs / 1e3);
       return `${sign}${Math.floor(secs / 60)} min ${secs % 60} s`;
@@ -24747,7 +25344,7 @@ ${effectiveName(url, id)}`;
   // components/binge/binge-zap-button.tsx
   function BingeZapButton({
     size = "desktop",
-    station: station2
+    station: station3
   }) {
     const { t } = useLang();
     const [, setVersion] = useState(0);
@@ -24759,7 +25356,7 @@ ${effectiveName(url, id)}`;
       "button",
       {
         type: "button",
-        ...station2,
+        ...station3,
         onClick: () => requestBingeAdvance(),
         "aria-label": t("bingeZapOn"),
         title: t("bingeZapOn"),
@@ -24992,21 +25589,1472 @@ ${effectiveName(url, id)}`;
   });
 
   // lib/moment-link.ts
-  function takePendingMomentStart(key, nowMs = Date.now()) {
+  function buildMomentLink(base, target2) {
+    const params = new URLSearchParams();
+    params.set("watch", `${target2.mediaType}-${target2.tmdbId}`);
+    if (target2.mediaType === "tv" && target2.season != null && target2.episode != null) {
+      params.set("s", String(target2.season));
+      params.set("e", String(target2.episode));
+    }
+    const start2 = Math.max(0, Math.floor(target2.seconds));
+    params.set("t", String(start2));
+    if (target2.endSeconds != null && Math.floor(target2.endSeconds) > start2) {
+      params.set("end", String(Math.floor(target2.endSeconds)));
+    }
+    return `${base.replace(/\/+$/, "")}/?${params.toString()}`;
+  }
+  function isShareableOrigin(origin) {
+    try {
+      const url = new URL(origin);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+      return !["localhost", "127.0.0.1", "::1", "[::1]", "tauri.localhost"].includes(url.hostname);
+    } catch {
+      return false;
+    }
+  }
+  function takePendingMomentRange(key, nowMs = Date.now()) {
     if (!pending4 || !key) return null;
     if (pending4.expiresAt < nowMs) {
       pending4 = null;
       return null;
     }
     if (pending4.key !== key) return null;
-    const { seconds } = pending4;
+    const { seconds, endSeconds } = pending4;
     pending4 = null;
-    return seconds;
+    return endSeconds != null ? { seconds, endSeconds } : { seconds };
   }
   var pending4;
   var init_moment_link = __esm({
     "lib/moment-link.ts"() {
       pending4 = null;
+    }
+  });
+
+  // components/player/clip/clip-share-button.tsx
+  function ClipShareButton({ state: state2, onClick, t, variant }) {
+    const ref = useRef(null);
+    const label = state2.kind === "ready" ? t("clipShareNow") : state2.kind === "rendering" ? state2.progress > 0 ? t("clipRendering").replace("{pct}", String(Math.round(state2.progress * 100))) : t("clipRenderingIndeterminate") : t("clipShare");
+    return /* @__PURE__ */ jsxs(
+      "button",
+      {
+        ref,
+        type: "button",
+        disabled: state2.kind === "rendering",
+        onClick: () => {
+          if (ref.current) onClick(ref.current.getBoundingClientRect());
+        },
+        className: `flex items-center justify-center gap-2 transition disabled:opacity-70 ${VARIANT_CLASS[variant]}`,
+        children: [
+          clipUploadIcon(variant === "outline" ? "h-3.5 w-3.5" : "h-4 w-4"),
+          label
+        ]
+      }
+    );
+  }
+  var VARIANT_CLASS;
+  var init_clip_share_button = __esm({
+    "components/player/clip/clip-share-button.tsx"() {
+      "use client";
+      init_react_shim();
+      init_player_control_icons();
+      init_jsx_runtime_shim();
+      VARIANT_CLASS = {
+        outline: "w-full rounded-lg border border-[rgb(var(--player-accent)/0.40)] py-[9px] text-[13px] font-medium text-[rgb(var(--player-accent))] hover:bg-[rgb(var(--player-accent)/0.14)]",
+        pill: "h-11 w-full rounded-full border border-[rgb(var(--player-accent)/0.40)] bg-[rgb(var(--player-accent)/0.22)] text-sm font-semibold text-white",
+        "pill-lg": "h-12 w-full rounded-full border border-[rgb(var(--player-accent)/0.40)] bg-[rgb(var(--player-accent)/0.22)] text-[15px] font-semibold text-white"
+      };
+    }
+  });
+
+  // lib/clip/clip-state.ts
+  function maxLengthFor(format) {
+    return format === "gif" ? GIF_MAX_SEC : CLIP_MAX_SEC;
+  }
+  function lengthPresetsFor(format) {
+    return format === "gif" ? [5, 10, 15] : [10, 30, 60];
+  }
+  function clipWindowStart(anchorSec, duration) {
+    if (duration <= CLIP_WINDOW_SEC) return 0;
+    return ms(clamp(anchorSec - CLIP_WINDOW_SEC / 2, 0, duration - CLIP_WINDOW_SEC));
+  }
+  function clipWindowEnd(state2) {
+    return Math.min(state2.duration, state2.windowStart + CLIP_WINDOW_SEC);
+  }
+  function clipLength(state2) {
+    return ms(state2.outSec - state2.inSec);
+  }
+  function formatClipTime(sec) {
+    const total = Math.max(0, Math.floor(sec));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor(total % 3600 / 60);
+    const ss = String(total % 60).padStart(2, "0");
+    return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+  }
+  function normalize(s, fixed) {
+    const lo = s.windowStart;
+    const hi = clipWindowEnd(s);
+    const max = maxLengthFor(s.format);
+    let { inSec, outSec } = s;
+    if (fixed === "out") {
+      outSec = clamp(outSec, Math.min(hi, lo + CLIP_MIN_SEC), hi);
+      inSec = clamp(inSec, Math.max(lo, outSec - max), Math.max(lo, outSec - CLIP_MIN_SEC));
+    } else {
+      inSec = clamp(inSec, lo, Math.max(lo, hi - CLIP_MIN_SEC));
+      outSec = clamp(outSec, Math.min(hi, inSec + CLIP_MIN_SEC), Math.min(hi, inSec + max));
+    }
+    inSec = ms(inSec);
+    outSec = ms(outSec);
+    const title = s.titleEdited ? s.title : `${s.baseTitle} \xB7 ${formatClipTime(inSec)}`;
+    return { ...s, inSec, outSec, title };
+  }
+  function initClipState(args) {
+    const range = args.inSec != null && args.outSec != null ? { inSec: args.inSec, outSec: args.outSec } : null;
+    const anchor = range ? (range.inSec + range.outSec) / 2 : args.anchorSec;
+    const outSec = range ? range.outSec : args.anchorSec;
+    const base = {
+      inSec: range ? range.inSec : outSec - CLIP_DEFAULT_SEC,
+      outSec,
+      windowStart: clipWindowStart(anchor, args.duration),
+      duration: args.duration,
+      format: "mp4",
+      title: "",
+      baseTitle: args.baseTitle,
+      titleEdited: false,
+      activeHandle: null,
+      scrubbing: false
+    };
+    return normalize(base, base.inSec <= base.windowStart ? "in" : "out");
+  }
+  function clipReducer(state2, action) {
+    switch (action.type) {
+      case "setHandle": {
+        const moved = action.handle === "in" ? { inSec: action.sec } : { outSec: action.sec };
+        const other = action.handle === "in" ? "out" : "in";
+        return normalize({ ...state2, ...moved, activeHandle: action.handle, scrubbing: true }, other);
+      }
+      case "nudge": {
+        const current3 = action.handle === "in" ? state2.inSec : state2.outSec;
+        return clipReducer(state2, { type: "setHandle", handle: action.handle, sec: current3 + action.delta });
+      }
+      case "setLength": {
+        const len = Math.min(action.sec, maxLengthFor(state2.format));
+        return normalize({ ...state2, inSec: state2.outSec - len }, "out");
+      }
+      case "setFormat":
+        return normalize({ ...state2, format: action.format }, "out");
+      case "setTitle":
+        return { ...state2, title: action.title, titleEdited: true };
+      case "scrubEnd":
+        return { ...state2, scrubbing: false };
+    }
+  }
+  var CLIP_WINDOW_SEC, CLIP_MIN_SEC, CLIP_MAX_SEC, GIF_MAX_SEC, CLIP_DEFAULT_SEC, clamp, ms;
+  var init_clip_state = __esm({
+    "lib/clip/clip-state.ts"() {
+      CLIP_WINDOW_SEC = 240;
+      CLIP_MIN_SEC = 1;
+      CLIP_MAX_SEC = 60;
+      GIF_MAX_SEC = 15;
+      CLIP_DEFAULT_SEC = 30;
+      clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+      ms = (v) => Math.round(v * 1e3) / 1e3;
+    }
+  });
+
+  // components/player/clip/clip-panel.tsx
+  function ClipLengthButtons({ state: state2, dispatch, heightClass, roundedClass }) {
+    if (state2.format === "still") return null;
+    const len = Math.round(clipLength(state2));
+    return /* @__PURE__ */ jsx("div", { className: "flex gap-2", children: lengthPresetsFor(state2.format).map((sec) => {
+      const on = len === sec;
+      return /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          onClick: () => dispatch({ type: "setLength", sec }),
+          className: `${heightClass} ${roundedClass} flex-1 border text-[13px] font-semibold transition ${on ? "border-[rgb(var(--player-accent)/0.45)] bg-[rgb(var(--player-accent)/0.22)] text-white" : "border-white/10 text-slate-300 hover:bg-white/[0.06]"}`,
+          children: [
+            sec,
+            " s"
+          ]
+        },
+        sec
+      );
+    }) });
+  }
+  function ClipFormatSegment({ state: state2, dispatch, formats, heightClass, t }) {
+    if (formats.length <= 1) return null;
+    const formatLabel = { mp4: "MP4", gif: "GIF", still: t("clipFormatStill") };
+    return /* @__PURE__ */ jsx("div", { className: "flex self-start rounded-[10px] bg-white/[0.04] p-[3px]", children: formats.map((format) => /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        onClick: () => dispatch({ type: "setFormat", format }),
+        className: `${heightClass} rounded-lg px-[11px] text-xs font-semibold transition ${state2.format === format ? "bg-[rgb(var(--player-accent)/0.34)] text-white" : "text-slate-300 hover:text-white"}`,
+        children: formatLabel[format]
+      },
+      format
+    )) });
+  }
+  function ClipTitleField({ state: state2, dispatch }) {
+    return /* @__PURE__ */ jsx(
+      "input",
+      {
+        value: state2.title,
+        onChange: (event) => dispatch({ type: "setTitle", title: event.target.value }),
+        onKeyDown: (event) => {
+          if (event.key !== "Escape") event.stopPropagation();
+        },
+        className: "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-[9px] text-sm text-slate-100 outline-none focus:border-[rgb(var(--player-accent)/0.45)]"
+      }
+    );
+  }
+  function ClipPanelHeader({ label, onClose, t }) {
+    return /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-white/[0.07] px-4 py-3", children: [
+      /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400", children: label }),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: onClose,
+          "aria-label": t("clipClose"),
+          className: "grid h-7 w-7 place-items-center rounded-full text-slate-500 transition hover:bg-white/10 hover:text-white",
+          children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" }) })
+        }
+      )
+    ] });
+  }
+  function ClipPanel(p) {
+    const { state: state2, dispatch, t } = p;
+    const len = Math.round(clipLength(state2));
+    const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs("button", { type: "button", onClick, disabled, className: `${p.rowClass} disabled:opacity-50`, children: [
+      icon,
+      /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${p.rowTextClass}`, children: label })
+    ] }, key);
+    return /* @__PURE__ */ jsxs(
+      "aside",
+      {
+        "data-clip-panel": true,
+        className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)] backdrop-blur-[12px]",
+        style: { background: "rgb(var(--base-950) / 0.96)" },
+        onClick: (event) => event.stopPropagation(),
+        children: [
+          /* @__PURE__ */ jsx(ClipPanelHeader, { label: t("clipNew"), onClose: p.onClose, t }),
+          /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-3.5", children: [
+            /* @__PURE__ */ jsxs("div", { className: "relative aspect-video overflow-hidden rounded-lg bg-black/60", children: [
+              p.previewClip?.kind === "mp4" ? /* @__PURE__ */ jsx("video", { src: p.previewClip.src, autoPlay: true, loop: true, muted: true, playsInline: true, className: "h-full w-full object-cover" }) : p.previewClip?.kind === "gif" ? /* @__PURE__ */ jsx("img", { src: p.previewClip.src, alt: "", className: "h-full w-full object-cover" }) : p.previewSrc ? /* @__PURE__ */ jsx("img", { src: p.previewSrc, alt: "", className: "h-full w-full object-cover" }) : null,
+              p.previewClip ? null : /* @__PURE__ */ jsx("span", { className: "absolute left-2 top-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: t("clipFrom").replace("{time}", formatClipTime(state2.inSec)) }),
+              /* @__PURE__ */ jsx("span", { className: "absolute bottom-2 right-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: formatClipTime(len) })
+            ] }),
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-[30px]", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[26px]", t }),
+            /* @__PURE__ */ jsx("div", { className: "px-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("clipShareSection") }),
+            /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
+              p.canCopyLink ? row("copy", gearRowIcon("link", p.iconClass), state2.format === "still" ? t("clipCopyImage") : t("clipCopyLink"), p.onCopy) : null,
+              row("save", downloadIcon(p.iconClass), t("clipSaveFile"), p.onSaveFile, p.busy !== null),
+              row("moment", gearRowIcon("moments", p.iconClass), t("clipSaveMoment"), p.onSaveMoment)
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "mt-auto pt-2", children: /* @__PURE__ */ jsx(
+              ClipShareButton,
+              {
+                state: p.share ?? (p.busy ? { kind: "rendering", progress: p.busy.progress } : { kind: "idle" }),
+                onClick: p.onShare,
+                t,
+                variant: "outline"
+              }
+            ) })
+          ] })
+        ]
+      }
+    );
+  }
+  var downloadIcon, clipDownloadIcon;
+  var init_clip_panel = __esm({
+    "components/player/clip/clip-panel.tsx"() {
+      "use client";
+      init_clip_share_button();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+      downloadIcon = (cls) => /* @__PURE__ */ jsx("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, children: /* @__PURE__ */ jsx("path", { d: "M12 3v12M7 10l5 5 5-5M5 21h14" }) });
+      clipDownloadIcon = downloadIcon;
+    }
+  });
+
+  // components/player/clip/clip-trimmer.tsx
+  function ClipTrimmer({ state: state2, dispatch, position, heightClass, size = "desktop", t }) {
+    const touch = size === "touch";
+    const trackRef = useRef(null);
+    const lastHandle = useRef("out");
+    const start2 = state2.windowStart;
+    const end = clipWindowEnd(state2);
+    const span = Math.max(1, end - start2);
+    const percent = (sec) => Math.min(100, Math.max(0, (sec - start2) / span * 100));
+    const secAt = (clientX) => {
+      const rect = trackRef.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0) return start2;
+      return start2 + (clientX - rect.left) / rect.width * span;
+    };
+    const startDrag = (handle) => (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      lastHandle.current = handle;
+      const target2 = event.currentTarget;
+      target2.setPointerCapture(event.pointerId);
+      const move = (ev) => dispatch({ type: "setHandle", handle, sec: secAt(ev.clientX) });
+      const up = () => {
+        target2.removeEventListener("pointermove", move);
+        target2.removeEventListener("pointerup", up);
+        target2.removeEventListener("pointercancel", up);
+      };
+      target2.addEventListener("pointermove", move);
+      target2.addEventListener("pointerup", up);
+      target2.addEventListener("pointercancel", up);
+    };
+    const renderHandle = (which, sec) => /* @__PURE__ */ jsxs(
+      "div",
+      {
+        role: "slider",
+        "aria-label": which === "in" ? "In" : "Out",
+        "aria-valuemin": Math.round(start2),
+        "aria-valuemax": Math.round(end),
+        "aria-valuenow": Math.round(sec),
+        className: `absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none bg-white shadow-[0_1px_6px_rgba(0,0,0,0.6)] ${touch ? "h-[28px] w-[14px] rounded-[5px]" : "h-[22px] w-[10px] rounded"}`,
+        style: { left: `${percent(sec)}%` },
+        onPointerDown: startDrag(which),
+        children: [
+          /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: touch ? "absolute -inset-x-4 -inset-y-3" : "absolute -inset-3" }),
+          /* @__PURE__ */ jsx("span", { className: labelClass, children: formatClipTime(sec) })
+        ]
+      },
+      which
+    );
+    const track = /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: trackRef,
+        className: `vp-seek-track relative flex-1 rounded-full bg-white/[0.18] ${heightClass}`,
+        style: { touchAction: "none" },
+        onWheel: (event) => {
+          if (touch) return;
+          event.preventDefault();
+          const step = event.shiftKey ? 1 / 24 : 1;
+          dispatch({ type: "nudge", handle: lastHandle.current, delta: event.deltaY < 0 ? step : -step });
+        },
+        children: [
+          /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-[rgb(var(--player-accent))] opacity-35", style: { width: `${percent(position)}%` } }),
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "absolute -bottom-[3px] -top-[3px] rounded border border-[rgb(var(--player-accent)/0.45)] bg-[rgb(var(--player-accent)/0.30)]",
+              style: { left: `${percent(state2.inSec)}%`, width: `${percent(state2.outSec) - percent(state2.inSec)}%` }
+            }
+          ),
+          renderHandle("in", state2.inSec),
+          renderHandle("out", state2.outSec)
+        ]
+      }
+    );
+    if (touch) {
+      return /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("div", { className: "flex", children: track }),
+        /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between text-[13px] tabular-nums text-slate-300", children: [
+          /* @__PURE__ */ jsx("span", { children: formatClipTime(start2) }),
+          /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: t ? t("clipZoomed") : "" }),
+          /* @__PURE__ */ jsx("span", { children: formatClipTime(end) })
+        ] })
+      ] });
+    }
+    return /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3.5", children: [
+      /* @__PURE__ */ jsx("span", { className: timePillClass, children: formatClipTime(start2) }),
+      track,
+      /* @__PURE__ */ jsx("span", { className: timePillClass, children: formatClipTime(end) })
+    ] });
+  }
+  var timePillClass, labelClass;
+  var init_clip_trimmer = __esm({
+    "components/player/clip/clip-trimmer.tsx"() {
+      "use client";
+      init_react_shim();
+      init_clip_state();
+      init_jsx_runtime_shim();
+      timePillClass = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
+      labelClass = "pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-white";
+    }
+  });
+
+  // lib/clip/clip-loop.ts
+  function shouldLoopBack(p, gate) {
+    if (p.scrubbing || p.still) return false;
+    if (p.position >= p.inSec && p.position < p.outSec) {
+      gate.armed = true;
+      return false;
+    }
+    if (p.position >= p.outSec && gate.armed) {
+      gate.armed = false;
+      return true;
+    }
+    return false;
+  }
+  function clipAvailableFor(p) {
+    if (p.isTv || p.live || p.duration <= 2) return false;
+    return p.engine === "mpv" || p.ffmpeg;
+  }
+  function gestureBlockedBySurface(surface) {
+    return surface === "clip";
+  }
+  var init_clip_loop = __esm({
+    "lib/clip/clip-loop.ts"() {
+    }
+  });
+
+  // components/player/clip/clip-phone-panels.tsx
+  function ClipLandscapePanel(p) {
+    const { state: state2, dispatch, t } = p;
+    const busy = p.share.kind === "rendering";
+    const len = Math.round(clipLength(state2));
+    const tile = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        onClick,
+        disabled,
+        className: "flex flex-col items-center gap-1 rounded-[10px] bg-white/[0.04] py-2.5 text-slate-200 transition active:bg-white/[0.08] disabled:opacity-50",
+        children: [
+          icon,
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-medium leading-none", children: label })
+        ]
+      },
+      key
+    );
+    return /* @__PURE__ */ jsxs(
+      "aside",
+      {
+        "data-clip-panel": true,
+        className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)] backdrop-blur-[12px]",
+        style: { background: "rgb(var(--base-950) / 0.96)", paddingRight: "env(safe-area-inset-right)" },
+        onClick: (event) => event.stopPropagation(),
+        children: [
+          /* @__PURE__ */ jsx(
+            ClipPanelHeader,
+            {
+              label: t("clipNewWithLength").replace("{len}", state2.format === "still" ? t("clipFormatStill") : `${len} s`),
+              onClose: p.onClose,
+              t
+            }
+          ),
+          /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pb-4 pt-3", children: [
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-9", roundedClass: "rounded-lg" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-8", t }),
+            /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-3 gap-1.5", children: [
+              tile("link", gearRowIcon("link", "h-[18px] w-[18px]"), t("clipTileLink"), p.onCopyLink),
+              tile("save", clipDownloadIcon("h-[18px] w-[18px]"), t("clipTileSave"), p.onSave, busy),
+              tile("moment", gearRowIcon("moments", "h-[18px] w-[18px]"), t("clipTileMoment"), p.onSaveMoment)
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "mt-auto pt-1", children: /* @__PURE__ */ jsx(ClipShareButton, { state: p.share, onClick: p.onShare, t, variant: "pill" }) })
+          ] })
+        ]
+      }
+    );
+  }
+  function ClipPortraitSheet(p) {
+    const { state: state2, dispatch, t } = p;
+    const busy = p.share.kind === "rendering";
+    const row = (key, icon, label, onClick, disabled = false) => /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        onClick,
+        disabled,
+        className: "flex items-center gap-3 rounded-lg px-2 py-3 text-[15px] text-slate-100 transition active:bg-white/[0.06] disabled:opacity-50",
+        children: [
+          icon,
+          /* @__PURE__ */ jsx("span", { className: "flex-1 text-left", children: label })
+        ]
+      },
+      key
+    );
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-clip-panel": true,
+        className: "fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-xl border-t border-white/10 bg-base-800/95 shadow-[0_-20px_60px_rgba(0,0,0,0.6)]",
+        style: { top: p.topOffset },
+        onClick: (event) => event.stopPropagation(),
+        children: [
+          /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "mx-auto mt-2 h-1 w-9 flex-none rounded-full bg-white/25" }),
+          /* @__PURE__ */ jsx(ClipPanelHeader, { label: t("clipNew"), onClose: p.onClose, t }),
+          /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom),var(--android-inset-bottom,0px))] pt-3", children: [
+            /* @__PURE__ */ jsx(ClipLengthButtons, { state: state2, dispatch, heightClass: "h-11", roundedClass: "rounded-[10px]" }),
+            /* @__PURE__ */ jsx(ClipFormatSegment, { state: state2, dispatch, formats: p.formats, heightClass: "h-[38px]", t }),
+            /* @__PURE__ */ jsx(ClipTitleField, { state: state2, dispatch }),
+            /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex flex-col", children: [
+              row("link", gearRowIcon("link", "h-5 w-5 flex-none text-slate-300"), t("clipCopyLink"), p.onCopyLink),
+              row("save", clipDownloadIcon("h-5 w-5 flex-none text-slate-300"), t("clipSavePhotos"), p.onSave, busy),
+              row("moment", gearRowIcon("moments", "h-5 w-5 flex-none text-slate-300"), t("clipSaveMoment"), p.onSaveMoment)
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "mt-auto pt-1", children: /* @__PURE__ */ jsx(ClipShareButton, { state: p.share, onClick: p.onShare, t, variant: "pill-lg" }) })
+          ] })
+        ]
+      }
+    );
+  }
+  var init_clip_phone_panels = __esm({
+    "components/player/clip/clip-phone-panels.tsx"() {
+      "use client";
+      init_clip_panel();
+      init_clip_share_button();
+      init_player_control_icons();
+      init_clip_state();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // lib/barcode/barcode-share-render.ts
+  function shareColors(paper) {
+    if (paper === "light") return { bg: PAPER.light.bg, text: PAPER.light.ink, dim: PAPER.light.dim };
+    return { bg: BG, text: TEXT, dim: DIM_TEXT };
+  }
+  function displayBarcode(b) {
+    const shown = displayColumns(b);
+    if (shown.scale === 1) return b;
+    return { ...b, colors: shown.colors, duration: b.duration / shown.scale, endAt: void 0 };
+  }
+  function columnFills(b, unseen) {
+    const tail = tailFrom(b);
+    return b.colors.map((color, i) => {
+      if (color) return color;
+      if (tail != null && i >= tail) return TAIL2;
+      if (unseen === "dim") return DIM2;
+      if (unseen === "empty") return EMPTY3;
+      return "hatch";
+    });
+  }
+  function drawHatch(ctx, r, scale) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(r.x, r.y, r.w, r.h);
+    ctx.clip();
+    ctx.fillStyle = HATCH_BASE;
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    const period = 7 * scale;
+    const line = 3 * scale;
+    ctx.strokeStyle = HATCH_LINE;
+    ctx.lineWidth = line;
+    ctx.beginPath();
+    for (let d = -r.h; d < r.w + r.h; d += period) {
+      ctx.moveTo(r.x + d, r.y + r.h);
+      ctx.lineTo(r.x + d + r.h, r.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawBarcode(ctx, fills, r, vertical, hatchScale) {
+    const n = fills.length;
+    if (n === 0) {
+      ctx.fillStyle = EMPTY3;
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      return;
+    }
+    const span = vertical ? r.h : r.w;
+    const edge = (i2) => Math.round(i2 / n * span);
+    let i = 0;
+    while (i < n) {
+      let j = i + 1;
+      while (j < n && fills[j] === fills[i]) j++;
+      const a = edge(i);
+      const b = edge(j);
+      const part = vertical ? { x: r.x, y: r.y + a, w: r.w, h: b - a } : { x: r.x + a, y: r.y, w: b - a, h: r.h };
+      if (fills[i] === "hatch") drawHatch(ctx, part, hatchScale);
+      else {
+        ctx.fillStyle = fills[i];
+        ctx.fillRect(part.x, part.y, part.w, part.h);
+      }
+      i = j;
+    }
+  }
+  function drawSpaced(ctx, text, x, y, spacing, align) {
+    const chars = [...text];
+    const widths = chars.map((c) => ctx.measureText(c).width);
+    const total = widths.reduce((s, w) => s + w, 0) + spacing * Math.max(0, chars.length - 1);
+    let cx = align === "left" ? x : align === "right" ? x - total : x - total / 2;
+    ctx.textAlign = "left";
+    chars.forEach((c, k) => {
+      ctx.fillText(c, cx, y);
+      cx += widths[k] + spacing;
+    });
+  }
+  function fitText(ctx, text, maxWidth) {
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    let t = text;
+    while (t.length > 1 && ctx.measureText(`${t}\u2026`).width > maxWidth) t = t.slice(0, -1);
+    return `${t.trimEnd()}\u2026`;
+  }
+  function drawShare(ctx, kind, b, opts) {
+    const { w, h } = SHARE_SIZES[kind];
+    const fills = columnFills(displayBarcode(b), opts.unseen);
+    const year = b.year != null ? String(b.year) : "";
+    const c = kind === "image" || kind === "story" ? shareColors(opts.paper) : shareColors(void 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = c.bg;
+    ctx.fillRect(0, 0, w, h);
+    ctx.textBaseline = "alphabetic";
+    if (kind === "image") {
+      const pad3 = 48;
+      const textBlock = opts.includeTitle ? 150 : 0;
+      drawBarcode(ctx, fills, { x: pad3, y: pad3, w: w - pad3 * 2, h: h - pad3 * 2 - textBlock }, false, 2.4);
+      if (opts.includeTitle) {
+        ctx.fillStyle = c.text;
+        ctx.font = `600 64px ${FONT}`;
+        ctx.textAlign = "left";
+        ctx.fillText(fitText(ctx, b.title, w - pad3 * 2 - 180), pad3, h - pad3 - 62);
+        ctx.fillStyle = c.dim;
+        ctx.font = `500 26px ${FONT}`;
+        const meta = [year, opts.runtimeLabel].filter(Boolean).join(" \xB7 ").toUpperCase();
+        drawSpaced(ctx, meta, pad3, h - pad3 - 8, 26 * 0.2, "left");
+        ctx.font = `600 24px ${FONT}`;
+        drawSpaced(ctx, "LUMIO", w - pad3, h - pad3 - 8, 24 * 0.3, "right");
+      }
+      return;
+    }
+    if (kind === "story") {
+      const pad3 = 90;
+      const textBlock = opts.includeTitle ? 300 : 0;
+      drawBarcode(ctx, fills, { x: pad3, y: pad3, w: w - pad3 * 2, h: h - pad3 * 2 - textBlock }, true, 3);
+      if (opts.includeTitle) {
+        ctx.fillStyle = c.text;
+        ctx.font = `600 72px ${FONT}`;
+        ctx.textAlign = "center";
+        ctx.fillText(fitText(ctx, b.title, w - pad3 * 2), w / 2, h - pad3 - 150);
+        ctx.fillStyle = c.dim;
+        ctx.font = `500 30px ${FONT}`;
+        drawSpaced(ctx, [year, "LUMIO"].filter(Boolean).join(" \xB7 "), w / 2, h - pad3 - 80, 30 * 0.3, "center");
+      }
+      return;
+    }
+    if (kind === "wallDesktop") {
+      drawBarcode(ctx, fills, { x: 0, y: 0, w, h }, false, 3);
+      if (opts.includeTitle) {
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,.65)";
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = "rgba(242,242,245,.9)";
+        ctx.font = `600 30px ${FONT}`;
+        drawSpaced(ctx, [b.title.toUpperCase(), year].filter(Boolean).join(" \xB7 "), w - 72, h - 64, 30 * 0.2, "right");
+        ctx.restore();
+      }
+      return;
+    }
+    drawBarcode(ctx, fills, { x: 0, y: 0, w, h }, true, 3);
+    if (opts.includeTitle) {
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,.65)";
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = "rgba(242,242,245,.9)";
+      ctx.font = `600 36px ${FONT}`;
+      drawSpaced(ctx, [b.title.toUpperCase(), year].filter(Boolean).join(" \xB7 "), w / 2, h - 260, 36 * 0.2, "center");
+      ctx.restore();
+    }
+  }
+  function shareFileName(b, kind) {
+    const safe = b.title.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() || "barcode";
+    const suffix = kind === "image" ? "" : kind === "story" ? " story" : kind === "wallDesktop" ? " tapet" : " tapet mobil";
+    return `${safe}${b.year ? ` (${b.year})` : ""} \u2013 barcode${suffix}.png`;
+  }
+  var SHARE_SIZES, BG, TEXT, DIM_TEXT, PAPER, HATCH_BASE, HATCH_LINE, DIM2, EMPTY3, TAIL2, FONT;
+  var init_barcode_share_render = __esm({
+    "lib/barcode/barcode-share-render.ts"() {
+      "use strict";
+      init_barcode_model();
+      SHARE_SIZES = {
+        image: { w: 1200, h: 630 },
+        story: { w: 1080, h: 1920 },
+        wallDesktop: { w: 2560, h: 1600 },
+        wallMobile: { w: 1170, h: 2532 }
+      };
+      BG = "#050507";
+      TEXT = "#f2f2f5";
+      DIM_TEXT = "#8b8e99";
+      PAPER = {
+        light: { bg: "#f3eee5", ink: "#141416", dim: "#6d6a64", rule: "#c9c2b6" },
+        dark: { bg: "#0c0d11", ink: "#ecebe8", dim: "#8b8e99", rule: "rgba(255,255,255,.18)" }
+      };
+      HATCH_BASE = "#111216";
+      HATCH_LINE = "#1c1d23";
+      DIM2 = "#1a1b22";
+      EMPTY3 = "#141519";
+      TAIL2 = "#0b0b0d";
+      FONT = '"Avenir Next", "Trebuchet MS", system-ui, sans-serif';
+    }
+  });
+
+  // lib/barcode/barcode-poster-render.ts
+  function ensurePosterFont() {
+    if (fontLoad) return fontLoad;
+    if (typeof document === "undefined" || typeof FontFace === "undefined" || !document.fonts) {
+      fontLoad = Promise.resolve();
+      return fontLoad;
+    }
+    const faces = [];
+    for (const weight of ["300", "400", "600", "700"]) {
+      for (const [subset, range] of [["latin", LATIN], ["latin-ext", LATIN_EXT]]) {
+        faces.push(new FontFace(POSTER_FONT_FAMILY, `url(/fonts/jost/jost-${subset}-${weight}-normal.woff2) format('woff2')`, { weight, unicodeRange: range }));
+      }
+    }
+    fontLoad = Promise.all(faces.map((face) => face.load().then((loaded) => {
+      document.fonts.add(loaded);
+    }).catch(() => {
+    }))).then(() => {
+    });
+    return fontLoad;
+  }
+  function setFont(ctx, weight, size) {
+    ctx.font = `${weight} ${size}px ${FONT2}`;
+  }
+  function spacedWidth(ctx, text, spacing) {
+    const chars = [...text];
+    return chars.reduce((sum, c) => sum + ctx.measureText(c).width, 0) + spacing * Math.max(0, chars.length - 1);
+  }
+  function baseline(top, lineH, size) {
+    return top + lineH / 2 + size * 0.34;
+  }
+  function clip(ctx, text, maxW, spacing = 0) {
+    if (spacedWidth(ctx, text, spacing) <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && spacedWidth(ctx, `${t}\u2026`, spacing) > maxW) t = t.slice(0, -1);
+    return `${t.trimEnd()}\u2026`;
+  }
+  function wrapLines(ctx, text, maxW, maxLines) {
+    const lines = [];
+    for (const word of text.split(/\s+/).filter(Boolean)) {
+      const last2 = lines[lines.length - 1];
+      if (last2 != null && ctx.measureText(`${last2} ${word}`).width <= maxW) lines[lines.length - 1] = `${last2} ${word}`;
+      else lines.push(word);
+    }
+    if (lines.length <= maxLines) return lines.map((line) => clip(ctx, line, maxW));
+    const kept = lines.slice(0, maxLines);
+    kept[maxLines - 1] = clip(ctx, `${lines.slice(maxLines - 1).join(" ")}`, maxW);
+    if (!kept[maxLines - 1].endsWith("\u2026")) kept[maxLines - 1] = clip(ctx, `${kept[maxLines - 1]}\u2026`, maxW);
+    return kept.map((line) => clip(ctx, line, maxW));
+  }
+  function parseColor(color) {
+    const hex = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hex) {
+      const h = hex[1].length === 3 ? [...hex[1]].map((c) => c + c).join("") : hex[1];
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    }
+    const rgb = color.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i);
+    return rgb ? [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])] : null;
+  }
+  function smoothRow(fills, width, sigma) {
+    const n = fills.length;
+    const px = Math.max(1, Math.round(width));
+    const rgb = fills.map((f) => f === "hatch" ? HATCH_MEAN : parseColor(f) ?? HATCH_MEAN);
+    let row = Array.from({ length: px }, (_, x) => {
+      if (n === 0) return HATCH_MEAN;
+      const a = Math.floor(x / px * n);
+      const b = Math.max(a + 1, Math.floor((x + 1) / px * n));
+      const acc = [0, 0, 0];
+      for (let i = a; i < Math.min(b, n); i++) for (let k = 0; k < 3; k++) acc[k] += rgb[i][k];
+      const count = Math.max(1, Math.min(b, n) - a);
+      return [acc[0] / count, acc[1] / count, acc[2] / count];
+    });
+    const radius = Math.round((Math.sqrt(12 * sigma * sigma / 3 + 1) - 1) / 2);
+    if (radius < 1) return row;
+    for (let pass = 0; pass < 3; pass++) {
+      const out = new Array(px);
+      const acc = [0, 0, 0];
+      const at = (i) => row[Math.min(px - 1, Math.max(0, i))];
+      for (let i = -radius; i <= radius; i++) for (let k = 0; k < 3; k++) acc[k] += at(i)[k];
+      const span = radius * 2 + 1;
+      for (let x = 0; x < px; x++) {
+        out[x] = [acc[0] / span, acc[1] / span, acc[2] / span];
+        const add = at(x + radius + 1);
+        const drop = at(x - radius);
+        for (let k = 0; k < 3; k++) acc[k] += add[k] - drop[k];
+      }
+      row = out;
+    }
+    return row;
+  }
+  function drawSmooth(ctx, fills, r, sigma) {
+    const x0 = Math.round(r.x);
+    const w = Math.round(r.x + r.w) - x0;
+    const row = smoothRow(fills, w, sigma);
+    for (let x = 0; x < row.length; x++) {
+      const [red, green, blue] = row[x];
+      ctx.fillStyle = `rgb(${Math.round(red)},${Math.round(green)},${Math.round(blue)})`;
+      ctx.fillRect(x0 + x, r.y, 1.5, r.h);
+    }
+  }
+  function drawRing(ctx, fills, cx, cy, radius, holeColor) {
+    const n = fills.length;
+    const start2 = -Math.PI / 2;
+    const angle = (i2) => start2 + i2 / Math.max(1, n) * Math.PI * 2;
+    const colorAt = (i2) => fills[i2] === "hatch" ? Math.floor(i2 / n * 360) % 2 === 0 ? HATCH_BASE : HATCH_LINE : fills[i2];
+    const overlap = 0.6 / radius;
+    let i = 0;
+    while (i < n) {
+      const color = colorAt(i);
+      let j = i + 1;
+      while (j < n && colorAt(j) === color) j++;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, angle(i), Math.min(angle(j) + overlap, start2 + Math.PI * 2));
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      i = j;
+    }
+    if (n === 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = HATCH_BASE;
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 0.22, 0, Math.PI * 2);
+    ctx.fillStyle = holeColor;
+    ctx.fill();
+  }
+  function drawCredits({ ctx, s, paper, b, fills, opts, year }) {
+    const padX = 40 * s;
+    const padY = 34 * s;
+    const contentW = 600 * s - padX * 2;
+    const gap = 18 * s;
+    let y = padY;
+    if (opts.includeTitle) {
+      let size = 28;
+      setFont(ctx, 700, size * s);
+      const yearW = year ? ctx.measureText(year).width : 0;
+      const titleMax = contentW - yearW - (year ? 24 * s : 0);
+      const title = b.title.toUpperCase();
+      while (size > 20 && spacedWidth(ctx, title, 0.02 * size * s) > titleMax) {
+        size -= 1;
+        setFont(ctx, 700, size * s);
+      }
+      const rowH = 28 * 1.2 * s;
+      ctx.fillStyle = paper.ink;
+      drawSpaced(ctx, clip(ctx, title, titleMax, 0.02 * size * s), padX, baseline(y, rowH, 28 * s), 0.02 * size * s, "left");
+      if (year) {
+        setFont(ctx, 700, 28 * s);
+        ctx.textAlign = "right";
+        ctx.fillText(year, padX + contentW, baseline(y, rowH, 28 * s));
+      }
+      y += rowH + gap;
+      const m = opts.meta;
+      const columns = m ? [
+        { label: opts.labels.directedBy, names: m.directors },
+        { label: opts.labels.writtenBy, names: m.writers },
+        { label: opts.labels.starring, names: m.starring },
+        { label: opts.labels.musicBy, names: m.music }
+      ].filter((c) => c.names.length > 0) : [];
+      if (columns.length > 0) {
+        const colGap = 14 * s;
+        const colW = (contentW - colGap * 3) / 4;
+        const size7 = 7.5 * s;
+        const lineH = 7.5 * 1.5 * s;
+        const spacing = 0.04 * size7;
+        const rows = Math.max(...columns.map((c) => c.names.length));
+        columns.forEach((c, k) => {
+          const x = padX + k * (colW + colGap);
+          setFont(ctx, 700, size7);
+          drawSpaced(ctx, clip(ctx, c.label.toUpperCase(), colW, spacing), x, baseline(y, lineH, size7), spacing, "left");
+          setFont(ctx, 400, size7);
+          c.names.forEach((name, row) => {
+            const top = y + lineH + 3 * s + row * lineH;
+            drawSpaced(ctx, clip(ctx, name.toUpperCase(), colW, spacing), x, baseline(top, lineH, size7), spacing, "left");
+          });
+        });
+        y += lineH + 3 * s + rows * lineH + gap;
+      }
+    }
+    drawBarcode(ctx, fills, { x: padX, y, w: contentW, h: 400 * s - padY - y }, false, s);
+  }
+  function drawPortrait({ ctx, s, paper, b, fills, opts, year }) {
+    const padX = 24 * s;
+    const padY = 28 * s;
+    const contentW = 330 * s - padX * 2;
+    const gap = 14 * s;
+    let y = padY;
+    if (opts.includeTitle) {
+      let size = 20;
+      setFont(ctx, 700, size * s);
+      const yearW = year ? ctx.measureText(year).width : 0;
+      const titleMax = contentW - yearW - (year ? 16 * s : 0);
+      const title = b.title.toUpperCase();
+      while (size > 14 && spacedWidth(ctx, title, 0.02 * size * s) > titleMax) {
+        size -= 1;
+        setFont(ctx, 700, size * s);
+      }
+      const rowH = 20 * 1.2 * s;
+      ctx.fillStyle = paper.ink;
+      drawSpaced(ctx, clip(ctx, title, titleMax, 0.02 * size * s), padX, baseline(y, rowH, 20 * s), 0.02 * size * s, "left");
+      if (year) {
+        setFont(ctx, 700, 20 * s);
+        ctx.textAlign = "right";
+        ctx.fillText(year, padX + contentW, baseline(y, rowH, 20 * s));
+      }
+      y += rowH + gap;
+      const m = opts.meta;
+      const columns = m ? [
+        { label: opts.labels.directedBy, names: m.directors },
+        { label: opts.labels.writtenBy, names: m.writers },
+        { label: opts.labels.starring, names: m.starring.slice(0, 3) },
+        { label: opts.labels.musicBy, names: m.music }
+      ].filter((c) => c.names.length > 0) : [];
+      if (columns.length > 0) {
+        const perRow = 2;
+        const colGap = 12 * s;
+        const colW = (contentW - colGap * (perRow - 1)) / perRow;
+        const size7 = 6.5 * s;
+        const lineH = 6.5 * 1.5 * s;
+        const spacing = 0.04 * size7;
+        for (let start2 = 0; start2 < columns.length; start2 += perRow) {
+          const rowCols = columns.slice(start2, start2 + perRow);
+          const rows = Math.max(...rowCols.map((c) => c.names.length));
+          rowCols.forEach((c, k) => {
+            const x = padX + k * (colW + colGap);
+            setFont(ctx, 700, size7);
+            drawSpaced(ctx, clip(ctx, c.label.toUpperCase(), colW, spacing), x, baseline(y, lineH, size7), spacing, "left");
+            setFont(ctx, 400, size7);
+            c.names.forEach((name, row) => {
+              const top = y + lineH + 2 * s + row * lineH;
+              drawSpaced(ctx, clip(ctx, name.toUpperCase(), colW, spacing), x, baseline(top, lineH, size7), spacing, "left");
+            });
+          });
+          y += lineH + 2 * s + rows * lineH + 8 * s;
+        }
+        y += gap - 8 * s;
+      }
+    }
+    drawBarcode(ctx, fills, { x: padX, y, w: contentW, h: 440 * s - padY - y }, false, s);
+  }
+  function drawTitleCard({ ctx, s, paper, b, fills, opts, year }) {
+    const padX = 30 * s;
+    const padY = 34 * s;
+    const contentW = 440 * s - padX * 2;
+    const cx = 220 * s;
+    let y = padY;
+    if (opts.includeTitle) {
+      const titleH = 17 * 1.2 * s;
+      const title = b.title.toUpperCase();
+      const yearText = year ? ` (${year})` : "";
+      setFont(ctx, 400, 9 * s);
+      const yearW = yearText ? ctx.measureText(yearText).width : 0;
+      setFont(ctx, 700, 17 * s);
+      const titleText = clip(ctx, title, contentW - yearW);
+      const titleW = ctx.measureText(titleText).width;
+      const left = cx - (titleW + yearW) / 2;
+      ctx.fillStyle = paper.ink;
+      ctx.textAlign = "left";
+      ctx.fillText(titleText, left, baseline(y, titleH, 17 * s));
+      if (yearText) {
+        setFont(ctx, 400, 9 * s);
+        ctx.fillText(yearText, left + titleW, baseline(y, titleH, 17 * s));
+      }
+      y += titleH;
+      const m = opts.meta;
+      const lines = m ? [
+        [opts.labels.directedBy, m.directors],
+        [opts.labels.cinematographyBy, m.dop],
+        [opts.labels.editedBy, m.editors]
+      ].filter(([, names]) => names.length > 0) : [];
+      const lineH = 11 * 1.2 * s;
+      setFont(ctx, 400, 11 * s);
+      ctx.textAlign = "center";
+      for (const [label, names] of lines) {
+        y += 2 * s;
+        ctx.fillText(clip(ctx, opts.labels.line(label, names), contentW), cx, baseline(y, lineH, 11 * s));
+        y += lineH;
+      }
+      y += 14 * s + 6 * s;
+    }
+    drawSmooth(ctx, fills, { x: padX, y, w: contentW, h: 440 * s - padY - y }, opts.texture === "smooth" ? 1.6 * s : 0);
+  }
+  function drawRingPoster({ ctx, s, paper, b, fills, opts, year }) {
+    const padX = 26 * s;
+    const padY = 22 * s;
+    const contentW = 330 * s - padX * 2;
+    const bottom = 440 * s - padY;
+    let top = padY;
+    let blockTop = bottom;
+    if (opts.includeTitle) {
+      const m = opts.meta;
+      if (m?.tagline) {
+        const lineH = 8 * 1.2 * s;
+        setFont(ctx, 400, 8 * s);
+        ctx.fillStyle = paper.dim;
+        ctx.textAlign = "left";
+        ctx.fillText(clip(ctx, m.tagline, contentW), padX, baseline(top, lineH, 8 * s));
+        top += lineH + 5 * s;
+        ctx.fillStyle = paper.rule;
+        ctx.fillRect(padX, top, contentW, Math.max(1, s));
+        top += Math.max(1, s) + 12 * s;
+      }
+      setFont(ctx, 600, 24 * s);
+      const titleLines = wrapLines(ctx, b.title, 200 * s, 3);
+      const titleLH = 24 * 1.05 * s;
+      ctx.fillStyle = paper.ink;
+      ctx.textAlign = "left";
+      titleLines.forEach((line, k) => ctx.fillText(line, padX, baseline(top + k * titleLH, titleLH, 24 * s)));
+      if (year) {
+        setFont(ctx, 300, 16 * s);
+        ctx.fillStyle = paper.dim;
+        ctx.textAlign = "right";
+        ctx.fillText(year, padX + contentW, baseline(top, 16 * 1.2 * s, 16 * s));
+      }
+      top += titleLines.length * titleLH;
+      const bx = padX + contentW * 0.44;
+      const bw = contentW - contentW * 0.44;
+      const parts = [];
+      if (m?.directors.length) {
+        const h = 9.5 * 1.2 * s;
+        const text = opts.labels.line(opts.labels.directedBy, m.directors);
+        parts.push({ h, draw: (y) => {
+          setFont(ctx, 600, 9.5 * s);
+          ctx.fillStyle = paper.ink;
+          ctx.fillText(clip(ctx, text, bw), bx, baseline(y, h, 9.5 * s));
+        } });
+      }
+      if (m?.writers.length) {
+        const h = 8 * 1.2 * s;
+        const text = opts.labels.line(opts.labels.writtenBy, m.writers);
+        parts.push({ h: h + 2 * s, draw: (y) => {
+          setFont(ctx, 400, 8 * s);
+          ctx.fillStyle = paper.dim;
+          ctx.fillText(clip(ctx, text, bw), bx, baseline(y + 2 * s, h, 8 * s));
+        } });
+      }
+      if (m?.synopsis) {
+        setFont(ctx, 400, 6.5 * s);
+        const lines = wrapLines(ctx, m.synopsis, bw, 7);
+        const lh = 6.5 * 1.45 * s;
+        parts.push({
+          h: 5 * s + lines.length * lh,
+          draw: (y) => {
+            setFont(ctx, 400, 6.5 * s);
+            ctx.fillStyle = paper.dim;
+            lines.forEach((line, k) => ctx.fillText(line, bx, baseline(y + 5 * s + k * lh, lh, 6.5 * s)));
+          }
+        });
+      }
+      const runtimeMin = m?.runtime ?? (b.duration > 0 ? Math.round(b.duration / 60) : null);
+      const metaLine2 = [
+        runtimeMin ? posterRuntime(runtimeMin) : "",
+        m?.genres ?? "",
+        m?.releaseDate ? posterReleaseDate(m.releaseDate, opts.lang) : ""
+      ].filter(Boolean).join(" \xB7 ");
+      if (metaLine2) {
+        const h = 6 * 1.2 * s;
+        parts.push({ h: 5 * s + h, draw: (y) => {
+          setFont(ctx, 600, 6 * s);
+          ctx.fillStyle = paper.ink;
+          ctx.fillText(clip(ctx, metaLine2, bw), bx, baseline(y + 5 * s, h, 6 * s));
+        } });
+      }
+      if (parts.length > 0) {
+        const total = parts.reduce((sum, p) => sum + p.h, 0);
+        blockTop = bottom - total;
+        ctx.textAlign = "left";
+        let y = blockTop;
+        for (const p of parts) {
+          p.draw(y);
+          y += p.h;
+        }
+      }
+    }
+    const areaH = blockTop - top;
+    const radius = Math.max(20 * s, Math.min(105 * s, areaH / 2 - 8 * s));
+    drawRing(ctx, fills, 165 * s, top + areaH / 2, radius, paper.bg);
+  }
+  function drawPoster(ctx, style, b, opts) {
+    const { width, height } = ctx.canvas;
+    const s = width / POSTER_DESIGN[style].w;
+    const paper = PAPER[opts.paper];
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = paper.bg;
+    ctx.fillRect(0, 0, width, height);
+    ctx.textBaseline = "alphabetic";
+    const c = { ctx, s, paper, b, fills: columnFills(displayBarcode(b), opts.unseen), opts, year: b.year != null ? String(b.year) : "" };
+    if (style === "credits") drawCredits(c);
+    else if (style === "titleCard") drawTitleCard(c);
+    else if (style === "portrait") drawPortrait(c);
+    else drawRingPoster(c);
+  }
+  var POSTER_DESIGN, POSTER_EXPORT, POSTER_FONT_FAMILY, FONT2, LATIN, LATIN_EXT, fontLoad, HATCH_MEAN;
+  var init_barcode_poster_render = __esm({
+    "lib/barcode/barcode-poster-render.ts"() {
+      "use strict";
+      init_barcode_poster();
+      init_barcode_share_render();
+      POSTER_DESIGN = {
+        credits: { w: 600, h: 400 },
+        titleCard: { w: 440, h: 440 },
+        ring: { w: 330, h: 440 },
+        portrait: { w: 330, h: 440 }
+      };
+      POSTER_EXPORT = {
+        credits: { w: 3e3, h: 2e3 },
+        titleCard: { w: 2400, h: 2400 },
+        ring: { w: 2400, h: 3200 },
+        portrait: { w: 2400, h: 3200 }
+      };
+      POSTER_FONT_FAMILY = "Lumio Poster";
+      FONT2 = `"${POSTER_FONT_FAMILY}", "Futura", "Avenir Next", system-ui, sans-serif`;
+      LATIN = "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD";
+      LATIN_EXT = "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF";
+      fontLoad = null;
+      HATCH_MEAN = (() => {
+        const a = parseColor(HATCH_BASE);
+        const b = parseColor(HATCH_LINE);
+        return [0, 1, 2].map((k) => a[k] * (4 / 7) + b[k] * (3 / 7));
+      })();
+    }
+  });
+
+  // lib/barcode/barcode-share-export.ts
+  var barcode_share_export_exports = {};
+  __export(barcode_share_export_exports, {
+    blobToBase64: () => blobToBase64,
+    copySharePng: () => copySharePng,
+    jobFileName: () => jobFileName,
+    publishCanvasForPhone: () => publishCanvasForPhone,
+    publishShareForPhone: () => publishShareForPhone,
+    renderJob: () => renderJob,
+    renderShareCanvas: () => renderShareCanvas,
+    saveCanvasPng: () => saveCanvasPng,
+    saveSharePng: () => saveSharePng,
+    shareCanvasPng: () => shareCanvasPng,
+    shareSharePng: () => shareSharePng
+  });
+  function renderShareCanvas(kind, b, opts) {
+    const { w, h } = SHARE_SIZES[kind];
+    const canvas2 = document.createElement("canvas");
+    canvas2.width = w;
+    canvas2.height = h;
+    const ctx = canvas2.getContext("2d");
+    if (ctx) drawShare(ctx, kind, b, opts);
+    return canvas2;
+  }
+  async function renderJob(job, b) {
+    if (job.type === "share") return renderShareCanvas(job.kind, b, job.opts);
+    await ensurePosterFont();
+    const { w, h } = POSTER_EXPORT[job.style];
+    const canvas2 = document.createElement("canvas");
+    canvas2.width = w;
+    canvas2.height = h;
+    const ctx = canvas2.getContext("2d");
+    if (ctx) drawPoster(ctx, job.style, b, job.opts);
+    return canvas2;
+  }
+  function jobFileName(job, b) {
+    if (job.type === "share") return shareFileName(b, job.kind);
+    return shareFileName(b, "image").replace(/\.png$/, ` ${POSTER_SUFFIX[job.style]}.png`);
+  }
+  function canvasToBlob(canvas2) {
+    return new Promise((resolve, reject) => {
+      canvas2.toBlob((blob) => blob ? resolve(blob) : reject(new Error("toBlob gav inget")), "image/png");
+    });
+  }
+  async function blobToBase64(blob) {
+    const buffer = new Uint8Array(await blob.arrayBuffer());
+    let binary = "";
+    const chunk2 = 32768;
+    for (let i = 0; i < buffer.length; i += chunk2) {
+      binary += String.fromCharCode(...buffer.subarray(i, i + chunk2));
+    }
+    return btoa(binary);
+  }
+  async function saveCanvasPng(canvas2, name) {
+    const blob = await canvasToBlob(canvas2);
+    if (isTauriEnv) {
+      const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
+      const path = await invoke6("save_png_file", { suggestedName: name, dataBase64: await blobToBase64(blob) });
+      return path ? "saved" : "cancelled";
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    return "saved";
+  }
+  async function saveSharePng(job, b) {
+    return saveCanvasPng(await renderJob(job, b), jobFileName(job, b));
+  }
+  async function copySharePng(job, b) {
+    const ClipboardItemCtor = window.ClipboardItem;
+    if (!ClipboardItemCtor || !navigator.clipboard?.write) throw new Error("urklipp f\xF6r bilder saknas");
+    const item = new ClipboardItemCtor({ "image/png": renderJob(job, b).then(canvasToBlob) });
+    await navigator.clipboard.write([item]);
+  }
+  async function shareCanvasPng(canvas2, name, title) {
+    const blob = await canvasToBlob(canvas2);
+    if (isAndroidTauriEnv) {
+      const result = await np({ cmd: "shareImage", data: await blobToBase64(blob), name, title });
+      if (!result?.ok) throw new Error(result?.error ?? "delning misslyckades");
+      return "shared";
+    }
+    const file = new File([blob], name, { type: "image/png" });
+    const nav = navigator;
+    if (nav.share && nav.canShare?.({ files: [file] })) {
+      await nav.share({ files: [file], title });
+      return "shared";
+    }
+    await saveCanvasPng(canvas2, name);
+    return "saved";
+  }
+  async function shareSharePng(job, b) {
+    return shareCanvasPng(await renderJob(job, b), jobFileName(job, b), b.title);
+  }
+  async function publishCanvasForPhone(canvas2) {
+    const blob = await canvasToBlob(canvas2);
+    const upload = await fetch("/api/barcode-share", { method: "POST", headers: { "content-type": "image/png" }, body: blob });
+    if (!upload.ok) return null;
+    const { token } = await upload.json();
+    if (!token) return null;
+    const lan = await fetch("/api/lan-ip").then((r) => r.json()).catch(() => null);
+    if (!lan?.ip) return null;
+    const port = window.location.port || "3011";
+    return `http://${lan.ip}:${port}/api/barcode-share/${token}`;
+  }
+  async function publishShareForPhone(job, b) {
+    return publishCanvasForPhone(await renderJob(job, b));
+  }
+  var POSTER_SUFFIX;
+  var init_barcode_share_export = __esm({
+    "lib/barcode/barcode-share-export.ts"() {
+      init_tauri_mpv();
+      init_tauri_native_player();
+      init_barcode_share_render();
+      init_barcode_poster_render();
+      POSTER_SUFFIX = { portrait: "staende", credits: "affisch", titleCard: "titelkort", ring: "ring" };
+    }
+  });
+
+  // lib/clip/clip-export.ts
+  function clipCacheKey(i) {
+    return `${i.url}|${i.inSec.toFixed(3)}|${i.outSec.toFixed(3)}|${i.format}|${i.hdr ? 1 : 0}`;
+  }
+  function clipExt(format) {
+    return format === "still" ? "png" : format;
+  }
+  function clipMime(format) {
+    return format === "mp4" ? "video/mp4" : format === "gif" ? "image/gif" : "image/png";
+  }
+  function clipFileName(title, ext) {
+    const safe = title.replace(/:\s+/g, " ").replace(/:/g, ".").replace(/[\\/?%*|"<>]/g, "").replace(/\s+/g, " ").trim();
+    return `${safe || "Klipp"}.${ext}`;
+  }
+  async function tauriInvoke(cmd, args) {
+    const { invoke: invoke6 } = await Promise.resolve().then(() => __toESM(require_core()));
+    return invoke6(cmd, args);
+  }
+  function downloadUrl(url, name) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  function anchorArgs(anchor) {
+    return { x: anchor.x, y: anchor.y, w: anchor.width, h: anchor.height };
+  }
+  async function webShareFile(file) {
+    const nav = navigator;
+    if (!nav.share || !nav.canShare?.({ files: [file] })) return false;
+    await nav.share({ files: [file] });
+    return true;
+  }
+  async function saveRenderedClip(clip2, name, ext) {
+    if (isTauriEnv) {
+      const out = await tauriInvoke("save_file", {
+        suggestedName: name,
+        srcPath: clip2.path,
+        filterName: ext.toUpperCase(),
+        extensions: [ext]
+      });
+      return out ? "saved" : "cancelled";
+    }
+    downloadUrl(`/api/clip/${clip2.id}/file`, name);
+    return "saved";
+  }
+  async function shareRenderedClip(clip2, name, anchor, ext) {
+    if (isTauriEnv) {
+      try {
+        await tauriInvoke("share_file", { path: clip2.path, ...anchorArgs(anchor) });
+        return "shared";
+      } catch {
+        await saveRenderedClip(clip2, name, ext);
+        return "saved";
+      }
+    }
+    const blob = await (await fetch(`/api/clip/${clip2.id}/file`)).blob();
+    if (await webShareFile(new File([blob], name, { type: blob.type }))) return "shared";
+    const url = URL.createObjectURL(blob);
+    downloadUrl(url, name);
+    setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    return "saved";
+  }
+  async function shareFileAndroid(path, mime, title, name) {
+    const res = await np({ cmd: "shareFile", path, mime, title, name });
+    if (!res?.ok) throw new Error(res?.error ?? "delning misslyckades");
+  }
+  async function saveToGalleryAndroid(path, mime, name) {
+    const res = await np({ cmd: "saveToGallery", path, mime, name });
+    if (!res?.ok) throw Object.assign(new Error(res?.error ?? "kunde inte spara"), { code: res?.code });
+  }
+  function isAndroidVersionError(error) {
+    return error instanceof Error && error.code === "android-version";
+  }
+  async function prepareWebShareFile(clip2, name, mime, fetchImpl = (...args) => fetch(...args)) {
+    const blob = await (await fetchImpl(`/api/clip/${clip2.id}/file`)).blob();
+    return new File([blob], name, { type: mime });
+  }
+  async function shareWebFile(file, nav = navigator) {
+    const n = nav;
+    if (!n.share || !n.canShare?.({ files: [file] })) return "unsupported";
+    try {
+      await n.share({ files: [file] });
+      return "shared";
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return "cancelled";
+      throw error;
+    }
+  }
+  function canShareFiles(mime, nav = navigator) {
+    const n = nav;
+    if (!n.share || !n.canShare) return false;
+    try {
+      return n.canShare({ files: [new File([""], "probe", { type: mime })] });
+    } catch {
+      return false;
+    }
+  }
+  function downloadClipFile(clip2, name) {
+    downloadUrl(`/api/clip/${clip2.id}/file`, name);
+  }
+  async function toPng(source) {
+    const w = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
+    const h = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
+    const canvas2 = document.createElement("canvas");
+    canvas2.width = w;
+    canvas2.height = h;
+    const ctx = canvas2.getContext("2d");
+    if (!ctx) throw new Error("canvas saknas");
+    ctx.drawImage(source, 0, 0, w, h);
+    const blob = await new Promise((r) => canvas2.toBlob(r, "image/png"));
+    if (!blob) throw new Error("kunde inte koda bilden");
+    return blob;
+  }
+  async function captureFrameBlob(engine, video) {
+    if (engine === "mpv") {
+      const key = `clip-still-${Date.now()}`;
+      await mpvCaptureFrame(key);
+      const url = `/api/player-frame?key=${encodeURIComponent(key)}`;
+      const jpeg = await (await fetch(url)).blob();
+      void fetch(url, { method: "DELETE" }).catch(() => {
+      });
+      return jpeg;
+    }
+    if (!video || video.readyState < 2 || video.videoWidth === 0) throw new Error("ingen bildruta");
+    return toPng(video);
+  }
+  async function captureStill(engine, video) {
+    const blob = await captureFrameBlob(engine, video);
+    return blob.type === "image/png" ? blob : toPng(await createImageBitmap(blob));
+  }
+  function copyStillToClipboard(blob) {
+    const Ctor = window.ClipboardItem;
+    if (!Ctor || !navigator.clipboard?.write) return Promise.reject(new Error("urklipp f\xF6r bilder saknas"));
+    return navigator.clipboard.write([new Ctor({ "image/png": blob })]);
+  }
+  async function saveStill(blob, name) {
+    if (isTauriEnv) {
+      const { blobToBase64: blobToBase642 } = await Promise.resolve().then(() => (init_barcode_share_export(), barcode_share_export_exports));
+      const out = await tauriInvoke("save_png_file", { suggestedName: name, dataBase64: await blobToBase642(blob) });
+      return out ? "saved" : "cancelled";
+    }
+    const url = URL.createObjectURL(blob);
+    downloadUrl(url, name);
+    setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    return "saved";
+  }
+  async function shareStill(blob, name, anchor) {
+    if (isTauriEnv) {
+      const path = await mpvCaptureFrame(`clip-share-${Date.now()}`);
+      await tauriInvoke("share_file", { path, ...anchorArgs(anchor) });
+      return "shared";
+    }
+    if (await webShareFile(new File([blob], name, { type: "image/png" }))) return "shared";
+    await saveStill(blob, name);
+    return "saved";
+  }
+  var ClipRenderer;
+  var init_clip_export = __esm({
+    "lib/clip/clip-export.ts"() {
+      "use client";
+      init_tauri_mpv();
+      init_tauri_native_player();
+      ClipRenderer = class {
+        constructor(fetchImpl = (...args) => fetch(...args), pollMs = 400) {
+          __publicField(this, "fetchImpl", fetchImpl);
+          __publicField(this, "pollMs", pollMs);
+          __publicField(this, "last", null);
+          __publicField(this, "active", null);
+        }
+        async render(input, onProgress) {
+          const key = clipCacheKey(input);
+          if (this.last?.key === key) return this.last.clip;
+          this.cancel();
+          const token = { id: null, cancelled: false };
+          this.active = token;
+          const res = await this.fetchImpl("/api/clip/render", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(input)
+          });
+          if (!res.ok) throw new Error(`rendering nekades (${res.status})`);
+          const { id } = await res.json();
+          token.id = id;
+          if (token.cancelled) {
+            void this.fetchImpl(`/api/clip/${id}`, { method: "DELETE" }).catch(() => {
+            });
+            throw new Error("avbruten");
+          }
+          for (; ; ) {
+            const s = await (await this.fetchImpl(`/api/clip/${id}`)).json();
+            if (token.cancelled) throw new Error("avbruten");
+            if (s.state === "done" && s.path) {
+              this.last = { key, clip: { id, path: s.path } };
+              this.active = null;
+              return this.last.clip;
+            }
+            if (s.state !== "running") throw new Error(s.error ?? s.state);
+            onProgress(s.progress);
+            await new Promise((r) => setTimeout(r, this.pollMs));
+            if (token.cancelled) throw new Error("avbruten");
+          }
+        }
+        /** Den färdiga filen om just det här valet redan är renderat. */
+        peek(input) {
+          return this.last?.key === clipCacheKey(input) ? this.last.clip : null;
+        }
+        cancel() {
+          const a = this.active;
+          if (!a) return;
+          a.cancelled = true;
+          this.active = null;
+          if (a.id) void this.fetchImpl(`/api/clip/${a.id}`, { method: "DELETE" }).catch(() => {
+          });
+        }
+      };
     }
   });
 
@@ -25091,7 +27139,7 @@ ${effectiveName(url, id)}`;
   }
   function read9() {
     try {
-      const raw = getScopedStorageItem(KEY16);
+      const raw = getScopedStorageItem(KEY17);
       const parsed = raw ? JSON.parse(raw) : null;
       return parsed && typeof parsed === "object" ? parsed : {};
     } catch {
@@ -25105,7 +27153,7 @@ ${effectiveName(url, id)}`;
       for (const nyckel of nycklar.slice(0, nycklar.length - MAX_TITLES)) delete store2[nyckel];
     }
     try {
-      setScopedStorageItem(KEY16, JSON.stringify(store2));
+      setScopedStorageItem(KEY17, JSON.stringify(store2));
     } catch {
     }
     if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT14));
@@ -25146,11 +27194,11 @@ ${effectiveName(url, id)}`;
     window.addEventListener(EVENT14, listener);
     return () => window.removeEventListener(EVENT14, listener);
   }
-  var KEY16, EVENT14, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
+  var KEY17, EVENT14, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
   var init_player_moments = __esm({
     "lib/player-moments.ts"() {
       init_profile_storage_shim();
-      KEY16 = "player_moments_v1";
+      KEY17 = "player_moments_v1";
       EVENT14 = "lumio-player-moments-changed";
       MOMENT_DEDUPE_SECONDS = 3;
       MAX_PER_TITLE = 50;
@@ -25175,11 +27223,11 @@ ${effectiveName(url, id)}`;
   }
   function cuesToSrt(cues) {
     const stamp = (sec) => {
-      const ms = Math.max(0, Math.round(sec * 1e3));
-      const h = String(Math.floor(ms / 36e5)).padStart(2, "0");
-      const m = String(Math.floor(ms % 36e5 / 6e4)).padStart(2, "0");
-      const s = String(Math.floor(ms % 6e4 / 1e3)).padStart(2, "0");
-      const rest = String(ms % 1e3).padStart(3, "0");
+      const ms2 = Math.max(0, Math.round(sec * 1e3));
+      const h = String(Math.floor(ms2 / 36e5)).padStart(2, "0");
+      const m = String(Math.floor(ms2 % 36e5 / 6e4)).padStart(2, "0");
+      const s = String(Math.floor(ms2 % 6e4 / 1e3)).padStart(2, "0");
+      const rest = String(ms2 % 1e3).padStart(3, "0");
       return `${h}:${m}:${s},${rest}`;
     };
     return cues.map((cue, i) => `${i + 1}
@@ -25189,11 +27237,11 @@ ${cue.text}
   }
   function cuesToVtt(cues, delay) {
     const stamp = (sec) => {
-      const ms = Math.max(0, Math.round((sec + delay) * 1e3));
-      const h = String(Math.floor(ms / 36e5)).padStart(2, "0");
-      const m = String(Math.floor(ms % 36e5 / 6e4)).padStart(2, "0");
-      const s = String(Math.floor(ms % 6e4 / 1e3)).padStart(2, "0");
-      const rest = String(ms % 1e3).padStart(3, "0");
+      const ms2 = Math.max(0, Math.round((sec + delay) * 1e3));
+      const h = String(Math.floor(ms2 / 36e5)).padStart(2, "0");
+      const m = String(Math.floor(ms2 % 36e5 / 6e4)).padStart(2, "0");
+      const s = String(Math.floor(ms2 % 6e4 / 1e3)).padStart(2, "0");
+      const rest = String(ms2 % 1e3).padStart(3, "0");
       return `${h}:${m}:${s}.${rest}`;
     };
     return `WEBVTT
@@ -26222,6 +28270,8 @@ ${cue.text}`).join("\n\n")}
     const [creditsMode, setCreditsMode] = useState(false);
     creditsModeRef.current = creditsMode;
     const creditsPipRef = useRef(null);
+    const clipDockRef = useRef(null);
+    const clipDockedRef = useRef(false);
     const creditsTouchedRef = useRef(false);
     const outroFiredRef = useRef(false);
     const onOutroStartRef = useRef(onOutroStart);
@@ -26554,6 +28604,12 @@ ${cue.text}`).join("\n\n")}
     firstFrameRenderedRef.current = mpv.firstFrameRendered;
     const mutedRef = useRef(muted);
     const cinemaMuteRef = useRef({ held: false, userMuted: false });
+    const silentStartRef = useRef({ held: false });
+    const mpvCommandRef = useRef(mpvCommand2);
+    mpvCommandRef.current = mpvCommand2;
+    const [silentReloadNonce, setSilentReloadNonce] = useState(0);
+    const silentReloadPendingRef = useRef(false);
+    const audioOnlyTrackerRef = useRef(createAudioOnlyTracker());
     const cinemaTimePosRef = useRef(0);
     cinemaTimePosRef.current = mpv.timePos;
     mutedRef.current = muted;
@@ -26811,6 +28867,8 @@ ${cue.text}`).join("\n\n")}
     const firstFrameLoggedRef = useRef(false);
     const closeEventSentRef = useRef(false);
     const closeInProgressRef = useRef(false);
+    const captureContinueFrameRef = useRef(() => {
+    });
     const playbackSessionIdRef = useRef(null);
     const playbackSessionClosedRef = useRef(false);
     const tryCloseDesktopPlaybackSession = useCallback(async (reason) => {
@@ -27341,7 +29399,7 @@ ${cue.text}`).join("\n\n")}
       const rect = container.getBoundingClientRect();
       setContainerSize({ width: rect.width, height: rect.height });
       if (!useMpv) return;
-      const pip = creditsMode ? creditsPipRef.current : null;
+      const pip = creditsMode ? creditsPipRef.current : clipDockedRef.current ? clipDockRef.current : null;
       if (pip) {
         const pipRect = pip.getBoundingClientRect();
         if (pipRect.width > 0 && pipRect.height > 0) {
@@ -27452,6 +29510,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!useMpv) return;
       let cancelled = false;
+      const silentReload = silentReloadPendingRef.current;
+      silentReloadPendingRef.current = false;
       mpv.resetTimePos();
       mpv.resetFileLoaded();
       mpv.resetPlaybackRestarted();
@@ -27465,17 +29525,34 @@ ${cue.text}`).join("\n\n")}
       }).then(() => {
         if (cancelled) return;
         syncPlayerBounds();
+        const silent = !isPlayerRevealHeld();
+        if (silent) {
+          silentStartRef.current.held = true;
+          if (isDroidEngine) void mpvCommand2(["set_property", "mute", "yes"]);
+        }
         openPromise = openMpvPlayer2({
           url,
           start: initialTime ?? 0,
           audioLang: getDefaultAudioLanguage() || void 0,
           requestHeaders,
           shouldAbort: () => cancelled
+        }).then(() => {
+          if (silent && !cancelled && silentStartRef.current.held) void mpvCommand2(["set_property", "mute", "yes"]);
         });
+        if (silentReload) {
+          void fetch(`/api/debug-log?msg=${encodeURIComponent(`[silent-reload] \xF6ppnar samma str\xF6m igen vid ${Math.round(initialTime ?? 0)} s`)}`).catch(() => {
+          });
+        }
         return openPromise;
       });
       return () => {
         cancelled = true;
+        if (silentReloadPendingRef.current) {
+          const pending6 = openPromise;
+          void (pending6 ? pending6.catch(() => {
+          }).then(() => closeMpvPlayer2("spelare: tyst omstart")) : closeMpvPlayer2("spelare: tyst omstart"));
+          return;
+        }
         const pending5 = openPromise;
         void (pending5 ? pending5.catch(() => {
         }).then(() => closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes")) : closeMpvPlayer2("spelare: url byttes eller st\xE4ngdes"));
@@ -27492,7 +29569,31 @@ ${cue.text}`).join("\n\n")}
         setAirplayActive(false);
         airplayWasExternalRef.current = false;
       };
-    }, [useMpv, url]);
+    }, [useMpv, url, silentReloadNonce]);
+    useEffect(() => {
+      if (!useMpv || !mpvRevealPlaybackReady) return;
+      const silentStart = silentStartRef.current;
+      if (!silentStart.held) return;
+      silentStart.held = false;
+      if (isPlayerRevealHeld()) return;
+      void mpvCommand2(["set_property", "mute", mutedRef.current ? "yes" : "no"]);
+    }, [useMpv, mpvRevealPlaybackReady]);
+    useEffect(() => () => {
+      if (!silentStartRef.current.held) return;
+      silentStartRef.current.held = false;
+      void mpvCommandRef.current(["set_property", "mute", mutedRef.current ? "yes" : "no"]);
+    }, []);
+    useEffect(() => {
+      if (!useMpv) return;
+      if (!audioOnlyTrackerRef.current.observe({ url, timePos: mpv.timePos, firstFrame: mpv.firstFrameRendered })) return;
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(`[silent-reload] ljud utan bild i 3 s \u2014 laddar om samma str\xF6m tyst (${filename ?? url.slice(-40)})`)}`).catch(() => {
+      });
+      silentReloadPendingRef.current = true;
+      setMpvStartupHoldReady(false);
+      setMpvStartupTracksReady(false);
+      setMpvRevealPlaybackReady(false);
+      setSilentReloadNonce((n) => n + 1);
+    }, [useMpv, url, mpv.timePos, mpv.firstFrameRendered]);
     useEffect(() => {
       if (!useMpv) return;
       if (mpv.paused) showControlsPermanent();
@@ -27643,6 +29744,7 @@ ${cue.text}`).join("\n\n")}
     const handleClose = useCallback(() => {
       if (closeInProgressRef.current) return;
       closeInProgressRef.current = true;
+      captureContinueFrameRef.current();
       let didFinishClose = false;
       const finishClose = () => {
         notifyLanPlaybackState(false);
@@ -28038,6 +30140,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       if (isTv && e.key.startsWith("Arrow")) return;
+      if (isTextEntryTarget2(keyTarget)) return;
       if (matchesShortcut("playPause", e.key) || e.key === "k") {
         e.preventDefault();
         togglePlay();
@@ -28061,6 +30164,11 @@ ${cue.text}`).join("\n\n")}
       }
       if (matchesShortcut("saveMoment", e.key)) {
         saveMomentNow();
+        return;
+      }
+      if (!isTv && !hasCommandModifier(e) && matchesShortcut("clip", e.key)) {
+        if (openSurfaceRef.current === "clip") closeClip();
+        else openClip();
         return;
       }
       if (matchesShortcut("secondarySubtitleCycle", e.key)) {
@@ -28519,6 +30627,15 @@ ${cue.text}`).join("\n\n")}
       setPlayerOpen(true);
       return () => setPlayerOpen(false);
     }, []);
+    const continueFrameRef = useMemo(() => mediaId ? { id: mediaId, season, episode } : null, [mediaId, season, episode]);
+    captureContinueFrameRef.current = useContinueFrameCapture({
+      engine: engineKind,
+      ref: continueFrameRef,
+      videoRef,
+      playing: isPlaying,
+      armed: hasStarted && durationConfirmed,
+      shouldSkip: () => watchedMarkedRef.current || creditsMode || hasEndedPlayback
+    });
     const playerBarcode = useBarcodeRecorder({ engine: engineKind, mediaId: mediaId ?? null, mediaType, tmdbId: wikiTmdbId, title: mediaTitle ?? title, year, posterUrl, season, episode, snapshotRef: progressSnapshotRef, videoRef, playing: isPlaying, finished: creditsMode || hasEndedPlayback });
     useEffect(() => {
       if (useMpv) {
@@ -30143,7 +32260,7 @@ ${cue.text}`).join("\n\n")}
       introLabel: mediaType === "tv" && introSegment ? introKind === "recap" ? t("recapFound") : t("introFound") : null,
       outroLabel: mediaType === "tv" && outroSegment ? t("outroFound") : null,
       endsTemplate: t("plEndsAt"),
-      formatClock: (ms) => statusClock.format(ms)
+      formatClock: (ms2) => statusClock.format(ms2)
     });
     const renderStatusLine = (textClass) => statusParts.length === 0 ? null : /* @__PURE__ */ jsx("span", { className: `flex flex-none items-center gap-2 whitespace-nowrap font-medium text-white ${textClass}`, children: statusParts.map((part, index) => /* @__PURE__ */ jsxs(react_shim_default.Fragment, { children: [
       index > 0 ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "h-[3px] w-[3px] flex-none rounded-full bg-white/80" }) : null,
@@ -30170,7 +32287,7 @@ ${cue.text}`).join("\n\n")}
         }
       )
     ] }) : /* @__PURE__ */ jsx("div", { className: dtMenuHeadingClass, children: label });
-    const portraitPickerOpen = portraitChrome && (openSurface === "subs" || openSurface === "audio" || openSurface === "aspect" || openSurface === "zoom" || openSurface === "cast" || openSurface === "more");
+    const portraitPickerOpen = portraitChrome && (openSurface === "subs" || openSurface === "audio" || openSurface === "aspect" || openSurface === "zoom" || openSurface === "cast" || openSurface === "more" || openSurface === "clip");
     const dtActiveTextClass = newChrome ? "text-[rgb(var(--player-accent))]" : "text-aurora-300";
     const dtMenuDotClass = newChrome ? "ml-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white" : "ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-aurora-400";
     const chapterList = useMemo(() => buildChapterList({
@@ -30188,10 +32305,13 @@ ${cue.text}`).join("\n\n")}
       }
     }), [mpvChapters, url, introSegment, introKind, outroSegment, totalDuration, mediaType, season, episode, mediaTitle, title, t]);
     const chapterIndexNow = currentChapterIndex(chapterList, realTime);
+    const pendingClipRef = useRef(null);
     useEffect(() => {
       if (!hasStarted) return;
-      const sekund = takePendingMomentStart(momentKey);
-      if (sekund !== null && sekund > 0) seekToAbsolute(sekund);
+      const range = takePendingMomentRange(momentKey);
+      if (!range) return;
+      if (range.seconds > 0) seekToAbsolute(range.seconds);
+      if (range.endSeconds != null) pendingClipRef.current = { inSec: range.seconds, outSec: range.endSeconds };
     }, [hasStarted, momentKey, seekToAbsolute]);
     const saveMomentNow = () => {
       if (!momentKey) {
@@ -30199,6 +32319,276 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       const result = addMoment(momentKey, realTime);
+      showMomentNotice((result.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result.seconds)));
+    };
+    const showClip = openSurface === "clip";
+    const [clip2, setClip] = useState(null);
+    const clipDispatch = useCallback((action) => setClip((s) => s ? clipReducer(s, action) : s), []);
+    const clipAnchorRef = useRef(0);
+    const clipRendererRef = useRef(null);
+    const clipHdrRef = useRef(false);
+    const clipRenderSeqRef = useRef(0);
+    const isMpvEngineRef = useRef(isMpvEngine);
+    isMpvEngineRef.current = isMpvEngine;
+    const [clipShareState, setClipShareState] = useState({ kind: "idle" });
+    const clipBusy = clipShareState.kind === "rendering" ? { kind: "rendering", progress: clipShareState.progress } : null;
+    const setClipBusy = (busy) => setClipShareState(busy ? { kind: "rendering", progress: busy.progress } : { kind: "idle" });
+    const clipWebFileRef = useRef(null);
+    const clipLoopGateRef = useRef({ armed: true });
+    const [clipPreview, setClipPreview] = useState(null);
+    const [ffmpegOk, setFfmpegOk] = useState(true);
+    useEffect(() => {
+      void fetch("/api/health").then((r) => r.json()).then((h) => setFfmpegOk(h.ffmpeg !== false)).catch(() => {
+      });
+    }, []);
+    const clipEngine = isMpvEngine ? "mpv" : useMpv ? "droid" : "none";
+    const clipAvailable = clipAvailableFor({ isTv, duration: totalDuration, live: isLiveStreamUrl(url), ffmpeg: ffmpegOk, engine: clipEngine });
+    const [clipLinkBase, setClipLinkBase] = useState(() => typeof window !== "undefined" && isShareableOrigin(window.location.origin) ? window.location.origin : null);
+    useEffect(() => {
+      if (!showClip || clipLinkBase) return;
+      void fetch("/api/lan-ip").then((r) => r.json()).then((lan) => {
+        if (lan?.ip) setClipLinkBase(`http://${lan.ip}:${window.location.port || "3011"}`);
+      }).catch(() => {
+      });
+    }, [showClip, clipLinkBase]);
+    const openClip = (range) => {
+      if (!clipAvailable) return;
+      clipAnchorRef.current = range ? range.inSec : realTime;
+      let next = initClipState({ anchorSec: realTime, duration: totalDuration, baseTitle: mediaTitle || title || "", ...range ?? {} });
+      if (!ffmpegOk) next = clipReducer(next, { type: "setFormat", format: "still" });
+      clipLoopGateRef.current = { armed: true };
+      setClip(next);
+      setOpenSurface("clip");
+    };
+    const closeClip = () => {
+      clipRendererRef.current?.cancel();
+      setClipBusy(null);
+      setClip(null);
+      setClipPreview((previous) => {
+        if (previous) URL.revokeObjectURL(previous);
+        return null;
+      });
+      if (isMpvEngine) void mpvCommand2(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand2(["set_property", "ab-loop-b", "no"]));
+      seekToAbsolute(clipAnchorRef.current);
+      if (isPlaying) togglePlay();
+      setOpenSurface((s) => s === "clip" ? null : s);
+    };
+    useEffect(() => {
+      const pending5 = pendingClipRef.current;
+      if (!pending5 || !clipAvailable) return;
+      pendingClipRef.current = null;
+      openClip(pending5);
+    }, [clipAvailable]);
+    useEffect(() => {
+      clipRendererRef.current?.cancel();
+      clipRenderSeqRef.current += 1;
+      clipWebFileRef.current = null;
+      setClipShareState({ kind: "idle" });
+    }, [clip2?.inSec, clip2?.outSec, clip2?.format]);
+    useEffect(() => () => {
+      clipRendererRef.current?.cancel();
+      if (isMpvEngineRef.current) void mpvCommand(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand(["set_property", "ab-loop-b", "no"]));
+    }, []);
+    const clipDocked = showClip && Boolean(clip2) && portraitChrome;
+    clipDockedRef.current = clipDocked;
+    useEffect(() => {
+      if (useMpv) scheduleBoundsResync();
+    }, [clipDocked, useMpv, scheduleBoundsResync]);
+    useEffect(() => {
+      if (!showClip && clip2) closeClip();
+    }, [showClip]);
+    useEffect(() => {
+      if (!clip2) return;
+      if (clip2.format === "still" && !clip2.scrubbing) {
+        if (isMpvEngine) void mpvCommand2(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand2(["set_property", "ab-loop-b", "no"]));
+        seekToAbsolute(clip2.inSec);
+        if (isPlaying) togglePlay();
+        return;
+      }
+      if (clip2.scrubbing) {
+        if (isMpvEngine) void mpvCommand2(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand2(["set_property", "ab-loop-b", "no"]));
+        seekToAbsolute(clip2.activeHandle === "out" ? clip2.outSec : clip2.inSec);
+        if (isPlaying) togglePlay();
+        const id = window.setTimeout(() => clipDispatch({ type: "scrubEnd" }), 900);
+        return () => window.clearTimeout(id);
+      }
+      if (isMpvEngine) {
+        void mpvCommand2(["set_property", "ab-loop-a", String(clip2.inSec)]).then(() => mpvCommand2(["set_property", "ab-loop-b", String(clip2.outSec)]));
+      }
+      seekToAbsolute(clip2.inSec);
+      if (!isPlaying) togglePlay();
+    }, [clip2?.inSec, clip2?.outSec, clip2?.scrubbing, clip2?.format]);
+    useEffect(() => {
+      if (!clip2 || isMpvEngine) return;
+      const back = shouldLoopBack(
+        { position: realTime, inSec: clip2.inSec, outSec: clip2.outSec, scrubbing: clip2.scrubbing, still: clip2.format === "still" },
+        clipLoopGateRef.current
+      );
+      if (back) seekToAbsolute(clip2.inSec);
+    }, [realTime, clip2, isMpvEngine, seekToAbsolute]);
+    useEffect(() => {
+      if (!showClip || !isMpvEngine) return;
+      void Promise.resolve(mpvCommand2(["get_property", "video-params/gamma"])).then((g) => {
+        clipHdrRef.current = g === "pq" || g === "hlg";
+      });
+    }, [showClip, isMpvEngine]);
+    useEffect(() => {
+      if (!clip2 || clip2.scrubbing || !isMpvEngine) return;
+      let cancelled = false;
+      const id = window.setTimeout(() => {
+        void captureFrameBlob("mpv", null).then((blob) => {
+          if (cancelled) return;
+          const next = URL.createObjectURL(blob);
+          setClipPreview((previous) => {
+            if (previous) URL.revokeObjectURL(previous);
+            return next;
+          });
+        }).catch(() => {
+        });
+      }, 250);
+      return () => {
+        cancelled = true;
+        window.clearTimeout(id);
+      };
+    }, [clip2?.inSec, clip2?.scrubbing]);
+    const tClip = (key) => t(key);
+    const clipToast = (key) => showMomentNotice(tClip(key));
+    const isClipCancel = (error) => error instanceof Error && error.message === "avbruten";
+    const clipRenderInput = () => clip2 && (clip2.format !== "still" || clipEngine !== "mpv") ? { url, headers: requestHeaders, inSec: clip2.inSec, outSec: clip2.outSec, format: clip2.format, hdr: clipHdrRef.current } : null;
+    const clipPreviewClip = (() => {
+      const input = clipRenderInput();
+      const done = input ? clipRendererRef.current?.peek(input) : null;
+      return input && done && input.format !== "still" ? { src: `/api/clip/${done.id}/file`, kind: input.format } : null;
+    })();
+    const renderClip = async () => {
+      const input = clipRenderInput();
+      if (!input) throw new Error("inget att rendera");
+      clipRendererRef.current ?? (clipRendererRef.current = new ClipRenderer());
+      const seq = ++clipRenderSeqRef.current;
+      setClipBusy({ kind: "rendering", progress: 0 });
+      try {
+        return await clipRendererRef.current.render(input, (progress3) => {
+          if (seq === clipRenderSeqRef.current) setClipBusy({ kind: "rendering", progress: progress3 });
+        });
+      } finally {
+        if (seq === clipRenderSeqRef.current) setClipBusy(null);
+      }
+    };
+    const clipCopy = () => {
+      if (!clip2) return;
+      if (clip2.format === "still") {
+        copyStillToClipboard(captureStill(clipEngine, videoRef.current)).then(() => clipToast("clipImageCopied"), () => clipToast("clipFailed"));
+        return;
+      }
+      if (!tmdbId || !clipLinkBase) {
+        clipToast("clipFailed");
+        return;
+      }
+      const link = buildMomentLink(clipLinkBase, {
+        mediaType: mediaType === "tv" ? "tv" : "movie",
+        tmdbId: String(tmdbId),
+        season: season ?? void 0,
+        episode: episode ?? void 0,
+        seconds: clip2.inSec,
+        endSeconds: clip2.outSec
+      });
+      void writeTextToClipboard(link).then((ok) => clipToast(ok ? "clipLinkCopied" : "clipFailed"));
+    };
+    const clipCopyLink = () => {
+      if (!clip2) return;
+      if (!tmdbId || !clipLinkBase) {
+        clipToast("clipFailed");
+        return;
+      }
+      const link = buildMomentLink(clipLinkBase, {
+        mediaType: mediaType === "tv" ? "tv" : "movie",
+        tmdbId: String(tmdbId),
+        season: season ?? void 0,
+        episode: episode ?? void 0,
+        seconds: clip2.inSec,
+        endSeconds: clip2.format === "still" ? void 0 : clip2.outSec
+      });
+      void writeTextToClipboard(link).then((ok) => clipToast(ok ? "clipLinkCopied" : "clipFailed"));
+    };
+    const clipSaveFile = async () => {
+      if (!clip2) return;
+      try {
+        if (clipEngine !== "mpv") {
+          const rendered2 = await renderClip();
+          const name = clipFileName(clip2.title, clipExt(clip2.format));
+          if (clipEngine === "droid") {
+            try {
+              await saveToGalleryAndroid(rendered2.path, clipMime(clip2.format), name);
+              clipToast("clipSavedPhotos");
+            } catch (error) {
+              if (!isAndroidVersionError(error)) throw error;
+              clipToast("clipSaveNeedsAndroid10");
+              await shareFileAndroid(rendered2.path, clipMime(clip2.format), clip2.title, name);
+            }
+          } else {
+            downloadClipFile(rendered2, name);
+          }
+          return;
+        }
+        if (clip2.format === "still") {
+          await saveStill(await captureStill(clipEngine, videoRef.current), clipFileName(clip2.title, "png"));
+          return;
+        }
+        const rendered = await renderClip();
+        if (await saveRenderedClip(rendered, clipFileName(clip2.title, clip2.format), clip2.format) === "saved") clipToast("clipSaved");
+      } catch (error) {
+        if (!isClipCancel(error)) clipToast("clipFailed");
+      }
+    };
+    const clipShare = async (anchor) => {
+      if (!clip2) return;
+      try {
+        if (clipEngine === "none") {
+          const ready = clipWebFileRef.current;
+          if (clipShareState.kind === "ready" && ready) {
+            const name2 = ready.name;
+            const result = await shareWebFile(ready);
+            if (result === "unsupported") {
+              const rendered2 = clipRenderInput() ? clipRendererRef.current?.peek(clipRenderInput()) : null;
+              if (rendered2) downloadClipFile(rendered2, name2);
+            }
+            clipWebFileRef.current = null;
+            setClipShareState({ kind: "idle" });
+            return;
+          }
+          const rendered = await renderClip();
+          const name = clipFileName(clip2.title, clipExt(clip2.format));
+          if (!canShareFiles(clipMime(clip2.format))) {
+            downloadClipFile(rendered, name);
+            return;
+          }
+          const seq = clipRenderSeqRef.current;
+          const file = await prepareWebShareFile(rendered, name, clipMime(clip2.format));
+          if (seq !== clipRenderSeqRef.current) return;
+          clipWebFileRef.current = file;
+          setClipShareState({ kind: "ready" });
+          return;
+        }
+        if (clipEngine === "droid") {
+          const rendered = await renderClip();
+          await shareFileAndroid(rendered.path, clipMime(clip2.format), clip2.title, clipFileName(clip2.title, clipExt(clip2.format)));
+          return;
+        }
+        if (clip2.format === "still") {
+          await shareStill(await captureStill(clipEngine, videoRef.current), clipFileName(clip2.title, "png"), anchor);
+          return;
+        }
+        await shareRenderedClip(await renderClip(), clipFileName(clip2.title, clip2.format), anchor, clip2.format);
+      } catch (error) {
+        if (!isClipCancel(error)) clipToast("clipFailed");
+      }
+    };
+    const clipSaveMoment = () => {
+      if (!clip2 || !momentKey) {
+        showMomentNotice(t("plMomentUnavailable"));
+        return;
+      }
+      const result = addMoment(momentKey, clip2.inSec);
       showMomentNotice((result.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result.seconds)));
     };
     const gearChevron = /* @__PURE__ */ jsx("svg", { "aria-hidden": true, className: "h-4 w-4 flex-none text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" }) });
@@ -30378,7 +32768,7 @@ ${cue.text}`).join("\n\n")}
     const introZone = trackZone(introSegment);
     const outroZone = trackZone(outroSegment);
     const playerIcon = (id, cls) => playerControlIcon(id, cls);
-    const downloadIcon = (cls) => /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+    const downloadIcon2 = (cls) => /* @__PURE__ */ jsxs("svg", { className: cls, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
       /* @__PURE__ */ jsx("path", { d: "M12 3v12" }),
       /* @__PURE__ */ jsx("path", { d: "m7 10 5 5 5-5" }),
       /* @__PURE__ */ jsx("path", { d: "M5 21h14" })
@@ -30573,6 +32963,18 @@ ${cue.text}`).join("\n\n")}
           "aria-label": t("castTitle"),
           className: dtIconButtonClass(showCastMenu ? "open" : castTarget ? "active" : "idle"),
           children: playerIcon("cast", "h-[19px] w-[19px]")
+        }
+      ) : null,
+      clip: clipAvailable ? /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          ...dtStation,
+          onClick: () => showClip ? closeClip() : openClip(),
+          title: t("clipTitle"),
+          "aria-label": t("clipTitle"),
+          className: dtIconButtonClass(showClip ? "open" : "idle"),
+          children: playerIcon("clip", "h-[19px] w-[19px]")
         }
       ) : null,
       sleepTimer: /* @__PURE__ */ jsx(
@@ -31029,6 +33431,7 @@ ${cue.text}`).join("\n\n")}
     };
     const onGesturePointerDown = (event) => {
       if (!phoneChrome || event.pointerType === "mouse") return;
+      if (gestureBlockedBySurface(openSurfaceRef.current)) return;
       const rect = event.currentTarget.getBoundingClientRect();
       activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (activePointersRef.current.size === 2) {
@@ -31233,6 +33636,12 @@ ${cue.text}`).join("\n\n")}
         onClick: () => setShowMomentsMenu((open2) => !open2),
         triggerRef: momentsTriggerRef
       } : void 0,
+      clip: clipAvailable ? {
+        label: t("clipTitle"),
+        title: t("clipTitle"),
+        state: showClip ? "open" : "idle",
+        onClick: () => showClip ? closeClip() : openClip()
+      } : void 0,
       chapters: chapterList.length > 0 ? {
         label: t("plChapters"),
         title: t("plChapters"),
@@ -31394,7 +33803,7 @@ ${cue.text}`).join("\n\n")}
           "aria-label": downloading ? t("cancel") : t("downloadThisVideo"),
           className: variant === "round" ? `flex h-10 flex-none items-center gap-2 rounded-full transition ${active4 ? "bg-[rgb(var(--player-accent)/0.22)] px-4 text-white" : "w-10 justify-center bg-[rgba(13,14,22,0.6)] text-slate-100"}` : `flex h-[34px] flex-none items-center gap-1.5 rounded-lg transition ${active4 ? "px-2 text-[rgb(var(--player-accent))]" : "w-[34px] justify-center text-slate-300"}`,
           children: [
-            downloadIcon(variant === "round" ? "h-[19px] w-[19px]" : "h-[17px] w-[17px]"),
+            downloadIcon2(variant === "round" ? "h-[19px] w-[19px]" : "h-[17px] w-[17px]"),
             downloadLabel ? /* @__PURE__ */ jsx("span", { className: `font-semibold tabular-nums ${variant === "round" ? "text-[13px]" : "text-xs"}`, children: downloadLabel }) : null
           ]
         }
@@ -31509,7 +33918,9 @@ ${cue.text}`).join("\n\n")}
                   // för att kapa den.
                   background: "linear-gradient(0deg,transparent 0%,rgba(0,0,0,0.35) 40%,rgba(0,0,0,0.85) 100%)",
                   opacity: controlsVisible ? 1 : 0,
-                  pointerEvents: controlsVisible ? "auto" : "none"
+                  pointerEvents: controlsVisible ? "auto" : "none",
+                  // Klippets sidopanel tar 340 px till höger.
+                  right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : 340 : void 0
                 },
                 children: [
                   isDesktopTauriEnv ? /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "w-[68px] flex-none" }) : null,
@@ -31527,34 +33938,36 @@ ${cue.text}`).join("\n\n")}
                   ] }),
                   /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
                     /* @__PURE__ */ jsx(BingeModeChip, {}),
-                    /* @__PURE__ */ jsxs(
-                      "button",
-                      {
-                        type: "button",
-                        ...dtStation,
-                        onClick: () => {
-                          void handleCopyStreamLink();
-                        },
-                        className: "flex items-center gap-[7px] rounded-lg border border-[rgb(var(--player-accent)/0.40)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--player-accent))] transition hover:bg-[rgb(var(--player-accent)/0.14)]",
-                        children: [
-                          /* @__PURE__ */ jsxs("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                            /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4" }),
-                            /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20" })
-                          ] }),
-                          copiedLink ? t("copied") : t("copyLink")
-                        ]
-                      }
-                    ),
-                    /* @__PURE__ */ jsx(
-                      "button",
-                      {
-                        type: "button",
-                        ...dtStation,
-                        onClick: handleClose,
-                        className: "rounded-lg border border-white/[0.14] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.07] hover:text-white",
-                        children: t("close")
-                      }
-                    )
+                    showClip ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
+                      /* @__PURE__ */ jsxs(
+                        "button",
+                        {
+                          type: "button",
+                          ...dtStation,
+                          onClick: () => {
+                            void handleCopyStreamLink();
+                          },
+                          className: "flex items-center gap-[7px] rounded-lg border border-[rgb(var(--player-accent)/0.40)] px-3 py-1.5 text-xs font-medium text-[rgb(var(--player-accent))] transition hover:bg-[rgb(var(--player-accent)/0.14)]",
+                          children: [
+                            /* @__PURE__ */ jsxs("svg", { className: "h-3.5 w-3.5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                              /* @__PURE__ */ jsx("path", { d: "M10 13a5 5 0 0 0 7.07 0l3.54-3.54a5 5 0 1 0-7.07-7.07L11 4" }),
+                              /* @__PURE__ */ jsx("path", { d: "M14 11a5 5 0 0 0-7.07 0L3.39 14.54a5 5 0 1 0 7.07 7.07L13 20" })
+                            ] }),
+                            copiedLink ? t("copied") : t("copyLink")
+                          ]
+                        }
+                      ),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          ...dtStation,
+                          onClick: handleClose,
+                          className: "rounded-lg border border-white/[0.14] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.07] hover:text-white",
+                          children: t("close")
+                        }
+                      )
+                    ] })
                   ] })
                 ]
               }
@@ -31582,7 +33995,15 @@ ${cue.text}`).join("\n\n")}
                 },
                 children: [
                   /* @__PURE__ */ jsx("span", { className: "min-w-0 flex-1 truncate text-sm font-medium text-slate-100", children: headerTitle }),
-                  /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
+                  /* @__PURE__ */ jsx("div", { className: "flex flex-none items-center gap-2", children: showClip ? /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: closeClip,
+                      className: "rounded-full border border-white/[0.14] px-3 py-[7px] text-[11px] font-medium text-slate-300",
+                      children: t("clipCancel")
+                    }
+                  ) : /* @__PURE__ */ jsxs(Fragment2, { children: [
                     renderPhoneDownload("flat"),
                     /* @__PURE__ */ jsx(
                       "button",
@@ -31604,7 +34025,7 @@ ${cue.text}`).join("\n\n")}
                         children: t("close")
                       }
                     )
-                  ] })
+                  ] }) })
                 ]
               }
             )
@@ -31733,7 +34154,13 @@ ${cue.text}`).join("\n\n")}
                     autoPlay: true,
                     playsInline: true,
                     className: "block",
-                    style: { ...videoPresentation.videoStyle, ...cropZoomVideoStyle, filter: tuningToCssFilter(effectiveVideoTuning) || void 0 },
+                    style: {
+                      ...videoPresentation.videoStyle,
+                      ...cropZoomVideoStyle,
+                      filter: tuningToCssFilter(effectiveVideoTuning) || void 0,
+                      // Klippet i stående läge: samma dockade ruta som Android-ytan.
+                      ...clipDocked ? { position: "fixed", left: 0, top: `calc(56px + ${PHONE_TOP_INSET})`, width: "100vw", height: "56.25vw", objectFit: "contain", transform: "none" } : {}
+                    },
                     ...{ "x-webkit-airplay": "allow" },
                     onLoadedMetadata: () => {
                       if (!hasStarted) void attemptHtml5Start(false);
@@ -31955,6 +34382,7 @@ ${cue.text}`).join("\n\n")}
                       pointerEvents: controlsVisible && controlsReady ? "auto" : "none",
                       // Liggande: designens -60 % lyfter klustret ur seekradens väg.
                       transform: landscapeChrome ? "translateY(-60%)" : void 0,
+                      right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : 340 : void 0,
                       // Stående: centrerad på VIDEON, inte i ytan mellan listen och
                       // kontrollerna. Bilden är brevlådad och ligger mitt i
                       // videoytan — designens "centrerad över videon" är alltså
@@ -31963,7 +34391,7 @@ ${cue.text}`).join("\n\n")}
                       top: portraitChrome ? "50%" : void 0
                     },
                     children: [
-                      showsControl("seekBack") ? /* @__PURE__ */ jsx(
+                      showsControl("seekBack") && !showClip ? /* @__PURE__ */ jsx(
                         "button",
                         {
                           type: "button",
@@ -31985,7 +34413,7 @@ ${cue.text}`).join("\n\n")}
                           children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: desktopChrome ? "h-[30px] w-[30px]" : landscapeChrome ? "h-[26px] w-[26px]" : "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: desktopChrome ? "h-8 w-8" : landscapeChrome ? "h-7 w-7" : "h-[22px] w-[22px]", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) })
                         }
                       ),
-                      showsControl("seekForward") ? /* @__PURE__ */ jsx(
+                      showsControl("seekForward") && !showClip ? /* @__PURE__ */ jsx(
                         "button",
                         {
                           type: "button",
@@ -32017,7 +34445,9 @@ ${cue.text}`).join("\n\n")}
                       /* I landskap sitter urklippet i SIDAN, inte i toppen — annars
                          hamnar bakåtpilen och nedladdningen under det. */
                       marginLeft: PHONE_LEFT_INSET,
-                      marginRight: PHONE_RIGHT_INSET
+                      marginRight: PHONE_RIGHT_INSET,
+                      // Klippets panel tar 340 px till höger.
+                      right: showClip ? "calc(340px + 26px)" : void 0
                     },
                     children: [
                       /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 items-center gap-3", children: [
@@ -32513,6 +34943,82 @@ ${cue.text}`).join("\n\n")}
                     ]
                   }
                 ),
+                clipDocked && clip2 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                  /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      ref: clipDockRef,
+                      className: "pointer-events-none fixed inset-x-0 z-[25]",
+                      style: { top: `calc(56px + ${PHONE_TOP_INSET})`, aspectRatio: "16 / 9" },
+                      children: /* @__PURE__ */ jsx("span", { className: "absolute bottom-2 right-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: tClip("clipFrom").replace("{time}", formatClipTime(clip2.inSec)) })
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(
+                    ClipPortraitSheet,
+                    {
+                      state: clip2,
+                      dispatch: clipDispatch,
+                      formats: ["mp4", "gif", "still"],
+                      share: clipShareState,
+                      t: tClip,
+                      topOffset: `calc(56px + ${PHONE_TOP_INSET} + 56.25vw + 96px)`,
+                      onClose: closeClip,
+                      onCopyLink: clipCopyLink,
+                      onSave: () => {
+                        void clipSaveFile();
+                      },
+                      onSaveMoment: clipSaveMoment,
+                      onShare: (anchor) => {
+                        void clipShare(anchor);
+                      }
+                    }
+                  )
+                ] }) : null,
+                showClip && clip2 && landscapeChrome ? /* @__PURE__ */ jsx(
+                  ClipLandscapePanel,
+                  {
+                    state: clip2,
+                    dispatch: clipDispatch,
+                    formats: ["mp4", "gif", "still"],
+                    share: clipShareState,
+                    t: tClip,
+                    onClose: closeClip,
+                    onCopyLink: clipCopyLink,
+                    onSave: () => {
+                      void clipSaveFile();
+                    },
+                    onSaveMoment: clipSaveMoment,
+                    onShare: (anchor) => {
+                      void clipShare(anchor);
+                    }
+                  }
+                ) : null,
+                showClip && clip2 && !phoneChrome ? /* @__PURE__ */ jsx(
+                  ClipPanel,
+                  {
+                    state: clip2,
+                    dispatch: clipDispatch,
+                    formats: ffmpegOk ? ["mp4", "gif", "still"] : ["still"],
+                    canCopyLink: clip2.format === "still" || clipLinkBase !== null,
+                    busy: clipBusy,
+                    share: clipShareState,
+                    previewSrc: clipPreview,
+                    previewClip: clipPreviewClip,
+                    onClose: closeClip,
+                    onCopy: clipCopy,
+                    onSaveFile: () => {
+                      void clipSaveFile();
+                    },
+                    onSaveMoment: clipSaveMoment,
+                    onShare: (anchor) => {
+                      void clipShare(anchor);
+                    },
+                    t: tClip,
+                    rowClass: dtMoreRowClass,
+                    rowTextClass: dtMoreTextClass,
+                    iconClass: dtMoreIconClass
+                  }
+                ) : null,
                 /* @__PURE__ */ jsxs(
                   "div",
                   {
@@ -32521,6 +35027,7 @@ ${cue.text}`).join("\n\n")}
                     style: {
                       opacity: controlsVisible && controlsReady ? 1 : 0,
                       pointerEvents: controlsVisible && controlsReady ? "auto" : "none",
+                      right: showClip ? landscapeChrome ? `calc(340px + ${PHONE_RIGHT_INSET})` : 340 : void 0,
                       // Sidoinsetet gäller bara liggande telefon: där ligger urklippet i
                       // sidan och skulle annars klippa tiden respektive Mer-brickan.
                       //
@@ -32539,14 +35046,27 @@ ${cue.text}`).join("\n\n")}
                     children: [
                       portraitPickerOpen ? /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-0 bg-slate-950/60", onClick: () => setOpenSurface(null) }) : null,
                       desktopChrome ? (() => {
-                        const timePillClass = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
+                        const timePillClass2 = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
                         const elapsedLabel = playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - seekTime))}` : fmt(seekTime);
                         const totalLabel = playerLayout.timeFormat === "elapsed-total" ? fmt(totalDuration) : null;
+                        if (showClip && clip2) {
+                          return /* @__PURE__ */ jsxs(Fragment2, { children: [
+                            /* @__PURE__ */ jsx(ClipTrimmer, { state: clip2, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass }),
+                            /* @__PURE__ */ jsxs("div", { className: "mt-3.5 flex items-center justify-between gap-6", children: [
+                              /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1", children: [
+                                desktopControls.playPause,
+                                dtDivider,
+                                /* @__PURE__ */ jsx("span", { className: "px-2 text-[13px] font-medium text-white", children: t("clipZoomed") })
+                              ] }),
+                              /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: desktopControls.clip })
+                            ] })
+                          ] });
+                        }
                         return /* @__PURE__ */ jsxs(Fragment2, { children: [
                           /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3.5", children: [
-                            showsControl("time") ? /* @__PURE__ */ jsx("span", { className: timePillClass, children: elapsedLabel }) : null,
+                            showsControl("time") ? /* @__PURE__ */ jsx("span", { className: timePillClass2, children: elapsedLabel }) : null,
                             renderSeekTrack("flex-1"),
-                            showsControl("time") && totalLabel ? /* @__PURE__ */ jsx("span", { className: timePillClass, children: totalLabel }) : null
+                            showsControl("time") && totalLabel ? /* @__PURE__ */ jsx("span", { className: timePillClass2, children: totalLabel }) : null
                           ] }),
                           /* @__PURE__ */ jsxs("div", { className: "mt-3.5 flex items-center justify-between gap-6", children: [
                             /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: renderDesktopZone(DESKTOP_CONTROL_ZONES.left) }),
@@ -32558,7 +35078,17 @@ ${cue.text}`).join("\n\n")}
                         /* Liggande: spåret kant till kant, tiden till vänster och sju
                            brickor till höger — den sjunde är Mer, som bär det som inte fick
                            plats. Ingen sidoscroll: budgeten är just sex plus Mer. */
-                        /* @__PURE__ */ jsxs(Fragment2, { children: [
+                        showClip && clip2 ? (
+                          /* Klippytan (handoff 2b): trimmern i touchstorlek, och raden bär
+                             bara play och klippknappen. */
+                          /* @__PURE__ */ jsxs(Fragment2, { children: [
+                            /* @__PURE__ */ jsx(ClipTrimmer, { state: clip2, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass, size: "touch", t: tClip }),
+                            /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between gap-5", children: [
+                              /* @__PURE__ */ jsx("button", { type: "button", onClick: togglePlay, "aria-label": t("plPlayPause"), className: "p-1 text-white", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-6 w-6", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-6 w-6", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
+                              phoneControls.clip ? renderPhoneTile("clip", phoneControls.clip) : null
+                            ] })
+                          ] })
+                        ) : /* @__PURE__ */ jsxs(Fragment2, { children: [
                           renderSeekTrack("w-full"),
                           /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between gap-5", children: [
                             renderPhoneClock("text-[15px]", "text-[13px]"),
@@ -32582,6 +35112,10 @@ ${cue.text}`).join("\n\n")}
                             ] })
                           ] })
                         ] })
+                      ) : portraitChrome && showClip && clip2 ? (
+                        /* Klippet i stående läge (handoff 2c): trimmern direkt under den
+                           dockade videon. Bottenarket ritas för sig (ClipPortraitSheet). */
+                        /* @__PURE__ */ jsx("div", { className: "fixed inset-x-0 px-[22px]", style: { top: `calc(56px + ${PHONE_TOP_INSET} + 56.25vw + 14px)` }, children: /* @__PURE__ */ jsx(ClipTrimmer, { state: clip2, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass, size: "touch", t: tClip }) })
                       ) : portraitChrome ? (
                         /* Stående: seekrad och ikonrad i sidmarginalen, sedan den rullande
                            pillerraden. `flex-none` på raden är NÖDVÄNDIGT — utan den blir
@@ -32663,6 +35197,8 @@ ${cue.text}`).join("\n\n")}
                             pip: null,
                             sleepTimer: null,
                             companions: null,
+                            // Klippet finns bara i den nya skrivbordsraden (desktopControls).
+                            clip: null,
                             playPause: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, "data-init": isTv ? "1" : void 0, onClick: togglePlay, className: "text-white hover:text-aurora-300", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
                             seekBack: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(-10), className: "text-xs text-slate-300 hover:text-white", children: "\u221210s" }),
                             seekForward: /* @__PURE__ */ jsx("button", { type: "button", "data-f": isTv ? "1" : void 0, onClick: () => seek(10), className: "text-xs text-slate-300 hover:text-white", children: "+10s" }),
@@ -33475,12 +36011,14 @@ ${cue.text}`).join("\n\n")}
       init_player_snapshot();
       init_homekit_client();
       init_plugin_sdk();
+      init_use_continue_frame_capture();
       init_playback_session_client();
       init_playback_settings();
       init_keyboard_shortcuts();
       init_playback_settings();
       init_autoplay_settings();
       init_player_reveal_hold();
+      init_player_silent_start();
       init_credits_recommendations();
       init_ids();
       init_title_logo_cache();
@@ -33501,6 +36039,12 @@ ${cue.text}`).join("\n\n")}
       init_series_lock_runtime();
       init_player_status_line();
       init_moment_link();
+      init_clip_panel();
+      init_clip_trimmer();
+      init_clip_state();
+      init_clip_loop();
+      init_clip_phone_panels();
+      init_clip_export();
       init_player_chapters();
       init_player_moments();
       init_jsx_runtime_shim();
@@ -33587,28 +36131,28 @@ ${cue.text}`).join("\n\n")}
   function useRepeatsTvTabHeading(text) {
     const label = useContext(TvTabHeadingContext);
     if (!label || typeof text !== "string") return false;
-    return normalize(text) === normalize(label);
+    return normalize2(text) === normalize2(label);
   }
-  var TvTabHeadingContext, normalize;
+  var TvTabHeadingContext, normalize2;
   var init_tv_tab_heading = __esm({
     "lib/tv-tab-heading.tsx"() {
       "use client";
       init_react_shim();
       init_jsx_runtime_shim();
       TvTabHeadingContext = createContext(null);
-      normalize = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
+      normalize2 = (value) => value.trim().toLowerCase().replace(/\s+/g, " ");
     }
   });
 
   // lib/settings-heading.ts
-  function normalize2(value) {
+  function normalize3(value) {
     if (typeof value === "string") return value.trim().toLowerCase().replace(/\s+/g, " ");
     if (typeof value === "number") return String(value);
     return null;
   }
   function eyebrowRepeatsTitle(eyebrow, title) {
-    const a = normalize2(eyebrow);
-    const b = normalize2(title);
+    const a = normalize3(eyebrow);
+    const b = normalize3(title);
     if (a === null || b === null || a === "" || b === "") return false;
     return a === b;
   }
@@ -33746,6 +36290,9 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
+  function isSelectHeader(o) {
+    return typeof o === "object" && o !== null && "header" in o;
+  }
   function Select({
     value,
     options,
@@ -33753,11 +36300,15 @@ ${cue.text}`).join("\n\n")}
     width,
     dim,
     compact,
-    placeholder
+    placeholder,
+    maxMenuHeight = 260,
+    ariaLabel
   }) {
     const [open2, setOpen] = useState(false);
     const ref = useRef(null);
+    const triggerRef = useRef(null);
     const menuRef = useRef(null);
+    const optionRefs = useRef([]);
     const [menuPos, setMenuPos] = useState(null);
     useEffect(() => {
       const onDoc = (e) => {
@@ -33781,7 +36332,7 @@ ${cue.text}`).join("\n\n")}
         const spaceBelow = window.innerHeight - rect.bottom - gap - margin;
         const spaceAbove = rect.top - gap - margin;
         const openUp = spaceBelow < 160 && spaceAbove > spaceBelow;
-        const maxHeight = Math.min(260, Math.max(120, openUp ? spaceAbove : spaceBelow));
+        const maxHeight = Math.min(maxMenuHeight, Math.max(120, openUp ? spaceAbove : spaceBelow));
         setMenuPos({
           // Bottom-anchor when opening upward so a short list still hugs the
           // trigger instead of floating maxHeight above it.
@@ -33798,18 +36349,103 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("scroll", update, true);
         window.removeEventListener("resize", update);
       };
-    }, [open2]);
-    const normalized = options.map(
-      (o) => typeof o === "object" ? o : { value: o, label: String(o) }
-    );
-    const current3 = normalized.find((o) => o.value === value);
-    const label = current3 ? current3.label : placeholder ?? String(value);
+    }, [open2, maxMenuHeight]);
+    const rows = [];
+    const normalized = [];
+    for (const o of options) {
+      if (isSelectHeader(o)) {
+        rows.push({ kind: "header", header: o });
+        continue;
+      }
+      const opt = typeof o === "object" ? o : { value: o, label: String(o) };
+      rows.push({ kind: "option", option: opt, index: normalized.length });
+      normalized.push(opt);
+    }
+    const selectedIndex = normalized.findIndex((o) => o.value === value);
+    const current3 = selectedIndex >= 0 ? normalized[selectedIndex] : void 0;
+    const label = current3 ? current3.triggerLabel ?? current3.label : placeholder ?? String(value);
+    const focusOnOpen = useRef(false);
+    useEffect(() => {
+      if (!open2 || !menuPos || !focusOnOpen.current) return;
+      focusOnOpen.current = false;
+      optionRefs.current[Math.max(0, selectedIndex)]?.focus();
+    }, [open2, menuPos, selectedIndex]);
+    const close = (returnFocus) => {
+      setOpen(false);
+      if (returnFocus) triggerRef.current?.focus();
+    };
+    const choose = (o, returnFocus) => {
+      if (onChange) onChange(o.value);
+      close(returnFocus);
+    };
+    const onTriggerKeyDown = (e) => {
+      if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (open2) {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") optionRefs.current[Math.max(0, selectedIndex)]?.focus();
+          else close(false);
+          return;
+        }
+        focusOnOpen.current = true;
+        setOpen(true);
+      } else if (e.key === "Escape" && open2) {
+        e.preventDefault();
+        e.stopPropagation();
+        close(false);
+      }
+    };
+    const onMenuKeyDown = (e) => {
+      const at = optionRefs.current.findIndex((el) => el === document.activeElement);
+      const last2 = normalized.length - 1;
+      const focusAt = (i) => optionRefs.current[Math.min(last2, Math.max(0, i))]?.focus();
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          focusAt(at < 0 ? 0 : at + 1);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          focusAt(at < 0 ? last2 : at - 1);
+          break;
+        case "Home":
+          e.preventDefault();
+          focusAt(0);
+          break;
+        case "End":
+          e.preventDefault();
+          focusAt(last2);
+          break;
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          if (at >= 0) choose(normalized[at], true);
+          break;
+        case "Escape":
+          e.preventDefault();
+          e.stopPropagation();
+          close(true);
+          break;
+        case "Tab":
+          e.preventDefault();
+          close(true);
+          break;
+      }
+    };
+    optionRefs.current.length = normalized.length;
     return /* @__PURE__ */ jsxs("div", { ref, style: { position: "relative", width: width || "100%" }, children: [
       /* @__PURE__ */ jsxs(
         "button",
         {
+          ref: triggerRef,
           type: "button",
-          onClick: () => setOpen((o) => !o),
+          "data-st-focus": "",
+          "aria-haspopup": "listbox",
+          "aria-expanded": open2,
+          "aria-label": ariaLabel,
+          onClick: () => {
+            setOpen((o) => !o);
+          },
+          onKeyDown: onTriggerKeyDown,
           style: {
             width: "100%",
             textAlign: "left",
@@ -33846,6 +36482,8 @@ ${cue.text}`).join("\n\n")}
           "div",
           {
             ref: menuRef,
+            role: "listbox",
+            onKeyDown: onMenuKeyDown,
             style: {
               position: "fixed",
               top: menuPos.top,
@@ -33861,15 +36499,51 @@ ${cue.text}`).join("\n\n")}
               maxHeight: menuPos.maxHeight,
               overflowY: "auto"
             },
-            children: normalized.map((o) => {
+            children: rows.map((row, ri) => {
+              if (row.kind === "header") {
+                return /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    role: "presentation",
+                    style: {
+                      padding: "10px 12px 4px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: TOKENS.textMute,
+                      userSelect: "none"
+                    },
+                    children: [
+                      row.header.header,
+                      row.header.badge ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                        " \xB7 ",
+                        /* @__PURE__ */ jsx("span", { style: { color: TOKENS.accent }, children: row.header.badge })
+                      ] }) : null
+                    ]
+                  },
+                  `h:${ri}`
+                );
+              }
+              const o = row.option;
               const active4 = o.value === value;
+              const hoverOn = (el) => {
+                if (!active4) el.style.background = TOKENS.surface3;
+              };
+              const hoverOff = (el) => {
+                if (!active4) el.style.background = "transparent";
+              };
               return /* @__PURE__ */ jsxs(
                 "div",
                 {
-                  onClick: () => {
-                    if (onChange) onChange(o.value);
-                    setOpen(false);
+                  ref: (el) => {
+                    optionRefs.current[row.index] = el;
                   },
+                  role: "option",
+                  "aria-selected": active4,
+                  tabIndex: -1,
+                  "data-st-focus": "",
+                  onClick: () => choose(o, false),
                   style: {
                     padding: "8px 10px",
                     borderRadius: 6,
@@ -33879,17 +36553,19 @@ ${cue.text}`).join("\n\n")}
                     background: active4 ? TOKENS.accentSoft : "transparent",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between"
+                    justifyContent: "space-between",
+                    gap: 8
                   },
-                  onMouseEnter: (e) => {
-                    if (!active4) e.currentTarget.style.background = TOKENS.surface3;
-                  },
-                  onMouseLeave: (e) => {
-                    if (!active4) e.currentTarget.style.background = "transparent";
-                  },
+                  onMouseEnter: (e) => hoverOn(e.currentTarget),
+                  onMouseLeave: (e) => hoverOff(e.currentTarget),
+                  onFocus: (e) => hoverOn(e.currentTarget),
+                  onBlur: (e) => hoverOff(e.currentTarget),
                   children: [
                     /* @__PURE__ */ jsx("span", { children: o.label }),
-                    active4 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
+                    o.mark || active4 ? /* @__PURE__ */ jsxs("span", { style: { display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 }, children: [
+                      o.mark ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: "var(--st-dim, #8b8e99)", whiteSpace: "nowrap" }, children: o.mark }) : null,
+                      active4 ? /* @__PURE__ */ jsx(Icon, { name: "check", size: 13, color: TOKENS.accent }) : null
+                    ] }) : null
                   ]
                 },
                 String(o.value)
@@ -34312,7 +36988,7 @@ ${cue.text}`).join("\n\n")}
   // lib/tv-keyboard-settings.ts
   function getTvKeyboardMode() {
     if (typeof window === "undefined") return DEFAULT_TV_KEYBOARD_MODE;
-    const raw = getScopedStorageItem(KEY17);
+    const raw = getScopedStorageItem(KEY18);
     return raw === "auto" || raw === "lumio" || raw === "system" ? raw : DEFAULT_TV_KEYBOARD_MODE;
   }
   function prefersSystemKeyboard(field, options) {
@@ -34321,12 +36997,12 @@ ${cue.text}`).join("\n\n")}
     if (mode === "system") return !options?.numeric;
     return field !== "short" && !options?.numeric;
   }
-  var KEY17, DEFAULT_TV_KEYBOARD_MODE;
+  var KEY18, DEFAULT_TV_KEYBOARD_MODE;
   var init_tv_keyboard_settings = __esm({
     "lib/tv-keyboard-settings.ts"() {
       "use client";
       init_profile_storage_shim();
-      KEY17 = "tv_keyboard_mode_v1";
+      KEY18 = "tv_keyboard_mode_v1";
       DEFAULT_TV_KEYBOARD_MODE = "system";
     }
   });
@@ -34423,7 +37099,7 @@ ${cue.text}`).join("\n\n")}
     }, [value]);
     const rows = numeric ? NUM_ROWS : KEY_ROWS;
     const columns = numeric ? 5 : 10;
-    const clamp3 = (next) => maxLength === void 0 ? next : next.slice(0, maxLength);
+    const clamp4 = (next) => maxLength === void 0 ? next : next.slice(0, maxLength);
     const push = (char) => {
       if (maxLength !== void 0 && value.length >= maxLength) return;
       setValue(value + (shift && !numeric ? char.toUpperCase() : char));
@@ -34432,7 +37108,7 @@ ${cue.text}`).join("\n\n")}
     const insert = (text) => {
       const cleaned = numeric ? text.replace(/\D/g, "") : text.replace(/\s+/g, " ");
       if (!cleaned) return;
-      setValue((current3) => clamp3(current3 + cleaned));
+      setValue((current3) => clamp4(current3 + cleaned));
     };
     useEffect(() => {
       const onKeyDown = (event) => {
@@ -34712,7 +37388,7 @@ ${cue.text}`).join("\n\n")}
     const [person, setPerson] = useState(null);
     const [personError, setPersonError] = useState(false);
     const [bioExpanded, setBioExpanded] = useState(false);
-    const station2 = isTv ? { "data-f": "" } : {};
+    const station3 = isTv ? { "data-f": "" } : {};
     const personTextClass = isTv ? "" : "max-w-[1080px]";
     const castGridClass = `flex-1 lg:grid lg:gap-8 ${isTv ? "lg:grid-cols-[minmax(0,1fr)_420px]" : "lg:grid-cols-[minmax(0,1fr)_300px]"}`;
     useEffect(() => {
@@ -34938,7 +37614,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsxs("div", { "data-cast-head": "", className: "flex flex-wrap items-start justify-between gap-4 sm:gap-8", children: [
           /* @__PURE__ */ jsxs("div", { className: "flex min-w-0 flex-col gap-3.5 sm:gap-2.5", children: [
             /* @__PURE__ */ jsxs("div", { className: "mb-1 flex items-center gap-3.5 sm:mb-1.5", children: [
-              /* @__PURE__ */ jsxs("button", { type: "button", ...station2, "data-cast-back": "", "data-f-right": "[data-cast-search]", onClick: onClose, className: backPillClass, children: [
+              /* @__PURE__ */ jsxs("button", { type: "button", ...station3, "data-cast-back": "", "data-f-right": "[data-cast-search]", onClick: onClose, className: backPillClass, children: [
                 /* @__PURE__ */ jsx(BackChevron, {}),
                 t("back")
               ] }),
@@ -34960,7 +37636,7 @@ ${cue.text}`).join("\n\n")}
                 "button",
                 {
                   type: "button",
-                  ...station2,
+                  ...station3,
                   "data-cast-search": "",
                   "data-f-left": "[data-cast-back]",
                   "data-f-right": "[data-cast-sort]",
@@ -34989,7 +37665,7 @@ ${cue.text}`).join("\n\n")}
               "button",
               {
                 type: "button",
-                ...station2,
+                ...station3,
                 "data-cast-sort": "",
                 "data-f-left": "[data-cast-search]",
                 onClick: () => setSort((current3) => current3 === "billing" ? "name" : current3 === "name" ? "popularity" : "billing"),
@@ -35003,25 +37679,25 @@ ${cue.text}`).join("\n\n")}
           ] })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", ...isTv ? { "data-row": "", "data-tv-scroll-row": "" } : {}, children: [
-          /* @__PURE__ */ jsxs("button", { type: "button", ...station2, ...isTv ? { "data-init": "" } : {}, onClick: () => setTab("cast"), className: pillClass(tab === "cast", isTv), children: [
+          /* @__PURE__ */ jsxs("button", { type: "button", ...station3, ...isTv ? { "data-init": "" } : {}, onClick: () => setTab("cast"), className: pillClass(tab === "cast", isTv), children: [
             t("fullCastCastTab"),
             /* @__PURE__ */ jsx("span", { className: `ml-2 ${tab === "cast" ? "text-accent-400/70" : "text-slate-500"}`, children: data?.cast?.length ?? 0 })
           ] }),
-          departments.map((department) => /* @__PURE__ */ jsxs("button", { type: "button", ...station2, onClick: () => setTab(department), className: pillClass(tab === department, isTv), children: [
+          departments.map((department) => /* @__PURE__ */ jsxs("button", { type: "button", ...station3, onClick: () => setTab(department), className: pillClass(tab === department, isTv), children: [
             department,
             /* @__PURE__ */ jsx("span", { className: `ml-2 ${tab === department ? "text-accent-400/70" : "text-slate-500"}`, children: crew.filter((member) => member.department === department).length })
           ] }, department))
         ] }),
         data == null && !loadError ? /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 lg:gap-4", children: Array.from({ length: 12 }).map((_, index) => /* @__PURE__ */ jsx("div", { className: "aspect-[3/4] animate-pulse rounded-2xl bg-white/[0.06]" }, index)) }) : loadError ? /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-3", children: [
           /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: t("detailsCastLoadError") }),
-          /* @__PURE__ */ jsx("button", { type: "button", ...station2, onClick: () => setReloadToken((token) => token + 1), className: backPillClass, children: t("tryAgain") })
+          /* @__PURE__ */ jsx("button", { type: "button", ...station3, onClick: () => setReloadToken((token) => token + 1), className: backPillClass, children: t("tryAgain") })
         ] }) : /* @__PURE__ */ jsxs("div", { className: castGridClass, children: [
           /* @__PURE__ */ jsxs("div", { children: [
             tab === "cast" ? visibleCast.length === 0 ? /* @__PURE__ */ jsx("p", { className: "py-10 text-center text-sm text-slate-500", children: t("fullCastNoMatches") }) : /* @__PURE__ */ jsx("div", { className: `grid grid-cols-2 content-start gap-3 sm:grid-cols-3 lg:grid-cols-5`, children: (castExpanded ? visibleCast : visibleCast.slice(0, 20)).map((member) => /* @__PURE__ */ jsxs(
               "button",
               {
                 type: "button",
-                ...station2,
+                ...station3,
                 onClick: () => setPersonId(member.id),
                 className: "focus-poster-ring group overflow-hidden rounded-2xl bg-white/[0.045] text-left transition hover:bg-white/[0.07]",
                 children: [
@@ -35038,7 +37714,7 @@ ${cue.text}`).join("\n\n")}
               "button",
               {
                 type: "button",
-                ...station2,
+                ...station3,
                 onClick: () => setPersonId(member.id),
                 className: "flex items-center justify-between gap-4 border-b border-white/[0.06] py-3 text-left transition hover:bg-white/[0.03]",
                 children: [
@@ -35051,7 +37727,7 @@ ${cue.text}`).join("\n\n")}
               },
               `${member.id}-${member.job}-${index}`
             )) }),
-            tab === "cast" && visibleCast.length > 20 ? /* @__PURE__ */ jsx("div", { className: "mt-4 flex justify-center", children: /* @__PURE__ */ jsx("button", { type: "button", ...station2, onClick: () => setCastExpanded((value) => !value), className: backPillClass, children: castExpanded ? t("showLess") : `${t("showAll")} (${visibleCast.length})` }) }) : null,
+            tab === "cast" && visibleCast.length > 20 ? /* @__PURE__ */ jsx("div", { className: "mt-4 flex justify-center", children: /* @__PURE__ */ jsx("button", { type: "button", ...station3, onClick: () => setCastExpanded((value) => !value), className: backPillClass, children: castExpanded ? t("showLess") : `${t("showAll")} (${visibleCast.length})` }) }) : null,
             (data?.stills?.length ?? 0) > 0 ? (
               /* Stillbilderna bor under casten: 16:9 blir frimärken i
                  300px-spalten — här får de en bred filmremsa i stället. */
@@ -35061,7 +37737,7 @@ ${cue.text}`).join("\n\n")}
                   "button",
                   {
                     type: "button",
-                    ...station2,
+                    ...station3,
                     onClick: () => setStillLightbox(still),
                     "data-tv-nosize": "",
                     "data-cast-still": "",
@@ -35080,7 +37756,7 @@ ${cue.text}`).join("\n\n")}
                 "button",
                 {
                   type: "button",
-                  ...station2,
+                  ...station3,
                   onClick: () => setPersonId(member.id),
                   className: "flex items-center justify-between gap-4 border-b border-white/[0.06] py-2.5 text-left transition hover:bg-white/[0.03]",
                   children: [
@@ -35103,7 +37779,7 @@ ${cue.text}`).join("\n\n")}
                   "button",
                   {
                     type: "button",
-                    ...station2,
+                    ...station3,
                     onClick: () => setPersonId(member.id),
                     className: `truncate text-left text-slate-300 transition hover:text-white text-sm`,
                     children: [
@@ -35125,7 +37801,7 @@ ${cue.text}`).join("\n\n")}
         /* ─── Persondetaljen ─── */
         /* @__PURE__ */ jsxs("div", { className: `relative flex min-h-full flex-col gap-5 px-4 pb-10 pt-[max(2.75rem,calc(env(safe-area-inset-top)+0.75rem))] sm:pt-5 lg:grid lg:items-start ${isTv ? "sm:px-[112px] sm:pt-[calc(72px+var(--tv-top-inset,0px))] lg:grid-cols-[400px_minmax(0,1fr)] lg:gap-14" : "sm:px-8 sm:pt-7 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10"}`, children: [
           /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3.5 lg:col-span-2", children: [
-            /* @__PURE__ */ jsxs("button", { type: "button", ...station2, "data-init": "", onClick: () => enteredViaPerson ? onClose() : setPersonId(null), className: backPillClass, children: [
+            /* @__PURE__ */ jsxs("button", { type: "button", ...station3, "data-init": "", onClick: () => enteredViaPerson ? onClose() : setPersonId(null), className: backPillClass, children: [
               /* @__PURE__ */ jsx(BackChevron, {}),
               enteredViaPerson ? t("back") : t("fullCastOpen")
             ] }),
@@ -35168,7 +37844,7 @@ ${cue.text}`).join("\n\n")}
             ] })
           ] }) : personError || !person ? /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 lg:col-span-2", children: [
             /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-400", children: t("detailsCastLoadError") }),
-            /* @__PURE__ */ jsx("button", { type: "button", ...station2, onClick: () => setPersonId((id) => id), className: backPillClass, children: t("tryAgain") })
+            /* @__PURE__ */ jsx("button", { type: "button", ...station3, onClick: () => setPersonId((id) => id), className: backPillClass, children: t("tryAgain") })
           ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
             /* @__PURE__ */ jsxs("div", { className: "hidden flex-col gap-4 sm:flex", children: [
               /* @__PURE__ */ jsx("div", { className: "aspect-[2/3] w-full max-w-[280px] overflow-hidden rounded-[18px] border border-white/[0.08] bg-white/[0.06] lg:max-w-none", children: person.profileUrl ? /* @__PURE__ */ jsx("img", { src: person.profileUrl.replace("w185", "h632"), alt: person.name, className: "h-full w-full object-cover" }) : /* @__PURE__ */ jsx(InitialTile, { name: person.name, textClass: "text-6xl" }) }),
@@ -35194,7 +37870,7 @@ ${cue.text}`).join("\n\n")}
                     children: person.biography
                   }
                 ),
-                /* @__PURE__ */ jsx("button", { type: "button", ...station2, onClick: () => setBioExpanded((value) => !value), className: "mt-2.5 text-[0.65rem] font-normal uppercase tracking-[0.22em] text-slate-400 transition hover:text-white focus-visible:text-white focus-visible:outline-none", children: bioExpanded ? t("readLess") : t("readMore") })
+                /* @__PURE__ */ jsx("button", { type: "button", ...station3, onClick: () => setBioExpanded((value) => !value), className: "mt-2.5 text-[0.65rem] font-normal uppercase tracking-[0.22em] text-slate-400 transition hover:text-white focus-visible:text-white focus-visible:outline-none", children: bioExpanded ? t("readLess") : t("readMore") })
               ] }) : null,
               person.topCredits.length > 0 ? /* @__PURE__ */ jsxs("div", { children: [
                 /* @__PURE__ */ jsxs("div", { className: "mb-2.5 flex items-baseline gap-3", children: [
@@ -35205,7 +37881,7 @@ ${cue.text}`).join("\n\n")}
                   "button",
                   {
                     type: "button",
-                    ...station2,
+                    ...station3,
                     onClick: () => onOpenCredit({ id: credit.id, mediaType: credit.mediaType }),
                     className: `focus-poster-ring group shrink-0 text-left ${isTv ? "w-[104px] sm:w-[150px]" : "w-[104px] sm:w-[120px]"}`,
                     children: [
@@ -35222,7 +37898,7 @@ ${cue.text}`).join("\n\n")}
                   "button",
                   {
                     type: "button",
-                    ...station2,
+                    ...station3,
                     onClick: () => onOpenCredit({ id: credit.id, mediaType: credit.mediaType }),
                     className: "flex items-baseline gap-4 border-b border-white/[0.06] py-2 text-left transition hover:bg-white/[0.03]",
                     children: [
@@ -36521,7 +39197,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -36695,7 +39371,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       INDEX_CHANGED_EVENT = "lumio-live-tv-index-changed";
@@ -36706,7 +39382,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -36783,14 +39459,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/list-curation.ts
   function splitGroups(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -36881,12 +39557,12 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -37477,7 +40153,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -37502,7 +40178,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = lang === "sv" ? SV2 : EN2;
     let out = table[key] ?? EN2[key];
@@ -37518,7 +40194,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -37546,6 +40222,7 @@ ${cue.text}`).join("\n\n")}
         // Ikonrad
         railSearch: "Search",
         railHome: "Home",
+        railChannels: "Channels",
         railGuide: "Guide",
         railMultiview: "Multiview",
         railFavourites: "Favourites",
@@ -37853,11 +40530,7 @@ ${cue.text}`).join("\n\n")}
         vodLibraryWhereToEnable: "Turn it on under Settings \u2192 Home \u2192 Start page.",
         vodLibraryFailed: "Could not build the library: {error}",
         // Hubben
-        vodRowTitle: "Film & series",
-        vodRowSub: "From {playlist} \xB7 {count} titles",
-        vodLinkTitle: "Film & series are in the Library",
-        vodLinkBody: "{count} titles from {playlist} are not shown here. Want them as rows in Live TV?",
-        vodLinkAction: "Settings",
+        vodHomeIndexing: "Film & series are being prepared \u2014 showing channels meanwhile",
         // Sökets omfång
         scopeAll: "All",
         scopeChannels: "Channels",
@@ -37883,6 +40556,7 @@ ${cue.text}`).join("\n\n")}
         guideEmpty: "No channels in this category",
         // Telefonens flik-rad + bottenark (fas 3)
         tabHome: "Home",
+        tabChannels: "Channels",
         tabGuide: "Guide",
         tabFavourites: "Favourites",
         tabSearch: "Search",
@@ -37931,6 +40605,7 @@ ${cue.text}`).join("\n\n")}
         curationIntro: "V\xE4lj vilka kategorier som ska visas. Du kan \xE4ndra det senare under spellistans inst\xE4llningar.",
         railSearch: "S\xF6k",
         railHome: "Hem",
+        railChannels: "Kanaler",
         railGuide: "Guide",
         railMultiview: "Multivy",
         railFavourites: "Favoriter",
@@ -38205,11 +40880,7 @@ ${cue.text}`).join("\n\n")}
         vodLibraryScanning: "En genomg\xE5ng p\xE5g\xE5r redan.",
         vodLibraryWhereToEnable: "Sl\xE5 p\xE5 det under Inst\xE4llningar \u2192 Hem \u2192 Startsida.",
         vodLibraryFailed: "Kunde inte bygga biblioteket: {error}",
-        vodRowTitle: "Film & serier",
-        vodRowSub: "Fr\xE5n {playlist} \xB7 {count} titlar",
-        vodLinkTitle: "Film & serier ligger i Biblioteket",
-        vodLinkBody: "{count} titlar fr\xE5n {playlist} visas inte h\xE4r. Vill du ha dem som rader i Live TV?",
-        vodLinkAction: "Inst\xE4llningar",
+        vodHomeIndexing: "Film och serier f\xF6rbereds \u2014 kanalerna visas s\xE5 l\xE4nge",
         scopeAll: "Allt",
         scopeChannels: "Kanaler",
         scopeVod: "Film & serier",
@@ -38231,6 +40902,7 @@ ${cue.text}`).join("\n\n")}
         guideEmpty: "Inga kanaler i kategorin",
         // Telefonens flik-rad + bottenark (fas 3)
         tabHome: "Hem",
+        tabChannels: "Kanaler",
         tabGuide: "Guide",
         tabFavourites: "Favoriter",
         tabSearch: "S\xF6k",
@@ -38256,7 +40928,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       activeLogoLoads += 1;
@@ -38336,7 +41008,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -38349,7 +41021,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
     const words = name.trim().split(/\s+/).filter(Boolean);
     const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
@@ -38359,8 +41031,8 @@ ${cue.text}`).join("\n\n")}
     if (stop <= start2) return 0;
     return Math.min(1, Math.max(0, (nowMs - start2) / (stop - start2)));
   }
-  function formatClock2(ms, locale) {
-    return new Date(ms).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  function formatClock2(ms2, locale) {
+    return new Date(ms2).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
   }
   function Tag({ variant = "neutral", children, style }) {
     const base = {
@@ -38566,7 +41238,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -38606,7 +41278,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
@@ -38629,14 +41301,14 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
@@ -38659,14 +41331,14 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
@@ -38692,7 +41364,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -38700,7 +41372,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -38942,7 +41614,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -39065,19 +41737,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
@@ -39136,7 +41808,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active3, listeners8;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -39150,7 +41822,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
     while (memo3.size > MAX_ENTRIES4) {
@@ -39182,7 +41854,7 @@ ${cue.text}`).join("\n\n")}
   }
   var MAX_ENTRIES4, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -39191,7 +41863,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -39206,14 +41878,14 @@ ${cue.text}`).join("\n\n")}
     return stored;
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -39271,7 +41943,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -39281,7 +41953,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-history.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/channel-history.ts
   function sanitize(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -39328,7 +42000,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -39338,7 +42010,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
@@ -39458,7 +42130,7 @@ ${cue.text}`).join("\n\n")}
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -39470,7 +42142,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -39524,7 +42196,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -39536,7 +42208,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
@@ -39591,7 +42263,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -39618,7 +42290,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -40004,8 +42676,8 @@ ${cue.text}`).join("\n\n")}
     const nowFor = useMemo(() => {
       const items2 = snapshot2?.items ?? null;
       return (channel) => {
-        if (!items2) return EMPTY3;
-        return items2[channelKey(channel)] ?? EMPTY3;
+        if (!items2) return EMPTY4;
+        return items2[channelKey(channel)] ?? EMPTY4;
       };
     }, [snapshot2]);
     const favouriteChannels = useMemo(
@@ -40072,9 +42744,9 @@ ${cue.text}`).join("\n\n")}
     if (/\b(SD|576|480)\b/.test(n)) return "SD";
     return null;
   }
-  var EMPTY3, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
+  var EMPTY4, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40090,7 +42762,7 @@ ${cue.text}`).join("\n\n")}
       init_list_curation();
       init_live_tv_data();
       init_tv_settings_store();
-      EMPTY3 = { now: null, next: null, later: null };
+      EMPTY4 = { now: null, next: null, later: null };
       PLACEHOLDER_NAME_RE = /^[\s=\-_*•·]+|=+/;
       EPG_TTL_MS = 6 * 60 * 60 * 1e3;
       bootstrapPromise = null;
@@ -40107,7 +42779,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -40218,7 +42890,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS2, MAX_ENTRIES5, cache7, batches, inflight9, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -40232,7 +42904,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -40247,7 +42919,7 @@ ${cue.text}`).join("\n\n")}
     return result;
   }
   function nowNextLaterFrom(programmes, now2 = Date.now()) {
-    if (!programmes || programmes.length === 0) return EMPTY4;
+    if (!programmes || programmes.length === 0) return EMPTY5;
     const idx = findCurrentIndex(programmes, now2);
     const candidate = idx >= 0 ? programmes[idx] : null;
     const isCurrent = candidate != null && candidate.stop > now2;
@@ -40259,22 +42931,22 @@ ${cue.text}`).join("\n\n")}
     if (!programmes || programmes.length === 0) return [];
     return programmes.filter((p) => p.stop > fromMs && p.start < toMs);
   }
-  var EMPTY4;
+  var EMPTY5;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
-      EMPTY4 = { now: null, next: null, later: null };
+      EMPTY5 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
-    const [state2, setState] = useState(() => ({ schedules: EMPTY6, loading: false }));
+    const [state2, setState] = useState(() => ({ schedules: EMPTY7, loading: false }));
     useEffect(() => {
       if (!listId || keys2.length === 0 || !Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
-        setState({ schedules: EMPTY6, loading: false });
+        setState({ schedules: EMPTY7, loading: false });
         return;
       }
       let live2 = true;
@@ -40295,19 +42967,19 @@ ${cue.text}`).join("\n\n")}
     }, [listId, keysId, from, to]);
     return state2;
   }
-  var EMPTY6;
+  var EMPTY7;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
       init_live_tv_data();
       init_schedule_cache();
-      EMPTY6 = {};
+      EMPTY7 = {};
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -40456,13 +43128,13 @@ ${cue.text}`).join("\n\n")}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useOrientation.ts
   function read10() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
@@ -40481,14 +43153,14 @@ ${cue.text}`).join("\n\n")}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
@@ -40537,13 +43209,13 @@ ${cue.text}`).join("\n\n")}
     }, [active4]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -40554,16 +43226,16 @@ ${cue.text}`).join("\n\n")}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis, clamp2, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         bg: "#000",
@@ -40642,10 +43314,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -40719,7 +43391,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -40739,7 +43411,7 @@ ${cue.text}`).join("\n\n")}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -40752,7 +43424,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -40796,7 +43468,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -40809,7 +43481,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
   function MobileSheet({ title, subtitle, art, body, items: items2, onClose, pushLayer, testId }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
@@ -40881,7 +43553,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -40891,7 +43563,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -41084,7 +43756,7 @@ ${cue.text}`).join("\n\n")}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41107,7 +43779,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
@@ -41423,7 +44095,7 @@ ${cue.text}`).join("\n\n")}
   }
   var FAV_WINDOW, DAY_MS, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41467,7 +44139,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -41661,7 +44333,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41675,7 +44347,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
@@ -41735,7 +44407,7 @@ ${cue.text}`).join("\n\n")}
   }
   var cutouts, listeners9, snapshot;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41745,7 +44417,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -42035,7 +44707,7 @@ ${cue.text}`).join("\n\n")}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42053,7 +44725,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer
@@ -42841,7 +45513,7 @@ ${cue.text}`).join("\n\n")}
   }
   var import_react_dom4, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42863,7 +45535,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -42873,11 +45545,11 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -43190,7 +45862,7 @@ ${cue.text}`).join("\n\n")}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -43238,16 +45910,16 @@ ${cue.text}`).join("\n\n")}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -43312,7 +45984,7 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
     categories: "Categories",
@@ -43765,10 +46437,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -43820,11 +46492,11 @@ ${cue.text}`).join("\n\n")}
     return { status, urls, refreshing, refresh, reload };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
-  function formatRelative(ms, locale) {
-    if (!ms) return null;
-    const then = new Date(ms);
+  function formatRelative(ms2, locale) {
+    if (!ms2) return null;
+    const then = new Date(ms2);
     if (Number.isNaN(then.getTime())) return null;
     const now2 = /* @__PURE__ */ new Date();
     return then.toDateString() === now2.toDateString() ? then.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : then.toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -43912,7 +46584,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -44072,18 +46744,18 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -44156,7 +46828,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -44178,7 +46850,7 @@ ${cue.text}`).join("\n\n")}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
@@ -44275,7 +46947,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -44323,7 +46995,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-library-card.tsx
   init_jsx_runtime_shim();
   function VodLibraryCard() {
     const { h, locale } = useHubText();
@@ -44358,16 +47030,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -44472,7 +47144,7 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -44608,7 +47280,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/category-curation-panel.tsx
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -44770,11 +47442,11 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -44961,7 +47633,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv-settings-views.tsx
   init_index_client();
   init_tv_strings();
   init_index_client();
@@ -45014,9 +47686,9 @@ ${cue.text}`).join("\n\n")}
     const fetchHint = s.fetchProgress.status === "fetching" ? h("m3uFetchProgress", { current: s.fetchProgress.current, total: s.fetchProgress.total }) : s.fetchProgress.status === "error" ? h("m3uFetchFailedOn", { host: s.fetchProgress.url ?? "", error: s.fetchProgress.error ?? "" }) : s.fetchProgress.status === "done" ? s.fetchProgress.results.map((r) => h("channelsCount", { count: fmtInt(r.channels, locale) })).join(" \xB7 ") : h("tvFetchHint");
     const loginHint = form.state === "authError" ? h("loginRejected") : form.state === "netError" ? h("loginUnreachable") : form.importProgress ? form.importProgress.total ? h("listImportProgress", { received: fmtInt(form.importProgress.received, locale), total: fmtInt(form.importProgress.total, locale) }) : h("listImportProgressUnknown") : h("tvLoginHint");
     const loginValue = form.state === "working" ? h("loggingIn") : form.state === "done" ? h("loginFetched") : h("tvLogin");
-    const fetchedAt = (ms) => {
-      if (!ms) return null;
-      return formatFetchedAt(new Date(ms).toISOString(), locale);
+    const fetchedAt = (ms2) => {
+      if (!ms2) return null;
+      return formatFetchedAt(new Date(ms2).toISOString(), locale);
     };
     const guideFetched = fetchedAt(epg.status?.fetchedAt ?? null);
     const refetchGuide = async () => {
@@ -45396,7 +48068,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text) {
@@ -45627,26 +48299,26 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_logo_image();
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
@@ -45656,15 +48328,15 @@ ${cue.text}`).join("\n\n")}
     return () => clearTimeout(timer3);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
-  var EMPTY5 = { now: null, next: null, later: null };
+  var EMPTY6 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
-    const [data, setData] = useState(EMPTY5);
+    const [data, setData] = useState(EMPTY6);
     const key = channel.url ? channelKey({ name: channel.name ?? "", url: channel.url }) : "";
     useEffect(() => {
       if (!enabled || !listId || !key) {
-        setData(EMPTY5);
+        setData(EMPTY6);
         return;
       }
       let cancelled = false;
@@ -45679,7 +48351,7 @@ ${cue.text}`).join("\n\n")}
       };
       const { from, to } = hourWindow(Date.now(), 6, 24);
       fetchSchedules(listId, [key], from, to).then((schedules) => apply(schedules[key] ?? [])).catch(() => {
-        if (!cancelled) setData(EMPTY5);
+        if (!cancelled) setData(EMPTY6);
       });
       return () => {
         cancelled = true;
@@ -45689,7 +48361,7 @@ ${cue.text}`).join("\n\n")}
     return data;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }) {
@@ -45722,7 +48394,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -45752,11 +48424,11 @@ ${cue.text}`).join("\n\n")}
     ) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-shell.tsx
   var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
   function encodeChannelParams(channel) {
     return {
@@ -45768,10 +48440,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-grid.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -45799,7 +48471,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -45808,7 +48480,7 @@ ${cue.text}`).join("\n\n")}
     return layout;
   }
   var DEFAULT_STATE = { layout: 4, tiles: [null, null, null, null], audioIndex: 0 };
-  function normalize3(state2) {
+  function normalize4(state2) {
     const count = tileCount(state2.layout);
     const tiles = Array.from({ length: count }, (_, i) => state2.tiles[i] ?? null);
     let audioIndex = state2.audioIndex;
@@ -45822,13 +48494,13 @@ ${cue.text}`).join("\n\n")}
     const r = raw && typeof raw === "object" ? raw : {};
     const layout = r.layout === 2 || r.layout === 3 || r.layout === 4 ? r.layout : 4;
     const tiles = Array.isArray(r.tiles) ? r.tiles.map((t) => typeof t === "string" && t ? t : null) : [];
-    return normalize3({ layout, tiles, audioIndex: typeof r.audioIndex === "number" ? r.audioIndex : 0 });
+    return normalize4({ layout, tiles, audioIndex: typeof r.audioIndex === "number" ? r.audioIndex : 0 });
   }
   function getMultiviewState() {
     return sanitize5(readPluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, DEFAULT_STATE));
   }
   function setMultiviewState(next) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, normalize3(next));
+    writePluginJson(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, normalize4(next));
   }
   function useMultiviewState() {
     const [value, setValue] = useState(getMultiviewState);
@@ -45839,39 +48511,39 @@ ${cue.text}`).join("\n\n")}
     const tiles = [...state2.tiles];
     tiles[index] = key;
     const hadAny = state2.tiles.some((t) => t !== null);
-    return normalize3({ ...state2, tiles, audioIndex: hadAny ? state2.audioIndex : index });
+    return normalize4({ ...state2, tiles, audioIndex: hadAny ? state2.audioIndex : index });
   }
   function removeTile(state2, index) {
     const tiles = [...state2.tiles];
     tiles[index] = null;
-    return normalize3({ ...state2, tiles });
+    return normalize4({ ...state2, tiles });
   }
   function setLayout(state2, layout) {
     const filled = state2.tiles.filter((t) => t !== null);
     const audioKey = state2.tiles[state2.audioIndex];
     const tiles = filled.slice(0, tileCount(layout));
     const audioIndex = audioKey ? Math.max(0, tiles.indexOf(audioKey)) : 0;
-    return normalize3({ layout, tiles, audioIndex });
+    return normalize4({ layout, tiles, audioIndex });
   }
   function enlargeTile(state2, index) {
     const key = state2.tiles[index];
     const rest = state2.tiles.filter((t, i) => t !== null && i !== index);
     const tiles = key ? [key, ...rest] : rest;
-    return normalize3({ layout: 3, tiles, audioIndex: key ? 0 : state2.audioIndex });
+    return normalize4({ layout: 3, tiles, audioIndex: key ? 0 : state2.audioIndex });
   }
   function addToFirstFree(state2, key) {
     const free = state2.tiles.findIndex((t) => t === null);
     return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -45911,7 +48583,7 @@ ${cue.text}`).join("\n\n")}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -46065,7 +48737,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-grid.tsx
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
   var CHANNELS_PER_PAGE = 28;
@@ -47585,13 +50257,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -47608,10 +50280,10 @@ ${cue.text}`).join("\n\n")}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/now-next-later-row.tsx
   init_jsx_runtime_shim();
-  function formatTime(ms) {
-    return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  function formatTime(ms2) {
+    return new Date(ms2).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
   function Card2({
     label,
@@ -47670,7 +50342,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_tv_settings_store();
@@ -47888,7 +50560,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
@@ -47954,7 +50626,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -47963,7 +50635,7 @@ ${cue.text}`).join("\n\n")}
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
@@ -47988,7 +50660,7 @@ ${cue.text}`).join("\n\n")}
     return phone;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -48040,12 +50712,67 @@ ${cue.text}`).join("\n\n")}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-rail.tsx
+  init_tv_strings();
+  init_tv_ui();
+  init_jsx_runtime_shim();
+  var RAIL_W_TV = 152;
+  var RAIL_W_DESKTOP = 132;
+  var RAIL_W_NARROW = 64;
+  var RAIL_ITEM_WIDE = 108;
+  var RAIL_ITEM_WIDE_H = 84;
+  var RAIL_W_TV_COMPACT = 104;
+  var RAIL_W_DESKTOP_COMPACT = 84;
+  var RAIL_ITEM_COMPACT = 60;
+  var RAIL_ITEM_NARROW = 48;
+  function railKeyForView(view) {
+    if (view === "channel") return "guide";
+    if (view === "hub" || view === "search" || view === "guide" || view === "library" || view === "multi" || view === "favs" || view === "settings") return view;
+    return null;
+  }
+  function TvRail({ active: active4, onSelect, isTv, narrow, labels: railLabels }) {
+    const { tt } = useTvText();
+    const railWidth = isTv ? railLabels ? RAIL_W_TV : RAIL_W_TV_COMPACT : narrow ? RAIL_W_NARROW : railLabels ? RAIL_W_DESKTOP : RAIL_W_DESKTOP_COMPACT;
+    const railItemSize = narrow ? RAIL_ITEM_NARROW : railLabels ? RAIL_ITEM_WIDE : RAIL_ITEM_COMPACT;
+    const rail = [
+      { key: "search", label: tt("railSearch"), icon: /* @__PURE__ */ jsx(Icons.Search, {}) },
+      { key: "home", label: tt("railHome"), icon: /* @__PURE__ */ jsx(Icons.Home, {}) },
+      // Kanaler (dagens Hem): egen ikon, skild från Guides Tv-ikon.
+      { key: "hub", label: tt("railChannels"), icon: /* @__PURE__ */ jsx(Icons.Eye, {}) },
+      { key: "guide", label: tt("railGuide"), icon: /* @__PURE__ */ jsx(Icons.Tv, {}) },
+      { key: "library", label: tt("railLibrary"), icon: /* @__PURE__ */ jsx(Icons.FilmStrip, {}) },
+      { key: "multi", label: tt("railMultiview"), icon: /* @__PURE__ */ jsx(Icons.SquaresFour, {}) },
+      { key: "favs", label: tt("railFavourites"), icon: /* @__PURE__ */ jsx(Icons.Heart, {}) }
+    ];
+    const railItem = (item, extraStyle) => {
+      const activeItem = item.key === active4;
+      return /* @__PURE__ */ jsxs(
+        "div",
+        {
+          ...station(() => onSelect(item.key), void 0, { "data-testid": `rail-${item.key}`, "aria-label": item.label, title: item.label, ...activeItem ? { "data-current": "" } : {} }),
+          style: { width: dp(railItemSize), height: dp(railLabels ? RAIL_ITEM_WIDE_H : railItemSize), borderRadius: dp(railLabels ? 18 : 16), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: dp(5), cursor: "pointer", background: activeItem ? TV2.s14 : "transparent", color: activeItem ? TV2.text : "rgba(243,244,248,0.62)", ...extraStyle },
+          children: [
+            item.icon,
+            !railLabels ? null : /* @__PURE__ */ jsx("span", { "data-live-tv-rail-label": "", style: { fontSize: dp(15), fontWeight: 600, lineHeight: 1.1, maxWidth: "100%", padding: `0 ${dp(6)}px`, boxSizing: "border-box", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: item.label })
+          ]
+        },
+        item.key
+      );
+    };
+    return /* @__PURE__ */ jsxs("nav", { "data-testid": "tv-rail", "aria-label": tt("liveTv"), style: { width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, background: "linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))", padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(narrow ? 8 : 8) }, children: [
+      narrow ? null : /* @__PURE__ */ jsx("div", { "data-live-tv-rail-badge": "", "aria-hidden": "true", style: { width: dp(44), height: dp(44), borderRadius: dp(12), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }, children: "L" }),
+      railItem({ key: "back", label: tt("railBack"), icon: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}) }),
+      rail.map((item) => railItem(item)),
+      railItem({ key: "settings", label: tt("railSettings"), icon: /* @__PURE__ */ jsx(Icons.Gear, {}) }, { marginTop: "auto" })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -48079,24 +50806,24 @@ ${cue.text}`).join("\n\n")}
       }
       const root = rootRef.current;
       if (!root) return;
-      const place = (station2) => {
+      const place = (station3) => {
         const rootRect = root.getBoundingClientRect();
-        const rect = station2.getBoundingClientRect();
+        const rect = station3.getBoundingClientRect();
         const scale = tvSceneBoxScale2(root) || 1;
-        stationRef.current = station2;
+        stationRef.current = station3;
         setSpot({ left: (rect.right - rootRect.left) / scale, top: (rect.top - rootRect.top) / scale });
       };
       const onPointerOver = (event) => {
         const target2 = event.target;
         if (!target2 || typeof target2.closest !== "function") return;
         if (target2.closest("[data-live-tv-hold-button]")) return;
-        const station2 = target2.closest("[data-hold]");
-        if (!station2) {
+        const station3 = target2.closest("[data-hold]");
+        if (!station3) {
           hide();
           return;
         }
-        if (station2 === stationRef.current) return;
-        place(station2);
+        if (station3 === stationRef.current) return;
+        place(station3);
       };
       root.addEventListener("pointerover", onPointerOver);
       root.addEventListener("pointermove", onPointerOver);
@@ -48124,8 +50851,8 @@ ${cue.text}`).join("\n\n")}
         onClick: (event) => {
           event.preventDefault();
           event.stopPropagation();
-          const station2 = stationRef.current;
-          if (!station2) return;
+          const station3 = stationRef.current;
+          if (!station3) return;
           const here = event.currentTarget.getBoundingClientRect();
           const synthetic = new MouseEvent("contextmenu", {
             bubbles: true,
@@ -48134,7 +50861,7 @@ ${cue.text}`).join("\n\n")}
             clientY: here.top + here.height / 2
           });
           synthetic.preventDefault();
-          station2.dispatchEvent(synthetic);
+          station3.dispatchEvent(synthetic);
         },
         style: {
           position: "absolute",
@@ -48160,10 +50887,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -48207,11 +50934,11 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_video_surface();
   init_surface_cutouts();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -48220,12 +50947,12 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -48273,7 +51000,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 36;
   var MAX_CHIPS = 12;
   var REPLAY_DAYS = 3;
@@ -48302,7 +51029,7 @@ ${cue.text}`).join("\n\n")}
     return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -48313,7 +51040,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_ui();
@@ -48370,358 +51097,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
-  init_react_shim();
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useVodLibrary.ts
-  init_react_shim();
-  init_vod_client();
-  init_live_tv_data();
-  var PAGE_SIZE = 120;
-  var IMPORT_POLL_MS = 2e3;
-  function resolveVodSource(source) {
-    if (source) return source;
-    const sources = new Set(
-      getLiveTvLists().filter((list) => list.kind !== "custom" && list.source).map((list) => list.source)
-    );
-    return sources.size === 1 ? [...sources][0] : null;
-  }
-  function useVodSource(source) {
-    const [resolved, setResolved] = useState(() => resolveVodSource(source));
-    useEffect(() => {
-      setResolved(resolveVodSource(source));
-      return onLiveTvListsChanged(() => setResolved(resolveVodSource(source)));
-    }, [source]);
-    return resolved;
-  }
-  function uniqueByKey(items2) {
-    const seen = /* @__PURE__ */ new Set();
-    return items2.filter((item) => {
-      if (seen.has(item.key)) return false;
-      seen.add(item.key);
-      return true;
-    });
-  }
-  function useVodCategories(requested) {
-    const source = useVodSource(requested);
-    const [state2, setState] = useState({
-      categories: [],
-      total: 0,
-      known: false,
-      importing: false,
-      loading: true,
-      error: null
-    });
-    const [nonce, setNonce] = useState(0);
-    const reload = useCallback(() => setNonce((n) => n + 1), []);
-    useEffect(() => {
-      let cancelled = false;
-      let timer3 = null;
-      const controller = new AbortController();
-      const load = async () => {
-        try {
-          const result = await listVodCategories(source, controller.signal);
-          if (cancelled) return;
-          setState({ ...result, loading: false, error: null });
-          if (result.importing) timer3 = setTimeout(load, IMPORT_POLL_MS);
-        } catch (err) {
-          if (cancelled || controller.signal.aborted) return;
-          setState((prev) => ({
-            ...prev,
-            loading: false,
-            error: err instanceof Error ? err.message : String(err)
-          }));
-        }
-      };
-      void load();
-      const off = onVodChanged(load);
-      return () => {
-        cancelled = true;
-        controller.abort();
-        if (timer3) clearTimeout(timer3);
-        off();
-      };
-    }, [source, nonce]);
-    return useMemo(() => ({ ...state2, reload }), [state2, reload]);
-  }
-  function useVodPage(opts) {
-    const { categoryId, kind, q, sort, enabled = true, limit = PAGE_SIZE } = opts;
-    const source = useVodSource(opts.source);
-    const [items2, setItems] = useState([]);
-    const [total, setTotal] = useState(0);
-    const [known, setKnown] = useState(false);
-    const [loading2, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [error, setError] = useState(null);
-    const [wanted, setWanted] = useState(1);
-    const filterKey = `${source ?? ""}|${categoryId ?? ""}|${kind ?? ""}|${q ?? ""}|${sort}`;
-    const lastFilter = useRef(filterKey);
-    if (lastFilter.current !== filterKey) {
-      lastFilter.current = filterKey;
-      if (wanted !== 1) setWanted(1);
-    }
-    useEffect(() => {
-      if (!enabled) {
-        setItems([]);
-        setTotal(0);
-        setKnown(false);
-        setLoading(false);
-        return;
-      }
-      let cancelled = false;
-      const controller = new AbortController();
-      const first = wanted === 1;
-      if (first) setLoading(true);
-      else setLoadingMore(true);
-      void (async () => {
-        try {
-          const page = await queryVod({
-            source: source ?? void 0,
-            categoryId: categoryId ?? void 0,
-            kind: kind ?? void 0,
-            q: q?.trim() || void 0,
-            sort,
-            offset: 0,
-            limit: limit * wanted,
-            signal: controller.signal
-          });
-          if (cancelled) return;
-          setItems(uniqueByKey(page.items));
-          setTotal(page.total);
-          setKnown(page.known);
-          setError(null);
-        } catch (err) {
-          if (cancelled || controller.signal.aborted) return;
-          setError(err instanceof Error ? err.message : String(err));
-        } finally {
-          if (!cancelled) {
-            setLoading(false);
-            setLoadingMore(false);
-          }
-        }
-      })();
-      return () => {
-        cancelled = true;
-        controller.abort();
-      };
-    }, [filterKey, wanted, enabled, limit]);
-    const hasMore = items2.length < total;
-    const loadMore = useCallback(() => {
-      setWanted((n) => n + 1);
-    }, []);
-    return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
-  }
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/vod-row-phone.tsx
-  init_tv_ui();
-  init_tv_strings();
-  init_mobile_tokens();
-  init_jsx_runtime_shim();
-  var CARD_W = 163;
-  var ROW_MAX = 20;
-  function VodRowPhone({ mode, source, playlistName, nav }) {
-    const { tt } = useTvText();
-    const enabled = mode !== "off";
-    const cats = useVodCategories(enabled ? source : null);
-    const page = useVodPage({
-      source,
-      sort: "new",
-      // Hänvisningsraden behöver bara ANTALET, och det kommer ur kategorisvaret.
-      enabled: enabled && mode === "rows",
-      limit: ROW_MAX
-    });
-    const ordered = useMemo(() => {
-      const movies = page.items.filter((item) => item.kind === "movie");
-      const series = page.items.filter((item) => item.kind === "series");
-      return [...movies, ...series].slice(0, ROW_MAX);
-    }, [page.items]);
-    if (mode === "off") return null;
-    if (cats.total === 0) return null;
-    if (mode === "link") {
-      return /* @__PURE__ */ jsxs(
-        "div",
-        {
-          "data-testid": "hub-vod-link-phone",
-          ...station(() => nav.go("settings", { tab: "content" })),
-          style: {
-            flexShrink: 0,
-            padding: "12px 14px",
-            borderRadius: 14,
-            background: MT.s06,
-            border: `1px solid ${MT.line10}`,
-            cursor: "pointer"
-          },
-          children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600 }, children: tt("vodLinkTitle") }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.muted, marginTop: 2 }, children: tt("vodLinkBody", { count: cats.total, playlist: playlistName }) })
-          ]
-        }
-      );
-    }
-    if (ordered.length === 0) return null;
-    return /* @__PURE__ */ jsxs("section", { "data-testid": "hub-vod-row-phone", style: { flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 8 }, children: [
-        /* @__PURE__ */ jsx("span", { style: { fontSize: 17, fontWeight: 600 }, children: tt("vodRowTitle") }),
-        /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, ...ellipsis }, children: tt("vodRowSub", { playlist: playlistName, count: cats.total }) })
-      ] }),
-      /* @__PURE__ */ jsx(
-        "div",
-        {
-          "data-row": "",
-          style: { display: "flex", gap: 10, overflowX: "auto", scrollSnapType: "x proximity", paddingBottom: 2 },
-          children: ordered.map((item) => /* @__PURE__ */ jsx(VodCardPhone, { item, onOpen: () => nav.go("title", { key: item.key }) }, item.key))
-        }
-      )
-    ] });
-  }
-  function VodCardPhone({ item, onOpen }) {
-    const { tt } = useTvText();
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        "data-testid": "hub-vod-card-phone",
-        ...station(onOpen),
-        style: {
-          width: CARD_W,
-          // Samma skäl som spotlightkortet: raden ligger i en kolumn-flexbox och
-          // korten har overflow hidden, så utan detta krymps de till ingenting.
-          flexShrink: 0,
-          scrollSnapAlign: "start",
-          borderRadius: 14,
-          background: MT.s07,
-          border: `1px solid ${MT.line08}`,
-          overflow: "hidden",
-          cursor: "pointer"
-        },
-        children: [
-          /* @__PURE__ */ jsxs("div", { style: { position: "relative", aspectRatio: "2 / 3", background: MT.s07 }, children: [
-            item.posterUrl ? /* @__PURE__ */ jsx(
-              "img",
-              {
-                src: item.posterUrl,
-                alt: "",
-                loading: "lazy",
-                style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }
-              }
-            ) : null,
-            /* @__PURE__ */ jsx(
-              "span",
-              {
-                "data-vod-kind": item.kind,
-                style: {
-                  position: "absolute",
-                  left: 8,
-                  bottom: 8,
-                  fontSize: 11,
-                  padding: "3px 8px",
-                  borderRadius: 6,
-                  background: "rgba(0,0,0,0.5)",
-                  color: "rgba(255,255,255,0.8)"
-                },
-                children: item.kind === "series" ? tt("libraryKindSeries") : tt("libraryKindMovie")
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxs("div", { style: { padding: "8px 10px" }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis }, children: item.title }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim }, children: item.year ?? "" })
-          ] })
-        ]
-      }
-    );
-  }
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-data.ts
-  init_plugin_sdk();
-  init_live_tv_data();
-  var VOD_MODE_DEFAULT = "link";
-  var VOD_MODE_KEY = "vod_mode_v1";
-  var VOD_SORT_KEY = "library_sort_v1";
-  var VOD_CATEGORY_KEY = "library_category_v1";
-  var VOD_SORT_DEFAULT = "new";
-  function isVodMode(value) {
-    return value === "link" || value === "rows" || value === "off";
-  }
-  function readRecord(key) {
-    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, key, {});
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    const out = {};
-    for (const [id, value] of Object.entries(parsed)) {
-      if (typeof value === "string") out[id] = value;
-    }
-    return out;
-  }
-  var ALL_PLAYLISTS_KEY = "*";
-  function modeKey(playlistId) {
-    return playlistId || ALL_PLAYLISTS_KEY;
-  }
-  function getVodMode(playlistId) {
-    const value = readRecord(VOD_MODE_KEY)[modeKey(playlistId)];
-    return isVodMode(value) ? value : VOD_MODE_DEFAULT;
-  }
-  function setVodMode(playlistId, mode) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [modeKey(playlistId)]: mode });
-  }
-  function getVodSort() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, VOD_SORT_DEFAULT);
-    return raw === "az" || raw === "rating" ? raw : VOD_SORT_DEFAULT;
-  }
-  function setVodSort(sort) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, sort);
-  }
-  function getVodCategory(playlistId) {
-    return readRecord(VOD_CATEGORY_KEY)[modeKey(playlistId)] ?? null;
-  }
-  function setVodCategory(playlistId, categoryId) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_CATEGORY_KEY, {
-      ...readRecord(VOD_CATEGORY_KEY),
-      [modeKey(playlistId)]: categoryId
-    });
-  }
-  function mediaItemIdFor(item) {
-    if (item.tmdbId == null || !Number.isFinite(item.tmdbId) || item.tmdbId <= 0) return null;
-    return `${item.kind === "series" ? "tv" : "movie"}-${item.tmdbId}`;
-  }
-  function canOpenDetails(item) {
-    return mediaItemIdFor(item) != null;
-  }
-  function vodItemToMediaItem(item) {
-    const id = mediaItemIdFor(item);
-    if (!id) return null;
-    return {
-      id,
-      title: item.title,
-      type: item.kind === "series" ? "tv" : "movie",
-      year: item.year ?? null,
-      imdbId: item.imdbId ?? null,
-      posterUrl: item.posterUrl ?? null,
-      backdropUrl: null,
-      genres: [],
-      keywords: [],
-      providers: [],
-      ratings: { imdb: item.rating != null ? item.rating.toFixed(1) : null, metacritic: null, rottenTomatoes: null },
-      overview: "",
-      originalLanguage: null,
-      source: "tmdb",
-      runtimeMinutes: null
-    };
-  }
-  function openVodItem(item, opts) {
-    const media = vodItemToMediaItem(item);
-    if (!media) return false;
-    requestOpenMediaItem({
-      item: media,
-      source: "live-tv-library",
-      ...opts?.autoPlay ? { autoPlay: true } : {}
-    });
-    return true;
-  }
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -48770,7 +51150,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
   var RECENT_MAX = 8;
@@ -48907,15 +51287,6 @@ ${cue.text}`).join("\n\n")}
           })
         ] })
       ] }) : null,
-      /* @__PURE__ */ jsx(
-        VodRowPhone,
-        {
-          mode: getVodMode(model.activePlaylistId),
-          source: model.activeSource,
-          playlistName: model.activePlaylistName ?? tt("allPlaylists"),
-          nav
-        }
-      ),
       /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }, children: [
         /* @__PURE__ */ jsx(SectionTitle, { title: tt("allChannelsCount", { count: filtered.length.toLocaleString(locale) }) }),
         /* @__PURE__ */ jsx(MobileChips, { items: chipItems, value: group, onChange: (k) => {
@@ -48945,157 +51316,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-vod-hub.tsx
-  init_react_shim();
-  init_tv_ui();
-  init_tv_strings();
-  init_jsx_runtime_shim();
-  var ROW_MAX2 = 20;
-  function TvVodHubSection({ mode, source, playlistName, nav }) {
-    const { tt } = useTvText();
-    const enabled = mode !== "off";
-    const cats = useVodCategories(enabled ? source : null);
-    const page = useVodPage({
-      source,
-      sort: "new",
-      // Raden behöver aldrig mer än sitt tak, och hänvisningsraden behöver bara
-      // ANTALET — det kommer ur kategorisvaret, så då hämtas inga titlar alls.
-      enabled: enabled && mode === "rows",
-      limit: ROW_MAX2
-    });
-    const ordered = useMemo(() => {
-      const movies = page.items.filter((item) => item.kind === "movie");
-      const series = page.items.filter((item) => item.kind === "series");
-      return [...movies, ...series].slice(0, ROW_MAX2);
-    }, [page.items]);
-    if (mode === "off") return null;
-    if (cats.total === 0) return null;
-    if (mode === "link") {
-      return /* @__PURE__ */ jsx("section", { "data-testid": "hub-vod-link", children: /* @__PURE__ */ jsxs(
-        "div",
-        {
-          ...station(() => nav.go("settings", { tab: "content" })),
-          style: {
-            display: "flex",
-            alignItems: "center",
-            gap: dp(20),
-            padding: `${dp(18)}px ${dp(22)}px`,
-            borderRadius: dp(14),
-            background: TV2.s06,
-            border: `1px solid ${TV2.lineCard}`,
-            cursor: "pointer"
-          },
-          children: [
-            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: tt("vodLinkTitle") }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(17), color: "rgba(243,244,248,0.6)" }, children: tt("vodLinkBody", { count: cats.total, playlist: playlistName }) })
-            ] }),
-            /* @__PURE__ */ jsx(
-              "span",
-              {
-                style: {
-                  marginLeft: "auto",
-                  flexShrink: 0,
-                  fontSize: dp(18),
-                  fontWeight: 600,
-                  padding: `${dp(10)}px ${dp(20)}px`,
-                  borderRadius: 999,
-                  background: TV2.acc,
-                  // Vit text på accentfylld knapp — handoffens uttryckliga regel.
-                  color: "#fff"
-                },
-                children: tt("vodLinkAction")
-              }
-            )
-          ]
-        }
-      ) });
-    }
-    if (ordered.length === 0) return null;
-    return /* @__PURE__ */ jsxs("section", { "data-testid": "hub-vod-row", style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(14) }, children: [
-        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: tt("vodRowTitle") }),
-        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: "rgba(243,244,248,0.5)" }, children: tt("vodRowSub", { playlist: playlistName, count: cats.total }) })
-      ] }),
-      /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(16), overflowX: "auto", padding: dp(4) }, children: ordered.map((item) => /* @__PURE__ */ jsx(VodRowCard, { item, nav }, item.key)) })
-    ] });
-  }
-  function VodRowCard({ item, nav }) {
-    const { tt } = useTvText();
-    const open2 = () => nav.go("title", { key: item.key });
-    const hold = (element) => {
-      const actions = [
-        ...item.url ? [{
-          key: "play",
-          label: tt("menuPlay"),
-          run: () => nav.playStream({
-            url: item.url,
-            title: item.title,
-            tmdbId: item.tmdbId ? String(item.tmdbId) : null,
-            mediaType: item.kind === "series" ? "tv" : "movie",
-            posterUrl: item.posterUrl ?? null,
-            year: item.year ?? null
-          })
-        }] : [],
-        { key: "details", label: tt("menuMoreInfo"), run: () => {
-          if (!openVodItem(item)) nav.toast(tt("libraryNoDetails"));
-        } }
-      ];
-      nav.openMenu({ title: item.title, element, actions });
-    };
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        "data-testid": "hub-vod-card",
-        ...station(open2, hold),
-        style: {
-          width: dp(190),
-          flexShrink: 0,
-          borderRadius: dp(14),
-          background: TV2.s07,
-          border: `1px solid ${TV2.lineCard}`,
-          overflow: "hidden",
-          cursor: "pointer"
-        },
-        children: [
-          /* @__PURE__ */ jsxs("div", { style: { position: "relative", aspectRatio: "2 / 3", background: TV2.s07 }, children: [
-            item.posterUrl ? /* @__PURE__ */ jsx(
-              "img",
-              {
-                src: item.posterUrl,
-                alt: "",
-                loading: "lazy",
-                style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }
-              }
-            ) : null,
-            /* @__PURE__ */ jsx(
-              "span",
-              {
-                "data-vod-kind": item.kind,
-                style: {
-                  position: "absolute",
-                  left: dp(10),
-                  bottom: dp(10),
-                  fontSize: dp(13),
-                  padding: `${dp(4)}px ${dp(10)}px`,
-                  borderRadius: dp(6),
-                  background: "rgba(0,0,0,0.5)",
-                  color: "rgba(255,255,255,0.8)"
-                },
-                children: item.kind === "series" ? tt("libraryKindSeries") : tt("libraryKindMovie")
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxs("div", { style: { padding: `${dp(10)}px ${dp(12)}px` }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(17), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: item.title }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.55)" }, children: item.year ?? "" })
-          ] })
-        ]
-      }
-    );
-  }
-
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_DESKTOP = 3;
   var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
@@ -49256,15 +51477,6 @@ ${cue.text}`).join("\n\n")}
           })
         ] })
       ] }) : null,
-      /* @__PURE__ */ jsx(
-        TvVodHubSection,
-        {
-          mode: getVodMode(model.activePlaylistId),
-          source: model.activeSource,
-          playlistName: model.activePlaylistName ?? "",
-          nav
-        }
-      ),
       /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
         isTv ? (
           // TV-designen är godkänd (Jerry) och rörs inte: rubrik + underrad
@@ -49314,7 +51526,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -49323,7 +51535,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -49348,12 +51560,12 @@ ${cue.text}`).join("\n\n")}
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS * 100));
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -49409,14 +51621,14 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
-  function useDebouncedChannel(channel, ms = 300) {
+  function useDebouncedChannel(channel, ms2 = 300) {
     const [value, setValue] = useState(channel);
     useEffect(() => {
-      const timer3 = window.setTimeout(() => setValue(channel), ms);
+      const timer3 = window.setTimeout(() => setValue(channel), ms2);
       return () => window.clearTimeout(timer3);
-    }, [channel, ms]);
+    }, [channel, ms2]);
     return value;
   }
   var FAVS_GROUP = "__favs";
@@ -49473,7 +51685,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -49503,7 +51715,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -49512,7 +51724,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -49546,7 +51758,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -49555,14 +51767,14 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -49594,7 +51806,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -49663,7 +51875,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -49796,7 +52008,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_jsx_runtime_shim();
   var MAX_GROUPS2 = 12;
   var ROW_STEP3 = 40;
@@ -49921,7 +52133,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -49931,7 +52143,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -49969,7 +52181,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -49977,7 +52189,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
@@ -50048,7 +52260,7 @@ ${cue.text}`).join("\n\n")}
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_jsx_runtime_shim();
@@ -50170,12 +52382,12 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
-  function alignToHour(ms) {
-    const d = new Date(ms);
+  function alignToHour(ms2) {
+    const d = new Date(ms2);
     d.setMinutes(0, 0, 0);
     return d.getTime();
   }
@@ -50420,11 +52632,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -50433,7 +52645,7 @@ ${cue.text}`).join("\n\n")}
   init_guide_surface();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -50596,7 +52808,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-control-row.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -50691,7 +52903,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -50700,11 +52912,11 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -50749,7 +52961,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -50817,7 +53029,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
   var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
@@ -51047,7 +53259,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -51252,7 +53464,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
@@ -51367,7 +53579,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
   function TvGuide(props) {
@@ -51606,7 +53818,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -51614,7 +53826,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -51624,7 +53836,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -51633,7 +53845,7 @@ ${cue.text}`).join("\n\n")}
     next.splice(to, 0, moved);
     return next;
   }
-  function clamp(value, min, max) {
+  function clamp3(value, min, max) {
     return Math.min(max, Math.max(min, value));
   }
   function useDragReorder({ count, rowHeight, onCommit }) {
@@ -51648,7 +53860,7 @@ ${cue.text}`).join("\n\n")}
         const dy = e.clientY - startYRef.current;
         setOffsetY(dy);
         if (fromRef.current === null) return;
-        toRef.current = clamp(Math.round(fromRef.current + dy / rowHeight), 0, count - 1);
+        toRef.current = clamp3(Math.round(fromRef.current + dy / rowHeight), 0, count - 1);
       };
       const finish = () => {
         const from = fromRef.current;
@@ -51685,7 +53897,7 @@ ${cue.text}`).join("\n\n")}
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
   function TvFavouritesPhone({ model, nav }) {
@@ -51781,7 +53993,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
@@ -51861,13 +54073,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
   init_channel_locks();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -51988,12 +54200,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_tv_ui();
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -52172,7 +54384,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_jsx_runtime_shim();
   function TvChannel(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
@@ -52302,7 +54514,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -52311,13 +54523,13 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-keyboard.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -52348,7 +54560,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_jsx_runtime_shim();
   function isComposing(event) {
     return event.nativeEvent.isComposing === true || event.keyCode === 229;
@@ -52487,7 +54699,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -52521,23 +54733,23 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
   init_live_tv_data();
   var DEBOUNCE_MS = 150;
-  var EMPTY7 = [];
+  var EMPTY8 = [];
   function useProgrammeSearch(query, dayStart, dayEnd, opts) {
     const listId = opts?.listId === void 0 ? LIVE_TV_GLOBAL_EPG_ID : opts.listId;
     const limit = opts?.limit ?? 30;
-    const [state2, setState] = useState(() => ({ hits: EMPTY7, loading: false }));
+    const [state2, setState] = useState(() => ({ hits: EMPTY8, loading: false }));
     const generation = useRef(0);
     useEffect(() => {
       const q = query.trim();
       const mine = ++generation.current;
       if (!listId || q.length === 0) {
-        setState({ hits: EMPTY7, loading: false });
+        setState({ hits: EMPTY8, loading: false });
         return;
       }
       setState((prev) => ({ hits: prev.hits, loading: true }));
@@ -52553,7 +54765,7 @@ ${cue.text}`).join("\n\n")}
           hits.sort((left, right) => left.programme.start - right.programme.start);
           if (generation.current === mine) setState({ hits, loading: false });
         }).catch(() => {
-          if (generation.current === mine) setState({ hits: EMPTY7, loading: false });
+          if (generation.current === mine) setState({ hits: EMPTY8, loading: false });
         });
       }, DEBOUNCE_MS);
       return () => {
@@ -52563,7 +54775,7 @@ ${cue.text}`).join("\n\n")}
     return state2;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -52573,6 +54785,233 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
   init_mobile_channel_row();
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  init_react_shim();
+  init_vod_client();
+  init_live_tv_data();
+  var PAGE_SIZE = 120;
+  var IMPORT_POLL_MS = 2e3;
+  function resolveVodSource(source) {
+    if (source) return source;
+    const sources = new Set(
+      getLiveTvLists().filter((list) => list.kind !== "custom" && list.source).map((list) => list.source)
+    );
+    return sources.size === 1 ? [...sources][0] : null;
+  }
+  function useVodSource(source) {
+    const [resolved, setResolved] = useState(() => resolveVodSource(source));
+    useEffect(() => {
+      setResolved(resolveVodSource(source));
+      return onLiveTvListsChanged(() => setResolved(resolveVodSource(source)));
+    }, [source]);
+    return resolved;
+  }
+  function uniqueByKey(items2) {
+    const seen = /* @__PURE__ */ new Set();
+    return items2.filter((item) => {
+      if (seen.has(item.key)) return false;
+      seen.add(item.key);
+      return true;
+    });
+  }
+  function useVodCategories(requested) {
+    const source = useVodSource(requested);
+    const [state2, setState] = useState({
+      categories: [],
+      total: 0,
+      known: false,
+      importing: false,
+      loading: true,
+      error: null
+    });
+    const [nonce, setNonce] = useState(0);
+    const reload = useCallback(() => setNonce((n) => n + 1), []);
+    useEffect(() => {
+      let cancelled = false;
+      let timer3 = null;
+      const controller = new AbortController();
+      const load = async () => {
+        try {
+          const result = await listVodCategories(source, controller.signal);
+          if (cancelled) return;
+          setState({ ...result, loading: false, error: null });
+          if (result.importing) timer3 = setTimeout(load, IMPORT_POLL_MS);
+        } catch (err) {
+          if (cancelled || controller.signal.aborted) return;
+          setState((prev) => ({
+            ...prev,
+            loading: false,
+            error: err instanceof Error ? err.message : String(err)
+          }));
+        }
+      };
+      void load();
+      const off = onVodChanged(load);
+      return () => {
+        cancelled = true;
+        controller.abort();
+        if (timer3) clearTimeout(timer3);
+        off();
+      };
+    }, [source, nonce]);
+    return useMemo(() => ({ ...state2, reload }), [state2, reload]);
+  }
+  function useVodPage(opts) {
+    const { categoryId, kind, q, sort, enabled = true, limit = PAGE_SIZE } = opts;
+    const source = useVodSource(opts.source);
+    const [items2, setItems] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [known, setKnown] = useState(false);
+    const [loading2, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [error, setError] = useState(null);
+    const [wanted, setWanted] = useState(1);
+    const filterKey = `${source ?? ""}|${categoryId ?? ""}|${kind ?? ""}|${q ?? ""}|${sort}`;
+    const lastFilter = useRef(filterKey);
+    if (lastFilter.current !== filterKey) {
+      lastFilter.current = filterKey;
+      if (wanted !== 1) setWanted(1);
+    }
+    useEffect(() => {
+      if (!enabled) {
+        setItems([]);
+        setTotal(0);
+        setKnown(false);
+        setLoading(false);
+        return;
+      }
+      let cancelled = false;
+      const controller = new AbortController();
+      const first = wanted === 1;
+      if (first) setLoading(true);
+      else setLoadingMore(true);
+      void (async () => {
+        try {
+          const page = await queryVod({
+            source: source ?? void 0,
+            categoryId: categoryId ?? void 0,
+            kind: kind ?? void 0,
+            q: q?.trim() || void 0,
+            sort,
+            offset: 0,
+            limit: limit * wanted,
+            signal: controller.signal
+          });
+          if (cancelled) return;
+          setItems(uniqueByKey(page.items));
+          setTotal(page.total);
+          setKnown(page.known);
+          setError(null);
+        } catch (err) {
+          if (cancelled || controller.signal.aborted) return;
+          setError(err instanceof Error ? err.message : String(err));
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+            setLoadingMore(false);
+          }
+        }
+      })();
+      return () => {
+        cancelled = true;
+        controller.abort();
+      };
+    }, [filterKey, wanted, enabled, limit]);
+    const hasMore = items2.length < total;
+    const loadMore = useCallback(() => {
+      setWanted((n) => n + 1);
+    }, []);
+    return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-data.ts
+  init_plugin_sdk();
+  init_live_tv_data();
+  var VOD_MODE_DEFAULT = "link";
+  var VOD_MODE_KEY = "vod_mode_v1";
+  var VOD_SORT_KEY = "library_sort_v1";
+  var VOD_CATEGORY_KEY = "library_category_v1";
+  var VOD_SORT_DEFAULT = "new";
+  function isVodMode(value) {
+    return value === "link" || value === "rows" || value === "off";
+  }
+  function readRecord(key) {
+    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, key, {});
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const out = {};
+    for (const [id, value] of Object.entries(parsed)) {
+      if (typeof value === "string") out[id] = value;
+    }
+    return out;
+  }
+  var ALL_PLAYLISTS_KEY = "*";
+  function modeKey(playlistId) {
+    return playlistId || ALL_PLAYLISTS_KEY;
+  }
+  function getVodMode(playlistId) {
+    const value = readRecord(VOD_MODE_KEY)[modeKey(playlistId)];
+    return isVodMode(value) ? value : VOD_MODE_DEFAULT;
+  }
+  function setVodMode(playlistId, mode) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [modeKey(playlistId)]: mode });
+  }
+  function getVodSort() {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, VOD_SORT_DEFAULT);
+    return raw === "az" || raw === "rating" ? raw : VOD_SORT_DEFAULT;
+  }
+  function setVodSort(sort) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, sort);
+  }
+  function getVodCategory(playlistId) {
+    return readRecord(VOD_CATEGORY_KEY)[modeKey(playlistId)] ?? null;
+  }
+  function setVodCategory(playlistId, categoryId) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_CATEGORY_KEY, {
+      ...readRecord(VOD_CATEGORY_KEY),
+      [modeKey(playlistId)]: categoryId
+    });
+  }
+  function mediaItemIdFor(item) {
+    if (item.tmdbId == null || !Number.isFinite(item.tmdbId) || item.tmdbId <= 0) return null;
+    return `${item.kind === "series" ? "tv" : "movie"}-${item.tmdbId}`;
+  }
+  function canOpenDetails(item) {
+    return mediaItemIdFor(item) != null;
+  }
+  function vodItemToMediaItem(item) {
+    const id = mediaItemIdFor(item);
+    if (!id) return null;
+    return {
+      id,
+      title: item.title,
+      type: item.kind === "series" ? "tv" : "movie",
+      year: item.year ?? null,
+      imdbId: item.imdbId ?? null,
+      posterUrl: item.posterUrl ?? null,
+      backdropUrl: null,
+      genres: [],
+      keywords: [],
+      providers: [],
+      ratings: { imdb: item.rating != null ? item.rating.toFixed(1) : null, metacritic: null, rottenTomatoes: null },
+      overview: "",
+      originalLanguage: null,
+      source: "tmdb",
+      runtimeMinutes: null
+    };
+  }
+  function openVodItem(item, opts) {
+    const media = vodItemToMediaItem(item);
+    if (!media) return false;
+    requestOpenMediaItem({
+      item: media,
+      source: "live-tv-library",
+      ...opts?.autoPlay ? { autoPlay: true } : {}
+    });
+    return true;
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_jsx_runtime_shim();
   function TvSearchPhone({ model, nav }) {
     const { tt, locale } = useTvText();
@@ -52701,7 +55140,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
     return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
@@ -52816,14 +55255,14 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -52832,10 +55271,10 @@ ${cue.text}`).join("\n\n")}
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -52885,7 +55324,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -53053,7 +55492,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
     2: { columns: "1fr 1fr", rows: "1fr" },
@@ -53185,7 +55624,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -53713,13 +56152,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -53777,7 +56216,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -54234,7 +56673,7 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -54269,21 +56708,21 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_live_tv_data();
   init_index_client();
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -54438,19 +56877,19 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileToggle({ on }) {
     return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_jsx_runtime_shim();
   function Row({ label, right, onOk, testId, phone = false }) {
     if (phone) {
@@ -55146,7 +57585,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -55216,7 +57655,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_jsx_runtime_shim();
   var TABS = ["appearance", "content", "playlists", "epg", "parental"];
@@ -55283,7 +57722,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -55297,14 +57736,15 @@ ${cue.text}`).join("\n\n")}
     settings: TvSettingsView
   };
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
   init_mobile_icons();
   init_jsx_runtime_shim();
   var BASE_TABS = [
-    { key: "hub", icon: MIcons.House, label: "tabHome" },
+    { key: "home", icon: MIcons.House, label: "tabHome" },
+    { key: "hub", icon: MIcons.SquaresFour, label: "tabChannels" },
     { key: "guide", icon: MIcons.List, label: "tabGuide" },
     { key: "favs", icon: MIcons.Heart, label: "tabFavourites" },
     { key: "search", icon: MIcons.MagnifyingGlass, label: "tabSearch" }
@@ -55320,9 +57760,9 @@ ${cue.text}`).join("\n\n")}
     if (view === "multi" || view === "settings") return "more";
     return view;
   }
-  function MobileTabBar({ view, onGo, onMore, showLibrary = false }) {
+  function MobileTabBar({ view, activeOverride, onGo, onMore, showLibrary = false }) {
     const { tt } = useTvText();
-    const active4 = tabForView(view);
+    const active4 = activeOverride ?? tabForView(view);
     const tabs = tabsFor(showLibrary);
     return /* @__PURE__ */ jsx(
       "nav",
@@ -55376,12 +57816,74 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-autoscan.ts
+  init_plugin_sdk();
+  init_live_tv_data();
+  init_vod_client();
+  var AUTOSCAN_KEY = "live_tv_vod_autoscan_v1";
+  var inFlight2 = false;
+  async function maybeAutoScanVod() {
+    if (inFlight2) return "skipped";
+    if (readPluginJson(LIVE_TV_PLUGIN_ID, AUTOSCAN_KEY, false)) return "skipped";
+    if (isLibraryScanRunning2()) return "skipped";
+    inFlight2 = true;
+    try {
+      const [sources, library] = await Promise.all([vodStatus(), fetchLibraryStatus()]);
+      if (library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync)) return "skipped";
+      const rows = vodLibraryRows(sources, library).filter((row) => row.indexedTitles === null);
+      if (rows.length === 0) return "skipped";
+      if (rows.some((row) => row.importing)) return "skipped";
+      if (isLibraryScanRunning2()) return "skipped";
+      writePluginJson(LIVE_TV_PLUGIN_ID, AUTOSCAN_KEY, true);
+      for (const row of rows) {
+        try {
+          await runLibraryScan2(vodLibraryProvider, { id: row.libraryId, name: row.label, cursor: null }, { mode: "full" });
+        } catch (err) {
+          console.warn("[live-tv] VOD-autoindex", err);
+        }
+      }
+      return "started";
+    } catch (err) {
+      console.warn("[live-tv] VOD-autoindex", err);
+      return "skipped";
+    } finally {
+      inFlight2 = false;
+    }
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-home.ts
+  init_plugin_sdk();
+  var LIVE_TV_FRAME_ID = "live-tv";
+  function vodHomeTarget() {
+    return {
+      pageId: "library",
+      params: { provider: VOD_LIBRARY_PROVIDER_ID, frame: LIVE_TV_FRAME_ID, fallbackPageId: LIVE_TV_BROWSE_PAGE_ID }
+    };
+  }
+  async function hasVodIndex() {
+    try {
+      const status = await fetchLibraryStatus();
+      return Boolean(status?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync));
+    } catch {
+      return false;
+    }
+  }
+  var REDIRECT_COOLDOWN_MS = 1e4;
+  var lastRedirect = -Infinity;
+  function shouldRedirectToVodHome(params, now2) {
+    if (params && (params.view || params.url)) return false;
+    return now2 - lastRedirect >= REDIRECT_COOLDOWN_MS;
+  }
+  function markVodHomeRedirect(now2) {
+    lastRedirect = now2;
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_mobile_sheet();
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
     const ref = useRef(null);
-    const [clip, setClip] = useState(() => cutoutClipPath([]));
+    const [clip2, setClip] = useState(() => cutoutClipPath([]));
     useLayoutEffect(() => {
       const measure2 = () => {
         const el = ref.current;
@@ -55407,22 +57909,13 @@ ${cue.text}`).join("\n\n")}
         ref,
         "data-live-tv-backdrop": "",
         "aria-hidden": "true",
-        style: { position: "fixed", inset: 0, background: TV2.bg, pointerEvents: "none", zIndex: -1, clipPath: clip, WebkitClipPath: clip }
+        style: { position: "fixed", inset: 0, background: TV2.bg, pointerEvents: "none", zIndex: -1, clipPath: clip2, WebkitClipPath: clip2 }
       }
     );
   }
   var VIEWS2 = ["hub", "guide", "favs", "channel", "search", "multi", "library", "title", "cast", "settings"];
   var BACK_KEYS2 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   var ZAP_TIMEOUT_MS = 1500;
-  var RAIL_W_TV = 152;
-  var RAIL_W_DESKTOP = 132;
-  var RAIL_W_NARROW = 64;
-  var RAIL_ITEM_WIDE = 108;
-  var RAIL_ITEM_WIDE_H = 84;
-  var RAIL_W_TV_COMPACT = 104;
-  var RAIL_W_DESKTOP_COMPACT = 84;
-  var RAIL_ITEM_COMPACT = 60;
-  var RAIL_ITEM_NARROW = 48;
   function viewFromParams(params) {
     const raw = params?.view;
     if (raw && VIEWS2.includes(raw)) return raw;
@@ -55454,8 +57947,6 @@ ${cue.text}`).join("\n\n")}
     const phone = usePhoneSurface(rootRef) && !isTv;
     const desktopSurface = isDesktopTauri() && !isTv && !phone;
     const railLabels = settings.railLabels && !narrow;
-    const railWidth = isTv ? railLabels ? RAIL_W_TV : RAIL_W_TV_COMPACT : narrow ? RAIL_W_NARROW : railLabels ? RAIL_W_DESKTOP : RAIL_W_DESKTOP_COMPACT;
-    const railItemSize = narrow ? RAIL_ITEM_NARROW : railLabels ? RAIL_ITEM_WIDE : RAIL_ITEM_COMPACT;
     const [moreOpen, setMoreOpen] = useState(false);
     useEffect(() => {
       if (active4) return;
@@ -55504,10 +57995,34 @@ ${cue.text}`).join("\n\n")}
     const go = useCallback((next, extra = {}) => {
       onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: next, ...extra } });
     }, [onNavigate]);
+    const [redirectCheck, setRedirectCheck] = useState(() => params === void 0 && shouldRedirectToVodHome(params, Date.now()));
+    useEffect(() => {
+      if (!redirectCheck) return;
+      let cancelled = false;
+      void hasVodIndex().then((ok) => {
+        if (cancelled) return;
+        if (!ok) {
+          setRedirectCheck(false);
+          void maybeAutoScanVod();
+          return;
+        }
+        markVodHomeRedirect(Date.now());
+        onNavigate(vodHomeTarget());
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, []);
     const toast = useCallback((text) => {
       setToastText(text);
       window.setTimeout(() => setToastText((current3) => current3 === text ? null : current3), 1800);
     }, []);
+    const goVodHome = useCallback(() => {
+      void hasVodIndex().then((ok) => {
+        if (ok) onNavigate(vodHomeTarget());
+        else toast(tt("vodHomeIndexing"));
+      });
+    }, [onNavigate, toast, tt]);
     const modelRef = useRef(model);
     useEffect(() => {
       modelRef.current = model;
@@ -55679,29 +58194,6 @@ ${cue.text}`).join("\n\n")}
     useSwipeBack(back, (!menu || phone) && pending5 === null);
     const View = TV_VIEWS[view];
     const activeChannel = active4 ? active4.url ? { ...active4.channel, url: active4.url, name: active4.label ?? active4.channel.name } : active4.channel : null;
-    const rail = [
-      { key: "search", label: tt("railSearch"), icon: /* @__PURE__ */ jsx(Icons.Search, {}) },
-      { key: "hub", label: tt("railHome"), icon: /* @__PURE__ */ jsx(Icons.Home, {}) },
-      { key: "guide", label: tt("railGuide"), icon: /* @__PURE__ */ jsx(Icons.Tv, {}) },
-      { key: "library", label: tt("railLibrary"), icon: /* @__PURE__ */ jsx(Icons.FilmStrip, {}) },
-      { key: "multi", label: tt("railMultiview"), icon: /* @__PURE__ */ jsx(Icons.SquaresFour, {}) },
-      { key: "favs", label: tt("railFavourites"), icon: /* @__PURE__ */ jsx(Icons.Heart, {}) }
-    ];
-    const railItem = (item, extraStyle) => {
-      const activeItem = item.key === view || item.key === "guide" && view === "channel";
-      return /* @__PURE__ */ jsxs(
-        "div",
-        {
-          ...station(item.run ?? (() => go(item.key)), void 0, { "data-testid": `rail-${item.key}`, "aria-label": item.label, title: item.label }),
-          style: { width: dp(railItemSize), height: dp(railLabels ? RAIL_ITEM_WIDE_H : railItemSize), borderRadius: dp(railLabels ? 18 : 16), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: dp(5), cursor: "pointer", background: activeItem ? TV2.s14 : "transparent", color: activeItem ? TV2.text : "rgba(243,244,248,0.62)", ...extraStyle },
-          children: [
-            item.icon,
-            !railLabels ? null : /* @__PURE__ */ jsx("span", { "data-live-tv-rail-label": "", style: { fontSize: dp(15), fontWeight: 600, lineHeight: 1.1, maxWidth: "100%", padding: `0 ${dp(6)}px`, boxSizing: "border-box", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: item.label })
-          ]
-        },
-        item.key
-      );
-    };
     const tvPlayerProps = activeChannel ? buildTvPlayerProps({
       model,
       settings,
@@ -55742,21 +58234,22 @@ ${cue.text}`).join("\n\n")}
         children: [
           hasCutouts ? /* @__PURE__ */ jsx(SurfaceBackdrop, { cutouts: cutouts2 }) : null,
           /* @__PURE__ */ jsx(TvFocusStyle, {}),
-          phone ? null : (
-            /* Ikonrad: pluginets egen navigation inne i Live TV. Inte data-col="side" —
-                värdens Back-regel hade då flyttat fokus hit i stället för att gå bakåt.
-                OFÖRÄNDRAD ovanför telefonbredden (spec §1/krav 3) — se
-                "utan telefonattribut: ikonraden som förut" i tv-shell-phone.test.tsx.
-                På telefon finns ingen rad alls: flik-raden nedan tar över. */
-            /* @__PURE__ */ jsxs("nav", { "data-testid": "tv-rail", "aria-label": tt("liveTv"), style: { width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, background: "linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))", padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(narrow ? 8 : 8) }, children: [
-              narrow ? null : /* @__PURE__ */ jsx("div", { "data-live-tv-rail-badge": "", "aria-hidden": "true", style: { width: dp(44), height: dp(44), borderRadius: dp(12), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: dp(22), marginBottom: dp(24) }, children: "L" }),
-              railItem({ key: "back", label: tt("railBack"), icon: /* @__PURE__ */ jsx(Icons.ChevronLeft, {}), run: requestBrowseBack }),
-              rail.map((item) => railItem(item)),
-              railItem({ key: "settings", label: tt("railSettings"), icon: /* @__PURE__ */ jsx(Icons.Gear, {}) }, { marginTop: "auto" })
-            ] })
+          phone ? null : /* @__PURE__ */ jsx(
+            TvRail,
+            {
+              active: railKeyForView(view),
+              isTv,
+              narrow,
+              labels: railLabels,
+              onSelect: (key) => {
+                if (key === "back") requestBrowseBack();
+                else if (key === "home") goVodHome();
+                else go(key);
+              }
+            }
           ),
-          /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone }, view) }),
-          phone && active4 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
+          /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: redirectCheck ? null : /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone }, view) }),
+          phone && active4 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => v === "home" ? goVodHome() : go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
           phone && moreOpen ? /* @__PURE__ */ jsx(
             MobileSheet,
             {
@@ -55820,7 +58313,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -55877,7 +58370,7 @@ ${cue.text}`).join("\n\n")}
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -55919,7 +58412,68 @@ ${cue.text}`).join("\n\n")}
     return programmes;
   }
 
-  // ../../../lumio-official-plugins/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_tv_settings_store();
+  init_useNarrowSurface();
+  init_tv_ui();
+  init_live_tv_data();
+  init_vod_client();
+  init_guide_surface();
+  init_jsx_runtime_shim();
+  function PhoneTabBar({ select }) {
+    const tvMode = useTvMode();
+    const [showLibrary, setShowLibrary] = useState(false);
+    useEffect(() => {
+      let cancelled = false;
+      const playlistId = getActivePlaylistId();
+      const source = tvMode || isDesktopTauri() ? getLiveTvLists().find((list) => list.id === playlistId)?.source ?? null : null;
+      if (getVodMode(playlistId) === "off") return;
+      listVodCategories(source).then((result) => {
+        if (!cancelled) setShowLibrary(result.total > 0);
+      }).catch(() => {
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [tvMode]);
+    return /* @__PURE__ */ jsx(MobileTabBar, { view: "hub", activeOverride: "home", showLibrary, onGo: select, onMore: () => select("multi") });
+  }
+  function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset }) {
+    const settings = useTvSettings();
+    const rootRef = useRef(null);
+    const isTv = platform === "tv";
+    const phone = platform === "phone";
+    const narrow = useNarrowSurface(rootRef) && !isTv;
+    const select = (key) => {
+      if (key === "back") {
+        onExit();
+        return;
+      }
+      if (key === "home") return;
+      onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: key } });
+    };
+    useEffect(() => {
+      if (phone) {
+        onInset(0);
+        return;
+      }
+      const el = rootRef.current;
+      if (!el) return;
+      const report = () => onInset(el.getBoundingClientRect().width);
+      report();
+      const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(report) : null;
+      observer?.observe(el);
+      return () => observer?.disconnect();
+    }, [phone, onInset]);
+    if (phone) {
+      return /* @__PURE__ */ jsx(PhoneTabBar, { select });
+    }
+    return /* @__PURE__ */ jsx("div", { ref: rootRef, style: { height: "100%", display: "flex", background: TV2.bg, color: TV2.text, fontFamily: TV2.font }, children: /* @__PURE__ */ jsx(TvRail, { active: "home", isTv, narrow, labels: settings.railLabels && !narrow, onSelect: select }) });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/live-tv-vod-hem/plugins/live-tv/runtime/index.ts
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,
@@ -55969,6 +58523,8 @@ ${cue.text}`).join("\n\n")}
       });
       const registerLibrary = ctx.registerLibraryProvider;
       if (typeof registerLibrary === "function") registerLibrary.call(ctx, vodLibraryProvider);
+      const registerFrame = ctx.registerLibraryFrame;
+      if (typeof registerFrame === "function") registerFrame.call(ctx, { id: LIVE_TV_FRAME_ID, Frame: LiveTvLibraryFrame });
       const registerStreams = ctx.registerMediaStreamCatalogProvider;
       if (typeof registerStreams === "function") {
         registerStreams({
