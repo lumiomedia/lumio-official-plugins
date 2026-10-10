@@ -19,7 +19,7 @@ describe('vod-home', () => {
     try {
       vi.mocked(fetchLibraryStatus).mockReturnValueOnce(new Promise(() => {}) as never)
       const result = hasVodIndex()
-      await vi.advanceTimersByTimeAsync(1500)
+      await vi.advanceTimersByTimeAsync(5000)
       expect(await result).toBe(false)
     } finally {
       vi.useRealTimers()

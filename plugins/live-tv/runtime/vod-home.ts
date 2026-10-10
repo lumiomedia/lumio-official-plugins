@@ -22,8 +22,14 @@ export function vodHiddenForActivePlaylist(): boolean {
   return getVodMode(getActivePlaylistId()) === 'off'
 }
 
-/** Hur länge statusfrågan får ta innan vi ger upp och visar Kanaler (ett stockat index får aldrig lämna hubben tom). */
-export const VOD_INDEX_TIMEOUT_MS = 1500
+/**
+ * Hur länge statusfrågan får ta innan vi ger upp och visar Kanaler (ett
+ * stockat index får aldrig lämna hubben tom). Inte kortare: vid kallstart
+ * köar webbvyn anropet bakom appens egna (uppmätt 2026-10-10, telefon:
+ * ~2,9 s innan anropet ens skickades, svaret sedan 0,2 s) — med 1,5 s
+ * hamnade Live TV då alltid på Kanaler i stället för Hem.
+ */
+export const VOD_INDEX_TIMEOUT_MS = 5000
 
 /** Finns minst en indexerad xtream-vod-källa? Fel eller timeout i anropet räknas som inget index. */
 export async function hasVodIndex(timeoutMs = VOD_INDEX_TIMEOUT_MS): Promise<boolean> {
