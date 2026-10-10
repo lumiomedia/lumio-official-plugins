@@ -10533,7 +10533,7 @@
         }
         order.splice(insertAt, 0, id);
       }
-      const hidden = (Array.isArray(parsed.hidden) ? parsed.hidden : []).filter(
+      const hidden2 = (Array.isArray(parsed.hidden) ? parsed.hidden : []).filter(
         (id) => known.has(id) && id !== "playPause"
       );
       const timeFormat = parsed.timeFormat === "remaining" || parsed.timeFormat === "elapsed" ? parsed.timeFormat : "elapsed-total";
@@ -10542,7 +10542,7 @@
       const seekBarHeight = parsed.seekBarHeight === "slim" || parsed.seekBarHeight === "chunky" ? parsed.seekBarHeight : "standard";
       const seekBarColor = parsed.seekBarColor === "white" || parsed.seekBarColor === "red" || parsed.seekBarColor === "amber" ? parsed.seekBarColor : "accent";
       const seekBarDot = parsed.seekBarDot !== false;
-      return { order, hidden, timeFormat, volumeStyle, seekBarStyle, seekBarHeight, seekBarColor, seekBarDot };
+      return { order, hidden: hidden2, timeFormat, volumeStyle, seekBarStyle, seekBarHeight, seekBarColor, seekBarDot };
     } catch {
       return defaultLayout();
     }
@@ -39531,14 +39531,14 @@ ${cue.text}`).join("\n\n")}
       names.add(name);
       merges.push({ name, groups });
     }
-    const hidden = [];
+    const hidden2 = [];
     for (const raw of curation.hidden ?? []) {
       const g = (raw ?? "").trim();
-      if (!g || hidden.includes(g)) continue;
-      hidden.push(g);
+      if (!g || hidden2.includes(g)) continue;
+      hidden2.push(g);
     }
-    if (hidden.length === 0 && merges.length === 0) return void 0;
-    return { hidden, merges };
+    if (hidden2.length === 0 && merges.length === 0) return void 0;
+    return { hidden: hidden2, merges };
   }
   function mergeNameFor(curation) {
     const map = /* @__PURE__ */ new Map();
@@ -39547,7 +39547,7 @@ ${cue.text}`).join("\n\n")}
   }
   function applyCuration(channels, curation) {
     if (!curation || curation.hidden.length === 0 && curation.merges.length === 0) return [...channels];
-    const hidden = new Set(curation.hidden);
+    const hidden2 = new Set(curation.hidden);
     const renamed = mergeNameFor(curation);
     const out = [];
     for (const channel of channels) {
@@ -39559,7 +39559,7 @@ ${cue.text}`).join("\n\n")}
       const kept = [];
       for (const part of parts2) {
         const merged = renamed.get(part);
-        if (merged === void 0 && hidden.has(part)) continue;
+        if (merged === void 0 && hidden2.has(part)) continue;
         const name = merged ?? part;
         if (!kept.includes(name)) kept.push(name);
       }
@@ -39570,12 +39570,12 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
   function curatedGroupCounts(groups, curation) {
-    const hidden = new Set(curation?.hidden ?? []);
+    const hidden2 = new Set(curation?.hidden ?? []);
     const renamed = curation ? mergeNameFor(curation) : /* @__PURE__ */ new Map();
     const counts = /* @__PURE__ */ new Map();
     for (const { name, count } of groups) {
       const merged = renamed.get(name);
-      if (merged === void 0 && hidden.has(name)) continue;
+      if (merged === void 0 && hidden2.has(name)) continue;
       const target2 = merged ?? name;
       counts.set(target2, (counts.get(target2) ?? 0) + count);
     }
@@ -39594,8 +39594,8 @@ ${cue.text}`).join("\n\n")}
     if (!trimmed) return "empty";
     if (curation.merges.some((m) => m.name === trimmed)) return "duplicate";
     const claimed = /* @__PURE__ */ new Set([...curation.merges.flatMap((m) => m.groups), ...members]);
-    const hidden = new Set(curation.hidden);
-    if (groups.some((g) => g.name === trimmed && !hidden.has(g.name) && !claimed.has(g.name))) return "visible-group";
+    const hidden2 = new Set(curation.hidden);
+    if (groups.some((g) => g.name === trimmed && !hidden2.has(g.name) && !claimed.has(g.name))) return "visible-group";
     return null;
   }
   var init_list_curation = __esm({
@@ -39703,12 +39703,12 @@ ${cue.text}`).join("\n\n")}
   function sanitizeCuration(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const obj = raw;
-    const hidden = Array.isArray(obj.hidden) ? obj.hidden.filter((g) => typeof g === "string") : [];
+    const hidden2 = Array.isArray(obj.hidden) ? obj.hidden.filter((g) => typeof g === "string") : [];
     const merges = Array.isArray(obj.merges) ? obj.merges.filter((m) => Boolean(m) && typeof m === "object").map((m) => ({
       name: typeof m.name === "string" ? m.name : "",
       groups: Array.isArray(m.groups) ? m.groups.filter((g) => typeof g === "string") : []
     })) : [];
-    return normalizeCuration({ hidden, merges });
+    return normalizeCuration({ hidden: hidden2, merges });
   }
   function readLists() {
     const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, LIVE_TV_LISTS_KEY, []);
@@ -44200,7 +44200,22 @@ ${cue.text}`).join("\n\n")}
   function useOverrides() {
     return useStored(SPORT_OVERRIDES_KEY, getOverrides);
   }
-  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, DEFAULT_SETTINGS;
+  function getAlertSkips() {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, {});
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    const out = {};
+    for (const [id, start2] of Object.entries(raw)) if (typeof start2 === "number") out[id] = start2;
+    return out;
+  }
+  function setAlertSkip(matchId, start2, skip, now2 = Date.now()) {
+    const current3 = getAlertSkips();
+    if (!skip && !(matchId in current3)) return;
+    const next = {};
+    for (const [id, s] of Object.entries(current3)) if (s + SKIP_KEEP_MS > now2 && id !== matchId) next[id] = s;
+    if (skip) next[matchId] = start2;
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, next);
+  }
+  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, DEFAULT_SETTINGS, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
   var init_sport_store = __esm({
     "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-store.ts"() {
       "use strict";
@@ -44213,6 +44228,8 @@ ${cue.text}`).join("\n\n")}
       SPORT_FOLLOWS_KEY = "sport_follows_v1";
       SPORT_OVERRIDES_KEY = "sport_overrides_v1";
       DEFAULT_SETTINGS = { view: "matchday", alert: "15" };
+      SPORT_ALERT_SKIP_KEY = "sport_alert_skip_v1";
+      SKIP_KEEP_MS = 24 * 60 * 6e4;
     }
   });
 
@@ -44424,7 +44441,13 @@ ${cue.text}`).join("\n\n")}
       },
       toggleRemind: (m) => {
         const chosen = best(m);
-        if (chosen) toggleReminder(sourceChannel(chosen), { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop });
+        if (!chosen) return;
+        const channel = sourceChannel(chosen);
+        const id = reminderId(channel, { start: chosen.programmeStart });
+        const existing = reminders.find((r) => r.id === id);
+        if (existing?.origin === "sport") setAlertSkip(m.id, m.start, true);
+        else if (!existing) setAlertSkip(m.id, m.start, false);
+        toggleReminder(channel, { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop });
       },
       isReminded: (m) => {
         const chosen = best(m);
@@ -44678,8 +44701,20 @@ ${cue.text}`).join("\n\n")}
   function usePlayerSport(args) {
     const settings = useSportSettings();
     const overrides = useOverrides();
-    const { active: active4, model, play, openMultiview } = args;
-    const { data } = useSportDay(active4 ? localDayKey(model.nowMs) : null, model.nowMs);
+    const { playingKey, model, play, openMultiview } = args;
+    const active4 = playingKey !== null;
+    const [armed, setArmed] = useState(false);
+    useEffect(() => {
+      setArmed(false);
+      if (playingKey === null) return;
+      const timer3 = window.setTimeout(() => setArmed(true), PLAYER_SPORT_DELAY_MS);
+      return () => window.clearTimeout(timer3);
+    }, [playingKey]);
+    const { data: fresh } = useSportDay(active4 && armed ? localDayKey(model.nowMs) : null, model.nowMs);
+    const last2 = useRef(null);
+    if (!active4) last2.current = null;
+    else if (fresh) last2.current = fresh;
+    const data = active4 ? fresh ?? last2.current : null;
     return useMemo(() => {
       if (!active4 || !data) return void 0;
       return {
@@ -44711,7 +44746,7 @@ ${cue.text}`).join("\n\n")}
       items2.map((m) => /* @__PURE__ */ jsx("span", { style: { padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV2.lineCard}`, background: "rgba(0,0,0,0.5)", fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap" }, children: shortLabel(m) }, m.id))
     ] });
   }
-  function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose }) {
+  function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps }) {
     const { tt } = useTvText();
     const [picking, setPicking] = useState(false);
     const [picked, setPicked] = useState([]);
@@ -44728,34 +44763,34 @@ ${cue.text}`).join("\n\n")}
       const best = rankedSources(m, sport.overrides)[0];
       const on = picked.includes(m.id);
       const meta = [m.league, statusAt(m, nowMs) === "live" ? tt("live") : formatClock2(m.start, locale), best?.name].filter(Boolean).join(" \xB7 ");
-      return /* @__PURE__ */ jsxs("div", { "data-testid": "pm-row", "data-picked": on ? "1" : "0", ...station(() => picking ? toggle(m) : sport.onSwitchMatch(m), void 0, index === 0 ? { "data-init": "" } : void 0), style: { display: "flex", alignItems: "center", gap: dp(14), padding: `${dp(12)}px ${dp(14)}px`, borderRadius: dp(12), cursor: "pointer", background: now2 ? TV2.accMix(16) : TV2.s08, border: `1px solid ${now2 ? TV2.accMix(60) : TV2.line}` }, children: [
-        picking ? /* @__PURE__ */ jsx("span", { style: { width: dp(30), height: dp(30), borderRadius: dp(8), border: `2px solid ${on ? TV2.acc : TV2.lineStrong}`, background: on ? TV2.acc : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: on ? "\u2713" : "" }) : null,
+      return /* @__PURE__ */ jsxs("div", { "data-testid": "pm-row", "data-picked": on ? "1" : "0", ...station(() => picking ? toggle(m) : sport.onSwitchMatch(m), void 0, index === 0 ? { "data-init": "" } : void 0), style: { display: "flex", alignItems: "center", gap: ps(14), padding: `${ps(12)}px ${ps(14)}px`, borderRadius: ps(12), cursor: "pointer", background: now2 ? TV2.accMix(16) : TV2.s08, border: `1px solid ${now2 ? TV2.accMix(60) : TV2.line}` }, children: [
+        picking ? /* @__PURE__ */ jsx("span", { style: { width: ps(30), height: ps(30), borderRadius: ps(8), border: `2px solid ${on ? TV2.acc : TV2.lineStrong}`, background: on ? TV2.acc : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: on ? "\u2713" : "" }) : null,
         /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexShrink: 0 }, children: [
-          m.home ? /* @__PURE__ */ jsx(Crest, { name: m.home, colorKey: m.homeKey ?? m.home, size: dp(44) }) : null,
-          m.away ? /* @__PURE__ */ jsx("span", { style: { marginLeft: -dp(12) }, children: /* @__PURE__ */ jsx(Crest, { name: m.away, colorKey: m.awayKey ?? m.away, size: dp(44) }) }) : null
+          m.home ? /* @__PURE__ */ jsx(Crest, { name: m.home, colorKey: m.homeKey ?? m.home, size: ps(44) }) : null,
+          m.away ? /* @__PURE__ */ jsx("span", { style: { marginLeft: -ps(12) }, children: /* @__PURE__ */ jsx(Crest, { name: m.away, colorKey: m.awayKey ?? m.away, size: ps(44) }) }) : null
         ] }),
         /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted, ...ellipsis2 }, children: meta })
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(19), fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(15), color: TV2.muted, ...ellipsis2 }, children: meta })
         ] }),
-        now2 ? /* @__PURE__ */ jsx("span", { "data-testid": "pm-now", style: { padding: `${dp(3)}px ${dp(10)}px`, borderRadius: 999, border: `1px solid ${TV2.accMix(80)}`, color: TV2.accText, fontSize: dp(13), fontWeight: 700 }, children: tt("sportNowPill") }) : null
+        now2 ? /* @__PURE__ */ jsx("span", { "data-testid": "pm-now", style: { padding: `${ps(3)}px ${ps(10)}px`, borderRadius: 999, border: `1px solid ${TV2.accMix(80)}`, color: TV2.accText, fontSize: ps(13), fontWeight: 700 }, children: tt("sportNowPill") }) : null
       ] }, m.id);
     };
-    const section = (title, list, now2) => list.length === 0 ? null : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
-      /* @__PURE__ */ jsx("span", { style: overline, children: title }),
+    const section = (title, list, now2) => list.length === 0 ? null : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: ps(8) }, children: [
+      /* @__PURE__ */ jsx("span", { style: { ...overline, fontSize: ps(15) }, children: title }),
       list.map((m) => row(m, now2))
     ] }, title);
-    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "player-matches-drawer", "data-panel-root": "", style: { position: "absolute", top: 0, right: 0, bottom: 0, width: `min(${dp(780)}px, 100%)`, zIndex: 40, background: "#141519", borderLeft: "1px solid rgba(255,255,255,0.16)", padding: dp(28), boxSizing: "border-box", display: "flex", flexDirection: "column", gap: dp(14), color: TV2.text }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
-        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(30), fontWeight: 600 }, children: tt("sportMatches") }),
+    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "player-matches-drawer", "data-panel-root": "", style: { position: "absolute", top: 0, right: 0, bottom: 0, width: `min(${ps(780)}px, 100%)`, zIndex: 40, background: "#141519", borderLeft: "1px solid rgba(255,255,255,0.16)", padding: ps(28), boxSizing: "border-box", display: "flex", flexDirection: "column", gap: ps(14), color: TV2.text }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(12) }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: ps(30), fontWeight: 600 }, children: tt("sportMatches") }),
         /* @__PURE__ */ jsx("div", { "data-testid": "pm-pick", ...station(() => {
           setPicking((v) => !v);
           setPicked([]);
-        }), "aria-pressed": picking ? "true" : "false", style: { marginLeft: "auto", height: dp(48), minHeight: dp(48), padding: `0 ${dp(16)}px`, borderRadius: dp(12), border: `1px solid ${TV2.lineCard}`, background: picking ? TV2.s16 : TV2.s08, display: "inline-flex", alignItems: "center", fontSize: dp(16), fontWeight: 600, cursor: "pointer" }, children: tt("sportPickSeveral") }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "pm-close", ...station(onClose), "aria-label": tt("sportClose"), style: { width: dp(48), height: dp(48), minHeight: dp(48), borderRadius: dp(12), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: "\u2715" })
+        }), "aria-pressed": picking ? "true" : "false", style: { marginLeft: "auto", height: ps(48), minHeight: ps(48), padding: `0 ${ps(16)}px`, borderRadius: ps(12), border: `1px solid ${TV2.lineCard}`, background: picking ? TV2.s16 : TV2.s08, display: "inline-flex", alignItems: "center", fontSize: ps(16), fontWeight: 600, cursor: "pointer" }, children: tt("sportPickSeveral") }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "pm-close", ...station(onClose), "aria-label": tt("sportClose"), style: { width: ps(48), height: ps(48), minHeight: ps(48), borderRadius: ps(12), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: "\u2715" })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("sportMatchesHint") }),
-      /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: dp(16) }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: ps(16), color: TV2.muted }, children: tt("sportMatchesHint") }),
+      /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: ps(16) }, children: [
         section(tt("sportOnThisChannel"), lists.onChannel, true),
         section(tt("sportLiveOnChannels"), lists.live, false),
         section(tt("sportLaterOnChannels"), lists.later, false)
@@ -44769,13 +44804,13 @@ ${cue.text}`).join("\n\n")}
             if (chosen.length > 0) sport.onOpenMultiview(pickMultiviewKeys(chosen, sport.overrides, sport.isKnownChannel));
           }),
           "aria-disabled": picked.length === 0 ? "true" : "false",
-          style: { height: dp(60), minHeight: dp(60), borderRadius: dp(14), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontSize: dp(20), fontWeight: 600, cursor: "pointer", opacity: picked.length === 0 ? 0.5 : 1 },
+          style: { height: ps(60), minHeight: ps(60), borderRadius: ps(14), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ps(20), fontWeight: 600, cursor: "pointer", opacity: picked.length === 0 ? 0.5 : 1 },
           children: tt("sportOpenMultiview", { n: picked.length })
         }
       ) : null
     ] });
   }
-  var MAX_PICK, shortLabel;
+  var MAX_PICK, PLAYER_SPORT_DELAY_MS, shortLabel;
   var init_player_sport = __esm({
     "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
       "use strict";
@@ -44792,6 +44827,7 @@ ${cue.text}`).join("\n\n")}
       init_sport_parts();
       init_jsx_runtime_shim();
       MAX_PICK = 4;
+      PLAYER_SPORT_DELAY_MS = 4e3;
       shortLabel = (m) => m.home && m.away ? `${crestText(m.home)} \u2013 ${crestText(m.away)}` : m.event ?? m.league;
     }
   });
@@ -45362,7 +45398,7 @@ ${cue.text}`).join("\n\n")}
         ),
         /* @__PURE__ */ jsx(PlayerScheduleOverlay, { channel, tv, ps, open: guideOpen, onClose: closeGuide, onSwitch: switchChannel, onHoldChip: holdChip, overlayRef }),
         tv.sport && sportHere && tv.sport.view === "feed" && visible ? /* @__PURE__ */ jsx(PlayerSportTicker, { sport: tv.sport, channel, nowMs: tv.nowMs, variant: "column", ps }) : null,
-        matchesOpen && tv.sport ? /* @__PURE__ */ jsx("div", { style: { pointerEvents: "auto" }, children: /* @__PURE__ */ jsx(PlayerMatchesDrawer, { sport: tv.sport, channel, nowMs: tv.nowMs, locale: tv.locale, onClose: closeMatches }) }) : null,
+        matchesOpen && tv.sport ? /* @__PURE__ */ jsx("div", { style: { pointerEvents: "auto" }, children: /* @__PURE__ */ jsx(PlayerMatchesDrawer, { sport: tv.sport, channel, nowMs: tv.nowMs, locale: tv.locale, onClose: closeMatches, ps }) }) : null,
         TvGlassMenu && menu ? /* @__PURE__ */ jsx("div", { style: { pointerEvents: "auto" }, children: /* @__PURE__ */ jsx(TvGlassMenu, { target: menu, onClose: () => {
           setMenu(null);
           reveal();
@@ -48445,7 +48481,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", maxHeight: 300, flexDirection: "column", overflowY: "auto", borderRadius: 9, background: UI.inset, padding: "0 12px" }, children: [
           groups === null ? /* @__PURE__ */ jsx(LtNote, { style: { padding: "10px 0" }, children: h("listImportProgressUnknown") }) : null,
           rows.map((g, i) => {
-            const hidden = draft.hidden.includes(g.name);
+            const hidden2 = draft.hidden.includes(g.name);
             const isMarked = marked.includes(g.name);
             return /* @__PURE__ */ jsxs("div", { "data-cat-row": "", style: { display: "flex", alignItems: "center", gap: 12, borderTop: `1px solid ${i === 0 ? "transparent" : UI.lineSoft}`, padding: "10px 0" }, children: [
               /* @__PURE__ */ jsx(
@@ -48453,14 +48489,14 @@ ${cue.text}`).join("\n\n")}
                 {
                   type: "button",
                   role: "checkbox",
-                  "aria-checked": !hidden,
+                  "aria-checked": !hidden2,
                   "aria-label": g.name,
                   onClick: () => toggleHidden(g.name),
                   style: { display: "flex", flex: "none", cursor: "pointer", background: "transparent", border: 0, padding: 0 },
-                  children: /* @__PURE__ */ jsx(LtCheckMark, { on: !hidden })
+                  children: /* @__PURE__ */ jsx(LtCheckMark, { on: !hidden2 })
                 }
               ),
-              /* @__PURE__ */ jsx("span", { onClick: () => toggleHidden(g.name), style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, cursor: "pointer", color: hidden ? UI.muted : UI.text }, children: g.name }),
+              /* @__PURE__ */ jsx("span", { onClick: () => toggleHidden(g.name), style: { minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, cursor: "pointer", color: hidden2 ? UI.muted : UI.text }, children: g.name }),
               /* @__PURE__ */ jsx("span", { style: { flex: "none", fontSize: 12.5, fontFamily: UI.mono, color: UI.muted }, children: fmtInt(g.count, locale) }),
               /* @__PURE__ */ jsx(LtBtn, { active: isMarked, style: { padding: "5px 11px", color: isMarked ? UI.text : UI.muted }, onClick: () => toggleMark(g.name), children: isMarked ? h("marked") : h("mark") })
             ] }, `g:${g.name}`);
@@ -51615,12 +51651,12 @@ ${cue.text}`).join("\n\n")}
   init_sport_store();
   var KICKOFF_LEAD_MS = { "15": 15 * 6e4, kickoff: 0 };
   var SPORT_ALERT_SYNC_MS = 30 * 6e4;
-  function kickoffReminders(days, follows, alert, overrides, now2) {
+  function kickoffReminders(days, follows, alert, overrides, now2, skip = {}) {
     if (alert === "off" || follows.length === 0) return [];
     const out = [];
     for (const day of days) {
       for (const m of day?.matches ?? []) {
-        if (m.rerun || statusAt(m, now2) !== "upcoming" || !followState(m, follows).any) continue;
+        if (m.rerun || m.id in skip || statusAt(m, now2) !== "upcoming" || !followState(m, follows).any) continue;
         const source = rankedSources(m, overrides)[0];
         if (!source) continue;
         const channel = sourceChannel(source);
@@ -51652,20 +51688,33 @@ ${cue.text}`).join("\n\n")}
     }
     const today = localDayKey(now2);
     const days = await Promise.all([today, shiftDay(today, 1)].map((day) => fetchSportDay(day, now2).catch(() => null)));
-    replaceSportReminders(kickoffReminders(days, follows, alert, getOverrides(), now2), now2);
+    replaceSportReminders(kickoffReminders(days, follows, alert, getOverrides(), now2, getAlertSkips()), now2);
   }
+  var SPORT_ALERT_START_DELAY_MS = 6e4;
+  var hidden = () => typeof document !== "undefined" && document.visibilityState === "hidden";
   function startSportAlertSync() {
     let stopped = false;
+    let ready = false;
     const run = () => {
-      if (!stopped) void syncKickoffReminders().catch(() => {
+      if (stopped || !ready || hidden()) return;
+      void syncKickoffReminders().catch(() => {
       });
     };
-    run();
+    const startTimer = window.setTimeout(() => {
+      ready = true;
+      run();
+    }, SPORT_ALERT_START_DELAY_MS);
     const timer3 = window.setInterval(run, SPORT_ALERT_SYNC_MS);
-    const offs = [SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, SPORT_OVERRIDES_KEY].map((key) => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, run));
+    const onVisibility = () => {
+      if (!hidden()) run();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    const offs = [SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, SPORT_OVERRIDES_KEY, SPORT_ALERT_SKIP_KEY].map((key) => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, run));
     return () => {
       stopped = true;
+      window.clearTimeout(startTimer);
       window.clearInterval(timer3);
+      document.removeEventListener("visibilitychange", onVisibility);
       for (const off of offs) off();
     };
   }
@@ -60043,7 +60092,7 @@ ${cue.text}`).join("\n\n")}
       setActive3(null);
       go("multi");
     }, [go]);
-    const playerSport = usePlayerSport({ active: active4 !== null && !phone, model, play, openMultiview: openSportMultiview });
+    const playerSport = usePlayerSport({ playingKey: active4 !== null && !phone ? channelKey(active4.channel) : null, model, play, openMultiview: openSportMultiview });
     const View = TV_VIEWS[view];
     const activeChannel = active4 ? active4.url ? { ...active4.channel, url: active4.url, name: active4.label ?? active4.channel.name } : active4.channel : null;
     const tvPlayerProps = activeChannel ? buildTvPlayerProps({
