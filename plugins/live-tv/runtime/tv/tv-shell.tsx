@@ -26,6 +26,7 @@ import { TV_VIEWS } from './tv-views'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
+import { maybeAutoScanVod } from '../vod-autoscan'
 import { hasVodIndex, markVodHomeRedirect, shouldRedirectToVodHome, vodHomeTarget } from '../vod-home'
 import { MobileSheet } from './mobile/mobile-sheet'
 
@@ -306,7 +307,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     let cancelled = false
     void hasVodIndex().then((ok) => {
       if (cancelled) return
-      if (!ok) { setRedirectCheck(false); return }
+      if (!ok) { setRedirectCheck(false); void maybeAutoScanVod(); return }
       markVodHomeRedirect(Date.now())
       onNavigate(vodHomeTarget())
     })
