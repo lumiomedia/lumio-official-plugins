@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, BROWSE_BACK_EVENT, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, __setDesktopTauriEnvForTests, __setTvModeForTests, BROWSE_BACK_EVENT, LIBRARY_STUB, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 
@@ -24,6 +24,7 @@ vi.mock('../live-tv-player', () => ({
 }))
 
 import { LiveTvTvShell } from './tv-shell'
+import { vodHomeTarget } from '../vod-home'
 
 const ch = (name: string, group: string) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch('A', 'Sport'), ch('B', 'Sport'), ch('C', 'News')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
@@ -42,6 +43,24 @@ function mount(params: Record<string, string> = {}) {
   const view = render(<LiveTvTvShell pageId="live-tv-browse" params={params} onNavigate={onNavigate} onOpenDetails={() => {}} />)
   return { onNavigate, view }
 }
+
+describe('Hem i rälsen (VOD)', () => {
+  const setSources = (sources: Array<{ id: string; provider: string; titles: number; lastFullSync: number | null }>) => { LIBRARY_STUB.status = { ...LIBRARY_STUB.status, sources } as typeof LIBRARY_STUB.status }
+  afterEach(() => { LIBRARY_STUB.status = { ...LIBRARY_STUB.status, sources: [] } })
+  it('indexerad xtream-vod-källa: Hem navigerar till VOD-hemmet', async () => {
+    setSources([{ id: 'xtream-vod:a', provider: 'xtream-vod', titles: 3, lastFullSync: 5 }])
+    const { onNavigate } = mount()
+    fireEvent.click(screen.getByTestId('rail-home'))
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith(vodHomeTarget()))
+  })
+  it('inget index: ingen navigering, ett besked visas', async () => {
+    setSources([{ id: 'xtream-vod:a', provider: 'xtream-vod', titles: 0, lastFullSync: null }])
+    const { onNavigate } = mount()
+    fireEvent.click(screen.getByTestId('rail-home'))
+    expect(await screen.findByRole('status')).toHaveTextContent('Film & series are being prepared')
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+})
 
 describe('LiveTvTvShell', () => {
   it('ritar ikonraden med nio stationer och exakt en data-init', () => {

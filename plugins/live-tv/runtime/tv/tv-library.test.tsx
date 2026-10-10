@@ -248,39 +248,6 @@ describe('Inställningar → Innehåll', () => {
   })
 })
 
-describe('Hubbens VOD-avsnitt', () => {
-  function mountHub(vod: VodItemFixture[]) {
-    seedLiveTvIndex({ vod: { [SOURCE]: vod } })
-    const onNavigate = vi.fn()
-    render(
-      <LiveTvTvShell pageId="live-tv-browse" params={{ view: 'hub' }} onNavigate={onNavigate} onOpenDetails={() => {}} />,
-    )
-    return onNavigate
-  }
-
-  it('Kanaler har ingen VOD-rad längre: Hem (VOD) bor i kärnans startsida (spec 2026-10-10)', async () => {
-    mountHub(LIBRARY)
-    await waitFor(() => expect(screen.getByTestId('rail-hub')).toBeTruthy())
-    expect(screen.queryByTestId('hub-vod-link')).toBeNull()
-    expect(screen.queryByTestId('hub-vod-row')).toBeNull()
-  })
-
-  it('läget off döljer allt om VOD i Live TV', async () => {
-    setVodMode('l1', 'off')
-    mountHub(LIBRARY)
-    await waitFor(() => expect(screen.getByTestId('rail-hub')).toBeTruthy())
-    expect(screen.queryByTestId('hub-vod-link')).toBeNull()
-    expect(screen.queryByTestId('hub-vod-row')).toBeNull()
-  })
-
-  it('visar ingenting alls när spellistan saknar VOD', async () => {
-    mountHub([])
-    await waitFor(() => expect(screen.getByTestId('rail-hub')).toBeTruthy())
-    // En hänvisningsrad som säger "0 titlar" är värre än ingen rad.
-    expect(screen.queryByTestId('hub-vod-link')).toBeNull()
-  })
-})
-
 describe('Sök med film & serier', () => {
   function mountSearch(vod: VodItemFixture[], params: Record<string, string> = {}) {
     seedLiveTvIndex({ vod: { [SOURCE]: vod } })

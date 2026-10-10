@@ -5,11 +5,12 @@ import { MobileTabBar, tabForView } from './mobile-tab-bar'
 afterEach(cleanup)
 
 describe('MobileTabBar', () => {
-  it('ritar fem flikar med etiketter och markerar den aktiva', () => {
+  it('ritar sex flikar med etiketter och markerar den aktiva', () => {
     render(<MobileTabBar view="guide" onGo={vi.fn()} onMore={vi.fn()} />)
-    for (const label of ['Home', 'Guide', 'Favourites', 'Search', 'More']) expect(screen.getByText(label)).toBeInTheDocument()
+    for (const label of ['Home', 'Channels', 'Guide', 'Favourites', 'Search', 'More']) expect(screen.getByText(label)).toBeInTheDocument()
     expect(screen.getByTestId('tab-guide')).toHaveAttribute('aria-current', 'page')
     expect(screen.getByTestId('tab-hub')).not.toHaveAttribute('aria-current')
+    expect(screen.getByTestId('tab-home')).not.toHaveAttribute('aria-current')
   })
   it('kanaldetalj räknas som Guide, multivy och inställningar som More', () => {
     expect(tabForView('channel')).toBe('guide')
@@ -22,11 +23,15 @@ describe('MobileTabBar', () => {
     render(<MobileTabBar view="hub" onGo={onGo} onMore={onMore} />)
     fireEvent.click(screen.getByTestId('tab-favs'))
     expect(onGo).toHaveBeenCalledWith('favs')
+    fireEvent.click(screen.getByTestId('tab-home'))
+    expect(onGo).toHaveBeenCalledWith('home')
+    fireEvent.click(screen.getByTestId('tab-hub'))
+    expect(onGo).toHaveBeenCalledWith('hub')
     fireEvent.click(screen.getByTestId('tab-more'))
     expect(onMore).toHaveBeenCalled()
   })
   it('varje flik är minst 44 px hög', () => {
     render(<MobileTabBar view="hub" onGo={vi.fn()} onMore={vi.fn()} />)
-    for (const id of ['hub', 'guide', 'favs', 'search', 'more']) expect(parseFloat(screen.getByTestId(`tab-${id}`).style.minHeight)).toBeGreaterThanOrEqual(44)
+    for (const id of ['home', 'hub', 'guide', 'favs', 'search', 'more']) expect(parseFloat(screen.getByTestId(`tab-${id}`).style.minHeight)).toBeGreaterThanOrEqual(44)
   })
 })
