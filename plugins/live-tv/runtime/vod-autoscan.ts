@@ -28,6 +28,8 @@ export async function maybeAutoScanVod(): Promise<'started' | 'skipped'> {
     if (library?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync)) return 'skipped'
     const rows = vodLibraryRows(sources, library).filter((row) => row.indexedTitles === null)
     if (rows.length === 0) return 'skipped'
+    // Värden hämtar fortfarande katalogen: en genomgång nu blir ofullständig och flaggan förbrukad. Ingen flagga — nästa montering försöker igen.
+    if (rows.some((row) => row.importing)) return 'skipped'
     // Statusfrågorna tog tid — kolla låset igen precis innan vi startar.
     if (isLibraryScanRunning()) return 'skipped'
     writePluginJson(LIVE_TV_PLUGIN_ID, AUTOSCAN_KEY, true)
@@ -40,6 +42,7 @@ export async function maybeAutoScanVod(): Promise<'started' | 'skipped'> {
     }
     return 'started'
   } catch (err) {
+    // Statusfel (före flaggan): 'skipped' utan flagga, så nästa montering försöker igen — till skillnad från ett skanningsfel ovan.
     console.warn('[live-tv] VOD-autoindex', err)
     return 'skipped'
   } finally {

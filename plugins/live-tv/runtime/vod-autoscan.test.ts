@@ -52,4 +52,13 @@ describe('maybeAutoScanVod', () => {
     expect([x, y].sort()).toEqual(['skipped', 'started'])
     expect(runLibraryScan).toHaveBeenCalledTimes(1)
   })
+  it('hoppar över helt medan en källa importeras, utan flagga, och startar när den är klar', async () => {
+    vi.mocked(vodStatus).mockResolvedValue([{ ...source('a'), importing: true }])
+    vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))
+    expect(await maybeAutoScanVod()).toBe('skipped')
+    expect(runLibraryScan).not.toHaveBeenCalled()
+    vi.mocked(vodStatus).mockResolvedValue([source('a')])
+    expect(await maybeAutoScanVod()).toBe('started')
+    expect(runLibraryScan).toHaveBeenCalledTimes(1)
+  })
 })
