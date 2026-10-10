@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
@@ -9,6 +9,7 @@ vi.mock('../vod-home', async (orig) => ({ ...(await orig<object>()), hasVodIndex
 
 import { LiveTvTvShell } from './tv-shell'
 import { hasVodIndex, resetVodHomeRedirectForTests, vodHomeTarget } from '../vod-home'
+import { setVodMode } from '../vod-data'
 
 const ch = (name: string, group: string) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch('A', 'Sport'), ch('B', 'News')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
@@ -66,5 +67,23 @@ describe('Live TV öppnar i Hem', () => {
     const second = mount(undefined)
     await new Promise((r) => setTimeout(r, 20))
     expect(second.onNavigate).not.toHaveBeenCalled()
+  })
+  it('VOD-läget off: ingen indexkoll, ingen omdirigering, Kanaler ritas direkt', async () => {
+    setVodMode(null, 'off')
+    vi.mocked(hasVodIndex).mockResolvedValue(true)
+    const { onNavigate } = mount(undefined)
+    expect(document.querySelector('main')?.childElementCount).toBeGreaterThan(0)
+    await new Promise((r) => setTimeout(r, 20))
+    expect(hasVodIndex).not.toHaveBeenCalled()
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+  it('VOD-läget off: Hem i rälsen navigerar inte utan visar ett besked', async () => {
+    setVodMode(null, 'off')
+    vi.mocked(hasVodIndex).mockResolvedValue(true)
+    const { onNavigate } = mount({ view: 'hub' })
+    fireEvent.click(screen.getByTestId('rail-home'))
+    await waitFor(() => expect(screen.getByRole('status')).toBeTruthy())
+    expect(hasVodIndex).not.toHaveBeenCalled()
+    expect(onNavigate).not.toHaveBeenCalled()
   })
 })

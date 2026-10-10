@@ -4,6 +4,7 @@ import { vodStatus } from './vod-client'
 import { vodLibraryProvider } from './vod-library-provider'
 import { vodLibraryRows } from './vod-library-rows'
 import { VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
+import { vodHiddenForActivePlaylist } from './vod-home'
 
 const AUTOSCAN_KEY = 'live_tv_vod_autoscan_v1'
 
@@ -11,7 +12,7 @@ const AUTOSCAN_KEY = 'live_tv_vod_autoscan_v1'
 let inFlight = false
 
 /**
- * Indexerar VOD automatiskt, en enda gång.
+ * Indexerar VOD automatiskt, en enda gång. Aldrig när VOD-läget är 'off'.
  *
  * Flaggan sätts INNAN genomgången startar: en krasch eller ett fel ger då
  * aldrig en loop. Hoppar över om något index redan finns, om värden kör en
@@ -20,6 +21,8 @@ let inFlight = false
  */
 export async function maybeAutoScanVod(): Promise<'started' | 'skipped'> {
   if (inFlight) return 'skipped'
+  // "Dölj VOD helt": ingen indexering alls (och ingen flagga, så ett senare byte av läget kan indexera).
+  if (vodHiddenForActivePlaylist()) return 'skipped'
   if (readPluginJson<boolean>(LIVE_TV_PLUGIN_ID, AUTOSCAN_KEY, false)) return 'skipped'
   if (isLibraryScanRunning()) return 'skipped'
   inFlight = true

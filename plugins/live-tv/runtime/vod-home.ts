@@ -1,6 +1,8 @@
 import { fetchLibraryStatus } from '@/lib/plugin-sdk'
 import { LIVE_TV_BROWSE_PAGE_ID } from './live-tv-shell'
 import { VOD_LIBRARY_PROVIDER_ID } from './vod-library-map'
+import { getVodMode } from './vod-data'
+import { getActivePlaylistId } from './tv/tv-settings-store'
 
 export const LIVE_TV_FRAME_ID = 'live-tv'
 
@@ -12,13 +14,28 @@ export function vodHomeTarget() {
   }
 }
 
-/** Finns minst en indexerad xtream-vod-källa? Fel i anropet räknas som inget index. */
-export async function hasVodIndex(): Promise<boolean> {
+/**
+ * Har användaren valt "Dölj VOD helt" för den aktiva spellistan? Då finns inget
+ * Hem: ingen omdirigering, ingen navigering dit och ingen automatisk indexering.
+ */
+export function vodHiddenForActivePlaylist(): boolean {
+  return getVodMode(getActivePlaylistId()) === 'off'
+}
+
+/** Hur länge statusfrågan får ta innan vi ger upp och visar Kanaler (ett stockat index får aldrig lämna hubben tom). */
+export const VOD_INDEX_TIMEOUT_MS = 1500
+
+/** Finns minst en indexerad xtream-vod-källa? Fel eller timeout i anropet räknas som inget index. */
+export async function hasVodIndex(timeoutMs = VOD_INDEX_TIMEOUT_MS): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined
   try {
-    const status = await fetchLibraryStatus()
+    const timeout = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), timeoutMs) })
+    const status = await Promise.race([fetchLibraryStatus(), timeout])
     return Boolean(status?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync))
   } catch {
     return false
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
   }
 }
 

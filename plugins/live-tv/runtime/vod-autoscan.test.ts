@@ -4,6 +4,7 @@ vi.mock('./vod-client', async (orig) => ({ ...(await orig<object>()), vodStatus:
 import { fetchLibraryStatus, isLibraryScanRunning, runLibraryScan } from '@/lib/plugin-sdk'
 import { vodStatus, type VodSourceStatus } from './vod-client'
 import { maybeAutoScanVod, resetVodAutoScanForTests } from './vod-autoscan'
+import { setVodMode } from './vod-data'
 
 const source = (id: string): VodSourceStatus => ({ id, total: 100, movies: 80, series: 20, updatedAt: 1, importing: false })
 const status = (sources: Array<{ id: string; lastFullSync?: number | null }>) =>
@@ -12,6 +13,19 @@ const status = (sources: Array<{ id: string; lastFullSync?: number | null }>) =>
 beforeEach(() => { vi.clearAllMocks(); vi.mocked(isLibraryScanRunning).mockReturnValue(false); resetVodAutoScanForTests() })
 
 describe('maybeAutoScanVod', () => {
+  it('indexerar aldrig när VOD-läget är off, och förbrukar inte flaggan', async () => {
+    vi.mocked(vodStatus).mockResolvedValue([source('a')])
+    vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))
+    setVodMode(null, 'off')
+    try {
+      expect(await maybeAutoScanVod()).toBe('skipped')
+      expect(vodStatus).not.toHaveBeenCalled()
+      expect(runLibraryScan).not.toHaveBeenCalled()
+    } finally {
+      setVodMode(null, 'link')
+    }
+    expect(await maybeAutoScanVod()).toBe('started')
+  })
   it('startar en gång och aldrig igen', async () => {
     vi.mocked(vodStatus).mockResolvedValue([source('a')])
     vi.mocked(fetchLibraryStatus).mockResolvedValue(status([]))

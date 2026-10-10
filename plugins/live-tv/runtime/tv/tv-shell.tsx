@@ -27,7 +27,7 @@ import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
 import { maybeAutoScanVod } from '../vod-autoscan'
-import { hasVodIndex, markVodHomeRedirect, shouldRedirectToVodHome, vodHomeTarget } from '../vod-home'
+import { hasVodIndex, markVodHomeRedirect, shouldRedirectToVodHome, vodHiddenForActivePlaylist, vodHomeTarget } from '../vod-home'
 import { MobileSheet } from './mobile/mobile-sheet'
 
 /**
@@ -301,7 +301,8 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   */
   // Bara när värden öppnar sidan helt utan params (undefined). Medan kollen pågår ritas ingen vy: hubben hade annars startat sina
   // kanal-/EPG-laddningar bara för att kastas vid omdirigeringen.
-  const [redirectCheck, setRedirectCheck] = useState(() => params === undefined && shouldRedirectToVodHome(params, Date.now()))
+  // "Dölj VOD helt" (VOD-läget 'off'): aldrig Hem och ingen autoindexering — Kanaler direkt.
+  const [redirectCheck, setRedirectCheck] = useState(() => params === undefined && !vodHiddenForActivePlaylist() && shouldRedirectToVodHome(params, Date.now()))
   useEffect(() => {
     if (!redirectCheck) return
     let cancelled = false
@@ -322,6 +323,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
 
   /** Hem = VOD-startsidan i kärnan när indexet finns, annars ett besked och kanalerna kvar. */
   const goVodHome = useCallback(() => {
+    if (vodHiddenForActivePlaylist()) { toast(tt('vodHomeHidden')); return }
     void hasVodIndex().then((ok) => { if (ok) onNavigate(vodHomeTarget()); else toast(tt('vodHomeIndexing')) })
   }, [onNavigate, toast, tt])
 
