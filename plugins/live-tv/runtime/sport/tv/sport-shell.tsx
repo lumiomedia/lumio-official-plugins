@@ -15,6 +15,7 @@ import { SportMatchday } from './sport-matchday'
 import { SportFeed } from './sport-feed'
 import { FollowPicker, SportFollows } from './sport-follows'
 import { SportMatchCenter } from './sport-match-center'
+import { SportPhone } from '../mobile/sport-phone'
 
 type SportTab = 'foryou' | 'follows'
 type DayOffset = -1 | 0 | 1
@@ -22,7 +23,7 @@ const OFFSETS: readonly DayOffset[] = [-1, 0, 1]
 
 /** Sportvyn. Skrivbordet ritar samma träd i scenlådan (Live TV:s "everywhere"-modell). */
 export function TvSport(props: TvViewProps) {
-  return <SportTv {...props} />
+  return props.phone ? <SportPhone {...props} /> : <SportTv {...props} />
 }
 
 function SportTv({ model, nav }: TvViewProps) {
