@@ -57878,7 +57878,7 @@ ${cue.text}`).join("\n\n")}
   function vodHiddenForActivePlaylist() {
     return getVodMode(getActivePlaylistId()) === "off";
   }
-  var VOD_INDEX_TIMEOUT_MS = 1500;
+  var VOD_INDEX_TIMEOUT_MS = 5e3;
   async function hasVodIndex(timeoutMs = VOD_INDEX_TIMEOUT_MS) {
     let timer3;
     try {
