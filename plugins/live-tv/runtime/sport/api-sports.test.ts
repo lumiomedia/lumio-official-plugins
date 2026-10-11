@@ -106,3 +106,14 @@ describe('api-sports: tolkning', () => {
     expect(roundNumber('Quarter-finals')).toBeNull()
   })
 })
+
+describe('api-sports searchLeagues', () => {
+  it('leagues?search= (minst 3 tecken), tolkar fotboll och övriga sporter', async () => {
+    const { apiSports } = await import('./api-sports')
+    expect(apiSports.searchLeagues!('football', 'se').requests).toEqual([])
+    const fb = apiSports.searchLeagues!('football', 'serie')
+    expect(fb.requests).toEqual([{ sport: 'football', path: '/leagues?search=serie', ttlS: 604800 }])
+    expect(fb.parse([{ response: [{ league: { id: 135, name: 'Serie A', logo: 'l.png' }, country: { name: 'Italy' } }] }])).toEqual([{ id: '135', name: 'Serie A', crest: 'l.png', country: 'Italy' }])
+    expect(apiSports.searchLeagues!('hockey', 'shl').parse([{ response: [{ id: 47, name: 'SHL', logo: null, country: { name: 'Sweden' } }] }])).toEqual([{ id: '47', name: 'SHL', crest: null, country: 'Sweden' }])
+  })
+})

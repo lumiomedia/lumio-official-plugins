@@ -218,6 +218,17 @@ export const apiSports: SportsProvider = {
       }),
     }
   },
+  searchLeagues(sport, q): ProviderCall<TeamHit[]> {
+    const query = q.trim()
+    if (query.length < 3) return { requests: [], parse: () => [] }
+    return {
+      requests: [{ sport, path: `/leagues?search=${enc(query)}`, ttlS: 604_800 }],
+      parse: (bodies) => resp(bodies[0]).map((x) => {
+        const l = sport === 'football' ? x?.league : x
+        return { id: String(l?.id ?? ''), name: String(l?.name ?? ''), crest: str(l?.logo), country: str(x?.country?.name) }
+      }),
+    }
+  },
   validateKey: () => ({ requests: [{ sport: 'football', path: '/status', ttlS: 0 }], parse: (bodies) => keyCheck(bodies[0]) }),
   quotaProbe: (sport) => (COVERED.has(sport) ? { requests: [{ sport, path: '/status', ttlS: 0 }], parse: (bodies) => keyCheck(bodies[0]) } : null),
   crestUrl: (t) => t.crest,

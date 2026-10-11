@@ -205,6 +205,10 @@ export class Budget {
   }
   standings(sport: SportKind, leagueId: string, season: string) { return this.run<StandingRow[]>('standings', sport, this.provider.standings(sport, leagueId, season)) }
   searchTeams(sport: SportKind, q: string) { return this.run<TeamHit[]>('search', sport, this.provider.searchTeams(sport, q)) }
+  searchLeagues(sport: SportKind, q: string): Promise<BudgetResult<TeamHit[]>> | null {
+    const call = this.provider.searchLeagues?.(sport, q)
+    return call ? this.run<TeamHit[]>('search', sport, call) : null
+  }
   validate() { return this.run<KeyCheck>('validate', 'football', this.provider.validateKey()) }
 
   /** Startvärdet ur diskcachen innan något anrop görs. Alltid `cache-only`, så det kostar aldrig kvot. */
