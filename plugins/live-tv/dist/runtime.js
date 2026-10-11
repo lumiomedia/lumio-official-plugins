@@ -20278,7 +20278,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -66516,6 +66515,8 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_plugin_sdk();
   init_mobile_tokens();
+  init_mobile_sheet();
+  init_tv_strings();
   init_tv_settings_store();
   init_useNarrowSurface();
   init_tv_ui();
@@ -66526,6 +66527,8 @@ ${cue.text}`).join("\n\n")}
   var BACK_KEYS3 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   function PhoneTabBar({ select, onInsetBottom }) {
     const tvMode = useTvMode();
+    const { tt } = useTvText();
+    const [moreOpen, setMoreOpen] = useState(false);
     const [showLibrary, setShowLibrary] = useState(false);
     const wrapRef = useRef(null);
     useEffect(() => {
@@ -66554,7 +66557,24 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [tvMode]);
-    return /* @__PURE__ */ jsx("div", { ref: wrapRef, children: /* @__PURE__ */ jsx(MobileTabBar, { view: "hub", activeOverride: "home", showLibrary, onGo: select, onMore: () => select("multi") }) });
+    return /* @__PURE__ */ jsxs("div", { ref: wrapRef, children: [
+      /* @__PURE__ */ jsx(MobileTabBar, { view: "hub", activeOverride: "home", showLibrary, onGo: select, onMore: () => setMoreOpen(true) }),
+      moreOpen ? /* @__PURE__ */ jsx(
+        MobileSheet,
+        {
+          title: tt("moreActions"),
+          items: [
+            { key: "favs", label: tt("sheetFavourites"), run: () => select("favs") },
+            { key: "multi", label: tt("sheetMultiview"), run: () => select("multi") },
+            { key: "settings", label: tt("sheetSettings"), run: () => select("settings") }
+          ],
+          onClose: () => setMoreOpen(false),
+          pushLayer: () => () => {
+          },
+          testId: "more-sheet"
+        }
+      ) : null
+    ] });
   }
   function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onInsetBottom }) {
     const settings = useTvSettings();
