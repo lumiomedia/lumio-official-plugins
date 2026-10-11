@@ -58,6 +58,11 @@ describe('märken', () => {
     expect(crestForFollow({ key: 'malmo' }, [m()])).toBe('https://m/375.png')
     expect(crestForFollow({ key: 'aik' }, [m()])).toBeNull()
   })
+  it('saknas märke i matcherna gäller det lagrade; matchens märke går först', () => {
+    expect(crestForFollow({ key: 'aik', crest: 'https://s/aik.png' }, [m()])).toBe('https://s/aik.png')
+    expect(crestForFollow({ key: 'malmo', crest: 'https://s/old.png' }, [m()])).toBe('https://m/375.png')
+    expect(crestForFollow({ key: 'aik', crest: null }, [])).toBeNull()
+  })
   it('"Ingen kanal"', () => {
     render(<ResultOnlyTag />)
     expect(screen.getByText('Ingen kanal')).toBeTruthy()

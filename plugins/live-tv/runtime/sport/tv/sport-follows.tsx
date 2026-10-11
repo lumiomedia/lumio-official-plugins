@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import { Chip, Segment, TV, dp, station } from '../../tv/tv-ui'
 import { PickerPanel } from '../../tv/tv-list-picker'
@@ -12,6 +12,7 @@ import { followCandidates, nextMatchFor } from '../sport-day-model'
 // `getStoredFollows`: väljarens bockar ska visa ett klick direkt, innan skalets `useFollows` hunnit rita om kontexten.
 import { getFollows as getStoredFollows, isFollowing, setSportSettings, toggleFollow, type KickoffAlert, type SportFollow } from '../sport-store'
 import { alertLabel, followNext, type SportCtx } from '../sport-ctx'
+import { useBackfillFollowCrests } from '../follow-crest'
 import { crestForFollow } from '../score-model'
 import { Crest, ellipsis, primaryBtn, sectionTitle } from './sport-parts'
 import { SportIcon, SportIcons } from './sport-icons'
@@ -22,6 +23,8 @@ const same = (a: Pick<SportFollow, 'kind' | 'key'>, b: Pick<SportFollow, 'kind' 
 export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | null)[] }) {
   // Avföljda ligger kvar (dämpade) tills vyn lämnas — ett felklick ska gå att ångra.
   const [shown, setShown] = useState<SportFollow[]>(ctx.follows)
+  const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days])
+  useBackfillFollowCrests(allMatches)
   useEffect(() => {
     setShown((prev) => [...prev, ...ctx.follows.filter((f) => !prev.some((p) => same(p, f)))])
   }, [ctx.follows])
@@ -134,6 +137,7 @@ export function FollowPicker({ ctx, days, onClose }: { ctx: SportCtx; days: (Spo
     key: hit.kind === 'league' ? `fx:${hit.provider ?? ctx.settings.provider}:${hit.id}` : foldTeamKey(hit.name),
     name: hit.name,
     providerIds: { [hit.provider ?? ctx.settings.provider]: hit.id },
+    ...(hit.crest ? { crest: hit.crest } : {}),
   })
   const extra = hits.map((hit) => [hit, hitFollow(hit)] as const).filter(([, f]) => !rows.some((c) => c.kind === f.kind && c.key === f.key))
   const chips: { key: SportKind | 'all'; label: string }[] = [
@@ -166,7 +170,7 @@ export function FollowPicker({ ctx, days, onClose }: { ctx: SportCtx; days: (Spo
       rows={[...rows.map((c, index) => {
         const on = isFollowing(ctx.follows, c) || isFollowing(getStoredFollows(), c)
         return (
-          <div key={`${c.kind}:${c.key}`} data-testid={`follow-row-${c.key}`} {...station(() => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name }), undefined, index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
+          <div key={`${c.kind}:${c.key}`} data-testid={`follow-row-${c.key}`} {...station(() => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name, ...(c.crest ? { crest: c.crest } : {}) }), undefined, index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
             <Crest name={c.name} colorKey={c.key} size={dp(46)} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: dp(19), fontWeight: 600, ...ellipsis }}>{c.name}</div>

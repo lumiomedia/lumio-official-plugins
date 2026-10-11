@@ -6,6 +6,7 @@ import {
   SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, getFollows, getOverrides, getSportSettings, isFollowing, setOverride,
   hasAnyKey, removeProviderKey, setFollowAlert, setProviderKey, setSportOrder, setSportSettings, sportsCompatible, teamKeysMatch, toggleFollow, useFollows,
 } from './sport-store'
+import { backfillFollowCrests, useBackfillFollowCrests } from './follow-crest'
 
 beforeEach(() => __resetForTests())
 
@@ -187,5 +188,31 @@ describe('nycklar per källa (flera källor samtidigt, EN nyckel per källa)', (
   it('källordning per sport: bara kända källor, inga dubbletter', () => {
     setSportOrder('football', ['api-sports', 'sportapi', 'api-sports', 'bogus' as never])
     expect(getSportSettings().order).toEqual({ football: ['api-sports', 'sportapi'] })
+  })
+})
+
+describe('märke på följd post', () => {
+  const crestMatch = { homeKey: 'barcelona', homeCrest: 'https://m/bar.png', awayKey: 'real madrid', awayCrest: null } as never
+  it('märket sparas och saneras vid läsning (sträng eller bort)', () => {
+    toggleFollow({ sport: 'football', kind: 'team', key: 'barcelona', name: 'Barcelona', crest: 'https://m/bar.png' })
+    expect(getFollows()[0].crest).toBe('https://m/bar.png')
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, [{ sport: 'football', kind: 'team', key: 'a', name: 'A', crest: 5 }])
+    expect('crest' in getFollows()[0]).toBe(false)
+  })
+  it('backfill fyller bara poster utan märke, en gång, och skriver inget om inget ändras', () => {
+    const f = [
+      { sport: 'football' as const, kind: 'team' as const, key: 'barcelona', name: 'Barcelona' },
+      { sport: 'football' as const, kind: 'team' as const, key: 'real madrid', name: 'Real' },
+      { sport: 'football' as const, kind: 'team' as const, key: 'x', name: 'X', crest: 'keep' },
+    ]
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, f)
+    expect(backfillFollowCrests([crestMatch])).toBe(true)
+    expect(getFollows().map((x) => x.crest)).toEqual(['https://m/bar.png', undefined, 'keep'])
+    expect(backfillFollowCrests([crestMatch])).toBe(false)
+  })
+  it('useBackfillFollowCrests skriver i en effekt', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, [{ sport: 'football', kind: 'team', key: 'barcelona', name: 'Barcelona' }])
+    renderHook(() => useBackfillFollowCrests([crestMatch]))
+    expect(getFollows()[0].crest).toBe('https://m/bar.png')
   })
 })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { station } from '../../tv/tv-ui'
 import { ellipsis } from '../../tv/mobile/mobile-tokens'
 import { MIcons } from '../../tv/mobile/mobile-icons'
@@ -8,6 +8,7 @@ import { SPORT_KINDS, type SportDay, type SportKind } from '../sport-model'
 import { nextMatchFor } from '../sport-day-model'
 import { followAlert, isFollowing, setFollowAlert, toggleFollow, type KickoffAlert, type SportFollow } from '../sport-store'
 import { followNextLine, type SportCtx } from '../sport-ctx'
+import { useBackfillFollowCrests } from '../follow-crest'
 import { crestForFollow } from '../score-model'
 import { SportIcon } from '../sport-icons'
 import { nextAlert } from './phone-sport-model'
@@ -24,6 +25,8 @@ const same = (a: Pick<SportFollow, 'kind' | 'key'>, b: Pick<SportFollow, 'kind' 
 
 export function PhoneFollows({ ctx, days, onAdd }: { ctx: SportCtx; days: (SportDay | null)[]; onAdd: (sport: SportKind) => void }) {
   const [shown, setShown] = useState<SportFollow[]>(ctx.follows)
+  const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days])
+  useBackfillFollowCrests(allMatches)
   useEffect(() => {
     // Nya följda läggs till; klockans ändring skrivs över på de som redan står kvar.
     setShown((prev) => [...prev.map((p) => ctx.follows.find((f) => same(f, p)) ?? p), ...ctx.follows.filter((f) => !prev.some((p) => same(p, f)))])

@@ -152,7 +152,7 @@ describe('Följväljaren', () => {
       fireEvent.click(hit)
       fireEvent.click(screen.getByTestId('follow-hit-league-135'))
       expect(getFollows()).toEqual([
-        { sport: 'football', kind: 'team', key: 'ac milan', name: 'AC Milan', providerIds: { 'api-sports': '489' } },
+        { sport: 'football', kind: 'team', key: 'ac milan', name: 'AC Milan', providerIds: { 'api-sports': '489' }, crest: 'https://m/489.png' },
         { sport: 'football', kind: 'league', key: 'fx:api-sports:135', name: 'Serie A', providerIds: { 'api-sports': '135' } },
       ])
     } finally { vi.useRealTimers() }

@@ -156,6 +156,8 @@ export interface FollowCandidate {
   kind: 'team' | 'league'
   key: string
   name: string
+  /** Lagets märke ur första match som bär det; ligor har ingen logga i matchmodellen. */
+  crest?: string
   count: number
 }
 
@@ -164,15 +166,17 @@ export function followCandidates(days: (SportDay | null)[]): FollowCandidate[] {
   const add = (c: Omit<FollowCandidate, 'count'>) => {
     const id = `${c.kind}:${c.key}`
     const hit = out.get(id)
-    if (hit) hit.count += 1
-    else out.set(id, { ...c, count: 1 })
+    if (hit) {
+      hit.count += 1
+      if (!hit.crest && c.crest) hit.crest = c.crest
+    } else out.set(id, { ...c, count: 1 })
   }
   for (const day of days) {
     for (const m of day?.matches ?? []) {
       if (m.rerun) continue
       if (m.leagueKey) add({ sport: m.kind, kind: 'league', key: m.leagueKey, name: m.league })
-      if (m.home && m.homeKey) add({ sport: m.kind, kind: 'team', key: m.homeKey, name: m.home })
-      if (m.away && m.awayKey) add({ sport: m.kind, kind: 'team', key: m.awayKey, name: m.away })
+      if (m.home && m.homeKey) add({ sport: m.kind, kind: 'team', key: m.homeKey, name: m.home, ...(m.homeCrest ? { crest: m.homeCrest } : {}) })
+      if (m.away && m.awayKey) add({ sport: m.kind, kind: 'team', key: m.awayKey, name: m.away, ...(m.awayCrest ? { crest: m.awayCrest } : {}) })
     }
   }
   return [...out.values()].sort((a, b) =>

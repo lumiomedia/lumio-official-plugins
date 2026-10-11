@@ -91,6 +91,11 @@ describe('tidslinje, krockar och följkandidater', () => {
     expect(cands.filter((c) => c.kind === 'league').map((c) => c.key)).toEqual(['allsvenskan', 'shl'])
     expect(cands.find((c) => c.key === 'gais')).toMatchObject({ kind: 'team', count: 1, sport: 'football' })
   })
+  it('kandidater bär lagets märke när en match har det', () => {
+    const c = followCandidates([fxDay('d', [{ ...later, homeCrest: 'https://m/h.png' }])])
+    expect(c.find((x) => x.key === later.homeKey)?.crest).toBe('https://m/h.png')
+    expect(c.find((x) => x.kind === 'league')?.crest).toBeUndefined()
+  })
   it('nästa match och ringen för ett följt lag', () => {
     const f = { sport: 'football' as const, kind: 'team' as const, key: 'gais', name: 'GAIS' }
     expect(nextMatchFor(f, [fxDay('d', [done, live, later])], now)?.id).toBe('live')

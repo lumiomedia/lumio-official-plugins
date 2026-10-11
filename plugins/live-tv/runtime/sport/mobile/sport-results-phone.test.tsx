@@ -11,7 +11,7 @@ import { fxMatch } from '../__sport-fixture'
 import type { SportMatch } from '../sport-model'
 
 vi.mock('../follow-search', () => ({
-  searchProviderTeams: vi.fn(async () => [{ id: '375', name: 'Malmo FF', crest: null, country: 'Sweden' }]),
+  searchProviderTeams: vi.fn(async () => [{ id: '375', name: 'Malmo FF', crest: 'https://m/375.png', country: 'Sweden' }]),
 }))
 
 // Rå källtext för telefonträdet: samma grepp som deleted-desktop-views.test.ts.
@@ -140,6 +140,6 @@ describe('Sök i källan på telefon', () => {
     fireEvent.change(screen.getByTestId('phone-follow-search-input'), { target: { value: 'malmo' } })
     fireEvent.submit(screen.getByTestId('phone-follow-search-input').closest('form')!)
     fireEvent.click(await screen.findByTestId('phone-follow-hit-375'))
-    expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: foldTeamKey('Malmo FF'), name: 'Malmo FF', providerIds: { 'api-sports': '375' } }])
+    expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: foldTeamKey('Malmo FF'), name: 'Malmo FF', providerIds: { 'api-sports': '375' }, crest: 'https://m/375.png' }])
   })
 })

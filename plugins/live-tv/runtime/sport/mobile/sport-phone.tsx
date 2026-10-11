@@ -201,7 +201,7 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
           {followCandidates([todayDay.data, tomorrowDay.data]).filter((c) => c.sport === adding).slice(0, 60).map((c) => {
             const on = isFollowing(ctx.follows, c)
             return (
-              <SheetRow key={`${c.kind}:${c.key}`} testId={`sport-phone-candidate-${c.key}`} on={false} height={56} onPress={() => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name })}>
+              <SheetRow key={`${c.kind}:${c.key}`} testId={`sport-phone-candidate-${c.key}`} on={false} height={56} onPress={() => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name, ...(c.crest ? { crest: c.crest } : {}) })}>
                 <PhoneTeamCrest name={c.name} colorKey={c.key} size={32} />
                 <span style={{ flex: 1, fontSize: 15, fontWeight: 600, ...ellipsis }}>{c.name}</span>
                 <span style={{ color: on ? P.coral : P.muted60, display: 'inline-flex' }}><MIcons.Heart size={20} filled={on} /></span>

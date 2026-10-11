@@ -265,6 +265,8 @@ export interface SportFollow {
   providerIds?: Record<string, string>
   /** Lagets egen klocka (Mina lag på telefon). Saknas = den allmänna (`SportSettings.alert`). */
   alert?: KickoffAlert
+  /** Märket (lagets bricka / ligans logga), sparat när posten skapades eller hittades i en match. Utan det blir det initialer när dagens matcher saknar laget. */
+  crest?: string | null
 }
 
 function sanitizeFollows(raw: unknown): SportFollow[] {
@@ -280,7 +282,7 @@ function sanitizeFollows(raw: unknown): SportFollow[] {
       ? Object.fromEntries(Object.entries(f.providerIds).filter((e): e is [string, string] => typeof e[1] === 'string'))
       : null
     const alert = f.alert === 'off' || f.alert === '15' || f.alert === 'kickoff' ? f.alert : null
-    out.push({ sport: f.sport as SportKind, kind: f.kind, key: f.key, name: typeof f.name === 'string' && f.name ? f.name : f.key, ...(ids && Object.keys(ids).length > 0 ? { providerIds: ids } : {}), ...(alert ? { alert } : {}) })
+    out.push({ sport: f.sport as SportKind, kind: f.kind, key: f.key, name: typeof f.name === 'string' && f.name ? f.name : f.key, ...(ids && Object.keys(ids).length > 0 ? { providerIds: ids } : {}), ...(alert ? { alert } : {}), ...(typeof f.crest === 'string' && f.crest ? { crest: f.crest } : {}) })
   }
   return out
 }

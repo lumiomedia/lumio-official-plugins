@@ -9,6 +9,7 @@ import { localDayKey } from '../sport-epg'
 import { crestText, matchTitle, type MatchSource, type SportDay, type SportMatch } from '../sport-model'
 import { featuredMatch, followState, leagueColor, nextMatchFor, nextOnYourChannels, rankedSources, splitSections, statusAt, teamRing } from '../sport-day-model'
 import { heroStatusLine, matchStatusLabel, scoreText, showsScore } from '../score-model'
+import { useBackfillFollowCrests } from '../follow-crest'
 import { crestForFollow } from '../score-model'
 import { sourceLine, timeLine, type SportCtx } from '../sport-ctx'
 import type { SportFollow } from '../sport-store'
@@ -222,12 +223,14 @@ export function PhoneFeed({ ctx, matches, days, onAddTeam }: { ctx: SportCtx; ma
   const { live, later } = splitSections(matches, ctx.now)
   const plan = eveningPlan(later, ctx.isReminded)
   const dayMatches = days[0]?.matches ?? []
+  const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days])
+  useBackfillFollowCrests(allMatches)
   return (
     <>
       <section data-testid="sport-phone-teams" style={{ ...cardStyle, borderRadius: 16, border: `1px solid ${P.line16}`, padding: '12px 0 10px 12px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
         <span style={{ fontSize: 17, fontWeight: 600 }}>{ctx.tt('sportYourTeams')}</span>
         <div data-row="" style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '4px 12px 4px 0' }}>
-          {ctx.follows.map((f) => <TeamAvatar key={`${f.kind}:${f.key}`} ctx={ctx} follow={f} dayMatches={dayMatches} days={days} />)}
+          {ctx.follows.map((f) => <TeamAvatar key={`${f.kind}:${f.key}`} ctx={ctx} follow={f} dayMatches={dayMatches} allMatches={allMatches} days={days} />)}
           <div data-testid="sport-phone-teams-add" {...station(onAddTeam)} style={{ flex: '0 0 70px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
             <span style={{ width: 56, height: 56, borderRadius: 999, border: '2px dashed rgba(255,255,255,0.35)', boxSizing: 'border-box', display: 'grid', placeItems: 'center' }}><MIcons.Plus size={22} /></span>
             <span style={{ fontSize: 12, fontWeight: 600 }}>{ctx.tt('sportAddTeam')}</span>
@@ -291,7 +294,7 @@ export function PhoneFeed({ ctx, matches, days, onAddTeam }: { ctx: SportCtx; ma
   )
 }
 
-function TeamAvatar({ ctx, follow, dayMatches, days }: { ctx: SportCtx; follow: SportFollow; dayMatches: SportMatch[]; days: (SportDay | null)[] }) {
+function TeamAvatar({ ctx, follow, dayMatches, allMatches, days }: { ctx: SportCtx; follow: SportFollow; dayMatches: SportMatch[]; allMatches: SportMatch[]; days: (SportDay | null)[] }) {
   const ring = teamRing(follow, dayMatches, ctx.now)
   const next = nextMatchFor(follow, days, ctx.now)
   const liveMatch = ring === 'live' ? dayMatches.find((m) => statusAt(m, ctx.now) === 'live' && followState(m, [follow]).any) : undefined
@@ -305,7 +308,7 @@ function TeamAvatar({ ctx, follow, dayMatches, days }: { ctx: SportCtx; follow: 
   return (
     <div data-testid="sport-phone-team" data-ring={ring} {...station(() => { if (open) ctx.openMatch(open) })} style={{ flex: '0 0 70px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', textAlign: 'center' }}>
       <div style={{ width: 56, height: 56, borderRadius: 999, padding: 3, boxSizing: 'border-box', border: `3px solid ${ringColor}`, position: 'relative', display: 'grid', placeItems: 'center' }}>
-        <PhoneTeamCrest name={follow.name} colorKey={follow.key} src={crestForFollow(follow, dayMatches)} size={44} />
+        <PhoneTeamCrest name={follow.name} colorKey={follow.key} src={crestForFollow(follow, allMatches)} size={44} />
         {ring === 'live' ? <span style={{ position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)', height: 15, padding: '0 5px', borderRadius: 4, background: P.ring, color: '#fff', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center' }}>{ctx.tt('sportLiveShort')}</span> : null}
       </div>
       <span style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.2, maxWidth: 70, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{follow.name}</span>

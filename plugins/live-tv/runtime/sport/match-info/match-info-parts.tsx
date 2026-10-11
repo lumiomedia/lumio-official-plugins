@@ -85,7 +85,7 @@ export function TeamsHeader({ u, match, ctx, compact = false }: { u: U; match: S
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: u(8), minWidth: 0 }}>
         <Crest name={name} colorKey={key ?? name} size={crest} src={src} />
         <div style={{ fontSize: u(21), fontWeight: 700, textAlign: 'center', maxWidth: '100%', ...ellipsis }}>{name}</div>
-        {key ? <FollowPill u={u} testId={`mc-follow-${side}`} on={fs[side]} name={name} ctx={ctx} onToggle={() => toggleFollow({ sport: match.kind, kind: 'team', key, name })} /> : null}
+        {key ? <FollowPill u={u} testId={`mc-follow-${side}`} on={fs[side]} name={name} ctx={ctx} onToggle={() => toggleFollow({ sport: match.kind, kind: 'team', key, name, ...(src ? { crest: src } : {}) })} /> : null}
       </div>
     )
   }
