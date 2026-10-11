@@ -134,3 +134,26 @@ describe('spärr som släpper medan vyn står öppen', () => {
     poller.stop()
   })
 })
+
+describe('ingen dubbel livepollning', () => {
+  it('en omplanering mitt i en tick (kvotsvaret) startar ingen parallell tick för en sport som redan står på tur', async () => {
+    let poller: ReturnType<typeof createLivePoller> | null = null
+    const live = vi.fn(async (_sport: string) => {
+      poller?.reschedule() // som noteQuota → emit → reschedule
+      await new Promise((r) => setTimeout(r, 50))
+      return { ok: true as const, data: [], cached: false, fetchedAt: Date.now() }
+    })
+    const budget = { live, liveIntervalMs: () => 60_000, pausedUntil: () => null, provider: { bucket: (s: string) => s } }
+    poller = createLivePoller({
+      budget: budget as never,
+      targets: () => [{ sport: 'football', hot: true, windowEndsAt: NOW + 3_600_000 }, { sport: 'hockey', hot: true, windowEndsAt: NOW + 3_600_000 }],
+      onFixtures: () => {}, liveOpts: () => ({ today: '2026-10-10', tz: 'Europe/Stockholm' }),
+      isVisible: () => true, onVisibility: () => () => {},
+    })
+    poller.start()
+    acquirePollDemand('sport-view')
+    await vi.advanceTimersByTimeAsync(60_500)
+    expect(live.mock.calls.map(([s]) => s).sort()).toEqual(['football', 'hockey'])
+    poller.stop()
+  })
+})

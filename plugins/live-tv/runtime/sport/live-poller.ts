@@ -79,6 +79,8 @@ export function createLivePoller(deps: LivePollerDeps): LivePoller {
   const due = new Map<SportKind, number>()
   let timer: unknown = null
   let running = false
+  /** Medan en tick pågår planerar bara ticken själv om (när den är klar). */
+  let ticking = false
   let unsubs: Array<() => void> = []
 
   const active = () => running && hasPollDemand() && isVisible()
@@ -111,6 +113,7 @@ export function createLivePoller(deps: LivePollerDeps): LivePoller {
   }
 
   function reschedule(): void {
+    if (ticking) return
     if (timer != null) { clearTimer(timer); timer = null }
     if (!active()) { due.clear(); return }
     const delay = nextDelayMs()
@@ -125,13 +128,20 @@ export function createLivePoller(deps: LivePollerDeps): LivePoller {
   }
 
   async function tick(): Promise<void> {
-    if (!active()) return
-    const t = now()
-    for (const item of plan()) {
-      if (item.at > t) continue
-      due.delete(item.sport)
-      const res = await deps.budget.live(item.sport, deps.liveOpts())
-      if (res.data) deps.onFixtures(item.sport, res.data, res.fetchedAt)
+    if (!active() || ticking) return
+    ticking = true
+    try {
+      const t = now()
+      // Alla som står på tur tas ur kön INNAN första anropet, så att en
+      // omplanering under väntan (kvotsvaret) aldrig ser dem som förfallna igen.
+      const dueNow = plan().filter((item) => item.at <= t)
+      for (const item of dueNow) due.delete(item.sport)
+      for (const item of dueNow) {
+        const res = await deps.budget.live(item.sport, deps.liveOpts())
+        if (res.data) deps.onFixtures(item.sport, res.data, res.fetchedAt)
+      }
+    } finally {
+      ticking = false
     }
     reschedule()
   }
