@@ -178,12 +178,15 @@ let current: { id: string; router: SportRouter | null } | null = null
 const budgets = new Map<string, Budget>()
 
 /**
- * EN router för nycklarna och ordningen. `null` utan nycklar: då görs inga anrop.
+ * EN router för nycklarna (standardordningen per sport). `null` utan nycklar: då görs inga anrop.
  * Samma nycklar och ordning = samma router (och samma resultatlager), även när
  * andra sportinställningar sparas.
  */
 export function currentRouter(): SportRouter | null {
-  const { keys, order } = getSportSettings()
+  // Källa per sport sköts automatiskt (Jerry 2026-10-11): standardordningen gäller
+  // alltid, och en egen ordning sparad av den tidigare väljaren ignoreras.
+  const { keys } = getSportSettings()
+  const order: SportOrder = {}
   const id = JSON.stringify([keys, order])
   if (current?.id === id) return current.router
   const make = (pid: ProviderId, key: string): Budget => {

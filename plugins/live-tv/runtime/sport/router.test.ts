@@ -139,3 +139,16 @@ describe('SportRouter: första källan med kvot, sedan nästa tills kvoten nolls
     expect(router.budget('api-sports')!.plannedFor('hockey')).toBe(2)
   })
 })
+
+describe('currentRouter: källa per sport sköts automatiskt', () => {
+  it('en sparad egen ordning ignoreras — standardordningen gäller', async () => {
+    const { __resetPluginStorageForTests } = await import('@/lib/plugin-sdk')
+    const { setProviderKey, setSportOrder } = await import('./sport-store')
+    const { currentRouter, __resetRouterForTests } = await import('./router')
+    __resetPluginStorageForTests(); __resetRouterForTests()
+    setProviderKey('sportapi', 'sk_live_1', null)
+    setProviderKey('api-sports', 'aaaa1111', 'Free')
+    setSportOrder('football', ['api-sports', 'sportapi'])
+    expect(currentRouter()!.candidates('football').map((b) => b.provider.id)).toEqual(['sportapi', 'api-sports'])
+  })
+})

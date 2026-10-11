@@ -31,7 +31,13 @@ const SIGNUP: Record<ProviderId, string> = { sportapi: SPORTAPI_REGISTER_URL, 'a
  * (Nycklar: Lägg till / Byt nyckel). En nyckel för en källa som redan har en
  * ERSÄTTER den — en nyckel per källa.
  */
-export function KeyCard({ variant, onDone, pushLayer, provider: fixed }: { variant: 'banner' | 'tab' | 'settings'; onDone?: () => void; pushLayer?: (close: () => void) => () => void; provider?: ProviderId }) {
+export function KeyCard({ variant, onDone, pushLayer, provider: fixed, current, onRemove }: {
+  variant: 'banner' | 'tab' | 'settings'; onDone?: () => void; pushLayer?: (close: () => void) => () => void; provider?: ProviderId
+  /** Inställningarnas redigerare: källans nuvarande nyckel (maskad) och dagens kvot per sport. */
+  current?: { masked: string; detail?: string | null }
+  /** Ta bort nyckeln — bor här, där nyckeln skrivs in (inga separata Ta bort-rader). */
+  onRemove?: () => void
+}) {
   const { tt } = useTvText()
   const tv = useTvMode()
   const settings = useSportSettings()
@@ -66,9 +72,10 @@ export function KeyCard({ variant, onDone, pushLayer, provider: fixed }: { varia
     return r.reason === 'network' ? tt('sportKeyNetwork') : r.reason === 'rejected' ? tt('sportKeyRejected') : null
   })()
 
-  const btn = (label: string, onOk: () => void, primary = false, testId?: string) => (
-    <div data-testid={testId} {...station(onOk)} style={{ minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: 'inline-flex', alignItems: 'center', fontSize: dp(17), fontWeight: 600, cursor: 'pointer', background: primary ? TV.text : TV.s12, color: primary ? '#0e0f13' : TV.text }}>{label}</div>
+  const btn = (label: string, onOk: () => void, primary = false, testId?: string, danger = false) => (
+    <div data-testid={testId} {...station(onOk)} style={{ minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: 'inline-flex', alignItems: 'center', fontSize: dp(17), fontWeight: 600, cursor: 'pointer', background: primary ? TV.text : danger ? 'rgba(224,119,106,0.16)' : TV.s12, color: primary ? '#0e0f13' : danger ? '#e0776a' : TV.text }}>{label}</div>
   )
+  const removeBtn = fixed && current && onRemove ? btn(tt('sportKeyRemove'), onRemove, false, 'sport-key-remove', true) : null
 
   return (
     <section data-testid={`sport-key-card-${variant}`} style={{ borderRadius: dp(16), background: sportBg(TV.s06), border: `1px solid ${TV.lineCard}`, padding: dp(24), display: 'flex', gap: dp(24), flexWrap: 'wrap' }}>
@@ -76,12 +83,19 @@ export function KeyCard({ variant, onDone, pushLayer, provider: fixed }: { varia
         <div style={{ fontSize: dp(24), fontWeight: 600 }}>{broken ? tt('sportKeyBroken') : fixed ? `${PROVIDER_LABEL[fixed]} · ${tt(settings.keys[fixed] ? 'sportKeyChange' : 'sportKeyAdd')}` : tt('sportKeyTitle')}</div>
         {fixed ? null : <Segment options={PROVIDER_IDS.map((id) => ({ key: id, label: PROVIDER_LABEL[id] }))} value={provider} onChange={(k) => { setProvider(k); setPhase({ kind: 'idle' }) }} />}
         {fixed ? null : <div style={{ fontSize: dp(16), color: TV.muted }}>{tt('sportKeyChoice')}</div>}
+        {fixed && current ? (
+          <div data-testid="sport-key-current" style={{ display: 'flex', flexDirection: 'column', gap: dp(6) }}>
+            <div style={{ fontSize: dp(16), color: TV.text }}>{tt('sportKeyCurrent', { key: current.masked })}</div>
+            {current.detail ? <div style={{ fontSize: dp(16), color: TV.muted, fontVariantNumeric: 'tabular-nums' }}>{current.detail}</div> : null}
+          </div>
+        ) : null}
         {provider === 'sportapi' ? <div data-testid="sport-key-sportapi-free" style={{ fontSize: dp(16), color: TV.text }}>{tt('sportKeySportApiFree')}</div> : null}
         <div style={{ fontSize: dp(16), color: TV.muted }}>{tt('sportKeyCovers', { sports: sportsText })}</div>
         {tv ? (
           <div style={{ display: 'flex', gap: dp(12), flexWrap: 'wrap' }}>
             {btn(tt('sportKeyPhone'), () => { setPhoneEntry(true); handoff.restart() }, true)}
             {prompt.available ? btn(tt('sportKeyKeyboard'), () => prompt.ask(tt('sportKeyPaste'), '', (v) => void submit(v), 'password')) : null}
+            {removeBtn}
           </div>
         ) : (
           <div style={{ display: 'flex', gap: dp(10), flexWrap: 'wrap', alignItems: 'center' }}>
@@ -91,6 +105,7 @@ export function KeyCard({ variant, onDone, pushLayer, provider: fixed }: { varia
             {btn(tt('sportKeySave'), () => void submit(draft), true)}
           </div>
         )}
+        {!tv && removeBtn ? <div style={{ display: 'flex' }}>{removeBtn}</div> : null}
         {prompt.node}
         {message ? <div role="status" style={{ fontSize: dp(16), color: phase.kind === 'done' && phase.result.ok ? '#3cd6a3' : TV.text }}>{message}</div> : null}
       </div>
