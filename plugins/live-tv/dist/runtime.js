@@ -269,9 +269,9 @@
         }
       };
       var PluginListener = class {
-        constructor(plugin2, event, channelId) {
+        constructor(plugin2, event2, channelId) {
           this.plugin = plugin2;
-          this.event = event;
+          this.event = event2;
           this.channelId = channelId;
         }
         async unregister() {
@@ -281,17 +281,17 @@
           });
         }
       };
-      async function addPluginListener(plugin2, event, cb) {
+      async function addPluginListener(plugin2, event2, cb) {
         const handler = new Channel(cb);
         try {
           await invoke6(`plugin:${plugin2}|register_listener`, {
-            event,
+            event: event2,
             handler
           });
-          return new PluginListener(plugin2, event, handler.id);
+          return new PluginListener(plugin2, event2, handler.id);
         } catch {
-          await invoke6(`plugin:${plugin2}|registerListener`, { event, handler });
-          return new PluginListener(plugin2, event, handler.id);
+          await invoke6(`plugin:${plugin2}|registerListener`, { event: event2, handler });
+          return new PluginListener(plugin2, event2, handler.id);
         }
       }
       async function checkPermissions(plugin2) {
@@ -364,41 +364,41 @@
         TauriEvent["DRAG_DROP"] = "tauri://drag-drop";
         TauriEvent["DRAG_LEAVE"] = "tauri://drag-leave";
       })(exports.TauriEvent || (exports.TauriEvent = {}));
-      async function _unlisten(event, eventId) {
-        window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, eventId);
+      async function _unlisten(event2, eventId) {
+        window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event2, eventId);
         await core.invoke("plugin:event|unlisten", {
-          event,
+          event: event2,
           eventId
         });
       }
-      async function listen3(event, handler, options) {
+      async function listen3(event2, handler, options) {
         var _a;
         const target2 = typeof (options === null || options === void 0 ? void 0 : options.target) === "string" ? { kind: "AnyLabel", label: options.target } : (_a = options === null || options === void 0 ? void 0 : options.target) !== null && _a !== void 0 ? _a : { kind: "Any" };
         return core.invoke("plugin:event|listen", {
-          event,
+          event: event2,
           target: target2,
           handler: core.transformCallback(handler)
         }).then((eventId) => {
-          return async () => _unlisten(event, eventId);
+          return async () => _unlisten(event2, eventId);
         });
       }
-      async function once(event, handler, options) {
-        return listen3(event, (eventData) => {
-          void _unlisten(event, eventData.id);
+      async function once(event2, handler, options) {
+        return listen3(event2, (eventData) => {
+          void _unlisten(event2, eventData.id);
           handler(eventData);
         }, options);
       }
-      async function emit3(event, payload) {
+      async function emit3(event2, payload) {
         await core.invoke("plugin:event|emit", {
-          event,
+          event: event2,
           payload
         });
       }
-      async function emitTo(target2, event, payload) {
+      async function emitTo(target2, event2, payload) {
         const eventTarget = typeof target2 === "string" ? { kind: "AnyLabel", label: target2 } : target2;
         await core.invoke("plugin:event|emit_to", {
           target: eventTarget,
-          event,
+          event: event2,
           payload
         });
       }
@@ -1220,14 +1220,14 @@
       captureSupported: true,
       maxSurfaces: () => MAX_HTML,
       create(id) {
-        const listeners10 = /* @__PURE__ */ new Set();
+        const listeners11 = /* @__PURE__ */ new Set();
         let video = null;
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
         const emit3 = (patch) => {
           state2 = { ...state2, ...patch };
-          for (const l of [...listeners10]) l(state2);
+          for (const l of [...listeners11]) l(state2);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -1300,15 +1300,15 @@
             return res.ok;
           },
           onState(l) {
-            listeners10.add(l);
-            return () => listeners10.delete(l);
+            listeners11.add(l);
+            return () => listeners11.delete(l);
           },
           // Värdstängning (yta 0 öppnas) ger ett sista loadFailed; en
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
             if (reason) emit3({ loadFailed: true });
-            listeners10.clear();
+            listeners11.clear();
           }
         };
       }
@@ -1329,8 +1329,8 @@
   function ensureSharedListener() {
     closingSharedListener = false;
     if (sharedUnlisten) return;
-    sharedUnlisten = (0, import_event.listen)("mpv-surface-state", (event) => {
-      const { surface, ...state2 } = event.payload;
+    sharedUnlisten = (0, import_event.listen)("mpv-surface-state", (event2) => {
+      const { surface, ...state2 } = event2.payload;
       dispatchersByRustId.get(surface)?.(state2);
     });
   }
@@ -1362,17 +1362,17 @@
     }
   }
   function createMpvSurfaceBackend() {
-    const listeners10 = /* @__PURE__ */ new Set();
+    const listeners11 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners10]) listener(state2);
+      for (const listener of [...listeners11]) listener(state2);
     };
     const dispatch = (next) => {
       state2 = next;
-      for (const listener of [...listeners10]) listener(next);
+      for (const listener of [...listeners11]) listener(next);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
@@ -1448,15 +1448,15 @@
         }
       },
       onState(listener) {
-        listeners10.add(listener);
+        listeners11.add(listener);
         return () => {
-          listeners10.delete(listener);
+          listeners11.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
         if (reason) emit3({ loadFailed: true });
-        listeners10.clear();
+        listeners11.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
           dispatchersByRustId.delete(surface);
@@ -1519,11 +1519,11 @@
     };
   }
   function createDroidSurfaceBackend() {
-    const listeners10 = /* @__PURE__ */ new Set();
+    const listeners11 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
     const emit3 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners10]) listener(state2);
+      for (const listener of [...listeners11]) listener(state2);
     };
     let nativeId = null;
     let destroyed = false;
@@ -1563,7 +1563,7 @@
           const next = toSurfaceState(value);
           if (!next) return;
           state2 = next;
-          for (const listener of [...listeners10]) listener(next);
+          for (const listener of [...listeners11]) listener(next);
         });
       }, 250);
     }
@@ -1636,9 +1636,9 @@
         return false;
       },
       onState(listener) {
-        listeners10.add(listener);
+        listeners11.add(listener);
         return () => {
-          listeners10.delete(listener);
+          listeners11.delete(listener);
         };
       },
       async destroy(reason) {
@@ -1646,7 +1646,7 @@
         generation++;
         stopPolling();
         if (reason) emit3({ loadFailed: true });
-        listeners10.clear();
+        listeners11.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
         await np({ cmd: "surfaceDestroy", surface }).catch(() => {
@@ -10474,8 +10474,8 @@
   function onTvFocusEdge(handler) {
     const sdk3 = hostSdk();
     if (sdk3?.onTvFocusEdge) return sdk3.onTvFocusEdge(handler);
-    const listener = (event) => {
-      const dir = event.detail?.dir;
+    const listener = (event2) => {
+      const dir = event2.detail?.dir;
       if (dir) handler(dir);
     };
     window.addEventListener(TV_FOCUS_EDGE_EVENT, listener);
@@ -11441,27 +11441,27 @@
   // lib/tv-hold.ts
   function tvHoldHandlers(onShort, onHold) {
     return {
-      onKeyDown: (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        if (event.repeat || !event.currentTarget) return;
-        const previous = holds2.get(event.currentTarget);
+      onKeyDown: (event2) => {
+        if (event2.key !== "Enter" && event2.key !== " ") return;
+        event2.preventDefault();
+        if (event2.repeat || !event2.currentTarget) return;
+        const previous = holds2.get(event2.currentTarget);
         if (previous) window.clearTimeout(previous.timer);
         const hold = { timer: 0, fired: false, source: "key" };
-        const element = event.currentTarget;
+        const element = event2.currentTarget;
         hold.timer = window.setTimeout(() => {
           hold.fired = true;
           onHold(element);
         }, TV_HOLD_MS);
-        holds2.set(event.currentTarget, hold);
+        holds2.set(event2.currentTarget, hold);
       },
-      onKeyUp: (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        if (!event.currentTarget) return;
-        const hold = holds2.get(event.currentTarget);
+      onKeyUp: (event2) => {
+        if (event2.key !== "Enter" && event2.key !== " ") return;
+        if (!event2.currentTarget) return;
+        const hold = holds2.get(event2.currentTarget);
         if (!hold || hold.source !== "key") return;
         window.clearTimeout(hold.timer);
-        holds2.delete(event.currentTarget);
+        holds2.delete(event2.currentTarget);
         if (!hold.fired) onShort();
       }
     };
@@ -11488,8 +11488,8 @@
   }
   function tvPointerHoldHandlers(onShort, onHold) {
     void onShort;
-    const abort = (event) => {
-      const target2 = event.currentTarget;
+    const abort = (event2) => {
+      const target2 = event2.currentTarget;
       if (!target2) return;
       const hold = holds2.get(target2);
       if (!hold || hold.source !== "pointer") return;
@@ -11497,10 +11497,10 @@
       holds2.delete(target2);
     };
     return {
-      onPointerDown: (event) => {
-        const target2 = event.currentTarget;
+      onPointerDown: (event2) => {
+        const target2 = event2.currentTarget;
         if (!target2) return;
-        if (event.button !== void 0 && event.button !== 0) return;
+        if (event2.button !== void 0 && event2.button !== 0) return;
         const previous = holds2.get(target2);
         if (previous) window.clearTimeout(previous.timer);
         releaseClickSuppression(target2);
@@ -11513,33 +11513,33 @@
         }, TV_HOLD_MS);
         holds2.set(target2, hold);
       },
-      onPointerUp: (event) => {
-        const target2 = event.currentTarget;
+      onPointerUp: (event2) => {
+        const target2 = event2.currentTarget;
         const record = target2 ? holds2.get(target2) : void 0;
         const fired = record?.source === "pointer" && record.fired;
-        abort(event);
+        abort(event2);
         if (target2 && fired) suppressNextClick(target2);
       },
       onPointerCancel: abort,
       onPointerLeave: abort,
-      onContextMenu: (event) => {
-        if (isTextEntryTarget(event.target)) return;
-        event.preventDefault();
-        const target2 = event.currentTarget;
+      onContextMenu: (event2) => {
+        if (isTextEntryTarget(event2.target)) return;
+        event2.preventDefault();
+        const target2 = event2.currentTarget;
         if (!target2) return;
         if (holds2.get(target2)?.fired === true) {
-          abort(event);
+          abort(event2);
           return;
         }
-        abort(event);
+        abort(event2);
         onHold(target2);
       },
-      onClickCapture: (event) => {
-        const target2 = event.currentTarget;
+      onClickCapture: (event2) => {
+        const target2 = event2.currentTarget;
         if (!target2 || !pointerHoldSuppressed.has(target2)) return;
         releaseClickSuppression(target2);
-        event.preventDefault();
-        event.stopPropagation?.();
+        event2.preventDefault();
+        event2.stopPropagation?.();
       }
     };
   }
@@ -12036,24 +12036,52 @@
     }
   });
 
+  // lib/home-background-settings.ts
+  function getHomeBackgroundUrls() {
+    if (typeof window === "undefined") return [];
+    try {
+      const parsed = JSON.parse(getScopedStorageItem(KEY2) ?? "[]");
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((value) => typeof value === "string").map((value) => value.trim()).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+  function onHomeBackgroundChanged(listener) {
+    if (typeof window === "undefined") return () => {
+    };
+    window.addEventListener(EVENT4, listener);
+    return () => window.removeEventListener(EVENT4, listener);
+  }
+  var KEY2, EVENT4;
+  var init_home_background_settings = __esm({
+    "lib/home-background-settings.ts"() {
+      "use strict";
+      "use client";
+      init_profile_storage_shim();
+      KEY2 = "home_background_urls";
+      EVENT4 = "lumio-home-background-changed";
+    }
+  });
+
   // lib/home-override-settings.ts
   function emitChanged2() {
     if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent(EVENT4));
+    window.dispatchEvent(new CustomEvent(EVENT5));
   }
   function getHomeOverridePluginId() {
     if (typeof window === "undefined") return null;
-    const value = getScopedStorageItem(KEY2)?.trim() ?? "";
+    const value = getScopedStorageItem(KEY3)?.trim() ?? "";
     return value || null;
   }
   function setHomeOverridePluginId(pluginId) {
     const normalized = pluginId.trim();
     if (!normalized) return;
-    setScopedStorageItem(KEY2, normalized);
+    setScopedStorageItem(KEY3, normalized);
     emitChanged2();
   }
   function clearHomeOverridePluginId() {
-    removeScopedStorageItem(KEY2);
+    removeScopedStorageItem(KEY3);
     emitChanged2();
   }
   function disableHomeOverridePlugin(pluginId) {
@@ -12063,9 +12091,9 @@
   function tryEnableHomeOverridePlugin(pluginId) {
     const normalized = pluginId.trim();
     if (!normalized) return { ok: true };
-    const current3 = getHomeOverridePluginId();
-    if (current3 && current3 !== normalized) {
-      return { ok: false, activePluginId: current3 };
+    const current5 = getHomeOverridePluginId();
+    if (current5 && current5 !== normalized) {
+      return { ok: false, activePluginId: current5 };
     }
     setHomeOverridePluginId(normalized);
     return { ok: true };
@@ -12074,21 +12102,21 @@
     if (typeof window === "undefined") return () => {
     };
     const wrapped = () => listener();
-    window.addEventListener(EVENT4, wrapped);
+    window.addEventListener(EVENT5, wrapped);
     const offProfile = onProfileChanged(wrapped);
     return () => {
-      window.removeEventListener(EVENT4, wrapped);
+      window.removeEventListener(EVENT5, wrapped);
       offProfile();
     };
   }
-  var KEY2, EVENT4;
+  var KEY3, EVENT5;
   var init_home_override_settings = __esm({
     "lib/home-override-settings.ts"() {
       "use strict";
       "use client";
       init_profile_storage_shim();
-      KEY2 = "custom_home_override_plugin";
-      EVENT4 = "lumio-home-override-changed";
+      KEY3 = "custom_home_override_plugin";
+      EVENT5 = "lumio-home-override-changed";
     }
   });
 
@@ -12166,7 +12194,7 @@
   }
   function emitChanged3() {
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT5));
+      window.dispatchEvent(new CustomEvent(EVENT6));
     }
   }
   function setTraktAuth(auth) {
@@ -12185,14 +12213,14 @@
   function onTraktAuthChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT5, listener);
-    return () => window.removeEventListener(EVENT5, listener);
+    window.addEventListener(EVENT6, listener);
+    return () => window.removeEventListener(EVENT6, listener);
   }
   function getTraktScrobbleEnabled() {
     if (typeof window === "undefined") return false;
     return getScopedStorageItem(SCROBBLE_KEY) !== "0";
   }
-  var AUTH_KEY, EVENT5, SCROBBLE_KEY;
+  var AUTH_KEY, EVENT6, SCROBBLE_KEY;
   var init_trakt_storage = __esm({
     "lib/trakt-storage.ts"() {
       "use strict";
@@ -12200,7 +12228,7 @@
       init_profile_storage_shim();
       init_spoiler_settings();
       AUTH_KEY = "trakt_auth";
-      EVENT5 = "lumio-trakt-auth-changed";
+      EVENT6 = "lumio-trakt-auth-changed";
       SCROBBLE_KEY = "trakt_scrobble_enabled";
     }
   });
@@ -12212,7 +12240,7 @@
   function read() {
     if (typeof window === "undefined") return [];
     try {
-      const parsed = JSON.parse(getScopedStorageItem(KEY3) ?? "[]");
+      const parsed = JSON.parse(getScopedStorageItem(KEY4) ?? "[]");
       const deduped = [];
       for (const entry of parsed) {
         const normalizedEntry = {
@@ -12240,9 +12268,9 @@
     }
   }
   function write(entries) {
-    setScopedStorageItem(KEY3, JSON.stringify(entries));
+    setScopedStorageItem(KEY4, JSON.stringify(entries));
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT6));
+      window.dispatchEvent(new CustomEvent(EVENT7));
     }
   }
   function emitMutation(mutation) {
@@ -12284,20 +12312,20 @@
   function onMovieWatchlistMutation(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handler = (event) => {
-      const detail = event.detail;
+    const handler = (event2) => {
+      const detail = event2.detail;
       if (detail) listener(detail);
     };
     window.addEventListener(DETAIL_EVENT, handler);
     return () => window.removeEventListener(DETAIL_EVENT, handler);
   }
-  var KEY3, EVENT6, DETAIL_EVENT;
+  var KEY4, EVENT7, DETAIL_EVENT;
   var init_movie_watchlist = __esm({
     "lib/movie-watchlist.ts"() {
       "use strict";
       init_profile_storage_shim();
-      KEY3 = "movie_watchlist";
-      EVENT6 = "lumio-movie-watchlist-changed";
+      KEY4 = "movie_watchlist";
+      EVENT7 = "lumio-movie-watchlist-changed";
       DETAIL_EVENT = "lumio-movie-watchlist-mutated";
     }
   });
@@ -12306,7 +12334,7 @@
   function read2() {
     if (typeof window === "undefined") return [];
     try {
-      const raw = getScopedStorageItem(KEY4) ?? getScopedStorageItem(LEGACY_KEY) ?? "[]";
+      const raw = getScopedStorageItem(KEY5) ?? getScopedStorageItem(LEGACY_KEY) ?? "[]";
       const parsed = JSON.parse(raw);
       const deduped = [];
       for (const entry of parsed) {
@@ -12330,9 +12358,9 @@
     }
   }
   function write2(entries) {
-    setScopedStorageItem(KEY4, JSON.stringify(entries));
+    setScopedStorageItem(KEY5, JSON.stringify(entries));
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT7));
+      window.dispatchEvent(new CustomEvent(EVENT8));
     }
   }
   function emitMutation2(mutation) {
@@ -12380,27 +12408,27 @@
   function onWatchlistChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT7, listener);
-    return () => window.removeEventListener(EVENT7, listener);
+    window.addEventListener(EVENT8, listener);
+    return () => window.removeEventListener(EVENT8, listener);
   }
   function onWatchlistMutation(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handler = (event) => {
-      const detail = event.detail;
+    const handler = (event2) => {
+      const detail = event2.detail;
       if (detail) listener(detail);
     };
     window.addEventListener(DETAIL_EVENT2, handler);
     return () => window.removeEventListener(DETAIL_EVENT2, handler);
   }
-  var KEY4, LEGACY_KEY, EVENT7, DETAIL_EVENT2;
+  var KEY5, LEGACY_KEY, EVENT8, DETAIL_EVENT2;
   var init_watchlist = __esm({
     "lib/watchlist.ts"() {
       "use strict";
       init_profile_storage_shim();
-      KEY4 = "watchlist_items";
+      KEY5 = "watchlist_items";
       LEGACY_KEY = "rd_watchlist";
-      EVENT7 = "lumio-watchlist-changed";
+      EVENT8 = "lumio-watchlist-changed";
       DETAIL_EVENT2 = "lumio-watchlist-mutated";
     }
   });
@@ -12412,7 +12440,7 @@
   function read3() {
     if (typeof window === "undefined") return {};
     try {
-      const parsed = JSON.parse(getScopedStorageItem(KEY5) ?? "{}");
+      const parsed = JSON.parse(getScopedStorageItem(KEY6) ?? "{}");
       const out = {};
       for (const [key, value] of Object.entries(parsed)) {
         if (typeof value === "string" && value.trim().length > 0) out[key] = value;
@@ -12424,9 +12452,9 @@
     }
   }
   function write3(data) {
-    setScopedStorageItem(KEY5, JSON.stringify(data));
+    setScopedStorageItem(KEY6, JSON.stringify(data));
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent(EVENT8));
+      window.dispatchEvent(new CustomEvent(EVENT9));
     }
   }
   function timestampOf(value) {
@@ -12503,26 +12531,26 @@
   function onWatchedEpisodesChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT8, listener);
-    return () => window.removeEventListener(EVENT8, listener);
+    window.addEventListener(EVENT9, listener);
+    return () => window.removeEventListener(EVENT9, listener);
   }
   function onWatchedEpisodeMutation(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handler = (event) => {
-      const detail = event.detail;
+    const handler = (event2) => {
+      const detail = event2.detail;
       if (detail) listener(detail);
     };
     window.addEventListener(DETAIL_EVENT3, handler);
     return () => window.removeEventListener(DETAIL_EVENT3, handler);
   }
-  var KEY5, EVENT8, DETAIL_EVENT3;
+  var KEY6, EVENT9, DETAIL_EVENT3;
   var init_watched_episodes = __esm({
     "lib/watched-episodes.ts"() {
       "use strict";
       init_profile_storage_shim();
-      KEY5 = "watched_episodes";
-      EVENT8 = "lumio-watched-episodes-changed";
+      KEY6 = "watched_episodes";
+      EVENT9 = "lumio-watched-episodes-changed";
       DETAIL_EVENT3 = "lumio-watched-episode-mutated";
     }
   });
@@ -12609,8 +12637,8 @@
     const title = entry.title ?? null;
     const year = normalizeYear(entry.year);
     if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) return;
-    const current3 = readEntries();
-    const next = current3.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
+    const current5 = readEntries();
+    const next = current5.filter((currentEntry) => !sameMovie(currentEntry, { tmdbId, imdbId, title, year }));
     const nextEntry = {
       tmdbId,
       imdbId,
@@ -12631,7 +12659,7 @@
   }
   function applyRemoteWatchedMovies(remote, options) {
     if (typeof window === "undefined") return { kept: 0, removed: 0 };
-    const current3 = readEntries();
+    const current5 = readEntries();
     const next = [];
     for (const movie of remote) {
       const tmdbId = normalizeId(movie.tmdbId);
@@ -12640,7 +12668,7 @@
       const year = normalizeYear(movie.year);
       if (!tmdbId && !imdbId && !(normalizeTitle(title) && year != null)) continue;
       if (next.some((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }))) continue;
-      const existing = current3.find((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }));
+      const existing = current5.find((entry) => sameMovie(entry, { tmdbId, imdbId, title, year }));
       next.push({
         tmdbId,
         imdbId,
@@ -12651,7 +12679,7 @@
       });
     }
     let removed = 0;
-    for (const entry of current3) {
+    for (const entry of current5) {
       if (next.some((kept) => sameMovie(kept, entry))) continue;
       if (options?.keepLocal?.(entry)) {
         next.push(entry);
@@ -12670,8 +12698,8 @@
   function onWatchedMoviesChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handle = (event) => {
-      const detail = event.detail;
+    const handle = (event2) => {
+      const detail = event2.detail;
       listener(detail?.entries ?? readEntries());
     };
     window.addEventListener(EVENT_WATCHED_MOVIES_CHANGED, handle);
@@ -12680,8 +12708,8 @@
   function onWatchedMovieMutation(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handle = (event) => {
-      const detail = event.detail;
+    const handle = (event2) => {
+      const detail = event2.detail;
       if (detail) listener(detail);
     };
     window.addEventListener(DETAIL_EVENT_WATCHED_MOVIE_MUTATED, handle);
@@ -12804,13 +12832,13 @@
   function read4() {
     if (typeof window === "undefined") return {};
     try {
-      return JSON.parse(getScopedStorageItem(KEY6) ?? "{}");
+      return JSON.parse(getScopedStorageItem(KEY7) ?? "{}");
     } catch {
       return {};
     }
   }
   function write4(cache9) {
-    setScopedStorageItem(KEY6, JSON.stringify(cache9));
+    setScopedStorageItem(KEY7, JSON.stringify(cache9));
   }
   function cacheWatchlistItems(items2) {
     if (typeof window === "undefined" || items2.length === 0) return;
@@ -12823,11 +12851,11 @@
     }
     if (changed) write4(cache9);
   }
-  var KEY6;
+  var KEY7;
   var init_watchlist_item_cache = __esm({
     "lib/watchlist-item-cache.ts"() {
       init_profile_storage_shim();
-      KEY6 = "watchlist_item_cache";
+      KEY7 = "watchlist_item_cache";
     }
   });
 
@@ -12868,17 +12896,17 @@
   }
   function applyAuthUpdate(nextAuth) {
     if (!nextAuth) return getTraktAuth();
-    const current3 = getTraktAuth();
+    const current5 = getTraktAuth();
     const merged = {
       accessToken: nextAuth.accessToken,
       refreshToken: nextAuth.refreshToken,
       expiresAt: nextAuth.expiresAt,
       scope: nextAuth.scope ?? "",
       tokenType: nextAuth.tokenType ?? "bearer",
-      username: nextAuth.username ?? current3?.username ?? null,
-      name: nextAuth.name ?? current3?.name ?? null
+      username: nextAuth.username ?? current5?.username ?? null,
+      name: nextAuth.name ?? current5?.name ?? null
     };
-    if (current3?.accessToken === merged.accessToken && (current3.username ?? null) === merged.username && (current3.name ?? null) === merged.name) return merged;
+    if (current5?.accessToken === merged.accessToken && (current5.username ?? null) === merged.username && (current5.name ?? null) === merged.name) return merged;
     setTraktAuth(merged);
     return merged;
   }
@@ -13355,26 +13383,26 @@
   function setMdblistApiKey(value) {
     if (value) setScopedStorageItem(KEY_MDBLIST, value);
     else removeScopedStorageItem(KEY_MDBLIST);
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT9));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
   }
   function onRatingSourcesChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT9, listener);
+    window.addEventListener(EVENT10, listener);
     window.addEventListener(MDBLIST_AUTH_EVENT, listener);
     return () => {
-      window.removeEventListener(EVENT9, listener);
+      window.removeEventListener(EVENT10, listener);
       window.removeEventListener(MDBLIST_AUTH_EVENT, listener);
     };
   }
-  var KEY_MDBLIST, EVENT9, MDBLIST_AUTH_EVENT;
+  var KEY_MDBLIST, EVENT10, MDBLIST_AUTH_EVENT;
   var init_rating_sources = __esm({
     "lib/rating-sources.ts"() {
       "use strict";
       "use client";
       init_profile_storage_shim();
       KEY_MDBLIST = "mdblist_api_key";
-      EVENT9 = "lumio-rating-sources-changed";
+      EVENT10 = "lumio-rating-sources-changed";
       MDBLIST_AUTH_EVENT = "lumio-mdblist-auth-changed";
     }
   });
@@ -14219,14 +14247,14 @@
             return result;
           }
           // Returns a new array of bytes representing the given string encoded in UTF-8.
-          static toUtf8ByteArray(str) {
-            str = encodeURI(str);
+          static toUtf8ByteArray(str3) {
+            str3 = encodeURI(str3);
             let result = [];
-            for (let i = 0; i < str.length; i++) {
-              if (str.charAt(i) != "%")
-                result.push(str.charCodeAt(i));
+            for (let i = 0; i < str3.length; i++) {
+              if (str3.charAt(i) != "%")
+                result.push(str3.charCodeAt(i));
               else {
-                result.push(parseInt(str.substring(i + 1, i + 3), 16));
+                result.push(parseInt(str3.substring(i + 1, i + 3), 16));
                 i += 2;
               }
             }
@@ -15614,7 +15642,7 @@
   function readCoreStreamAddons() {
     if (typeof window === "undefined") return [];
     try {
-      const raw = getScopedStorageItem(KEY7);
+      const raw = getScopedStorageItem(KEY8);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
@@ -15626,14 +15654,14 @@
   function getEnabledCoreStreamAddons() {
     return readCoreStreamAddons().filter((entry) => entry.enabled !== false);
   }
-  var KEY7;
+  var KEY8;
   var init_core_addons = __esm({
     "lib/media-stream/core-addons.ts"() {
       "use client";
       init_addon_url();
       init_profile_storage_shim();
       init_config();
-      KEY7 = "core_stream_addons_v1";
+      KEY8 = "core_stream_addons_v1";
     }
   });
 
@@ -16676,18 +16704,18 @@
   // lib/zapp-settings.ts
   function getZappMinRating() {
     if (typeof window === "undefined") return DEFAULT;
-    const v = parseFloat(getScopedStorageItem(KEY8) ?? "");
+    const v = parseFloat(getScopedStorageItem(KEY9) ?? "");
     return isNaN(v) ? DEFAULT : v;
   }
   function setZappMinRating(v) {
-    setScopedStorageItem(KEY8, String(v));
+    setScopedStorageItem(KEY9, String(v));
   }
-  var KEY8, DEFAULT;
+  var KEY9, DEFAULT;
   var init_zapp_settings = __esm({
     "lib/zapp-settings.ts"() {
       "use strict";
       init_profile_storage_shim();
-      KEY8 = "zapp_min_rating";
+      KEY9 = "zapp_min_rating";
       DEFAULT = 7;
     }
   });
@@ -16724,8 +16752,8 @@
   function onOpenMediaItemRequested(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handler = (event) => {
-      const detail = event.detail;
+    const handler = (event2) => {
+      const detail = event2.detail;
       if (!detail) return;
       try {
         listener(detail);
@@ -16742,8 +16770,8 @@
   function onPlaySeriesEpisodeRequested(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handler = (event) => {
-      const detail = event.detail;
+    const handler = (event2) => {
+      const detail = event2.detail;
       if (!detail) return;
       try {
         listener(detail);
@@ -16760,8 +16788,8 @@
   function onOpenBrowsePageRequested(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handler = (event) => {
-      const detail = event.detail;
+    const handler = (event2) => {
+      const detail = event2.detail;
       if (!detail?.pageId) return;
       try {
         listener(detail);
@@ -16973,7 +17001,7 @@
   // lib/playback-speed-store.ts
   function read5() {
     try {
-      const raw = getScopedStorageItem(KEY9);
+      const raw = getScopedStorageItem(KEY10);
       const parsed = raw ? JSON.parse(raw) : null;
       return parsed && typeof parsed === "object" ? parsed : {};
     } catch {
@@ -16999,17 +17027,17 @@
     const keys2 = Object.keys(store2);
     for (let index = 0; index < keys2.length - MAX_ENTRIES; index += 1) delete store2[keys2[index]];
     try {
-      setScopedStorageItem(KEY9, JSON.stringify(store2));
+      setScopedStorageItem(KEY10, JSON.stringify(store2));
     } catch {
     }
   }
-  var PLAYBACK_SPEED_OPTIONS, KEY9, MAX_ENTRIES;
+  var PLAYBACK_SPEED_OPTIONS, KEY10, MAX_ENTRIES;
   var init_playback_speed_store = __esm({
     "lib/playback-speed-store.ts"() {
       "use client";
       init_profile_storage_shim();
       PLAYBACK_SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2];
-      KEY9 = "playback_speed_by_title_v1";
+      KEY10 = "playback_speed_by_title_v1";
       MAX_ENTRIES = 200;
     }
   });
@@ -17499,7 +17527,7 @@
     "../../node_modules/@tauri-apps/api/window.cjs"(exports) {
       "use strict";
       var dpi = require_dpi();
-      var event = require_event();
+      var event2 = require_event();
       var core = require_core();
       var image = require_image();
       exports.UserAttentionType = void 0;
@@ -17508,10 +17536,10 @@
         UserAttentionType[UserAttentionType["Informational"] = 2] = "Informational";
       })(exports.UserAttentionType || (exports.UserAttentionType = {}));
       var CloseRequestedEvent = class {
-        constructor(event2) {
+        constructor(event3) {
           this._preventDefault = false;
-          this.event = event2.event;
-          this.id = event2.id;
+          this.event = event3.event;
+          this.id = event3.id;
         }
         preventDefault() {
           this._preventDefault = true;
@@ -17640,11 +17668,11 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners10 = this.listeners[event$1];
-              listeners10.splice(listeners10.indexOf(handler), 1);
+              const listeners11 = this.listeners[event$1];
+              listeners11.splice(listeners11.indexOf(handler), 1);
             };
           }
-          return event.listen(event$1, handler, {
+          return event2.listen(event$1, handler, {
             target: { kind: "Window", label: this.label }
           });
         }
@@ -17670,11 +17698,11 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners10 = this.listeners[event$1];
-              listeners10.splice(listeners10.indexOf(handler), 1);
+              const listeners11 = this.listeners[event$1];
+              listeners11.splice(listeners11.indexOf(handler), 1);
             };
           }
-          return event.once(event$1, handler, {
+          return event2.once(event$1, handler, {
             target: { kind: "Window", label: this.label }
           });
         }
@@ -17700,7 +17728,7 @@
             }
             return;
           }
-          return event.emit(event$1, payload);
+          return event2.emit(event$1, payload);
         }
         /**
          * Emits an event to all {@link EventTarget|targets} matching the given target.
@@ -17725,15 +17753,15 @@
             }
             return;
           }
-          return event.emitTo(target2, event$1, payload);
+          return event2.emitTo(target2, event$1, payload);
         }
         /** @ignore */
-        _handleTauriEvent(event2, handler) {
-          if (localTauriEvents.includes(event2)) {
-            if (!(event2 in this.listeners)) {
-              this.listeners[event2] = [handler];
+        _handleTauriEvent(event3, handler) {
+          if (localTauriEvents.includes(event3)) {
+            if (!(event3 in this.listeners)) {
+              this.listeners[event3] = [handler];
             } else {
-              this.listeners[event2].push(handler);
+              this.listeners[event3].push(handler);
             }
             return true;
           }
@@ -18967,7 +18995,7 @@
          * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
          */
         async onResized(handler) {
-          return this.listen(event.TauriEvent.WINDOW_RESIZED, (e) => {
+          return this.listen(event2.TauriEvent.WINDOW_RESIZED, (e) => {
             e.payload = new dpi.PhysicalSize(e.payload);
             handler(e);
           });
@@ -18990,7 +19018,7 @@
          * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
          */
         async onMoved(handler) {
-          return this.listen(event.TauriEvent.WINDOW_MOVED, (e) => {
+          return this.listen(event2.TauriEvent.WINDOW_MOVED, (e) => {
             e.payload = new dpi.PhysicalPosition(e.payload);
             handler(e);
           });
@@ -19018,8 +19046,8 @@
          * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
          */
         async onCloseRequested(handler) {
-          return this.listen(event.TauriEvent.WINDOW_CLOSE_REQUESTED, async (event2) => {
-            const evt = new CloseRequestedEvent(event2);
+          return this.listen(event2.TauriEvent.WINDOW_CLOSE_REQUESTED, async (event3) => {
+            const evt = new CloseRequestedEvent(event3);
             await handler(evt);
             if (!evt.isPreventDefault()) {
               await this.destroy();
@@ -19052,37 +19080,37 @@
          * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
          */
         async onDragDropEvent(handler) {
-          const unlistenDrag = await this.listen(event.TauriEvent.DRAG_ENTER, (event2) => {
+          const unlistenDrag = await this.listen(event2.TauriEvent.DRAG_ENTER, (event3) => {
             handler({
-              ...event2,
+              ...event3,
               payload: {
                 type: "enter",
-                paths: event2.payload.paths,
-                position: new dpi.PhysicalPosition(event2.payload.position)
+                paths: event3.payload.paths,
+                position: new dpi.PhysicalPosition(event3.payload.position)
               }
             });
           });
-          const unlistenDragOver = await this.listen(event.TauriEvent.DRAG_OVER, (event2) => {
+          const unlistenDragOver = await this.listen(event2.TauriEvent.DRAG_OVER, (event3) => {
             handler({
-              ...event2,
+              ...event3,
               payload: {
                 type: "over",
-                position: new dpi.PhysicalPosition(event2.payload.position)
+                position: new dpi.PhysicalPosition(event3.payload.position)
               }
             });
           });
-          const unlistenDrop = await this.listen(event.TauriEvent.DRAG_DROP, (event2) => {
+          const unlistenDrop = await this.listen(event2.TauriEvent.DRAG_DROP, (event3) => {
             handler({
-              ...event2,
+              ...event3,
               payload: {
                 type: "drop",
-                paths: event2.payload.paths,
-                position: new dpi.PhysicalPosition(event2.payload.position)
+                paths: event3.payload.paths,
+                position: new dpi.PhysicalPosition(event3.payload.position)
               }
             });
           });
-          const unlistenCancel = await this.listen(event.TauriEvent.DRAG_LEAVE, (event2) => {
-            handler({ ...event2, payload: { type: "leave" } });
+          const unlistenCancel = await this.listen(event2.TauriEvent.DRAG_LEAVE, (event3) => {
+            handler({ ...event3, payload: { type: "leave" } });
           });
           return () => {
             unlistenDrag();
@@ -19109,11 +19137,11 @@
          * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
          */
         async onFocusChanged(handler) {
-          const unlistenFocus = await this.listen(event.TauriEvent.WINDOW_FOCUS, (event2) => {
-            handler({ ...event2, payload: true });
+          const unlistenFocus = await this.listen(event2.TauriEvent.WINDOW_FOCUS, (event3) => {
+            handler({ ...event3, payload: true });
           });
-          const unlistenBlur = await this.listen(event.TauriEvent.WINDOW_BLUR, (event2) => {
-            handler({ ...event2, payload: false });
+          const unlistenBlur = await this.listen(event2.TauriEvent.WINDOW_BLUR, (event3) => {
+            handler({ ...event3, payload: false });
           });
           return () => {
             unlistenFocus();
@@ -19142,7 +19170,7 @@
          * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
          */
         async onScaleChanged(handler) {
-          return this.listen(event.TauriEvent.WINDOW_SCALE_FACTOR_CHANGED, handler);
+          return this.listen(event2.TauriEvent.WINDOW_SCALE_FACTOR_CHANGED, handler);
         }
         /**
          * Listen to the system theme change.
@@ -19162,7 +19190,7 @@
          * Note that removing the listener is required if your listener goes out of scope e.g. the component is unmounted.
          */
         async onThemeChanged(handler) {
-          return this.listen(event.TauriEvent.WINDOW_THEME_CHANGED, handler);
+          return this.listen(event2.TauriEvent.WINDOW_THEME_CHANGED, handler);
         }
       };
       var BackgroundThrottlingPolicy;
@@ -19368,7 +19396,7 @@
   // lib/continue-frames.ts
   function getContinueFramesEnabled() {
     if (typeof window === "undefined") return true;
-    return getScopedStorageItem(KEY10) !== "0";
+    return getScopedStorageItem(KEY11) !== "0";
   }
   function continueFrameKey(ref) {
     const profile = getActiveProfileId() ?? "";
@@ -19406,14 +19434,14 @@
       return false;
     }
   }
-  var KEY10, ENDPOINT;
+  var KEY11, ENDPOINT;
   var init_continue_frames = __esm({
     "lib/continue-frames.ts"() {
       "use client";
       init_profile_storage_shim();
       init_player_frame_id();
       init_webdav_credentials();
-      KEY10 = "continue_watching_frames_v1";
+      KEY11 = "continue_watching_frames_v1";
       ENDPOINT = "/api/player-frame";
     }
   });
@@ -19441,7 +19469,7 @@
   function read6() {
     if (typeof window === "undefined") return [];
     try {
-      return JSON.parse(getScopedStorageItem(KEY11) ?? "[]");
+      return JSON.parse(getScopedStorageItem(KEY12) ?? "[]");
     } catch {
       return [];
     }
@@ -19518,14 +19546,14 @@
   function appendHistoryEntry(entry) {
     const sanitized = sanitizeEntry(entry);
     const incomingKey = historyDedupeKey(sanitized);
-    const current3 = readHistory();
-    const previous = current3.find((existing) => historyDedupeKey(existing) === incomingKey);
+    const current5 = readHistory();
+    const previous = current5.find((existing) => historyDedupeKey(existing) === incomingKey);
     const winner = previous && watchedAtMs(previous) > watchedAtMs(sanitized) ? {
       ...previous,
       posterUrl: previous.posterUrl ?? sanitized.posterUrl ?? null,
       backdropUrl: previous.backdropUrl ?? sanitized.backdropUrl ?? null
     } : sanitized;
-    const filtered = current3.filter((existing) => historyDedupeKey(existing) !== incomingKey);
+    const filtered = current5.filter((existing) => historyDedupeKey(existing) !== incomingKey);
     const next = sortByWatchedAtDesc([winner, ...filtered]).slice(0, HISTORY_MAX);
     writeHistory(next);
   }
@@ -19540,9 +19568,9 @@
     const sanitizedEntry = sanitizeEntry(entry);
     const before = read6();
     const list = sortByWatchedAtDesc(dedupeProgressEntries([sanitizedEntry, ...before])).slice(0, MAX);
-    setScopedStorageItem(KEY11, JSON.stringify(list));
+    setScopedStorageItem(KEY12, JSON.stringify(list));
     deleteFramesForDropped(before, list);
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT11));
     appendHistoryEntry(sanitizedEntry);
     reportLibraryProgress(sanitizedEntry);
   }
@@ -19555,11 +19583,11 @@
       const entryLookupKey = entryKey(entry.id, entry.season, entry.episode);
       return entryLookupKey !== key && entryLookupKey !== prefixedMovieKey && entryLookupKey !== prefixedTvKey;
     });
-    setScopedStorageItem(KEY11, JSON.stringify(list));
+    setScopedStorageItem(KEY12, JSON.stringify(list));
     deleteFramesForDropped(before, list);
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT10));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT11));
   }
-  var EVENT10, KEY11, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
+  var EVENT11, KEY12, MAX, HISTORY_KEY, HISTORY_EVENT, HISTORY_MAX;
   var init_video_progress = __esm({
     "lib/video-progress.ts"() {
       init_progress();
@@ -19567,17 +19595,17 @@
       init_continue_frames();
       init_watched_episodes();
       init_playback_availability();
-      EVENT10 = "lumio-stream-progress-changed";
+      EVENT11 = "lumio-stream-progress-changed";
       if (typeof window !== "undefined") {
         void Promise.resolve().then(() => (init_plugin_registry(), plugin_registry_exports)).then(({ subscribePluginRegistry: subscribePluginRegistry2 }) => {
           subscribePluginRegistry2(() => {
-            window.dispatchEvent(new CustomEvent(EVENT10));
+            window.dispatchEvent(new CustomEvent(EVENT11));
             window.dispatchEvent(new CustomEvent(HISTORY_EVENT));
           });
         }).catch(() => {
         });
       }
-      KEY11 = "stream_progress_list";
+      KEY12 = "stream_progress_list";
       MAX = 20;
       HISTORY_KEY = "stream_history_list";
       HISTORY_EVENT = "lumio-stream-history-changed";
@@ -20108,7 +20136,7 @@
     const d = DEFAULT_BARCODE_SETTINGS;
     let raw = {};
     try {
-      const stored = getScopedStorageItem(KEY12);
+      const stored = getScopedStorageItem(KEY13);
       if (stored) raw = JSON.parse(stored) ?? {};
     } catch {
       raw = {};
@@ -20130,7 +20158,7 @@
     };
   }
   function setBarcodeSettings(patch) {
-    setScopedStorageItem(KEY12, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
+    setScopedStorageItem(KEY13, JSON.stringify({ ...getBarcodeSettings(), ...patch, [SHELF_MIGRATED]: true, [ROUGH_MIGRATED]: true }));
     if (typeof window !== "undefined") window.dispatchEvent(new Event(BARCODE_SETTINGS_CHANGED_EVENT));
   }
   function onBarcodeSettingsChanged(listener) {
@@ -20143,11 +20171,11 @@
       window.removeEventListener("lumio-profile-changed", listener);
     };
   }
-  var KEY12, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
+  var KEY13, BARCODE_SETTINGS_CHANGED_EVENT, DEFAULT_BARCODE_SETTINGS, COLUMNS, UNSEEN, VIEWS, TEXTURES, SHELF_MIGRATED, ROUGH_MIGRATED;
   var init_barcode_settings = __esm({
     "lib/barcode/barcode-settings.ts"() {
       init_profile_storage_shim();
-      KEY12 = "barcode_settings_v1";
+      KEY13 = "barcode_settings_v1";
       BARCODE_SETTINGS_CHANGED_EVENT = "lumio-barcode-settings-changed";
       DEFAULT_BARCODE_SETTINGS = {
         enabled: true,
@@ -20371,9 +20399,9 @@
   }
   function recordColumn(meta, columns, i, color) {
     const now2 = (/* @__PURE__ */ new Date()).toISOString();
-    const current3 = items.get(meta.id) ?? createBarcode(meta, columns, now2);
-    const next = withColumn(current3, i, color, now2);
-    if (next === current3 && items.has(meta.id)) return;
+    const current5 = items.get(meta.id) ?? createBarcode(meta, columns, now2);
+    const next = withColumn(current5, i, color, now2);
+    if (next === current5 && items.has(meta.id)) return;
     items.set(meta.id, next);
     dirty.add(meta.id);
     schedule2(meta.id);
@@ -20897,8 +20925,8 @@
     const pending5 = inflight4.get(b.id);
     if (pending5) return pending5;
     const task = chain.then(async () => {
-      const current3 = getBarcode(b.id);
-      if (current3 && current3.meta !== void 0) return current3.meta;
+      const current5 = getBarcode(b.id);
+      if (current5 && current5.meta !== void 0) return current5.meta;
       const meta = await fetchPosterMeta(b.tmdbId);
       if (meta) await setBarcodeMeta(b.id, meta);
       await new Promise((resolve) => setTimeout(resolve, GAP_MS));
@@ -20926,10 +20954,10 @@
 
   // lib/barcode/barcode-player-status.ts
   function playerBarcodeState(input) {
-    const { id, capable, enabled, showStrip, scopeOk, playing, hasBarcode } = input;
+    const { id, capable, enabled, showStrip, scopeOk, playing: playing2, hasBarcode } = input;
     if (!id || !scopeOk) return { id, recording: false, status: null, showStrip: false, stripToggle: false };
     const recording = capable && enabled;
-    const status = !capable ? null : !enabled ? "off" : playing ? "recording" : "paused";
+    const status = !capable ? null : !enabled ? "off" : playing2 ? "recording" : "paused";
     return { id, recording, status, showStrip: showStrip && (recording || hasBarcode), stripToggle: recording || hasBarcode };
   }
   var init_barcode_player_status = __esm({
@@ -21246,22 +21274,22 @@
   function onMediaKey(listener) {
     if (typeof window === "undefined") return () => {
     };
-    const handler = (event) => {
-      const detail = event.detail;
+    const handler = (event2) => {
+      const detail = event2.detail;
       if (detail?.action) listener(detail.action);
     };
     listeners4 += 1;
-    window.addEventListener(EVENT11, handler);
+    window.addEventListener(EVENT12, handler);
     return () => {
       listeners4 -= 1;
-      window.removeEventListener(EVENT11, handler);
+      window.removeEventListener(EVENT12, handler);
     };
   }
-  var EVENT11, listeners4;
+  var EVENT12, listeners4;
   var init_android_media_keys = __esm({
     "lib/android-media-keys.ts"() {
       "use client";
-      EVENT11 = "lumio-media-key";
+      EVENT12 = "lumio-media-key";
       listeners4 = 0;
     }
   });
@@ -21369,14 +21397,14 @@
       pulse: opts?.pulse === true
     };
   }
-  function trackerEventKey(event) {
-    if (!event.tmdbId && !event.imdbId) return null;
-    if (event.mediaType === "episode" && (event.season == null || event.episode == null)) return null;
-    return `${event.action}${event.pulse ? "~" : ""}:${event.tmdbId ?? event.imdbId}:${event.season ?? ""}:${event.episode ?? ""}:${Math.round(event.progress)}`;
+  function trackerEventKey(event2) {
+    if (!event2.tmdbId && !event2.imdbId) return null;
+    if (event2.mediaType === "episode" && (event2.season == null || event2.episode == null)) return null;
+    return `${event2.action}${event2.pulse ? "~" : ""}:${event2.tmdbId ?? event2.imdbId}:${event2.season ?? ""}:${event2.episode ?? ""}:${Math.round(event2.progress)}`;
   }
   async function scrobbleAll(action, identity, progressPercent, opts) {
-    const event = buildTrackerEvent(action, identity, progressPercent, opts);
-    const key = trackerEventKey(event);
+    const event2 = buildTrackerEvent(action, identity, progressPercent, opts);
+    const key = trackerEventKey(event2);
     const now2 = Date.now();
     const duplicate = key !== null && key === lastTrackerKey && now2 - lastTrackerAt < DUPLICATE_WINDOW_MS2;
     if (key !== null && !duplicate) {
@@ -21388,7 +21416,7 @@
       scrobble(action, identity, progressPercent),
       ...active4.map(async (tracker) => {
         try {
-          await tracker.scrobble?.(event);
+          await tracker.scrobble?.(event2);
         } catch (error) {
           console.warn(`[scrobble] tracker ${tracker.id} kastade`, error);
         }
@@ -21412,7 +21440,7 @@
   function getVideoTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY13);
+      const raw = getScopedStorageItem(KEY14);
       if (!raw) return { ...DEFAULT_TUNING };
       const parsed = JSON.parse(raw);
       const clamp4 = (v, lo, hi, dflt) => {
@@ -21431,14 +21459,14 @@
     }
   }
   function setVideoTuning(tuning) {
-    setScopedStorageItem(KEY13, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT12));
+    setScopedStorageItem(KEY14, JSON.stringify(tuning));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
   }
   function onVideoTuningChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT12, listener);
-    return () => window.removeEventListener(EVENT12, listener);
+    window.addEventListener(EVENT13, listener);
+    return () => window.removeEventListener(EVENT13, listener);
   }
   function getRenderTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_RENDER_TUNING };
@@ -21461,7 +21489,7 @@
   }
   function setRenderTuning(tuning) {
     setScopedStorageItem(RENDER_KEY, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT12));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
   }
   function renderTuningProperties(t, isNetworkStream = false) {
     const props = [
@@ -21497,7 +21525,7 @@
     const mul = (v) => (1 + v / 100).toFixed(3);
     return `brightness(${mul(t.brightness)}) contrast(${mul(t.contrast)}) saturate(${mul(t.saturation)})`;
   }
-  var DEFAULT_TUNING, TUNING_PRESETS, KEY13, EVENT12, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
+  var DEFAULT_TUNING, TUNING_PRESETS, KEY14, EVENT13, TONE_MAPPINGS, DEFAULT_RENDER_TUNING, RENDER_KEY;
   var init_video_tuning = __esm({
     "lib/video-tuning.ts"() {
       "use client";
@@ -21510,8 +21538,8 @@
         cinema: { labelKey: "vtPresetCinema", patch: { brightness: -4, gamma: -6, saturation: -5 } },
         sharp: { labelKey: "vtPresetSharp", patch: { sharpen: 0.6, saturation: 8 } }
       };
-      KEY13 = "video_tuning";
-      EVENT12 = "lumio-video-tuning-changed";
+      KEY14 = "video_tuning";
+      EVENT13 = "lumio-video-tuning-changed";
       TONE_MAPPINGS = ["auto", "hable", "mobius", "reinhard", "bt.2390"];
       DEFAULT_RENDER_TUNING = {
         toneMapping: "auto",
@@ -21530,7 +21558,7 @@
   function getAudioTuning() {
     if (typeof window === "undefined") return { ...DEFAULT_AUDIO_TUNING };
     try {
-      const raw = getScopedStorageItem(KEY14);
+      const raw = getScopedStorageItem(KEY15);
       if (!raw) return { ...DEFAULT_AUDIO_TUNING };
       const parsed = JSON.parse(raw);
       return {
@@ -21544,14 +21572,14 @@
     }
   }
   function setAudioTuning(tuning) {
-    setScopedStorageItem(KEY14, JSON.stringify(tuning));
-    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT13));
+    setScopedStorageItem(KEY15, JSON.stringify(tuning));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVENT14));
   }
   function onAudioTuningChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT13, listener);
-    return () => window.removeEventListener(EVENT13, listener);
+    window.addEventListener(EVENT14, listener);
+    return () => window.removeEventListener(EVENT14, listener);
   }
   function audioTuningFilters(t) {
     const filters = [];
@@ -21560,7 +21588,7 @@
     if (t.normalize) filters.push("lavfi=[dynaudnorm=f=250:g=15]");
     return filters;
   }
-  var DEFAULT_AUDIO_TUNING, KEY14, EVENT13;
+  var DEFAULT_AUDIO_TUNING, KEY15, EVENT14;
   var init_audio_tuning = __esm({
     "lib/audio-tuning.ts"() {
       "use client";
@@ -21571,8 +21599,8 @@
         voiceClarity: false,
         downmixStereo: false
       };
-      KEY14 = "audio_tuning";
-      EVENT13 = "lumio-audio-tuning-changed";
+      KEY15 = "audio_tuning";
+      EVENT14 = "lumio-audio-tuning-changed";
     }
   });
 
@@ -23616,7 +23644,7 @@
           borderLeft: "1px solid rgba(255,255,255,0.07)",
           boxShadow: "-20px 0 60px rgba(0,0,0,0.5)"
         },
-        onClick: (event) => event.stopPropagation(),
+        onClick: (event2) => event2.stopPropagation(),
         ...isTv ? { "data-panel-root": "" } : {},
         children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top),var(--android-inset-top,0px))]", children: [
@@ -23730,7 +23758,7 @@
           borderLeft: "1px solid rgba(255,255,255,0.07)",
           boxShadow: "-20px 0 60px rgba(0,0,0,0.5)"
         },
-        onClick: (event) => event.stopPropagation(),
+        onClick: (event2) => event2.stopPropagation(),
         ...isTv ? { "data-panel-root": "" } : {},
         children: [
           /* @__PURE__ */ jsxs("div", { className: "flex flex-shrink-0 items-center justify-between border-b border-white/[0.07] px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top),var(--android-inset-top,0px))]", children: [
@@ -23907,7 +23935,7 @@
     const format = `${t.codec.toUpperCase()}${layout}`.trim();
     return { label, format: format || void 0 };
   }
-  function positionJumped(last2, pos, now2, playing) {
+  function positionJumped(last2, pos, now2, playing2) {
     if (!last2) return false;
     const expected = last2.playing ? last2.pos + Math.max(0, now2 - last2.at) / 1e3 : last2.pos;
     return Math.abs(pos - expected) > 2;
@@ -24023,18 +24051,18 @@
       });
     }, []);
     const wasPlayingRef = useRef(false);
-    const { playing, armed } = options;
+    const { playing: playing2, armed } = options;
     useEffect(() => {
       if (!armed) {
         wasPlayingRef.current = false;
         return;
       }
-      if (wasPlayingRef.current && !playing) captureNow();
-      wasPlayingRef.current = playing;
-      if (!playing) return;
+      if (wasPlayingRef.current && !playing2) captureNow();
+      wasPlayingRef.current = playing2;
+      if (!playing2) return;
       const interval = window.setInterval(captureNow, CONTINUE_FRAME_PERIOD_MS);
       return () => window.clearInterval(interval);
-    }, [playing, armed, captureNow]);
+    }, [playing2, armed, captureNow]);
     return captureNow;
   }
   var CONTINUE_FRAME_MIN_GAP_MS, CONTINUE_FRAME_PERIOD_MS, CONTINUE_FRAME_PUSH_DELAY_MS;
@@ -24093,7 +24121,7 @@
   function readOverrides() {
     if (typeof window === "undefined") return {};
     try {
-      const raw = getScopedStorageItem(KEY15);
+      const raw = getScopedStorageItem(KEY16);
       if (!raw) return {};
       const parsed = JSON.parse(raw);
       return parsed && typeof parsed === "object" ? parsed : {};
@@ -24122,11 +24150,11 @@
   function hasCommandModifier(e) {
     return e.metaKey || e.ctrlKey || e.altKey;
   }
-  var KEY15, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
+  var KEY16, SHORTCUT_COMMANDS, SUBTITLE_DELAY_STEP_SECONDS, DEFAULTS, NON_TEXT_INPUT_TYPES;
   var init_keyboard_shortcuts = __esm({
     "lib/keyboard-shortcuts.ts"() {
       init_profile_storage_shim();
-      KEY15 = "keyboard_shortcuts";
+      KEY16 = "keyboard_shortcuts";
       SHORTCUT_COMMANDS = [
         { id: "playPause", category: "player", defaultKey: " ", labelKey: "shortcutsPlayPause" },
         { id: "seekBack", category: "player", defaultKey: "ArrowLeft", labelKey: "shortcutsSeekBackward" },
@@ -24153,8 +24181,8 @@
   // lib/player-reveal-hold.ts
   function state() {
     const g = globalThis;
-    if (!g[KEY16]) g[KEY16] = { holders: 0, ready: false, userMuted: null };
-    return g[KEY16];
+    if (!g[KEY17]) g[KEY17] = { holders: 0, ready: false, userMuted: null };
+    return g[KEY17];
   }
   function isPlayerRevealHeld() {
     return state().holders > 0;
@@ -24162,16 +24190,16 @@
   function markPlayerReadyToReveal() {
     if (state().holders > 0) state().ready = true;
   }
-  function captureUserMutedOnce(current3) {
+  function captureUserMutedOnce(current5) {
     const s = state();
-    if (s.userMuted === null) s.userMuted = current3;
+    if (s.userMuted === null) s.userMuted = current5;
     return s.userMuted;
   }
-  var CINEMA_REVEAL_HOLD_MAX_MS, KEY16;
+  var CINEMA_REVEAL_HOLD_MAX_MS, KEY17;
   var init_player_reveal_hold = __esm({
     "lib/player-reveal-hold.ts"() {
       CINEMA_REVEAL_HOLD_MAX_MS = 20 * 6e4;
-      KEY16 = "__lumioRevealHold";
+      KEY17 = "__lumioRevealHold";
     }
   });
 
@@ -24245,7 +24273,7 @@
       onInteract();
     }, [onInteract]);
     const count = recommendations.length;
-    const current3 = recommendations[Math.min(index, Math.max(0, count - 1))] ?? null;
+    const current5 = recommendations[Math.min(index, Math.max(0, count - 1))] ?? null;
     const step = useCallback((direction) => {
       markInteracted();
       setIndex((value) => {
@@ -24254,14 +24282,14 @@
       });
     }, [count, markInteracted]);
     const swipeStartRef = useRef(null);
-    const onTouchStart = useCallback((event) => {
-      const touch = event.touches[0];
+    const onTouchStart = useCallback((event2) => {
+      const touch = event2.touches[0];
       swipeStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
     }, []);
-    const onTouchEnd = useCallback((event) => {
+    const onTouchEnd = useCallback((event2) => {
       const start2 = swipeStartRef.current;
       swipeStartRef.current = null;
-      const touch = event.changedTouches[0];
+      const touch = event2.changedTouches[0];
       if (!start2 || !touch) return;
       const dx = touch.clientX - start2.x;
       const dy = touch.clientY - start2.y;
@@ -24269,28 +24297,28 @@
       step(dx < 0 ? 1 : -1);
     }, [step]);
     useEffect(() => {
-      const onKey = (event) => {
-        if (event.key === "ArrowLeft") {
+      const onKey = (event2) => {
+        if (event2.key === "ArrowLeft") {
           step(-1);
-          event.preventDefault();
-        } else if (event.key === "ArrowRight") {
+          event2.preventDefault();
+        } else if (event2.key === "ArrowRight") {
           step(1);
-          event.preventDefault();
+          event2.preventDefault();
         }
       };
       window.addEventListener("keydown", onKey);
       return () => window.removeEventListener("keydown", onKey);
     }, [step]);
     const metaParts = useMemo(() => {
-      if (!current3) return [];
+      if (!current5) return [];
       const parts2 = [];
-      const genres = current3.item.genres?.slice(0, 3) ?? [];
+      const genres = current5.item.genres?.slice(0, 3) ?? [];
       if (genres.length > 0) parts2.push(genres.join(" / "));
-      if (current3.item.year) parts2.push(String(current3.item.year));
+      if (current5.item.year) parts2.push(String(current5.item.year));
       return parts2;
-    }, [current3]);
-    if (!current3) return null;
-    const backdrop = current3.item.backdropUrl ?? current3.item.posterUrl ?? null;
+    }, [current5]);
+    if (!current5) return null;
+    const backdrop = current5.item.backdropUrl ?? current5.item.posterUrl ?? null;
     return /* @__PURE__ */ jsxs(
       "div",
       {
@@ -24353,29 +24381,29 @@
           ] }, panelIndex)),
           /* @__PURE__ */ jsx("div", { className: "pointer-events-none absolute inset-y-0 left-0 w-[80%] bg-[linear-gradient(to_right,rgb(var(--base-950))_0%,rgb(var(--base-950)/0.94)_38%,rgb(var(--base-950)/0)_100%)]" }),
           /* @__PURE__ */ jsxs("div", { className: "absolute inset-0 flex max-w-[58%] flex-col justify-center gap-[clamp(0.4rem,1.5vh,1rem)] px-[clamp(1rem,4vw,3.5rem)] py-[clamp(0.75rem,3vh,2rem)]", children: [
-            current3.logoUrl && !failedLogos.has(current3.logoUrl) ? /* @__PURE__ */ jsx(
+            current5.logoUrl && !failedLogos.has(current5.logoUrl) ? /* @__PURE__ */ jsx(
               "img",
               {
-                src: current3.logoUrl,
-                alt: current3.heading,
+                src: current5.logoUrl,
+                alt: current5.heading,
                 className: "max-h-[clamp(2.25rem,10vh,6rem)] w-auto max-w-[min(100%,26rem)] self-start object-contain object-left drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]",
-                onError: () => setFailedLogos((prev) => new Set(prev).add(current3.logoUrl))
+                onError: () => setFailedLogos((prev) => new Set(prev).add(current5.logoUrl))
               }
-            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current3.heading }),
-            (metaParts.length > 0 || current3.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
+            ) : /* @__PURE__ */ jsx("h2", { className: "font-display text-[clamp(1.35rem,5.2vh,3rem)] leading-none text-slate-50 drop-shadow-[0_3px_20px_rgba(0,0,0,0.55)]", children: current5.heading }),
+            (metaParts.length > 0 || current5.item.ratings?.imdb) && /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-x-3 gap-y-1 text-[clamp(0.75rem,1.8vh,1rem)] text-slate-200/80", children: [
               metaParts.map((part, partIndex) => /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
                 partIndex > 0 && /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
                 /* @__PURE__ */ jsx("span", { children: part })
               ] }, part)),
-              current3.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
+              current5.item.ratings?.imdb && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-3", children: [
                 /* @__PURE__ */ jsx("span", { "aria-hidden": true, className: "text-white/25", children: "|" }),
                 /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1.5", children: [
                   /* @__PURE__ */ jsx("span", { className: "rounded bg-[#f5c518] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-black", children: "IMDb" }),
-                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current3.item.ratings.imdb })
+                  /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: current5.item.ratings.imdb })
                 ] })
               ] })
             ] }),
-            current3.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current3.item.overview }),
+            current5.item.overview && /* @__PURE__ */ jsx("p", { className: "max-w-[46ch] text-[clamp(0.75rem,1.9vh,1rem)] leading-relaxed text-slate-300/85 line-clamp-3 [@media(max-height:420px)]:line-clamp-2", children: current5.item.overview }),
             /* @__PURE__ */ jsxs("div", { className: "mt-1 flex flex-wrap items-center gap-3", children: [
               /* @__PURE__ */ jsxs(
                 "button",
@@ -24385,12 +24413,12 @@
                   "data-init": "",
                   onClick: () => {
                     markInteracted();
-                    current3.onPrimary();
+                    current5.onPrimary();
                   },
                   className: "inline-flex h-10 items-center gap-2 rounded-full bg-accent-500 px-6 text-sm font-semibold text-white transition hover:bg-accent-400",
                   children: [
                     /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }),
-                    current3.primaryLabel
+                    current5.primaryLabel
                   ]
                 }
               ),
@@ -24685,12 +24713,12 @@
   }
   function getSavedSubtitleDelayEntry(mediaKey, season, episode) {
     const store2 = readStore();
-    const pick2 = (entry) => entry && Number.isFinite(entry.d) ? { delay: entry.d, userSet: entry.u === 1 } : null;
+    const pick3 = (entry) => entry && Number.isFinite(entry.d) ? { delay: entry.d, userSet: entry.u === 1 } : null;
     if (season != null && episode != null) {
-      const exact = pick2(store2[`${mediaKey}:s${season}e${episode}`]);
+      const exact = pick3(store2[`${mediaKey}:s${season}e${episode}`]);
       if (exact) return exact;
     }
-    return pick2(store2[mediaKey]);
+    return pick3(store2[mediaKey]);
   }
   function saveSubtitleDelay(mediaKey, season, episode, delay) {
     const store2 = readStore();
@@ -24821,8 +24849,8 @@
     return `${sign}${(abs / 1e3).toFixed(1).replace(".", ",")} s`;
   }
   function createSyncGuard() {
-    let current3 = 0;
-    return { begin: () => ++current3, isCurrent: (token) => token === current3 };
+    let current5 = 0;
+    return { begin: () => ++current5, isCurrent: (token) => token === current5 };
   }
   function playedDelta(last2, now2) {
     const d = now2 - last2;
@@ -24940,8 +24968,8 @@ ${effectiveName(url, id)}`;
   function inheritedDelay(entry) {
     return entry && !entry.userSet ? entry.delay : null;
   }
-  function clearsInheritedDelay(inherited, current3) {
-    return inherited !== null && inherited !== 0 && current3 === inherited;
+  function clearsInheritedDelay(inherited, current5) {
+    return inherited !== null && inherited !== 0 && current5 === inherited;
   }
   function persistAfterRestore(pending5, subDelay) {
     if (pending5 === null) return { skip: false, pending: null };
@@ -25090,17 +25118,17 @@ ${effectiveName(url, id)}`;
       const controller = new AbortController();
       abortRef.current = controller;
       const token = guardRef.current.begin();
-      const current3 = () => guardRef.current.isCurrent(token) && !controller.signal.aborted;
-      const valid = () => isRunValid({ current: current3(), userBlocked: userBlocked(), enabled: getSubtitleAutoSync(), optedOut: isAutoSyncOptedOut(key, sel.id) });
+      const current5 = () => guardRef.current.isCurrent(token) && !controller.signal.aborted;
+      const valid = () => isRunValid({ current: current5(), userBlocked: userBlocked(), enabled: getSubtitleAutoSync(), optedOut: isAutoSyncOptedOut(key, sel.id) });
       inFlightRef.current = true;
       let dropLogged = false;
       const drop = () => {
         if (!dropLogged) {
           dropLogged = true;
-          const why = !current3() ? "byte/avbrott" : userBlocked() ? "anv\xE4ndarens f\xF6rdr\xF6jning" : !getSubtitleAutoSync() ? "inst\xE4llningen" : "\xE5ngrad";
+          const why = !current5() ? "byte/avbrott" : userBlocked() ? "anv\xE4ndarens f\xF6rdr\xF6jning" : !getSubtitleAutoSync() ? "inst\xE4llningen" : "\xE5ngrad";
           logSubsyncClient(`${CLIENT_PREFIX} k\xF6rning sl\xE4ppt (${why}) fil=${file} undertext=${subLabel(sel.id)}`);
         }
-        if (current3() && inFlightRef.current) {
+        if (current5() && inFlightRef.current) {
           inFlightRef.current = false;
           a.setStatus({ type: "idle" });
         }
@@ -25190,7 +25218,7 @@ ${effectiveName(url, id)}`;
             waitPlayed,
             onResult: async (r) => {
               logSubsyncClient(describeResult(r, attempt));
-              if (!current3()) return;
+              if (!current5()) return;
               markIfFinal(r);
               if (r.status === "reference_pending") {
                 if (applied === null && valid()) a.setStatus({ type: "analyzing", message: a.t(PENDING_MESSAGE_KEY) });
@@ -25229,13 +25257,13 @@ ${effectiveName(url, id)}`;
               }
             }
           });
-          if (!last2 || !current3()) return;
+          if (!last2 || !current5()) return;
           if (last2.status === "ambiguous" && last2.jobId) {
             if (!await waitPlayed(AUDIO_WAIT_PLAYED_SECONDS)) return;
             logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file} undertext=${subLabel(sel.id)}`);
             const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller.signal);
             logSubsyncClient(describeResult(v, "ljud"));
-            if (!current3()) return;
+            if (!current5()) return;
             markIfFinal(v);
             if (await applyResult(v, false)) return;
             if (!valid()) {
@@ -25775,8 +25803,8 @@ ${effectiveName(url, id)}`;
         return normalize({ ...state2, ...moved, activeHandle: action.handle, scrubbing: true }, other);
       }
       case "nudge": {
-        const current3 = action.handle === "in" ? state2.inSec : state2.outSec;
-        return clipReducer(state2, { type: "setHandle", handle: action.handle, sec: current3 + action.delta });
+        const current5 = action.handle === "in" ? state2.inSec : state2.outSec;
+        return clipReducer(state2, { type: "setHandle", handle: action.handle, sec: current5 + action.delta });
       }
       case "setLength": {
         const len = Math.min(action.sec, maxLengthFor(state2.format));
@@ -25843,9 +25871,9 @@ ${effectiveName(url, id)}`;
       "input",
       {
         value: state2.title,
-        onChange: (event) => dispatch({ type: "setTitle", title: event.target.value }),
-        onKeyDown: (event) => {
-          if (event.key !== "Escape") event.stopPropagation();
+        onChange: (event2) => dispatch({ type: "setTitle", title: event2.target.value }),
+        onKeyDown: (event2) => {
+          if (event2.key !== "Escape") event2.stopPropagation();
         },
         className: "rounded-lg border border-white/[0.07] bg-white/[0.04] px-3 py-[9px] text-sm text-slate-100 outline-none focus:border-[rgb(var(--player-accent)/0.45)]"
       }
@@ -25879,7 +25907,7 @@ ${effectiveName(url, id)}`;
         "data-clip-panel": true,
         className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)] backdrop-blur-[12px]",
         style: { background: "rgb(var(--base-950) / 0.96)" },
-        onClick: (event) => event.stopPropagation(),
+        onClick: (event2) => event2.stopPropagation(),
         children: [
           /* @__PURE__ */ jsx(ClipPanelHeader, { label: t("clipNew"), onClose: p.onClose, t }),
           /* @__PURE__ */ jsxs("div", { className: "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-3.5", children: [
@@ -25938,12 +25966,12 @@ ${effectiveName(url, id)}`;
       if (!rect || rect.width === 0) return start2;
       return start2 + (clientX - rect.left) / rect.width * span;
     };
-    const startDrag = (handle) => (event) => {
-      event.preventDefault();
-      event.stopPropagation();
+    const startDrag = (handle) => (event2) => {
+      event2.preventDefault();
+      event2.stopPropagation();
       lastHandle.current = handle;
-      const target2 = event.currentTarget;
-      target2.setPointerCapture(event.pointerId);
+      const target2 = event2.currentTarget;
+      target2.setPointerCapture(event2.pointerId);
       const move = (ev) => dispatch({ type: "setHandle", handle, sec: secAt(ev.clientX) });
       const up = () => {
         target2.removeEventListener("pointermove", move);
@@ -25978,11 +26006,11 @@ ${effectiveName(url, id)}`;
         ref: trackRef,
         className: `vp-seek-track relative flex-1 rounded-full bg-white/[0.18] ${heightClass}`,
         style: { touchAction: "none" },
-        onWheel: (event) => {
+        onWheel: (event2) => {
           if (touch) return;
-          event.preventDefault();
-          const step = event.shiftKey ? 1 / 24 : 1;
-          dispatch({ type: "nudge", handle: lastHandle.current, delta: event.deltaY < 0 ? step : -step });
+          event2.preventDefault();
+          const step = event2.shiftKey ? 1 / 24 : 1;
+          dispatch({ type: "nudge", handle: lastHandle.current, delta: event2.deltaY < 0 ? step : -step });
         },
         children: [
           /* @__PURE__ */ jsx("div", { className: "absolute inset-y-0 left-0 rounded-full bg-[rgb(var(--player-accent))] opacity-35", style: { width: `${percent(position)}%` } }),
@@ -26076,7 +26104,7 @@ ${effectiveName(url, id)}`;
         "data-clip-panel": true,
         className: "absolute inset-y-0 right-0 z-40 flex w-[340px] flex-col border-l border-white/[0.07] shadow-[-20px_0_60px_rgba(0,0,0,0.5)] backdrop-blur-[12px]",
         style: { background: "rgb(var(--base-950) / 0.96)", paddingRight: "env(safe-area-inset-right)" },
-        onClick: (event) => event.stopPropagation(),
+        onClick: (event2) => event2.stopPropagation(),
         children: [
           /* @__PURE__ */ jsx(
             ClipPanelHeader,
@@ -26123,7 +26151,7 @@ ${effectiveName(url, id)}`;
         "data-clip-panel": true,
         className: "fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-xl border-t border-white/10 bg-base-800/95 shadow-[0_-20px_60px_rgba(0,0,0,0.6)]",
         style: { top: p.topOffset },
-        onClick: (event) => event.stopPropagation(),
+        onClick: (event2) => event2.stopPropagation(),
         children: [
           /* @__PURE__ */ jsx("div", { "aria-hidden": true, className: "mx-auto mt-2 h-1 w-9 flex-none rounded-full bg-white/25" }),
           /* @__PURE__ */ jsx(ClipPanelHeader, { label: t("clipNew"), onClose: p.onClose, t }),
@@ -27181,7 +27209,7 @@ ${effectiveName(url, id)}`;
   }
   function read9() {
     try {
-      const raw = getScopedStorageItem(KEY17);
+      const raw = getScopedStorageItem(KEY18);
       const parsed = raw ? JSON.parse(raw) : null;
       return parsed && typeof parsed === "object" ? parsed : {};
     } catch {
@@ -27195,10 +27223,10 @@ ${effectiveName(url, id)}`;
       for (const nyckel of nycklar.slice(0, nycklar.length - MAX_TITLES)) delete store2[nyckel];
     }
     try {
-      setScopedStorageItem(KEY17, JSON.stringify(store2));
+      setScopedStorageItem(KEY18, JSON.stringify(store2));
     } catch {
     }
-    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT14));
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(EVENT15));
   }
   function getMoments(titleKey) {
     if (!titleKey) return [];
@@ -27233,15 +27261,15 @@ ${effectiveName(url, id)}`;
   function onMomentsChanged(listener) {
     if (typeof window === "undefined") return () => {
     };
-    window.addEventListener(EVENT14, listener);
-    return () => window.removeEventListener(EVENT14, listener);
+    window.addEventListener(EVENT15, listener);
+    return () => window.removeEventListener(EVENT15, listener);
   }
-  var KEY17, EVENT14, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
+  var KEY18, EVENT15, MOMENT_DEDUPE_SECONDS, MAX_PER_TITLE, MAX_TITLES;
   var init_player_moments = __esm({
     "lib/player-moments.ts"() {
       init_profile_storage_shim();
-      KEY17 = "player_moments_v1";
-      EVENT14 = "lumio-player-moments-changed";
+      KEY18 = "player_moments_v1";
+      EVENT15 = "lumio-player-moments-changed";
       MOMENT_DEDUPE_SECONDS = 3;
       MAX_PER_TITLE = 50;
       MAX_TITLES = 200;
@@ -27880,7 +27908,7 @@ ${cue.text}`).join("\n\n")}
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       setControlsVisible(true);
     }
-    const [playing, setPlaying] = useState(false);
+    const [playing2, setPlaying] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
     const hapticsStatus = useHapticsHostStatus();
     const hapticsActive = Boolean(hapticsStatus?.active);
@@ -27913,9 +27941,9 @@ ${cue.text}`).join("\n\n")}
     playbackSpeedRef.current = playbackSpeed;
     const openSurfaceRef = useRef(null);
     openSurfaceRef.current = openSurface;
-    const surfaceSetter = (id) => (value) => setOpenSurface((current3) => {
-      const next = typeof value === "function" ? value(current3 === id) : value;
-      return next ? id : current3 === id ? null : current3;
+    const surfaceSetter = (id) => (value) => setOpenSurface((current5) => {
+      const next = typeof value === "function" ? value(current5 === id) : value;
+      return next ? id : current5 === id ? null : current5;
     });
     const showSubMenu = openSurface === "subs";
     const setShowSubMenu = surfaceSetter("subs");
@@ -28886,7 +28914,7 @@ ${cue.text}`).join("\n\n")}
     const realTimeRef = useRef(realTime);
     realTimeRef.current = realTime;
     const totalDuration = useMpv ? mpv.duration > 0 ? mpv.duration : probedDuration ?? 0 : probedDuration ?? (isFinite(duration) && duration > 0 ? duration : 0);
-    const isPlaying = useMpv ? !mpv.paused : playing;
+    const isPlaying = useMpv ? !mpv.paused : playing2;
     const hasEndedPlayback = useMpv ? mpv.ended : hasEnded;
     const durationConfirmed = expectedDurationSeconds == null || expectedDurationSeconds <= 0 || totalDuration > 0 && !isResumeDurationMismatch(expectedDurationSeconds, totalDuration, initialTime ?? 0);
     const durationConfirmedRef = useRef(durationConfirmed);
@@ -29091,8 +29119,8 @@ ${cue.text}`).join("\n\n")}
       resetHapticsSupport();
     }, [mpv.fileLoadedToken]);
     useEffect(() => {
-      reportHapticsPlayback({ playing: hasStarted && (useMpv ? !mpv.paused : playing), firstFrame: hasStarted, title });
-    }, [hasStarted, useMpv, mpv.paused, playing, title]);
+      reportHapticsPlayback({ playing: hasStarted && (useMpv ? !mpv.paused : playing2), firstFrame: hasStarted, title });
+    }, [hasStarted, useMpv, mpv.paused, playing2, title]);
     useEffect(() => () => reportHapticsPlayback({ playing: false, firstFrame: false, title: null }), []);
     useEffect(() => {
       if (!useMpv || !mpv.fileLoaded) return;
@@ -29161,7 +29189,7 @@ ${cue.text}`).join("\n\n")}
         const values = await Promise.all(props.map((name) => mpvCommand2(["get_property", name]).catch(() => null)));
         if (cancelled) return;
         const [codec, hwdec, w, h, bitrate, fps, drops, cache9, acodec, arate, spd] = values;
-        const num = (v) => {
+        const num3 = (v) => {
           if (typeof v === "number") return Number.isFinite(v) ? v : null;
           if (typeof v === "string") {
             const parsed = Number.parseFloat(v.trim());
@@ -29171,12 +29199,12 @@ ${cue.text}`).join("\n\n")}
         };
         const heap = performance.memory?.usedJSHeapSize;
         const lines = [
-          `Video  ${String(codec ?? "\u2013")}  ${num(w) ?? "?"}\xD7${num(h) ?? "?"}  ${num(fps) != null ? `${num(fps).toFixed(1)} fps` : ""}`,
+          `Video  ${String(codec ?? "\u2013")}  ${num3(w) ?? "?"}\xD7${num3(h) ?? "?"}  ${num3(fps) != null ? `${num3(fps).toFixed(1)} fps` : ""}`,
           `Hwdec  ${String(hwdec ?? "no")}`,
-          `Bitrate  ${num(bitrate) != null ? `${(num(bitrate) / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
-          `Drops  ${num(drops) ?? 0}   Cache  ${num(cache9) != null ? `${num(cache9).toFixed(0)} s` : "\u2013"}`,
-          `Audio  ${String(acodec ?? "\u2013")}  ${num(arate) != null ? `${num(arate)} Hz` : ""}`,
-          `Speed  ${num(spd) ?? 1}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
+          `Bitrate  ${num3(bitrate) != null ? `${(num3(bitrate) / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
+          `Drops  ${num3(drops) ?? 0}   Cache  ${num3(cache9) != null ? `${num3(cache9).toFixed(0)} s` : "\u2013"}`,
+          `Audio  ${String(acodec ?? "\u2013")}  ${num3(arate) != null ? `${num3(arate)} Hz` : ""}`,
+          `Speed  ${num3(spd) ?? 1}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
         ];
         setStatsLines(lines);
       };
@@ -29241,8 +29269,8 @@ ${cue.text}`).join("\n\n")}
     }, []);
     useEffect(() => {
       if (!showMoreMenu) return;
-      function handleOutsideClick(event) {
-        const target2 = event.target;
+      function handleOutsideClick(event2) {
+        const target2 = event2.target;
         if (moreMenuRef.current?.contains(target2) || moreTriggerRef.current?.contains(target2)) return;
         setShowMoreMenu(false);
       }
@@ -29917,8 +29945,8 @@ ${cue.text}`).join("\n\n")}
       }
       setStillWatchingCountdown(seconds);
       const interval = window.setInterval(() => {
-        setStillWatchingCountdown((current3) => {
-          if (current3 <= 1) {
+        setStillWatchingCountdown((current5) => {
+          if (current5 <= 1) {
             window.clearInterval(interval);
             window.setTimeout(() => {
               if (stillWatchingReason === "sleep") journalMarkAsleep(realTimeRef.current, sleepFiredAtRef.current);
@@ -29926,7 +29954,7 @@ ${cue.text}`).join("\n\n")}
             }, 0);
             return 0;
           }
-          return current3 - 1;
+          return current5 - 1;
         });
       }, 1e3);
       return () => window.clearInterval(interval);
@@ -29995,9 +30023,9 @@ ${cue.text}`).join("\n\n")}
         setDownloadState({ type: "downloading", jobId, progress: 0, filename: t("preparingDownload") });
         const es = new EventSource(`/api/download/progress?jobId=${jobId}`);
         downloadEsRef.current = es;
-        es.onmessage = (event) => {
+        es.onmessage = (event2) => {
           try {
-            const job = JSON.parse(event.data);
+            const job = JSON.parse(event2.data);
             if (job.status === "done") {
               es.close();
               setDownloadState({ type: "done", filename: job.filename });
@@ -31614,7 +31642,7 @@ ${cue.text}`).join("\n\n")}
     });
     useEffect(() => {
       if (embeddedSubtitleOptions.length === 0) return;
-      setSubtitleLoadError((current3) => current3 === t("vpNoSubsFound") ? null : current3);
+      setSubtitleLoadError((current5) => current5 === t("vpNoSubsFound") ? null : current5);
     }, [embeddedSubtitleOptions.length]);
     useEffect(() => {
       if (manualSubtitleOverrideRef.current) return;
@@ -31686,14 +31714,14 @@ ${cue.text}`).join("\n\n")}
       if (mpv.fileLoadedToken === lastSubReapplyTokenRef.current) return;
       lastSubReapplyTokenRef.current = mpv.fileLoadedToken;
       if (!activeSubId || activeSubId.startsWith("embedded:")) return;
-      const current3 = subtitleOptions.find((subtitle) => subtitle.id === activeSubId);
-      if (!current3) return;
-      const synced = syncedVttRef.current.get(current3.id);
+      const current5 = subtitleOptions.find((subtitle) => subtitle.id === activeSubId);
+      if (!current5) return;
+      const synced = syncedVttRef.current.get(current5.id);
       if (synced && synced.url === url) {
-        void applySyncedSubtitleRef.current?.(current3, synced.vtt);
+        void applySyncedSubtitleRef.current?.(current5, synced.vtt);
         return;
       }
-      void selectSubtitle(current3, { noAutoSync: true });
+      void selectSubtitle(current5, { noAutoSync: true });
     }, [useMpv, mpv.fileLoaded, mpv.fileLoadedToken, activeSubId, subtitleOptions]);
     const lastSecondaryReapplyTokenRef = useRef(0);
     useEffect(() => {
@@ -31701,8 +31729,8 @@ ${cue.text}`).join("\n\n")}
       if (mpv.fileLoadedToken === lastSecondaryReapplyTokenRef.current) return;
       lastSecondaryReapplyTokenRef.current = mpv.fileLoadedToken;
       if (!secondarySubId) return;
-      const current3 = subtitleOptions.find((subtitle) => subtitle.id === secondarySubId);
-      if (current3) void selectSecondarySubtitle(current3);
+      const current5 = subtitleOptions.find((subtitle) => subtitle.id === secondarySubId);
+      if (current5) void selectSecondarySubtitle(current5);
     }, [isMpvEngine, mpv.fileLoaded, mpv.fileLoadedToken, learningMode, secondarySubId, subtitleOptions]);
     const seekToAbsolute = useCallback((targetTime) => {
       setSubtitleClockOverride(Math.max(0, targetTime));
@@ -32097,7 +32125,7 @@ ${cue.text}`).join("\n\n")}
           `[ext-sub] ${file.name} bytes=${bytes.length} vtt=${payload.vtt ? payload.vtt.length : "null"} cues=${payload.vtt ? parseVtt(payload.vtt).length : 0} mpv=${useMpv}`
         )}`).catch(() => {
         });
-        setExternalSubtitles((current3) => [option, ...current3]);
+        setExternalSubtitles((current5) => [option, ...current5]);
         void selectSubtitle(option, { manual: true });
       } catch (error) {
         setSubtitleLoadError(
@@ -32203,8 +32231,8 @@ ${cue.text}`).join("\n\n")}
       v.load();
       void v.play().catch(() => {
       });
-      const availabilityHandler = (event) => {
-        const availability = event.availability;
+      const availabilityHandler = (event2) => {
+        const availability = event2.availability;
         airplayLog(`target availability -> ${availability}`);
         setAirplayTargetReady(availability === "available");
       };
@@ -32753,19 +32781,19 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plMomentsClear") })
       ] }) : null
     ] });
-    const gearOptions = (options, current3, label, pick2) => options.map((option) => /* @__PURE__ */ jsxs(
+    const gearOptions = (options, current5, label, pick3) => options.map((option) => /* @__PURE__ */ jsxs(
       "button",
       {
         type: "button",
         ...dtStation,
         onClick: () => {
-          pick2(option);
+          pick3(option);
           setGearPage("root");
         },
-        className: dtMenuRowClass(option === current3),
+        className: dtMenuRowClass(option === current5),
         children: [
           /* @__PURE__ */ jsx("span", { children: label(option) }),
-          option === current3 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
+          option === current5 && /* @__PURE__ */ jsx("span", { className: dtMenuDotClass })
         ]
       },
       String(option)
@@ -32775,16 +32803,16 @@ ${cue.text}`).join("\n\n")}
       (audioTracks.find((track) => track.index === activeAudioTrack) ?? audioTracks[0])?.language
     )?.toUpperCase() ?? "AUD";
     const [scrubPercent, setScrubPercent] = useState(null);
-    const handleSeekPointerDown = (event) => {
-      if (!totalDuration || event.button !== 0) return;
-      const element = event.currentTarget;
+    const handleSeekPointerDown = (event2) => {
+      if (!totalDuration || event2.button !== 0) return;
+      const element = event2.currentTarget;
       const percentAt = (clientX) => {
         const rect = element.getBoundingClientRect();
         if (rect.width <= 0) return 0;
         return Math.min(100, Math.max(0, (clientX - rect.left) / rect.width * 100));
       };
-      element.setPointerCapture(event.pointerId);
-      setScrubPercent(percentAt(event.clientX));
+      element.setPointerCapture(event2.pointerId);
+      setScrubPercent(percentAt(event2.clientX));
       const onMove = (moveEvent) => setScrubPercent(percentAt(moveEvent.clientX));
       const onUp = (upEvent) => {
         element.removeEventListener("pointermove", onMove);
@@ -32876,14 +32904,14 @@ ${cue.text}`).join("\n\n")}
             "aria-valuemin": 0,
             "aria-valuemax": 100,
             "aria-valuenow": Math.round((muted ? 0 : volume) * 100),
-            onClick: (event) => {
-              const rect = event.currentTarget.getBoundingClientRect();
-              applyVolume((event.clientX - rect.left) / rect.width * volumeCeiling);
+            onClick: (event2) => {
+              const rect = event2.currentTarget.getBoundingClientRect();
+              applyVolume((event2.clientX - rect.left) / rect.width * volumeCeiling);
             },
-            onKeyDown: (event) => {
-              if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-              event.preventDefault();
-              applyVolume((muted ? 0 : volume) + (event.key === "ArrowLeft" ? -0.05 : 0.05));
+            onKeyDown: (event2) => {
+              if (event2.key !== "ArrowLeft" && event2.key !== "ArrowRight") return;
+              event2.preventDefault();
+              applyVolume((muted ? 0 : volume) + (event2.key === "ArrowLeft" ? -0.05 : 0.05));
             },
             className: "relative h-1 w-[84px] flex-none cursor-pointer rounded-full bg-white/[0.18]",
             children: [
@@ -33136,19 +33164,19 @@ ${cue.text}`).join("\n\n")}
     const seekFillColorClass = seekLook.fillClass;
     const seekFillStyleClass = seekLook.overlayClass;
     const tvSeekHoldStartedAtRef = useRef(0);
-    const handleTvSeekKey = (event) => {
-      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!event.repeat) tvSeekHoldStartedAtRef.current = Date.now();
-        const held = event.repeat && Date.now() - tvSeekHoldStartedAtRef.current > 1e3;
+    const handleTvSeekKey = (event2) => {
+      if (event2.key === "ArrowLeft" || event2.key === "ArrowRight") {
+        event2.preventDefault();
+        event2.stopPropagation();
+        if (!event2.repeat) tvSeekHoldStartedAtRef.current = Date.now();
+        const held = event2.repeat && Date.now() - tvSeekHoldStartedAtRef.current > 1e3;
         const step = held ? 60 : 10;
-        seek(event.key === "ArrowLeft" ? -step : step);
+        seek(event2.key === "ArrowLeft" ? -step : step);
         return;
       }
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        event.stopPropagation();
+      if (event2.key === "Enter" || event2.key === " ") {
+        event2.preventDefault();
+        event2.stopPropagation();
         togglePlay();
       }
     };
@@ -33340,11 +33368,11 @@ ${cue.text}`).join("\n\n")}
         ...tvSeekStation,
         className: `vp-seek-track relative cursor-pointer rounded-full bg-white/[0.18] ${widthClass} ${seekHeightClass}`,
         onPointerDown: handleSeekPointerDown,
-        onWheel: (event) => {
+        onWheel: (event2) => {
           if (!desktopChrome || !totalDuration) return;
-          event.preventDefault();
-          const step = event.shiftKey ? 1 : 10;
-          seek(event.deltaY < 0 ? step : -step);
+          event2.preventDefault();
+          const step = event2.shiftKey ? 1 : 10;
+          seek(event2.deltaY < 0 ? step : -step);
         },
         style: { touchAction: "none" },
         children: [
@@ -33441,15 +33469,15 @@ ${cue.text}`).join("\n\n")}
     const clickLayerRef = useRef(null);
     const revealTapGuardRef = useRef(false);
     useEffect(() => {
-      const swallowRevealClick = (event) => {
+      const swallowRevealClick = (event2) => {
         if (!revealTapGuardRef.current) return;
         revealTapGuardRef.current = false;
         const root = playerRootRef.current;
-        const target2 = event.target;
+        const target2 = event2.target;
         if (!root || !target2 || !root.contains(target2)) return;
         if (clickLayerRef.current && target2 === clickLayerRef.current) return;
-        event.stopPropagation();
-        event.preventDefault();
+        event2.stopPropagation();
+        event2.preventDefault();
         suppressNextOverlayToggleRef.current = false;
       };
       document.addEventListener("click", swallowRevealClick, true);
@@ -33471,11 +33499,11 @@ ${cue.text}`).join("\n\n")}
       if (gestureHudTimerRef.current) window.clearTimeout(gestureHudTimerRef.current);
       setGestureHud({ kind, value, text });
     };
-    const onGesturePointerDown = (event) => {
-      if (!phoneChrome || event.pointerType === "mouse") return;
+    const onGesturePointerDown = (event2) => {
+      if (!phoneChrome || event2.pointerType === "mouse") return;
       if (gestureBlockedBySurface(openSurfaceRef.current)) return;
-      const rect = event.currentTarget.getBoundingClientRect();
-      activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      const rect = event2.currentTarget.getBoundingClientRect();
+      activePointersRef.current.set(event2.pointerId, { x: event2.clientX, y: event2.clientY });
       if (activePointersRef.current.size === 2) {
         const [a, b] = Array.from(activePointersRef.current.values());
         pinchRef.current = { startDistance: Math.hypot(a.x - b.x, a.y - b.y), handled: false };
@@ -33485,9 +33513,9 @@ ${cue.text}`).join("\n\n")}
       const tapSeconds = getDoubleTapSeconds();
       const now2 = Date.now();
       const previous = lastTapRef.current;
-      const edgeFraction = (event.clientX - rect.left) / (rect.width || 1);
+      const edgeFraction = (event2.clientX - rect.left) / (rect.width || 1);
       const nearEdge = edgeFraction < 0.3 || edgeFraction > 0.7;
-      if (tapSeconds > 0 && nearEdge && previous && now2 - previous.at < 300 && Math.abs(event.clientX - previous.x) < 40) {
+      if (tapSeconds > 0 && nearEdge && previous && now2 - previous.at < 300 && Math.abs(event2.clientX - previous.x) < 40) {
         lastTapRef.current = null;
         const direction = edgeFraction < 0.5 ? -1 : 1;
         seekToAbsolute(Math.max(0, Math.min(totalDuration || 0, realTimeRef.current + direction * tapSeconds)));
@@ -33495,7 +33523,7 @@ ${cue.text}`).join("\n\n")}
         doubleTapHandledRef.current = true;
         return;
       }
-      lastTapRef.current = { at: now2, x: event.clientX };
+      lastTapRef.current = { at: now2, x: event2.clientX };
       if (getHoldToSpeed()) {
         if (holdSpeedTimerRef.current) clearTimeout(holdSpeedTimerRef.current);
         holdSpeedTimerRef.current = setTimeout(() => {
@@ -33506,8 +33534,8 @@ ${cue.text}`).join("\n\n")}
         }, 500);
       }
       gestureRef.current = {
-        x: event.clientX,
-        y: event.clientY,
+        x: event2.clientX,
+        y: event2.clientY,
         left: rect.left,
         top: rect.top,
         closeOffset: 0,
@@ -33523,11 +33551,11 @@ ${cue.text}`).join("\n\n")}
         startTime: realTimeRef.current,
         pendingSeek: null
       };
-      event.currentTarget.setPointerCapture(event.pointerId);
+      event2.currentTarget.setPointerCapture(event2.pointerId);
     };
-    const onGesturePointerMove = (event) => {
-      if (activePointersRef.current.has(event.pointerId)) {
-        activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const onGesturePointerMove = (event2) => {
+      if (activePointersRef.current.has(event2.pointerId)) {
+        activePointersRef.current.set(event2.pointerId, { x: event2.clientX, y: event2.clientY });
       }
       const pinch = pinchRef.current;
       if (pinch && activePointersRef.current.size === 2) {
@@ -33537,8 +33565,8 @@ ${cue.text}`).join("\n\n")}
         if (!pinch.handled && (ratio > 1.25 || ratio < 0.8)) {
           pinch.handled = true;
           const modes = ASPECT_RATIO_MODES;
-          const current3 = modes.indexOf(aspectRatioMode);
-          const next2 = modes[(current3 + (ratio > 1 ? 1 : modes.length - 1)) % modes.length];
+          const current5 = modes.indexOf(aspectRatioMode);
+          const next2 = modes[(current5 + (ratio > 1 ? 1 : modes.length - 1)) % modes.length];
           setAspectRatioMode(next2);
           showGestureHud("aspect", 0, getAspectRatioLabel(next2, t));
         }
@@ -33546,8 +33574,8 @@ ${cue.text}`).join("\n\n")}
       }
       const gesture = gestureRef.current;
       if (!gesture) return;
-      const dx = event.clientX - gesture.x;
-      const dy = event.clientY - gesture.y;
+      const dx = event2.clientX - gesture.x;
+      const dy = event2.clientY - gesture.y;
       if (!gesture.axis) {
         if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
         const startedAtTop = gesture.y - gesture.top < gesture.height * 0.15;
@@ -34825,9 +34853,9 @@ ${cue.text}`).join("\n\n")}
                               type: "file",
                               accept: ".srt,.vtt,.ass,.ssa,.sub,.txt,text/vtt,text/plain,application/x-subrip",
                               className: "hidden",
-                              onChange: (event) => {
-                                const file = event.target.files?.[0];
-                                event.target.value = "";
+                              onChange: (event2) => {
+                                const file = event2.target.files?.[0];
+                                event2.target.value = "";
                                 if (file) void handleExternalSubtitleFile(file);
                               }
                             }
@@ -35470,7 +35498,7 @@ ${cue.text}`).join("\n\n")}
                         {
                           style: anchoredMenuStyle(audioDelayTriggerRef.current, 244),
                           className: "z-50 w-[244px] rounded-[1.1rem] border border-white/10 bg-base-800/95 p-3 shadow-2xl backdrop-blur-md",
-                          onClick: (event) => event.stopPropagation(),
+                          onClick: (event2) => event2.stopPropagation(),
                           children: [
                             /* @__PURE__ */ jsx("p", { className: "px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500", children: t("audioDelayTitle") }),
                             /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between gap-2", children: [
@@ -35840,7 +35868,7 @@ ${cue.text}`).join("\n\n")}
                                   type: "button",
                                   ...dtStation,
                                   "data-f": isTv ? "1" : void 0,
-                                  onClick: () => setDvColorFallbackMuted((current3) => !current3),
+                                  onClick: () => setDvColorFallbackMuted((current5) => !current5),
                                   className: dtMoreRowClass,
                                   children: [
                                     /* @__PURE__ */ jsxs("svg", { className: dtMoreIconClass, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
@@ -36404,8 +36432,8 @@ ${cue.text}`).join("\n\n")}
       normalized.push(opt);
     }
     const selectedIndex = normalized.findIndex((o) => o.value === value);
-    const current3 = selectedIndex >= 0 ? normalized[selectedIndex] : void 0;
-    const label = current3 ? current3.triggerLabel ?? current3.label : placeholder ?? String(value);
+    const current5 = selectedIndex >= 0 ? normalized[selectedIndex] : void 0;
+    const label = current5 ? current5.triggerLabel ?? current5.label : placeholder ?? String(value);
     const focusOnOpen = useRef(false);
     useEffect(() => {
       if (!open2 || !menuPos || !focusOnOpen.current) return;
@@ -37030,7 +37058,7 @@ ${cue.text}`).join("\n\n")}
   // lib/tv-keyboard-settings.ts
   function getTvKeyboardMode() {
     if (typeof window === "undefined") return DEFAULT_TV_KEYBOARD_MODE;
-    const raw = getScopedStorageItem(KEY18);
+    const raw = getScopedStorageItem(KEY19);
     return raw === "auto" || raw === "lumio" || raw === "system" ? raw : DEFAULT_TV_KEYBOARD_MODE;
   }
   function prefersSystemKeyboard(field, options) {
@@ -37039,12 +37067,12 @@ ${cue.text}`).join("\n\n")}
     if (mode === "system") return !options?.numeric;
     return field !== "short" && !options?.numeric;
   }
-  var KEY18, DEFAULT_TV_KEYBOARD_MODE;
+  var KEY19, DEFAULT_TV_KEYBOARD_MODE;
   var init_tv_keyboard_settings = __esm({
     "lib/tv-keyboard-settings.ts"() {
       "use client";
       init_profile_storage_shim();
-      KEY18 = "tv_keyboard_mode_v1";
+      KEY19 = "tv_keyboard_mode_v1";
       DEFAULT_TV_KEYBOARD_MODE = "system";
     }
   });
@@ -37070,10 +37098,10 @@ ${cue.text}`).join("\n\n")}
       {
         ref: panelRef,
         "data-panel-root": "",
-        onKeyDown: (event) => {
-          if (event.key !== "Escape" && event.key !== "Backspace") return;
-          event.preventDefault();
-          event.stopPropagation();
+        onKeyDown: (event2) => {
+          if (event2.key !== "Escape" && event2.key !== "Backspace") return;
+          event2.preventDefault();
+          event2.stopPropagation();
           onClose();
         },
         style: {
@@ -37150,28 +37178,28 @@ ${cue.text}`).join("\n\n")}
     const insert = (text) => {
       const cleaned = numeric ? text.replace(/\D/g, "") : text.replace(/\s+/g, " ");
       if (!cleaned) return;
-      setValue((current3) => clamp4(current3 + cleaned));
+      setValue((current5) => clamp4(current5 + cleaned));
     };
     useEffect(() => {
-      const onKeyDown = (event) => {
+      const onKeyDown = (event2) => {
         if (keyboardReplacement) return;
-        if (event.key === "Backspace") {
+        if (event2.key === "Backspace") {
           if (!value) return;
-          event.preventDefault();
-          event.stopPropagation();
+          event2.preventDefault();
+          event2.stopPropagation();
           setValue(value.slice(0, -1));
           return;
         }
-        if (event.metaKey || event.ctrlKey || event.altKey) return;
-        if (event.key.length !== 1) return;
-        event.preventDefault();
-        event.stopPropagation();
-        insert(event.key);
+        if (event2.metaKey || event2.ctrlKey || event2.altKey) return;
+        if (event2.key.length !== 1) return;
+        event2.preventDefault();
+        event2.stopPropagation();
+        insert(event2.key);
       };
-      const onPaste = (event) => {
-        const text = event.clipboardData?.getData("text");
+      const onPaste = (event2) => {
+        const text = event2.clipboardData?.getData("text");
         if (!text) return;
-        event.preventDefault();
+        event2.preventDefault();
         insert(text);
       };
       window.addEventListener("keydown", onKeyDown, true);
@@ -37214,14 +37242,14 @@ ${cue.text}`).join("\n\n")}
                     value,
                     maxLength,
                     placeholder,
-                    onChange: (event) => setValue(event.target.value),
-                    onKeyDown: (event) => {
-                      if (event.key === "Enter") {
+                    onChange: (event2) => setValue(event2.target.value),
+                    onKeyDown: (event2) => {
+                      if (event2.key === "Enter") {
                         onDone(value.trim());
                         onClose();
                         return;
                       }
-                      if (event.key.startsWith("Arrow")) event.stopPropagation();
+                      if (event2.key.startsWith("Arrow")) event2.stopPropagation();
                     },
                     style: {
                       minWidth: 0,
@@ -37293,9 +37321,9 @@ ${cue.text}`).join("\n\n")}
         onFocus: () => setFocused(true),
         onBlur: () => setFocused(false),
         onClick: onSelect,
-        onKeyDown: (event) => {
-          if (event.key !== "Enter" && event.key !== " ") return;
-          event.preventDefault();
+        onKeyDown: (event2) => {
+          if (event2.key !== "Enter" && event2.key !== " ") return;
+          event2.preventDefault();
           onSelect();
         },
         style: {
@@ -37483,12 +37511,12 @@ ${cue.text}`).join("\n\n")}
     const keyboardOpenRef = useRef(keyboardOpen);
     keyboardOpenRef.current = keyboardOpen;
     useEffect(() => {
-      const onKey = (event) => {
-        if (event.key !== "Escape" && event.key !== "Backspace") return;
-        const target2 = event.target;
-        if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA") && event.key === "Backspace") return;
-        event.preventDefault();
-        event.stopPropagation();
+      const onKey = (event2) => {
+        if (event2.key !== "Escape" && event2.key !== "Backspace") return;
+        const target2 = event2.target;
+        if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA") && event2.key === "Backspace") return;
+        event2.preventDefault();
+        event2.stopPropagation();
         if (keyboardOpenRef.current) {
           setKeyboardOpen(false);
           window.setTimeout(() => document.querySelector("[data-cast-search]")?.focus(), 0);
@@ -37581,29 +37609,29 @@ ${cue.text}`).join("\n\n")}
     const [stillIndex, setStillIndex] = useState(null);
     const stillLightbox = stillIndex != null ? stills[stillIndex] ?? null : null;
     const setStillLightbox = (still) => setStillIndex(still ? Math.max(0, stills.indexOf(still)) : null);
-    const stepStill = (delta) => setStillIndex((current3) => {
-      if (current3 == null || stills.length === 0) return current3;
-      return (current3 + delta + stills.length) % stills.length;
+    const stepStill = (delta) => setStillIndex((current5) => {
+      if (current5 == null || stills.length === 0) return current5;
+      return (current5 + delta + stills.length) % stills.length;
     });
     const swipeStartRef = useRef(null);
     useEffect(() => {
       if (stillIndex == null) return;
-      const onKey = (event) => {
-        if (event.key === "Escape" || event.key === "Backspace" || event.key === "GoBack" || event.key === "BrowserBack") {
-          event.stopPropagation();
-          event.preventDefault();
+      const onKey = (event2) => {
+        if (event2.key === "Escape" || event2.key === "Backspace" || event2.key === "GoBack" || event2.key === "BrowserBack") {
+          event2.stopPropagation();
+          event2.preventDefault();
           setStillIndex(null);
           return;
         }
-        if (event.key === "ArrowRight") {
-          event.stopPropagation();
-          event.preventDefault();
+        if (event2.key === "ArrowRight") {
+          event2.stopPropagation();
+          event2.preventDefault();
           stepStill(1);
           return;
         }
-        if (event.key === "ArrowLeft") {
-          event.stopPropagation();
-          event.preventDefault();
+        if (event2.key === "ArrowLeft") {
+          event2.stopPropagation();
+          event2.preventDefault();
           stepStill(-1);
         }
       };
@@ -37618,28 +37646,28 @@ ${cue.text}`).join("\n\n")}
           role: "dialog",
           "data-tv-cover": "",
           onClick: () => setStillLightbox(null),
-          onTouchStart: (event) => {
-            swipeStartRef.current = event.touches[0]?.clientX ?? null;
+          onTouchStart: (event2) => {
+            swipeStartRef.current = event2.touches[0]?.clientX ?? null;
           },
-          onTouchEnd: (event) => {
+          onTouchEnd: (event2) => {
             const start2 = swipeStartRef.current;
             swipeStartRef.current = null;
-            const end = event.changedTouches[0]?.clientX;
+            const end = event2.changedTouches[0]?.clientX;
             if (start2 == null || end == null) return;
             const delta = end - start2;
             if (Math.abs(delta) < 40) return;
-            event.stopPropagation();
+            event2.stopPropagation();
             stepStill(delta < 0 ? 1 : -1);
           },
           children: [
-            /* @__PURE__ */ jsx("img", { src: stillLightbox, alt: "", className: "max-h-full max-w-full rounded-xl object-contain shadow-2xl", onClick: (event) => event.stopPropagation() }, stillLightbox),
+            /* @__PURE__ */ jsx("img", { src: stillLightbox, alt: "", className: "max-h-full max-w-full rounded-xl object-contain shadow-2xl", onClick: (event2) => event2.stopPropagation() }, stillLightbox),
             stills.length > 1 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-              /* @__PURE__ */ jsx("button", { type: "button", onClick: (event) => {
-                event.stopPropagation();
+              /* @__PURE__ */ jsx("button", { type: "button", onClick: (event2) => {
+                event2.stopPropagation();
                 stepStill(-1);
               }, "aria-label": t("sssPrevSeasons"), className: "menu-glass absolute left-3 top-1/2 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-white sm:flex", children: /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.4", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M15 18l-6-6 6-6" }) }) }),
-              /* @__PURE__ */ jsx("button", { type: "button", onClick: (event) => {
-                event.stopPropagation();
+              /* @__PURE__ */ jsx("button", { type: "button", onClick: (event2) => {
+                event2.stopPropagation();
                 stepStill(1);
               }, "aria-label": t("sssMoreSeasons"), className: "menu-glass absolute right-3 top-1/2 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-white sm:flex", children: /* @__PURE__ */ jsx("svg", { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.4", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M9 6l6 6-6 6" }) }) }),
               /* @__PURE__ */ jsxs("span", { className: "menu-glass absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-xs tabular-nums text-white/80", children: [
@@ -37697,7 +37725,7 @@ ${cue.text}`).join("\n\n")}
                 {
                   type: "text",
                   value: query,
-                  onChange: (event) => setQuery(event.target.value),
+                  onChange: (event2) => setQuery(event2.target.value),
                   placeholder: t("fullCastSearch"),
                   className: "w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-400"
                 }
@@ -37710,7 +37738,7 @@ ${cue.text}`).join("\n\n")}
                 ...station3,
                 "data-cast-sort": "",
                 "data-f-left": "[data-cast-search]",
-                onClick: () => setSort((current3) => current3 === "billing" ? "name" : current3 === "name" ? "popularity" : "billing"),
+                onClick: () => setSort((current5) => current5 === "billing" ? "name" : current5 === "name" ? "popularity" : "billing"),
                 className: `flex items-center gap-2 rounded-full bg-[#fcfcff14] text-slate-100 transition hover:bg-[#fcfcff22] h-10 px-4 text-sm`,
                 children: [
                   sortLabel,
@@ -38382,9 +38410,9 @@ ${cue.text}`).join("\n\n")}
          *
          * @since 2.0.0
          */
-        removeAllListeners(event) {
-          if (event) {
-            delete this.eventListeners[event];
+        removeAllListeners(event2) {
+          if (event2) {
+            delete this.eventListeners[event2];
           } else {
             this.eventListeners = /* @__PURE__ */ Object.create(null);
           }
@@ -38401,8 +38429,8 @@ ${cue.text}`).join("\n\n")}
          */
         emit(eventName, arg) {
           if (eventName in this.eventListeners) {
-            const listeners10 = this.eventListeners[eventName];
-            for (const listener of listeners10)
+            const listeners11 = this.eventListeners[eventName];
+            for (const listener of listeners11)
               listener(arg);
             return true;
           }
@@ -38558,19 +38586,19 @@ ${cue.text}`).join("\n\n")}
             Object.freeze(args);
           }
           const onEvent = new core.Channel();
-          onEvent.onmessage = (event) => {
-            switch (event.event) {
+          onEvent.onmessage = (event2) => {
+            switch (event2.event) {
               case "Error":
-                this.emit("error", event.payload);
+                this.emit("error", event2.payload);
                 break;
               case "Terminated":
-                this.emit("close", event.payload);
+                this.emit("close", event2.payload);
                 break;
               case "Stdout":
-                this.stdout.emit("data", event.payload);
+                this.stdout.emit("data", event2.payload);
                 break;
               case "Stderr":
-                this.stderr.emit("data", event.payload);
+                this.stderr.emit("data", event2.payload);
                 break;
             }
           };
@@ -38696,6 +38724,7 @@ ${cue.text}`).join("\n\n")}
     getControlsHideAfterSeconds: () => getControlsHideAfterSeconds,
     getHideWatchedMoviesHome: () => getHideWatchedMoviesHome,
     getHls: () => getHls,
+    getHomeBackgroundUrls: () => getHomeBackgroundUrls,
     getHomeOverridePluginId: () => getHomeOverridePluginId,
     getLibraryMode: () => getLibraryMode,
     getMdblistApiKey: () => getMdblistApiKey,
@@ -38755,6 +38784,7 @@ ${cue.text}`).join("\n\n")}
     notifyPluginRegistryChanged: () => notifyPluginRegistryChanged,
     onAppearanceChanged: () => onAppearanceChanged,
     onAuthCapabilitiesChanged: () => onAuthCapabilitiesChanged,
+    onHomeBackgroundChanged: () => onHomeBackgroundChanged,
     onHomeOverridePluginChanged: () => onHomeOverridePluginChanged,
     onLibraryModeChanged: () => onLibraryModeChanged,
     onLibraryScanChanged: () => onLibraryScanChanged2,
@@ -39191,6 +39221,7 @@ ${cue.text}`).join("\n\n")}
       init_appearance_settings();
       init_plugin_storage();
       init_plugin_assets();
+      init_home_background_settings();
       init_home_override_settings();
       init_trakt_storage();
       init_trakt_sync();
@@ -39239,7 +39270,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -39413,7 +39444,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       INDEX_CHANGED_EVENT = "lumio-live-tv-index-changed";
@@ -39424,7 +39455,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -39501,14 +39532,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/list-curation.ts
   function splitGroups(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -39599,12 +39630,12 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -39873,14 +39904,14 @@ ${cue.text}`).join("\n\n")}
     let outcome = "not-custom";
     writeLists(readLists().map((list) => {
       if (list.id !== listId || list.kind !== "custom") return list;
-      const current3 = list.channels ?? [];
-      if (current3.length >= MAX_CUSTOM_LIST_CHANNELS) {
+      const current5 = list.channels ?? [];
+      if (current5.length >= MAX_CUSTOM_LIST_CHANNELS) {
         outcome = "full";
         return list;
       }
       const { archive: _archive, ...withoutArchive } = channel;
-      const channels = dedupeChannels([...current3, withoutArchive]);
-      if (channels.length === current3.length) {
+      const channels = dedupeChannels([...current5, withoutArchive]);
+      if (channels.length === current5.length) {
         outcome = "duplicate";
         return list;
       }
@@ -39911,18 +39942,18 @@ ${cue.text}`).join("\n\n")}
   }
   function togglePinnedLiveTvChannel(channel) {
     const key = channelKey(channel);
-    const current3 = getPinnedLiveTvKeys();
-    const next = current3.includes(key) ? current3.filter((entry) => entry !== key) : [...current3, key];
+    const current5 = getPinnedLiveTvKeys();
+    const next = current5.includes(key) ? current5.filter((entry) => entry !== key) : [...current5, key];
     setPinnedLiveTvKeys(next);
     return next;
   }
   function movePinnedLiveTvChannel(key, delta) {
-    const current3 = getPinnedLiveTvKeys();
-    const index = current3.indexOf(key);
-    if (index === -1) return current3;
+    const current5 = getPinnedLiveTvKeys();
+    const index = current5.indexOf(key);
+    if (index === -1) return current5;
     const target2 = index + delta;
-    if (target2 < 0 || target2 >= current3.length) return current3;
-    const next = [...current3];
+    if (target2 < 0 || target2 >= current5.length) return current5;
+    const next = [...current5];
     next.splice(index, 1);
     next.splice(target2, 0, key);
     setPinnedLiveTvKeys(next);
@@ -40195,7 +40226,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -40220,7 +40251,882 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/channel-locks.ts
+  function bridge() {
+    return plugin_sdk_exports;
+  }
+  function pinSupportAvailable() {
+    const b = bridge();
+    return typeof b.activeProfileHasPin === "function" && typeof b.verifyActiveProfilePin === "function";
+  }
+  function activeProfileHasPin2() {
+    const b = bridge();
+    try {
+      return typeof b.activeProfileHasPin === "function" ? b.activeProfileHasPin() : false;
+    } catch {
+      return false;
+    }
+  }
+  async function verifyActiveProfilePin2(pin) {
+    const b = bridge();
+    if (typeof b.verifyActiveProfilePin !== "function") return false;
+    try {
+      return await b.verifyActiveProfilePin(pin);
+    } catch {
+      return false;
+    }
+  }
+  function sanitize(raw) {
+    return Array.isArray(raw) ? raw.filter((value) => typeof value === "string" && value.length > 0) : [];
+  }
+  function getLockedChannelKeys() {
+    return sanitize(readPluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, []));
+  }
+  function toggleChannelLock(channel) {
+    const key = channelKey(channel);
+    const current5 = getLockedChannelKeys();
+    const next = current5.includes(key) ? current5.filter((entry) => entry !== key) : [...current5, key];
+    writePluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, next);
+    return next;
+  }
+  function onChannelLocksChanged(listener) {
+    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, listener);
+  }
+  function useLockedChannelKeys() {
+    const [keys2, setKeys] = useState(() => getLockedChannelKeys());
+    useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), []);
+    return new Set(keys2);
+  }
+  function markUnlockedThisSession() {
+    unlockedThisSession = true;
+  }
+  function isUnlockedThisSession() {
+    return unlockedThisSession;
+  }
+  var LOCKED_CHANNELS_KEY, unlockedThisSession;
+  var init_channel_locks = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/channel-locks.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
+      init_live_tv_data();
+      LOCKED_CHANNELS_KEY = "locked_channels_v1";
+      unlockedThisSession = false;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  function drainLogoQueue() {
+    while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
+      activeLogoLoads += 1;
+      const next = pendingLogoLoads.shift();
+      next?.();
+    }
+  }
+  function requestLogoLoad(start2) {
+    pendingLogoLoads.push(start2);
+    drainLogoQueue();
+  }
+  function finishLogoLoad(src) {
+    loadedLogoSrcs.add(src);
+    activeLogoLoads = Math.max(0, activeLogoLoads - 1);
+    drainLogoQueue();
+  }
+  function LiveTvLogoImage({ src, fallbackSrc, alt, className, onError }) {
+    const ref = useRef(null);
+    const [shouldLoad, setShouldLoad] = useState(false);
+    const [stage, setStage] = useState("primary");
+    const [failed, setFailed] = useState(false);
+    useEffect(() => {
+      setShouldLoad(false);
+      setStage("primary");
+      setFailed(false);
+    }, [src]);
+    useEffect(() => {
+      if (loadedLogoSrcs.has(src)) {
+        setShouldLoad(true);
+        return;
+      }
+      const node = ref.current;
+      if (!node || shouldLoad) return;
+      if (typeof IntersectionObserver === "undefined") {
+        requestLogoLoad(() => setShouldLoad(true));
+        return;
+      }
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            requestLogoLoad(() => setShouldLoad(true));
+            observer.disconnect();
+          }
+        },
+        { rootMargin: isTauriEnv ? "48px" : "160px" }
+      );
+      observer.observe(node);
+      return () => observer.disconnect();
+    }, [shouldLoad, src]);
+    if (failed) return null;
+    const usableFallbackSrc = fallbackSrc && fallbackSrc !== src ? fallbackSrc : null;
+    const activeSrc = stage === "fallback" && usableFallbackSrc ? usableFallbackSrc : src;
+    return /* @__PURE__ */ jsx(
+      "img",
+      {
+        ref,
+        src: shouldLoad ? activeSrc : void 0,
+        alt,
+        className,
+        loading: isTauriEnv ? void 0 : "lazy",
+        decoding: "async",
+        fetchPriority: "low",
+        draggable: false,
+        style: isTauriEnv ? void 0 : { contentVisibility: "auto" },
+        onLoad: () => finishLogoLoad(activeSrc),
+        onError: () => {
+          if (stage === "primary" && usableFallbackSrc) {
+            setStage("fallback");
+            return;
+          }
+          setFailed(true);
+          finishLogoLoad(activeSrc);
+          onError?.();
+        }
+      }
+    );
+  }
+  var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
+  var init_live_tv_logo_image = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_jsx_runtime_shim();
+      loadedLogoSrcs = /* @__PURE__ */ new Set();
+      pendingLogoLoads = [];
+      activeLogoLoads = 0;
+      MAX_CONCURRENT_LOGO_LOADS = isTauriEnv ? 1 : 8;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-ui.tsx
+  function initialsOf(name) {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
+    return letters.join("") || "\u2022";
+  }
+  function progressOf(start2, stop, nowMs) {
+    if (stop <= start2) return 0;
+    return Math.min(1, Math.max(0, (nowMs - start2) / (stop - start2)));
+  }
+  function formatClock2(ms2, locale) {
+    return new Date(ms2).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  }
+  function Tag({ variant = "neutral", children, style }) {
+    const base = {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      fontSize: 11,
+      letterSpacing: "0.04em",
+      padding: "3px 10px",
+      borderRadius: 6,
+      lineHeight: 1.3,
+      whiteSpace: "nowrap"
+    };
+    const look = variant === "accent" ? { background: LT.accentSoft, color: LT.accentText } : variant === "live" ? { background: LT.liveSoft, color: "#fecdd3", fontWeight: 600, letterSpacing: "0.12em", fontSize: 10, textTransform: "uppercase" } : variant === "outline" ? { border: `1px solid ${LT.accentLine}`, color: LT.accentText, padding: "2px 9px" } : { background: LT.neutral, color: LT.muted };
+    return /* @__PURE__ */ jsx("span", { style: { ...base, ...look, ...style }, children });
+  }
+  function LiveTag({ label }) {
+    return /* @__PURE__ */ jsxs(Tag, { variant: "live", children: [
+      /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: LT.live } }),
+      label
+    ] });
+  }
+  function Btn({
+    variant = "secondary",
+    children,
+    onClick,
+    title,
+    ariaLabel,
+    pressed,
+    block = false,
+    small = false,
+    icon = false,
+    style,
+    tvStation
+  }) {
+    const base = {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      fontSize: small ? 13 : 14,
+      lineHeight: 1.2,
+      padding: icon ? 0 : small ? "6px 14px" : "8px 16px",
+      width: icon ? 36 : block ? "100%" : void 0,
+      height: icon ? 36 : void 0,
+      /*
+            IKONKNAPPEN ÄR RUND, oavsett vilket höjdgolv värden sätter.
+      
+            36×36 plus `borderRadius: 999` är en cirkel i pluginets egen stil — men
+            appens TV-CSS lägger `min-height: calc(52 * var(--tv-u))` på TV-knappar,
+            vilket vid grundskalan 1,54 är 80 px. Höjden växte alltså till 80 medan
+            bredden stod kvar på 36, och Tillbaka-pilen blev en STÅENDE kapsel
+            (Jerry 2026-09-08: "gör pilen rund sen").
+      
+            `aspect-ratio: 1` gör formen till en egenskap i stället för ett par tal
+            som måste hållas i takt: växer höjden av en regel utanför pluginet följer
+            bredden med, och knappen kan inte bli oval igen. Att i stället hårdkoda
+            80 px hade fungerat tills någon ändrade `--tv-base-scale`.
+          */
+      aspectRatio: icon ? "1 / 1" : void 0,
+      borderRadius: 999,
+      border: "1px solid transparent",
+      background: "transparent",
+      color: LT.text,
+      cursor: "pointer",
+      whiteSpace: "nowrap",
+      fontFamily: "inherit"
+    };
+    const look = variant === "primary" ? { color: LT.accentText, borderColor: LT.accentLine, background: pressed ? LT.accentSoft : LT.accentDeep } : variant === "solid" ? { color: "#1b0d08", background: LT.accent, fontWeight: 700, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase" } : variant === "ghost" ? { color: pressed ? LT.text : LT.muted, background: pressed ? "rgba(255,255,255,0.12)" : "transparent" } : { borderColor: pressed ? "rgba(255,255,255,0.5)" : LT.line, background: pressed ? "rgba(255,255,255,0.12)" : "rgba(252,252,255,0.06)" };
+    return /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        ...tvStation ?? {},
+        onClick,
+        title,
+        "aria-label": ariaLabel,
+        "aria-pressed": pressed,
+        className: "transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+        style: { ...base, ...look, ...style },
+        children
+      }
+    );
+  }
+  function ChannelBadge({ channel, size = 40, radius = LT.radiusSm }) {
+    const [failed, setFailed] = useState(false);
+    const primarySrc = getLiveTvLogoSrc(channel.logo);
+    const fallbackSrc = getLiveTvLogoSrc(channel.logoFallback);
+    const src = primarySrc ?? fallbackSrc;
+    const box = {
+      width: size,
+      height: size,
+      borderRadius: radius,
+      background: LT.neutral,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+      overflow: "hidden"
+    };
+    if (src && !failed) {
+      return /* @__PURE__ */ jsx("div", { style: box, children: /* @__PURE__ */ jsx(
+        LiveTvLogoImage,
+        {
+          src,
+          fallbackSrc: primarySrc ? fallbackSrc : void 0,
+          alt: "",
+          className: "h-full w-full object-contain p-1",
+          onError: () => setFailed(true)
+        }
+      ) });
+    }
+    return /* @__PURE__ */ jsx("div", { style: { ...box, fontSize: Math.max(9, Math.round(size * 0.28)), fontWeight: 600, color: LT.muted }, "aria-hidden": "true", children: initialsOf(channel.name) });
+  }
+  function ProgressBar({ value, width, height = 4 }) {
+    return /* @__PURE__ */ jsx("div", { style: { height, width: width ?? "100%", maxWidth: "100%", background: LT.neutral, borderRadius: height, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${Math.round(value * 100)}%`, background: LT.accent } }) });
+  }
+  function Kicker({ children }) {
+    return /* @__PURE__ */ jsx("div", { style: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: LT.accent }, children });
+  }
+  function PinGate({
+    open: open2,
+    title,
+    wrongText,
+    unlockLabel,
+    cancelLabel,
+    onVerify,
+    onClose,
+    onUnlocked
+  }) {
+    const [pin, setPin] = useState("");
+    const [wrong, setWrong] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const inputRef = useRef(null);
+    useEffect(() => {
+      if (!open2) return;
+      setPin("");
+      setWrong(false);
+      const timer3 = window.setTimeout(() => inputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer3);
+    }, [open2]);
+    if (!open2) return null;
+    const submit = async () => {
+      if (pin.length < 4 || busy) return;
+      setBusy(true);
+      const ok = await onVerify(pin);
+      setBusy(false);
+      if (ok) {
+        onUnlocked();
+        return;
+      }
+      setWrong(true);
+      setPin("");
+      inputRef.current?.focus();
+    };
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-label": title,
+        style: { position: "fixed", inset: 0, zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" },
+        onClick: onClose,
+        children: /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, background: "#111b2f", padding: 20, width: 300, display: "flex", flexDirection: "column", gap: 12 }, onClick: (event2) => event2.stopPropagation(), children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, color: LT.text }, children: title }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              ref: inputRef,
+              type: "password",
+              inputMode: "numeric",
+              autoComplete: "off",
+              maxLength: 4,
+              value: pin,
+              onChange: (event2) => setPin(event2.target.value.replace(/\D/g, "").slice(0, 4)),
+              onKeyDown: (event2) => {
+                if (event2.key === "Enter") void submit();
+                if (event2.key === "Escape") onClose();
+              },
+              "aria-invalid": wrong,
+              style: {
+                fontSize: 24,
+                letterSpacing: "0.5em",
+                textAlign: "center",
+                padding: "10px 12px",
+                borderRadius: LT.radiusMd,
+                border: `1px solid ${wrong ? LT.live : LT.line}`,
+                background: LT.surfaceRaised,
+                color: LT.text,
+                outline: "none",
+                fontFamily: "inherit"
+              }
+            }
+          ),
+          wrong ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: "#fecdd3" }, children: wrongText }) : null,
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" }, children: [
+            /* @__PURE__ */ jsx(Btn, { variant: "ghost", small: true, onClick: onClose, children: cancelLabel }),
+            /* @__PURE__ */ jsx(Btn, { variant: "primary", small: true, onClick: () => void submit(), children: unlockLabel })
+          ] })
+        ] })
+      }
+    );
+  }
+  var LT, surfaceCard;
+  var init_live_tv_ui = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_logo_image();
+      init_live_tv_data();
+      init_jsx_runtime_shim();
+      LT = {
+        bg: "#050816",
+        /* Glas utan blur (Jerry 2026-09-02): samma yta som strömraderna på
+           detaljsidan. Ljusare än de solida panelerna och utan backdrop-filter,
+           som är dyrt på telefon och TV. */
+        surface: "rgba(252,252,255,0.09)",
+        surfaceRaised: "rgba(252,252,255,0.14)",
+        neutral: "rgba(252,252,255,0.12)",
+        line: "rgba(255,255,255,0.10)",
+        text: "#f3f4f8",
+        muted: "rgba(243,244,248,0.7)",
+        dim: "rgba(243,244,248,0.55)",
+        faint: "rgba(243,244,248,0.4)",
+        accent: "#f4845f",
+        accentText: "#ffd9c9",
+        accentSoft: "rgba(244,132,95,0.16)",
+        accentLine: "rgba(244,132,95,0.55)",
+        accentDeep: "rgba(244,132,95,0.12)",
+        live: "#fb7185",
+        liveSoft: "rgba(251,113,133,0.18)",
+        radiusLg: 14,
+        radiusMd: 8,
+        radiusSm: 4
+      };
+      surfaceCard = {
+        background: LT.surface,
+        borderRadius: LT.radiusMd,
+        border: `1px solid ${LT.line}`,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)"
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  function useInSceneBox(ref) {
+    const [inBox, setInBox] = useState(false);
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const read11 = () => {
+        const from = ref?.current ?? null;
+        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
+        return box !== null;
+      };
+      const sync = () => setInBox(read11());
+      sync();
+      const observer = new MutationObserver(sync);
+      observer.observe(document.documentElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [TV_SCENE_BOX_ATTR]
+      });
+      return () => observer.disconnect();
+    }, [ref]);
+    return inBox;
+  }
+  var init_useInSceneBox = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  function useNarrowSurface(ref) {
+    const [narrow, setNarrow] = useState(false);
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const read11 = () => {
+        const from = ref?.current ?? null;
+        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
+        return box?.getAttribute(TV_SCENE_NARROW_ATTR) === "1";
+      };
+      const sync = () => setNarrow(read11());
+      sync();
+      const observer = new MutationObserver(sync);
+      observer.observe(document.documentElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR]
+      });
+      return () => observer.disconnect();
+    }, [ref]);
+    return narrow;
+  }
+  var init_useNarrowSurface = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  function useSceneBoxScale() {
+    const [scale, setScale] = useState(null);
+    useEffect(() => {
+      if (typeof document === "undefined") return;
+      const read11 = () => {
+        const getScale = tvSceneBoxScale2;
+        if (typeof getScale !== "function") return null;
+        const box = document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
+        if (!box) return null;
+        const value = getScale(box);
+        return Number.isFinite(value) && value > 0 ? value : null;
+      };
+      const sync = () => setScale(read11());
+      sync();
+      const observer = new MutationObserver(sync);
+      observer.observe(document.documentElement, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: [TV_SCENE_BOX_ATTR, "style"]
+      });
+      return () => observer.disconnect();
+    }, []);
+    return scale;
+  }
+  var init_useSceneBoxScale = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+      "use strict";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-ui.tsx
+  function dp(n) {
+    return n;
+  }
+  function TvFocusStyle() {
+    return /* @__PURE__ */ jsx("style", { children: `
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f]:focus,
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f][data-fcur="1"] {
+  outline: 2px solid rgb(var(--accent-500)) !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 28px color-mix(in srgb, rgb(var(--accent-500)) 45%, transparent) !important;
+}
+[data-live-tv-tv-root] [data-f] { outline: none; }
+[data-live-tv-tv-root] [data-f] { user-select: none; -webkit-user-select: none; }
+[data-live-tv-tv-root] [data-selectable-text] { user-select: text; -webkit-user-select: text; }
+@media (hover: hover) and (pointer: fine) {
+  [data-live-tv-tv-root] [data-f]:hover { background-image: linear-gradient(rgba(252,252,255,0.06), rgba(252,252,255,0.06)) !important; }
+  [data-live-tv-tv-root] [data-live-tv-chip][data-f]:hover { border-color: rgba(255,255,255,0.22) !important; }
+}
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:focus,
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f][data-fcur="1"] { outline: none !important; box-shadow: none !important; }
+[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:hover { background-image: none !important; }
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f]:focus,
+:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f][data-fcur="1"] {
+  outline: 1px solid rgb(var(--accent-500)) !important;
+  outline-offset: -1px;
+  box-shadow: none !important;
+}
+[data-live-tv-tv-root] [data-guide-block]:not([data-live]):hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f][data-fcur="1"] { outline: none !important; }
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f]:focus,
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
+[data-live-tv-tv-root] [data-guide-row]:hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
+[data-live-tv-tv-root] [data-guide-row][data-sticky]:hover { background: #232324 !important; }
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f][data-fcur="1"] { outline: none !important; }
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f]:focus,
+[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
+[data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
+[data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
+[data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
+[data-live-tv-tv-root] .lumio-tv-logo-img { max-width: 60%; max-height: 60%; object-fit: contain; }
+@keyframes lumio-livetv-fade { from { opacity: 0; transform: translateY(${dp(6)}px); } to { opacity: 1; transform: none; } }
+[data-live-tv-tv-root] [data-live-tv-layer] { animation: lumio-livetv-fade 160ms ease-out; }
+
+/* \xC5TG\xC4RDSKNAPPARNAS UTF\xC4LLBARA NAMN.
+   Samma kontrakt som appens hero-icon-action: knappen b\xE4r
+   [data-hero-icon-action] och namnet [data-hero-icon-label]. Appens egen regel
+   i spa/src/index.css f\xE4ller ut namnet n\xE4r <html data-hero-action-labels="open">
+   \u2014 allts\xE5 n\xE4r inst\xE4llningen \xE4r p\xE5 \u2014 och den tr\xE4ffar de h\xE4r elementen ocks\xE5,
+   eftersom markeringen \xE4r densamma. Det som INTE kommer d\xE4rifr\xE5n \xE4r hovring
+   och fokus: appens variant g\xF6r det med Tailwinds group-hover-klasser, och de
+   finns inte i pluginets inline-stilar. M\xE5tten \xE4r medvetet identiska
+   (9rem/1rem), s\xE5 de tv\xE5 inte kan glida is\xE4r utan att det syns. */
+[data-live-tv-tv-root] [data-hero-icon-label] {
+  max-width: 0;
+  padding-right: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 200ms ease-out, padding 200ms ease-out, opacity 200ms ease-out;
+}
+[data-live-tv-tv-root] [data-hero-icon-action]:hover [data-hero-icon-label],
+[data-live-tv-tv-root] [data-hero-icon-action]:focus [data-hero-icon-label],
+[data-live-tv-tv-root] [data-hero-icon-action][data-fcur="1"] [data-hero-icon-label] {
+  max-width: 9rem;
+  padding-right: 1rem;
+  opacity: 1;
+}
+
+/* Knappstorlek (appens Tema och skala \u2192 Knappstorlek): glyferna i VOD-
+   titelns knapprad f\xF6ljer --tv-button-scale som knapparna sj\xE4lva. Vilande
+   n\xE4r appen inte s\xE4tter data-tv-button-scale (100 % eller \xE4ldre app). */
+:root[data-tv="1"][data-tv-button-scale] [data-live-tv-tv-root] [data-vod-actions] [data-hero-icon-action] svg {
+  width: calc(30px * var(--tv-button-scale));
+  height: calc(30px * var(--tv-button-scale));
+}
+:root[data-tv="1"][data-tv-button-scale] [data-live-tv-tv-root] [data-vod-actions] [data-testid="title-play"] svg {
+  width: calc(28px * var(--tv-button-scale));
+  height: calc(28px * var(--tv-button-scale));
+}
+` });
+  }
+  function station(onOk, onHold, extra) {
+    const hold = onHold ? tvHoldHandlers(onOk, onHold) : null;
+    const pointer = onHold ? tvPointerHoldHandlers(onOk, onHold) : null;
+    return {
+      "data-f": "",
+      tabIndex: 0,
+      role: "button",
+      ...pointer ? {
+        "data-hold": "",
+        // Ett fyrat håll undertrycker klicket i `onClickCapture`. Två bälten,
+        // för att SDK:t kan vara äldre än den här filen: capture-handlaren
+        // stoppar spridningen OCH markerar eventet som `defaultPrevented`,
+        // och onClick nedan vägrar köra onOk på ett sådant event. Utan det
+        // skulle både glasmenyn och uppspelningen starta på samma håll.
+        onClick: (event2) => {
+          if (event2?.defaultPrevented) return;
+          onOk();
+        },
+        onPointerDown: pointer.onPointerDown,
+        onPointerUp: pointer.onPointerUp,
+        onPointerCancel: pointer.onPointerCancel,
+        onPointerLeave: pointer.onPointerLeave,
+        onContextMenu: pointer.onContextMenu,
+        onClickCapture: pointer.onClickCapture
+      } : { onClick: onOk },
+      ...hold ? { onKeyDown: hold.onKeyDown, onKeyUp: hold.onKeyUp } : {
+        onKeyDown: (event2) => {
+          if (event2.key === "Enter" || event2.key === " ") {
+            event2.preventDefault();
+            onOk();
+          }
+        }
+      },
+      ...extra ?? {}
+    };
+  }
+  function Tag2({ variant, children, style, title }) {
+    const base = { display: "inline-flex", alignItems: "center", gap: dp(8), whiteSpace: "nowrap", lineHeight: 1.2 };
+    const look = {
+      live: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.14em", padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.liveSoft, color: TV2.liveText, textTransform: "uppercase" },
+      neutral: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.s12, color: TV2.text },
+      quality: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: "rgba(0,0,0,0.45)", color: TV2.text },
+      replay: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV2.accMix(22), color: TV2.accText },
+      reason: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: "rgba(0,0,0,0.45)", color: TV2.text },
+      audio: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.12em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV2.acc, color: TV2.onAcc, textTransform: "uppercase" }
+    };
+    return /* @__PURE__ */ jsxs("span", { title, style: { ...base, ...look[variant], ...style }, children: [
+      variant === "live" ? /* @__PURE__ */ jsx("span", { style: { width: dp(8), height: dp(8), borderRadius: 999, background: TV2.live } }) : null,
+      children
+    ] });
+  }
+  function Progress({ value, height = dp(5), track = TV2.s14, style }) {
+    const pct2 = Math.round(Math.min(1, Math.max(0, value)) * 100);
+    return /* @__PURE__ */ jsx("div", { style: { height, borderRadius: height, background: track, overflow: "hidden", ...style }, children: /* @__PURE__ */ jsx("div", { "data-fill": "", style: { width: `${pct2}%`, height: "100%", background: TV2.acc } }) });
+  }
+  function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style }) {
+    const [frameFailed, setFrameFailed] = useState(false);
+    const [logoFailed, setLogoFailed] = useState(false);
+    const frameSrc = USE_PLAYER_FRAMES && !frameFailed && "url" in channel ? playerFrameUrl(channelKey(channel), frameVersion ?? null) : null;
+    const primaryLogo = getLiveTvLogoSrc(channel.logo);
+    const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback);
+    const logo = logoFailed ? null : primaryLogo ?? fallbackLogo;
+    return /* @__PURE__ */ jsxs("div", { style: { position: "relative", height, aspectRatio: aspect, background: "rgba(252,252,255,0.06)", borderRadius: radius, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", ...style }, children: [
+      frameSrc ? /* @__PURE__ */ jsx("img", { src: frameSrc, alt: "", onError: () => setFrameFailed(true), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }) : logo ? /* @__PURE__ */ jsx(
+        LiveTvLogoImage,
+        {
+          src: logo,
+          fallbackSrc: primaryLogo ? fallbackLogo : void 0,
+          alt: "",
+          className: "lumio-tv-logo-img",
+          onError: () => setLogoFailed(true)
+        }
+      ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: dp(22), fontWeight: 600, color: TV2.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }),
+      children
+    ] });
+  }
+  function Chip({ active: active4, children, style, glass = false, ...rest }) {
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-live-tv-chip": "",
+        "data-live-tv-chip-glass": glass ? "" : void 0,
+        ...rest,
+        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active4 ? TV2.s16 : TV2.s05, color: active4 ? TV2.text : TV2.muted, fontWeight: active4 ? 600 : 400, border: `1px solid ${glass ? active4 ? TV2.lineStrong : TV2.line : active4 ? TV2.lineStrong : "transparent"}`, ...style },
+        children
+      }
+    );
+  }
+  function Segment({ options, value, onChange, style }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": "tv-segment", style: { display: "inline-flex", padding: dp(4), borderRadius: 999, background: TV2.s08, gap: dp(2), flexShrink: 0, whiteSpace: "nowrap", maxWidth: "100%", ...style }, children: options.map((option) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "tv-segment-option",
+        ...station(() => onChange(option.key)),
+        style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(16), whiteSpace: "nowrap", cursor: "pointer", background: option.key === value ? TV2.s16 : "transparent", color: option.key === value ? TV2.text : TV2.muted },
+        children: option.label
+      },
+      option.key
+    )) });
+  }
+  function RoundBtn({ size, children, background = TV2.s12, style, ...rest }) {
+    const resolvedSize = size ?? dp(52);
+    return /* @__PURE__ */ jsx("div", { ...rest, style: { width: resolvedSize, height: resolvedSize, minHeight: resolvedSize, borderRadius: 999, background, border: `1px solid ${TV2.lineCard}`, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TV2.text, cursor: "pointer", flexShrink: 0, ...style }, children });
+  }
+  function Toggle({ on }) {
+    return /* @__PURE__ */ jsx("span", { style: { width: dp(52), height: dp(30), borderRadius: 999, background: on ? TV2.acc : TV2.s18, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(3), left: on ? dp(25) : dp(3), width: dp(24), height: dp(24), borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
+  }
+  function useTvClockNode(locale) {
+    const HostClock = getTvClock?.() ?? null;
+    const inSceneBox = useInSceneBox();
+    const sceneBoxScale = useSceneBoxScale();
+    const narrowSurface = useNarrowSurface();
+    const canCompensate = inSceneBox && sceneBoxScale !== null && !narrowSurface;
+    const clockRef = useRef(null);
+    const [naturalWidth, setNaturalWidth] = useState(0);
+    useEffect(() => {
+      const el = clockRef.current;
+      if (!el) return;
+      const mat = () => setNaturalWidth(el.offsetWidth);
+      mat();
+      const vakt = new ResizeObserver(mat);
+      vakt.observe(el);
+      return () => vakt.disconnect();
+    }, [canCompensate]);
+    const useHostClock = HostClock !== null && (!inSceneBox || canCompensate);
+    const [now2, setNow] = useState(() => /* @__PURE__ */ new Date());
+    useEffect(() => {
+      if (useHostClock) return;
+      let timer3 = 0;
+      const tick2 = () => {
+        const next = /* @__PURE__ */ new Date();
+        setNow(next);
+        timer3 = window.setTimeout(tick2, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
+      };
+      tick2();
+      return () => window.clearTimeout(timer3);
+    }, [useHostClock]);
+    if (useHostClock) {
+      if (inSceneBox) {
+        const bredd = naturalWidth > 0 ? naturalWidth / sceneBoxScale : void 0;
+        return /* @__PURE__ */ jsx("span", { style: { display: "inline-block", width: bredd, textAlign: "right" }, children: /* @__PURE__ */ jsx(
+          "span",
+          {
+            ref: clockRef,
+            style: { display: "inline-block", transform: `scale(${1 / sceneBoxScale})`, transformOrigin: "top right" },
+            children: /* @__PURE__ */ jsx(HostClock, { variant: "desktop" })
+          }
+        ) });
+      }
+      return /* @__PURE__ */ jsx(HostClock, { variant: "desktop" });
+    }
+    const time = now2.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+    const date = now2.toLocaleDateString(locale, { day: "numeric", month: "short" }).replace(".", "").toUpperCase();
+    const day = now2.toLocaleDateString(locale, { weekday: "short" }).replace(".", "").toUpperCase();
+    return /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), letterSpacing: "0.1em", color: "rgba(243,244,248,0.65)", whiteSpace: "nowrap" }, children: `${time} | ${date} | ${day}` });
+  }
+  var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
+  var init_tv_ui = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_live_tv_logo_image();
+      init_live_tv_ui();
+      init_useInSceneBox();
+      init_useNarrowSurface();
+      init_useSceneBoxScale();
+      init_jsx_runtime_shim();
+      TV2 = {
+        bg: "#000",
+        text: "#f3f4f8",
+        muted: "rgba(243,244,248,0.7)",
+        dim: "rgba(243,244,248,0.55)",
+        faint: "rgba(243,244,248,0.4)",
+        s05: "rgba(252,252,255,0.05)",
+        s06: "rgba(252,252,255,0.06)",
+        s07: "rgba(252,252,255,0.07)",
+        s08: "rgba(252,252,255,0.08)",
+        s10: "rgba(252,252,255,0.10)",
+        s12: "rgba(252,252,255,0.12)",
+        s14: "rgba(252,252,255,0.14)",
+        s16: "rgba(252,252,255,0.16)",
+        s18: "rgba(252,252,255,0.18)",
+        line: "rgba(255,255,255,0.08)",
+        lineCard: "rgba(255,255,255,0.10)",
+        lineStrong: "rgba(255,255,255,0.22)",
+        acc: "rgb(var(--accent-500))",
+        accMix: (pct2) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct2}%, transparent)`,
+        accText: "#ffd9c9",
+        onAcc: "#fff",
+        live: "#fb7185",
+        liveSoft: "rgba(251,113,133,0.22)",
+        liveText: "#fecdd3",
+        glass: "rgba(58,59,66,0.96)",
+        panel: "#141519",
+        scrim: "rgba(0,0,0,0.6)",
+        font: "'Avenir Next', 'Trebuchet MS', sans-serif",
+        mono: "ui-monospace, SFMono-Regular, Menlo, monospace"
+      };
+      cardStyle = {
+        background: TV2.s07,
+        border: `1px solid ${TV2.lineCard}`,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+        borderRadius: dp(14),
+        overflow: "hidden"
+      };
+      USE_PLAYER_FRAMES = false;
+      sw = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+      svg = (size, children, fill2) => createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", ...sw, fill: fill2 ? "currentColor" : "none" }, children);
+      Icons = {
+        Search: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
+          /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
+        ] })),
+        Home: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M3 11.5 12 4l9 7.5" }),
+          /* @__PURE__ */ jsx("path", { d: "M5 10v10h14V10" })
+        ] })),
+        Tv: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "13", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 21h8" })
+        ] })),
+        SquaresFour: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
+        ] })),
+        /** Filmremsa — Biblioteket. Två perforeringsrader och en ruta emellan. */
+        FilmStrip: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" })
+        ] })),
+        /** Rollista — två figurer, som appens detaljsida. */
+        Users: ({ size = dp(22) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "8", r: "3.2" }),
+          /* @__PURE__ */ jsx("path", { d: "M3.5 19a5.5 5.5 0 0 1 11 0" }),
+          /* @__PURE__ */ jsx("path", { d: "M16 5.2a3.2 3.2 0 0 1 0 5.6M17.5 13.2A5.5 5.5 0 0 1 20.5 19" })
+        ] })),
+        /** Min lista. */
+        Bookmark: ({ size = dp(22), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z", strokeLinejoin: "round" }), filled),
+        /** Sedd. */
+        Eye: ({ size = dp(22), filled = false }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z" }),
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" })
+        ] }), filled),
+        Heart: ({ size = dp(26), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
+        Gear: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })
+        ] })),
+        ChevronLeft: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M15 18l-6-6 6-6" })),
+        /** Öppningsknappen för telefonens meny-låda (spec §2) — tre linjer. */
+        ChevronDown: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "m6 9 6 6 6-6" })),
+        Play: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
+        Pause: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }), true),
+        Bell: ({ size = dp(20), filled = false }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" }),
+          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
+        ] }), filled),
+        Lock: ({ size = dp(18) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "5", y: "11", width: "14", height: "10", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 11V7a4 4 0 0 1 8 0v4" })
+        ] })),
+        Plus: ({ size = dp(40) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" })),
+        Dots: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "18", cy: "12", r: "1.6" })
+        ] }), true),
+        Calendar: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "16", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 3v4M16 3v4M3 10h18" })
+        ] }))
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = lang === "sv" ? SV2 : EN2;
     let out = table[key] ?? EN2[key];
@@ -40236,7 +41142,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40648,6 +41554,14 @@ ${cue.text}`).join("\n\n")}
         sportKindOther: "Other",
         sportLiveWindow: "LIVE \xB7 {from}\u2013{to}",
         sportEnded: "ENDED",
+        // Sport fas 2: takt
+        sportRateEvery: "Updates {every}",
+        sportRateLeft: "{n} calls left today",
+        sportRateIdle: "No matches in progress",
+        sportRatePaused: "Results paused until {time} \u2013 today's calls are used up",
+        sportRateMinute: "Results paused for a moment \u2013 too many calls per minute",
+        sportRateFaster: "Faster with a paid key",
+        sportKeyBroken: "The key no longer works",
         sportYouFollow: "You follow",
         sportWatchOn: "Watch on {channel}",
         sportMatchCenter: "Match center",
@@ -40707,7 +41621,93 @@ ${cue.text}`).join("\n\n")}
         sportRound: "Round {n}",
         sportPlaylistUnknown: "Playlist",
         sportFollowEmpty: "Follow a team or a competition and its matches show up here.",
-        sportClose: "Close"
+        sportClose: "Close",
+        sportLiveShort: "LIVE",
+        sportHalfTime: "HT",
+        sportPostponed: "Postponed",
+        sportInProgress: "in progress",
+        sportResultOnly: "Results only",
+        sportFollowSearch: "Search teams",
+        sportKeyTitle: "Show results and tables \u2013 free, takes 1 minute",
+        sportKeyChoice: "API-Sports is free (100 calls a day per sport); TheSportsDB costs $9/month but has no daily limit.",
+        sportKeyCovers: "Results for {sports}.",
+        sportKeyGetKey: "Get a key",
+        sportKeyPaste: "Paste key",
+        sportKeySave: "Check and save",
+        sportKeyPhone: "Enter it with your phone",
+        sportKeyPhoneHint: "Scan with your phone and paste the key there.",
+        sportKeyKeyboard: "Use the keyboard",
+        sportKeyNotNow: "Not now",
+        sportKeyChecking: "Checking\u2026",
+        sportKeyOk: "The key works \xB7 {used} of {limit} calls today \xB7 {plan}",
+        sportKeyOkNoQuota: "The key works \xB7 {plan}",
+        sportPlanFree: "Free tier",
+        sportKeyRejected: "The key was not accepted",
+        sportKeyNetwork: "Couldn't reach the source. Try again.",
+        sportKeyExpired: "The code expired.",
+        sportKeyRetry: "New code",
+        sportKeyAddRow: "Show results \u2013 add a key",
+        sportSearchSubmit: "Search",
+        sportBackdropTitle: "Background in Sport",
+        sportBackdropHint: "Automatic shows the stadium of the featured match.",
+        sportBackdropAuto: "Automatic",
+        sportBackdropCustom: "Custom image",
+        sportBackdropOff: "Off",
+        sportBackdropFromHome: "Home screen image",
+        sportBackdropHomeN: "Image {n} of {total}",
+        sportBackdropNone: "None chosen",
+        sportBackdropNoHome: "Add your own images under Settings > Home, or paste a link.",
+        sportBackdropNoHomeShort: "None",
+        sportBackdropLink: "Image link",
+        sportBackdropUse: "Use",
+        sportFollowSearchEmpty: "No teams found.",
+        sportNameFootball: "football",
+        sportNameHockey: "ice hockey",
+        sportNameBasketball: "basketball",
+        sportNameHandball: "handball",
+        sportListAnd: "and",
+        tabSport: "Sport",
+        sportSettingsTitle: "Results and tables",
+        sportSettingsSource: "Source",
+        sportSettingsKey: "Key",
+        sportKeyChange: "Change key",
+        sportKeyRemove: "Remove key",
+        sportKeyRemoveBody: "Results, tables and goal alerts stop. Matches from the guide remain.",
+        sportNoKey: "No key",
+        sportCancel: "Cancel",
+        sportTabResults: "Results",
+        sportResultsAll: "All",
+        sportResultsLive: "Live only",
+        sportResultsMine: "My channels ({n})",
+        sportJumpTo: "JUMP TO",
+        sportTable: "Table",
+        sportColTeam: "Team",
+        sportColPlayed: "P",
+        sportColPoints: "Pts",
+        sportColForm: "Form",
+        sportResultsEmpty: "No results for this day.",
+        sportFormW: "W",
+        sportFormD: "D",
+        sportFormL: "L",
+        sportEvents: "Events",
+        sportStats: "Statistics",
+        sportLineups: "Line-ups",
+        sportSubs: "Substitutes",
+        sportEvGoal: "Goal",
+        sportEvCard: "Card",
+        sportEvYellow: "Yellow card",
+        sportEvRed: "Red card",
+        sportEvSub: "Substitution",
+        sportEvVar: "VAR",
+        sportEvPenalty: "Penalty",
+        sportGoalAlert: "Goal alerts",
+        sportAppRunningOnly: "Only while the app is running",
+        sportStatPossession: "Ball possession",
+        sportStatShots: "Shots",
+        sportStatShotsOn: "Shots on target",
+        sportStatCorners: "Corners",
+        sportGoal: "GOAL!",
+        sportJumpThere: "Jump there"
       };
       SV2 = {
         categories: "Kategorier",
@@ -41074,6 +42074,14 @@ ${cue.text}`).join("\n\n")}
         sportKindOther: "\xD6vrigt",
         sportLiveWindow: "LIVE \xB7 {from}\u2013{to}",
         sportEnded: "SLUT",
+        // Sport fas 2: takt
+        sportRateEvery: "Uppdateras {every}",
+        sportRateLeft: "{n} anrop kvar i dag",
+        sportRateIdle: "Inga matcher p\xE5g\xE5r",
+        sportRatePaused: "Resultat pausade till {time} \u2013 dagens anrop \xE4r slut",
+        sportRateMinute: "Resultat pausade en stund \u2013 f\xF6r m\xE5nga anrop per minut",
+        sportRateFaster: "Snabbare med betald nyckel",
+        sportKeyBroken: "Nyckeln fungerar inte l\xE4ngre",
         sportYouFollow: "Du f\xF6ljer",
         sportWatchOn: "Titta p\xE5 {channel}",
         sportMatchCenter: "Matchcenter",
@@ -41133,833 +42141,110 @@ ${cue.text}`).join("\n\n")}
         sportRound: "Omg\xE5ng {n}",
         sportPlaylistUnknown: "Spellista",
         sportFollowEmpty: "F\xF6lj ett lag eller en turnering s\xE5 hamnar deras matcher h\xE4r.",
-        sportClose: "St\xE4ng"
+        sportClose: "St\xE4ng",
+        sportLiveShort: "LIVE",
+        sportHalfTime: "Paus",
+        sportPostponed: "Uppskjuten",
+        sportInProgress: "p\xE5g\xE5r",
+        sportResultOnly: "Bara resultat",
+        sportFollowSearch: "S\xF6k lag",
+        sportKeyTitle: "Visa resultat och tabeller \u2013 gratis, tar 1 minut",
+        sportKeyChoice: "API-Sports \xE4r gratis (100 anrop per dag och sport); TheSportsDB kostar 9 USD/m\xE5n men har ingen dagskvot.",
+        sportKeyCovers: "Resultat f\xF6r {sports}.",
+        sportKeyGetKey: "Skaffa nyckel",
+        sportKeyPaste: "Klistra in nyckel",
+        sportKeySave: "Kontrollera och spara",
+        sportKeyPhone: "Skriv in med telefonen",
+        sportKeyPhoneHint: "Skanna med telefonen och klistra in nyckeln d\xE4r.",
+        sportKeyKeyboard: "Anv\xE4nd tangentbordet",
+        sportKeyNotNow: "Inte nu",
+        sportKeyChecking: "Kontrollerar\u2026",
+        sportKeyOk: "Nyckeln fungerar \xB7 {used} av {limit} anrop i dag \xB7 {plan}",
+        sportKeyOkNoQuota: "Nyckeln fungerar \xB7 {plan}",
+        sportPlanFree: "Gratisniv\xE5",
+        sportKeyRejected: "Nyckeln godtogs inte",
+        sportKeyNetwork: "Kunde inte n\xE5 k\xE4llan. F\xF6rs\xF6k igen.",
+        sportKeyExpired: "Koden gick ut.",
+        sportKeyRetry: "Ny kod",
+        sportKeyAddRow: "Visa resultat \u2013 l\xE4gg till nyckel",
+        sportSearchSubmit: "S\xF6k",
+        sportBackdropTitle: "Bakgrund i Sport",
+        sportBackdropHint: "Automatisk visar arenan f\xF6r den utvalda matchen.",
+        sportBackdropAuto: "Automatisk",
+        sportBackdropCustom: "Egen bild",
+        sportBackdropOff: "Av",
+        sportBackdropFromHome: "Startsidans bild",
+        sportBackdropHomeN: "Bild {n} av {total}",
+        sportBackdropNone: "Ingen vald",
+        sportBackdropNoHome: "L\xE4gg till egna bilder under Inst\xE4llningar > Startsida, eller klistra in en l\xE4nk.",
+        sportBackdropNoHomeShort: "Inga",
+        sportBackdropLink: "Bildl\xE4nk",
+        sportBackdropUse: "Anv\xE4nd",
+        sportFollowSearchEmpty: "Inga lag hittades.",
+        sportNameFootball: "fotboll",
+        sportNameHockey: "ishockey",
+        sportNameBasketball: "basket",
+        sportNameHandball: "handboll",
+        sportListAnd: "och",
+        tabSport: "Sport",
+        sportSettingsTitle: "Resultat och tabeller",
+        sportSettingsSource: "K\xE4lla",
+        sportSettingsKey: "Nyckel",
+        sportKeyChange: "Byt nyckel",
+        sportKeyRemove: "Ta bort nyckel",
+        sportKeyRemoveBody: "Resultat, tabeller och m\xE5lnotiser slutar. Matcherna ur guiden finns kvar.",
+        sportNoKey: "Ingen nyckel",
+        sportCancel: "Avbryt",
+        sportTabResults: "Resultat",
+        sportResultsAll: "Alla",
+        sportResultsLive: "Bara live",
+        sportResultsMine: "Mina kanaler ({n})",
+        sportJumpTo: "HOPPA TILL",
+        sportTable: "Tabell",
+        sportColTeam: "Lag",
+        sportColPlayed: "M",
+        sportColPoints: "P",
+        sportColForm: "Form",
+        sportResultsEmpty: "Inga resultat den h\xE4r dagen.",
+        sportFormW: "V",
+        sportFormD: "O",
+        sportFormL: "F",
+        sportEvents: "H\xE4ndelser",
+        sportStats: "Statistik",
+        sportLineups: "Laguppst\xE4llningar",
+        sportSubs: "Avbytare",
+        sportEvGoal: "M\xE5l",
+        sportEvCard: "Kort",
+        sportEvYellow: "Gult kort",
+        sportEvRed: "R\xF6tt kort",
+        sportEvSub: "Byte",
+        sportEvVar: "VAR",
+        sportEvPenalty: "Utvisning",
+        sportGoalAlert: "Notis vid m\xE5l",
+        sportAppRunningOnly: "Bara n\xE4r appen k\xF6rs",
+        sportStatPossession: "Bollinnehav",
+        sportStatShots: "Skott",
+        sportStatShotsOn: "Skott p\xE5 m\xE5l",
+        sportStatCorners: "H\xF6rnor",
+        sportGoal: "M\xC5L!",
+        sportJumpThere: "Hoppa dit"
       };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-logo-image.tsx
-  function drainLogoQueue() {
-    while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
-      activeLogoLoads += 1;
-      const next = pendingLogoLoads.shift();
-      next?.();
-    }
-  }
-  function requestLogoLoad(start2) {
-    pendingLogoLoads.push(start2);
-    drainLogoQueue();
-  }
-  function finishLogoLoad(src) {
-    loadedLogoSrcs.add(src);
-    activeLogoLoads = Math.max(0, activeLogoLoads - 1);
-    drainLogoQueue();
-  }
-  function LiveTvLogoImage({ src, fallbackSrc, alt, className, onError }) {
-    const ref = useRef(null);
-    const [shouldLoad, setShouldLoad] = useState(false);
-    const [stage, setStage] = useState("primary");
-    const [failed, setFailed] = useState(false);
-    useEffect(() => {
-      setShouldLoad(false);
-      setStage("primary");
-      setFailed(false);
-    }, [src]);
-    useEffect(() => {
-      if (loadedLogoSrcs.has(src)) {
-        setShouldLoad(true);
-        return;
-      }
-      const node = ref.current;
-      if (!node || shouldLoad) return;
-      if (typeof IntersectionObserver === "undefined") {
-        requestLogoLoad(() => setShouldLoad(true));
-        return;
-      }
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((entry) => entry.isIntersecting)) {
-            requestLogoLoad(() => setShouldLoad(true));
-            observer.disconnect();
-          }
-        },
-        { rootMargin: isTauriEnv ? "48px" : "160px" }
-      );
-      observer.observe(node);
-      return () => observer.disconnect();
-    }, [shouldLoad, src]);
-    if (failed) return null;
-    const usableFallbackSrc = fallbackSrc && fallbackSrc !== src ? fallbackSrc : null;
-    const activeSrc = stage === "fallback" && usableFallbackSrc ? usableFallbackSrc : src;
-    return /* @__PURE__ */ jsx(
-      "img",
-      {
-        ref,
-        src: shouldLoad ? activeSrc : void 0,
-        alt,
-        className,
-        loading: isTauriEnv ? void 0 : "lazy",
-        decoding: "async",
-        fetchPriority: "low",
-        draggable: false,
-        style: isTauriEnv ? void 0 : { contentVisibility: "auto" },
-        onLoad: () => finishLogoLoad(activeSrc),
-        onError: () => {
-          if (stage === "primary" && usableFallbackSrc) {
-            setStage("fallback");
-            return;
-          }
-          setFailed(true);
-          finishLogoLoad(activeSrc);
-          onError?.();
-        }
-      }
-    );
-  }
-  var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
-  var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_plugin_sdk();
-      init_jsx_runtime_shim();
-      loadedLogoSrcs = /* @__PURE__ */ new Set();
-      pendingLogoLoads = [];
-      activeLogoLoads = 0;
-      MAX_CONCURRENT_LOGO_LOADS = isTauriEnv ? 1 : 8;
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-ui.tsx
-  function initialsOf(name) {
-    const words = name.trim().split(/\s+/).filter(Boolean);
-    const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
-    return letters.join("") || "\u2022";
-  }
-  function progressOf(start2, stop, nowMs) {
-    if (stop <= start2) return 0;
-    return Math.min(1, Math.max(0, (nowMs - start2) / (stop - start2)));
-  }
-  function formatClock2(ms2, locale) {
-    return new Date(ms2).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-  }
-  function Tag({ variant = "neutral", children, style }) {
-    const base = {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 6,
-      fontSize: 11,
-      letterSpacing: "0.04em",
-      padding: "3px 10px",
-      borderRadius: 6,
-      lineHeight: 1.3,
-      whiteSpace: "nowrap"
-    };
-    const look = variant === "accent" ? { background: LT.accentSoft, color: LT.accentText } : variant === "live" ? { background: LT.liveSoft, color: "#fecdd3", fontWeight: 600, letterSpacing: "0.12em", fontSize: 10, textTransform: "uppercase" } : variant === "outline" ? { border: `1px solid ${LT.accentLine}`, color: LT.accentText, padding: "2px 9px" } : { background: LT.neutral, color: LT.muted };
-    return /* @__PURE__ */ jsx("span", { style: { ...base, ...look, ...style }, children });
-  }
-  function LiveTag({ label }) {
-    return /* @__PURE__ */ jsxs(Tag, { variant: "live", children: [
-      /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: LT.live } }),
-      label
-    ] });
-  }
-  function Btn({
-    variant = "secondary",
-    children,
-    onClick,
-    title,
-    ariaLabel,
-    pressed,
-    block = false,
-    small = false,
-    icon = false,
-    style,
-    tvStation
-  }) {
-    const base = {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      fontSize: small ? 13 : 14,
-      lineHeight: 1.2,
-      padding: icon ? 0 : small ? "6px 14px" : "8px 16px",
-      width: icon ? 36 : block ? "100%" : void 0,
-      height: icon ? 36 : void 0,
-      /*
-            IKONKNAPPEN ÄR RUND, oavsett vilket höjdgolv värden sätter.
-      
-            36×36 plus `borderRadius: 999` är en cirkel i pluginets egen stil — men
-            appens TV-CSS lägger `min-height: calc(52 * var(--tv-u))` på TV-knappar,
-            vilket vid grundskalan 1,54 är 80 px. Höjden växte alltså till 80 medan
-            bredden stod kvar på 36, och Tillbaka-pilen blev en STÅENDE kapsel
-            (Jerry 2026-09-08: "gör pilen rund sen").
-      
-            `aspect-ratio: 1` gör formen till en egenskap i stället för ett par tal
-            som måste hållas i takt: växer höjden av en regel utanför pluginet följer
-            bredden med, och knappen kan inte bli oval igen. Att i stället hårdkoda
-            80 px hade fungerat tills någon ändrade `--tv-base-scale`.
-          */
-      aspectRatio: icon ? "1 / 1" : void 0,
-      borderRadius: 999,
-      border: "1px solid transparent",
-      background: "transparent",
-      color: LT.text,
-      cursor: "pointer",
-      whiteSpace: "nowrap",
-      fontFamily: "inherit"
-    };
-    const look = variant === "primary" ? { color: LT.accentText, borderColor: LT.accentLine, background: pressed ? LT.accentSoft : LT.accentDeep } : variant === "solid" ? { color: "#1b0d08", background: LT.accent, fontWeight: 700, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase" } : variant === "ghost" ? { color: pressed ? LT.text : LT.muted, background: pressed ? "rgba(255,255,255,0.12)" : "transparent" } : { borderColor: pressed ? "rgba(255,255,255,0.5)" : LT.line, background: pressed ? "rgba(255,255,255,0.12)" : "rgba(252,252,255,0.06)" };
-    return /* @__PURE__ */ jsx(
-      "button",
-      {
-        type: "button",
-        ...tvStation ?? {},
-        onClick,
-        title,
-        "aria-label": ariaLabel,
-        "aria-pressed": pressed,
-        className: "transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
-        style: { ...base, ...look, ...style },
-        children
-      }
-    );
-  }
-  function ChannelBadge({ channel, size = 40, radius = LT.radiusSm }) {
-    const [failed, setFailed] = useState(false);
-    const primarySrc = getLiveTvLogoSrc(channel.logo);
-    const fallbackSrc = getLiveTvLogoSrc(channel.logoFallback);
-    const src = primarySrc ?? fallbackSrc;
-    const box = {
-      width: size,
-      height: size,
-      borderRadius: radius,
-      background: LT.neutral,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-      overflow: "hidden"
-    };
-    if (src && !failed) {
-      return /* @__PURE__ */ jsx("div", { style: box, children: /* @__PURE__ */ jsx(
-        LiveTvLogoImage,
-        {
-          src,
-          fallbackSrc: primarySrc ? fallbackSrc : void 0,
-          alt: "",
-          className: "h-full w-full object-contain p-1",
-          onError: () => setFailed(true)
-        }
-      ) });
-    }
-    return /* @__PURE__ */ jsx("div", { style: { ...box, fontSize: Math.max(9, Math.round(size * 0.28)), fontWeight: 600, color: LT.muted }, "aria-hidden": "true", children: initialsOf(channel.name) });
-  }
-  function ProgressBar({ value, width, height = 4 }) {
-    return /* @__PURE__ */ jsx("div", { style: { height, width: width ?? "100%", maxWidth: "100%", background: LT.neutral, borderRadius: height, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${Math.round(value * 100)}%`, background: LT.accent } }) });
-  }
-  function Kicker({ children }) {
-    return /* @__PURE__ */ jsx("div", { style: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: LT.accent }, children });
-  }
-  function PinGate({
-    open: open2,
-    title,
-    wrongText,
-    unlockLabel,
-    cancelLabel,
-    onVerify,
-    onClose,
-    onUnlocked
-  }) {
-    const [pin, setPin] = useState("");
-    const [wrong, setWrong] = useState(false);
-    const [busy, setBusy] = useState(false);
-    const inputRef = useRef(null);
-    useEffect(() => {
-      if (!open2) return;
-      setPin("");
-      setWrong(false);
-      const timer3 = window.setTimeout(() => inputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer3);
-    }, [open2]);
-    if (!open2) return null;
-    const submit = async () => {
-      if (pin.length < 4 || busy) return;
-      setBusy(true);
-      const ok = await onVerify(pin);
-      setBusy(false);
-      if (ok) {
-        onUnlocked();
-        return;
-      }
-      setWrong(true);
-      setPin("");
-      inputRef.current?.focus();
-    };
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        role: "dialog",
-        "aria-modal": "true",
-        "aria-label": title,
-        style: { position: "fixed", inset: 0, zIndex: 80, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" },
-        onClick: onClose,
-        children: /* @__PURE__ */ jsxs("div", { style: { ...surfaceCard, background: "#111b2f", padding: 20, width: 300, display: "flex", flexDirection: "column", gap: 12 }, onClick: (event) => event.stopPropagation(), children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, color: LT.text }, children: title }),
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              ref: inputRef,
-              type: "password",
-              inputMode: "numeric",
-              autoComplete: "off",
-              maxLength: 4,
-              value: pin,
-              onChange: (event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 4)),
-              onKeyDown: (event) => {
-                if (event.key === "Enter") void submit();
-                if (event.key === "Escape") onClose();
-              },
-              "aria-invalid": wrong,
-              style: {
-                fontSize: 24,
-                letterSpacing: "0.5em",
-                textAlign: "center",
-                padding: "10px 12px",
-                borderRadius: LT.radiusMd,
-                border: `1px solid ${wrong ? LT.live : LT.line}`,
-                background: LT.surfaceRaised,
-                color: LT.text,
-                outline: "none",
-                fontFamily: "inherit"
-              }
-            }
-          ),
-          wrong ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: "#fecdd3" }, children: wrongText }) : null,
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" }, children: [
-            /* @__PURE__ */ jsx(Btn, { variant: "ghost", small: true, onClick: onClose, children: cancelLabel }),
-            /* @__PURE__ */ jsx(Btn, { variant: "primary", small: true, onClick: () => void submit(), children: unlockLabel })
-          ] })
-        ] })
-      }
-    );
-  }
-  var LT, surfaceCard;
-  var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-ui.tsx"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_live_tv_logo_image();
-      init_live_tv_data();
-      init_jsx_runtime_shim();
-      LT = {
-        bg: "#050816",
-        /* Glas utan blur (Jerry 2026-09-02): samma yta som strömraderna på
-           detaljsidan. Ljusare än de solida panelerna och utan backdrop-filter,
-           som är dyrt på telefon och TV. */
-        surface: "rgba(252,252,255,0.09)",
-        surfaceRaised: "rgba(252,252,255,0.14)",
-        neutral: "rgba(252,252,255,0.12)",
-        line: "rgba(255,255,255,0.10)",
-        text: "#f3f4f8",
-        muted: "rgba(243,244,248,0.7)",
-        dim: "rgba(243,244,248,0.55)",
-        faint: "rgba(243,244,248,0.4)",
-        accent: "#f4845f",
-        accentText: "#ffd9c9",
-        accentSoft: "rgba(244,132,95,0.16)",
-        accentLine: "rgba(244,132,95,0.55)",
-        accentDeep: "rgba(244,132,95,0.12)",
-        live: "#fb7185",
-        liveSoft: "rgba(251,113,133,0.18)",
-        radiusLg: 14,
-        radiusMd: 8,
-        radiusSm: 4
-      };
-      surfaceCard = {
-        background: LT.surface,
-        borderRadius: LT.radiusMd,
-        border: `1px solid ${LT.line}`,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)"
-      };
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useInSceneBox.ts
-  function useInSceneBox(ref) {
-    const [inBox, setInBox] = useState(false);
-    useEffect(() => {
-      if (typeof document === "undefined") return;
-      const read11 = () => {
-        const from = ref?.current ?? null;
-        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
-        return box !== null;
-      };
-      const sync = () => setInBox(read11());
-      sync();
-      const observer = new MutationObserver(sync);
-      observer.observe(document.documentElement, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: [TV_SCENE_BOX_ATTR]
-      });
-      return () => observer.disconnect();
-    }, [ref]);
-    return inBox;
-  }
-  var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
-      "use strict";
-      init_react_shim();
-      init_plugin_sdk();
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
-  function useNarrowSurface(ref) {
-    const [narrow, setNarrow] = useState(false);
-    useEffect(() => {
-      if (typeof document === "undefined") return;
-      const read11 = () => {
-        const from = ref?.current ?? null;
-        const box = from ? from.closest(`[${TV_SCENE_BOX_ATTR}]`) : document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
-        return box?.getAttribute(TV_SCENE_NARROW_ATTR) === "1";
-      };
-      const sync = () => setNarrow(read11());
-      sync();
-      const observer = new MutationObserver(sync);
-      observer.observe(document.documentElement, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: [TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR]
-      });
-      return () => observer.disconnect();
-    }, [ref]);
-    return narrow;
-  }
-  var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
-      "use strict";
-      init_react_shim();
-      init_plugin_sdk();
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
-  function useSceneBoxScale() {
-    const [scale, setScale] = useState(null);
-    useEffect(() => {
-      if (typeof document === "undefined") return;
-      const read11 = () => {
-        const getScale = tvSceneBoxScale2;
-        if (typeof getScale !== "function") return null;
-        const box = document.querySelector(`[${TV_SCENE_BOX_ATTR}]`);
-        if (!box) return null;
-        const value = getScale(box);
-        return Number.isFinite(value) && value > 0 ? value : null;
-      };
-      const sync = () => setScale(read11());
-      sync();
-      const observer = new MutationObserver(sync);
-      observer.observe(document.documentElement, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: [TV_SCENE_BOX_ATTR, "style"]
-      });
-      return () => observer.disconnect();
-    }, []);
-    return scale;
-  }
-  var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
-      "use strict";
-      init_react_shim();
-      init_plugin_sdk();
-      init_plugin_sdk();
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-ui.tsx
-  function dp(n) {
-    return n;
-  }
-  function TvFocusStyle() {
-    return /* @__PURE__ */ jsx("style", { children: `
-:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f]:focus,
-:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f][data-fcur="1"] {
-  outline: 2px solid rgb(var(--accent-500)) !important;
-  outline-offset: 3px;
-  box-shadow: 0 0 28px color-mix(in srgb, rgb(var(--accent-500)) 45%, transparent) !important;
-}
-[data-live-tv-tv-root] [data-f] { outline: none; }
-[data-live-tv-tv-root] [data-f] { user-select: none; -webkit-user-select: none; }
-[data-live-tv-tv-root] [data-selectable-text] { user-select: text; -webkit-user-select: text; }
-@media (hover: hover) and (pointer: fine) {
-  [data-live-tv-tv-root] [data-f]:hover { background-image: linear-gradient(rgba(252,252,255,0.06), rgba(252,252,255,0.06)) !important; }
-  [data-live-tv-tv-root] [data-live-tv-chip][data-f]:hover { border-color: rgba(255,255,255,0.22) !important; }
-}
-[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:focus,
-[data-live-tv-tv-root][data-lt-phone="1"] [data-f][data-fcur="1"] { outline: none !important; box-shadow: none !important; }
-[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:hover { background-image: none !important; }
-:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f]:focus,
-:root:not([data-focus-source="pointer"]) [data-live-tv-tv-root][data-live-tv-desktop="1"] [data-f][data-fcur="1"] {
-  outline: 1px solid rgb(var(--accent-500)) !important;
-  outline-offset: -1px;
-  box-shadow: none !important;
-}
-[data-live-tv-tv-root] [data-guide-block]:not([data-live]):hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f]:focus,
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-block][data-f][data-fcur="1"] { outline: none !important; }
-[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f]:focus,
-[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-block][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
-[data-live-tv-tv-root] [data-guide-row]:hover { background: rgba(252,252,255,0.14) !important; background-image: none !important; }
-[data-live-tv-tv-root] [data-guide-row][data-sticky]:hover { background: #232324 !important; }
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f]:focus,
-[data-live-tv-tv-root][data-live-tv-desktop="1"] [data-guide-row][data-f][data-fcur="1"] { outline: none !important; }
-[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f]:focus,
-[data-live-tv-tv-root]:not([data-live-tv-desktop="1"]) [data-guide-row][data-f][data-fcur="1"] { outline: 2px solid rgba(255,255,255,0.45) !important; outline-offset: -2px; box-shadow: none !important; }
-[data-live-tv-tv-root] [data-live-tv-menu-item][data-f]:focus,
-[data-live-tv-tv-root] [data-live-tv-menu-item][data-f][data-fcur="1"] { outline-offset: -4px; border-radius: ${dp(12)}px; }
-[data-live-tv-tv-root] [data-scroll]::-webkit-scrollbar, [data-live-tv-tv-root] [data-row]::-webkit-scrollbar { display: none; }
-[data-live-tv-tv-root] .lumio-tv-logo-img { max-width: 60%; max-height: 60%; object-fit: contain; }
-@keyframes lumio-livetv-fade { from { opacity: 0; transform: translateY(${dp(6)}px); } to { opacity: 1; transform: none; } }
-[data-live-tv-tv-root] [data-live-tv-layer] { animation: lumio-livetv-fade 160ms ease-out; }
-
-/* \xC5TG\xC4RDSKNAPPARNAS UTF\xC4LLBARA NAMN.
-   Samma kontrakt som appens hero-icon-action: knappen b\xE4r
-   [data-hero-icon-action] och namnet [data-hero-icon-label]. Appens egen regel
-   i spa/src/index.css f\xE4ller ut namnet n\xE4r <html data-hero-action-labels="open">
-   \u2014 allts\xE5 n\xE4r inst\xE4llningen \xE4r p\xE5 \u2014 och den tr\xE4ffar de h\xE4r elementen ocks\xE5,
-   eftersom markeringen \xE4r densamma. Det som INTE kommer d\xE4rifr\xE5n \xE4r hovring
-   och fokus: appens variant g\xF6r det med Tailwinds group-hover-klasser, och de
-   finns inte i pluginets inline-stilar. M\xE5tten \xE4r medvetet identiska
-   (9rem/1rem), s\xE5 de tv\xE5 inte kan glida is\xE4r utan att det syns. */
-[data-live-tv-tv-root] [data-hero-icon-label] {
-  max-width: 0;
-  padding-right: 0;
-  opacity: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  transition: max-width 200ms ease-out, padding 200ms ease-out, opacity 200ms ease-out;
-}
-[data-live-tv-tv-root] [data-hero-icon-action]:hover [data-hero-icon-label],
-[data-live-tv-tv-root] [data-hero-icon-action]:focus [data-hero-icon-label],
-[data-live-tv-tv-root] [data-hero-icon-action][data-fcur="1"] [data-hero-icon-label] {
-  max-width: 9rem;
-  padding-right: 1rem;
-  opacity: 1;
-}
-
-/* Knappstorlek (appens Tema och skala \u2192 Knappstorlek): glyferna i VOD-
-   titelns knapprad f\xF6ljer --tv-button-scale som knapparna sj\xE4lva. Vilande
-   n\xE4r appen inte s\xE4tter data-tv-button-scale (100 % eller \xE4ldre app). */
-:root[data-tv="1"][data-tv-button-scale] [data-live-tv-tv-root] [data-vod-actions] [data-hero-icon-action] svg {
-  width: calc(30px * var(--tv-button-scale));
-  height: calc(30px * var(--tv-button-scale));
-}
-:root[data-tv="1"][data-tv-button-scale] [data-live-tv-tv-root] [data-vod-actions] [data-testid="title-play"] svg {
-  width: calc(28px * var(--tv-button-scale));
-  height: calc(28px * var(--tv-button-scale));
-}
-` });
-  }
-  function station(onOk, onHold, extra) {
-    const hold = onHold ? tvHoldHandlers(onOk, onHold) : null;
-    const pointer = onHold ? tvPointerHoldHandlers(onOk, onHold) : null;
-    return {
-      "data-f": "",
-      tabIndex: 0,
-      role: "button",
-      ...pointer ? {
-        "data-hold": "",
-        // Ett fyrat håll undertrycker klicket i `onClickCapture`. Två bälten,
-        // för att SDK:t kan vara äldre än den här filen: capture-handlaren
-        // stoppar spridningen OCH markerar eventet som `defaultPrevented`,
-        // och onClick nedan vägrar köra onOk på ett sådant event. Utan det
-        // skulle både glasmenyn och uppspelningen starta på samma håll.
-        onClick: (event) => {
-          if (event?.defaultPrevented) return;
-          onOk();
-        },
-        onPointerDown: pointer.onPointerDown,
-        onPointerUp: pointer.onPointerUp,
-        onPointerCancel: pointer.onPointerCancel,
-        onPointerLeave: pointer.onPointerLeave,
-        onContextMenu: pointer.onContextMenu,
-        onClickCapture: pointer.onClickCapture
-      } : { onClick: onOk },
-      ...hold ? { onKeyDown: hold.onKeyDown, onKeyUp: hold.onKeyUp } : {
-        onKeyDown: (event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onOk();
-          }
-        }
-      },
-      ...extra ?? {}
-    };
-  }
-  function Tag2({ variant, children, style, title }) {
-    const base = { display: "inline-flex", alignItems: "center", gap: dp(8), whiteSpace: "nowrap", lineHeight: 1.2 };
-    const look = {
-      live: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.14em", padding: `${dp(5)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.liveSoft, color: TV2.liveText, textTransform: "uppercase" },
-      neutral: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.s12, color: TV2.text },
-      quality: { fontSize: dp(15), padding: `${dp(3)}px ${dp(12)}px`, borderRadius: dp(8), background: "rgba(0,0,0,0.45)", color: TV2.text },
-      replay: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV2.accMix(22), color: TV2.accText },
-      reason: { fontSize: dp(13), letterSpacing: "0.08em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: "rgba(0,0,0,0.45)", color: TV2.text },
-      audio: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.12em", padding: `${dp(4)}px ${dp(10)}px`, borderRadius: dp(6), background: TV2.acc, color: TV2.onAcc, textTransform: "uppercase" }
-    };
-    return /* @__PURE__ */ jsxs("span", { title, style: { ...base, ...look[variant], ...style }, children: [
-      variant === "live" ? /* @__PURE__ */ jsx("span", { style: { width: dp(8), height: dp(8), borderRadius: 999, background: TV2.live } }) : null,
-      children
-    ] });
-  }
-  function Progress({ value, height = dp(5), track = TV2.s14, style }) {
-    const pct2 = Math.round(Math.min(1, Math.max(0, value)) * 100);
-    return /* @__PURE__ */ jsx("div", { style: { height, borderRadius: height, background: track, overflow: "hidden", ...style }, children: /* @__PURE__ */ jsx("div", { "data-fill": "", style: { width: `${pct2}%`, height: "100%", background: TV2.acc } }) });
-  }
-  function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style }) {
-    const [frameFailed, setFrameFailed] = useState(false);
-    const [logoFailed, setLogoFailed] = useState(false);
-    const frameSrc = USE_PLAYER_FRAMES && !frameFailed && "url" in channel ? playerFrameUrl(channelKey(channel), frameVersion ?? null) : null;
-    const primaryLogo = getLiveTvLogoSrc(channel.logo);
-    const fallbackLogo = getLiveTvLogoSrc(channel.logoFallback);
-    const logo = logoFailed ? null : primaryLogo ?? fallbackLogo;
-    return /* @__PURE__ */ jsxs("div", { style: { position: "relative", height, aspectRatio: aspect, background: "rgba(252,252,255,0.06)", borderRadius: radius, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", ...style }, children: [
-      frameSrc ? /* @__PURE__ */ jsx("img", { src: frameSrc, alt: "", onError: () => setFrameFailed(true), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }) : logo ? /* @__PURE__ */ jsx(
-        LiveTvLogoImage,
-        {
-          src: logo,
-          fallbackSrc: primaryLogo ? fallbackLogo : void 0,
-          alt: "",
-          className: "lumio-tv-logo-img",
-          onError: () => setLogoFailed(true)
-        }
-      ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: dp(22), fontWeight: 600, color: TV2.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }),
-      children
-    ] });
-  }
-  function Chip({ active: active4, children, style, glass = false, ...rest }) {
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        "data-live-tv-chip": "",
-        "data-live-tv-chip-glass": glass ? "" : void 0,
-        ...rest,
-        style: { height: dp(46), minHeight: dp(46), padding: `0 ${dp(22)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(19), whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0, background: glass ? TV2.glass : active4 ? TV2.s16 : TV2.s05, color: active4 ? TV2.text : TV2.muted, fontWeight: active4 ? 600 : 400, border: `1px solid ${glass ? active4 ? TV2.lineStrong : TV2.line : active4 ? TV2.lineStrong : "transparent"}`, ...style },
-        children
-      }
-    );
-  }
-  function Segment({ options, value, onChange, style }) {
-    return /* @__PURE__ */ jsx("div", { "data-testid": "tv-segment", style: { display: "inline-flex", padding: dp(4), borderRadius: 999, background: TV2.s08, gap: dp(2), flexShrink: 0, whiteSpace: "nowrap", maxWidth: "100%", ...style }, children: options.map((option) => /* @__PURE__ */ jsx(
-      "div",
-      {
-        "data-testid": "tv-segment-option",
-        ...station(() => onChange(option.key)),
-        style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(16), whiteSpace: "nowrap", cursor: "pointer", background: option.key === value ? TV2.s16 : "transparent", color: option.key === value ? TV2.text : TV2.muted },
-        children: option.label
-      },
-      option.key
-    )) });
-  }
-  function RoundBtn({ size, children, background = TV2.s12, style, ...rest }) {
-    const resolvedSize = size ?? dp(52);
-    return /* @__PURE__ */ jsx("div", { ...rest, style: { width: resolvedSize, height: resolvedSize, minHeight: resolvedSize, borderRadius: 999, background, border: `1px solid ${TV2.lineCard}`, display: "inline-flex", alignItems: "center", justifyContent: "center", color: TV2.text, cursor: "pointer", flexShrink: 0, ...style }, children });
-  }
-  function Toggle({ on }) {
-    return /* @__PURE__ */ jsx("span", { style: { width: dp(52), height: dp(30), borderRadius: 999, background: on ? TV2.acc : TV2.s18, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: dp(3), left: on ? dp(25) : dp(3), width: dp(24), height: dp(24), borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
-  }
-  function useTvClockNode(locale) {
-    const HostClock = getTvClock?.() ?? null;
-    const inSceneBox = useInSceneBox();
-    const sceneBoxScale = useSceneBoxScale();
-    const narrowSurface = useNarrowSurface();
-    const canCompensate = inSceneBox && sceneBoxScale !== null && !narrowSurface;
-    const clockRef = useRef(null);
-    const [naturalWidth, setNaturalWidth] = useState(0);
-    useEffect(() => {
-      const el = clockRef.current;
-      if (!el) return;
-      const mat = () => setNaturalWidth(el.offsetWidth);
-      mat();
-      const vakt = new ResizeObserver(mat);
-      vakt.observe(el);
-      return () => vakt.disconnect();
-    }, [canCompensate]);
-    const useHostClock = HostClock !== null && (!inSceneBox || canCompensate);
-    const [now2, setNow] = useState(() => /* @__PURE__ */ new Date());
-    useEffect(() => {
-      if (useHostClock) return;
-      let timer3 = 0;
-      const tick2 = () => {
-        const next = /* @__PURE__ */ new Date();
-        setNow(next);
-        timer3 = window.setTimeout(tick2, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
-      };
-      tick2();
-      return () => window.clearTimeout(timer3);
-    }, [useHostClock]);
-    if (useHostClock) {
-      if (inSceneBox) {
-        const bredd = naturalWidth > 0 ? naturalWidth / sceneBoxScale : void 0;
-        return /* @__PURE__ */ jsx("span", { style: { display: "inline-block", width: bredd, textAlign: "right" }, children: /* @__PURE__ */ jsx(
-          "span",
-          {
-            ref: clockRef,
-            style: { display: "inline-block", transform: `scale(${1 / sceneBoxScale})`, transformOrigin: "top right" },
-            children: /* @__PURE__ */ jsx(HostClock, { variant: "desktop" })
-          }
-        ) });
-      }
-      return /* @__PURE__ */ jsx(HostClock, { variant: "desktop" });
-    }
-    const time = now2.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-    const date = now2.toLocaleDateString(locale, { day: "numeric", month: "short" }).replace(".", "").toUpperCase();
-    const day = now2.toLocaleDateString(locale, { weekday: "short" }).replace(".", "").toUpperCase();
-    return /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), letterSpacing: "0.1em", color: "rgba(243,244,248,0.65)", whiteSpace: "nowrap" }, children: `${time} | ${date} | ${day}` });
-  }
-  var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
-  var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_plugin_sdk();
-      init_plugin_sdk();
-      init_live_tv_data();
-      init_live_tv_logo_image();
-      init_live_tv_ui();
-      init_useInSceneBox();
-      init_useNarrowSurface();
-      init_useSceneBoxScale();
-      init_jsx_runtime_shim();
-      TV2 = {
-        bg: "#000",
-        text: "#f3f4f8",
-        muted: "rgba(243,244,248,0.7)",
-        dim: "rgba(243,244,248,0.55)",
-        faint: "rgba(243,244,248,0.4)",
-        s05: "rgba(252,252,255,0.05)",
-        s06: "rgba(252,252,255,0.06)",
-        s07: "rgba(252,252,255,0.07)",
-        s08: "rgba(252,252,255,0.08)",
-        s10: "rgba(252,252,255,0.10)",
-        s12: "rgba(252,252,255,0.12)",
-        s14: "rgba(252,252,255,0.14)",
-        s16: "rgba(252,252,255,0.16)",
-        s18: "rgba(252,252,255,0.18)",
-        line: "rgba(255,255,255,0.08)",
-        lineCard: "rgba(255,255,255,0.10)",
-        lineStrong: "rgba(255,255,255,0.22)",
-        acc: "rgb(var(--accent-500))",
-        accMix: (pct2) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct2}%, transparent)`,
-        accText: "#ffd9c9",
-        onAcc: "#fff",
-        live: "#fb7185",
-        liveSoft: "rgba(251,113,133,0.22)",
-        liveText: "#fecdd3",
-        glass: "rgba(58,59,66,0.96)",
-        panel: "#141519",
-        scrim: "rgba(0,0,0,0.6)",
-        font: "'Avenir Next', 'Trebuchet MS', sans-serif",
-        mono: "ui-monospace, SFMono-Regular, Menlo, monospace"
-      };
-      cardStyle = {
-        background: TV2.s07,
-        border: `1px solid ${TV2.lineCard}`,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
-        borderRadius: dp(14),
-        overflow: "hidden"
-      };
-      USE_PLAYER_FRAMES = false;
-      sw = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
-      svg = (size, children, fill2) => createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", ...sw, fill: fill2 ? "currentColor" : "none" }, children);
-      Icons = {
-        Search: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
-          /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
-        ] })),
-        Home: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M3 11.5 12 4l9 7.5" }),
-          /* @__PURE__ */ jsx("path", { d: "M5 10v10h14V10" })
-        ] })),
-        Tv: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "13", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M8 21h8" })
-        ] })),
-        SquaresFour: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "4", y: "4", width: "7", height: "7", rx: "1.5" }),
-          /* @__PURE__ */ jsx("rect", { x: "13", y: "4", width: "7", height: "7", rx: "1.5" }),
-          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "7", height: "7", rx: "1.5" }),
-          /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
-        ] })),
-        /** Filmremsa — Biblioteket. Två perforeringsrader och en ruta emellan. */
-        FilmStrip: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" })
-        ] })),
-        /** Rollista — två figurer, som appens detaljsida. */
-        Users: ({ size = dp(22) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "9", cy: "8", r: "3.2" }),
-          /* @__PURE__ */ jsx("path", { d: "M3.5 19a5.5 5.5 0 0 1 11 0" }),
-          /* @__PURE__ */ jsx("path", { d: "M16 5.2a3.2 3.2 0 0 1 0 5.6M17.5 13.2A5.5 5.5 0 0 1 20.5 19" })
-        ] })),
-        /** Min lista. */
-        Bookmark: ({ size = dp(22), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z", strokeLinejoin: "round" }), filled),
-        /** Sedd. */
-        Eye: ({ size = dp(22), filled = false }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z" }),
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" })
-        ] }), filled),
-        Heart: ({ size = dp(26), filled = false }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
-        Gear: ({ size = dp(26) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
-          /* @__PURE__ */ jsx("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })
-        ] })),
-        ChevronLeft: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M15 18l-6-6 6-6" })),
-        /** Öppningsknappen för telefonens meny-låda (spec §2) — tre linjer. */
-        ChevronDown: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "m6 9 6 6 6-6" })),
-        Play: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
-        Pause: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M7 5h4v14H7zM13 5h4v14h-4z" }), true),
-        Bell: ({ size = dp(20), filled = false }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" }),
-          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
-        ] }), filled),
-        Lock: ({ size = dp(18) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "5", y: "11", width: "14", height: "10", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M8 11V7a4 4 0 0 1 8 0v4" })
-        ] })),
-        Plus: ({ size = dp(40) }) => svg(size, /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" })),
-        Dots: ({ size = dp(24) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "12", r: "1.6" }),
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.6" }),
-          /* @__PURE__ */ jsx("circle", { cx: "18", cy: "12", r: "1.6" })
-        ] }), true),
-        Calendar: ({ size = dp(20) }) => svg(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "16", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M8 3v4M16 3v4M3 10h18" })
-        ] }))
-      };
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
@@ -42018,7 +42303,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active3, listeners8;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -42032,7 +42317,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
     while (memo3.size > MAX_ENTRIES4) {
@@ -42064,7 +42349,7 @@ ${cue.text}`).join("\n\n")}
   }
   var MAX_ENTRIES4, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -42073,7 +42358,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -42088,14 +42373,14 @@ ${cue.text}`).join("\n\n")}
     return stored;
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -42140,7 +42425,7 @@ ${cue.text}`).join("\n\n")}
     try {
       if (migrated > 0) {
         const rewrittenById = new Map(rewritten.map((entry) => [entry.id, entry]));
-        const merged = getLiveTvLists().map((current3) => rewrittenById.get(current3.id) ?? current3);
+        const merged = getLiveTvLists().map((current5) => rewrittenById.get(current5.id) ?? current5);
         replaceLiveTvLists(merged);
         emitIndexChanged();
       }
@@ -42153,7 +42438,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -42163,8 +42448,8 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/channel-history.ts
-  function sanitize(raw) {
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/channel-history.ts
+  function sanitize2(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
     for (const item of raw) {
@@ -42186,7 +42471,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
   function getChannelHistory() {
-    return sanitize(readPluginJson(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, []));
+    return sanitize2(readPluginJson(LIVE_TV_PLUGIN_ID, CHANNEL_HISTORY_KEY, []));
   }
   function recordChannelWatch(channel, listId = null, now2 = Date.now()) {
     if (!channel.url?.trim() || !channel.name?.trim()) return getChannelHistory();
@@ -42210,7 +42495,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -42220,11 +42505,11 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
-  function sanitize2(raw) {
+  function sanitize3(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
     for (const item of raw) {
@@ -42251,7 +42536,7 @@ ${cue.text}`).join("\n\n")}
     return out.sort((left, right) => left.start - right.start);
   }
   function getReminders(now2 = Date.now()) {
-    return sanitize2(readPluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, [])).filter((r) => r.start + REMINDER_GRACE_MS > now2);
+    return sanitize3(readPluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, [])).filter((r) => r.start + REMINDER_GRACE_MS > now2);
   }
   function write6(list) {
     writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, list);
@@ -42262,9 +42547,9 @@ ${cue.text}`).join("\n\n")}
   }
   function toggleReminder(channel, programme, now2 = Date.now()) {
     const id = reminderId(channel, programme);
-    const current3 = getReminders(now2);
-    const next = current3.some((r) => r.id === id) ? current3.filter((r) => r.id !== id) : [
-      ...current3,
+    const current5 = getReminders(now2);
+    const next = current5.some((r) => r.id === id) ? current5.filter((r) => r.id !== id) : [
+      ...current5,
       {
         id,
         channelKey: channelKey(channel),
@@ -42283,13 +42568,13 @@ ${cue.text}`).join("\n\n")}
     return next;
   }
   function replaceSportReminders(next, now2 = Date.now()) {
-    const current3 = getReminders(now2);
-    const manual = current3.filter((r) => r.origin !== "sport");
+    const current5 = getReminders(now2);
+    const manual = current5.filter((r) => r.origin !== "sport");
     const manualIds = new Set(manual.map((r) => r.id));
-    const previous = new Map(current3.filter((r) => r.origin === "sport").map((r) => [r.id, r]));
+    const previous = new Map(current5.filter((r) => r.origin === "sport").map((r) => [r.id, r]));
     const auto = next.filter((r) => !manualIds.has(r.id)).map((r) => ({ ...r, origin: "sport", notifiedAt: previous.get(r.id)?.notifiedAt }));
     const merged = [...manual, ...auto].sort((left, right) => left.start - right.start);
-    if (JSON.stringify(merged) !== JSON.stringify(current3)) write6(merged);
+    if (JSON.stringify(merged) !== JSON.stringify(current5)) write6(merged);
     return merged;
   }
   function markReminderNotified(id, now2 = Date.now()) {
@@ -42352,7 +42637,7 @@ ${cue.text}`).join("\n\n")}
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42364,73 +42649,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/channel-locks.ts
-  function bridge() {
-    return plugin_sdk_exports;
-  }
-  function pinSupportAvailable() {
-    const b = bridge();
-    return typeof b.activeProfileHasPin === "function" && typeof b.verifyActiveProfilePin === "function";
-  }
-  function activeProfileHasPin2() {
-    const b = bridge();
-    try {
-      return typeof b.activeProfileHasPin === "function" ? b.activeProfileHasPin() : false;
-    } catch {
-      return false;
-    }
-  }
-  async function verifyActiveProfilePin2(pin) {
-    const b = bridge();
-    if (typeof b.verifyActiveProfilePin !== "function") return false;
-    try {
-      return await b.verifyActiveProfilePin(pin);
-    } catch {
-      return false;
-    }
-  }
-  function sanitize3(raw) {
-    return Array.isArray(raw) ? raw.filter((value) => typeof value === "string" && value.length > 0) : [];
-  }
-  function getLockedChannelKeys() {
-    return sanitize3(readPluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, []));
-  }
-  function toggleChannelLock(channel) {
-    const key = channelKey(channel);
-    const current3 = getLockedChannelKeys();
-    const next = current3.includes(key) ? current3.filter((entry) => entry !== key) : [...current3, key];
-    writePluginJson(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, next);
-    return next;
-  }
-  function onChannelLocksChanged(listener) {
-    return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, LOCKED_CHANNELS_KEY, listener);
-  }
-  function useLockedChannelKeys() {
-    const [keys2, setKeys] = useState(() => getLockedChannelKeys());
-    useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), []);
-    return new Set(keys2);
-  }
-  function markUnlockedThisSession() {
-    unlockedThisSession = true;
-  }
-  function isUnlockedThisSession() {
-    return unlockedThisSession;
-  }
-  var LOCKED_CHANNELS_KEY, unlockedThisSession;
-  var init_channel_locks = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/channel-locks.ts"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_plugin_sdk();
-      init_plugin_sdk();
-      init_live_tv_data();
-      LOCKED_CHANNELS_KEY = "locked_channels_v1";
-      unlockedThisSession = false;
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
@@ -42485,7 +42704,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42512,7 +42731,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -42968,7 +43187,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY4, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -43001,7 +43220,1970 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  var MT, ellipsis2, clamp2, sectionLabel;
+  var init_mobile_tokens = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+      "use strict";
+      MT = {
+        bg: "#000",
+        text: "#f3f4f8",
+        muted: "rgba(243,244,248,0.62)",
+        muted70: "rgba(243,244,248,0.7)",
+        // Handoffets 70 % text på chips
+        dim: "rgba(243,244,248,0.45)",
+        faint: "rgba(243,244,248,0.4)",
+        s05: "rgba(252,252,255,0.05)",
+        s06: "rgba(252,252,255,0.06)",
+        s07: "rgba(252,252,255,0.07)",
+        s08: "rgba(252,252,255,0.08)",
+        s10: "rgba(252,252,255,0.10)",
+        s12: "rgba(252,252,255,0.12)",
+        s14: "rgba(252,252,255,0.14)",
+        s16: "rgba(252,252,255,0.16)",
+        line07: "rgba(255,255,255,0.07)",
+        line08: "rgba(255,255,255,0.08)",
+        line10: "rgba(255,255,255,0.10)",
+        line14: "rgba(255,255,255,0.14)",
+        line20: "rgba(255,255,255,0.2)",
+        sheet: "rgba(38,39,45,0.98)",
+        scrim: "rgba(0,0,0,0.6)",
+        acc: "rgb(var(--accent-500))",
+        accMix: (pct2) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct2}%, transparent)`,
+        onAcc: "#fff",
+        live: "#fb7185",
+        liveSoft: "rgba(251,113,133,0.22)",
+        liveText: "#fecdd3",
+        warnSoft: "rgba(244,132,95,0.2)",
+        warnText: "#f9c3ad",
+        font: "'Avenir Next', 'Trebuchet MS', sans-serif",
+        HIT: 44,
+        PAD: 16,
+        HEADER_H: 52,
+        HEADER_LEFT: 60,
+        TAB_BAR: 52,
+        SAFE_BOTTOM: "env(safe-area-inset-bottom, 18px)",
+        SAFE_TOP: "env(safe-area-inset-top, 0px)",
+        /**
+         * TOPPMARGINALEN MOT SYSTEMRADEN.
+         *
+         * `env(safe-area-inset-top)` ensamt räcker inte: Android-webviewn ger den
+         * bara när sidan bett om `viewport-fit=cover`, och värden räknar dessutom ut
+         * sin egen `--android-inset-top` ur fönstrets insets. Appens egna ytor tar
+         * max av båda (se `components/media-explorer.tsx`), och telefongrenen ska
+         * göra likadant — annars hamnar rubriken under kamerahålet, vilket den
+         * gjorde på en S10e: 39 px inset, sidhuvudet på y=0.
+         */
+        SAFE_TOP_GUARD: "max(env(safe-area-inset-top, 0px), var(--android-inset-top, 0px))",
+        /**
+         * BOTTENMARGINALEN MOT SYSTEMRADEN, samma resonemang som SAFE_TOP_GUARD.
+         * env() ensam räcker inte på Android; värdens --android-inset-bottom gör.
+         */
+        SAFE_BOTTOM_GUARD: "max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px))",
+        /**
+         * Innehållets bottenluft så att sista raden inte hamnar under flik-raden.
+         *
+         * Var 96 — ett fast tal — medan flik-raden är `TAB_BAR + SAFE_BOTTOM` och
+         * alltså VÄXER med enhetens navigeringsfält. På en Galaxy S10e (inset 48) är
+         * raden 100 px hög, och uppmätt i Live TV-inställningarna vid full rullning:
+         *
+         *   sista sektionen slutar   648
+         *   flik-raden börjar        644
+         *
+         * Innehållet gick alltså 4 px IN under raden, utan någon luft alls kvar
+         * (Jerry 2026-09-22). Måttet räknas därför ur radens egna delar plus 24 px
+         * andrum, så det följer med oavsett hur högt systemfältet är.
+         */
+        SCROLL_PAD_BOTTOM: "calc(52px + max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px)) + 24px)"
+      };
+      ellipsis2 = { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+      clamp2 = { overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" };
+      sectionLabel = { fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: MT.dim };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  var svg2, MIcons;
+  var init_mobile_icons = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+      "use strict";
+      init_react_shim();
+      init_jsx_runtime_shim();
+      svg2 = (size, children, filled) => createElement(
+        "svg",
+        { width: size, height: size, viewBox: "0 0 24 24", fill: filled ? "currentColor" : "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" },
+        children
+      );
+      MIcons = {
+        House: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M3 11.5 12 4l9 7.5" }),
+          /* @__PURE__ */ jsx("path", { d: "M5 10v10h14V10" })
+        ] }), filled),
+        List: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M4 6h16M4 12h16M4 18h16" })),
+        Heart: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
+        MagnifyingGlass: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
+          /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
+        ] })),
+        Gear: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })
+        ] })),
+        CaretLeft: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M15 6l-6 6 6 6" })),
+        CaretRight: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M9 6l6 6-6 6" })),
+        CaretDown: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M6 9l6 6 6-6" })),
+        Play: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
+        SpeakerHigh: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 9v6h4l6 5V4l-6 5H4z" }),
+          /* @__PURE__ */ jsx("path", { d: "M17.5 8.5a5 5 0 0 1 0 7" }),
+          /* @__PURE__ */ jsx("path", { d: "M20 6a8.5 8.5 0 0 1 0 12" })
+        ] })),
+        SpeakerSlash: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M4 9v6h4l6 5V4l-6 5H4z" }),
+          /* @__PURE__ */ jsx("path", { d: "m16 9 5 6M21 9l-5 6" })
+        ] })),
+        Bell: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" }),
+          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
+        ] }), filled),
+        Lock: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "5", y: "11", width: "14", height: "10", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 11V7a4 4 0 0 1 8 0v4" })
+        ] }), filled),
+        /** Filmremsa — Biblioteket. Samma form som ikonraden på TV. */
+        FilmStrip: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" })
+        ] })),
+        SquaresFour: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
+        ] })),
+        ArrowsOut: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" }) })),
+        Pip: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
+          /* @__PURE__ */ jsx("rect", { x: "12", y: "12", width: "7", height: "5", rx: "1", fill: "currentColor", stroke: "none" })
+        ] })),
+        DotsThree: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.6" }),
+          /* @__PURE__ */ jsx("circle", { cx: "18", cy: "12", r: "1.6" })
+        ] }), true),
+        /** Handtaget för dragbara listor: tre korta horisontella streck. */
+        ListHandle: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M7 7h10M7 12h10M7 17h10" }) })),
+        Plus: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" })),
+        X: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" }))
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/api-sports.ts
+  function venueImageUrl(id) {
+    const n = num(id);
+    return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/venues/${n}.png` : null;
+  }
+  function roundNumber(r) {
+    const m = /(\d+)\s*$/.exec(String(r ?? ""));
+    return m ? Number(m[1]) : null;
+  }
+  function team(raw) {
+    return { id: String(raw?.id ?? ""), name: String(raw?.name ?? ""), crest: str(raw?.logo) };
+  }
+  function sideOf(homeId, awayId, teamId) {
+    if (teamId == null) return null;
+    if (String(teamId) === String(homeId)) return "home";
+    if (String(teamId) === String(awayId)) return "away";
+    return null;
+  }
+  function footballLastGoal(raw) {
+    const goals = arr(raw?.events).filter((e) => e?.type === "Goal" && e?.detail !== "Missed Penalty");
+    const g = goals[goals.length - 1];
+    if (!g) return null;
+    return { side: sideOf(raw?.teams?.home?.id, raw?.teams?.away?.id, g?.team?.id), player: str(g?.player?.name), minute: num(g?.time?.elapsed) };
+  }
+  function footballFixture(raw) {
+    if (raw?.fixture?.id == null) return null;
+    const short = String(raw.fixture.status?.short ?? "NS");
+    const gh = num(raw.goals?.home);
+    const ga = num(raw.goals?.away);
+    return {
+      provider: "api-sports",
+      id: String(raw.fixture.id),
+      sport: "football",
+      league: { id: String(raw.league?.id ?? ""), name: String(raw.league?.name ?? ""), season: String(raw.league?.season ?? ""), round: roundNumber(raw.league?.round), country: str(raw.league?.country) },
+      kickoff: (num(raw.fixture.timestamp) ?? 0) * 1e3,
+      status: FOOTBALL_STATUS[short] ?? "scheduled",
+      statusShort: short,
+      minute: num(raw.fixture.status?.elapsed),
+      home: team(raw.teams?.home),
+      away: team(raw.teams?.away),
+      score: gh != null && ga != null ? { home: gh, away: ga } : null,
+      venue: str(raw.fixture.venue?.name),
+      venueImage: venueImageUrl(raw.fixture.venue?.id),
+      lastGoal: footballLastGoal(raw)
+    };
+  }
+  function gameFixture(sport, raw) {
+    if (raw?.id == null) return null;
+    const short = String(raw.status?.short ?? "NS");
+    const total = (v) => v && typeof v === "object" ? num(v.total) : num(v);
+    const h = total(raw.scores?.home);
+    const a = total(raw.scores?.away);
+    return {
+      provider: "api-sports",
+      id: String(raw.id),
+      sport,
+      league: { id: String(raw.league?.id ?? ""), name: String(raw.league?.name ?? ""), season: String(raw.league?.season ?? ""), round: roundNumber(raw.week), country: str(raw.country?.name) },
+      kickoff: (num(raw.timestamp) ?? 0) * 1e3,
+      status: GAMES_STATUS[short] ?? "scheduled",
+      statusShort: short,
+      minute: num(raw.timer),
+      home: team(raw.teams?.home),
+      away: team(raw.teams?.away),
+      score: h != null && a != null ? { home: h, away: a } : null,
+      venue: str(raw.venue?.name),
+      lastGoal: null
+    };
+  }
+  function footballEvent(raw, e) {
+    const type = e?.type === "Goal" ? e?.detail === "Missed Penalty" ? "other" : "goal" : e?.type === "Card" ? "card" : e?.type === "subst" ? "sub" : e?.type === "Var" ? "var" : "other";
+    return { minute: num(e?.time?.elapsed), extra: num(e?.time?.extra), side: sideOf(raw?.teams?.home?.id, raw?.teams?.away?.id, e?.team?.id), type, detail: String(e?.detail ?? ""), player: str(e?.player?.name), assist: str(e?.assist?.name) };
+  }
+  function footballStats(raw) {
+    const [h, a] = arr(raw?.statistics);
+    if (!h || !a) return [];
+    const away = new Map(arr(a.statistics).map((s) => [s?.type, s?.value]));
+    const fmt2 = (v) => v == null ? "0" : String(v);
+    return arr(h.statistics).map((s) => ({ label: String(s?.type ?? ""), home: fmt2(s?.value), away: fmt2(away.get(s?.type)) }));
+  }
+  function footballLineups(raw) {
+    return arr(raw?.lineups).map((l) => ({
+      side: sideOf(raw?.teams?.home?.id, raw?.teams?.away?.id, l?.team?.id) ?? "home",
+      formation: str(l?.formation),
+      startXI: arr(l?.startXI).map(lineupEntry),
+      subs: arr(l?.substitutes).map(lineupEntry)
+    }));
+  }
+  function hockeyEvent(game, e) {
+    const m = num(e?.minute);
+    const base = PERIOD_OFFSET[String(e?.period)] ?? 0;
+    const type = e?.type === "goal" ? "goal" : e?.type === "penalty" ? "penalty" : "other";
+    return { minute: m == null ? null : base + m, extra: null, side: sideOf(game?.teams?.home?.id, game?.teams?.away?.id, e?.team?.id), type, detail: String(e?.comment ?? ""), player: str(arr(e?.players)[0]), assist: str(arr(e?.assists)[0]) };
+  }
+  function footballStandingRow(row) {
+    return { rank: num(row?.rank) ?? 0, team: team(row?.team), played: num(row?.all?.played) ?? 0, points: num(row?.points) ?? 0, goalDiff: num(row?.goalsDiff), form: str(row?.form), group: str(row?.group) };
+  }
+  function gameStandingRow(row) {
+    const f = num(row?.goals?.for);
+    const a = num(row?.goals?.against);
+    return { rank: num(row?.position) ?? 0, team: team(row?.team), played: num(row?.games?.played) ?? 0, points: num(row?.points) ?? 0, goalDiff: f != null && a != null ? f - a : null, form: str(row?.form), group: str(row?.group?.name) };
+  }
+  function keyCheck(body) {
+    const r = body?.response;
+    const used = num(r?.requests?.current);
+    const limit = num(r?.requests?.limit_day);
+    if (used == null || limit == null) return { ok: false, plan: null, used: null, limit: null };
+    return { ok: true, plan: str(r?.subscription?.plan), used, limit };
+  }
+  var API_SPORTS_REGISTER_URL, COVERED, FOOTBALL_STATUS, GAMES_STATUS, PERIOD_OFFSET, arr, resp, num, API_SPORTS_MEDIA, str, enc, parseFixture, fixtures, lineupEntry, apiSports;
+  var init_api_sports = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/api-sports.ts"() {
+      "use strict";
+      API_SPORTS_REGISTER_URL = "https://dashboard.api-football.com/register";
+      COVERED = /* @__PURE__ */ new Set(["football", "hockey", "basketball", "handball"]);
+      FOOTBALL_STATUS = {
+        TBD: "scheduled",
+        NS: "scheduled",
+        "1H": "live",
+        HT: "ht",
+        "2H": "live",
+        ET: "live",
+        BT: "ht",
+        P: "live",
+        SUSP: "live",
+        INT: "live",
+        LIVE: "live",
+        FT: "finished",
+        AET: "finished",
+        PEN: "finished",
+        PST: "postponed",
+        CANC: "postponed",
+        ABD: "postponed",
+        AWD: "finished",
+        WO: "finished"
+      };
+      GAMES_STATUS = {
+        NS: "scheduled",
+        P1: "live",
+        P2: "live",
+        P3: "live",
+        OT: "live",
+        PT: "live",
+        BT: "ht",
+        Q1: "live",
+        Q2: "live",
+        Q3: "live",
+        Q4: "live",
+        HT: "ht",
+        "1H": "live",
+        "2H": "live",
+        ET: "live",
+        INTR: "live",
+        FT: "finished",
+        AOT: "finished",
+        AP: "finished",
+        AW: "finished",
+        AET: "finished",
+        AWO: "finished",
+        POST: "postponed",
+        CANC: "postponed",
+        ABD: "postponed"
+      };
+      PERIOD_OFFSET = { P1: 0, P2: 20, P3: 40, OT: 60 };
+      arr = (v) => Array.isArray(v) ? v : [];
+      resp = (body) => arr(body?.response);
+      num = (v) => typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+      API_SPORTS_MEDIA = "https://media.api-sports.io";
+      str = (v) => typeof v === "string" && v.trim() ? v : null;
+      enc = encodeURIComponent;
+      parseFixture = (sport, raw) => sport === "football" ? footballFixture(raw) : gameFixture(sport, raw);
+      fixtures = (sport) => (bodies) => resp(bodies[0]).map((r) => parseFixture(sport, r)).filter((f) => f !== null);
+      lineupEntry = (x) => ({ number: num(x?.player?.number), name: String(x?.player?.name ?? ""), pos: str(x?.player?.pos) });
+      apiSports = {
+        id: "api-sports",
+        liveFloorMs: 15e3,
+        coverage: (sport) => COVERED.has(sport) ? "full" : "epg",
+        bucket: (sport) => sport,
+        day(sport, date, opts) {
+          const route = sport === "football" ? "/fixtures" : "/games";
+          const past = date < opts.today;
+          return {
+            requests: [{ sport, path: `${route}?date=${date}&timezone=${enc(opts.tz)}`, ttlS: date === opts.today ? 900 : 21600, ...past ? { finalAfter: opts.dayEndMs + 3 * 36e5 } : {} }],
+            parse: fixtures(sport)
+          };
+        },
+        live(sport, opts) {
+          const path = sport === "football" ? `/fixtures?live=all&timezone=${enc(opts.tz)}` : `/games?date=${opts.today}&timezone=${enc(opts.tz)}`;
+          return { requests: [{ sport, path, ttlS: 10 }], parse: fixtures(sport) };
+        },
+        fixture(sport, id, opts) {
+          const ttlS = opts.finished ? -1 : 60;
+          if (sport === "football") {
+            return {
+              requests: [{ sport, path: `/fixtures?id=${enc(id)}`, ttlS }],
+              parse: (bodies) => {
+                const raw = resp(bodies[0])[0];
+                const fixture = raw ? footballFixture(raw) : null;
+                if (!fixture) return null;
+                return { fixture, events: arr(raw.events).map((e) => footballEvent(raw, e)), stats: footballStats(raw), lineups: footballLineups(raw) };
+              }
+            };
+          }
+          const requests = [{ sport, path: `/games?id=${enc(id)}`, ttlS }];
+          if (sport === "hockey") requests.push({ sport, path: `/games/events?game=${enc(id)}`, ttlS });
+          return {
+            requests,
+            parse: (bodies) => {
+              const raw = resp(bodies[0])[0];
+              const fixture = raw ? gameFixture(sport, raw) : null;
+              if (!fixture) return null;
+              const events = sport === "hockey" ? resp(bodies[1]).map((e) => hockeyEvent(raw, e)) : [];
+              return { fixture, events, stats: [], lineups: [] };
+            }
+          };
+        },
+        standings(sport, leagueId, season) {
+          return {
+            requests: [{ sport, path: `/standings?league=${enc(leagueId)}&season=${enc(season)}`, ttlS: 86400 }],
+            parse: (bodies) => sport === "football" ? resp(bodies[0]).flatMap((r) => arr(r?.league?.standings)).flat().map(footballStandingRow) : resp(bodies[0]).flat().map(gameStandingRow)
+          };
+        },
+        searchTeams(sport, q) {
+          const query = q.trim();
+          if (query.length < 3) return { requests: [], parse: () => [] };
+          return {
+            requests: [{ sport, path: `/teams?search=${enc(query)}`, ttlS: 604800 }],
+            parse: (bodies) => resp(bodies[0]).map((x) => {
+              const t = sport === "football" ? x?.team : x;
+              return { id: String(t?.id ?? ""), name: String(t?.name ?? ""), crest: str(t?.logo), country: str(typeof t?.country === "string" ? t.country : t?.country?.name) };
+            })
+          };
+        },
+        validateKey: () => ({ requests: [{ sport: "football", path: "/status", ttlS: 0 }], parse: (bodies) => keyCheck(bodies[0]) }),
+        quotaProbe: (sport) => COVERED.has(sport) ? { requests: [{ sport, path: "/status", ttlS: 0 }], parse: (bodies) => keyCheck(bodies[0]) } : null,
+        crestUrl: (t) => t.crest,
+        teamArt: () => null
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/thesportsdb.ts
+  function utc(ts, date, time) {
+    const raw = str2(ts);
+    if (raw) return Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(raw) ? raw : `${raw}Z`);
+    const d = str2(date);
+    const t = str2(time) ?? "00:00:00";
+    return d ? Date.parse(`${d}T${t.length === 5 ? `${t}:00` : t}Z`) : 0;
+  }
+  function tsdbStatus(status, postponed) {
+    const v = String(status ?? "").trim().toLowerCase();
+    if (String(postponed ?? "").toLowerCase() === "yes" || v.includes("postponed") || v.includes("cancel") || v === "abd") return "postponed";
+    if (["ft", "aet", "pen", "aot", "ap", "match finished", "finished", "after over time", "after penalties"].includes(v)) return "finished";
+    if (["ht", "half time", "break", "bt"].includes(v)) return "ht";
+    if (["", "ns", "not started", "tbd", "time to be defined"].includes(v)) return "scheduled";
+    return "live";
+  }
+  function event(sport, e) {
+    if (!e?.idEvent) return null;
+    const h = num2(e.intHomeScore);
+    const a = num2(e.intAwayScore);
+    const status = tsdbStatus(e.strStatus, e.strPostponed);
+    return {
+      provider: "thesportsdb",
+      id: String(e.idEvent),
+      sport,
+      league: { id: String(e.idLeague ?? ""), name: String(e.strLeague ?? ""), season: String(e.strSeason ?? ""), round: num2(e.intRound), country: str2(e.strCountry) },
+      kickoff: utc(e.strTimestamp, e.dateEvent, e.strTime ?? e.strEventTime),
+      status,
+      statusShort: String(e.strStatus ?? ""),
+      minute: status === "live" ? num2(e.strProgress) : null,
+      home: { id: String(e.idHomeTeam ?? ""), name: String(e.strHomeTeam ?? ""), crest: str2(e.strHomeTeamBadge) },
+      away: { id: String(e.idAwayTeam ?? ""), name: String(e.strAwayTeam ?? ""), crest: str2(e.strAwayTeamBadge) },
+      score: h != null && a != null ? { home: h, away: a } : null,
+      venue: str2(e.strVenue),
+      lastGoal: null
+    };
+  }
+  function timelineEvent(x) {
+    const kind = String(x?.strTimeline ?? "").toLowerCase();
+    const type = kind === "goal" ? "goal" : kind === "card" ? "card" : kind === "subst" ? "sub" : kind === "var" ? "var" : "other";
+    return { minute: num2(x?.intTime), extra: null, side: side(x), type, detail: String(x?.strTimelineDetail ?? ""), player: str2(x?.strPlayer), assist: str2(x?.strAssist) };
+  }
+  function lineups(rows) {
+    const out = [];
+    for (const s of ["home", "away"]) {
+      const mine = rows.filter((r) => side(r) === s);
+      if (mine.length === 0) continue;
+      const entry = (r) => ({ number: num2(r?.intSquadNumber), name: String(r?.strPlayer ?? ""), pos: str2(r?.strPosition) });
+      out.push({ side: s, formation: str2(mine[0]?.strFormation), startXI: mine.filter((r) => r?.strSubstitute !== "Yes").map(entry), subs: mine.filter((r) => r?.strSubstitute === "Yes").map(entry) });
+    }
+    return out;
+  }
+  var THESPORTSDB_PRICING_URL, SPORTS, arr2, num2, str2, enc2, side, theSportsDb;
+  var init_thesportsdb = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
+      "use strict";
+      THESPORTSDB_PRICING_URL = "https://www.thesportsdb.com/pricing";
+      SPORTS = {
+        football: { day: "Soccer", live: "soccer" },
+        hockey: { day: "Ice Hockey", live: "icehockey" },
+        // live-namnet: verifiera med nyckel
+        basketball: { day: "Basketball", live: "basketball" },
+        handball: { day: "Handball", live: "handball" }
+      };
+      arr2 = (v) => Array.isArray(v) ? v : [];
+      num2 = (v) => typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+      str2 = (v) => typeof v === "string" && v.trim() ? v : null;
+      enc2 = encodeURIComponent;
+      side = (x) => x?.strHome === "Yes" ? "home" : x?.strHome === "No" ? "away" : null;
+      theSportsDb = {
+        id: "thesportsdb",
+        liveFloorMs: 12e4,
+        coverage: (sport) => SPORTS[sport] ? "full" : "epg",
+        bucket: () => "all",
+        day(sport, date, opts) {
+          const s = SPORTS[sport]?.day ?? "";
+          const past = date < opts.today;
+          return {
+            requests: [{ sport, path: `/v1/eventsday.php?d=${date}&s=${enc2(s)}`, ttlS: date === opts.today ? 900 : 21600, ...past ? { finalAfter: opts.dayEndMs + 3 * 36e5 } : {} }],
+            parse: (bodies) => arr2(bodies[0]?.events).map((e) => event(sport, e)).filter((f) => f !== null)
+          };
+        },
+        live(sport) {
+          return {
+            requests: [{ sport, path: `/v2/livescore/${SPORTS[sport]?.live ?? ""}`, ttlS: 10 }],
+            parse: (bodies) => arr2(bodies[0]?.livescore).map((e) => event(sport, e)).filter((f) => f !== null)
+          };
+        },
+        fixture(sport, id, opts) {
+          const ttlS = opts.finished ? -1 : 60;
+          const parts2 = ["event", "event_timeline", "event_stats", "event_lineup"];
+          return {
+            requests: parts2.map((p) => ({ sport, path: `/v2/lookup/${p}/${enc2(id)}`, ttlS })),
+            parse: (bodies) => {
+              const raw = arr2(bodies[0]?.lookup)[0];
+              const fixture = raw ? event(sport, raw) : null;
+              if (!fixture) return null;
+              return {
+                fixture,
+                events: arr2(bodies[1]?.lookup).map(timelineEvent),
+                stats: arr2(bodies[2]?.lookup).map((s) => ({ label: String(s?.strStat ?? ""), home: String(s?.intHome ?? "0"), away: String(s?.intAway ?? "0") })),
+                lineups: lineups(arr2(bodies[3]?.lookup))
+              };
+            }
+          };
+        },
+        standings(sport, leagueId, season) {
+          return {
+            requests: [{ sport, path: `/v1/lookuptable.php?l=${enc2(leagueId)}&s=${enc2(season)}`, ttlS: 86400 }],
+            parse: (bodies) => arr2(bodies[0]?.table).map((r) => ({
+              rank: num2(r?.intRank) ?? 0,
+              team: { id: String(r?.idTeam ?? ""), name: String(r?.strTeam ?? ""), crest: str2(r?.strBadge) },
+              played: num2(r?.intPlayed) ?? 0,
+              points: num2(r?.intPoints) ?? 0,
+              goalDiff: num2(r?.intGoalDifference),
+              form: str2(r?.strForm),
+              group: str2(r?.strGroup)
+            }))
+          };
+        },
+        searchTeams(sport, q) {
+          const query = q.trim();
+          if (query.length < 3) return { requests: [], parse: () => [] };
+          const want = SPORTS[sport]?.day;
+          return {
+            requests: [{ sport, path: `/v1/searchteams.php?t=${enc2(query)}`, ttlS: 604800 }],
+            parse: (bodies) => arr2(bodies[0]?.teams).filter((t) => !want || t?.strSport === want).map((t) => ({ id: String(t?.idTeam ?? ""), name: String(t?.strTeam ?? ""), crest: str2(t?.strBadge), country: str2(t?.strCountry) }))
+          };
+        },
+        validateKey: () => ({
+          requests: [{ sport: "football", path: "/v2/all/sports", ttlS: 0 }],
+          parse: (bodies) => Array.isArray(bodies[0]?.all) ? { ok: true, plan: "Premium", used: null, limit: null } : { ok: false, plan: null, used: null, limit: null }
+        }),
+        quotaProbe: () => null,
+        crestUrl: (t) => t.crest,
+        teamArt(sport, teamId) {
+          return {
+            requests: [{ sport, path: `/v1/lookupteam.php?id=${enc2(teamId)}`, ttlS: 2592e3 }],
+            parse: (bodies) => {
+              const t = arr2(bodies[0]?.teams)[0];
+              if (!t) return null;
+              return { stadium: str2(t.strStadiumThumb), fanart: str2(t.strFanart1) ?? str2(t.strFanart2) };
+            }
+          };
+        }
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/providers.ts
+  function providerFor(id) {
+    return id === "thesportsdb" ? theSportsDb : apiSports;
+  }
+  function coverageFor(id, sport) {
+    return id ? providerFor(id).coverage(sport) : "epg";
+  }
+  var init_providers = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/providers.ts"() {
+      "use strict";
+      init_api_sports();
+      init_thesportsdb();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-fetch.ts
+  function sportFetchUrl(provider, req, mode) {
+    const params = new URLSearchParams({ provider, sport: req.sport, path: req.path, ttl: String(req.ttlS), mode });
+    if (req.finalAfter != null) params.set("finalAfter", String(req.finalAfter));
+    return `/api/live-tv/sport/fetch?${params.toString()}`;
+  }
+  async function sportFetch(args) {
+    let res;
+    try {
+      res = await fetch(sportFetchUrl(args.provider, args.req, args.mode), { headers: { [SPORT_KEY_HEADER]: args.key }, cache: "no-store" });
+    } catch {
+      return FAILED("network");
+    }
+    if (res.status === 400 || res.status === 403) return FAILED("not-allowed");
+    if (!res.ok) return FAILED("network");
+    let body;
+    try {
+      body = await res.json();
+    } catch {
+      return FAILED("network");
+    }
+    return {
+      data: body.data ?? null,
+      cached: body.cached === true,
+      fresh: body.fresh === true,
+      fetchedAt: typeof body.fetchedAt === "number" ? body.fetchedAt : null,
+      quota: body.quota ?? null,
+      error: body.error ?? null
+    };
+  }
+  var SPORT_KEY_HEADER, FAILED;
+  var init_sport_fetch = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
+      "use strict";
+      "use client";
+      SPORT_KEY_HEADER = "x-lumio-sport-key";
+      FAILED = (error) => ({ data: null, cached: false, fresh: false, fetchedAt: null, quota: null, error });
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-model.ts
+  function matchTitle(m) {
+    return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
+  }
+  function crestText(name) {
+    const words = name.split(/\s+/).filter(Boolean);
+    const word = words.find((w) => !CREST_SKIP.has(w.toLowerCase()) && /\p{L}/u.test(w)) ?? words[0] ?? "?";
+    return word.slice(0, 3).toUpperCase();
+  }
+  function sourceChannel(s) {
+    return { name: s.name, url: s.url, logo: s.logo, group: s.group, tvgId: s.tvgId };
+  }
+  var SPORT_KINDS, SPORT_CHIPS, CREST_SKIP;
+  var init_sport_model = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-model.ts"() {
+      "use strict";
+      SPORT_KINDS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
+      SPORT_CHIPS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis"];
+      CREST_SKIP = /* @__PURE__ */ new Set(["fc", "if", "ik", "ifk", "aif", "bk", "sk", "hc", "ff", "is", "cf", "afc", "ssc", "hf", "bik", "gik"]);
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-store.ts
+  function sanitizeBackdropCustom(raw) {
+    const c = raw && typeof raw === "object" ? raw : null;
+    if (c?.from === "home" && typeof c.index === "number" && Number.isInteger(c.index) && c.index >= 0) return { from: "home", index: c.index };
+    if (c?.from === "url" && typeof c.url === "string" && /^https?:\/\/\S+$/i.test(c.url.trim())) return { from: "url", url: c.url.trim() };
+    return null;
+  }
+  function sanitizeSettings(raw) {
+    const r = raw && typeof raw === "object" ? raw : {};
+    return {
+      view: r.view === "feed" || r.view === "matchday" ? r.view : DEFAULT_SETTINGS.view,
+      alert: r.alert === "off" || r.alert === "15" || r.alert === "kickoff" ? r.alert : DEFAULT_SETTINGS.alert,
+      apiKey: typeof r.apiKey === "string" && r.apiKey ? r.apiKey : null,
+      goalAlerts: r.goalAlerts !== false,
+      provider: r.provider === "thesportsdb" ? "thesportsdb" : "api-sports",
+      keyPlan: typeof r.keyPlan === "string" ? r.keyPlan : null,
+      keyCardDismissed: r.keyCardDismissed === true,
+      goalAlertMatches: Object.fromEntries(
+        Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === "object" ? r.goalAlertMatches : {}).filter((e) => typeof e[1] === "number" && e[1] > Date.now())
+      ),
+      backdrop: r.backdrop === "custom" || r.backdrop === "off" ? r.backdrop : "auto",
+      backdropCustom: sanitizeBackdropCustom(r.backdropCustom)
+    };
+  }
+  function getSportSettings() {
+    return sanitizeSettings(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, DEFAULT_SETTINGS));
+  }
+  function setSportSettings(patch) {
+    const next = sanitizeSettings({ ...getSportSettings(), ...patch });
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, next);
+    return next;
+  }
+  function useStored(key, read11) {
+    const [value, setValue] = useState(read11);
+    useEffect(() => {
+      setValue(read11());
+      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, () => setValue(read11()));
+    }, [key]);
+    return value;
+  }
+  function useSportSettings() {
+    return useStored(SPORT_SETTINGS_KEY, getSportSettings);
+  }
+  function teamKeysMatch(a, b) {
+    if (!a || !b) return false;
+    if (a === b || `${a}s` === b || `${b}s` === a) return true;
+    const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+    const sw3 = short.split(" ");
+    const lw = long.split(" ");
+    if (sw3.length >= lw.length) return false;
+    const head = lw.slice(0, sw3.length).join(" ");
+    const tail = lw.slice(lw.length - sw3.length).join(" ");
+    return head === short || tail === short;
+  }
+  function sportsCompatible(a, b) {
+    return a === b || a === "other" || b === "other";
+  }
+  function sanitizeFollows(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const item of raw) {
+      if (!item || typeof item !== "object") continue;
+      const f = item;
+      if (!SPORT_KINDS.includes(f.sport)) continue;
+      if (f.kind !== "team" && f.kind !== "league") continue;
+      if (typeof f.key !== "string" || !f.key) continue;
+      const ids = f.providerIds && typeof f.providerIds === "object" ? Object.fromEntries(Object.entries(f.providerIds).filter((e) => typeof e[1] === "string")) : null;
+      out.push({ sport: f.sport, kind: f.kind, key: f.key, name: typeof f.name === "string" && f.name ? f.name : f.key, ...ids && Object.keys(ids).length > 0 ? { providerIds: ids } : {} });
+    }
+    return out;
+  }
+  function getFollows() {
+    return sanitizeFollows(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, []));
+  }
+  function isFollowing(follows, f) {
+    return follows.some((x) => x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key));
+  }
+  function toggleFollow(f) {
+    const current5 = getFollows();
+    const next = isFollowing(current5, f) ? current5.filter((x) => !(x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key))) : [...current5, f];
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
+    return next;
+  }
+  function useFollows() {
+    return useStored(SPORT_FOLLOWS_KEY, getFollows);
+  }
+  function sanitizeOverrides(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    const out = {};
+    for (const [id, value] of Object.entries(raw)) {
+      const c = value;
+      if (!c || typeof c.key !== "string" || typeof c.url !== "string" || typeof c.name !== "string") continue;
+      out[id] = { key: c.key, name: c.name, url: c.url, logo: typeof c.logo === "string" ? c.logo : null, group: typeof c.group === "string" ? c.group : "", tvgId: typeof c.tvgId === "string" ? c.tvgId : null };
+    }
+    return out;
+  }
+  function getOverrides() {
+    return sanitizeOverrides(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, {}));
+  }
+  function setOverride(matchId, channel) {
+    const next = { ...getOverrides() };
+    if (channel) next[matchId] = channel;
+    else delete next[matchId];
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, next);
+    return next;
+  }
+  function useOverrides() {
+    return useStored(SPORT_OVERRIDES_KEY, getOverrides);
+  }
+  function getAlertSkips() {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, {});
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    const out = {};
+    for (const [id, start2] of Object.entries(raw)) if (typeof start2 === "number") out[id] = start2;
+    return out;
+  }
+  function setAlertSkip(matchId, start2, skip, now2 = Date.now()) {
+    const current5 = getAlertSkips();
+    if (!skip && !(matchId in current5)) return;
+    const next = {};
+    for (const [id, s] of Object.entries(current5)) if (s + SKIP_KEEP_MS > now2 && id !== matchId) next[id] = s;
+    if (skip) next[matchId] = start2;
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, next);
+  }
+  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, DEFAULT_SETTINGS, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
+  var init_sport_store = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-store.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_sport_model();
+      SPORT_SETTINGS_KEY = "sport_settings_v1";
+      SPORT_FOLLOWS_KEY = "sport_follows_v1";
+      SPORT_OVERRIDES_KEY = "sport_overrides_v1";
+      DEFAULT_SETTINGS = {
+        view: "matchday",
+        alert: "15",
+        apiKey: null,
+        goalAlerts: true,
+        provider: "api-sports",
+        keyPlan: null,
+        keyCardDismissed: false,
+        goalAlertMatches: {},
+        backdrop: "auto",
+        backdropCustom: null
+      };
+      SPORT_ALERT_SKIP_KEY = "sport_alert_skip_v1";
+      SKIP_KEEP_MS = 24 * 60 * 6e4;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/budget.ts
+  function reserveFor(limit) {
+    return limit == null ? 0 : Math.max(5, Math.ceil(limit * 0.1));
+  }
+  function currentBudget() {
+    const { provider, apiKey } = getSportSettings();
+    const id = `${provider}|${apiKey ?? ""}`;
+    if (current3?.id === id) return current3.budget;
+    current3 = { id, budget: apiKey ? new Budget(providerFor(provider), apiKey) : null };
+    return current3.budget;
+  }
+  var RETRY_MS2, unknownQuota, Budget, current3;
+  var init_budget = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/budget.ts"() {
+      "use strict";
+      "use client";
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_sport_fetch();
+      init_providers();
+      init_sport_store();
+      RETRY_MS2 = 2e3;
+      unknownQuota = (bucket) => ({ bucket, limit: null, remaining: null, minuteLimit: null, minuteRemaining: null, blockedUntil: null, reason: null, plan: null });
+      Budget = class {
+        constructor(provider, key, deps = {}) {
+          __publicField(this, "provider", provider);
+          __publicField(this, "key", key);
+          __publicField(this, "quotas", /* @__PURE__ */ new Map());
+          __publicField(this, "planned", /* @__PURE__ */ new Map());
+          __publicField(this, "primed", /* @__PURE__ */ new Set());
+          __publicField(this, "invalid", false);
+          __publicField(this, "listeners", /* @__PURE__ */ new Set());
+          __publicField(this, "fetchImpl");
+          __publicField(this, "now");
+          __publicField(this, "sleep");
+          this.fetchImpl = deps.fetch ?? sportFetch;
+          this.now = deps.now ?? Date.now;
+          this.sleep = deps.sleep ?? ((ms2) => new Promise((resolve) => setTimeout(resolve, ms2)));
+        }
+        hasKey() {
+          return !!this.key;
+        }
+        isInvalid() {
+          return this.invalid;
+        }
+        quota(bucket) {
+          return this.quotas.get(bucket) ?? unknownQuota(bucket);
+        }
+        noteQuota(q) {
+          this.quotas.set(q.bucket, q);
+          this.emit();
+        }
+        setPlanned(bucket, n) {
+          if ((this.planned.get(bucket) ?? 0) === n) return;
+          this.planned.set(bucket, Math.max(0, n));
+          this.emit();
+        }
+        plannedFor(bucket) {
+          return this.planned.get(bucket) ?? 0;
+        }
+        subscribe(cb) {
+          this.listeners.add(cb);
+          return () => {
+            this.listeners.delete(cb);
+          };
+        }
+        emit() {
+          for (const cb of [...this.listeners]) cb();
+        }
+        blocked(bucket) {
+          const until = this.quota(bucket).blockedUntil;
+          return until != null && until > this.now();
+        }
+        allows(kind, bucket, n) {
+          if (this.blocked(bucket)) return false;
+          if (kind === "validate") return true;
+          const q = this.quota(bucket);
+          if (q.remaining == null) return true;
+          const reserve = reserveFor(q.limit);
+          switch (kind) {
+            case "fixture":
+              return q.remaining >= n;
+            case "day":
+            case "standings":
+            case "search":
+              return q.remaining - n >= reserve;
+            case "live":
+              return q.remaining - n >= reserve + this.plannedFor(bucket);
+          }
+        }
+        /** `max(golv, återstående livefönster / (kvar − reserv − planerat))`. `null` = polla inte. */
+        liveIntervalMs(bucket, windowEndsAt) {
+          if (this.blocked(bucket)) return null;
+          const floor = this.provider.liveFloorMs;
+          const q = this.quota(bucket);
+          if (q.remaining == null) return floor;
+          const spendable = q.remaining - reserveFor(q.limit) - this.plannedFor(bucket);
+          if (spendable <= 0) return null;
+          return Math.max(floor, Math.ceil(Math.max(0, windowEndsAt - this.now()) / spendable));
+        }
+        spendLocal(bucket, n) {
+          const q = this.quotas.get(bucket);
+          if (q && q.remaining != null && n > 0) this.quotas.set(bucket, { ...q, remaining: Math.max(0, q.remaining - n) });
+        }
+        async prime(sport, bucket) {
+          if (this.primed.has(bucket) || this.quota(bucket).remaining != null) return;
+          const probe = this.provider.quotaProbe(sport);
+          this.primed.add(bucket);
+          if (!probe) return;
+          for (const req of probe.requests) {
+            const res = await this.fetchImpl({ provider: this.provider.id, key: this.key ?? "", req, mode: "cache-first" });
+            if (res.quota) this.noteQuota(res.quota);
+            if (res.error === "unauthorized") {
+              this.invalid = true;
+              this.emit();
+            }
+          }
+        }
+        async run(kind, sport, call) {
+          const none = (reason) => ({ ok: false, reason, data: null, fetchedAt: null, until: null });
+          if (!this.key) return none("no-key");
+          if (this.provider.coverage(sport) !== "full") return none("no-coverage");
+          if (this.invalid && kind !== "validate") return none("invalid-key");
+          if (call.requests.length === 0) return { ok: true, data: call.parse([]), cached: true, fetchedAt: null };
+          const bucket = this.provider.bucket(sport);
+          if (kind !== "validate") {
+            await this.prime(sport, bucket);
+            if (this.invalid) return none("invalid-key");
+          }
+          const n = call.requests.length;
+          const affordable = this.allows(kind, bucket, n);
+          const mode = affordable ? "cache-first" : "cache-only";
+          if (affordable && kind !== "validate") this.spendLocal(bucket, n);
+          let failure = affordable ? null : this.blocked(bucket) ? "paused" : "over-budget";
+          let cached = true;
+          let fetchedAt = null;
+          const bodies = [];
+          for (const req of call.requests) {
+            let res = await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode });
+            if (res.error === "network" && mode === "cache-first") {
+              await this.sleep(RETRY_MS2);
+              if (this.allows(kind, bucket, 1)) res = await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode });
+            }
+            if (res.quota) this.noteQuota(res.quota);
+            if (res.error === "unauthorized") {
+              this.invalid = true;
+              this.emit();
+              return none("invalid-key");
+            }
+            if (res.error && !failure) failure = res.error === "network" || res.error === "upstream" || res.error === "not-allowed" ? "network" : "paused";
+            if (!res.cached) cached = false;
+            if (res.fetchedAt != null) fetchedAt = fetchedAt == null ? res.fetchedAt : Math.min(fetchedAt, res.fetchedAt);
+            bodies.push(res.data);
+          }
+          let data = null;
+          if (bodies.some((b) => b != null)) {
+            try {
+              data = call.parse(bodies);
+            } catch {
+              data = null;
+            }
+          }
+          if (failure || data == null) {
+            return { ok: false, reason: failure ?? "network", data, fetchedAt, until: this.quota(bucket).blockedUntil };
+          }
+          return { ok: true, data, cached, fetchedAt };
+        }
+        day(sport, date, opts) {
+          return this.run("day", sport, this.provider.day(sport, date, opts));
+        }
+        live(sport, opts) {
+          return this.run("live", sport, this.provider.live(sport, opts));
+        }
+        fixture(sport, id, opts) {
+          return this.run("fixture", sport, this.provider.fixture(sport, id, opts));
+        }
+        standings(sport, leagueId, season) {
+          return this.run("standings", sport, this.provider.standings(sport, leagueId, season));
+        }
+        searchTeams(sport, q) {
+          return this.run("search", sport, this.provider.searchTeams(sport, q));
+        }
+        validate() {
+          return this.run("validate", "football", this.provider.validateKey());
+        }
+        /** Startvärdet ur diskcachen innan något anrop görs. Alltid `cache-only`, så det kostar aldrig kvot. */
+        async peek(sport, call) {
+          if (!this.key || this.provider.coverage(sport) !== "full" || call.requests.length === 0) return null;
+          const bodies = [];
+          for (const req of call.requests) bodies.push((await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode: "cache-only" })).data);
+          if (bodies.every((b) => b == null)) return null;
+          try {
+            return call.parse(bodies);
+          } catch {
+            return null;
+          }
+        }
+      };
+      current3 = null;
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => {
+        current3 = null;
+      });
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/key-flow.ts
+  function cleanKey(raw) {
+    const key = raw.replace(/\s+/g, "");
+    return /^[A-Za-z0-9_-]{3,128}$/.test(key) ? key : null;
+  }
+  function maskKey(key) {
+    return `\u2022\u2022\u2022\u2022${key.slice(-4)}`;
+  }
+  function isPaidPlan(plan, provider) {
+    if (provider === "thesportsdb") return true;
+    return !!plan && plan.toLowerCase() !== "free";
+  }
+  async function validateKey(provider, raw, deps = {}) {
+    const key = cleanKey(raw);
+    if (!key) return { ok: false, reason: "empty" };
+    const result = await new Budget(providerFor(provider), key, { fetch: deps.fetch }).validate();
+    if (result.ok && result.data.ok) return { ok: true, key, check: result.data };
+    if (!result.ok && result.reason === "network") return { ok: false, reason: "network" };
+    return { ok: false, reason: "rejected" };
+  }
+  async function saveValidatedKey(provider, raw, deps = {}) {
+    const result = await validateKey(provider, raw, deps);
+    if (result.ok) setSportSettings({ apiKey: result.key, provider, keyPlan: result.check.plan, keyCardDismissed: false });
+    return result;
+  }
+  function removeKey() {
+    setSportSettings({ apiKey: null, keyPlan: null });
+  }
+  var init_key_flow = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/key-flow.ts"() {
+      "use strict";
+      "use client";
+      init_budget();
+      init_providers();
+      init_sport_store();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/rate-line.ts
+  function svOrdinal(n) {
+    const last2 = n % 10;
+    const lastTwo = n % 100;
+    return (last2 === 1 || last2 === 2) && lastTwo !== 11 && lastTwo !== 12 ? "a" : "e";
+  }
+  function everyText(ms2, lang) {
+    const minutes = ms2 >= 6e4;
+    const n = Math.max(1, Math.round(ms2 / (minutes ? 6e4 : 1e3)));
+    if (lang === "sv") {
+      if (n === 1) return minutes ? "varje minut" : "varje sekund";
+      return `var ${n}:${svOrdinal(n)} ${minutes ? "min" : "s"}`;
+    }
+    if (n === 1) return minutes ? "every minute" : "every second";
+    return `every ${n} ${minutes ? "min" : "s"}`;
+  }
+  function rateLine(s, tt, opts) {
+    if (s.state === "no-key") return null;
+    if (s.state === "invalid-key") return { text: tt("sportKeyBroken"), showPaidLink: false };
+    if (s.state === "paused" && s.pausedUntil != null) {
+      const time = new Intl.DateTimeFormat(opts.locale, { hour: "2-digit", minute: "2-digit", timeZone: opts.tz }).format(s.pausedUntil);
+      return { text: tt("sportRatePaused", { time }), showPaidLink: false };
+    }
+    if (s.state === "rate-limited") return { text: tt("sportRateMinute"), showPaidLink: false };
+    const left = s.remainingToday != null ? ` \xB7 ${tt("sportRateLeft", { n: s.remainingToday })}` : "";
+    const head = s.intervalMs != null ? tt("sportRateEvery", { every: everyText(s.intervalMs, opts.lang) }) : tt("sportRateIdle");
+    return { text: `${head}${left}`, showPaidLink: s.provider === "api-sports" && !s.paid };
+  }
+  var init_rate_line = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/rate-line.ts"() {
+      "use strict";
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/day-plan.ts
+  function planKey(c) {
+    return c.kind === "day" ? `day|${c.sport}|${c.date}` : `standings|${c.sport}|${c.leagueId}|${c.season}`;
+  }
+  function planDay(input, provider) {
+    const sports = [...new Set(input.sports)].filter((s) => provider.coverage(s) === "full");
+    const out = sports.map((sport) => ({ kind: "day", sport, date: input.today }));
+    for (const sport of sports) {
+      for (const date of [input.yesterday, input.tomorrow]) {
+        const c = { kind: "day", sport, date };
+        if (!input.done.has(planKey(c))) out.push(c);
+      }
+    }
+    const seen = /* @__PURE__ */ new Set();
+    for (const l of input.leagues) {
+      if (provider.coverage(l.sport) !== "full") continue;
+      const c = { kind: "standings", sport: l.sport, leagueId: l.leagueId, season: l.season };
+      const k = planKey(c);
+      if (seen.has(k) || input.done.has(k)) continue;
+      seen.add(k);
+      out.push(c);
+    }
+    return out;
+  }
+  function plannedPerBucket(calls, provider) {
+    const out = /* @__PURE__ */ new Map();
+    for (const c of calls) out.set(provider.bucket(c.sport), (out.get(provider.bucket(c.sport)) ?? 0) + 1);
+    return out;
+  }
+  function ymd(ms2, tz) {
+    const parts2 = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ms2));
+    const get = (t) => parts2.find((p) => p.type === t)?.value ?? "00";
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  }
+  function offsetMs(ms2, tz) {
+    const parts2 = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" }).formatToParts(new Date(ms2));
+    const n = (t) => Number(parts2.find((p) => p.type === t)?.value ?? 0);
+    return Date.UTC(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second")) - Math.floor(ms2 / 1e3) * 1e3;
+  }
+  function localDates(now2, tz) {
+    const today = ymd(now2, tz);
+    const [y, m, d] = today.split("-").map(Number);
+    const shift = (days) => ymd(Date.UTC(y, m - 1, d + days, 12), "UTC");
+    const dayEndMs = (date) => {
+      const [yy, mm, dd] = date.split("-").map(Number);
+      const utcMidnight = Date.UTC(yy, mm - 1, dd + 1);
+      return utcMidnight - offsetMs(utcMidnight, tz);
+    };
+    return { today, yesterday: shift(-1), tomorrow: shift(1), dayEndMs };
+  }
+  var init_day_plan = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/day-plan.ts"() {
+      "use strict";
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/live-poller.ts
+  function emitDemand() {
+    for (const cb of [...demandListeners]) cb();
+  }
+  function acquirePollDemand(reason) {
+    demand.set(reason, (demand.get(reason) ?? 0) + 1);
+    emitDemand();
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      const n = (demand.get(reason) ?? 1) - 1;
+      if (n <= 0) demand.delete(reason);
+      else demand.set(reason, n);
+      emitDemand();
+    };
+  }
+  function hasPollDemand() {
+    return demand.size > 0;
+  }
+  function onPollDemandChanged(cb) {
+    demandListeners.add(cb);
+    return () => {
+      demandListeners.delete(cb);
+    };
+  }
+  function usePollDemand(reason, active4) {
+    useEffect(() => active4 ? acquirePollDemand(reason) : void 0, [reason, active4]);
+  }
+  function createLivePoller(deps) {
+    const now2 = deps.now ?? Date.now;
+    const setTimer = deps.setTimer ?? ((fn, ms2) => setTimeout(fn, ms2));
+    const clearTimer = deps.clearTimer ?? ((h) => clearTimeout(h));
+    const isVisible = deps.isVisible ?? defaultVisible;
+    const due = /* @__PURE__ */ new Map();
+    let timer3 = null;
+    let running2 = false;
+    let unsubs = [];
+    const active4 = () => running2 && hasPollDemand() && isVisible();
+    function plan() {
+      const out = [];
+      for (const t of deps.targets()) {
+        if (!t.hot) {
+          due.delete(t.sport);
+          continue;
+        }
+        const interval = deps.budget.liveIntervalMs(deps.budget.provider.bucket(t.sport), t.windowEndsAt);
+        if (interval == null) {
+          due.delete(t.sport);
+          continue;
+        }
+        if (!due.has(t.sport)) due.set(t.sport, now2() + interval);
+        out.push({ sport: t.sport, at: due.get(t.sport) });
+      }
+      return out;
+    }
+    function nextDelayMs() {
+      if (!active4()) return null;
+      const items2 = plan();
+      if (items2.length === 0) return null;
+      return Math.max(0, Math.min(...items2.map((i) => i.at)) - now2());
+    }
+    function reschedule() {
+      if (timer3 != null) {
+        clearTimer(timer3);
+        timer3 = null;
+      }
+      if (!active4()) {
+        due.clear();
+        return;
+      }
+      const delay = nextDelayMs();
+      if (delay == null) return;
+      timer3 = setTimer(() => {
+        timer3 = null;
+        void tick2();
+      }, delay);
+    }
+    async function tick2() {
+      if (!active4()) return;
+      const t = now2();
+      for (const item of plan()) {
+        if (item.at > t) continue;
+        due.delete(item.sport);
+        const res = await deps.budget.live(item.sport, deps.liveOpts());
+        if (res.data) deps.onFixtures(item.sport, res.data);
+      }
+      reschedule();
+    }
+    return {
+      start() {
+        if (running2) return;
+        running2 = true;
+        unsubs = [onPollDemandChanged(reschedule), (deps.onVisibility ?? defaultOnVisibility)(reschedule)];
+        reschedule();
+      },
+      stop() {
+        running2 = false;
+        for (const u of unsubs) u();
+        unsubs = [];
+        if (timer3 != null) {
+          clearTimer(timer3);
+          timer3 = null;
+        }
+        due.clear();
+      },
+      reschedule,
+      nextDelayMs
+    };
+  }
+  var demand, demandListeners, defaultVisible, defaultOnVisibility;
+  var init_live_poller = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/live-poller.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      demand = /* @__PURE__ */ new Map();
+      demandListeners = /* @__PURE__ */ new Set();
+      defaultVisible = () => typeof document === "undefined" || document.visibilityState !== "hidden";
+      defaultOnVisibility = (cb) => {
+        if (typeof document === "undefined") return () => {
+        };
+        document.addEventListener("visibilitychange", cb);
+        return () => document.removeEventListener("visibilitychange", cb);
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/goal-events.ts
+  function diffGoals(prev, next, now2) {
+    const out = [];
+    for (const f of next) {
+      if (!f.score) continue;
+      const before = prev.get(f.id);
+      if (!before) continue;
+      for (const side2 of ["home", "away"]) {
+        if (f.score[side2] <= before[side2]) continue;
+        const own = f.lastGoal?.side === side2 ? f.lastGoal : null;
+        out.push({
+          fixtureId: f.id,
+          provider: f.provider,
+          sport: f.sport,
+          side: side2,
+          score: { ...f.score },
+          scorer: own?.player ?? null,
+          minute: own?.minute ?? f.minute,
+          at: now2,
+          home: f.home.name,
+          away: f.away.name
+        });
+      }
+    }
+    return out;
+  }
+  function emitGoals(events) {
+    for (const e of events) for (const cb of [...listeners9]) cb(e);
+  }
+  function onGoal(cb) {
+    listeners9.add(cb);
+    return () => {
+      listeners9.delete(cb);
+    };
+  }
+  var listeners9;
+  var init_goal_events = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/goal-events.ts"() {
+      "use strict";
+      listeners9 = /* @__PURE__ */ new Set();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-epg.ts
+  function localDayKey(ms2) {
+    const d = new Date(ms2);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  }
+  function parts(day) {
+    const [y, m, d] = day.split("-").map(Number);
+    return [y ?? 1970, m ?? 1, d ?? 1];
+  }
+  function shiftDay(day, delta) {
+    const [y, m, d] = parts(day);
+    return localDayKey(new Date(y, m - 1, d + delta, 12).getTime());
+  }
+  function tzOffsetFor(day) {
+    const [y, m, d] = parts(day);
+    return -new Date(y, m - 1, d, 12).getTimezoneOffset();
+  }
+  function dayStartMs(day) {
+    const [y, m, d] = parts(day);
+    return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+  }
+  function sanitizeDay(raw, day) {
+    const r = raw && typeof raw === "object" ? raw : {};
+    const matches = Array.isArray(r.matches) ? r.matches.map((m) => ({ ...m, sources: Array.isArray(m.sources) ? m.sources : [] })) : [];
+    return {
+      day,
+      from: Number(r.from ?? 0),
+      to: Number(r.to ?? 0),
+      at: Number(r.at ?? 0),
+      fetchedAt: typeof r.fetchedAt === "number" ? r.fetchedAt : null,
+      matches,
+      counts: r.counts && typeof r.counts === "object" ? r.counts : {}
+    };
+  }
+  function fetchSportDay(day, now2 = Date.now()) {
+    const hit = cache7.get(day);
+    if (hit && now2 - hit.at < TTL_MS2) return hit.promise;
+    const qs = new URLSearchParams({ listId: LIVE_TV_GLOBAL_EPG_ID, day, tzOffset: String(tzOffsetFor(day)) });
+    const promise = fetch(`/api/live-tv/sport/day?${qs.toString()}`).then(async (res) => {
+      if (res.status === 404) throw new SportEndpointMissing();
+      if (!res.ok) throw new Error(`/api/live-tv/sport/day returned ${res.status}`);
+      return sanitizeDay(await res.json(), day);
+    });
+    cache7.set(day, { at: now2, promise });
+    promise.catch(() => {
+      if (cache7.get(day)?.promise === promise) cache7.delete(day);
+    });
+    return promise;
+  }
+  function useSportDay(day, nowMs) {
+    const [result, setResult] = useState({ day: null, data: null, state: "loading" });
+    const bucket = Math.floor(nowMs / TTL_MS2);
+    useEffect(() => {
+      if (!day) return;
+      let cancelled = false;
+      fetchSportDay(day).then((data) => {
+        if (!cancelled) setResult({ day, data, state: "ready" });
+      }).catch((error) => {
+        if (!cancelled) setResult({ day, data: null, state: error instanceof SportEndpointMissing ? "missing" : "error" });
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [day, bucket]);
+    if (!day) return { data: null, state: "ready" };
+    return result.day === day ? { data: result.data, state: result.state } : { data: null, state: "loading" };
+  }
+  var pad2, SportEndpointMissing, TTL_MS2, cache7;
+  var init_sport_epg = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-epg.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_data();
+      pad2 = (n) => String(n).padStart(2, "0");
+      SportEndpointMissing = class extends Error {
+        constructor() {
+          super("sport endpoint missing");
+        }
+      };
+      TTL_MS2 = 5 * 6e4;
+      cache7 = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-link.ts
+  async function linkFixtures(args) {
+    if (args.fixtures.length === 0) return {};
+    try {
+      const res = await fetch("/api/live-tv/sport/link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          listId: LIVE_TV_GLOBAL_EPG_ID,
+          day: args.day,
+          tzOffset: tzOffsetFor(args.day),
+          fixtures: args.fixtures.map((f) => ({ id: f.id, sport: f.sport, home: f.home.name, away: f.away.name, league: f.league.name, kickoff: f.kickoff }))
+        })
+      });
+      if (!res.ok) return {};
+      const body = await res.json();
+      return body.links ?? {};
+    } catch {
+      return {};
+    }
+  }
+  var init_sport_link = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-link.ts"() {
+      "use strict";
+      "use client";
+      init_live_tv_data();
+      init_sport_epg();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-day-model.ts
+  function statusAt(m, now2) {
+    if (m.phase === "postponed") return "upcoming";
+    if (m.fixture && m.status !== "upcoming") return m.status;
+    if (m.status === "finished" || now2 >= m.stop) return "finished";
+    if (now2 >= m.start) return "live";
+    return "upcoming";
+  }
+  function visibleMatches(day, filter) {
+    if (!day) return [];
+    return day.matches.filter((m) => !m.rerun && (filter === "all" || m.kind === filter)).sort((a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)));
+  }
+  function sportCounts(day) {
+    const out = Object.fromEntries(SPORT_KINDS.map((k) => [k, 0]));
+    for (const m of day?.matches ?? []) if (!m.rerun) out[m.kind] += 1;
+    return out;
+  }
+  function splitSections(matches, now2) {
+    return {
+      live: matches.filter((m) => statusAt(m, now2) === "live"),
+      later: matches.filter((m) => statusAt(m, now2) === "upcoming"),
+      finished: matches.filter((m) => statusAt(m, now2) === "finished")
+    };
+  }
+  function headerSummary(matches, now2) {
+    return { total: matches.length, live: matches.filter((m) => statusAt(m, now2) === "live").length };
+  }
+  function matchesFollow(m, f) {
+    if (!sportsCompatible(f.sport, m.kind)) return false;
+    if (f.kind === "league") return m.leagueKey !== "" && m.leagueKey === f.key;
+    return teamKeysMatch(f.key, m.homeKey) || teamKeysMatch(f.key, m.awayKey);
+  }
+  function followState(m, follows) {
+    const team2 = (key) => follows.some((f) => f.kind === "team" && sportsCompatible(f.sport, m.kind) && teamKeysMatch(f.key, key));
+    const home = team2(m.homeKey);
+    const away = team2(m.awayKey);
+    const league = m.leagueKey !== "" && follows.some((f) => f.kind === "league" && f.key === m.leagueKey);
+    return { home, away, league, any: home || away || league };
+  }
+  function rankedSources(m, overrides) {
+    const o = overrides[m.id];
+    if (!o) return m.sources;
+    const own = m.sources.find((s) => s.channelKey === o.key);
+    const chosen = own ?? {
+      channelKey: o.key,
+      name: o.name,
+      url: o.url,
+      logo: o.logo,
+      group: o.group,
+      tvgId: o.tvgId,
+      sourceId: "",
+      quality: qualityFromName(o.name),
+      programmeStart: m.start,
+      programmeStop: m.stop,
+      liveFlag: false
+    };
+    return [chosen, ...m.sources.filter((s) => s.channelKey !== o.key)];
+  }
+  function featuredMatch(matches, follows, now2) {
+    const score = (m) => (followState(m, follows).any ? 1e3 : 0) + m.sources.length;
+    const best = (list) => [...list].sort((a, b) => score(b) - score(a) || a.start - b.start)[0] ?? null;
+    const live2 = matches.filter((m) => statusAt(m, now2) === "live");
+    const upcoming = matches.filter((m) => statusAt(m, now2) === "upcoming");
+    return best(live2) ?? best(upcoming.filter((m) => followState(m, follows).any)) ?? upcoming[0] ?? matches[matches.length - 1] ?? null;
+  }
+  function nextOnYourChannels(matches, now2, excludeId, limit = 3) {
+    return matches.filter((m) => m.id !== excludeId && m.sources.length > 0 && statusAt(m, now2) === "upcoming").sort((a, b) => a.start - b.start).slice(0, limit);
+  }
+  function timelineAxis(matches, dayFrom) {
+    const dayTo = dayFrom + 24 * HOUR;
+    let start2 = dayFrom + 15 * HOUR;
+    let end = dayFrom + 23 * HOUR;
+    if (matches.length > 0) {
+      start2 = Math.max(dayFrom, Math.floor(Math.min(...matches.map((m) => m.start)) / HOUR) * HOUR);
+      end = Math.min(dayTo, Math.ceil(Math.max(...matches.map((m) => m.stop)) / HOUR) * HOUR);
+      if (end - start2 < 8 * HOUR) {
+        end = Math.min(dayTo, start2 + 8 * HOUR);
+        start2 = Math.max(dayFrom, end - 8 * HOUR);
+      }
+    }
+    const hours = [];
+    for (let t = start2; t < end; t += HOUR) hours.push(t);
+    return { start: start2, end, hours };
+  }
+  function timelineRows(matches) {
+    const rows = /* @__PURE__ */ new Map();
+    for (const m of [...matches].sort((a, b) => a.start - b.start)) {
+      const key = m.leagueKey || `kind:${m.kind}`;
+      const row = rows.get(key) ?? { key, label: m.league, kind: m.kind, lanes: [] };
+      rows.set(key, row);
+      const lane = row.lanes.find((l) => (l[l.length - 1]?.stop ?? 0) <= m.start);
+      if (lane) lane.push(m);
+      else row.lanes.push([m]);
+    }
+    return [...rows.values()];
+  }
+  function clashes(matches, minutes = 100) {
+    const sorted = [...matches].sort((a, b) => a.start - b.start);
+    const out = /* @__PURE__ */ new Set();
+    for (let i = 0; i < sorted.length; i += 1) {
+      for (let j = i + 1; j < sorted.length && sorted[j].start - sorted[i].start < minutes * MIN; j += 1) {
+        out.add(sorted[i].id);
+        out.add(sorted[j].id);
+      }
+    }
+    return out;
+  }
+  function followCandidates(days) {
+    const out = /* @__PURE__ */ new Map();
+    const add = (c) => {
+      const id = `${c.kind}:${c.key}`;
+      const hit = out.get(id);
+      if (hit) hit.count += 1;
+      else out.set(id, { ...c, count: 1 });
+    };
+    for (const day of days) {
+      for (const m of day?.matches ?? []) {
+        if (m.rerun) continue;
+        if (m.leagueKey) add({ sport: m.kind, kind: "league", key: m.leagueKey, name: m.league });
+        if (m.home && m.homeKey) add({ sport: m.kind, kind: "team", key: m.homeKey, name: m.home });
+        if (m.away && m.awayKey) add({ sport: m.kind, kind: "team", key: m.awayKey, name: m.away });
+      }
+    }
+    return [...out.values()].sort((a, b) => SPORT_KINDS.indexOf(a.sport) - SPORT_KINDS.indexOf(b.sport) || (a.kind === b.kind ? 0 : a.kind === "league" ? -1 : 1) || a.name.localeCompare(b.name));
+  }
+  function nextMatchFor(f, days, now2) {
+    return days.flatMap((d) => d?.matches ?? []).filter((m) => !m.rerun && statusAt(m, now2) !== "finished" && matchesFollow(m, f)).sort((a, b) => a.start - b.start)[0] ?? null;
+  }
+  function teamRing(f, matches, now2) {
+    const mine = matches.filter((m) => !m.rerun && matchesFollow(m, f));
+    if (mine.some((m) => statusAt(m, now2) === "live")) return "live";
+    if (mine.some((m) => statusAt(m, now2) === "upcoming")) return "today";
+    return "none";
+  }
+  function pickMultiviewKeys(matches, overrides, isKnown, max = 4) {
+    const out = [];
+    for (const m of matches) {
+      const ranked = rankedSources(m, overrides);
+      const chosen = ranked.find((s) => isKnown(s.channelKey)) ?? ranked[0];
+      if (chosen && !out.includes(chosen.channelKey)) out.push(chosen.channelKey);
+      if (out.length >= max) break;
+    }
+    return out;
+  }
+  function hue(key) {
+    let h = 0;
+    for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) % 360;
+    return h;
+  }
+  function leagueColor(key) {
+    return LEAGUE_COLORS[key] ?? `hsl(${hue(key)} 70% 60%)`;
+  }
+  function crestColor(key) {
+    return `hsl(${hue(key)} 55% 42%)`;
+  }
+  var HOUR, MIN, LEAGUE_COLORS;
+  var init_sport_day_model = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
+      "use strict";
+      init_live_tv_model();
+      init_sport_model();
+      init_sport_store();
+      HOUR = 36e5;
+      MIN = 6e4;
+      LEAGUE_COLORS = {
+        allsvenskan: "#3b82f6",
+        superettan: "#60a5fa",
+        "premier-league": "#a855f7",
+        "efl-championship": "#c084fc",
+        "uefa-champions-league": "#2563eb",
+        "uefa-europa-league": "#f97316",
+        "uefa-nations-league": "#0ea5e9",
+        "serie-a": "#22c55e",
+        bundesliga: "#e11d48",
+        "la-liga": "#f59e0b",
+        "ligue-1": "#14b8a6",
+        shl: "#ef4444",
+        hockeyallsvenskan: "#fb923c",
+        nhl: "#94a3b8",
+        f1: "#dc2626",
+        motogp: "#f43f5e",
+        atp: "#84cc16"
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/merge.ts
+  function fixtureMatchKey(f) {
+    return `fx:${f.provider}:${f.id}`;
+  }
+  function foldTeamKey(name) {
+    return name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  }
+  function fromFixture(f) {
+    return {
+      home: f.home.name,
+      away: f.away.name,
+      homeCrest: f.home.crest,
+      awayCrest: f.away.crest,
+      homeIds: { [f.provider]: f.home.id },
+      awayIds: { [f.provider]: f.away.id },
+      status: STATUS[f.status],
+      phase: phaseOf(f.status),
+      minute: f.minute,
+      score: f.score ?? void 0,
+      fixture: { provider: f.provider, id: f.id, leagueId: f.league.id, season: f.league.season },
+      lastGoal: f.lastGoal,
+      ...f.venueImage ? { venueImage: f.venueImage } : {},
+      coverage: "full"
+    };
+  }
+  function applyFixture(m, f, swapped) {
+    const homeKey = swapped ? m.awayKey : m.homeKey;
+    const awayKey = swapped ? m.homeKey : m.awayKey;
+    return {
+      ...m,
+      ...fromFixture(f),
+      league: f.league.name || m.league,
+      homeKey: homeKey ?? foldTeamKey(f.home.name),
+      awayKey: awayKey ?? foldTeamKey(f.away.name),
+      round: f.league.round ?? m.round,
+      venue: f.venue ?? m.venue,
+      resultOnly: false
+    };
+  }
+  function fixtureOnly(f, overrides) {
+    const match = {
+      id: fixtureMatchKey(f),
+      kind: f.sport,
+      league: f.league.name,
+      leagueKey: `fx:${f.provider}:${f.league.id}`,
+      home: f.home.name,
+      away: f.away.name,
+      homeKey: foldTeamKey(f.home.name),
+      awayKey: foldTeamKey(f.away.name),
+      event: null,
+      start: f.kickoff,
+      stop: f.kickoff + TWO_HOURS,
+      status: "upcoming",
+      rerun: false,
+      round: f.league.round,
+      venue: f.venue,
+      sources: [],
+      ...fromFixture(f),
+      resultOnly: true
+    };
+    return overrides[match.id] ? { ...match, sources: rankedSources(match, overrides), resultOnly: false } : match;
+  }
+  function mergeLinked(a) {
+    const out = a.epg.map((m) => ({ ...m, coverage: a.coverage(m.kind) }));
+    const index = new Map(out.map((m, i) => [m.id, i]));
+    const used = /* @__PURE__ */ new Set();
+    for (const f of a.fixtures) {
+      if (a.coverage(f.sport) !== "full") continue;
+      const link = a.links[f.id];
+      const i = link ? index.get(link.matchId) : void 0;
+      if (link && i !== void 0 && !used.has(link.matchId) && out[i].coverage === "full") {
+        used.add(link.matchId);
+        out[i] = applyFixture(out[i], f, link.swapped);
+        continue;
+      }
+      out.push(fixtureOnly(f, a.overrides));
+    }
+    return out;
+  }
+  var TWO_HOURS, STATUS, phaseOf;
+  var init_merge = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/merge.ts"() {
+      "use strict";
+      init_sport_day_model();
+      TWO_HOURS = 2 * 36e5;
+      STATUS = { scheduled: "upcoming", postponed: "upcoming", live: "live", ht: "live", finished: "finished" };
+      phaseOf = (s) => s === "ht" || s === "postponed" ? s : void 0;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/results-controller.ts
+  function currentResults() {
+    const budget = currentBudget();
+    if (!budget) {
+      current4?.controller.dispose();
+      current4 = null;
+      return null;
+    }
+    if (current4?.budget !== budget) {
+      current4?.controller.dispose();
+      current4 = { budget, controller: new ResultsController(budget) };
+    }
+    return current4.controller;
+  }
+  function useResultsController() {
+    const [, bump] = useReducer((n) => n + 1, 0);
+    const [controller, setController] = useState(() => currentResults());
+    useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => setController(currentResults())), []);
+    useEffect(() => controller ? controller.subscribe(bump) : void 0, [controller]);
+    return controller;
+  }
+  function useSportResults(opts) {
+    const controller = useResultsController();
+    const overrides = useOverrides();
+    const [links, setLinks] = useState({});
+    const providerId = controller?.budget.provider.id ?? null;
+    const sports = useMemo(() => {
+      const follows = getFollows();
+      return [.../* @__PURE__ */ new Set([...opts.epg.map((m) => m.kind), ...follows.map((f) => f.sport)])].sort();
+    }, [opts.epg]);
+    useEffect(() => {
+      if (!controller || !opts.day) return;
+      const follows = getFollows();
+      const leagues = controller.merged().filter((m) => m.fixture?.leagueId && m.fixture.season && followState(m, follows).any).map((m) => ({ sport: m.kind, leagueId: m.fixture.leagueId, season: m.fixture.season }));
+      void controller.runPlan({ sports, leagues });
+    }, [controller, opts.day, sports.join(",")]);
+    const version3 = controller?.version ?? 0;
+    const fixtures2 = useMemo(() => controller && opts.day ? controller.allFixtures(opts.day) : [], [controller, opts.day, version3]);
+    const fixtureIds = fixtures2.map((f) => f.id).sort().join(",");
+    useEffect(() => {
+      if (!controller || !opts.day || fixtures2.length === 0) {
+        setLinks({});
+        return;
+      }
+      let cancelled = false;
+      void linkFixtures({ day: opts.day, fixtures: fixtures2 }).then((l) => {
+        if (!cancelled) setLinks(l);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [controller, opts.day, fixtureIds]);
+    const matches = useMemo(() => {
+      if (!controller) return opts.epg.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }));
+      return mergeLinked({ epg: opts.epg, fixtures: fixtures2, links, overrides, coverage: (s) => coverageFor(providerId, s) });
+    }, [controller, opts.epg, fixtures2, links, overrides, providerId]);
+    useEffect(() => {
+      if (opts.day) controller?.setMerged(matches);
+    }, [controller, opts.day, matches]);
+    return { matches, status: controller ? controller.status() : NO_KEY, controller };
+  }
+  function useChannelSportLive(channelKey2) {
+    const controller = useResultsController();
+    const [, bump] = useReducer((n) => n + 1, 0);
+    useEffect(() => controller ? controller.onMerged(bump) : void 0, [controller]);
+    if (!controller || !channelKey2) return null;
+    return controller.merged().find((m) => m.coverage === "full" && !!m.fixture && m.status === "live" && m.sources.some((s) => s.channelKey === channelKey2)) ?? null;
+  }
+  var TEN_MIN, TWO_HOURS2, LIVE_DETAIL_MS, ResultsController, current4, NO_KEY;
+  var init_results_controller = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/results-controller.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_budget();
+      init_day_plan();
+      init_live_poller();
+      init_goal_events();
+      init_key_flow();
+      init_sport_link();
+      init_merge();
+      init_providers();
+      init_sport_day_model();
+      init_sport_store();
+      TEN_MIN = 10 * 6e4;
+      TWO_HOURS2 = 2 * 36e5;
+      LIVE_DETAIL_MS = 6e4;
+      ResultsController = class {
+        constructor(budget, deps = {}) {
+          __publicField(this, "budget", budget);
+          __publicField(this, "days", /* @__PURE__ */ new Map());
+          __publicField(this, "scores", /* @__PURE__ */ new Map());
+          __publicField(this, "done", /* @__PURE__ */ new Set());
+          __publicField(this, "doneDay", "");
+          __publicField(this, "details", /* @__PURE__ */ new Map());
+          __publicField(this, "tables", /* @__PURE__ */ new Map());
+          __publicField(this, "mergedById", /* @__PURE__ */ new Map());
+          __publicField(this, "listeners", /* @__PURE__ */ new Set());
+          __publicField(this, "poller", null);
+          __publicField(this, "unsubBudget");
+          __publicField(this, "tz");
+          __publicField(this, "now");
+          /** Räknas upp vid varje dataändring (fixturer, tabeller, matchcenter, kvot). Hookarna memoiserar på den. */
+          __publicField(this, "version", 0);
+          __publicField(this, "mergedListeners", /* @__PURE__ */ new Set());
+          this.tz = deps.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+          this.now = deps.now ?? Date.now;
+          this.unsubBudget = budget.subscribe(() => {
+            this.poller?.reschedule();
+            this.emit();
+          });
+          if (deps.startPoller !== false) {
+            this.poller = createLivePoller({
+              budget,
+              targets: () => this.liveTargets(),
+              onFixtures: (sport, list) => this.applyFixtures(sport, this.dates().today, list, "live"),
+              liveOpts: () => ({ today: this.dates().today, tz: this.tz }),
+              now: this.now
+            });
+            this.poller.start();
+          }
+        }
+        dates() {
+          return localDates(this.now(), this.tz);
+        }
+        dayKey(sport, date) {
+          return `${sport}|${date}`;
+        }
+        subscribe(cb) {
+          this.listeners.add(cb);
+          return () => {
+            this.listeners.delete(cb);
+          };
+        }
+        emit() {
+          this.version += 1;
+          for (const cb of [...this.listeners]) cb();
+        }
+        fixtures(sport, date) {
+          return this.days.get(this.dayKey(sport, date)) ?? [];
+        }
+        allFixtures(date) {
+          const out = [];
+          for (const [k, list] of this.days) if (k.endsWith(`|${date}`)) out.push(...list);
+          return out;
+        }
+        /**
+         * Målhändelser BARA från livepollningen. En äldre cachepost följd av ett
+         * färskt dagsprogram är ingen "händelse" som användaren ska få MÅL! för.
+         */
+        applyFixtures(sport, date, list, source) {
+          const goals = source === "live" ? diffGoals(this.scores, list, this.now()) : [];
+          for (const f of list) if (f.score) this.scores.set(f.id, f.score);
+          const byId = new Map(this.fixtures(sport, date).map((f) => [f.id, f]));
+          for (const f of list) byId.set(f.id, f);
+          this.days.set(this.dayKey(sport, date), [...byId.values()].sort((a, b) => a.kickoff - b.kickoff));
+          if (goals.length) emitGoals(goals);
+          this.poller?.reschedule();
+          this.emit();
+        }
+        rollDone() {
+          const utcDay = new Date(this.now()).toISOString().slice(0, 10);
+          if (utcDay !== this.doneDay) {
+            this.doneDay = utcDay;
+            this.done.clear();
+          }
+        }
+        async runPlan(input) {
+          this.rollDone();
+          const d = this.dates();
+          const provider = this.budget.provider;
+          const calls = planDay({ today: d.today, yesterday: d.yesterday, tomorrow: d.tomorrow, sports: input.sports, leagues: input.leagues, done: this.done }, provider);
+          for (const call of calls) {
+            if (call.kind !== "day" || call.date !== d.today || this.fixtures(call.sport, d.today).length > 0) continue;
+            const cached = await this.budget.peek(call.sport, provider.day(call.sport, d.today, { today: d.today, tz: this.tz, dayEndMs: d.dayEndMs(d.today) }));
+            if (cached) this.applyFixtures(call.sport, d.today, cached, "cache");
+          }
+          const remaining2 = [...calls];
+          const syncPlanned = () => {
+            const per = plannedPerBucket(remaining2, provider);
+            for (const bucket of /* @__PURE__ */ new Set([...per.keys(), ...calls.map((c) => provider.bucket(c.sport))])) this.budget.setPlanned(bucket, per.get(bucket) ?? 0);
+          };
+          syncPlanned();
+          for (const call of calls) {
+            await this.runPlanned(call, d.today, d.dayEndMs);
+            remaining2.shift();
+            syncPlanned();
+          }
+        }
+        async runPlanned(call, today, dayEndMs) {
+          if (call.kind === "day") {
+            const res2 = await this.budget.day(call.sport, call.date, { today, tz: this.tz, dayEndMs: dayEndMs(call.date) });
+            if (res2.data) this.applyFixtures(call.sport, call.date, res2.data, "day");
+            if (res2.ok && call.date !== today) this.done.add(planKey(call));
+            return;
+          }
+          const res = await this.budget.standings(call.sport, call.leagueId, call.season);
+          if (res.data) {
+            this.tables.set(planKey(call), res.data);
+            this.emit();
+          }
+          if (res.ok) this.done.add(planKey(call));
+        }
+        async loadFixture(sport, id, finished) {
+          const key = `${sport}|${id}`;
+          const hit = this.details.get(key);
+          if (hit && (finished || this.now() - hit.at < LIVE_DETAIL_MS)) return hit.detail;
+          const res = await this.budget.fixture(sport, id, { finished });
+          if (res.data) {
+            this.details.set(key, { at: this.now(), detail: res.data });
+            this.emit();
+            return res.data;
+          }
+          return hit?.detail ?? null;
+        }
+        standings(sport, leagueId, season) {
+          return this.tables.get(planKey({ kind: "standings", sport, leagueId, season })) ?? null;
+        }
+        async loadStandings(sport, leagueId, season) {
+          const call = { kind: "standings", sport, leagueId, season };
+          const cached = this.tables.get(planKey(call));
+          if (cached && this.done.has(planKey(call))) return cached;
+          await this.runPlanned(call, this.dates().today, this.dates().dayEndMs);
+          return this.tables.get(planKey(call)) ?? null;
+        }
+        liveTargets() {
+          const today = this.dates().today;
+          const now2 = this.now();
+          const bySport = /* @__PURE__ */ new Map();
+          for (const [k, list] of this.days) {
+            const [sport, date] = k.split("|");
+            if (date === today) bySport.set(sport, list);
+          }
+          const out = [];
+          for (const [sport, list] of bySport) {
+            const open2 = list.filter((f) => f.status !== "finished" && f.status !== "postponed");
+            if (open2.length === 0) continue;
+            const hot = open2.some((f) => f.status === "live" || f.status === "ht" || f.kickoff - now2 <= TEN_MIN && f.kickoff + TWO_HOURS2 > now2);
+            out.push({ sport, hot, windowEndsAt: Math.max(...open2.map((f) => f.kickoff)) + TWO_HOURS2 });
+          }
+          return out;
+        }
+        status() {
+          const provider = this.budget.provider;
+          const base = { provider: provider.id, intervalMs: null, remainingToday: null, pausedUntil: null, paid: false };
+          if (this.budget.isInvalid()) return { ...base, state: "invalid-key" };
+          const targets = this.liveTargets();
+          const hot = targets.find((t) => t.hot);
+          const bucket = provider.bucket(hot?.sport ?? targets[0]?.sport ?? "football");
+          const q = this.budget.quota(bucket);
+          const paid = isPaidPlan(q.plan ?? getSportSettings().keyPlan, provider.id);
+          if (q.blockedUntil != null && q.blockedUntil > this.now()) {
+            return { ...base, state: q.reason === "rate-limited" ? "rate-limited" : "paused", pausedUntil: q.blockedUntil, remainingToday: q.remaining, paid };
+          }
+          return { ...base, state: "ok", intervalMs: hot ? this.budget.liveIntervalMs(bucket, hot.windowEndsAt) : null, remainingToday: q.remaining, paid };
+        }
+        /**
+         * Den sammanslagna listan, som spelaren läser (MÅL!, efterfrågan). Den
+         * meddelar BARA `onMerged`-lyssnare och aldrig datalyssnarna. Annars hade
+         * useSportResults → setMerged → emit → omritning → setMerged blivit en loop.
+         */
+        setMerged(m) {
+          const cutoff = this.now() - 36 * 36e5;
+          for (const x of m) this.mergedById.set(x.id, x);
+          for (const [id, x] of this.mergedById) if (x.stop < cutoff) this.mergedById.delete(id);
+          for (const cb of [...this.mergedListeners]) cb();
+        }
+        merged() {
+          return [...this.mergedById.values()];
+        }
+        onMerged(cb) {
+          this.mergedListeners.add(cb);
+          return () => {
+            this.mergedListeners.delete(cb);
+          };
+        }
+        dispose() {
+          this.poller?.stop();
+          this.unsubBudget();
+          this.listeners.clear();
+          this.mergedListeners.clear();
+        }
+      };
+      current4 = null;
+      NO_KEY = { provider: null, state: "no-key", intervalMs: null, remainingToday: null, pausedUntil: null, paid: false };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -43020,7 +45202,7 @@ ${cue.text}`).join("\n\n")}
           const request = epgSchedule(epgStoreId(listId), wanted, from, to).then((items2) => {
             const storedAt = Date.now();
             for (const key of wanted) {
-              cache7.set(entryKey2(listId, key, from, to), { programmes: items2[key] ?? [], storedAt });
+              cache8.set(entryKey2(listId, key, from, to), { programmes: items2[key] ?? [], storedAt });
             }
             evict(storedAt);
             return items2;
@@ -43051,13 +45233,13 @@ ${cue.text}`).join("\n\n")}
     return `${epgStoreId(listId)}|${key}|${from}|${to}`;
   }
   function evict(now2) {
-    for (const [key, entry] of cache7) {
-      if (now2 - entry.storedAt >= TTL_MS2) cache7.delete(key);
+    for (const [key, entry] of cache8) {
+      if (now2 - entry.storedAt >= TTL_MS3) cache8.delete(key);
     }
-    while (cache7.size > MAX_ENTRIES5) {
-      const oldest = cache7.keys().next();
+    while (cache8.size > MAX_ENTRIES5) {
+      const oldest = cache8.keys().next();
       if (oldest.done) break;
-      cache7.delete(oldest.value);
+      cache8.delete(oldest.value);
     }
   }
   function split(listId, keys2, from, to, now2) {
@@ -43065,11 +45247,11 @@ ${cue.text}`).join("\n\n")}
     const missing = [];
     for (const key of keys2) {
       const id = entryKey2(listId, key, from, to);
-      const entry = cache7.get(id);
-      if (entry && now2 - entry.storedAt < TTL_MS2) {
+      const entry = cache8.get(id);
+      if (entry && now2 - entry.storedAt < TTL_MS3) {
         hits[key] = entry.programmes;
-        cache7.delete(id);
-        cache7.set(id, entry);
+        cache8.delete(id);
+        cache8.set(id, entry);
       } else {
         missing.push(key);
       }
@@ -43102,7 +45284,7 @@ ${cue.text}`).join("\n\n")}
           break;
         }
       }
-      merged[key] = value ?? cache7.get(entryKey2(listId, key, from, to))?.programmes ?? [];
+      merged[key] = value ?? cache8.get(entryKey2(listId, key, from, to))?.programmes ?? [];
     }
     return merged;
   }
@@ -43110,23 +45292,23 @@ ${cue.text}`).join("\n\n")}
     const anchor = Math.floor(nowMs / HOUR_MS) * HOUR_MS;
     return { from: anchor - Math.max(0, hoursBack) * HOUR_MS, to: anchor + Math.max(1, hoursAhead) * HOUR_MS };
   }
-  var TTL_MS2, MAX_ENTRIES5, cache7, batches, inflight9, HOUR_MS;
+  var TTL_MS3, MAX_ENTRIES5, cache8, batches, inflight9, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
       init_store_id();
-      TTL_MS2 = 5 * 60 * 1e3;
+      TTL_MS3 = 5 * 60 * 1e3;
       MAX_ENTRIES5 = 600;
-      cache7 = /* @__PURE__ */ new Map();
+      cache8 = /* @__PURE__ */ new Map();
       batches = /* @__PURE__ */ new Map();
       inflight9 = /* @__PURE__ */ new Map();
       HOUR_MS = 36e5;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -43155,13 +45337,13 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY5;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY5 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
@@ -43191,7 +45373,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY7;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -43201,7 +45383,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -43350,13 +45532,13 @@ ${cue.text}`).join("\n\n")}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useOrientation.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useOrientation.ts
   function read10() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
@@ -43366,7 +45548,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
       const mql = window.matchMedia(QUERY);
-      const onChange = (event) => setOrientation(event.matches ? "landscape" : "portrait");
+      const onChange = (event2) => setOrientation(event2.matches ? "landscape" : "portrait");
       setOrientation(mql.matches ? "landscape" : "portrait");
       mql.addEventListener("change", onChange);
       return () => mql.removeEventListener("change", onChange);
@@ -43375,14 +45557,14 @@ ${cue.text}`).join("\n\n")}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
@@ -43431,13 +45613,13 @@ ${cue.text}`).join("\n\n")}
     }, [active4]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -43448,172 +45630,13 @@ ${cue.text}`).join("\n\n")}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
-  var MT, ellipsis, clamp2, sectionLabel;
-  var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
-      "use strict";
-      MT = {
-        bg: "#000",
-        text: "#f3f4f8",
-        muted: "rgba(243,244,248,0.62)",
-        muted70: "rgba(243,244,248,0.7)",
-        // Handoffets 70 % text på chips
-        dim: "rgba(243,244,248,0.45)",
-        faint: "rgba(243,244,248,0.4)",
-        s05: "rgba(252,252,255,0.05)",
-        s06: "rgba(252,252,255,0.06)",
-        s07: "rgba(252,252,255,0.07)",
-        s08: "rgba(252,252,255,0.08)",
-        s10: "rgba(252,252,255,0.10)",
-        s12: "rgba(252,252,255,0.12)",
-        s14: "rgba(252,252,255,0.14)",
-        s16: "rgba(252,252,255,0.16)",
-        line07: "rgba(255,255,255,0.07)",
-        line08: "rgba(255,255,255,0.08)",
-        line10: "rgba(255,255,255,0.10)",
-        line14: "rgba(255,255,255,0.14)",
-        line20: "rgba(255,255,255,0.2)",
-        sheet: "rgba(38,39,45,0.98)",
-        scrim: "rgba(0,0,0,0.6)",
-        acc: "rgb(var(--accent-500))",
-        accMix: (pct2) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct2}%, transparent)`,
-        onAcc: "#fff",
-        live: "#fb7185",
-        liveSoft: "rgba(251,113,133,0.22)",
-        liveText: "#fecdd3",
-        warnSoft: "rgba(244,132,95,0.2)",
-        warnText: "#f9c3ad",
-        font: "'Avenir Next', 'Trebuchet MS', sans-serif",
-        HIT: 44,
-        PAD: 16,
-        HEADER_H: 52,
-        HEADER_LEFT: 60,
-        TAB_BAR: 52,
-        SAFE_BOTTOM: "env(safe-area-inset-bottom, 18px)",
-        SAFE_TOP: "env(safe-area-inset-top, 0px)",
-        /**
-         * TOPPMARGINALEN MOT SYSTEMRADEN.
-         *
-         * `env(safe-area-inset-top)` ensamt räcker inte: Android-webviewn ger den
-         * bara när sidan bett om `viewport-fit=cover`, och värden räknar dessutom ut
-         * sin egen `--android-inset-top` ur fönstrets insets. Appens egna ytor tar
-         * max av båda (se `components/media-explorer.tsx`), och telefongrenen ska
-         * göra likadant — annars hamnar rubriken under kamerahålet, vilket den
-         * gjorde på en S10e: 39 px inset, sidhuvudet på y=0.
-         */
-        SAFE_TOP_GUARD: "max(env(safe-area-inset-top, 0px), var(--android-inset-top, 0px))",
-        /**
-         * BOTTENMARGINALEN MOT SYSTEMRADEN, samma resonemang som SAFE_TOP_GUARD.
-         * env() ensam räcker inte på Android; värdens --android-inset-bottom gör.
-         */
-        SAFE_BOTTOM_GUARD: "max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px))",
-        /**
-         * Innehållets bottenluft så att sista raden inte hamnar under flik-raden.
-         *
-         * Var 96 — ett fast tal — medan flik-raden är `TAB_BAR + SAFE_BOTTOM` och
-         * alltså VÄXER med enhetens navigeringsfält. På en Galaxy S10e (inset 48) är
-         * raden 100 px hög, och uppmätt i Live TV-inställningarna vid full rullning:
-         *
-         *   sista sektionen slutar   648
-         *   flik-raden börjar        644
-         *
-         * Innehållet gick alltså 4 px IN under raden, utan någon luft alls kvar
-         * (Jerry 2026-09-22). Måttet räknas därför ur radens egna delar plus 24 px
-         * andrum, så det följer med oavsett hur högt systemfältet är.
-         */
-        SCROLL_PAD_BOTTOM: "calc(52px + max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px)) + 24px)"
-      };
-      ellipsis = { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
-      clamp2 = { overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" };
-      sectionLabel = { fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: MT.dim };
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
-  var svg2, MIcons;
-  var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
-      "use strict";
-      init_react_shim();
-      init_jsx_runtime_shim();
-      svg2 = (size, children, filled) => createElement(
-        "svg",
-        { width: size, height: size, viewBox: "0 0 24 24", fill: filled ? "currentColor" : "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" },
-        children
-      );
-      MIcons = {
-        House: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M3 11.5 12 4l9 7.5" }),
-          /* @__PURE__ */ jsx("path", { d: "M5 10v10h14V10" })
-        ] }), filled),
-        List: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M4 6h16M4 12h16M4 18h16" })),
-        Heart: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
-        MagnifyingGlass: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
-          /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
-        ] })),
-        Gear: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "3" }),
-          /* @__PURE__ */ jsx("path", { d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" })
-        ] })),
-        CaretLeft: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M15 6l-6 6 6 6" })),
-        CaretRight: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M9 6l6 6-6 6" })),
-        CaretDown: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M6 9l6 6 6-6" })),
-        Play: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
-        SpeakerHigh: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M4 9v6h4l6 5V4l-6 5H4z" }),
-          /* @__PURE__ */ jsx("path", { d: "M17.5 8.5a5 5 0 0 1 0 7" }),
-          /* @__PURE__ */ jsx("path", { d: "M20 6a8.5 8.5 0 0 1 0 12" })
-        ] })),
-        SpeakerSlash: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M4 9v6h4l6 5V4l-6 5H4z" }),
-          /* @__PURE__ */ jsx("path", { d: "m16 9 5 6M21 9l-5 6" })
-        ] })),
-        Bell: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" }),
-          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
-        ] }), filled),
-        Lock: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "5", y: "11", width: "14", height: "10", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M8 11V7a4 4 0 0 1 8 0v4" })
-        ] }), filled),
-        /** Filmremsa — Biblioteket. Samma form som ikonraden på TV. */
-        FilmStrip: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
-          /* @__PURE__ */ jsx("path", { d: "M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" })
-        ] })),
-        SquaresFour: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "4", y: "4", width: "7", height: "7", rx: "1.5" }),
-          /* @__PURE__ */ jsx("rect", { x: "13", y: "4", width: "7", height: "7", rx: "1.5" }),
-          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "7", height: "7", rx: "1.5" }),
-          /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
-        ] })),
-        ArrowsOut: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" }) })),
-        Pip: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("rect", { x: "3", y: "5", width: "18", height: "14", rx: "2" }),
-          /* @__PURE__ */ jsx("rect", { x: "12", y: "12", width: "7", height: "5", rx: "1", fill: "currentColor", stroke: "none" })
-        ] })),
-        DotsThree: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("circle", { cx: "6", cy: "12", r: "1.6" }),
-          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "1.6" }),
-          /* @__PURE__ */ jsx("circle", { cx: "18", cy: "12", r: "1.6" })
-        ] }), true),
-        /** Handtaget för dragbara listor: tre korta horisontella streck. */
-        ListHandle: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx(Fragment2, { children: /* @__PURE__ */ jsx("path", { d: "M7 7h10M7 12h10M7 17h10" }) })),
-        Plus: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" })),
-        X: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" }))
-      };
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -43633,7 +45656,7 @@ ${cue.text}`).join("\n\n")}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -43646,7 +45669,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -43663,17 +45686,17 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx(MobileLogo, { channel, width: logo.w, height: logo.h }),
           /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }, children: [
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: "0px" }, children: [
-              /* @__PURE__ */ jsx("span", { style: { fontSize: variant === "zap" ? 14 : 15, fontWeight: 600, ...ellipsis, minWidth: "0px" }, children: channel.name }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: variant === "zap" ? 14 : 15, fontWeight: 600, ...ellipsis2, minWidth: "0px" }, children: channel.name }),
               pinned ? /* @__PURE__ */ jsx("span", { "data-pinned": "", style: { color: MT.acc, flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 14, filled: true }) }) : null,
               locked ? /* @__PURE__ */ jsx("span", { "data-locked": "", style: { color: MT.dim, flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Lock, { size: 14 }) }) : null
             ] }),
             now2.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: variant === "zap" ? 12 : 14, color: "rgba(243,244,248,0.85)", ...ellipsis }, children: variant === "search" ? `${tt("nowPrefix")}: ${now2.now.title}` : now2.now.title }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: variant === "zap" ? 12 : 14, color: "rgba(243,244,248,0.85)", ...ellipsis2 }, children: variant === "search" ? `${tt("nowPrefix")}: ${now2.now.title}` : now2.now.title }),
               variant === "guide" || variant === "sheet" ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
                 /* @__PURE__ */ jsx("div", { style: { flex: 1, height: 4, borderRadius: 4, background: MT.s14, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${Math.round(progressOf(now2.now.start, now2.now.stop, nowMs) * 100)}%`, height: "100%", background: MT.acc } }) }),
                 /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: MT.dim, flexShrink: 0 }, children: tt("minutesShort", { min: minutes }) })
               ] }) : null,
-              variant === "guide" && now2.next ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis }, children: [
+              variant === "guide" && now2.next ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis2 }, children: [
                 tt("nextLabel"),
                 " ",
                 formatClock2(now2.next.start, locale),
@@ -43681,8 +45704,8 @@ ${cue.text}`).join("\n\n")}
                 now2.next.title
               ] }) : null
             ] }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.dim, ...ellipsis }, children: noProgrammeLabel }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.faint, ...ellipsis }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") })
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.dim, ...ellipsis2 }, children: noProgrammeLabel }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.faint, ...ellipsis2 }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") })
             ] })
           ] })
         ]
@@ -43690,7 +45713,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -43703,7 +45726,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
   function MobileSheet({ title, subtitle, art, body, items: items2, onClose, pushLayer, testId }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
@@ -43741,8 +45764,8 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsxs("div", { style: { padding: "18px 20px 12px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${MT.line08}` }, children: [
               art ? /* @__PURE__ */ jsx("div", { style: { flexShrink: 0 }, children: art }) : null,
               /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-                /* @__PURE__ */ jsx("div", { style: { fontSize: 16, fontWeight: 600, ...ellipsis }, children: title }),
-                subtitle ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.muted, ...ellipsis }, children: subtitle }) : null
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 16, fontWeight: 600, ...ellipsis2 }, children: title }),
+                subtitle ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.muted, ...ellipsis2 }, children: subtitle }) : null
               ] })
             ] }),
             body ? /* @__PURE__ */ jsx("div", { "data-testid": "sheet-body", style: { padding: "12px 20px", fontSize: 14, color: MT.muted, maxHeight: "30vh", overflow: "auto" }, children: body }) : null,
@@ -43764,7 +45787,7 @@ ${cue.text}`).join("\n\n")}
                   borderBottom: `1px solid ${MT.line07}`,
                   cursor: "pointer"
                 },
-                children: /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis }, children: item.label })
+                children: /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis2 }, children: item.label })
               },
               item.key
             )) }),
@@ -43775,7 +45798,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -43785,423 +45808,41 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-model.ts
-  function matchTitle(m) {
-    return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/score-model.ts
+  function showsScore(m) {
+    return m.coverage === "full" && !!m.fixture && !!m.score && m.status !== "upcoming";
   }
-  function crestText(name) {
-    const words = name.split(/\s+/).filter(Boolean);
-    const word = words.find((w) => !CREST_SKIP.has(w.toLowerCase()) && /\p{L}/u.test(w)) ?? words[0] ?? "?";
-    return word.slice(0, 3).toUpperCase();
+  function scoreText(m) {
+    return showsScore(m) && m.score ? `${m.score.home}\u2013${m.score.away}` : null;
   }
-  function sourceChannel(s) {
-    return { name: s.name, url: s.url, logo: s.logo, group: s.group, tvgId: s.tvgId };
+  function matchStatusLabel(m, tt) {
+    if (m.coverage !== "full" || !m.fixture) return null;
+    if (m.phase === "postponed") return tt("sportPostponed");
+    if (m.phase === "ht") return tt("sportHalfTime");
+    if (m.status === "live") return m.minute != null ? `${m.minute}'` : tt("sportLiveShort");
+    if (m.status === "finished") return tt("sportEnded");
+    return null;
   }
-  var SPORT_KINDS, SPORT_CHIPS, CREST_SKIP;
-  var init_sport_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-model.ts"() {
-      "use strict";
-      SPORT_KINDS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
-      SPORT_CHIPS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis"];
-      CREST_SKIP = /* @__PURE__ */ new Set(["fc", "if", "ik", "ifk", "aif", "bk", "sk", "hc", "ff", "is", "cf", "afc", "ssc", "hf", "bik", "gik"]);
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-epg.ts
-  function localDayKey(ms2) {
-    const d = new Date(ms2);
-    return `${d.getFullYear()}-${pad3(d.getMonth() + 1)}-${pad3(d.getDate())}`;
+  function heroStatusLine(m, tt) {
+    if (m.coverage !== "full" || !m.fixture) return null;
+    if (m.status === "live" && !m.phase && m.minute != null) return `${m.minute}' \xB7 ${tt("sportInProgress")}`;
+    return matchStatusLabel(m, tt);
   }
-  function parts(day) {
-    const [y, m, d] = day.split("-").map(Number);
-    return [y ?? 1970, m ?? 1, d ?? 1];
-  }
-  function shiftDay(day, delta) {
-    const [y, m, d] = parts(day);
-    return localDayKey(new Date(y, m - 1, d + delta, 12).getTime());
-  }
-  function tzOffsetFor(day) {
-    const [y, m, d] = parts(day);
-    return -new Date(y, m - 1, d, 12).getTimezoneOffset();
-  }
-  function dayStartMs(day) {
-    const [y, m, d] = parts(day);
-    return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
-  }
-  function sanitizeDay(raw, day) {
-    const r = raw && typeof raw === "object" ? raw : {};
-    const matches = Array.isArray(r.matches) ? r.matches.map((m) => ({ ...m, sources: Array.isArray(m.sources) ? m.sources : [] })) : [];
-    return {
-      day,
-      from: Number(r.from ?? 0),
-      to: Number(r.to ?? 0),
-      at: Number(r.at ?? 0),
-      fetchedAt: typeof r.fetchedAt === "number" ? r.fetchedAt : null,
-      matches,
-      counts: r.counts && typeof r.counts === "object" ? r.counts : {}
-    };
-  }
-  function fetchSportDay(day, now2 = Date.now()) {
-    const hit = cache8.get(day);
-    if (hit && now2 - hit.at < TTL_MS3) return hit.promise;
-    const qs = new URLSearchParams({ listId: LIVE_TV_GLOBAL_EPG_ID, day, tzOffset: String(tzOffsetFor(day)) });
-    const promise = fetch(`/api/live-tv/sport/day?${qs.toString()}`).then(async (res) => {
-      if (res.status === 404) throw new SportEndpointMissing();
-      if (!res.ok) throw new Error(`/api/live-tv/sport/day returned ${res.status}`);
-      return sanitizeDay(await res.json(), day);
-    });
-    cache8.set(day, { at: now2, promise });
-    promise.catch(() => {
-      if (cache8.get(day)?.promise === promise) cache8.delete(day);
-    });
-    return promise;
-  }
-  function useSportDay(day, nowMs) {
-    const [result, setResult] = useState({ day: null, data: null, state: "loading" });
-    const bucket = Math.floor(nowMs / TTL_MS3);
-    useEffect(() => {
-      if (!day) return;
-      let cancelled = false;
-      fetchSportDay(day).then((data) => {
-        if (!cancelled) setResult({ day, data, state: "ready" });
-      }).catch((error) => {
-        if (!cancelled) setResult({ day, data: null, state: error instanceof SportEndpointMissing ? "missing" : "error" });
-      });
-      return () => {
-        cancelled = true;
-      };
-    }, [day, bucket]);
-    if (!day) return { data: null, state: "ready" };
-    return result.day === day ? { data: result.data, state: result.state } : { data: null, state: "loading" };
-  }
-  var pad3, SportEndpointMissing, TTL_MS3, cache8;
-  var init_sport_epg = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-epg.ts"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_live_tv_data();
-      pad3 = (n) => String(n).padStart(2, "0");
-      SportEndpointMissing = class extends Error {
-        constructor() {
-          super("sport endpoint missing");
-        }
-      };
-      TTL_MS3 = 5 * 6e4;
-      cache8 = /* @__PURE__ */ new Map();
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-store.ts
-  function sanitizeSettings(raw) {
-    const r = raw && typeof raw === "object" ? raw : {};
-    return {
-      view: r.view === "feed" || r.view === "matchday" ? r.view : DEFAULT_SETTINGS.view,
-      alert: r.alert === "off" || r.alert === "15" || r.alert === "kickoff" ? r.alert : DEFAULT_SETTINGS.alert
-    };
-  }
-  function getSportSettings() {
-    return sanitizeSettings(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, DEFAULT_SETTINGS));
-  }
-  function setSportSettings(patch) {
-    const next = sanitizeSettings({ ...getSportSettings(), ...patch });
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, next);
-    return next;
-  }
-  function useStored(key, read11) {
-    const [value, setValue] = useState(read11);
-    useEffect(() => {
-      setValue(read11());
-      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, () => setValue(read11()));
-    }, [key]);
-    return value;
-  }
-  function useSportSettings() {
-    return useStored(SPORT_SETTINGS_KEY, getSportSettings);
-  }
-  function teamKeysMatch(a, b) {
-    if (!a || !b) return false;
-    if (a === b || `${a}s` === b || `${b}s` === a) return true;
-    const [short, long] = a.length <= b.length ? [a, b] : [b, a];
-    const sw3 = short.split(" ");
-    const lw = long.split(" ");
-    if (sw3.length >= lw.length) return false;
-    const head = lw.slice(0, sw3.length).join(" ");
-    const tail = lw.slice(lw.length - sw3.length).join(" ");
-    return head === short || tail === short;
-  }
-  function sportsCompatible(a, b) {
-    return a === b || a === "other" || b === "other";
-  }
-  function sanitizeFollows(raw) {
-    if (!Array.isArray(raw)) return [];
-    const out = [];
-    for (const item of raw) {
-      if (!item || typeof item !== "object") continue;
-      const f = item;
-      if (!SPORT_KINDS.includes(f.sport)) continue;
-      if (f.kind !== "team" && f.kind !== "league") continue;
-      if (typeof f.key !== "string" || !f.key) continue;
-      out.push({ sport: f.sport, kind: f.kind, key: f.key, name: typeof f.name === "string" && f.name ? f.name : f.key });
-    }
-    return out;
-  }
-  function getFollows() {
-    return sanitizeFollows(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, []));
-  }
-  function isFollowing(follows, f) {
-    return follows.some((x) => x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key));
-  }
-  function toggleFollow(f) {
-    const current3 = getFollows();
-    const next = isFollowing(current3, f) ? current3.filter((x) => !(x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key))) : [...current3, f];
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
-    return next;
-  }
-  function useFollows() {
-    return useStored(SPORT_FOLLOWS_KEY, getFollows);
-  }
-  function sanitizeOverrides(raw) {
-    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-    const out = {};
-    for (const [id, value] of Object.entries(raw)) {
-      const c = value;
-      if (!c || typeof c.key !== "string" || typeof c.url !== "string" || typeof c.name !== "string") continue;
-      out[id] = { key: c.key, name: c.name, url: c.url, logo: typeof c.logo === "string" ? c.logo : null, group: typeof c.group === "string" ? c.group : "", tvgId: typeof c.tvgId === "string" ? c.tvgId : null };
-    }
-    return out;
-  }
-  function getOverrides() {
-    return sanitizeOverrides(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, {}));
-  }
-  function setOverride(matchId, channel) {
-    const next = { ...getOverrides() };
-    if (channel) next[matchId] = channel;
-    else delete next[matchId];
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, next);
-    return next;
-  }
-  function useOverrides() {
-    return useStored(SPORT_OVERRIDES_KEY, getOverrides);
-  }
-  function getAlertSkips() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, {});
-    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-    const out = {};
-    for (const [id, start2] of Object.entries(raw)) if (typeof start2 === "number") out[id] = start2;
-    return out;
-  }
-  function setAlertSkip(matchId, start2, skip, now2 = Date.now()) {
-    const current3 = getAlertSkips();
-    if (!skip && !(matchId in current3)) return;
-    const next = {};
-    for (const [id, s] of Object.entries(current3)) if (s + SKIP_KEEP_MS > now2 && id !== matchId) next[id] = s;
-    if (skip) next[matchId] = start2;
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, next);
-  }
-  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, DEFAULT_SETTINGS, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
-  var init_sport_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-store.ts"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_plugin_sdk();
-      init_live_tv_data();
-      init_sport_model();
-      SPORT_SETTINGS_KEY = "sport_settings_v1";
-      SPORT_FOLLOWS_KEY = "sport_follows_v1";
-      SPORT_OVERRIDES_KEY = "sport_overrides_v1";
-      DEFAULT_SETTINGS = { view: "matchday", alert: "15" };
-      SPORT_ALERT_SKIP_KEY = "sport_alert_skip_v1";
-      SKIP_KEEP_MS = 24 * 60 * 6e4;
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-day-model.ts
-  function statusAt(m, now2) {
-    if (m.status === "finished" || now2 >= m.stop) return "finished";
-    if (now2 >= m.start) return "live";
-    return "upcoming";
-  }
-  function visibleMatches(day, filter) {
-    if (!day) return [];
-    return day.matches.filter((m) => !m.rerun && (filter === "all" || m.kind === filter)).sort((a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)));
-  }
-  function sportCounts(day) {
-    const out = Object.fromEntries(SPORT_KINDS.map((k) => [k, 0]));
-    for (const m of day?.matches ?? []) if (!m.rerun) out[m.kind] += 1;
-    return out;
-  }
-  function splitSections(matches, now2) {
-    return {
-      live: matches.filter((m) => statusAt(m, now2) === "live"),
-      later: matches.filter((m) => statusAt(m, now2) === "upcoming"),
-      finished: matches.filter((m) => statusAt(m, now2) === "finished")
-    };
-  }
-  function headerSummary(matches, now2) {
-    return { total: matches.length, live: matches.filter((m) => statusAt(m, now2) === "live").length };
-  }
-  function matchesFollow(m, f) {
-    if (!sportsCompatible(f.sport, m.kind)) return false;
-    if (f.kind === "league") return m.leagueKey !== "" && m.leagueKey === f.key;
-    return teamKeysMatch(f.key, m.homeKey) || teamKeysMatch(f.key, m.awayKey);
-  }
-  function followState(m, follows) {
-    const team = (key) => follows.some((f) => f.kind === "team" && sportsCompatible(f.sport, m.kind) && teamKeysMatch(f.key, key));
-    const home = team(m.homeKey);
-    const away = team(m.awayKey);
-    const league = m.leagueKey !== "" && follows.some((f) => f.kind === "league" && f.key === m.leagueKey);
-    return { home, away, league, any: home || away || league };
-  }
-  function rankedSources(m, overrides) {
-    const o = overrides[m.id];
-    if (!o) return m.sources;
-    const own = m.sources.find((s) => s.channelKey === o.key);
-    const chosen = own ?? {
-      channelKey: o.key,
-      name: o.name,
-      url: o.url,
-      logo: o.logo,
-      group: o.group,
-      tvgId: o.tvgId,
-      sourceId: "",
-      quality: qualityFromName(o.name),
-      programmeStart: m.start,
-      programmeStop: m.stop,
-      liveFlag: false
-    };
-    return [chosen, ...m.sources.filter((s) => s.channelKey !== o.key)];
-  }
-  function featuredMatch(matches, follows, now2) {
-    const score = (m) => (followState(m, follows).any ? 1e3 : 0) + m.sources.length;
-    const best = (list) => [...list].sort((a, b) => score(b) - score(a) || a.start - b.start)[0] ?? null;
-    const live2 = matches.filter((m) => statusAt(m, now2) === "live");
-    const upcoming = matches.filter((m) => statusAt(m, now2) === "upcoming");
-    return best(live2) ?? best(upcoming.filter((m) => followState(m, follows).any)) ?? upcoming[0] ?? matches[matches.length - 1] ?? null;
-  }
-  function nextOnYourChannels(matches, now2, excludeId, limit = 3) {
-    return matches.filter((m) => m.id !== excludeId && m.sources.length > 0 && statusAt(m, now2) === "upcoming").sort((a, b) => a.start - b.start).slice(0, limit);
-  }
-  function timelineAxis(matches, dayFrom) {
-    const dayTo = dayFrom + 24 * HOUR;
-    let start2 = dayFrom + 15 * HOUR;
-    let end = dayFrom + 23 * HOUR;
-    if (matches.length > 0) {
-      start2 = Math.max(dayFrom, Math.floor(Math.min(...matches.map((m) => m.start)) / HOUR) * HOUR);
-      end = Math.min(dayTo, Math.ceil(Math.max(...matches.map((m) => m.stop)) / HOUR) * HOUR);
-      if (end - start2 < 8 * HOUR) {
-        end = Math.min(dayTo, start2 + 8 * HOUR);
-        start2 = Math.max(dayFrom, end - 8 * HOUR);
-      }
-    }
-    const hours = [];
-    for (let t = start2; t < end; t += HOUR) hours.push(t);
-    return { start: start2, end, hours };
-  }
-  function timelineRows(matches) {
-    const rows = /* @__PURE__ */ new Map();
-    for (const m of [...matches].sort((a, b) => a.start - b.start)) {
-      const key = m.leagueKey || `kind:${m.kind}`;
-      const row = rows.get(key) ?? { key, label: m.league, kind: m.kind, lanes: [] };
-      rows.set(key, row);
-      const lane = row.lanes.find((l) => (l[l.length - 1]?.stop ?? 0) <= m.start);
-      if (lane) lane.push(m);
-      else row.lanes.push([m]);
-    }
-    return [...rows.values()];
-  }
-  function clashes(matches, minutes = 100) {
-    const sorted = [...matches].sort((a, b) => a.start - b.start);
-    const out = /* @__PURE__ */ new Set();
-    for (let i = 0; i < sorted.length; i += 1) {
-      for (let j = i + 1; j < sorted.length && sorted[j].start - sorted[i].start < minutes * MIN; j += 1) {
-        out.add(sorted[i].id);
-        out.add(sorted[j].id);
-      }
-    }
-    return out;
-  }
-  function followCandidates(days) {
-    const out = /* @__PURE__ */ new Map();
-    const add = (c) => {
-      const id = `${c.kind}:${c.key}`;
-      const hit = out.get(id);
-      if (hit) hit.count += 1;
-      else out.set(id, { ...c, count: 1 });
-    };
-    for (const day of days) {
-      for (const m of day?.matches ?? []) {
-        if (m.rerun) continue;
-        if (m.leagueKey) add({ sport: m.kind, kind: "league", key: m.leagueKey, name: m.league });
-        if (m.home && m.homeKey) add({ sport: m.kind, kind: "team", key: m.homeKey, name: m.home });
-        if (m.away && m.awayKey) add({ sport: m.kind, kind: "team", key: m.awayKey, name: m.away });
-      }
-    }
-    return [...out.values()].sort((a, b) => SPORT_KINDS.indexOf(a.sport) - SPORT_KINDS.indexOf(b.sport) || (a.kind === b.kind ? 0 : a.kind === "league" ? -1 : 1) || a.name.localeCompare(b.name));
-  }
-  function nextMatchFor(f, days, now2) {
-    return days.flatMap((d) => d?.matches ?? []).filter((m) => !m.rerun && statusAt(m, now2) !== "finished" && matchesFollow(m, f)).sort((a, b) => a.start - b.start)[0] ?? null;
-  }
-  function teamRing(f, matches, now2) {
-    const mine = matches.filter((m) => !m.rerun && matchesFollow(m, f));
-    if (mine.some((m) => statusAt(m, now2) === "live")) return "live";
-    if (mine.some((m) => statusAt(m, now2) === "upcoming")) return "today";
-    return "none";
-  }
-  function pickMultiviewKeys(matches, overrides, isKnown, max = 4) {
-    const out = [];
+  function crestForFollow(f, matches) {
     for (const m of matches) {
-      const ranked = rankedSources(m, overrides);
-      const chosen = ranked.find((s) => isKnown(s.channelKey)) ?? ranked[0];
-      if (chosen && !out.includes(chosen.channelKey)) out.push(chosen.channelKey);
-      if (out.length >= max) break;
+      if (m.homeCrest && teamKeysMatch(f.key, m.homeKey)) return m.homeCrest;
+      if (m.awayCrest && teamKeysMatch(f.key, m.awayKey)) return m.awayCrest;
     }
-    return out;
+    return null;
   }
-  function hue(key) {
-    let h = 0;
-    for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) % 360;
-    return h;
-  }
-  function leagueColor(key) {
-    return LEAGUE_COLORS[key] ?? `hsl(${hue(key)} 70% 60%)`;
-  }
-  function crestColor(key) {
-    return `hsl(${hue(key)} 55% 42%)`;
-  }
-  var HOUR, MIN, LEAGUE_COLORS;
-  var init_sport_day_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
+  var init_score_model = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/score-model.ts"() {
       "use strict";
-      init_live_tv_model();
-      init_sport_model();
       init_sport_store();
-      HOUR = 36e5;
-      MIN = 6e4;
-      LEAGUE_COLORS = {
-        allsvenskan: "#3b82f6",
-        superettan: "#60a5fa",
-        "premier-league": "#a855f7",
-        "efl-championship": "#c084fc",
-        "uefa-champions-league": "#2563eb",
-        "uefa-europa-league": "#f97316",
-        "uefa-nations-league": "#0ea5e9",
-        "serie-a": "#22c55e",
-        bundesliga: "#e11d48",
-        "la-liga": "#f59e0b",
-        "ligue-1": "#14b8a6",
-        shl: "#ef4444",
-        hockeyallsvenskan: "#fb923c",
-        nhl: "#94a3b8",
-        f1: "#dc2626",
-        motogp: "#f43f5e",
-        atp: "#84cc16"
-      };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-ctx.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-ctx.ts
   function buildSportCtx(input) {
     const { model, nav, tt, overrides, reminders } = input;
     const best = (m) => rankedSources(m, overrides)[0] ?? null;
@@ -44283,7 +45924,7 @@ ${cue.text}`).join("\n\n")}
   }
   var KIND_KEYS;
   var init_sport_ctx = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44306,7 +45947,65 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-score.tsx
+  function MatchScore({ match, size = "card" }) {
+    const blink = useGoalBlink(match);
+    if (!showsScore(match) || !match.score) return null;
+    return /* @__PURE__ */ jsxs("span", { "data-testid": "match-score", style: { fontSize: SCORE_SIZE[size], fontWeight: 700, fontVariantNumeric: "tabular-nums", color: blink ? TV2.live : TV2.text, transition: "color 300ms" }, children: [
+      match.score.home,
+      "\u2013",
+      match.score.away
+    ] });
+  }
+  function ResultOnlyTag() {
+    const { tt } = useTvText();
+    return /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportResultOnly") });
+  }
+  function useGoalBlink(match) {
+    const [until, setUntil] = useState(0);
+    const id = match.fixture?.id ?? null;
+    useEffect(() => id ? onGoal((e) => {
+      if (e.fixtureId === id) setUntil(Date.now() + BLINK_MS);
+    }) : void 0, [id]);
+    useEffect(() => {
+      if (!until) return;
+      const t = setTimeout(() => setUntil(0), Math.max(0, until - Date.now()) + 1);
+      return () => clearTimeout(t);
+    }, [until]);
+    return until > Date.now();
+  }
+  function RateLineView({ status, tv }) {
+    const { tt, lang, locale } = useTvText();
+    const line = rateLine(status, tt, { lang, locale });
+    if (!line) return null;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-rate-line", style: { fontSize: dp(14), color: TV2.faint, display: "flex", gap: dp(10), flexWrap: "wrap" }, children: [
+      /* @__PURE__ */ jsx("span", { children: line.text }),
+      line.showPaidLink ? tv ? /* @__PURE__ */ jsxs("span", { children: [
+        "\xB7 ",
+        tt("sportRateFaster")
+      ] }) : /* @__PURE__ */ jsx("a", { href: API_SPORTS_REGISTER_URL, target: "_blank", rel: "noreferrer", style: { color: TV2.dim }, children: tt("sportRateFaster") }) : null
+    ] });
+  }
+  var SCORE_SIZE, BLINK_MS;
+  var init_sport_score = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_goal_events();
+      init_rate_line();
+      init_api_sports();
+      init_score_model();
+      init_score_model();
+      init_jsx_runtime_shim();
+      SCORE_SIZE = { hero: dp(64), card: dp(28), row: dp(20) };
+      BLINK_MS = 1e4;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
   function SportIcon({ kind, size }) {
     switch (kind) {
       case "football":
@@ -44327,7 +46026,7 @@ ${cue.text}`).join("\n\n")}
   }
   var sw2, svg3, SportIcons;
   var init_sport_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -44377,8 +46076,13 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
-  function Crest({ name, colorKey, size = dp(56) }) {
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
+  function Crest({ name, colorKey, size = dp(56), src }) {
+    const [broken, setBroken] = useState(false);
+    const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
+    if (url) {
+      return /* @__PURE__ */ jsx("img", { "data-crest": "", src: url, alt: "", width: size, height: size, onError: () => setBroken(true), style: { width: size, height: size, objectFit: "contain", flexShrink: 0 } });
+    }
     return /* @__PURE__ */ jsx("span", { "data-crest": "", "aria-hidden": "true", style: { width: size, height: size, borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: crestColor(colorKey), color: "#fff", fontSize: Math.round(size * 0.32), fontWeight: 700, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.18)" }, children: crestText(name) });
   }
   function LeagueDot({ leagueKey, size = dp(12) }) {
@@ -44386,14 +46090,15 @@ ${cue.text}`).join("\n\n")}
   }
   function StatusTag({ match, ctx }) {
     const st = statusAt(match, ctx.now);
-    if (st === "live") return /* @__PURE__ */ jsx(Tag2, { variant: "live", children: ctx.tt("live") });
-    if (st === "finished") return /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: ctx.tt("sportEnded") });
-    return /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: formatClock2(match.start, ctx.locale) });
+    const label = matchStatusLabel(match, ctx.tt);
+    if (st === "live") return /* @__PURE__ */ jsx(Tag2, { variant: "live", children: label ?? ctx.tt("live") });
+    if (st === "finished") return /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: label ?? ctx.tt("sportEnded") });
+    return /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: label ?? formatClock2(match.start, ctx.locale) });
   }
-  function TeamCell({ name, colorKey, align }) {
+  function TeamCell({ name, colorKey, align, crest }) {
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: align === "end" ? "flex-end" : "flex-start", gap: dp(10), minWidth: 0, flexDirection: align === "end" ? "row" : "row-reverse" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18), fontWeight: 600, ...ellipsis2 }, children: name }),
-      /* @__PURE__ */ jsx(Crest, { name, colorKey, size: dp(42) })
+      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18), fontWeight: 600, ...ellipsis3 }, children: name }),
+      /* @__PURE__ */ jsx(Crest, { name, colorKey, size: dp(42), src: crest })
     ] });
   }
   function MatchCard({ match, ctx }) {
@@ -44403,17 +46108,17 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-card", "data-match-id": match.id, ...station(() => ctx.openMatch(match), () => ctx.watch(match)), style: { ...cardStyle, width: dp(450), flexShrink: 0, padding: `${dp(16)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(12), cursor: "pointer" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(15), color: TV2.muted }, children: [
         /* @__PURE__ */ jsx(LeagueDot, { leagueKey: match.leagueKey || match.kind }),
-        /* @__PURE__ */ jsx("span", { style: { ...ellipsis2, flex: 1 }, children: match.league || ctx.kindLabel(match.kind) }),
+        /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: match.league || ctx.kindLabel(match.kind) }),
         /* @__PURE__ */ jsx(StatusTag, { match, ctx })
       ] }),
       match.home && match.away ? /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: dp(12) }, children: [
-        /* @__PURE__ */ jsx(TeamCell, { name: match.home, colorKey: match.homeKey ?? match.home, align: "end" }),
-        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: "\u2013" }),
-        /* @__PURE__ */ jsx(TeamCell, { name: match.away, colorKey: match.awayKey ?? match.away, align: "start" })
-      ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, ...ellipsis2 }, children: matchTitle(match) }),
+        /* @__PURE__ */ jsx(TeamCell, { name: match.home, colorKey: match.homeKey ?? match.home, align: "end", crest: match.homeCrest }),
+        showsScore(match) ? /* @__PURE__ */ jsx(MatchScore, { match, size: "card" }) : /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: "\u2013" }),
+        /* @__PURE__ */ jsx(TeamCell, { name: match.away, colorKey: match.awayKey ?? match.away, align: "start", crest: match.awayCrest })
+      ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, ...ellipsis3 }, children: matchTitle(match) }),
       /* @__PURE__ */ jsx(Progress, { value: st === "live" ? progressOf(match.start, match.stop, ctx.now) : st === "finished" ? 1 : 0, height: dp(4), track: TV2.s10 }),
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(8), fontSize: dp(15), color: TV2.muted }, children: [
-        /* @__PURE__ */ jsx("span", { style: { ...ellipsis2, flex: 1 }, children: sourceLine(match, ctx) }),
+        /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: match.resultOnly ? /* @__PURE__ */ jsx(ResultOnlyTag, {}) : sourceLine(match, ctx) }),
         followed ? /* @__PURE__ */ jsx("span", { "data-testid": "card-followed", style: { color: "#fbbf24", display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(18), filled: true }) }) : null,
         reminded ? /* @__PURE__ */ jsx("span", { "data-testid": "card-reminded", style: { display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(18) }) }) : null
       ] })
@@ -44432,19 +46137,23 @@ ${cue.text}`).join("\n\n")}
   function Notice({ text, testId }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { ...cardStyle, padding: `${dp(28)}px ${dp(32)}px`, fontSize: dp(20), color: TV2.muted }, children: text });
   }
-  var ellipsis2, overline, sectionTitle, primaryBtn, secondaryBtn;
+  var ellipsis3, overline, sectionTitle, primaryBtn, secondaryBtn;
   var init_sport_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
       "use strict";
       "use client";
+      init_react_shim();
+      init_plugin_sdk();
       init_live_tv_ui();
       init_tv_ui();
       init_sport_model();
       init_sport_day_model();
       init_sport_ctx();
+      init_score_model();
+      init_sport_score();
       init_sport_icons();
       init_jsx_runtime_shim();
-      ellipsis2 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+      ellipsis3 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
       overline = { fontSize: dp(15), fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: TV2.dim };
       sectionTitle = { fontSize: dp(28), fontWeight: 600 };
       primaryBtn = {
@@ -44467,7 +46176,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/player-sport.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/player-sport.tsx
   function multiviewFor(keys2) {
     const picked = keys2.slice(0, MAX_PICK);
     const layout = picked.length <= 2 ? 2 : picked.length === 3 ? 3 : 4;
@@ -44507,10 +46216,12 @@ ${cue.text}`).join("\n\n")}
     if (!active4) last2.current = null;
     else if (fresh) last2.current = fresh;
     const data = active4 ? fresh ?? last2.current : null;
+    const { matches: mergedMatches } = useSportResults({ day: active4 && armed ? localDayKey(model.nowMs) : null, epg: data?.matches ?? NO_MATCHES });
+    const mergedData = useMemo(() => data ? { ...data, matches: mergedMatches } : null, [data, mergedMatches]);
     return useMemo(() => {
-      if (!active4 || !data) return void 0;
+      if (!active4 || !mergedData) return void 0;
       return {
-        matches: visibleMatches(data, "all"),
+        matches: visibleMatches(mergedData, "all"),
         overrides,
         view: settings.view,
         onSwitchMatch: (m) => {
@@ -44522,25 +46233,31 @@ ${cue.text}`).join("\n\n")}
         isKnownChannel: (key) => model.byKey.has(key),
         playlistName: (sourceId) => model.lists.find((list) => list.source === sourceId)?.name ?? tt("sportPlaylistUnknown")
       };
-    }, [active4, data, overrides, settings.view, play, openMultiview, model.byKey, model.lists, tt]);
+    }, [active4, mergedData, overrides, settings.view, play, openMultiview, model.byKey, model.lists, tt]);
   }
   function PlayerSportTicker({ sport, channel, nowMs, variant, ps }) {
     const { tt } = useTvText();
     const lists = matchesForPlayer(sport.matches, channelKey(channel), nowMs);
     const items2 = [...lists.onChannel, ...lists.live].slice(0, variant === "ticker" ? 6 : 5);
     if (items2.length === 0) return null;
-    const pick2 = (m) => () => {
+    const pick3 = (m) => () => {
       if (!lists.onChannel.includes(m)) sport.onSwitchMatch(m);
     };
     if (variant === "column") {
-      return /* @__PURE__ */ jsx("div", { "data-testid": "player-sport-ticker", "data-variant": "column", style: { position: "absolute", top: ps(96), right: ps(20), width: ps(300), display: "flex", flexDirection: "column", gap: ps(6), pointerEvents: "none", zIndex: 31 }, children: items2.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "pst-item", ...station(pick2(m)), style: { display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: "rgba(20,21,25,0.86)", border: `1px solid ${TV2.lineCard}`, fontSize: ps(14), fontWeight: 600, pointerEvents: "auto", cursor: "pointer" }, children: [
-        /* @__PURE__ */ jsx("span", { style: { ...ellipsis2, flex: 1 }, children: shortLabel(m) }),
+      return /* @__PURE__ */ jsx("div", { "data-testid": "player-sport-ticker", "data-variant": "column", style: { position: "absolute", top: ps(96), right: ps(20), width: ps(300), display: "flex", flexDirection: "column", gap: ps(6), pointerEvents: "none", zIndex: 31 }, children: items2.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "pst-item", ...station(pick3(m)), style: { display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: "rgba(20,21,25,0.86)", border: `1px solid ${TV2.lineCard}`, fontSize: ps(14), fontWeight: 600, pointerEvents: "auto", cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsxs("span", { style: { ...ellipsis3, flex: 1 }, children: [
+          shortLabel(m),
+          scoreText(m) ? ` ${scoreText(m)}` : ""
+        ] }),
         /* @__PURE__ */ jsx("span", { style: { color: TV2.live, fontSize: ps(12) }, children: tt("live") })
       ] }, m.id)) });
     }
     return /* @__PURE__ */ jsxs("div", { "data-testid": "player-sport-ticker", "data-variant": "ticker", style: { display: "flex", alignItems: "center", gap: ps(8), marginBottom: ps(8), overflow: "hidden" }, children: [
       /* @__PURE__ */ jsx("span", { style: { fontSize: ps(11), fontWeight: 700, letterSpacing: "0.14em", color: TV2.dim }, children: tt("live") }),
-      items2.map((m) => /* @__PURE__ */ jsx("span", { "data-testid": "pst-item", ...station(pick2(m)), style: { padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV2.lineCard}`, background: "rgba(0,0,0,0.5)", fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap", pointerEvents: "auto", cursor: "pointer" }, children: shortLabel(m) }, m.id))
+      items2.map((m) => /* @__PURE__ */ jsxs("span", { "data-testid": "pst-item", ...station(pick3(m)), style: { padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV2.lineCard}`, background: "rgba(0,0,0,0.5)", fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap", pointerEvents: "auto", cursor: "pointer" }, children: [
+        shortLabel(m),
+        scoreText(m) ? ` ${scoreText(m)}` : ""
+      ] }, m.id))
     ] });
   }
   function PlayerSourceSwitcher({ sport, channel, nowMs, ps, testId = "player-sources" }) {
@@ -44555,11 +46272,11 @@ ${cue.text}`).join("\n\n")}
         return /* @__PURE__ */ jsxs("div", { "data-testid": "player-source", "data-current": on ? "1" : "0", "aria-pressed": on ? "true" : "false", ...station(() => {
           if (!on) sport.onSwitchSource(s);
         }), style: { display: "flex", flexDirection: "column", flexShrink: 0, maxWidth: ps(240), padding: `${ps(5)}px ${ps(12)}px`, borderRadius: ps(10), cursor: "pointer", background: on ? TV2.accMix(18) : "rgba(0,0,0,0.5)", border: `1px solid ${on ? TV2.accMix(70) : TV2.lineCard}` }, children: [
-          /* @__PURE__ */ jsxs("span", { style: { fontSize: ps(13), fontWeight: 600, ...ellipsis2 }, children: [
+          /* @__PURE__ */ jsxs("span", { style: { fontSize: ps(13), fontWeight: 600, ...ellipsis3 }, children: [
             on ? "\u25CF " : "",
             s.name
           ] }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: ps(11), color: TV2.muted, ...ellipsis2 }, children: [sport.playlistName(s.sourceId), s.quality].filter(Boolean).join(" \xB7 ") })
+          /* @__PURE__ */ jsx("span", { style: { fontSize: ps(11), color: TV2.muted, ...ellipsis3 }, children: [sport.playlistName(s.sourceId), s.quality].filter(Boolean).join(" \xB7 ") })
         ] }, s.channelKey);
       })
     ] });
@@ -44577,20 +46294,22 @@ ${cue.text}`).join("\n\n")}
     const toggle = (m) => setPicked((prev) => prev.includes(m.id) ? prev.filter((id) => id !== m.id) : prev.length >= MAX_PICK ? prev : [...prev, m.id]);
     let rowIndex = 0;
     const row = (m, now2) => {
-      const index = rowIndex++;
+      const index = m.resultOnly ? -1 : rowIndex++;
       const best = rankedSources(m, sport.overrides)[0];
       const on = picked.includes(m.id);
-      const meta = [m.league, statusAt(m, nowMs) === "live" ? tt("live") : formatClock2(m.start, locale), best?.name].filter(Boolean).join(" \xB7 ");
-      return /* @__PURE__ */ jsxs("div", { "data-testid": "pm-row", "data-picked": on ? "1" : "0", ...station(() => picking ? toggle(m) : sport.onSwitchMatch(m), void 0, index === 0 ? { "data-init": "" } : void 0), style: { display: "flex", alignItems: "center", gap: ps(14), padding: `${ps(12)}px ${ps(14)}px`, borderRadius: ps(12), cursor: "pointer", background: now2 ? TV2.accMix(16) : TV2.s08, border: `1px solid ${now2 ? TV2.accMix(60) : TV2.line}` }, children: [
-        picking ? /* @__PURE__ */ jsx("span", { style: { width: ps(30), height: ps(30), borderRadius: ps(8), border: `2px solid ${on ? TV2.acc : TV2.lineStrong}`, background: on ? TV2.acc : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: on ? "\u2713" : "" }) : null,
+      const meta = [m.league, matchStatusLabel(m, tt) ?? (statusAt(m, nowMs) === "live" ? tt("live") : formatClock2(m.start, locale)), best?.name].filter(Boolean).join(" \xB7 ");
+      const stationProps = m.resultOnly ? {} : station(() => picking ? toggle(m) : sport.onSwitchMatch(m), void 0, index === 0 ? { "data-init": "" } : void 0);
+      return /* @__PURE__ */ jsxs("div", { "data-testid": "pm-row", "data-picked": on ? "1" : "0", ...stationProps, style: { display: "flex", alignItems: "center", gap: ps(14), padding: `${ps(12)}px ${ps(14)}px`, borderRadius: ps(12), cursor: m.resultOnly ? "default" : "pointer", background: now2 ? TV2.accMix(16) : TV2.s08, border: `1px solid ${now2 ? TV2.accMix(60) : TV2.line}` }, children: [
+        picking && !m.resultOnly ? /* @__PURE__ */ jsx("span", { style: { width: ps(30), height: ps(30), borderRadius: ps(8), border: `2px solid ${on ? TV2.acc : TV2.lineStrong}`, background: on ? TV2.acc : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: on ? "\u2713" : "" }) : null,
         /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexShrink: 0 }, children: [
           m.home ? /* @__PURE__ */ jsx(Crest, { name: m.home, colorKey: m.homeKey ?? m.home, size: ps(44) }) : null,
           m.away ? /* @__PURE__ */ jsx("span", { style: { marginLeft: -ps(12) }, children: /* @__PURE__ */ jsx(Crest, { name: m.away, colorKey: m.awayKey ?? m.away, size: ps(44) }) }) : null
         ] }),
         /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(19), fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(15), color: TV2.muted, ...ellipsis2 }, children: meta })
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(19), fontWeight: 600, ...ellipsis3 }, children: matchTitle(m) }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(15), color: TV2.muted, ...ellipsis3 }, children: meta })
         ] }),
+        /* @__PURE__ */ jsx(MatchScore, { match: m, size: "row" }),
         now2 ? /* @__PURE__ */ jsx("span", { "data-testid": "pm-now", style: { padding: `${ps(3)}px ${ps(10)}px`, borderRadius: 999, border: `1px solid ${TV2.accMix(80)}`, color: TV2.accText, fontSize: ps(13), fontWeight: 700 }, children: tt("sportNowPill") }) : null
       ] }, m.id);
     };
@@ -44612,7 +46331,8 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: ps(16) }, children: [
         section(tt("sportOnThisChannel"), lists.onChannel, true),
         section(tt("sportLiveOnChannels"), lists.live, false),
-        section(tt("sportLaterOnChannels"), lists.later, false)
+        section(tt("sportLaterOnChannels"), lists.later, false),
+        section(tt("sportResultOnly"), sport.matches.filter((m) => m.resultOnly), false)
       ] }),
       picking ? /* @__PURE__ */ jsx(
         "div",
@@ -44629,9 +46349,9 @@ ${cue.text}`).join("\n\n")}
       ) : null
     ] });
   }
-  var MAX_PICK, PLAYER_SPORT_DELAY_MS, shortLabel;
+  var MAX_PICK, NO_MATCHES, PLAYER_SPORT_DELAY_MS, shortLabel;
   var init_player_sport = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44643,15 +46363,19 @@ ${cue.text}`).join("\n\n")}
       init_sport_epg();
       init_sport_day_model();
       init_sport_store();
+      init_results_controller();
+      init_score_model();
       init_sport_parts();
+      init_sport_score();
       init_jsx_runtime_shim();
       MAX_PICK = 4;
+      NO_MATCHES = [];
       PLAYER_SPORT_DELAY_MS = 4e3;
       shortLabel = (m) => m.home && m.away ? `${crestText(m.home)} \u2013 ${crestText(m.away)}` : m.event ?? m.league;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -44686,8 +46410,8 @@ ${cue.text}`).join("\n\n")}
       reveal();
       return clearTimer;
     }, [reveal, clearTimer, channel]);
-    const onStageTap = useCallback((event) => {
-      const target2 = event.target instanceof Element ? event.target : null;
+    const onStageTap = useCallback((event2) => {
+      const target2 = event2.target instanceof Element ? event2.target : null;
       if (target2?.closest('[role="button"]')) {
         reveal();
         return;
@@ -44698,11 +46422,11 @@ ${cue.text}`).join("\n\n")}
       } else reveal();
     }, [visible, reveal, clearTimer]);
     useEffect(() => {
-      const onKey = (event) => {
-        if (event.key !== "Escape" && event.key !== "Backspace") return;
+      const onKey = (event2) => {
+        if (event2.key !== "Escape" && event2.key !== "Backspace") return;
         if (tv.gateOpen) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
+        event2.preventDefault();
+        event2.stopImmediatePropagation();
         if (sheet) {
           setSheet(null);
           return;
@@ -44715,11 +46439,11 @@ ${cue.text}`).join("\n\n")}
     const closeSheet = useCallback(() => setSheet(null), []);
     const pinnedSet = useMemo(() => new Set(tv.pinnedKeys), [tv.pinnedKeys]);
     const zap = useMemo(() => {
-      const current3 = channelKey(channel);
+      const current5 = channelKey(channel);
       const pinned = [];
       const rest = [];
       tv.neighbours.forEach((c, i) => (pinnedSet.has(channelKey(c)) ? pinned : rest).push({ channel: c, number: i + 1 }));
-      const index = rest.findIndex((entry) => channelKey(entry.channel) === current3);
+      const index = rest.findIndex((entry) => channelKey(entry.channel) === current5);
       const window2 = index < 0 ? rest.slice(0, ZAP_WINDOW * 2) : rest.slice(Math.max(0, index - ZAP_WINDOW), index + ZAP_WINDOW + 1);
       return [...pinned, ...window2];
     }, [tv.neighbours, pinnedSet, channel]);
@@ -44768,7 +46492,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape", onPointerDown: onStageTap, style: { position: "absolute", inset: 0, zIndex: 30, color: MT.text, fontFamily: MT.font }, children: [
           /* @__PURE__ */ jsxs("div", { style: { position: "absolute", top: 0, left: 0, right: 0, padding: `max(44px, env(safe-area-inset-top, 0px)) ${SAFE_SIDE_R} 0 ${SAFE_SIDE_L}`, display: "flex", alignItems: "center", gap: 12, ...fade }, children: [
             /* @__PURE__ */ jsx(Round, { size: 40, label: tt("back"), onPress: onClose, children: /* @__PURE__ */ jsx(MIcons.CaretLeft, { size: 22 }) }),
-            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, color: "rgba(243,244,248,0.78)", ...ellipsis }, children: numberName }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, color: "rgba(243,244,248,0.78)", ...ellipsis2 }, children: numberName }),
             /* @__PURE__ */ jsxs("span", { style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 10, fontSize: 14, color: "rgba(243,244,248,0.78)" }, children: [
               info.now ? /* @__PURE__ */ jsx(LiveTag2, { label: tt("live") }) : null,
               /* @__PURE__ */ jsx("span", { children: [tv.quality, formatClock2(tv.nowMs, tv.locale)].filter(Boolean).join(" \xB7 ") })
@@ -44777,8 +46501,8 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: `72px ${SAFE_SIDE_R} max(22px, env(safe-area-inset-bottom, 0px)) ${SAFE_SIDE_L}`, background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.9) 55%)", display: "flex", flexDirection: "column", gap: 12, ...fade }, children: [
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", gap: 16 }, children: [
               /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape-info", style: { flex: 1, minWidth: "0px", display: "flex", flexDirection: "column", gap: 4 }, children: [
-                /* @__PURE__ */ jsx("div", { style: { fontSize: 26, fontWeight: 600, ...ellipsis }, children: info.now?.title ?? channel.name }),
-                timeLine2 ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 26, fontWeight: 600, ...ellipsis2 }, children: info.now?.title ?? channel.name }),
+                timeLine2 ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis2 }, children: [
                   timeLine2,
                   nextLine ? ` \xB7 ${nextLine}` : ""
                 ] }) : null
@@ -44816,12 +46540,12 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs("div", { "data-testid": "phone-info", style: { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 16, paddingBottom: `calc(16px + ${MT.SAFE_BOTTOM})`, display: "flex", flexDirection: "column", gap: 14, background: MT.bg, color: MT.text, fontFamily: MT.font }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, minHeight: 44 }, children: [
           /* @__PURE__ */ jsx(MobileLogo, { channel, width: 52, height: 34 }),
-          /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 14, color: MT.muted70, ...ellipsis }, children: numberName }),
+          /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 14, color: MT.muted70, ...ellipsis2 }, children: numberName }),
           /* @__PURE__ */ jsx(Round, { size: 44, label: favLabel, onPress: tv.onToggleFavourite, background: tv.favourite ? MT.accMix(22) : MT.s10, children: /* @__PURE__ */ jsx("span", { style: { display: "flex", color: tv.favourite ? MT.acc : MT.text }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 22, filled: tv.favourite }) }) })
         ] }),
         /* @__PURE__ */ jsx("div", { "data-testid": "phone-title", style: { fontSize: 22, fontWeight: 600, lineHeight: 1.2, ...clamp2 }, children: info.now?.title ?? channel.name }),
-        timeLine2 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis }, children: timeLine2 }) : null,
-        nextLine ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted, ...ellipsis }, children: nextLine }) : null,
+        timeLine2 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis2 }, children: timeLine2 }) : null,
+        nextLine ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted, ...ellipsis2 }, children: nextLine }) : null,
         /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }, children: [
           /* @__PURE__ */ jsx(GridBtn, { label: tt("audioSubs"), onPress: () => setSheet("audio") }),
           /* @__PURE__ */ jsx(GridBtn, { label: qualityLabel }),
@@ -44851,12 +46575,12 @@ ${cue.text}`).join("\n\n")}
   }
   function GridBtn({ label, onPress, testId }) {
     const shared = { minHeight: 46, padding: "0 12px", borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, boxSizing: "border-box" };
-    if (!onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }) });
-    return /* @__PURE__ */ jsx("div", { ...station(onPress), "data-testid": testId, style: { ...shared, color: MT.text, cursor: "pointer", gridColumn: testId === "phone-sources" ? "1 / -1" : void 0 }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }) });
+    if (!onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: /* @__PURE__ */ jsx("span", { style: ellipsis2, children: label }) });
+    return /* @__PURE__ */ jsx("div", { ...station(onPress), "data-testid": testId, style: { ...shared, color: MT.text, cursor: "pointer", gridColumn: testId === "phone-sources" ? "1 / -1" : void 0 }, children: /* @__PURE__ */ jsx("span", { style: ellipsis2, children: label }) });
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44880,7 +46604,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
@@ -45005,12 +46729,12 @@ ${cue.text}`).join("\n\n")}
       if (!rect || rect.width === 0 || !controls) return;
       controls.onVolume(Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)));
     };
-    const onVolumeKey = (event) => {
+    const onVolumeKey = (event2) => {
       if (!controls) return;
-      const delta = event.key === "ArrowRight" ? VOLUME_STEP : event.key === "ArrowLeft" ? -VOLUME_STEP : 0;
+      const delta = event2.key === "ArrowRight" ? VOLUME_STEP : event2.key === "ArrowLeft" ? -VOLUME_STEP : 0;
       if (delta === 0) return;
-      event.preventDefault();
-      event.stopPropagation();
+      event2.preventDefault();
+      event2.stopPropagation();
       controls.onVolume(Math.max(0, Math.min(1, Math.round((controls.volume + delta) * 100) / 100)));
     };
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
@@ -45044,11 +46768,11 @@ ${cue.text}`).join("\n\n")}
               "aria-valuemax": 100,
               "aria-valuenow": volumePercent,
               onKeyDown: onVolumeKey,
-              onPointerDown: (event) => setVolumeFromPointer(event.clientX),
-              onPointerMove: (event) => {
-                if (event.buttons === 1) setVolumeFromPointer(event.clientX);
+              onPointerDown: (event2) => setVolumeFromPointer(event2.clientX),
+              onPointerMove: (event2) => {
+                if (event2.buttons === 1) setVolumeFromPointer(event2.clientX);
               },
-              onClick: (event) => setVolumeFromPointer(event.clientX),
+              onClick: (event2) => setVolumeFromPointer(event2.clientX),
               style: { width: ps(96), height: ps(44), minHeight: ps(44), display: "inline-flex", alignItems: "center", padding: `0 ${ps(4)}px`, borderRadius: 999, cursor: "pointer", touchAction: "none", boxSizing: "border-box", flexShrink: 0 },
               children: /* @__PURE__ */ jsxs("span", { style: { position: "relative", width: "100%", height: ps(4), borderRadius: 999, background: "rgba(252,252,255,0.22)" }, children: [
                 /* @__PURE__ */ jsx("span", { style: { position: "absolute", inset: 0, right: `${100 - volumePercent}%`, borderRadius: 999, background: "#fff" } }),
@@ -45088,31 +46812,31 @@ ${cue.text}`).join("\n\n")}
   }
   function favouriteRowChannels(channel, tv) {
     const pinnedSet = new Set(tv.pinnedKeys);
-    const current3 = channelKey(channel);
+    const current5 = channelKey(channel);
     const pinned = [];
     const rest = [];
     for (const c of tv.neighbours) (pinnedSet.has(channelKey(c)) ? pinned : rest).push(c);
-    const index = rest.findIndex((c) => channelKey(c) === current3);
+    const index = rest.findIndex((c) => channelKey(c) === current5);
     const window2 = index < 0 ? rest.slice(0, FAV_WINDOW * 2) : rest.slice(Math.max(0, index - FAV_WINDOW), index + FAV_WINDOW + 1);
     const list = [...pinned, ...window2];
-    return list.some((c) => channelKey(c) === current3) ? list : [channel, ...list];
+    return list.some((c) => channelKey(c) === current5) ? list : [channel, ...list];
   }
   function PlayerFavouritesRow({ channel, tv, ps, onSwitch, onHold, style }) {
     const { tt } = useTvText();
     const items2 = useMemo(() => favouriteRowChannels(channel, tv), [channel, tv]);
     const currentKey = channelKey(channel);
     return /* @__PURE__ */ jsx("div", { "data-testid": "favourites-row", "data-row": "", style: { display: "flex", gap: ps(8), overflowX: "auto", scrollbarWidth: "none", padding: `${ps(8)}px 0 ${ps(2)}px`, ...style }, children: items2.map((c) => {
-      const current3 = channelKey(c) === currentKey;
+      const current5 = channelKey(c) === currentKey;
       const n = tv.nowFor(c);
       return /* @__PURE__ */ jsxs(
         "div",
         {
           "data-testid": "favourite-chip",
           "data-guide-row": "",
-          "aria-current": current3 ? "true" : void 0,
+          "aria-current": current5 ? "true" : void 0,
           ...station(() => onSwitch(c), onHold ? (el) => onHold(c, el) : void 0, { title: c.name }),
-          onFocus: (event) => event.currentTarget.scrollIntoView?.({ inline: "nearest", block: "nearest" }),
-          style: { width: ps(190), flexShrink: 0, display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(6)}px ${ps(10)}px`, borderRadius: ps(10), boxSizing: "border-box", background: current3 ? TV2.accMix(16) : "rgba(252,252,255,0.08)", border: `1px solid ${current3 ? TV2.accMix(45) : TV2.line}`, color: TV2.text, cursor: "pointer", textAlign: "left" },
+          onFocus: (event2) => event2.currentTarget.scrollIntoView?.({ inline: "nearest", block: "nearest" }),
+          style: { width: ps(190), flexShrink: 0, display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(6)}px ${ps(10)}px`, borderRadius: ps(10), boxSizing: "border-box", background: current5 ? TV2.accMix(16) : "rgba(252,252,255,0.08)", border: `1px solid ${current5 ? TV2.accMix(45) : TV2.line}`, color: TV2.text, cursor: "pointer", textAlign: "left" },
           children: [
             /* @__PURE__ */ jsx(SmallLogo, { channel: c, size: ps(26), radius: ps(5) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
@@ -45197,7 +46921,7 @@ ${cue.text}`).join("\n\n")}
   }
   var FAV_WINDOW, DAY_MS, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45241,7 +46965,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -45353,24 +47077,24 @@ ${cue.text}`).join("\n\n")}
       tv.onSwitchChannel(next);
     }, [guideOpen, closeGuide, tv]);
     useEffect(() => {
-      const onKey = (event) => {
+      const onKey = (event2) => {
         if (menu) return;
         if (tv.gateOpen) return;
-        if (event.key === "ChannelUp" || event.key === "PageUp") {
-          event.preventDefault();
-          event.stopImmediatePropagation();
+        if (event2.key === "ChannelUp" || event2.key === "PageUp") {
+          event2.preventDefault();
+          event2.stopImmediatePropagation();
           step(1);
           return;
         }
-        if (event.key === "ChannelDown" || event.key === "PageDown") {
-          event.preventDefault();
-          event.stopImmediatePropagation();
+        if (event2.key === "ChannelDown" || event2.key === "PageDown") {
+          event2.preventDefault();
+          event2.stopImmediatePropagation();
           step(-1);
           return;
         }
-        if (event.key === "Escape" || event.key === "Backspace") {
-          event.preventDefault();
-          event.stopImmediatePropagation();
+        if (event2.key === "Escape" || event2.key === "Backspace") {
+          event2.preventDefault();
+          event2.stopImmediatePropagation();
           if (matchesOpen) {
             closeMatches();
             return;
@@ -45382,16 +47106,16 @@ ${cue.text}`).join("\n\n")}
           onClose();
           return;
         }
-        const target2 = event.target;
+        const target2 = event2.target;
         const insideChrome = target2 instanceof Node && rootRef.current?.contains(target2) === true;
-        if (!insideChrome && (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "Enter" || event.key === " ")) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
+        if (!insideChrome && (event2.key === "ArrowLeft" || event2.key === "ArrowRight" || event2.key === "Enter" || event2.key === " ")) {
+          event2.preventDefault();
+          event2.stopImmediatePropagation();
           reveal();
           return;
         }
-        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-          if (!insideChrome) event.preventDefault();
+        if (event2.key === "ArrowUp" || event2.key === "ArrowDown") {
+          if (!insideChrome) event2.preventDefault();
           reveal();
           return;
         }
@@ -45456,7 +47180,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45471,13 +47195,94 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/goal-alerts.ts
+  function matchForGoal(e, merged) {
+    return merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId) ?? null;
+  }
+  function goalAlertWanted(match, settings, follows, now2 = Date.now()) {
+    if (!match || !settings.goalAlerts) return false;
+    return followState(match, follows).any || (settings.goalAlertMatches[match.id] ?? 0) > now2;
+  }
+  function goalTitle(e, tt) {
+    return `${tt("sportGoal")} ${e.home} ${e.score.home}\u2013${e.score.away} ${e.away}`;
+  }
+  function goalBody(e) {
+    const minute = e.minute != null ? `${e.minute}'` : "";
+    return [e.scorer, minute].filter(Boolean).join(" ");
+  }
+  function setPlayingChannel(key) {
+    playing = key;
+  }
+  function playingChannel() {
+    return playing;
+  }
+  var playing;
+  var init_goal_alerts = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
+      "use strict";
+      init_sport_day_model();
+      playing = null;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
+  function PlayerGoalOverlay({ channelKey: channelKey2, onJump }) {
+    const { tt } = useTvText();
+    const controller = useResultsController();
+    const [shown, setShown] = useState(null);
+    useEffect(() => onGoal((e2) => {
+      const match2 = controller ? matchForGoal(e2, controller.merged()) : null;
+      if (!match2) return;
+      const here2 = match2.sources.some((s) => s.channelKey === channelKey2);
+      if (!here2 && !goalAlertWanted(match2, getSportSettings(), getFollows())) return;
+      setShown({ e: e2, match: match2, here: here2 });
+    }), [controller, channelKey2]);
+    useEffect(() => {
+      if (!shown) return;
+      const t = setTimeout(() => setShown(null), SHOW_MS);
+      return () => clearTimeout(t);
+    }, [shown]);
+    if (!shown) return null;
+    const { e, match, here } = shown;
+    const target2 = !here ? rankedSources(match, getOverrides())[0] : void 0;
+    return /* @__PURE__ */ jsxs("div", { "data-live-tv-goal-overlay": "", role: "status", style: { position: "absolute", top: dp(40), left: "50%", transform: "translateX(-50%)", zIndex: 30, display: "flex", alignItems: "center", gap: dp(20), padding: `${dp(16)}px ${dp(24)}px`, borderRadius: dp(16), background: TV2.panel, border: `1px solid ${TV2.lineStrong}`, color: TV2.text }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(34), fontWeight: 800, color: TV2.live, letterSpacing: "0.04em" }, children: tt("sportGoal") }),
+      /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600 }, children: `${e.home} ${e.score.home}\u2013${e.score.away} ${e.away}` }),
+        goalBody(e) ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.muted }, children: goalBody(e) }) : null
+      ] }),
+      target2 ? /* @__PURE__ */ jsx("div", { ...station(() => {
+        setShown(null);
+        onJump(sourceChannel(target2));
+      }), style: { padding: `${dp(8)}px ${dp(14)}px`, borderRadius: dp(10), background: TV2.text, color: "#0e0f13", fontWeight: 600, cursor: "pointer" }, children: tt("sportJumpThere") }) : null
+    ] });
+  }
+  var SHOW_MS;
+  var init_player_goal_overlay = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_goal_events();
+      init_goal_alerts();
+      init_results_controller();
+      init_sport_day_model();
+      init_sport_store();
+      init_sport_model();
+      init_jsx_runtime_shim();
+      SHOW_MS = 6e3;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
   function publish3() {
     snapshot = [...cutouts.values()];
-    for (const listener of [...listeners9]) listener();
+    for (const listener of [...listeners10]) listener();
   }
   function registerSurfaceCutout(key, cutout) {
     const previous = cutouts.get(key);
@@ -45493,9 +47298,9 @@ ${cue.text}`).join("\n\n")}
     return snapshot;
   }
   function subscribeSurfaceCutouts(listener) {
-    listeners9.add(listener);
+    listeners10.add(listener);
     return () => {
-      listeners9.delete(listener);
+      listeners10.delete(listener);
     };
   }
   function useSurfaceCutouts() {
@@ -45529,19 +47334,19 @@ ${cue.text}`).join("\n\n")}
   function round(value) {
     return Math.round(value * 100) / 100;
   }
-  var cutouts, listeners9, snapshot;
+  var cutouts, listeners10, snapshot;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
       cutouts = /* @__PURE__ */ new Map();
-      listeners9 = /* @__PURE__ */ new Set();
+      listeners10 = /* @__PURE__ */ new Set();
       snapshot = [];
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -45839,7 +47644,7 @@ ${cue.text}`).join("\n\n")}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45857,7 +47662,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer
@@ -45887,6 +47692,13 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       recordChannelWatch(channel, listId);
     }, [channel.url, channel.name, listId]);
+    const playingKey = channelKey(channel);
+    const sportLive = useChannelSportLive(playingKey);
+    usePollDemand("player", !!sportLive);
+    useEffect(() => {
+      setPlayingChannel(playingKey);
+      return () => setPlayingChannel(null);
+    }, [playingKey]);
     const videoRef = useRef(null);
     const stageRef = useRef(null);
     const [error, setError] = useState(null);
@@ -46065,13 +47877,13 @@ ${cue.text}`).join("\n\n")}
     }, [hasNativeSurface]);
     useEffect(() => {
       lockBodyScroll();
-      function onKey(event) {
-        const target2 = event.target;
+      function onKey(event2) {
+        const target2 = event2.target;
         if (target2?.tagName === "INPUT" || target2?.tagName === "TEXTAREA") return;
-        if (tvChrome && (event.key === "Escape" || event.key === "Backspace")) return;
-        if (event.key === "Escape" || isTv && event.key === "Backspace") {
-          event.preventDefault();
-          event.stopPropagation();
+        if (tvChrome && (event2.key === "Escape" || event2.key === "Backspace")) return;
+        if (event2.key === "Escape" || isTv && event2.key === "Backspace") {
+          event2.preventDefault();
+          event2.stopPropagation();
           if (hasNativeSurface) {
             void getWindowFullscreen().then((fullscreen) => {
               if (!fullscreen) {
@@ -46092,8 +47904,8 @@ ${cue.text}`).join("\n\n")}
           handleCloseRef.current();
           return;
         }
-        if (event.key === " " || event.key === "Spacebar") {
-          event.preventDefault();
+        if (event2.key === " " || event2.key === "Spacebar") {
+          event2.preventDefault();
           void mpv.setPlayPause(!mpvPaused);
         }
       }
@@ -46124,8 +47936,8 @@ ${cue.text}`).join("\n\n")}
       }
     };
     useEffect(() => {
-      const onMediaKey2 = (event) => {
-        const action = event.detail?.action;
+      const onMediaKey2 = (event2) => {
+        const action = event2.detail?.action;
         if (action) mediaKeyRef.current(action);
       };
       window.addEventListener("lumio-media-key", onMediaKey2);
@@ -46275,8 +48087,8 @@ ${cue.text}`).join("\n\n")}
           const segmentGone = data.details === "fragLoadError" && data.response?.code === 404;
           if (segmentGone && renditionFallbacks < 3) {
             const levels = hls.levels ?? [];
-            const current3 = hls.currentLevel;
-            const next = levels.length > 1 ? (current3 + 1) % levels.length : -1;
+            const current5 = hls.currentLevel;
+            const next = levels.length > 1 ? (current5 + 1) % levels.length : -1;
             renditionFallbacks += 1;
             hls.currentLevel = next;
             hls.startLoad();
@@ -46487,9 +48299,9 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!pipPhone) return;
       const stepChannel = (delta) => {
-        const { tv: shell, channel: current3 } = pipStateRef.current;
+        const { tv: shell, channel: current5 } = pipStateRef.current;
         if (!shell || shell.neighbours.length === 0) return;
-        const index = shell.neighbours.findIndex((c) => channelKey(c) === channelKey(current3));
+        const index = shell.neighbours.findIndex((c) => channelKey(c) === channelKey(current5));
         const next = shell.neighbours[(index + delta + shell.neighbours.length) % shell.neighbours.length];
         if (next) shell.onSwitchChannel(next);
       };
@@ -46610,8 +48422,8 @@ ${cue.text}`).join("\n\n")}
                   muted,
                   style: { objectFit: ASPECT_OPTIONS[aspectIndex].htmlFit, background: "#000" },
                   onCanPlay: () => setLoading(false),
-                  onError: (event) => {
-                    const media = event.currentTarget;
+                  onError: (event2) => {
+                    const media = event2.currentTarget;
                     if (!media.currentSrc && !media.getAttribute("src")) return;
                     setLoading(false);
                     setError(t("liveTvStreamError"));
@@ -46637,6 +48449,7 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx("p", { className: "text-sm text-red-400", children: error }),
             /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
           ] }),
+          /* @__PURE__ */ jsx(PlayerGoalOverlay, { channelKey: playingKey, onJump: (next) => tvChrome?.onSwitchChannel(next) }),
           tvChrome ? /* @__PURE__ */ jsx(TvPlayerChrome, { channel, tv: tvChrome, controls: playerControls, paused: mpvPaused, onTogglePause: toggleMpvPause, onClose: handleClose, phoneLandscape }) : null
         ]
       }
@@ -46645,7 +48458,7 @@ ${cue.text}`).join("\n\n")}
   }
   var import_react_dom4, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46658,6 +48471,10 @@ ${cue.text}`).join("\n\n")}
       init_useWakeLock();
       init_live_tv_playback_fallback();
       init_tv_player_chrome();
+      init_player_goal_overlay();
+      init_goal_alerts();
+      init_live_poller();
+      init_results_controller();
       init_player_chrome_phone();
       init_video_surface();
       init_jsx_runtime_shim();
@@ -46667,7 +48484,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -46677,11 +48494,11 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -46832,10 +48649,10 @@ ${cue.text}`).join("\n\n")}
         autoCapitalize: "none",
         autoCorrect: "off",
         spellCheck: false,
-        onChange: (event) => onChange(event.target.value),
-        onKeyDown: (event) => {
-          if (event.key === "Enter" && onEnter) {
-            event.preventDefault();
+        onChange: (event2) => onChange(event2.target.value),
+        onKeyDown: (event2) => {
+          if (event2.key === "Enter" && onEnter) {
+            event2.preventDefault();
             onEnter();
           }
         },
@@ -46886,17 +48703,17 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!active4) return;
       const opener = document.activeElement;
-      const onKey = (event) => {
-        if (!BACK_KEYS.has(event.key)) return;
+      const onKey = (event2) => {
+        if (!BACK_KEYS.has(event2.key)) return;
         if (!isTopPanel(rootRef.current)) return;
-        if (event.key === "Backspace" && (!isTv || inTextField(event.target))) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
+        if (event2.key === "Backspace" && (!isTv || inTextField(event2.target))) return;
+        event2.preventDefault();
+        event2.stopImmediatePropagation();
         onBackRef.current();
       };
-      const onBrowse = (event) => {
+      const onBrowse = (event2) => {
         if (!isTopPanel(rootRef.current)) return;
-        event.stopImmediatePropagation();
+        event2.stopImmediatePropagation();
         onBackRef.current();
       };
       window.addEventListener("keydown", onKey, true);
@@ -46929,7 +48746,7 @@ ${cue.text}`).join("\n\n")}
             {
               className: "lt-dialog-box",
               "data-testid": testId,
-              onClick: (event) => event.stopPropagation(),
+              onClick: (event2) => event2.stopPropagation(),
               style: { width: "100%", maxWidth: width, maxHeight: "100%", overflowY: "auto", borderRadius: 14, background: UI.dialog, padding: "26px 26px 22px", boxShadow: "0 30px 70px rgba(0,0,0,0.6)", color: UI.text },
               children: [
                 /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 15, fontWeight: 500, color: UI.text }, children: title }),
@@ -46994,7 +48811,7 @@ ${cue.text}`).join("\n\n")}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -47042,16 +48859,16 @@ ${cue.text}`).join("\n\n")}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -47116,7 +48933,7 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
     categories: "Categories",
@@ -47569,10 +49386,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -47609,10 +49426,10 @@ ${cue.text}`).join("\n\n")}
       refreshingRef.current = true;
       setRefreshing(true);
       try {
-        const current3 = getLiveTvLists();
-        setLists(current3);
-        const sources = current3.map((list) => list.source).filter((source) => Boolean(source));
-        const job = await refreshEpg(LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls(current3), sources, true);
+        const current5 = getLiveTvLists();
+        setLists(current5);
+        const sources = current5.map((list) => list.source).filter((source) => Boolean(source));
+        const job = await refreshEpg(LIVE_TV_GLOBAL_EPG_ID, getAllLiveTvEpgUrls(current5), sources, true);
         await waitForJob(job);
       } catch {
       } finally {
@@ -47624,7 +49441,7 @@ ${cue.text}`).join("\n\n")}
     return { status, urls, refreshing, refresh, reload };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms2, locale) {
     if (!ms2) return null;
@@ -47716,7 +49533,2244 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  init_react_shim();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_index_client();
+  init_channel_locks();
+  init_live_tv_ui();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  init_react_shim();
+  init_vod_client();
+  init_live_tv_data();
+  var PAGE_SIZE = 120;
+  var IMPORT_POLL_MS = 2e3;
+  function resolveVodSource(source) {
+    if (source) return source;
+    const sources = new Set(
+      getLiveTvLists().filter((list) => list.kind !== "custom" && list.source).map((list) => list.source)
+    );
+    return sources.size === 1 ? [...sources][0] : null;
+  }
+  function useVodSource(source) {
+    const [resolved, setResolved] = useState(() => resolveVodSource(source));
+    useEffect(() => {
+      setResolved(resolveVodSource(source));
+      return onLiveTvListsChanged(() => setResolved(resolveVodSource(source)));
+    }, [source]);
+    return resolved;
+  }
+  function uniqueByKey(items2) {
+    const seen = /* @__PURE__ */ new Set();
+    return items2.filter((item) => {
+      if (seen.has(item.key)) return false;
+      seen.add(item.key);
+      return true;
+    });
+  }
+  function useVodCategories(requested) {
+    const source = useVodSource(requested);
+    const [state2, setState] = useState({
+      categories: [],
+      total: 0,
+      known: false,
+      importing: false,
+      loading: true,
+      error: null
+    });
+    const [nonce, setNonce] = useState(0);
+    const reload = useCallback(() => setNonce((n) => n + 1), []);
+    useEffect(() => {
+      let cancelled = false;
+      let timer3 = null;
+      const controller = new AbortController();
+      const load = async () => {
+        try {
+          const result = await listVodCategories(source, controller.signal);
+          if (cancelled) return;
+          setState({ ...result, loading: false, error: null });
+          if (result.importing) timer3 = setTimeout(load, IMPORT_POLL_MS);
+        } catch (err) {
+          if (cancelled || controller.signal.aborted) return;
+          setState((prev) => ({
+            ...prev,
+            loading: false,
+            error: err instanceof Error ? err.message : String(err)
+          }));
+        }
+      };
+      void load();
+      const off = onVodChanged(load);
+      return () => {
+        cancelled = true;
+        controller.abort();
+        if (timer3) clearTimeout(timer3);
+        off();
+      };
+    }, [source, nonce]);
+    return useMemo(() => ({ ...state2, reload }), [state2, reload]);
+  }
+  function useVodPage(opts) {
+    const { categoryId, kind, q, sort, enabled = true, limit = PAGE_SIZE } = opts;
+    const source = useVodSource(opts.source);
+    const [items2, setItems] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [known, setKnown] = useState(false);
+    const [loading2, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [error, setError] = useState(null);
+    const [wanted, setWanted] = useState(1);
+    const filterKey = `${source ?? ""}|${categoryId ?? ""}|${kind ?? ""}|${q ?? ""}|${sort}`;
+    const lastFilter = useRef(filterKey);
+    if (lastFilter.current !== filterKey) {
+      lastFilter.current = filterKey;
+      if (wanted !== 1) setWanted(1);
+    }
+    useEffect(() => {
+      if (!enabled) {
+        setItems([]);
+        setTotal(0);
+        setKnown(false);
+        setLoading(false);
+        return;
+      }
+      let cancelled = false;
+      const controller = new AbortController();
+      const first = wanted === 1;
+      if (first) setLoading(true);
+      else setLoadingMore(true);
+      void (async () => {
+        try {
+          const page = await queryVod({
+            source: source ?? void 0,
+            categoryId: categoryId ?? void 0,
+            kind: kind ?? void 0,
+            q: q?.trim() || void 0,
+            sort,
+            offset: 0,
+            limit: limit * wanted,
+            signal: controller.signal
+          });
+          if (cancelled) return;
+          setItems(uniqueByKey(page.items));
+          setTotal(page.total);
+          setKnown(page.known);
+          setError(null);
+        } catch (err) {
+          if (cancelled || controller.signal.aborted) return;
+          setError(err instanceof Error ? err.message : String(err));
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+            setLoadingMore(false);
+          }
+        }
+      })();
+      return () => {
+        cancelled = true;
+        controller.abort();
+      };
+    }, [filterKey, wanted, enabled, limit]);
+    const hasMore = items2.length < total;
+    const loadMore = useCallback(() => {
+      setWanted((n) => n + 1);
+    }, []);
+    return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-data.ts
+  init_plugin_sdk();
+  init_live_tv_data();
+  var VOD_MODE_DEFAULT = "link";
+  var VOD_MODE_KEY = "vod_mode_v1";
+  var VOD_SORT_KEY = "library_sort_v1";
+  var VOD_CATEGORY_KEY = "library_category_v1";
+  var VOD_SORT_DEFAULT = "new";
+  function isVodMode(value) {
+    return value === "link" || value === "rows" || value === "off";
+  }
+  function readRecord(key) {
+    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, key, {});
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const out = {};
+    for (const [id, value] of Object.entries(parsed)) {
+      if (typeof value === "string") out[id] = value;
+    }
+    return out;
+  }
+  var ALL_PLAYLISTS_KEY = "*";
+  function modeKey2(playlistId) {
+    return playlistId || ALL_PLAYLISTS_KEY;
+  }
+  function getVodMode(playlistId) {
+    const value = readRecord(VOD_MODE_KEY)[modeKey2(playlistId)];
+    return isVodMode(value) ? value : VOD_MODE_DEFAULT;
+  }
+  function setVodMode(playlistId, mode) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [modeKey2(playlistId)]: mode });
+  }
+  function getVodSort() {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, VOD_SORT_DEFAULT);
+    return raw === "az" || raw === "rating" ? raw : VOD_SORT_DEFAULT;
+  }
+  function setVodSort(sort) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, sort);
+  }
+  function getVodCategory(playlistId) {
+    return readRecord(VOD_CATEGORY_KEY)[modeKey2(playlistId)] ?? null;
+  }
+  function setVodCategory(playlistId, categoryId) {
+    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_CATEGORY_KEY, {
+      ...readRecord(VOD_CATEGORY_KEY),
+      [modeKey2(playlistId)]: categoryId
+    });
+  }
+  function mediaItemIdFor(item) {
+    if (item.tmdbId == null || !Number.isFinite(item.tmdbId) || item.tmdbId <= 0) return null;
+    return `${item.kind === "series" ? "tv" : "movie"}-${item.tmdbId}`;
+  }
+  function canOpenDetails(item) {
+    return mediaItemIdFor(item) != null;
+  }
+  function vodItemToMediaItem(item) {
+    const id = mediaItemIdFor(item);
+    if (!id) return null;
+    return {
+      id,
+      title: item.title,
+      type: item.kind === "series" ? "tv" : "movie",
+      year: item.year ?? null,
+      imdbId: item.imdbId ?? null,
+      posterUrl: item.posterUrl ?? null,
+      backdropUrl: null,
+      genres: [],
+      keywords: [],
+      providers: [],
+      ratings: { imdb: item.rating != null ? item.rating.toFixed(1) : null, metacritic: null, rottenTomatoes: null },
+      overview: "",
+      originalLanguage: null,
+      source: "tmdb",
+      runtimeMinutes: null
+    };
+  }
+  function openVodItem(item, opts) {
+    const media = vodItemToMediaItem(item);
+    if (!media) return false;
+    requestOpenMediaItem({
+      item: media,
+      source: "live-tv-library",
+      ...opts?.autoPlay ? { autoPlay: true } : {}
+    });
+    return true;
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  init_react_shim();
+  init_plugin_sdk();
+  init_vod_client();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-library-rows.ts
+  init_live_tv_data();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-library-map.ts
+  var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
+  function vodLibrarySourceId(vodSource) {
+    return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
+  }
+  function seriesIdFromKey(key) {
+    const match = /^series:(\d+)$/.exec(key);
+    if (!match) return null;
+    const id = Number(match[1]);
+    return Number.isSafeInteger(id) && id > 0 ? id : null;
+  }
+  function movieMedia(item) {
+    if (!item.url) return [];
+    return [{ key: item.key, label: item.categoryName ?? "", playRef: item.url }];
+  }
+  function vodEpisodeToLibrary(ep, titleKey) {
+    const key = `${titleKey}:s${ep.season}e${ep.episode}`;
+    return {
+      episode: {
+        key,
+        season: ep.season,
+        episode: ep.episode,
+        title: ep.title ?? "",
+        runtimeMin: ep.runtimeMin ?? null,
+        stillUrl: ep.stillUrl ?? null
+      },
+      media: { key, label: "", playRef: ep.url, episodeKey: key }
+    };
+  }
+  function vodItemToLibraryTitle(item, vodSource) {
+    const key = typeof item.key === "string" ? item.key.trim() : "";
+    const title = typeof item.title === "string" ? item.title.trim() : "";
+    if (!key || !title) return null;
+    const sourceId = vodLibrarySourceId(vodSource);
+    const series = item.kind === "series";
+    return {
+      // Nyckeln MÅSTE bära samma sourceId som batchen skickas med — annars
+      // hoppar `batch_handler` över titeln utan ett ljud (library_index.rs:355).
+      key: `${sourceId}:${key}`,
+      sourceId,
+      kind: series ? "series" : "movie",
+      title,
+      tmdbId: item.tmdbId ?? null,
+      imdbId: item.imdbId ?? null,
+      year: item.year ?? null,
+      rating: item.rating ?? null,
+      posterUrl: item.posterUrl ?? null,
+      // `addedAt` är Unix-SEKUNDER på båda sidor: `VodItem.addedAt` kommer ur
+      // panelens `added`/`last_modified`, och `LibraryTitle.addedAt` är
+      // dokumenterad som sekunder i lib/library/types.ts (samma enhet som
+      // lokala mappar skriver, `as_secs()` i src-tauri/src/local_files.rs).
+      // Ingen konvertering — en sådan hade sorterat hela biblioteket till år 33 000.
+      addedAt: item.addedAt,
+      /*
+        Panelerna ger TMDB-id på 65–97 % av raderna. Svansen får `unmatched`,
+        precis som en Plex-fil utan match: synlig i biblioteket och i sök,
+        frånvarande ur de TMDB-drivna raderna. Det är hela skälet att
+        `matchState` finns.
+      */
+      matchState: item.tmdbId || item.imdbId ? "matched" : "unmatched",
+      /*
+        Genrer och beskrivning lämnas tomma med flit (planens beslut G).
+        `VodItem` har dem inte, och startsidans genrerader kommer från
+        TMDB-rader filtrerade mot indexet — den vägen behöver bara `tmdbId`.
+        Att gissa en genre ur kategorinamnet hade gett "Movie: Swedish" som genre.
+      */
+      genres: [],
+      // Serier har inga versioner på titelnivå — avsnitten bär sina egna (fas B).
+      media: series ? [] : movieMedia(item),
+      episodes: []
+    };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-library-rows.ts
+  function vodLibraryRows(sources, library) {
+    return sources.filter((source) => source.total > 0).map((source) => {
+      const libraryId = vodLibrarySourceId(source.id);
+      const entry = library?.sources.find((item) => item.id === libraryId);
+      return {
+        vodSource: source.id,
+        label: vodSourceLabel(source.id),
+        libraryId,
+        vodTitles: source.total,
+        indexedTitles: entry ? entry.titles : null,
+        importing: source.importing
+      };
+    });
+  }
+  function vodSourceLabel(vodSource) {
+    return parseXtreamSource(vodSource)?.host ?? vodSource;
+  }
+  function vodLibraryBuildDisabled(row, scanning) {
+    return scanning || row.importing;
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-library-provider.ts
+  init_vod_client();
+  init_live_tv_data();
+  var VOD_SCAN_PAGE = 200;
+  function vodSourceFromLibraryId(libraryId) {
+    const prefix = `${VOD_LIBRARY_PROVIDER_ID}:`;
+    return libraryId.startsWith(prefix) ? libraryId.slice(prefix.length) || null : null;
+  }
+  var defaultDeps = { query: queryVod, status: vodStatus };
+  async function scanVodSource(libraryId, emit3, progress2, signal, deps = defaultDeps) {
+    const source = vodSourceFromLibraryId(libraryId);
+    if (!source) return { titles: 0, cursor: null };
+    const sources = await deps.status();
+    const cursor = sources.find((entry) => entry.id === source)?.updatedAt ?? null;
+    let offset = 0;
+    let titles = 0;
+    progress2({ phase: "listing", done: 0 });
+    for (; ; ) {
+      if (signal?.aborted) break;
+      const page = await deps.query({ source, offset, limit: VOD_SCAN_PAGE, sort: "new", signal });
+      const upsert = page.items.map((item) => vodItemToLibraryTitle(item, source)).filter((title) => title !== null);
+      if (upsert.length > 0) {
+        await emit3({ upsert });
+        titles += upsert.length;
+        progress2({ phase: "titles", done: titles });
+      }
+      if (page.items.length < VOD_SCAN_PAGE) break;
+      offset += VOD_SCAN_PAGE;
+    }
+    return { titles, cursor: cursor === null ? null : String(cursor) };
+  }
+  function vodDeltaNeeded(cursor, updatedAt) {
+    if (updatedAt === null || updatedAt === void 0) return true;
+    if (!cursor) return true;
+    return String(updatedAt) !== cursor;
+  }
+  function vodPlaybackUrl(playRef) {
+    const ref = typeof playRef === "string" ? playRef.trim() : "";
+    if (!/^https?:\/\//i.test(ref)) return null;
+    return ref;
+  }
+  var vodLibraryProvider = {
+    id: VOD_LIBRARY_PROVIDER_ID,
+    label: { en: "Xtream VOD", sv: "Xtream VOD" },
+    pluginId: "com.lumio.live-tv",
+    async scanAll(source, emit3, progress2, signal) {
+      const out = await scanVodSource(source.id, emit3, progress2, signal);
+      return { titles: out.titles, cursor: out.cursor };
+    },
+    async scanDelta(source, cursor, emit3, progress2, signal) {
+      const account = vodSourceFromLibraryId(source.id);
+      const updatedAt = account ? (await vodStatus()).find((entry) => entry.id === account)?.updatedAt ?? null : null;
+      if (!vodDeltaNeeded(cursor, updatedAt)) return { titles: 0, cursor };
+      const out = await scanVodSource(source.id, emit3, progress2, signal);
+      return { titles: out.titles, cursor: out.cursor };
+    },
+    /**
+     * AVSNITTEN, LATA (fas B).
+     *
+     * Panelen har 4 402 serier och listan kostar ett uppslag per serie, så de
+     * indexeras tomma och fylls här — första gången någon öppnar serien.
+     *
+     * Det här är enda stället i biblioteksvägen som rör en INLOGGNING. Katalogen
+     * läses ur värdens redan importerade index; avsnitten kräver panelen, och
+     * lösenordet går till `/api/live-tv/vod/series` och ingen annanstans. Det
+     * når aldrig `/api/library/*` och hamnar aldrig i biblioteksindexet.
+     *
+     * Saknas inloggningen (kontot raderat) returneras `null`: biblioteket ska
+     * tappa en serie, inte fällas.
+     */
+    async loadEpisodes(source, title, _signal) {
+      const account = vodSourceFromLibraryId(source.id);
+      if (!account) return null;
+      const seriesId = seriesIdFromKey(title.key.slice(`${source.id}:`.length));
+      if (seriesId === null) return null;
+      const login = findXtreamLoginByPseudoUrl(account);
+      if (!login) return null;
+      let episodes;
+      try {
+        episodes = await fetchVodEpisodes(account, seriesId, {
+          base: login.base,
+          username: login.username,
+          password: login.password,
+          format: login.format
+        });
+      } catch {
+        return null;
+      }
+      const mapped = episodes.map((ep) => vodEpisodeToLibrary(ep, title.key));
+      return { episodes: mapped.map((m) => m.episode), media: mapped.map((m) => m.media) };
+    },
+    async resolvePlayback(_source, media) {
+      const url = vodPlaybackUrl(media.playRef);
+      return url ? { url } : null;
+    }
+  };
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  function useVodLibrarySources() {
+    const [sources, setSources] = useState([]);
+    const [library, setLibrary] = useState(null);
+    const [ownScan, setOwnScan] = useState(false);
+    const [hostScan, setHostScan] = useState(false);
+    useEffect(() => {
+      const l\u00E4s = () => setHostScan(isLibraryScanRunning2());
+      l\u00E4s();
+      const id = setInterval(l\u00E4s, 1e3);
+      return () => clearInterval(id);
+    }, []);
+    const scanning = ownScan || hostScan;
+    const [progress2, setProgress] = useState(null);
+    const [error, setError] = useState(null);
+    const refresh = useCallback(() => {
+      void vodStatus().then(setSources).catch(() => setSources([]));
+      void fetchLibraryStatus().then(setLibrary).catch(() => setLibrary(null));
+    }, []);
+    useEffect(() => {
+      refresh();
+      return onVodChanged(refresh);
+    }, [refresh]);
+    const rows = useMemo(() => vodLibraryRows(sources, library), [sources, library]);
+    const build = useCallback(async (row) => {
+      if (isLibraryScanRunning2()) return;
+      setError(null);
+      setOwnScan(true);
+      setProgress({ libraryId: row.libraryId, done: 0 });
+      try {
+        const cursor = library?.sources.find((entry) => entry.id === row.libraryId)?.cursor ?? null;
+        await runLibraryScan2(
+          vodLibraryProvider,
+          { id: row.libraryId, name: row.label, cursor },
+          { mode: "full", onProgress: (state2) => setProgress({ libraryId: row.libraryId, done: state2.done }) }
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setOwnScan(false);
+        setProgress(null);
+        refresh();
+      }
+    }, [library, refresh]);
+    const disabled = useCallback((row) => vodLibraryBuildDisabled(row, scanning), [scanning]);
+    return { rows, scanning, progress: progress2, error, build, disabled };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  init_react_shim();
+  init_live_tv_data();
+  init_tv_ui();
+  init_tv_strings();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  init_react_shim();
+  init_live_tv_model();
+  init_tv_ui();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var ROWS_STEP = 80;
+  var HOVER_MS = 120;
+  var GUIDE_SCALE = 1.4;
+  function gp(n) {
+    return Math.round(n * GUIDE_SCALE);
+  }
+  var GUIDE_CARD_BG = "rgba(252,252,255,0.09)";
+  var GUIDE_CARD_LINE = "1px solid rgba(255,255,255,0.10)";
+  var GUIDE_CARD_RADIUS = gp(10);
+  var GUIDE_CARD_GAP = gp(8);
+  var GUIDE_CARD_INSET = gp(5);
+  var GUIDE_ON_SELECTED = "#15161c";
+  var GUIDE_ON_SELECTED_DIM = "rgba(21,22,28,0.6)";
+  var ellipsis = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  var initAttr = (on) => on ? { "data-init": "" } : void 0;
+  function withPointerLeave(props, onLeave) {
+    if (!onLeave) return props;
+    const own = props.onPointerLeave;
+    return { ...props, onPointerLeave: (event2) => {
+      own?.(event2);
+      onLeave();
+    } };
+  }
+  function useHoverSelect(enabled, onSelect) {
+    const timer3 = useRef(null);
+    const clear = () => {
+      if (timer3.current !== null) window.clearTimeout(timer3.current);
+      timer3.current = null;
+    };
+    useEffect(() => clear, []);
+    if (!enabled) return { enter: void 0, leave: void 0 };
+    return {
+      enter: (sel) => {
+        clear();
+        timer3.current = window.setTimeout(() => {
+          timer3.current = null;
+          onSelect(sel);
+        }, HOVER_MS);
+      },
+      leave: clear
+    };
+  }
+  function GuidePaginationRow({ testId, shown, total, hasMore, onMore, hint }) {
+    const { tt } = useTvText();
+    return /* @__PURE__ */ jsxs("div", { "data-testid": `${testId}-pagination`, style: { height: gp(52), minHeight: gp(52), padding: `0 ${gp(20)}px`, display: "flex", alignItems: "center", gap: gp(14), borderTop: `1px solid ${TV2.line}`, boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(13), color: TV2.dim, ...ellipsis }, children: tt("paginationRow", { shown, total }) }),
+      hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": `${testId}-show-more`, ...station(onMore), style: { height: gp(32), minHeight: gp(32), padding: `0 ${gp(14)}px`, borderRadius: 999, background: TV2.s10, display: "inline-flex", alignItems: "center", fontSize: gp(13), cursor: "pointer", flexShrink: 0 }, children: tt("showMoreN", { n: ROWS_STEP }) }) : null,
+      hint ? /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto", fontSize: gp(13), color: "rgba(243,244,248,0.35)", ...ellipsis }, children: hint }) : null
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  init_jsx_runtime_shim();
+  function useDebouncedChannel(channel, ms2 = 300) {
+    const [value, setValue] = useState(channel);
+    useEffect(() => {
+      const timer3 = window.setTimeout(() => setValue(channel), ms2);
+      return () => window.clearTimeout(timer3);
+    }, [channel, ms2]);
+    return value;
+  }
+  var FAVS_GROUP = "__favs";
+  var MAX_GROUPS = 12;
+  function useGuideGroups(model, tt) {
+    return useMemo(() => [
+      { key: null, label: tt("allGroups"), id: "all" },
+      ...model.favouriteChannels.length ? [{ key: FAVS_GROUP, label: tt("favourites"), id: "favs" }] : [],
+      ...model.groups.slice(0, MAX_GROUPS).map((g) => ({ key: g, label: g, id: g }))
+    ], [model.favouriteChannels.length, model.groups, tt]);
+  }
+  function filterByGroup(model, group) {
+    if (group === FAVS_GROUP) return model.favouriteChannels;
+    if (group) return model.channels.filter((c) => c.group === group);
+    return model.channels;
+  }
+  var CHANNEL_CELL_WIDTH_DP = 520;
+  function channelColumnStyle() {
+    return { width: dp(CHANNEL_CELL_WIDTH_DP), flexShrink: 0 };
+  }
+  function ChannelCell({ channel, number, pinned, locked, quality, focused, width = dp(CHANNEL_CELL_WIDTH_DP) }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-channel-cell", style: { width, height: dp(72), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, background: focused ? TV2.s10 : "transparent", flexShrink: 0 }, children: [
+      /* @__PURE__ */ jsx("span", { style: { width: dp(44), fontSize: dp(18), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number ?? "" }),
+      /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(88), height: dp(56), flexShrink: 0 }, radius: dp(8) }),
+      /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(21), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.5)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, quality].filter(Boolean).join(" \xB7 ") })
+      ] }),
+      pinned ? /* @__PURE__ */ jsx("span", { style: { color: TV2.acc }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: dp(18), filled: true }) }) : null,
+      locked ? /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.5)" }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: dp(18) }) }) : null
+    ] });
+  }
+  var GUIDE_CELL_WIDTH = { grid: gp(240), nownext: gp(340), timeline: gp(240) };
+  var GUIDE_ART_SIZE = {
+    grid: { width: gp(44), height: gp(28) },
+    nownext: { width: gp(48), height: gp(30) }
+  };
+  function guideCellStyle(variant) {
+    const width = GUIDE_CELL_WIDTH[variant];
+    return { flex: `0 0 ${width}px`, width, minWidth: 0, boxSizing: "border-box" };
+  }
+  function GuideChannelCell({ channel, number, pinned, locked, variant, fill: fill2 = false }) {
+    const art = variant === "timeline" ? null : GUIDE_ART_SIZE[variant];
+    const box = fill2 ? { flex: 1, minWidth: 0, height: "100%", boxSizing: "border-box" } : guideCellStyle(variant);
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-cell", style: { ...box, display: "flex", alignItems: "center", gap: gp(10), padding: `0 ${gp(12)}px` }, children: [
+      /* @__PURE__ */ jsx("span", { style: { width: gp(26), flexShrink: 0, fontSize: gp(14), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number ?? "" }),
+      art ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: art.width, flexShrink: 0 }, height: art.height, radius: gp(6) }) : null,
+      /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: gp(15), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+        variant !== "timeline" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(12.5), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }) : null
+      ] }),
+      pinned ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-pinned", style: { color: TV2.acc, flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: gp(13), filled: true }) }) : null,
+      locked ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-locked", style: { color: "rgba(243,244,248,0.45)", flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: gp(13) }) }) : null
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  init_jsx_runtime_shim();
+  function PickerPanel({
+    nav,
+    title,
+    chips,
+    rows,
+    onClose,
+    testId = "list-picker"
+  }) {
+    const rootRef = useRef(null);
+    const openerRef = useRef(null);
+    const closeRef = useRef(null);
+    const navRef = useRef(nav);
+    const onCloseRef = useRef(onClose);
+    useEffect(() => {
+      navRef.current = nav;
+      onCloseRef.current = onClose;
+    });
+    useEffect(() => {
+      openerRef.current = document.activeElement;
+      const close = () => {
+        onCloseRef.current();
+        window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
+      };
+      closeRef.current = close;
+      const off = navRef.current.pushLayer(close);
+      window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
+      return off;
+    }, []);
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        ref: rootRef,
+        "data-testid": testId,
+        "data-panel-root": "",
+        "data-live-tv-layer": "",
+        style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(18) },
+        children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
+          chips,
+          /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: typeof rows === "function" ? rows(() => closeRef.current?.()) : rows })
+        ]
+      }
+    );
+  }
+  function Check({ on, label }) {
+    if (!on) return /* @__PURE__ */ jsx("span", { style: { width: dp(28), flexShrink: 0 } });
+    return /* @__PURE__ */ jsx("span", { "data-testid": `picker-check-${label}`, style: { width: dp(28), flexShrink: 0, color: TV2.acc, fontSize: dp(22), textAlign: "center" }, children: "\u2713" });
+  }
+  function TvListPicker({ model, nav, title, selected, onToggle, onClose }) {
+    const { tt } = useTvText();
+    const groups = useGuideGroups(model, tt);
+    const [group, setGroup] = useState(null);
+    const rows = useMemo(() => filterByGroup(model, group).slice(0, 200), [model, group]);
+    return /* @__PURE__ */ jsx(
+      PickerPanel,
+      {
+        nav,
+        title,
+        onClose,
+        chips: /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: groups.map((chip, index) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => setGroup(chip.key), void 0, rows.length === 0 && index === 0 ? { "data-init": "" } : void 0), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) }),
+        rows: rows.map((channel, index) => {
+          const on = selected.has(channelKey(channel));
+          return /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `picker-row-${channel.name}`,
+              ...station(() => onToggle(channel), void 0, index === 0 ? { "data-init": "" } : void 0),
+              style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" },
+              children: [
+                /* @__PURE__ */ jsx(Check, { on, label: channel.name }),
+                /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(70), height: dp(46), flexShrink: 0 }, radius: dp(8) }),
+                /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.group })
+                ] })
+              ]
+            },
+            channelKey(channel)
+          );
+        })
+      }
+    );
+  }
+  function TvCategoryPicker({ nav, title, categories, selected, onToggle, onSelectAll, onClose }) {
+    const { tt } = useTvText();
+    const all = selected.size === 0;
+    return /* @__PURE__ */ jsx(
+      PickerPanel,
+      {
+        nav,
+        title,
+        onClose,
+        chips: null,
+        rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": "picker-row-all",
+              ...station(onSelectAll, void 0, { "data-init": "" }),
+              style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: "pointer" },
+              children: [
+                /* @__PURE__ */ jsx(Check, { on: all, label: "all" }),
+                tt("xtreamAllCategories")
+              ]
+            }
+          ),
+          categories === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("loadingChannels") }) : categories.map((category) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `picker-row-${category.name}`,
+              ...station(() => onToggle(category)),
+              style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: "pointer" },
+              children: [
+                /* @__PURE__ */ jsx(Check, { on: selected.has(category.id), label: category.name }),
+                /* @__PURE__ */ jsx("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: category.name })
+              ]
+            },
+            category.id
+          ))
+        ] })
+      }
+    );
+  }
+  function TvChoicePanel({ nav, title, options, value, onPick, onClose }) {
+    const initIndex = Math.max(0, options.findIndex((option) => option.key === value));
+    return /* @__PURE__ */ jsx(
+      PickerPanel,
+      {
+        nav,
+        title,
+        onClose,
+        chips: null,
+        testId: "choice-panel",
+        rows: (close) => options.map((option, index) => {
+          const on = option.key === value;
+          return /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `choice-row-${option.label}`,
+              ...station(() => {
+                onPick(option.key);
+                close();
+              }, void 0, index === initIndex ? { "data-init": "" } : void 0),
+              style: { height: gp(56), minHeight: gp(56), borderRadius: gp(10), display: "flex", alignItems: "center", gap: gp(12), padding: `0 ${gp(12)}px`, cursor: "pointer", background: on ? TV2.s08 : "transparent" },
+              children: [
+                /* @__PURE__ */ jsx(Check, { on, label: option.label }),
+                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(15), fontWeight: on ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: option.label }),
+                option.count !== void 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), color: TV2.faint, flexShrink: 0 }, children: option.count }) : null
+              ]
+            },
+            option.key ?? "__all"
+          );
+        })
+      }
+    );
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+  init_index_client();
+  init_list_curation();
+  init_live_tv_data();
+  init_jsx_runtime_shim();
+  var rowStyle = {
+    height: dp(64),
+    minHeight: dp(64),
+    borderRadius: dp(12),
+    display: "flex",
+    alignItems: "center",
+    gap: dp(14),
+    padding: `0 ${dp(12)}px`,
+    fontSize: dp(19),
+    cursor: "pointer"
+  };
+  function TvCurationPicker({ nav, list, mode, keyboard, onClose }) {
+    const { tt } = useTvText();
+    const [groups, setGroups] = useState(null);
+    const [draft, setDraft] = useState(() => ({
+      hidden: [...list.curation?.hidden ?? []],
+      merges: (list.curation?.merges ?? []).map((m) => ({ name: m.name, groups: [...m.groups] }))
+    }));
+    const [mergeMode, setMergeMode] = useState(false);
+    const [marked, setMarked] = useState(/* @__PURE__ */ new Set());
+    const [error, setError] = useState(null);
+    useEffect(() => {
+      let live2 = true;
+      listGroups(list.source ?? null).then((fetched) => {
+        if (live2) setGroups(fetched.length > 0 ? fetched : list.groups ?? []);
+      }).catch(() => {
+        if (live2) setGroups(list.groups ?? []);
+      });
+      return () => {
+        live2 = false;
+      };
+    }, [list.id, list.source]);
+    const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups]);
+    const claimed = useMemo(() => new Set(draft.merges.flatMap((m) => m.groups)), [draft.merges]);
+    const merges = draft.merges.map((m) => ({
+      ...m,
+      groups: m.groups.filter((g) => known.has(g)),
+      count: (groups ?? []).filter((g) => m.groups.includes(g.name)).reduce((sum, g) => sum + g.count, 0)
+    })).filter((m) => m.groups.length > 0);
+    const plain = (groups ?? []).filter((g) => !claimed.has(g.name)).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const summary = groups ? tt("curationSummary", {
+      groups: curatedGroupCounts(groups, draft).length,
+      hidden: draft.hidden.filter((g) => known.has(g)).length,
+      merged: draft.merges.length
+    }) : "";
+    const toggleHidden = (name) => setDraft((d) => ({ ...d, hidden: d.hidden.includes(name) ? d.hidden.filter((g) => g !== name) : [...d.hidden, name] }));
+    const toggleMark = (name) => setMarked((m) => {
+      const next = new Set(m);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+    const finishMerge = () => {
+      if (marked.size < 2) return;
+      keyboard.ask(tt("mergeNameLabel"), "", (value) => {
+        const conflict = mergeNameConflict(value, groups ?? [], draft, [...marked]);
+        if (conflict) {
+          setError(conflict === "empty" ? tt("mergeNameEmpty") : conflict === "duplicate" ? tt("mergeNameTaken") : tt("mergeNameIsGroup"));
+          return;
+        }
+        const members = [...marked];
+        setDraft((d) => ({ ...d, merges: [...d.merges, { name: value.trim(), groups: members }] }));
+        setMarked(/* @__PURE__ */ new Set());
+        setMergeMode(false);
+        setError(null);
+      });
+    };
+    const save = () => {
+      updateLiveTvListCuration(list.id, normalizeCuration(draft));
+      onClose();
+    };
+    const skip = () => {
+      markListCurationSeen(list.id);
+      onClose();
+    };
+    const dismiss = mode === "after-import" ? skip : onClose;
+    return /* @__PURE__ */ jsx(
+      PickerPanel,
+      {
+        nav,
+        title: `${tt("categories")} \xB7 ${list.name}`,
+        testId: "curation-picker",
+        onClose: dismiss,
+        chips: /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.dim }, children: mode === "after-import" ? tt("curationIntro") : summary }),
+        rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("div", { "data-testid": "curation-save", ...station(save, void 0, { "data-init": "" }), style: { ...rowStyle, color: TV2.acc }, children: tt("save") }),
+          /* @__PURE__ */ jsx("div", { "data-testid": "curation-skip", ...station(dismiss), style: rowStyle, children: mode === "after-import" ? tt("skip") : tt("cancel") }),
+          /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: [] }))), style: rowStyle, children: tt("showAll") }),
+          /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: plain.map((g) => g.name) }))), style: rowStyle, children: tt("hideAll") }),
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              "data-testid": "curation-merge-mode",
+              ...station(() => {
+                setMergeMode((m) => !m);
+                setMarked(/* @__PURE__ */ new Set());
+                setError(null);
+              }),
+              style: { ...rowStyle, color: mergeMode ? TV2.acc : void 0 },
+              children: tt("mergeInto")
+            }
+          ),
+          mergeMode ? /* @__PURE__ */ jsx("div", { "data-testid": "curation-merge-done", ...station(finishMerge), style: { ...rowStyle, color: marked.size >= 2 ? TV2.acc : TV2.dim }, children: tt("mergeSelected", { n: marked.size }) }) : null,
+          error ? /* @__PURE__ */ jsx("div", { role: "alert", style: { padding: dp(12), fontSize: dp(16), color: "#fca5a5" }, children: error }) : null,
+          groups === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("loadingChannels") }) : null,
+          groups && groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("noCategoriesInList") }) : null,
+          merges.map((m) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `curation-merge-${m.name}`,
+              ...station(() => setDraft((d) => ({ ...d, merges: d.merges.filter((x) => x.name !== m.name) }))),
+              style: rowStyle,
+              children: [
+                /* @__PURE__ */ jsx(Check, { on: true, label: m.name }),
+                /* @__PURE__ */ jsxs("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                  m.name,
+                  /* @__PURE__ */ jsxs("span", { style: { color: TV2.dim, fontSize: dp(15) }, children: [
+                    " \xB7 ",
+                    tt("mergeContains", { groups: m.groups.join(", ") }),
+                    " \xB7 ",
+                    tt("splitMerge")
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: m.count })
+              ]
+            },
+            `m:${m.name}`
+          )),
+          plain.map((g) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `curation-row-${g.name}`,
+              ...station(() => mergeMode ? toggleMark(g.name) : toggleHidden(g.name)),
+              style: rowStyle,
+              children: [
+                /* @__PURE__ */ jsx(Check, { on: mergeMode ? marked.has(g.name) : !draft.hidden.includes(g.name), label: g.name }),
+                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: draft.hidden.includes(g.name) && !mergeMode ? TV2.dim : void 0 }, children: g.name }),
+                /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: g.count })
+              ]
+            },
+            `g:${g.name}`
+          ))
+        ] })
+      }
+    );
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_tv_ui();
+  init_tv_strings();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+  init_jsx_runtime_shim();
+  var LETTERS = ["1234567890", "qwertyuiop\xE5", "asdfghjkl\xF6\xE4", "zxcvbnm,.-"];
+  var SYMBOLS = ["1234567890", "!?@#%&/()=", `+-*_:;"'<>`, "[]{}~^|\\\u20AC\xA3"];
+  function TvKeyboard({ value, onChange, onDone, initFocus }) {
+    const { tt } = useTvText();
+    const [symbols, setSymbols] = useState(false);
+    const rows = symbols ? SYMBOLS : LETTERS;
+    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
+        style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV2.acc : TV2.s10, color: opts?.accent ? TV2.onAcc : TV2.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
+        children: label
+      },
+      label
+    );
+    return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+      rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(8) }, children: [
+        key("\u2423", () => onChange(value + " "), { flex: true, aria: "Space" }),
+        key("\u232B", () => onChange(value.slice(0, -1)), { width: dp(120), aria: "Backspace" }),
+        key(symbols ? tt("keyLetters") : tt("keySymbols"), () => setSymbols((s) => !s), { width: dp(120) }),
+        key(tt("keyDone"), onDone, { width: dp(140), accent: true })
+      ] })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  init_jsx_runtime_shim();
+  function isComposing(event2) {
+    return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
+  }
+  function useTextPrompt(options) {
+    const tvMode = useTvMode();
+    const Panel = getTvKeyboardPanel();
+    const [prompt, setPrompt] = useState(null);
+    const promptId = useRef(0);
+    const open2 = prompt !== null;
+    const openerRef = useRef(null);
+    useEffect(() => {
+      if (!open2) return;
+      openerRef.current = document.activeElement;
+      return () => {
+        const opener = openerRef.current;
+        window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
+      };
+    }, [open2]);
+    const ask = (title, initial, onDone, kind = "text") => {
+      promptId.current += 1;
+      setPrompt({ id: promptId.current, title, initial, kind, onDone });
+    };
+    let node = null;
+    if (tvMode) {
+      node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(
+        Panel,
+        {
+          title: prompt.title,
+          initial: prompt.initial,
+          onDone: (value) => {
+            setPrompt(null);
+            prompt.onDone(value);
+          },
+          onClose: () => setPrompt((current5) => current5 === prompt ? null : current5)
+        },
+        prompt.id
+      ) }) : null;
+    } else if (prompt) {
+      node = /* @__PURE__ */ jsx(
+        TextPromptDialog,
+        {
+          title: prompt.title,
+          initial: prompt.initial,
+          kind: prompt.kind,
+          pushLayer: options?.pushLayer,
+          onDone: (value) => {
+            setPrompt(null);
+            prompt.onDone(value);
+          },
+          onCancel: () => setPrompt((current5) => current5 === prompt ? null : current5)
+        },
+        prompt.id
+      );
+    }
+    return { available: tvMode ? Panel !== null : true, ask, node };
+  }
+  function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }) {
+    const { tt } = useTvText();
+    const [value, setValue] = useState(initial);
+    const inputRef = useRef(null);
+    useEffect(() => {
+      inputRef.current?.focus();
+    }, []);
+    const cancelRef = useRef(onCancel);
+    useEffect(() => {
+      cancelRef.current = onCancel;
+    });
+    useEffect(() => pushLayer?.(() => cancelRef.current()), [pushLayer]);
+    const submit = () => onDone(value);
+    const field = kind === "password" ? { type: "password", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "url" ? { type: "url", inputMode: "url", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "username" ? { type: "text", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : { type: "text" };
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "text-prompt-dialog",
+        "data-panel-root": "",
+        style: { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: TV2.scrim },
+        children: /* @__PURE__ */ jsxs("div", { style: { width: dp(420), borderRadius: dp(14), background: TV2.panel, border: `1px solid ${TV2.line}`, padding: dp(24), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: title }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              ref: inputRef,
+              "data-testid": "text-prompt-input",
+              ...field,
+              value,
+              onChange: (event2) => setValue(event2.target.value),
+              onKeyDown: (event2) => {
+                if (event2.key === "Enter") {
+                  if (isComposing(event2)) return;
+                  event2.preventDefault();
+                  submit();
+                } else if (event2.key === "Escape") {
+                  event2.preventDefault();
+                  onCancel();
+                }
+              },
+              style: { height: dp(44), borderRadius: dp(8), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, color: TV2.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }
+            }
+          ),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: dp(10) }, children: [
+            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
+            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
+          ] })
+        ] })
+      }
+    );
+  }
+  function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus }) {
+    const tvMode = useTvMode();
+    const inputRef = useRef(null);
+    useEffect(() => {
+      if (!tvMode && autoFocus) inputRef.current?.focus();
+    }, [tvMode, autoFocus]);
+    if (tvMode) {
+      return /* @__PURE__ */ jsx(TvKeyboard, { value, onChange, onDone: onSubmit ?? (() => {
+      }), initFocus: !!autoFocus });
+    }
+    return /* @__PURE__ */ jsx(
+      "input",
+      {
+        ref: inputRef,
+        "data-f": "",
+        value,
+        placeholder,
+        onChange: (event2) => onChange(event2.target.value),
+        onKeyDown: (event2) => {
+          if (event2.key === "Enter") {
+            if (isComposing(event2)) return;
+            event2.preventDefault();
+            onSubmit?.();
+          }
+        },
+        style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, border: `1px solid ${TV2.line}`, color: TV2.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }
+      }
+    );
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  init_tv_ui();
+  init_mobile_tokens();
+  init_mobile_icons();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  init_mobile_tokens();
+  init_jsx_runtime_shim();
+  function MobileToggle({ on }) {
+    return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  init_jsx_runtime_shim();
+  function Row({ label, right, onOk, testId, phone = false }) {
+    if (phone) {
+      return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 52, padding: "10px 14px", borderRadius: 0, background: "transparent", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsx("span", { style: ellipsis2, children: label }),
+        /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: MT.muted, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14 }, children: right })
+      ] });
+    }
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19), cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label }),
+      /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: "rgba(243,244,248,0.6)", display: "inline-flex", alignItems: "center", gap: dp(10) }, children: right })
+    ] });
+  }
+  var PhoneCaret = () => /* @__PURE__ */ jsx("span", { style: { color: MT.dim, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 16 }) });
+  function Heading({ children, hint, phone = false }) {
+    if (phone) return /* @__PURE__ */ jsxs("div", { style: { padding: "14px 14px 6px" }, children: [
+      /* @__PURE__ */ jsx("div", { style: sectionLabel, children }),
+      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, marginTop: 4 }, children: hint }) : null
+    ] });
+    return /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsx("div", { style: { fontSize: dp(26), fontWeight: 600 }, children }),
+      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: hint }) : null
+    ] });
+  }
+  function hostOf2(url) {
+    try {
+      return new URL(url).hostname || url;
+    } catch {
+      return url;
+    }
+  }
+  function removeListAndSourceUrl(list) {
+    const urls = getM3uUrls();
+    const remaining2 = urls.filter((url) => !url.startsWith("xtream://") && hostOf2(url) !== list.name);
+    if (remaining2.length !== urls.length) applyM3uUrls(remaining2);
+    deleteLiveTvList(list.id);
+  }
+  function xtreamLoginMissing(list) {
+    if (list.kind !== "xtream") return false;
+    return !getXtreamLogins().some((login) => login.id === list.xtreamLoginId);
+  }
+  function progressText(tt, locale, progress2) {
+    if (progress2.state === "parsing") return tt("importParsing");
+    if (progress2.state === "writing") return tt("importWriting");
+    return progress2.total ? tt("importProgress", { received: progress2.received.toLocaleString(locale), total: progress2.total.toLocaleString(locale) }) : tt("importProgressUnknown");
+  }
+  function Action({ label, onOk, testId, disabled, phone = false }) {
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": testId,
+        "aria-disabled": disabled ? "true" : void 0,
+        ...station(() => {
+          if (!disabled) onOk();
+        }),
+        style: phone ? { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", fontSize: 14, whiteSpace: "nowrap", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 } : { height: dp(48), minHeight: dp(48), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(17), whiteSpace: "nowrap", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 },
+        children: label
+      }
+    );
+  }
+  function formatFetchedAt(iso, locale) {
+    const then = new Date(iso);
+    if (Number.isNaN(then.getTime())) return iso;
+    const now2 = /* @__PURE__ */ new Date();
+    return then.toDateString() === now2.toDateString() ? then.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : then.toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+  var ListRow = memo(function ListRow2({
+    list,
+    tt,
+    locale,
+    busy,
+    needsLogin,
+    onRefetch,
+    onRemove,
+    onEditChannels,
+    onCategories,
+    phone = false
+  }) {
+    const importable = list.kind === "m3u" || list.kind === "xtream";
+    const logoEnabled = isLogoFallbackEnabled(list);
+    const [logoBusy, setLogoBusy] = useState(false);
+    const [logoResult, setLogoResult] = useState(null);
+    const [logoError, setLogoError] = useState(null);
+    async function handleCompleteLogos() {
+      setLogoBusy(true);
+      setLogoError(null);
+      try {
+        const result = await completeLogos(list.source ?? "");
+        setLogoResult(result);
+      } catch (err) {
+        setLogoError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLogoBusy(false);
+      }
+    }
+    const sub = phone ? 13 : dp(15);
+    const meta = phone ? 13 : dp(16);
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-testid": `list-row-${list.id}`,
+        style: phone ? { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19) },
+        children: [
+          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 4 : dp(4) }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: phone ? 8 : dp(10), minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis2 } : { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.name }),
+              list.needsReimport ? /* @__PURE__ */ jsx("span", { style: phone ? { flexShrink: 0, fontSize: 11, fontWeight: 600, minHeight: 22, padding: "0 8px", borderRadius: 999, background: MT.warnSoft, color: MT.warnText, display: "inline-flex", alignItems: "center" } : { flexShrink: 0, fontSize: dp(14), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: "rgba(244,132,95,0.18)", color: "#f4845f" }, children: tt("needsReimport") }) : null
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { fontSize: meta, color: phone ? MT.dim : TV2.dim }, children: [
+              tt("channelsCount", { count: (list.channelCount ?? list.channels?.length ?? 0).toLocaleString(locale) }),
+              list.fetchedAt ? ` \xB7 ${tt("fetchedAt", { time: formatFetchedAt(list.fetchedAt, locale) })}` : ""
+            ] }),
+            busy ? /* @__PURE__ */ jsx("div", { style: { fontSize: meta, color: TV2.muted }, children: progressText(tt, locale, busy) }) : null,
+            !busy && needsLogin ? /* @__PURE__ */ jsx("div", { style: { fontSize: sub, color: TV2.muted }, children: tt("xtreamNeedsLogin") }) : null,
+            list.truncated ? /* @__PURE__ */ jsx("div", { "data-testid": `list-truncated-${list.id}`, style: { fontSize: sub, color: "#fbbf24" }, children: tt("truncated") }) : null,
+            !busy && list.lastImportError ? /* @__PURE__ */ jsx("div", { "data-testid": `list-error-${list.id}`, style: { fontSize: sub, color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.lastImportError }) : null,
+            logoResult ? /* @__PURE__ */ jsx("div", { "data-testid": `list-logo-complete-result-${list.id}`, style: { fontSize: sub, color: TV2.dim }, children: tt("logoCompleteResult", { matched: logoResult.matched, total: logoResult.total }) }) : null,
+            logoError ? /* @__PURE__ */ jsx("div", { "data-testid": `list-logo-complete-error-${list.id}`, style: { fontSize: sub, color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: logoError }) : null
+          ] }),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              ...phone ? { "data-list-actions": "" } : {},
+              style: phone ? { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 } : { flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10) },
+              children: [
+                importable ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-refetch-${list.id}`, label: busy ? tt("refetching") : tt("refetch"), onOk: () => onRefetch(list) }) : null,
+                importable ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-categories-${list.id}`, label: tt("categories"), onOk: () => onCategories(list) }) : null,
+                list.kind === "custom" ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-channels-${list.id}`, label: tt("listChannels"), onOk: () => onEditChannels(list) }) : null,
+                /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    "data-testid": `list-logo-fallback-${list.id}`,
+                    "aria-disabled": list.kind === "custom" ? "true" : void 0,
+                    ...station(() => {
+                      if (list.kind !== "custom") setLogoFallbackEnabled(list.id, !logoEnabled);
+                    }),
+                    style: phone ? {
+                      minHeight: 36,
+                      padding: "0 12px",
+                      borderRadius: 999,
+                      background: MT.s06,
+                      border: `1px solid ${MT.line10}`,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      fontSize: 14,
+                      whiteSpace: "nowrap",
+                      cursor: list.kind === "custom" ? "default" : "pointer",
+                      opacity: list.kind === "custom" ? 0.5 : 1
+                    } : {
+                      height: dp(48),
+                      minHeight: dp(48),
+                      padding: `0 ${dp(16)}px`,
+                      borderRadius: 999,
+                      background: TV2.s06,
+                      border: `1px solid ${TV2.line}`,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: dp(10),
+                      fontSize: dp(15),
+                      whiteSpace: "nowrap",
+                      cursor: list.kind === "custom" ? "default" : "pointer",
+                      opacity: list.kind === "custom" ? 0.5 : 1
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx("span", { children: tt("logoFallback") }),
+                      phone ? /* @__PURE__ */ jsx(MobileToggle, { on: logoEnabled }) : /* @__PURE__ */ jsx(Toggle, { on: logoEnabled })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  Action,
+                  {
+                    phone,
+                    testId: `list-logo-complete-${list.id}`,
+                    label: logoBusy ? tt("logoCompleteRunning") : tt("logoComplete"),
+                    disabled: !logoEnabled || list.kind === "custom" || logoBusy,
+                    onOk: () => {
+                      void handleCompleteLogos();
+                    }
+                  }
+                ),
+                /* @__PURE__ */ jsx(Action, { phone, testId: `list-remove-${list.id}`, label: tt("remove"), onOk: () => onRemove(list) })
+              ]
+            }
+          )
+        ]
+      }
+    );
+  });
+  function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = false }) {
+    const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
+    const [progress2, setProgress] = useState(null);
+    async function runImport(list, existedBefore) {
+      setProgress({ listId: list.id, state: "fetching", received: 0, total: null });
+      try {
+        const status = await importList(list, (s) => setProgress({ listId: list.id, state: s.state, received: s.received, total: s.total ?? null }));
+        if (status.state === "error") {
+          if (existedBefore) recordListImportOutcome(list.id, status.error ?? "import failed");
+          else deleteLiveTvList(list.id);
+          toast(`${tt("importFailed")}: ${status.error ?? ""}`.trim());
+          return false;
+        }
+        recordListImportOutcome(list.id);
+        const fresh = getLiveTvLists().find((entry) => entry.id === list.id);
+        if (!existedBefore && fresh && fresh.curationSeen !== true) setCuration({ listId: list.id, mode: "after-import" });
+        return true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (existedBefore) recordListImportOutcome(list.id, message);
+        else deleteLiveTvList(list.id);
+        toast(`${tt("importFailed")}: ${message}`);
+        return false;
+      } finally {
+        setProgress(null);
+      }
+    }
+    const addUrl = () => keyboard.ask(tt("addM3u"), "", (value) => {
+      const url = value.trim();
+      if (!url) return;
+      const source = getLiveTvUrlsKey([url]);
+      const existedBefore = getLiveTvLists().some((entry) => entry.source === source);
+      const list = ensureM3uList(url);
+      void runImport(list, existedBefore).then((ok) => {
+        if (ok && !getM3uUrls().includes(url)) applyM3uUrls([...getM3uUrls(), url]);
+      });
+    }, "url");
+    const askXtream = (prefillServer, reuseLoginId) => keyboard.ask(tt("xtreamServer"), prefillServer, (serverValue) => {
+      const server = serverValue.trim();
+      if (!server) return;
+      keyboard.ask(tt("xtreamUsername"), "", (usernameValue) => {
+        const username = usernameValue.trim();
+        if (!username) return;
+        keyboard.ask(tt("xtreamPassword"), "", (passwordValue) => {
+          const password = passwordValue.trim();
+          if (!password) return;
+          void connectXtream(server, username, password, reuseLoginId);
+        }, "password");
+      }, "username");
+    }, "url");
+    async function connectXtream(server, username, password, reuseLoginId) {
+      const base = normalizeXtreamBase(server);
+      if (!base) {
+        toast(tt("xtreamLoginFailed"));
+        return;
+      }
+      let account;
+      try {
+        account = await fetchXtreamAccount({ base, username, password }, { force: true });
+      } catch {
+        toast(tt("xtreamLoginFailed"));
+        return;
+      }
+      if (!account.auth) {
+        toast(tt("xtreamLoginFailed"));
+        return;
+      }
+      const existing = getXtreamLogins().find((entry) => entry.base === base && entry.username === username);
+      const login = {
+        id: existing?.id ?? reuseLoginId ?? crypto.randomUUID(),
+        base,
+        username,
+        password,
+        format: account.allowedFormats.length === 0 || account.allowedFormats.includes("ts") ? "ts" : "m3u8",
+        categoryIds: existing?.categoryIds ?? []
+      };
+      saveXtreamLogin(login);
+      const source = xtreamPseudoUrl(login);
+      const existedBefore = getLiveTvLists().some((entry) => entry.source === source);
+      await runImport(ensureXtreamList(login), existedBefore);
+    }
+    const orderRef = useRef([]);
+    const ordered = useMemo(() => {
+      if (orderRef.current.length === 0) {
+        orderRef.current = [...lists].sort((a, b) => Number(Boolean(b.needsReimport)) - Number(Boolean(a.needsReimport))).map((list) => list.id);
+      } else {
+        for (const list of lists) if (!orderRef.current.includes(list.id)) orderRef.current.push(list.id);
+      }
+      const rank = new Map(orderRef.current.map((id, index) => [id, index]));
+      return [...lists].sort((a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER));
+    }, [lists]);
+    const refetchRef = useRef(() => {
+    });
+    useEffect(() => {
+      refetchRef.current = (list) => {
+        if (progress2 || refetchingAll) return;
+        if (xtreamLoginMissing(list)) {
+          const parsed = parseXtreamSource(list.source);
+          askXtream(parsed ? `http://${parsed.host}` : "", parsed?.loginId ?? null);
+          return;
+        }
+        void runImport(list, true);
+      };
+    });
+    const onRefetch = useCallback((list) => refetchRef.current(list), []);
+    const onRemove = useCallback((list) => removeListAndSourceUrl(list), []);
+    const [curation, setCuration] = useState(null);
+    const onCategories = useCallback((list) => setCuration({ listId: list.id, mode: "settings" }), []);
+    const [pickerListId, setPickerListId] = useState(null);
+    const [members, setMembers] = useState(() => /* @__PURE__ */ new Set());
+    const pickerList = pickerListId ? getLiveTvLists().find((entry) => entry.id === pickerListId) ?? null : null;
+    const openPicker = useCallback((list) => {
+      setMembers(new Set((getLiveTvLists().find((entry) => entry.id === list.id)?.channels ?? []).map(channelKey)));
+      setPickerListId(list.id);
+    }, []);
+    const toggleMember = (channel) => {
+      if (!pickerListId) return;
+      const key = channelKey(channel);
+      if (members.has(key)) {
+        removeChannelFromLiveTvList(pickerListId, channel);
+        setMembers((current5) => {
+          const next = new Set(current5);
+          next.delete(key);
+          return next;
+        });
+        return;
+      }
+      const outcome = addChannelToLiveTvList(pickerListId, channel);
+      if (outcome === "full") {
+        toast(tt("listFull"));
+        return;
+      }
+      if (outcome === "added" || outcome === "duplicate") setMembers((current5) => new Set(current5).add(key));
+    };
+    const createList = () => keyboard.ask(tt("listName"), "", (value) => {
+      const name = value.trim();
+      if (!name) return;
+      openPicker(createLiveTvList(name));
+    });
+    const [refetchingAll, setRefetchingAll] = useState(false);
+    const importable = lists.filter((list) => Boolean(list.source) && (list.kind === "m3u" || list.kind === "xtream") && !xtreamLoginMissing(list));
+    async function refetchAll() {
+      if (progress2 || refetchingAll) return;
+      setRefetchingAll(true);
+      try {
+        for (const list of importable) await runImport(list, true);
+      } finally {
+        setRefetchingAll(false);
+      }
+    }
+    const plus = phone ? /* @__PURE__ */ jsx(PhoneCaret, {}) : "+";
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
+      phone ? importable.length > 0 ? /* @__PURE__ */ jsx("div", { style: { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", justifyContent: "flex-end" }, children: /* @__PURE__ */ jsx(Action, { phone: true, testId: "lists-refetch-all", label: refetchingAll ? tt("refetching") : tt("refetchAll"), disabled: refetchingAll || progress2 !== null, onOk: () => {
+        void refetchAll();
+      } }) }) : null : /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dp(16) }, children: [
+        /* @__PURE__ */ jsx(Heading, { children: tt("tabPlaylists") }),
+        importable.length > 0 ? /* @__PURE__ */ jsx(Action, { testId: "lists-refetch-all", label: refetchingAll ? tt("refetching") : tt("refetchAll"), disabled: refetchingAll || progress2 !== null, onOk: () => {
+          void refetchAll();
+        } }) : null
+      ] }),
+      ordered.map((list) => /* @__PURE__ */ jsx(
+        ListRow,
+        {
+          list,
+          tt,
+          locale,
+          busy: progress2?.listId === list.id ? progress2 : null,
+          needsLogin: xtreamLoginMissing(list),
+          onRefetch,
+          onRemove,
+          onEditChannels: openPicker,
+          onCategories,
+          phone
+        },
+        list.id
+      )),
+      keyboard.available ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addM3u"), right: plus, onOk: addUrl }) : null,
+      keyboard.available ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addXtream"), right: plus, onOk: () => askXtream("", null) }) : null,
+      keyboard.available ? /* @__PURE__ */ jsx(Row, { phone, testId: "create-list", label: tt("createList"), right: plus, onOk: createList }) : null,
+      /* @__PURE__ */ jsx(XtreamAccounts, { nav, tt, locale, phone, onReimport: (list) => {
+        void runImport(list, true);
+      } }),
+      pickerList ? /* @__PURE__ */ jsx(
+        TvListPicker,
+        {
+          model,
+          nav,
+          title: tt("pickChannels", { list: pickerList.name }),
+          selected: members,
+          onToggle: toggleMember,
+          onClose: () => setPickerListId(null)
+        }
+      ) : null,
+      curation ? (() => {
+        const target2 = lists.find((entry) => entry.id === curation.listId);
+        return target2 ? /* @__PURE__ */ jsx(TvCurationPicker, { nav, list: target2, mode: curation.mode, keyboard, onClose: () => setCuration(null) }) : null;
+      })() : null,
+      keyboard.node
+    ] });
+  }
+  function formatExpiry(expDate, locale) {
+    if (!expDate) return null;
+    const when = new Date(expDate * 1e3);
+    if (Number.isNaN(when.getTime())) return null;
+    return when.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
+  }
+  function XtreamAccounts({ nav, tt, locale, onReimport, phone = false }) {
+    const [logins, setLogins] = useState(getXtreamLogins);
+    useEffect(() => onXtreamLoginsChanged(() => setLogins(getXtreamLogins())), []);
+    const [pickerLoginId, setPickerLoginId] = useState(null);
+    const [categories, setCategories] = useState(null);
+    const [selected, setSelected] = useState(() => /* @__PURE__ */ new Set());
+    const [dirty2, setDirty] = useState(false);
+    const pickerLogin = pickerLoginId ? logins.find((entry) => entry.id === pickerLoginId) ?? null : null;
+    function openCategories(login) {
+      setCategories(null);
+      setSelected(new Set(login.categoryIds));
+      setDirty(false);
+      setPickerLoginId(login.id);
+      void fetchXtreamCategories(login).then((list) => setCategories(list)).catch(() => setCategories([]));
+    }
+    function writeCategories(login, ids) {
+      saveXtreamLogin({ ...login, categoryIds: ids });
+      setSelected(new Set(ids));
+      setDirty(true);
+    }
+    const listForLogin = (login) => getLiveTvLists().find((entry) => entry.xtreamLoginId === login.id || entry.source === xtreamPseudoUrl(login)) ?? null;
+    function closeCategories() {
+      const login = pickerLogin;
+      setPickerLoginId(null);
+      setDirty(false);
+      if (!login || !dirty2) return;
+      const list = listForLogin(login);
+      if (list) onReimport(list);
+    }
+    const pendingRef = useRef({ login: logins[0] ?? {}, dirty: false });
+    useEffect(() => {
+      if (pickerLogin) pendingRef.current = { login: pickerLogin, dirty: dirty2 };
+    });
+    useEffect(() => () => {
+      const pending5 = pendingRef.current;
+      if (!pending5.dirty || !pending5.login?.id) return;
+      const list = getLiveTvLists().find((entry) => entry.xtreamLoginId === pending5.login.id);
+      if (!list) return;
+      void importList(list).catch((err) => recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err)));
+    }, []);
+    const orphanIds = new Set(getOrphanXtreamLogins().map((entry) => entry.id));
+    function removeLogin(login) {
+      deleteXtreamLoginAndData(login.id);
+      setLogins(getXtreamLogins());
+    }
+    if (logins.length === 0) return null;
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(Heading, { phone, hint: orphanIds.size > 0 ? tt("orphanLoginsHint") : void 0, children: tt("xtreamAccount") }),
+      logins.map((login) => /* @__PURE__ */ jsx(XtreamAccountCard, { login, tt, locale, phone, orphan: orphanIds.has(login.id), onCategories: () => openCategories(login), onRemove: () => removeLogin(login) }, login.id)),
+      pickerLogin ? /* @__PURE__ */ jsx(
+        TvCategoryPicker,
+        {
+          nav,
+          title: tt("xtreamCategoriesTitle"),
+          categories,
+          selected,
+          onToggle: (category) => {
+            const next = new Set(selected);
+            if (next.has(category.id)) next.delete(category.id);
+            else next.add(category.id);
+            writeCategories(pickerLogin, [...next]);
+          },
+          onSelectAll: () => writeCategories(pickerLogin, []),
+          onClose: closeCategories
+        }
+      ) : null
+    ] });
+  }
+  function XtreamAccountCard({ login, tt, locale, onCategories, onRemove, orphan = false, phone = false }) {
+    const [account, setAccount] = useState(null);
+    const [failed, setFailed] = useState(false);
+    useEffect(() => {
+      let cancelled = false;
+      setFailed(false);
+      void fetchXtreamAccount(login).then((next) => {
+        if (!cancelled) setAccount(next);
+      }).catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [login.base, login.username, login.password]);
+    let host2 = login.base;
+    try {
+      host2 = new URL(login.base).host;
+    } catch {
+    }
+    const expiry = account ? formatExpiry(account.expDate, locale) : null;
+    const meta = failed ? tt("xtreamAccountUnavailable") : account ? [account.status, expiry ? tt("xtreamExpires", { date: expiry }) : tt("xtreamNoExpiry"), account.maxConnections ? tt("xtreamMaxConnections", { count: account.maxConnections }) : null].filter((part) => Boolean(part)).join(" \xB7 ") : tt("refetching");
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-testid": `xtream-account-${login.id}`,
+        style: phone ? { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19) },
+        children: [
+          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 4 : dp(4) }, children: [
+            /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis2 } : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: host2 }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: phone ? 13 : dp(16), color: failed ? "#fca5a5" : phone ? MT.dim : TV2.dim }, children: orphan ? `${tt("orphanLogins")} \xB7 ${meta}` : meta })
+          ] }),
+          phone ? /* @__PURE__ */ jsxs("div", { "data-list-actions": "", style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }, children: [
+            /* @__PURE__ */ jsx(
+              Action,
+              {
+                phone: true,
+                testId: `xtream-categories-${login.id}`,
+                label: `${tt("xtreamCategories")}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ""}`,
+                onOk: onCategories
+              }
+            ),
+            /* @__PURE__ */ jsx(Action, { phone: true, testId: `xtream-remove-${login.id}`, label: tt("orphanRemove"), onOk: onRemove })
+          ] }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsx(
+              Action,
+              {
+                testId: `xtream-categories-${login.id}`,
+                label: `${tt("xtreamCategories")}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ""}`,
+                onOk: onCategories
+              }
+            ),
+            /* @__PURE__ */ jsx(Action, { testId: `xtream-remove-${login.id}`, label: tt("orphanRemove"), onOk: onRemove })
+          ] })
+        ]
+      }
+    );
+  }
+  function ContentTab({ model, tt, phone = false }) {
+    const source = model.activeSource;
+    const playlistId = model.activePlaylistId;
+    const cats = useVodCategories(source);
+    const [mode, setModeState] = useState(() => getVodMode(playlistId));
+    useEffect(() => setModeState(getVodMode(playlistId)), [playlistId]);
+    const choose = (next) => {
+      setVodMode(playlistId, next);
+      setModeState(next);
+    };
+    const options = [
+      { key: "link", title: tt("vodModeLinkTitle"), body: tt("vodModeLinkBody") },
+      { key: "rows", title: tt("vodModeRowsTitle"), body: tt("vodModeRowsBody") },
+      { key: "off", title: tt("vodModeOffTitle"), body: tt("vodModeOffBody") }
+    ];
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 12 : dp(14) }, "data-testid": "settings-content", children: [
+      /* @__PURE__ */ jsx(Heading, { phone, hint: cats.total > 0 ? tt("vodHint", { count: cats.total }) : tt("vodHintEmpty"), children: tt("vodHeading") }),
+      /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: phone ? 10 : dp(16), flexWrap: "wrap" }, children: options.map((option) => {
+        const active4 = option.key === mode;
+        return /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": `vod-mode-${option.key}`,
+            "data-active": active4 ? "" : void 0,
+            ...station(() => choose(option.key)),
+            style: phone ? { width: "100%", padding: "12px 14px", borderRadius: 12, background: MT.s07, border: `1px solid ${active4 ? TV2.acc : MT.line10}`, cursor: "pointer" } : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV2.s07, border: `1px solid ${active4 ? TV2.acc : TV2.lineCard}`, cursor: "pointer", textAlign: "left" },
+            children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), fontWeight: 600 }, children: option.title }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : "rgba(243,244,248,0.6)", marginTop: 4 }, children: option.body })
+            ]
+          },
+          option.key
+        );
+      }) }),
+      /* @__PURE__ */ jsx(VodLibrarySection, { tt, phone })
+    ] });
+  }
+  function VodLibrarySection({ tt, phone }) {
+    const { rows, progress: progress2, error, build, disabled } = useVodLibrarySources();
+    if (rows.length === 0) return null;
+    const statusText = (row) => {
+      if (progress2?.libraryId === row.libraryId) return tt("vodLibraryBuilding", { count: progress2.done.toLocaleString() });
+      if (row.importing) return tt("vodLibraryImporting");
+      if (row.indexedTitles === null) return tt("vodLibraryNotBuilt", { count: row.vodTitles.toLocaleString() });
+      return tt("vodLibraryBuilt", { count: row.indexedTitles.toLocaleString() });
+    };
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 8 : dp(10) }, "data-testid": "vod-library", children: [
+      /* @__PURE__ */ jsx(Heading, { phone, hint: tt("vodLibraryHint"), children: tt("vodLibraryHeading") }),
+      rows.map((row) => /* @__PURE__ */ jsxs(
+        "div",
+        {
+          "data-testid": `vod-library-${row.vodSource}`,
+          style: phone ? { padding: "12px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16) },
+          children: [
+            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), ...ellipsis2 }, children: row.label }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: statusText(row) })
+            ] }),
+            /* @__PURE__ */ jsx(
+              Action,
+              {
+                phone,
+                testId: `vod-library-build-${row.vodSource}`,
+                label: row.indexedTitles === null ? tt("vodLibraryBuild") : tt("vodLibraryRebuild"),
+                disabled: disabled(row),
+                onOk: () => {
+                  void build(row);
+                }
+              }
+            )
+          ]
+        },
+        row.libraryId
+      )),
+      /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim, padding: phone ? "0 14px 5px" : void 0 }, children: error ? tt("vodLibraryFailed", { error }) : tt("vodLibraryWhereToEnable") })
+    ] });
+  }
+  function EpgTab({ lists, nav, tt, locale, phone = false }) {
+    const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
+    const { status, urls: statusUrls, refreshing, refresh } = useEpgStatus();
+    const urls = useMemo(() => lists.flatMap((list) => [
+      ...list.urlTvg && !list.autoEpgDisabled ? [{ listId: list.id, url: list.urlTvg, fromPlaylist: true }] : [],
+      ...list.epgUrls.map((url) => ({ listId: list.id, url, fromPlaylist: false }))
+    ]), [lists]);
+    const sectionGap = phone ? 0 : dp(10);
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: sectionGap }, children: [
+        /* @__PURE__ */ jsx(Heading, { phone, children: tt("tabEpg") }),
+        urls.map(({ listId, url, fromPlaylist }) => {
+          const list = lists.find((l) => l.id === listId);
+          return /* @__PURE__ */ jsx(
+            Row,
+            {
+              phone,
+              label: fromPlaylist ? `${url}  \xB7  ${tt("epgFromPlaylist")}` : url,
+              right: fromPlaylist ? tt("epgAutoOff") : tt("remove"),
+              onOk: () => fromPlaylist ? updateLiveTvListEpg(listId, { autoEpgDisabled: true }) : updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) })
+            },
+            `${listId}:${url}`
+          );
+        }),
+        keyboard.available && lists[0] ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addEpgUrl"), right: phone ? /* @__PURE__ */ jsx(PhoneCaret, {}) : "+", onOk: () => keyboard.ask(tt("addEpgUrl"), "", (value) => {
+          const url = value.trim();
+          if (url) updateLiveTvListEpg(lists[0].id, { epgUrls: [...lists[0].epgUrls, url] });
+        }, "url") }) : null,
+        keyboard.node
+      ] }),
+      statusUrls.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: sectionGap }, children: [
+        /* @__PURE__ */ jsxs("div", { style: phone ? { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, paddingRight: 14 } : { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dp(16) }, children: [
+          /* @__PURE__ */ jsx(Heading, { phone, children: tt("epgStatusTitle") }),
+          /* @__PURE__ */ jsx(Action, { phone, testId: "epg-refresh", label: refreshing ? tt("epgRefreshing") : tt("epgRefresh"), disabled: refreshing, onOk: () => {
+            void refresh();
+          } })
+        ] }),
+        statusUrls.map((url) => {
+          const stat = status?.urls.find((item) => item.url === url);
+          const fetched = stat?.fetchedAt ? formatFetchedAt(new Date(stat.fetchedAt).toISOString(), locale) : null;
+          return /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `epg-status-${url}`,
+              style: phone ? { minHeight: 52, padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(4), fontSize: dp(18) },
+              children: [
+                /* @__PURE__ */ jsx("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: url }),
+                stat?.error ? /* @__PURE__ */ jsx("span", { style: { fontSize: phone ? 13 : dp(16), color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: stat.error }) : /* @__PURE__ */ jsxs("span", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: [
+                  stat ? tt("epgSourceStats", { channels: stat.channels.toLocaleString(locale), programmes: stat.programmes.toLocaleString(locale) }) : tt("epgNeverFetched"),
+                  fetched ? ` \xB7 ${tt("fetchedAt", { time: fetched })}` : ""
+                ] })
+              ]
+            },
+            url
+          );
+        })
+      ] }) : null
+    ] });
+  }
+  function ParentalTab({ model, tt, phone = false }) {
+    const [keys2, setKeys] = useState(getLockedChannelKeys);
+    useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), []);
+    const channels = keys2.map((key) => model.allChannels.find((c) => channelKey(c) === key)).filter((c) => Boolean(c));
+    const lockAvailable = pinSupportAvailable() && activeProfileHasPin2();
+    const [pinTarget, setPinTarget] = useState(null);
+    const requestUnlock = (channel) => {
+      if (!lockAvailable) {
+        toggleChannelLock(channel);
+        return;
+      }
+      setPinTarget(channel);
+    };
+    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
+      /* @__PURE__ */ jsx(Heading, { phone, children: tt("lockedChannels") }),
+      channels.length === 0 ? /* @__PURE__ */ jsx("div", { style: phone ? { fontSize: 15, color: MT.dim, padding: "4px 14px 14px" } : { fontSize: dp(18), color: TV2.dim }, children: tt("noLocked") }) : null,
+      channels.map((channel) => /* @__PURE__ */ jsx(Row, { phone, label: channel.name, right: tt("unlock"), onOk: () => requestUnlock(channel) }, channelKey(channel))),
+      /* @__PURE__ */ jsx(
+        PinGate,
+        {
+          open: pinTarget !== null,
+          title: tt("enterPin"),
+          wrongText: tt("pinWrong"),
+          unlockLabel: tt("unlock"),
+          cancelLabel: tt("cancel"),
+          onVerify: verifyActiveProfilePin2,
+          onClose: () => setPinTarget(null),
+          onUnlocked: () => {
+            const channel = pinTarget;
+            setPinTarget(null);
+            if (channel) toggleChannelLock(channel);
+          }
+        }
+      )
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  init_tv_strings();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/key-card.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_tv_ui();
+  init_tv_strings();
+  init_api_sports();
+  init_thesportsdb();
+  init_providers();
+  init_key_flow();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/key-handoff.ts
+  init_react_shim();
+  var BASE = "/api/live-tv/sport/key-handoff";
+  var POLL_MS2 = 2e3;
+  async function startKeyHandoff() {
+    try {
+      const res = await fetch(BASE, { method: "POST" });
+      if (!res.ok) return null;
+      const body = await res.json();
+      return body.code ? { code: body.code, url: body.url ?? null } : null;
+    } catch {
+      return null;
+    }
+  }
+  async function pollKeyHandoff(code) {
+    try {
+      const res = await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { cache: "no-store" });
+      if (!res.ok) return { state: "expired" };
+      return await res.json();
+    } catch {
+      return { state: "waiting" };
+    }
+  }
+  async function cancelKeyHandoff(code) {
+    try {
+      await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { method: "DELETE" });
+    } catch {
+    }
+  }
+  function useKeyHandoff(active4, onKey) {
+    const [url, setUrl] = useState(null);
+    const [expired, setExpired] = useState(false);
+    const [round2, setRound] = useState(0);
+    const onKeyRef = useRef(onKey);
+    onKeyRef.current = onKey;
+    useEffect(() => {
+      if (!active4) return;
+      let stopped = false;
+      let code = null;
+      let done = false;
+      let timer3 = null;
+      setExpired(false);
+      const loop = async () => {
+        if (stopped || done || !code) return;
+        const r = await pollKeyHandoff(code);
+        if (stopped) return;
+        if (r.state === "received" && r.key) {
+          done = true;
+          onKeyRef.current(r.key);
+          return;
+        }
+        if (r.state === "expired") {
+          done = true;
+          setExpired(true);
+          return;
+        }
+        timer3 = setTimeout(() => void loop(), POLL_MS2);
+      };
+      void startKeyHandoff().then((h) => {
+        if (stopped || !h) return;
+        code = h.code;
+        setUrl(h.url);
+        timer3 = setTimeout(() => void loop(), POLL_MS2);
+      });
+      return () => {
+        stopped = true;
+        if (timer3) clearTimeout(timer3);
+        if (code) void cancelKeyHandoff(code);
+      };
+    }, [active4, round2]);
+    const restart = useCallback(() => setRound((n) => n + 1), []);
+    return { url, expired, restart };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/key-card.tsx
+  init_budget();
+  init_sport_store();
+  init_jsx_runtime_shim();
+  var SPORT_NAMES = [
+    ["football", "sportNameFootball"],
+    ["hockey", "sportNameHockey"],
+    ["basketball", "sportNameBasketball"],
+    ["handball", "sportNameHandball"]
+  ];
+  function shouldShowKeyBanner(s) {
+    return !s.apiKey && !s.keyCardDismissed;
+  }
+  function KeyCard({ variant, onDone, pushLayer }) {
+    const { tt } = useTvText();
+    const tv = useTvMode();
+    const settings = useSportSettings();
+    const [provider, setProvider] = useState(settings.provider);
+    const [draft, setDraft] = useState("");
+    const [phase, setPhase] = useState({ kind: "idle" });
+    const [phoneEntry, setPhoneEntry] = useState(false);
+    const prompt = useTextPrompt({ pushLayer });
+    const broken = !!settings.apiKey && !!currentBudget()?.isInvalid();
+    const submit = async (raw) => {
+      setPhase({ kind: "checking" });
+      const result = await saveValidatedKey(provider, raw);
+      setPhase({ kind: "done", result });
+      if (result.ok) setPhoneEntry(false);
+    };
+    const handoff = useKeyHandoff(tv && phoneEntry, (key) => void submit(key));
+    const covered = SPORT_NAMES.filter(([s]) => providerFor(provider).coverage(s) === "full").map(([, k]) => tt(k));
+    const sportsText = covered.length > 1 ? `${covered.slice(0, -1).join(", ")} ${tt("sportListAnd")} ${covered[covered.length - 1]}` : covered.join("");
+    const signupUrl = provider === "api-sports" ? API_SPORTS_REGISTER_URL : THESPORTSDB_PRICING_URL;
+    const message = (() => {
+      if (phase.kind === "checking") return tt("sportKeyChecking");
+      if (phase.kind !== "done") return null;
+      const r = phase.result;
+      if (r.ok) {
+        const plan = r.check.plan && r.check.plan.toLowerCase() === "free" ? tt("sportPlanFree") : r.check.plan ?? "";
+        return r.check.limit != null && r.check.used != null ? tt("sportKeyOk", { used: r.check.used, limit: r.check.limit, plan }) : tt("sportKeyOkNoQuota", { plan });
+      }
+      return r.reason === "network" ? tt("sportKeyNetwork") : r.reason === "rejected" ? tt("sportKeyRejected") : null;
+    })();
+    const btn = (label, onOk, primary = false, testId) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk), style: { minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: "inline-flex", alignItems: "center", fontSize: dp(17), fontWeight: 600, cursor: "pointer", background: primary ? TV2.text : TV2.s12, color: primary ? "#0e0f13" : TV2.text }, children: label });
+    return /* @__PURE__ */ jsxs("section", { "data-testid": `sport-key-card-${variant}`, style: { borderRadius: dp(16), background: TV2.s06, border: `1px solid ${TV2.lineCard}`, padding: dp(24), display: "flex", gap: dp(24), flexWrap: "wrap" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: dp(12) }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(24), fontWeight: 600 }, children: broken ? tt("sportKeyBroken") : tt("sportKeyTitle") }),
+        /* @__PURE__ */ jsx(Segment, { options: [{ key: "api-sports", label: "API-Sports" }, { key: "thesportsdb", label: "TheSportsDB" }], value: provider, onChange: (k) => {
+          setProvider(k);
+          setPhase({ kind: "idle" });
+        } }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("sportKeyChoice") }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("sportKeyCovers", { sports: sportsText }) }),
+        tv ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(12), flexWrap: "wrap" }, children: [
+          btn(tt("sportKeyPhone"), () => {
+            setPhoneEntry(true);
+            handoff.restart();
+          }, true),
+          prompt.available ? btn(tt("sportKeyKeyboard"), () => prompt.ask(tt("sportKeyPaste"), "", (v) => void submit(v), "password")) : null
+        ] }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(10), flexWrap: "wrap", alignItems: "center" }, children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              "data-testid": "sport-key-input",
+              value: draft,
+              onChange: (e) => setDraft(e.target.value),
+              placeholder: tt("sportKeyPaste"),
+              autoComplete: "off",
+              spellCheck: false,
+              style: { flex: "1 1 220px", minHeight: 44, borderRadius: 10, border: `1px solid ${TV2.lineStrong}`, background: "rgba(0,0,0,0.25)", color: TV2.text, padding: "0 12px", fontFamily: "ui-monospace, monospace" }
+            }
+          ),
+          btn(tt("sportKeyPaste"), () => {
+            void navigator.clipboard?.readText?.().then((t) => setDraft(t)).catch(() => {
+            });
+          }),
+          btn(tt("sportKeySave"), () => void submit(draft), true)
+        ] }),
+        prompt.node,
+        message ? /* @__PURE__ */ jsx("div", { role: "status", style: { fontSize: dp(16), color: phase.kind === "done" && phase.result.ok ? "#3cd6a3" : TV2.text }, children: message }) : null,
+        variant !== "settings" && !settings.apiKey ? /* @__PURE__ */ jsx("div", { children: btn(tt("sportKeyNotNow"), () => {
+          setSportSettings({ keyCardDismissed: true });
+          onDone?.();
+        }) }) : null
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(20), alignItems: "flex-start" }, children: [
+        /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: signupUrl, size: dp(132) }) }),
+          tv ? /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportKeyGetKey") }) : /* @__PURE__ */ jsx("a", { href: signupUrl, target: "_blank", rel: "noreferrer", style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportKeyGetKey") })
+        ] }),
+        tv && phoneEntry ? /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center", maxWidth: dp(180) }, children: [
+          handoff.url ? /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
+          /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(14), color: TV2.dim, textAlign: "center" }, children: handoff.expired ? tt("sportKeyExpired") : tt("sportKeyPhoneHint") }),
+          handoff.expired ? btn(tt("sportKeyRetry"), handoff.restart) : null
+        ] }) : null
+      ] })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  init_key_flow();
+  init_rate_line();
+  init_results_controller();
+  init_sport_store();
+  init_jsx_runtime_shim();
+  var PROVIDER_LABEL = { "api-sports": "API-Sports", thesportsdb: "TheSportsDB" };
+  function useQuotaText() {
+    const { tt, lang, locale } = useTvText();
+    const controller = useResultsController();
+    return controller ? rateLine(controller.status(), tt, { lang, locale })?.text ?? null : null;
+  }
+  function SportKeySettingsDesktop() {
+    const { tt } = useTvText();
+    const s = useSportSettings();
+    const quota = useQuotaText();
+    const [changing, setChanging] = useState(false);
+    const [confirm, setConfirm] = useState(false);
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-key-settings", children: [
+      /* @__PURE__ */ jsx(LtSection, { eyebrow: tt("tabSport"), title: tt("sportSettingsTitle") }),
+      !s.apiKey || changing ? /* @__PURE__ */ jsx(KeyCard, { variant: "settings", onDone: () => setChanging(false) }) : /* @__PURE__ */ jsxs(LtRows, { children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0" }, children: [
+          /* @__PURE__ */ jsx("span", { children: tt("sportSettingsSource") }),
+          /* @__PURE__ */ jsx("span", { children: PROVIDER_LABEL[s.provider] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0" }, children: [
+          /* @__PURE__ */ jsx("span", { children: tt("sportSettingsKey") }),
+          /* @__PURE__ */ jsx("span", { style: { fontFamily: "ui-monospace, monospace" }, children: maskKey(s.apiKey) })
+        ] }),
+        quota ? /* @__PURE__ */ jsx(LtNote, { children: quota }) : null,
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, padding: "12px 0" }, children: [
+          /* @__PURE__ */ jsx(LtBtn, { onClick: () => setChanging(true), children: tt("sportKeyChange") }),
+          /* @__PURE__ */ jsx(LtBtn, { variant: "danger", onClick: () => setConfirm(true), children: tt("sportKeyRemove") })
+        ] })
+      ] }),
+      confirm ? /* @__PURE__ */ jsx(
+        LtConfirm,
+        {
+          title: tt("sportKeyRemove"),
+          body: tt("sportKeyRemoveBody"),
+          confirmLabel: tt("sportKeyRemove"),
+          cancelLabel: tt("sportCancel"),
+          onCancel: () => setConfirm(false),
+          onConfirm: () => {
+            removeKey();
+            setConfirm(false);
+          }
+        }
+      ) : null
+    ] });
+  }
+  function SportKeySettingsTv({ phone = false }) {
+    const { tt } = useTvText();
+    const s = useSportSettings();
+    const quota = useQuotaText();
+    const [changing, setChanging] = useState(false);
+    if (!s.apiKey || changing) return /* @__PURE__ */ jsx(KeyCard, { variant: "settings", onDone: () => setChanging(false) });
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-key-settings-tv", children: [
+      /* @__PURE__ */ jsx(Heading, { phone, hint: quota ?? void 0, children: tt("sportSettingsTitle") }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-key-source", label: tt("sportSettingsSource"), right: PROVIDER_LABEL[s.provider], onOk: () => setChanging(true) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-key-masked", label: tt("sportSettingsKey"), right: maskKey(s.apiKey), onOk: () => setChanging(true) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-key-change", label: tt("sportKeyChange"), right: "", onOk: () => setChanging(true) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-key-remove", label: tt("sportKeyRemove"), right: "", onOk: () => removeKey() })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  init_react_shim();
+  init_tv_strings();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/backdrop.ts
+  init_react_shim();
+  init_plugin_sdk();
+  init_budget();
+  init_sport_store();
+  var SPORT_GRADIENTS = {
+    football: "radial-gradient(120% 90% at 85% 10%, #1f3b2c 0%, #0d1611 55%, #050806 100%)",
+    hockey: "radial-gradient(120% 90% at 85% 10%, #22364a 0%, #0c141c 55%, #05080b 100%)",
+    basketball: "radial-gradient(120% 90% at 85% 10%, #46301c 0%, #1a120b 55%, #080604 100%)",
+    handball: "radial-gradient(120% 90% at 85% 10%, #3a2a44 0%, #150f19 55%, #070509 100%)",
+    motorsport: "radial-gradient(120% 90% at 85% 10%, #45201f 0%, #190c0c 55%, #080404 100%)",
+    tennis: "radial-gradient(120% 90% at 85% 10%, #3b3f1e 0%, #15160b 55%, #070704 100%)",
+    other: "radial-gradient(120% 90% at 85% 10%, #2a2c33 0%, #111216 55%, #060608 100%)"
+  };
+  var BACKDROP_SCRIM = "linear-gradient(90deg, #000000eb 0%, #000000c7 38%, #00000073 70%, #0000004d 100%)";
+  var BACKDROP_SCRIM_PHONE = `linear-gradient(180deg, #00000080 0%, #000000d9 45%, #000 100%), ${BACKDROP_SCRIM}`;
+  function chooseSportBackdrop(i) {
+    if (i.mode === "off") return { kind: "none" };
+    const sport = i.hero?.kind ?? "other";
+    const usable = (url) => !!url && !i.broken?.has(url);
+    if (i.mode === "custom") return usable(i.custom) ? { kind: "image", url: i.custom, from: "custom" } : { kind: "gradient", sport };
+    if (!i.hasKey || !i.hero) return { kind: "gradient", sport };
+    if (usable(i.hero.venueImage)) return { kind: "image", url: i.hero.venueImage, from: "venue" };
+    const stadium = i.art?.stadium;
+    const fanart = i.art?.fanart;
+    if (usable(stadium)) return { kind: "image", url: stadium, from: "stadium" };
+    if (usable(fanart)) return { kind: "image", url: fanart, from: "fanart" };
+    return { kind: "gradient", sport };
+  }
+  function resolveCustomBackdrop(c, homeUrls) {
+    if (!c) return null;
+    return c.from === "url" ? c.url : homeUrls[c.index] ?? null;
+  }
+  function backdropSrc(c) {
+    return c.from === "custom" ? c.url : getPluginHttpAssetUrl("/api/live-tv/sport/image", c.url);
+  }
+  function useHomeBackgrounds() {
+    const [urls, setUrls] = useState(getHomeBackgroundUrls);
+    useEffect(() => onHomeBackgroundChanged(() => setUrls(getHomeBackgroundUrls())), []);
+    return urls;
+  }
+  var artCache = /* @__PURE__ */ new Map();
+  function useHeroTeamArt(hero) {
+    const provider = hero?.fixture?.provider ?? null;
+    const teamId = provider ? hero?.homeIds?.[provider] ?? null : null;
+    const key = hero && provider && teamId && !hero.venueImage ? `${provider}:${hero.kind}:${teamId}` : null;
+    const [art, setArt] = useState(() => key ? artCache.get(key) ?? null : null);
+    useEffect(() => {
+      if (!key || !hero || !teamId) {
+        setArt(null);
+        return;
+      }
+      if (artCache.has(key)) {
+        setArt(artCache.get(key) ?? null);
+        return;
+      }
+      const budget = currentBudget();
+      const call = budget?.provider.teamArt(hero.kind, teamId) ?? null;
+      if (!budget || !call) {
+        setArt(null);
+        return;
+      }
+      let alive = true;
+      void budget.run("search", hero.kind, call).then((res) => {
+        if (res.ok) artCache.set(key, res.data);
+        if (alive) setArt(res.data ?? null);
+      });
+      return () => {
+        alive = false;
+      };
+    }, [key]);
+    return key ? art : null;
+  }
+  function useSportBackdrop(hero) {
+    const settings = useSportSettings();
+    const homeUrls = useHomeBackgrounds();
+    const [broken, setBroken] = useState(() => /* @__PURE__ */ new Set());
+    const art = useHeroTeamArt(settings.backdrop === "auto" && settings.apiKey ? hero : null);
+    const onBroken = useCallback((url) => setBroken((b) => b.has(url) ? b : new Set(b).add(url)), []);
+    const choice = chooseSportBackdrop({
+      mode: settings.backdrop,
+      hasKey: !!settings.apiKey,
+      hero,
+      art,
+      custom: resolveCustomBackdrop(settings.backdropCustom, homeUrls),
+      broken
+    });
+    return { choice, onBroken };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  init_sport_store();
+  init_jsx_runtime_shim();
+  var MODES = ["auto", "custom", "off"];
+  var MODE_LABEL = { auto: "sportBackdropAuto", custom: "sportBackdropCustom", off: "sportBackdropOff" };
+  var isHttp = (v) => /^https?:\/\/\S+$/i.test(v.trim());
+  var pick2 = (c) => setSportSettings({ backdrop: "custom", backdropCustom: c });
+  function SportBackdropSettingsDesktop() {
+    const { tt } = useTvText();
+    const s = useSportSettings();
+    const home = useHomeBackgrounds();
+    const [link, setLink] = useState(s.backdropCustom?.from === "url" ? s.backdropCustom.url : "");
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-backdrop-settings", children: [
+      /* @__PURE__ */ jsx(LtSection, { title: tt("sportBackdropTitle"), hint: tt("sportBackdropHint") }),
+      /* @__PURE__ */ jsxs(LtRows, { children: [
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 8, padding: "12px 0" }, children: MODES.map((m) => /* @__PURE__ */ jsx(LtBtn, { testId: `sport-backdrop-${m}`, active: s.backdrop === m, onClick: () => setSportSettings({ backdrop: m }), children: tt(MODE_LABEL[m]) }, m)) }),
+        s.backdrop === "custom" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          home.length > 0 ? /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", padding: "8px 0" }, children: home.map((url, index) => {
+            const on = s.backdropCustom?.from === "home" && s.backdropCustom.index === index;
+            return /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                "data-testid": `sport-backdrop-home-${index}`,
+                "aria-pressed": on,
+                onClick: () => pick2({ from: "home", index }),
+                style: { width: 120, height: 68, padding: 0, borderRadius: 8, cursor: "pointer", borderWidth: 2, borderStyle: "solid", borderColor: on ? "rgb(var(--accent-500))" : "transparent", background: `center / cover no-repeat url("${url.replace(/"/g, "%22")}")` }
+              },
+              index
+            );
+          }) }) : /* @__PURE__ */ jsx(LtNote, { children: tt("sportBackdropNoHome") }),
+          /* @__PURE__ */ jsx(
+            LtTextRow,
+            {
+              label: tt("sportBackdropLink"),
+              value: link,
+              onChange: setLink,
+              placeholder: "https://\u2026",
+              button: tt("sportBackdropUse"),
+              buttonDisabled: !isHttp(link),
+              onButton: () => {
+                if (isHttp(link)) pick2({ from: "url", url: link });
+              },
+              onEnter: () => {
+                if (isHttp(link)) pick2({ from: "url", url: link });
+              },
+              testId: "sport-backdrop-link"
+            }
+          )
+        ] }) : null
+      ] })
+    ] });
+  }
+  function SportBackdropSettingsTv({ phone = false, pushLayer }) {
+    const { tt } = useTvText();
+    const s = useSportSettings();
+    const home = useHomeBackgrounds();
+    const prompt = useTextPrompt({ pushLayer });
+    const nextMode = MODES[(MODES.indexOf(s.backdrop) + 1) % MODES.length];
+    const homeRight = s.backdropCustom?.from === "home" ? tt("sportBackdropHomeN", { n: s.backdropCustom.index + 1, total: home.length }) : home.length > 0 ? tt("sportBackdropNone") : tt("sportBackdropNoHomeShort");
+    const nextHome = () => {
+      if (home.length === 0) return;
+      const index = s.backdropCustom?.from === "home" ? (s.backdropCustom.index + 1) % home.length : 0;
+      pick2({ from: "home", index });
+    };
+    const askLink = () => prompt.ask(tt("sportBackdropLink"), s.backdropCustom?.from === "url" ? s.backdropCustom.url : "", (value) => {
+      if (isHttp(value)) pick2({ from: "url", url: value });
+    }, "url");
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-backdrop-settings-tv", children: [
+      /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportBackdropHint"), children: tt("sportBackdropTitle") }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-mode", label: tt("sportBackdropTitle"), right: tt(MODE_LABEL[s.backdrop]), onOk: () => setSportSettings({ backdrop: nextMode }) }),
+      s.backdrop === "custom" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-home", label: tt("sportBackdropFromHome"), right: homeRight, onOk: nextHome }),
+        /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-link-tv", label: tt("sportBackdropLink"), right: s.backdropCustom?.from === "url" ? hostOf(s.backdropCustom.url) : "", onOk: askLink })
+      ] }) : null,
+      prompt.node
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -47876,258 +51930,8 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
-  init_react_shim();
-  init_plugin_sdk();
-  init_vod_client();
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-library-rows.ts
-  init_live_tv_data();
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-library-map.ts
-  var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
-  function vodLibrarySourceId(vodSource) {
-    return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
-  }
-  function seriesIdFromKey(key) {
-    const match = /^series:(\d+)$/.exec(key);
-    if (!match) return null;
-    const id = Number(match[1]);
-    return Number.isSafeInteger(id) && id > 0 ? id : null;
-  }
-  function movieMedia(item) {
-    if (!item.url) return [];
-    return [{ key: item.key, label: item.categoryName ?? "", playRef: item.url }];
-  }
-  function vodEpisodeToLibrary(ep, titleKey) {
-    const key = `${titleKey}:s${ep.season}e${ep.episode}`;
-    return {
-      episode: {
-        key,
-        season: ep.season,
-        episode: ep.episode,
-        title: ep.title ?? "",
-        runtimeMin: ep.runtimeMin ?? null,
-        stillUrl: ep.stillUrl ?? null
-      },
-      media: { key, label: "", playRef: ep.url, episodeKey: key }
-    };
-  }
-  function vodItemToLibraryTitle(item, vodSource) {
-    const key = typeof item.key === "string" ? item.key.trim() : "";
-    const title = typeof item.title === "string" ? item.title.trim() : "";
-    if (!key || !title) return null;
-    const sourceId = vodLibrarySourceId(vodSource);
-    const series = item.kind === "series";
-    return {
-      // Nyckeln MÅSTE bära samma sourceId som batchen skickas med — annars
-      // hoppar `batch_handler` över titeln utan ett ljud (library_index.rs:355).
-      key: `${sourceId}:${key}`,
-      sourceId,
-      kind: series ? "series" : "movie",
-      title,
-      tmdbId: item.tmdbId ?? null,
-      imdbId: item.imdbId ?? null,
-      year: item.year ?? null,
-      rating: item.rating ?? null,
-      posterUrl: item.posterUrl ?? null,
-      // `addedAt` är Unix-SEKUNDER på båda sidor: `VodItem.addedAt` kommer ur
-      // panelens `added`/`last_modified`, och `LibraryTitle.addedAt` är
-      // dokumenterad som sekunder i lib/library/types.ts (samma enhet som
-      // lokala mappar skriver, `as_secs()` i src-tauri/src/local_files.rs).
-      // Ingen konvertering — en sådan hade sorterat hela biblioteket till år 33 000.
-      addedAt: item.addedAt,
-      /*
-        Panelerna ger TMDB-id på 65–97 % av raderna. Svansen får `unmatched`,
-        precis som en Plex-fil utan match: synlig i biblioteket och i sök,
-        frånvarande ur de TMDB-drivna raderna. Det är hela skälet att
-        `matchState` finns.
-      */
-      matchState: item.tmdbId || item.imdbId ? "matched" : "unmatched",
-      /*
-        Genrer och beskrivning lämnas tomma med flit (planens beslut G).
-        `VodItem` har dem inte, och startsidans genrerader kommer från
-        TMDB-rader filtrerade mot indexet — den vägen behöver bara `tmdbId`.
-        Att gissa en genre ur kategorinamnet hade gett "Movie: Swedish" som genre.
-      */
-      genres: [],
-      // Serier har inga versioner på titelnivå — avsnitten bär sina egna (fas B).
-      media: series ? [] : movieMedia(item),
-      episodes: []
-    };
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-library-rows.ts
-  function vodLibraryRows(sources, library) {
-    return sources.filter((source) => source.total > 0).map((source) => {
-      const libraryId = vodLibrarySourceId(source.id);
-      const entry = library?.sources.find((item) => item.id === libraryId);
-      return {
-        vodSource: source.id,
-        label: vodSourceLabel(source.id),
-        libraryId,
-        vodTitles: source.total,
-        indexedTitles: entry ? entry.titles : null,
-        importing: source.importing
-      };
-    });
-  }
-  function vodSourceLabel(vodSource) {
-    return parseXtreamSource(vodSource)?.host ?? vodSource;
-  }
-  function vodLibraryBuildDisabled(row, scanning) {
-    return scanning || row.importing;
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-library-provider.ts
-  init_vod_client();
-  init_live_tv_data();
-  var VOD_SCAN_PAGE = 200;
-  function vodSourceFromLibraryId(libraryId) {
-    const prefix = `${VOD_LIBRARY_PROVIDER_ID}:`;
-    return libraryId.startsWith(prefix) ? libraryId.slice(prefix.length) || null : null;
-  }
-  var defaultDeps = { query: queryVod, status: vodStatus };
-  async function scanVodSource(libraryId, emit3, progress2, signal, deps = defaultDeps) {
-    const source = vodSourceFromLibraryId(libraryId);
-    if (!source) return { titles: 0, cursor: null };
-    const sources = await deps.status();
-    const cursor = sources.find((entry) => entry.id === source)?.updatedAt ?? null;
-    let offset = 0;
-    let titles = 0;
-    progress2({ phase: "listing", done: 0 });
-    for (; ; ) {
-      if (signal?.aborted) break;
-      const page = await deps.query({ source, offset, limit: VOD_SCAN_PAGE, sort: "new", signal });
-      const upsert = page.items.map((item) => vodItemToLibraryTitle(item, source)).filter((title) => title !== null);
-      if (upsert.length > 0) {
-        await emit3({ upsert });
-        titles += upsert.length;
-        progress2({ phase: "titles", done: titles });
-      }
-      if (page.items.length < VOD_SCAN_PAGE) break;
-      offset += VOD_SCAN_PAGE;
-    }
-    return { titles, cursor: cursor === null ? null : String(cursor) };
-  }
-  function vodDeltaNeeded(cursor, updatedAt) {
-    if (updatedAt === null || updatedAt === void 0) return true;
-    if (!cursor) return true;
-    return String(updatedAt) !== cursor;
-  }
-  function vodPlaybackUrl(playRef) {
-    const ref = typeof playRef === "string" ? playRef.trim() : "";
-    if (!/^https?:\/\//i.test(ref)) return null;
-    return ref;
-  }
-  var vodLibraryProvider = {
-    id: VOD_LIBRARY_PROVIDER_ID,
-    label: { en: "Xtream VOD", sv: "Xtream VOD" },
-    pluginId: "com.lumio.live-tv",
-    async scanAll(source, emit3, progress2, signal) {
-      const out = await scanVodSource(source.id, emit3, progress2, signal);
-      return { titles: out.titles, cursor: out.cursor };
-    },
-    async scanDelta(source, cursor, emit3, progress2, signal) {
-      const account = vodSourceFromLibraryId(source.id);
-      const updatedAt = account ? (await vodStatus()).find((entry) => entry.id === account)?.updatedAt ?? null : null;
-      if (!vodDeltaNeeded(cursor, updatedAt)) return { titles: 0, cursor };
-      const out = await scanVodSource(source.id, emit3, progress2, signal);
-      return { titles: out.titles, cursor: out.cursor };
-    },
-    /**
-     * AVSNITTEN, LATA (fas B).
-     *
-     * Panelen har 4 402 serier och listan kostar ett uppslag per serie, så de
-     * indexeras tomma och fylls här — första gången någon öppnar serien.
-     *
-     * Det här är enda stället i biblioteksvägen som rör en INLOGGNING. Katalogen
-     * läses ur värdens redan importerade index; avsnitten kräver panelen, och
-     * lösenordet går till `/api/live-tv/vod/series` och ingen annanstans. Det
-     * når aldrig `/api/library/*` och hamnar aldrig i biblioteksindexet.
-     *
-     * Saknas inloggningen (kontot raderat) returneras `null`: biblioteket ska
-     * tappa en serie, inte fällas.
-     */
-    async loadEpisodes(source, title, _signal) {
-      const account = vodSourceFromLibraryId(source.id);
-      if (!account) return null;
-      const seriesId = seriesIdFromKey(title.key.slice(`${source.id}:`.length));
-      if (seriesId === null) return null;
-      const login = findXtreamLoginByPseudoUrl(account);
-      if (!login) return null;
-      let episodes;
-      try {
-        episodes = await fetchVodEpisodes(account, seriesId, {
-          base: login.base,
-          username: login.username,
-          password: login.password,
-          format: login.format
-        });
-      } catch {
-        return null;
-      }
-      const mapped = episodes.map((ep) => vodEpisodeToLibrary(ep, title.key));
-      return { episodes: mapped.map((m) => m.episode), media: mapped.map((m) => m.media) };
-    },
-    async resolvePlayback(_source, media) {
-      const url = vodPlaybackUrl(media.playRef);
-      return url ? { url } : null;
-    }
-  };
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
-  function useVodLibrarySources() {
-    const [sources, setSources] = useState([]);
-    const [library, setLibrary] = useState(null);
-    const [ownScan, setOwnScan] = useState(false);
-    const [hostScan, setHostScan] = useState(false);
-    useEffect(() => {
-      const l\u00E4s = () => setHostScan(isLibraryScanRunning2());
-      l\u00E4s();
-      const id = setInterval(l\u00E4s, 1e3);
-      return () => clearInterval(id);
-    }, []);
-    const scanning = ownScan || hostScan;
-    const [progress2, setProgress] = useState(null);
-    const [error, setError] = useState(null);
-    const refresh = useCallback(() => {
-      void vodStatus().then(setSources).catch(() => setSources([]));
-      void fetchLibraryStatus().then(setLibrary).catch(() => setLibrary(null));
-    }, []);
-    useEffect(() => {
-      refresh();
-      return onVodChanged(refresh);
-    }, [refresh]);
-    const rows = useMemo(() => vodLibraryRows(sources, library), [sources, library]);
-    const build = useCallback(async (row) => {
-      if (isLibraryScanRunning2()) return;
-      setError(null);
-      setOwnScan(true);
-      setProgress({ libraryId: row.libraryId, done: 0 });
-      try {
-        const cursor = library?.sources.find((entry) => entry.id === row.libraryId)?.cursor ?? null;
-        await runLibraryScan2(
-          vodLibraryProvider,
-          { id: row.libraryId, name: row.label, cursor },
-          { mode: "full", onProgress: (state2) => setProgress({ libraryId: row.libraryId, done: state2.done }) }
-        );
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setOwnScan(false);
-        setProgress(null);
-        refresh();
-      }
-    }, [library, refresh]);
-    const disabled = useCallback((row) => vodLibraryBuildDisabled(row, scanning), [scanning]);
-    return { rows, scanning, progress: progress2, error, build, disabled };
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-library-card.tsx
   init_jsx_runtime_shim();
   function VodLibraryCard() {
     const { h, locale } = useHubText();
@@ -48162,16 +51966,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -48276,11 +52080,11 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_jsx_runtime_shim();
-  function formatFetchedAt(iso, locale) {
+  function formatFetchedAt2(iso, locale) {
     const then = new Date(iso);
     if (Number.isNaN(then.getTime())) return iso;
     const now2 = /* @__PURE__ */ new Date();
@@ -48325,7 +52129,7 @@ ${cue.text}`).join("\n\n")}
     const meta = busy ? h("fetching") : h("playlistMeta", {
       kind: kindLabel2,
       channels: fmtInt(list.channelCount ?? 0, locale),
-      fetched: list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt(list.fetchedAt, locale) }) : h("m3uNeverFetched")
+      fetched: list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt2(list.fetchedAt, locale) }) : h("m3uNeverFetched")
     });
     const summary = curationSummary(list);
     const updateLabel = busy ? h("fetching") : kind === "xtream" ? h("updateChannels") : h("listRefetch");
@@ -48412,7 +52216,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/category-curation-panel.tsx
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -48519,12 +52323,12 @@ ${cue.text}`).join("\n\n")}
                   type: "text",
                   "aria-label": h("mergeNameLabel"),
                   value: editNames[m.index] ?? m.name,
-                  onChange: (event) => setEditNames((e) => ({ ...e, [m.index]: event.target.value })),
+                  onChange: (event2) => setEditNames((e) => ({ ...e, [m.index]: event2.target.value })),
                   onBlur: () => commitRename(m.index),
-                  onKeyDown: (event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      event.target.blur();
+                  onKeyDown: (event2) => {
+                    if (event2.key === "Enter") {
+                      event2.preventDefault();
+                      event2.target.blur();
                     }
                   },
                   style: { width: "100%", border: 0, borderRadius: 6, background: "transparent", padding: "2px 0", fontSize: 13.5, fontFamily: "inherit", color: UI.text, outline: "none" }
@@ -48574,11 +52378,11 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -48711,7 +52515,7 @@ ${cue.text}`).join("\n\n")}
           return;
         }
         const settingsRoot = overlay.closest("[data-tv-settings]") ?? document;
-        const side = settingsRoot.querySelector('[data-col="side"]');
+        const side2 = settingsRoot.querySelector('[data-col="side"]');
         const column = overlay.closest('[data-col="content"]') ?? settingsRoot.querySelector('[data-col="content"]');
         const o = overlay.getBoundingClientRect();
         if (o.width === 0 || overlay.offsetWidth === 0) {
@@ -48719,7 +52523,7 @@ ${cue.text}`).join("\n\n")}
           return;
         }
         const scale = o.width / overlay.offsetWidth;
-        const edge = side ? side.getBoundingClientRect().right : column ? column.getBoundingClientRect().left : null;
+        const edge = side2 ? side2.getBoundingClientRect().right : column ? column.getBoundingClientRect().left : null;
         if (edge === null) {
           setLeft(null);
           return;
@@ -48765,7 +52569,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv-settings-views.tsx
   init_index_client();
   init_tv_strings();
   init_index_client();
@@ -48820,7 +52624,7 @@ ${cue.text}`).join("\n\n")}
     const loginValue = form.state === "working" ? h("loggingIn") : form.state === "done" ? h("loginFetched") : h("tvLogin");
     const fetchedAt = (ms2) => {
       if (!ms2) return null;
-      return formatFetchedAt(new Date(ms2).toISOString(), locale);
+      return formatFetchedAt2(new Date(ms2).toISOString(), locale);
     };
     const guideFetched = fetchedAt(epg.status?.fetchedAt ?? null);
     const refetchGuide = async () => {
@@ -48838,7 +52642,7 @@ ${cue.text}`).join("\n\n")}
         {
           testId: `tv-playlist-row-${list.id}`,
           label: playlistHost(list),
-          hint: s.listProgress?.listId === list.id ? h("fetching") : h("playlistMeta", { kind: kindLabel(list, h), channels: fmtInt(list.channelCount ?? 0, locale), fetched: list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt(list.fetchedAt, locale) }) : h("m3uNeverFetched") }),
+          hint: s.listProgress?.listId === list.id ? h("fetching") : h("playlistMeta", { kind: kindLabel(list, h), channels: fmtInt(list.channelCount ?? 0, locale), fetched: list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt2(list.fetchedAt, locale) }) : h("m3uNeverFetched") }),
           value: list.kind === "custom" ? void 0 : shortSummary(list, h),
           caret: true,
           onOk: () => setOpenList(list.id)
@@ -48975,7 +52779,7 @@ ${cue.text}`).join("\n\n")}
     };
     return /* @__PURE__ */ jsxs(TvPanel, { title: host2, hint: `${kind} \xB7 ${h("channelsCount", { count: fmtInt(list.channelCount ?? 0, locale) })}`, onBack: onClose, testId: "tv-playlist-panel", children: [
       /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("tvStatus"), hint: statusMeta, value: kind }),
-      /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("tvChannels"), hint: list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt(list.fetchedAt, locale) }) : h("m3uNeverFetched"), value: fmtInt(list.channelCount ?? 0, locale) }),
+      /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("tvChannels"), hint: list.fetchedAt ? h("m3uFetchedAt", { time: formatFetchedAt2(list.fetchedAt, locale) }) : h("m3uNeverFetched"), value: fmtInt(list.channelCount ?? 0, locale) }),
       importable ? /* @__PURE__ */ jsx(TvRow, { size: "panel", init: true, label: h("categories"), hint: h("curationSummary", { groups: summary.categories, hidden: summary.hidden, merged: summary.merged }), value: h("tvEdit"), onOk: onCategories }) : null,
       login ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("serverCategories"), hint: serverMeta, value: h("tvEdit"), onOk: () => setServerCats(true) }) : null,
       needsLogin ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: h("xtreamRelogin"), hint: h("xtreamNeedsLogin"), value: h("tvLogin"), onOk: onRelogin }) : importable ? /* @__PURE__ */ jsx(TvRow, { size: "panel", label: list.kind === "xtream" ? h("updateChannels") : h("listRefetch"), hint: busy ? h("fetching") : h("tvUpdateHint"), value: busy ? "\u2026" : h("tvUpdate"), onOk: onUpdate, disabled: busy }) : null,
@@ -49200,7 +53004,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text) {
@@ -49397,6 +53201,8 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx(EpgStatusCard, {}),
       /* @__PURE__ */ jsx(VodLibraryCard, {}),
       /* @__PURE__ */ jsx(DisplayMetricsCard, {}),
+      /* @__PURE__ */ jsx(SportKeySettingsDesktop, {}),
+      /* @__PURE__ */ jsx(SportBackdropSettingsDesktop, {}),
       s.curationList ? /* @__PURE__ */ jsx(CategoriesDialog, { list: s.curationList.list, mode: s.curationList.mode, onClose: () => s.setCurationList(null) }) : null
     ] });
   }
@@ -49431,26 +53237,26 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_logo_image();
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
@@ -49460,7 +53266,7 @@ ${cue.text}`).join("\n\n")}
     return () => clearTimeout(timer3);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY6 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -49493,7 +53299,7 @@ ${cue.text}`).join("\n\n")}
     return data;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }) {
@@ -49507,8 +53313,8 @@ ${cue.text}`).join("\n\n")}
         "button",
         {
           type: "button",
-          onClick: (event) => {
-            event.stopPropagation();
+          onClick: (event2) => {
+            event2.stopPropagation();
             setRequested(true);
           },
           className: "rounded-full border border-white/10 bg-white/[0.03] px-2 py-1 text-[9px] uppercase tracking-[0.18em] text-slate-400 transition hover:border-emerald-300/40 hover:bg-emerald-400/10 hover:text-emerald-200",
@@ -49526,7 +53332,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -49556,11 +53362,11 @@ ${cue.text}`).join("\n\n")}
     ) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-shell.tsx
   var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
   function encodeChannelParams(channel) {
     return {
@@ -49572,10 +53378,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-grid.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -49604,7 +53410,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -49669,27 +53475,27 @@ ${cue.text}`).join("\n\n")}
     return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
     return Boolean(a && a.days > 0 && a.streamId > 0 && a.base && a.username && a.password);
   }
-  function pad2(n) {
+  function pad3(n) {
     return String(n).padStart(2, "0");
   }
   function buildTimeshiftUrl(channel, startMs, durationMs) {
     const a = channel.archive;
     if (!a || !channelSupportsCatchUp(channel)) return null;
     const d = new Date(startMs);
-    const stamp = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}:${pad2(d.getHours())}-${pad2(d.getMinutes())}`;
+    const stamp = `${d.getFullYear()}-${pad3(d.getMonth() + 1)}-${pad3(d.getDate())}:${pad3(d.getHours())}-${pad3(d.getMinutes())}`;
     const minutes = Math.max(1, Math.round(durationMs / 6e4));
     return `${a.base}/timeshift/${encodeURIComponent(a.username)}/${encodeURIComponent(a.password)}/${minutes}/${stamp}/${a.streamId}.ts`;
   }
@@ -49716,7 +53522,7 @@ ${cue.text}`).join("\n\n")}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -49870,7 +53676,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-grid.tsx
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
   var CHANNELS_PER_PAGE = 28;
@@ -49971,10 +53777,10 @@ ${cue.text}`).join("\n\n")}
       const syncLists = () => {
         const nextLists = getLiveTvLists();
         setLists(nextLists);
-        setActiveListId((current3) => {
-          if (current3 === FAVORITES_LIST_ID) return current3;
-          if (current3 === null) return null;
-          if (current3 && nextLists.some((list) => list.id === current3)) return current3;
+        setActiveListId((current5) => {
+          if (current5 === FAVORITES_LIST_ID) return current5;
+          if (current5 === null) return null;
+          if (current5 && nextLists.some((list) => list.id === current5)) return current5;
           return null;
         });
       };
@@ -49983,8 +53789,8 @@ ${cue.text}`).join("\n\n")}
     }, []);
     useEffect(() => {
       if (!groupDropdownOpen) return;
-      function handleClickOutside(event) {
-        if (groupDropdownRef.current && !groupDropdownRef.current.contains(event.target)) {
+      function handleClickOutside(event2) {
+        if (groupDropdownRef.current && !groupDropdownRef.current.contains(event2.target)) {
           setGroupDropdownOpen(false);
         }
       }
@@ -50022,30 +53828,30 @@ ${cue.text}`).join("\n\n")}
     }, [isTv, loading2]);
     useEffect(() => {
       if (!isTv) return;
-      const onKeyDown = (event) => {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      const onKeyDown = (event2) => {
+        if (event2.key !== "ArrowDown" && event2.key !== "ArrowUp") return;
         if (document.querySelector("[data-panel-root]")) return;
         const active4 = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-        const current3 = active4?.hasAttribute("data-f") ? active4 : document.querySelector('[data-fcur="1"]');
-        if (!current3) return;
-        if (event.key === "ArrowDown" && current3 === tvMenuButtonRef.current) {
+        const current5 = active4?.hasAttribute("data-f") ? active4 : document.querySelector('[data-fcur="1"]');
+        if (!current5) return;
+        if (event2.key === "ArrowDown" && current5 === tvMenuButtonRef.current) {
           const target2 = document.querySelector(".live-tv-channel-grid > div:first-child[data-f]") ?? document.querySelector(".live-tv-channel-grid > div:first-child [data-f]");
           if (!target2) return;
-          event.preventDefault();
-          event.stopPropagation();
+          event2.preventDefault();
+          event2.stopPropagation();
           target2.focus();
           return;
         }
-        if (event.key === "ArrowUp") {
-          const grid = current3.closest(".live-tv-channel-grid");
-          const card2 = current3.closest(".live-tv-channel-grid > div");
+        if (event2.key === "ArrowUp") {
+          const grid = current5.closest(".live-tv-channel-grid");
+          const card2 = current5.closest(".live-tv-channel-grid > div");
           const menuButton = tvMenuButtonRef.current;
           if (!grid || !card2 || !menuButton) return;
           const firstCard = grid.firstElementChild;
           if (!firstCard) return;
           if (Math.abs(card2.getBoundingClientRect().top - firstCard.getBoundingClientRect().top) > 8) return;
-          event.preventDefault();
-          event.stopPropagation();
+          event2.preventDefault();
+          event2.stopPropagation();
           menuButton.focus();
         }
       };
@@ -50066,12 +53872,12 @@ ${cue.text}`).join("\n\n")}
     }, [isTv, tvMenuOpen, tvMenuView]);
     useEffect(() => {
       if (!isTv || !tvMenuOpen) return;
-      const onKeyDown = (event) => {
-        if (event.key !== "Escape" && event.key !== "Backspace") return;
-        const target2 = event.target;
+      const onKeyDown = (event2) => {
+        if (event2.key !== "Escape" && event2.key !== "Backspace") return;
+        const target2 = event2.target;
         if (target2?.tagName === "INPUT" || target2?.tagName === "TEXTAREA") return;
-        event.preventDefault();
-        event.stopPropagation();
+        event2.preventDefault();
+        event2.stopPropagation();
         if (tvMenuView === "categories") {
           setTvMenuView("root");
           return;
@@ -50149,7 +53955,7 @@ ${cue.text}`).join("\n\n")}
         setCreateListOpen(true);
         return;
       }
-      setListPickerChannelKey((current3) => current3 === key ? null : key);
+      setListPickerChannelKey((current5) => current5 === key ? null : key);
     }
     useEffect(() => {
       logLiveTvStage("live tv sources", { count: urls.length, loaded: channels.length });
@@ -50299,7 +54105,7 @@ ${cue.text}`).join("\n\n")}
         }).filter((pair) => pair !== null)
       );
       Object.entries(initialLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src));
-      setLoadedLogoUrls((current3) => ({ ...current3, ...initialLoaded }));
+      setLoadedLogoUrls((current5) => ({ ...current5, ...initialLoaded }));
       void (async () => {
         const pendingEntries = logoEntries.filter((entry) => !initialLoaded[entry.key]);
         const batchSize = isTauriEnv ? 3 : 8;
@@ -50323,7 +54129,7 @@ ${cue.text}`).join("\n\n")}
           );
           Object.entries(batchLoaded).forEach(([key, src]) => rememberedChannelLogoSrcs.set(key, src));
           if (Object.keys(batchLoaded).length > 0) {
-            setLoadedLogoUrls((current3) => ({ ...current3, ...batchLoaded }));
+            setLoadedLogoUrls((current5) => ({ ...current5, ...batchLoaded }));
           }
           if (isTauriEnv && i + batchSize < pendingEntries.length) {
             await new Promise((resolve) => setTimeout(resolve, 40));
@@ -50815,12 +54621,12 @@ ${cue.text}`).join("\n\n")}
                         onMouseEnter: () => setPreviewChannel(channel),
                         onFocus: () => setPreviewChannel(channel),
                         ...isTv ? { "data-f": "", tabIndex: 0 } : {},
-                        onKeyDown: isTv ? (event) => {
-                          if (event.currentTarget !== event.target) return;
-                          if (event.key !== "Enter" && event.key !== " ") return;
-                          event.preventDefault();
-                          event.stopPropagation();
-                          event.currentTarget.querySelector("[data-card-play]")?.focus();
+                        onKeyDown: isTv ? (event2) => {
+                          if (event2.currentTarget !== event2.target) return;
+                          if (event2.key !== "Enter" && event2.key !== " ") return;
+                          event2.preventDefault();
+                          event2.stopPropagation();
+                          event2.currentTarget.querySelector("[data-card-play]")?.focus();
                         } : void 0,
                         className: `${isTv ? "focus-card-ring " : ""}group relative flex min-h-[10.5rem] flex-col items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/95 p-4 ${isTauriEnv ? "" : "transition hover:-translate-y-0.5 hover:border-accent-400/30 hover:bg-slate-800"}`,
                         children: [
@@ -50829,8 +54635,8 @@ ${cue.text}`).join("\n\n")}
                             {
                               type: "button",
                               title: isPinned ? t("unpinChannel") : t("pinChannel"),
-                              onClick: (event) => {
-                                event.stopPropagation();
+                              onClick: (event2) => {
+                                event2.stopPropagation();
                                 togglePinnedLiveTvChannel(channel);
                                 setPinVersion((value) => value + 1);
                               },
@@ -50846,8 +54652,8 @@ ${cue.text}`).join("\n\n")}
                             {
                               type: "button",
                               title: t("liveTvAddToList"),
-                              onClick: (event) => {
-                                event.stopPropagation();
+                              onClick: (event2) => {
+                                event2.stopPropagation();
                                 handleOpenListPicker(channel);
                               },
                               className: `absolute left-2 top-2 z-10 flex h-8 min-w-8 items-center justify-center rounded-full border px-1.5 transition ${isInAnyList ? "border-accent-400/40 bg-accent-400/15 text-accent-300" : "border-white/10 bg-black/40 text-slate-400 hover:text-slate-200"}`,
@@ -50863,8 +54669,8 @@ ${cue.text}`).join("\n\n")}
                               "button",
                               {
                                 type: "button",
-                                onClick: (event) => {
-                                  event.stopPropagation();
+                                onClick: (event2) => {
+                                  event2.stopPropagation();
                                   if (isInList) removeChannelFromLiveTvList(list.id, channel);
                                   else setListFull(addChannelToLiveTvList(list.id, channel) === "full");
                                   setListPickerChannelKey(null);
@@ -50905,23 +54711,23 @@ ${cue.text}`).join("\n\n")}
                               "div",
                               {
                                 className: "mt-1 flex items-center justify-center gap-3",
-                                onKeyDown: (event) => {
-                                  const target2 = event.target;
-                                  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-                                    const buttons = [...event.currentTarget.querySelectorAll("button")];
+                                onKeyDown: (event2) => {
+                                  const target2 = event2.target;
+                                  if (event2.key === "ArrowLeft" || event2.key === "ArrowRight") {
+                                    const buttons = [...event2.currentTarget.querySelectorAll("button")];
                                     const index = buttons.indexOf(target2);
-                                    const next = buttons[index + (event.key === "ArrowRight" ? 1 : -1)];
+                                    const next = buttons[index + (event2.key === "ArrowRight" ? 1 : -1)];
                                     if (next) {
-                                      event.preventDefault();
-                                      event.stopPropagation();
+                                      event2.preventDefault();
+                                      event2.stopPropagation();
                                       next.focus();
                                     }
                                     return;
                                   }
-                                  if (event.key === "Escape" || event.key === "Backspace") {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    event.currentTarget.closest("[data-f]")?.focus();
+                                  if (event2.key === "Escape" || event2.key === "Backspace") {
+                                    event2.preventDefault();
+                                    event2.stopPropagation();
+                                    event2.currentTarget.closest("[data-f]")?.focus();
                                   }
                                 },
                                 children: [
@@ -50943,7 +54749,7 @@ ${cue.text}`).join("\n\n")}
                                       type: "button",
                                       tabIndex: -1,
                                       title: t("liveTvFetchEpgForChannel"),
-                                      onClick: () => setTvEpgRequested((current3) => ({ ...current3, [channel.url]: true })),
+                                      onClick: () => setTvEpgRequested((current5) => ({ ...current5, [channel.url]: true })),
                                       className: `${tvRoundControlClass} ${epgRequestedForCard ? "!border-emerald-300/40 !bg-emerald-400/10 !text-emerald-200" : ""}`,
                                       children: /* @__PURE__ */ jsx("span", { className: "text-[10px] font-semibold uppercase tracking-[0.14em]", children: "EPG" })
                                     }
@@ -51259,7 +55065,7 @@ ${cue.text}`).join("\n\n")}
             "div",
             {
               className: "w-full max-w-md rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.96))] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.45)]",
-              onClick: (event) => event.stopPropagation(),
+              onClick: (event2) => event2.stopPropagation(),
               children: [
                 /* @__PURE__ */ jsxs("div", { className: "mb-5 space-y-2", children: [
                   /* @__PURE__ */ jsx("p", { className: "text-[10px] uppercase tracking-[0.24em] text-slate-500", children: t("liveTvCreateList") }),
@@ -51271,13 +55077,13 @@ ${cue.text}`).join("\n\n")}
                   {
                     type: "text",
                     value: createListName,
-                    onChange: (event) => setCreateListName(event.target.value),
-                    onKeyDown: (event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
+                    onChange: (event2) => setCreateListName(event2.target.value),
+                    onKeyDown: (event2) => {
+                      if (event2.key === "Enter") {
+                        event2.preventDefault();
                         handleSubmitCreateList();
                       }
-                      if (event.key === "Escape") {
+                      if (event2.key === "Escape") {
                         setCreateListOpen(false);
                         setCreateListName("");
                         setPendingChannelForNewList(null);
@@ -51390,13 +55196,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -51413,7 +55219,7 @@ ${cue.text}`).join("\n\n")}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/now-next-later-row.tsx
   init_jsx_runtime_shim();
   function formatTime(ms2) {
     return new Date(ms2).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -51475,7 +55281,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_tv_settings_store();
@@ -51693,12 +55499,12 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/sport-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-alerts.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_reminders();
@@ -51776,7 +55582,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_live_tv_ui();
   init_jsx_runtime_shim();
   function LiveTvRemindersMount() {
@@ -51840,7 +55646,50 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_reminders();
+  init_live_tv_ui();
+  init_tv_ui();
+  init_tv_strings();
+  init_goal_events();
+  init_goal_alerts();
+  init_results_controller();
+  init_sport_day_model();
+  init_sport_store();
+  init_sport_model();
+  init_jsx_runtime_shim();
+  function SportGoalMount() {
+    const { tt } = useTvText();
+    const [banner, setBanner] = useState(null);
+    useEffect(() => onGoal((e) => {
+      const match = matchForGoal(e, currentResults()?.merged() ?? []);
+      if (!match || !goalAlertWanted(match, getSportSettings(), getFollows())) return;
+      if (match.sources.some((s) => s.channelKey === playingChannel())) return;
+      tryNativeNotification(goalTitle(e, tt), goalBody(e));
+      setBanner({ e, match });
+    }), [tt]);
+    useEffect(() => {
+      if (!banner) return;
+      const t = window.setTimeout(() => setBanner(null), 2e4);
+      return () => window.clearTimeout(t);
+    }, [banner]);
+    if (!banner) return null;
+    const source = rankedSources(banner.match, getOverrides())[0];
+    return /* @__PURE__ */ jsxs("div", { role: "status", style: { position: "fixed", right: 20, bottom: 24, zIndex: 400, maxWidth: 380, display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: LT.radiusLg, background: TV2.panel, border: `1px solid ${LT.line}`, boxShadow: "0 18px 40px rgba(0,0,0,0.45)", color: LT.text }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600 }, children: goalTitle(banner.e, tt) }),
+        goalBody(banner.e) ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: LT.dim }, children: goalBody(banner.e) }) : null
+      ] }),
+      source ? /* @__PURE__ */ jsx(Btn, { variant: "primary", small: true, onClick: () => {
+        setBanner(null);
+        requestOpenBrowsePage({ pageId: "live-tv-browse", params: { view: "channel", autoplay: "1", ...encodeChannelParams(sourceChannel(source)) } });
+      }, children: tt("sportWatch") }) : null
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -51849,7 +55698,7 @@ ${cue.text}`).join("\n\n")}
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
@@ -51874,7 +55723,7 @@ ${cue.text}`).join("\n\n")}
     return phone;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -51894,19 +55743,19 @@ ${cue.text}`).join("\n\n")}
       if (!enabled || tvMode) return;
       if (typeof document === "undefined") return;
       let start2 = null;
-      const onTouchStart = (event) => {
-        if (event.touches.length !== 1) {
+      const onTouchStart = (event2) => {
+        if (event2.touches.length !== 1) {
           start2 = null;
           return;
         }
-        const touch = event.touches[0];
+        const touch = event2.touches[0];
         start2 = { x: touch.clientX, y: touch.clientY };
       };
-      const onTouchEnd = (event) => {
+      const onTouchEnd = (event2) => {
         const from = start2;
         start2 = null;
         if (!from) return;
-        const touch = event.changedTouches[0];
+        const touch = event2.changedTouches[0];
         if (!touch) return;
         if (isSwipeBackGesture({ startX: from.x, startY: from.y, endX: touch.clientX, endY: touch.clientY })) {
           onBack();
@@ -51926,12 +55775,12 @@ ${cue.text}`).join("\n\n")}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-rail.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-rail.tsx
   init_tv_strings();
   init_tv_ui();
   init_sport_icons();
@@ -51991,7 +55840,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -52007,7 +55856,7 @@ ${cue.text}`).join("\n\n")}
     const stationRef = useRef(null);
     const hide = useCallback(() => {
       stationRef.current = null;
-      setSpot((current3) => current3 === null ? current3 : null);
+      setSpot((current5) => current5 === null ? current5 : null);
     }, []);
     useEffect(() => {
       if (typeof window.matchMedia !== "function") return;
@@ -52032,8 +55881,8 @@ ${cue.text}`).join("\n\n")}
         stationRef.current = station3;
         setSpot({ left: (rect.right - rootRect.left) / scale, top: (rect.top - rootRect.top) / scale });
       };
-      const onPointerOver = (event) => {
-        const target2 = event.target;
+      const onPointerOver = (event2) => {
+        const target2 = event2.target;
         if (!target2 || typeof target2.closest !== "function") return;
         if (target2.closest("[data-live-tv-hold-button]")) return;
         const station3 = target2.closest("[data-hold]");
@@ -52067,12 +55916,12 @@ ${cue.text}`).join("\n\n")}
         tabIndex: -1,
         title: tt("moreOptions"),
         "aria-label": tt("moreOptions"),
-        onClick: (event) => {
-          event.preventDefault();
-          event.stopPropagation();
+        onClick: (event2) => {
+          event2.preventDefault();
+          event2.stopPropagation();
           const station3 = stationRef.current;
           if (!station3) return;
-          const here = event.currentTarget.getBoundingClientRect();
+          const here = event2.currentTarget.getBoundingClientRect();
           const synthetic = new MouseEvent("contextmenu", {
             bubbles: true,
             cancelable: true,
@@ -52106,10 +55955,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -52153,12 +56002,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_video_surface();
   init_surface_cutouts();
   init_player_sport();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -52167,12 +56016,12 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -52220,7 +56069,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 36;
   var MAX_CHIPS = 12;
   var REPLAY_DAYS = 3;
@@ -52249,7 +56098,7 @@ ${cue.text}`).join("\n\n")}
     return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -52260,7 +56109,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_ui();
@@ -52310,18 +56159,18 @@ ${cue.text}`).join("\n\n")}
               children: /* @__PURE__ */ jsx(MIcons.CaretLeft, {})
             }
           ) : null,
-          /* @__PURE__ */ jsx("div", { style: { flex: 1, fontSize: 21, fontWeight: 600, ...ellipsis }, children: title }),
+          /* @__PURE__ */ jsx("div", { style: { flex: 1, fontSize: 21, fontWeight: 600, ...ellipsis2 }, children: title }),
           right ? /* @__PURE__ */ jsx("div", { style: { flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }, children: right }) : null
         ]
       }
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -52370,7 +56219,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
   var RECENT_MAX = 8;
@@ -52389,7 +56238,7 @@ ${cue.text}`).join("\n\n")}
   }
   function SectionTitle({ title, sub }) {
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 10, minWidth: 0 }, children: [
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 17, fontWeight: 600, ...ellipsis }, children: title }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 17, fontWeight: 600, ...ellipsis2 }, children: title }),
       sub ? /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: sub }) : null
     ] });
   }
@@ -52419,7 +56268,7 @@ ${cue.text}`).join("\n\n")}
       { key: "__add", label: tt("addPlaylist"), run: () => nav.go("settings", { tab: "playlists" }) }
     ];
     const pill2 = /* @__PURE__ */ jsxs("div", { "data-testid": "playlist-pill", ...station(() => setPlaylistOpen(true)), style: { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", maxWidth: 180 }, children: [
-      /* @__PURE__ */ jsx("span", { style: ellipsis, children: model.activePlaylistName ?? tt("allPlaylists") }),
+      /* @__PURE__ */ jsx("span", { style: ellipsis2, children: model.activePlaylistName ?? tt("allPlaylists") }),
       /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 16 }) })
     ] });
     const sheet = playlistOpen ? /* @__PURE__ */ jsx(MobileSheet, { title: tt("playlists"), items: playlistItems, onClose: () => setPlaylistOpen(false), pushLayer: nav.pushLayer, testId: "playlist-sheet" }) : null;
@@ -52435,32 +56284,32 @@ ${cue.text}`).join("\n\n")}
         sheet
       ] });
     }
-    const pick2 = spotlight[0];
+    const pick3 = spotlight[0];
     const recentCards = recent.filter((c) => !replays.some((r) => channelKey(r.channel) === channelKey(c))).slice(0, RECENT_MAX);
     return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 14 }, children: [
       header,
       model.appTooOld ? /* @__PURE__ */ jsx("div", { "data-testid": "live-tv-app-too-old", style: { padding: "10px 14px", borderRadius: 12, background: "rgba(244,132,95,0.18)", color: "#f4845f", fontSize: 14 }, children: tt("appTooOld") }) : null,
       /* @__PURE__ */ jsxs("div", { "data-testid": "hub-search", ...station(() => nav.go("search")), style: { minHeight: 44, borderRadius: 14, background: MT.s10, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }, children: [
         /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", color: "rgba(243,244,248,0.55)", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.MagnifyingGlass, { size: 18 }) }),
-        /* @__PURE__ */ jsx("span", { style: { fontSize: 15, color: "rgba(243,244,248,0.55)", ...ellipsis, flex: 1 }, children: tt("searchPlaceholder") })
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 15, color: "rgba(243,244,248,0.55)", ...ellipsis2, flex: 1 }, children: tt("searchPlaceholder") })
       ] }),
-      pick2 ? (() => {
-        const info = model.nowFor(pick2.channel);
-        const number = model.channelNumber(pick2.channel);
-        return /* @__PURE__ */ jsxs("div", { "data-testid": "hub-spotlight", ...cardStation(pick2.channel, { "data-init": "" }), style: { ...card, borderRadius: 18 }, children: [
-          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick2.channel, height: 186, radius: 0, children: [
+      pick3 ? (() => {
+        const info = model.nowFor(pick3.channel);
+        const number = model.channelNumber(pick3.channel);
+        return /* @__PURE__ */ jsxs("div", { "data-testid": "hub-spotlight", ...cardStation(pick3.channel, { "data-init": "" }), style: { ...card, borderRadius: 18 }, children: [
+          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick3.channel, height: 186, radius: 0, children: [
             /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 42%, rgba(0,0,0,0.78))" } }),
             info.now ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 10, left: 10 }, children: /* @__PURE__ */ jsx(LiveTag3, { children: tt("live") }) }) : null,
-            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 10, right: 10 }, children: /* @__PURE__ */ jsx(ReasonTag, { children: reasonLabel(pick2.reason) }) }),
-            /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 12, right: 12, bottom: 10, fontSize: 13, color: "rgba(243,244,248,0.8)", ...ellipsis }, children: [
+            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 10, right: 10 }, children: /* @__PURE__ */ jsx(ReasonTag, { children: reasonLabel(pick3.reason) }) }),
+            /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 12, right: 12, bottom: 10, fontSize: 13, color: "rgba(243,244,248,0.8)", ...ellipsis2 }, children: [
               number ? `${number} \xB7 ` : "",
-              pick2.channel.name
+              pick3.channel.name
             ] })
           ] }),
           /* @__PURE__ */ jsxs("div", { style: { padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 18, fontWeight: 600, ...ellipsis }, children: info.now ? info.now.title : noProgrammeLabel }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 18, fontWeight: 600, ...ellipsis2 }, children: info.now ? info.now.title : noProgrammeLabel }),
             info.now ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.muted, ...ellipsis }, children: `${formatClock2(info.now.start, locale)}\u2013${formatClock2(info.now.stop, locale)} \xB7 ${minutesLeft(info.now.stop)}` }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.muted, ...ellipsis2 }, children: `${formatClock2(info.now.start, locale)}\u2013${formatClock2(info.now.stop, locale)} \xB7 ${minutesLeft(info.now.stop)}` }),
               /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs), height: 5 })
             ] }) : null
           ] })
@@ -52474,7 +56323,7 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx(MobileLogo, { channel, width: 44, height: 30, radius: 6 }),
             /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, lineHeight: 1.25, ...clamp2 }, children: channel.name }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis }, children: info.now?.title ?? noProgrammeLabel })
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis2 }, children: info.now?.title ?? noProgrammeLabel })
             ] })
           ] }, channelKey(channel));
         }) })
@@ -52488,8 +56337,8 @@ ${cue.text}`).join("\n\n")}
               /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 8, bottom: 6, color: MT.text, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Play, { size: 22 }) })
             ] }),
             /* @__PURE__ */ jsxs("div", { style: { padding: "8px 10px", minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis }, children: item.programme.title }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis }, children: `${item.channel.name} \xB7 ${formatClock2(item.programme.start, locale)} \xB7 ${Math.round((item.programme.stop - item.programme.start) / 6e4)} min` })
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis2 }, children: item.programme.title }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis2 }, children: `${item.channel.name} \xB7 ${formatClock2(item.programme.start, locale)} \xB7 ${Math.round((item.programme.stop - item.programme.start) / 6e4)} min` })
             ] })
           ] }, `${channelKey(item.channel)}:${item.programme.start}`)),
           recentCards.map((channel) => {
@@ -52500,8 +56349,8 @@ ${cue.text}`).join("\n\n")}
                 /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 8, bottom: 6, color: MT.text, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Play, { size: 22 }) })
               ] }),
               /* @__PURE__ */ jsxs("div", { style: { padding: "8px 10px", minWidth: 0 }, children: [
-                /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis }, children: info.now?.title ?? channel.name }),
-                /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis }, children: channel.name })
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis2 }, children: info.now?.title ?? channel.name }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis2 }, children: channel.name })
               ] })
             ] }, `recent:${channelKey(channel)}`);
           })
@@ -52517,7 +56366,7 @@ ${cue.text}`).join("\n\n")}
           const info = model.nowFor(channel);
           const number = model.channelNumber(channel);
           const pinned = model.pinnedSet.has(channelKey(channel));
-          return /* @__PURE__ */ jsxs("div", { ...cardStation(channel, !pick2 && index === 0 ? { "data-init": "" } : void 0), style: { ...card, borderRadius: 14, minWidth: 0 }, children: [
+          return /* @__PURE__ */ jsxs("div", { ...cardStation(channel, !pick3 && index === 0 ? { "data-init": "" } : void 0), style: { ...card, borderRadius: 14, minWidth: 0 }, children: [
             /* @__PURE__ */ jsxs(ChannelArt, { channel, aspect: "16 / 10", radius: 12, children: [
               /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 6, left: 8, fontSize: 12, color: "rgba(243,244,248,0.6)" }, children: number ?? "" }),
               pinned ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 6, right: 8, color: MT.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 14, filled: true }) }) : null,
@@ -52525,8 +56374,8 @@ ${cue.text}`).join("\n\n")}
               info.now ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0 }, children: /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs), height: 3, track: "rgba(0,0,0,0.4)", style: { borderRadius: 0 } }) }) : null
             ] }),
             /* @__PURE__ */ jsxs("div", { style: { padding: "8px 10px", minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis }, children: channel.name }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis }, children: info.now?.title ?? (qualityFromName(channel.name) ?? channel.group) })
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis2 }, children: channel.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: MT.muted, ...ellipsis2 }, children: info.now?.title ?? (qualityFromName(channel.name) ?? channel.group) })
             ] })
           ] }, channelKey(channel));
         }) }),
@@ -52536,7 +56385,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_DESKTOP = 3;
   var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
@@ -52626,18 +56475,18 @@ ${cue.text}`).join("\n\n")}
         ] }),
         /* @__PURE__ */ jsx("div", { "data-testid": "hub-clock", style: { marginLeft: "auto", flexShrink: 0, textAlign: "right" }, children: clock })
       ] }),
-      spotlight.length > 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "hub-spotlight", "data-row": "", style: { display: "grid", gridTemplateColumns: `repeat(${spotlightCount}, minmax(0, 1fr))`, gap: dp(20) }, children: spotlight.map((pick2, index) => {
-        const info = model.nowFor(pick2.channel);
-        const number = model.channelNumber(pick2.channel);
-        return /* @__PURE__ */ jsxs("div", { ...cardStation(pick2.channel, index === 0 ? { "data-init": "" } : void 0), style: { ...cardStyle, borderRadius: dp(18), cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick2.channel, height: dp(150), children: [
+      spotlight.length > 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "hub-spotlight", "data-row": "", style: { display: "grid", gridTemplateColumns: `repeat(${spotlightCount}, minmax(0, 1fr))`, gap: dp(20) }, children: spotlight.map((pick3, index) => {
+        const info = model.nowFor(pick3.channel);
+        const number = model.channelNumber(pick3.channel);
+        return /* @__PURE__ */ jsxs("div", { ...cardStation(pick3.channel, index === 0 ? { "data-init": "" } : void 0), style: { ...cardStyle, borderRadius: dp(18), cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick3.channel, height: dp(150), children: [
             /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.75))" } }),
-            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: dp(12), right: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "reason", children: reasonLabel(pick2.reason) }) }),
+            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: dp(12), right: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "reason", children: reasonLabel(pick3.reason) }) }),
             /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: dp(16), bottom: dp(12), display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(16), color: "rgba(243,244,248,0.75)" }, children: [
               info.now ? /* @__PURE__ */ jsx(Tag2, { variant: "live", children: tt("live") }) : null,
               /* @__PURE__ */ jsxs("span", { children: [
                 number ? `${number} \xB7 ` : "",
-                pick2.channel.name
+                pick3.channel.name
               ] })
             ] })
           ] }),
@@ -52648,7 +56497,7 @@ ${cue.text}`).join("\n\n")}
               /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs) })
             ] }) : null
           ] })
-        ] }, channelKey(pick2.channel));
+        ] }, channelKey(pick3.channel));
       }) }) : null,
       favourites.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(14) }, children: [
@@ -52746,7 +56595,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -52755,7 +56604,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -52780,132 +56629,7 @@ ${cue.text}`).join("\n\n")}
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS * 100));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
-  init_react_shim();
-  init_live_tv_model();
-  init_tv_ui();
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-view-shared.tsx
-  init_react_shim();
-  init_tv_ui();
-  init_tv_strings();
-  init_jsx_runtime_shim();
-  var ROWS_STEP = 80;
-  var HOVER_MS = 120;
-  var GUIDE_SCALE = 1.4;
-  function gp(n) {
-    return Math.round(n * GUIDE_SCALE);
-  }
-  var GUIDE_CARD_BG = "rgba(252,252,255,0.09)";
-  var GUIDE_CARD_LINE = "1px solid rgba(255,255,255,0.10)";
-  var GUIDE_CARD_RADIUS = gp(10);
-  var GUIDE_CARD_GAP = gp(8);
-  var GUIDE_CARD_INSET = gp(5);
-  var GUIDE_ON_SELECTED = "#15161c";
-  var GUIDE_ON_SELECTED_DIM = "rgba(21,22,28,0.6)";
-  var ellipsis3 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-  var initAttr = (on) => on ? { "data-init": "" } : void 0;
-  function withPointerLeave(props, onLeave) {
-    if (!onLeave) return props;
-    const own = props.onPointerLeave;
-    return { ...props, onPointerLeave: (event) => {
-      own?.(event);
-      onLeave();
-    } };
-  }
-  function useHoverSelect(enabled, onSelect) {
-    const timer3 = useRef(null);
-    const clear = () => {
-      if (timer3.current !== null) window.clearTimeout(timer3.current);
-      timer3.current = null;
-    };
-    useEffect(() => clear, []);
-    if (!enabled) return { enter: void 0, leave: void 0 };
-    return {
-      enter: (sel) => {
-        clear();
-        timer3.current = window.setTimeout(() => {
-          timer3.current = null;
-          onSelect(sel);
-        }, HOVER_MS);
-      },
-      leave: clear
-    };
-  }
-  function GuidePaginationRow({ testId, shown, total, hasMore, onMore, hint }) {
-    const { tt } = useTvText();
-    return /* @__PURE__ */ jsxs("div", { "data-testid": `${testId}-pagination`, style: { height: gp(52), minHeight: gp(52), padding: `0 ${gp(20)}px`, display: "flex", alignItems: "center", gap: gp(14), borderTop: `1px solid ${TV2.line}`, boxSizing: "border-box" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { fontSize: gp(13), color: TV2.dim, ...ellipsis3 }, children: tt("paginationRow", { shown, total }) }),
-      hasMore ? /* @__PURE__ */ jsx("div", { "data-testid": `${testId}-show-more`, ...station(onMore), style: { height: gp(32), minHeight: gp(32), padding: `0 ${gp(14)}px`, borderRadius: 999, background: TV2.s10, display: "inline-flex", alignItems: "center", fontSize: gp(13), cursor: "pointer", flexShrink: 0 }, children: tt("showMoreN", { n: ROWS_STEP }) }) : null,
-      hint ? /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto", fontSize: gp(13), color: "rgba(243,244,248,0.35)", ...ellipsis3 }, children: hint }) : null
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
-  init_jsx_runtime_shim();
-  function useDebouncedChannel(channel, ms2 = 300) {
-    const [value, setValue] = useState(channel);
-    useEffect(() => {
-      const timer3 = window.setTimeout(() => setValue(channel), ms2);
-      return () => window.clearTimeout(timer3);
-    }, [channel, ms2]);
-    return value;
-  }
-  var FAVS_GROUP = "__favs";
-  var MAX_GROUPS = 12;
-  function useGuideGroups(model, tt) {
-    return useMemo(() => [
-      { key: null, label: tt("allGroups"), id: "all" },
-      ...model.favouriteChannels.length ? [{ key: FAVS_GROUP, label: tt("favourites"), id: "favs" }] : [],
-      ...model.groups.slice(0, MAX_GROUPS).map((g) => ({ key: g, label: g, id: g }))
-    ], [model.favouriteChannels.length, model.groups, tt]);
-  }
-  function filterByGroup(model, group) {
-    if (group === FAVS_GROUP) return model.favouriteChannels;
-    if (group) return model.channels.filter((c) => c.group === group);
-    return model.channels;
-  }
-  var CHANNEL_CELL_WIDTH_DP = 520;
-  function channelColumnStyle() {
-    return { width: dp(CHANNEL_CELL_WIDTH_DP), flexShrink: 0 };
-  }
-  function ChannelCell({ channel, number, pinned, locked, quality, focused, width = dp(CHANNEL_CELL_WIDTH_DP) }) {
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-channel-cell", style: { width, height: dp(72), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, background: focused ? TV2.s10 : "transparent", flexShrink: 0 }, children: [
-      /* @__PURE__ */ jsx("span", { style: { width: dp(44), fontSize: dp(18), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number ?? "" }),
-      /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(88), height: dp(56), flexShrink: 0 }, radius: dp(8) }),
-      /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(21), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.5)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, quality].filter(Boolean).join(" \xB7 ") })
-      ] }),
-      pinned ? /* @__PURE__ */ jsx("span", { style: { color: TV2.acc }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: dp(18), filled: true }) }) : null,
-      locked ? /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.5)" }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: dp(18) }) }) : null
-    ] });
-  }
-  var GUIDE_CELL_WIDTH = { grid: gp(240), nownext: gp(340), timeline: gp(240) };
-  var GUIDE_ART_SIZE = {
-    grid: { width: gp(44), height: gp(28) },
-    nownext: { width: gp(48), height: gp(30) }
-  };
-  function guideCellStyle(variant) {
-    const width = GUIDE_CELL_WIDTH[variant];
-    return { flex: `0 0 ${width}px`, width, minWidth: 0, boxSizing: "border-box" };
-  }
-  function GuideChannelCell({ channel, number, pinned, locked, variant, fill: fill2 = false }) {
-    const art = variant === "timeline" ? null : GUIDE_ART_SIZE[variant];
-    const box = fill2 ? { flex: 1, minWidth: 0, height: "100%", boxSizing: "border-box" } : guideCellStyle(variant);
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "guide-cell", style: { ...box, display: "flex", alignItems: "center", gap: gp(10), padding: `0 ${gp(12)}px` }, children: [
-      /* @__PURE__ */ jsx("span", { style: { width: gp(26), flexShrink: 0, fontSize: gp(14), color: "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums", textAlign: "right" }, children: number ?? "" }),
-      art ? /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: art.width, flexShrink: 0 }, height: art.height, radius: gp(6) }) : null,
-      /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: gp(15), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
-        variant !== "timeline" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(12.5), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }) : null
-      ] }),
-      pinned ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-pinned", style: { color: TV2.acc, flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Heart, { size: gp(13), filled: true }) }) : null,
-      locked ? /* @__PURE__ */ jsx("span", { "data-testid": "guide-cell-locked", style: { color: "rgba(243,244,248,0.45)", flexShrink: 0 }, children: /* @__PURE__ */ jsx(Icons.Lock, { size: gp(13) }) }) : null
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -52935,7 +56659,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -52944,7 +56668,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -52978,7 +56702,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -52987,14 +56711,14 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -53026,7 +56750,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -53095,7 +56819,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -53172,7 +56896,7 @@ ${cue.text}`).join("\n\n")}
           enterKeyHint: "search",
           autoComplete: "off",
           value: filter,
-          onChange: (event) => setFilter(event.target.value),
+          onChange: (event2) => setFilter(event2.target.value),
           placeholder: tt("filterCategories"),
           "aria-label": tt("filterCategories"),
           style: { minHeight: MT.HIT, width: "100%", boxSizing: "border-box", padding: "0 14px", borderRadius: CARD_RADIUS, border: "none", outline: "none", background: MT.s10, color: MT.text, fontSize: 16, fontFamily: MT.font }
@@ -53180,7 +56904,7 @@ ${cue.text}`).join("\n\n")}
       ),
       model.favouriteChannels.length > 0 ? /* @__PURE__ */ jsxs("div", { "data-testid": "lists-favs-section", style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
         /* @__PURE__ */ jsxs("div", { style: { minHeight: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }, children: [
-          /* @__PURE__ */ jsx("span", { style: { ...sectionLabel, flex: 1, ...ellipsis }, children: tt("favourites") }),
+          /* @__PURE__ */ jsx("span", { style: { ...sectionLabel, flex: 1, ...ellipsis2 }, children: tt("favourites") }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: MT.dim, flexShrink: 0 }, children: model.favouriteChannels.length })
         ] }),
         /* @__PURE__ */ jsxs(
@@ -53191,7 +56915,7 @@ ${cue.text}`).join("\n\n")}
             style: { minHeight: GROUP_ROW_H, padding: "0 14px", borderRadius: CARD_RADIUS, background: MT.accMix(14), border: `1px solid ${MT.accMix(40)}`, display: "flex", alignItems: "center", gap: 10, fontSize: 15, cursor: "pointer" },
             children: [
               /* @__PURE__ */ jsx("span", { style: { color: MT.acc, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 18, filled: true }) }),
-              /* @__PURE__ */ jsx("span", { style: { flex: 1, fontWeight: 600, ...ellipsis }, children: tt("favourites") }),
+              /* @__PURE__ */ jsx("span", { style: { flex: 1, fontWeight: 600, ...ellipsis2 }, children: tt("favourites") }),
               /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: model.favouriteChannels.length }),
               /* @__PURE__ */ jsx("span", { style: { color: MT.dim, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 16 }) })
             ]
@@ -53203,7 +56927,7 @@ ${cue.text}`).join("\n\n")}
         const shown = expanded.has(list.id) ? matching : matching.slice(0, GROUPS_PREVIEW);
         return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
           /* @__PURE__ */ jsxs("div", { "data-testid": `lists-section-${list.id}`, ...station(() => openList(list)), style: { minHeight: MT.HIT, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, cursor: "pointer" }, children: [
-            /* @__PURE__ */ jsx("span", { style: { ...sectionLabel, flex: 1, ...ellipsis }, children: list.name }),
+            /* @__PURE__ */ jsx("span", { style: { ...sectionLabel, flex: 1, ...ellipsis2 }, children: list.name }),
             /* @__PURE__ */ jsx("span", { "data-testid": "lists-list-count", style: { fontSize: 12, color: MT.dim, flexShrink: 0 }, children: list.count })
           ] }),
           shown.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { borderRadius: CARD_RADIUS, background: MT.s06, border: `1px solid ${MT.line08}`, overflow: "hidden" }, children: [
@@ -53214,7 +56938,7 @@ ${cue.text}`).join("\n\n")}
                 ...station(() => openGroup(list, group.name)),
                 style: { minHeight: GROUP_ROW_H, padding: "0 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 15, borderTop: index === 0 ? "none" : `1px solid ${MT.line07}`, cursor: "pointer" },
                 children: [
-                  /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis }, children: group.name }),
+                  /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis2 }, children: group.name }),
                   list.channelsLoaded ? /* @__PURE__ */ jsx("span", { "data-testid": "lists-group-count", style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: group.count }) : null,
                   /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: "\u203A" })
                 ]
@@ -53228,7 +56952,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_jsx_runtime_shim();
   var MAX_GROUPS2 = 12;
   var ROW_STEP3 = 40;
@@ -53353,7 +57077,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -53363,7 +57087,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -53401,7 +57125,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -53409,7 +57133,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
@@ -53480,7 +57204,7 @@ ${cue.text}`).join("\n\n")}
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_jsx_runtime_shim();
@@ -53524,7 +57248,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (hasRows) scrollToNow();
     }, [hasRows]);
-    const isLive = (programme) => programme.start <= nowMs && programme.stop > nowMs;
+    const isLive2 = (programme) => programme.start <= nowMs && programme.stop > nowMs;
     const dateLabel = new Date(nowMs).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
     return /* @__PURE__ */ jsxs("div", { "data-testid": "grid-phone", style: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
       /* @__PURE__ */ jsx(MobileHeader, { title: tt("guideTitle") }),
@@ -53532,7 +57256,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx(PhoneGuideModeBar, { mode, onChange: onModeChange }),
         /* @__PURE__ */ jsx(MobileChips, { items: groups, value: group, onChange: setGroup, testId: "guide-groups" }),
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }, children: [
-          /* @__PURE__ */ jsx("span", { "data-testid": "grid-phone-date", style: { fontSize: 13, color: MT.dim, ...ellipsis }, children: dateLabel }),
+          /* @__PURE__ */ jsx("span", { "data-testid": "grid-phone-date", style: { fontSize: 13, color: MT.dim, ...ellipsis2 }, children: dateLabel }),
           /* @__PURE__ */ jsx("div", { "data-testid": "grid-now-btn", ...station(scrollToNow), style: { minHeight: MT.HIT, display: "flex", alignItems: "center", paddingLeft: 12, flexShrink: 0, cursor: "pointer" }, children: /* @__PURE__ */ jsx("span", { style: { minHeight: 30, padding: "0 14px", borderRadius: 999, background: MT.accMix(18), fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center" }, children: tt("gridNow") }) })
         ] })
       ] }),
@@ -53564,7 +57288,7 @@ ${cue.text}`).join("\n\n")}
                 }
               ),
               /* @__PURE__ */ jsx("div", { style: { position: "relative", width: gridWidth, flexShrink: 0 }, children: entries.map(({ box, programme }) => {
-                const live2 = isLive(programme);
+                const live2 = isLive2(programme);
                 return /* @__PURE__ */ jsx(
                   "div",
                   {
@@ -53587,8 +57311,8 @@ ${cue.text}`).join("\n\n")}
                       cursor: "pointer"
                     },
                     children: box.shape !== "marker" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-                      /* @__PURE__ */ jsx("div", { style: { fontSize: 12, fontWeight: 600, lineHeight: "16px", ...ellipsis }, children: programme.title }),
-                      box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: 11, lineHeight: "14px", color: MT.dim, ...ellipsis }, children: formatClock2(programme.start, locale) }) : null
+                      /* @__PURE__ */ jsx("div", { style: { fontSize: 12, fontWeight: 600, lineHeight: "16px", ...ellipsis2 }, children: programme.title }),
+                      box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: 11, lineHeight: "14px", color: MT.dim, ...ellipsis2 }, children: formatClock2(programme.start, locale) }) : null
                     ] }) : null
                   },
                   programme.start
@@ -53602,7 +57326,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
@@ -53659,7 +57383,7 @@ ${cue.text}`).join("\n\n")}
       if (dayOffset === 0) scrollToNow();
       else if (scrollRef.current) scrollRef.current.scrollLeft = 0;
     }, [dayOffset, rows.length > 0]);
-    const isLive = (programme) => programme.start <= nowMs && programme.stop > nowMs;
+    const isLive2 = (programme) => programme.start <= nowMs && programme.stop > nowMs;
     const toggle = (channel, programme) => {
       toggleReminder(channel, programme, nowMs);
       setReminderTick((value) => value + 1);
@@ -53758,7 +57482,7 @@ ${cue.text}`).join("\n\n")}
                       box,
                       programme,
                       locale,
-                      live: isLive(programme),
+                      live: isLive2(programme),
                       init: Boolean(initKey && initKey.channel === key && initKey.start === programme.start),
                       selected: selected?.channel.url === channel.url && selected.programme.start === programme.start,
                       reminded: isReminded(channel, programme),
@@ -53766,7 +57490,7 @@ ${cue.text}`).join("\n\n")}
                       onSelect: () => setSelected({ channel, programme }),
                       onOk: () => {
                         setSelected({ channel, programme });
-                        if (isLive(programme)) nav.play({ channel });
+                        if (isLive2(programme)) nav.play({ channel });
                         else nav.openChannel(channel, programme.start);
                       },
                       onHold: (element) => nav.channelMenu(channel, element, [
@@ -53852,11 +57576,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -53865,170 +57589,7 @@ ${cue.text}`).join("\n\n")}
   init_guide_surface();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-list-picker.tsx
-  init_react_shim();
-  init_live_tv_data();
-  init_tv_ui();
-  init_tv_strings();
-  init_jsx_runtime_shim();
-  function PickerPanel({
-    nav,
-    title,
-    chips,
-    rows,
-    onClose,
-    testId = "list-picker"
-  }) {
-    const rootRef = useRef(null);
-    const openerRef = useRef(null);
-    const closeRef = useRef(null);
-    const navRef = useRef(nav);
-    const onCloseRef = useRef(onClose);
-    useEffect(() => {
-      navRef.current = nav;
-      onCloseRef.current = onClose;
-    });
-    useEffect(() => {
-      openerRef.current = document.activeElement;
-      const close = () => {
-        onCloseRef.current();
-        window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
-      };
-      closeRef.current = close;
-      const off = navRef.current.pushLayer(close);
-      window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
-      return off;
-    }, []);
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        ref: rootRef,
-        "data-testid": testId,
-        "data-panel-root": "",
-        "data-live-tv-layer": "",
-        style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(18) },
-        children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
-          chips,
-          /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: typeof rows === "function" ? rows(() => closeRef.current?.()) : rows })
-        ]
-      }
-    );
-  }
-  function Check({ on, label }) {
-    if (!on) return /* @__PURE__ */ jsx("span", { style: { width: dp(28), flexShrink: 0 } });
-    return /* @__PURE__ */ jsx("span", { "data-testid": `picker-check-${label}`, style: { width: dp(28), flexShrink: 0, color: TV2.acc, fontSize: dp(22), textAlign: "center" }, children: "\u2713" });
-  }
-  function TvListPicker({ model, nav, title, selected, onToggle, onClose }) {
-    const { tt } = useTvText();
-    const groups = useGuideGroups(model, tt);
-    const [group, setGroup] = useState(null);
-    const rows = useMemo(() => filterByGroup(model, group).slice(0, 200), [model, group]);
-    return /* @__PURE__ */ jsx(
-      PickerPanel,
-      {
-        nav,
-        title,
-        onClose,
-        chips: /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: groups.map((chip, index) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => setGroup(chip.key), void 0, rows.length === 0 && index === 0 ? { "data-init": "" } : void 0), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) }),
-        rows: rows.map((channel, index) => {
-          const on = selected.has(channelKey(channel));
-          return /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `picker-row-${channel.name}`,
-              ...station(() => onToggle(channel), void 0, index === 0 ? { "data-init": "" } : void 0),
-              style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" },
-              children: [
-                /* @__PURE__ */ jsx(Check, { on, label: channel.name }),
-                /* @__PURE__ */ jsx(ChannelArt, { channel, style: { width: dp(70), height: dp(46), flexShrink: 0 }, radius: dp(8) }),
-                /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.name }),
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: "rgba(243,244,248,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: channel.group })
-                ] })
-              ]
-            },
-            channelKey(channel)
-          );
-        })
-      }
-    );
-  }
-  function TvCategoryPicker({ nav, title, categories, selected, onToggle, onSelectAll, onClose }) {
-    const { tt } = useTvText();
-    const all = selected.size === 0;
-    return /* @__PURE__ */ jsx(
-      PickerPanel,
-      {
-        nav,
-        title,
-        onClose,
-        chips: null,
-        rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": "picker-row-all",
-              ...station(onSelectAll, void 0, { "data-init": "" }),
-              style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: "pointer" },
-              children: [
-                /* @__PURE__ */ jsx(Check, { on: all, label: "all" }),
-                tt("xtreamAllCategories")
-              ]
-            }
-          ),
-          categories === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("loadingChannels") }) : categories.map((category) => /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `picker-row-${category.name}`,
-              ...station(() => onToggle(category)),
-              style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, fontSize: dp(19), cursor: "pointer" },
-              children: [
-                /* @__PURE__ */ jsx(Check, { on: selected.has(category.id), label: category.name }),
-                /* @__PURE__ */ jsx("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: category.name })
-              ]
-            },
-            category.id
-          ))
-        ] })
-      }
-    );
-  }
-  function TvChoicePanel({ nav, title, options, value, onPick, onClose }) {
-    const initIndex = Math.max(0, options.findIndex((option) => option.key === value));
-    return /* @__PURE__ */ jsx(
-      PickerPanel,
-      {
-        nav,
-        title,
-        onClose,
-        chips: null,
-        testId: "choice-panel",
-        rows: (close) => options.map((option, index) => {
-          const on = option.key === value;
-          return /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `choice-row-${option.label}`,
-              ...station(() => {
-                onPick(option.key);
-                close();
-              }, void 0, index === initIndex ? { "data-init": "" } : void 0),
-              style: { height: gp(56), minHeight: gp(56), borderRadius: gp(10), display: "flex", alignItems: "center", gap: gp(12), padding: `0 ${gp(12)}px`, cursor: "pointer", background: on ? TV2.s08 : "transparent" },
-              children: [
-                /* @__PURE__ */ jsx(Check, { on, label: option.label }),
-                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(15), fontWeight: on ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: option.label }),
-                option.count !== void 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: gp(14), color: TV2.faint, flexShrink: 0 }, children: option.count }) : null
-              ]
-            },
-            option.key ?? "__all"
-          );
-        })
-      }
-    );
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-control-row.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -54123,7 +57684,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -54132,11 +57693,11 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -54181,7 +57742,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -54249,7 +57810,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
   var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
@@ -54295,7 +57856,7 @@ ${cue.text}`).join("\n\n")}
       const targetMs = windowStart === guideWindowStart(nowMs) ? nowMs : windowStart;
       el.scrollLeft = Math.max(0, nowLinePx(targetMs, gridStart, PX_PER_MIN_GRID) - NOW_LEAD_PX2);
     }, [windowStart, nowTick, nothing]);
-    const isLive = (programme) => programme.start <= nowMs && programme.stop > nowMs;
+    const isLive2 = (programme) => programme.start <= nowMs && programme.stop > nowMs;
     const toggle = (channel, programme) => {
       toggleReminder(channel, programme, nowMs);
       setReminderTick((value) => value + 1);
@@ -54309,7 +57870,7 @@ ${cue.text}`).join("\n\n")}
       const first = rows[0];
       if (!first) return withoutEpg[0] ? { channel: channelKey(withoutEpg[0]), start: null, empty: true } : null;
       const key = channelKey(first.channel);
-      const live2 = (entriesByChannel.get(key) ?? []).find((entry) => isLive(entry.programme));
+      const live2 = (entriesByChannel.get(key) ?? []).find((entry) => isLive2(entry.programme));
       return { channel: key, start: live2 ? live2.programme.start : null, empty: false };
     }, [rows, withoutEpg, entriesByChannel, nowMs]);
     const selectedKey = selection ? channelKey(selection.channel) : null;
@@ -54345,7 +57906,7 @@ ${cue.text}`).join("\n\n")}
           nothing ? null : /* @__PURE__ */ jsxs("div", { style: { minWidth: CHANNEL_COL_PX2 + trackWidth }, children: [
             /* @__PURE__ */ jsxs("div", { "data-testid": "grid-time-axis", style: { position: "sticky", top: 0, zIndex: 3, height: gp(30), minHeight: gp(30), display: "flex", background: TV2.bg, borderBottom: `1px solid ${TV2.line}`, boxSizing: "border-box" }, children: [
               /* @__PURE__ */ jsx("div", { style: { ...guideCellStyle("grid"), position: "sticky", left: 0, zIndex: 1, background: TV2.bg } }),
-              labels.map((mark) => /* @__PURE__ */ jsx("div", { "data-testid": "grid-time-label", "data-ms": String(mark), style: { width: 30 * PX_PER_MIN_GRID, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.06)", paddingLeft: gp(8), boxSizing: "border-box", display: "flex", alignItems: "center", fontSize: gp(11), color: "rgba(243,244,248,0.4)", letterSpacing: "0.06em", ...ellipsis3 }, children: formatClock2(mark, locale) }, mark))
+              labels.map((mark) => /* @__PURE__ */ jsx("div", { "data-testid": "grid-time-label", "data-ms": String(mark), style: { width: 30 * PX_PER_MIN_GRID, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.06)", paddingLeft: gp(8), boxSizing: "border-box", display: "flex", alignItems: "center", fontSize: gp(11), color: "rgba(243,244,248,0.4)", letterSpacing: "0.06em", ...ellipsis }, children: formatClock2(mark, locale) }, mark))
             ] }),
             /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
               rows.map(({ channel }) => {
@@ -54355,7 +57916,7 @@ ${cue.text}`).join("\n\n")}
                 return /* @__PURE__ */ jsxs("div", { "data-testid": "grid-row", style: { display: "flex", height: ROW_H_PX, minHeight: ROW_H_PX, boxSizing: "border-box" }, children: [
                   channelCell(channel, rowInit && initKey.start === null),
                   /* @__PURE__ */ jsx("div", { "data-testid": "grid-track", style: { width: trackWidth, flexShrink: 0, position: "relative" }, children: entries.map(({ box, programme }, blockIndex) => {
-                    const live2 = isLive(programme);
+                    const live2 = isLive2(programme);
                     const sel = { channel, programme };
                     return /* @__PURE__ */ jsx(
                       GridBlock2,
@@ -54399,7 +57960,7 @@ ${cue.text}`).join("\n\n")}
                       }, (element) => nav.channelMenu(channel, element), initAttr(initKey !== null && initKey.empty && index === 0)), hover.leave),
                       onFocus: isTv ? () => onSelect(sel) : void 0,
                       onPointerEnter: hover.enter ? () => hover.enter?.(sel) : void 0,
-                      style: { width: trackWidth, flexShrink: 0, display: "flex", alignItems: "center", padding: `0 ${gp(12)}px`, boxSizing: "border-box", fontSize: gp(13), color: "rgba(243,244,248,0.4)", cursor: "pointer", ...ellipsis3 },
+                      style: { width: trackWidth, flexShrink: 0, display: "flex", alignItems: "center", padding: `0 ${gp(12)}px`, boxSizing: "border-box", fontSize: gp(13), color: "rgba(243,244,248,0.4)", cursor: "pointer", ...ellipsis },
                       children: tt("noEpgRow")
                     }
                   )
@@ -54469,8 +58030,8 @@ ${cue.text}`).join("\n\n")}
               position: "relative"
             },
             children: marker ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
-              textFits ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(14), fontWeight: 600, color: selected ? GUIDE_ON_SELECTED : live2 ? TV2.text : "rgba(243,244,248,0.88)", paddingRight: reminded ? gp(14) : 0, ...ellipsis3 }, children: programme.title }) : null,
-              textFits && box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(12), color: selected ? GUIDE_ON_SELECTED_DIM : live2 ? "rgba(243,244,248,0.65)" : "rgba(243,244,248,0.5)", ...ellipsis3 }, children: times }) : null,
+              textFits ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(14), fontWeight: 600, color: selected ? GUIDE_ON_SELECTED : live2 ? TV2.text : "rgba(243,244,248,0.88)", paddingRight: reminded ? gp(14) : 0, ...ellipsis }, children: programme.title }) : null,
+              textFits && box.shape === "full" ? /* @__PURE__ */ jsx("div", { style: { fontSize: gp(12), color: selected ? GUIDE_ON_SELECTED_DIM : live2 ? "rgba(243,244,248,0.65)" : "rgba(243,244,248,0.5)", ...ellipsis }, children: times }) : null,
               reminded ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", right: gp(4), top: gp(4), color: TV2.acc }, children: /* @__PURE__ */ jsx(Icons.Bell, { size: gp(11), filled: true }) }) : null
             ] })
           }
@@ -54479,7 +58040,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -54600,7 +58161,7 @@ ${cue.text}`).join("\n\n")}
             return /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-row", ...rowProps(channel, now2, initTarget === "row" && index === 0), style: rowStyle2(channel, false), children: [
               cell(channel),
               /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-now", style: { ...colStyle(COL_WEIGHTS[0]), background: selected ? TV2.text : TV2.accMix(14), border: selected ? "1px solid transparent" : `1px solid ${TV2.accMix(45)}`, color: selected ? GUIDE_ON_SELECTED : TV2.text }, children: [
-                /* @__PURE__ */ jsx("div", { title: now2.title, style: { flex: 1, minWidth: 0, fontSize: gp(15), fontWeight: 600, ...ellipsis3 }, children: now2.title }),
+                /* @__PURE__ */ jsx("div", { title: now2.title, style: { flex: 1, minWidth: 0, fontSize: gp(15), fontWeight: 600, ...ellipsis }, children: now2.title }),
                 /* @__PURE__ */ jsxs("div", { style: { width: gp(90), flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: gp(4) }, children: [
                   /* @__PURE__ */ jsx(Progress, { value: progressOf(now2.start, now2.stop, nowMs), height: gp(4), track: selected ? "rgba(21,22,28,0.15)" : TV2.s14, style: { width: "100%" } }),
                   /* @__PURE__ */ jsx("span", { style: { fontSize: gp(11), color: selected ? GUIDE_ON_SELECTED_DIM : "rgba(243,244,248,0.5)", fontVariantNumeric: "tabular-nums" }, children: tt("minShort", { min: minutesLeft }) })
@@ -54613,7 +58174,7 @@ ${cue.text}`).join("\n\n")}
           emptyRows.map((channel, index) => /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-row", ...rowProps(channel, null, initTarget === "row" && rows.length === 0 && index === 0), style: rowStyle2(channel, true), children: [
             cell(channel),
             /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-empty-cell", style: { ...colStyle(1), background: "rgba(252,252,255,0.04)", gap: gp(14) }, children: [
-              /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(13), color: "rgba(243,244,248,0.4)", ...ellipsis3 }, children: tt("noEpgRow") }),
+              /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: gp(13), color: "rgba(243,244,248,0.4)", ...ellipsis }, children: tt("noEpgRow") }),
               /* @__PURE__ */ jsxs("span", { "data-testid": "nownext-watch-pill", style: { height: gp(26), padding: `0 ${gp(12)}px`, borderRadius: 999, background: TV2.s08, display: "inline-flex", alignItems: "center", gap: gp(6), fontSize: gp(12), flexShrink: 0 }, children: [
                 /* @__PURE__ */ jsx(Icons.Play, { size: gp(10) }),
                 " ",
@@ -54628,7 +58189,7 @@ ${cue.text}`).join("\n\n")}
   }
   function UpcomingCell({ testId, programme, locale, titleColor, timeColor, weight }) {
     return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: colStyle(weight), children: programme ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx("div", { title: programme.title, style: { flex: 1, minWidth: 0, fontSize: gp(14), color: titleColor, ...ellipsis3 }, children: programme.title }),
+      /* @__PURE__ */ jsx("div", { title: programme.title, style: { flex: 1, minWidth: 0, fontSize: gp(14), color: titleColor, ...ellipsis }, children: programme.title }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: gp(12.5), color: timeColor, flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: formatClock2(programme.start, locale) })
     ] }) : null });
   }
@@ -54658,13 +58219,13 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: gp(6) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: gp(8), minWidth: 0 }, children: [
           channelNumber !== null ? /* @__PURE__ */ jsx("span", { style: { fontSize: gp(13), color: "rgba(243,244,248,0.45)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: channelNumber }) : null,
-          /* @__PURE__ */ jsx("span", { "data-testid": "nownext-banner-channel", style: { fontSize: gp(13), color: TV2.muted, minWidth: 0, ...ellipsis3 }, children: channel.name }),
+          /* @__PURE__ */ jsx("span", { "data-testid": "nownext-banner-channel", style: { fontSize: gp(13), color: TV2.muted, minWidth: 0, ...ellipsis }, children: channel.name }),
           meta ? /* @__PURE__ */ jsx(Tag2, { variant: "neutral", style: { height: gp(22), padding: `0 ${gp(9)}px`, fontSize: gp(11), borderRadius: gp(7), background: TV2.s08, flexShrink: 0 }, children: meta }) : null
         ] }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-title", style: { fontSize: gp(22), fontWeight: 600, lineHeight: 1.2, ...ellipsis3 }, children: programme ? programme.title : tt("noProgramme") }),
-        programme ? /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-time", style: { fontSize: gp(13), color: "rgba(243,244,248,0.6)", ...ellipsis3 }, children: `${formatClock2(programme.start, locale)}\u2013${formatClock2(programme.stop, locale)}${live2 ? ` \xB7 ${tt("minutesLeft", { min: minutesLeft })}` : ""}` }) : null,
+        /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-title", style: { fontSize: gp(22), fontWeight: 600, lineHeight: 1.2, ...ellipsis }, children: programme ? programme.title : tt("noProgramme") }),
+        programme ? /* @__PURE__ */ jsx("div", { "data-testid": "nownext-banner-time", style: { fontSize: gp(13), color: "rgba(243,244,248,0.6)", ...ellipsis }, children: `${formatClock2(programme.start, locale)}\u2013${formatClock2(programme.stop, locale)}${live2 ? ` \xB7 ${tt("minutesLeft", { min: minutesLeft })}` : ""}` }) : null,
         live2 && programme ? /* @__PURE__ */ jsx(Progress, { value: progressOf(programme.start, programme.stop, nowMs), height: gp(4), style: { maxWidth: gp(520) } }) : null,
-        next ? /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-banner-next", style: { fontSize: gp(13), ...ellipsis3 }, children: [
+        next ? /* @__PURE__ */ jsxs("div", { "data-testid": "nownext-banner-next", style: { fontSize: gp(13), ...ellipsis }, children: [
           /* @__PURE__ */ jsx("span", { style: { color: "rgba(243,244,248,0.45)", marginRight: gp(8) }, children: tt("nextLabel") }),
           `${next.title} \xB7 ${formatClock2(next.start, locale)}`
         ] }) : null
@@ -54684,7 +58245,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
@@ -54799,7 +58360,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
   function TvGuide(props) {
@@ -54973,14 +58534,14 @@ ${cue.text}`).join("\n\n")}
             ...isInit ? { "data-init": "" } : {}
           });
           const baseOnKeyDown = rowStation.onKeyDown;
-          const onKeyDown = (event) => {
-            if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-              event.preventDefault();
-              event.stopPropagation();
-              stepCategory(event.key === "ArrowLeft" ? -1 : 1);
+          const onKeyDown = (event2) => {
+            if (event2.key === "ArrowLeft" || event2.key === "ArrowRight") {
+              event2.preventDefault();
+              event2.stopPropagation();
+              stepCategory(event2.key === "ArrowLeft" ? -1 : 1);
               return;
             }
-            baseOnKeyDown?.(event);
+            baseOnKeyDown?.(event2);
           };
           const timeline = mode === "tl" ? timelineSchedules[key] ?? null : null;
           return /* @__PURE__ */ jsxs("div", { style: { height: dp(86), borderBottom: `1px solid rgba(255,255,255,0.07)`, display: "flex", alignItems: "center", gap: dp(16) }, children: [
@@ -55038,7 +58599,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -55046,7 +58607,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -55056,7 +58617,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -55117,7 +58678,7 @@ ${cue.text}`).join("\n\n")}
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
   function TvFavouritesPhone({ model, nav }) {
@@ -55180,8 +58741,8 @@ ${cue.text}`).join("\n\n")}
               /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, fontSize: 18, fontWeight: 600, color: MT.dim }, children: index + 1 }),
               /* @__PURE__ */ jsx(MobileLogo, { channel, width: 64, height: 42 }),
               /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }, children: [
-                /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis }, children: channel.name }),
-                /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: "rgba(243,244,248,0.8)", ...ellipsis }, children: info.now?.title ?? tt("noProgramme") }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: channel.name }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: "rgba(243,244,248,0.8)", ...ellipsis2 }, children: info.now?.title ?? tt("noProgramme") }),
                 info.now ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
                   /* @__PURE__ */ jsx("div", { style: { flex: 1, height: 3, borderRadius: 3, background: MT.s14, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${progressOf(info.now.start, info.now.stop, model.nowMs) * 100}%`, height: "100%", background: MT.acc } }) }),
                   /* @__PURE__ */ jsx("span", { style: { fontSize: 11, color: MT.dim, flexShrink: 0 }, children: tt("minutesShort", { min: minutes }) })
@@ -55213,7 +58774,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
@@ -55293,13 +58854,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
   init_channel_locks();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -55420,12 +58981,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_tv_ui();
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -55495,8 +59056,8 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs("div", { "data-testid": "channel-row", ...station(() => setInfoOpen(true)), style: { display: "flex", alignItems: "center", gap: 12, minHeight: 46, cursor: "pointer" }, children: [
         /* @__PURE__ */ jsx(MobileLogo, { channel, width: 72, height: 46 }),
         /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted, ...ellipsis }, children: [model.channelNumber(channel), channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }),
-          channel.archive && channel.archive.days > 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis }, children: tt("replayDaysShort", { days: channel.archive.days }) }) : null
+          /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted, ...ellipsis2 }, children: [model.channelNumber(channel), channel.group, qualityFromName(channel.name)].filter(Boolean).join(" \xB7 ") }),
+          channel.archive && channel.archive.days > 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis2 }, children: tt("replayDaysShort", { days: channel.archive.days }) }) : null
         ] })
       ] }),
       /* @__PURE__ */ jsxs(
@@ -55604,7 +59165,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_jsx_runtime_shim();
   function TvChannel(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
@@ -55734,7 +59295,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -55743,183 +59304,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-text-entry.tsx
-  init_react_shim();
-  init_plugin_sdk();
-  init_tv_ui();
-  init_tv_strings();
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-keyboard.tsx
-  init_react_shim();
-  init_tv_ui();
-  init_tv_strings();
-  init_jsx_runtime_shim();
-  var LETTERS = ["1234567890", "qwertyuiop\xE5", "asdfghjkl\xF6\xE4", "zxcvbnm,.-"];
-  var SYMBOLS = ["1234567890", "!?@#%&/()=", `+-*_:;"'<>`, "[]{}~^|\\\u20AC\xA3"];
-  function TvKeyboard({ value, onChange, onDone, initFocus }) {
-    const { tt } = useTvText();
-    const [symbols, setSymbols] = useState(false);
-    const rows = symbols ? SYMBOLS : LETTERS;
-    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
-      "div",
-      {
-        ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
-        style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV2.acc : TV2.s10, color: opts?.accent ? TV2.onAcc : TV2.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
-        children: label
-      },
-      label
-    );
-    return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
-      rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(8) }, children: [
-        key("\u2423", () => onChange(value + " "), { flex: true, aria: "Space" }),
-        key("\u232B", () => onChange(value.slice(0, -1)), { width: dp(120), aria: "Backspace" }),
-        key(symbols ? tt("keyLetters") : tt("keySymbols"), () => setSymbols((s) => !s), { width: dp(120) }),
-        key(tt("keyDone"), onDone, { width: dp(140), accent: true })
-      ] })
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-text-entry.tsx
-  init_jsx_runtime_shim();
-  function isComposing(event) {
-    return event.nativeEvent.isComposing === true || event.keyCode === 229;
-  }
-  function useTextPrompt(options) {
-    const tvMode = useTvMode();
-    const Panel = getTvKeyboardPanel();
-    const [prompt, setPrompt] = useState(null);
-    const promptId = useRef(0);
-    const open2 = prompt !== null;
-    const openerRef = useRef(null);
-    useEffect(() => {
-      if (!open2) return;
-      openerRef.current = document.activeElement;
-      return () => {
-        const opener = openerRef.current;
-        window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
-      };
-    }, [open2]);
-    const ask = (title, initial, onDone, kind = "text") => {
-      promptId.current += 1;
-      setPrompt({ id: promptId.current, title, initial, kind, onDone });
-    };
-    let node = null;
-    if (tvMode) {
-      node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(
-        Panel,
-        {
-          title: prompt.title,
-          initial: prompt.initial,
-          onDone: (value) => {
-            setPrompt(null);
-            prompt.onDone(value);
-          },
-          onClose: () => setPrompt((current3) => current3 === prompt ? null : current3)
-        },
-        prompt.id
-      ) }) : null;
-    } else if (prompt) {
-      node = /* @__PURE__ */ jsx(
-        TextPromptDialog,
-        {
-          title: prompt.title,
-          initial: prompt.initial,
-          kind: prompt.kind,
-          pushLayer: options?.pushLayer,
-          onDone: (value) => {
-            setPrompt(null);
-            prompt.onDone(value);
-          },
-          onCancel: () => setPrompt((current3) => current3 === prompt ? null : current3)
-        },
-        prompt.id
-      );
-    }
-    return { available: tvMode ? Panel !== null : true, ask, node };
-  }
-  function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }) {
-    const { tt } = useTvText();
-    const [value, setValue] = useState(initial);
-    const inputRef = useRef(null);
-    useEffect(() => {
-      inputRef.current?.focus();
-    }, []);
-    const cancelRef = useRef(onCancel);
-    useEffect(() => {
-      cancelRef.current = onCancel;
-    });
-    useEffect(() => pushLayer?.(() => cancelRef.current()), [pushLayer]);
-    const submit = () => onDone(value);
-    const field = kind === "password" ? { type: "password", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "url" ? { type: "url", inputMode: "url", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "username" ? { type: "text", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : { type: "text" };
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        "data-testid": "text-prompt-dialog",
-        "data-panel-root": "",
-        style: { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: TV2.scrim },
-        children: /* @__PURE__ */ jsxs("div", { style: { width: dp(420), borderRadius: dp(14), background: TV2.panel, border: `1px solid ${TV2.line}`, padding: dp(24), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: title }),
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              ref: inputRef,
-              "data-testid": "text-prompt-input",
-              ...field,
-              value,
-              onChange: (event) => setValue(event.target.value),
-              onKeyDown: (event) => {
-                if (event.key === "Enter") {
-                  if (isComposing(event)) return;
-                  event.preventDefault();
-                  submit();
-                } else if (event.key === "Escape") {
-                  event.preventDefault();
-                  onCancel();
-                }
-              },
-              style: { height: dp(44), borderRadius: dp(8), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, color: TV2.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }
-            }
-          ),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: dp(10) }, children: [
-            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
-            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
-          ] })
-        ] })
-      }
-    );
-  }
-  function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus }) {
-    const tvMode = useTvMode();
-    const inputRef = useRef(null);
-    useEffect(() => {
-      if (!tvMode && autoFocus) inputRef.current?.focus();
-    }, [tvMode, autoFocus]);
-    if (tvMode) {
-      return /* @__PURE__ */ jsx(TvKeyboard, { value, onChange, onDone: onSubmit ?? (() => {
-      }), initFocus: !!autoFocus });
-    }
-    return /* @__PURE__ */ jsx(
-      "input",
-      {
-        ref: inputRef,
-        "data-f": "",
-        value,
-        placeholder,
-        onChange: (event) => onChange(event.target.value),
-        onKeyDown: (event) => {
-          if (event.key === "Enter") {
-            if (isComposing(event)) return;
-            event.preventDefault();
-            onSubmit?.();
-          }
-        },
-        style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, border: `1px solid ${TV2.line}`, color: TV2.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }
-      }
-    );
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -55953,7 +59338,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -55995,7 +59380,7 @@ ${cue.text}`).join("\n\n")}
     return state2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -56005,233 +59390,6 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
   init_mobile_channel_row();
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useVodLibrary.ts
-  init_react_shim();
-  init_vod_client();
-  init_live_tv_data();
-  var PAGE_SIZE = 120;
-  var IMPORT_POLL_MS = 2e3;
-  function resolveVodSource(source) {
-    if (source) return source;
-    const sources = new Set(
-      getLiveTvLists().filter((list) => list.kind !== "custom" && list.source).map((list) => list.source)
-    );
-    return sources.size === 1 ? [...sources][0] : null;
-  }
-  function useVodSource(source) {
-    const [resolved, setResolved] = useState(() => resolveVodSource(source));
-    useEffect(() => {
-      setResolved(resolveVodSource(source));
-      return onLiveTvListsChanged(() => setResolved(resolveVodSource(source)));
-    }, [source]);
-    return resolved;
-  }
-  function uniqueByKey(items2) {
-    const seen = /* @__PURE__ */ new Set();
-    return items2.filter((item) => {
-      if (seen.has(item.key)) return false;
-      seen.add(item.key);
-      return true;
-    });
-  }
-  function useVodCategories(requested) {
-    const source = useVodSource(requested);
-    const [state2, setState] = useState({
-      categories: [],
-      total: 0,
-      known: false,
-      importing: false,
-      loading: true,
-      error: null
-    });
-    const [nonce, setNonce] = useState(0);
-    const reload = useCallback(() => setNonce((n) => n + 1), []);
-    useEffect(() => {
-      let cancelled = false;
-      let timer3 = null;
-      const controller = new AbortController();
-      const load = async () => {
-        try {
-          const result = await listVodCategories(source, controller.signal);
-          if (cancelled) return;
-          setState({ ...result, loading: false, error: null });
-          if (result.importing) timer3 = setTimeout(load, IMPORT_POLL_MS);
-        } catch (err) {
-          if (cancelled || controller.signal.aborted) return;
-          setState((prev) => ({
-            ...prev,
-            loading: false,
-            error: err instanceof Error ? err.message : String(err)
-          }));
-        }
-      };
-      void load();
-      const off = onVodChanged(load);
-      return () => {
-        cancelled = true;
-        controller.abort();
-        if (timer3) clearTimeout(timer3);
-        off();
-      };
-    }, [source, nonce]);
-    return useMemo(() => ({ ...state2, reload }), [state2, reload]);
-  }
-  function useVodPage(opts) {
-    const { categoryId, kind, q, sort, enabled = true, limit = PAGE_SIZE } = opts;
-    const source = useVodSource(opts.source);
-    const [items2, setItems] = useState([]);
-    const [total, setTotal] = useState(0);
-    const [known, setKnown] = useState(false);
-    const [loading2, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [error, setError] = useState(null);
-    const [wanted, setWanted] = useState(1);
-    const filterKey = `${source ?? ""}|${categoryId ?? ""}|${kind ?? ""}|${q ?? ""}|${sort}`;
-    const lastFilter = useRef(filterKey);
-    if (lastFilter.current !== filterKey) {
-      lastFilter.current = filterKey;
-      if (wanted !== 1) setWanted(1);
-    }
-    useEffect(() => {
-      if (!enabled) {
-        setItems([]);
-        setTotal(0);
-        setKnown(false);
-        setLoading(false);
-        return;
-      }
-      let cancelled = false;
-      const controller = new AbortController();
-      const first = wanted === 1;
-      if (first) setLoading(true);
-      else setLoadingMore(true);
-      void (async () => {
-        try {
-          const page = await queryVod({
-            source: source ?? void 0,
-            categoryId: categoryId ?? void 0,
-            kind: kind ?? void 0,
-            q: q?.trim() || void 0,
-            sort,
-            offset: 0,
-            limit: limit * wanted,
-            signal: controller.signal
-          });
-          if (cancelled) return;
-          setItems(uniqueByKey(page.items));
-          setTotal(page.total);
-          setKnown(page.known);
-          setError(null);
-        } catch (err) {
-          if (cancelled || controller.signal.aborted) return;
-          setError(err instanceof Error ? err.message : String(err));
-        } finally {
-          if (!cancelled) {
-            setLoading(false);
-            setLoadingMore(false);
-          }
-        }
-      })();
-      return () => {
-        cancelled = true;
-        controller.abort();
-      };
-    }, [filterKey, wanted, enabled, limit]);
-    const hasMore = items2.length < total;
-    const loadMore = useCallback(() => {
-      setWanted((n) => n + 1);
-    }, []);
-    return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-data.ts
-  init_plugin_sdk();
-  init_live_tv_data();
-  var VOD_MODE_DEFAULT = "link";
-  var VOD_MODE_KEY = "vod_mode_v1";
-  var VOD_SORT_KEY = "library_sort_v1";
-  var VOD_CATEGORY_KEY = "library_category_v1";
-  var VOD_SORT_DEFAULT = "new";
-  function isVodMode(value) {
-    return value === "link" || value === "rows" || value === "off";
-  }
-  function readRecord(key) {
-    const parsed = readPluginJson(LIVE_TV_PLUGIN_ID, key, {});
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    const out = {};
-    for (const [id, value] of Object.entries(parsed)) {
-      if (typeof value === "string") out[id] = value;
-    }
-    return out;
-  }
-  var ALL_PLAYLISTS_KEY = "*";
-  function modeKey2(playlistId) {
-    return playlistId || ALL_PLAYLISTS_KEY;
-  }
-  function getVodMode(playlistId) {
-    const value = readRecord(VOD_MODE_KEY)[modeKey2(playlistId)];
-    return isVodMode(value) ? value : VOD_MODE_DEFAULT;
-  }
-  function setVodMode(playlistId, mode) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_MODE_KEY, { ...readRecord(VOD_MODE_KEY), [modeKey2(playlistId)]: mode });
-  }
-  function getVodSort() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, VOD_SORT_DEFAULT);
-    return raw === "az" || raw === "rating" ? raw : VOD_SORT_DEFAULT;
-  }
-  function setVodSort(sort) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_SORT_KEY, sort);
-  }
-  function getVodCategory(playlistId) {
-    return readRecord(VOD_CATEGORY_KEY)[modeKey2(playlistId)] ?? null;
-  }
-  function setVodCategory(playlistId, categoryId) {
-    writePluginJson(LIVE_TV_PLUGIN_ID, VOD_CATEGORY_KEY, {
-      ...readRecord(VOD_CATEGORY_KEY),
-      [modeKey2(playlistId)]: categoryId
-    });
-  }
-  function mediaItemIdFor(item) {
-    if (item.tmdbId == null || !Number.isFinite(item.tmdbId) || item.tmdbId <= 0) return null;
-    return `${item.kind === "series" ? "tv" : "movie"}-${item.tmdbId}`;
-  }
-  function canOpenDetails(item) {
-    return mediaItemIdFor(item) != null;
-  }
-  function vodItemToMediaItem(item) {
-    const id = mediaItemIdFor(item);
-    if (!id) return null;
-    return {
-      id,
-      title: item.title,
-      type: item.kind === "series" ? "tv" : "movie",
-      year: item.year ?? null,
-      imdbId: item.imdbId ?? null,
-      posterUrl: item.posterUrl ?? null,
-      backdropUrl: null,
-      genres: [],
-      keywords: [],
-      providers: [],
-      ratings: { imdb: item.rating != null ? item.rating.toFixed(1) : null, metacritic: null, rottenTomatoes: null },
-      overview: "",
-      originalLanguage: null,
-      source: "tmdb",
-      runtimeMinutes: null
-    };
-  }
-  function openVodItem(item, opts) {
-    const media = vodItemToMediaItem(item);
-    if (!media) return false;
-    requestOpenMediaItem({
-      item: media,
-      source: "live-tv-library",
-      ...opts?.autoPlay ? { autoPlay: true } : {}
-    });
-    return true;
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_jsx_runtime_shim();
   function TvSearchPhone({ model, nav }) {
     const { tt, locale } = useTvText();
@@ -56262,7 +59420,7 @@ ${cue.text}`).join("\n\n")}
             autoComplete: "off",
             autoFocus: true,
             value: query,
-            onChange: (event) => setQuery(event.target.value),
+            onChange: (event2) => setQuery(event2.target.value),
             onFocus: () => setFocused(true),
             onBlur: () => setFocused(false),
             placeholder: tt("searchPlaceholder"),
@@ -56304,8 +59462,8 @@ ${cue.text}`).join("\n\n")}
               children: [
                 /* @__PURE__ */ jsx("div", { style: { width: 36, height: 54, borderRadius: 6, background: MT.s10, overflow: "hidden", flexShrink: 0 }, children: item.posterUrl ? /* @__PURE__ */ jsx("img", { src: item.posterUrl, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }) : null }),
                 /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis }, children: item.title }),
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis }, children: [item.year, item.kind === "series" ? tt("libraryKindSeries") : tt("libraryKindMovie")].filter(Boolean).join(" \xB7 ") })
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: item.title }),
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, ...ellipsis2 }, children: [item.year, item.kind === "series" ? tt("libraryKindSeries") : tt("libraryKindMovie")].filter(Boolean).join(" \xB7 ") })
                 ] })
               ]
             },
@@ -56349,8 +59507,8 @@ ${cue.text}`).join("\n\n")}
               style: { minHeight: 56, display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${MT.line07}`, cursor: "pointer" },
               children: [
                 /* @__PURE__ */ jsx("span", { style: { width: 46, flexShrink: 0, fontSize: 14, color: MT.dim, fontVariantNumeric: "tabular-nums" }, children: formatClock2(hit.programme.start, locale) }),
-                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: 15, ...ellipsis }, children: hit.programme.title }),
-                /* @__PURE__ */ jsx("span", { style: { maxWidth: "40%", fontSize: 12, color: MT.dim, ...ellipsis }, children: hit.channel.name })
+                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: 15, ...ellipsis2 }, children: hit.programme.title }),
+                /* @__PURE__ */ jsx("span", { style: { maxWidth: "40%", fontSize: 12, color: MT.dim, ...ellipsis2 }, children: hit.channel.name })
               ]
             },
             `${channelKey(hit.channel)}:${hit.programme.start}`
@@ -56360,7 +59518,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
     return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
@@ -56475,14 +59633,14 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -56491,10 +59649,10 @@ ${cue.text}`).join("\n\n")}
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/surface-diagnostics.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/surface-diagnostics.ts
   init_surface_cutouts();
   function opaqueAt(x, y) {
     if (typeof document === "undefined" || typeof document.elementsFromPoint !== "function") return "ok\xE4nt";
@@ -56535,7 +59693,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -56585,7 +59743,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -56635,7 +59793,7 @@ ${cue.text}`).join("\n\n")}
       ) }),
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 6, fontSize: 13 }, children: [
         /* @__PURE__ */ jsx("span", { style: { color: MT.dim }, children: tt("audioLabel") }),
-        audioChannel ? /* @__PURE__ */ jsx("span", { style: { fontWeight: 600, ...ellipsis }, children: audioChannel.name }) : null
+        audioChannel ? /* @__PURE__ */ jsx("span", { style: { fontWeight: 600, ...ellipsis2 }, children: audioChannel.name }) : null
       ] }),
       /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: visible.map((realIndex) => {
         const key = state2.tiles[realIndex];
@@ -56737,7 +59895,7 @@ ${cue.text}`).join("\n\n")}
           channel ? /* @__PURE__ */ jsxs(Fragment2, { children: [
             /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: "32px 14px 12px", background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.85))", display: "flex", alignItems: "baseline", gap: 8, overflow: "hidden" }, children: [
               /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, flexShrink: 0 }, children: number ?? "" }),
-              /* @__PURE__ */ jsx("span", { style: { fontSize: 15, fontWeight: 600, flex: 1, minWidth: 0, ...ellipsis }, children: channel.name }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: 15, fontWeight: 600, flex: 1, minWidth: 0, ...ellipsis2 }, children: channel.name }),
               nowTitle ? /* @__PURE__ */ jsxs("span", { style: { fontSize: 13, color: MT.muted, flexShrink: 0, maxWidth: "40%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
                 "\xB7 ",
                 nowTitle
@@ -56753,7 +59911,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
     2: { columns: "1fr 1fr", rows: "1fr" },
@@ -56892,7 +60050,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -57148,7 +60306,7 @@ ${cue.text}`).join("\n\n")}
               enterKeyHint: "search",
               autoComplete: "off",
               value: query,
-              onChange: (event) => setQuery(event.target.value),
+              onChange: (event2) => setQuery(event2.target.value),
               placeholder: tt("librarySearchPlaceholder"),
               "aria-label": tt("librarySearchPlaceholder"),
               style: {
@@ -57420,13 +60578,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -57484,7 +60642,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -57941,7 +61099,7 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -57976,884 +61134,14 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/settings-tabs.tsx
-  init_react_shim();
-  init_live_tv_data();
-  init_index_client();
-  init_channel_locks();
-  init_live_tv_ui();
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
-  init_react_shim();
-  init_tv_ui();
-  init_tv_strings();
-  init_index_client();
-  init_list_curation();
-  init_live_tv_data();
-  init_jsx_runtime_shim();
-  var rowStyle = {
-    height: dp(64),
-    minHeight: dp(64),
-    borderRadius: dp(12),
-    display: "flex",
-    alignItems: "center",
-    gap: dp(14),
-    padding: `0 ${dp(12)}px`,
-    fontSize: dp(19),
-    cursor: "pointer"
-  };
-  function TvCurationPicker({ nav, list, mode, keyboard, onClose }) {
-    const { tt } = useTvText();
-    const [groups, setGroups] = useState(null);
-    const [draft, setDraft] = useState(() => ({
-      hidden: [...list.curation?.hidden ?? []],
-      merges: (list.curation?.merges ?? []).map((m) => ({ name: m.name, groups: [...m.groups] }))
-    }));
-    const [mergeMode, setMergeMode] = useState(false);
-    const [marked, setMarked] = useState(/* @__PURE__ */ new Set());
-    const [error, setError] = useState(null);
-    useEffect(() => {
-      let live2 = true;
-      listGroups(list.source ?? null).then((fetched) => {
-        if (live2) setGroups(fetched.length > 0 ? fetched : list.groups ?? []);
-      }).catch(() => {
-        if (live2) setGroups(list.groups ?? []);
-      });
-      return () => {
-        live2 = false;
-      };
-    }, [list.id, list.source]);
-    const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups]);
-    const claimed = useMemo(() => new Set(draft.merges.flatMap((m) => m.groups)), [draft.merges]);
-    const merges = draft.merges.map((m) => ({
-      ...m,
-      groups: m.groups.filter((g) => known.has(g)),
-      count: (groups ?? []).filter((g) => m.groups.includes(g.name)).reduce((sum, g) => sum + g.count, 0)
-    })).filter((m) => m.groups.length > 0);
-    const plain = (groups ?? []).filter((g) => !claimed.has(g.name)).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-    const summary = groups ? tt("curationSummary", {
-      groups: curatedGroupCounts(groups, draft).length,
-      hidden: draft.hidden.filter((g) => known.has(g)).length,
-      merged: draft.merges.length
-    }) : "";
-    const toggleHidden = (name) => setDraft((d) => ({ ...d, hidden: d.hidden.includes(name) ? d.hidden.filter((g) => g !== name) : [...d.hidden, name] }));
-    const toggleMark = (name) => setMarked((m) => {
-      const next = new Set(m);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-    const finishMerge = () => {
-      if (marked.size < 2) return;
-      keyboard.ask(tt("mergeNameLabel"), "", (value) => {
-        const conflict = mergeNameConflict(value, groups ?? [], draft, [...marked]);
-        if (conflict) {
-          setError(conflict === "empty" ? tt("mergeNameEmpty") : conflict === "duplicate" ? tt("mergeNameTaken") : tt("mergeNameIsGroup"));
-          return;
-        }
-        const members = [...marked];
-        setDraft((d) => ({ ...d, merges: [...d.merges, { name: value.trim(), groups: members }] }));
-        setMarked(/* @__PURE__ */ new Set());
-        setMergeMode(false);
-        setError(null);
-      });
-    };
-    const save = () => {
-      updateLiveTvListCuration(list.id, normalizeCuration(draft));
-      onClose();
-    };
-    const skip = () => {
-      markListCurationSeen(list.id);
-      onClose();
-    };
-    const dismiss = mode === "after-import" ? skip : onClose;
-    return /* @__PURE__ */ jsx(
-      PickerPanel,
-      {
-        nav,
-        title: `${tt("categories")} \xB7 ${list.name}`,
-        testId: "curation-picker",
-        onClose: dismiss,
-        chips: /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.dim }, children: mode === "after-import" ? tt("curationIntro") : summary }),
-        rows: /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("div", { "data-testid": "curation-save", ...station(save, void 0, { "data-init": "" }), style: { ...rowStyle, color: TV2.acc }, children: tt("save") }),
-          /* @__PURE__ */ jsx("div", { "data-testid": "curation-skip", ...station(dismiss), style: rowStyle, children: mode === "after-import" ? tt("skip") : tt("cancel") }),
-          /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: [] }))), style: rowStyle, children: tt("showAll") }),
-          /* @__PURE__ */ jsx("div", { ...station(() => setDraft((d) => ({ ...d, hidden: plain.map((g) => g.name) }))), style: rowStyle, children: tt("hideAll") }),
-          /* @__PURE__ */ jsx(
-            "div",
-            {
-              "data-testid": "curation-merge-mode",
-              ...station(() => {
-                setMergeMode((m) => !m);
-                setMarked(/* @__PURE__ */ new Set());
-                setError(null);
-              }),
-              style: { ...rowStyle, color: mergeMode ? TV2.acc : void 0 },
-              children: tt("mergeInto")
-            }
-          ),
-          mergeMode ? /* @__PURE__ */ jsx("div", { "data-testid": "curation-merge-done", ...station(finishMerge), style: { ...rowStyle, color: marked.size >= 2 ? TV2.acc : TV2.dim }, children: tt("mergeSelected", { n: marked.size }) }) : null,
-          error ? /* @__PURE__ */ jsx("div", { role: "alert", style: { padding: dp(12), fontSize: dp(16), color: "#fca5a5" }, children: error }) : null,
-          groups === null ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("loadingChannels") }) : null,
-          groups && groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: dp(12), fontSize: dp(17), color: TV2.dim }, children: tt("noCategoriesInList") }) : null,
-          merges.map((m) => /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `curation-merge-${m.name}`,
-              ...station(() => setDraft((d) => ({ ...d, merges: d.merges.filter((x) => x.name !== m.name) }))),
-              style: rowStyle,
-              children: [
-                /* @__PURE__ */ jsx(Check, { on: true, label: m.name }),
-                /* @__PURE__ */ jsxs("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
-                  m.name,
-                  /* @__PURE__ */ jsxs("span", { style: { color: TV2.dim, fontSize: dp(15) }, children: [
-                    " \xB7 ",
-                    tt("mergeContains", { groups: m.groups.join(", ") }),
-                    " \xB7 ",
-                    tt("splitMerge")
-                  ] })
-                ] }),
-                /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: m.count })
-              ]
-            },
-            `m:${m.name}`
-          )),
-          plain.map((g) => /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `curation-row-${g.name}`,
-              ...station(() => mergeMode ? toggleMark(g.name) : toggleHidden(g.name)),
-              style: rowStyle,
-              children: [
-                /* @__PURE__ */ jsx(Check, { on: mergeMode ? marked.has(g.name) : !draft.hidden.includes(g.name), label: g.name }),
-                /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: draft.hidden.includes(g.name) && !mergeMode ? TV2.dim : void 0 }, children: g.name }),
-                /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: g.count })
-              ]
-            },
-            `g:${g.name}`
-          ))
-        ] })
-      }
-    );
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/settings-tabs.tsx
-  init_tv_ui();
-  init_mobile_tokens();
-  init_mobile_icons();
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
-  init_mobile_tokens();
-  init_jsx_runtime_shim();
-  function MobileToggle({ on }) {
-    return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/settings-tabs.tsx
-  init_jsx_runtime_shim();
-  function Row({ label, right, onOk, testId, phone = false }) {
-    if (phone) {
-      return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 52, padding: "10px 14px", borderRadius: 0, background: "transparent", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
-        /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }),
-        /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: MT.muted, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14 }, children: right })
-      ] });
-    }
-    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { height: dp(64), minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `0 ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19), cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: label }),
-      /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, color: "rgba(243,244,248,0.6)", display: "inline-flex", alignItems: "center", gap: dp(10) }, children: right })
-    ] });
-  }
-  var PhoneCaret = () => /* @__PURE__ */ jsx("span", { style: { color: MT.dim, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 16 }) });
-  function Heading({ children, hint, phone = false }) {
-    if (phone) return /* @__PURE__ */ jsxs("div", { style: { padding: "14px 14px 6px" }, children: [
-      /* @__PURE__ */ jsx("div", { style: sectionLabel, children }),
-      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, marginTop: 4 }, children: hint }) : null
-    ] });
-    return /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx("div", { style: { fontSize: dp(26), fontWeight: 600 }, children }),
-      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: hint }) : null
-    ] });
-  }
-  function hostOf2(url) {
-    try {
-      return new URL(url).hostname || url;
-    } catch {
-      return url;
-    }
-  }
-  function removeListAndSourceUrl(list) {
-    const urls = getM3uUrls();
-    const remaining2 = urls.filter((url) => !url.startsWith("xtream://") && hostOf2(url) !== list.name);
-    if (remaining2.length !== urls.length) applyM3uUrls(remaining2);
-    deleteLiveTvList(list.id);
-  }
-  function xtreamLoginMissing(list) {
-    if (list.kind !== "xtream") return false;
-    return !getXtreamLogins().some((login) => login.id === list.xtreamLoginId);
-  }
-  function progressText(tt, locale, progress2) {
-    if (progress2.state === "parsing") return tt("importParsing");
-    if (progress2.state === "writing") return tt("importWriting");
-    return progress2.total ? tt("importProgress", { received: progress2.received.toLocaleString(locale), total: progress2.total.toLocaleString(locale) }) : tt("importProgressUnknown");
-  }
-  function Action({ label, onOk, testId, disabled, phone = false }) {
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        "data-testid": testId,
-        "aria-disabled": disabled ? "true" : void 0,
-        ...station(() => {
-          if (!disabled) onOk();
-        }),
-        style: phone ? { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", fontSize: 14, whiteSpace: "nowrap", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 } : { height: dp(48), minHeight: dp(48), padding: `0 ${dp(20)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(17), whiteSpace: "nowrap", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 },
-        children: label
-      }
-    );
-  }
-  function formatFetchedAt2(iso, locale) {
-    const then = new Date(iso);
-    if (Number.isNaN(then.getTime())) return iso;
-    const now2 = /* @__PURE__ */ new Date();
-    return then.toDateString() === now2.toDateString() ? then.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : then.toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  }
-  var ListRow = memo(function ListRow2({
-    list,
-    tt,
-    locale,
-    busy,
-    needsLogin,
-    onRefetch,
-    onRemove,
-    onEditChannels,
-    onCategories,
-    phone = false
-  }) {
-    const importable = list.kind === "m3u" || list.kind === "xtream";
-    const logoEnabled = isLogoFallbackEnabled(list);
-    const [logoBusy, setLogoBusy] = useState(false);
-    const [logoResult, setLogoResult] = useState(null);
-    const [logoError, setLogoError] = useState(null);
-    async function handleCompleteLogos() {
-      setLogoBusy(true);
-      setLogoError(null);
-      try {
-        const result = await completeLogos(list.source ?? "");
-        setLogoResult(result);
-      } catch (err) {
-        setLogoError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setLogoBusy(false);
-      }
-    }
-    const sub = phone ? 13 : dp(15);
-    const meta = phone ? 13 : dp(16);
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        "data-testid": `list-row-${list.id}`,
-        style: phone ? { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19) },
-        children: [
-          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 4 : dp(4) }, children: [
-            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: phone ? 8 : dp(10), minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis } : { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.name }),
-              list.needsReimport ? /* @__PURE__ */ jsx("span", { style: phone ? { flexShrink: 0, fontSize: 11, fontWeight: 600, minHeight: 22, padding: "0 8px", borderRadius: 999, background: MT.warnSoft, color: MT.warnText, display: "inline-flex", alignItems: "center" } : { flexShrink: 0, fontSize: dp(14), fontWeight: 600, padding: `${dp(3)}px ${dp(10)}px`, borderRadius: dp(8), background: "rgba(244,132,95,0.18)", color: "#f4845f" }, children: tt("needsReimport") }) : null
-            ] }),
-            /* @__PURE__ */ jsxs("div", { style: { fontSize: meta, color: phone ? MT.dim : TV2.dim }, children: [
-              tt("channelsCount", { count: (list.channelCount ?? list.channels?.length ?? 0).toLocaleString(locale) }),
-              list.fetchedAt ? ` \xB7 ${tt("fetchedAt", { time: formatFetchedAt2(list.fetchedAt, locale) })}` : ""
-            ] }),
-            busy ? /* @__PURE__ */ jsx("div", { style: { fontSize: meta, color: TV2.muted }, children: progressText(tt, locale, busy) }) : null,
-            !busy && needsLogin ? /* @__PURE__ */ jsx("div", { style: { fontSize: sub, color: TV2.muted }, children: tt("xtreamNeedsLogin") }) : null,
-            list.truncated ? /* @__PURE__ */ jsx("div", { "data-testid": `list-truncated-${list.id}`, style: { fontSize: sub, color: "#fbbf24" }, children: tt("truncated") }) : null,
-            !busy && list.lastImportError ? /* @__PURE__ */ jsx("div", { "data-testid": `list-error-${list.id}`, style: { fontSize: sub, color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: list.lastImportError }) : null,
-            logoResult ? /* @__PURE__ */ jsx("div", { "data-testid": `list-logo-complete-result-${list.id}`, style: { fontSize: sub, color: TV2.dim }, children: tt("logoCompleteResult", { matched: logoResult.matched, total: logoResult.total }) }) : null,
-            logoError ? /* @__PURE__ */ jsx("div", { "data-testid": `list-logo-complete-error-${list.id}`, style: { fontSize: sub, color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: logoError }) : null
-          ] }),
-          /* @__PURE__ */ jsxs(
-            "div",
-            {
-              ...phone ? { "data-list-actions": "" } : {},
-              style: phone ? { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 } : { flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10) },
-              children: [
-                importable ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-refetch-${list.id}`, label: busy ? tt("refetching") : tt("refetch"), onOk: () => onRefetch(list) }) : null,
-                importable ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-categories-${list.id}`, label: tt("categories"), onOk: () => onCategories(list) }) : null,
-                list.kind === "custom" ? /* @__PURE__ */ jsx(Action, { phone, testId: `list-channels-${list.id}`, label: tt("listChannels"), onOk: () => onEditChannels(list) }) : null,
-                /* @__PURE__ */ jsxs(
-                  "div",
-                  {
-                    "data-testid": `list-logo-fallback-${list.id}`,
-                    "aria-disabled": list.kind === "custom" ? "true" : void 0,
-                    ...station(() => {
-                      if (list.kind !== "custom") setLogoFallbackEnabled(list.id, !logoEnabled);
-                    }),
-                    style: phone ? {
-                      minHeight: 36,
-                      padding: "0 12px",
-                      borderRadius: 999,
-                      background: MT.s06,
-                      border: `1px solid ${MT.line10}`,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                      fontSize: 14,
-                      whiteSpace: "nowrap",
-                      cursor: list.kind === "custom" ? "default" : "pointer",
-                      opacity: list.kind === "custom" ? 0.5 : 1
-                    } : {
-                      height: dp(48),
-                      minHeight: dp(48),
-                      padding: `0 ${dp(16)}px`,
-                      borderRadius: 999,
-                      background: TV2.s06,
-                      border: `1px solid ${TV2.line}`,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: dp(10),
-                      fontSize: dp(15),
-                      whiteSpace: "nowrap",
-                      cursor: list.kind === "custom" ? "default" : "pointer",
-                      opacity: list.kind === "custom" ? 0.5 : 1
-                    },
-                    children: [
-                      /* @__PURE__ */ jsx("span", { children: tt("logoFallback") }),
-                      phone ? /* @__PURE__ */ jsx(MobileToggle, { on: logoEnabled }) : /* @__PURE__ */ jsx(Toggle, { on: logoEnabled })
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsx(
-                  Action,
-                  {
-                    phone,
-                    testId: `list-logo-complete-${list.id}`,
-                    label: logoBusy ? tt("logoCompleteRunning") : tt("logoComplete"),
-                    disabled: !logoEnabled || list.kind === "custom" || logoBusy,
-                    onOk: () => {
-                      void handleCompleteLogos();
-                    }
-                  }
-                ),
-                /* @__PURE__ */ jsx(Action, { phone, testId: `list-remove-${list.id}`, label: tt("remove"), onOk: () => onRemove(list) })
-              ]
-            }
-          )
-        ]
-      }
-    );
-  });
-  function PlaylistsTab({ model, nav, lists, tt, locale, toast, phone = false }) {
-    const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
-    const [progress2, setProgress] = useState(null);
-    async function runImport(list, existedBefore) {
-      setProgress({ listId: list.id, state: "fetching", received: 0, total: null });
-      try {
-        const status = await importList(list, (s) => setProgress({ listId: list.id, state: s.state, received: s.received, total: s.total ?? null }));
-        if (status.state === "error") {
-          if (existedBefore) recordListImportOutcome(list.id, status.error ?? "import failed");
-          else deleteLiveTvList(list.id);
-          toast(`${tt("importFailed")}: ${status.error ?? ""}`.trim());
-          return false;
-        }
-        recordListImportOutcome(list.id);
-        const fresh = getLiveTvLists().find((entry) => entry.id === list.id);
-        if (!existedBefore && fresh && fresh.curationSeen !== true) setCuration({ listId: list.id, mode: "after-import" });
-        return true;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (existedBefore) recordListImportOutcome(list.id, message);
-        else deleteLiveTvList(list.id);
-        toast(`${tt("importFailed")}: ${message}`);
-        return false;
-      } finally {
-        setProgress(null);
-      }
-    }
-    const addUrl = () => keyboard.ask(tt("addM3u"), "", (value) => {
-      const url = value.trim();
-      if (!url) return;
-      const source = getLiveTvUrlsKey([url]);
-      const existedBefore = getLiveTvLists().some((entry) => entry.source === source);
-      const list = ensureM3uList(url);
-      void runImport(list, existedBefore).then((ok) => {
-        if (ok && !getM3uUrls().includes(url)) applyM3uUrls([...getM3uUrls(), url]);
-      });
-    }, "url");
-    const askXtream = (prefillServer, reuseLoginId) => keyboard.ask(tt("xtreamServer"), prefillServer, (serverValue) => {
-      const server = serverValue.trim();
-      if (!server) return;
-      keyboard.ask(tt("xtreamUsername"), "", (usernameValue) => {
-        const username = usernameValue.trim();
-        if (!username) return;
-        keyboard.ask(tt("xtreamPassword"), "", (passwordValue) => {
-          const password = passwordValue.trim();
-          if (!password) return;
-          void connectXtream(server, username, password, reuseLoginId);
-        }, "password");
-      }, "username");
-    }, "url");
-    async function connectXtream(server, username, password, reuseLoginId) {
-      const base = normalizeXtreamBase(server);
-      if (!base) {
-        toast(tt("xtreamLoginFailed"));
-        return;
-      }
-      let account;
-      try {
-        account = await fetchXtreamAccount({ base, username, password }, { force: true });
-      } catch {
-        toast(tt("xtreamLoginFailed"));
-        return;
-      }
-      if (!account.auth) {
-        toast(tt("xtreamLoginFailed"));
-        return;
-      }
-      const existing = getXtreamLogins().find((entry) => entry.base === base && entry.username === username);
-      const login = {
-        id: existing?.id ?? reuseLoginId ?? crypto.randomUUID(),
-        base,
-        username,
-        password,
-        format: account.allowedFormats.length === 0 || account.allowedFormats.includes("ts") ? "ts" : "m3u8",
-        categoryIds: existing?.categoryIds ?? []
-      };
-      saveXtreamLogin(login);
-      const source = xtreamPseudoUrl(login);
-      const existedBefore = getLiveTvLists().some((entry) => entry.source === source);
-      await runImport(ensureXtreamList(login), existedBefore);
-    }
-    const orderRef = useRef([]);
-    const ordered = useMemo(() => {
-      if (orderRef.current.length === 0) {
-        orderRef.current = [...lists].sort((a, b) => Number(Boolean(b.needsReimport)) - Number(Boolean(a.needsReimport))).map((list) => list.id);
-      } else {
-        for (const list of lists) if (!orderRef.current.includes(list.id)) orderRef.current.push(list.id);
-      }
-      const rank = new Map(orderRef.current.map((id, index) => [id, index]));
-      return [...lists].sort((a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER));
-    }, [lists]);
-    const refetchRef = useRef(() => {
-    });
-    useEffect(() => {
-      refetchRef.current = (list) => {
-        if (progress2 || refetchingAll) return;
-        if (xtreamLoginMissing(list)) {
-          const parsed = parseXtreamSource(list.source);
-          askXtream(parsed ? `http://${parsed.host}` : "", parsed?.loginId ?? null);
-          return;
-        }
-        void runImport(list, true);
-      };
-    });
-    const onRefetch = useCallback((list) => refetchRef.current(list), []);
-    const onRemove = useCallback((list) => removeListAndSourceUrl(list), []);
-    const [curation, setCuration] = useState(null);
-    const onCategories = useCallback((list) => setCuration({ listId: list.id, mode: "settings" }), []);
-    const [pickerListId, setPickerListId] = useState(null);
-    const [members, setMembers] = useState(() => /* @__PURE__ */ new Set());
-    const pickerList = pickerListId ? getLiveTvLists().find((entry) => entry.id === pickerListId) ?? null : null;
-    const openPicker = useCallback((list) => {
-      setMembers(new Set((getLiveTvLists().find((entry) => entry.id === list.id)?.channels ?? []).map(channelKey)));
-      setPickerListId(list.id);
-    }, []);
-    const toggleMember = (channel) => {
-      if (!pickerListId) return;
-      const key = channelKey(channel);
-      if (members.has(key)) {
-        removeChannelFromLiveTvList(pickerListId, channel);
-        setMembers((current3) => {
-          const next = new Set(current3);
-          next.delete(key);
-          return next;
-        });
-        return;
-      }
-      const outcome = addChannelToLiveTvList(pickerListId, channel);
-      if (outcome === "full") {
-        toast(tt("listFull"));
-        return;
-      }
-      if (outcome === "added" || outcome === "duplicate") setMembers((current3) => new Set(current3).add(key));
-    };
-    const createList = () => keyboard.ask(tt("listName"), "", (value) => {
-      const name = value.trim();
-      if (!name) return;
-      openPicker(createLiveTvList(name));
-    });
-    const [refetchingAll, setRefetchingAll] = useState(false);
-    const importable = lists.filter((list) => Boolean(list.source) && (list.kind === "m3u" || list.kind === "xtream") && !xtreamLoginMissing(list));
-    async function refetchAll() {
-      if (progress2 || refetchingAll) return;
-      setRefetchingAll(true);
-      try {
-        for (const list of importable) await runImport(list, true);
-      } finally {
-        setRefetchingAll(false);
-      }
-    }
-    const plus = phone ? /* @__PURE__ */ jsx(PhoneCaret, {}) : "+";
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
-      phone ? importable.length > 0 ? /* @__PURE__ */ jsx("div", { style: { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", justifyContent: "flex-end" }, children: /* @__PURE__ */ jsx(Action, { phone: true, testId: "lists-refetch-all", label: refetchingAll ? tt("refetching") : tt("refetchAll"), disabled: refetchingAll || progress2 !== null, onOk: () => {
-        void refetchAll();
-      } }) }) : null : /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dp(16) }, children: [
-        /* @__PURE__ */ jsx(Heading, { children: tt("tabPlaylists") }),
-        importable.length > 0 ? /* @__PURE__ */ jsx(Action, { testId: "lists-refetch-all", label: refetchingAll ? tt("refetching") : tt("refetchAll"), disabled: refetchingAll || progress2 !== null, onOk: () => {
-          void refetchAll();
-        } }) : null
-      ] }),
-      ordered.map((list) => /* @__PURE__ */ jsx(
-        ListRow,
-        {
-          list,
-          tt,
-          locale,
-          busy: progress2?.listId === list.id ? progress2 : null,
-          needsLogin: xtreamLoginMissing(list),
-          onRefetch,
-          onRemove,
-          onEditChannels: openPicker,
-          onCategories,
-          phone
-        },
-        list.id
-      )),
-      keyboard.available ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addM3u"), right: plus, onOk: addUrl }) : null,
-      keyboard.available ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addXtream"), right: plus, onOk: () => askXtream("", null) }) : null,
-      keyboard.available ? /* @__PURE__ */ jsx(Row, { phone, testId: "create-list", label: tt("createList"), right: plus, onOk: createList }) : null,
-      /* @__PURE__ */ jsx(XtreamAccounts, { nav, tt, locale, phone, onReimport: (list) => {
-        void runImport(list, true);
-      } }),
-      pickerList ? /* @__PURE__ */ jsx(
-        TvListPicker,
-        {
-          model,
-          nav,
-          title: tt("pickChannels", { list: pickerList.name }),
-          selected: members,
-          onToggle: toggleMember,
-          onClose: () => setPickerListId(null)
-        }
-      ) : null,
-      curation ? (() => {
-        const target2 = lists.find((entry) => entry.id === curation.listId);
-        return target2 ? /* @__PURE__ */ jsx(TvCurationPicker, { nav, list: target2, mode: curation.mode, keyboard, onClose: () => setCuration(null) }) : null;
-      })() : null,
-      keyboard.node
-    ] });
-  }
-  function formatExpiry(expDate, locale) {
-    if (!expDate) return null;
-    const when = new Date(expDate * 1e3);
-    if (Number.isNaN(when.getTime())) return null;
-    return when.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
-  }
-  function XtreamAccounts({ nav, tt, locale, onReimport, phone = false }) {
-    const [logins, setLogins] = useState(getXtreamLogins);
-    useEffect(() => onXtreamLoginsChanged(() => setLogins(getXtreamLogins())), []);
-    const [pickerLoginId, setPickerLoginId] = useState(null);
-    const [categories, setCategories] = useState(null);
-    const [selected, setSelected] = useState(() => /* @__PURE__ */ new Set());
-    const [dirty2, setDirty] = useState(false);
-    const pickerLogin = pickerLoginId ? logins.find((entry) => entry.id === pickerLoginId) ?? null : null;
-    function openCategories(login) {
-      setCategories(null);
-      setSelected(new Set(login.categoryIds));
-      setDirty(false);
-      setPickerLoginId(login.id);
-      void fetchXtreamCategories(login).then((list) => setCategories(list)).catch(() => setCategories([]));
-    }
-    function writeCategories(login, ids) {
-      saveXtreamLogin({ ...login, categoryIds: ids });
-      setSelected(new Set(ids));
-      setDirty(true);
-    }
-    const listForLogin = (login) => getLiveTvLists().find((entry) => entry.xtreamLoginId === login.id || entry.source === xtreamPseudoUrl(login)) ?? null;
-    function closeCategories() {
-      const login = pickerLogin;
-      setPickerLoginId(null);
-      setDirty(false);
-      if (!login || !dirty2) return;
-      const list = listForLogin(login);
-      if (list) onReimport(list);
-    }
-    const pendingRef = useRef({ login: logins[0] ?? {}, dirty: false });
-    useEffect(() => {
-      if (pickerLogin) pendingRef.current = { login: pickerLogin, dirty: dirty2 };
-    });
-    useEffect(() => () => {
-      const pending5 = pendingRef.current;
-      if (!pending5.dirty || !pending5.login?.id) return;
-      const list = getLiveTvLists().find((entry) => entry.xtreamLoginId === pending5.login.id);
-      if (!list) return;
-      void importList(list).catch((err) => recordListImportOutcome(list.id, err instanceof Error ? err.message : String(err)));
-    }, []);
-    const orphanIds = new Set(getOrphanXtreamLogins().map((entry) => entry.id));
-    function removeLogin(login) {
-      deleteXtreamLoginAndData(login.id);
-      setLogins(getXtreamLogins());
-    }
-    if (logins.length === 0) return null;
-    return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx(Heading, { phone, hint: orphanIds.size > 0 ? tt("orphanLoginsHint") : void 0, children: tt("xtreamAccount") }),
-      logins.map((login) => /* @__PURE__ */ jsx(XtreamAccountCard, { login, tt, locale, phone, orphan: orphanIds.has(login.id), onCategories: () => openCategories(login), onRemove: () => removeLogin(login) }, login.id)),
-      pickerLogin ? /* @__PURE__ */ jsx(
-        TvCategoryPicker,
-        {
-          nav,
-          title: tt("xtreamCategoriesTitle"),
-          categories,
-          selected,
-          onToggle: (category) => {
-            const next = new Set(selected);
-            if (next.has(category.id)) next.delete(category.id);
-            else next.add(category.id);
-            writeCategories(pickerLogin, [...next]);
-          },
-          onSelectAll: () => writeCategories(pickerLogin, []),
-          onClose: closeCategories
-        }
-      ) : null
-    ] });
-  }
-  function XtreamAccountCard({ login, tt, locale, onCategories, onRemove, orphan = false, phone = false }) {
-    const [account, setAccount] = useState(null);
-    const [failed, setFailed] = useState(false);
-    useEffect(() => {
-      let cancelled = false;
-      setFailed(false);
-      void fetchXtreamAccount(login).then((next) => {
-        if (!cancelled) setAccount(next);
-      }).catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-      return () => {
-        cancelled = true;
-      };
-    }, [login.base, login.username, login.password]);
-    let host2 = login.base;
-    try {
-      host2 = new URL(login.base).host;
-    } catch {
-    }
-    const expiry = account ? formatExpiry(account.expDate, locale) : null;
-    const meta = failed ? tt("xtreamAccountUnavailable") : account ? [account.status, expiry ? tt("xtreamExpires", { date: expiry }) : tt("xtreamNoExpiry"), account.maxConnections ? tt("xtreamMaxConnections", { count: account.maxConnections }) : null].filter((part) => Boolean(part)).join(" \xB7 ") : tt("refetching");
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        "data-testid": `xtream-account-${login.id}`,
-        style: phone ? { padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16), fontSize: dp(19) },
-        children: [
-          /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 4 : dp(4) }, children: [
-            /* @__PURE__ */ jsx("strong", { style: phone ? { fontSize: 15, fontWeight: 600, ...ellipsis } : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: host2 }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: phone ? 13 : dp(16), color: failed ? "#fca5a5" : phone ? MT.dim : TV2.dim }, children: orphan ? `${tt("orphanLogins")} \xB7 ${meta}` : meta })
-          ] }),
-          phone ? /* @__PURE__ */ jsxs("div", { "data-list-actions": "", style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }, children: [
-            /* @__PURE__ */ jsx(
-              Action,
-              {
-                phone: true,
-                testId: `xtream-categories-${login.id}`,
-                label: `${tt("xtreamCategories")}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ""}`,
-                onOk: onCategories
-              }
-            ),
-            /* @__PURE__ */ jsx(Action, { phone: true, testId: `xtream-remove-${login.id}`, label: tt("orphanRemove"), onOk: onRemove })
-          ] }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), flexShrink: 0 }, children: [
-            /* @__PURE__ */ jsx(
-              Action,
-              {
-                testId: `xtream-categories-${login.id}`,
-                label: `${tt("xtreamCategories")}${login.categoryIds.length > 0 ? ` (${login.categoryIds.length})` : ""}`,
-                onOk: onCategories
-              }
-            ),
-            /* @__PURE__ */ jsx(Action, { testId: `xtream-remove-${login.id}`, label: tt("orphanRemove"), onOk: onRemove })
-          ] })
-        ]
-      }
-    );
-  }
-  function ContentTab({ model, tt, phone = false }) {
-    const source = model.activeSource;
-    const playlistId = model.activePlaylistId;
-    const cats = useVodCategories(source);
-    const [mode, setModeState] = useState(() => getVodMode(playlistId));
-    useEffect(() => setModeState(getVodMode(playlistId)), [playlistId]);
-    const choose = (next) => {
-      setVodMode(playlistId, next);
-      setModeState(next);
-    };
-    const options = [
-      { key: "link", title: tt("vodModeLinkTitle"), body: tt("vodModeLinkBody") },
-      { key: "rows", title: tt("vodModeRowsTitle"), body: tt("vodModeRowsBody") },
-      { key: "off", title: tt("vodModeOffTitle"), body: tt("vodModeOffBody") }
-    ];
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 12 : dp(14) }, "data-testid": "settings-content", children: [
-      /* @__PURE__ */ jsx(Heading, { phone, hint: cats.total > 0 ? tt("vodHint", { count: cats.total }) : tt("vodHintEmpty"), children: tt("vodHeading") }),
-      /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: phone ? 10 : dp(16), flexWrap: "wrap" }, children: options.map((option) => {
-        const active4 = option.key === mode;
-        return /* @__PURE__ */ jsxs(
-          "div",
-          {
-            "data-testid": `vod-mode-${option.key}`,
-            "data-active": active4 ? "" : void 0,
-            ...station(() => choose(option.key)),
-            style: phone ? { width: "100%", padding: "12px 14px", borderRadius: 12, background: MT.s07, border: `1px solid ${active4 ? TV2.acc : MT.line10}`, cursor: "pointer" } : { width: dp(340), padding: `${dp(16)}px ${dp(18)}px`, borderRadius: dp(14), background: TV2.s07, border: `1px solid ${active4 ? TV2.acc : TV2.lineCard}`, cursor: "pointer", textAlign: "left" },
-            children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), fontWeight: 600 }, children: option.title }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : "rgba(243,244,248,0.6)", marginTop: 4 }, children: option.body })
-            ]
-          },
-          option.key
-        );
-      }) }),
-      /* @__PURE__ */ jsx(VodLibrarySection, { tt, phone })
-    ] });
-  }
-  function VodLibrarySection({ tt, phone }) {
-    const { rows, progress: progress2, error, build, disabled } = useVodLibrarySources();
-    if (rows.length === 0) return null;
-    const statusText = (row) => {
-      if (progress2?.libraryId === row.libraryId) return tt("vodLibraryBuilding", { count: progress2.done.toLocaleString() });
-      if (row.importing) return tt("vodLibraryImporting");
-      if (row.indexedTitles === null) return tt("vodLibraryNotBuilt", { count: row.vodTitles.toLocaleString() });
-      return tt("vodLibraryBuilt", { count: row.indexedTitles.toLocaleString() });
-    };
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 8 : dp(10) }, "data-testid": "vod-library", children: [
-      /* @__PURE__ */ jsx(Heading, { phone, hint: tt("vodLibraryHint"), children: tt("vodLibraryHeading") }),
-      rows.map((row) => /* @__PURE__ */ jsxs(
-        "div",
-        {
-          "data-testid": `vod-library-${row.vodSource}`,
-          style: phone ? { padding: "12px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(16) },
-          children: [
-            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), ...ellipsis }, children: row.label }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: statusText(row) })
-            ] }),
-            /* @__PURE__ */ jsx(
-              Action,
-              {
-                phone,
-                testId: `vod-library-build-${row.vodSource}`,
-                label: row.indexedTitles === null ? tt("vodLibraryBuild") : tt("vodLibraryRebuild"),
-                disabled: disabled(row),
-                onOk: () => {
-                  void build(row);
-                }
-              }
-            )
-          ]
-        },
-        row.libraryId
-      )),
-      /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim, padding: phone ? "0 14px 5px" : void 0 }, children: error ? tt("vodLibraryFailed", { error }) : tt("vodLibraryWhereToEnable") })
-    ] });
-  }
-  function EpgTab({ lists, nav, tt, locale, phone = false }) {
-    const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
-    const { status, urls: statusUrls, refreshing, refresh } = useEpgStatus();
-    const urls = useMemo(() => lists.flatMap((list) => [
-      ...list.urlTvg && !list.autoEpgDisabled ? [{ listId: list.id, url: list.urlTvg, fromPlaylist: true }] : [],
-      ...list.epgUrls.map((url) => ({ listId: list.id, url, fromPlaylist: false }))
-    ]), [lists]);
-    const sectionGap = phone ? 0 : dp(10);
-    return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: sectionGap }, children: [
-        /* @__PURE__ */ jsx(Heading, { phone, children: tt("tabEpg") }),
-        urls.map(({ listId, url, fromPlaylist }) => {
-          const list = lists.find((l) => l.id === listId);
-          return /* @__PURE__ */ jsx(
-            Row,
-            {
-              phone,
-              label: fromPlaylist ? `${url}  \xB7  ${tt("epgFromPlaylist")}` : url,
-              right: fromPlaylist ? tt("epgAutoOff") : tt("remove"),
-              onOk: () => fromPlaylist ? updateLiveTvListEpg(listId, { autoEpgDisabled: true }) : updateLiveTvListEpg(listId, { epgUrls: list.epgUrls.filter((u) => u !== url) })
-            },
-            `${listId}:${url}`
-          );
-        }),
-        keyboard.available && lists[0] ? /* @__PURE__ */ jsx(Row, { phone, label: tt("addEpgUrl"), right: phone ? /* @__PURE__ */ jsx(PhoneCaret, {}) : "+", onOk: () => keyboard.ask(tt("addEpgUrl"), "", (value) => {
-          const url = value.trim();
-          if (url) updateLiveTvListEpg(lists[0].id, { epgUrls: [...lists[0].epgUrls, url] });
-        }, "url") }) : null,
-        keyboard.node
-      ] }),
-      statusUrls.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: sectionGap }, children: [
-        /* @__PURE__ */ jsxs("div", { style: phone ? { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, paddingRight: 14 } : { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dp(16) }, children: [
-          /* @__PURE__ */ jsx(Heading, { phone, children: tt("epgStatusTitle") }),
-          /* @__PURE__ */ jsx(Action, { phone, testId: "epg-refresh", label: refreshing ? tt("epgRefreshing") : tt("epgRefresh"), disabled: refreshing, onOk: () => {
-            void refresh();
-          } })
-        ] }),
-        statusUrls.map((url) => {
-          const stat = status?.urls.find((item) => item.url === url);
-          const fetched = stat?.fetchedAt ? formatFetchedAt2(new Date(stat.fetchedAt).toISOString(), locale) : null;
-          return /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-testid": `epg-status-${url}`,
-              style: phone ? { minHeight: 52, padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", flexDirection: "column", gap: 4, fontSize: 15 } : { minHeight: dp(64), borderRadius: dp(12), background: TV2.s06, padding: `${dp(12)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(4), fontSize: dp(18) },
-              children: [
-                /* @__PURE__ */ jsx("span", { style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: url }),
-                stat?.error ? /* @__PURE__ */ jsx("span", { style: { fontSize: phone ? 13 : dp(16), color: "#fca5a5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: stat.error }) : /* @__PURE__ */ jsxs("span", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: [
-                  stat ? tt("epgSourceStats", { channels: stat.channels.toLocaleString(locale), programmes: stat.programmes.toLocaleString(locale) }) : tt("epgNeverFetched"),
-                  fetched ? ` \xB7 ${tt("fetchedAt", { time: fetched })}` : ""
-                ] })
-              ]
-            },
-            url
-          );
-        })
-      ] }) : null
-    ] });
-  }
-  function ParentalTab({ model, tt, phone = false }) {
-    const [keys2, setKeys] = useState(getLockedChannelKeys);
-    useEffect(() => onChannelLocksChanged(() => setKeys(getLockedChannelKeys())), []);
-    const channels = keys2.map((key) => model.allChannels.find((c) => channelKey(c) === key)).filter((c) => Boolean(c));
-    const lockAvailable = pinSupportAvailable() && activeProfileHasPin2();
-    const [pinTarget, setPinTarget] = useState(null);
-    const requestUnlock = (channel) => {
-      if (!lockAvailable) {
-        toggleChannelLock(channel);
-        return;
-      }
-      setPinTarget(channel);
-    };
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
-      /* @__PURE__ */ jsx(Heading, { phone, children: tt("lockedChannels") }),
-      channels.length === 0 ? /* @__PURE__ */ jsx("div", { style: phone ? { fontSize: 15, color: MT.dim, padding: "4px 14px 14px" } : { fontSize: dp(18), color: TV2.dim }, children: tt("noLocked") }) : null,
-      channels.map((channel) => /* @__PURE__ */ jsx(Row, { phone, label: channel.name, right: tt("unlock"), onOk: () => requestUnlock(channel) }, channelKey(channel))),
-      /* @__PURE__ */ jsx(
-        PinGate,
-        {
-          open: pinTarget !== null,
-          title: tt("enterPin"),
-          wrongText: tt("pinWrong"),
-          unlockLabel: tt("unlock"),
-          cancelLabel: tt("cancel"),
-          onVerify: verifyActiveProfilePin2,
-          onClose: () => setPinTarget(null),
-          onUnlocked: () => {
-            const channel = pinTarget;
-            setPinTarget(null);
-            if (channel) toggleChannelLock(channel);
-          }
-        }
-      )
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -58863,9 +61151,12 @@ ${cue.text}`).join("\n\n")}
     const { model, nav, params, settings } = props;
     const { tt, locale } = useTvText();
     const guideMode = useGuideMode();
-    if (params.tab === "epg" || params.tab === "parental" || params.tab === "content") {
-      const rubrik = params.tab === "epg" ? "tabEpg" : params.tab === "parental" ? "tabParental" : "tabContent";
-      return /* @__PURE__ */ jsx(PhonePage, { header: /* @__PURE__ */ jsx(MobileHeader, { title: tt(rubrik), back: true, onBack: () => nav.go("settings") }), children: /* @__PURE__ */ jsx(Card3, { children: params.tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale, phone: true }) : params.tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt, phone: true }) : /* @__PURE__ */ jsx(ContentTab, { model, tt, phone: true }) }) });
+    if (params.tab === "epg" || params.tab === "parental" || params.tab === "content" || params.tab === "sport") {
+      const rubrik = params.tab === "epg" ? "tabEpg" : params.tab === "parental" ? "tabParental" : params.tab === "sport" ? "tabSport" : "tabContent";
+      return /* @__PURE__ */ jsx(PhonePage, { header: /* @__PURE__ */ jsx(MobileHeader, { title: tt(rubrik), back: true, onBack: () => nav.go("settings") }), children: /* @__PURE__ */ jsx(Card3, { children: params.tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale, phone: true }) : params.tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt, phone: true }) : params.tab === "sport" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(SportKeySettingsTv, { phone: true }),
+        /* @__PURE__ */ jsx(SportBackdropSettingsTv, { phone: true, pushLayer: nav.pushLayer })
+      ] }) : /* @__PURE__ */ jsx(ContentTab, { model, tt, phone: true }) }) });
     }
     const modes = [
       { key: "now", label: tt("phoneModeNow") },
@@ -58883,7 +61174,8 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx(Section2, { label: tt("sectionMore"), children: /* @__PURE__ */ jsxs(Card3, { children: [
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-content-nav", label: tt("tabContent"), onOk: () => nav.go("settings", { tab: "content" }) }),
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-epg", label: tt("tabEpg"), onOk: () => nav.go("settings", { tab: "epg" }) }),
-        /* @__PURE__ */ jsx(NavRow, { testId: "settings-parental", label: tt("tabParental"), onOk: () => nav.go("settings", { tab: "parental" }) })
+        /* @__PURE__ */ jsx(NavRow, { testId: "settings-parental", label: tt("tabParental"), onOk: () => nav.go("settings", { tab: "parental" }) }),
+        /* @__PURE__ */ jsx(NavRow, { testId: "settings-sport", label: tt("tabSport"), onOk: () => nav.go("settings", { tab: "sport" }) })
       ] }) })
     ] });
   }
@@ -58918,15 +61210,15 @@ ${cue.text}`).join("\n\n")}
   }
   function NavRow({ label, onOk, testId }) {
     return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOk), style: { minHeight: 52, padding: "10px 14px", borderBottom: `1px solid ${MT.line07}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 15, cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }),
+      /* @__PURE__ */ jsx("span", { style: ellipsis2, children: label }),
       /* @__PURE__ */ jsx(PhoneCaret, {})
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_jsx_runtime_shim();
-  var TABS = ["appearance", "content", "playlists", "epg", "parental"];
+  var TABS = ["appearance", "content", "playlists", "epg", "parental", "sport"];
   var accentApi = plugin_sdk_exports;
   var hasAccent = typeof accentApi.getAccent === "function" && typeof accentApi.setAccent === "function" && !!accentApi.ACCENT_PRESETS;
   function TvSettingsView(props) {
@@ -58937,7 +61229,7 @@ ${cue.text}`).join("\n\n")}
     const { tt, locale } = useTvText();
     const initial = TABS.includes(params.tab ?? "") ? params.tab : "appearance";
     const [tab, setTab] = useState(initial);
-    const labels = { appearance: tt("tabAppearance"), content: tt("tabContent"), playlists: tt("tabPlaylists"), epg: tt("tabEpg"), parental: tt("tabParental") };
+    const labels = { appearance: tt("tabAppearance"), content: tt("tabContent"), playlists: tt("tabPlaylists"), epg: tt("tabEpg"), parental: tt("tabParental"), sport: tt("tabSport") };
     return /* @__PURE__ */ jsxs("div", { style: { flex: 1, minHeight: 0, display: "flex" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV2.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(6) }, children: [
         /* @__PURE__ */ jsx("div", { style: { fontSize: dp(30), fontWeight: 600, marginBottom: dp(16) }, children: tt("liveTv") }),
@@ -58948,7 +61240,11 @@ ${cue.text}`).join("\n\n")}
         tab === "content" ? /* @__PURE__ */ jsx(ContentTab, { model, tt }) : null,
         tab === "playlists" ? /* @__PURE__ */ jsx(PlaylistsTab, { model, nav, lists: model.lists, tt, locale, toast: nav.toast }) : null,
         tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale }) : null,
-        tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt }) : null
+        tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt }) : null,
+        tab === "sport" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx(SportKeySettingsTv, {}),
+          /* @__PURE__ */ jsx(SportBackdropSettingsTv, { pushLayer: nav.pushLayer })
+        ] }) : null
       ] })
     ] });
   }
@@ -58957,7 +61253,7 @@ ${cue.text}`).join("\n\n")}
     const [accent, setAccentState] = useState(() => hasAccent ? accentApi.getAccent() : "");
     const newGuide = useNewGuideSurface(false);
     const modes = newGuide ? [{ key: "grid", label: tt("modeGrid") }, { key: "nownext", label: tt("modeNowNext") }, { key: "timeline", label: tt("modeTimelineDay") }] : [{ key: "now", label: tt("modeNow") }, { key: "tl", label: tt("modeTimeline") }, { key: "grid", label: tt("modeGrid") }, { key: "playlists", label: tt("modePlaylists") }];
-    const nextBanner = (current3) => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current3) + 1) % BANNER_HIDE_OPTIONS.length];
+    const nextBanner = (current5) => BANNER_HIDE_OPTIONS[(BANNER_HIDE_OPTIONS.indexOf(current5) + 1) % BANNER_HIDE_OPTIONS.length];
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       hasAccent ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
         /* @__PURE__ */ jsx(Heading, { children: tt("accentColour") }),
@@ -58990,23 +61286,174 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_react_shim();
+  init_plugin_sdk();
   init_tv_ui();
   init_sport_model();
   init_sport_epg();
   init_sport_store();
   init_sport_day_model();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-backdrop.tsx
+  init_jsx_runtime_shim();
+  function SportBackdropLayer({ choice, phone, onBroken }) {
+    if (choice.kind === "none") return null;
+    const image = choice.kind === "image" ? choice : null;
+    const src = image ? backdropSrc(image) : null;
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "sport-backdrop",
+        "data-backdrop": image ? image.from : "gradient",
+        "aria-hidden": "true",
+        style: { position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", background: choice.kind === "gradient" ? SPORT_GRADIENTS[choice.sport] : "#000" },
+        children: image && src ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("img", { src, alt: "", decoding: "async", onError: () => onBroken(image.url), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" } }),
+          /* @__PURE__ */ jsx("div", { "data-scrim": "", style: { position: "absolute", inset: 0, backgroundImage: phone ? BACKDROP_SCRIM_PHONE : BACKDROP_SCRIM } })
+        ] }) : null
+      }
+    );
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_ctx();
+  init_results_controller();
+  init_live_poller();
+  init_sport_score();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+  init_sport_parts();
+  init_sport_score();
+  init_sport_store();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/results-model.ts
+  var isLive = (m) => m.status === "live";
+  var isMine = (m) => m.sources.length > 0 && !m.resultOnly;
+  function groupResults(matches, filter) {
+    const eligible = matches.filter((m) => m.coverage === "full" && m.fixture?.leagueId);
+    const shown = eligible.filter((m) => filter === "live" ? isLive(m) : filter === "mine" ? isMine(m) : true);
+    const groups = /* @__PURE__ */ new Map();
+    for (const m of shown) {
+      const key = `${m.kind}|${m.fixture.leagueId}`;
+      const g = groups.get(key) ?? { key, sport: m.kind, league: m.league, leagueId: m.fixture.leagueId, season: m.fixture.season ?? "", round: m.round ?? null, matches: [] };
+      g.matches.push(m);
+      groups.set(key, g);
+    }
+    for (const g of groups.values()) g.matches.sort((a, b) => a.start - b.start);
+    return { groups: [...groups.values()], liveCount: eligible.filter(isLive).length, mineCount: eligible.filter(isMine).length };
+  }
+  function formLetters(form, tt) {
+    const map = { W: tt("sportFormW"), D: tt("sportFormD"), L: tt("sportFormL") };
+    return (form ?? "").toUpperCase().split("").filter((c) => c === "W" || c === "D" || c === "L").map((kind) => ({ kind, letter: map[kind] }));
+  }
+  var FORM_COLOR = { W: "#3cd6a3", D: "rgba(243,244,248,0.45)", L: "#e0776a" };
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  init_jsx_runtime_shim();
+  function StandingsTable({ rows, tt }) {
+    const cell = { padding: `${dp(6)}px ${dp(8)}px`, fontSize: dp(15) };
+    return /* @__PURE__ */ jsxs("table", { style: { width: "100%", borderCollapse: "collapse", color: TV2.text }, children: [
+      /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { style: { color: TV2.dim, textAlign: "left" }, children: [
+        /* @__PURE__ */ jsx("th", { style: cell, children: "#" }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColTeam") }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPlayed") }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPoints") }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColForm") })
+      ] }) }),
+      /* @__PURE__ */ jsx("tbody", { children: rows.map((r) => /* @__PURE__ */ jsxs("tr", { style: { borderTop: `1px solid ${TV2.line}` }, children: [
+        /* @__PURE__ */ jsx("td", { style: cell, children: r.rank }),
+        /* @__PURE__ */ jsx("td", { style: cell, children: /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: dp(8) }, children: [
+          /* @__PURE__ */ jsx(Crest, { name: r.team.name, colorKey: r.team.id, src: r.team.crest, size: dp(20) }),
+          r.team.name
+        ] }) }),
+        /* @__PURE__ */ jsx("td", { style: cell, children: r.played }),
+        /* @__PURE__ */ jsx("td", { style: { ...cell, fontWeight: 600 }, children: r.points }),
+        /* @__PURE__ */ jsx("td", { style: cell, children: /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", gap: dp(4) }, children: formLetters(r.form, tt).map((f, i) => /* @__PURE__ */ jsx("span", { style: { width: dp(18), height: dp(18), borderRadius: dp(4), background: FORM_COLOR[f.kind], color: "#0e0f13", fontSize: dp(11), fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: f.letter }, i)) }) })
+      ] }, `${r.group ?? ""}-${r.rank}-${r.team.id}`)) })
+    ] });
+  }
+  function SportResults({ matches, controller, onOpenMatch, tv }) {
+    const { tt } = useTvText();
+    const settings = useSportSettings();
+    const [filter, setFilter] = useState("all");
+    const [showCard, setShowCard] = useState(false);
+    const [tables, setTables] = useState({});
+    const groupRefs = useRef(/* @__PURE__ */ new Map());
+    if (!settings.apiKey || !controller) {
+      if (settings.keyCardDismissed && !showCard) {
+        return /* @__PURE__ */ jsx("div", { "data-testid": "sport-key-add-row", ...station(() => setShowCard(true), void 0, tv ? { "data-init": "" } : void 0), style: { color: TV2.dim, fontSize: dp(16), cursor: "pointer", padding: dp(12) }, children: tt("sportKeyAddRow") });
+      }
+      return /* @__PURE__ */ jsx(KeyCard, { variant: "tab", onDone: () => setShowCard(false) });
+    }
+    const { groups, liveCount, mineCount } = groupResults(matches, filter);
+    const toggleTable = async (g) => {
+      if (tables[g.key]) {
+        setTables((t) => {
+          const { [g.key]: _drop, ...rest } = t;
+          return rest;
+        });
+        return;
+      }
+      setTables((t) => ({ ...t, [g.key]: "loading" }));
+      const rows = controller.standings(g.sport, g.leagueId, g.season) ?? await controller.loadStandings(g.sport, g.leagueId, g.season);
+      setTables((t) => ({ ...t, [g.key]: rows ?? [] }));
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-results", style: { display: "flex", flexDirection: "column", gap: dp(20) }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(10), flexWrap: "wrap" }, children: [
+        /* @__PURE__ */ jsx(Chip, { active: filter === "all", ...station(() => setFilter("all"), void 0, tv ? { "data-init": "" } : void 0), children: tt("sportResultsAll") }),
+        /* @__PURE__ */ jsx(Chip, { active: filter === "live", ...station(() => setFilter("live")), children: `${tt("sportResultsLive")} (${liveCount})` }),
+        /* @__PURE__ */ jsx(Chip, { active: filter === "mine", ...station(() => setFilter("mine")), children: tt("sportResultsMine", { n: mineCount }) })
+      ] }),
+      groups.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(10), alignItems: "center", flexWrap: "wrap" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(13), letterSpacing: "0.12em", color: TV2.dim }, children: tt("sportJumpTo") }),
+        groups.map((g) => /* @__PURE__ */ jsx(Chip, { active: false, ...station(() => {
+          const el = groupRefs.current.get(g.key);
+          el?.scrollIntoView?.({ block: "start" });
+          el?.querySelector("[data-f]")?.focus();
+        }), children: g.league }, g.key))
+      ] }) : null,
+      groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { color: TV2.dim, fontSize: dp(16) }, children: tt("sportResultsEmpty") }) : null,
+      groups.map((g) => /* @__PURE__ */ jsxs("section", { ref: (el) => {
+        if (el) groupRefs.current.set(g.key, el);
+        else groupRefs.current.delete(g.key);
+      }, style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: g.round != null ? `${g.league} \xB7 ${tt("sportRound", { n: g.round })}` : g.league }),
+          /* @__PURE__ */ jsx("div", { ...station(() => void toggleTable(g)), style: { fontSize: dp(15), color: TV2.muted, cursor: "pointer", padding: `${dp(6)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.s08 }, children: tt("sportTable") })
+        ] }),
+        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { ...station(() => onOpenMatch(m)), style: { display: "grid", gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: "center", gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, borderRadius: dp(10), background: TV2.s05, cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: m.status === "live" ? TV2.live : TV2.dim }, children: matchStatusLabel(m, tt) ?? "" }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: dp(8), justifyContent: "flex-end" }, children: [
+            m.home,
+            /* @__PURE__ */ jsx(Crest, { name: m.home ?? "", colorKey: m.homeKey ?? "", src: m.homeCrest, size: dp(22) })
+          ] }),
+          /* @__PURE__ */ jsx(MatchScore, { match: m, size: "row" }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: dp(8) }, children: [
+            /* @__PURE__ */ jsx(Crest, { name: m.away ?? "", colorKey: m.awayKey ?? "", src: m.awayCrest, size: dp(22) }),
+            m.away
+          ] })
+        ] }, m.id)),
+        tables[g.key] && tables[g.key] !== "loading" ? /* @__PURE__ */ jsx(StandingsTable, { rows: tables[g.key], tt }) : null
+      ] }, g.key))
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_parts();
   init_sport_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_model();
   init_sport_day_model();
   init_sport_ctx();
+  init_score_model();
+  init_sport_score();
   init_sport_parts();
   init_sport_icons();
   init_jsx_runtime_shim();
@@ -59037,26 +61484,29 @@ ${cue.text}`).join("\n\n")}
       ] }),
       match.home && match.away ? /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: dp(28), width: "100%" }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: dp(18), minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(42), fontWeight: 600, ...ellipsis2 }, children: match.home }),
-          /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: dp(84) })
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(42), fontWeight: 600, ...ellipsis3 }, children: match.home }),
+          /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: dp(84), src: match.homeCrest })
         ] }),
-        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, color: st === "live" ? TV2.liveText : TV2.muted, textAlign: "center", whiteSpace: "nowrap" }, children: timeLine(match, ctx) }),
+        /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(4) }, children: [
+          showsScore(match) ? /* @__PURE__ */ jsx(MatchScore, { match, size: "hero" }) : null,
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, color: st === "live" ? TV2.liveText : TV2.muted, whiteSpace: "nowrap" }, children: heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx) })
+        ] }),
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(18), minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx(Crest, { name: match.away, colorKey: match.awayKey ?? match.away, size: dp(84) }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(42), fontWeight: 600, ...ellipsis2 }, children: match.away })
+          /* @__PURE__ */ jsx(Crest, { name: match.away, colorKey: match.awayKey ?? match.away, size: dp(84), src: match.awayCrest }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(42), fontWeight: 600, ...ellipsis3 }, children: match.away })
         ] })
       ] }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(8) }, children: [
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(42), fontWeight: 600 }, children: matchTitle(match) }),
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), color: st === "live" ? TV2.liveText : TV2.muted }, children: timeLine(match, ctx) })
       ] }),
-      st === "live" ? /* @__PURE__ */ jsx(Progress, { value: progressOf(match.start, match.stop, ctx.now), height: dp(5), style: { width: "40%" } }) : null,
+      st === "live" ? /* @__PURE__ */ jsx(Progress, { value: match.minute != null && match.kind === "football" ? Math.min(match.minute / 90, 1) : progressOf(match.start, match.stop, ctx.now), height: dp(5), style: { width: "40%" } }) : null,
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(14), flexWrap: "wrap", justifyContent: "center" }, children: [
         best ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-hero-watch", ...station(() => ctx.watch(match)), style: primaryBtn, children: [
           /* @__PURE__ */ jsx(SportIcons.Play, { size: dp(20) }),
           ctx.tt("sportWatchOn", { channel: best.name })
         ] }) : null,
         /* @__PURE__ */ jsx("div", { "data-testid": "sport-hero-mc", ...station(() => ctx.openMatch(match)), style: secondaryBtn, children: ctx.tt("sportMatchCenter") }),
-        match.sources.length > 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "#86efac" }, children: ctx.tt("sportSources", { n: match.sources.length }) }) : null
+        match.resultOnly ? /* @__PURE__ */ jsx(ResultOnlyTag, {}) : match.sources.length > 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: "#86efac" }, children: ctx.tt("sportSources", { n: match.sources.length }) }) : null
       ] })
     ] });
   }
@@ -59068,8 +61518,8 @@ ${cue.text}`).join("\n\n")}
         return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-next-row", "data-match-id": m.id, ...station(() => ctx.openMatch(m), () => ctx.toggleRemind(m)), style: { display: "flex", alignItems: "center", gap: dp(14), padding: `${dp(12)}px ${dp(14)}px`, borderRadius: dp(12), background: TV2.s08, border: `1px solid ${TV2.line}`, cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(24), fontWeight: 700, flexShrink: 0 }, children: formatClock2(m.start, ctx.locale) }),
           /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis2 }, children: best?.name ?? "" })
+            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: matchTitle(m) }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis3 }, children: best?.name ?? "" })
           ] }),
           ctx.isReminded(m) ? /* @__PURE__ */ jsx("span", { "data-testid": "next-reminded", style: { display: "inline-flex", color: TV2.accText }, children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(20) }) }) : null
         ] }, m.id);
@@ -59095,60 +61545,64 @@ ${cue.text}`).join("\n\n")}
       rows.flatMap((row) => row.lanes.map((lane, laneIndex) => /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", alignItems: "center", height: dp(50) }, children: [
         /* @__PURE__ */ jsx("div", { style: { width: dp(LABEL_W), flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(16), fontWeight: 600, paddingRight: dp(10), boxSizing: "border-box" }, children: laneIndex === 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx(LeagueDot, { leagueKey: row.key }),
-          /* @__PURE__ */ jsx("span", { style: ellipsis2, children: row.label || ctx.kindLabel(row.kind) })
+          /* @__PURE__ */ jsx("span", { style: ellipsis3, children: row.label || ctx.kindLabel(row.kind) })
         ] }) : null }),
         /* @__PURE__ */ jsxs("div", { style: { position: "relative", flex: 1, height: dp(42), background: TV2.s05, borderRadius: dp(8) }, children: [
-          lane.map((m) => {
-            const st = statusAt(m, ctx.now);
-            const left = pct2(m.start);
-            const width = Math.max(pct2(m.stop) - left, 1.5);
-            const label = m.home && m.away ? `${crestText(m.home)}\u2013${crestText(m.away)}` : matchTitle(m);
-            return /* @__PURE__ */ jsx(
-              "div",
-              {
-                "data-testid": `sport-block-${m.id}`,
-                "data-status": st,
-                ...station(() => ctx.openMatch(m)),
-                style: {
-                  position: "absolute",
-                  top: 0,
-                  bottom: 0,
-                  left: `${left}%`,
-                  width: `${width}%`,
-                  boxSizing: "border-box",
-                  padding: `0 ${dp(10)}px`,
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: dp(15),
-                  fontWeight: 600,
-                  borderRadius: dp(8),
-                  cursor: "pointer",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  background: st === "live" ? TV2.accMix(30) : st === "finished" ? TV2.s07 : TV2.s14,
-                  border: `1px solid ${st === "live" ? TV2.accMix(85) : TV2.lineCard}`,
-                  borderLeft: `${dp(4)}px solid ${leagueColor(m.leagueKey || m.kind)}`,
-                  color: st === "finished" ? TV2.dim : TV2.text
-                },
-                children: st === "upcoming" ? `${formatClock2(m.start, ctx.locale)} ${label}` : label
-              },
-              m.id
-            );
-          }),
+          lane.map((m) => /* @__PURE__ */ jsx(TimelineBlock, { ctx, m, left: pct2(m.start), width: Math.max(pct2(m.stop) - pct2(m.start), 1.5) }, m.id)),
           nowInside ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", top: -dp(4), bottom: -dp(4), left: `${pct2(ctx.now)}%`, width: dp(3), background: TV2.acc, boxShadow: `0 0 ${dp(8)}px ${TV2.acc}` } }) : null
         ] })
       ] }, `${row.key}-${laneIndex}`)))
     ] });
   }
+  function TimelineBlock({ ctx, m, left, width }) {
+    const blink = useGoalBlink(m);
+    const st = statusAt(m, ctx.now);
+    const base = m.home && m.away ? `${crestText(m.home)}\u2013${crestText(m.away)}` : matchTitle(m);
+    const tail = scoreText(m) ?? (st === "finished" ? matchStatusLabel(m, ctx.tt) : null);
+    const label = st === "upcoming" ? `${formatClock2(m.start, ctx.locale)} ${base}` : [base, tail].filter(Boolean).join(" ");
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": `sport-block-${m.id}`,
+        "data-status": st,
+        ...station(() => ctx.openMatch(m)),
+        style: {
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: `${left}%`,
+          width: `${width}%`,
+          boxSizing: "border-box",
+          padding: `0 ${dp(10)}px`,
+          display: "flex",
+          alignItems: "center",
+          fontSize: dp(15),
+          fontWeight: 600,
+          borderRadius: dp(8),
+          cursor: "pointer",
+          overflow: "hidden",
+          whiteSpace: "nowrap",
+          background: st === "live" ? TV2.accMix(30) : st === "finished" ? TV2.s07 : TV2.s14,
+          border: `1px solid ${st === "live" ? TV2.accMix(85) : TV2.lineCard}`,
+          borderLeft: `${dp(4)}px solid ${leagueColor(m.leagueKey || m.kind)}`,
+          outline: blink ? `2px solid ${TV2.live}` : void 0,
+          color: st === "finished" ? TV2.dim : TV2.text
+        },
+        children: label
+      }
+    );
+  }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_epg();
   init_sport_model();
   init_sport_day_model();
   init_sport_ctx();
+  init_score_model();
   init_sport_parts();
+  init_sport_score();
   init_sport_icons();
   init_jsx_runtime_shim();
   var avatarCol = { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(8), width: dp(150), flexShrink: 0, cursor: "pointer" };
@@ -59178,18 +61632,19 @@ ${cue.text}`).join("\n\n")}
         ] }),
         live2.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "feed-now-row", style: { ...cardStyle, display: "flex", alignItems: "center", gap: dp(18), padding: `${dp(14)}px ${dp(18)}px`, borderLeft: `${dp(6)}px solid ${leagueColor(m.leagueKey || m.kind)}` }, children: [
           /* @__PURE__ */ jsxs("div", { style: { width: dp(80), display: "flex", flexDirection: "column", gap: dp(6), flexShrink: 0 }, children: [
-            /* @__PURE__ */ jsx("span", { style: { color: TV2.live, fontWeight: 700, fontSize: dp(16) }, children: ctx.tt("live") }),
+            /* @__PURE__ */ jsx("span", { style: { color: TV2.live, fontWeight: 700, fontSize: dp(16) }, children: [ctx.tt("live"), matchStatusLabel(m, ctx.tt)].filter(Boolean).join(" ") }),
             /* @__PURE__ */ jsx(Progress, { value: progressOf(m.start, m.stop, ctx.now), height: dp(4) })
           ] }),
           /* @__PURE__ */ jsxs("div", { ...station(() => ctx.openMatch(m)), style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: dp(16), cursor: "pointer" }, children: [
             m.home && m.away ? /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexShrink: 0 }, children: [
-              /* @__PURE__ */ jsx(Crest, { name: m.home, colorKey: m.homeKey ?? m.home, size: dp(48) }),
-              /* @__PURE__ */ jsx("span", { style: { marginLeft: -dp(14) }, children: /* @__PURE__ */ jsx(Crest, { name: m.away, colorKey: m.awayKey ?? m.away, size: dp(48) }) })
+              /* @__PURE__ */ jsx(Crest, { name: m.home, colorKey: m.homeKey ?? m.home, size: dp(48), src: m.homeCrest }),
+              /* @__PURE__ */ jsx("span", { style: { marginLeft: -dp(14) }, children: /* @__PURE__ */ jsx(Crest, { name: m.away, colorKey: m.awayKey ?? m.away, size: dp(48), src: m.awayCrest }) })
             ] }) : null,
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(21), fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted, ...ellipsis2 }, children: [m.league || ctx.kindLabel(m.kind), followState(m, ctx.follows).any ? ctx.tt("sportYouFollow").toLowerCase() : null].filter(Boolean).join(" \xB7 ") })
-            ] })
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(21), fontWeight: 600, ...ellipsis3 }, children: matchTitle(m) }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted, ...ellipsis3 }, children: [m.league || ctx.kindLabel(m.kind), followState(m, ctx.follows).any ? ctx.tt("sportYouFollow").toLowerCase() : null].filter(Boolean).join(" \xB7 ") })
+            ] }),
+            /* @__PURE__ */ jsx(MatchScore, { match: m, size: "row" })
           ] }),
           /* @__PURE__ */ jsx("span", { "data-testid": "feed-source-chip", style: { fontSize: dp(15), padding: `${dp(6)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.s12, whiteSpace: "nowrap" }, children: sourceChip(m, ctx) }),
           /* @__PURE__ */ jsx("div", { "data-testid": "feed-play", ...station(() => ctx.watch(m)), "aria-label": ctx.tt("sportWatch"), style: { width: dp(56), height: dp(56), minHeight: dp(56), borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }, children: /* @__PURE__ */ jsx(SportIcons.Play, { size: dp(22) }) })
@@ -59205,8 +61660,8 @@ ${cue.text}`).join("\n\n")}
               /* @__PURE__ */ jsx("div", { "data-testid": "feed-plan-check", ...station(() => ctx.toggleRemind(m)), role: "checkbox", "aria-checked": reminded ? "true" : "false", "aria-label": ctx.tt("sportRemindMe"), style: { width: dp(34), height: dp(34), minHeight: dp(34), borderRadius: dp(8), border: `2px solid ${reminded ? TV2.acc : TV2.lineStrong}`, background: reminded ? TV2.acc : "transparent", color: TV2.onAcc, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: dp(20), cursor: "pointer", flexShrink: 0 }, children: reminded ? "\u2713" : "" }),
               /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 700, width: dp(84), flexShrink: 0 }, children: formatClock2(m.start, ctx.locale) }),
               /* @__PURE__ */ jsxs("div", { ...station(() => ctx.openMatch(m)), style: { flex: 1, minWidth: 0, cursor: "pointer" }, children: [
-                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
-                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted, ...ellipsis2 }, children: [m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(" \xB7 ") })
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, ...ellipsis3 }, children: matchTitle(m) }),
+                /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted, ...ellipsis3 }, children: [m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(" \xB7 ") })
               ] }),
               followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24", display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(22), filled: true }) }) : null
             ] }, m.id);
@@ -59217,7 +61672,7 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: TV2.muted }, children: `${ctx.tt("sportKickoffAlert")}: ${alertLabel(ctx)}` }),
             planned.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "evening-row", style: { display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(16) }, children: [
               /* @__PURE__ */ jsx("span", { style: { fontWeight: 700 }, children: formatClock2(m.start, ctx.locale) }),
-              /* @__PURE__ */ jsx("span", { style: { ...ellipsis2, flex: 1 }, children: matchTitle(m) }),
+              /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: matchTitle(m) }),
               clash.has(m.id) ? /* @__PURE__ */ jsxs("span", { "data-testid": "evening-clash", title: ctx.tt("sportClash"), style: { color: "#fbbf24" }, children: [
                 "\u26A0 ",
                 ctx.tt("sportClash")
@@ -59229,8 +61684,8 @@ ${cue.text}`).join("\n\n")}
       finished.length > 0 ? /* @__PURE__ */ jsxs("section", { "data-testid": "feed-finished", style: { display: "flex", flexDirection: "column", gap: dp(12) }, children: [
         /* @__PURE__ */ jsx("span", { style: sectionTitle, children: ctx.tt("sportFinished") }),
         /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: dp(12) }, children: finished.map((m) => /* @__PURE__ */ jsxs("div", { ...station(() => ctx.openMatch(m)), style: { ...cardStyle, padding: `${dp(12)}px ${dp(16)}px`, display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(17), cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("span", { style: { ...ellipsis2, flex: 1 }, children: matchTitle(m) }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: TV2.dim }, children: ctx.tt("sportEnded") })
+          /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: matchTitle(m) }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: TV2.dim }, children: scoreText(m) ?? ctx.tt("sportEnded") })
         ] }, m.id)) })
       ] }) : null
     ] });
@@ -59238,23 +61693,37 @@ ${cue.text}`).join("\n\n")}
   function TeamAvatar({ ctx, follow, dayMatches, days }) {
     const ring = teamRing(follow, dayMatches, ctx.now);
     const next = nextMatchFor(follow, days, ctx.now);
-    const status = ring === "live" ? ctx.tt("live") : next ? localDayKey(next.start) === localDayKey(ctx.now) ? formatClock2(next.start, ctx.locale) : ctx.tt("sportTomorrow") : "";
+    const liveMatch = ring === "live" ? dayMatches.find((m) => statusAt(m, ctx.now) === "live" && followState(m, [follow]).any) : void 0;
+    const status = ring === "live" ? [ctx.tt("live"), liveMatch ? scoreText(liveMatch) : null].filter(Boolean).join(" ") : next ? localDayKey(next.start) === localDayKey(ctx.now) ? formatClock2(next.start, ctx.locale) : ctx.tt("sportTomorrow") : "";
     const ringShadow = ring === "live" ? `0 0 0 ${dp(4)}px #ef4444` : ring === "today" ? `0 0 0 ${dp(3)}px ${TV2.text}` : `0 0 0 ${dp(2)}px ${TV2.s14}`;
     return /* @__PURE__ */ jsxs("div", { "data-testid": "feed-team", "data-ring": ring, ...station(() => {
       if (next) ctx.openMatch(next);
     }), style: avatarCol, children: [
       /* @__PURE__ */ jsxs("span", { style: { position: "relative", borderRadius: 999, boxShadow: ringShadow, display: "inline-flex" }, children: [
-        /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(108) }),
+        /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(108), src: crestForFollow(follow, dayMatches) }),
         ring === "live" ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: "50%", bottom: -dp(10), transform: "translateX(-50%)", padding: `${dp(2)}px ${dp(8)}px`, borderRadius: dp(6), background: "#ef4444", color: "#fff", fontSize: dp(12), fontWeight: 700, letterSpacing: "0.1em" }, children: ctx.tt("live") }) : null
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600, maxWidth: "100%", textAlign: "center", ...ellipsis2, marginTop: dp(6) }, children: follow.name }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600, maxWidth: "100%", textAlign: "center", ...ellipsis3, marginTop: dp(6) }, children: follow.name }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: ring === "live" ? TV2.live : TV2.muted }, children: status })
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_react_shim();
+  init_plugin_sdk();
   init_tv_ui();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/follow-search.ts
+  init_budget();
+  async function searchProviderTeams(sport, q) {
+    const budget = currentBudget();
+    if (!budget || q.trim().length < 3 || budget.provider.coverage(sport) !== "full") return [];
+    const res = await budget.searchTeams(sport, q);
+    return res.data ?? [];
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  init_merge();
   init_sport_model();
   init_sport_day_model();
   init_sport_store();
@@ -59307,12 +61776,22 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(66) }),
         /* @__PURE__ */ jsx("div", { "data-testid": "follow-star", ...station(() => toggleFollow(follow)), "aria-pressed": following ? "true" : "false", "aria-label": following ? ctx.tt("sportFollowingName", { name: follow.name }) : ctx.tt("sportFollowName", { name: follow.name }), style: { marginLeft: "auto", color: following ? "#fbbf24" : TV2.dim, display: "inline-flex", cursor: "pointer" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(28), filled: following }) })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis2 }, children: follow.name }),
-      /* @__PURE__ */ jsx("span", { ...next ? station(() => ctx.openMatch(next)) : {}, style: { fontSize: dp(15), color: TV2.muted, ...ellipsis2 }, children: followNextLine(ctx, follow, next) })
+      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis3 }, children: follow.name }),
+      /* @__PURE__ */ jsx("span", { ...next ? station(() => ctx.openMatch(next)) : {}, style: { fontSize: dp(15), color: TV2.muted, ...ellipsis3 }, children: followNextLine(ctx, follow, next) })
     ] });
   }
   function FollowPicker({ ctx, days, onClose }) {
     const [sport, setSport] = useState("all");
+    const [query, setQuery] = useState("");
+    const [hits, setHits] = useState([]);
+    const tv = useTvMode();
+    const prompt = useTextPrompt({ pushLayer: ctx.nav.pushLayer });
+    const hasKey = !!ctx.settings.apiKey;
+    const submit = async (q) => {
+      setQuery(q);
+      const res = await searchProviderTeams(sport === "all" ? "football" : sport, q);
+      setHits(res);
+    };
     const all = followCandidates(days);
     const rows = all.filter((c) => sport === "all" || c.sport === sport);
     const chips = [
@@ -59326,23 +61805,52 @@ ${cue.text}`).join("\n\n")}
         title: ctx.tt("sportFollowAdd"),
         onClose,
         testId: "follow-picker",
-        chips: /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: chips.map((chip, index) => /* @__PURE__ */ jsx(Chip, { "data-testid": `follow-chip-${chip.key}`, active: sport === chip.key, ...station(() => setSport(chip.key), void 0, rows.length === 0 && index === 0 ? { "data-init": "" } : void 0), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.key)) }),
-        rows: rows.map((c, index) => {
+        chips: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+          hasKey ? tv ? /* @__PURE__ */ jsx("div", { "data-testid": "follow-search", ...station(() => prompt.ask(ctx.tt("sportFollowSearch"), query, (v) => void submit(v))), style: { height: dp(48), minHeight: dp(48), padding: `0 ${dp(16)}px`, borderRadius: dp(10), background: TV2.s08, border: `1px solid ${TV2.lineCard}`, display: "flex", alignItems: "center", fontSize: dp(17), color: query ? TV2.text : TV2.dim, cursor: "pointer" }, children: query || ctx.tt("sportFollowSearch") }) : /* @__PURE__ */ jsx(
+            "input",
+            {
+              "data-testid": "follow-search",
+              value: query,
+              placeholder: ctx.tt("sportFollowSearch"),
+              onChange: (e) => setQuery(e.target.value),
+              onKeyDown: (e) => {
+                if (e.key === "Enter") void submit(query);
+              },
+              autoComplete: "off",
+              spellCheck: false,
+              style: { height: dp(48), borderRadius: dp(10), border: `1px solid ${TV2.lineStrong}`, background: "rgba(0,0,0,0.25)", color: TV2.text, padding: `0 ${dp(14)}px`, fontSize: dp(17) }
+            }
+          ) : null,
+          prompt.node,
+          /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: chips.map((chip, index) => /* @__PURE__ */ jsx(Chip, { "data-testid": `follow-chip-${chip.key}`, active: sport === chip.key, ...station(() => setSport(chip.key), void 0, rows.length === 0 && index === 0 ? { "data-init": "" } : void 0), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.key)) })
+        ] }),
+        rows: [...rows.map((c, index) => {
           const on = isFollowing(ctx.follows, c) || isFollowing(getFollows(), c);
           return /* @__PURE__ */ jsxs("div", { "data-testid": `follow-row-${c.key}`, ...station(() => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name }), void 0, index === 0 ? { "data-init": "" } : void 0), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
             /* @__PURE__ */ jsx(Check, { on, label: c.name }),
             /* @__PURE__ */ jsx(Crest, { name: c.name, colorKey: c.key, size: dp(46) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis2 }, children: c.name }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis2 }, children: ctx.kindLabel(c.sport) })
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: c.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis3 }, children: ctx.kindLabel(c.sport) })
             ] })
           ] }, `${c.kind}:${c.key}`);
-        })
+        }), ...hits.map((hit) => {
+          const hitFollow = { sport: sport === "all" ? "football" : sport, kind: "team", key: foldTeamKey(hit.name), name: hit.name };
+          const on = isFollowing(ctx.follows, hitFollow) || isFollowing(getFollows(), hitFollow);
+          return /* @__PURE__ */ jsxs("div", { "data-testid": `follow-hit-${hit.id}`, ...station(() => toggleFollow({ ...hitFollow, providerIds: { [ctx.settings.provider]: hit.id } })), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx(Check, { on, label: hit.name }),
+            /* @__PURE__ */ jsx(Crest, { name: hit.name, colorKey: hitFollow.key, src: hit.crest, size: dp(46) }),
+            /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: hit.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis3 }, children: hit.country ?? "" })
+            ] })
+          ] }, `hit-${hit.id}`);
+        })]
       }
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -59350,7 +61858,127 @@ ${cue.text}`).join("\n\n")}
   init_sport_day_model();
   init_sport_store();
   init_sport_ctx();
+  init_score_model();
   init_sport_parts();
+  init_sport_score();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-match-center-data.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_tv_ui();
+  init_tv_strings();
+  init_sport_score();
+  init_results_controller();
+  init_live_poller();
+  init_sport_store();
+  init_jsx_runtime_shim();
+  var FOUR_HOURS = 4 * 36e5;
+  function eventLabel(e, tt) {
+    switch (e.type) {
+      case "goal":
+        return tt("sportEvGoal");
+      case "card":
+        return /red/i.test(e.detail) ? tt("sportEvRed") : /yellow/i.test(e.detail) ? tt("sportEvYellow") : tt("sportEvCard");
+      case "sub":
+        return tt("sportEvSub");
+      case "var":
+        return tt("sportEvVar");
+      case "penalty":
+        return tt("sportEvPenalty");
+      default:
+        return e.detail;
+    }
+  }
+  var STAT_KEYS = {
+    "Ball Possession": "sportStatPossession",
+    "Total Shots": "sportStatShots",
+    "Shots on Goal": "sportStatShotsOn",
+    "Corner Kicks": "sportStatCorners"
+  };
+  function statLabel(label, tt) {
+    return STAT_KEYS[label] ? tt(STAT_KEYS[label]) : label;
+  }
+  function toggleGoalAlert(match) {
+    const current5 = { ...getSportSettings().goalAlertMatches };
+    if (current5[match.id]) delete current5[match.id];
+    else current5[match.id] = match.start + FOUR_HOURS;
+    setSportSettings({ goalAlertMatches: current5 });
+  }
+  function MatchCenterData({ match }) {
+    const { tt } = useTvText();
+    const tv = useTvMode();
+    const controller = useResultsController();
+    const settings = useSportSettings();
+    const [detail, setDetail] = useState(null);
+    const covered = match.coverage === "full" && !!match.fixture;
+    const live2 = match.status === "live";
+    usePollDemand("match-center", covered && live2);
+    useEffect(() => {
+      if (!covered || !controller || !match.fixture) return;
+      let cancelled = false;
+      void controller.loadFixture(match.kind, match.fixture.id, match.status === "finished").then((d) => {
+        if (!cancelled) setDetail(d);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [covered, controller, match.kind, match.fixture?.id, match.status, match.score?.home, match.score?.away, match.minute]);
+    if (!covered) return null;
+    const alertOn = !!settings.goalAlertMatches[match.id];
+    const h2 = { fontSize: dp(18), fontWeight: 600, marginTop: dp(12) };
+    const sideName = (s) => s === "home" ? match.home ?? "" : s === "away" ? match.away ?? "" : "";
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-match-center-data", style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+      controller ? /* @__PURE__ */ jsx(RateLineView, { status: controller.status(), tv }) : null,
+      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-goal-alert", ...station(() => toggleGoalAlert(match)), "aria-pressed": alertOn ? "true" : "false", style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(12), padding: `${dp(10)}px ${dp(12)}px`, borderRadius: dp(10), background: TV2.s06, cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsxs("span", { children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16) }, children: tt("sportGoalAlert") }),
+          /* @__PURE__ */ jsx("br", {}),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(13), color: TV2.dim }, children: tt("sportAppRunningOnly") })
+        ] }),
+        /* @__PURE__ */ jsx(Toggle, { on: alertOn })
+      ] }),
+      detail && detail.events.length > 0 ? /* @__PURE__ */ jsxs("section", { children: [
+        /* @__PURE__ */ jsx("div", { style: h2, children: tt("sportEvents") }),
+        detail.events.map((e, i) => /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: `${dp(48)}px ${dp(110)}px 1fr`, gap: dp(8), padding: `${dp(6)}px 0`, fontSize: dp(15), borderTop: `1px solid ${TV2.line}` }, children: [
+          /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: e.minute != null ? `${e.minute}'${e.extra ? `+${e.extra}` : ""}` : "" }),
+          /* @__PURE__ */ jsx("span", { children: eventLabel(e, tt) }),
+          /* @__PURE__ */ jsx("span", { children: [e.player, e.assist ? `(${e.assist})` : null, sideName(e.side) ? `\xB7 ${sideName(e.side)}` : null].filter(Boolean).join(" ") })
+        ] }, i))
+      ] }) : null,
+      detail && detail.stats.length > 0 ? /* @__PURE__ */ jsxs("section", { children: [
+        /* @__PURE__ */ jsx("div", { style: h2, children: tt("sportStats") }),
+        detail.stats.map((s) => /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: dp(8), padding: `${dp(6)}px 0`, fontSize: dp(15), borderTop: `1px solid ${TV2.line}` }, children: [
+          /* @__PURE__ */ jsx("span", { style: { textAlign: "right" }, children: s.home }),
+          /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: statLabel(s.label, tt) }),
+          /* @__PURE__ */ jsx("span", { children: s.away })
+        ] }, s.label))
+      ] }) : null,
+      detail && detail.lineups.length > 0 ? /* @__PURE__ */ jsxs("section", { children: [
+        /* @__PURE__ */ jsx("div", { style: h2, children: tt("sportLineups") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: dp(16) }, children: detail.lineups.map((l) => /* @__PURE__ */ jsxs("div", { "data-lineup": l.side, style: { display: "flex", flexDirection: "column", gap: dp(4), fontSize: dp(14) }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { fontWeight: 600 }, children: [
+            sideName(l.side),
+            l.formation ? ` \xB7 ${l.formation}` : ""
+          ] }),
+          l.startXI.map((p, i) => /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("span", { style: { color: TV2.dim, display: "inline-block", width: dp(28) }, children: p.number ?? "" }),
+            /* @__PURE__ */ jsx("span", { children: p.name }),
+            p.pos ? /* @__PURE__ */ jsxs("span", { style: { color: TV2.faint }, children: [
+              " ",
+              p.pos
+            ] }) : null
+          ] }, `s${i}`)),
+          l.subs.length > 0 ? /* @__PURE__ */ jsx("div", { style: { color: TV2.dim, marginTop: dp(6) }, children: tt("sportSubs") }) : null,
+          l.subs.map((p, i) => /* @__PURE__ */ jsxs("div", { style: { color: TV2.muted }, children: [
+            /* @__PURE__ */ jsx("span", { style: { display: "inline-block", width: dp(28) }, children: p.number ?? "" }),
+            p.name
+          ] }, `b${i}`))
+        ] }, l.side)) })
+      ] }) : null
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
   init_sport_icons();
   init_jsx_runtime_shim();
   var pill = (on) => ({
@@ -59405,18 +62033,21 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "match-center", "data-panel-root": "", "data-live-tv-layer": "", "data-scroll": "", role: "dialog", "aria-label": matchTitle(match), style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: "1px solid rgba(255,255,255,0.16)", padding: `${dp(28)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(20), overflowY: "auto", boxSizing: "border-box" }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
           /* @__PURE__ */ jsx(StatusTag, { match, ctx }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted, ...ellipsis2 }, children: context }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted, ...ellipsis3 }, children: context }),
           /* @__PURE__ */ jsx(RoundBtn, { "data-testid": "mc-close", ...station(onClose), "aria-label": ctx.tt("sportClose"), style: { marginLeft: "auto" }, children: "\u2715" })
         ] }),
         /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: dp(20) }, children: match.home && match.away ? /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(10), minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: dp(99) }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis2 }, children: match.home })
+            /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: dp(99), src: match.homeCrest }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis3 }, children: match.home })
           ] }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(24), fontWeight: 600, color: st === "live" ? TV2.liveText : TV2.muted, whiteSpace: "nowrap" }, children: timeLine(match, ctx) }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(4) }, children: [
+            showsScore(match) ? /* @__PURE__ */ jsx(MatchScore, { match, size: "hero" }) : null,
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(24), fontWeight: 600, color: st === "live" ? TV2.liveText : TV2.muted, whiteSpace: "nowrap" }, children: heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx) })
+          ] }),
           /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(10), minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx(Crest, { name: match.away, colorKey: match.awayKey ?? match.away, size: dp(99) }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis2 }, children: match.away })
+            /* @__PURE__ */ jsx(Crest, { name: match.away, colorKey: match.awayKey ?? match.away, size: dp(99), src: match.awayCrest }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis3 }, children: match.away })
           ] })
         ] }) : /* @__PURE__ */ jsxs("div", { style: { gridColumn: "1 / 4", textAlign: "center" }, children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(30), fontWeight: 600 }, children: matchTitle(match) }),
@@ -59446,8 +62077,8 @@ ${cue.text}`).join("\n\n")}
           return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-source", "data-selected": on ? "1" : "0", ...station(() => setSelected(i), void 0, i === 0 ? { "data-init": "" } : void 0), style: { display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(12)}px ${dp(16)}px`, borderRadius: dp(12), cursor: "pointer", background: on ? TV2.text : TV2.s08, color: on ? "#12152a" : TV2.text, border: `1px solid ${on ? TV2.text : TV2.lineCard}` }, children: [
             /* @__PURE__ */ jsx(ChannelArt, { channel: sourceChannel(s), style: { width: dp(72), height: dp(46), flexShrink: 0 }, radius: dp(8) }),
             /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis2 }, children: s.name }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), opacity: 0.7, ...ellipsis2 }, children: `${ctx.playlistName(s.sourceId)} \xB7 ${ctx.tt("sportLatencyUnknown")}` })
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: s.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), opacity: 0.7, ...ellipsis3 }, children: `${ctx.playlistName(s.sourceId)} \xB7 ${ctx.tt("sportLatencyUnknown")}` })
             ] }),
             override && i === 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), fontWeight: 600 }, children: ctx.tt("sportYourChoice") }) : null,
             s.quality ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), fontWeight: 700 }, children: s.quality }) : null,
@@ -59468,7 +62099,8 @@ ${cue.text}`).join("\n\n")}
           ] }),
           /* @__PURE__ */ jsx("span", { "aria-hidden": "true", children: "\u203A" })
         ] }),
-        override ? /* @__PURE__ */ jsx("div", { "data-testid": "mc-clear-override", ...station(() => setOverride(match.id, null)), style: { fontSize: dp(17), color: TV2.accText, cursor: "pointer", padding: `${dp(8)}px ${dp(4)}px` }, children: ctx.tt("sportUseAutomatic") }) : null
+        override ? /* @__PURE__ */ jsx("div", { "data-testid": "mc-clear-override", ...station(() => setOverride(match.id, null)), style: { fontSize: dp(17), color: TV2.accText, cursor: "pointer", padding: `${dp(8)}px ${dp(4)}px` }, children: ctx.tt("sportUseAutomatic") }) : null,
+        /* @__PURE__ */ jsx(MatchCenterData, { match })
       ] }),
       picking ? /* @__PURE__ */ jsx(
         TvChannelPicker,
@@ -59486,7 +62118,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_mobile_tokens();
@@ -59495,8 +62127,184 @@ ${cue.text}`).join("\n\n")}
   init_sport_epg();
   init_sport_day_model();
   init_sport_store();
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+  init_mobile_sheet();
+  init_score_model();
+  init_sport_model();
+  init_sport_store();
+  init_jsx_runtime_shim();
+  function PhoneCrest({ name, src, size = 22 }) {
+    const [broken, setBroken] = useState(false);
+    const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
+    if (url) return /* @__PURE__ */ jsx("img", { "data-crest": "", src: url, alt: "", width: size, height: size, onError: () => setBroken(true), style: { width: size, height: size, objectFit: "contain", flexShrink: 0 } });
+    return /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: size, height: size, borderRadius: 999, background: MT.s12, color: MT.muted, fontSize: Math.round(size * 0.42), fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: crestText(name) });
+  }
+  function PhoneStandings({ rows, tt }) {
+    const cell = { padding: "8px 6px", fontSize: 14 };
+    return /* @__PURE__ */ jsx("div", { style: { maxHeight: "60vh", overflowY: "auto", padding: "4px 14px 12px" }, children: /* @__PURE__ */ jsxs("table", { style: { width: "100%", borderCollapse: "collapse", color: MT.text }, children: [
+      /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { style: { color: MT.dim, textAlign: "left", fontSize: 12 }, children: [
+        /* @__PURE__ */ jsx("th", { style: cell, children: "#" }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColTeam") }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPlayed") }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPoints") }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColForm") })
+      ] }) }),
+      /* @__PURE__ */ jsx("tbody", { children: rows.map((r) => /* @__PURE__ */ jsxs("tr", { style: { borderTop: `1px solid ${MT.line08}` }, children: [
+        /* @__PURE__ */ jsx("td", { style: cell, children: r.rank }),
+        /* @__PURE__ */ jsx("td", { style: { ...cell, maxWidth: 150 }, children: /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx(PhoneCrest, { name: r.team.name, src: r.team.crest, size: 18 }),
+          /* @__PURE__ */ jsx("span", { style: ellipsis2, children: r.team.name })
+        ] }) }),
+        /* @__PURE__ */ jsx("td", { style: cell, children: r.played }),
+        /* @__PURE__ */ jsx("td", { style: { ...cell, fontWeight: 700 }, children: r.points }),
+        /* @__PURE__ */ jsx("td", { style: cell, children: /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", gap: 3 }, children: formLetters(r.form, tt).slice(-5).map((f, i) => /* @__PURE__ */ jsx("span", { "data-testid": "phone-form", style: { width: 16, height: 16, borderRadius: 4, background: FORM_COLOR[f.kind], color: "#0e0f13", fontSize: 10, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: f.letter }, i)) }) })
+      ] }, `${r.group ?? ""}-${r.rank}-${r.team.id}`)) })
+    ] }) });
+  }
+  function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer }) {
+    const { tt } = useTvText();
+    const settings = useSportSettings();
+    const [filter, setFilter] = useState("all");
+    const [showCard, setShowCard] = useState(false);
+    const [table, setTable] = useState(null);
+    const sections = useRef(/* @__PURE__ */ new Map());
+    if (!settings.apiKey || !controller) {
+      if (settings.keyCardDismissed && !showCard) {
+        return /* @__PURE__ */ jsx("div", { "data-testid": "phone-results-add-key", ...station(() => setShowCard(true)), style: { padding: "16px 4px", fontSize: 15, color: MT.muted, cursor: "pointer" }, children: tt("sportKeyAddRow") });
+      }
+      return /* @__PURE__ */ jsx(KeyCard, { variant: "tab", onDone: () => setShowCard(false), pushLayer });
+    }
+    const { groups, liveCount, mineCount } = groupResults(matches, filter);
+    const openTable = async (g) => {
+      const cached = controller.standings(g.sport, g.leagueId, g.season);
+      setTable({ group: g, rows: cached });
+      if (cached) return;
+      const rows = await controller.loadStandings(g.sport, g.leagueId, g.season);
+      setTable((t) => t && t.group.key === g.key ? { group: g, rows: rows ?? [] } : t);
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "phone-results", style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+      /* @__PURE__ */ jsx(
+        MobileChips,
+        {
+          testId: "phone-results-filter",
+          items: [
+            { key: "all", label: tt("sportResultsAll"), id: "all" },
+            { key: "live", label: `${tt("sportResultsLive")} (${liveCount})`, id: "live" },
+            { key: "mine", label: tt("sportResultsMine", { n: mineCount }), id: "mine" }
+          ],
+          value: filter,
+          onChange: setFilter
+        }
+      ),
+      groups.length > 0 ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 2 }, children: [
+        /* @__PURE__ */ jsx("span", { style: sectionLabel, children: tt("sportJumpTo") }),
+        /* @__PURE__ */ jsx(
+          MobileChips,
+          {
+            testId: "phone-results-jump",
+            items: groups.map((g) => ({ key: g.key, label: g.league, id: `jump-${g.key}` })),
+            value: "",
+            onChange: (key) => sections.current.get(key)?.scrollIntoView({ block: "start", behavior: "smooth" })
+          }
+        )
+      ] }) : null,
+      groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: "24px 4px", fontSize: 15, color: MT.muted }, children: tt("sportResultsEmpty") }) : null,
+      groups.map((g) => /* @__PURE__ */ jsxs("section", { ref: (el) => {
+        if (el) sections.current.set(g.key, el);
+        else sections.current.delete(g.key);
+      }, style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 6, scrollMarginTop: 8 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { flex: 1, fontSize: 17, fontWeight: 600, ...ellipsis2 }, children: g.round != null ? `${g.league} \xB7 ${tt("sportRound", { n: g.round })}` : g.league }),
+          /* @__PURE__ */ jsx("div", { "data-testid": `phone-table-${g.key}`, ...station(() => void openTable(g)), style: { minHeight: MT.HIT, padding: "0 14px", borderRadius: 12, background: MT.s08, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", fontSize: 14, color: MT.muted70, cursor: "pointer", flexShrink: 0 }, children: tt("sportTable") })
+        ] }),
+        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "phone-result-row", ...station(() => onOpenMatch(m)), style: { minHeight: 56, display: "grid", gridTemplateColumns: "46px minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 14, background: MT.s07, border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, fontWeight: 700, color: m.status === "live" ? MT.live : MT.muted }, children: matchStatusLabel(m, tt) ?? "" }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 14, ...ellipsis2 }, children: m.home }),
+            /* @__PURE__ */ jsx(PhoneCrest, { name: m.home ?? "", src: m.homeCrest })
+          ] }),
+          /* @__PURE__ */ jsx("span", { "data-testid": "phone-result-score", style: { fontSize: 16, fontWeight: 700, minWidth: 38, textAlign: "center", fontVariantNumeric: "tabular-nums" }, children: scoreText(m) ?? "\u2013" }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx(PhoneCrest, { name: m.away ?? "", src: m.awayCrest }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 14, ...ellipsis2 }, children: m.away })
+          ] })
+        ] }, m.id))
+      ] }, g.key)),
+      table ? /* @__PURE__ */ jsx(
+        MobileSheet,
+        {
+          testId: "phone-standings-sheet",
+          title: `${table.group.league} \xB7 ${tt("sportTable")}`,
+          body: table.rows === null ? /* @__PURE__ */ jsx("div", { style: { padding: 16, color: MT.muted }, children: tt("sportLoading") }) : /* @__PURE__ */ jsx(PhoneStandings, { rows: table.rows, tt }),
+          items: [],
+          onClose: () => setTable(null),
+          pushLayer
+        }
+      ) : null
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_tv_strings();
+  init_mobile_tokens();
+  init_merge();
+  init_sport_store();
+  init_jsx_runtime_shim();
+  function PhoneFollowSearch({ sport }) {
+    const { tt } = useTvText();
+    const settings = useSportSettings();
+    const follows = useFollows();
+    const [q, setQ] = useState("");
+    const [hits, setHits] = useState(null);
+    const [busy, setBusy] = useState(false);
+    if (!settings.apiKey) return null;
+    const tooShort = q.trim().length < 3;
+    const submit = async () => {
+      if (busy || tooShort) return;
+      setBusy(true);
+      try {
+        setHits(await searchProviderTeams(sport, q));
+      } finally {
+        setBusy(false);
+      }
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "phone-follow-search", style: { padding: "12px 20px", display: "flex", flexDirection: "column", gap: 8, borderBottom: `1px solid ${MT.line08}` }, children: [
+      /* @__PURE__ */ jsxs("form", { onSubmit: (e) => {
+        e.preventDefault();
+        void submit();
+      }, style: { display: "flex", gap: 8 }, children: [
+        /* @__PURE__ */ jsx("input", { "data-testid": "phone-follow-search-input", type: "search", enterKeyHint: "search", value: q, onChange: (e) => setQ(e.target.value), placeholder: tt("sportFollowSearch"), style: { flex: 1, minWidth: 0, height: MT.HIT, borderRadius: 12, border: `1px solid ${MT.line14}`, background: MT.s07, color: MT.text, padding: "0 12px", fontSize: 16, fontFamily: MT.font } }),
+        /* @__PURE__ */ jsx("button", { type: "submit", "data-testid": "phone-follow-search-go", disabled: busy || tooShort, style: { height: MT.HIT, padding: "0 16px", borderRadius: 12, border: "none", background: MT.acc, color: MT.onAcc, fontSize: 15, fontWeight: 600, fontFamily: MT.font, opacity: busy || tooShort ? 0.5 : 1 }, children: tt("sportSearchSubmit") })
+      ] }),
+      hits?.map((hit) => {
+        const follow = { sport, kind: "team", key: foldTeamKey(hit.name), name: hit.name, providerIds: { [settings.provider]: hit.id } };
+        const on = isFollowing(follows, follow);
+        return /* @__PURE__ */ jsxs("div", { "data-testid": `phone-follow-hit-${hit.id}`, ...station(() => toggleFollow(follow)), style: { minHeight: 48, display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx(PhoneCrest, { name: hit.name, src: hit.crest, size: 26 }),
+          /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, ...ellipsis2 }, children: hit.name }),
+          hit.country ? /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.muted, flexShrink: 0 }, children: hit.country }) : null,
+          /* @__PURE__ */ jsx("span", { style: { color: on ? "#fbbf24" : MT.dim, flexShrink: 0 }, children: on ? "\u2605" : "\u2606" })
+        ] }, hit.id);
+      }),
+      hits && hits.length === 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted }, children: tt("sportFollowSearchEmpty") }) : null
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  init_results_controller();
+  init_live_poller();
+  init_score_model();
   init_sport_ctx();
   init_jsx_runtime_shim();
+  var NO_MATCHES2 = [];
   function SportPhone({ model, nav }) {
     const [tab, setTab] = useState("foryou");
     const [offset, setOffset] = useState(0);
@@ -59508,12 +62316,18 @@ ${cue.text}`).join("\n\n")}
     const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker });
     const { tt } = ctx;
     const today = localDayKey(model.nowMs);
-    const selected = useSportDay(shiftDay(today, offset), model.nowMs);
+    const day = shiftDay(today, offset);
+    const selected = useSportDay(day, model.nowMs);
+    const { matches: mergedMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES2 });
+    const mergedDay = useMemo(() => selected.data ? { ...selected.data, matches: mergedMatches } : null, [selected.data, mergedMatches]);
+    usePollDemand("sport-view", true);
     const wantsFollow = tab === "follows" || adding;
     const todayDay = useSportDay(wantsFollow ? today : null, model.nowMs);
     const tomorrowDay = useSportDay(wantsFollow ? shiftDay(today, 1) : null, model.nowMs);
-    const counts = sportCounts(selected.data);
-    const { live: live2, later, finished } = splitSections(visibleMatches(selected.data, filter), ctx.now);
+    const phoneHero = useMemo(() => featuredMatch(visibleMatches(mergedDay, filter), ctx.follows, ctx.now), [mergedDay, filter, ctx.follows, ctx.now]);
+    const backdrop = useSportBackdrop(phoneHero);
+    const counts = sportCounts(mergedDay);
+    const { live: live2, later, finished } = splitSections(visibleMatches(mergedDay, filter), ctx.now);
     const dayLabel = (o) => o === -1 ? tt("sportYesterday") : o === 0 ? tt("sportToday") : tt("sportTomorrow");
     const sheetItems = (m) => {
       const fs = followState(m, ctx.follows);
@@ -59528,32 +62342,36 @@ ${cue.text}`).join("\n\n")}
       ];
     };
     const notice = selected.state === "missing" ? tt("sportNeedsUpdate") : selected.state === "error" ? tt("sportError") : selected.state === "loading" ? tt("sportLoading") : live2.length + later.length + finished.length === 0 ? tt("sportEmptyDay") : null;
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone", "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 10 }, children: [
-      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("sportTitle") }) }),
-      /* @__PURE__ */ jsx(MobileSegment, { testId: "sport-phone-tabs", options: [{ key: "foryou", label: tt("sportTabForYou") }, { key: "follows", label: tt("sportTabFollows") }], value: tab, onChange: setTab }),
-      tab === "foryou" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-        /* @__PURE__ */ jsx(MobileChips, { testId: "sport-phone-days", items: [-1, 0, 1].map((o) => ({ key: o, label: dayLabel(o), id: `day-${o}` })), value: offset, onChange: setOffset, emphasisKey: 0 }),
-        /* @__PURE__ */ jsx(MobileChips, { testId: "sport-phone-sports", items: [{ key: "all", label: tt("sportAll"), id: "all" }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k, label: `${ctx.kindLabel(k)} ${counts[k]}`, id: k }))], value: filter, onChange: setFilter }),
-        notice ? /* @__PURE__ */ jsx("div", { style: { padding: "24px 4px", fontSize: 15, color: MT.muted }, children: notice }) : null,
-        /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLiveNow"), matches: live2 }),
-        /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLater"), matches: later }),
-        /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportFinished"), matches: finished })
-      ] }) : /* @__PURE__ */ jsx(PhoneFollows, { ctx, days: [todayDay.data, tomorrowDay.data] }),
-      sheet ? /* @__PURE__ */ jsx(MobileSheet, { testId: "sport-phone-sheet", title: matchTitle(sheet), subtitle: [sheet.league || ctx.kindLabel(sheet.kind), timeLine(sheet, ctx)].join(" \xB7 "), items: sheetItems(sheet), onClose: () => setSheet(null), pushLayer: nav.pushLayer }) : null,
-      adding ? /* @__PURE__ */ jsx(
-        MobileSheet,
-        {
-          testId: "sport-phone-follow-sheet",
-          title: tt("sportFollowAdd"),
-          items: followCandidates([todayDay.data, tomorrowDay.data]).slice(0, 60).map((c) => ({
-            key: `${c.kind}:${c.key}`,
-            label: `${isFollowing(ctx.follows, c) ? "\u2605 " : ""}${c.name} \xB7 ${ctx.kindLabel(c.sport)}`,
-            run: () => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name })
-          })),
-          onClose: () => setAdding(false),
-          pushLayer: nav.pushLayer
-        }
-      ) : null
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsx(SportBackdropLayer, { choice: backdrop.choice, phone: true, onBroken: backdrop.onBroken }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone", "data-scroll": "", style: { position: "relative", flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 10 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("sportTitle") }) }),
+        /* @__PURE__ */ jsx(MobileSegment, { testId: "sport-phone-tabs", options: [{ key: "foryou", label: tt("sportTabForYou") }, { key: "results", label: tt("sportTabResults") }, { key: "follows", label: tt("sportTabFollows") }], value: tab, onChange: setTab }),
+        tab !== "follows" ? /* @__PURE__ */ jsx(MobileChips, { testId: "sport-phone-days", items: [-1, 0, 1].map((o) => ({ key: o, label: dayLabel(o), id: `day-${o}` })), value: offset, onChange: setOffset, emphasisKey: 0 }) : null,
+        tab === "foryou" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx(MobileChips, { testId: "sport-phone-sports", items: [{ key: "all", label: tt("sportAll"), id: "all" }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k, label: `${ctx.kindLabel(k)} ${counts[k]}`, id: k }))], value: filter, onChange: setFilter }),
+          notice ? /* @__PURE__ */ jsx("div", { style: { padding: "24px 4px", fontSize: 15, color: MT.muted }, children: notice }) : null,
+          /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLiveNow"), matches: live2 }),
+          /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLater"), matches: later }),
+          /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportFinished"), matches: finished })
+        ] }) : tab === "results" ? /* @__PURE__ */ jsx(SportResultsPhone, { matches: mergedMatches, controller, onOpenMatch: openMatch, pushLayer: nav.pushLayer }) : /* @__PURE__ */ jsx(PhoneFollows, { ctx, days: [todayDay.data, tomorrowDay.data] }),
+        sheet ? /* @__PURE__ */ jsx(MobileSheet, { testId: "sport-phone-sheet", title: matchTitle(sheet), subtitle: [sheet.league || ctx.kindLabel(sheet.kind), timeLine(sheet, ctx)].join(" \xB7 "), items: sheetItems(sheet), onClose: () => setSheet(null), pushLayer: nav.pushLayer }) : null,
+        adding ? /* @__PURE__ */ jsx(
+          MobileSheet,
+          {
+            testId: "sport-phone-follow-sheet",
+            title: tt("sportFollowAdd"),
+            body: /* @__PURE__ */ jsx(PhoneFollowSearch, { sport: filter === "all" ? "football" : filter }),
+            items: followCandidates([todayDay.data, tomorrowDay.data]).slice(0, 60).map((c) => ({
+              key: `${c.kind}:${c.key}`,
+              label: `${isFollowing(ctx.follows, c) ? "\u2605 " : ""}${c.name} \xB7 ${ctx.kindLabel(c.sport)}`,
+              run: () => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name })
+            })),
+            onClose: () => setAdding(false),
+            pushLayer: nav.pushLayer
+          }
+        ) : null
+      ] })
     ] });
   }
   function PhoneSection({ ctx, title, matches }) {
@@ -59563,10 +62381,13 @@ ${cue.text}`).join("\n\n")}
       matches.map((m) => {
         const st = statusAt(m, ctx.now);
         return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-row", ...station(() => ctx.openMatch(m)), style: { minHeight: 64, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: MT.s07, border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("span", { style: { width: 54, flexShrink: 0, fontSize: 13, fontWeight: 700, color: st === "live" ? MT.live : MT.text }, children: st === "live" ? ctx.tt("live") : st === "finished" ? ctx.tt("sportEnded") : timeLine(m, ctx) }),
+          /* @__PURE__ */ jsx("span", { style: { width: 54, flexShrink: 0, display: "flex", flexDirection: "column", fontSize: 13, fontWeight: 700, color: st === "live" ? MT.live : MT.text }, children: showsScore(m) ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("span", { style: { fontVariantNumeric: "tabular-nums" }, children: scoreText(m) }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 600, color: MT.muted }, children: matchStatusLabel(m, ctx.tt) ?? "" })
+          ] }) : st === "live" ? ctx.tt("live") : st === "finished" ? ctx.tt("sportEnded") : timeLine(m, ctx) }),
           /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis }, children: matchTitle(m) }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis }, children: [m.league || ctx.kindLabel(m.kind), sourceLine(m, ctx)].filter(Boolean).join(" \xB7 ") })
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: [m.league || ctx.kindLabel(m.kind), sourceLine(m, ctx)].filter(Boolean).join(" \xB7 ") })
           ] }),
           followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24" }, children: "\u2605" }) : null
         ] }, m.id);
@@ -59594,16 +62415,17 @@ ${cue.text}`).join("\n\n")}
         }), style: { minHeight: 60, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: MT.s07, cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24" }, children: "\u2605" }),
           /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis }, children: f.name }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis }, children: followNextLine(ctx, f, next) })
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: f.name }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: followNextLine(ctx, f, next) })
           ] })
         ] }, `${f.kind}:${f.key}`);
       })
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_jsx_runtime_shim();
+  var NO_MATCHES3 = [];
   var OFFSETS = [-1, 0, 1];
   function TvSport(props) {
     return props.phone ? /* @__PURE__ */ jsx(SportPhone, { ...props }) : /* @__PURE__ */ jsx(SportTv, { ...props });
@@ -59627,86 +62449,98 @@ ${cue.text}`).join("\n\n")}
     const todayDay = useSportDay(wantsToday ? today : null, model.nowMs);
     const tomorrowDay = useSportDay(wantsToday || ctx.settings.view === "feed" ? shiftDay(today, 1) : null, model.nowMs);
     const yesterdayDay = useSportDay(pickerOpen ? shiftDay(today, -1) : null, model.nowMs);
-    const counts = sportCounts(selected.data);
-    const matches = useMemo(() => visibleMatches(selected.data, filter), [selected.data, filter]);
+    const { matches: mergedMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES3 });
+    const mergedDay = useMemo(() => selected.data ? { ...selected.data, matches: mergedMatches } : null, [selected.data, mergedMatches]);
+    const tvMode = useTvMode();
+    usePollDemand("sport-view", true);
+    const counts = sportCounts(mergedDay);
+    const matches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter]);
+    const hero = useMemo(() => featuredMatch(matches, ctx.follows, ctx.now), [matches, ctx.follows, ctx.now]);
+    const backdrop = useSportBackdrop(hero);
     const summary = headerSummary(matches, ctx.now);
     const total = SPORT_KINDS.reduce((sum, k) => sum + counts[k], 0);
     const open2 = useMemo(() => {
       if (!openId) return null;
-      return [selected.data, todayDay.data, tomorrowDay.data].flatMap((d) => d?.matches ?? []).find((m) => m.id === openId) ?? null;
-    }, [openId, selected.data, todayDay.data, tomorrowDay.data]);
+      return [mergedDay, todayDay.data, tomorrowDay.data].flatMap((d) => d?.matches ?? []).find((m) => m.id === openId) ?? null;
+    }, [openId, mergedDay, todayDay.data, tomorrowDay.data]);
     const dayLabel = (o) => o === -1 ? tt("sportYesterday") : o === 0 ? tt("sportToday") : tt("sportTomorrow");
     const body = () => {
       if (selected.state === "missing") return /* @__PURE__ */ jsx(Notice, { testId: "sport-missing", text: tt("sportNeedsUpdate") });
       if (selected.state === "error") return /* @__PURE__ */ jsx(Notice, { testId: "sport-error", text: tt("sportError") });
+      if (tab === "results") return /* @__PURE__ */ jsx(SportResults, { matches: mergedMatches, controller, onOpenMatch: ctx.openMatch, tv: tvMode });
       if (tab === "follows") return /* @__PURE__ */ jsx(SportFollows, { ctx, days: [todayDay.data, tomorrowDay.data] });
       if (selected.state === "loading") return /* @__PURE__ */ jsx(Notice, { testId: "sport-loading", text: tt("sportLoading") });
       if (matches.length === 0) return /* @__PURE__ */ jsx(Notice, { testId: "sport-empty", text: tt("sportEmptyDay") });
-      return ctx.settings.view === "feed" ? /* @__PURE__ */ jsx(SportFeed, { ctx, matches, days: [selected.data, tomorrowDay.data] }) : /* @__PURE__ */ jsx(SportMatchday, { ctx, matches, dayFrom: dayStartMs(day) });
+      return ctx.settings.view === "feed" ? /* @__PURE__ */ jsx(SportFeed, { ctx, matches, days: [mergedDay, tomorrowDay.data] }) : /* @__PURE__ */ jsx(SportMatchday, { ctx, matches, dayFrom: dayStartMs(day) });
     };
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-view", "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(22) }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(18) }, children: [
-        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(40), fontWeight: 600 }, children: tt("sportTitle") }),
-        /* @__PURE__ */ jsx("span", { "data-testid": "sport-summary", style: { fontSize: dp(19), color: TV2.muted }, children: tt("sportSummary", { day: dayLabel(offset), count: summary.total, live: summary.live }) }),
-        /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto" }, children: clock })
-      ] }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", gap: dp(28), borderBottom: `1px solid ${TV2.s12}` }, children: [
-        ["foryou", "follows"].map((key) => /* @__PURE__ */ jsx(
-          "div",
-          {
-            "data-testid": `sport-tab-${key}`,
-            ...station(() => setTab(key), void 0, key === tab ? { "data-init": "" } : void 0),
-            "aria-selected": key === tab ? "true" : "false",
-            style: { padding: `${dp(8)}px 0 ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: "pointer", color: key === tab ? TV2.text : TV2.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV2.acc : "transparent"}`, marginBottom: -1 },
-            children: key === "foryou" ? tt("sportTabForYou") : tt("sportTabFollows")
-          },
-          key
-        )),
-        tab === "foryou" ? /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(12), paddingBottom: dp(8) }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: tt("sportViewAs") }),
-          /* @__PURE__ */ jsx(Segment, { options: [{ key: "matchday", label: tt("sportMatchday") }, { key: "feed", label: tt("sportFeed") }], value: ctx.settings.view, onChange: (view) => setSportSettings({ view }) })
-        ] }) : null
-      ] }),
-      /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
-        OFFSETS.map((o) => {
-          const active4 = o === offset;
-          return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-day-${o}`, ...station(() => setOffset(o)), "aria-pressed": active4 ? "true" : "false", style: { minWidth: dp(144), height: dp(68), padding: `0 ${dp(18)}px`, borderRadius: dp(14), display: "flex", flexDirection: "column", justifyContent: "center", cursor: "pointer", boxSizing: "border-box", background: active4 ? TV2.text : TV2.s10, color: active4 ? "#12152a" : TV2.text, border: `1px solid ${active4 ? TV2.text : TV2.lineCard}` }, children: [
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 700 }, children: dayLabel(o) }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.7 }, children: new Date(dayStartMs(shiftDay(today, o)) + 12 * 36e5).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }) })
-          ] }, o);
-        }),
-        /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(10) }, children: [
-          SPORT_CHIPS.filter((k) => counts[k] > 0).map((k) => {
-            const active4 = filter === k;
-            return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-chip-${k}`, ...station(() => setFilter(active4 ? "all" : k)), "aria-label": ctx.kindLabel(k), title: ctx.kindLabel(k), "aria-pressed": active4 ? "true" : "false", style: { height: dp(68), minWidth: dp(68), padding: active4 ? `0 ${dp(18)}px` : 0, boxSizing: "border-box", borderRadius: dp(14), display: "inline-flex", alignItems: "center", justifyContent: "center", gap: dp(8), cursor: "pointer", background: active4 ? TV2.accMix(22) : TV2.s10, color: active4 ? TV2.accText : TV2.text, border: `1px solid ${active4 ? TV2.acc : TV2.lineCard}`, fontSize: dp(18), fontWeight: 600 }, children: [
-              /* @__PURE__ */ jsx(SportIcon, { kind: k, size: dp(26) }),
-              active4 ? ctx.kindLabel(k) : null
-            ] }, k);
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsx(SportBackdropLayer, { choice: backdrop.choice, phone: false, onBroken: backdrop.onBroken }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-view", "data-scroll": "", style: { position: "relative", flex: 1, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(22) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(18) }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(40), fontWeight: 600 }, children: tt("sportTitle") }),
+          /* @__PURE__ */ jsx("span", { "data-testid": "sport-summary", style: { fontSize: dp(19), color: TV2.muted }, children: tt("sportSummary", { day: dayLabel(offset), count: summary.total, live: summary.live }) }),
+          /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto" }, children: clock })
+        ] }),
+        /* @__PURE__ */ jsx(RateLineView, { status, tv: tvMode }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", gap: dp(28), borderBottom: `1px solid ${TV2.s12}` }, children: [
+          ["foryou", "results", "follows"].map((key) => /* @__PURE__ */ jsx(
+            "div",
+            {
+              "data-testid": `sport-tab-${key}`,
+              ...station(() => setTab(key), void 0, key === tab ? { "data-init": "" } : void 0),
+              "aria-selected": key === tab ? "true" : "false",
+              style: { padding: `${dp(8)}px 0 ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: "pointer", color: key === tab ? TV2.text : TV2.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV2.acc : "transparent"}`, marginBottom: -1 },
+              children: key === "foryou" ? tt("sportTabForYou") : key === "results" ? tt("sportTabResults") : tt("sportTabFollows")
+            },
+            key
+          )),
+          tab === "foryou" ? /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(12), paddingBottom: dp(8) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: tt("sportViewAs") }),
+            /* @__PURE__ */ jsx(Segment, { options: [{ key: "matchday", label: tt("sportMatchday") }, { key: "feed", label: tt("sportFeed") }], value: ctx.settings.view, onChange: (view) => setSportSettings({ view }) })
+          ] }) : null
+        ] }),
+        /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
+          OFFSETS.map((o) => {
+            const active4 = o === offset;
+            return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-day-${o}`, ...station(() => setOffset(o)), "aria-pressed": active4 ? "true" : "false", style: { minWidth: dp(144), height: dp(68), padding: `0 ${dp(18)}px`, borderRadius: dp(14), display: "flex", flexDirection: "column", justifyContent: "center", cursor: "pointer", boxSizing: "border-box", background: active4 ? TV2.text : TV2.s10, color: active4 ? "#12152a" : TV2.text, border: `1px solid ${active4 ? TV2.text : TV2.lineCard}` }, children: [
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 700 }, children: dayLabel(o) }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.7 }, children: new Date(dayStartMs(shiftDay(today, o)) + 12 * 36e5).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }) })
+            ] }, o);
           }),
-          /* @__PURE__ */ jsxs(Chip, { "data-testid": "sport-all", active: filter === "all", ...station(() => setAllOpen(true)), children: [
-            filter === "all" ? tt("sportAll") : ctx.kindLabel(filter),
-            " \u25BE"
+          /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(10) }, children: [
+            SPORT_CHIPS.filter((k) => counts[k] > 0).map((k) => {
+              const active4 = filter === k;
+              return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-chip-${k}`, ...station(() => setFilter(active4 ? "all" : k)), "aria-label": ctx.kindLabel(k), title: ctx.kindLabel(k), "aria-pressed": active4 ? "true" : "false", style: { height: dp(68), minWidth: dp(68), padding: active4 ? `0 ${dp(18)}px` : 0, boxSizing: "border-box", borderRadius: dp(14), display: "inline-flex", alignItems: "center", justifyContent: "center", gap: dp(8), cursor: "pointer", background: active4 ? TV2.accMix(22) : TV2.s10, color: active4 ? TV2.accText : TV2.text, border: `1px solid ${active4 ? TV2.acc : TV2.lineCard}`, fontSize: dp(18), fontWeight: 600 }, children: [
+                /* @__PURE__ */ jsx(SportIcon, { kind: k, size: dp(26) }),
+                active4 ? ctx.kindLabel(k) : null
+              ] }, k);
+            }),
+            /* @__PURE__ */ jsxs(Chip, { "data-testid": "sport-all", active: filter === "all", ...station(() => setAllOpen(true)), children: [
+              filter === "all" ? tt("sportAll") : ctx.kindLabel(filter),
+              " \u25BE"
+            ] })
           ] })
-        ] })
-      ] }),
-      body(),
-      allOpen ? /* @__PURE__ */ jsx(
-        TvChoicePanel,
-        {
-          nav,
-          title: tt("sportAll"),
-          options: [{ key: null, label: tt("sportAll"), count: total }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k, label: ctx.kindLabel(k), count: counts[k] }))],
-          value: filter === "all" ? null : filter,
-          onPick: (key) => setFilter(key ?? "all"),
-          onClose: () => setAllOpen(false)
-        }
-      ) : null,
-      open2 ? /* @__PURE__ */ jsx(SportMatchCenter, { ctx, match: open2, onClose: () => setOpenId(null) }) : null,
-      pickerOpen ? /* @__PURE__ */ jsx(FollowPicker, { ctx, days: [yesterdayDay.data, todayDay.data, tomorrowDay.data], onClose: () => setPickerOpen(false) }) : null
+        ] }),
+        shouldShowKeyBanner(ctx.settings) && tab !== "results" ? /* @__PURE__ */ jsx(KeyCard, { variant: "banner", pushLayer: nav.pushLayer }) : null,
+        body(),
+        allOpen ? /* @__PURE__ */ jsx(
+          TvChoicePanel,
+          {
+            nav,
+            title: tt("sportAll"),
+            options: [{ key: null, label: tt("sportAll"), count: total }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k, label: ctx.kindLabel(k), count: counts[k] }))],
+            value: filter === "all" ? null : filter,
+            onPick: (key) => setFilter(key ?? "all"),
+            onClose: () => setAllOpen(false)
+          }
+        ) : null,
+        open2 ? /* @__PURE__ */ jsx(SportMatchCenter, { ctx, match: open2, onClose: () => setOpenId(null) }) : null,
+        pickerOpen ? /* @__PURE__ */ jsx(FollowPicker, { ctx, days: [yesterdayDay.data, todayDay.data, tomorrowDay.data], onClose: () => setPickerOpen(false) }) : null
+      ] })
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -59721,7 +62555,7 @@ ${cue.text}`).join("\n\n")}
     sport: TvSport
   };
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -59801,12 +62635,12 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-autoscan.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-home.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
   init_tv_settings_store();
   var LIVE_TV_FRAME_ID = "live-tv";
@@ -59844,7 +62678,7 @@ ${cue.text}`).join("\n\n")}
     lastRedirect = now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-autoscan.ts
   var AUTOSCAN_KEY = "live_tv_vod_autoscan_v1";
   var inFlight2 = false;
   async function maybeAutoScanVod() {
@@ -59877,7 +62711,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_mobile_sheet();
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
@@ -60014,7 +62848,7 @@ ${cue.text}`).join("\n\n")}
     }, []);
     const toast = useCallback((text) => {
       setToastText(text);
-      window.setTimeout(() => setToastText((current3) => current3 === text ? null : current3), 1800);
+      window.setTimeout(() => setToastText((current5) => current5 === text ? null : current5), 1800);
     }, []);
     const goVodHome = useCallback(() => {
       if (vodHiddenForActivePlaylist()) {
@@ -60112,21 +62946,21 @@ ${cue.text}`).join("\n\n")}
       requestBrowseBack();
     }, [menu, pending5, active4, view, go]);
     useEffect(() => {
-      const onKey = (event) => {
-        if (!BACK_KEYS2.has(event.key)) return;
+      const onKey = (event2) => {
+        if (!BACK_KEYS2.has(event2.key)) return;
         if (menu && !phone) return;
         if (pending5) {
-          event.preventDefault();
-          event.stopPropagation();
+          event2.preventDefault();
+          event2.stopPropagation();
           back();
           return;
         }
         if (active4 && Player) return;
-        const target2 = event.target;
+        const target2 = event2.target;
         if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
         if (target2?.closest?.("[data-live-tv-host-ui]")) return;
-        event.preventDefault();
-        event.stopPropagation();
+        event2.preventDefault();
+        event2.stopPropagation();
         back();
       };
       window.addEventListener("keydown", onKey, true);
@@ -60158,19 +62992,19 @@ ${cue.text}`).join("\n\n")}
     }, []);
     useEffect(() => {
       if (!settings.numericZap || phone) return;
-      const onKey = (event) => {
+      const onKey = (event2) => {
         if (menu || layersRef.current.length > 0) return;
-        const target2 = event.target;
+        const target2 = event2.target;
         if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
         if (target2?.closest?.('[contenteditable]:not([contenteditable="false"])')) return;
         if (target2?.closest?.("[data-live-tv-keyboard]")) return;
-        if (/^[0-9]$/.test(event.key)) {
-          event.preventDefault();
-          event.stopPropagation();
-          zapRef.current?.push(event.key);
-        } else if (event.key === "Enter" && zapDigits) {
-          event.preventDefault();
-          event.stopPropagation();
+        if (/^[0-9]$/.test(event2.key)) {
+          event2.preventDefault();
+          event2.stopPropagation();
+          zapRef.current?.push(event2.key);
+        } else if (event2.key === "Enter" && zapDigits) {
+          event2.preventDefault();
+          event2.stopPropagation();
           zapRef.current?.commit();
         }
       };
@@ -60339,7 +63173,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -60396,7 +63230,7 @@ ${cue.text}`).join("\n\n")}
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -60438,7 +63272,7 @@ ${cue.text}`).join("\n\n")}
     return programmes;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_settings_store();
@@ -60510,13 +63344,13 @@ ${cue.text}`).join("\n\n")}
     }, [phone, onInset]);
     useEffect(() => {
       if (phone) return;
-      const onKey = (event) => {
-        if (!BACK_KEYS3.has(event.key)) return;
+      const onKey = (event2) => {
+        if (!BACK_KEYS3.has(event2.key)) return;
         const el = rootRef.current;
-        const target2 = event.target;
+        const target2 = event2.target;
         if (!el || !target2 || !el.contains(target2)) return;
-        event.preventDefault();
-        event.stopPropagation();
+        event2.preventDefault();
+        event2.stopPropagation();
         onExit();
       };
       window.addEventListener("keydown", onKey, true);
@@ -60528,7 +63362,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { ref: rootRef, style: { height: "100%", display: "flex", background: TV2.bg, color: TV2.text, fontFamily: TV2.font }, children: /* @__PURE__ */ jsx(TvRail, { active: "home", isTv, narrow, labels: settings.railLabels && !narrow, onSelect: select }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/stabil-layout/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/index.ts
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,
@@ -60556,6 +63390,7 @@ ${cue.text}`).join("\n\n")}
     preinstalled: true,
     register(ctx) {
       ctx.registerBootstrap({ id: "live-tv-reminders", Mount: LiveTvRemindersMount });
+      ctx.registerBootstrap({ id: "live-tv-sport-goals", Mount: SportGoalMount });
       ctx.registerSettingsSection({
         id: "m3u",
         label: { en: "Live TV", sv: "Live TV" },
