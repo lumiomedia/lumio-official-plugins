@@ -19,6 +19,8 @@
     "settings-section",
     "home-override",
     "browse-page",
-    "main-menu-item"
+    "main-menu-item",
+    "home-row",
+    "home-source"
   ]
 }

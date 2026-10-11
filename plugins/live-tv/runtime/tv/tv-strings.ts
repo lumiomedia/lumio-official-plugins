@@ -669,6 +669,19 @@ const EN = {
   sportAlertShort15: '15 min',
   sportAlertShortKickoff: 'Kick-off',
   sportAlertFor: 'Reminder for {name}: {rule}',
+  sportRowLiveNow: 'Live now',
+  sportRowMyTeams: 'My teams',
+  sportRowTonight: 'Tonight',
+  sportRowZap: 'Zap live',
+  sportRowLeague: 'League',
+  sportRowResults: 'Results for my teams',
+  sportRowSource: 'Sport: {name}',
+  sportRowOptionSport: 'Sport',
+  sportRowOptionLeague: 'League',
+  sportRowLeagueAuto: 'First followed league',
+  sportRowOptionScores: 'Scores',
+  sportRowShowScores: 'Show',
+  sportRowHideScores: 'Hide scores',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -1289,6 +1302,19 @@ const SV: Record<keyof typeof EN, string> = {
   sportAlertShort15: '15 min',
   sportAlertShortKickoff: 'Avspark',
   sportAlertFor: 'Påminnelse för {name}: {rule}',
+  sportRowLiveNow: 'Live nu',
+  sportRowMyTeams: 'Mina lag',
+  sportRowTonight: 'I kväll',
+  sportRowZap: 'Zappa live',
+  sportRowLeague: 'Liga',
+  sportRowResults: 'Resultat för mina lag',
+  sportRowSource: 'Sport: {name}',
+  sportRowOptionSport: 'Sport',
+  sportRowOptionLeague: 'Liga',
+  sportRowLeagueAuto: 'Första följda ligan',
+  sportRowOptionScores: 'Ställning',
+  sportRowShowScores: 'Visa',
+  sportRowHideScores: 'Dölj ställning',
 }
 
 export type TvStringKey = keyof typeof EN

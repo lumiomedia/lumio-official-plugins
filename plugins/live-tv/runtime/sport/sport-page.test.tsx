@@ -5,7 +5,7 @@ import { localDayKey } from './sport-epg'
 import { setSportSettings } from './sport-store'
 import { MIN, HOUR, fxMatch, mountSport } from './__sport-fixture'
 import { LiveTvPlugin } from '../index'
-import { SPORT_PAGE_ID } from './sport-page'
+import { LiveTvSportPage, SPORT_PAGE_ID } from './sport-page'
 import { sportViewPaddingTop } from './tv/sport-shell'
 
 // Spelaren som en knapp: ett klick är "stäng spelaren".
@@ -104,6 +104,38 @@ describe('Sport som egen sida: skrivbord/TV', () => {
   it('okänd vy i params blir Sport — sidan visar aldrig Live TV:s övriga vyer', async () => {
     mountSport({ view: 'guide' }, { page: true, days: { [today]: [live] } })
     expect(await screen.findByTestId('sport-hero')).toBeInTheDocument()
+  })
+})
+
+describe('Sport som egen sida: hemradens kort (autoplay)', () => {
+  const channel = { url: 'http://x/TV4 Fotboll FHD SE', name: 'TV4 Fotboll FHD SE', logo: '', group: 'Sport', tvgId: '' }
+  it('spelar kanalen direkt och tar sedan bort autoplay, så att Bakåt/uppdatering inte startar om den', async () => {
+    const { onNavigate, rerender, box } = mountSport({ view: 'sport', autoplay: '1', ...channel }, { page: true, days: { [today]: [live] } })
+    expect(await screen.findByTestId('player')).toHaveTextContent('TV4 Fotboll FHD SE')
+    expect(onNavigate).toHaveBeenCalledTimes(1)
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: SPORT_PAGE_ID, params: { view: 'sport' } })
+    // Värden byter params (ersätter, monterar inte om): spelaren står kvar och inget spelas om.
+    rerender(<LiveTvSportPage pageId={SPORT_PAGE_ID} params={{ view: 'sport' }} onNavigate={onNavigate} onOpenDetails={() => {}} />)
+    expect(screen.getByTestId('player')).toBeInTheDocument()
+    expect(onNavigate).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByTestId('player'))
+    expect(screen.queryByTestId('player')).toBeNull()
+    expect(within(box).getByTestId('sport-stage')).toBeInTheDocument()
+  })
+  it('samma params igen (omritning) spelar inte om', async () => {
+    const params = { view: 'sport', autoplay: '1', ...channel }
+    const { onNavigate, rerender } = mountSport(params, { page: true, days: { [today]: [live] } })
+    fireEvent.click(await screen.findByTestId('player'))
+    rerender(<LiveTvSportPage pageId={SPORT_PAGE_ID} params={params} onNavigate={onNavigate} onOpenDetails={() => {}} />)
+    await act(async () => { await new Promise((r) => setTimeout(r, 10)) })
+    expect(screen.queryByTestId('player')).toBeNull()
+    expect(onNavigate).toHaveBeenCalledTimes(1)
+  })
+  it('utan kanal i params: bara Sport, ingen spelare', async () => {
+    const { onNavigate } = mountSport({ view: 'sport', autoplay: '1' }, { page: true, days: { [today]: [live] } })
+    await screen.findByTestId('sport-hero')
+    expect(screen.queryByTestId('player')).toBeNull()
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: SPORT_PAGE_ID, params: { view: 'sport' } })
   })
 })
 
