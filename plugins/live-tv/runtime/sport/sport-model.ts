@@ -53,8 +53,8 @@ export interface SportMatch {
   /** Källans lag-id per källa, för följda lag och tabeller. */
   homeIds?: Record<string, string>
   awayIds?: Record<string, string>
-  /** Källans fixtur. `leagueId`/`season` behövs för tabellen. */
-  fixture?: { provider: string; id: string; leagueId?: string; season?: string }
+  /** Källans fixtur. `leagueId`/`season` behövs för tabellen; `country` (ligans land) skiljer dubblettnamn i Hoppa till. */
+  fixture?: { provider: string; id: string; leagueId?: string; season?: string; country?: string | null }
   /** Fixtur utan kopplad kanal ("Bara resultat"). Visas bara med nyckel. */
   resultOnly?: boolean
   /** Senaste målet om källan skickar händelser (målskytt i MÅL!). */

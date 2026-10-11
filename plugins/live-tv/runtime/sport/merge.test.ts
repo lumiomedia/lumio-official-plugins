@@ -38,6 +38,13 @@ describe('mergeLinked', () => {
     expect(m.resultOnly).toBeFalsy()
   })
 
+  it('ligans land från källan följer med i fixturen (Hoppa till skiljer dubblettnamn med det)', () => {
+    const [linked] = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [fixture()], links: { '1180001': { matchId: 'm1', swapped: false } } })
+    expect(linked.fixture?.country).toBe('Sweden')
+    const [only] = mergeLinked({ ...base, epg: [], fixtures: [fixture({ league: { id: '39', name: 'Premier League', season: '2026', round: 8, country: 'England' } })], links: {} })
+    expect(only.fixture?.country).toBe('England')
+  })
+
   it('omvänd ordning i EPG: källans ordning gäller, EPG-nycklarna följer rätt lag', () => {
     const [m] = mergeLinked({ ...base, epg: [epgMatch({ home: 'Djurgården', homeKey: 'djurgarden', away: 'Malmö FF', awayKey: 'malmo' })], fixtures: [fixture()], links: { '1180001': { matchId: 'm1', swapped: true } } })
     expect([m.home, m.homeKey, m.away, m.awayKey]).toEqual(['Malmo FF', 'malmo', 'Djurgardens IF', 'djurgarden'])

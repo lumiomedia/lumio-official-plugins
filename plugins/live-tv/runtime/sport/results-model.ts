@@ -9,7 +9,7 @@ import type { SportKind, SportMatch } from './sport-model'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 export type ResultsFilter = 'all' | 'live' | 'mine'
-export interface ResultGroup { key: string; sport: SportKind; league: string; leagueId: string; season: string; round: number | null; matches: SportMatch[] }
+export interface ResultGroup { key: string; sport: SportKind; league: string; leagueId: string; season: string; round: number | null; country: string | null; matches: SportMatch[] }
 
 // Matcher med fixtur bär källans status i `status` (live omfattar paus), så klockan behövs inte här.
 const isLive = (m: SportMatch) => m.status === 'live'
@@ -21,7 +21,7 @@ export function groupResults(matches: SportMatch[], filter: ResultsFilter): { gr
   const groups = new Map<string, ResultGroup>()
   for (const m of shown) {
     const key = `${m.kind}|${m.fixture!.leagueId}`
-    const g = groups.get(key) ?? { key, sport: m.kind, league: m.league, leagueId: m.fixture!.leagueId!, season: m.fixture!.season ?? '', round: m.round ?? null, matches: [] }
+    const g = groups.get(key) ?? { key, sport: m.kind, league: m.league, leagueId: m.fixture!.leagueId!, season: m.fixture!.season ?? '', round: m.round ?? null, country: m.fixture!.country ?? null, matches: [] }
     g.matches.push(m)
     groups.set(key, g)
   }
