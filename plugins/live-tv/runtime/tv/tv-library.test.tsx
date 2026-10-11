@@ -244,7 +244,7 @@ describe('Inställningar → Innehåll', () => {
   it('ligger mellan Utseende och Spellistor', async () => {
     mountSettings(LIBRARY)
     const tabs = screen.getAllByTestId(/^tab-/).map((el) => el.getAttribute('data-testid'))
-    expect(tabs).toEqual(['tab-appearance', 'tab-content', 'tab-playlists', 'tab-epg', 'tab-parental'])
+    expect(tabs).toEqual(['tab-appearance', 'tab-content', 'tab-playlists', 'tab-epg', 'tab-parental', 'tab-sport'])
   })
 })
 
