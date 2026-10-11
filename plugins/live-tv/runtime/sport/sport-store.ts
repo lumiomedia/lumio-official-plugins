@@ -167,6 +167,8 @@ export interface SportFollow {
   name: string
   /** Fas 2: källans id per källa, känt när laget följdes ur en sökning i källan. */
   providerIds?: Record<string, string>
+  /** Lagets egen klocka (Mina lag på telefon). Saknas = den allmänna (`SportSettings.alert`). */
+  alert?: KickoffAlert
 }
 
 function sanitizeFollows(raw: unknown): SportFollow[] {
@@ -181,7 +183,8 @@ function sanitizeFollows(raw: unknown): SportFollow[] {
     const ids = f.providerIds && typeof f.providerIds === 'object'
       ? Object.fromEntries(Object.entries(f.providerIds).filter((e): e is [string, string] => typeof e[1] === 'string'))
       : null
-    out.push({ sport: f.sport as SportKind, kind: f.kind, key: f.key, name: typeof f.name === 'string' && f.name ? f.name : f.key, ...(ids && Object.keys(ids).length > 0 ? { providerIds: ids } : {}) })
+    const alert = f.alert === 'off' || f.alert === '15' || f.alert === 'kickoff' ? f.alert : null
+    out.push({ sport: f.sport as SportKind, kind: f.kind, key: f.key, name: typeof f.name === 'string' && f.name ? f.name : f.key, ...(ids && Object.keys(ids).length > 0 ? { providerIds: ids } : {}), ...(alert ? { alert } : {}) })
   }
   return out
 }
@@ -202,6 +205,16 @@ export function toggleFollow(f: SportFollow): SportFollow[] {
   const next = isFollowing(current, f)
     ? current.filter((x) => !(x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === 'team' ? teamKeysMatch(x.key, f.key) : x.key === f.key)))
     : [...current, f]
+  writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next)
+  return next
+}
+
+/** Lagets egen klocka, annars den allmänna. */
+export const followAlert = (f: SportFollow, global: KickoffAlert): KickoffAlert => f.alert ?? global
+
+/** Sätter klockan på den följda posten (samma matchningsregel som `isFollowing`); en okänd post lämnas orörd. */
+export function setFollowAlert(f: Pick<SportFollow, 'sport' | 'kind' | 'key'>, alert: KickoffAlert): SportFollow[] {
+  const next = getFollows().map((x) => (isFollowing([x], f) ? { ...x, alert } : x))
   writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next)
   return next
 }

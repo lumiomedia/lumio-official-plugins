@@ -156,8 +156,13 @@ export const SPORT_GRADIENTS: Record<SportKind, string> = {
  * läses över vilken bild som helst.
  */
 export const BACKDROP_SCRIM = 'linear-gradient(180deg, #00000073 0%, #00000026 30%, #00000000 55%), linear-gradient(90deg, #000000a6 0%, #00000059 40%, #00000000 75%), linear-gradient(#00000080, #00000080)'
-/** Telefonen: texten går över hela bredden, så bilden tonas också ned uppifrån och ned. */
-export const BACKDROP_SCRIM_PHONE = `linear-gradient(180deg, #00000080 0%, #000000b3 45%, #000000e6 100%), linear-gradient(#00000059, #00000059)`
+/**
+ * Telefonen (handoffen "Sport på mobil"): bilden ligger på 40 % över svart och
+ * tonas lodrätt .85 → .6 → .85 → helsvart, så rubriken upptill och listorna
+ * längre ned läses över vilken bild som helst.
+ */
+export const BACKDROP_SCRIM_PHONE = 'linear-gradient(180deg, #000000d9 0%, #00000099 30%, #000000d9 70%, #000000 100%)'
+export const BACKDROP_PHONE_OPACITY = 0.4
 
 export function chooseSportBackdrop(i: BackdropInput): BackdropChoice {
   if (i.mode === 'off') return { kind: 'none' }
