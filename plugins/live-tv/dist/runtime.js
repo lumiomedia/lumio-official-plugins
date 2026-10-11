@@ -65587,7 +65587,7 @@ ${cue.text}`).join("\n\n")}
     favs: () => /* @__PURE__ */ jsx(MIcons.Heart, { size: 20 }),
     multi: () => /* @__PURE__ */ jsx(PIcons.Grid, { size: 20 })
   };
-  function SportPhone({ model, nav }) {
+  function SportPhone({ model, nav, standalone = false }) {
     const [tab, setTab] = useState("foryou");
     const [offset, setOffset] = useState(0);
     const [filter, setFilter] = useState("all");
@@ -65634,7 +65634,7 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
         /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-head", style: { flexShrink: 0, padding: `calc(${MT.SAFE_TOP_GUARD} + 8px) 16px 0`, display: "flex", flexDirection: "column", gap: 10 }, children: [
           /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
-            /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-title", ...station(() => setSections(true)), "aria-label": tt("sportSwitchSection"), "aria-haspopup": "dialog", style: { display: "flex", flexDirection: "column", minWidth: 0, cursor: "pointer" }, children: [
+            standalone ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-title", style: { display: "flex", flexDirection: "column", minWidth: 0 }, children: /* @__PURE__ */ jsx("span", { style: { fontSize: platform === "ios" ? 32 : 26, fontWeight: 700, lineHeight: 1.1 }, children: tt("sportTitle") }) }) : /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-title", ...station(() => setSections(true)), "aria-label": tt("sportSwitchSection"), "aria-haspopup": "dialog", style: { display: "flex", flexDirection: "column", minWidth: 0, cursor: "pointer" }, children: [
               /* @__PURE__ */ jsx("span", { style: { fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: P.muted60 }, children: tt("liveTv") }),
               /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: platform === "ios" ? 32 : 26, fontWeight: 700, lineHeight: 1.1 }, children: [
                 tt("sportTitle"),
@@ -65705,7 +65705,7 @@ ${cue.text}`).join("\n\n")}
         ] }) : tab === "results" ? /* @__PURE__ */ jsx(SportResultsPhone, { matches: allMatches, controller, onOpenMatch: openMatch, onWatch: (m) => ctx.watch(m), pushLayer: nav.pushLayer, sport: filter, kindLabel: ctx.kindLabel }) : /* @__PURE__ */ jsx(PhoneFollows, { ctx, days: [todayDay.data, tomorrowDay.data], onAdd: (k) => setAdding(k) }) })
       ] }),
       sheet ? /* @__PURE__ */ jsx(MatchInfoDrawer, { ctx, match: liveSheet ?? sheet, onClose: () => setSheet(null), phone: true }) : null,
-      sections ? /* @__PURE__ */ jsxs(PhoneSportSheet, { testId: "sport-phone-sections", label: tt("sportSwitchSection"), onClose: () => setSections(false), pushLayer: nav.pushLayer, children: [
+      sections && !standalone ? /* @__PURE__ */ jsxs(PhoneSportSheet, { testId: "sport-phone-sections", label: tt("sportSwitchSection"), onClose: () => setSections(false), pushLayer: nav.pushLayer, children: [
         /* @__PURE__ */ jsx("span", { style: overline2, children: tt("liveTv") }),
         PHONE_SECTIONS.map((s) => {
           const on = s.key === "sport";
@@ -66428,7 +66428,7 @@ ${cue.text}`).join("\n\n")}
               }
             }
           ),
-          /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: redirectCheck ? null : /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone }, view) }),
+          /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: redirectCheck ? null : /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone, standalone: sportOnly }, view) }),
           phone && !sportOnly && active4 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => v === "home" ? goVodHome() : go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
           phone && moreOpen ? /* @__PURE__ */ jsx(
             MobileSheet,
