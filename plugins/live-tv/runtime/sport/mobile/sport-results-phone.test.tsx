@@ -29,12 +29,10 @@ beforeEach(() => { __resetPluginStorageForTests(); __setLangForTests('sv') })
 afterEach(() => { cleanup(); __setLangForTests('en') })
 
 describe('Resultat på telefon', () => {
-  it('utan nyckel: nyckelkortet; efter "Inte nu": den diskreta raden', () => {
-    const { rerender } = render(<SportResultsPhone matches={[]} controller={null} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
+  it('utan nyckel: nyckelkortet (inget "Inte nu")', () => {
+    render(<SportResultsPhone matches={[]} controller={null} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
     expect(screen.getByTestId('sport-key-card-tab')).toBeTruthy()
-    setSportSettings({ keyCardDismissed: true })
-    rerender(<SportResultsPhone matches={[]} controller={null} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
-    expect(screen.getByText('Visa resultat – lägg till nyckel')).toBeTruthy()
+    expect(screen.queryByText('Inte nu')).toBeNull()
   })
 
   it('med nyckel: ligagrupp med omgång, ställning, filter och HOPPA TILL; tryck öppnar matchen', () => {

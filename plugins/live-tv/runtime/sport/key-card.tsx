@@ -19,10 +19,6 @@ const SPORT_NAMES: Array<[SportKind, TvStringKey]> = [
   ['football', 'sportNameFootball'], ['hockey', 'sportNameHockey'], ['basketball', 'sportNameBasketball'], ['handball', 'sportNameHandball'],
 ]
 
-export function shouldShowKeyBanner(s: SportSettings): boolean {
-  return !s.apiKey && !s.keyCardDismissed
-}
-
 type Phase = { kind: 'idle' } | { kind: 'checking' } | { kind: 'done'; result: KeyFlowResult }
 
 export function KeyCard({ variant, onDone, pushLayer }: { variant: 'banner' | 'tab' | 'settings'; onDone?: () => void; pushLayer?: (close: () => void) => () => void }) {
@@ -85,7 +81,6 @@ export function KeyCard({ variant, onDone, pushLayer }: { variant: 'banner' | 't
         )}
         {prompt.node}
         {message ? <div role="status" style={{ fontSize: dp(16), color: phase.kind === 'done' && phase.result.ok ? '#3cd6a3' : TV.text }}>{message}</div> : null}
-        {variant !== 'settings' && !settings.apiKey ? <div>{btn(tt('sportKeyNotNow'), () => { setSportSettings({ keyCardDismissed: true }); onDone?.() })}</div> : null}
       </div>
       <div style={{ display: 'flex', gap: dp(20), alignItems: 'flex-start' }}>
         <figure style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: dp(8), alignItems: 'center' }}>

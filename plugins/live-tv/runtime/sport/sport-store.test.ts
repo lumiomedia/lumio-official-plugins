@@ -72,7 +72,7 @@ describe('teamKeysMatch (samma regel som Rust)', () => {
 
 describe('fas 2-fälten', () => {
   it('standardvärden, och providerIds bevaras på följda lag', () => {
-    expect(getSportSettings()).toMatchObject({ apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {} })
+    expect(getSportSettings()).toMatchObject({ apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {} })
     const f = { sport: 'football' as const, kind: 'team' as const, key: 'malmo', name: 'Malmö FF', providerIds: { 'api-sports': '375' } }
     toggleFollow(f)
     expect(getFollows()).toEqual([f])

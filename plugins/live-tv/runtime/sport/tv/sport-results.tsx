@@ -38,15 +38,11 @@ export function SportResults({ matches, controller, onOpenMatch, tv }: { matches
   const { tt } = useTvText()
   const settings = useSportSettings()
   const [filter, setFilter] = useState<ResultsFilter>('all')
-  const [showCard, setShowCard] = useState(false)
   const [tables, setTables] = useState<Record<string, StandingRow[] | 'loading'>>({})
   const groupRefs = useRef(new Map<string, HTMLElement>())
 
   if (!settings.apiKey || !controller) {
-    if (settings.keyCardDismissed && !showCard) {
-      return <div data-testid="sport-key-add-row" {...station(() => setShowCard(true), undefined, tv ? { 'data-init': '' } : undefined)} style={{ color: TV.dim, fontSize: dp(16), cursor: 'pointer', padding: dp(12) }}>{tt('sportKeyAddRow')}</div>
-    }
-    return <KeyCard variant="tab" onDone={() => setShowCard(false)} />
+    return <KeyCard variant="tab" />
   }
 
   const { groups, liveCount, mineCount } = groupResults(matches, filter)

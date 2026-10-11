@@ -35,7 +35,7 @@ export async function validateKey(provider: ProviderId, raw: string, deps: { fet
 /** Sparar BARA efter godkänd validering. En underkänd nyckel rör aldrig en fungerande. */
 export async function saveValidatedKey(provider: ProviderId, raw: string, deps: { fetch?: BudgetDeps['fetch'] } = {}): Promise<KeyFlowResult> {
   const result = await validateKey(provider, raw, deps)
-  if (result.ok) setSportSettings({ apiKey: result.key, provider, keyPlan: result.check.plan, keyCardDismissed: false })
+  if (result.ok) setSportSettings({ apiKey: result.key, provider, keyPlan: result.check.plan })
   return result
 }
 

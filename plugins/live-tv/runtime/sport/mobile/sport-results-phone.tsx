@@ -65,15 +65,11 @@ export function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer 
   const { tt } = useTvText()
   const settings = useSportSettings()
   const [filter, setFilter] = useState<ResultsFilter>('all')
-  const [showCard, setShowCard] = useState(false)
   const [table, setTable] = useState<{ group: ResultGroup; rows: StandingRow[] | null } | null>(null)
   const sections = useRef(new Map<string, HTMLElement>())
 
   if (!settings.apiKey || !controller) {
-    if (settings.keyCardDismissed && !showCard) {
-      return <div data-testid="phone-results-add-key" {...station(() => setShowCard(true))} style={{ padding: '16px 4px', fontSize: 15, color: MT.muted, cursor: 'pointer' }}>{tt('sportKeyAddRow')}</div>
-    }
-    return <KeyCard variant="tab" onDone={() => setShowCard(false)} pushLayer={pushLayer} />
+    return <KeyCard variant="tab" pushLayer={pushLayer} />
   }
 
   const { groups, liveCount, mineCount } = groupResults(matches, filter)

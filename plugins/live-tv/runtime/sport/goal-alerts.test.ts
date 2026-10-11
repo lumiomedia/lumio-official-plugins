@@ -8,7 +8,7 @@ import { fxMatch } from './__sport-fixture'
 const tt = (k: Parameters<typeof tvText>[1], v?: Record<string, string | number>) => tvText('sv', k, v)
 const e: GoalEvent = { fixtureId: '1', provider: 'api-sports', sport: 'football', side: 'home', score: { home: 3, away: 1 }, scorer: 'S. Larsson', minute: 67, at: 0, home: 'Malmo FF', away: 'AIK' }
 const match = fxMatch({ id: 'm1', home: 'Malmo FF', away: 'AIK', homeKey: 'malmo', awayKey: 'aik', leagueKey: 'a', fixture: { provider: 'api-sports', id: '1' } })
-const settings = (over: Partial<SportSettings> = {}) => ({ apiKey: 'k', view: 'matchday', alert: 'off', goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {}, ...over }) as SportSettings
+const settings = (over: Partial<SportSettings> = {}) => ({ apiKey: 'k', view: 'matchday', alert: 'off', goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, ...over }) as SportSettings
 
 describe('goal-alerts', () => {
   it('hittar matchen via källa och fixtur-id', () => {

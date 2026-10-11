@@ -49,6 +49,6 @@ describe('nyckeln', () => {
   })
   it('lagringen tål äldre poster utan fas 2-fälten', () => {
     setSportSettings({ apiKey: 'abc12345' })
-    expect(getSportSettings()).toMatchObject({ provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {} })
+    expect(getSportSettings()).toMatchObject({ provider: 'api-sports', keyPlan: null, goalAlertMatches: {} })
   })
 })

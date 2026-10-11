@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { __resetPluginStorageForTests, __setLangForTests, __setTvModeForTests } from '@/lib/plugin-sdk'
-import { KeyCard, shouldShowKeyBanner } from './key-card'
+import { KeyCard } from './key-card'
 import { getSportSettings } from './sport-store'
 import { __resetBudgetForTests } from './budget'
 import status from './__fixtures__/api-sports/status.json'
@@ -47,15 +47,6 @@ describe('KeyCard', () => {
     fireEvent.click(screen.getByText('Kontrollera och spara'))
     await waitFor(() => expect(screen.getByText('Nyckeln godtogs inte')).toBeTruthy())
     expect(getSportSettings().apiKey).toBeNull()
-  })
-
-  it('"Inte nu" döljer bannern för gott', () => {
-    const onDone = vi.fn()
-    render(<KeyCard variant="banner" onDone={onDone} />)
-    fireEvent.click(screen.getByText('Inte nu'))
-    expect(getSportSettings().keyCardDismissed).toBe(true)
-    expect(shouldShowKeyBanner(getSportSettings())).toBe(false)
-    expect(onDone).toHaveBeenCalled()
   })
 
   it('TV: "Skriv in med telefonen" visar telefonsidans QR', async () => {

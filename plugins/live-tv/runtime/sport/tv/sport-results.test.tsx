@@ -39,12 +39,10 @@ describe('groupResults', () => {
 })
 
 describe('SportResults', () => {
-  it('utan nyckel: nyckelkortet; efter "Inte nu": den diskreta raden', () => {
-    const { rerender } = render(<SportResults matches={[]} controller={null} onOpenMatch={vi.fn()} tv={false} />)
+  it('utan nyckel: nyckelkortet (inget "Inte nu")', () => {
+    render(<SportResults matches={[]} controller={null} onOpenMatch={vi.fn()} tv={false} />)
     expect(screen.getByTestId('sport-key-card-tab')).toBeTruthy()
-    setSportSettings({ keyCardDismissed: true })
-    rerender(<SportResults matches={[]} controller={null} onOpenMatch={vi.fn()} tv={false} />)
-    expect(screen.getByText('Visa resultat – lägg till nyckel')).toBeTruthy()
+    expect(screen.queryByText('Inte nu')).toBeNull()
   })
   it('med nyckel: grupper, HOPPA TILL och Tabell med form', async () => {
     setSportSettings({ apiKey: 'k123' })

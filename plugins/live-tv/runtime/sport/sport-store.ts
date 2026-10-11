@@ -44,8 +44,6 @@ export interface SportSettings {
   provider: ProviderId
   /** Fas 2: källans plan vid senaste validering ("Free", "Pro", "Premium"). */
   keyPlan: string | null
-  /** Fas 2: "Inte nu" på nyckelkortet. Efter det visas bara en diskret rad i Resultat. */
-  keyCardDismissed: boolean
   /** Fas 2: "Notis vid mål" per match (matchens id → utgår ms, avspark + 4 h). */
   goalAlertMatches: Record<string, number>
   /** Bakgrund i Sport: Automatisk (arenan), Egen bild eller Av. */
@@ -54,7 +52,7 @@ export interface SportSettings {
 }
 
 const DEFAULT_SETTINGS: SportSettings = {
-  view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {}, backdrop: 'auto', backdropCustom: null,
+  view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, backdrop: 'auto', backdropCustom: null,
 }
 
 function sanitizeSettings(raw: unknown): SportSettings {
@@ -66,7 +64,6 @@ function sanitizeSettings(raw: unknown): SportSettings {
     goalAlerts: r.goalAlerts !== false,
     provider: r.provider === 'thesportsdb' ? 'thesportsdb' : 'api-sports',
     keyPlan: typeof r.keyPlan === 'string' ? r.keyPlan : null,
-    keyCardDismissed: r.keyCardDismissed === true,
     goalAlertMatches: Object.fromEntries(
       Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === 'object' ? (r.goalAlertMatches as Record<string, unknown>) : {})
         .filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] > Date.now()),

@@ -19,11 +19,14 @@ describe('Sportskalet', () => {
     expect(screen.getByTestId('sport-summary')).toHaveTextContent('Today · 2 matches · 1 live')
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
-  it('Resultat-fliken finns (tre flikar) och visar nyckelkortet utan nyckel, utan bannern', async () => {
+  it('Resultat-fliken finns (tre flikar) och visar nyckelkortet utan nyckel, aldrig som banner', async () => {
     mountSport({}, { days: { [today]: [live, later] } })
     await screen.findByTestId('sport-hero')
     expect(['foryou', 'results', 'follows'].map((k) => screen.queryByTestId(`sport-tab-${k}`) !== null)).toEqual([true, true, true])
-    expect(screen.getByTestId('sport-key-card-banner')).toBeInTheDocument()
+    expect(screen.queryByTestId('sport-key-card-banner')).toBeNull()
+    expect(screen.queryByTestId('sport-key-card-tab')).toBeNull()
+    fireEvent.click(screen.getByTestId('sport-tab-follows'))
+    expect(screen.queryByTestId('sport-key-card-banner')).toBeNull()
     fireEvent.click(screen.getByTestId('sport-tab-results'))
     expect(await screen.findByTestId('sport-key-card-tab')).toBeInTheDocument()
     expect(screen.queryByTestId('sport-key-card-banner')).toBeNull()
