@@ -14,6 +14,7 @@ import { crestText, type SportMatch } from '../sport-model'
 import { useSportSettings } from '../sport-store'
 import type { ResultsController } from '../results-controller'
 import type { StandingRow } from '../provider'
+import { sportBg } from '../surface'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 
@@ -112,7 +113,7 @@ export function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer 
             <div data-testid={`phone-table-${g.key}`} {...station(() => void openTable(g))} style={{ minHeight: MT.HIT, padding: '0 14px', borderRadius: 12, background: MT.s08, border: `1px solid ${MT.line08}`, display: 'inline-flex', alignItems: 'center', fontSize: 14, color: MT.muted70, cursor: 'pointer', flexShrink: 0 }}>{tt('sportTable')}</div>
           </div>
           {g.matches.map((m) => (
-            <div key={m.id} data-testid="phone-result-row" {...station(() => onOpenMatch(m))} style={{ minHeight: 56, display: 'grid', gridTemplateColumns: '46px minmax(0,1fr) auto minmax(0,1fr)', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 14, background: MT.s07, border: `1px solid ${MT.line08}`, cursor: 'pointer' }}>
+            <div key={m.id} data-testid="phone-result-row" {...station(() => onOpenMatch(m))} style={{ minHeight: 56, display: 'grid', gridTemplateColumns: '46px minmax(0,1fr) auto minmax(0,1fr)', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: 'pointer' }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: m.status === 'live' ? MT.live : MT.muted }}>{matchStatusLabel(m, tt) ?? ''}</span>
               <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, minWidth: 0 }}><span style={{ fontSize: 14, ...ellipsis }}>{m.home}</span><PhoneCrest name={m.home ?? ''} src={m.homeCrest} /></span>
               <span data-testid="phone-result-score" style={{ fontSize: 16, fontWeight: 700, minWidth: 38, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{scoreText(m) ?? '–'}</span>

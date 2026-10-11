@@ -83,7 +83,7 @@ export function fakeCtx(over: Partial<SportCtx> = {}): SportCtx {
     locale: 'en-GB',
     follows: over.follows ?? [],
     overrides: over.overrides ?? {},
-    settings: over.settings ?? { view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, backdrop: 'auto', backdropCustom: null },
+    settings: over.settings ?? { view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, backdrops: { all: 'standard', sports: {} }, cards: { opacity: 85, tone: 'black' } },
     reminders: over.reminders ?? [],
     openMatch: vi.fn(),
     openFollowPicker: vi.fn(),

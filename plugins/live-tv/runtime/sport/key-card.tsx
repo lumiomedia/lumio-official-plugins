@@ -14,6 +14,7 @@ import { currentBudget } from './budget'
 import { setSportSettings, useSportSettings, type SportSettings } from './sport-store'
 import type { ProviderId } from './provider'
 import type { SportKind } from './sport-model'
+import { sportBg } from './surface'
 
 const SPORT_NAMES: Array<[SportKind, TvStringKey]> = [
   ['football', 'sportNameFootball'], ['hockey', 'sportNameHockey'], ['basketball', 'sportNameBasketball'], ['handball', 'sportNameHandball'],
@@ -60,7 +61,7 @@ export function KeyCard({ variant, onDone, pushLayer }: { variant: 'banner' | 't
   )
 
   return (
-    <section data-testid={`sport-key-card-${variant}`} style={{ borderRadius: dp(16), background: TV.s06, border: `1px solid ${TV.lineCard}`, padding: dp(24), display: 'flex', gap: dp(24), flexWrap: 'wrap' }}>
+    <section data-testid={`sport-key-card-${variant}`} style={{ borderRadius: dp(16), background: sportBg(TV.s06), border: `1px solid ${TV.lineCard}`, padding: dp(24), display: 'flex', gap: dp(24), flexWrap: 'wrap' }}>
       <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(12) }}>
         <div style={{ fontSize: dp(24), fontWeight: 600 }}>{broken ? tt('sportKeyBroken') : tt('sportKeyTitle')}</div>
         <Segment options={[{ key: 'api-sports' as ProviderId, label: 'API-Sports' }, { key: 'thesportsdb' as ProviderId, label: 'TheSportsDB' }]} value={provider} onChange={(k) => { setProvider(k); setPhase({ kind: 'idle' }) }} />

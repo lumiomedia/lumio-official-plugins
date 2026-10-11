@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { __resetBackdropForTests, backdropSrc, chooseSportBackdrop, resolveCustomBackdrop, useHeroTeamArt } from './backdrop'
+import {
+  STANDARD_IMAGES, __resetBackdropForTests, averageRgb, backdropSrc, cardSurfaceVars, chooseSportBackdrop, darkTone, resolveBackdropMode, standardImageFor, useHeroTeamArt,
+} from './backdrop'
 import { apiSports } from './api-sports'
 import { theSportsDb } from './thesportsdb'
 import { mergeLinked } from './merge'
@@ -17,44 +19,96 @@ vi.mock('./budget', async () => {
 const VENUE = 'https://media.api-sports.io/football/venues/1460.png'
 const art = { stadium: 'https://r2.thesportsdb.com/images/media/team/stadium/malmo.jpg', fanart: 'https://r2.thesportsdb.com/images/media/team/fanart/malmo1.jpg' }
 const hero = { kind: 'football' as const, venueImage: null as string | null }
-const base = { mode: 'auto' as const, hasKey: true, hero, art: null, custom: null }
+const STD = '/sport-backgrounds/football.webp'
+const base = { mode: 'auto' as const, slot: 'all' as const, hasKey: true, hero, art: null, uploads: {}, standard: STD }
 const DAY = { today: '2026-10-10', tz: 'Europe/Stockholm', dayEndMs: Date.UTC(2026, 9, 10, 22) }
+const std = { kind: 'image', url: STD, from: 'standard' }
 
 describe('chooseSportBackdrop', () => {
-  it('Automatisk: arenan, sedan lagets arenabild, sedan fanart, sist sportens gradient', () => {
+  it('Automatisk: arenan, sedan lagets arenabild, sedan fanart, sist Standard-bilden', () => {
     expect(chooseSportBackdrop({ ...base, hero: { ...hero, venueImage: VENUE }, art })).toEqual({ kind: 'image', url: VENUE, from: 'venue' })
     expect(chooseSportBackdrop({ ...base, art })).toEqual({ kind: 'image', url: art.stadium, from: 'stadium' })
     expect(chooseSportBackdrop({ ...base, art: { stadium: null, fanart: art.fanart } })).toEqual({ kind: 'image', url: art.fanart, from: 'fanart' })
-    expect(chooseSportBackdrop(base)).toEqual({ kind: 'gradient', sport: 'football' })
+    expect(chooseSportBackdrop(base)).toEqual(std)
   })
-  it('utan nyckel eller utan hero: neutral gradient, aldrig en bild ur källan', () => {
-    expect(chooseSportBackdrop({ ...base, hasKey: false, hero: { ...hero, venueImage: VENUE }, art })).toEqual({ kind: 'gradient', sport: 'football' })
-    expect(chooseSportBackdrop({ ...base, hero: null })).toEqual({ kind: 'gradient', sport: 'other' })
+  it('Automatisk utan nyckel eller utan hero: Standard-bilden, aldrig en bild ur källan', () => {
+    expect(chooseSportBackdrop({ ...base, hasKey: false, hero: { ...hero, venueImage: VENUE }, art })).toEqual(std)
+    expect(chooseSportBackdrop({ ...base, hero: null })).toEqual(std)
   })
-  it('en bild som inte gick att ladda hoppas över', () => {
+  it('Standard: den medföljande bilden även med nyckel och arena', () => {
+    expect(chooseSportBackdrop({ ...base, mode: 'standard', hero: { ...hero, venueImage: VENUE }, art })).toEqual(std)
+  })
+  it('en bild som inte gick att ladda hoppas över; trasig Standard blir sportens gradient', () => {
     expect(chooseSportBackdrop({ ...base, hero: { ...hero, venueImage: VENUE }, art, broken: new Set([VENUE]) })).toEqual({ kind: 'image', url: art.stadium, from: 'stadium' })
-    expect(chooseSportBackdrop({ ...base, art, broken: new Set([art.stadium, art.fanart]) })).toEqual({ kind: 'gradient', sport: 'football' })
+    expect(chooseSportBackdrop({ ...base, art, broken: new Set([art.stadium, art.fanart]) })).toEqual(std)
+    expect(chooseSportBackdrop({ ...base, mode: 'standard', broken: new Set([STD]) })).toEqual({ kind: 'gradient', sport: 'football' })
   })
-  it('Egen bild gäller även utan nyckel; saknas bilden blir det gradient', () => {
-    expect(chooseSportBackdrop({ ...base, mode: 'custom', hasKey: false, custom: 'data:image/png;base64,AA' })).toEqual({ kind: 'image', url: 'data:image/png;base64,AA', from: 'custom' })
-    expect(chooseSportBackdrop({ ...base, mode: 'custom', custom: null })).toEqual({ kind: 'gradient', sport: 'football' })
+  it('Egen bild: den uppladdade bilden för platsen; saknas den på värden blir det Standard', () => {
+    const url = '/api/live-tv/sport/backdrop?slot=hockey&v=7'
+    expect(chooseSportBackdrop({ ...base, mode: 'custom', slot: 'hockey', hasKey: false, uploads: { hockey: 7 } })).toEqual({ kind: 'image', url, from: 'custom' })
+    expect(chooseSportBackdrop({ ...base, mode: 'custom', slot: 'hockey', uploads: { all: 3 } })).toEqual(std)
+    expect(chooseSportBackdrop({ ...base, mode: 'custom', slot: 'hockey', uploads: { hockey: 7 }, broken: new Set([url]) })).toEqual(std)
   })
   it('Av: ingenting, inte ens med arena', () => {
     expect(chooseSportBackdrop({ ...base, mode: 'off', hero: { ...hero, venueImage: VENUE } })).toEqual({ kind: 'none' })
   })
 })
 
-describe('bildens källor', () => {
-  it('Egen bild slås upp i startsidans lista per index, eller är länken', () => {
-    expect(resolveCustomBackdrop({ from: 'home', index: 1 }, ['a', 'b'])).toBe('b')
-    expect(resolveCustomBackdrop({ from: 'home', index: 5 }, ['a'])).toBeNull()
-    expect(resolveCustomBackdrop({ from: 'url', url: 'https://x/y.jpg' }, [])).toBe('https://x/y.jpg')
-    expect(resolveCustomBackdrop(null, ['a'])).toBeNull()
+describe('läge per sport', () => {
+  const b = { all: 'auto' as const, sports: { hockey: 'custom' as const } }
+  it('en sport med eget val använder sin plats; annars ärvs Alla sporter', () => {
+    expect(resolveBackdropMode(b, 'hockey')).toEqual({ mode: 'custom', slot: 'hockey' })
+    expect(resolveBackdropMode(b, 'football')).toEqual({ mode: 'auto', slot: 'all' })
+    expect(resolveBackdropMode(b, 'all')).toEqual({ mode: 'auto', slot: 'all' })
   })
-  it('källornas bilder går genom appens bildcache; Egen bild används som den är', () => {
+})
+
+describe('Standard-bilderna', () => {
+  it('fem sporter har en egen bild som appen serverar', () => {
+    expect(STANDARD_IMAGES).toEqual({
+      football: '/sport-backgrounds/football.webp', hockey: '/sport-backgrounds/hockey.webp', basketball: '/sport-backgrounds/basketball.webp',
+      motorsport: '/sport-backgrounds/motorsport.webp', tennis: '/sport-backgrounds/tennis.webp',
+    })
+    expect(standardImageFor('hockey', '2026-10-11')).toBe('/sport-backgrounds/hockey.webp')
+  })
+  it('handboll, övrigt och Alla sporter: en av dem, samma hela dagen (inget flimmer), olika dagar varierar', () => {
+    const all = Object.values(STANDARD_IMAGES)
+    for (const scope of ['handball', 'other', 'all'] as const) {
+      const a = standardImageFor(scope, '2026-10-11')
+      expect(all).toContain(a)
+      expect(standardImageFor(scope, '2026-10-11')).toBe(a)
+    }
+    const days = Array.from({ length: 20 }, (_, i) => standardImageFor('all', `2026-10-${String(i + 1).padStart(2, '0')}`))
+    expect(new Set(days).size).toBeGreaterThan(1)
+  })
+})
+
+describe('kortens bakgrund', () => {
+  it('standardvärdena (inget eget val): svart 85 % med oskärpa utanför TV:n', () => {
+    expect(cardSurfaceVars({ opacity: 85, tone: 'black' }, null, { blur: true })).toEqual({ '--sport-card-bg': 'rgba(0, 0, 0, 0.85)', '--sport-card-blur': 'blur(14px)' })
+    expect(cardSurfaceVars({ opacity: 85, tone: 'black' }, null, { blur: false })['--sport-card-blur']).toBe('none')
+  })
+  it('mörkgrå, och ton ur bilden (mörkad); utan prov blir tonen svart', () => {
+    expect(cardSurfaceVars({ opacity: 50, tone: 'gray' }, null, { blur: false })['--sport-card-bg']).toBe('rgba(28, 29, 34, 0.5)')
+    expect(cardSurfaceVars({ opacity: 100, tone: 'image' }, [200, 100, 50], { blur: false })['--sport-card-bg']).toBe(`rgba(${darkTone([200, 100, 50]).join(', ')}, 1)`)
+    expect(cardSurfaceVars({ opacity: 0, tone: 'image' }, null, { blur: false })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0)')
+  })
+  it('tonen hålls mörk nog för vit text', () => {
+    const [r, g, bl] = darkTone([250, 250, 250])
+    expect(0.2126 * r + 0.7152 * g + 0.0722 * bl).toBeLessThanOrEqual(42)
+    expect(darkTone([40, 60, 20])).toEqual([24, 36, 12])
+  })
+  it('medelfärgen ur pixeldata hoppar över genomskinliga pixlar', () => {
+    expect(averageRgb(new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 255, 255, 9, 9, 9, 0]))).toEqual([128, 0, 128])
+    expect(averageRgb(new Uint8ClampedArray([1, 2, 3, 0]))).toBeNull()
+  })
+})
+
+describe('bildens källor', () => {
+  it('källornas bilder går genom appens bildcache; Standard och Egen bild kommer redan från värden', () => {
     expect(backdropSrc({ kind: 'image', url: VENUE, from: 'venue' })).toBe('/api/live-tv/sport/image?src=' + encodeURIComponent(VENUE))
-    expect(backdropSrc({ kind: 'image', url: 'data:image/png;base64,AA', from: 'custom' })).toBe('data:image/png;base64,AA')
-    expect(backdropSrc({ kind: 'image', url: 'https://min.server/bild.jpg', from: 'custom' })).toBe('https://min.server/bild.jpg')
+    expect(backdropSrc({ kind: 'image', url: STD, from: 'standard' })).toBe(STD)
+    expect(backdropSrc({ kind: 'image', url: '/api/live-tv/sport/backdrop?slot=all&v=1', from: 'custom' })).toBe('/api/live-tv/sport/backdrop?slot=all&v=1')
   })
   it('API-Sports: arenans bild ur fixturens venue-id utan anrop, och den följer med in i SportMatch', () => {
     const [live] = apiSports.day('football', '2026-10-10', DAY).parse([footballDate])

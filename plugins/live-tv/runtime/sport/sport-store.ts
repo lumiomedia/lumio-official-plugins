@@ -18,20 +18,40 @@ export const SPORT_OVERRIDES_KEY = 'sport_overrides_v1'
 
 export type SportViewMode = 'matchday' | 'feed'
 export type KickoffAlert = 'off' | '15' | 'kickoff'
-export type SportBackdropMode = 'auto' | 'custom' | 'off'
 /**
- * Egen bild: en av appens egna bakgrunder (Inställningar > Startsida) per index,
- * eller en http(s)-länk. Bilden själv kopieras aldrig hit: lagringen synkas med
- * WebDAV, och uppladdade bilder är data-URL:er på flera MB.
+ * Bakgrund i Sport. Standard = appens medföljande bild för sporten,
+ * Automatisk = källans arena-/lagbild (med nyckel) och annars Standard,
+ * Egen bild = en bild uppladdad till DEN HÄR värden (själva bilden synkas
+ * aldrig; saknas den här blir det Standard), Av = ingen bakgrund.
  */
-export type SportBackdropCustom = { from: 'home'; index: number } | { from: 'url'; url: string }
+export type SportBackdropMode = 'standard' | 'auto' | 'custom' | 'off'
+const BACKDROP_MODES: readonly SportBackdropMode[] = ['standard', 'auto', 'custom', 'off']
+/** "Alla sporter" plus egna val per sport; en sport utan eget val ärver "Alla sporter". */
+export interface SportBackdrops { all: SportBackdropMode; sports: Partial<Record<SportKind, SportBackdropMode>> }
+/** Kortens bakgrund medan en bild visas. */
+export type SportCardTone = 'black' | 'gray' | 'image'
+export interface SportCards { opacity: number; tone: SportCardTone }
 
-function sanitizeBackdropCustom(raw: unknown): SportBackdropCustom | null {
-  const c = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
-  if (c?.from === 'home' && typeof c.index === 'number' && Number.isInteger(c.index) && c.index >= 0) return { from: 'home', index: c.index }
-  if (c?.from === 'url' && typeof c.url === 'string' && /^https?:\/\/\S+$/i.test(c.url.trim())) return { from: 'url', url: c.url.trim() }
-  return null
+const isMode = (v: unknown): v is SportBackdropMode => typeof v === 'string' && (BACKDROP_MODES as readonly string[]).includes(v)
+
+function sanitizeBackdrops(raw: unknown, legacy: unknown): SportBackdrops {
+  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
+  if (!r) return { all: legacy === 'off' ? 'off' : 'standard', sports: {} }
+  const sportsRaw = r.sports && typeof r.sports === 'object' ? (r.sports as Record<string, unknown>) : {}
+  const sports: Partial<Record<SportKind, SportBackdropMode>> = {}
+  for (const k of SPORT_KINDS) if (isMode(sportsRaw[k])) sports[k] = sportsRaw[k]
+  return { all: isMode(r.all) ? r.all : 'standard', sports }
 }
+
+function sanitizeCards(raw: unknown): SportCards {
+  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  const n = typeof r.opacity === 'number' && Number.isFinite(r.opacity) ? Math.round(Math.min(100, Math.max(0, r.opacity))) : DEFAULT_CARDS.opacity
+  const tone = r.tone === 'gray' || r.tone === 'image' || r.tone === 'black' ? r.tone : DEFAULT_CARDS.tone
+  return { opacity: n, tone }
+}
+
+/** Läsbart över en bild: svart 85 % (Jerry 2026-10-11). */
+export const DEFAULT_CARDS: SportCards = { opacity: 85, tone: 'black' }
 
 export interface SportSettings {
   view: SportViewMode // fas 1
@@ -46,17 +66,19 @@ export interface SportSettings {
   keyPlan: string | null
   /** Fas 2: "Notis vid mål" per match (matchens id → utgår ms, avspark + 4 h). */
   goalAlertMatches: Record<string, number>
-  /** Bakgrund i Sport: Automatisk (arenan), Egen bild eller Av. */
-  backdrop: SportBackdropMode
-  backdropCustom: SportBackdropCustom | null
+  /** Bakgrund i Sport per sport, med "Alla sporter" som standard. */
+  backdrops: SportBackdrops
+  /** Kortens bakgrund medan en bild visas. */
+  cards: SportCards
 }
 
 const DEFAULT_SETTINGS: SportSettings = {
-  view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, backdrop: 'auto', backdropCustom: null,
+  view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, backdrops: { all: 'standard', sports: {} }, cards: DEFAULT_CARDS,
 }
 
 function sanitizeSettings(raw: unknown): SportSettings {
-  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof SportSettings, unknown>>
+  // `backdrop`/`backdropCustom` är fas 2:s första form (länk eller startsidans bild); bara Av följer med.
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof SportSettings | 'backdrop', unknown>>
   return {
     view: r.view === 'feed' || r.view === 'matchday' ? r.view : DEFAULT_SETTINGS.view,
     alert: r.alert === 'off' || r.alert === '15' || r.alert === 'kickoff' ? r.alert : DEFAULT_SETTINGS.alert,
@@ -68,8 +90,8 @@ function sanitizeSettings(raw: unknown): SportSettings {
       Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === 'object' ? (r.goalAlertMatches as Record<string, unknown>) : {})
         .filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] > Date.now()),
     ),
-    backdrop: r.backdrop === 'custom' || r.backdrop === 'off' ? r.backdrop : 'auto',
-    backdropCustom: sanitizeBackdropCustom(r.backdropCustom),
+    backdrops: sanitizeBackdrops(r.backdrops, r.backdrop),
+    cards: sanitizeCards(r.cards),
   }
 }
 

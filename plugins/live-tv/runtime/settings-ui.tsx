@@ -132,6 +132,7 @@ export function LtBtn({ children, onClick, variant = 'default', size = 'sm', dis
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-pressed={active ? true : undefined}
       style={{
         flex: 'none',
         borderRadius: 7,

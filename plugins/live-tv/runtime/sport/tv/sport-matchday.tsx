@@ -1,7 +1,7 @@
 'use client'
 
 import { formatClock, progressOf } from '../../live-tv-ui'
-import { Progress, Tag, TV, cardStyle, dp, station } from '../../tv/tv-ui'
+import { Progress, Tag, TV, dp, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, type SportMatch } from '../sport-model'
 import { featuredMatch, followState, leagueColor, nextOnYourChannels, rankedSources, splitSections, statusAt, timelineAxis, timelineRows } from '../sport-day-model'
 import { timeLine, type SportCtx } from '../sport-ctx'
@@ -9,6 +9,7 @@ import { heroStatusLine, matchStatusLabel, scoreText, showsScore } from '../scor
 import { MatchScore, ResultOnlyTag, useGoalBlink } from './sport-score'
 import { CardRow, Crest, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
 import { SportIcons } from './sport-icons'
+import { sportCardStyle } from '../surface'
 
 export function SportMatchday({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: SportMatch[]; dayFrom: number }) {
   const hero = featuredMatch(matches, ctx.follows, ctx.now)
@@ -34,7 +35,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
   const followed = followState(match, ctx.follows).any
   const context = [followed ? ctx.tt('sportYouFollow') : null, match.league || ctx.kindLabel(match.kind), match.venue].filter(Boolean).join(' · ')
   return (
-    <div data-testid="sport-hero" style={{ ...cardStyle, flex: 1, minWidth: 0, borderRadius: dp(20), padding: `${dp(24)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(16), background: `radial-gradient(60% 80% at 50% 0%, ${TV.accMix(14)}, transparent), ${TV.s07}` }}>
+    <div data-testid="sport-hero" style={{ ...sportCardStyle, flex: 1, minWidth: 0, borderRadius: dp(20), padding: `${dp(24)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(16), background: `radial-gradient(60% 80% at 50% 0%, ${TV.accMix(14)}, transparent), ${TV.s07}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(17), color: TV.muted }}>
         {st === 'live' ? <Tag variant="live">{ctx.tt('live')}</Tag> : null}
         <span>{context}</span>
@@ -77,7 +78,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
 
 function NextOnChannels({ ctx, matches }: { ctx: SportCtx; matches: SportMatch[] }) {
   return (
-    <div data-testid="sport-next" style={{ ...cardStyle, width: dp(450), flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px`, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+    <div data-testid="sport-next" style={{ ...sportCardStyle, width: dp(450), flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px`, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
       <span style={overline}>{ctx.tt('sportNextOnChannels')}</span>
       {matches.map((m) => {
         const best = rankedSources(m, ctx.overrides)[0]
@@ -105,7 +106,7 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
   const pct = (t: number) => ((Math.min(Math.max(t, axis.start), axis.end) - axis.start) / span) * 100
   const nowInside = ctx.now >= axis.start && ctx.now <= axis.end
   return (
-    <div data-testid="sport-timeline" style={{ ...cardStyle, padding: `${dp(20)}px ${dp(24)}px`, display: 'flex', flexDirection: 'column', gap: dp(8) }}>
+    <div data-testid="sport-timeline" style={{ ...sportCardStyle, padding: `${dp(20)}px ${dp(24)}px`, display: 'flex', flexDirection: 'column', gap: dp(8) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
         <span style={{ fontSize: dp(26), fontWeight: 600 }}>{ctx.tt('sportMatchday')}</span>
         <span style={{ fontSize: dp(16), color: TV.dim }}>{ctx.tt('sportMatchdayHint')}</span>

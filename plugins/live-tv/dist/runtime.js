@@ -24713,12 +24713,12 @@
   }
   function getSavedSubtitleDelayEntry(mediaKey, season, episode) {
     const store2 = readStore();
-    const pick3 = (entry) => entry && Number.isFinite(entry.d) ? { delay: entry.d, userSet: entry.u === 1 } : null;
+    const pick2 = (entry) => entry && Number.isFinite(entry.d) ? { delay: entry.d, userSet: entry.u === 1 } : null;
     if (season != null && episode != null) {
-      const exact = pick3(store2[`${mediaKey}:s${season}e${episode}`]);
+      const exact = pick2(store2[`${mediaKey}:s${season}e${episode}`]);
       if (exact) return exact;
     }
-    return pick3(store2[mediaKey]);
+    return pick2(store2[mediaKey]);
   }
   function saveSubtitleDelay(mediaKey, season, episode, delay) {
     const store2 = readStore();
@@ -32781,13 +32781,13 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("span", { className: `flex-1 text-left ${dtMoreTextClass}`, children: t("plMomentsClear") })
       ] }) : null
     ] });
-    const gearOptions = (options, current5, label, pick3) => options.map((option) => /* @__PURE__ */ jsxs(
+    const gearOptions = (options, current5, label, pick2) => options.map((option) => /* @__PURE__ */ jsxs(
       "button",
       {
         type: "button",
         ...dtStation,
         onClick: () => {
-          pick3(option);
+          pick2(option);
           setGearPage("root");
         },
         className: dtMenuRowClass(option === current5),
@@ -39270,7 +39270,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -39444,7 +39444,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       INDEX_CHANGED_EVENT = "lumio-live-tv-index-changed";
@@ -39455,7 +39455,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -39532,14 +39532,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/list-curation.ts
   function splitGroups(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -39630,12 +39630,12 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -40226,7 +40226,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -40251,7 +40251,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -40305,7 +40305,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40317,7 +40317,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       activeLogoLoads += 1;
@@ -40397,7 +40397,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40410,7 +40410,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
     const words = name.trim().split(/\s+/).filter(Boolean);
     const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
@@ -40627,7 +40627,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40667,7 +40667,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
@@ -40690,14 +40690,14 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
@@ -40720,14 +40720,14 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
@@ -40753,7 +40753,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -40761,7 +40761,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -41003,7 +41003,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41126,7 +41126,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = lang === "sv" ? SV2 : EN2;
     let out = table[key] ?? EN2[key];
@@ -41142,7 +41142,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41647,17 +41647,33 @@ ${cue.text}`).join("\n\n")}
         sportKeyRetry: "New code",
         sportSearchSubmit: "Search",
         sportBackdropTitle: "Background in Sport",
-        sportBackdropHint: "Automatic shows the stadium of the featured match.",
+        sportBackdropHint: "Standard shows a photo for the sport. Automatic shows the stadium of the featured match when you have a key.",
+        sportBackdropStandard: "Standard",
         sportBackdropAuto: "Automatic",
         sportBackdropCustom: "Custom image",
         sportBackdropOff: "Off",
-        sportBackdropFromHome: "Home screen image",
-        sportBackdropHomeN: "Image {n} of {total}",
-        sportBackdropNone: "None chosen",
-        sportBackdropNoHome: "Add your own images under Settings > Home, or paste a link.",
-        sportBackdropNoHomeShort: "None",
-        sportBackdropLink: "Image link",
-        sportBackdropUse: "Use",
+        sportBackdropScope: "Applies to",
+        sportBackdropAllSports: "All sports",
+        sportBackdropInherit: "Same as All sports",
+        sportBackdropChoose: "Choose image\u2026",
+        sportBackdropReplace: "Replace image\u2026",
+        sportBackdropRemove: "Remove image",
+        sportBackdropImage: "Image",
+        sportBackdropHasImage: "Added",
+        sportBackdropNoImage: "None yet",
+        sportBackdropLocalNote: "The image is stored on this device only. Other devices show Standard until you add one there too.",
+        sportBackdropUploading: "Uploading\u2026",
+        sportBackdropUploadFailed: "That image could not be used. Try a JPEG, PNG or WebP under 15 MB.",
+        sportBackdropPhone: "Send an image from your phone",
+        sportBackdropPhoneHint: "Scan with your phone on the same network and pick an image.",
+        sportBackdropReceived: "Image received",
+        sportCardsTitle: "Card background",
+        sportCardsHint: "Used while a background image is shown.",
+        sportCardsOpacity: "Opacity",
+        sportCardsColor: "Colour",
+        sportCardsBlack: "Black",
+        sportCardsGray: "Dark grey",
+        sportCardsImage: "Tone from the image",
         sportFollowSearchEmpty: "No teams found.",
         sportNameFootball: "football",
         sportNameHockey: "ice hockey",
@@ -42165,17 +42181,33 @@ ${cue.text}`).join("\n\n")}
         sportKeyRetry: "Ny kod",
         sportSearchSubmit: "S\xF6k",
         sportBackdropTitle: "Bakgrund i Sport",
-        sportBackdropHint: "Automatisk visar arenan f\xF6r den utvalda matchen.",
+        sportBackdropHint: "Standard visar en bild f\xF6r sporten. Automatisk visar arenan f\xF6r den utvalda matchen n\xE4r du har en nyckel.",
+        sportBackdropStandard: "Standard",
         sportBackdropAuto: "Automatisk",
         sportBackdropCustom: "Egen bild",
         sportBackdropOff: "Av",
-        sportBackdropFromHome: "Startsidans bild",
-        sportBackdropHomeN: "Bild {n} av {total}",
-        sportBackdropNone: "Ingen vald",
-        sportBackdropNoHome: "L\xE4gg till egna bilder under Inst\xE4llningar > Startsida, eller klistra in en l\xE4nk.",
-        sportBackdropNoHomeShort: "Inga",
-        sportBackdropLink: "Bildl\xE4nk",
-        sportBackdropUse: "Anv\xE4nd",
+        sportBackdropScope: "G\xE4ller",
+        sportBackdropAllSports: "Alla sporter",
+        sportBackdropInherit: "Som Alla sporter",
+        sportBackdropChoose: "V\xE4lj bild\u2026",
+        sportBackdropReplace: "Byt bild\u2026",
+        sportBackdropRemove: "Ta bort bild",
+        sportBackdropImage: "Bild",
+        sportBackdropHasImage: "Tillagd",
+        sportBackdropNoImage: "Ingen \xE4n",
+        sportBackdropLocalNote: "Bilden sparas bara p\xE5 den h\xE4r enheten. Andra enheter visar Standard tills du l\xE4gger till en d\xE4r.",
+        sportBackdropUploading: "Laddar upp\u2026",
+        sportBackdropUploadFailed: "Bilden gick inte att anv\xE4nda. Prova en JPEG, PNG eller WebP under 15 MB.",
+        sportBackdropPhone: "Skicka en bild fr\xE5n telefonen",
+        sportBackdropPhoneHint: "Skanna med telefonen p\xE5 samma n\xE4tverk och v\xE4lj en bild.",
+        sportBackdropReceived: "Bilden \xE4r mottagen",
+        sportCardsTitle: "Kortens bakgrund",
+        sportCardsHint: "G\xE4ller medan en bakgrundsbild visas.",
+        sportCardsOpacity: "Opacitet",
+        sportCardsColor: "F\xE4rg",
+        sportCardsBlack: "Svart",
+        sportCardsGray: "M\xF6rkgr\xE5",
+        sportCardsImage: "Ton fr\xE5n bilden",
         sportFollowSearchEmpty: "Inga lag hittades.",
         sportNameFootball: "fotboll",
         sportNameHockey: "ishockey",
@@ -42228,19 +42260,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
@@ -42299,7 +42331,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active3, listeners8;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -42313,7 +42345,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
     while (memo3.size > MAX_ENTRIES4) {
@@ -42345,7 +42377,7 @@ ${cue.text}`).join("\n\n")}
   }
   var MAX_ENTRIES4, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -42354,7 +42386,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -42369,14 +42401,14 @@ ${cue.text}`).join("\n\n")}
     return stored;
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -42434,7 +42466,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -42444,7 +42476,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/channel-history.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/channel-history.ts
   function sanitize2(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -42491,7 +42523,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -42501,7 +42533,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
@@ -42633,7 +42665,7 @@ ${cue.text}`).join("\n\n")}
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42645,7 +42677,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
@@ -42700,7 +42732,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42727,7 +42759,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -43183,7 +43215,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY4, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -43216,10 +43248,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis2, clamp2, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         bg: "#000",
@@ -43298,10 +43330,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -43375,7 +43407,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/api-sports.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/api-sports.ts
   function venueImageUrl(id) {
     const n = num(id);
     return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/venues/${n}.png` : null;
@@ -43485,7 +43517,7 @@ ${cue.text}`).join("\n\n")}
   }
   var API_SPORTS_REGISTER_URL, COVERED, FOOTBALL_STATUS, GAMES_STATUS, PERIOD_OFFSET, arr, resp, num, API_SPORTS_MEDIA, str, enc, parseFixture, fixtures, lineupEntry, apiSports;
   var init_api_sports = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/api-sports.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/api-sports.ts"() {
       "use strict";
       API_SPORTS_REGISTER_URL = "https://dashboard.api-football.com/register";
       COVERED = /* @__PURE__ */ new Set(["football", "hockey", "basketball", "handball"]);
@@ -43615,7 +43647,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/thesportsdb.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/thesportsdb.ts
   function utc(ts, date, time) {
     const raw = str2(ts);
     if (raw) return Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(raw) ? raw : `${raw}Z`);
@@ -43669,7 +43701,7 @@ ${cue.text}`).join("\n\n")}
   }
   var THESPORTSDB_PRICING_URL, SPORTS, arr2, num2, str2, enc2, side, theSportsDb;
   var init_thesportsdb = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
       "use strict";
       THESPORTSDB_PRICING_URL = "https://www.thesportsdb.com/pricing";
       SPORTS = {
@@ -43764,7 +43796,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/providers.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/providers.ts
   function providerFor(id) {
     return id === "thesportsdb" ? theSportsDb : apiSports;
   }
@@ -43772,14 +43804,14 @@ ${cue.text}`).join("\n\n")}
     return id ? providerFor(id).coverage(sport) : "epg";
   }
   var init_providers = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/providers.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/providers.ts"() {
       "use strict";
       init_api_sports();
       init_thesportsdb();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-fetch.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-fetch.ts
   function sportFetchUrl(provider, req, mode) {
     const params = new URLSearchParams({ provider, sport: req.sport, path: req.path, ttl: String(req.ttlS), mode });
     if (req.finalAfter != null) params.set("finalAfter", String(req.finalAfter));
@@ -43811,7 +43843,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KEY_HEADER, FAILED;
   var init_sport_fetch = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
       "use strict";
       "use client";
       SPORT_KEY_HEADER = "x-lumio-sport-key";
@@ -43819,7 +43851,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-model.ts
   function matchTitle(m) {
     return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
   }
@@ -43833,7 +43865,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KINDS, SPORT_CHIPS, CREST_SKIP;
   var init_sport_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-model.ts"() {
       "use strict";
       SPORT_KINDS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
       SPORT_CHIPS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis"];
@@ -43841,12 +43873,20 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-store.ts
-  function sanitizeBackdropCustom(raw) {
-    const c = raw && typeof raw === "object" ? raw : null;
-    if (c?.from === "home" && typeof c.index === "number" && Number.isInteger(c.index) && c.index >= 0) return { from: "home", index: c.index };
-    if (c?.from === "url" && typeof c.url === "string" && /^https?:\/\/\S+$/i.test(c.url.trim())) return { from: "url", url: c.url.trim() };
-    return null;
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-store.ts
+  function sanitizeBackdrops(raw, legacy) {
+    const r = raw && typeof raw === "object" ? raw : null;
+    if (!r) return { all: legacy === "off" ? "off" : "standard", sports: {} };
+    const sportsRaw = r.sports && typeof r.sports === "object" ? r.sports : {};
+    const sports = {};
+    for (const k of SPORT_KINDS) if (isMode(sportsRaw[k])) sports[k] = sportsRaw[k];
+    return { all: isMode(r.all) ? r.all : "standard", sports };
+  }
+  function sanitizeCards(raw) {
+    const r = raw && typeof raw === "object" ? raw : {};
+    const n = typeof r.opacity === "number" && Number.isFinite(r.opacity) ? Math.round(Math.min(100, Math.max(0, r.opacity))) : DEFAULT_CARDS.opacity;
+    const tone = r.tone === "gray" || r.tone === "image" || r.tone === "black" ? r.tone : DEFAULT_CARDS.tone;
+    return { opacity: n, tone };
   }
   function sanitizeSettings(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
@@ -43860,8 +43900,8 @@ ${cue.text}`).join("\n\n")}
       goalAlertMatches: Object.fromEntries(
         Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === "object" ? r.goalAlertMatches : {}).filter((e) => typeof e[1] === "number" && e[1] > Date.now())
       ),
-      backdrop: r.backdrop === "custom" || r.backdrop === "off" ? r.backdrop : "auto",
-      backdropCustom: sanitizeBackdropCustom(r.backdropCustom)
+      backdrops: sanitizeBackdrops(r.backdrops, r.backdrop),
+      cards: sanitizeCards(r.cards)
     };
   }
   function getSportSettings() {
@@ -43964,9 +44004,9 @@ ${cue.text}`).join("\n\n")}
     if (skip) next[matchId] = start2;
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, next);
   }
-  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, DEFAULT_SETTINGS, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
+  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, BACKDROP_MODES, isMode, DEFAULT_CARDS, DEFAULT_SETTINGS, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
   var init_sport_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -43976,6 +44016,9 @@ ${cue.text}`).join("\n\n")}
       SPORT_SETTINGS_KEY = "sport_settings_v1";
       SPORT_FOLLOWS_KEY = "sport_follows_v1";
       SPORT_OVERRIDES_KEY = "sport_overrides_v1";
+      BACKDROP_MODES = ["standard", "auto", "custom", "off"];
+      isMode = (v) => typeof v === "string" && BACKDROP_MODES.includes(v);
+      DEFAULT_CARDS = { opacity: 85, tone: "black" };
       DEFAULT_SETTINGS = {
         view: "matchday",
         alert: "15",
@@ -43984,15 +44027,15 @@ ${cue.text}`).join("\n\n")}
         provider: "api-sports",
         keyPlan: null,
         goalAlertMatches: {},
-        backdrop: "auto",
-        backdropCustom: null
+        backdrops: { all: "standard", sports: {} },
+        cards: DEFAULT_CARDS
       };
       SPORT_ALERT_SKIP_KEY = "sport_alert_skip_v1";
       SKIP_KEEP_MS = 24 * 60 * 6e4;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/budget.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/budget.ts
   function reserveFor(limit) {
     return limit == null ? 0 : Math.max(5, Math.ceil(limit * 0.1));
   }
@@ -44005,7 +44048,7 @@ ${cue.text}`).join("\n\n")}
   }
   var RETRY_MS2, unknownQuota, Budget, current3;
   var init_budget = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/budget.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/budget.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -44213,7 +44256,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/key-flow.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/key-flow.ts
   function cleanKey(raw) {
     const key = raw.replace(/\s+/g, "");
     return /^[A-Za-z0-9_-]{3,128}$/.test(key) ? key : null;
@@ -44242,7 +44285,7 @@ ${cue.text}`).join("\n\n")}
     setSportSettings({ apiKey: null, keyPlan: null });
   }
   var init_key_flow = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/key-flow.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/key-flow.ts"() {
       "use strict";
       "use client";
       init_budget();
@@ -44251,7 +44294,25 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/rate-line.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/surface.ts
+  var sportBg, SPORT_CARD_BG, SPORT_PANEL_BG, sportSurface, sportCardStyle;
+  var init_surface = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/surface.ts"() {
+      "use strict";
+      init_tv_ui();
+      sportBg = (fallback) => `var(--sport-card-bg, ${fallback})`;
+      SPORT_CARD_BG = sportBg("rgba(252,252,255,0.07)");
+      SPORT_PANEL_BG = sportBg("#141519");
+      sportSurface = (fallback = SPORT_CARD_BG) => ({
+        background: fallback,
+        backdropFilter: "var(--sport-card-blur, none)",
+        WebkitBackdropFilter: "var(--sport-card-blur, none)"
+      });
+      sportCardStyle = { ...cardStyle, ...sportSurface() };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/rate-line.ts
   function svOrdinal(n) {
     const last2 = n % 10;
     const lastTwo = n % 100;
@@ -44280,12 +44341,12 @@ ${cue.text}`).join("\n\n")}
     return { text: `${head}${left}`, showPaidLink: s.provider === "api-sports" && !s.paid };
   }
   var init_rate_line = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/rate-line.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/rate-line.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/day-plan.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/day-plan.ts
   function planKey(c) {
     return c.kind === "day" ? `day|${c.sport}|${c.date}` : `standings|${c.sport}|${c.leagueId}|${c.season}`;
   }
@@ -44336,12 +44397,12 @@ ${cue.text}`).join("\n\n")}
     return { today, yesterday: shift(-1), tomorrow: shift(1), dayEndMs };
   }
   var init_day_plan = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/day-plan.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/day-plan.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/live-poller.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/live-poller.ts
   function emitDemand() {
     for (const cb of [...demandListeners]) cb();
   }
@@ -44471,7 +44532,7 @@ ${cue.text}`).join("\n\n")}
   }
   var demand, demandListeners, defaultVisible, defaultOnVisibility;
   var init_live_poller = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/live-poller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/live-poller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44487,7 +44548,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/goal-events.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/goal-events.ts
   function diffGoals(prev, next, now2) {
     const out = [];
     for (const f of next) {
@@ -44524,13 +44585,13 @@ ${cue.text}`).join("\n\n")}
   }
   var listeners9;
   var init_goal_events = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/goal-events.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/goal-events.ts"() {
       "use strict";
       listeners9 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-epg.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-epg.ts
   function localDayKey(ms2) {
     const d = new Date(ms2);
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -44599,7 +44660,7 @@ ${cue.text}`).join("\n\n")}
   }
   var pad2, SportEndpointMissing, TTL_MS2, cache7;
   var init_sport_epg = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-epg.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-epg.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44615,7 +44676,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-link.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-link.ts
   async function linkFixtures(args) {
     if (args.fixtures.length === 0) return {};
     try {
@@ -44637,7 +44698,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
   var init_sport_link = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-link.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-link.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
@@ -44645,7 +44706,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-day-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-day-model.ts
   function statusAt(m, now2) {
     if (m.phase === "postponed") return "upcoming";
     if (m.fixture && m.status !== "upcoming") return m.status;
@@ -44802,7 +44863,7 @@ ${cue.text}`).join("\n\n")}
   }
   var HOUR, MIN, LEAGUE_COLORS;
   var init_sport_day_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
       "use strict";
       init_live_tv_model();
       init_sport_model();
@@ -44831,7 +44892,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/merge.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/merge.ts
   function fixtureMatchKey(f) {
     return `fx:${f.provider}:${f.id}`;
   }
@@ -44915,7 +44976,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TWO_HOURS, STATUS, phaseOf;
   var init_merge = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/merge.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/merge.ts"() {
       "use strict";
       init_sport_day_model();
       TWO_HOURS = 2 * 36e5;
@@ -44924,7 +44985,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/results-controller.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/results-controller.ts
   function currentResults() {
     const budget = currentBudget();
     if (!budget) {
@@ -44996,7 +45057,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TEN_MIN, TWO_HOURS2, LIVE_DETAIL_MS, ResultsController, current4, NO_KEY;
   var init_results_controller = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/results-controller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/results-controller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45240,7 +45301,112 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-ctx.ts
+  function buildSportCtx(input) {
+    const { model, nav, tt, overrides, reminders } = input;
+    const best = (m) => rankedSources(m, overrides)[0] ?? null;
+    return {
+      model,
+      nav,
+      now: model.nowMs,
+      locale: input.locale,
+      tt,
+      follows: input.follows,
+      overrides,
+      settings: input.settings,
+      reminders,
+      kindLabel: (kind) => tt(KIND_KEYS[kind]),
+      playlistName: (sourceId) => model.lists.find((list) => list.source === sourceId)?.name ?? tt("sportPlaylistUnknown"),
+      openMatch: input.openMatch,
+      openFollowPicker: input.openFollowPicker,
+      watch: (m, source) => {
+        const chosen = source ?? best(m);
+        if (chosen) nav.play({ channel: sourceChannel(chosen) });
+      },
+      toggleRemind: (m) => {
+        const chosen = best(m);
+        if (!chosen) return;
+        const channel = sourceChannel(chosen);
+        const id = reminderId(channel, { start: chosen.programmeStart });
+        const existing = reminders.find((r) => r.id === id);
+        if (existing?.origin === "sport") setAlertSkip(m.id, m.start, true);
+        else if (!existing) setAlertSkip(m.id, m.start, false);
+        toggleReminder(channel, { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop });
+      },
+      isReminded: (m) => {
+        const chosen = best(m);
+        return chosen ? reminders.some((r) => r.id === reminderId(sourceChannel(chosen), { start: chosen.programmeStart })) : false;
+      }
+    };
+  }
+  function useSportCtx(args) {
+    const { tt, locale } = useTvText();
+    const follows = useFollows();
+    const overrides = useOverrides();
+    const settings = useSportSettings();
+    const reminders = useReminders();
+    const { model, nav, openMatch, openFollowPicker } = args;
+    return useMemo(
+      () => buildSportCtx({ model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker }),
+      [model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker]
+    );
+  }
+  function timeLine(m, ctx) {
+    const st = statusAt(m, ctx.now);
+    if (st === "live") return ctx.tt("sportLiveWindow", { from: formatClock2(m.start, ctx.locale), to: formatClock2(m.stop, ctx.locale) });
+    if (st === "finished") return ctx.tt("sportEnded");
+    return formatClock2(m.start, ctx.locale);
+  }
+  function sourceLine(m, ctx) {
+    const ranked = rankedSources(m, ctx.overrides);
+    const first = ranked[0];
+    if (!first) return "";
+    return ranked.length > 1 ? `${first.name} \xB7 ${ctx.tt("sportSourcesShort", { n: ranked.length })}` : first.name;
+  }
+  function sourceChip(m, ctx) {
+    const ranked = rankedSources(m, ctx.overrides);
+    const first = ranked[0];
+    if (!first) return "";
+    if (ranked.length === 1) return first.name;
+    return first.quality ? `${ctx.tt("sportSourcesShort", { n: ranked.length })} \xB7 ${first.quality}` : ctx.tt("sportSourcesShort", { n: ranked.length });
+  }
+  function alertLabel(ctx) {
+    return ctx.settings.alert === "off" ? ctx.tt("sportAlertOff") : ctx.settings.alert === "15" ? ctx.tt("sportAlert15") : ctx.tt("sportAlertKickoff");
+  }
+  function followNextLine(ctx, follow, next) {
+    if (!next) return ctx.tt("sportNoUpcoming");
+    const time = formatClock2(next.start, ctx.locale);
+    const when = statusAt(next, ctx.now) === "live" ? ctx.tt("sportLiveNowShort") : localDayKey(next.start) === localDayKey(ctx.now) ? ctx.tt("sportTodayAt", { time }) : ctx.tt("sportTomorrowAt", { time });
+    if (follow.kind === "league" || !next.home || !next.away) return `${when} \xB7 ${matchTitle(next)}`;
+    const opponent = teamKeysMatch(follow.key, next.homeKey) ? next.away : next.home;
+    return `${when} \xB7 ${ctx.tt("sportVs", { opponent })}`;
+  }
+  var KIND_KEYS;
+  var init_sport_ctx = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_ui();
+      init_reminders();
+      init_tv_strings();
+      init_sport_epg();
+      init_sport_model();
+      init_sport_day_model();
+      init_sport_store();
+      KIND_KEYS = {
+        football: "sportKindFootball",
+        hockey: "sportKindHockey",
+        basketball: "sportKindBasketball",
+        handball: "sportKindHandball",
+        motorsport: "sportKindMotorsport",
+        tennis: "sportKindTennis",
+        other: "sportKindOther"
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -45351,7 +45517,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS3, MAX_ENTRIES5, cache8, batches, inflight9, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -45365,7 +45531,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -45394,13 +45560,13 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY5;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY5 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
@@ -45430,7 +45596,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY7;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45440,7 +45606,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -45589,13 +45755,13 @@ ${cue.text}`).join("\n\n")}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useOrientation.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useOrientation.ts
   function read10() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
@@ -45614,14 +45780,14 @@ ${cue.text}`).join("\n\n")}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
@@ -45670,13 +45836,13 @@ ${cue.text}`).join("\n\n")}
     }, [active4]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -45687,13 +45853,13 @@ ${cue.text}`).join("\n\n")}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -45713,7 +45879,7 @@ ${cue.text}`).join("\n\n")}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -45726,7 +45892,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -45770,7 +45936,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -45783,7 +45949,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
   function MobileSheet({ title, subtitle, art, body, items: items2, onClose, pushLayer, testId }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
@@ -45855,7 +46021,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -45865,7 +46031,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/score-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/score-model.ts
   function showsScore(m) {
     return m.coverage === "full" && !!m.fixture && !!m.score && m.status !== "upcoming";
   }
@@ -45893,118 +46059,13 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_score_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/score-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/score-model.ts"() {
       "use strict";
       init_sport_store();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-ctx.ts
-  function buildSportCtx(input) {
-    const { model, nav, tt, overrides, reminders } = input;
-    const best = (m) => rankedSources(m, overrides)[0] ?? null;
-    return {
-      model,
-      nav,
-      now: model.nowMs,
-      locale: input.locale,
-      tt,
-      follows: input.follows,
-      overrides,
-      settings: input.settings,
-      reminders,
-      kindLabel: (kind) => tt(KIND_KEYS[kind]),
-      playlistName: (sourceId) => model.lists.find((list) => list.source === sourceId)?.name ?? tt("sportPlaylistUnknown"),
-      openMatch: input.openMatch,
-      openFollowPicker: input.openFollowPicker,
-      watch: (m, source) => {
-        const chosen = source ?? best(m);
-        if (chosen) nav.play({ channel: sourceChannel(chosen) });
-      },
-      toggleRemind: (m) => {
-        const chosen = best(m);
-        if (!chosen) return;
-        const channel = sourceChannel(chosen);
-        const id = reminderId(channel, { start: chosen.programmeStart });
-        const existing = reminders.find((r) => r.id === id);
-        if (existing?.origin === "sport") setAlertSkip(m.id, m.start, true);
-        else if (!existing) setAlertSkip(m.id, m.start, false);
-        toggleReminder(channel, { title: matchTitle(m), start: chosen.programmeStart, stop: chosen.programmeStop });
-      },
-      isReminded: (m) => {
-        const chosen = best(m);
-        return chosen ? reminders.some((r) => r.id === reminderId(sourceChannel(chosen), { start: chosen.programmeStart })) : false;
-      }
-    };
-  }
-  function useSportCtx(args) {
-    const { tt, locale } = useTvText();
-    const follows = useFollows();
-    const overrides = useOverrides();
-    const settings = useSportSettings();
-    const reminders = useReminders();
-    const { model, nav, openMatch, openFollowPicker } = args;
-    return useMemo(
-      () => buildSportCtx({ model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker }),
-      [model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker]
-    );
-  }
-  function timeLine(m, ctx) {
-    const st = statusAt(m, ctx.now);
-    if (st === "live") return ctx.tt("sportLiveWindow", { from: formatClock2(m.start, ctx.locale), to: formatClock2(m.stop, ctx.locale) });
-    if (st === "finished") return ctx.tt("sportEnded");
-    return formatClock2(m.start, ctx.locale);
-  }
-  function sourceLine(m, ctx) {
-    const ranked = rankedSources(m, ctx.overrides);
-    const first = ranked[0];
-    if (!first) return "";
-    return ranked.length > 1 ? `${first.name} \xB7 ${ctx.tt("sportSourcesShort", { n: ranked.length })}` : first.name;
-  }
-  function sourceChip(m, ctx) {
-    const ranked = rankedSources(m, ctx.overrides);
-    const first = ranked[0];
-    if (!first) return "";
-    if (ranked.length === 1) return first.name;
-    return first.quality ? `${ctx.tt("sportSourcesShort", { n: ranked.length })} \xB7 ${first.quality}` : ctx.tt("sportSourcesShort", { n: ranked.length });
-  }
-  function alertLabel(ctx) {
-    return ctx.settings.alert === "off" ? ctx.tt("sportAlertOff") : ctx.settings.alert === "15" ? ctx.tt("sportAlert15") : ctx.tt("sportAlertKickoff");
-  }
-  function followNextLine(ctx, follow, next) {
-    if (!next) return ctx.tt("sportNoUpcoming");
-    const time = formatClock2(next.start, ctx.locale);
-    const when = statusAt(next, ctx.now) === "live" ? ctx.tt("sportLiveNowShort") : localDayKey(next.start) === localDayKey(ctx.now) ? ctx.tt("sportTodayAt", { time }) : ctx.tt("sportTomorrowAt", { time });
-    if (follow.kind === "league" || !next.home || !next.away) return `${when} \xB7 ${matchTitle(next)}`;
-    const opponent = teamKeysMatch(follow.key, next.homeKey) ? next.away : next.home;
-    return `${when} \xB7 ${ctx.tt("sportVs", { opponent })}`;
-  }
-  var KIND_KEYS;
-  var init_sport_ctx = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_live_tv_ui();
-      init_reminders();
-      init_tv_strings();
-      init_sport_epg();
-      init_sport_model();
-      init_sport_day_model();
-      init_sport_store();
-      KIND_KEYS = {
-        football: "sportKindFootball",
-        hockey: "sportKindHockey",
-        basketball: "sportKindBasketball",
-        handball: "sportKindHandball",
-        motorsport: "sportKindMotorsport",
-        tennis: "sportKindTennis",
-        other: "sportKindOther"
-      };
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-score.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-score.tsx
   function MatchScore({ match, size = "card" }) {
     const blink = useGoalBlink(match);
     if (!showsScore(match) || !match.score) return null;
@@ -46045,7 +46106,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SCORE_SIZE, BLINK_MS;
   var init_sport_score = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46062,7 +46123,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
   function SportIcon({ kind, size }) {
     switch (kind) {
       case "football":
@@ -46083,7 +46144,7 @@ ${cue.text}`).join("\n\n")}
   }
   var sw2, svg3, SportIcons;
   var init_sport_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -46133,7 +46194,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
   function Crest({ name, colorKey, size = dp(56), src }) {
     const [broken, setBroken] = useState(false);
     const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
@@ -46162,7 +46223,7 @@ ${cue.text}`).join("\n\n")}
     const st = statusAt(match, ctx.now);
     const followed = followState(match, ctx.follows).any;
     const reminded = ctx.isReminded(match);
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-card", "data-match-id": match.id, ...station(() => ctx.openMatch(match), () => ctx.watch(match)), style: { ...cardStyle, width: dp(450), flexShrink: 0, padding: `${dp(16)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(12), cursor: "pointer" }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-card", "data-match-id": match.id, ...station(() => ctx.openMatch(match), () => ctx.watch(match)), style: { ...sportCardStyle, width: dp(450), flexShrink: 0, padding: `${dp(16)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(12), cursor: "pointer" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(15), color: TV2.muted }, children: [
         /* @__PURE__ */ jsx(LeagueDot, { leagueKey: match.leagueKey || match.kind }),
         /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: match.league || ctx.kindLabel(match.kind) }),
@@ -46192,11 +46253,11 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   function Notice({ text, testId }) {
-    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { ...cardStyle, padding: `${dp(28)}px ${dp(32)}px`, fontSize: dp(20), color: TV2.muted }, children: text });
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, style: { ...sportCardStyle, padding: `${dp(28)}px ${dp(32)}px`, fontSize: dp(20), color: TV2.muted }, children: text });
   }
   var ellipsis3, overline, sectionTitle, primaryBtn, secondaryBtn;
   var init_sport_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46209,6 +46270,7 @@ ${cue.text}`).join("\n\n")}
       init_score_model();
       init_sport_score();
       init_sport_icons();
+      init_surface();
       init_jsx_runtime_shim();
       ellipsis3 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
       overline = { fontSize: dp(15), fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: TV2.dim };
@@ -46233,7 +46295,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/player-sport.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/player-sport.tsx
   function multiviewFor(keys2) {
     const picked = keys2.slice(0, MAX_PICK);
     const layout = picked.length <= 2 ? 2 : picked.length === 3 ? 3 : 4;
@@ -46297,11 +46359,11 @@ ${cue.text}`).join("\n\n")}
     const lists = matchesForPlayer(sport.matches, channelKey(channel), nowMs);
     const items2 = [...lists.onChannel, ...lists.live].slice(0, variant === "ticker" ? 6 : 5);
     if (items2.length === 0) return null;
-    const pick3 = (m) => () => {
+    const pick2 = (m) => () => {
       if (!lists.onChannel.includes(m)) sport.onSwitchMatch(m);
     };
     if (variant === "column") {
-      return /* @__PURE__ */ jsx("div", { "data-testid": "player-sport-ticker", "data-variant": "column", style: { position: "absolute", top: ps(96), right: ps(20), width: ps(300), display: "flex", flexDirection: "column", gap: ps(6), pointerEvents: "none", zIndex: 31 }, children: items2.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "pst-item", ...station(pick3(m)), style: { display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: "rgba(20,21,25,0.86)", border: `1px solid ${TV2.lineCard}`, fontSize: ps(14), fontWeight: 600, pointerEvents: "auto", cursor: "pointer" }, children: [
+      return /* @__PURE__ */ jsx("div", { "data-testid": "player-sport-ticker", "data-variant": "column", style: { position: "absolute", top: ps(96), right: ps(20), width: ps(300), display: "flex", flexDirection: "column", gap: ps(6), pointerEvents: "none", zIndex: 31 }, children: items2.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "pst-item", ...station(pick2(m)), style: { display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: "rgba(20,21,25,0.86)", border: `1px solid ${TV2.lineCard}`, fontSize: ps(14), fontWeight: 600, pointerEvents: "auto", cursor: "pointer" }, children: [
         /* @__PURE__ */ jsxs("span", { style: { ...ellipsis3, flex: 1 }, children: [
           shortLabel(m),
           scoreText(m) ? ` ${scoreText(m)}` : ""
@@ -46311,7 +46373,7 @@ ${cue.text}`).join("\n\n")}
     }
     return /* @__PURE__ */ jsxs("div", { "data-testid": "player-sport-ticker", "data-variant": "ticker", style: { display: "flex", alignItems: "center", gap: ps(8), marginBottom: ps(8), overflow: "hidden" }, children: [
       /* @__PURE__ */ jsx("span", { style: { fontSize: ps(11), fontWeight: 700, letterSpacing: "0.14em", color: TV2.dim }, children: tt("live") }),
-      items2.map((m) => /* @__PURE__ */ jsxs("span", { "data-testid": "pst-item", ...station(pick3(m)), style: { padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV2.lineCard}`, background: "rgba(0,0,0,0.5)", fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap", pointerEvents: "auto", cursor: "pointer" }, children: [
+      items2.map((m) => /* @__PURE__ */ jsxs("span", { "data-testid": "pst-item", ...station(pick2(m)), style: { padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV2.lineCard}`, background: "rgba(0,0,0,0.5)", fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap", pointerEvents: "auto", cursor: "pointer" }, children: [
         shortLabel(m),
         scoreText(m) ? ` ${scoreText(m)}` : ""
       ] }, m.id))
@@ -46408,7 +46470,7 @@ ${cue.text}`).join("\n\n")}
   }
   var MAX_PICK, NO_MATCHES, PLAYER_SPORT_DELAY_MS, shortLabel;
   var init_player_sport = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46432,7 +46494,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -46637,7 +46699,7 @@ ${cue.text}`).join("\n\n")}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46661,7 +46723,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
@@ -46978,7 +47040,7 @@ ${cue.text}`).join("\n\n")}
   }
   var FAV_WINDOW, DAY_MS, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47022,7 +47084,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -47237,7 +47299,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47252,7 +47314,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/goal-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/goal-alerts.ts
   function matchForGoal(e, merged) {
     return merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId) ?? null;
   }
@@ -47275,14 +47337,14 @@ ${cue.text}`).join("\n\n")}
   }
   var playing;
   var init_goal_alerts = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
       "use strict";
       init_sport_day_model();
       playing = null;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
   function PlayerGoalOverlay({ channelKey: channelKey2, onJump }) {
     const { tt } = useTvText();
     const controller = useResultsController();
@@ -47316,7 +47378,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SHOW_MS;
   var init_player_goal_overlay = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47333,7 +47395,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
@@ -47393,7 +47455,7 @@ ${cue.text}`).join("\n\n")}
   }
   var cutouts, listeners10, snapshot;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47403,7 +47465,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -47701,7 +47763,7 @@ ${cue.text}`).join("\n\n")}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47719,7 +47781,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer
@@ -48515,7 +48577,7 @@ ${cue.text}`).join("\n\n")}
   }
   var import_react_dom4, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -48541,7 +48603,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -48551,11 +48613,11 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -48621,6 +48683,7 @@ ${cue.text}`).join("\n\n")}
         onClick,
         disabled,
         title,
+        "aria-pressed": active4 ? true : void 0,
         style: {
           flex: "none",
           borderRadius: 7,
@@ -48868,7 +48931,7 @@ ${cue.text}`).join("\n\n")}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -48916,16 +48979,16 @@ ${cue.text}`).join("\n\n")}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -48990,7 +49053,7 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
     categories: "Categories",
@@ -49443,10 +49506,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -49498,7 +49561,7 @@ ${cue.text}`).join("\n\n")}
     return { status, urls, refreshing, refresh, reload };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms2, locale) {
     if (!ms2) return null;
@@ -49590,17 +49653,17 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_live_tv_data();
   init_index_client();
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
@@ -49739,7 +49802,7 @@ ${cue.text}`).join("\n\n")}
     return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-data.ts
   init_plugin_sdk();
   init_live_tv_data();
   var VOD_MODE_DEFAULT = "link";
@@ -49825,15 +49888,15 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -49906,7 +49969,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -49928,7 +49991,7 @@ ${cue.text}`).join("\n\n")}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
@@ -50025,7 +50088,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -50073,18 +50136,18 @@ ${cue.text}`).join("\n\n")}
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -50140,7 +50203,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms2 = 300) {
     const [value, setValue] = useState(channel);
@@ -50204,7 +50267,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_jsx_runtime_shim();
   function PickerPanel({
     nav,
@@ -50363,7 +50426,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -50518,13 +50581,13 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-keyboard.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -50555,7 +50618,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-text-entry.tsx
   init_jsx_runtime_shim();
   function isComposing(event2) {
     return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
@@ -50694,19 +50757,19 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileToggle({ on }) {
     return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_jsx_runtime_shim();
   function Row({ label, right, onOk, testId, phone = false }) {
     if (phone) {
@@ -51402,10 +51465,10 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/key-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/key-card.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -51415,7 +51478,7 @@ ${cue.text}`).join("\n\n")}
   init_providers();
   init_key_flow();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/key-handoff.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/key-handoff.ts
   init_react_shim();
   var BASE = "/api/live-tv/sport/key-handoff";
   var POLL_MS2 = 2e3;
@@ -51489,9 +51552,10 @@ ${cue.text}`).join("\n\n")}
     return { url, expired, restart };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/key-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/key-card.tsx
   init_budget();
   init_sport_store();
+  init_surface();
   init_jsx_runtime_shim();
   var SPORT_NAMES = [
     ["football", "sportNameFootball"],
@@ -51530,7 +51594,7 @@ ${cue.text}`).join("\n\n")}
       return r.reason === "network" ? tt("sportKeyNetwork") : r.reason === "rejected" ? tt("sportKeyRejected") : null;
     })();
     const btn = (label, onOk, primary = false, testId) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk), style: { minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: "inline-flex", alignItems: "center", fontSize: dp(17), fontWeight: 600, cursor: "pointer", background: primary ? TV2.text : TV2.s12, color: primary ? "#0e0f13" : TV2.text }, children: label });
-    return /* @__PURE__ */ jsxs("section", { "data-testid": `sport-key-card-${variant}`, style: { borderRadius: dp(16), background: TV2.s06, border: `1px solid ${TV2.lineCard}`, padding: dp(24), display: "flex", gap: dp(24), flexWrap: "wrap" }, children: [
+    return /* @__PURE__ */ jsxs("section", { "data-testid": `sport-key-card-${variant}`, style: { borderRadius: dp(16), background: sportBg(TV2.s06), border: `1px solid ${TV2.lineCard}`, padding: dp(24), display: "flex", gap: dp(24), flexWrap: "wrap" }, children: [
       /* @__PURE__ */ jsxs("div", { style: { flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: dp(12) }, children: [
         /* @__PURE__ */ jsx("div", { style: { fontSize: dp(24), fontWeight: 600 }, children: broken ? tt("sportKeyBroken") : tt("sportKeyTitle") }),
         /* @__PURE__ */ jsx(Segment, { options: [{ key: "api-sports", label: "API-Sports" }, { key: "thesportsdb", label: "TheSportsDB" }], value: provider, onChange: (k) => {
@@ -51581,7 +51645,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_key_flow();
   init_rate_line();
   init_results_controller();
@@ -51647,15 +51711,75 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_react_shim();
+  init_plugin_sdk();
+  init_tv_ui();
   init_tv_strings();
+  init_sport_ctx();
+  init_sport_model();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/backdrop.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/backdrop.ts
   init_react_shim();
   init_plugin_sdk();
   init_budget();
   init_sport_store();
+  init_sport_epg();
+  init_surface();
+  var STANDARD_IMAGES = {
+    football: "/sport-backgrounds/football.webp",
+    hockey: "/sport-backgrounds/hockey.webp",
+    basketball: "/sport-backgrounds/basketball.webp",
+    motorsport: "/sport-backgrounds/motorsport.webp",
+    tennis: "/sport-backgrounds/tennis.webp"
+  };
+  var STANDARD_TONES = {
+    "/sport-backgrounds/football.webp": [54, 75, 45],
+    "/sport-backgrounds/hockey.webp": [84, 76, 77],
+    "/sport-backgrounds/basketball.webp": [63, 58, 59],
+    "/sport-backgrounds/motorsport.webp": [51, 56, 52],
+    "/sport-backgrounds/tennis.webp": [41, 69, 79]
+  };
+  function hash(text) {
+    let h = 2166136261;
+    for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+    return h >>> 0;
+  }
+  function standardImageFor(scope, dayKey) {
+    const own = scope === "all" ? void 0 : STANDARD_IMAGES[scope];
+    if (own) return own;
+    const all = Object.values(STANDARD_IMAGES);
+    return all[hash(`${dayKey}|${scope}`) % all.length];
+  }
+  function resolveBackdropMode(b, scope) {
+    const own = scope === "all" ? void 0 : b.sports[scope];
+    return own ? { mode: own, slot: scope } : { mode: b.all, slot: "all" };
+  }
+  function customBackdropUrl(slot, version3) {
+    return `/api/live-tv/sport/backdrop?slot=${slot}&v=${version3}`;
+  }
+  function darkTone([r, g, b]) {
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    const f = Math.min(0.6, lum > 0 ? 42 / lum : 0.6);
+    return [Math.round(r * f), Math.round(g * f), Math.round(b * f)];
+  }
+  function averageRgb(data) {
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i + 3 < data.length; i += 4) {
+      if (data[i + 3] < 16) continue;
+      r += data[i];
+      g += data[i + 1];
+      b += data[i + 2];
+      n++;
+    }
+    return n === 0 ? null : [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
+  }
+  var GRAY = [28, 29, 34];
+  var CARD_BLUR = "blur(14px)";
+  function cardSurfaceVars(cards, sampled, opts) {
+    const rgb = cards.tone === "gray" ? GRAY : cards.tone === "image" && sampled ? darkTone(sampled) : [0, 0, 0];
+    return { "--sport-card-bg": `rgba(${rgb.join(", ")}, ${cards.opacity / 100})`, "--sport-card-blur": opts.blur ? CARD_BLUR : "none" };
+  }
   var SPORT_GRADIENTS = {
     football: "radial-gradient(120% 90% at 85% 10%, #1f3b2c 0%, #0d1611 55%, #050806 100%)",
     hockey: "radial-gradient(120% 90% at 85% 10%, #22364a 0%, #0c141c 55%, #05080b 100%)",
@@ -51665,32 +51789,167 @@ ${cue.text}`).join("\n\n")}
     tennis: "radial-gradient(120% 90% at 85% 10%, #3b3f1e 0%, #15160b 55%, #070704 100%)",
     other: "radial-gradient(120% 90% at 85% 10%, #2a2c33 0%, #111216 55%, #060608 100%)"
   };
-  var BACKDROP_SCRIM = "linear-gradient(90deg, #000000eb 0%, #000000c7 38%, #00000073 70%, #0000004d 100%)";
-  var BACKDROP_SCRIM_PHONE = `linear-gradient(180deg, #00000080 0%, #000000d9 45%, #000 100%), ${BACKDROP_SCRIM}`;
+  var BACKDROP_SCRIM = "linear-gradient(180deg, #00000073 0%, #00000026 30%, #00000000 55%), linear-gradient(90deg, #000000a6 0%, #00000059 40%, #00000000 75%), linear-gradient(#00000080, #00000080)";
+  var BACKDROP_SCRIM_PHONE = `linear-gradient(180deg, #00000080 0%, #000000b3 45%, #000000e6 100%), linear-gradient(#00000059, #00000059)`;
   function chooseSportBackdrop(i) {
     if (i.mode === "off") return { kind: "none" };
     const sport = i.hero?.kind ?? "other";
     const usable = (url) => !!url && !i.broken?.has(url);
-    if (i.mode === "custom") return usable(i.custom) ? { kind: "image", url: i.custom, from: "custom" } : { kind: "gradient", sport };
-    if (!i.hasKey || !i.hero) return { kind: "gradient", sport };
+    const standard = () => usable(i.standard) ? { kind: "image", url: i.standard, from: "standard" } : { kind: "gradient", sport };
+    if (i.mode === "standard") return standard();
+    if (i.mode === "custom") {
+      const v = i.uploads[i.slot];
+      const url = v != null ? customBackdropUrl(i.slot, v) : null;
+      return usable(url) ? { kind: "image", url, from: "custom" } : standard();
+    }
+    if (!i.hasKey || !i.hero) return standard();
     if (usable(i.hero.venueImage)) return { kind: "image", url: i.hero.venueImage, from: "venue" };
     const stadium = i.art?.stadium;
     const fanart = i.art?.fanart;
     if (usable(stadium)) return { kind: "image", url: stadium, from: "stadium" };
     if (usable(fanart)) return { kind: "image", url: fanart, from: "fanart" };
-    return { kind: "gradient", sport };
-  }
-  function resolveCustomBackdrop(c, homeUrls) {
-    if (!c) return null;
-    return c.from === "url" ? c.url : homeUrls[c.index] ?? null;
+    return standard();
   }
   function backdropSrc(c) {
-    return c.from === "custom" ? c.url : getPluginHttpAssetUrl("/api/live-tv/sport/image", c.url);
+    return c.from === "custom" || c.from === "standard" ? c.url : getPluginHttpAssetUrl("/api/live-tv/sport/image", c.url);
   }
-  function useHomeBackgrounds() {
-    const [urls, setUrls] = useState(getHomeBackgroundUrls);
-    useEffect(() => onHomeBackgroundChanged(() => setUrls(getHomeBackgroundUrls())), []);
-    return urls;
+  var UPLOADS_EVENT = "lumio-sport-backdrops-changed";
+  var uploadsCache = null;
+  async function fetchBackdropUploads() {
+    try {
+      const res = await fetch("/api/live-tv/sport/backdrops", { cache: "no-store" });
+      if (!res.ok) return {};
+      const body = await res.json();
+      const out = {};
+      for (const [k, v] of Object.entries(body.slots ?? {})) if (typeof v === "number") out[k] = v;
+      return out;
+    } catch {
+      return {};
+    }
+  }
+  function notifyBackdropUploadsChanged() {
+    uploadsCache = null;
+    try {
+      window.dispatchEvent(new Event(UPLOADS_EVENT));
+    } catch {
+    }
+  }
+  function useBackdropUploads() {
+    const [uploads, setUploads] = useState(() => uploadsCache ?? {});
+    useEffect(() => {
+      let alive = true;
+      const load = () => void fetchBackdropUploads().then((u) => {
+        uploadsCache = u;
+        if (alive) setUploads(u);
+      });
+      if (!uploadsCache) load();
+      window.addEventListener(UPLOADS_EVENT, load);
+      return () => {
+        alive = false;
+        window.removeEventListener(UPLOADS_EVENT, load);
+      };
+    }, []);
+    return uploads;
+  }
+  async function uploadBackdrop(slot, file) {
+    try {
+      const res = await fetch(`/api/live-tv/sport/backdrop?slot=${slot}`, { method: "POST", headers: { "content-type": file.type || "application/octet-stream" }, body: file });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        return { ok: false, error: body.error ?? "failed" };
+      }
+      notifyBackdropUploadsChanged();
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "network" };
+    }
+  }
+  async function removeBackdrop(slot) {
+    try {
+      await fetch(`/api/live-tv/sport/backdrop?slot=${slot}`, { method: "DELETE" });
+    } catch {
+    }
+    notifyBackdropUploadsChanged();
+  }
+  var TONE_KEY = "lumio.sport.backdrop-tones.v1";
+  var tones = /* @__PURE__ */ new Map();
+  function readToneStore() {
+    try {
+      return JSON.parse(window.localStorage.getItem(TONE_KEY) ?? "{}");
+    } catch {
+      return {};
+    }
+  }
+  function writeTone(src, rgb) {
+    try {
+      const all = readToneStore();
+      all[src] = rgb;
+      const keys2 = Object.keys(all);
+      for (const k of keys2.slice(0, Math.max(0, keys2.length - 40))) delete all[k];
+      window.localStorage.setItem(TONE_KEY, JSON.stringify(all));
+    } catch {
+    }
+  }
+  function sampleTone(src) {
+    return new Promise((resolve) => {
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.decoding = "async";
+        img.onload = () => {
+          try {
+            const canvas2 = document.createElement("canvas");
+            canvas2.width = 24;
+            canvas2.height = 24;
+            const ctx = canvas2.getContext("2d");
+            if (!ctx) return resolve(null);
+            ctx.drawImage(img, 0, 0, 24, 24);
+            resolve(averageRgb(ctx.getImageData(0, 0, 24, 24).data));
+          } catch {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = src;
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+  function useImageTone(src, wanted) {
+    const known = (s) => {
+      if (!s) return null;
+      if (STANDARD_TONES[s]) return STANDARD_TONES[s];
+      if (tones.has(s)) return tones.get(s) ?? null;
+      const stored = readToneStore()[s];
+      if (stored) {
+        tones.set(s, stored);
+        return stored;
+      }
+      return void 0;
+    };
+    const [tone, setTone] = useState(() => wanted ? known(src) ?? null : null);
+    useEffect(() => {
+      if (!wanted || !src) {
+        setTone(null);
+        return;
+      }
+      const hit = known(src);
+      if (hit !== void 0) {
+        setTone(hit);
+        return;
+      }
+      let alive = true;
+      void sampleTone(src).then((rgb) => {
+        tones.set(src, rgb);
+        if (rgb) writeTone(src, rgb);
+        if (alive) setTone(rgb);
+      });
+      return () => {
+        alive = false;
+      };
+    }, [src, wanted]);
+    return tone;
   }
   var artCache = /* @__PURE__ */ new Map();
   function useHeroTeamArt(hero) {
@@ -51724,103 +51983,231 @@ ${cue.text}`).join("\n\n")}
     }, [key]);
     return key ? art : null;
   }
-  function useSportBackdrop(hero) {
+  function useSportBackdrop(hero, scope = "all", nowMs = Date.now()) {
     const settings = useSportSettings();
-    const homeUrls = useHomeBackgrounds();
+    const uploads = useBackdropUploads();
+    const tvMode = useTvMode();
     const [broken, setBroken] = useState(() => /* @__PURE__ */ new Set());
-    const art = useHeroTeamArt(settings.backdrop === "auto" && settings.apiKey ? hero : null);
+    const { mode, slot } = resolveBackdropMode(settings.backdrops, scope);
+    const art = useHeroTeamArt(mode === "auto" && settings.apiKey ? hero : null);
     const onBroken = useCallback((url) => setBroken((b) => b.has(url) ? b : new Set(b).add(url)), []);
     const choice = chooseSportBackdrop({
-      mode: settings.backdrop,
+      mode,
+      slot,
       hasKey: !!settings.apiKey,
       hero,
       art,
-      custom: resolveCustomBackdrop(settings.backdropCustom, homeUrls),
+      uploads,
+      standard: standardImageFor(scope, localDayKey(nowMs)),
       broken
     });
-    return { choice, onBroken };
+    const src = choice.kind === "image" ? backdropSrc(choice) : null;
+    const tone = useImageTone(src, settings.cards.tone === "image");
+    const surface = choice.kind === "image" ? cardSurfaceVars(settings.cards, tone, { blur: !tvMode }) : null;
+    return { choice, onBroken, surface };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/backdrop-handoff.ts
+  init_react_shim();
+  var BASE2 = "/api/live-tv/sport/backdrop-handoff";
+  var POLL_MS3 = 2e3;
+  function useBackdropHandoff(active4, slot, onReceived) {
+    const [url, setUrl] = useState(null);
+    const [expired, setExpired] = useState(false);
+    const [received, setReceived] = useState(false);
+    const [round2, setRound] = useState(0);
+    const onReceivedRef = useRef(onReceived);
+    onReceivedRef.current = onReceived;
+    useEffect(() => {
+      if (!active4) return;
+      let stopped = false;
+      let code = null;
+      let done = false;
+      let timer3 = null;
+      setExpired(false);
+      setReceived(false);
+      setUrl(null);
+      const loop = async () => {
+        if (stopped || done || !code) return;
+        let state2 = "waiting";
+        try {
+          const res = await fetch(`${BASE2}?code=${encodeURIComponent(code)}`, { cache: "no-store" });
+          state2 = res.ok ? (await res.json()).state ?? "waiting" : "expired";
+        } catch {
+        }
+        if (stopped) return;
+        if (state2 === "received") {
+          done = true;
+          setReceived(true);
+          notifyBackdropUploadsChanged();
+          onReceivedRef.current?.();
+          return;
+        }
+        if (state2 === "expired") {
+          done = true;
+          setExpired(true);
+          return;
+        }
+        timer3 = setTimeout(() => void loop(), POLL_MS3);
+      };
+      void (async () => {
+        try {
+          const res = await fetch(`${BASE2}?slot=${slot}`, { method: "POST" });
+          if (!res.ok || stopped) return;
+          const body = await res.json();
+          if (!body.code || stopped) return;
+          code = body.code;
+          setUrl(body.url ?? null);
+          timer3 = setTimeout(() => void loop(), POLL_MS3);
+        } catch {
+        }
+      })();
+      return () => {
+        stopped = true;
+        if (timer3) clearTimeout(timer3);
+        if (code && !done) void fetch(`${BASE2}?code=${encodeURIComponent(code)}`, { method: "DELETE" }).catch(() => {
+        });
+      };
+    }, [active4, slot, round2]);
+    const restart = useCallback(() => setRound((n) => n + 1), []);
+    return { url, expired, received, restart };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_sport_store();
   init_jsx_runtime_shim();
-  var MODES = ["auto", "custom", "off"];
-  var MODE_LABEL = { auto: "sportBackdropAuto", custom: "sportBackdropCustom", off: "sportBackdropOff" };
-  var isHttp = (v) => /^https?:\/\/\S+$/i.test(v.trim());
-  var pick2 = (c) => setSportSettings({ backdrop: "custom", backdropCustom: c });
+  var MODES = ["standard", "auto", "custom", "off"];
+  var MODE_LABEL = { standard: "sportBackdropStandard", auto: "sportBackdropAuto", custom: "sportBackdropCustom", off: "sportBackdropOff" };
+  var SCOPES = ["all", ...SPORT_KINDS];
+  var TONES = ["black", "gray", "image"];
+  var TONE_LABEL = { black: "sportCardsBlack", gray: "sportCardsGray", image: "sportCardsImage" };
+  var OPACITY_STEPS = [0, 25, 50, 70, 85, 100];
+  var ACCEPT = "image/jpeg,image/png,image/webp";
+  function setScopeMode(current5, scope, mode) {
+    if (scope === "all") {
+      if (mode !== "inherit") setSportSettings({ backdrops: { ...current5, all: mode } });
+      return;
+    }
+    const sports = { ...current5.sports };
+    if (mode === "inherit") delete sports[scope];
+    else sports[scope] = mode;
+    setSportSettings({ backdrops: { ...current5, sports } });
+  }
+  function useScopeState(scope) {
+    const s = useSportSettings();
+    const own = scope === "all" ? s.backdrops.all : s.backdrops.sports[scope] ?? "inherit";
+    const { mode, slot } = resolveBackdropMode(s.backdrops, scope);
+    return { s, own, mode, slot };
+  }
+  function useUploader(slot) {
+    const { tt } = useTvText();
+    const inputRef = useRef(null);
+    const [status, setStatus] = useState(null);
+    const onFile = (e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      setStatus(tt("sportBackdropUploading"));
+      void uploadBackdrop(slot, file).then((r) => setStatus(r.ok ? null : tt("sportBackdropUploadFailed")));
+    };
+    const input = /* @__PURE__ */ jsx("input", { ref: inputRef, "data-testid": "sport-backdrop-file", type: "file", accept: ACCEPT, onChange: onFile, style: { display: "none" } });
+    return { input, pick: () => inputRef.current?.click(), status };
+  }
   function SportBackdropSettingsDesktop() {
     const { tt } = useTvText();
-    const s = useSportSettings();
-    const home = useHomeBackgrounds();
-    const [link, setLink] = useState(s.backdropCustom?.from === "url" ? s.backdropCustom.url : "");
+    const [scope, setScope] = useState("all");
+    const { s, own, mode, slot } = useScopeState(scope);
+    const uploads = useBackdropUploads();
+    const uploader = useUploader(slot);
+    const scopeLabel = (k) => k === "all" ? tt("sportBackdropAllSports") : tt(KIND_KEYS[k]);
+    const choices = scope === "all" ? MODES : ["inherit", ...MODES];
+    const version3 = uploads[slot];
     return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-backdrop-settings", children: [
       /* @__PURE__ */ jsx(LtSection, { title: tt("sportBackdropTitle"), hint: tt("sportBackdropHint") }),
       /* @__PURE__ */ jsxs(LtRows, { children: [
-        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 8, padding: "12px 0" }, children: MODES.map((m) => /* @__PURE__ */ jsx(LtBtn, { testId: `sport-backdrop-${m}`, active: s.backdrop === m, onClick: () => setSportSettings({ backdrop: m }), children: tt(MODE_LABEL[m]) }, m)) }),
-        s.backdrop === "custom" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-          home.length > 0 ? /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", padding: "8px 0" }, children: home.map((url, index) => {
-            const on = s.backdropCustom?.from === "home" && s.backdropCustom.index === index;
-            return /* @__PURE__ */ jsx(
-              "button",
-              {
-                type: "button",
-                "data-testid": `sport-backdrop-home-${index}`,
-                "aria-pressed": on,
-                onClick: () => pick2({ from: "home", index }),
-                style: { width: 120, height: 68, padding: 0, borderRadius: 8, cursor: "pointer", borderWidth: 2, borderStyle: "solid", borderColor: on ? "rgb(var(--accent-500))" : "transparent", background: `center / cover no-repeat url("${url.replace(/"/g, "%22")}")` }
-              },
-              index
-            );
-          }) }) : /* @__PURE__ */ jsx(LtNote, { children: tt("sportBackdropNoHome") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 0 4px" }, children: SCOPES.map((k) => /* @__PURE__ */ jsx(LtBtn, { testId: `sport-backdrop-scope-${k}`, active: scope === k, onClick: () => setScope(k), children: scopeLabel(k) }, k)) }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", padding: "8px 0 12px" }, children: choices.map((m) => /* @__PURE__ */ jsx(LtBtn, { testId: `sport-backdrop-${m}`, active: own === m, onClick: () => setScopeMode(s.backdrops, scope, m), children: m === "inherit" ? `${tt("sportBackdropInherit")} (${tt(MODE_LABEL[s.backdrops.all])})` : tt(MODE_LABEL[m]) }, m)) }),
+        mode === "custom" ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", padding: "8px 0" }, children: [
+          version3 != null ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-backdrop-preview", "aria-hidden": "true", style: { width: 120, height: 68, borderRadius: 8, background: `center / cover no-repeat url("${customBackdropUrl(slot, version3)}")` } }) : null,
+          uploader.input,
+          /* @__PURE__ */ jsx(LtBtn, { testId: "sport-backdrop-choose", onClick: uploader.pick, children: version3 != null ? tt("sportBackdropReplace") : tt("sportBackdropChoose") }),
+          version3 != null ? /* @__PURE__ */ jsx(LtBtn, { variant: "danger", testId: "sport-backdrop-remove", onClick: () => void removeBackdrop(slot), children: tt("sportBackdropRemove") }) : null,
+          slot !== scope ? /* @__PURE__ */ jsx(LtNote, { children: `${tt("sportBackdropInherit")}` }) : null
+        ] }) : null,
+        uploader.status ? /* @__PURE__ */ jsx(LtNote, { children: uploader.status }) : null,
+        mode === "custom" ? /* @__PURE__ */ jsx(LtNote, { children: tt("sportBackdropLocalNote") }) : null
+      ] }),
+      /* @__PURE__ */ jsx(LtSection, { title: tt("sportCardsTitle"), hint: tt("sportCardsHint") }),
+      /* @__PURE__ */ jsxs(LtRows, { children: [
+        /* @__PURE__ */ jsxs("label", { style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 0" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { minWidth: 90 }, children: tt("sportCardsOpacity") }),
           /* @__PURE__ */ jsx(
-            LtTextRow,
+            "input",
             {
-              label: tt("sportBackdropLink"),
-              value: link,
-              onChange: setLink,
-              placeholder: "https://\u2026",
-              button: tt("sportBackdropUse"),
-              buttonDisabled: !isHttp(link),
-              onButton: () => {
-                if (isHttp(link)) pick2({ from: "url", url: link });
-              },
-              onEnter: () => {
-                if (isHttp(link)) pick2({ from: "url", url: link });
-              },
-              testId: "sport-backdrop-link"
+              "data-testid": "sport-cards-opacity",
+              type: "range",
+              min: 0,
+              max: 100,
+              step: 5,
+              value: s.cards.opacity,
+              onChange: (e) => setSportSettings({ cards: { ...s.cards, opacity: Number(e.target.value) } }),
+              style: { flex: 1, accentColor: "rgb(var(--accent-500))" }
             }
-          )
-        ] }) : null
+          ),
+          /* @__PURE__ */ jsx("span", { style: { minWidth: 44, textAlign: "right", fontVariantNumeric: "tabular-nums" }, children: `${s.cards.opacity} %` })
+        ] }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", padding: "4px 0 12px" }, children: TONES.map((t) => /* @__PURE__ */ jsx(LtBtn, { testId: `sport-cards-tone-${t}`, active: s.cards.tone === t, onClick: () => setSportSettings({ cards: { ...s.cards, tone: t } }), children: tt(TONE_LABEL[t]) }, t)) })
       ] })
     ] });
   }
-  function SportBackdropSettingsTv({ phone = false, pushLayer }) {
+  function SportBackdropSettingsTv({ phone = false }) {
     const { tt } = useTvText();
-    const s = useSportSettings();
-    const home = useHomeBackgrounds();
-    const prompt = useTextPrompt({ pushLayer });
-    const nextMode = MODES[(MODES.indexOf(s.backdrop) + 1) % MODES.length];
-    const homeRight = s.backdropCustom?.from === "home" ? tt("sportBackdropHomeN", { n: s.backdropCustom.index + 1, total: home.length }) : home.length > 0 ? tt("sportBackdropNone") : tt("sportBackdropNoHomeShort");
-    const nextHome = () => {
-      if (home.length === 0) return;
-      const index = s.backdropCustom?.from === "home" ? (s.backdropCustom.index + 1) % home.length : 0;
-      pick2({ from: "home", index });
-    };
-    const askLink = () => prompt.ask(tt("sportBackdropLink"), s.backdropCustom?.from === "url" ? s.backdropCustom.url : "", (value) => {
-      if (isHttp(value)) pick2({ from: "url", url: value });
-    }, "url");
+    const tvMode = useTvMode();
+    const [scope, setScope] = useState("all");
+    const { s, own, mode, slot } = useScopeState(scope);
+    const uploads = useBackdropUploads();
+    const uploader = useUploader(slot);
+    const [qrOpen, setQrOpen] = useState(false);
+    const viaPhone = tvMode && !phone;
+    const handoff = useBackdropHandoff(viaPhone && qrOpen && mode === "custom", slot);
+    const choices = scope === "all" ? MODES : ["inherit", ...MODES];
+    const nextMode = choices[(choices.indexOf(own) + 1) % choices.length];
+    const nextScope = SCOPES[(SCOPES.indexOf(scope) + 1) % SCOPES.length];
+    const scopeLabel = scope === "all" ? tt("sportBackdropAllSports") : tt(KIND_KEYS[scope]);
+    const modeLabel = own === "inherit" ? `${tt("sportBackdropInherit")} (${tt(MODE_LABEL[s.backdrops.all])})` : tt(MODE_LABEL[own]);
+    const version3 = uploads[slot];
+    const nextOpacity = OPACITY_STEPS.find((n) => n > s.cards.opacity) ?? OPACITY_STEPS[0];
+    const nextTone = TONES[(TONES.indexOf(s.cards.tone) + 1) % TONES.length];
     return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-backdrop-settings-tv", children: [
       /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportBackdropHint"), children: tt("sportBackdropTitle") }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-mode", label: tt("sportBackdropTitle"), right: tt(MODE_LABEL[s.backdrop]), onOk: () => setSportSettings({ backdrop: nextMode }) }),
-      s.backdrop === "custom" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-        /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-home", label: tt("sportBackdropFromHome"), right: homeRight, onOk: nextHome }),
-        /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-link-tv", label: tt("sportBackdropLink"), right: s.backdropCustom?.from === "url" ? hostOf(s.backdropCustom.url) : "", onOk: askLink })
+      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-scope", label: tt("sportBackdropScope"), right: scopeLabel, onOk: () => {
+        setScope(nextScope);
+        setQrOpen(false);
+      } }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-mode", label: tt("sportBackdropTitle"), right: modeLabel, onOk: () => setScopeMode(s.backdrops, scope, nextMode) }),
+      mode === "custom" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        viaPhone ? /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-phone", label: tt("sportBackdropPhone"), right: version3 != null ? tt("sportBackdropHasImage") : tt("sportBackdropNoImage"), onOk: () => {
+          setQrOpen(true);
+          handoff.restart();
+        } }) : /* @__PURE__ */ jsxs(Fragment2, { children: [
+          uploader.input,
+          /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-choose", label: version3 != null ? tt("sportBackdropReplace") : tt("sportBackdropChoose"), right: version3 != null ? tt("sportBackdropHasImage") : tt("sportBackdropNoImage"), onOk: uploader.pick })
+        ] }),
+        version3 != null ? /* @__PURE__ */ jsx(Row, { phone, testId: "sport-backdrop-remove", label: tt("sportBackdropRemove"), right: "", onOk: () => void removeBackdrop(slot) }) : null,
+        viaPhone && qrOpen ? /* @__PURE__ */ jsxs("figure", { "data-testid": "sport-backdrop-handoff", style: { margin: 0, display: "flex", gap: dp(20), alignItems: "center", padding: `${dp(8)}px 0` }, children: [
+          handoff.url && !handoff.received ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-qr", style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
+          /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(16), color: TV2.dim, maxWidth: dp(360) }, children: handoff.received ? tt("sportBackdropReceived") : handoff.expired ? tt("sportKeyExpired") : tt("sportBackdropPhoneHint") })
+        ] }) : null,
+        uploader.status ? /* @__PURE__ */ jsx("div", { role: "status", style: { fontSize: phone ? 13 : dp(16), color: TV2.dim, padding: phone ? "6px 14px" : 0 }, children: uploader.status }) : null,
+        /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(15), color: TV2.dim, padding: phone ? "6px 14px" : 0 }, children: tt("sportBackdropLocalNote") })
       ] }) : null,
-      prompt.node
+      /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportCardsHint"), children: tt("sportCardsTitle") }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-opacity-row", label: tt("sportCardsOpacity"), right: `${s.cards.opacity} %`, onOk: () => setSportSettings({ cards: { ...s.cards, opacity: nextOpacity } }) }),
+      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-tone-row", label: tt("sportCardsColor"), right: tt(TONE_LABEL[s.cards.tone]), onOk: () => setSportSettings({ cards: { ...s.cards, tone: nextTone } }) })
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -51980,7 +52367,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
   init_jsx_runtime_shim();
   function VodLibraryCard() {
@@ -52016,16 +52403,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -52130,7 +52517,7 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -52266,7 +52653,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/category-curation-panel.tsx
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -52428,11 +52815,11 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -52619,7 +53006,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv-settings-views.tsx
   init_index_client();
   init_tv_strings();
   init_index_client();
@@ -53054,7 +53441,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text) {
@@ -53287,26 +53674,26 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_logo_image();
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
@@ -53316,7 +53703,7 @@ ${cue.text}`).join("\n\n")}
     return () => clearTimeout(timer3);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY6 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -53349,7 +53736,7 @@ ${cue.text}`).join("\n\n")}
     return data;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }) {
@@ -53382,7 +53769,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -53412,11 +53799,11 @@ ${cue.text}`).join("\n\n")}
     ) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-shell.tsx
   var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
   function encodeChannelParams(channel) {
     return {
@@ -53428,10 +53815,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-grid.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -53460,7 +53847,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -53525,14 +53912,14 @@ ${cue.text}`).join("\n\n")}
     return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -53572,7 +53959,7 @@ ${cue.text}`).join("\n\n")}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -53726,7 +54113,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-grid.tsx
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
   var CHANNELS_PER_PAGE = 28;
@@ -55246,13 +55633,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -55269,7 +55656,7 @@ ${cue.text}`).join("\n\n")}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/now-next-later-row.tsx
   init_jsx_runtime_shim();
   function formatTime(ms2) {
     return new Date(ms2).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -55331,7 +55718,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_tv_settings_store();
@@ -55549,12 +55936,12 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-alerts.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_reminders();
@@ -55632,7 +56019,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_live_tv_ui();
   init_jsx_runtime_shim();
   function LiveTvRemindersMount() {
@@ -55696,7 +56083,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
@@ -55739,7 +56126,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -55748,7 +56135,7 @@ ${cue.text}`).join("\n\n")}
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
@@ -55773,7 +56160,7 @@ ${cue.text}`).join("\n\n")}
     return phone;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -55825,12 +56212,12 @@ ${cue.text}`).join("\n\n")}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-rail.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-rail.tsx
   init_tv_strings();
   init_tv_ui();
   init_sport_icons();
@@ -55890,7 +56277,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -56005,10 +56392,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -56052,12 +56439,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_video_surface();
   init_surface_cutouts();
   init_player_sport();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -56066,12 +56453,12 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -56119,7 +56506,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 36;
   var MAX_CHIPS = 12;
   var REPLAY_DAYS = 3;
@@ -56148,7 +56535,7 @@ ${cue.text}`).join("\n\n")}
     return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -56159,7 +56546,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_ui();
@@ -56216,11 +56603,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -56269,7 +56656,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
   var RECENT_MAX = 8;
@@ -56334,7 +56721,7 @@ ${cue.text}`).join("\n\n")}
         sheet
       ] });
     }
-    const pick3 = spotlight[0];
+    const pick2 = spotlight[0];
     const recentCards = recent.filter((c) => !replays.some((r) => channelKey(r.channel) === channelKey(c))).slice(0, RECENT_MAX);
     return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 14 }, children: [
       header,
@@ -56343,17 +56730,17 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", color: "rgba(243,244,248,0.55)", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.MagnifyingGlass, { size: 18 }) }),
         /* @__PURE__ */ jsx("span", { style: { fontSize: 15, color: "rgba(243,244,248,0.55)", ...ellipsis2, flex: 1 }, children: tt("searchPlaceholder") })
       ] }),
-      pick3 ? (() => {
-        const info = model.nowFor(pick3.channel);
-        const number = model.channelNumber(pick3.channel);
-        return /* @__PURE__ */ jsxs("div", { "data-testid": "hub-spotlight", ...cardStation(pick3.channel, { "data-init": "" }), style: { ...card, borderRadius: 18 }, children: [
-          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick3.channel, height: 186, radius: 0, children: [
+      pick2 ? (() => {
+        const info = model.nowFor(pick2.channel);
+        const number = model.channelNumber(pick2.channel);
+        return /* @__PURE__ */ jsxs("div", { "data-testid": "hub-spotlight", ...cardStation(pick2.channel, { "data-init": "" }), style: { ...card, borderRadius: 18 }, children: [
+          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick2.channel, height: 186, radius: 0, children: [
             /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 42%, rgba(0,0,0,0.78))" } }),
             info.now ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 10, left: 10 }, children: /* @__PURE__ */ jsx(LiveTag3, { children: tt("live") }) }) : null,
-            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 10, right: 10 }, children: /* @__PURE__ */ jsx(ReasonTag, { children: reasonLabel(pick3.reason) }) }),
+            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: 10, right: 10 }, children: /* @__PURE__ */ jsx(ReasonTag, { children: reasonLabel(pick2.reason) }) }),
             /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 12, right: 12, bottom: 10, fontSize: 13, color: "rgba(243,244,248,0.8)", ...ellipsis2 }, children: [
               number ? `${number} \xB7 ` : "",
-              pick3.channel.name
+              pick2.channel.name
             ] })
           ] }),
           /* @__PURE__ */ jsxs("div", { style: { padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6 }, children: [
@@ -56416,7 +56803,7 @@ ${cue.text}`).join("\n\n")}
           const info = model.nowFor(channel);
           const number = model.channelNumber(channel);
           const pinned = model.pinnedSet.has(channelKey(channel));
-          return /* @__PURE__ */ jsxs("div", { ...cardStation(channel, !pick3 && index === 0 ? { "data-init": "" } : void 0), style: { ...card, borderRadius: 14, minWidth: 0 }, children: [
+          return /* @__PURE__ */ jsxs("div", { ...cardStation(channel, !pick2 && index === 0 ? { "data-init": "" } : void 0), style: { ...card, borderRadius: 14, minWidth: 0 }, children: [
             /* @__PURE__ */ jsxs(ChannelArt, { channel, aspect: "16 / 10", radius: 12, children: [
               /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 6, left: 8, fontSize: 12, color: "rgba(243,244,248,0.6)" }, children: number ?? "" }),
               pinned ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 6, right: 8, color: MT.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 14, filled: true }) }) : null,
@@ -56435,7 +56822,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_DESKTOP = 3;
   var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
@@ -56525,18 +56912,18 @@ ${cue.text}`).join("\n\n")}
         ] }),
         /* @__PURE__ */ jsx("div", { "data-testid": "hub-clock", style: { marginLeft: "auto", flexShrink: 0, textAlign: "right" }, children: clock })
       ] }),
-      spotlight.length > 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "hub-spotlight", "data-row": "", style: { display: "grid", gridTemplateColumns: `repeat(${spotlightCount}, minmax(0, 1fr))`, gap: dp(20) }, children: spotlight.map((pick3, index) => {
-        const info = model.nowFor(pick3.channel);
-        const number = model.channelNumber(pick3.channel);
-        return /* @__PURE__ */ jsxs("div", { ...cardStation(pick3.channel, index === 0 ? { "data-init": "" } : void 0), style: { ...cardStyle, borderRadius: dp(18), cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick3.channel, height: dp(150), children: [
+      spotlight.length > 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "hub-spotlight", "data-row": "", style: { display: "grid", gridTemplateColumns: `repeat(${spotlightCount}, minmax(0, 1fr))`, gap: dp(20) }, children: spotlight.map((pick2, index) => {
+        const info = model.nowFor(pick2.channel);
+        const number = model.channelNumber(pick2.channel);
+        return /* @__PURE__ */ jsxs("div", { ...cardStation(pick2.channel, index === 0 ? { "data-init": "" } : void 0), style: { ...cardStyle, borderRadius: dp(18), cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsxs(ChannelArt, { channel: pick2.channel, height: dp(150), children: [
             /* @__PURE__ */ jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.75))" } }),
-            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: dp(12), right: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "reason", children: reasonLabel(pick3.reason) }) }),
+            /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: dp(12), right: dp(12) }, children: /* @__PURE__ */ jsx(Tag2, { variant: "reason", children: reasonLabel(pick2.reason) }) }),
             /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: dp(16), bottom: dp(12), display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(16), color: "rgba(243,244,248,0.75)" }, children: [
               info.now ? /* @__PURE__ */ jsx(Tag2, { variant: "live", children: tt("live") }) : null,
               /* @__PURE__ */ jsxs("span", { children: [
                 number ? `${number} \xB7 ` : "",
-                pick3.channel.name
+                pick2.channel.name
               ] })
             ] })
           ] }),
@@ -56547,7 +56934,7 @@ ${cue.text}`).join("\n\n")}
               /* @__PURE__ */ jsx(Progress, { value: progressOf(info.now.start, info.now.stop, model.nowMs) })
             ] }) : null
           ] })
-        ] }, channelKey(pick3.channel));
+        ] }, channelKey(pick2.channel));
       }) }) : null,
       favourites.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(14) }, children: [
@@ -56645,7 +57032,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -56654,7 +57041,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -56679,7 +57066,7 @@ ${cue.text}`).join("\n\n")}
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS * 100));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -56709,7 +57096,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -56718,7 +57105,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -56752,7 +57139,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -56761,14 +57148,14 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -56800,7 +57187,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -56869,7 +57256,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -57002,7 +57389,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_jsx_runtime_shim();
   var MAX_GROUPS2 = 12;
   var ROW_STEP3 = 40;
@@ -57127,7 +57514,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57137,7 +57524,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -57175,7 +57562,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57183,7 +57570,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
@@ -57254,7 +57641,7 @@ ${cue.text}`).join("\n\n")}
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_jsx_runtime_shim();
@@ -57376,7 +57763,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
@@ -57626,11 +58013,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -57639,7 +58026,7 @@ ${cue.text}`).join("\n\n")}
   init_guide_surface();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-control-row.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -57734,7 +58121,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -57743,11 +58130,11 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -57792,7 +58179,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -57860,7 +58247,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
   var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
@@ -58090,7 +58477,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -58295,7 +58682,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
@@ -58410,7 +58797,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
   function TvGuide(props) {
@@ -58649,7 +59036,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -58657,7 +59044,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -58667,7 +59054,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -58728,7 +59115,7 @@ ${cue.text}`).join("\n\n")}
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
   function TvFavouritesPhone({ model, nav }) {
@@ -58824,7 +59211,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
@@ -58904,13 +59291,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
   init_channel_locks();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -59031,12 +59418,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_tv_ui();
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -59215,7 +59602,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_jsx_runtime_shim();
   function TvChannel(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
@@ -59345,7 +59732,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -59354,7 +59741,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -59388,7 +59775,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -59430,7 +59817,7 @@ ${cue.text}`).join("\n\n")}
     return state2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -59568,7 +59955,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
     return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
@@ -59683,14 +60070,14 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -59699,10 +60086,10 @@ ${cue.text}`).join("\n\n")}
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/surface-diagnostics.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/surface-diagnostics.ts
   init_surface_cutouts();
   function opaqueAt(x, y) {
     if (typeof document === "undefined" || typeof document.elementsFromPoint !== "function") return "ok\xE4nt";
@@ -59743,7 +60130,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -59793,7 +60180,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -59961,7 +60348,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
     2: { columns: "1fr 1fr", rows: "1fr" },
@@ -60100,7 +60487,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -60628,13 +61015,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -60692,7 +61079,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -61149,7 +61536,7 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -61184,14 +61571,14 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -61265,7 +61652,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_jsx_runtime_shim();
   var TABS = ["appearance", "content", "playlists", "epg", "parental", "sport"];
@@ -61336,7 +61723,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -61345,7 +61732,7 @@ ${cue.text}`).join("\n\n")}
   init_sport_store();
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/sport-backdrop.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/sport-backdrop.tsx
   init_jsx_runtime_shim();
   function SportBackdropLayer({ choice, phone, onBroken }) {
     if (choice.kind === "none") return null;
@@ -61366,13 +61753,13 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_ctx();
   init_results_controller();
   init_live_poller();
   init_sport_score();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -61380,7 +61767,7 @@ ${cue.text}`).join("\n\n")}
   init_sport_score();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/results-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/results-model.ts
   var isLive = (m) => m.status === "live";
   var isMine = (m) => m.sources.length > 0 && !m.resultOnly;
   function groupResults(matches, filter) {
@@ -61402,7 +61789,8 @@ ${cue.text}`).join("\n\n")}
   }
   var FORM_COLOR = { W: "#3cd6a3", D: "rgba(243,244,248,0.45)", L: "#e0776a" };
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  init_surface();
   init_jsx_runtime_shim();
   function StandingsTable({ rows, tt }) {
     const cell = { padding: `${dp(6)}px ${dp(8)}px`, fontSize: dp(15) };
@@ -61471,7 +61859,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: g.round != null ? `${g.league} \xB7 ${tt("sportRound", { n: g.round })}` : g.league }),
           /* @__PURE__ */ jsx("div", { ...station(() => void toggleTable(g)), style: { fontSize: dp(15), color: TV2.muted, cursor: "pointer", padding: `${dp(6)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.s08 }, children: tt("sportTable") })
         ] }),
-        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { ...station(() => onOpenMatch(m)), style: { display: "grid", gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: "center", gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, borderRadius: dp(10), background: TV2.s05, cursor: "pointer" }, children: [
+        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { ...station(() => onOpenMatch(m)), style: { display: "grid", gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: "center", gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, borderRadius: dp(10), background: sportBg(TV2.s05), cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: m.status === "live" ? TV2.live : TV2.dim }, children: matchStatusLabel(m, tt) ?? "" }),
           /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: dp(8), justifyContent: "flex-end" }, children: [
             m.home,
@@ -61488,11 +61876,11 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_parts();
   init_sport_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_model();
@@ -61502,6 +61890,7 @@ ${cue.text}`).join("\n\n")}
   init_sport_score();
   init_sport_parts();
   init_sport_icons();
+  init_surface();
   init_jsx_runtime_shim();
   function SportMatchday({ ctx, matches, dayFrom }) {
     const hero = featuredMatch(matches, ctx.follows, ctx.now);
@@ -61523,7 +61912,7 @@ ${cue.text}`).join("\n\n")}
     const st = statusAt(match, ctx.now);
     const followed = followState(match, ctx.follows).any;
     const context = [followed ? ctx.tt("sportYouFollow") : null, match.league || ctx.kindLabel(match.kind), match.venue].filter(Boolean).join(" \xB7 ");
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-hero", style: { ...cardStyle, flex: 1, minWidth: 0, borderRadius: dp(20), padding: `${dp(24)}px ${dp(32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(16), background: `radial-gradient(60% 80% at 50% 0%, ${TV2.accMix(14)}, transparent), ${TV2.s07}` }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-hero", style: { ...sportCardStyle, flex: 1, minWidth: 0, borderRadius: dp(20), padding: `${dp(24)}px ${dp(32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(16), background: `radial-gradient(60% 80% at 50% 0%, ${TV2.accMix(14)}, transparent), ${TV2.s07}` }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12), fontSize: dp(17), color: TV2.muted }, children: [
         st === "live" ? /* @__PURE__ */ jsx(Tag2, { variant: "live", children: ctx.tt("live") }) : null,
         /* @__PURE__ */ jsx("span", { children: context })
@@ -61557,7 +61946,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   function NextOnChannels({ ctx, matches }) {
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-next", style: { ...cardStyle, width: dp(450), flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px`, display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-next", style: { ...sportCardStyle, width: dp(450), flexShrink: 0, padding: `${dp(20)}px ${dp(20)}px`, display: "flex", flexDirection: "column", gap: dp(10) }, children: [
       /* @__PURE__ */ jsx("span", { style: overline, children: ctx.tt("sportNextOnChannels") }),
       matches.map((m) => {
         const best = rankedSources(m, ctx.overrides)[0];
@@ -61579,7 +61968,7 @@ ${cue.text}`).join("\n\n")}
     const span = axis.end - axis.start;
     const pct2 = (t) => (Math.min(Math.max(t, axis.start), axis.end) - axis.start) / span * 100;
     const nowInside = ctx.now >= axis.start && ctx.now <= axis.end;
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-timeline", style: { ...cardStyle, padding: `${dp(20)}px ${dp(24)}px`, display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-timeline", style: { ...sportCardStyle, padding: `${dp(20)}px ${dp(24)}px`, display: "flex", flexDirection: "column", gap: dp(8) }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(14) }, children: [
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: ctx.tt("sportMatchday") }),
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: ctx.tt("sportMatchdayHint") })
@@ -61639,7 +62028,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_epg();
@@ -61650,6 +62039,7 @@ ${cue.text}`).join("\n\n")}
   init_sport_parts();
   init_sport_score();
   init_sport_icons();
+  init_surface();
   init_jsx_runtime_shim();
   var avatarCol = { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(8), width: dp(150), flexShrink: 0, cursor: "pointer" };
   function SportFeed({ ctx, matches, days }) {
@@ -61676,7 +62066,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("span", { style: sectionTitle, children: ctx.tt("sportJustNow") }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: ctx.tt("sportJustNowSub", { n: live2.length }) })
         ] }),
-        live2.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "feed-now-row", style: { ...cardStyle, display: "flex", alignItems: "center", gap: dp(18), padding: `${dp(14)}px ${dp(18)}px`, borderLeft: `${dp(6)}px solid ${leagueColor(m.leagueKey || m.kind)}` }, children: [
+        live2.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "feed-now-row", style: { ...sportCardStyle, display: "flex", alignItems: "center", gap: dp(18), padding: `${dp(14)}px ${dp(18)}px`, borderLeft: `${dp(6)}px solid ${leagueColor(m.leagueKey || m.kind)}` }, children: [
           /* @__PURE__ */ jsxs("div", { style: { width: dp(80), display: "flex", flexDirection: "column", gap: dp(6), flexShrink: 0 }, children: [
             /* @__PURE__ */ jsx("span", { style: { color: TV2.live, fontWeight: 700, fontSize: dp(16) }, children: [ctx.tt("live"), matchStatusLabel(m, ctx.tt)].filter(Boolean).join(" ") }),
             /* @__PURE__ */ jsx(Progress, { value: progressOf(m.start, m.stop, ctx.now), height: dp(4) })
@@ -61702,7 +62092,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(10) }, children: later.map((m) => {
             const reminded = ctx.isReminded(m);
             const best = m.sources[0];
-            return /* @__PURE__ */ jsxs("div", { "data-testid": "feed-plan-row", style: { ...cardStyle, display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(12)}px ${dp(16)}px` }, children: [
+            return /* @__PURE__ */ jsxs("div", { "data-testid": "feed-plan-row", style: { ...sportCardStyle, display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(12)}px ${dp(16)}px` }, children: [
               /* @__PURE__ */ jsx("div", { "data-testid": "feed-plan-check", ...station(() => ctx.toggleRemind(m)), role: "checkbox", "aria-checked": reminded ? "true" : "false", "aria-label": ctx.tt("sportRemindMe"), style: { width: dp(34), height: dp(34), minHeight: dp(34), borderRadius: dp(8), border: `2px solid ${reminded ? TV2.acc : TV2.lineStrong}`, background: reminded ? TV2.acc : "transparent", color: TV2.onAcc, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: dp(20), cursor: "pointer", flexShrink: 0 }, children: reminded ? "\u2713" : "" }),
               /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 700, width: dp(84), flexShrink: 0 }, children: formatClock2(m.start, ctx.locale) }),
               /* @__PURE__ */ jsxs("div", { ...station(() => ctx.openMatch(m)), style: { flex: 1, minWidth: 0, cursor: "pointer" }, children: [
@@ -61712,7 +62102,7 @@ ${cue.text}`).join("\n\n")}
               followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24", display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(22), filled: true }) }) : null
             ] }, m.id);
           }) }),
-          /* @__PURE__ */ jsxs("div", { "data-testid": "sport-evening", style: { ...cardStyle, width: dp(420), flexShrink: 0, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+          /* @__PURE__ */ jsxs("div", { "data-testid": "sport-evening", style: { ...sportCardStyle, width: dp(420), flexShrink: 0, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10) }, children: [
             /* @__PURE__ */ jsx("span", { style: overline, children: ctx.tt("sportYourEvening") }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 600 }, children: ctx.tt("sportEveningCount", { n: planned.length }) }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: TV2.muted }, children: `${ctx.tt("sportKickoffAlert")}: ${alertLabel(ctx)}` }),
@@ -61729,7 +62119,7 @@ ${cue.text}`).join("\n\n")}
       ] }) : null,
       finished.length > 0 ? /* @__PURE__ */ jsxs("section", { "data-testid": "feed-finished", style: { display: "flex", flexDirection: "column", gap: dp(12) }, children: [
         /* @__PURE__ */ jsx("span", { style: sectionTitle, children: ctx.tt("sportFinished") }),
-        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: dp(12) }, children: finished.map((m) => /* @__PURE__ */ jsxs("div", { ...station(() => ctx.openMatch(m)), style: { ...cardStyle, padding: `${dp(12)}px ${dp(16)}px`, display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(17), cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: dp(12) }, children: finished.map((m) => /* @__PURE__ */ jsxs("div", { ...station(() => ctx.openMatch(m)), style: { ...sportCardStyle, padding: `${dp(12)}px ${dp(16)}px`, display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(17), cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: matchTitle(m) }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: TV2.dim }, children: scoreText(m) ?? ctx.tt("sportEnded") })
         ] }, m.id)) })
@@ -61754,12 +62144,12 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/follow-search.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/follow-search.ts
   init_budget();
   async function searchProviderTeams(sport, q) {
     const budget = currentBudget();
@@ -61768,7 +62158,7 @@ ${cue.text}`).join("\n\n")}
     return res.data ?? [];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_merge();
   init_sport_model();
   init_sport_day_model();
@@ -61776,6 +62166,7 @@ ${cue.text}`).join("\n\n")}
   init_sport_ctx();
   init_sport_parts();
   init_sport_icons();
+  init_surface();
   init_jsx_runtime_shim();
   var same2 = (a, b) => a.kind === b.kind && a.key === b.key;
   function SportFollows({ ctx, days }) {
@@ -61796,14 +62187,14 @@ ${cue.text}`).join("\n\n")}
           ctx.tt("sportFollowAdd")
         ] }),
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted }, children: ctx.tt("sportFollowSummary", { n: ctx.follows.length, rule: alertLabel(ctx).toLowerCase() }) }),
-        /* @__PURE__ */ jsxs("div", { "data-testid": "follows-alert", style: { ...cardStyle, marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(12), padding: `${dp(8)}px ${dp(12)}px` }, children: [
+        /* @__PURE__ */ jsxs("div", { "data-testid": "follows-alert", style: { ...sportCardStyle, marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(12), padding: `${dp(8)}px ${dp(12)}px` }, children: [
           /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(20) }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: ctx.tt("sportKickoffAlert") }),
           /* @__PURE__ */ jsx(Segment, { options: alertOptions, value: ctx.settings.alert, onChange: (alert) => setSportSettings({ alert }) })
         ] })
       ] }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: TV2.dim }, children: ctx.tt("sportAlertOnlyRunning") }),
-      shown.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "follows-empty", style: { ...cardStyle, padding: dp(28), fontSize: dp(20), color: TV2.muted }, children: ctx.tt("sportFollowEmpty") }) : null,
+      shown.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "follows-empty", style: { ...sportCardStyle, padding: dp(28), fontSize: dp(20), color: TV2.muted }, children: ctx.tt("sportFollowEmpty") }) : null,
       groups.map(([kind, list]) => /* @__PURE__ */ jsxs("section", { "data-testid": `follow-group-${kind}`, style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
           /* @__PURE__ */ jsx(SportIcon, { kind, size: dp(28) }),
@@ -61817,7 +62208,7 @@ ${cue.text}`).join("\n\n")}
   function FollowCard({ ctx, follow, days }) {
     const following = isFollowing(ctx.follows, follow);
     const next = nextMatchFor(follow, days, ctx.now);
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "follow-card", "data-following": following ? "1" : "0", style: { ...cardStyle, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10), opacity: following ? 1 : 0.55 }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "follow-card", "data-following": following ? "1" : "0", style: { ...sportCardStyle, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10), opacity: following ? 1 : 0.55 }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-start" }, children: [
         /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(66) }),
         /* @__PURE__ */ jsx("div", { "data-testid": "follow-star", ...station(() => toggleFollow(follow)), "aria-pressed": following ? "true" : "false", "aria-label": following ? ctx.tt("sportFollowingName", { name: follow.name }) : ctx.tt("sportFollowName", { name: follow.name }), style: { marginLeft: "auto", color: following ? "#fbbf24" : TV2.dim, display: "inline-flex", cursor: "pointer" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(28), filled: following }) })
@@ -61896,7 +62287,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -61908,7 +62299,7 @@ ${cue.text}`).join("\n\n")}
   init_sport_parts();
   init_sport_score();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-match-center-data.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-match-center-data.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -62024,8 +62415,9 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
   init_sport_icons();
+  init_surface();
   init_jsx_runtime_shim();
   var pill = (on) => ({
     height: dp(52),
@@ -62076,7 +62468,7 @@ ${cue.text}`).join("\n\n")}
     };
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx("div", { "data-live-tv-layer": "", "aria-hidden": "true", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 59, background: TV2.scrim } }),
-      /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "match-center", "data-panel-root": "", "data-live-tv-layer": "", "data-scroll": "", role: "dialog", "aria-label": matchTitle(match), style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: "1px solid rgba(255,255,255,0.16)", padding: `${dp(28)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(20), overflowY: "auto", boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "match-center", "data-panel-root": "", "data-live-tv-layer": "", "data-scroll": "", role: "dialog", "aria-label": matchTitle(match), style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, ...sportSurface(SPORT_PANEL_BG), borderLeft: "1px solid rgba(255,255,255,0.16)", padding: `${dp(28)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(20), overflowY: "auto", boxSizing: "border-box" }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
           /* @__PURE__ */ jsx(StatusTag, { match, ctx }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted, ...ellipsis3 }, children: context }),
@@ -62164,7 +62556,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_mobile_tokens();
@@ -62174,7 +62566,7 @@ ${cue.text}`).join("\n\n")}
   init_sport_day_model();
   init_sport_store();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -62184,6 +62576,7 @@ ${cue.text}`).join("\n\n")}
   init_score_model();
   init_sport_model();
   init_sport_store();
+  init_surface();
   init_jsx_runtime_shim();
   function PhoneCrest({ name, src, size = 22 }) {
     const [broken, setBroken] = useState(false);
@@ -62265,7 +62658,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("div", { style: { flex: 1, fontSize: 17, fontWeight: 600, ...ellipsis2 }, children: g.round != null ? `${g.league} \xB7 ${tt("sportRound", { n: g.round })}` : g.league }),
           /* @__PURE__ */ jsx("div", { "data-testid": `phone-table-${g.key}`, ...station(() => void openTable(g)), style: { minHeight: MT.HIT, padding: "0 14px", borderRadius: 12, background: MT.s08, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", fontSize: 14, color: MT.muted70, cursor: "pointer", flexShrink: 0 }, children: tt("sportTable") })
         ] }),
-        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "phone-result-row", ...station(() => onOpenMatch(m)), style: { minHeight: 56, display: "grid", gridTemplateColumns: "46px minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 14, background: MT.s07, border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
+        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "phone-result-row", ...station(() => onOpenMatch(m)), style: { minHeight: 56, display: "grid", gridTemplateColumns: "46px minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, fontWeight: 700, color: m.status === "live" ? MT.live : MT.muted }, children: matchStatusLabel(m, tt) ?? "" }),
           /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, minWidth: 0 }, children: [
             /* @__PURE__ */ jsx("span", { style: { fontSize: 14, ...ellipsis2 }, children: m.home }),
@@ -62292,7 +62685,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -62340,11 +62733,12 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_results_controller();
   init_live_poller();
   init_score_model();
   init_sport_ctx();
+  init_surface();
   init_jsx_runtime_shim();
   var NO_MATCHES2 = [];
   function SportPhone({ model, nav }) {
@@ -62367,7 +62761,7 @@ ${cue.text}`).join("\n\n")}
     const todayDay = useSportDay(wantsFollow ? today : null, model.nowMs);
     const tomorrowDay = useSportDay(wantsFollow ? shiftDay(today, 1) : null, model.nowMs);
     const phoneHero = useMemo(() => featuredMatch(visibleMatches(mergedDay, filter), ctx.follows, ctx.now), [mergedDay, filter, ctx.follows, ctx.now]);
-    const backdrop = useSportBackdrop(phoneHero);
+    const backdrop = useSportBackdrop(phoneHero, filter, model.nowMs);
     const counts = sportCounts(mergedDay);
     const { live: live2, later, finished } = splitSections(visibleMatches(mergedDay, filter), ctx.now);
     const dayLabel = (o) => o === -1 ? tt("sportYesterday") : o === 0 ? tt("sportToday") : tt("sportTomorrow");
@@ -62384,7 +62778,7 @@ ${cue.text}`).join("\n\n")}
       ];
     };
     const notice = selected.state === "missing" ? tt("sportNeedsUpdate") : selected.state === "error" ? tt("sportError") : selected.state === "loading" ? tt("sportLoading") : live2.length + later.length + finished.length === 0 ? tt("sportEmptyDay") : null;
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", ...backdrop.surface }, children: [
       /* @__PURE__ */ jsx(SportBackdropLayer, { choice: backdrop.choice, phone: true, onBroken: backdrop.onBroken }),
       /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone", "data-scroll": "", style: { position: "relative", flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 10 }, children: [
         /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("sportTitle") }) }),
@@ -62422,7 +62816,7 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx("div", { style: { fontSize: 17, fontWeight: 600 }, children: title }),
       matches.map((m) => {
         const st = statusAt(m, ctx.now);
-        return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-row", ...station(() => ctx.openMatch(m)), style: { minHeight: 64, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: MT.s07, border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
+        return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-row", ...station(() => ctx.openMatch(m)), style: { minHeight: 64, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { width: 54, flexShrink: 0, display: "flex", flexDirection: "column", fontSize: 13, fontWeight: 700, color: st === "live" ? MT.live : MT.text }, children: showsScore(m) ? /* @__PURE__ */ jsxs(Fragment2, { children: [
             /* @__PURE__ */ jsx("span", { style: { fontVariantNumeric: "tabular-nums" }, children: scoreText(m) }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 600, color: MT.muted }, children: matchStatusLabel(m, ctx.tt) ?? "" })
@@ -62454,7 +62848,7 @@ ${cue.text}`).join("\n\n")}
         const next = nextMatchFor(f, days, ctx.now);
         return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-follow", ...station(() => {
           if (next) ctx.openMatch(next);
-        }), style: { minHeight: 60, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: MT.s07, cursor: "pointer" }, children: [
+        }), style: { minHeight: 60, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: sportBg(MT.s07), cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24" }, children: "\u2605" }),
           /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
             /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: f.name }),
@@ -62465,7 +62859,8 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  init_surface();
   init_jsx_runtime_shim();
   var NO_MATCHES3 = [];
   var OFFSETS = [-1, 0, 1];
@@ -62498,7 +62893,7 @@ ${cue.text}`).join("\n\n")}
     const counts = sportCounts(mergedDay);
     const matches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter]);
     const hero = useMemo(() => featuredMatch(matches, ctx.follows, ctx.now), [matches, ctx.follows, ctx.now]);
-    const backdrop = useSportBackdrop(hero);
+    const backdrop = useSportBackdrop(hero, filter, model.nowMs);
     const summary = headerSummary(matches, ctx.now);
     const total = SPORT_KINDS.reduce((sum, k) => sum + counts[k], 0);
     const open2 = useMemo(() => {
@@ -62515,7 +62910,7 @@ ${cue.text}`).join("\n\n")}
       if (matches.length === 0) return /* @__PURE__ */ jsx(Notice, { testId: "sport-empty", text: tt("sportEmptyDay") });
       return ctx.settings.view === "feed" ? /* @__PURE__ */ jsx(SportFeed, { ctx, matches, days: [mergedDay, tomorrowDay.data] }) : /* @__PURE__ */ jsx(SportMatchday, { ctx, matches, dayFrom: dayStartMs(day) });
     };
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", ...backdrop.surface }, children: [
       /* @__PURE__ */ jsx(SportBackdropLayer, { choice: backdrop.choice, phone: false, onBroken: backdrop.onBroken }),
       /* @__PURE__ */ jsxs("div", { "data-testid": "sport-view", "data-scroll": "", style: { position: "relative", flex: 1, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(22) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(18) }, children: [
@@ -62544,7 +62939,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
           OFFSETS.map((o) => {
             const active4 = o === offset;
-            return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-day-${o}`, ...station(() => setOffset(o)), "aria-pressed": active4 ? "true" : "false", style: { minWidth: dp(144), height: dp(68), padding: `0 ${dp(18)}px`, borderRadius: dp(14), display: "flex", flexDirection: "column", justifyContent: "center", cursor: "pointer", boxSizing: "border-box", background: active4 ? TV2.text : TV2.s10, color: active4 ? "#12152a" : TV2.text, border: `1px solid ${active4 ? TV2.text : TV2.lineCard}` }, children: [
+            return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-day-${o}`, ...station(() => setOffset(o)), "aria-pressed": active4 ? "true" : "false", style: { minWidth: dp(144), height: dp(68), padding: `0 ${dp(18)}px`, borderRadius: dp(14), display: "flex", flexDirection: "column", justifyContent: "center", cursor: "pointer", boxSizing: "border-box", background: active4 ? TV2.text : sportBg(TV2.s10), color: active4 ? "#12152a" : TV2.text, border: `1px solid ${active4 ? TV2.text : TV2.lineCard}` }, children: [
               /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 700 }, children: dayLabel(o) }),
               /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.7 }, children: new Date(dayStartMs(shiftDay(today, o)) + 12 * 36e5).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }) })
             ] }, o);
@@ -62552,7 +62947,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(10) }, children: [
             SPORT_CHIPS.filter((k) => counts[k] > 0).map((k) => {
               const active4 = filter === k;
-              return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-chip-${k}`, ...station(() => setFilter(active4 ? "all" : k)), "aria-label": ctx.kindLabel(k), title: ctx.kindLabel(k), "aria-pressed": active4 ? "true" : "false", style: { height: dp(68), minWidth: dp(68), padding: active4 ? `0 ${dp(18)}px` : 0, boxSizing: "border-box", borderRadius: dp(14), display: "inline-flex", alignItems: "center", justifyContent: "center", gap: dp(8), cursor: "pointer", background: active4 ? TV2.accMix(22) : TV2.s10, color: active4 ? TV2.accText : TV2.text, border: `1px solid ${active4 ? TV2.acc : TV2.lineCard}`, fontSize: dp(18), fontWeight: 600 }, children: [
+              return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-chip-${k}`, ...station(() => setFilter(active4 ? "all" : k)), "aria-label": ctx.kindLabel(k), title: ctx.kindLabel(k), "aria-pressed": active4 ? "true" : "false", style: { height: dp(68), minWidth: dp(68), padding: active4 ? `0 ${dp(18)}px` : 0, boxSizing: "border-box", borderRadius: dp(14), display: "inline-flex", alignItems: "center", justifyContent: "center", gap: dp(8), cursor: "pointer", background: active4 ? TV2.accMix(22) : sportBg(TV2.s10), color: active4 ? TV2.accText : TV2.text, border: `1px solid ${active4 ? TV2.acc : TV2.lineCard}`, fontSize: dp(18), fontWeight: 600 }, children: [
                 /* @__PURE__ */ jsx(SportIcon, { kind: k, size: dp(26) }),
                 active4 ? ctx.kindLabel(k) : null
               ] }, k);
@@ -62581,7 +62976,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -62596,7 +62991,7 @@ ${cue.text}`).join("\n\n")}
     sport: TvSport
   };
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -62676,12 +63071,12 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-autoscan.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-home.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
   init_tv_settings_store();
   var LIVE_TV_FRAME_ID = "live-tv";
@@ -62719,7 +63114,7 @@ ${cue.text}`).join("\n\n")}
     lastRedirect = now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-autoscan.ts
   var AUTOSCAN_KEY = "live_tv_vod_autoscan_v1";
   var inFlight2 = false;
   async function maybeAutoScanVod() {
@@ -62752,7 +63147,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_mobile_sheet();
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
@@ -63214,7 +63609,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -63271,7 +63666,7 @@ ${cue.text}`).join("\n\n")}
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -63313,7 +63708,7 @@ ${cue.text}`).join("\n\n")}
     return programmes;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_settings_store();
@@ -63403,7 +63798,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { ref: rootRef, style: { height: "100%", display: "flex", background: TV2.bg, color: TV2.text, fontFamily: TV2.font }, children: /* @__PURE__ */ jsx(TvRail, { active: "home", isTv, narrow, labels: settings.railLabels && !narrow, onSelect: select }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/sport-keycard/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-bg/plugins/live-tv/runtime/index.ts
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,

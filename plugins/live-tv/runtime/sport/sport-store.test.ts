@@ -80,14 +80,24 @@ describe('fas 2-fälten', () => {
 })
 
 describe('Bakgrund i Sport', () => {
-  it('standard Automatisk; okända värden faller tillbaka', () => {
-    expect(getSportSettings()).toMatchObject({ backdrop: 'auto', backdropCustom: null })
-    expect(setSportSettings({ backdrop: 'bogus' as never })).toMatchObject({ backdrop: 'auto' })
+  it('standard: Standard för Alla sporter, inga egna sportval, korten svarta 85 %', () => {
+    expect(getSportSettings()).toMatchObject({ backdrops: { all: 'standard', sports: {} }, cards: { opacity: 85, tone: 'black' } })
+    expect(setSportSettings({ backdrops: { all: 'bogus' as never, sports: { football: 'nope' as never, cricket: 'off' } as never } })).toMatchObject({ backdrops: { all: 'standard', sports: {} } })
   })
-  it('Egen bild: startsidans bild per index eller en http(s)-länk; data-URL:er sparas aldrig i den synkade lagringen', () => {
-    expect(setSportSettings({ backdrop: 'custom', backdropCustom: { from: 'home', index: 2 } })).toMatchObject({ backdrop: 'custom', backdropCustom: { from: 'home', index: 2 } })
-    expect(setSportSettings({ backdropCustom: { from: 'url', url: '  https://x.example/y.jpg ' } }).backdropCustom).toEqual({ from: 'url', url: 'https://x.example/y.jpg' })
-    expect(setSportSettings({ backdropCustom: { from: 'url', url: 'data:image/png;base64,AAAA' } }).backdropCustom).toBeNull()
-    expect(setSportSettings({ backdropCustom: { from: 'home', index: -1 } }).backdropCustom).toBeNull()
+  it('per sport med arv; Egen bild, Automatisk och Av sparas', () => {
+    const s = setSportSettings({ backdrops: { all: 'auto', sports: { football: 'custom', hockey: 'off', tennis: 'standard' } } })
+    expect(s.backdrops).toEqual({ all: 'auto', sports: { football: 'custom', hockey: 'off', tennis: 'standard' } })
+  })
+  it('kortens bakgrund: opacitet 0–100 i heltal, tre färger', () => {
+    expect(setSportSettings({ cards: { opacity: 140, tone: 'gray' } }).cards).toEqual({ opacity: 100, tone: 'gray' })
+    expect(setSportSettings({ cards: { opacity: -3.4, tone: 'image' } }).cards).toEqual({ opacity: 0, tone: 'image' })
+    expect(setSportSettings({ cards: { opacity: 42.6, tone: 'pink' as never } }).cards).toEqual({ opacity: 43, tone: 'black' })
+  })
+  it('gamla inställningar läses ofarligt: Av följer med, länken och startsidans bild glöms', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { backdrop: 'off', backdropCustom: { from: 'url', url: 'https://x/y.jpg' } })
+    expect(getSportSettings().backdrops).toEqual({ all: 'off', sports: {} })
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { backdrop: 'custom', backdropCustom: { from: 'home', index: 1 } })
+    expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: {} })
+    expect(getSportSettings()).not.toHaveProperty('backdropCustom')
   })
 })
