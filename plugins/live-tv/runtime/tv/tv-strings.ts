@@ -394,6 +394,7 @@ const EN = {
   // Sportläge (fas 1, EPG)
   railSport: 'Sport',
   sheetSport: 'Sport',
+  sheetFavourites: 'Favourites',
   sportTitle: 'Sport',
   sportSummary: '{live} in play · {count} matches {day}',
   sportSummaryQuiet: '{count} matches {day}',
@@ -1011,6 +1012,7 @@ const SV: Record<keyof typeof EN, string> = {
   // Sportläge (fas 1, EPG)
   railSport: 'Sport',
   sheetSport: 'Sport',
+  sheetFavourites: 'Favoriter',
   sportTitle: 'Sport',
   sportSummary: '{live} pågår nu · {count} matcher {day}',
   sportSummaryQuiet: '{count} matcher {day}',

@@ -64,7 +64,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const { matches: mergedMatches, allMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
   usePollDemand('sport-view', true)
-  const view = ctx.settings.view
+  const view = ctx.settings.phoneView ?? 'matchday'
   // Ny flik, vy eller dag börjar överst (rullytan delas mellan dem).
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0 }, [tab, view, offset])
   const wantsFollow = tab === 'follows' || adding !== null
@@ -111,7 +111,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
                 {([['matchday', tt('sportMatchday'), <PIcons.Calendar key="c" />], ['feed', tt('sportFeed'), <PIcons.Rows key="r" />]] as const).map(([key, label, icon]) => {
                   const on = view === key
                   return (
-                    <div key={key} data-testid={`sport-phone-view-${key}`} {...station(() => setSportSettings({ view: key }))} aria-pressed={on ? 'true' : 'false'} aria-label={label} title={label}
+                    <div key={key} data-testid={`sport-phone-view-${key}`} {...station(() => setSportSettings({ phoneView: key }))} aria-pressed={on ? 'true' : 'false'} aria-label={label} title={label}
                       style={{ width: 40, height: 34, borderRadius: 9, display: 'grid', placeItems: 'center', cursor: 'pointer', background: on ? P.text : 'transparent', color: on ? P.ink : P.muted80 }}>
                       {icon}
                     </div>

@@ -88,6 +88,8 @@ export type SportOrder = Partial<Record<SportKind, ProviderId[]>>
 
 export interface SportSettings {
   view: SportViewMode // fas 1
+  /** Telefonens eget val; saknas = Matchdag. Skild från `view` så ett skrivbords-/TV-val av Flöde inte följer med till telefonen. */
+  phoneView?: SportViewMode | null
   alert: KickoffAlert // fas 1
   /** Nycklarna, en per källa. Sanningen; `apiKey`/`provider`/`keyPlan` härleds ur den. */
   keys: ProviderKeys
@@ -165,6 +167,7 @@ function sanitizeSettings(raw: unknown): SportSettings {
   const provider = primaryProvider(keys)
   return {
     view: r.view === 'feed' || r.view === 'matchday' ? r.view : DEFAULT_SETTINGS.view,
+    phoneView: r.phoneView === 'feed' || r.phoneView === 'matchday' ? r.phoneView : null,
     alert: r.alert === 'off' || r.alert === '15' || r.alert === 'kickoff' ? r.alert : DEFAULT_SETTINGS.alert,
     keys,
     order: sanitizeOrder(r.order),

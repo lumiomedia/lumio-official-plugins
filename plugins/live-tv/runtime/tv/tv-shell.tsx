@@ -675,7 +675,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         <MobileSheet
           title={tt('moreActions')}
           items={[
-            { key: 'sport', label: tt('sheetSport'), run: () => go('sport') },
+            { key: 'favs', label: tt('sheetFavourites'), run: () => go('favs') },
             { key: 'multi', label: tt('sheetMultiview'), run: () => go('multi') },
             { key: 'settings', label: tt('sheetSettings'), run: () => go('settings') },
           ]}

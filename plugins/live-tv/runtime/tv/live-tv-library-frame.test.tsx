@@ -35,6 +35,19 @@ describe('LiveTvLibraryFrame', () => {
     expect(queryByTestId('tv-rail')).toBeNull()
     expect(props.onInset).toHaveBeenCalledWith(0)
   })
+  it('telefon: X överst till vänster ovanför hemmet (z 51) lämnar Live TV', () => {
+    const props = { ...base, platform: 'phone' as const, onExit: vi.fn() }
+    const { getByTestId } = render(<LiveTvLibraryFrame {...props} />)
+    const wrap = getByTestId('frame-exit')
+    expect(wrap.style.position).toBe('fixed')
+    expect(wrap.style.zIndex).toBe('51')
+    fireEvent.click(getByTestId('header-close'))
+    expect(props.onExit).toHaveBeenCalled()
+  })
+  it('skrivbord: ingen X', () => {
+    const { queryByTestId } = render(<LiveTvLibraryFrame {...base} platform="desktop" />)
+    expect(queryByTestId('header-close')).toBeNull()
+  })
   it('telefon: flikradens höjd rapporteras till värden, och 0 när ramen tas bort', () => {
     const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ height: 83, width: 390 } as DOMRect)
     try {

@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { localDayKey } from '../sport-epg'
-import { getFollows, getSportSettings } from '../sport-store'
+import { writePluginJson } from '@/lib/plugin-sdk'
+import { LIVE_TV_PLUGIN_ID } from '../../live-tv-data'
+import { SPORT_SETTINGS_KEY, getFollows, getSportSettings } from '../sport-store'
 import { getReminders } from '../../reminders'
 import { HOUR, MIN, fxMatch, fxSource, mountSport } from '../__sport-fixture'
 import { mountPhone } from '../../tv/mobile/__phone-mount'
@@ -43,9 +45,20 @@ describe('Sport på telefon: rubriken och sektionsarket', () => {
     const tabs = await screen.findByTestId('sport-phone-tabs')
     expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Tables & results', 'My teams'])
     fireEvent.click(screen.getByTestId('sport-phone-view-feed'))
-    expect(getSportSettings().view).toBe('feed')
+    expect(getSportSettings().phoneView).toBe('feed')
     fireEvent.click(within(tabs).getByText('My teams'))
     expect(screen.queryByTestId('sport-phone-view')).toBeNull()
+  })
+})
+
+describe('Översikt – startvy på telefon', () => {
+  it('Matchdag när telefonen inte valt, även om skrivbordets delade val är Flöde; eget val bevaras', async () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { view: 'feed' })
+    mountSport({}, { phone: true, days: { [today]: [later] } })
+    expect((await screen.findByTestId('sport-phone-view-matchday')).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByTestId('sport-phone-view-feed'))
+    expect(getSportSettings()).toMatchObject({ phoneView: 'feed' })
+    expect(screen.getByTestId('sport-phone-view-feed').getAttribute('aria-pressed')).toBe('true')
   })
 })
 
@@ -134,10 +147,10 @@ describe('Mina lag', () => {
     expect(await screen.findByTestId('sport-key-card-tab')).toBeTruthy()
     expect(screen.getByTestId('sport-day-label')).toHaveTextContent('Today')
   })
-  it('Mer-arket har Sport', async () => {
+  it('Sport är en flik i flikraden och Favoriter ligger i Mer-arket', async () => {
     const { onNavigate } = mountPhone({ view: 'hub' })
     fireEvent.click(screen.getByTestId('tab-more'))
-    fireEvent.click(within(await screen.findByRole('dialog')).getByText('Sport'))
-    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'sport' } })
+    fireEvent.click(within(await screen.findByRole('dialog')).getByText('Favourites'))
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'favs' } })
   })
 })
