@@ -23,7 +23,8 @@ export function SportFeed({ ctx, matches, days }: { ctx: SportCtx; matches: Spor
   const dayMatches = days[0]?.matches ?? []
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: dp(32) }}>
-      <section data-testid="feed-teams" style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
+      {/* Egen ruta, som övriga sektioner med kortbakgrund (Jerry 2026-10-11). */}
+      <section data-testid="feed-teams" style={{ ...sportCardStyle, display: 'flex', flexDirection: 'column', gap: dp(14), padding: `${dp(20)}px ${dp(24)}px` }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
           <span style={{ ...sectionTitle, display: 'inline-flex', alignItems: 'center', gap: dp(12) }}><span style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(26)} filled /></span>{ctx.tt('sportYourTeams')}</span>
           <span style={{ fontSize: dp(16), color: TV.dim }}>{ctx.tt('sportYourTeamsHint')}</span>
