@@ -81,6 +81,34 @@ describe('raden', () => {
     })
   })
 
+  it('TV-startsidan: kortet är ett kort utan bild (data-tv-card), tät yta, och bär herons spegling', async () => {
+    stubHost({ [today]: [live] })
+    render(<SportHomeRow kind="live-now" onNavigate={() => {}} />)
+    const card = await screen.findByRole('button', { name: /GAIS - Sirius/ })
+    expect(card).toHaveAttribute('data-tv-card')
+    expect(card.style.background).toMatch(/0\.94\)$/)
+    const mirror = JSON.parse(card.getAttribute('data-tv-mirror') ?? '{}') as Record<string, string>
+    expect(mirror.title).toBe('GAIS – Sirius')
+    expect(mirror.kicker).toBe('LIVE')
+    expect(mirror.metaLine).toBe('Allsvenskan · Football')
+    expect(mirror.backdropUrl).toBe('/sport-backgrounds/football.webp')
+  })
+
+  it('texten stannar i kortet: eventnamn högst två rader, övriga rader en rad med ellips', async () => {
+    const event = fxMatch({ id: 'gp', home: null, away: null, event: 'Indonesian Grand Prix: MotoGP Race and a much longer name', kind: 'motorsport', start: now - 10 * MIN, stop: now + HOUR })
+    stubHost({ [today]: [event, live] })
+    render(<SportHomeRow kind="live-now" onNavigate={() => {}} />)
+    const card = await screen.findByRole('button', { name: /Indonesian/ })
+    expect(card.style.overflow).toBe('hidden')
+    const title = within(card).getByTestId('sport-row-title')
+    expect(title.style.maxHeight).toBe('2.6em') // två rader (line-clamp ritas inte av testmiljön)
+    expect(title.style.overflow).toBe('hidden')
+    expect(within(card).getByTestId('sport-row-channel').style.textOverflow).toBe('ellipsis')
+    const team = within(screen.getByRole('button', { name: /GAIS - Sirius/ })).getAllByTestId('sport-row-team')[0]!
+    expect(team.style.textOverflow).toBe('ellipsis')
+    expect(team.style.minWidth).toBe('0')
+  })
+
   it('svenska rubriker', async () => {
     __setLangForTests('sv')
     stubHost({ [today]: [live] })
@@ -131,6 +159,7 @@ describe('raden', () => {
     expect(within(card).getAllByTestId('sport-row-score').map((n) => n.textContent)).toEqual(['2', '1'])
     view.rerender(<SportHomeRow kind="results" onNavigate={() => {}} option="hide" />)
     expect(within(screen.getByRole('button', { name: /GAIS - Sirius/ })).queryByTestId('sport-row-score')).toBeNull()
+    expect(screen.getByRole('button', { name: /GAIS - Sirius/ }).getAttribute('data-tv-mirror')).not.toMatch(/2–1/)
     expect(new Set(calls.fetchModes)).toEqual(new Set(['cache-only']))
   })
 

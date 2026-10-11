@@ -682,6 +682,7 @@ const EN = {
   sportRowOptionScores: 'Scores',
   sportRowShowScores: 'Show',
   sportRowHideScores: 'Hide scores',
+  sportRowFollowNote: 'You follow {name}',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -1315,6 +1316,7 @@ const SV: Record<keyof typeof EN, string> = {
   sportRowOptionScores: 'Ställning',
   sportRowShowScores: 'Visa',
   sportRowHideScores: 'Dölj ställning',
+  sportRowFollowNote: 'Du följer {name}',
 }
 
 export type TvStringKey = keyof typeof EN

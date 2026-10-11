@@ -2,16 +2,16 @@
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import type { HomeRowProps } from '@/lib/plugin-sdk'
-import { formatClock } from '../../live-tv-ui'
 import { useTvText } from '../../tv/tv-strings'
 import { Crest } from '../crest'
 import { KIND_KEYS } from '../sport-ctx'
-import { localDayKey, shiftDay } from '../sport-epg'
 import { leagueColor, rankedSources, statusAt } from '../sport-day-model'
 import { matchStatusLabel, showsScore } from '../score-model'
 import { SPORT_KINDS, matchTitle, type SportFilter, type SportKind, type SportMatch } from '../sport-model'
 import { hasAnyKey, useFollows, useOverrides, useSportSettings, type SportOverrides } from '../sport-store'
 import { useSportRows } from './rows-feed'
+import { sportHeroMirror, whenText } from './rows-mirror'
+import { useBackdropUploads } from '../backdrop'
 import {
   leagueName,
   leagueRow,
@@ -73,6 +73,7 @@ export function SportHomeRow({ kind, onNavigate, layout = 'slider', count = 20, 
   const overrides = useOverrides()
   const settings = useSportSettings()
   const now = useNow(30_000)
+  const uploads = useBackdropUploads()
   // Zappa: nytt frö per montering (Hem öppnas), samma frö vid omritning.
   const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31))
   const sport = sportOf(option)
@@ -124,6 +125,7 @@ export function SportHomeRow({ kind, onNavigate, layout = 'slider', count = 20, 
             overrides={overrides}
             hideScore={hideScores}
             width={cardWidth}
+            mirror={JSON.stringify(sportHeroMirror(m, { now, locale, tt, overrides, follows, settings, uploads, hideScore: hideScores }))}
             onOpen={() => onNavigate(sportRowTarget(m, overrides))}
           />
         ))}
@@ -134,19 +136,19 @@ export function SportHomeRow({ kind, onNavigate, layout = 'slider', count = 20, 
 
 type TT = ReturnType<typeof useTvText>['tt']
 
-const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+/** Text som aldrig lämnar kortet: blocknivå, får krympa, klipps med ellips. */
+const line: CSSProperties = { display: 'block', minWidth: 0, maxWidth: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+/** Titeln: högst två rader, sedan ellips. */
+const twoLines: CSSProperties = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minWidth: 0, maxWidth: '100%', overflow: 'hidden', whiteSpace: 'normal', overflowWrap: 'anywhere' }
 
-/** "19:00" idag, "Imorgon 19:00", annars "lör 19:00". */
-function whenText(m: SportMatch, now: number, locale: string, tt: TT): string {
-  const time = formatClock(m.start, locale)
-  const day = localDayKey(m.start)
-  const today = localDayKey(now)
-  if (day === today) return time
-  if (day === shiftDay(today, 1)) return tt('sportTomorrowAt', { time })
-  return `${new Date(m.start).toLocaleDateString(locale, { weekday: 'short' })} ${time}`
-}
+/**
+ * Kortets yta. Tät (Jerry 2026-10-11, "med mindre opacitet"): på TV:ns
+ * startsida ligger raden över herons bild, och sportsidans glasyta (7 %) gick
+ * inte att läsa där. Samma täta mörka ton som appens kort på alla ytor.
+ */
+const CARD_BG = 'rgba(17, 20, 32, 0.94)'
 
-export function SportRowCard({ match: m, now, locale, tt, overrides, hideScore, width, onOpen }: {
+export function SportRowCard({ match: m, now, locale, tt, overrides, hideScore, width, mirror, onOpen }: {
   match: SportMatch
   now: number
   locale: string
@@ -154,6 +156,8 @@ export function SportRowCard({ match: m, now, locale, tt, overrides, hideScore, 
   overrides: SportOverrides
   hideScore: boolean
   width: string
+  /** TV-herons spegling (värdens `data-tv-mirror`), färdig JSON. */
+  mirror?: string
   onOpen: () => void
 }) {
   const st = statusAt(m, now)
@@ -167,6 +171,10 @@ export function SportRowCard({ match: m, now, locale, tt, overrides, hideScore, 
     <button
       type="button"
       data-f=""
+      // Ett KORT för TV-startsidans scen även utan bild (märken kan vara initialer):
+      // utan markeringen räknades raden som krom och ritades över heron.
+      data-tv-card=""
+      data-tv-mirror={mirror}
       data-sport-row-card=""
       data-match-id={m.id}
       data-status={st}
@@ -175,38 +183,41 @@ export function SportRowCard({ match: m, now, locale, tt, overrides, hideScore, 
       aria-label={`${matchTitle(m)} · ${m.league}`}
       style={{
         width, flex: 'none', boxSizing: 'border-box', textAlign: 'left', cursor: 'pointer', color: TEXT,
-        borderRadius: 14, padding: '0.75rem 0.875rem', background: 'rgba(252,252,255,0.07)',
-        border: '1px solid rgba(255,255,255,0.10)', display: 'flex', flexDirection: 'column', gap: '0.55rem',
+        borderRadius: 14, padding: '0.75rem 0.875rem', background: CARD_BG, overflow: 'hidden', minWidth: 0,
+        border: '1px solid rgba(255,255,255,0.12)', display: 'block',
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0, fontSize: 'var(--st-label, 0.6875rem)', color: MUTED }}>
-        <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 2, background: leagueColor(m.leagueKey || m.kind), flexShrink: 0 }} />
-        <span style={{ ...ellipsis, flex: 1, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{m.league || tt(KIND_KEYS[m.kind])}</span>
-        {st === 'live' ? (
-          <span data-testid="sport-row-live" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
-            <span style={{ padding: '1px 6px', borderRadius: 6, background: LIVE, color: '#fff', fontWeight: 700, letterSpacing: '0.06em' }}>{tt('live')}</span>
-            {label && label !== tt('sportLiveShort') ? <span data-testid="sport-row-minute" style={{ color: TEXT, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{label}</span> : null}
+      <span style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', minWidth: 0, width: '100%' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0, fontSize: 'var(--st-label, 0.6875rem)', color: MUTED }}>
+          <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 2, background: leagueColor(m.leagueKey || m.kind), flexShrink: 0 }} />
+          <span style={{ ...line, flex: '1 1 0%', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{m.league || tt(KIND_KEYS[m.kind])}</span>
+          {st === 'live' ? (
+            <span data-testid="sport-row-live" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+              <span style={{ padding: '1px 6px', borderRadius: 6, background: LIVE, color: '#fff', fontWeight: 700, letterSpacing: '0.06em' }}>{tt('live')}</span>
+              {label && label !== tt('sportLiveShort') ? <span data-testid="sport-row-minute" style={{ color: TEXT, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{label}</span> : null}
+            </span>
+          ) : (
+            <span data-testid="sport-row-when" style={{ ...line, flex: '0 1 auto', color: TEXT, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+              {st === 'finished' ? (label ?? tt('sportEnded')) : (label ?? whenText(m, now, locale, tt))}
+            </span>
+          )}
+        </span>
+        {teams ? (
+          <span style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: 0 }}>
+            {([['home', m.home!, m.homeKey, m.homeCrest], ['away', m.away!, m.awayKey, m.awayCrest]] as const).map(([side, name, key, crest]) => (
+              <span key={side} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                <Crest name={name} colorKey={key ?? name} size={24} src={crest} />
+                <span data-testid="sport-row-team" style={{ ...line, flex: '1 1 0%', fontSize: 'var(--st-body, 0.875rem)', fontWeight: 600 }}>{name}</span>
+                {score ? <span data-testid="sport-row-score" style={{ flexShrink: 0, fontSize: 'var(--st-h3, 1rem)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{side === 'home' ? score.home : score.away}</span> : null}
+              </span>
+            ))}
           </span>
         ) : (
-          <span data-testid="sport-row-when" style={{ flexShrink: 0, color: TEXT, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-            {st === 'finished' ? (label ?? tt('sportEnded')) : (label ?? whenText(m, now, locale, tt))}
-          </span>
+          // maxHeight = två rader även där line-clamp saknas (gamla webbvyer).
+          <span data-testid="sport-row-title" style={{ ...twoLines, fontSize: 'var(--st-body, 0.875rem)', fontWeight: 600, lineHeight: 1.3, maxHeight: '2.6em' }}>{matchTitle(m)}</span>
         )}
+        <span data-testid="sport-row-channel" style={{ ...line, fontSize: 'var(--st-small, 0.75rem)', color: DIM }}>{channel}</span>
       </span>
-      {teams ? (
-        <span style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-          {([['home', m.home!, m.homeKey, m.homeCrest], ['away', m.away!, m.awayKey, m.awayCrest]] as const).map(([side, name, key, crest]) => (
-            <span key={side} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-              <Crest name={name} colorKey={key ?? name} size={24} src={crest} />
-              <span style={{ ...ellipsis, flex: 1, fontSize: 'var(--st-body, 0.875rem)', fontWeight: 600 }}>{name}</span>
-              {score ? <span data-testid="sport-row-score" style={{ fontSize: 'var(--st-h3, 1rem)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{side === 'home' ? score.home : score.away}</span> : null}
-            </span>
-          ))}
-        </span>
-      ) : (
-        <span style={{ ...ellipsis, fontSize: 'var(--st-body, 0.875rem)', fontWeight: 600 }}>{matchTitle(m)}</span>
-      )}
-      <span data-testid="sport-row-channel" style={{ ...ellipsis, fontSize: 'var(--st-small, 0.75rem)', color: DIM }}>{channel}</span>
     </button>
   )
 }
