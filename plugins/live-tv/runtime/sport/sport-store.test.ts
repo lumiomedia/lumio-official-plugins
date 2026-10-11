@@ -82,8 +82,8 @@ describe('fas 2-fälten', () => {
 const OWN = { football: 'standard', hockey: 'standard', basketball: 'standard', motorsport: 'standard', tennis: 'standard' } as const
 
 describe('Bakgrund i Sport', () => {
-  it('standard: varje sport med egen bild har Standard (sin bild), Övrigt och Alla sporter ärver/blandar; korten tonas ur bilden 85 %', () => {
-    expect(getSportSettings()).toMatchObject({ backdrops: { all: 'standard', sports: OWN }, cards: { opacity: 85, tone: 'image' } })
+  it('standard: varje sport med egen bild har Standard (sin bild), Övrigt och Alla sporter ärver/blandar; korten tonas ur bilden 50 %', () => {
+    expect(getSportSettings()).toMatchObject({ backdrops: { all: 'standard', sports: OWN }, cards: { opacity: 50, tone: 'image' } })
     expect(getSportSettings().backdrops.sports.other).toBeUndefined()
     expect(setSportSettings({ backdrops: { all: 'bogus' as never, sports: { football: 'nope' as never, cricket: 'off' } as never } })).toMatchObject({ backdrops: { all: 'standard', sports: OWN } })
   })

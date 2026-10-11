@@ -152,7 +152,7 @@ export const SPORT_GRADIENTS: Record<SportKind, string> = {
 /**
  * Läsbarheten: hela bilden mörkas ~50 % (#00000080), mer till vänster där
  * rubrik och hero står och upptill där flikarna ligger. Korten har dessutom
- * egen grund (svart 85 % som standard), så texten och tidslinjens block
+ * egen grund (50 % som standard), så texten och tidslinjens block
  * läses över vilken bild som helst.
  */
 export const BACKDROP_SCRIM = 'linear-gradient(180deg, #00000073 0%, #00000026 30%, #00000000 55%), linear-gradient(90deg, #000000a6 0%, #00000059 40%, #00000000 75%), linear-gradient(#00000080, #00000080)'

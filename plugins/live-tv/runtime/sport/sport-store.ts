@@ -71,8 +71,8 @@ function sanitizeCards(raw: unknown): SportCards {
   return { opacity: n, tone }
 }
 
-/** Läsbart över en bild: 85 % i en ton ur bilden (Jerry 2026-10-11). */
-export const DEFAULT_CARDS: SportCards = { opacity: 85, tone: 'image' }
+/** Standard 50 % i en ton ur bilden (Jerry 2026-10-11: "sätt standard opacitet till 50%"). */
+export const DEFAULT_CARDS: SportCards = { opacity: 50, tone: 'image' }
 
 export interface SportSettings {
   view: SportViewMode // fas 1

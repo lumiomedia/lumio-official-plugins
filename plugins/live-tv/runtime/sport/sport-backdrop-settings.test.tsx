@@ -131,6 +131,9 @@ describe('Bakgrund i Sport, TV-raderna', () => {
   it('kortens opacitet och färg stegas', () => {
     render(<SportBackdropSettingsTv />)
     fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
+    expect(getSportSettings().cards.opacity).toBe(70)
+    fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
+    fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
     expect(getSportSettings().cards.opacity).toBe(100)
     fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
     expect(getSportSettings().cards.opacity).toBe(0)
