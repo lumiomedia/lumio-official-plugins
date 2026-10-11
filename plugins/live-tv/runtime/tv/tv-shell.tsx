@@ -13,7 +13,7 @@ import { useSwipeBack } from '../hooks/useSwipeBack'
 import { useTvText } from './tv-strings'
 import { isDesktopTauri } from './guide-surface'
 import { TV, TvFocusStyle, dp, station, Icons } from './tv-ui'
-import { TvRail, railKeyForView } from './tv-rail'
+import { TvRail, shellRailActive } from './tv-rail'
 import { TvHoldAffordance } from './tv-hold-affordance'
 import { useTvSettings, type TvSettings } from './tv-settings-store'
 import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv-multiview-store'
@@ -646,7 +646,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       <TvFocusStyle />
       {phone ? null : (
         <TvRail
-          active={railKeyForView(view)}
+          active={shellRailActive(view, redirectCheck)}
           isTv={isTv}
           narrow={narrow}
           labels={railLabels}

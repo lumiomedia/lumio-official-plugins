@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, fireEvent } from '@testing-library/react'
-import { TvRail, railKeyForView } from './tv-rail'
+import { TvRail, railKeyForView, shellRailActive } from './tv-rail'
 
 describe('TvRail', () => {
   afterEach(cleanup)
@@ -28,6 +28,12 @@ describe('TvRail', () => {
     fireEvent.click(getByTestId('rail-back'))
     expect(onSelect).toHaveBeenCalledWith('back')
   })
+  it('shellRailActive: Hem lyser medan omdirigeringen till VOD-hemmet kollas', () => {
+    expect(shellRailActive('hub', true)).toBe('home')
+    expect(shellRailActive('hub', false)).toBe('hub')
+    expect(shellRailActive('channel', false)).toBe('guide')
+  })
+
   it('railKeyForView: kanalvyn lyser upp Guide, övriga som förut', () => {
     expect(railKeyForView('channel')).toBe('guide')
     expect(railKeyForView('hub')).toBe('hub')

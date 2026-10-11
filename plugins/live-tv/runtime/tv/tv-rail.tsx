@@ -61,6 +61,16 @@ export function railKeyForView(view: TvView): RailKey | null {
   return null
 }
 
+/**
+ * Rälsens aktiva post i skalet. Medan sidan kollar om VOD-hemmet finns
+ * (omdirigeringen, tv-shell.tsx) lyser Hem — det är dit användaren är på väg.
+ * Annars tändes Kanaler i en bildruta eller tre och slocknade när ramen runt
+ * VOD-hemmet tog över, så markeringen hoppade två steg i rälsen (2026-10-11).
+ */
+export function shellRailActive(view: TvView, redirecting: boolean): RailKey | null {
+  return redirecting ? 'home' : railKeyForView(view)
+}
+
 export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: TvRailProps) {
   const { tt } = useTvText()
   const railWidth = isTv ? (railLabels ? RAIL_W_TV : RAIL_W_TV_COMPACT) : narrow ? RAIL_W_NARROW : railLabels ? RAIL_W_DESKTOP : RAIL_W_DESKTOP_COMPACT
