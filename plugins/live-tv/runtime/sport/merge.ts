@@ -92,7 +92,7 @@ function fixtureOnly(f: Fixture, overrides: SportOverrides): SportMatch {
  * kanal…") vinner alltid.
  */
 export function mergeLinked(a: MergeArgs): SportMatch[] {
-  const out = a.epg.map((m) => ({ ...m, coverage: a.coverage(m.kind) }))
+  const out: SportMatch[] = a.epg.map((m) => ({ ...m, coverage: a.coverage(m.kind) }))
   const index = new Map(out.map((m, i) => [m.id, i]))
   const used = new Set<string>()
   for (const f of a.fixtures) {
