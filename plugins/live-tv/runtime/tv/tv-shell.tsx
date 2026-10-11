@@ -342,14 +342,26 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   const modelRef = useRef(model)
   useEffect(() => { modelRef.current = model })
 
+  /**
+   * Väntande vybyte till multivyn (se `leavePlayerForMultiview`). Ligger före
+   * `play` så att en ny uppspelning kan avbryta det.
+   */
+  const pendingMultiRef = useRef<number[]>([])
+  const cancelPendingMulti = useCallback(() => {
+    for (const id of pendingMultiRef.current) window.cancelAnimationFrame(id)
+    pendingMultiRef.current = []
+  }, [])
+  useEffect(() => cancelPendingMulti, [cancelPendingMulti])
+
   const play = useCallback((request: PlayRequest) => {
+    cancelPendingMulti()
     const locked = modelRef.current.locked.has(channelKey(request.channel))
     if (locked && !isUnlockedThisSession() && pinSupportAvailable() && activeProfileHasPin()) {
       setPending({ kind: 'play', request })
       return
     }
     void releaseAllSurfaces().finally(() => setActive(request))
-  }, [])
+  }, [cancelPendingMulti])
 
   const openChannel = useCallback((channel: M3uChannel, programmeStart?: number) => {
     go('channel', { ...encodeChannelParams(channel), ...(programmeStart ? { programme: String(programmeStart) } : {}) })
@@ -553,11 +565,30 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   // Matcher-lådans "Öppna i Multiview": rutorna fylls med de valda kanalerna
   // och spelaren stängs. Telefonen får bara källväljaren (spelararket), men
   // samma fördröjda hämtning — aldrig något anrop under uppspelningsstarten.
+  //
+  // MULTIVYN INIFRÅN SPELAREN: först stängs spelaren, sedan — två bildrutor
+  // senare — byts vyn. I samma rendering monterades multivyns nativa ytor
+  // medan spelaren revs (mpv-playing släpps, hela #root går från dold till
+  // synlig, mpv_close på väg) och rutorna mättes mitt i den omläggningen:
+  // ljud men ingen bild i alla rutor, medan exakt samma vy monterad utan en
+  // spelare som rivs samtidigt (lämna multivyn, gå in igen) visade bilden
+  // (Jerry 2026-10-11). Väntan gör vägen identisk med den som fungerar.
+  const leavePlayerForMultiview = useCallback(() => {
+    cancelPendingMulti()
+    setActive(null)
+    const first = window.requestAnimationFrame(() => {
+      const second = window.requestAnimationFrame(() => {
+        pendingMultiRef.current = []
+        go('multi')
+      })
+      pendingMultiRef.current = [second]
+    })
+    pendingMultiRef.current = [first]
+  }, [go, cancelPendingMulti])
   const openSportMultiview = useCallback((keys: string[]) => {
     setMultiviewState(multiviewFor(keys))
-    setActive(null)
-    go('multi')
-  }, [go])
+    leavePlayerForMultiview()
+  }, [leavePlayerForMultiview])
   const playerSport = usePlayerSport({ playingKey: active !== null ? channelKey(active.channel) : null, model, play, openMultiview: openSportMultiview })
 
   const View = TV_VIEWS[view]
@@ -577,7 +608,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
         // tillbaka helt (Enter/Back) så att PIN-grinden äger dem.
         gateOpen: pending !== null,
         onOpenChannelDetails: () => { setActive(null); openChannel(activeChannel) },
-        onOpenMultiview: () => { setActive(null); go('multi') },
+        onOpenMultiview: leavePlayerForMultiview,
         onOpenGuide: () => { setActive(null); go('guide') },
         onAddToMultiview: addToMultiview,
         // Kanalbyte inifrån spelaren (ChannelUp/Down, mini-guiden) går genom

@@ -413,6 +413,21 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
     }
     void start()
 
+    // MÄTTRAPPA EFTER START. ResizeObserver ser bara storleksändringar i
+    // layoutpixlar; en ruta som FLYTTAS på skärmen utan att ändra storlek
+    // (scenens transform, en rubrikrad som kommer tillbaka när spelaren just
+    // stängts, värdens lager som lägger om sig) lämnade ytan och hålet i
+    // skalets bakgrund där rutan stod vid första mätningen. Samma trappa som
+    // spelaren själv kör (live-tv-player.tsx `syncRepeatedly`). Ändliga steg:
+    // registret och ytan ignorerar oförändrade rektanglar, men en evig
+    // mätslinga per ruta vore ändå en kostnad utan nytta.
+    const settleTimers: number[] = []
+    let settleFrame = 0
+    if (!anchored) {
+      settleFrame = window.requestAnimationFrame(sync)
+      for (const delay of [60, 160, 320, 700, 1200]) settleTimers.push(window.setTimeout(sync, delay))
+    }
+
     const observer = !anchored && typeof ResizeObserver !== 'undefined' && rectRef.current ? new ResizeObserver(sync) : null
     if (observer && rectRef.current) observer.observe(rectRef.current)
     if (!anchored) {
@@ -441,6 +456,8 @@ export function useVideoSurface(rectRef: RefObject<HTMLElement | null>, source: 
       cancelled = true
       dropCutout()
       window.clearTimeout(readyTimer)
+      window.cancelAnimationFrame(settleFrame)
+      settleTimers.forEach((timer) => window.clearTimeout(timer))
       observer?.disconnect()
       if (!anchored) {
         window.removeEventListener('resize', sync)
