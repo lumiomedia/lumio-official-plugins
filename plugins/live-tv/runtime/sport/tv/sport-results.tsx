@@ -1,15 +1,18 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { TV, dp, station, Chip } from '../../tv/tv-ui'
 import { useTvText, type TvStringKey } from '../../tv/tv-strings'
 import { Crest } from './sport-parts'
 import { MatchScore, matchStatusLabel } from './sport-score'
 import { KeyCard } from '../key-card'
-import { useSportSettings } from '../sport-store'
+import { useFollows, useSportSettings } from '../sport-store'
 import type { ResultsController } from '../results-controller'
 import type { StandingRow } from '../provider'
-import type { SportMatch } from '../sport-model'
+import type { SportFilter, SportMatch } from '../sport-model'
+import type { TvNav } from '../../tv/tv-shell'
+import { leagueEntries, yourLeagues } from '../league-jump'
+import { LeagueDrawer, YourLeaguesRow } from './sport-league-drawer'
 import { FORM_COLOR, formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
 export { formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
 
@@ -34,24 +37,39 @@ function StandingsTable({ rows, tt }: { rows: StandingRow[]; tt: TT }) {
   )
 }
 
-export function SportResults({ matches, controller, onOpenMatch, tv }: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; tv: boolean }) {
+const NO_LAYER = { pushLayer: () => () => {} } as unknown as TvNav
+
+export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'all', nav = NO_LAYER }: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; tv: boolean; sport?: SportFilter; nav?: TvNav }) {
   const { tt } = useTvText()
   const settings = useSportSettings()
   const [filter, setFilter] = useState<ResultsFilter>('all')
   const [tables, setTables] = useState<Record<string, StandingRow[] | 'loading'>>({})
+  const [drawer, setDrawer] = useState(false)
+  const follows = useFollows()
   const groupRefs = useRef(new Map<string, HTMLElement>())
+  const forSport = useMemo(() => (sport === 'all' ? matches : matches.filter((m) => m.kind === sport)), [matches, sport])
+  const { groups, liveCount, mineCount } = useMemo(() => groupResults(forSport, filter), [forSport, filter])
+  const entries = useMemo(() => leagueEntries(groups, follows), [groups, follows])
+  const mine = useMemo(() => yourLeagues(entries), [entries])
 
   if (!settings.apiKey || !controller) {
     return <KeyCard variant="tab" />
   }
 
-  const { groups, liveCount, mineCount } = groupResults(matches, filter)
   const toggleTable = async (g: ResultGroup) => {
     if (tables[g.key]) { setTables((t) => { const { [g.key]: _drop, ...rest } = t; return rest }); return }
     setTables((t) => ({ ...t, [g.key]: 'loading' }))
     const rows = controller.standings(g.sport, g.leagueId, g.season) ?? (await controller.loadStandings(g.sport, g.leagueId, g.season))
     setTables((t) => ({ ...t, [g.key]: rows ?? [] }))
   }
+
+  // Efter panelens egen stängning (fokus tillbaka till öppnaren, timeout 0) — annars stjäl öppnaren fokus från gruppen.
+  const jump = (key: string) => window.setTimeout(() => {
+    const el = groupRefs.current.get(key)
+    el?.scrollIntoView?.({ block: 'start' })
+    ;(el?.querySelector('[data-f]') as HTMLElement | null)?.focus({ preventScroll: true })
+  }, 0)
+  const labels = new Map(entries.map((e) => [e.key, e.label]))
 
   return (
     <div data-testid="sport-results" style={{ display: 'flex', flexDirection: 'column', gap: dp(20) }}>
@@ -60,19 +78,12 @@ export function SportResults({ matches, controller, onOpenMatch, tv }: { matches
         <Chip active={filter === 'live'} {...station(() => setFilter('live'))}>{`${tt('sportResultsLive')} (${liveCount})`}</Chip>
         <Chip active={filter === 'mine'} {...station(() => setFilter('mine'))}>{tt('sportResultsMine', { n: mineCount })}</Chip>
       </div>
-      {groups.length > 0 ? (
-        <div style={{ display: 'flex', gap: dp(10), alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: dp(13), letterSpacing: '0.12em', color: TV.dim }}>{tt('sportJumpTo')}</span>
-          {groups.map((g) => (
-            <Chip key={g.key} active={false} {...station(() => { const el = groupRefs.current.get(g.key); el?.scrollIntoView?.({ block: 'start' }); (el?.querySelector('[data-f]') as HTMLElement | null)?.focus() })}>{g.league}</Chip>
-          ))}
-        </div>
-      ) : null}
+      {groups.length > 0 ? <YourLeaguesRow entries={mine.entries} fallback={mine.fallback} onJump={jump} onMore={() => setDrawer(true)} tv={tv} /> : null}
       {groups.length === 0 ? <div style={{ color: TV.dim, fontSize: dp(16) }}>{tt('sportResultsEmpty')}</div> : null}
       {groups.map((g) => (
-        <section key={g.key} ref={(el) => { if (el) groupRefs.current.set(g.key, el); else groupRefs.current.delete(g.key) }} style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
+        <section key={g.key} data-testid={`results-group-${g.key}`} ref={(el) => { if (el) groupRefs.current.set(g.key, el); else groupRefs.current.delete(g.key) }} style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: dp(20), fontWeight: 600 }}>{g.round != null ? `${g.league} · ${tt('sportRound', { n: g.round })}` : g.league}</div>
+            <div style={{ fontSize: dp(20), fontWeight: 600 }}>{g.round != null ? `${labels.get(g.key) ?? g.league} · ${tt('sportRound', { n: g.round })}` : labels.get(g.key) ?? g.league}</div>
             <div {...station(() => void toggleTable(g))} style={{ fontSize: dp(15), color: TV.muted, cursor: 'pointer', padding: `${dp(6)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.s08 }}>{tt('sportTable')}</div>
           </div>
           {g.matches.map((m) => (
@@ -86,6 +97,7 @@ export function SportResults({ matches, controller, onOpenMatch, tv }: { matches
           {tables[g.key] && tables[g.key] !== 'loading' ? <StandingsTable rows={tables[g.key] as StandingRow[]} tt={tt} /> : null}
         </section>
       ))}
+      {drawer ? <LeagueDrawer nav={nav} entries={entries} showSport={sport === 'all'} onPick={jump} onClose={() => setDrawer(false)} /> : null}
     </div>
   )
 }
