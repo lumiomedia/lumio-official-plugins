@@ -8,7 +8,9 @@ import { formatClock } from '../../live-tv-ui'
 import type { TvViewProps } from '../tv-shell'
 import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
-import { useGuideGroups } from '../tv-guide-shared'
+import { MORE_GROUPS, useGuideGroups } from '../tv-guide-shared'
+import { groupCounts } from '../group-chips'
+import { useGroupPicker } from '../tv-group-picker'
 import { useGridRows } from '../grid-rows'
 import { PHONE_CHANNEL_COL_PX, PHONE_PX_PER_MIN, PHONE_ROW_H_PX, epgRowBoxes, nowLinePx, type EpgRowEntry } from '../epg-grid-geometry'
 import { MT, clamp2, ellipsis } from './mobile-tokens'
@@ -41,8 +43,10 @@ const NOW_LEAD_PX = 40
  */
 export function TvGuideGridPhone({ model, nav, mode, onModeChange }: TvViewProps & { mode: PhoneGuideMode; onModeChange: (mode: PhoneGuideMode) => void }) {
   const { tt, locale } = useTvText()
-  const groups = useGuideGroups(model, tt)
   const [group, setGroup] = useState<string | null>(null)
+  const groups = useGuideGroups(model, tt, group)
+  const counts = useMemo(() => groupCounts(model.channels), [model.channels])
+  const groupPicker = useGroupPicker({ nav, phone: true, groups: model.groups, counts, value: group, onPick: setGroup })
   const [visibleRows, setVisibleRows] = useState(MAX_ROWS)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const { nowMs } = model
@@ -88,7 +92,7 @@ export function TvGuideGridPhone({ model, nav, mode, onModeChange }: TvViewProps
       <MobileHeader title={tt('guideTitle')} />
       <div style={{ padding: `0 ${MT.PAD}px`, display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
         <PhoneGuideModeBar mode={mode} onChange={onModeChange} />
-        <MobileChips items={groups} value={group} onChange={setGroup} testId="guide-groups" />
+        <MobileChips items={groups} value={group} onChange={(k) => (k === MORE_GROUPS ? groupPicker.open() : setGroup(k))} testId="guide-groups" />
         {/* Datumraden med Nu-knappen. Pillen är 30 px som i handoffen, men
             träffytan är stationen runt den — 44 px hög. */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -175,6 +179,7 @@ export function TvGuideGridPhone({ model, nav, mode, onModeChange }: TvViewProps
           </div>
         </div>
       )}
+      {groupPicker.node}
     </div>
   )
 }

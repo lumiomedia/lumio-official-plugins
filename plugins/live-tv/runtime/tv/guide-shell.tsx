@@ -9,7 +9,9 @@ import { getTvSettings, setGuideMode, setTvSettings, useGuideMode, useTvSettings
 import { desktopGuideMode, type DesktopGuideMode } from './guide-surface'
 import { guideWindowStart } from './epg-grid-geometry'
 import { startOfLocalDay } from '../live-tv-model'
-import { FAVS_GROUP, useGuideGroups } from './tv-guide-shared'
+import { FAVS_GROUP, MORE_GROUPS, useGuideGroups } from './tv-guide-shared'
+import { groupCounts } from './group-chips'
+import { TvGroupPanel } from './tv-group-picker'
 import { TvChoicePanel, type ChoiceOption } from './tv-list-picker'
 import { GuideControlRow } from './guide-control-row'
 import { GuideGridView } from './guide-grid-view'
@@ -73,12 +75,16 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
 
   // Kategori lagras (`guideCategory`); en lagrad grupp som inte längre finns
   // i modellen faller tillbaka till Alla i stället för att ge en tom vy.
-  const groups = useGuideGroups(model, tt)
+  //
+  // Mot ALLA grupper, inte de kapade chippen: en grupp vald ur "Alla grupper"
+  // ligger ofta bortom taket och hade annars nollats direkt.
   const category = useMemo(() => {
     const stored = settings.guideCategory
     if (stored === null) return null
-    return groups.some((g) => g.key === stored) ? stored : null
-  }, [settings.guideCategory, groups])
+    if (stored === FAVS_GROUP) return model.favouriteChannels.length > 0 ? stored : null
+    return model.groups.includes(stored) ? stored : null
+  }, [settings.guideCategory, model.groups, model.favouriteChannels.length])
+  const groups = useGuideGroups(model, tt, category)
 
   // `params.group` (hubbens kategorikort och djuplänkar) skriver kategorin
   // EN gång vid inträde — `'all'` = Alla — precis som den gamla guiden läste
@@ -99,7 +105,11 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
   // den klickade tiden så fort man stod på Imorgon.
   const [windowStart, setWindowStart] = useState(() => guideWindowStart(model.nowMs))
   const [selection, setSelection] = useState<GuideSelection | null>(null)
-  const [panel, setPanel] = useState<'source' | 'category' | null>(null)
+  const [panel, setPanel] = useState<'source' | 'category' | 'groups' | null>(null)
+  // Kategoriknappen, fångad när väljaren öppnas: "Alla grupper" öppnar
+  // grupplistan UR väljaren, och då är väljarens rad redan borta när
+  // grupplistan monteras — fokus ska tillbaka hit, inte till body.
+  const categoryOpenerRef = useRef<HTMLElement | null>(null)
 
   // Markeringen följer raden: byter man källa, kategori eller dag är raden
   // borta ur vyn, så markeringen nollas. Lägesbyte behåller den (spec §1).
@@ -117,16 +127,15 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
     { key: null, label: tt('sourceAll'), count: model.allChannels.length },
     ...model.playlists.map((p) => ({ key: p.id, label: p.name, count: p.count })),
   ], [model.allChannels.length, model.playlists, tt])
-  // Kategoriväljaren: `useGuideGroups`-listan med antal per grupp.
-  const categoryOptions: ChoiceOption[] = useMemo(() => {
-    const perGroup = new Map<string, number>()
-    for (const c of model.channels) perGroup.set(c.group, (perGroup.get(c.group) ?? 0) + 1)
-    return groups.map((g) => ({
-      key: g.key,
-      label: g.key === null ? tt('categoryAll') : g.label,
-      count: g.key === null ? model.channels.length : g.key === FAVS_GROUP ? model.favouriteChannels.length : perGroup.get(g.key) ?? 0,
-    }))
-  }, [groups, model.channels, model.favouriteChannels.length, tt])
+  // Kategoriväljaren: `useGuideGroups`-listan med antal per grupp. Sista
+  // posten är "Alla grupper (N)" när grupperna inte ryms — den öppnar den
+  // sökbara grupplistan i stället för att sätta en kategori.
+  const perGroup = useMemo(() => groupCounts(model.channels), [model.channels])
+  const categoryOptions: ChoiceOption[] = useMemo(() => groups.map((g) => ({
+    key: g.key,
+    label: g.key === null ? tt('categoryAll') : g.label,
+    count: g.key === null ? model.channels.length : g.key === FAVS_GROUP ? model.favouriteChannels.length : g.key === MORE_GROUPS ? undefined : perGroup.get(g.key) ?? 0,
+  })), [groups, perGroup, model.channels.length, model.favouriteChannels.length, tt])
   const categoryLabel = category === null ? tt('categoryAll') : groups.find((g) => g.key === category)?.label ?? tt('categoryAll')
   const categoryCount = categoryOptions.find((o) => o.key === category)?.count ?? model.channels.length
 
@@ -149,7 +158,7 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
         onOpenSource={() => setPanel('source')}
         categoryLabel={categoryLabel}
         categoryCount={categoryCount}
-        onOpenCategory={() => setPanel('category')}
+        onOpenCategory={() => { categoryOpenerRef.current = document.activeElement as HTMLElement | null; setPanel('category') }}
         dayOffset={dayOffset}
         onDay={changeDay}
         onNow={jumpToNow}
@@ -164,7 +173,30 @@ export function TvGuideShell({ model, nav, params }: TvViewProps) {
         <TvChoicePanel nav={nav} title={tt('pickSource')} options={sourceOptions} value={model.activePlaylistId} onPick={(key) => { model.setActivePlaylist(key); setSelection(null) }} onClose={() => setPanel(null)} />
       ) : null}
       {panel === 'category' ? (
-        <TvChoicePanel nav={nav} title={tt('pickCategory')} options={categoryOptions} value={category} onPick={(key) => { setTvSettings({ guideCategory: key }); setSelection(null) }} onClose={() => setPanel(null)} />
+        <TvChoicePanel
+          nav={nav}
+          title={tt('pickCategory')}
+          options={categoryOptions}
+          value={category}
+          onPick={(key) => {
+            if (key === MORE_GROUPS) { setPanel('groups'); return }
+            setTvSettings({ guideCategory: key }); setSelection(null)
+          }}
+          // Väljarens stängning körs EFTER onPick: har "Alla grupper" just
+          // bytt till grupplistan får den stå kvar.
+          onClose={() => setPanel((current) => (current === 'category' ? null : current))}
+        />
+      ) : null}
+      {panel === 'groups' ? (
+        <TvGroupPanel
+          nav={nav}
+          groups={model.groups}
+          counts={perGroup}
+          value={category}
+          opener={categoryOpenerRef.current}
+          onPick={(group) => { setTvSettings({ guideCategory: group }); setSelection(null) }}
+          onClose={() => setPanel(null)}
+        />
       ) : null}
     </div>
   )

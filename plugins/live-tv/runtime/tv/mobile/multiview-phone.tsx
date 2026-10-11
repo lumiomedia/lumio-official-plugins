@@ -8,7 +8,8 @@ import { useTvText } from '../tv-strings'
 import { assignTile, removeTile, setMultiviewState, useMultiviewState, type MultiviewState } from '../tv-multiview-store'
 import { narrowVisibleIndices } from '../multiview-slots'
 import { useVideoSurface, videoSurfaceCapabilities } from '../video-surface'
-import { filterByGroup, useGuideGroups } from '../tv-guide-shared'
+import { MORE_GROUPS, filterByGroup, useGuideGroups } from '../tv-guide-shared'
+import { useGroupPicker } from '../tv-group-picker'
 import { MT, ellipsis } from './mobile-tokens'
 import { MIcons } from './mobile-icons'
 import { MobileHeader } from './mobile-header'
@@ -34,9 +35,11 @@ const MAX_PICKER_ROWS = 200
 export function TvMultiviewPhone({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
   const state = useMultiviewState()
-  const groups = useGuideGroups(model, tt)
   const [pickerTile, setPickerTile] = useState<number | null>(null)
   const [group, setGroup] = useState<string | null>(null)
+  const groups = useGuideGroups(model, tt, group)
+  // Grupparket ovanpå kanalarket när grupperna inte ryms i chipraden.
+  const groupPicker = useGroupPicker({ nav, phone: true, groups: model.groups, value: group, onPick: setGroup })
   const caps = videoSurfaceCapabilities()
   const update = (next: MultiviewState) => setMultiviewState(next)
 
@@ -141,7 +144,7 @@ export function TvMultiviewPhone({ model, nav }: TvViewProps) {
           title={tt('selectChannel')}
           body={
             <>
-              <MobileChips items={groups} value={group} onChange={setGroup} testId="mv-picker-groups" />
+              <MobileChips items={groups} value={group} onChange={(k) => (k === MORE_GROUPS ? groupPicker.open() : setGroup(k))} testId="mv-picker-groups" />
               <div>
                 {pickerRows.map((channel) => {
                   const key = channelKey(channel)
@@ -172,6 +175,7 @@ export function TvMultiviewPhone({ model, nav }: TvViewProps) {
           pushLayer={nav.pushLayer}
         />
       ) : null}
+      {pickerTile !== null ? groupPicker.node : null}
     </div>
   )
 }

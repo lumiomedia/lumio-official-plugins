@@ -6,7 +6,9 @@ import type { TvViewProps } from '../tv-shell'
 import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
 import type { GuideMode } from '../tv-settings-store'
-import { FAVS_GROUP, filterByGroup, useGuideGroups } from '../tv-guide-shared'
+import { FAVS_GROUP, MORE_GROUPS, filterByGroup, useGuideGroups } from '../tv-guide-shared'
+import { groupCounts } from '../group-chips'
+import { useGroupPicker } from '../tv-group-picker'
 import { MT } from './mobile-tokens'
 import { MobileHeader } from './mobile-header'
 import { MobileSegment } from './mobile-segment'
@@ -53,7 +55,6 @@ const ROW_STEP = 40
  */
 export function TvGuideNowPhone({ model, nav, params, mode, onModeChange }: TvViewProps & { mode: PhoneGuideMode; onModeChange: (mode: PhoneGuideMode) => void }) {
   const { tt, locale } = useTvText()
-  const groups = useGuideGroups(model, tt)
   // params.group valideras mot de faktiska grupperna precis som på TV:n —
   // en okänd kategori faller tillbaka till "Alla", inte till en tom vy.
   const [group, setGroup] = useState<string | null>(() => {
@@ -62,6 +63,9 @@ export function TvGuideNowPhone({ model, nav, params, mode, onModeChange }: TvVi
     if (raw === FAVS_GROUP) return FAVS_GROUP
     return model.groups.includes(raw) ? raw : null
   })
+  const groups = useGuideGroups(model, tt, group)
+  const counts = useMemo(() => groupCounts(model.channels), [model.channels])
+  const groupPicker = useGroupPicker({ nav, phone: true, groups: model.groups, counts, value: group, onPick: setGroup })
   const rows = useMemo(() => filterByGroup(model, group), [model, group])
   const [visible, setVisible] = useState(ROW_STEP)
   useEffect(() => { setVisible(ROW_STEP) }, [group])
@@ -74,7 +78,7 @@ export function TvGuideNowPhone({ model, nav, params, mode, onModeChange }: TvVi
           16 höger) — kolumnens 16 px-luft dras tillbaka runt det. */}
       <div style={{ margin: `0 -${MT.PAD}px` }}><MobileHeader title={tt('guideTitle')} /></div>
       <PhoneGuideModeBar mode={mode} onChange={onModeChange} />
-      <MobileChips items={groups} value={group} onChange={setGroup} testId="guide-groups" />
+      <MobileChips items={groups} value={group} onChange={(k) => (k === MORE_GROUPS ? groupPicker.open() : setGroup(k))} testId="guide-groups" />
 
       {rows.length === 0 ? (
         // Kanalerna kommer ur appens index: tomt betyder "hämtar" tills
@@ -109,6 +113,7 @@ export function TvGuideNowPhone({ model, nav, params, mode, onModeChange }: TvVi
           ) : null}
         </div>
       )}
+      {groupPicker.node}
     </div>
   )
 }

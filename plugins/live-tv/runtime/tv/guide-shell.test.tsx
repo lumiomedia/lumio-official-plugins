@@ -162,6 +162,30 @@ describe('TvGuideShell (TV-läge)', () => {
     expect(screen.getByTestId('guide-category')).toHaveTextContent('Sport')
   })
 
+  it('fler än tolv grupper: "All groups (N)" sist i väljaren öppnar grupplistan, valet skrivs till guideCategory', async () => {
+    const many: LiveTvList = { id: 'l9', name: 'Big', channels: Array.from({ length: 20 }, (_, i) => ch(`K${i + 1}`, `G${String(i + 1).padStart(3, '0')}`)), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [many])
+    seedLiveTvIndex()
+    await mount()
+    fireEvent.click(screen.getByTestId('guide-category'))
+    expect(screen.queryByTestId('choice-row-G013')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('choice-row-All groups (20)'))
+    expect(screen.queryByTestId('choice-panel')).not.toBeInTheDocument()
+    fireEvent.click(within(screen.getByTestId('group-picker')).getByTestId('group-row-G017'))
+    expect(getTvSettings().guideCategory).toBe('G017')
+    expect(screen.queryByTestId('group-picker')).not.toBeInTheDocument()
+    expect(screen.getByTestId('guide-category')).toHaveTextContent('G017')
+  })
+
+  it('en lagrad kategori bortom chiptaket står kvar (nollas inte till Alla)', async () => {
+    const many: LiveTvList = { id: 'l9', name: 'Big', channels: Array.from({ length: 20 }, (_, i) => ch(`K${i + 1}`, `G${String(i + 1).padStart(3, '0')}`)), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [many])
+    seedLiveTvIndex()
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'live_tv_tv_settings_v1', { guideCategory: 'G019' })
+    await mount()
+    expect(screen.getByTestId('guide-category')).toHaveTextContent('G019')
+  })
+
   it('Bakåt stänger en öppen panel utan att lämna guiden', async () => {
     const onNavigate = await mount()
     fireEvent.click(screen.getByTestId('guide-source'))

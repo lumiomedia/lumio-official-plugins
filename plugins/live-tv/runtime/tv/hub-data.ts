@@ -9,7 +9,6 @@ import { pickSpotlight } from './tv-spotlight'
 
 /** "Alla kanaler" visas i steg om 36 — Visa fler lägger på ett steg till. */
 export const ALL_STEP = 36
-const MAX_CHIPS = 12
 /** Repriser: hur långt bakåt tablån hämtas (urvalet av kanaler görs i view-helpers). */
 const REPLAY_DAYS = 3
 
@@ -41,12 +40,11 @@ export function useHubData(model: LiveTvModel, spotlightCount: number) {
   }, [model.nowMs])
   const { schedules: replaySchedules } = useSchedules(replayChannels, replayWindow.from, replayWindow.to)
   const replays = useMemo(() => catchUpAcross(replayChannels, replaySchedules, model.nowMs, 8), [replayChannels, replaySchedules, model.nowMs])
-  const chips = useMemo(() => model.groups.slice(0, MAX_CHIPS), [model.groups])
   const filtered = useMemo(() => {
     if (group === '__favs') return favourites
     if (group) return model.channels.filter((c) => c.group === group)
     return model.channels
   }, [group, favourites, model.channels])
   const shown = filtered.slice(0, visible)
-  return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus }
+  return { favourites, recent, spotlight, replays, filtered, shown, group, setGroup, visible, setVisible, epgStatus }
 }

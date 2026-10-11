@@ -1,90 +1,22 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { channelKey, type M3uChannel, type XtreamCategory } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav } from './tv-shell'
-import { ChannelArt, Chip, TV, belowTitleBar, dp, station } from './tv-ui'
+import { ChannelArt, Chip, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { filterByGroup, useGuideGroups } from './tv-guide-shared'
+import { MORE_GROUPS, filterByGroup, useGuideGroups } from './tv-guide-shared'
+import { groupCounts } from './group-chips'
+import { TvGroupPanel } from './tv-group-picker'
 import { gp } from './guide-view-shared'
 
-/**
- * FLERVALSVÄLJAREN — `tv-channel-picker.tsx` med bock i stället för "välj och
- * stäng". Samma panelmönster: högerpanel, `data-panel-root` (motorns pilar
- * stannar i den), kategorichips i `data-row`, rader i `data-scroll`, öppnaren
- * fångad EN gång och `nav.pushLayer(close)` som enda Back-väg.
- *
- * Skillnaden mot enkelvalet är avsiktlig: man bockar i tio kanaler i rad, så
- * panelen får INTE stänga sig på varje OK.
- */
-export function PickerPanel({
-  nav,
-  title,
-  chips,
-  rows,
-  onClose,
-  testId = 'list-picker',
-}: {
-  nav: TvNav
-  title: string
-  chips: ReactNode
-  /**
-   * Rader, eller en funktion som får panelens `close` — DEN stängning som
-   * lagret registrerade (ropar `onClose` OCH lämnar tillbaka fokus till
-   * öppnaren). Ett val i envalspanelen ska gå den vägen: ropar man `onClose`
-   * själv rivs panelen med fokus kvar på en borttagen rad → body, och
-   * fjärren står stilla tills man klickar med mus.
-   */
-  rows: ReactNode | ((close: () => void) => ReactNode)
-  onClose: () => void
-  testId?: string
-}) {
-  const rootRef = useRef<HTMLDivElement | null>(null)
-  const openerRef = useRef<HTMLElement | null>(null)
-  const closeRef = useRef<(() => void) | null>(null)
-  // Senaste `nav`/`onClose` i refar. Effekten nedan får BARA köra en gång per
-  // öppning: `nav` bytte identitet vid varje omrender av skalet (minuttick,
-  // lagringsändring), och då kördes effekten om — den läste om "vem öppnade
-  // mig" från det fokus som råkade gälla just då (ett kort inne i väljaren)
-  // och flyttade tillbaka fokus till [data-init]. Resultatet var att markören
-  // hoppade hem varje minut och att Back landade i väljaren i stället för hos
-  // den station som öppnade den.
-  const navRef = useRef(nav)
-  const onCloseRef = useRef(onClose)
-  useEffect(() => { navRef.current = nav; onCloseRef.current = onClose })
+// `PickerPanel` och `Check` bor i `picker-panel.tsx` (grupplistan i
+// `tv-group-picker.tsx` använder dem också, och importeras härifrån — utan
+// egen modul hade det blivit en importcykel).
+import { Check, PickerPanel } from './picker-panel'
 
-  useEffect(() => {
-    openerRef.current = document.activeElement as HTMLElement | null
-    const close = () => { onCloseRef.current(); window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0) }
-    closeRef.current = close
-    const off = navRef.current.pushLayer(close)
-    window.setTimeout(() => rootRef.current?.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true }), 0)
-    return off
-  }, [])
-
-  return (
-    <div
-      ref={rootRef}
-      data-testid={testId}
-      data-panel-root=""
-      data-live-tv-layer=""
-      style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}
-    >
-      <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
-      {chips}
-      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{typeof rows === 'function' ? rows(() => closeRef.current?.()) : rows}</div>
-    </div>
-  )
-}
-
-/** Bocken. Enda återkopplingen i flervalsläget — raden ligger kvar. */
-export function Check({ on, label }: { on: boolean; label: string }) {
-  if (!on) return <span style={{ width: dp(28), flexShrink: 0 }} />
-  return (
-    <span data-testid={`picker-check-${label}`} style={{ width: dp(28), flexShrink: 0, color: TV.acc, fontSize: dp(22), textAlign: 'center' }}>✓</span>
-  )
-}
+export { Check, PickerPanel }
 
 export function TvListPicker({ model, nav, title, selected, onToggle, onClose }: {
   model: LiveTvModel
@@ -96,10 +28,13 @@ export function TvListPicker({ model, nav, title, selected, onToggle, onClose }:
   onClose: () => void
 }) {
   const { tt } = useTvText()
-  const groups = useGuideGroups(model, tt)
   const [group, setGroup] = useState<string | null>(null)
+  const groups = useGuideGroups(model, tt, group)
+  const [groupsOpen, setGroupsOpen] = useState(false)
+  const counts = useMemo(() => (groupsOpen ? groupCounts(model.channels) : undefined), [groupsOpen, model.channels])
   const rows = useMemo(() => filterByGroup(model, group).slice(0, 200), [model, group])
   return (
+    <>
     <PickerPanel
       nav={nav}
       title={title}
@@ -109,7 +44,7 @@ export function TvListPicker({ model, nav, title, selected, onToggle, onClose }:
           {/* Tom kategori = inga rader att sätta `data-init` på. Då tar första
               chipet det, annars öppnades panelen utan någon station att
               landa på och fjärrkontrollen strandade på body. */}
-          {groups.map((chip, index) => <Chip key={chip.id} active={group === chip.key} {...station(() => setGroup(chip.key), undefined, rows.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}
+          {groups.map((chip, index) => <Chip key={chip.id} active={group === chip.key} {...station(() => (chip.key === MORE_GROUPS ? setGroupsOpen(true) : setGroup(chip.key)), undefined, rows.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}
         </div>
       )}
       rows={rows.map((channel, index) => {
@@ -131,6 +66,9 @@ export function TvListPicker({ model, nav, title, selected, onToggle, onClose }:
         )
       })}
     />
+    {/* Grupplistan ovanpå väljaren (samma panelmönster, senare i DOM:en = överst). */}
+    {groupsOpen ? <TvGroupPanel nav={nav} groups={model.groups} counts={counts} value={group} onPick={setGroup} onClose={() => setGroupsOpen(false)} /> : null}
+    </>
   )
 }
 

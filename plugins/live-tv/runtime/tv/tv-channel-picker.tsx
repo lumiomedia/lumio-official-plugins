@@ -6,12 +6,16 @@ import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav } from './tv-shell'
 import { ChannelArt, Chip, TV, belowTitleBar, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { filterByGroup, useGuideGroups } from './tv-guide-shared'
+import { MORE_GROUPS, filterByGroup, useGuideGroups } from './tv-guide-shared'
+import { groupCounts } from './group-chips'
+import { TvGroupPanel } from './tv-group-picker'
 
 export function TvChannelPicker({ model, nav, title, onPick, onClose }: { model: LiveTvModel; nav: TvNav; title: string; onPick: (channel: M3uChannel) => void; onClose: () => void }) {
   const { tt } = useTvText()
-  const groups = useGuideGroups(model, tt)
   const [group, setGroup] = useState<string | null>(null)
+  const groups = useGuideGroups(model, tt, group)
+  const [groupsOpen, setGroupsOpen] = useState(false)
+  const counts = useMemo(() => (groupsOpen ? groupCounts(model.channels) : undefined), [groupsOpen, model.channels])
   const rows = useMemo(() => filterByGroup(model, group).slice(0, 200), [model, group])
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)
@@ -38,7 +42,7 @@ export function TvChannelPicker({ model, nav, title, onPick, onClose }: { model:
     <div ref={rootRef} data-testid="channel-picker" data-panel-root="" data-live-tv-layer="" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}>
       <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
       <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto' }}>
-        {groups.map((chip) => <Chip key={chip.id} active={group === chip.key} {...station(() => setGroup(chip.key))} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}
+        {groups.map((chip) => <Chip key={chip.id} active={group === chip.key} {...station(() => (chip.key === MORE_GROUPS ? setGroupsOpen(true) : setGroup(chip.key)))} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}
       </div>
       <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {rows.map((channel, index) => {
@@ -55,6 +59,8 @@ export function TvChannelPicker({ model, nav, title, onPick, onClose }: { model:
           )
         })}
       </div>
+      {/* Grupplistan ovanpå väljaren (samma panelmönster, senare i DOM:en = överst). */}
+      {groupsOpen ? <TvGroupPanel nav={nav} groups={model.groups} counts={counts} value={group} onPick={setGroup} onClose={() => setGroupsOpen(false)} /> : null}
     </div>
   )
 }

@@ -67,3 +67,31 @@ describe('TvChannelPicker som lager', () => {
     opener.remove()
   })
 })
+
+describe('TvChannelPicker: "Alla grupper"', () => {
+  it('öppnar grupplistan ovanpå väljaren; valet filtrerar och visas som chip', async () => {
+    const groups = Array.from({ length: 15 }, (_, i) => `G${String(i + 1).padStart(2, '0')}`)
+    const big = {
+      ...model,
+      channels: groups.map((g, i) => ({ name: `K${i}`, logo: null, group: g, url: `http://x/K${i}`, tvgId: null })),
+      groups,
+    } as unknown as LiveTvModel
+    const layers: Array<() => void> = []
+    const pushLayer = vi.fn((close: () => void) => { layers.push(close); return () => { layers.splice(layers.indexOf(close), 1) } })
+    render(<TvChannelPicker model={big} nav={makeNav(pushLayer)} title="Välj" onPick={() => {}} onClose={() => {}} />)
+    await settle()
+    const more = screen.getByText('All groups (15)')
+    act(() => { more.click() })
+    await settle()
+    expect(screen.getByTestId('group-picker')).toBeInTheDocument()
+    // Två lager: väljaren och grupplistan överst.
+    expect(layers).toHaveLength(2)
+    act(() => { screen.getByTestId('group-row-G14').click() })
+    await settle()
+    expect(screen.queryByTestId('group-picker')).toBeNull()
+    expect(screen.getByTestId('channel-picker')).toBeInTheDocument()
+    expect(screen.getAllByTestId(/^picker-row-/)).toHaveLength(1)
+    const chips = Array.from(document.querySelectorAll('[data-live-tv-chip]')).map((c) => c.textContent)
+    expect(chips.slice(0, 2)).toEqual(['All', 'G14'])
+  })
+})

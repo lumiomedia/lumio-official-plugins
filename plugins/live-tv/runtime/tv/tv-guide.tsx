@@ -9,7 +9,9 @@ import { Chip, Progress, Segment, Tag, TV, dp, station, useTvClockNode } from '.
 import { useTvText } from './tv-strings'
 import { setGuideMode, useGuideMode, type GuideMode } from './tv-settings-store'
 import { blockGeometry, nowLinePct, scheduleWindow, timeTicks } from './tv-schedule-window'
-import { ChannelCell, FAVS_GROUP, channelColumnStyle, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
+import { ChannelCell, FAVS_GROUP, MORE_GROUPS, channelColumnStyle, filterByGroup, useDebouncedChannel, useGuideGroups } from './tv-guide-shared'
+import { groupCounts } from './group-chips'
+import { useGroupPicker } from './tv-group-picker'
 import { TvPreview } from './tv-preview'
 import { TvGuidePlaylists } from './tv-guide-playlists'
 import { TvGuideGrid } from './tv-guide-grid'
@@ -138,7 +140,6 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
   const { tt, locale } = useTvText()
   const clock = useTvClockNode(locale)
   const channelColStyle = channelColumnStyle()
-  const groups = useGuideGroups(model, tt)
   // params.group kan vara en föråldrad eller manipulerad query-parameter
   // (t.ex. ett borttaget spellistnamn) — validera mot de faktiska grupperna
   // så att en okänd kategori faller tillbaka till "Alla" i stället för att
@@ -149,6 +150,9 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
     if (raw === FAVS_GROUP) return FAVS_GROUP
     return model.groups.includes(raw) ? raw : null
   })
+  const groups = useGuideGroups(model, tt, group)
+  const counts = useMemo(() => groupCounts(model.channels), [model.channels])
+  const groupPicker = useGroupPicker({ nav, phone: false, groups: model.groups, counts, value: group, onPick: (g) => { setGroup(g); setSelectedKey(null) } })
   const rows = useMemo(() => filterByGroup(model, group), [model, group])
   const [visible, setVisible] = useState(ROW_STEP)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
@@ -187,10 +191,12 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
   // i stället direkt här, och Enter/Space-hållet (glasmenyn) slås ihop in i
   // samma onKeyDown i stället för att skuggas.
   const stepCategory = (delta: 1 | -1) => {
-    if (groups.length === 0) return
-    const idx = groups.findIndex((g) => g.key === group)
-    const nextIdx = (((idx < 0 ? 0 : idx) + delta) + groups.length) % groups.length
-    const next = groups[nextIdx]
+    // "Alla grupper (N)" är ingen kategori att stega till — den öppnar listan.
+    const steps = groups.filter((g) => g.key !== MORE_GROUPS)
+    if (steps.length === 0) return
+    const idx = steps.findIndex((g) => g.key === group)
+    const nextIdx = (((idx < 0 ? 0 : idx) + delta) + steps.length) % steps.length
+    const next = steps[nextIdx]
     if (!next) return
     setGroup(next.key)
     // Vald kanal följer med till den nya kategorins första rad.
@@ -252,7 +258,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
       <div style={{ padding: `0 ${dp(48)}px ${dp(18)}px`, display: 'flex', alignItems: 'center', gap: dp(16), flexShrink: 0 }}>
         <div data-row="" style={{ display: 'flex', gap: dp(10), overflowX: 'auto', flex: 1, minWidth: 0 }}>
           {groups.map((chip) => (
-            <Chip key={chip.id} active={group === chip.key} {...station(() => { setGroup(chip.key); setSelectedKey(null) }, undefined, { 'data-live-tv-chip': chip.id, 'data-testid': `chip-${chip.id}` })}>{chip.label}</Chip>
+            <Chip key={chip.id} active={group === chip.key} {...station(() => { if (chip.key === MORE_GROUPS) { groupPicker.open(); return } setGroup(chip.key); setSelectedKey(null) }, undefined, { 'data-live-tv-chip': chip.id, 'data-testid': `chip-${chip.id}` })}>{chip.label}</Chip>
           ))}
         </div>
         <Segment options={modeOptions} value={mode} onChange={onModeChange} />
@@ -367,6 +373,7 @@ function TvGuideStandard({ model, nav, params, settings, mode, onModeChange }: T
           <div {...station(() => setVisible((v) => v + ROW_STEP))} style={{ margin: `${dp(20)}px auto 0`, width: 'fit-content', height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
       </div>
+      {groupPicker.node}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { CatchUpItem } from '../catch-up'
 import { formatClock, progressOf } from '../live-tv-ui'
@@ -11,6 +11,9 @@ import { ChannelArt, Chip, Icons, Progress, Tag, TV, cardStyle, dp, station, use
 import { useTvText } from './tv-strings'
 import type { SpotlightReason } from './tv-spotlight'
 import { ALL_STEP, useHubData } from './hub-data'
+import { MORE_GROUPS, useGuideGroups } from './tv-guide-shared'
+import { groupCounts } from './group-chips'
+import { useGroupPicker } from './tv-group-picker'
 import { TvHubPhone } from './mobile/hub-phone'
 
 // Datahooken bor i `hub-data.ts` (ingen importcykel mot telefongrenen) men
@@ -36,15 +39,16 @@ function TvHubDesktop({ model, nav }: TvViewProps) {
   const [playlistOpen, setPlaylistOpen] = useState(false)
   const pillRef = useRef<HTMLDivElement | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
-  const { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus } = useHubData(model, spotlightCount)
+  const { favourites, recent, spotlight, replays, filtered, shown, group, setGroup, visible, setVisible, epgStatus } = useHubData(model, spotlightCount)
   const noProgrammeLabel = epgStatus === 'loading' ? tt('loadingGuide') : tt('noProgramme')
   // Kategorichippen i "Alla kanaler": samma lista oavsett TV-läge, bara
-  // raden runt dem och chippens yta skiljer sig (se sektionen nedan).
-  const chipItems: { key: string | null; label: string; id: string }[] = [
-    { key: null, label: tt('allGroups'), id: 'all' },
-    ...(favourites.length ? [{ key: '__favs', label: tt('favourites'), id: 'favs' }] : []),
-    ...chips.map((g) => ({ key: g, label: g, id: g })),
-  ]
+  // raden runt dem och chippens yta skiljer sig (se sektionen nedan). Fler
+  // grupper än taket → "Alla grupper (N)" sist, som öppnar grupplistan.
+  const chipItems = useGuideGroups(model, tt, group)
+  const counts = useMemo(() => groupCounts(model.channels), [model.channels])
+  const pickGroup = (key: string | null) => { setGroup(key); setVisible(ALL_STEP) }
+  const groupPicker = useGroupPicker({ nav, phone: false, groups: model.groups, counts, value: group, onPick: pickGroup })
+  const onChip = (key: string | null) => (key === MORE_GROUPS ? groupPicker.open() : pickGroup(key))
 
   // Spellistmenyn är ett lager: Back stänger, fokus tillbaka till pillen.
   //
@@ -224,7 +228,7 @@ function TvHubDesktop({ model, nav }: TvViewProps) {
             <span style={{ fontSize: dp(17), color: 'rgba(243,244,248,0.5)' }}>{tt('allChannelsSub', { playlist: model.activePlaylistName ?? tt('allPlaylists'), count: filtered.length })}</span>
             <div data-row="" data-testid="all-channels-filter-row" style={{ marginLeft: 'auto', display: 'flex', gap: dp(10), overflowX: 'auto', maxWidth: '55%' }}>
               {chipItems.map((chip) => (
-                <Chip key={chip.id} active={group === chip.key} {...station(() => { setGroup(chip.key); setVisible(ALL_STEP) }, undefined, { 'data-testid': `chip-${chip.id}` })} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
+                <Chip key={chip.id} active={group === chip.key} {...station(() => onChip(chip.key), undefined, { 'data-testid': `chip-${chip.id}` })} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
               ))}
             </div>
           </div>
@@ -239,7 +243,7 @@ function TvHubDesktop({ model, nav }: TvViewProps) {
             <span style={{ fontSize: dp(26), fontWeight: 600 }}>{tt('allChannelsCount', { count: filtered.length.toLocaleString(locale) })}</span>
             <div data-row="" data-testid="all-channels-filter-row" style={{ display: 'flex', gap: dp(10), overflowX: 'auto', width: '100%' }}>
               {chipItems.map((chip) => (
-                <Chip key={chip.id} active={group === chip.key} glass {...station(() => { setGroup(chip.key); setVisible(ALL_STEP) }, undefined, { 'data-testid': `chip-${chip.id}` })} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
+                <Chip key={chip.id} active={group === chip.key} glass {...station(() => onChip(chip.key), undefined, { 'data-testid': `chip-${chip.id}` })} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
               ))}
             </div>
           </>
@@ -269,6 +273,7 @@ function TvHubDesktop({ model, nav }: TvViewProps) {
           <div {...station(() => setVisible((v) => v + ALL_STEP))} style={{ alignSelf: 'center', height: dp(48), minHeight: dp(48), padding: `0 ${dp(24)}px`, borderRadius: 999, background: TV.s10, display: 'inline-flex', alignItems: 'center', fontSize: dp(18), cursor: 'pointer' }}>{tt('showMore')}</div>
         ) : null}
       </section>
+      {groupPicker.node}
     </div>
   )
 }

@@ -11,7 +11,9 @@ import type { TvViewProps } from './tv-shell'
 import { ChannelArt, Chip, Icons, Segment, TV, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import type { GuideMode } from './tv-settings-store'
-import { useGuideGroups } from './tv-guide-shared'
+import { MORE_GROUPS, useGuideGroups } from './tv-guide-shared'
+import { groupCounts } from './group-chips'
+import { useGroupPicker } from './tv-group-picker'
 import { useGridRows } from './grid-rows'
 import { phoneGuideMode } from './mobile/guide-phone'
 import { TvGuideGridPhone } from './mobile/guide-grid-phone'
@@ -96,8 +98,10 @@ export function TvGuideGrid(props: TvViewProps & { mode: GuideMode; onModeChange
 
 function TvGuideGridDesktop({ model, nav, mode, onModeChange }: TvViewProps & { mode: GuideMode; onModeChange: (mode: GuideMode) => void }) {
   const { tt, locale } = useTvText()
-  const groups = useGuideGroups(model, tt)
   const [group, setGroup] = useState<string | null>(null)
+  const groups = useGuideGroups(model, tt, group)
+  const counts = useMemo(() => groupCounts(model.channels), [model.channels])
+  const groupPicker = useGroupPicker({ nav, phone: false, groups: model.groups, counts, value: group, onPick: setGroup })
   const [dayOffset, setDayOffset] = useState<0 | 1>(0)
   const [visibleRows, setVisibleRows] = useState(MAX_ROWS)
   const [selected, setSelected] = useState<Selection | null>(null)
@@ -229,7 +233,7 @@ function TvGuideGridDesktop({ model, nav, mode, onModeChange }: TvViewProps & { 
             key={chip.id}
             active={group === chip.key}
             title={chip.label}
-            {...station(() => setGroup(chip.key), undefined, {
+            {...station(() => (chip.key === MORE_GROUPS ? groupPicker.open() : setGroup(chip.key)), undefined, {
               'data-testid': `grid-chip-${chip.id}`,
               ...(rows.length === 0 && index === 0 ? { 'data-init': '' } : {}),
             })}
@@ -369,6 +373,7 @@ function TvGuideGridDesktop({ model, nav, mode, onModeChange }: TvViewProps & { 
           </>
         ) : null}
       </div>
+      {groupPicker.node}
     </div>
   )
 }

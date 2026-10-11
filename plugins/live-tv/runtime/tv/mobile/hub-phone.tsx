@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { requestBrowseBack } from '@/lib/plugin-sdk'
 import type { TvGlassMenuAction } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../../live-tv-data'
@@ -11,6 +11,9 @@ import type { TvViewProps } from '../tv-shell'
 import { ChannelArt, Progress, station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
 import { ALL_STEP, useHubData } from '../hub-data'
+import { MORE_GROUPS, useGuideGroups } from '../tv-guide-shared'
+import { groupCounts } from '../group-chips'
+import { useGroupPicker } from '../tv-group-picker'
 import type { SpotlightReason } from '../tv-spotlight'
 import { MT, clamp2, ellipsis } from './mobile-tokens'
 import { MIcons } from './mobile-icons'
@@ -73,18 +76,18 @@ function SectionTitle({ title, sub }: { title: string; sub?: string }) {
 export function TvHubPhone({ model, nav }: TvViewProps) {
   const { tt, locale } = useTvText()
   const [playlistOpen, setPlaylistOpen] = useState(false)
-  const { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus } = useHubData(model, SPOTLIGHT_COUNT_PHONE)
+  const { favourites, recent, spotlight, replays, filtered, shown, group, setGroup, visible, setVisible, epgStatus } = useHubData(model, SPOTLIGHT_COUNT_PHONE)
   const noProgrammeLabel = epgStatus === 'loading' ? tt('loadingGuide') : tt('noProgramme')
   const reasonLabel = (reason: SpotlightReason) =>
     reason === 'favouriteLive' ? tt('spotlightFavouriteLive') : reason === 'favourite' ? tt('spotlightFavourite') : reason === 'recent' ? tt('spotlightRecent') : tt('spotlightOnNow')
   const minutesLeft = (stop: number) => tt('minutesLeft', { min: Math.max(0, Math.round((stop - model.nowMs) / 60_000)) })
   const cardStation = (channel: M3uChannel, extra?: Record<string, string>) => station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), extra)
 
-  const chipItems: { key: string | null; label: string; id: string }[] = [
-    { key: null, label: tt('allGroups'), id: 'all' },
-    ...(favourites.length ? [{ key: '__favs', label: tt('favourites'), id: 'favs' }] : []),
-    ...chips.map((g) => ({ key: g, label: g, id: g })),
-  ]
+  // Fler grupper än taket → "Alla grupper (N)" sist, som öppnar grupparket.
+  const chipItems = useGuideGroups(model, tt, group)
+  const counts = useMemo(() => groupCounts(model.channels), [model.channels])
+  const pickGroup = (key: string | null) => { setGroup(key); setVisible(ALL_STEP) }
+  const groupPicker = useGroupPicker({ nav, phone: true, groups: model.groups, counts, value: group, onPick: pickGroup })
 
   // Spellistvalet är ett bottenark (inte skrivbordets nedfällda meny):
   // arket registrerar sig i Bakåt-kedjan självt via `pushLayer`.
@@ -230,7 +233,7 @@ export function TvHubPhone({ model, nav }: TvViewProps) {
       {/* Alla kanaler: chips i sidoscroll, rutnät i två kolumner, Visa fler i steg. */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
         <SectionTitle title={tt('allChannelsCount', { count: filtered.length.toLocaleString(locale) })} />
-        <MobileChips items={chipItems} value={group} onChange={(k) => { setGroup(k); setVisible(ALL_STEP) }} testId="all-channels-filter-row" />
+        <MobileChips items={chipItems} value={group} onChange={(k) => (k === MORE_GROUPS ? groupPicker.open() : pickGroup(k))} testId="all-channels-filter-row" />
         <div data-testid="all-channels" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
           {shown.map((channel, index) => {
             const info = model.nowFor(channel)
@@ -257,6 +260,7 @@ export function TvHubPhone({ model, nav }: TvViewProps) {
         ) : null}
       </section>
       {sheet}
+      {groupPicker.node}
     </div>
   )
 }

@@ -13,9 +13,15 @@ import { ChannelCell, FAVS_GROUP, useDebouncedChannel } from './tv-guide-shared'
 import type { GuideMode } from './tv-settings-store'
 import { TvPreview } from './tv-preview'
 import { useListRows, useListTree, type ListSelection } from './list-tree'
+import { planGroupChips } from './group-chips'
+import { TvGroupPanel } from './tv-group-picker'
 import { TvGuideListsPhone } from './mobile/guide-lists-phone'
 
-/** Skrivbordets vänsterkolumn visar högst så här många grupper per lista. */
+/**
+ * Skrivbordets vänsterkolumn visar högst så här många grupper per lista; fler
+ * än så ger en sista rad "Alla grupper" som öppnar den sökbara grupplistan
+ * (samma beslut som chipraderna, `group-chips.ts`).
+ */
 const MAX_GROUPS = 12
 
 /**
@@ -44,7 +50,14 @@ function TvGuidePlaylistsDesktop({ model, nav, settings, mode, onModeChange }: T
 
   // Vänsterkolumnen ritas ur listornas metadata och kanalerna laddas bara
   // för den valda listan — se `list-tree.ts`.
-  const tree = useListTree(model, MAX_GROUPS)
+  // Okapat träd: taket läggs per lista nedan (`planGroupChips`), så att
+  // grupplistan och en vald grupp bortom taket har alla namn att gå på.
+  const tree = useListTree(model)
+  const [groupsFor, setGroupsFor] = useState<string | null>(null)
+  const groupsList = groupsFor ? tree.find((l) => l.id === groupsFor) ?? null : null
+  const groupsPanel = useMemo(() => (groupsList
+    ? { names: groupsList.groups.map((g) => g.name), counts: new Map(groupsList.groups.map((g) => [g.name, g.count])) }
+    : null), [groupsList])
   const { rows, channelsLoading } = useListRows(model, sel)
 
   const [visible, setVisible] = useState(ROW_STEP)
@@ -108,7 +121,17 @@ function TvGuidePlaylistsDesktop({ model, nav, settings, mode, onModeChange }: T
       <div data-testid="playlists-column" data-scroll="" style={{ width: dp(330), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(30)}px ${dp(16)}px 0 ${dp(20)}px`, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: dp(2) }}>
         {tree.map((list, listIndex) => [
           colItem(list.id, sel.listId === list.id && !sel.group, list.name, list.count, false, () => { setSel({ listId: list.id, group: null }); setSelectedKey(null) }, `pl-list-${list.id}`, noRows && listIndex === 0 ? { 'data-init': '' } : undefined),
-          ...list.groups.map((g) => colItem(`${list.id}:${g.name}`, sel.listId === list.id && sel.group === g.name, g.name, g.count, true, () => { setSel({ listId: list.id, group: g.name }); setSelectedKey(null) }, `pl-group-${list.id}-${g.name}`)),
+          ...(() => {
+            // En vald grupp bortom taket står först bland grupperna (vald),
+            // "Alla grupper" sist när de inte ryms.
+            const plan = planGroupChips(list.groups.map((g) => g.name), sel.listId === list.id ? sel.group : null, MAX_GROUPS)
+            const shownGroups = plan.extra !== null ? [plan.extra, ...plan.chips] : plan.chips
+            const countOf = new Map(list.groups.map((g) => [g.name, g.count]))
+            return [
+              ...shownGroups.map((name) => colItem(`${list.id}:${name}`, sel.listId === list.id && sel.group === name, name, countOf.get(name) ?? 0, true, () => { setSel({ listId: list.id, group: name }); setSelectedKey(null) }, `pl-group-${list.id}-${name}`)),
+              ...(plan.more ? [colItem(`${list.id}:__more`, false, tt('groupPickerTitle'), plan.total, true, () => setGroupsFor(list.id), `pl-more-groups-${list.id}`)] : []),
+            ]
+          })(),
         ])}
         {colItem('__favs', sel.listId === FAVS_GROUP, tt('favourites'), model.favouriteChannels.length, false, () => { setSel({ listId: FAVS_GROUP, group: null }); setSelectedKey(null) }, 'pl-list-favs', noRows && tree.length === 0 ? { 'data-init': '' } : undefined)}
       </div>
@@ -185,6 +208,16 @@ function TvGuidePlaylistsDesktop({ model, nav, settings, mode, onModeChange }: T
         {card(tt('colNext'), info.next, 'next')}
         {card(tt('colLater'), info.later, 'later')}
       </div>
+      {groupsFor !== null && groupsPanel ? (
+        <TvGroupPanel
+          nav={nav}
+          groups={groupsPanel.names}
+          counts={groupsPanel.counts}
+          value={sel.listId === groupsFor ? sel.group : null}
+          onPick={(group) => { setSel({ listId: groupsFor, group }); setSelectedKey(null) }}
+          onClose={() => setGroupsFor(null)}
+        />
+      ) : null}
     </div>
   )
 }

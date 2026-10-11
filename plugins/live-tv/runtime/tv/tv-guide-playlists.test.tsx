@@ -82,6 +82,23 @@ describe('TvGuidePlaylists (LAN/fjärr)', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]).toHaveTextContent('C')
   })
+  it('fler än tolv grupper i en lista: tolv rader + "All groups" som öppnar grupplistan; valet syns i kolumnen', async () => {
+    const many: LiveTvList = { id: 'l9', name: 'Big', channels: Array.from({ length: 20 }, (_, i) => ch(`K${i + 1}`, `G${String(i + 1).padStart(3, '0')}`)), createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [many])
+    seedLiveTvIndex({ cache })
+    await mount()
+    expect(screen.getByTestId('pl-group-l9-G012')).toBeInTheDocument()
+    expect(screen.queryByTestId('pl-group-l9-G013')).not.toBeInTheDocument()
+    const more = screen.getByTestId('pl-more-groups-l9')
+    expect(more).toHaveTextContent('All groups')
+    expect(more).toHaveTextContent('20')
+    fireEvent.click(more)
+    fireEvent.click(screen.getByTestId('group-row-G018'))
+    await flushLiveTvIndex()
+    expect(screen.queryByTestId('group-picker')).not.toBeInTheDocument()
+    expect(screen.getByTestId('pl-group-l9-G018')).toBeInTheDocument()
+    expect(screen.getAllByTestId('pl-row')).toHaveLength(1)
+  })
   it('listar spellistor med grupper och Favoriter sist', async () => {
     await mount()
     const left = screen.getByTestId('playlists-column')

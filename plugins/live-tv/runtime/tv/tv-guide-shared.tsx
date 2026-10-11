@@ -7,6 +7,7 @@ import { qualityFromName } from '../live-tv-model'
 import { ChannelArt, Icons, TV, dp } from './tv-ui'
 import type { TvStringKey } from './tv-strings'
 import { gp } from './guide-view-shared'
+import { buildGroupChips, type GroupChipItem } from './group-chips'
 
 export function useDebouncedChannel(channel: M3uChannel | null, ms = 300): M3uChannel | null {
   const [value, setValue] = useState(channel)
@@ -18,14 +19,21 @@ export function useDebouncedChannel(channel: M3uChannel | null, ms = 300): M3uCh
 }
 
 export const FAVS_GROUP = '__favs'
-const MAX_GROUPS = 12
+export { MORE_GROUPS } from './group-chips'
 
-export function useGuideGroups(model: LiveTvModel, tt: (key: TvStringKey) => string) {
-  return useMemo(() => [
-    { key: null as string | null, label: tt('allGroups'), id: 'all' },
-    ...(model.favouriteChannels.length ? [{ key: FAVS_GROUP, label: tt('favourites'), id: 'favs' }] : []),
-    ...model.groups.slice(0, MAX_GROUPS).map((g) => ({ key: g, label: g, id: g })),
-  ], [model.favouriteChannels.length, model.groups, tt])
+/**
+ * Chipraden: Alla, Favoriter, högst `MAX_GROUP_CHIPS` grupper och — när de
+ * inte ryms — "Alla grupper (N)" sist (`MORE_GROUPS`, öppnar grupplistan, se
+ * `tv-group-picker.tsx`). `selected` är vyns aktiva grupp: står den bortom
+ * taket ritas den som extra vald chip efter Alla/Favoriter (`group-chips.ts`).
+ */
+export function useGuideGroups(model: LiveTvModel, tt: (key: TvStringKey, vars?: Record<string, string | number>) => string, selected: string | null = null): GroupChipItem[] {
+  return useMemo(() => buildGroupChips({
+    groups: model.groups,
+    selected,
+    hasFavourites: model.favouriteChannels.length > 0,
+    labels: { all: tt('allGroups'), favourites: tt('favourites'), more: (count) => tt('moreGroups', { count }) },
+  }), [model.favouriteChannels.length, model.groups, selected, tt])
 }
 
 /** Tar bara de två fälten så att vyer kan memoisera på dem (modellobjektet byter identitet varje minut). */

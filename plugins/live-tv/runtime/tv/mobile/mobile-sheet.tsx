@@ -16,6 +16,15 @@ export interface MobileSheetProps {
   onClose: () => void
   pushLayer: (close: () => void) => () => void
   testId?: string
+  /** Fast rad mellan huvudet och listan (t.ex. grupplistans sökfält). */
+  header?: ReactNode
+  /** Sist i den rullande listan (t.ex. "Visa fler" i grupplistan). */
+  footer?: ReactNode
+  /**
+   * Posten som ritas i fetstil. Utan den är det första posten ("Alla …" i
+   * spellistarket); grupplistan har ingen sådan post och markerar den valda.
+   */
+  activeKey?: string
 }
 
 /**
@@ -24,7 +33,7 @@ export interface MobileSheetProps {
  * appens Bakåt stänger arket i stället för att lämna skärmen — samma mönster
  * som skalets övriga lager (kanalväljare, spellistmeny).
  */
-export function MobileSheet({ title, subtitle, art, body, items, onClose, pushLayer, testId }: MobileSheetProps) {
+export function MobileSheet({ title, subtitle, art, body, items, onClose, pushLayer, testId, header, footer, activeKey }: MobileSheetProps) {
   const { tt } = useTvText()
   // Alltid senaste onClose i lagrets stängningsfunktion, utan att effekten
   // (och därmed pushLayer/off-paret) körs om varje gång föräldern skickar en
@@ -60,6 +69,7 @@ export function MobileSheet({ title, subtitle, art, body, items, onClose, pushLa
           </div>
         </div>
         {body ? <div data-testid="sheet-body" style={{ padding: '12px 20px', fontSize: 14, color: MT.muted, maxHeight: '30vh', overflow: 'auto' }}>{body}</div> : null}
+        {header}
         <div data-scroll="" style={{ maxHeight: '55vh', overflowY: 'auto' }}>
           {items.map((item, index) => (
             <div
@@ -68,12 +78,13 @@ export function MobileSheet({ title, subtitle, art, body, items, onClose, pushLa
               {...station(() => { item.run(); onClose() }, undefined, index === 0 ? { 'data-init': '' } : undefined)}
               style={{
                 minHeight: 56, padding: '0 20px', display: 'flex', alignItems: 'center', fontSize: 16,
-                fontWeight: index === 0 ? 600 : 400, borderBottom: `1px solid ${MT.line07}`, cursor: 'pointer',
+                fontWeight: (activeKey !== undefined ? item.key === activeKey : index === 0) ? 600 : 400, borderBottom: `1px solid ${MT.line07}`, cursor: 'pointer',
               }}
             >
               <span style={{ flex: 1, ...ellipsis }}>{item.label}</span>
             </div>
           ))}
+          {footer}
         </div>
         <div style={{ padding: 8 }}>
           <div {...station(onClose)} style={{ minHeight: 50, borderRadius: 16, background: MT.s08, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
