@@ -45786,6 +45786,12 @@ ${cue.text}`).join("\n\n")}
         sync();
       };
       void start2();
+      const settleTimers = [];
+      let settleFrame = 0;
+      if (!anchored) {
+        settleFrame = window.requestAnimationFrame(sync);
+        for (const delay of [60, 160, 320, 700, 1200]) settleTimers.push(window.setTimeout(sync, delay));
+      }
       const observer = !anchored && typeof ResizeObserver !== "undefined" && rectRef.current ? new ResizeObserver(sync) : null;
       if (observer && rectRef.current) observer.observe(rectRef.current);
       if (!anchored) {
@@ -45810,6 +45816,8 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
         dropCutout();
         window.clearTimeout(readyTimer);
+        window.cancelAnimationFrame(settleFrame);
+        settleTimers.forEach((timer3) => window.clearTimeout(timer3));
         observer?.disconnect();
         if (!anchored) {
           window.removeEventListener("resize", sync);
@@ -56483,6 +56491,47 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/surface-diagnostics.ts
+  init_surface_cutouts();
+  function opaqueAt(x, y) {
+    if (typeof document === "undefined" || typeof document.elementsFromPoint !== "function") return "ok\xE4nt";
+    for (const el of document.elementsFromPoint(x, y)) {
+      const style = window.getComputedStyle(el);
+      const bg = style.backgroundColor;
+      const transparent = bg === "transparent" || /rgba\([^)]*,\s*0\)$/.test(bg);
+      if (!transparent || style.backgroundImage && style.backgroundImage !== "none") {
+        const id = el.getAttribute("data-testid") ?? el.getAttribute("data-live-tv-backdrop") ?? "";
+        const cls = typeof el.className === "string" ? el.className.slice(0, 60) : "";
+        return `${el.tagName.toLowerCase()}${id ? `[${id}]` : ""}${cls ? `.${cls}` : ""} bg=${bg} img=${style.backgroundImage.slice(0, 40)}`;
+      }
+    }
+    return "inget (genomskinligt hela v\xE4gen)";
+  }
+  function describeSurfaceStack(label, tiles) {
+    const root = document.documentElement;
+    const parts2 = [
+      `[surface-diag] ${label}`,
+      `html.bg=${window.getComputedStyle(root).backgroundColor}`,
+      `body.bg=${window.getComputedStyle(document.body).backgroundColor}`,
+      `native-surfaces=${root.getAttribute("data-native-surfaces") ?? "-"}`,
+      `mpv-playing=${root.classList.contains("mpv-playing") ? 1 : 0}`,
+      `h\xE5l=${getSurfaceCutouts().map((c) => `${Math.round(c.left)},${Math.round(c.top)} ${Math.round(c.width)}x${Math.round(c.height)}`).join(" ") || "-"}`
+    ];
+    tiles.forEach((tile, index) => {
+      const r = tile.getBoundingClientRect();
+      parts2.push(`ruta${index}=${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)} \xF6ver:${opaqueAt(r.left + r.width / 2, r.top + r.height / 2)}`);
+    });
+    return parts2.join(" | ");
+  }
+  function logSurfaceStack(label, tiles) {
+    try {
+      const msg = describeSurfaceStack(label, tiles);
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(msg)}`).catch(() => {
+      });
+    } catch {
+    }
+  }
+
   // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
@@ -56723,6 +56772,13 @@ ${cue.text}`).join("\n\n")}
     const caps = videoSurfaceCapabilities();
     const update = (next) => setMultiviewState(next);
     const audioChannel = state2.tiles[state2.audioIndex] ? model.byKey.get(state2.tiles[state2.audioIndex]) ?? model.allChannels.find((c) => channelKey(c) === state2.tiles[state2.audioIndex]) ?? null : null;
+    const nativeBehindDom = caps.nativeBehindDom;
+    useEffect(() => {
+      if (!nativeBehindDom) return;
+      const tiles = () => Array.from(rootRef.current?.querySelectorAll('[data-testid="mv-tile"]') ?? []);
+      const timers2 = [1500, 5e3].map((ms2) => window.setTimeout(() => logSurfaceStack(`multivy +${ms2} ms`, tiles()), ms2));
+      return () => timers2.forEach((timer3) => window.clearTimeout(timer3));
+    }, [nativeBehindDom]);
     useEffect(() => {
       if (!narrow) return;
       const root = rootRef.current;
@@ -59971,14 +60027,21 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       modelRef.current = model;
     });
+    const pendingMultiRef = useRef([]);
+    const cancelPendingMulti = useCallback(() => {
+      for (const id of pendingMultiRef.current) window.cancelAnimationFrame(id);
+      pendingMultiRef.current = [];
+    }, []);
+    useEffect(() => cancelPendingMulti, [cancelPendingMulti]);
     const play = useCallback((request) => {
+      cancelPendingMulti();
       const locked = modelRef.current.locked.has(channelKey(request.channel));
       if (locked && !isUnlockedThisSession() && pinSupportAvailable() && activeProfileHasPin2()) {
         setPending({ kind: "play", request });
         return;
       }
       void releaseAllSurfaces().finally(() => setActive3(request));
-    }, []);
+    }, [cancelPendingMulti]);
     const openChannel = useCallback((channel, programmeStart) => {
       go("channel", { ...encodeChannelParams(channel), ...programmeStart ? { programme: String(programmeStart) } : {} });
     }, [go]);
@@ -60136,11 +60199,22 @@ ${cue.text}`).join("\n\n")}
       playerOpen: active4 !== null
     }), [view, viewParams, go, back, play, openChannel, channelMenu, addToMultiview, pushLayer, toast, active4]);
     useSwipeBack(back, (!menu || phone) && pending5 === null);
+    const leavePlayerForMultiview = useCallback(() => {
+      cancelPendingMulti();
+      setActive3(null);
+      const first = window.requestAnimationFrame(() => {
+        const second = window.requestAnimationFrame(() => {
+          pendingMultiRef.current = [];
+          go("multi");
+        });
+        pendingMultiRef.current = [second];
+      });
+      pendingMultiRef.current = [first];
+    }, [go, cancelPendingMulti]);
     const openSportMultiview = useCallback((keys2) => {
       setMultiviewState(multiviewFor(keys2));
-      setActive3(null);
-      go("multi");
-    }, [go]);
+      leavePlayerForMultiview();
+    }, [leavePlayerForMultiview]);
     const playerSport = usePlayerSport({ playingKey: active4 !== null ? channelKey(active4.channel) : null, model, play, openMultiview: openSportMultiview });
     const View = TV_VIEWS[view];
     const activeChannel = active4 ? active4.url ? { ...active4.channel, url: active4.url, name: active4.label ?? active4.channel.name } : active4.channel : null;
@@ -60158,10 +60232,7 @@ ${cue.text}`).join("\n\n")}
         setActive3(null);
         openChannel(activeChannel);
       },
-      onOpenMultiview: () => {
-        setActive3(null);
-        go("multi");
-      },
+      onOpenMultiview: leavePlayerForMultiview,
       onOpenGuide: () => {
         setActive3(null);
         go("guide");
