@@ -33,6 +33,14 @@ type DayOffset = -1 | 0 | 1
 const MIN_OFFSET: DayOffset = -1
 const MAX_OFFSET: DayOffset = 1
 
+/**
+ * ▾ från dag- och filterraden: flikens FÖRSTA station (överst till vänster),
+ * inte den som råkar ligga närmast under chipet — från Tennis längst till
+ * höger hoppade fokus förbi Välj dina lag rakt in i ett lagkort (Jerry
+ * 2026-10-11). Hittas ingen faller motorn tillbaka på geometrin.
+ */
+const BODY_FIRST = '[data-sport-body] [data-f]'
+
 const VIEW_AS_FIRST = '[data-testid="sport-view-as"] [data-f]'
 
 const stepBtn = (enabled: boolean) => ({ width: dp(56), height: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: enabled ? 'pointer' : 'default', color: TV.text, opacity: enabled ? 1 : 0.3, borderRadius: dp(14) }) as const
@@ -168,14 +176,14 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
           {/* Etiketten mellan pilarna är bred, så Tabeller-fliken snett ovanför
               låg närmare än › och höger hoppade ur raden (Jerry 2026-10-11:
               "datum går ej att välja på TV-mode"). Grannarna är uttalade. */}
-          <div data-testid="sport-day-prev" {...station(() => setOffset((o) => (o > MIN_OFFSET ? ((o - 1) as DayOffset) : o)), undefined, { 'data-f-right': '[data-testid="sport-day-next"]' })} aria-label={tt('sportDayPrev')} title={tt('sportDayPrev')} aria-disabled={offset <= MIN_OFFSET ? 'true' : 'false'} style={stepBtn(offset > MIN_OFFSET)}>
+          <div data-testid="sport-day-prev" {...station(() => setOffset((o) => (o > MIN_OFFSET ? ((o - 1) as DayOffset) : o)), undefined, { 'data-f-right': '[data-testid="sport-day-next"]', 'data-f-down': BODY_FIRST })} aria-label={tt('sportDayPrev')} title={tt('sportDayPrev')} aria-disabled={offset <= MIN_OFFSET ? 'true' : 'false'} style={stepBtn(offset > MIN_OFFSET)}>
             <SportIcons.Back size={dp(22)} />
           </div>
           <span data-testid="sport-day-label" style={{ minWidth: dp(170), display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: dp(10), padding: `0 ${dp(6)}px` }}>
             <span style={{ fontSize: dp(20), fontWeight: 700 }}>{dayLabel(offset)}</span>
             <span style={{ fontSize: dp(17), color: TV.muted }}>{new Date(dayStartMs(day) + 12 * 3_600_000).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
           </span>
-          <div data-testid="sport-day-next" {...station(() => setOffset((o) => (o < MAX_OFFSET ? ((o + 1) as DayOffset) : o)), undefined, { 'data-f-left': '[data-testid="sport-day-prev"]' })} aria-label={tt('sportDayNext')} title={tt('sportDayNext')} aria-disabled={offset >= MAX_OFFSET ? 'true' : 'false'} style={stepBtn(offset < MAX_OFFSET)}>
+          <div data-testid="sport-day-next" {...station(() => setOffset((o) => (o < MAX_OFFSET ? ((o + 1) as DayOffset) : o)), undefined, { 'data-f-left': '[data-testid="sport-day-prev"]', 'data-f-down': BODY_FIRST })} aria-label={tt('sportDayNext')} title={tt('sportDayNext')} aria-disabled={offset >= MAX_OFFSET ? 'true' : 'false'} style={stepBtn(offset < MAX_OFFSET)}>
             <SportIcons.Chevron size={dp(22)} />
           </div>
         </div>
@@ -183,7 +191,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
           {(['all', ...SPORT_CHIPS.filter((k) => counts[k] > 0)] as SportFilter[]).map((k) => {
             const active = filter === k
             return (
-              <div key={k} data-testid={`sport-chip-${k}`} {...station(() => setFilter(k))} aria-pressed={active ? 'true' : 'false'} style={{ height: dp(52), padding: `0 ${dp(18)}px`, boxSizing: 'border-box', borderRadius: dp(12), display: 'inline-flex', alignItems: 'center', gap: dp(8), cursor: 'pointer', background: active ? TV.text : 'transparent', color: active ? '#12152a' : TV.text, fontSize: dp(19), fontWeight: 700 }}>
+              <div key={k} data-testid={`sport-chip-${k}`} {...station(() => setFilter(k), undefined, { 'data-f-down': BODY_FIRST })} aria-pressed={active ? 'true' : 'false'} style={{ height: dp(52), padding: `0 ${dp(18)}px`, boxSizing: 'border-box', borderRadius: dp(12), display: 'inline-flex', alignItems: 'center', gap: dp(8), cursor: 'pointer', background: active ? TV.text : 'transparent', color: active ? '#12152a' : TV.text, fontSize: dp(19), fontWeight: 700 }}>
                 {k === 'all' ? tt('sportAllShort') : ctx.kindLabel(k)}
                 {k !== 'all' ? <span style={{ fontSize: dp(15), fontWeight: 600, opacity: 0.55, fontVariantNumeric: 'tabular-nums' }}>{counts[k]}</span> : null}
               </div>
@@ -198,7 +206,8 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
         </div>
       ) : null}
 
-      {body()}
+      {/* Fliken innehåll; ▾ från dag- och filterraden landar på dess första station. */}
+      <div data-sport-body="" style={{ display: 'contents' }}>{body()}</div>
 
       {open ? <SportMatchCenter ctx={ctx} match={open} onClose={() => setOpenId(null)} /> : null}
       {pickerOpen ? <FollowPicker ctx={ctx} days={[yesterdayDay.data, todayDay.data, tomorrowDay.data]} onClose={() => setPickerOpen(false)} /> : null}

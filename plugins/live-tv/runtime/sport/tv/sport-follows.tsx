@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import { Chip, Segment, TV, dp, station } from '../../tv/tv-ui'
 import { PickerPanel } from '../../tv/tv-list-picker'
@@ -20,6 +20,9 @@ import { sportCardStyle, sportDrawerStyle } from '../surface'
 
 const same = (a: Pick<SportFollow, 'kind' | 'key'>, b: Pick<SportFollow, 'kind' | 'key'>) => a.kind === b.kind && a.key === b.key
 
+/** ▾ från Välj dina lag-raden: FÖRSTA lagkortet (överst till vänster), inte det närmaste under (Jerry 2026-10-11). */
+const FIRST_FOLLOW = '[data-testid="follow-row"] [data-f]'
+
 export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | null)[] }) {
   // Avföljda ligger kvar (dämpade) tills vyn lämnas — ett felklick ska gå att ångra.
   const [shown, setShown] = useState<SportFollow[]>(ctx.follows)
@@ -34,13 +37,37 @@ export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | n
     { key: 'kickoff', label: ctx.tt('sportAlertKickoff') },
   ]
   const groups = SPORT_KINDS.map((kind) => [kind, shown.filter((f) => f.sport === kind)] as const).filter(([, list]) => list.length > 0)
+  /*
+    ▴ ur översta kortraden: tillbaka till Välj dina lag, som ▾ kom ifrån.
+    Geometrin bar med sig det lodräta ankaret från filterraden och tog ett
+    chip i stället (Jerry 2026-10-11). Vilka kort som står i första raden
+    beror på rutnätets kolumner, så det mäts efter varje ritning.
+  */
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  useLayoutEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    const mark = () => {
+      const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="follow-row"]'))
+      const top = cards[0]?.offsetTop
+      for (const card of cards) {
+        for (const st of card.querySelectorAll<HTMLElement>('[data-f]')) {
+          if (card.offsetTop === top) st.setAttribute('data-f-up', '[data-testid="follows-add"]')
+          else st.removeAttribute('data-f-up')
+        }
+      }
+    }
+    mark()
+    window.addEventListener('resize', mark)
+    return () => window.removeEventListener('resize', mark)
+  })
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: dp(24) }}>
+    <div ref={rootRef} style={{ display: 'flex', flexDirection: 'column', gap: dp(24) }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(18), flexWrap: 'wrap' }}>
         {/* Påminnelsen står längst till höger; geometrin tog dagstegaren snett
             ovanför i stället (Jerry 2026-10-11: "gå över saker och kolla så
             allt syns bra på TV-mode"). Grannarna är uttalade åt båda hållen. */}
-        <div data-testid="follows-add" {...station(ctx.openFollowPicker, undefined, { 'data-f-right': '[data-testid="follows-alert"] [data-f]' })} style={primaryBtn}>
+        <div data-testid="follows-add" {...station(ctx.openFollowPicker, undefined, { 'data-f-right': '[data-testid="follows-alert"] [data-f]', 'data-f-down': FIRST_FOLLOW })} style={primaryBtn}>
           <SportIcons.Plus size={dp(20)} />
           {ctx.tt('sportFollowAdd')}
         </div>
@@ -48,7 +75,7 @@ export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | n
         <div data-testid="follows-alert" style={{ ...sportCardStyle, marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(12), padding: `${dp(8)}px ${dp(12)}px` }}>
           <SportIcons.Bell size={dp(20)} />
           <span style={{ fontSize: dp(17), fontWeight: 600 }}>{ctx.tt('sportKickoffAlert')}</span>
-          <Segment size="lg" options={alertOptions} value={ctx.settings.alert} onChange={(alert) => setSportSettings({ alert })} optionAttrs={(index) => (index === 0 ? { 'data-f-left': '[data-testid="follows-add"]' } : undefined)} />
+          <Segment size="lg" options={alertOptions} value={ctx.settings.alert} onChange={(alert) => setSportSettings({ alert })} optionAttrs={(index) => (index === 0 ? { 'data-f-left': '[data-testid="follows-add"]', 'data-f-down': FIRST_FOLLOW } : { 'data-f-down': FIRST_FOLLOW })} />
         </div>
       </div>
       <span style={{ fontSize: dp(17), color: TV.muted }}>{ctx.tt('sportAlertOnlyRunning')}</span>

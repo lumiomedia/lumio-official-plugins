@@ -36,6 +36,21 @@ describe('followNext', () => {
   })
 })
 
+describe('Mina lag: fokusordningen (Jerry 2026-10-11)', () => {
+  it('▾ från Välj dina lag och från Påminnelse landar på FÖRSTA lagkortet, inte det närmaste', () => {
+    render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
+    const first = within(screen.getAllByTestId('follow-row')[0]!).getAllByRole('button')[0]!
+    const down = (el: Element) => document.querySelector(el.getAttribute('data-f-down')!)
+    expect(down(screen.getByTestId('follows-add'))).toBe(first)
+    for (const option of within(screen.getByTestId('follows-alert')).getAllByTestId('tv-segment-option')) expect(down(option)).toBe(first)
+  })
+  it('▴ från översta kortraden tillbaka till Välj dina lag', () => {
+    render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
+    const firstRow = within(screen.getAllByTestId('follow-row')[0]!).getAllByRole('button')
+    for (const st of firstRow) expect(document.querySelector(st.getAttribute('data-f-up')!)).toBe(screen.getByTestId('follows-add'))
+  })
+})
+
 describe('Mina lag', () => {
   it('liggande rader per sport: märket till vänster, nästa match som huvudinfo, hjärta till höger', () => {
     render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
