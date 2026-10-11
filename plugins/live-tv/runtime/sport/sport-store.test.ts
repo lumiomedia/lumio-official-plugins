@@ -79,29 +79,44 @@ describe('fas 2-fälten', () => {
   })
 })
 
+const OWN = { football: 'standard', hockey: 'standard', basketball: 'standard', motorsport: 'standard', tennis: 'standard' } as const
+
 describe('Bakgrund i Sport', () => {
-  it('standard: Standard för Alla sporter, inga egna sportval, korten svarta 85 %', () => {
-    expect(getSportSettings()).toMatchObject({ backdrops: { all: 'standard', sports: {} }, cards: { opacity: 85, tone: 'black' } })
-    expect(setSportSettings({ backdrops: { all: 'bogus' as never, sports: { football: 'nope' as never, cricket: 'off' } as never } })).toMatchObject({ backdrops: { all: 'standard', sports: {} } })
+  it('standard: varje sport med egen bild har Standard (sin bild), Övrigt och Alla sporter ärver/blandar; korten tonas ur bilden 85 %', () => {
+    expect(getSportSettings()).toMatchObject({ backdrops: { all: 'standard', sports: OWN }, cards: { opacity: 85, tone: 'image' } })
+    expect(getSportSettings().backdrops.sports.other).toBeUndefined()
+    expect(setSportSettings({ backdrops: { all: 'bogus' as never, sports: { football: 'nope' as never, cricket: 'off' } as never } })).toMatchObject({ backdrops: { all: 'standard', sports: OWN } })
+  })
+  it('flytt: en sport utan sparat val (förr underförstått "Som Alla sporter") blir Standard; uttryckliga val står kvar', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { backdrops: { all: 'custom', sports: { hockey: 'image:tennis', tennis: 'off' } } })
+    expect(getSportSettings().backdrops).toEqual({ all: 'custom', sports: { ...OWN, hockey: 'image:tennis', tennis: 'off' } })
+  })
+  it('"Som Alla sporter" sparas uttryckligen och överlever en omläsning', () => {
+    setSportSettings({ backdrops: { all: 'auto', sports: { football: 'inherit', other: 'inherit' } } })
+    expect(getSportSettings().backdrops).toEqual({ all: 'auto', sports: { ...OWN, football: 'inherit', other: 'inherit' } })
+  })
+  it('handboll har ingen egen rad: ett gammalt handbollsval släpps', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { backdrops: { all: 'standard', sports: { handball: 'off' } } })
+    expect(getSportSettings().backdrops.sports.handball).toBeUndefined()
   })
   it('per sport med arv; Egen bild, Automatisk och Av sparas', () => {
     const s = setSportSettings({ backdrops: { all: 'auto', sports: { football: 'custom', hockey: 'off', tennis: 'standard' } } })
-    expect(s.backdrops).toEqual({ all: 'auto', sports: { football: 'custom', hockey: 'off', tennis: 'standard' } })
+    expect(s.backdrops).toEqual({ all: 'auto', sports: { ...OWN, football: 'custom', hockey: 'off', tennis: 'standard' } })
   })
   it('en vald medföljande bild sparas per plats; okända bilder släpps', () => {
     const s = setSportSettings({ backdrops: { all: 'image:tennis', sports: { hockey: 'image:football', football: 'image:cricket' as never } } })
-    expect(s.backdrops).toEqual({ all: 'image:tennis', sports: { hockey: 'image:football' } })
+    expect(s.backdrops).toEqual({ all: 'image:tennis', sports: { ...OWN, hockey: 'image:football' } })
   })
   it('kortens bakgrund: opacitet 0–100 i heltal, tre färger', () => {
     expect(setSportSettings({ cards: { opacity: 140, tone: 'gray' } }).cards).toEqual({ opacity: 100, tone: 'gray' })
     expect(setSportSettings({ cards: { opacity: -3.4, tone: 'image' } }).cards).toEqual({ opacity: 0, tone: 'image' })
-    expect(setSportSettings({ cards: { opacity: 42.6, tone: 'pink' as never } }).cards).toEqual({ opacity: 43, tone: 'black' })
+    expect(setSportSettings({ cards: { opacity: 42.6, tone: 'pink' as never } }).cards).toEqual({ opacity: 43, tone: 'image' })
   })
   it('gamla inställningar läses ofarligt: Av följer med, länken och startsidans bild glöms', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { backdrop: 'off', backdropCustom: { from: 'url', url: 'https://x/y.jpg' } })
-    expect(getSportSettings().backdrops).toEqual({ all: 'off', sports: {} })
+    expect(getSportSettings().backdrops).toEqual({ all: 'off', sports: OWN })
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { backdrop: 'custom', backdropCustom: { from: 'home', index: 1 } })
-    expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: {} })
+    expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: OWN })
     expect(getSportSettings()).not.toHaveProperty('backdropCustom')
   })
 })

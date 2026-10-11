@@ -91,10 +91,18 @@ export function Row({ label, right, onOk, testId, phone = false }: { label: Reac
 /** Telefonens `›` i navigeringsraderna (52 px rader i ett kort). */
 export const PhoneCaret = () => <span style={{ color: MT.dim, display: 'inline-flex', flexShrink: 0 }}><MIcons.CaretRight size={16} /></span>
 
+/**
+ * Avsnittens beskrivningar och hjälptexter. 18 designpixlar: scenen skalas
+ * ner på skrivbordet (~0,8 i ett vanligt fönster), och 16 hamnade då under
+ * appens egna beskrivningar (Jerry 2026-10-11, "för små").
+ */
+export const HINT_SIZE = dp(18)
+export const HINT_SIZE_PHONE = 14
+
 export function Heading({ children, hint, phone = false }: { children: ReactNode; hint?: string; phone?: boolean }) {
   // Telefonen: sektionsetikett (12/600, versaler) med kortets inre luft.
-  if (phone) return <div style={{ padding: '14px 14px 6px' }}><div style={sectionLabel}>{children}</div>{hint ? <div style={{ fontSize: 13, color: MT.dim, marginTop: 4 }}>{hint}</div> : null}</div>
-  return <div><div style={{ fontSize: dp(26), fontWeight: 600 }}>{children}</div>{hint ? <div style={{ fontSize: dp(16), color: 'rgba(243,244,248,0.5)' }}>{hint}</div> : null}</div>
+  if (phone) return <div style={{ padding: '14px 14px 6px' }}><div style={sectionLabel}>{children}</div>{hint ? <div style={{ fontSize: HINT_SIZE_PHONE, color: MT.dim, marginTop: 4 }}>{hint}</div> : null}</div>
+  return <div><div style={{ fontSize: dp(26), fontWeight: 600 }}>{children}</div>{hint ? <div style={{ fontSize: HINT_SIZE, color: 'rgba(243,244,248,0.6)', marginTop: dp(4) }}>{hint}</div> : null}</div>
 }
 
 /*

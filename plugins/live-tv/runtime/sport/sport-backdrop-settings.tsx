@@ -3,18 +3,18 @@
 import { useCallback, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import { QRCodeSVG, getTvGlassMenu, useTvMode, type TvGlassMenuAction, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { LtBtn, LtNote, LtRows, LtSection, UI } from '../settings-ui'
-import { Heading, Row } from '../tv/settings-tabs'
+import { HINT_SIZE, HINT_SIZE_PHONE, Heading, Row } from '../tv/settings-tabs'
+import { MT } from '../tv/mobile/mobile-tokens'
 import { TV, dp } from '../tv/tv-ui'
 import { useTvText, type TvStringKey } from '../tv/tv-strings'
 import { MobileSheet } from '../tv/mobile/mobile-sheet'
 import { KIND_KEYS } from './sport-ctx'
-import { SPORT_KINDS } from './sport-model'
 import { localDayKey } from './sport-epg'
 import {
   STANDARD_IMAGES, backdropPreview, customBackdropUrl, removeBackdrop, standardImageFor, uploadBackdrop, useBackdropUploads, type BackdropScope,
 } from './backdrop'
 import { useBackdropHandoff } from './backdrop-handoff'
-import { BUNDLED_IMAGES, setSportSettings, useSportSettings, type SportBackdropMode, type SportBackdrops, type SportCardTone } from './sport-store'
+import { BACKDROP_SPORTS, BUNDLED_IMAGES, setSportSettings, useSportSettings, type SportBackdropMode, type SportBackdrops, type SportCardTone } from './sport-store'
 
 /**
  * BAKGRUND I SPORT: EN RAD PER SPORT (Jerry 2026-10-11: "ska ju vara en bild
@@ -27,7 +27,7 @@ import { BUNDLED_IMAGES, setSportSettings, useSportSettings, type SportBackdropM
  * miniatyrer på skrivbordet.
  */
 
-const SCOPES: BackdropScope[] = ['all', ...SPORT_KINDS]
+const SCOPES: BackdropScope[] = ['all', ...BACKDROP_SPORTS]
 const TONES: SportCardTone[] = ['black', 'gray', 'image']
 const TONE_LABEL: Record<SportCardTone, TvStringKey> = { black: 'sportCardsBlack', gray: 'sportCardsGray', image: 'sportCardsImage' }
 /** TV-radens steg (fjärren har inget reglage). */
@@ -43,9 +43,8 @@ function setScopeMode(current: SportBackdrops, scope: BackdropScope, mode: Sport
     if (mode !== 'inherit') setSportSettings({ backdrops: { ...current, all: mode } })
     return
   }
-  const sports = { ...current.sports }
-  if (mode === 'inherit') delete sports[scope]
-  else sports[scope] = mode
+  // "Som Alla sporter" sparas uttryckligen: en saknad nyckel betyder Standard för sporterna med egen bild.
+  const sports = { ...current.sports, [scope]: mode }
   setSportSettings({ backdrops: { ...current, sports } })
 }
 
@@ -187,9 +186,10 @@ export function SportBackdropSettingsDesktop() {
             {open === r.scope ? <ChooserPanel choices={choicesFor(r.scope)} onPick={(k) => pick(r.scope, k)} /> : null}
           </div>
         ))}
-        {uploader.status ? <LtNote style={{ paddingBottom: 10 }}>{uploader.status}</LtNote> : null}
-        <LtNote style={{ paddingBottom: 12 }}>{tt('sportBackdropLocalNote')}</LtNote>
+        {uploader.status ? <LtNote style={{ paddingBottom: 10, fontSize: 13 }}>{uploader.status}</LtNote> : null}
+        <LtNote style={{ paddingBottom: 12, fontSize: 13 }}>{tt('sportBackdropLocalNote')}</LtNote>
       </LtRows>
+      <div style={{ height: 28 }} />
       <LtSection title={tt('sportCardsTitle')} hint={tt('sportCardsHint')} />
       <LtRows>
         <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0' }}>
@@ -249,12 +249,15 @@ export function SportBackdropSettingsTv({ phone = false, pushLayer }: { phone?: 
     setOpen(open === scope ? null : scope)
   }
   const thumbSize = phone ? { w: 48, h: 27, radius: 5 } : { w: dp(80), h: dp(45), radius: dp(6) }
-  const note = { fontSize: phone ? 13 : dp(15), color: TV.dim, padding: phone ? '6px 14px' : 0 }
+  /** Hjälptexterna i samma storlek som avsnittens beskrivningar (`HINT_SIZE` i settings-tabs). */
+  const note = { fontSize: phone ? HINT_SIZE_PHONE : HINT_SIZE, color: phone ? MT.dim : 'rgba(243,244,248,0.6)', padding: phone ? '6px 14px' : 0 }
   const nextOpacity = OPACITY_STEPS.find((n) => n > s.cards.opacity) ?? OPACITY_STEPS[0]!
   const nextTone = TONES[(TONES.indexOf(s.cards.tone) + 1) % TONES.length]!
   const sheetRow = sheet ? rows.find((r) => r.scope === sheet) : null
   return (
-    <div data-testid="sport-backdrop-settings-tv">
+    // Två sektioner med samma luft som Live TV:s övriga inställningar (innehållets gap 36, sektionens 10).
+    <div data-testid="sport-backdrop-settings-tv" style={{ display: 'flex', flexDirection: 'column', gap: phone ? 18 : dp(36) }}>
+      <section data-testid="sport-backdrop-section" style={{ display: 'flex', flexDirection: 'column', gap: phone ? 0 : dp(10) }}>
       <Heading phone={phone} hint={tt('sportBackdropHint')}>{tt('sportBackdropTitle')}</Heading>
       {viaPhone ? null : uploader.input}
       {rows.map((r) => (
@@ -278,10 +281,13 @@ export function SportBackdropSettingsTv({ phone = false, pushLayer }: { phone?: 
         </figure>
       ) : null}
       {uploader.status ? <div role="status" style={note}>{uploader.status}</div> : null}
-      <div style={note}>{tt('sportBackdropLocalNote')}</div>
+      <div data-testid="sport-backdrop-note" style={note}>{tt('sportBackdropLocalNote')}</div>
+      </section>
+      <section data-testid="sport-cards-section" style={{ display: 'flex', flexDirection: 'column', gap: phone ? 0 : dp(10) }}>
       <Heading phone={phone} hint={tt('sportCardsHint')}>{tt('sportCardsTitle')}</Heading>
       <Row phone={phone} testId="sport-cards-opacity-row" label={tt('sportCardsOpacity')} right={`${s.cards.opacity} %`} onOk={() => setSportSettings({ cards: { ...s.cards, opacity: nextOpacity } })} />
       <Row phone={phone} testId="sport-cards-tone-row" label={tt('sportCardsColor')} right={tt(TONE_LABEL[s.cards.tone])} onOk={() => setSportSettings({ cards: { ...s.cards, tone: nextTone } })} />
+      </section>
       {menu && GlassMenu ? <GlassMenu target={menu} onClose={() => setMenu(null)} /> : null}
       {sheetRow ? (
         <MobileSheet

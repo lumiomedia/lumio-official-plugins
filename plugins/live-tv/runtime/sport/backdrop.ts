@@ -57,7 +57,13 @@ function hash(text: string): number {
 }
 
 /** Sportens egen bild, annars en av dem vald per dag (stabil hela dagen: inget flimmer). */
-export function standardImageFor(scope: BackdropScope, dayKey: string): string {
+/** Handbollen har ingen egen rad: dess matcher följer Övrigt. */
+export function backdropScope(scope: BackdropScope): BackdropScope {
+  return scope === 'handball' ? 'other' : scope
+}
+
+export function standardImageFor(rawScope: BackdropScope, dayKey: string): string {
+  const scope = backdropScope(rawScope)
   const own = scope === 'all' ? undefined : STANDARD_IMAGES[scope]
   if (own) return own
   const all = Object.values(STANDARD_IMAGES) as string[]
@@ -83,7 +89,8 @@ export interface BackdropPreview {
  * Automatisk visar Standard-bilden (arenan är bara känd med nyckel och en
  * utvald match), Egen bild utan uppladdning likaså — precis som vyn.
  */
-export function backdropPreview(b: SportBackdrops, scope: BackdropScope, uploads: Partial<Record<BackdropScope, number>>, dayKey: string): BackdropPreview {
+export function backdropPreview(b: SportBackdrops, rawScope: BackdropScope, uploads: Partial<Record<BackdropScope, number>>, dayKey: string): BackdropPreview {
+  const scope = backdropScope(rawScope)
   const { mode, slot } = resolveBackdropMode(b, scope)
   const inherited = scope !== 'all' && slot === 'all'
   const standard = standardImageFor(scope, dayKey)
@@ -92,9 +99,10 @@ export function backdropPreview(b: SportBackdrops, scope: BackdropScope, uploads
   return { mode, slot, inherited, url }
 }
 
-export function resolveBackdropMode(b: SportBackdrops, scope: BackdropScope): { mode: SportBackdropMode; slot: BackdropScope } {
+export function resolveBackdropMode(b: SportBackdrops, rawScope: BackdropScope): { mode: SportBackdropMode; slot: BackdropScope } {
+  const scope = backdropScope(rawScope)
   const own = scope === 'all' ? undefined : b.sports[scope]
-  return own ? { mode: own, slot: scope } : { mode: b.all, slot: 'all' }
+  return own && own !== 'inherit' ? { mode: own, slot: scope } : { mode: b.all, slot: 'all' }
 }
 
 export function customBackdropUrl(slot: BackdropScope, version: number): string {

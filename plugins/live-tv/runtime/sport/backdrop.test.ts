@@ -173,3 +173,15 @@ describe('useHeroTeamArt', () => {
     expect(h.run).not.toHaveBeenCalled()
   })
 })
+
+describe('handboll följer Övrigt, arv sparas uttryckligen', () => {
+  it('handbollens matcher läser Övrigts val och plats', () => {
+    const b = { all: 'standard' as const, sports: { other: 'off' as const } }
+    expect(resolveBackdropMode(b, 'handball')).toEqual({ mode: 'off', slot: 'other' })
+    expect(standardImageFor('handball', '2026-10-11')).toBe(standardImageFor('other', '2026-10-11'))
+  })
+  it('"inherit" = Alla sporters val', () => {
+    expect(resolveBackdropMode({ all: 'auto', sports: { football: 'inherit' } }, 'football')).toEqual({ mode: 'auto', slot: 'all' })
+    expect(resolveBackdropMode({ all: 'auto', sports: { football: 'standard' } }, 'football')).toEqual({ mode: 'standard', slot: 'football' })
+  })
+})
