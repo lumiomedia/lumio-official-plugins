@@ -69,8 +69,13 @@ export function rankedSources(m: SportMatch, overrides: SportOverrides): MatchSo
   return [chosen, ...m.sources.filter((s) => s.channelKey !== o.key)]
 }
 
+/** Hur intressant en match är: följda lag/ligor först, sedan fler källor. Samma mått som heron och hemradernas "Live nu". */
+export function matchInterest(m: SportMatch, follows: SportFollow[]): number {
+  return (followState(m, follows).any ? 1000 : 0) + m.sources.length
+}
+
 export function featuredMatch(matches: SportMatch[], follows: SportFollow[], now: number): SportMatch | null {
-  const score = (m: SportMatch) => (followState(m, follows).any ? 1000 : 0) + m.sources.length
+  const score = (m: SportMatch) => matchInterest(m, follows)
   const best = (list: SportMatch[]) => [...list].sort((a, b) => score(b) - score(a) || a.start - b.start)[0] ?? null
   const live = matches.filter((m) => statusAt(m, now) === 'live')
   const upcoming = matches.filter((m) => statusAt(m, now) === 'upcoming')

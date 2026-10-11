@@ -5,6 +5,7 @@ import { getTvGlassMenu, requestBrowseBack, useTvMode, type BrowsePageProps, typ
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { useLiveTvModel, type LiveTvModel } from '../live-tv-model'
 import { LIVE_TV_BROWSE_PAGE_ID, LIVE_TV_SPORT_PAGE_ID, encodeChannelParams, type PlayRequest } from '../live-tv-shell'
+import { channelFromParams } from './channel-detail'
 import { PinGate } from '../live-tv-ui'
 import { activeProfileHasPin, isUnlockedThisSession, markUnlockedThisSession, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
@@ -401,6 +402,24 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
     }
     void releaseAllSurfaces().finally(() => setActive(request))
   }, [cancelPendingMulti])
+
+  /*
+    SPORTENS HEMRADER: ett kort öppnar Sport-sidan med matchens bästa kanal
+    och `autoplay=1`. Kanalen startar här, EN gång, och sedan ersätts sidans
+    params med bara vyn — står autoplay kvar startar spelaren om vid nästa
+    montering (Bakåt in på sidan, omladdning). Stängd spelare landar på Sport
+    som vanligt. Bara Sport-sidan: Live TV:s egna länkar rörs inte.
+  */
+  const autoplayedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!sportOnly || params?.autoplay !== '1') return
+    const key = JSON.stringify(params)
+    if (autoplayedRef.current === key) return
+    autoplayedRef.current = key
+    const channel = channelFromParams(params, modelRef.current.byUrl)
+    if (channel) play({ channel })
+    onNavigate({ pageId: LIVE_TV_SPORT_PAGE_ID, params: { view } })
+  }, [sportOnly, params, play, onNavigate, view])
 
   const openChannel = useCallback((channel: M3uChannel, programmeStart?: number) => {
     go('channel', { ...encodeChannelParams(channel), ...(programmeStart ? { programme: String(programmeStart) } : {}) })

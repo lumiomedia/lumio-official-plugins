@@ -8,6 +8,7 @@ import { LiveTvRemindersMount } from './live-tv-reminders-mount'
 import { SportGoalMount } from './sport/sport-goal-mount'
 import { LiveTvTvShell } from './tv/tv-shell'
 import { LiveTvSportPage, SPORT_PAGE_ID } from './sport/sport-page'
+import { registerSportHomeRows } from './sport/home-rows/register'
 import { getVodStreams } from './vod-streams'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
@@ -136,6 +137,9 @@ export const LiveTvPlugin: LumioPlugin = {
         defaultEnabled: false,
       })
     }
+    // Sportens hemrader (Live nu, Mina lag, I kväll, Zappa live, Liga, Resultat) som
+    // källor i appens radväljare. Valfritt fack: en äldre värd får sporten utan dem.
+    registerSportHomeRows(ctx)
     /**
      * Spellistans film och serier som en strömkälla i appens detaljvy.
      *
