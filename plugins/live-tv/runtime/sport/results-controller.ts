@@ -142,7 +142,7 @@ export class ResultsController {
     const hit = this.details.get(key)
     // Avslutad: minnet räcker för alltid. Pågående: högst 60 s gammal (diskcachen har samma TTL).
     if (hit && (finished || this.now() - hit.at < LIVE_DETAIL_MS)) return hit.detail
-    const res = await this.budget.fixture(sport, id, { finished })
+    const res = await this.budget.fixture(sport, id, { finished, refresh: !!hit })
     if (res.data) {
       this.details.set(key, { at: this.now(), detail: res.data })
       this.emit()

@@ -43,6 +43,17 @@ describe('MatchCenterData', () => {
     expect(screen.getByText('I. Kiese Thelin', { selector: '[data-lineup] *' })).toBeTruthy()
     expect(screen.getByTestId('sport-rate-line').textContent).toContain('Uppdateras var 3:e min · 41 anrop kvar i dag')
   })
+  it('pågående match: minuten ensam hämtar inte om, ett mål gör det', async () => {
+    const c = fakeController(null)
+    const { rerender } = render(<MatchCenterData match={match()} />)
+    await waitFor(() => expect(c.loadFixture).toHaveBeenCalledTimes(1))
+    rerender(<MatchCenterData match={match({ minute: 68 })} />)
+    rerender(<MatchCenterData match={match({ minute: 69 })} />)
+    await Promise.resolve()
+    expect(c.loadFixture).toHaveBeenCalledTimes(1)
+    rerender(<MatchCenterData match={match({ minute: 70, score: { home: 3, away: 1 } })} />)
+    await waitFor(() => expect(c.loadFixture).toHaveBeenCalledTimes(2))
+  })
   it('hockey: tom statistik och tomma uppställningar döljs', async () => {
     fakeController(apiSports.fixture('hockey', '51001', { finished: false }).parse([{ response: [hockeyDate.response[0]] }, hockeyEvents]))
     render(<MatchCenterData match={match({ kind: 'hockey', fixture: { provider: 'api-sports', id: '51001' } })} />)

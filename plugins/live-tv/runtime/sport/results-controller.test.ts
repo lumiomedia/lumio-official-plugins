@@ -69,6 +69,23 @@ describe('ResultsController', () => {
     expect(c.status()).toMatchObject({ state: 'paused', pausedUntil: Date.UTC(2026, 9, 11), intervalMs: null })
   })
 
+  it('matchcentret: pågående omhämtning respekterar reserven och planen (som live)', async () => {
+    let now = NOW
+    const paths: Array<{ path: string; mode: string }> = []
+    const fetch = vi.fn(async ({ req, mode }: { req: { path: string }; mode: string }) => {
+      paths.push({ path: req.path, mode })
+      return { data: { response: [footballDate.response[0]] }, cached: mode === 'cache-only', fresh: true, fetchedAt: now, quota: null, error: null } as SportFetchResponse
+    })
+    const budget = new Budget(apiSports, 'k123', { fetch: fetch as never, now: () => now, sleep: async () => {} })
+    budget.noteQuota({ ...quota, remaining: 12 }) // reserven = 10
+    const c = new ResultsController(budget, { tz: 'Europe/Stockholm', now: () => now, startPoller: false })
+    await c.loadFixture('football', '1180001', false) // första öppningen får ta ur reserven
+    now += 61_000
+    budget.setPlanned('football', 1)
+    await c.loadFixture('football', '1180001', false) // 11 − 1 < 10 + 1 → bara cachen
+    expect(paths.map((p) => p.mode)).toEqual(['cache-first', 'cache-only'])
+  })
+
   it('matchcentret cachas i minnet; avslutad hämtas inte om', async () => {
     const { c, paths } = controller(() => ({ data: { response: [footballDate.response[0]] } }))
     const d = await c.loadFixture('football', '1180001', true)

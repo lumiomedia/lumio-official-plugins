@@ -19,7 +19,12 @@ import type { SportKind } from './sport-model'
  * ned lokalt, så att två samtidiga anrop inte båda tror att samma sista
  * anrop är ledigt.
  */
-export type CallKind = 'validate' | 'fixture' | 'day' | 'standings' | 'search' | 'live'
+/**
+ * `fixture` = matchcentret öppnas (får ta ur reserven, som är till för just det).
+ * `fixture-refresh` = en pågående match hämtas om medan centret står öppet. Den
+ * följer pollningstakten och räknas som live: reserven och planen går före.
+ */
+export type CallKind = 'validate' | 'fixture' | 'fixture-refresh' | 'day' | 'standings' | 'search' | 'live'
 export type BudgetFailure = 'no-key' | 'no-coverage' | 'over-budget' | 'paused' | 'invalid-key' | 'network'
 export type BudgetResult<T> =
   | { ok: true; data: T; cached: boolean; fetchedAt: number | null }
@@ -94,7 +99,8 @@ export class Budget {
       case 'day':
       case 'standings':
       case 'search': return q.remaining - n >= reserve
-      case 'live': return q.remaining - n >= reserve + this.plannedFor(bucket)
+      case 'live':
+      case 'fixture-refresh': return q.remaining - n >= reserve + this.plannedFor(bucket)
     }
   }
 
@@ -174,7 +180,9 @@ export class Budget {
 
   day(sport: SportKind, date: string, opts: DayOpts) { return this.run<Fixture[]>('day', sport, this.provider.day(sport, date, opts)) }
   live(sport: SportKind, opts: LiveOpts) { return this.run<Fixture[]>('live', sport, this.provider.live(sport, opts)) }
-  fixture(sport: SportKind, id: string, opts: { finished: boolean }) { return this.run<FixtureDetail | null>('fixture', sport, this.provider.fixture(sport, id, opts)) }
+  fixture(sport: SportKind, id: string, opts: { finished: boolean; refresh?: boolean }) {
+    return this.run<FixtureDetail | null>(opts.refresh && !opts.finished ? 'fixture-refresh' : 'fixture', sport, this.provider.fixture(sport, id, { finished: opts.finished }))
+  }
   standings(sport: SportKind, leagueId: string, season: string) { return this.run<StandingRow[]>('standings', sport, this.provider.standings(sport, leagueId, season)) }
   searchTeams(sport: SportKind, q: string) { return this.run<TeamHit[]>('search', sport, this.provider.searchTeams(sport, q)) }
   validate() { return this.run<KeyCheck>('validate', 'football', this.provider.validateKey()) }

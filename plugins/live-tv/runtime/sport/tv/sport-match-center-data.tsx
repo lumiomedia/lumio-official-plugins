@@ -54,8 +54,10 @@ export function MatchCenterData({ match }: { match: SportMatch }) {
     let cancelled = false
     void controller.loadFixture(match.kind, match.fixture.id, match.status === 'finished').then((d) => { if (!cancelled) setDetail(d) })
     return () => { cancelled = true }
-    // Pågående match: hämta om när ställning eller minut ändras (pollningstakten).
-  }, [covered, controller, match.kind, match.fixture?.id, match.status, match.score?.home, match.score?.away, match.minute])
+    // Pågående match: hämta om BARA när ställning eller status ändras. Minuten
+    // ändras vid varje livepollning, och en omhämtning per pollning dubblade
+    // förbrukningen. Omhämtningen räknas som live i kvothanteraren.
+  }, [covered, controller, match.kind, match.fixture?.id, match.status, match.score?.home, match.score?.away])
 
   if (!covered) return null
   const alertOn = !!settings.goalAlertMatches[match.id]
