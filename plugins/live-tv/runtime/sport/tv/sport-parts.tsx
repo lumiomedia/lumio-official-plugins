@@ -1,16 +1,18 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { formatClock, progressOf } from '../../live-tv-ui'
 import { ChannelArt, Tag, TV, dp, station } from '../../tv/tv-ui'
-import { crestText, matchTitle, sourceChannel, type SportMatch } from '../sport-model'
-import { crestColor, followState, leagueColor, matchdayStrip, rankedSources, statusAt } from '../sport-day-model'
+import { matchTitle, sourceChannel, type SportMatch } from '../sport-model'
+import { followState, leagueColor, matchdayStrip, rankedSources, statusAt } from '../sport-day-model'
 import { sourceLine, type SportCtx } from '../sport-ctx'
 import { matchStatusLabel, showsScore } from '../score-model'
 import { MatchScore, ResultOnlyTag } from './sport-score'
 import { SportIcon, SportIcons } from './sport-icons'
 import { sportCardStyle } from '../surface'
+import { Crest } from '../crest'
+
+export { Crest }
 
 export const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
 export const overline: CSSProperties = { fontSize: dp(15), fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: TV.dim }
@@ -20,20 +22,6 @@ export const primaryBtn: CSSProperties = {
   display: 'inline-flex', alignItems: 'center', gap: dp(10), fontSize: dp(20), fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
 }
 export const secondaryBtn: CSSProperties = { ...primaryBtn, background: TV.s12, color: TV.text, border: `1px solid ${TV.lineCard}` }
-
-/** Handoffens initialcirkel. Med `src` (källans märke) ritas märket via appens bildcache i stället. */
-export function Crest({ name, colorKey, size = dp(56), src }: { name: string; colorKey: string; size?: number; src?: string | null }) {
-  const [broken, setBroken] = useState(false)
-  const url = src && !broken ? getPluginHttpAssetUrl('/api/m3u-logo', src) : null
-  if (url) {
-    return <img data-crest="" src={url} alt="" width={size} height={size} onError={() => setBroken(true)} style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
-  }
-  return (
-    <span data-crest="" aria-hidden="true" style={{ width: size, height: size, borderRadius: 999, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: crestColor(colorKey), color: '#fff', fontSize: Math.round(size * 0.32), fontWeight: 700, boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.18)' }}>
-      {crestText(name)}
-    </span>
-  )
-}
 
 export function LeagueDot({ leagueKey, size = dp(12) }: { leagueKey: string; size?: number }) {
   return <span aria-hidden="true" style={{ width: size, height: size, borderRadius: dp(3), background: leagueColor(leagueKey), flexShrink: 0 }} />

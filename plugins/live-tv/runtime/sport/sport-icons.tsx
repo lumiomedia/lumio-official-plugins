@@ -22,6 +22,15 @@ export const SportIcons = {
   Bell: ({ size = dp(22) }: IconProps) => svg(size, <><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" /><path d="M10 20a2 2 0 0 0 4 0" /></>),
   Plus: ({ size = dp(22) }: IconProps) => svg(size, <path d="M12 5v14M5 12h14" />),
   Play: ({ size = dp(22) }: IconProps) => svg(size, <path d="M8 5v14l11-7z" />, true),
+  /** Matchinfons rader (skisserna 2026-10-11). */
+  Stats: ({ size = dp(22) }: IconProps) => svg(size, <path d="M4 20h16M6 20v-6M10 20V9M14 20v-8M18 20V5" />),
+  People: ({ size = dp(22) }: IconProps) => svg(size, <><circle cx="8" cy="9" r="3" /><circle cx="16" cy="9" r="3" /><path d="M3 19c.8-3 2.7-4.5 5-4.5s4.2 1.5 5 4.5M11 19c.8-3 2.7-4.5 5-4.5s4.2 1.5 5 4.5" /></>),
+  Pin: ({ size = dp(22) }: IconProps) => svg(size, <><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.4" /></>),
+  Chevron: ({ size = dp(20) }: IconProps) => svg(size, <path d="m9 6 6 6-6 6" />),
+  Back: ({ size = dp(22) }: IconProps) => svg(size, <path d="m15 6-6 6 6 6" />),
+  Close: ({ size = dp(20) }: IconProps) => svg(size, <path d="M6 6l12 12M18 6 6 18" />),
+  /** Gult/rött kort i händelselistan. */
+  Card: ({ size = dp(20), filled = true }: IconProps) => svg(size, <rect x="7" y="4" width="10" height="15" rx="1.5" />, filled),
 }
 
 export function SportIcon({ kind, size }: { kind: SportKind; size?: number }) {

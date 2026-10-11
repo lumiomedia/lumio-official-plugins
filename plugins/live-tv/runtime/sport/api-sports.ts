@@ -80,6 +80,7 @@ function footballFixture(raw: any): Fixture | null {
     score: gh != null && ga != null ? { home: gh, away: ga } : null,
     venue: str(raw.fixture.venue?.name),
     venueImage: venueImageUrl(raw.fixture.venue?.id),
+    venueCity: str(raw.fixture.venue?.city),
     lastGoal: footballLastGoal(raw),
   }
 }
@@ -121,7 +122,13 @@ function footballStats(raw: any): FixtureStat[] {
   return arr(h.statistics).map((s: any) => ({ label: String(s?.type ?? ''), home: fmt(s?.value), away: fmt(away.get(s?.type)) }))
 }
 
-const lineupEntry = (x: any): LineupEntry => ({ number: num(x?.player?.number), name: String(x?.player?.name ?? ''), pos: str(x?.player?.pos) })
+/** Spelarens bild på källans CDN — samma värd som märkena, inget kvotanrop. */
+export function playerPhotoUrl(id: unknown): string | null {
+  const n = num(id)
+  return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/players/${n}.png` : null
+}
+
+const lineupEntry = (x: any): LineupEntry => ({ number: num(x?.player?.number), name: String(x?.player?.name ?? ''), pos: str(x?.player?.pos), photo: playerPhotoUrl(x?.player?.id) })
 
 function footballLineups(raw: any): FixtureLineup[] {
   return arr(raw?.lineups).map((l: any) => ({

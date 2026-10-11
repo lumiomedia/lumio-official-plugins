@@ -55,6 +55,7 @@ function event(sport: SportKind, e: any): Fixture | null {
     away: { id: String(e.idAwayTeam ?? ''), name: String(e.strAwayTeam ?? ''), crest: str(e.strAwayTeamBadge) },
     score: h != null && a != null ? { home: h, away: a } : null,
     venue: str(e.strVenue),
+    venueCity: str(e.strCity),
     lastGoal: null,
   }
 }
@@ -72,7 +73,7 @@ function lineups(rows: any[]): FixtureLineup[] {
   for (const s of ['home', 'away'] as const) {
     const mine = rows.filter((r) => side(r) === s)
     if (mine.length === 0) continue
-    const entry = (r: any): LineupEntry => ({ number: num(r?.intSquadNumber), name: String(r?.strPlayer ?? ''), pos: str(r?.strPosition) })
+    const entry = (r: any): LineupEntry => ({ number: num(r?.intSquadNumber), name: String(r?.strPlayer ?? ''), pos: str(r?.strPosition), photo: str(r?.strCutout) ?? str(r?.strThumb) })
     out.push({ side: s, formation: str(mine[0]?.strFormation), startXI: mine.filter((r) => r?.strSubstitute !== 'Yes').map(entry), subs: mine.filter((r) => r?.strSubstitute === 'Yes').map(entry) })
   }
   return out

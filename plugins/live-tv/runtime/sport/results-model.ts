@@ -1,5 +1,7 @@
 import type { TvStringKey } from '../tv/tv-strings'
 import type { SportKind, SportMatch } from './sport-model'
+import type { SportFollow } from './sport-store'
+import { followState } from './sport-day-model'
 
 /*
   Resultatens rena delar. De bodde i sport/tv/sport-results.tsx (Task 18), men
@@ -8,16 +10,18 @@ import type { SportKind, SportMatch } from './sport-model'
 */
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
-export type ResultsFilter = 'all' | 'live' | 'mine'
+/** `followed` = Mina lag: följda lag och ligor (förvalt när något följs). */
+export type ResultsFilter = 'all' | 'live' | 'mine' | 'followed'
 export interface ResultGroup { key: string; sport: SportKind; league: string; leagueId: string; season: string; round: number | null; country: string | null; matches: SportMatch[] }
 
 // Matcher med fixtur bär källans status i `status` (live omfattar paus), så klockan behövs inte här.
 const isLive = (m: SportMatch) => m.status === 'live'
 const isMine = (m: SportMatch) => m.sources.length > 0 && !m.resultOnly
 
-export function groupResults(matches: SportMatch[], filter: ResultsFilter): { groups: ResultGroup[]; liveCount: number; mineCount: number } {
+export function groupResults(matches: SportMatch[], filter: ResultsFilter, follows: SportFollow[] = []): { groups: ResultGroup[]; liveCount: number; mineCount: number; followedCount: number } {
   const eligible = matches.filter((m) => m.coverage === 'full' && m.fixture?.leagueId)
-  const shown = eligible.filter((m) => (filter === 'live' ? isLive(m) : filter === 'mine' ? isMine(m) : true))
+  const isFollowed = (m: SportMatch) => followState(m, follows).any
+  const shown = eligible.filter((m) => (filter === 'live' ? isLive(m) : filter === 'mine' ? isMine(m) : filter === 'followed' ? isFollowed(m) : true))
   const groups = new Map<string, ResultGroup>()
   for (const m of shown) {
     const key = `${m.kind}|${m.fixture!.leagueId}`
@@ -26,7 +30,17 @@ export function groupResults(matches: SportMatch[], filter: ResultsFilter): { gr
     groups.set(key, g)
   }
   for (const g of groups.values()) g.matches.sort((a, b) => a.start - b.start)
-  return { groups: [...groups.values()], liveCount: eligible.filter(isLive).length, mineCount: eligible.filter(isMine).length }
+  return { groups: [...groups.values()], liveCount: eligible.filter(isLive).length, mineCount: eligible.filter(isMine).length, followedCount: eligible.filter(isFollowed).length }
+}
+
+/** Mina lag förvalt så fort användaren följer något. */
+export function defaultResultsFilter(follows: SportFollow[]): ResultsFilter {
+  return follows.length > 0 ? 'followed' : 'all'
+}
+
+/** Ett ligaval (Dina ligor / Fler ligor) FILTRERAR till den ligan; `null` = alla ligor. */
+export function onlyLeague(groups: ResultGroup[], key: string | null): ResultGroup[] {
+  return key ? groups.filter((g) => g.key === key) : groups
 }
 
 export function formLetters(form: string | null, tt: TT): Array<{ letter: string; kind: 'W' | 'D' | 'L' }> {
