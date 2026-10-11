@@ -41863,7 +41863,7 @@ ${cue.text}`).join("\n\n")}
         liveSoft: "rgba(251,113,133,0.22)",
         liveText: "#fecdd3",
         glass: "rgba(58,59,66,0.96)",
-        panel: "rgba(20,22,30,0.98)",
+        panel: "#141519",
         scrim: "rgba(0,0,0,0.6)",
         font: "'Avenir Next', 'Trebuchet MS', sans-serif",
         mono: "ui-monospace, SFMono-Regular, Menlo, monospace"
@@ -44598,7 +44598,7 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx("span", { style: { ...overline, fontSize: ps(15) }, children: title }),
       list.map((m) => row(m, now2))
     ] }, title);
-    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "player-matches-drawer", "data-panel-root": "", style: { position: "absolute", top: 0, right: 0, bottom: 0, width: `min(${ps(780)}px, 100%)`, zIndex: 40, background: "#141519", borderLeft: "1px solid rgba(255,255,255,0.16)", padding: ps(28), boxSizing: "border-box", display: "flex", flexDirection: "column", gap: ps(14), color: TV2.text }, children: [
+    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "player-matches-drawer", "data-panel-root": "", style: { position: "absolute", top: 0, right: 0, bottom: 0, width: `min(${ps(780)}px, 100%)`, zIndex: 40, background: TV2.panel, borderLeft: "1px solid rgba(255,255,255,0.16)", padding: ps(28), boxSizing: "border-box", display: "flex", flexDirection: "column", gap: ps(14), color: TV2.text }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(12) }, children: [
         /* @__PURE__ */ jsx("span", { style: { fontSize: ps(30), fontWeight: 600 }, children: tt("sportMatches") }),
         /* @__PURE__ */ jsx("div", { "data-testid": "pm-pick", ...station(() => {
@@ -59399,7 +59399,7 @@ ${cue.text}`).join("\n\n")}
     };
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx("div", { "data-live-tv-layer": "", "aria-hidden": "true", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 59, background: TV2.scrim } }),
-      /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "match-center", "data-panel-root": "", "data-live-tv-layer": "", "data-scroll": "", role: "dialog", "aria-label": matchTitle(match), style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, background: "#141519", borderLeft: "1px solid rgba(255,255,255,0.16)", padding: `${dp(28)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(20), overflowY: "auto", boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "match-center", "data-panel-root": "", "data-live-tv-layer": "", "data-scroll": "", role: "dialog", "aria-label": matchTitle(match), style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: "1px solid rgba(255,255,255,0.16)", padding: `${dp(28)}px ${dp(32)}px`, display: "flex", flexDirection: "column", gap: dp(20), overflowY: "auto", boxSizing: "border-box" }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
           /* @__PURE__ */ jsx(StatusTag, { match, ctx }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted, ...ellipsis2 }, children: context }),
