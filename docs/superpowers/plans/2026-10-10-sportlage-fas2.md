@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Med en nyckel som användaren själv klistrar in (API-Sports eller TheSportsDB premium) får Sport-fliken ställning, minut, status, märken, Resultat med tabeller, matchcenter, "Bara resultat", MÅL!-overlay och målnotis. Kvothanteraren äger varje anrop, och utan nyckel görs inga anrop.
+**Goal:** Med en nyckel som användaren själv klistrar in (API-Sports eller TheSportsDB premium) får Sport-fliken ställning, minut, status, märken, Resultat med tabeller (även på telefon), matchcenter, "Bara resultat", MÅL!-overlay, målnotis och en bakgrundsbild i Sport. Kvothanteraren äger varje anrop, och utan nyckel görs inga anrop.
 
 **Architecture:** Appen (Rust) får en lokal genomkoppling, `/api/live-tv/sport/fetch`. Den lägger på nyckelheadern, läser kvotheaders, för en delad kvotbok per källa och hink, svarar ur en diskcache i `live-tv-sport/` och spärrar hårt vid slut kvot. Ingenting hostas av oss. Appen får också `/sport/link` (fixtur ↔ EPG-match) och en nyckelöverlämning från telefonen via Soffläges port 3012 (QR). I pluginet ligger providergränssnittet. Adaptrarna är **rena** (de bygger förfrågningar och tolkar svar men har inget nät). Allt nät går genom `Budget` (`budget.ts`), som tillämpar dygnsplanen, reserven, minutgränsen och spärrarna. En livepoller kör bara medan sportvyn, matchcentret eller en sportsändning i spelaren har registrerat "efterfrågan" och fönstret syns. `merge.ts` lägger fixturerna på fas 1:s EPG-matcher. Vyerna läser den sammanslagna `SportMatch`.
 
@@ -43,13 +43,13 @@
 
 Avstämt mot `docs/superpowers/plans/2026-10-10-sportlage-fas1.md` (Task 8–20). Planen använder fas 1:s faktiska namn och former. Det som fas 1 saknar läggs till additivt av den task som behöver det, och står i listan nedan.
 
-**Konflikter som inte gick att lösa med namnbyte** (löst med en liten, uttrycklig ändring i fas 1-kod, utom punkt 6 som är öppen):
+**Konflikter som inte gick att lösa med namnbyte** (löst med en liten, uttrycklig ändring i fas 1-kod):
 1. Fas 1:s `statusAt(m, now)` räknar status ur EPG-klockan och kan inte uttrycka paus, uppskjuten eller en källa som säger live efter EPG-slut. Task 11 lägger `phase` på `SportMatch` och en regel i `statusAt` (en match med `fixture` och `status !== 'upcoming'` litar på `m.status`), med två nya fall i fas 1:s `sport-day-model.test.ts`.
 2. Fas 1:s `SportSettings` har bara `view` och `alert`, och `sanitizeSettings` släpper allt annat. Fas 1:s test `toEqual({ view: 'matchday', alert: '15' })` bryts. Task 13 lägger `apiKey`, `goalAlerts` (standard `true`), `provider`, `keyPlan`, `keyCardDismissed` och `goalAlertMatches`, och byter testet till `toMatchObject`.
 3. Fas 1:s `SportFollow` saknar `providerIds`, och `sanitizeFollows` släpper det. Task 13 gör fältet valfritt och bevarar det.
 4. Fas 1 har ingen `day_matches` eller `normalize_team`. `day_handler` samlar och grupperar inline, och `parse_day`, `now_ms` och `collect_entries` är privata. Task 3 gör dem `pub(crate)` och bygger `day_matches` ovanpå. Lagnyckeln heter `team_key`.
 5. Fas 1:s `keys_match` kopplar `city` till `manchester city`. Kopplingen får inte göra det. `team_keys_match` (Task 3) lägger alias och minst fem tecken ovanpå `keys_match`.
-6. **Öppen:** fas 1:s telefonträd (`sport/mobile/sport-phone.tsx`) får inte importera ur `sport/tv/*` (importcykelregeln). Ställning och status på telefonens rader görs med de rena hjälparna i `sport/score-model.ts`, men en Resultat-vy och en sökning i källan för telefonen ingår inte i fas 2 och behöver ett eget beslut av Jerry.
+6. **Löst av Task 21** (Jerrys beslut 2026-10-11): fas 1:s telefonträd (`sport/mobile/sport-phone.tsx`) får inte importera ur `sport/tv/*` (importcykelregeln). Ställning och status på telefonens rader görs med de rena hjälparna i `sport/score-model.ts` (Task 15). Telefonen får fullt Resultat och sökningen i källan i Task 21, med Task 18:s rena delar flyttade till `sport/results-model.ts` och samma `useSportResults`/`searchProviderTeams` som TV:n.
 7. Fas 1:s följväljare har ingen fritext ("ingen fritext i fas 1"). Task 15 lägger ett sökfält i `FollowPicker`.
 
 Fas 1 har ingen statisk täckningstabell (`epgOnlySport` finns inte). `coverageFor(provider, sport)` är nytt i fas 2 (Task 7), och `SportMatch.coverage` är ett nytt valfritt fält där `undefined` betyder `'epg'`. Specens `sport_overrides_v1 {matchKey → channelKey}` blev i fas 1 `{ [matchId]: OverrideChannel }` (hela kanalen). Fas 2 följer fas 1.
@@ -89,6 +89,8 @@ Fas 1 har ingen statisk täckningstabell (`epgOnlySport` finns inte). `coverageF
 | `src-tauri/src/live_tv_sport_fetch.rs` (ny) | Genomkopplingen: vitlista per källa och sport, uppströms-URL och nyckelheader, kvotheaders, klassning av svarskroppar, kvotbok per hink (dygn UTC och minut), diskcache med TTL och `finalAfter`, handlarna `fetch` och `quota` |
 | `src-tauri/src/live_tv_sport_link.rs` (ny) | `/sport/link`: lagjämförelse (alias ovanpå fas 1:s `keys_match`), tidsfönster, girig koppling fixtur → EPG-match med `swapped` |
 | `src-tauri/src/live_tv_sport.rs` (fas 1, ändras) | `parse_day`, `now_ms` och `collect_entries` blir `pub(crate)` |
+| `src-tauri/src/live_tv_sport_image.rs` (ny, Task 22) | Bildcachen `/sport/image` för bakgrunden: källornas värdar, en hämtning per URL, för alltid på disk i `live-tv-sport/img/` |
+| `lib/plugin-sdk.ts` (Task 22) | Läs-seam för appens egna bakgrund (`getHomeBackgroundUrls`, `onHomeBackgroundChanged`) |
 | `src-tauri/src/live_tv_sport_key.rs` (ny) | Nyckelöverlämning: väntande koder (10 min, engångs), värdrutter på 3011 (bara lokalt), telefonsida och POST på 3012 |
 | `src-tauri/src/lib.rs`, `axum_server.rs`, `couch/phone_routes.rs`, `couch/host_routes.rs`, `haptics/server.rs` | Registrering av moduler och rutter, `ensure_listener` görs `pub(crate)`, och 3012 hålls uppe medan ett överlämningsfönster är öppet |
 | `lib/__tests__/sync-key-selection.test.ts` | Bevisar att `sport_settings_v1` synkas |
@@ -117,6 +119,9 @@ Fas 1 har ingen statisk täckningstabell (`epgOnlySport` finns inte). `coverageF
 | `sport/tv/sport-results.tsx` (ny) | Resultat-fliken: ligagrupper, Omgång N, filter, HOPPA TILL och Tabell med form |
 | `sport/tv/sport-match-center-data.tsx` (ny) | Händelser, Statistik och Laguppställningar (döljs när de är tomma), takt-raden, Notis vid mål |
 | `sport/tv/player-goal-overlay.tsx` (ny) | MÅL!-overlay och Hoppa dit |
+| `sport/results-model.ts` (ny, Task 21) | Resultatens rena delar (`groupResults`, `formLetters`, `FORM_COLOR`), delade av TV och telefon |
+| `sport/mobile/sport-results-phone.tsx`, `sport/mobile/sport-follow-search-phone.tsx` (nya, Task 21) | Telefonens Resultat (ligagrupper, filter, HOPPA TILL, tabellark) och sökningen i källan i följarket |
+| `sport/backdrop.ts`, `sport/sport-backdrop.tsx`, `sport/sport-backdrop-settings.tsx` (nya, Task 22) | Bakgrund i Sport: ren val-logik och krokar, lagret bakom vyn, och inställningen på tre ytor |
 | `tv/tv-strings.ts`, `src/__test-stubs__/plugin-sdk.ts`, `index.ts`, `live-tv-player.tsx`, `live-tv-settings-section.tsx`, `tv/tv-settings.tsx`, `tv/mobile/settings-phone.tsx` + fas 1-vyerna under `sport/tv/` och `sport/mobile/` | Strängar, QR-stubben, registrering och inkoppling |
 
 ---
@@ -989,6 +994,8 @@ git commit -m "live-tv sport: local passthrough with shared quota ledger and dis
 - Produces:
   - HTTP `POST /api/live-tv/sport/link`, body `{ listId: string /* pluginets globala EPG-id, som /sport/day */, day: "YYYY-MM-DD", tzOffset: number /* minuter öster om UTC den dagen, som /sport/day */, fixtures: [{ id, sport, home, away, league, kickoff /*ms*/ }] }` → `{ links: { [fixtureId]: { matchId: string, swapped: bool } | null } }`
   - Rust: `pub fn team_keys_match(a: &str, b: &str) -> bool` (båda redan normaliserade), `pub fn link(fixtures: &[LinkFixture], epg: &[Candidate]) -> HashMap<String, Option<(String, bool)>>`
+
+Obs (efter fas 1-fixar): `collect_entries` tar nu `&[(String, LiveTvChannel)]` från `sport_candidates(&index, store, from, to)` (under läslåset), och `day_handler` kör `collect_entries` + `group_entries` i `tokio::task::spawn_blocking`. `candidates()` nedan ska göra likadant, och `sport_candidates` blir också `pub(crate)`.
 
 Fönstret är "förstudio −15/+60 min": EPG-programmet får börja upp till 60 min före avspark (förstudio) och högst 15 min efter. Live går före repris. Varje EPG-match kopplas till högst en fixtur, och den närmaste i tid vinner.
 
@@ -4830,6 +4837,8 @@ git commit -m "live-tv sport: results layer, merged matches and visible update r
 - Ändrar (`sport/tv/sport-parts.tsx`, fas 1): `Crest({ name, colorKey, size?, src? })`. Med `src` (källans märke) ritas märket via appens bildcache, annars fas 1:s initialcirkel (`crestText`). Det finns därför ingen separat märkeskomponent i fas 2.
 - Produces (`sport/follow-search.ts`): `export async function searchProviderTeams(sport: SportKind, q: string): Promise<TeamHit[]>` (tom lista utan nyckel, under tre tecken eller i en otäckt sport, och då görs inget anrop)
 
+Obs (efter fas 1-fixar): `usePlayerSport` väntar nu `PLAYER_SPORT_DELAY_MS` efter kanalstart (`armed`) och behåller förra svaret (`last`) vid kanalbyte. I punkt 7 blir därför dagen `active && armed ? localDayKey(model.nowMs) : null`, och sammanslagningen läggs på `data` (`fresh ?? last.current`). Lådans rader är nu valbara (`onSwitchMatch` byter till bästa källan), och `PlayerSourceSwitcher` finns. Raderna i gruppen "Bara resultat" har ingen källa och får därför ingen `station`.
+
 Den här tasken lägger också `__setLangForTests` i SDK-stubben, eftersom stubbens `useLang()` alltid svarar `en`. UI-testerna i Task 15–20 sätter `sv` i `beforeEach` och `en` i `afterEach`.
 
 Strängar: `sportLiveShort` (LIVE / LIVE), `sportHalfTime` (HT / Paus), `sportPostponed` (Postponed / Uppskjuten), `sportInProgress` (in progress / pågår), `sportResultOnly` (Results only / Bara resultat), `sportFollowSearch` (Search teams / Sök lag). Fas 1 äger redan `sportEnded` (SLUT), som är statusen för en avslutad match, och `live`. Task 14 la redan `sportRateFaster`.
@@ -5137,7 +5146,7 @@ export async function searchProviderTeams(sport: SportKind, q: string): Promise<
 5. `sport/tv/sport-follows.tsx`, `FollowPicker`: fas 1 har ingen fritext. Lägg ett sökfält överst (`data-testid="follow-search"`): på TV `useTextPrompt({ pushLayer: ctx.nav.pushLayer })` (som i Task 16), på skrivbord ett `<input>`. Sökningen **skickas** med OK eller Enter, inte per tecken, och bara när `ctx.settings.apiKey` finns: `const hits = await searchProviderTeams(selectedSport === 'all' ? 'football' : selectedSport, q)` (`selectedSport` är den valda sport-chippen `follow-chip-<sport>`). Träffarna listas under fas 1:s kandidater, med `Crest src={hit.crest}` och landet, som `follow-hit-<id>`. En följd träff sparas som fas 1:s `SportFollow`: `toggleFollow({ sport, kind: 'team', key: foldTeamKey(hit.name), name: hit.name, providerIds: { [ctx.settings.provider]: hit.id } })` (`foldTeamKey` från `merge.ts`, Task 11). Strängen `sportFollowSearch` är fältets placeholder. Lägg ett fall i fas 1:s `sport-follows.test.tsx` som mockar `../follow-search` och bevisar att en träff sparas med `providerIds`.
 6. `sport/tv/sport-match-center.tsx`: rubrikens initialcirklar får `src`, och klockslaget i mitten blir `<MatchScore match={match} size="hero" />` när `showsScore(match)`. Statusraden blir `heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)`, och arenan är `match.venue` (fas 1 visar den redan).
 7. `sport/tv/player-sport.tsx`: `usePlayerSport` kör `useSportResults({ day: active ? localDayKey(model.nowMs) : null, epg: data?.matches ?? NO_MATCHES })` direkt efter `useSportDay`, och `matches` i `PlayerSportProps` blir `visibleMatches({ ...data, matches: mergedMatches }, 'all')`, så att spelaren får sammanslagna matcher även om Sport aldrig öppnats (`day: null` när spelaren är stängd: inga anrop). Tickern lägger `scoreText(m)` efter `shortLabel(m)`, och lådan visar `<MatchScore match={m} size="row" />` i raden samt `matchStatusLabel(m, tt) ?? fas 1:s meta`. `matchesForPlayer` filtrerar bort matcher utan källa och lämnas orörd. Lådan får en fjärde grupp sist, "Bara resultat" (`sport.matches.filter((m) => m.resultOnly)`, rubrik `tt('sportResultOnly')`), som bara visas när listan inte är tom. Raderna i gruppen är inte valbara för Multiview.
-8. `sport/mobile/sport-phone.tsx`: raderna visar `scoreText(m)` och `matchStatusLabel(m, tt)` i stället för klockslaget när `showsScore(m)`, importerade från `../score-model` (aldrig ur `sport/tv/*`). `SportPhone` gör samma `useSportResults`/`mergedDay`-steg som skalet i punkt 1 och anropar `usePollDemand('sport-view', true)`. Märken och Resultat-vy ingår inte på telefon i fas 2.
+8. `sport/mobile/sport-phone.tsx`: raderna visar `scoreText(m)` och `matchStatusLabel(m, tt)` i stället för klockslaget när `showsScore(m)`, importerade från `../score-model` (aldrig ur `sport/tv/*`). `SportPhone` gör samma `useSportResults`/`mergedDay`-steg som skalet i punkt 1 och anropar `usePollDemand('sport-view', true)`. Märken, Resultat-vyn och sökningen i källan på telefon kommer i Task 21.
 
 - [ ] **Step 6: Kör testerna**
 
@@ -5600,6 +5609,8 @@ git commit -m "live-tv sport: masked key, change and remove in both settings sur
   export function formLetters(form: string | null, tt: TT): Array<{ letter: string; kind: 'W' | 'D' | 'L' }>
   export function SportResults(props: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; tv: boolean }): JSX.Element
   ```
+
+Obs: Task 21 flyttar `groupResults`, `formLetters` och `FORM_COLOR` till `sport/results-model.ts` (telefonen får inte importera ur `sport/tv/*`). Den här filen återexporterar dem sedan.
 
 Resultat listar bara matcher med fixtur i en täckt sport. Tennis och EPG-matcher utan fixtur listas aldrig. "Mina kanaler" är matcher med källor som inte är "Bara resultat". Fas 1 har ingen Resultat-flik (`SportTab = 'foryou' | 'follows'`), så fliken läggs till här.
 
@@ -6368,7 +6379,1432 @@ git commit -m "live-tv sport: GOAL overlay with jump, and goal alerts while the 
 
 ---
 
-### Task 21: Helhetsgrind, bygge och manuell verifiering
+### Task 21: Telefonen får fullt Resultat (ligagrupper, tabell med form och sök i källan)
+
+Jerrys beslut 2026-10-11 löser konflikt 6: telefonen får samma Resultat som TV och skrivbord, och följväljaren på telefonen får fritextsökningen i källan. Allt går genom samma lager som TV:n (`useSportResults`, `ResultsController.standings/loadStandings`, `searchProviderTeams`), så inga nya anrop och ingen ny kvotväg uppstår. Telefonträdet får **aldrig** importera ur `sport/tv/*` (importcykelregeln), så de rena delarna i Task 18 flyttas till `sport/results-model.ts`, och märket ritas med en egen liten `PhoneCrest`.
+
+**Files:**
+- Create: `$PLG/runtime/sport/results-model.ts` (rena: `groupResults`, `formLetters`, `FORM_COLOR`, `ResultsFilter`, `ResultGroup`, flyttade ur Task 18)
+- Modify: `$PLG/runtime/sport/tv/sport-results.tsx` (Task 18: importerar och återexporterar ur `../results-model`)
+- Create: `$PLG/runtime/sport/mobile/sport-results-phone.tsx` (`SportResultsPhone`, `PhoneCrest`)
+- Create: `$PLG/runtime/sport/mobile/sport-follow-search-phone.tsx` (`PhoneFollowSearch`)
+- Modify (fas 1): `$PLG/runtime/sport/mobile/sport-phone.tsx` (tredje segmentet Resultat, sökningen i följarket), `$PLG/runtime/sport/mobile/sport-phone.test.tsx`
+- Modify: `$PLG/runtime/tv/tv-strings.ts` (EN + SV)
+- Test: `$PLG/runtime/sport/mobile/sport-results-phone.test.tsx`
+
+**Interfaces:**
+- Consumes: Task 14 (`useSportResults` → `{ matches, status, controller }`, `ResultsController.standings(sport, leagueId, season): StandingRow[] | null`, `ResultsController.loadStandings(...)`), Task 15 (`scoreText`, `matchStatusLabel` ur `sport/score-model.ts`, `searchProviderTeams` ur `sport/follow-search.ts`, och punkt 8:s `mergedMatches`/`controller` i `SportPhone`), Task 11 (`foldTeamKey` ur `merge.ts`), Task 13 (`SportSettings.apiKey`, `provider`, `keyCardDismissed`, `SportFollow.providerIds`), Task 16 (`KeyCard`, testid `sport-key-card-tab`), Task 18 (strängarna `sportTabResults`, `sportResultsAll`, `sportResultsLive`, `sportResultsMine`, `sportJumpTo`, `sportTable`, `sportColTeam`, `sportColPlayed`, `sportColPoints`, `sportColForm`, `sportResultsEmpty`, `sportFormW/D/L`), Task 15 (`sportFollowSearch`). Fas 1: `MT`, `ellipsis`, `sectionLabel` (`tv/mobile/mobile-tokens.ts`), `MobileChips`, `MobileSegment`, `MobileSheet` (med `body`), `crestText`, `useFollows`, `isFollowing`, `toggleFollow`, `getFollows`, `mountSport`, `fxMatch`.
+- Produces:
+  ```ts
+  // sport/results-model.ts (inga TV-importer utöver typen TvStringKey)
+  export type ResultsFilter = 'all' | 'live' | 'mine'
+  export interface ResultGroup { key: string; sport: SportKind; league: string; leagueId: string; season: string; round: number | null; matches: SportMatch[] }
+  export function groupResults(matches: SportMatch[], filter: ResultsFilter): { groups: ResultGroup[]; liveCount: number; mineCount: number }
+  export function formLetters(form: string | null, tt: TT): Array<{ letter: string; kind: 'W' | 'D' | 'L' }>
+  export const FORM_COLOR: Record<'W' | 'D' | 'L', string>
+  // sport/mobile/sport-results-phone.tsx
+  export function PhoneCrest(props: { name: string; src?: string | null; size?: number }): JSX.Element
+  export function SportResultsPhone(props: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; pushLayer: (close: () => void) => () => void }): JSX.Element
+  // sport/mobile/sport-follow-search-phone.tsx
+  export function PhoneFollowSearch(props: { sport: SportKind }): JSX.Element | null   // null utan nyckel
+  ```
+
+Strängar (nya): `sportSearchSubmit` (Search / Sök), `sportFollowSearchEmpty` (No teams found. / Inga lag hittades.). Allt annat finns redan från Task 15, 16 och 18. Inga fjärrkontrollsord (OK, håll OK, ◂ ▸) på telefonen, som fas 1:s test `REMOTE_WORDS` kräver.
+
+- [ ] **Step 1: Skriv de fallerande testerna**
+
+```tsx
+// runtime/sport/mobile/sport-results-phone.test.tsx
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { __resetPluginStorageForTests, __setLangForTests } from '@/lib/plugin-sdk'
+import { SportResultsPhone } from './sport-results-phone'
+import { PhoneFollowSearch } from './sport-follow-search-phone'
+import { getFollows, setSportSettings } from '../sport-store'
+import { foldTeamKey } from '../merge'
+import { fxMatch } from '../__sport-fixture'
+import type { SportMatch } from '../sport-model'
+
+vi.mock('../follow-search', () => ({
+  searchProviderTeams: vi.fn(async () => [{ id: '375', name: 'Malmo FF', crest: null, country: 'Sweden' }]),
+}))
+
+// Rå källtext för telefonträdet: samma grepp som deleted-desktop-views.test.ts.
+const sources = import.meta.glob('./*.tsx', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
+
+let n = 0
+const m = (over: Partial<SportMatch> = {}): SportMatch => fxMatch({
+  id: `p${++n}`, home: 'Malmo FF', away: 'AIK', homeKey: 'malmo', awayKey: 'aik', start: n, stop: n + 1,
+  status: 'finished', score: { home: 1, away: 0 }, round: 27, coverage: 'full',
+  fixture: { provider: 'api-sports', id: `f${n}`, leagueId: '113', season: '2026' }, ...over,
+})
+const pushLayer = () => () => {}
+const rows = [{ rank: 1, team: { id: '363', name: 'AIK Stockholm', crest: null }, played: 26, points: 58, goalDiff: 25, form: 'WWDWL', group: null }]
+const fakeController = () => ({ standings: vi.fn(() => null), loadStandings: vi.fn(async () => rows), subscribe: () => () => {} })
+
+beforeEach(() => { __resetPluginStorageForTests(); __setLangForTests('sv') })
+afterEach(() => { cleanup(); __setLangForTests('en') })
+
+describe('Resultat på telefon', () => {
+  it('utan nyckel: nyckelkortet; efter "Inte nu": den diskreta raden', () => {
+    const { rerender } = render(<SportResultsPhone matches={[]} controller={null} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
+    expect(screen.getByTestId('sport-key-card-tab')).toBeTruthy()
+    setSportSettings({ keyCardDismissed: true })
+    rerender(<SportResultsPhone matches={[]} controller={null} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
+    expect(screen.getByText('Visa resultat – lägg till nyckel')).toBeTruthy()
+  })
+
+  it('med nyckel: ligagrupp med omgång, ställning, filter och HOPPA TILL; tryck öppnar matchen', () => {
+    setSportSettings({ apiKey: 'k123' })
+    const open = vi.fn()
+    const live = m({ status: 'live', minute: 67, score: { home: 2, away: 1 } })
+    render(<SportResultsPhone matches={[m(), live, m({ kind: 'tennis', coverage: 'epg' })]} controller={fakeController() as never} onOpenMatch={open} pushLayer={pushLayer} />)
+    expect(screen.getByText('Allsvenskan · Omgång 27')).toBeTruthy()
+    expect(screen.getByText('HOPPA TILL')).toBeTruthy()
+    expect(screen.getAllByTestId('phone-result-score').map((e) => e.textContent)).toEqual(['2–1', '1–0']) // `live` skapades först och har tidigast start
+    fireEvent.click(screen.getByTestId('chip-live'))
+    expect(screen.getAllByTestId('phone-result-row')).toHaveLength(1)
+    fireEvent.click(screen.getAllByTestId('phone-result-row')[0]!)
+    expect(open).toHaveBeenCalledWith(live)
+  })
+
+  it('Tabell öppnar ett ark med M, P och form på svenska', async () => {
+    setSportSettings({ apiKey: 'k123' })
+    const controller = fakeController()
+    render(<SportResultsPhone matches={[m()]} controller={controller as never} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
+    fireEvent.click(screen.getByTestId('phone-table-football|113'))
+    const sheet = await screen.findByTestId('phone-standings-sheet')
+    await waitFor(() => expect(within(sheet).getByText('AIK Stockholm')).toBeTruthy())
+    expect(within(sheet).getByText('58')).toBeTruthy()
+    expect(within(sheet).getByText('26')).toBeTruthy()
+    expect(within(sheet).getAllByTestId('phone-form').map((e) => e.textContent).join('')).toBe('VVOVF')
+    expect(controller.loadStandings).toHaveBeenCalledWith('football', '113', '2026')
+  })
+
+  it('telefonträdet importerar aldrig ur sport/tv (importcykelregeln)', () => {
+    const offenders = Object.entries(sources).filter(([file, src]) => !file.includes('.test.') && /from '\.\.\/tv\//.test(src)).map(([file]) => file)
+    expect(Object.keys(sources).length).toBeGreaterThan(2)
+    expect(offenders).toEqual([])
+  })
+})
+
+describe('Sök i källan på telefon', () => {
+  it('utan nyckel ritas inget sökfält', () => {
+    const { container } = render(<PhoneFollowSearch sport="football" />)
+    expect(container.textContent).toBe('')
+  })
+
+  it('sökningen skickas med Sök, och en träff följs med källans id', async () => {
+    setSportSettings({ apiKey: 'k123', provider: 'api-sports' })
+    render(<PhoneFollowSearch sport="football" />)
+    fireEvent.change(screen.getByTestId('phone-follow-search-input'), { target: { value: 'malmo' } })
+    fireEvent.submit(screen.getByTestId('phone-follow-search-input').closest('form')!)
+    fireEvent.click(await screen.findByTestId('phone-follow-hit-375'))
+    expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: foldTeamKey('Malmo FF'), name: 'Malmo FF', providerIds: { 'api-sports': '375' } }])
+  })
+})
+```
+
+Lägg också ett fall sist i fas 1:s `runtime/sport/mobile/sport-phone.test.tsx` (stubbens språk är `en`):
+
+```tsx
+  it('Resultat är ett tredje segment och visar nyckelkortet utan nyckel', async () => {
+    mountSport({}, { phone: true, days: { [today]: [later] } })
+    fireEvent.click(await screen.findByText('Results'))
+    expect(await screen.findByTestId('sport-key-card-tab')).toBeTruthy()
+    expect(screen.getByTestId('sport-phone-days')).toBeTruthy() // dagchipsen gäller även Resultat
+  })
+```
+
+- [ ] **Step 2: Kör testerna och se dem falla**
+
+Run: `cd "$PLG" && npx vitest run runtime/sport/mobile/sport-results-phone.test.tsx runtime/sport/mobile/sport-phone.test.tsx`
+Expected: FAIL med "Failed to resolve import './sport-results-phone'" och, i sport-phone, "Unable to find an element with the text: Results".
+
+- [ ] **Step 3: Flytta de rena delarna ur Task 18 till `results-model.ts`**
+
+```ts
+// runtime/sport/results-model.ts
+import type { TvStringKey } from '../tv/tv-strings'
+import type { SportKind, SportMatch } from './sport-model'
+
+/*
+  Resultatens rena delar. De bodde i sport/tv/sport-results.tsx (Task 18), men
+  telefonträdet får inte importera ur sport/tv/* (importcykelregeln), så TV och
+  telefon delar dem härifrån.
+*/
+
+type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
+export type ResultsFilter = 'all' | 'live' | 'mine'
+export interface ResultGroup { key: string; sport: SportKind; league: string; leagueId: string; season: string; round: number | null; matches: SportMatch[] }
+
+// Matcher med fixtur bär källans status i `status` (live omfattar paus), så klockan behövs inte här.
+const isLive = (m: SportMatch) => m.status === 'live'
+const isMine = (m: SportMatch) => m.sources.length > 0 && !m.resultOnly
+
+export function groupResults(matches: SportMatch[], filter: ResultsFilter): { groups: ResultGroup[]; liveCount: number; mineCount: number } {
+  const eligible = matches.filter((m) => m.coverage === 'full' && m.fixture?.leagueId)
+  const shown = eligible.filter((m) => (filter === 'live' ? isLive(m) : filter === 'mine' ? isMine(m) : true))
+  const groups = new Map<string, ResultGroup>()
+  for (const m of shown) {
+    const key = `${m.kind}|${m.fixture!.leagueId}`
+    const g = groups.get(key) ?? { key, sport: m.kind, league: m.league, leagueId: m.fixture!.leagueId!, season: m.fixture!.season ?? '', round: m.round ?? null, matches: [] }
+    g.matches.push(m)
+    groups.set(key, g)
+  }
+  for (const g of groups.values()) g.matches.sort((a, b) => a.start - b.start)
+  return { groups: [...groups.values()], liveCount: eligible.filter(isLive).length, mineCount: eligible.filter(isMine).length }
+}
+
+export function formLetters(form: string | null, tt: TT): Array<{ letter: string; kind: 'W' | 'D' | 'L' }> {
+  const map = { W: tt('sportFormW'), D: tt('sportFormD'), L: tt('sportFormL') }
+  return (form ?? '').toUpperCase().split('').filter((c): c is 'W' | 'D' | 'L' => c === 'W' || c === 'D' || c === 'L').map((kind) => ({ kind, letter: map[kind] }))
+}
+
+export const FORM_COLOR: Record<'W' | 'D' | 'L', string> = { W: '#3cd6a3', D: 'rgba(243,244,248,0.45)', L: '#e0776a' }
+```
+
+I `runtime/sport/tv/sport-results.tsx` (Task 18): ta bort definitionerna av `ResultsFilter`, `ResultGroup`, `isLive`, `isMine`, `groupResults`, `formLetters` och `FORM_COLOR`, ta bort `SportKind` ur typimporten om den blir oanvänd, och lägg överst:
+
+```ts
+import { FORM_COLOR, formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
+export { formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
+```
+
+Task 18:s test (`sport-results.test.tsx`) importerar fortfarande `groupResults` och `formLetters` ur `./sport-results` och ska vara grönt utan ändring.
+
+- [ ] **Step 4: Implementera telefonens Resultat**
+
+```tsx
+// runtime/sport/mobile/sport-results-phone.tsx
+'use client'
+
+import { useRef, useState } from 'react'
+import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
+import { station } from '../../tv/tv-ui'
+import { useTvText, type TvStringKey } from '../../tv/tv-strings'
+import { MT, ellipsis, sectionLabel } from '../../tv/mobile/mobile-tokens'
+import { MobileChips } from '../../tv/mobile/mobile-chips'
+import { MobileSheet } from '../../tv/mobile/mobile-sheet'
+import { KeyCard } from '../key-card'
+import { FORM_COLOR, formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
+import { matchStatusLabel, scoreText } from '../score-model'
+import { crestText, type SportMatch } from '../sport-model'
+import { useSportSettings } from '../sport-store'
+import type { ResultsController } from '../results-controller'
+import type { StandingRow } from '../provider'
+
+type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
+
+/** Lagets märke på telefon: källans bild via appens logocache, annars initialerna (som fas 1:s Crest, utan TV-skalning). */
+export function PhoneCrest({ name, src, size = 22 }: { name: string; src?: string | null; size?: number }) {
+  const [broken, setBroken] = useState(false)
+  const url = src && !broken ? getPluginHttpAssetUrl('/api/m3u-logo', src) : null
+  if (url) return <img data-crest="" src={url} alt="" width={size} height={size} onError={() => setBroken(true)} style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
+  return (
+    <span aria-hidden="true" style={{ width: size, height: size, borderRadius: 999, background: MT.s12, color: MT.muted, fontSize: Math.round(size * 0.42), fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      {crestText(name)}
+    </span>
+  )
+}
+
+function PhoneStandings({ rows, tt }: { rows: StandingRow[]; tt: TT }) {
+  const cell = { padding: '8px 6px', fontSize: 14 } as const
+  return (
+    <div style={{ maxHeight: '60vh', overflowY: 'auto', padding: '4px 14px 12px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', color: MT.text }}>
+        <thead>
+          <tr style={{ color: MT.dim, textAlign: 'left', fontSize: 12 }}>
+            <th style={cell}>#</th><th style={cell}>{tt('sportColTeam')}</th><th style={cell}>{tt('sportColPlayed')}</th><th style={cell}>{tt('sportColPoints')}</th><th style={cell}>{tt('sportColForm')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={`${r.group ?? ''}-${r.rank}-${r.team.id}`} style={{ borderTop: `1px solid ${MT.line08}` }}>
+              <td style={cell}>{r.rank}</td>
+              <td style={{ ...cell, maxWidth: 150 }}><span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}><PhoneCrest name={r.team.name} src={r.team.crest} size={18} /><span style={ellipsis}>{r.team.name}</span></span></td>
+              <td style={cell}>{r.played}</td>
+              <td style={{ ...cell, fontWeight: 700 }}>{r.points}</td>
+              <td style={cell}>
+                <span style={{ display: 'inline-flex', gap: 3 }}>
+                  {formLetters(r.form, tt).slice(-5).map((f, i) => (
+                    <span key={i} data-testid="phone-form" style={{ width: 16, height: 16, borderRadius: 4, background: FORM_COLOR[f.kind], color: '#0e0f13', fontSize: 10, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{f.letter}</span>
+                  ))}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+export function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer }: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; pushLayer: (close: () => void) => () => void }) {
+  const { tt } = useTvText()
+  const settings = useSportSettings()
+  const [filter, setFilter] = useState<ResultsFilter>('all')
+  const [showCard, setShowCard] = useState(false)
+  const [table, setTable] = useState<{ group: ResultGroup; rows: StandingRow[] | null } | null>(null)
+  const sections = useRef(new Map<string, HTMLElement>())
+
+  if (!settings.apiKey || !controller) {
+    if (settings.keyCardDismissed && !showCard) {
+      return <div data-testid="phone-results-add-key" {...station(() => setShowCard(true))} style={{ padding: '16px 4px', fontSize: 15, color: MT.muted, cursor: 'pointer' }}>{tt('sportKeyAddRow')}</div>
+    }
+    return <KeyCard variant="tab" onDone={() => setShowCard(false)} pushLayer={pushLayer} />
+  }
+
+  const { groups, liveCount, mineCount } = groupResults(matches, filter)
+  const openTable = async (g: ResultGroup) => {
+    const cached = controller.standings(g.sport, g.leagueId, g.season)
+    setTable({ group: g, rows: cached })
+    if (cached) return
+    const rows = await controller.loadStandings(g.sport, g.leagueId, g.season)
+    setTable((t) => (t && t.group.key === g.key ? { group: g, rows: rows ?? [] } : t))
+  }
+
+  return (
+    <div data-testid="phone-results" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <MobileChips<ResultsFilter>
+        testId="phone-results-filter"
+        items={[
+          { key: 'all', label: tt('sportResultsAll'), id: 'all' },
+          { key: 'live', label: `${tt('sportResultsLive')} (${liveCount})`, id: 'live' },
+          { key: 'mine', label: tt('sportResultsMine', { n: mineCount }), id: 'mine' },
+        ]}
+        value={filter}
+        onChange={setFilter}
+      />
+      {groups.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={sectionLabel}>{tt('sportJumpTo')}</span>
+          <MobileChips<string>
+            testId="phone-results-jump"
+            items={groups.map((g) => ({ key: g.key, label: g.league, id: `jump-${g.key}` }))}
+            value=""
+            onChange={(key) => sections.current.get(key)?.scrollIntoView({ block: 'start', behavior: 'smooth' })}
+          />
+        </div>
+      ) : null}
+      {groups.length === 0 ? <div style={{ padding: '24px 4px', fontSize: 15, color: MT.muted }}>{tt('sportResultsEmpty')}</div> : null}
+      {groups.map((g) => (
+        <section key={g.key} ref={(el) => { if (el) sections.current.set(g.key, el); else sections.current.delete(g.key) }} style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6, scrollMarginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ flex: 1, fontSize: 17, fontWeight: 600, ...ellipsis }}>{g.round != null ? `${g.league} · ${tt('sportRound', { n: g.round })}` : g.league}</div>
+            <div data-testid={`phone-table-${g.key}`} {...station(() => void openTable(g))} style={{ minHeight: MT.HIT, padding: '0 14px', borderRadius: 12, background: MT.s08, border: `1px solid ${MT.line08}`, display: 'inline-flex', alignItems: 'center', fontSize: 14, color: MT.muted70, cursor: 'pointer', flexShrink: 0 }}>{tt('sportTable')}</div>
+          </div>
+          {g.matches.map((m) => (
+            <div key={m.id} data-testid="phone-result-row" {...station(() => onOpenMatch(m))} style={{ minHeight: 56, display: 'grid', gridTemplateColumns: '46px minmax(0,1fr) auto minmax(0,1fr)', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 14, background: MT.s07, border: `1px solid ${MT.line08}`, cursor: 'pointer' }}>
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: m.status === 'live' ? MT.live : MT.muted }}>{matchStatusLabel(m, tt) ?? ''}</span>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, minWidth: 0 }}><span style={{ fontSize: 14, ...ellipsis }}>{m.home}</span><PhoneCrest name={m.home ?? ''} src={m.homeCrest} /></span>
+              <span data-testid="phone-result-score" style={{ fontSize: 16, fontWeight: 700, minWidth: 38, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{scoreText(m) ?? '–'}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}><PhoneCrest name={m.away ?? ''} src={m.awayCrest} /><span style={{ fontSize: 14, ...ellipsis }}>{m.away}</span></span>
+            </div>
+          ))}
+        </section>
+      ))}
+      {table ? (
+        <MobileSheet
+          testId="phone-standings-sheet"
+          title={`${table.group.league} · ${tt('sportTable')}`}
+          body={table.rows === null ? <div style={{ padding: 16, color: MT.muted }}>{tt('sportLoading')}</div> : <PhoneStandings rows={table.rows} tt={tt} />}
+          items={[]}
+          onClose={() => setTable(null)}
+          pushLayer={pushLayer}
+        />
+      ) : null}
+    </div>
+  )
+}
+```
+
+`KeyCard` är samma komponent som telefonens inställningar redan ritar (Task 17, `SportKeySettingsTv phone`), så ingen ny variant behövs. Ser kortet för stort ut på telefonbredd i Step 7 är det en justering i `key-card.tsx`, inte en egen telefonkopia.
+
+- [ ] **Step 5: Implementera sökningen i följarket**
+
+```tsx
+// runtime/sport/mobile/sport-follow-search-phone.tsx
+'use client'
+
+import { useState } from 'react'
+import { station } from '../../tv/tv-ui'
+import { useTvText } from '../../tv/tv-strings'
+import { MT, ellipsis } from '../../tv/mobile/mobile-tokens'
+import { searchProviderTeams } from '../follow-search'
+import { foldTeamKey } from '../merge'
+import { isFollowing, toggleFollow, useFollows, useSportSettings } from '../sport-store'
+import type { TeamHit } from '../provider'
+import type { SportKind } from '../sport-model'
+import { PhoneCrest } from './sport-results-phone'
+
+/**
+ * Följer på telefon: fritext mot källan, som FollowPicker på TV (Task 15 punkt 5).
+ * Frågan SKICKAS (Sök eller Enter), aldrig per tecken: varje sökning är ett
+ * anrop av typen `search` och skyddas av reserven i budget.ts.
+ */
+export function PhoneFollowSearch({ sport }: { sport: SportKind }) {
+  const { tt } = useTvText()
+  const settings = useSportSettings()
+  const follows = useFollows()
+  const [q, setQ] = useState('')
+  const [hits, setHits] = useState<TeamHit[] | null>(null)
+  const [busy, setBusy] = useState(false)
+  if (!settings.apiKey) return null
+  const tooShort = q.trim().length < 3
+  const submit = async () => {
+    if (busy || tooShort) return
+    setBusy(true)
+    try {
+      setHits(await searchProviderTeams(sport, q))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div data-testid="phone-follow-search" style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: `1px solid ${MT.line08}` }}>
+      <form onSubmit={(e) => { e.preventDefault(); void submit() }} style={{ display: 'flex', gap: 8 }}>
+        {/* 16 px: mindre text zoomar in sidan på iOS när fältet får fokus. */}
+        <input data-testid="phone-follow-search-input" type="search" enterKeyHint="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tt('sportFollowSearch')} style={{ flex: 1, minWidth: 0, height: MT.HIT, borderRadius: 12, border: `1px solid ${MT.line14}`, background: MT.s07, color: MT.text, padding: '0 12px', fontSize: 16, fontFamily: MT.font }} />
+        <button type="submit" data-testid="phone-follow-search-go" disabled={busy || tooShort} style={{ height: MT.HIT, padding: '0 16px', borderRadius: 12, border: 'none', background: MT.acc, color: MT.onAcc, fontSize: 15, fontWeight: 600, fontFamily: MT.font, opacity: busy || tooShort ? 0.5 : 1 }}>{tt('sportSearchSubmit')}</button>
+      </form>
+      {hits?.map((hit) => {
+        const follow = { sport, kind: 'team' as const, key: foldTeamKey(hit.name), name: hit.name, providerIds: { [settings.provider]: hit.id } }
+        const on = isFollowing(follows, follow)
+        return (
+          <div key={hit.id} data-testid={`phone-follow-hit-${hit.id}`} {...station(() => toggleFollow(follow))} style={{ minHeight: 48, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <PhoneCrest name={hit.name} src={hit.crest} size={26} />
+            <span style={{ flex: 1, fontSize: 15, ...ellipsis }}>{hit.name}</span>
+            {hit.country ? <span style={{ fontSize: 13, color: MT.muted, flexShrink: 0 }}>{hit.country}</span> : null}
+            <span style={{ color: on ? '#fbbf24' : MT.dim, flexShrink: 0 }}>{on ? '★' : '☆'}</span>
+          </div>
+        )
+      })}
+      {hits && hits.length === 0 ? <div style={{ fontSize: 14, color: MT.muted }}>{tt('sportFollowSearchEmpty')}</div> : null}
+    </div>
+  )
+}
+```
+
+Lägg strängarna i `tv/tv-strings.ts`: i `EN` `sportSearchSubmit: 'Search'`, `sportFollowSearchEmpty: 'No teams found.'`, i `SV` `sportSearchSubmit: 'Sök'`, `sportFollowSearchEmpty: 'Inga lag hittades.'`.
+
+- [ ] **Step 6: Koppla in i `SportPhone`** (fas 1, efter Task 15 punkt 8)
+
+I `runtime/sport/mobile/sport-phone.tsx`:
+1. Importer: `import { SportResultsPhone } from './sport-results-phone'` och `import { PhoneFollowSearch } from './sport-follow-search-phone'`.
+2. `const [tab, setTab] = useState<'foryou' | 'results' | 'follows'>('foryou')`.
+3. Segmentet får tre val:
+   ```tsx
+   <MobileSegment testId="sport-phone-tabs" options={[{ key: 'foryou', label: tt('sportTabForYou') }, { key: 'results', label: tt('sportTabResults') }, { key: 'follows', label: tt('sportTabFollows') }]} value={tab} onChange={setTab} />
+   ```
+4. Grenen `{tab === 'foryou' ? (<>…</>) : (<PhoneFollows … />)}` ersätts med:
+   ```tsx
+   {tab !== 'follows' ? (
+     <MobileChips<DayOffset> testId="sport-phone-days" items={([-1, 0, 1] as const).map((o) => ({ key: o, label: dayLabel(o), id: `day-${o}` }))} value={offset} onChange={setOffset} emphasisKey={0} />
+   ) : null}
+   {tab === 'foryou' ? (
+     <>
+       {/* fas 1:s sportchips, notisen och de tre PhoneSection, oförändrade */}
+     </>
+   ) : tab === 'results' ? (
+     <SportResultsPhone matches={mergedMatches} controller={controller} onOpenMatch={openMatch} pushLayer={nav.pushLayer} />
+   ) : (
+     <PhoneFollows ctx={ctx} days={[todayDay.data, tomorrowDay.data]} />
+   )}
+   ```
+   Dagchipsen flyttas alltså ut ur För dig-fragmentet. `mergedMatches` och `controller` är de som Task 15 punkt 8 la till (`useSportResults({ day: shiftDay(today, offset), epg: selected.data?.matches ?? NO_MATCHES })`), så Resultat följer vald dag precis som TV:ns flik.
+5. Följarket (`sport-phone-follow-sheet`) får `body={<PhoneFollowSearch sport={filter === 'all' ? 'football' : filter} />}`. Kandidatlistan (`items`) är fas 1:s och oförändrad.
+
+Matchens ark (`sport-phone-sheet`) öppnas från Resultat med samma `openMatch`. En "Bara resultat"-match har inga källor och får därför inga Titta-rader, bara följ-raderna.
+
+- [ ] **Step 7: Kör testerna och typkontrollen**
+
+Run: `cd "$PLG" && npx vitest run runtime/sport/mobile runtime/sport/tv/sport-results.test.tsx && npx tsc --noEmit -p tsconfig.json`
+Expected: PASS (sport-results-phone 6 tester, sport-phone 5 tester, sport-results oförändrat 5) och inga nya tsc-fel.
+
+- [ ] **Step 8: Commit**
+
+```bash
+cd "$PLG" && git add runtime/sport/results-model.ts runtime/sport/tv/sport-results.tsx runtime/sport/mobile/sport-results-phone.tsx runtime/sport/mobile/sport-follow-search-phone.tsx runtime/sport/mobile/sport-results-phone.test.tsx runtime/sport/mobile/sport-phone.tsx runtime/sport/mobile/sport-phone.test.tsx runtime/tv/tv-strings.ts
+git commit -m "live-tv sport: full Results tab and team search on phone"
+```
+
+---
+
+### Task 22: Bakgrundsbild i Sport (Automatisk / Egen bild / Av)
+
+Inställningen "Bakgrund i Sport" har tre lägen, och standard är Automatisk. **Automatisk** visar arenan för hero-matchen. Med API-Sports kommer bilden ur fixturens `venue.id` (`https://media.api-sports.io/football/venues/{id}.png`, finns för fotboll). Det är en bild på källans CDN och kostar inget anrop. Med TheSportsDB kommer den ur hemmalagets `strStadiumThumb`, och reserven är lagets `strFanart1`. Det kostar ett `lookupteam`-anrop per lag, som går genom kvothanteraren och cachas 30 dygn. Därefter kommer en neutral gradient per sport. Utan nyckel blir det alltid gradienten. **Egen bild** återanvänder appens befintliga egna bakgrund (`lib/home-background-settings.ts`: `home_background_urls`, profilbunden, URL:er eller uppladdade data-URL:er från Inställningar > Startsida) via ett nytt läs-seam i SDK:t, och den kan också vara en inklistrad bildlänk. **Av** visar ingen bakgrund. Bilden ligger bakom hela Sport-vyn med en mörk gradient från vänster till höger, så att texten går att läsa. Det gäller TV, skrivbord och telefon.
+
+Varje bild från källorna går genom appens nya bildcache `GET /api/live-tv/sport/image?url=`. Den hämtar varje URL **en** gång, även när två klienter frågar samtidigt, och sparar den för alltid under `live-tv-sport/img/`. Bara källornas värdar är tillåtna. Egna länkar och startsidans bilder används som de är (som startsidan gör), eftersom de kan ligga på vilken värd som helst.
+
+**Files:**
+- Create: `$APP/src-tauri/src/live_tv_sport_image.rs`
+- Modify: `$APP/src-tauri/src/lib.rs` (`pub mod live_tv_sport_image;` efter `pub mod live_tv_sport_fetch;`), `$APP/src-tauri/src/axum_server.rs` (rutten efter `/api/live-tv/sport/link`)
+- Modify: `$APP/src-tauri/src/live_tv_sport_fetch.rs` (Task 1:s vitlista: `lookupteam.php` för TheSportsDB v1, plus ett test)
+- Modify: `$APP/lib/plugin-sdk.ts` (läs-seam: `getHomeBackgroundUrls`, `onHomeBackgroundChanged`)
+- Modify: `$PLG/src/__test-stubs__/plugin-sdk.ts` (samma två och `__setHomeBackgroundUrlsForTests`)
+- Modify: `$PLG/runtime/sport/provider.ts` (`TeamArt`, `Fixture.venueImage?`, `SportsProvider.teamArt`), `$PLG/runtime/sport/api-sports.ts`, `$PLG/runtime/sport/thesportsdb.ts`, `$PLG/runtime/sport/sport-model.ts` (`SportMatch.venueImage?`), `$PLG/runtime/sport/merge.ts` (`fromFixture`)
+- Create: `$PLG/runtime/sport/__fixtures__/thesportsdb/lookupteam.json`
+- Modify (fas 1): `$PLG/runtime/sport/sport-store.ts` (`backdrop`, `backdropCustom`) och `$PLG/runtime/sport/sport-store.test.ts`
+- Create: `$PLG/runtime/sport/backdrop.ts` (ren val-logik och krokar), `$PLG/runtime/sport/sport-backdrop.tsx` (lagret), `$PLG/runtime/sport/sport-backdrop-settings.tsx` (inställningen)
+- Modify (fas 1): `$PLG/runtime/sport/tv/sport-shell.tsx`, `$PLG/runtime/sport/mobile/sport-phone.tsx`
+- Modify: `$PLG/runtime/live-tv-settings-section.tsx`, `$PLG/runtime/tv/tv-settings.tsx`, `$PLG/runtime/tv/mobile/settings-phone.tsx` (samma tre ställen som Task 17), `$PLG/runtime/tv/tv-strings.ts`
+- Test: `$PLG/runtime/sport/backdrop.test.ts`, `$PLG/runtime/sport/sport-backdrop.test.tsx`, `$PLG/runtime/sport/sport-backdrop-settings.test.tsx`, `$PLG/runtime/sport/sport-store.test.ts`, Rust `mod tests` i `live_tv_sport_image.rs` och `live_tv_sport_fetch.rs`
+
+**Interfaces:**
+- Consumes: Task 1 (`upstream`, `Provider`, `Bases`), Task 2 (`sport_dir(state) -> Option<PathBuf>`), Task 3 (rutten `/api/live-tv/sport/link`), Task 5 (`Fixture`, `ProviderCall`), Task 6 (`apiSports`, `num` och `footballFixture` i `api-sports.ts`), Task 7 (`theSportsDb`, `arr`, `str`, `enc` i `thesportsdb.ts`), Task 8 (`currentBudget()`, `Budget.run(kind, sport, call)`, `Budget.provider`), Task 11 (`fromFixture`, `mergeLinked`, `SportMatch.fixture`, `SportMatch.homeIds`), Task 13 (`SportSettings.apiKey`), Task 15 (`useSportResults` i skalen, `mergedDay`), Task 17 (inställningsytorna). Fas 1: `featuredMatch(matches, follows, now)`, `visibleMatches`, `useSportSettings`, `setSportSettings`, `LtSection`, `LtRows`, `LtBtn`, `LtNote`, `LtTextRow`, `hostOf`, `Row`, `Heading`, `useTextPrompt`, `mountSport`, `fxMatch`. Appen: `getHomeBackgroundUrls(): string[]`, `onHomeBackgroundChanged(listener): () => void` (`lib/home-background-settings.ts`).
+- Produces:
+  - HTTP `GET /api/live-tv/sport/image?url=<https-URL>` → bildens bytes med källans `content-type` (200), 400 felaktig URL, 403 värd utanför vitlistan, 502 uppströmsfel eller inte en bild (cachas inte), 503 ingen lagring. Rust: `pub fn host_allowed(url: &url::Url, extra_host: Option<&str>) -> bool`, `pub enum ImageError { BadRequest, Forbidden, Upstream }`, `pub async fn image_inner(dir: &Path, raw: &str, extra_host: Option<&str>) -> Result<(String, Vec<u8>), ImageError>`, `pub async fn image_handler(...)`.
+  - SDK: `getHomeBackgroundUrls`, `onHomeBackgroundChanged` (bara läsning; appens Inställningar > Startsida äger skrivningen).
+  - `provider.ts`: `export interface TeamArt { stadium: string | null; fanart: string | null }`, `Fixture.venueImage?: string | null`, `SportsProvider.teamArt(sport: SportKind, teamId: string): ProviderCall<TeamArt | null> | null` (`null` = ingen sådan uppslagning, inget anrop).
+  - `api-sports.ts`: `export const API_SPORTS_MEDIA = 'https://media.api-sports.io'`, `export function venueImageUrl(id: unknown): string | null`.
+  - `sport-model.ts`: `SportMatch.venueImage?: string | null`.
+  - `sport-store.ts`: `export type SportBackdropMode = 'auto' | 'custom' | 'off'`, `export type SportBackdropCustom = { from: 'home'; index: number } | { from: 'url'; url: string }`, `SportSettings.backdrop: SportBackdropMode` (standard `'auto'`), `SportSettings.backdropCustom: SportBackdropCustom | null`.
+  - `backdrop.ts`:
+    ```ts
+    export type BackdropChoice = { kind: 'none' } | { kind: 'image'; url: string; from: 'venue' | 'stadium' | 'fanart' | 'custom' } | { kind: 'gradient'; sport: SportKind }
+    export interface BackdropInput { mode: SportBackdropMode; hasKey: boolean; hero: Pick<SportMatch, 'kind' | 'venueImage'> | null; art: TeamArt | null; custom: string | null; broken?: ReadonlySet<string> }
+    export const SPORT_GRADIENTS: Record<SportKind, string>
+    export const BACKDROP_SCRIM: string; export const BACKDROP_SCRIM_PHONE: string
+    export function chooseSportBackdrop(i: BackdropInput): BackdropChoice
+    export function resolveCustomBackdrop(c: SportBackdropCustom | null, homeUrls: string[]): string | null
+    export function backdropSrc(c: Extract<BackdropChoice, { kind: 'image' }>): string | null
+    export function useHomeBackgrounds(): string[]
+    export function useHeroTeamArt(hero: SportMatch | null): TeamArt | null
+    export function useSportBackdrop(hero: SportMatch | null): { choice: BackdropChoice; onBroken(url: string): void }
+    export function __resetBackdropForTests(): void
+    ```
+  - `sport-backdrop.tsx`: `export function SportBackdropLayer(props: { choice: BackdropChoice; phone: boolean; onBroken(url: string): void }): JSX.Element | null`.
+  - `sport-backdrop-settings.tsx`: `export function SportBackdropSettingsDesktop(): JSX.Element`, `export function SportBackdropSettingsTv(props: { phone?: boolean; pushLayer?: (close: () => void) => () => void }): JSX.Element`.
+
+Strängar (EN / SV): `sportBackdropTitle` (Background in Sport / Bakgrund i Sport), `sportBackdropHint` (Automatic shows the stadium of the featured match. / Automatisk visar arenan för den utvalda matchen.), `sportBackdropAuto` (Automatic / Automatisk), `sportBackdropCustom` (Custom image / Egen bild), `sportBackdropOff` (Off / Av), `sportBackdropFromHome` (Home screen image / Startsidans bild), `sportBackdropHomeN` (Image {n} of {total} / Bild {n} av {total}), `sportBackdropNone` (None chosen / Ingen vald), `sportBackdropNoHome` (Add your own images under Settings > Home, or paste a link. / Lägg till egna bilder under Inställningar > Startsida, eller klistra in en länk.), `sportBackdropNoHomeShort` (None / Inga), `sportBackdropLink` (Image link / Bildlänk), `sportBackdropUse` (Use / Använd).
+
+- [ ] **Step 1: Skriv de fallerande Rust-testerna**
+
+Längst ned i den nya filen `$APP/src-tauri/src/live_tv_sport_image.rs`:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    const PNG: [u8; 4] = [137, 80, 78, 71];
+
+    fn host_of(mock: &MockServer) -> String {
+        mock.uri().trim_start_matches("http://").to_string()
+    }
+
+    #[test]
+    fn only_the_sources_https_hosts_are_allowed() {
+        let ok = |u: &str| host_allowed(&url::Url::parse(u).unwrap(), None);
+        assert!(ok("https://media.api-sports.io/football/venues/1460.png"));
+        assert!(ok("https://r2.thesportsdb.com/images/media/team/stadium/malmo.jpg"));
+        assert!(ok("https://www.thesportsdb.com/images/media/team/fanart/malmo1.jpg"));
+        assert!(!ok("http://media.api-sports.io/football/venues/1460.png"), "bara https");
+        assert!(!ok("https://evil.example/x.png"));
+        assert!(!ok("https://media.api-sports.io.evil.example/x.png"));
+    }
+
+    #[tokio::test]
+    async fn two_clients_fetch_a_venue_image_once_and_it_stays_on_disk() {
+        let mock = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/football/venues/1460.png"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "image/png").set_body_bytes(PNG.to_vec()))
+            .expect(1)
+            .mount(&mock)
+            .await;
+        let dir = tempfile::tempdir().unwrap();
+        let url = format!("{}/football/venues/1460.png", mock.uri());
+        let host = host_of(&mock);
+        let (a, b) = tokio::join!(image_inner(dir.path(), &url, Some(&host)), image_inner(dir.path(), &url, Some(&host)));
+        assert_eq!(a.ok().unwrap(), ("image/png".to_string(), PNG.to_vec()));
+        assert_eq!(b.ok().unwrap(), ("image/png".to_string(), PNG.to_vec()));
+        // Tredje gången: från disk. `expect(1)` kontrolleras när mocken släpps.
+        assert!(image_inner(dir.path(), &url, Some(&host)).await.is_ok());
+        assert!(dir.path().join("img").read_dir().unwrap().count() >= 2);
+    }
+
+    #[tokio::test]
+    async fn non_image_and_upstream_errors_are_never_cached() {
+        let mock = MockServer::start().await;
+        Mock::given(method("GET")).and(path("/html.png"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/html").set_body_string("<html>"))
+            .mount(&mock).await;
+        Mock::given(method("GET")).and(path("/missing.png")).respond_with(ResponseTemplate::new(404)).mount(&mock).await;
+        let dir = tempfile::tempdir().unwrap();
+        let host = host_of(&mock);
+        assert!(matches!(image_inner(dir.path(), &format!("{}/html.png", mock.uri()), Some(&host)).await, Err(ImageError::Upstream)));
+        assert!(matches!(image_inner(dir.path(), &format!("{}/missing.png", mock.uri()), Some(&host)).await, Err(ImageError::Upstream)));
+        assert!(!dir.path().join("img").exists() || dir.path().join("img").read_dir().unwrap().count() == 0);
+    }
+
+    #[tokio::test]
+    async fn forbidden_host_and_bad_url_never_reach_the_network() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(matches!(image_inner(dir.path(), "https://evil.example/x.png", None).await, Err(ImageError::Forbidden)));
+        assert!(matches!(image_inner(dir.path(), "inte en url", None).await, Err(ImageError::BadRequest)));
+    }
+}
+```
+
+och i `live_tv_sport_fetch.rs` (Task 1:s `mod tests`):
+
+```rust
+    #[test]
+    fn thesportsdb_lookupteam_is_allowed_for_the_sport_backdrop() {
+        let up = upstream(Provider::TheSportsDb, "football", "/v1/lookupteam.php?id=134001", "9999", &bases()).unwrap();
+        assert_eq!(up.url, "https://www.thesportsdb.com/api/v1/json/9999/lookupteam.php?id=134001");
+        assert_eq!(up.bucket, "all");
+    }
+```
+
+- [ ] **Step 2: Kör Rust-testerna och se dem falla**
+
+Run: `cd "$APP/src-tauri" && cargo test --lib live_tv_sport_image live_tv_sport_fetch::tests::thesportsdb_lookupteam`
+Expected: kompileringsfel ("cannot find function `image_inner`"), sedan, när modulen finns, FAIL för `thesportsdb_lookupteam_is_allowed_for_the_sport_backdrop` (`called Option::unwrap() on a None value`). Kör de två filtren var för sig om cargo bara tar ett filter: `cargo test --lib live_tv_sport_image` och `cargo test --lib thesportsdb_lookupteam`.
+
+- [ ] **Step 3: Implementera bildcachen och vitlistan**
+
+Ovanför testmodulen i `live_tv_sport_image.rs`:
+
+```rust
+//! Bildcachen för Sports bakgrund: arenabilder och lagens fanart.
+//!
+//! Bilderna kostar inga API-anrop hos källan, men de ska ändå hämtas EN gång
+//! per URL. De sparas för alltid under `live-tv-sport/img/` (arenor byter inte
+//! bild), och två klienter som frågar samtidigt (TV:n och telefonen mot samma
+//! värd) väntar på samma hämtning. `/api/m3u-logo` duger inte: den skalar ned
+//! till 256×128.
+
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::Duration;
+
+use axum::body::Body;
+use axum::extract::{Query, State};
+use axum::http::{header, StatusCode};
+use axum::response::{IntoResponse, Response};
+use once_cell::sync::Lazy;
+use serde::Deserialize;
+use sha2::{Digest, Sha256};
+
+use crate::axum_server::AxumState;
+
+pub const MAX_IMAGE_BYTES: usize = 8 * 1024 * 1024;
+const ALLOWED_HOSTS: &[&str] = &["media.api-sports.io", "r2.thesportsdb.com", "www.thesportsdb.com"];
+
+static CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
+    reqwest::Client::builder().timeout(Duration::from_secs(20)).build().expect("reqwest-klient")
+});
+static INFLIGHT: Lazy<std::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>> = Lazy::new(Default::default);
+
+#[derive(Debug)]
+pub enum ImageError {
+    BadRequest,
+    Forbidden,
+    Upstream,
+}
+
+/// Källornas värdar över https. `extra_host` ("127.0.0.1:port") finns bara för testernas wiremock.
+pub fn host_allowed(url: &url::Url, extra_host: Option<&str>) -> bool {
+    let Some(host) = url.host_str() else { return false };
+    let with_port = match url.port() {
+        Some(p) => format!("{host}:{p}"),
+        None => host.to_string(),
+    };
+    if extra_host.is_some_and(|h| h == with_port) {
+        return true;
+    }
+    url.scheme() == "https" && url.port().is_none() && ALLOWED_HOSTS.contains(&host)
+}
+
+fn image_paths(dir: &Path, url: &str) -> (PathBuf, PathBuf) {
+    let hash = format!("{:x}", Sha256::digest(url.as_bytes()));
+    let base = dir.join("img");
+    (base.join(format!("{hash}.bin")), base.join(format!("{hash}.type")))
+}
+
+/// En träff kräver typfilen, som skrivs SIST: en avbruten skrivning blir aldrig en halv träff.
+fn read_hit(bin: &Path, ty: &Path) -> Option<(String, Vec<u8>)> {
+    let content_type = std::fs::read_to_string(ty).ok()?;
+    let bytes = std::fs::read(bin).ok()?;
+    (!bytes.is_empty()).then_some((content_type, bytes))
+}
+
+fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    let tmp = PathBuf::from(format!("{}.tmp-{}", path.display(), std::process::id()));
+    std::fs::write(&tmp, bytes)?;
+    std::fs::rename(&tmp, path).inspect_err(|_| {
+        let _ = std::fs::remove_file(&tmp);
+    })
+}
+
+fn write_hit(bin: &Path, ty: &Path, content_type: &str, bytes: &[u8]) {
+    let Some(parent) = bin.parent() else { return };
+    if std::fs::create_dir_all(parent).is_err() {
+        return;
+    }
+    if write_atomic(bin, bytes).is_ok() {
+        let _ = write_atomic(ty, content_type.as_bytes());
+    }
+}
+
+async fn fetch_and_store(url: &url::Url, bin: &Path, ty: &Path) -> Result<(String, Vec<u8>), ImageError> {
+    let res = CLIENT.get(url.clone()).send().await.map_err(|_| ImageError::Upstream)?;
+    if !res.status().is_success() {
+        return Err(ImageError::Upstream);
+    }
+    let content_type = res
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.split(';').next())
+        .map(|v| v.trim().to_ascii_lowercase())
+        .unwrap_or_default();
+    if !content_type.starts_with("image/") {
+        return Err(ImageError::Upstream);
+    }
+    let bytes = res.bytes().await.map_err(|_| ImageError::Upstream)?;
+    if bytes.is_empty() || bytes.len() > MAX_IMAGE_BYTES {
+        return Err(ImageError::Upstream);
+    }
+    write_hit(bin, ty, &content_type, &bytes);
+    Ok((content_type, bytes.to_vec()))
+}
+
+pub async fn image_inner(dir: &Path, raw: &str, extra_host: Option<&str>) -> Result<(String, Vec<u8>), ImageError> {
+    let url = url::Url::parse(raw.trim()).map_err(|_| ImageError::BadRequest)?;
+    if !host_allowed(&url, extra_host) {
+        return Err(ImageError::Forbidden);
+    }
+    let key = url.as_str().to_string();
+    let (bin, ty) = image_paths(dir, &key);
+    if let Some(hit) = read_hit(&bin, &ty) {
+        return Ok(hit);
+    }
+    let lock = INFLIGHT.lock().unwrap().entry(key.clone()).or_default().clone();
+    let result = {
+        let _guard = lock.lock().await;
+        // Den som väntade på en annan klients hämtning läser dess resultat från disk.
+        match read_hit(&bin, &ty) {
+            Some(hit) => Ok(hit),
+            None => fetch_and_store(&url, &bin, &ty).await,
+        }
+    };
+    INFLIGHT.lock().unwrap().remove(&key);
+    result
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ImageQuery {
+    pub url: Option<String>,
+}
+
+pub async fn image_handler(State(state): State<Arc<AxumState>>, Query(q): Query<ImageQuery>) -> Response {
+    let Some(dir) = crate::live_tv_sport_fetch::sport_dir(&state) else {
+        return StatusCode::SERVICE_UNAVAILABLE.into_response();
+    };
+    let Some(raw) = q.url.filter(|u| !u.trim().is_empty()) else {
+        return StatusCode::BAD_REQUEST.into_response();
+    };
+    match image_inner(&dir, &raw, None).await {
+        Ok((content_type, bytes)) => (
+            [(header::CONTENT_TYPE, content_type), (header::CACHE_CONTROL, "public, max-age=2592000".to_string())],
+            Body::from(bytes),
+        )
+            .into_response(),
+        Err(ImageError::BadRequest) => StatusCode::BAD_REQUEST.into_response(),
+        Err(ImageError::Forbidden) => StatusCode::FORBIDDEN.into_response(),
+        Err(ImageError::Upstream) => StatusCode::BAD_GATEWAY.into_response(),
+    }
+}
+```
+
+I `lib.rs`: `pub mod live_tv_sport_image;` efter `pub mod live_tv_sport_fetch;`. I `axum_server.rs`, direkt efter raden med `/api/live-tv/sport/link` (Task 3):
+
+```rust
+        .route("/api/live-tv/sport/image", get(crate::live_tv_sport_image::image_handler))
+```
+
+I `live_tv_sport_fetch.rs` (Task 1:s `upstream`), TheSportsDB-grenen: `["v1", file] => matches!(*file, "eventsday.php" | "lookuptable.php" | "searchteams.php" | "lookupteam.php"),`.
+
+Testerna i `live_tv_sport_image.rs` använder `tokio::join!` med `#[tokio::test]` (en tråd), så de två anropen turas om vid `await`. Den andra väntar på låset och läser sedan från disk, och därför ger `expect(1)` beviset.
+
+- [ ] **Step 4: Läs-seam för appens egna bakgrund i SDK:t**
+
+I `$APP/lib/plugin-sdk.ts`, efter blocket med `getPluginHttpAssetUrl`:
+
+```ts
+/**
+ * Appens EGNA BAKGRUND (Inställningar > Startsida), bara läsning. Live TV:s
+ * Sport erbjuder samma bilder som "Egen bild" i stället för en egen
+ * uppladdning: uppladdade bilder är data-URL:er, och en kopia i pluginets
+ * synkade lagring hade fyllt Androids localStorage (10 MiB-taket).
+ */
+export { getHomeBackgroundUrls, onHomeBackgroundChanged } from './home-background-settings'
+```
+
+I `$PLG/src/__test-stubs__/plugin-sdk.ts`:
+
+```ts
+let homeBackgrounds: string[] = []
+const homeBackgroundListeners = new Set<() => void>()
+export function getHomeBackgroundUrls(): string[] {
+  return homeBackgrounds
+}
+export function onHomeBackgroundChanged(listener: () => void): () => void {
+  homeBackgroundListeners.add(listener)
+  return () => { homeBackgroundListeners.delete(listener) }
+}
+export function __setHomeBackgroundUrlsForTests(urls: string[]): void {
+  homeBackgrounds = urls
+  for (const listener of homeBackgroundListeners) listener()
+}
+```
+
+och i stubbens `__resetPluginStorageForTests` läggs `homeBackgrounds = []`.
+
+- [ ] **Step 5: Kör Rust-testerna och appens typkontroll, och committa i APP**
+
+Run: `cd "$APP/src-tauri" && cargo test --lib live_tv_sport_image && cargo test --lib thesportsdb_lookupteam && cargo build`
+Expected: PASS (live_tv_sport_image 4 tester, lookupteam 1) och ett grönt bygge.
+
+Run: `cd "$APP" && npx tsc --noEmit -p tsconfig.json`
+Expected: inga nya fel.
+
+```bash
+cd "$APP" && git add src-tauri/src/live_tv_sport_image.rs src-tauri/src/lib.rs src-tauri/src/axum_server.rs src-tauri/src/live_tv_sport_fetch.rs lib/plugin-sdk.ts
+git commit -m "live-tv sport: disk-cached image passthrough for the Sport backdrop, lookupteam whitelisted, home background read seam"
+```
+
+- [ ] **Step 6: Skriv de fallerande plugintesterna**
+
+`runtime/sport/__fixtures__/thesportsdb/lookupteam.json`:
+
+```json
+{
+  "_shape": "from docs — verify with real key",
+  "teams": [
+    {
+      "idTeam": "134001",
+      "strTeam": "Malmo FF",
+      "strStadium": "Eleda Stadion",
+      "strStadiumThumb": "https://r2.thesportsdb.com/images/media/team/stadium/malmo.jpg",
+      "strFanart1": "https://r2.thesportsdb.com/images/media/team/fanart/malmo1.jpg",
+      "strFanart2": null
+    }
+  ]
+}
+```
+
+```ts
+// runtime/sport/backdrop.test.ts
+import { describe, expect, it, vi } from 'vitest'
+import { renderHook, waitFor } from '@testing-library/react'
+import { __resetBackdropForTests, backdropSrc, chooseSportBackdrop, resolveCustomBackdrop, useHeroTeamArt } from './backdrop'
+import { apiSports } from './api-sports'
+import { theSportsDb } from './thesportsdb'
+import { mergeLinked } from './merge'
+import footballDate from './__fixtures__/api-sports/football-fixtures-date.json'
+import lookupteam from './__fixtures__/thesportsdb/lookupteam.json'
+import type { SportMatch } from './sport-model'
+
+const h = vi.hoisted(() => ({ run: vi.fn() }))
+vi.mock('./budget', async () => {
+  const { theSportsDb: provider } = await import('./thesportsdb')
+  return { currentBudget: () => ({ provider, run: h.run }) }
+})
+
+const VENUE = 'https://media.api-sports.io/football/venues/1460.png'
+const art = { stadium: 'https://r2.thesportsdb.com/images/media/team/stadium/malmo.jpg', fanart: 'https://r2.thesportsdb.com/images/media/team/fanart/malmo1.jpg' }
+const hero = { kind: 'football' as const, venueImage: null as string | null }
+const base = { mode: 'auto' as const, hasKey: true, hero, art: null, custom: null }
+const DAY = { today: '2026-10-10', tz: 'Europe/Stockholm', dayEndMs: Date.UTC(2026, 9, 10, 22) }
+
+describe('chooseSportBackdrop', () => {
+  it('Automatisk: arenan, sedan lagets arenabild, sedan fanart, sist sportens gradient', () => {
+    expect(chooseSportBackdrop({ ...base, hero: { ...hero, venueImage: VENUE }, art })).toEqual({ kind: 'image', url: VENUE, from: 'venue' })
+    expect(chooseSportBackdrop({ ...base, art })).toEqual({ kind: 'image', url: art.stadium, from: 'stadium' })
+    expect(chooseSportBackdrop({ ...base, art: { stadium: null, fanart: art.fanart } })).toEqual({ kind: 'image', url: art.fanart, from: 'fanart' })
+    expect(chooseSportBackdrop(base)).toEqual({ kind: 'gradient', sport: 'football' })
+  })
+  it('utan nyckel eller utan hero: neutral gradient, aldrig en bild ur källan', () => {
+    expect(chooseSportBackdrop({ ...base, hasKey: false, hero: { ...hero, venueImage: VENUE }, art })).toEqual({ kind: 'gradient', sport: 'football' })
+    expect(chooseSportBackdrop({ ...base, hero: null })).toEqual({ kind: 'gradient', sport: 'other' })
+  })
+  it('en bild som inte gick att ladda hoppas över', () => {
+    expect(chooseSportBackdrop({ ...base, hero: { ...hero, venueImage: VENUE }, art, broken: new Set([VENUE]) })).toEqual({ kind: 'image', url: art.stadium, from: 'stadium' })
+    expect(chooseSportBackdrop({ ...base, art, broken: new Set([art.stadium, art.fanart]) })).toEqual({ kind: 'gradient', sport: 'football' })
+  })
+  it('Egen bild gäller även utan nyckel; saknas bilden blir det gradient', () => {
+    expect(chooseSportBackdrop({ ...base, mode: 'custom', hasKey: false, custom: 'data:image/png;base64,AA' })).toEqual({ kind: 'image', url: 'data:image/png;base64,AA', from: 'custom' })
+    expect(chooseSportBackdrop({ ...base, mode: 'custom', custom: null })).toEqual({ kind: 'gradient', sport: 'football' })
+  })
+  it('Av: ingenting, inte ens med arena', () => {
+    expect(chooseSportBackdrop({ ...base, mode: 'off', hero: { ...hero, venueImage: VENUE } })).toEqual({ kind: 'none' })
+  })
+})
+
+describe('bildens källor', () => {
+  it('Egen bild slås upp i startsidans lista per index, eller är länken', () => {
+    expect(resolveCustomBackdrop({ from: 'home', index: 1 }, ['a', 'b'])).toBe('b')
+    expect(resolveCustomBackdrop({ from: 'home', index: 5 }, ['a'])).toBeNull()
+    expect(resolveCustomBackdrop({ from: 'url', url: 'https://x/y.jpg' }, [])).toBe('https://x/y.jpg')
+    expect(resolveCustomBackdrop(null, ['a'])).toBeNull()
+  })
+  it('källornas bilder går genom appens bildcache; Egen bild används som den är', () => {
+    expect(backdropSrc({ kind: 'image', url: VENUE, from: 'venue' })).toBe('/api/live-tv/sport/image?src=' + encodeURIComponent(VENUE))
+    expect(backdropSrc({ kind: 'image', url: 'data:image/png;base64,AA', from: 'custom' })).toBe('data:image/png;base64,AA')
+    expect(backdropSrc({ kind: 'image', url: 'https://min.server/bild.jpg', from: 'custom' })).toBe('https://min.server/bild.jpg')
+  })
+  it('API-Sports: arenans bild ur fixturens venue-id utan anrop, och den följer med in i SportMatch', () => {
+    const [live] = apiSports.day('football', '2026-10-10', DAY).parse([footballDate])
+    expect(live!.venueImage).toBe(VENUE)
+    expect(apiSports.teamArt('football', '375')).toBeNull()
+    const [merged] = mergeLinked({ epg: [], fixtures: [live!], links: {}, overrides: {}, coverage: () => 'full' })
+    expect(merged!.venueImage).toBe(VENUE)
+  })
+  it('TheSportsDB: lookupteam ger arenabild och fanart, cachas 30 dygn', () => {
+    const call = theSportsDb.teamArt('football', '134001')!
+    expect(call.requests).toEqual([{ sport: 'football', path: '/v1/lookupteam.php?id=134001', ttlS: 2_592_000 }])
+    expect(call.parse([lookupteam])).toEqual(art)
+    expect(call.parse([{ teams: null }])).toBeNull()
+  })
+})
+
+describe('useHeroTeamArt', () => {
+  const tsdbHero = (over: Partial<SportMatch> = {}) => ({ id: 'x', kind: 'football', venueImage: null, fixture: { provider: 'thesportsdb', id: 'e1' }, homeIds: { thesportsdb: '134001' }, ...over }) as unknown as SportMatch
+
+  it('ett lookupteam per lag genom kvothanteraren, sedan minnet', async () => {
+    __resetBackdropForTests()
+    h.run.mockReset().mockResolvedValue({ ok: true, data: art, cached: false, fetchedAt: 1 })
+    const a = renderHook(() => useHeroTeamArt(tsdbHero()))
+    await waitFor(() => expect(a.result.current).toEqual(art))
+    const b = renderHook(() => useHeroTeamArt(tsdbHero()))
+    expect(b.result.current).toEqual(art)
+    expect(h.run).toHaveBeenCalledTimes(1)
+    expect(h.run).toHaveBeenCalledWith('search', 'football', expect.objectContaining({ requests: [expect.objectContaining({ path: '/v1/lookupteam.php?id=134001' })] }))
+  })
+  it('arenabild på hero, ingen hero eller ingen fixtur: inget anrop', () => {
+    __resetBackdropForTests()
+    h.run.mockReset()
+    renderHook(() => useHeroTeamArt(tsdbHero({ venueImage: VENUE })))
+    renderHook(() => useHeroTeamArt(null))
+    renderHook(() => useHeroTeamArt(tsdbHero({ fixture: undefined })))
+    expect(h.run).not.toHaveBeenCalled()
+  })
+})
+```
+
+```tsx
+// runtime/sport/sport-backdrop.test.tsx
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { SportBackdropLayer } from './sport-backdrop'
+import { setSportSettings } from './sport-store'
+import { localDayKey } from './sport-epg'
+import { fxMatch, mountSport } from './__sport-fixture'
+
+vi.mock('../live-tv-player', () => ({ LiveTvPlayer: () => null }))
+
+afterEach(() => { cleanup() })
+
+describe('SportBackdropLayer', () => {
+  it('bild med mörk gradient från vänster; en trasig bild rapporteras', () => {
+    const onBroken = vi.fn()
+    const url = 'https://media.api-sports.io/football/venues/1460.png'
+    render(<SportBackdropLayer choice={{ kind: 'image', url, from: 'venue' }} phone={false} onBroken={onBroken} />)
+    const layer = screen.getByTestId('sport-backdrop')
+    expect(layer.getAttribute('data-backdrop')).toBe('venue')
+    expect(layer.getAttribute('aria-hidden')).toBe('true')
+    const img = layer.querySelector('img')!
+    expect(img.getAttribute('src')).toBe('/api/live-tv/sport/image?src=' + encodeURIComponent(url))
+    expect(layer.querySelector('[data-scrim]')?.getAttribute('style')).toContain('linear-gradient(90deg')
+    fireEvent.error(img)
+    expect(onBroken).toHaveBeenCalledWith(url)
+  })
+  it('Av ritar ingenting', () => {
+    const { container } = render(<SportBackdropLayer choice={{ kind: 'none' }} phone={false} onBroken={vi.fn()} />)
+    expect(container.innerHTML).toBe('')
+  })
+})
+
+describe('Sport-vyn', () => {
+  const today = localDayKey(Date.now())
+  it('TV och telefon: gradient bakom innehållet utan nyckel, borta när Av väljs', async () => {
+    mountSport({}, { days: { [today]: [fxMatch({ id: 'a', start: Date.now() + 3_600_000 })] } })
+    expect((await screen.findByTestId('sport-backdrop')).getAttribute('data-backdrop')).toBe('gradient')
+    act(() => { setSportSettings({ backdrop: 'off' }) })
+    expect(screen.queryByTestId('sport-backdrop')).toBeNull()
+    cleanup()
+    setSportSettings({ backdrop: 'auto' })
+    mountSport({}, { phone: true, days: { [today]: [fxMatch({ id: 'b', start: Date.now() + 3_600_000 })] } })
+    expect((await screen.findByTestId('sport-backdrop')).getAttribute('data-backdrop')).toBe('gradient')
+  })
+})
+```
+
+`setSportSettings({ backdrop: 'auto' })` före andra monteringen återställer läget, oavsett om `mountSport` nollställer lagringen eller inte.
+
+```tsx
+// runtime/sport/sport-backdrop-settings.test.tsx
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { __resetPluginStorageForTests, __setHomeBackgroundUrlsForTests, __setLangForTests } from '@/lib/plugin-sdk'
+import { SportBackdropSettingsDesktop, SportBackdropSettingsTv } from './sport-backdrop-settings'
+import { getSportSettings } from './sport-store'
+
+beforeEach(() => { __resetPluginStorageForTests(); __setLangForTests('sv') })
+afterEach(() => { cleanup(); __setLangForTests('en') })
+
+describe('Bakgrund i Sport, inställningen', () => {
+  it('skrivbord: Automatisk som standard; Egen bild med startsidans bilder och en länk; Av', () => {
+    __setHomeBackgroundUrlsForTests(['https://img.example/a.jpg', 'data:image/png;base64,AA'])
+    render(<SportBackdropSettingsDesktop />)
+    expect(getSportSettings().backdrop).toBe('auto')
+    fireEvent.click(screen.getByText('Egen bild'))
+    expect(getSportSettings().backdrop).toBe('custom')
+    fireEvent.click(screen.getByTestId('sport-backdrop-home-1'))
+    expect(getSportSettings().backdropCustom).toEqual({ from: 'home', index: 1 })
+    fireEvent.change(screen.getByPlaceholderText('https://…'), { target: { value: 'https://min.server/bild.jpg' } })
+    fireEvent.click(screen.getByText('Använd'))
+    expect(getSportSettings().backdropCustom).toEqual({ from: 'url', url: 'https://min.server/bild.jpg' })
+    fireEvent.click(screen.getByText('Av'))
+    expect(getSportSettings().backdrop).toBe('off')
+  })
+  it('TV-raderna: läget stegar Automatisk → Egen bild → Av, och startsidans bilder stegas', () => {
+    __setHomeBackgroundUrlsForTests(['https://img.example/a.jpg', 'https://img.example/b.jpg'])
+    render(<SportBackdropSettingsTv />)
+    fireEvent.click(screen.getByTestId('sport-backdrop-mode'))
+    expect(getSportSettings().backdrop).toBe('custom')
+    fireEvent.click(screen.getByTestId('sport-backdrop-home'))
+    expect(getSportSettings().backdropCustom).toEqual({ from: 'home', index: 0 })
+    fireEvent.click(screen.getByTestId('sport-backdrop-home'))
+    expect(screen.getByText('Bild 2 av 2')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('sport-backdrop-mode'))
+    expect(getSportSettings().backdrop).toBe('off')
+    expect(screen.queryByTestId('sport-backdrop-home')).toBeNull()
+  })
+})
+```
+
+Sist i fas 1:s `runtime/sport/sport-store.test.ts`:
+
+```ts
+describe('Bakgrund i Sport', () => {
+  it('standard Automatisk; okända värden faller tillbaka', () => {
+    expect(getSportSettings()).toMatchObject({ backdrop: 'auto', backdropCustom: null })
+    expect(setSportSettings({ backdrop: 'bogus' as never })).toMatchObject({ backdrop: 'auto' })
+  })
+  it('Egen bild: startsidans bild per index eller en http(s)-länk; data-URL:er sparas aldrig i den synkade lagringen', () => {
+    expect(setSportSettings({ backdrop: 'custom', backdropCustom: { from: 'home', index: 2 } })).toMatchObject({ backdrop: 'custom', backdropCustom: { from: 'home', index: 2 } })
+    expect(setSportSettings({ backdropCustom: { from: 'url', url: '  https://x.example/y.jpg ' } }).backdropCustom).toEqual({ from: 'url', url: 'https://x.example/y.jpg' })
+    expect(setSportSettings({ backdropCustom: { from: 'url', url: 'data:image/png;base64,AAAA' } }).backdropCustom).toBeNull()
+    expect(setSportSettings({ backdropCustom: { from: 'home', index: -1 } }).backdropCustom).toBeNull()
+  })
+})
+```
+
+- [ ] **Step 7: Kör plugintesterna och se dem falla**
+
+Run: `cd "$PLG" && npx vitest run runtime/sport/backdrop.test.ts runtime/sport/sport-backdrop.test.tsx runtime/sport/sport-backdrop-settings.test.tsx runtime/sport/sport-store.test.ts`
+Expected: FAIL med "Failed to resolve import './backdrop'" (och motsvarande för `./sport-backdrop` och `./sport-backdrop-settings`), och i sport-store `expected undefined to be 'auto'`.
+
+- [ ] **Step 8: Typer, adaptrar, modell och lagring**
+
+`provider.ts` (Task 5):
+
+```ts
+/** Lagets bilder för Sports bakgrund (TheSportsDB `lookupteam`). */
+export interface TeamArt { stadium: string | null; fanart: string | null }
+```
+
+I `Fixture` läggs `venueImage?: string | null` efter `venue`, och i `SportsProvider` efter `crestUrl`:
+
+```ts
+  /** Bilder för bakgrunden. `null` = källan har ingen sådan uppslagning, och då görs inget anrop. */
+  teamArt(sport: SportKind, teamId: string): ProviderCall<TeamArt | null> | null
+```
+
+`api-sports.ts` (Task 6), efter importerna:
+
+```ts
+export const API_SPORTS_MEDIA = 'https://media.api-sports.io'
+
+/** Arenans bild på källans CDN. Kostar inget anrop, och bara fotbollens fixtur bär venue-id. */
+export function venueImageUrl(id: unknown): string | null {
+  const n = num(id)
+  return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/venues/${n}.png` : null
+}
+```
+
+I `footballFixture` läggs `venueImage: venueImageUrl(raw.fixture.venue?.id),` efter `venue`, och i adapterobjektet `teamArt: () => null,` efter `crestUrl`. Task 6:s tester jämför med `toMatchObject` och påverkas inte.
+
+`thesportsdb.ts` (Task 7), i adapterobjektet efter `crestUrl` (och `TeamArt` i typimporten från `./provider`):
+
+```ts
+  teamArt(sport, teamId): ProviderCall<TeamArt | null> {
+    return {
+      requests: [{ sport, path: `/v1/lookupteam.php?id=${enc(teamId)}`, ttlS: 2_592_000 }],
+      parse: (bodies) => {
+        const t = arr((bodies[0] as any)?.teams)[0]
+        if (!t) return null
+        return { stadium: str(t.strStadiumThumb), fanart: str(t.strFanart1) ?? str(t.strFanart2) }
+      },
+    }
+  },
+```
+
+`sport-model.ts` (fas 1, efter Task 11:s fält): `venueImage?: string | null` på `SportMatch`. `merge.ts` (Task 11), sist i objektet som `fromFixture` returnerar: `...(f.venueImage ? { venueImage: f.venueImage } : {}),` (villkorligt, så att Task 11:s `toEqual` på hela matcher inte får ett nytt `undefined`-fält).
+
+`sport-store.ts` (fas 1 + Task 13):
+
+```ts
+export type SportBackdropMode = 'auto' | 'custom' | 'off'
+/**
+ * Egen bild: en av appens egna bakgrunder (Inställningar > Startsida) per index,
+ * eller en http(s)-länk. Bilden själv kopieras aldrig hit: lagringen synkas med
+ * WebDAV, och uppladdade bilder är data-URL:er på flera MB.
+ */
+export type SportBackdropCustom = { from: 'home'; index: number } | { from: 'url'; url: string }
+
+function sanitizeBackdropCustom(raw: unknown): SportBackdropCustom | null {
+  const c = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
+  if (c?.from === 'home' && typeof c.index === 'number' && Number.isInteger(c.index) && c.index >= 0) return { from: 'home', index: c.index }
+  if (c?.from === 'url' && typeof c.url === 'string' && /^https?:\/\/\S+$/i.test(c.url.trim())) return { from: 'url', url: c.url.trim() }
+  return null
+}
+```
+
+`SportSettings` får `backdrop: SportBackdropMode` och `backdropCustom: SportBackdropCustom | null`, `DEFAULT_SETTINGS` får `backdrop: 'auto', backdropCustom: null`, och `sanitizeSettings` får, efter Task 13:s fält:
+
+```ts
+    backdrop: r.backdrop === 'custom' || r.backdrop === 'off' ? r.backdrop : 'auto',
+    backdropCustom: sanitizeBackdropCustom(r.backdropCustom),
+```
+
+- [ ] **Step 9: Val-logiken och krokarna**
+
+```ts
+// runtime/sport/backdrop.ts
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+import { getHomeBackgroundUrls, getPluginHttpAssetUrl, onHomeBackgroundChanged } from '@/lib/plugin-sdk'
+import { currentBudget } from './budget'
+import { useSportSettings, type SportBackdropCustom, type SportBackdropMode } from './sport-store'
+import type { TeamArt } from './provider'
+import type { SportKind, SportMatch } from './sport-model'
+
+export type BackdropChoice =
+  | { kind: 'none' }
+  | { kind: 'image'; url: string; from: 'venue' | 'stadium' | 'fanart' | 'custom' }
+  | { kind: 'gradient'; sport: SportKind }
+
+export interface BackdropInput {
+  mode: SportBackdropMode
+  hasKey: boolean
+  hero: Pick<SportMatch, 'kind' | 'venueImage'> | null
+  /** Hemmalagets bilder (TheSportsDB). `null` = okänt, eller API-Sports som inte har någon. */
+  art: TeamArt | null
+  /** Egen bild, redan uppslagen (http(s) eller startsidans data-URL). */
+  custom: string | null
+  /** Bilder som inte gick att ladda i den här sessionen. */
+  broken?: ReadonlySet<string>
+}
+
+/** Neutral bakgrund per sport: mörk och svagt tonad, aldrig en bild. */
+export const SPORT_GRADIENTS: Record<SportKind, string> = {
+  football: 'radial-gradient(120% 90% at 85% 10%, #1f3b2c 0%, #0d1611 55%, #050806 100%)',
+  hockey: 'radial-gradient(120% 90% at 85% 10%, #22364a 0%, #0c141c 55%, #05080b 100%)',
+  basketball: 'radial-gradient(120% 90% at 85% 10%, #46301c 0%, #1a120b 55%, #080604 100%)',
+  handball: 'radial-gradient(120% 90% at 85% 10%, #3a2a44 0%, #150f19 55%, #070509 100%)',
+  motorsport: 'radial-gradient(120% 90% at 85% 10%, #45201f 0%, #190c0c 55%, #080404 100%)',
+  tennis: 'radial-gradient(120% 90% at 85% 10%, #3b3f1e 0%, #15160b 55%, #070704 100%)',
+  other: 'radial-gradient(120% 90% at 85% 10%, #2a2c33 0%, #111216 55%, #060608 100%)',
+}
+
+/** Läsbarheten (handoffens hero över arenafotot): mörkt till vänster där texten står, bilden syns till höger. */
+export const BACKDROP_SCRIM = 'linear-gradient(90deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.78) 38%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.3) 100%)'
+/** Telefonen: texten går över hela bredden, så bilden tonas också ned uppifrån och ned. */
+export const BACKDROP_SCRIM_PHONE = `linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.85) 45%, #000 100%), ${BACKDROP_SCRIM}`
+
+export function chooseSportBackdrop(i: BackdropInput): BackdropChoice {
+  if (i.mode === 'off') return { kind: 'none' }
+  const sport = i.hero?.kind ?? 'other'
+  const usable = (url: string | null | undefined): url is string => !!url && !i.broken?.has(url)
+  if (i.mode === 'custom') return usable(i.custom) ? { kind: 'image', url: i.custom, from: 'custom' } : { kind: 'gradient', sport }
+  if (!i.hasKey || !i.hero) return { kind: 'gradient', sport }
+  if (usable(i.hero.venueImage)) return { kind: 'image', url: i.hero.venueImage, from: 'venue' }
+  const stadium = i.art?.stadium
+  const fanart = i.art?.fanart
+  if (usable(stadium)) return { kind: 'image', url: stadium, from: 'stadium' }
+  if (usable(fanart)) return { kind: 'image', url: fanart, from: 'fanart' }
+  return { kind: 'gradient', sport }
+}
+
+export function resolveCustomBackdrop(c: SportBackdropCustom | null, homeUrls: string[]): string | null {
+  if (!c) return null
+  return c.from === 'url' ? c.url : homeUrls[c.index] ?? null
+}
+
+/** Källornas bilder via appens bildcache (en hämtning per bild); Egen bild som den är, som startsidan gör. */
+export function backdropSrc(c: Extract<BackdropChoice, { kind: 'image' }>): string | null {
+  return c.from === 'custom' ? c.url : getPluginHttpAssetUrl('/api/live-tv/sport/image', c.url)
+}
+
+export function useHomeBackgrounds(): string[] {
+  const [urls, setUrls] = useState(getHomeBackgroundUrls)
+  useEffect(() => onHomeBackgroundChanged(() => setUrls(getHomeBackgroundUrls())), [])
+  return urls
+}
+
+// `källa:sport:lag` → bilder. Bara lyckade svar sparas; en spärr eller ett nätfel försöks igen nästa gång.
+const artCache = new Map<string, TeamArt | null>()
+export function __resetBackdropForTests(): void {
+  artCache.clear()
+}
+
+/**
+ * Hemmalagets bilder för hero-matchen. API-Sports har ingen sådan uppslagning
+ * (`teamArt` är null, och arenan kommer ur fixturen). TheSportsDB kostar ett
+ * `lookupteam` per lag, genom kvothanteraren som ett `search`-anrop (skyddas
+ * av reserven), och cachas sedan 30 dygn på disk och här i minnet.
+ */
+export function useHeroTeamArt(hero: SportMatch | null): TeamArt | null {
+  const provider = hero?.fixture?.provider ?? null
+  const teamId = provider ? hero?.homeIds?.[provider] ?? null : null
+  const key = hero && provider && teamId && !hero.venueImage ? `${provider}:${hero.kind}:${teamId}` : null
+  const [art, setArt] = useState<TeamArt | null>(() => (key ? artCache.get(key) ?? null : null))
+  useEffect(() => {
+    if (!key || !hero || !teamId) { setArt(null); return }
+    if (artCache.has(key)) { setArt(artCache.get(key) ?? null); return }
+    const budget = currentBudget()
+    const call = budget?.provider.teamArt(hero.kind, teamId) ?? null
+    if (!budget || !call) { setArt(null); return }
+    let alive = true
+    void budget.run('search', hero.kind, call).then((res) => {
+      if (res.ok) artCache.set(key, res.data)
+      if (alive) setArt(res.data ?? null)
+    })
+    return () => { alive = false }
+    // `key` bär allt som avgör uppslagningen; matchobjektet byter identitet vid varje sammanslagning.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+  return key ? art : null
+}
+
+export function useSportBackdrop(hero: SportMatch | null): { choice: BackdropChoice; onBroken(url: string): void } {
+  const settings = useSportSettings()
+  const homeUrls = useHomeBackgrounds()
+  const [broken, setBroken] = useState<ReadonlySet<string>>(() => new Set())
+  const art = useHeroTeamArt(settings.backdrop === 'auto' && settings.apiKey ? hero : null)
+  const onBroken = useCallback((url: string) => setBroken((b) => (b.has(url) ? b : new Set(b).add(url))), [])
+  const choice = chooseSportBackdrop({
+    mode: settings.backdrop,
+    hasKey: !!settings.apiKey,
+    hero,
+    art,
+    custom: resolveCustomBackdrop(settings.backdropCustom, homeUrls),
+    broken,
+  })
+  return { choice, onBroken }
+}
+```
+
+- [ ] **Step 10: Lagret och inkopplingen i båda skalen**
+
+```tsx
+// runtime/sport/sport-backdrop.tsx
+'use client'
+
+import { BACKDROP_SCRIM, BACKDROP_SCRIM_PHONE, SPORT_GRADIENTS, backdropSrc, type BackdropChoice } from './backdrop'
+
+/** Ligger bakom hela Sport-vyn. Tar aldrig fokus eller klick. */
+export function SportBackdropLayer({ choice, phone, onBroken }: { choice: BackdropChoice; phone: boolean; onBroken(url: string): void }) {
+  if (choice.kind === 'none') return null
+  const image = choice.kind === 'image' ? choice : null
+  const src = image ? backdropSrc(image) : null
+  return (
+    <div
+      data-testid="sport-backdrop"
+      data-backdrop={image ? image.from : 'gradient'}
+      aria-hidden="true"
+      style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', background: choice.kind === 'gradient' ? SPORT_GRADIENTS[choice.sport] : '#000' }}
+    >
+      {image && src ? (
+        <>
+          <img src={src} alt="" decoding="async" onError={() => onBroken(image.url)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }} />
+          <div data-scrim="" style={{ position: 'absolute', inset: 0, background: phone ? BACKDROP_SCRIM_PHONE : BACKDROP_SCRIM }} />
+        </>
+      ) : null}
+    </div>
+  )
+}
+```
+
+`runtime/sport/tv/sport-shell.tsx` (`SportTv`, efter Task 15 punkt 1 och Task 18): importera `featuredMatch` ur `../sport-day-model`, `useSportBackdrop` ur `../backdrop` och `SportBackdropLayer` ur `../sport-backdrop`. Efter raden där `matches` räknas (`visibleMatches(mergedDay, filter)`):
+
+```tsx
+const hero = useMemo(() => featuredMatch(matches, ctx.follows, ctx.now), [matches, ctx.follows, ctx.now])
+const backdrop = useSportBackdrop(hero)
+```
+
+och returen lindas in, med fas 1:s rot i övrigt oförändrad:
+
+```tsx
+return (
+  <div data-testid="sport-stage" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+    <SportBackdropLayer choice={backdrop.choice} phone={false} onBroken={backdrop.onBroken} />
+    <div data-testid="sport-view" data-scroll="" style={{ /* fas 1:s stil oförändrad */ position: 'relative' }}>
+      {/* fas 1:s innehåll oförändrat */}
+    </div>
+  </div>
+)
+```
+
+`hero` är samma match som `SportMatchday` visar som hero (samma `featuredMatch` på samma lista), så bakgrunden och hero-kortet hör ihop. Ingen `zIndex` på innehållet: lagret ritas först och innehållet (`position: relative`) ovanpå, så att matchcentrets och väljarnas egna lager inte hamnar i en ny staplingskontext.
+
+`runtime/sport/mobile/sport-phone.tsx` (`SportPhone`, efter Task 15 punkt 8 och Task 21), samma importer:
+
+```tsx
+const phoneHero = useMemo(() => featuredMatch(visibleMatches(mergedDay, filter), ctx.follows, ctx.now), [mergedDay, filter, ctx.follows, ctx.now])
+const backdrop = useSportBackdrop(phoneHero)
+```
+
+och samma inlindning runt roten `sport-phone`: `<div data-testid="sport-stage" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}><SportBackdropLayer choice={backdrop.choice} phone onBroken={backdrop.onBroken} />…</div>`, och roten får `position: 'relative'`. `useMemo` och `featuredMatch` läggs i importerna, men inget importeras ur `sport/tv/*`. Task 21:s importtest vaktar det.
+
+- [ ] **Step 11: Inställningen på de tre ytorna**
+
+```tsx
+// runtime/sport/sport-backdrop-settings.tsx
+'use client'
+
+import { useState } from 'react'
+import { LtBtn, LtNote, LtRows, LtSection, LtTextRow, hostOf } from '../settings-ui'
+import { Heading, Row } from '../tv/settings-tabs'
+import { useTextPrompt } from '../tv/tv-text-entry'
+import { useTvText, type TvStringKey } from '../tv/tv-strings'
+import { useHomeBackgrounds } from './backdrop'
+import { setSportSettings, useSportSettings, type SportBackdropCustom, type SportBackdropMode } from './sport-store'
+
+const MODES: SportBackdropMode[] = ['auto', 'custom', 'off']
+const MODE_LABEL: Record<SportBackdropMode, TvStringKey> = { auto: 'sportBackdropAuto', custom: 'sportBackdropCustom', off: 'sportBackdropOff' }
+const isHttp = (v: string) => /^https?:\/\/\S+$/i.test(v.trim())
+const pick = (c: SportBackdropCustom) => setSportSettings({ backdrop: 'custom', backdropCustom: c })
+
+export function SportBackdropSettingsDesktop() {
+  const { tt } = useTvText()
+  const s = useSportSettings()
+  const home = useHomeBackgrounds()
+  const [link, setLink] = useState(s.backdropCustom?.from === 'url' ? s.backdropCustom.url : '')
+  return (
+    <div data-testid="sport-backdrop-settings">
+      <LtSection title={tt('sportBackdropTitle')} hint={tt('sportBackdropHint')} />
+      <LtRows>
+        <div style={{ display: 'flex', gap: 8, padding: '12px 0' }}>
+          {MODES.map((m) => (
+            <LtBtn key={m} testId={`sport-backdrop-${m}`} active={s.backdrop === m} onClick={() => setSportSettings({ backdrop: m })}>{tt(MODE_LABEL[m])}</LtBtn>
+          ))}
+        </div>
+        {s.backdrop === 'custom' ? (
+          <>
+            {home.length > 0 ? (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '8px 0' }}>
+                {home.map((url, index) => {
+                  const on = s.backdropCustom?.from === 'home' && s.backdropCustom.index === index
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      data-testid={`sport-backdrop-home-${index}`}
+                      aria-pressed={on}
+                      onClick={() => pick({ from: 'home', index })}
+                      style={{ width: 120, height: 68, padding: 0, borderRadius: 8, cursor: 'pointer', borderWidth: 2, borderStyle: 'solid', borderColor: on ? 'rgb(var(--accent-500))' : 'transparent', background: `center / cover no-repeat url("${url.replace(/"/g, '%22')}")` }}
+                    />
+                  )
+                })}
+              </div>
+            ) : (
+              <LtNote>{tt('sportBackdropNoHome')}</LtNote>
+            )}
+            <LtTextRow
+              label={tt('sportBackdropLink')}
+              value={link}
+              onChange={setLink}
+              placeholder="https://…"
+              button={tt('sportBackdropUse')}
+              buttonDisabled={!isHttp(link)}
+              onButton={() => { if (isHttp(link)) pick({ from: 'url', url: link }) }}
+              onEnter={() => { if (isHttp(link)) pick({ from: 'url', url: link }) }}
+              testId="sport-backdrop-link"
+            />
+          </>
+        ) : null}
+      </LtRows>
+    </div>
+  )
+}
+
+export function SportBackdropSettingsTv({ phone = false, pushLayer }: { phone?: boolean; pushLayer?: (close: () => void) => () => void }) {
+  const { tt } = useTvText()
+  const s = useSportSettings()
+  const home = useHomeBackgrounds()
+  const prompt = useTextPrompt({ pushLayer })
+  const nextMode = MODES[(MODES.indexOf(s.backdrop) + 1) % MODES.length]!
+  const homeRight = s.backdropCustom?.from === 'home'
+    ? tt('sportBackdropHomeN', { n: s.backdropCustom.index + 1, total: home.length })
+    : home.length > 0 ? tt('sportBackdropNone') : tt('sportBackdropNoHomeShort')
+  const nextHome = () => {
+    if (home.length === 0) return
+    const index = s.backdropCustom?.from === 'home' ? (s.backdropCustom.index + 1) % home.length : 0
+    pick({ from: 'home', index })
+  }
+  const askLink = () => prompt.ask(tt('sportBackdropLink'), s.backdropCustom?.from === 'url' ? s.backdropCustom.url : '', (value) => {
+    if (isHttp(value)) pick({ from: 'url', url: value })
+  }, 'url')
+  return (
+    <div data-testid="sport-backdrop-settings-tv">
+      <Heading phone={phone} hint={tt('sportBackdropHint')}>{tt('sportBackdropTitle')}</Heading>
+      <Row phone={phone} testId="sport-backdrop-mode" label={tt('sportBackdropTitle')} right={tt(MODE_LABEL[s.backdrop])} onOk={() => setSportSettings({ backdrop: nextMode })} />
+      {s.backdrop === 'custom' ? (
+        <>
+          <Row phone={phone} testId="sport-backdrop-home" label={tt('sportBackdropFromHome')} right={homeRight} onOk={nextHome} />
+          <Row phone={phone} testId="sport-backdrop-link-tv" label={tt('sportBackdropLink')} right={s.backdropCustom?.from === 'url' ? hostOf(s.backdropCustom.url) : ''} onOk={askLink} />
+        </>
+      ) : null}
+      {prompt.node}
+    </div>
+  )
+}
+```
+
+Kopplingar, på samma tre ställen som Task 17 (Live TV har två inställningsytor, och telefonen har en egen undersida):
+- `live-tv-settings-section.tsx`: direkt efter `<SportKeySettingsDesktop />`, `<SportBackdropSettingsDesktop />`.
+- `tv/tv-settings.tsx`: innehållet för fliken blir `{tab === 'sport' ? <><SportKeySettingsTv /><SportBackdropSettingsTv pushLayer={nav.pushLayer} /></> : null}`.
+- `tv/mobile/settings-phone.tsx`: kortets gren för `params.tab === 'sport'` blir `<><SportKeySettingsTv phone /><SportBackdropSettingsTv phone pushLayer={nav.pushLayer} /></>`.
+
+Lägg strängarna ur tabellen ovan i `EN` och `SV` i `tv/tv-strings.ts`.
+
+- [ ] **Step 12: Kör testerna och typkontrollen**
+
+Run: `cd "$PLG" && npx vitest run runtime/sport && npx tsc --noEmit -p tsconfig.json`
+Expected: PASS (backdrop 11 tester, sport-backdrop 3, sport-backdrop-settings 2, sport-store 2 nya). Fas 1:s skal- och telefontester är fortfarande gröna. De letar efter `sport-view` och `sport-phone`, som finns kvar inuti `sport-stage`. Inga nya tsc-fel.
+
+- [ ] **Step 13: Commit i PLG**
+
+```bash
+cd "$PLG" && git add src/__test-stubs__/plugin-sdk.ts runtime/sport/provider.ts runtime/sport/api-sports.ts runtime/sport/thesportsdb.ts runtime/sport/__fixtures__/thesportsdb/lookupteam.json runtime/sport/sport-model.ts runtime/sport/merge.ts runtime/sport/sport-store.ts runtime/sport/sport-store.test.ts runtime/sport/backdrop.ts runtime/sport/backdrop.test.ts runtime/sport/sport-backdrop.tsx runtime/sport/sport-backdrop.test.tsx runtime/sport/sport-backdrop-settings.tsx runtime/sport/sport-backdrop-settings.test.tsx runtime/sport/tv/sport-shell.tsx runtime/sport/mobile/sport-phone.tsx runtime/live-tv-settings-section.tsx runtime/tv/tv-settings.tsx runtime/tv/mobile/settings-phone.tsx runtime/tv/tv-strings.ts
+git commit -m "live-tv sport: background in Sport (stadium of the featured match, custom image or off)"
+```
+
+---
+
+### Task 23: Helhetsgrind, bygge och manuell verifiering
 
 **Files:**
 - Modify: `$PLG/dist/runtime.js` (byggd, `git add -f`)
@@ -6383,7 +7819,7 @@ Run: `cd "$PLG" && npx tsc --noEmit -p tsconfig.json && npx vitest run`
 Expected: inga nya tsc-fel och en grön svit. Det förbefintliga klockberoende `tv-player-chrome`-testet kan falla efter 12:11 och räknas inte.
 
 Run: `cd "$APP/src-tauri" && cargo test --lib live_tv_sport && cargo build`
-Expected: PASS och ett grönt bygge.
+Expected: PASS (filtret täcker också `live_tv_sport_image` från Task 22) och ett grönt bygge.
 
 Run: `cd "$APP" && npx vitest run lib/__tests__/sync-key-selection.test.ts`
 Expected: PASS.
@@ -6392,6 +7828,9 @@ Expected: PASS.
 
 Run: `cd "$PLG" && grep -rn "sport/fetch\|sport-fetch'" runtime --include='*.ts' --include='*.tsx' | grep -v '\.test\.' `
 Expected: träffar bara i `runtime/sport/sport-fetch.ts` och `runtime/sport/budget.ts`. Kontrollera också att `import type` är det enda sättet `key-flow.ts` refererar till `sport-fetch`.
+
+Run: `cd "$PLG" && grep -rn "from '\.\./tv/" runtime/sport/mobile | grep -v '\.test\.'`
+Expected: inga träffar (telefonträdet importerar aldrig ur `sport/tv/*`, se Task 21).
 
 - [ ] **Step 3: Bygg pluginet från APP-worktreet**
 
@@ -6409,6 +7848,9 @@ Starta dev-appen från APP-worktreet. Kontrollera först vilken app som äger po
 6. Smal yta, ≤639 px (telefon): Sport i "Mer", kortet med textfält och Klistra in. Inställningar > Mer > Sport visar den maskerade nyckeln.
 7. TV-överlämning: "Skriv in med telefonen" → skanna QR:n → klistra in på telefonen → TV:n validerar och sparar.
 8. Kvällskontroll (Jerry, med egen nyckel, under en matchkväll): `GET /api/live-tv/sport/quota?provider=api-sports` före och efter. Förbrukningen per hink ska stämma med dygnsplanen plus livepollningen i den visade takten.
+9. Telefon (≤639 px) med nyckel: Sport har tre segment. Resultat visar ligagrupper med omgång, ställning och minut, filtren Alla / Bara live / Mina kanaler, HOPPA TILL, och Tabell öppnar ett ark med M, P och form. Följer > Lägg till: sök "malmo" med Sök, följ en träff. Utan nyckel visar Resultat nyckelkortet.
+10. Bakgrund i Sport, Automatisk med API-Sports-nyckel: hero-matchens arena syns bakom vyn med mörk vänsterkant och läsbar text på TV, skrivbord och telefon. Nätverksloggen har **ett** `/api/live-tv/sport/image`-anrop per arena, och efter omladdning svarar det från disk (inga nya uppströmsanrop). `quota` ändras inte av bilderna. Utan nyckel visas sportens gradient och inga bildanrop görs.
+11. Egen bild: lägg en bild under appens Inställningar > Startsida, välj den under Live TV > Sport > Bakgrund i Sport, och kontrollera att den syns i Sport på skrivbordet. Kontrollera också att det inbyggda `getHomeBackgroundUrls` i pluginbunten läser samma lista som värden (samma profil). Av tar bort bakgrunden.
 
 - [ ] **Step 5: Commit av dist**
 
@@ -6432,3 +7874,5 @@ Ingen versionsbump, ingen push och inget släpp. Det avgör Jerry.
 7. **TheSportsDB:s livescore-namn för hockey** (`icehockey`) och valideringsanropet (`/v2/all/sports`) är antaganden ur dokumentationen och ska verifieras med nyckel. Det gäller också `strTimestamp` som UTC.
 8. **Nyckelöverlämningen på TV** använder Soffläges port 3012 med en engångskod, i stället för en parad Telefonkompis. Det fungerar för vilken telefon som helst på samma LAN, utan parning.
 9. **Delade ligor i dygnsplanen**: tabeller planeras bara för ligor bland kopplade matcher med följda lag eller ligor. Visade ligor hämtas på begäran när "Tabell" öppnas, och det skyddas av reserven.
+10. **Bakgrund i Sport (Task 22)**: API-Sports har arenabilder bara för fotboll (`media.api-sports.io/football/venues/{id}.png`, ur fixturens `venue.id`). Hockey, basket och handboll får därför gradient med API-Sports. TheSportsDB:s `strStadiumThumb` och `strFanart1` i `lookupteam` är antaganden ur dokumentationen och ska verifieras med nyckel. Lagets bilder kostar ett anrop per lag (som `search`, skyddat av reserven, cachat 30 dygn).
+11. **Egen bild** återanvänder appens befintliga egna bakgrund (Inställningar > Startsida) via ett läs-seam i SDK:t och sparar bara ett index eller en http(s)-länk i `sport_settings_v1`. En egen uppladdning i pluginet byggs inte: startsidans uppladdningar är data-URL:er, och en kopia i den synkade pluginlagringen hade riskerat Androids 10 MiB-tak. Egna länkar går inte genom bildcachen, eftersom den bara tillåter källornas värdar.
