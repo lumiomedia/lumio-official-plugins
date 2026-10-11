@@ -80,6 +80,25 @@ describe('Sport som egen sida: skrivbord/TV', () => {
     expect(back).toHaveBeenCalledTimes(1)
     expect(onNavigate).not.toHaveBeenCalled()
   })
+  /* Jerry 2026-10-11 (TV-läget): med appens sidomeny öppen över sportsidan
+     stängde Bakåt menyn OCH lämnade sidan — pluginets lyssnare tog trycket
+     först. Fokus i värdens eget lager är värdens Bakåt. */
+  it('Bakåt med fokus i värdens meny lämnar inte sidan', async () => {
+    const back = backSpy()
+    mountSport({}, { page: true, days: { [today]: [live] } })
+    await screen.findByTestId('sport-hero')
+    const hostMenu = document.createElement('nav')
+    hostMenu.setAttribute('data-panel-root', '')
+    const item = document.createElement('button')
+    hostMenu.appendChild(item)
+    document.body.appendChild(hostMenu)
+    item.focus()
+    fireEvent.keyDown(item, { key: 'Escape' })
+    expect(back).not.toHaveBeenCalled()
+    hostMenu.remove()
+    pressBack()
+    expect(back).toHaveBeenCalledTimes(1)
+  })
   it('Bakåt stänger matchcentret först, sedan lämnar den sidan', async () => {
     const back = backSpy()
     mountSport({}, { page: true, days: { [today]: [live, later] } })

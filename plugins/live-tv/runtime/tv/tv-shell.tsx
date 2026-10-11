@@ -541,6 +541,9 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return
       // Värdens egna paneler (TV-tangentbordet) stänger sig själva.
       if (target?.closest?.('[data-live-tv-host-ui]')) return
+      // Likaså värdens lager UTANFÖR skalet: appens sidomeny över sportsidan
+      // stängde annars både menyn och sidan på ett tryck (Jerry 2026-10-11).
+      if (target?.closest?.('[data-panel-root]') && !rootRef.current?.contains(target)) return
       event.preventDefault()
       event.stopPropagation()
       back()
