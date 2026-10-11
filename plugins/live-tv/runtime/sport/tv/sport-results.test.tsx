@@ -50,10 +50,50 @@ describe('SportResults', () => {
     const controller = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => rows), subscribe: () => () => {} }
     render(<SportResults matches={[m()]} controller={controller as never} onOpenMatch={vi.fn()} tv={false} />)
     expect(screen.getByText('Allsvenskan · Omgång 27')).toBeTruthy()
-    expect(screen.getByText('HOPPA TILL')).toBeTruthy()
+    expect(screen.getByText('DINA LIGOR')).toBeTruthy()
     fireEvent.click(screen.getByText('Tabell'))
     await waitFor(() => expect(screen.getByText('AIK Stockholm')).toBeTruthy())
     expect(controller.loadStandings).toHaveBeenCalledWith('football', '113', '2026')
     expect(screen.getByText('58')).toBeTruthy()
+  })
+
+  it('Dina ligor: kort rad med kopplade ligor, dubblettnamn med land, sportchipet respekteras; Fler ligor… öppnar lådan per land och hoppar', async () => {
+    setSportSettings({ apiKey: 'k123' })
+    const controller = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => null), subscribe: () => () => {} }
+    const fx = (leagueId: string, country: string) => ({ provider: 'api-sports', id: `f${++n}`, leagueId, season: '2026', country })
+    const world = [
+      m({ league: 'Allsvenskan', fixture: fx('113', 'Sweden') }),
+      m({ league: 'Premier League', fixture: fx('39', 'England'), status: 'live' }),
+      ...Array.from({ length: 3 }, () => m({ league: 'Premier League', fixture: fx('500', 'Wales'), resultOnly: true, sources: [] })),
+      m({ league: 'Primera División', fixture: fx('140', 'Spain'), resultOnly: true, sources: [] }),
+      m({ kind: 'hockey', league: 'SHL', fixture: fx('47', 'Sweden'), resultOnly: true, sources: [] }),
+    ]
+    const layers: Array<() => void> = []
+    const nav = { pushLayer: (close: () => void) => { layers.push(close); return () => {} } }
+    const { rerender } = render(<SportResults matches={world} controller={controller as never} onOpenMatch={vi.fn()} tv={false} nav={nav as never} />)
+    const row = screen.getByTestId('your-leagues')
+    expect(row.textContent).toContain('DINA LIGOR')
+    // Kopplade (Allsvenskan, PL England) — inte okopplade Wales/Spanien/SHL.
+    expect([...row.querySelectorAll('[data-testid^="league-chip-"]')].map((c) => c.textContent)).toEqual(['Premier League · England1', 'Allsvenskan1'])
+    expect(row.querySelectorAll('[data-testid="league-live-dot"]')).toHaveLength(1)
+    expect(screen.getByText('Premier League · Wales · Omgång 27')).toBeTruthy()
+
+    fireEvent.click(screen.getByTestId('league-more'))
+    const drawer = screen.getByTestId('league-drawer')
+    expect([...drawer.querySelectorAll('[data-testid^="league-country-"]')].map((g) => g.getAttribute('data-testid'))).toEqual(['league-country-Sweden', 'league-country-Wales', 'league-country-England', 'league-country-Spain'])
+    fireEvent.change(screen.getByTestId('league-search'), { target: { value: 'primera' } })
+    const hits = drawer.querySelectorAll('[data-testid^="league-row-"]')
+    expect(hits).toHaveLength(1)
+    expect(hits[0].textContent).toContain('Spain')
+    const scroll = vi.fn()
+    ;(screen.getByTestId('results-group-football|140') as HTMLElement).scrollIntoView = scroll
+    fireEvent.click(hits[0])
+    expect(layers).toHaveLength(1)
+    await waitFor(() => expect(scroll).toHaveBeenCalled())
+
+    rerender(<SportResults matches={world} controller={controller as never} onOpenMatch={vi.fn()} tv={false} nav={nav as never} sport="hockey" />)
+    expect(screen.getByText('FLEST MATCHER')).toBeTruthy()
+    expect([...screen.getByTestId('your-leagues').querySelectorAll('[data-testid^="league-chip-"]')].map((c) => c.textContent)).toEqual(['SHL1'])
+    expect(screen.queryByText('Allsvenskan · Omgång 27')).toBeNull()
   })
 })

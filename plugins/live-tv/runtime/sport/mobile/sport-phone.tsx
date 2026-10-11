@@ -75,16 +75,18 @@ export function SportPhone({ model, nav }: TvViewProps) {
       {tab !== 'follows' ? (
         <MobileChips<DayOffset> testId="sport-phone-days" items={([-1, 0, 1] as const).map((o) => ({ key: o, label: dayLabel(o), id: `day-${o}` }))} value={offset} onChange={setOffset} emphasisKey={0} />
       ) : null}
+      {tab !== 'follows' ? (
+        <MobileChips<SportFilter> testId="sport-phone-sports" items={[{ key: 'all', label: tt('sportAll'), id: 'all' }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k as SportFilter, label: `${ctx.kindLabel(k)} ${counts[k]}`, id: k }))]} value={filter} onChange={setFilter} />
+      ) : null}
       {tab === 'foryou' ? (
         <>
-          <MobileChips<SportFilter> testId="sport-phone-sports" items={[{ key: 'all', label: tt('sportAll'), id: 'all' }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k as SportFilter, label: `${ctx.kindLabel(k)} ${counts[k]}`, id: k }))]} value={filter} onChange={setFilter} />
           {notice ? <div style={{ padding: '24px 4px', fontSize: 15, color: MT.muted }}>{notice}</div> : null}
           <PhoneSection ctx={ctx} title={tt('sportLiveNow')} matches={live} />
           <PhoneSection ctx={ctx} title={tt('sportLater')} matches={later} />
           <PhoneSection ctx={ctx} title={tt('sportFinished')} matches={finished} />
         </>
       ) : tab === 'results' ? (
-        <SportResultsPhone matches={allMatches} controller={controller} onOpenMatch={openMatch} pushLayer={nav.pushLayer} />
+        <SportResultsPhone matches={allMatches} controller={controller} onOpenMatch={openMatch} pushLayer={nav.pushLayer} sport={filter} kindLabel={ctx.kindLabel} />
       ) : (
         <PhoneFollows ctx={ctx} days={[todayDay.data, tomorrowDay.data]} />
       )}

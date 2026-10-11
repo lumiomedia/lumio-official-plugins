@@ -37,7 +37,7 @@ function fromFixture(f: Fixture): Partial<SportMatch> {
     phase: phaseOf(f.status),
     minute: f.minute,
     score: f.score ?? undefined,
-    fixture: { provider: f.provider, id: f.id, leagueId: f.league.id, season: f.league.season },
+    fixture: { provider: f.provider, id: f.id, leagueId: f.league.id, season: f.league.season, country: f.league.country },
     lastGoal: f.lastGoal,
     ...(f.venueImage ? { venueImage: f.venueImage } : {}),
     coverage: 'full',

@@ -35,13 +35,13 @@ describe('Resultat på telefon', () => {
     expect(screen.queryByText('Inte nu')).toBeNull()
   })
 
-  it('med nyckel: ligagrupp med omgång, ställning, filter och HOPPA TILL; tryck öppnar matchen', () => {
+  it('med nyckel: ligagrupp med omgång, ställning, filter och DINA LIGOR; tryck öppnar matchen', () => {
     setSportSettings({ apiKey: 'k123' })
     const open = vi.fn()
     const live = m({ status: 'live', minute: 67, score: { home: 2, away: 1 } })
     render(<SportResultsPhone matches={[m(), live, m({ kind: 'tennis', coverage: 'epg' })]} controller={fakeController() as never} onOpenMatch={open} pushLayer={pushLayer} />)
     expect(screen.getByText('Allsvenskan · Omgång 27')).toBeTruthy()
-    expect(screen.getByText('HOPPA TILL')).toBeTruthy()
+    expect(screen.getByText('DINA LIGOR')).toBeTruthy()
     expect(screen.getAllByTestId('phone-result-score').map((e) => e.textContent)).toEqual(['2–1', '1–0']) // `live` skapades först och har tidigast start
     fireEvent.click(screen.getByTestId('chip-live'))
     expect(screen.getAllByTestId('phone-result-row')).toHaveLength(1)
@@ -60,6 +60,34 @@ describe('Resultat på telefon', () => {
     expect(within(sheet).getByText('26')).toBeTruthy()
     expect(within(sheet).getAllByTestId('phone-form').map((e) => e.textContent).join('')).toBe('VVOVF')
     expect(controller.loadStandings).toHaveBeenCalledWith('football', '113', '2026')
+  })
+
+  it('Dina ligor + Fler ligor…: bottenark per land med sök, land i träffarna, sport per rad vid Alla; val hoppar och stänger', () => {
+    setSportSettings({ apiKey: 'k123' })
+    const fx = (leagueId: string, country: string) => ({ provider: 'api-sports', id: `f${++n}`, leagueId, season: '2026', country })
+    const world = [
+      m({ league: 'Allsvenskan', fixture: fx('113', 'Sweden') }),
+      m({ league: 'Primera División', fixture: fx('140', 'Spain'), resultOnly: true, sources: [], status: 'live' }),
+      m({ league: 'Primera División', fixture: fx('128', 'Argentina'), resultOnly: true, sources: [] }),
+      m({ kind: 'hockey', league: 'SHL', fixture: fx('47', 'Sweden'), resultOnly: true, sources: [] }),
+    ]
+    const layers: Array<() => void> = []
+    render(<SportResultsPhone matches={world} controller={fakeController() as never} onOpenMatch={vi.fn()} pushLayer={(c) => { layers.push(c); return () => {} }} kindLabel={(k) => (k === 'hockey' ? 'Hockey' : 'Fotboll')} />)
+    expect(screen.getAllByTestId(/^phone-league-chip-/).map((c) => c.textContent)).toEqual(['Allsvenskan1'])
+    expect(screen.getByText('Primera División · Spain · Omgång 27')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('phone-league-more'))
+    const sheet = screen.getByTestId('phone-league-sheet')
+    expect(layers).toHaveLength(1)
+    expect(within(sheet).getAllByTestId(/^phone-league-country-/).map((g) => g.getAttribute('data-testid'))).toEqual(['phone-league-country-Sweden', 'phone-league-country-Argentina', 'phone-league-country-Spain'])
+    expect(within(screen.getByTestId('phone-league-row-hockey|47')).getByText('Hockey')).toBeTruthy()
+    fireEvent.change(within(sheet).getByTestId('phone-league-search'), { target: { value: 'primera' } })
+    const hits = within(sheet).getAllByTestId(/^phone-league-row-/)
+    expect(hits.map((h) => h.textContent)).toEqual(['Primera DivisiónArgentina · Fotboll1', 'Primera DivisiónSpain · Fotboll1'])
+    const scroll = vi.fn()
+    ;(screen.getByTestId('phone-results-group-football|140') as HTMLElement).scrollIntoView = scroll
+    fireEvent.click(hits[1]!)
+    expect(screen.queryByTestId('phone-league-sheet')).toBeNull()
+    expect(scroll).toHaveBeenCalled()
   })
 
   it('telefonträdet importerar aldrig ur sport/tv (importcykelregeln)', () => {

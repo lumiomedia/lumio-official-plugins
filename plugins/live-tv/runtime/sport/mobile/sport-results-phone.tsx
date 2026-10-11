@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
 import { station } from '../../tv/tv-ui'
 import { useTvText, type TvStringKey } from '../../tv/tv-strings'
@@ -10,8 +10,10 @@ import { MobileSheet } from '../../tv/mobile/mobile-sheet'
 import { KeyCard } from '../key-card'
 import { FORM_COLOR, formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
 import { matchStatusLabel, scoreText } from '../score-model'
-import { crestText, type SportMatch } from '../sport-model'
-import { useSportSettings } from '../sport-store'
+import { crestText, type SportFilter, type SportKind, type SportMatch } from '../sport-model'
+import { useFollows, useSportSettings } from '../sport-store'
+import { leagueEntries, yourLeagues } from '../league-jump'
+import { PhoneLeagueSheet, PhoneYourLeagues } from './sport-league-sheet-phone'
 import type { ResultsController } from '../results-controller'
 import type { StandingRow } from '../provider'
 import { sportBg } from '../surface'
@@ -62,18 +64,25 @@ function PhoneStandings({ rows, tt }: { rows: StandingRow[]; tt: TT }) {
   )
 }
 
-export function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer }: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; pushLayer: (close: () => void) => () => void }) {
+export function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer, sport = 'all', kindLabel }: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; pushLayer: (close: () => void) => () => void; sport?: SportFilter; kindLabel?: (k: SportKind) => string }) {
   const { tt } = useTvText()
   const settings = useSportSettings()
   const [filter, setFilter] = useState<ResultsFilter>('all')
   const [table, setTable] = useState<{ group: ResultGroup; rows: StandingRow[] | null } | null>(null)
+  const [leagueSheet, setLeagueSheet] = useState(false)
+  const follows = useFollows()
   const sections = useRef(new Map<string, HTMLElement>())
+  const forSport = useMemo(() => (sport === 'all' ? matches : matches.filter((m) => m.kind === sport)), [matches, sport])
+  const { groups, liveCount, mineCount } = useMemo(() => groupResults(forSport, filter), [forSport, filter])
+  const entries = useMemo(() => leagueEntries(groups, follows), [groups, follows])
+  const mine = useMemo(() => yourLeagues(entries), [entries])
 
   if (!settings.apiKey || !controller) {
     return <KeyCard variant="tab" pushLayer={pushLayer} />
   }
 
-  const { groups, liveCount, mineCount } = groupResults(matches, filter)
+  const labels = new Map(entries.map((e) => [e.key, e.label]))
+  const jump = (key: string) => sections.current.get(key)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
   const openTable = async (g: ResultGroup) => {
     const cached = controller.standings(g.sport, g.leagueId, g.season)
     setTable({ group: g, rows: cached })
@@ -94,22 +103,12 @@ export function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer 
         value={filter}
         onChange={setFilter}
       />
-      {groups.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={sectionLabel}>{tt('sportJumpTo')}</span>
-          <MobileChips<string>
-            testId="phone-results-jump"
-            items={groups.map((g) => ({ key: g.key, label: g.league, id: `jump-${g.key}` }))}
-            value=""
-            onChange={(key) => sections.current.get(key)?.scrollIntoView({ block: 'start', behavior: 'smooth' })}
-          />
-        </div>
-      ) : null}
+      {groups.length > 0 ? <PhoneYourLeagues entries={mine.entries} fallback={mine.fallback} onJump={jump} onMore={() => setLeagueSheet(true)} /> : null}
       {groups.length === 0 ? <div style={{ padding: '24px 4px', fontSize: 15, color: MT.muted }}>{tt('sportResultsEmpty')}</div> : null}
       {groups.map((g) => (
-        <section key={g.key} ref={(el) => { if (el) sections.current.set(g.key, el); else sections.current.delete(g.key) }} style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6, scrollMarginTop: 8 }}>
+        <section key={g.key} data-testid={`phone-results-group-${g.key}`} ref={(el) => { if (el) sections.current.set(g.key, el); else sections.current.delete(g.key) }} style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6, scrollMarginTop: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ flex: 1, fontSize: 17, fontWeight: 600, ...ellipsis }}>{g.round != null ? `${g.league} · ${tt('sportRound', { n: g.round })}` : g.league}</div>
+            <div style={{ flex: 1, fontSize: 17, fontWeight: 600, ...ellipsis }}>{g.round != null ? `${labels.get(g.key) ?? g.league} · ${tt('sportRound', { n: g.round })}` : labels.get(g.key) ?? g.league}</div>
             <div data-testid={`phone-table-${g.key}`} {...station(() => void openTable(g))} style={{ minHeight: MT.HIT, padding: '0 14px', borderRadius: 12, background: MT.s08, border: `1px solid ${MT.line08}`, display: 'inline-flex', alignItems: 'center', fontSize: 14, color: MT.muted70, cursor: 'pointer', flexShrink: 0 }}>{tt('sportTable')}</div>
           </div>
           {g.matches.map((m) => (
@@ -122,10 +121,11 @@ export function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer 
           ))}
         </section>
       ))}
+      {leagueSheet ? <PhoneLeagueSheet entries={entries} kindLabel={sport === 'all' ? kindLabel ?? null : null} onPick={jump} onClose={() => setLeagueSheet(false)} pushLayer={pushLayer} /> : null}
       {table ? (
         <MobileSheet
           testId="phone-standings-sheet"
-          title={`${table.group.league} · ${tt('sportTable')}`}
+          title={`${labels.get(table.group.key) ?? table.group.league} · ${tt('sportTable')}`}
           body={table.rows === null ? <div style={{ padding: 16, color: MT.muted }}>{tt('sportLoading')}</div> : <PhoneStandings rows={table.rows} tt={tt} />}
           items={[]}
           onClose={() => setTable(null)}

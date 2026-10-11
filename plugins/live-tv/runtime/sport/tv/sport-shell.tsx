@@ -78,7 +78,7 @@ function SportTv({ model, nav }: TvViewProps) {
   const body = () => {
     if (selected.state === 'missing') return <Notice testId="sport-missing" text={tt('sportNeedsUpdate')} />
     if (selected.state === 'error') return <Notice testId="sport-error" text={tt('sportError')} />
-    if (tab === 'results') return <SportResults matches={allMatches} controller={controller} onOpenMatch={ctx.openMatch} tv={tvMode} />
+    if (tab === 'results') return <SportResults matches={allMatches} controller={controller} onOpenMatch={ctx.openMatch} tv={tvMode} sport={filter} nav={nav} />
     if (tab === 'follows') return <SportFollows ctx={ctx} days={[todayDay.data, tomorrowDay.data]} />
     if (selected.state === 'loading') return <Notice testId="sport-loading" text={tt('sportLoading')} />
     if (matches.length === 0) return <Notice testId="sport-empty" text={tt('sportEmptyDay')} />
