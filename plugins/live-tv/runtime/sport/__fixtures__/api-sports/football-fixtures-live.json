@@ -1,0 +1,144 @@
+{
+  "_shape": "from docs — verify with real key",
+  "get": "fixtures",
+  "parameters": {
+    "live": "all"
+  },
+  "errors": [],
+  "results": 1,
+  "paging": {
+    "current": 1,
+    "total": 1
+  },
+  "response": [
+    {
+      "fixture": {
+        "id": 1180001,
+        "referee": null,
+        "timezone": "Europe/Stockholm",
+        "date": "2026-10-10T19:00:00+02:00",
+        "timestamp": 1791651600,
+        "venue": {
+          "id": 1460,
+          "name": "Eleda Stadion",
+          "city": "Malmö"
+        },
+        "status": {
+          "long": "Second Half",
+          "short": "2H",
+          "elapsed": 67,
+          "extra": null
+        }
+      },
+      "league": {
+        "id": 113,
+        "name": "Allsvenskan",
+        "country": "Sweden",
+        "logo": "https://media.api-sports.io/football/leagues/113.png",
+        "season": 2026,
+        "round": "Regular Season - 27"
+      },
+      "teams": {
+        "home": {
+          "id": 375,
+          "name": "Malmo FF",
+          "logo": "https://media.api-sports.io/football/teams/375.png",
+          "winner": true
+        },
+        "away": {
+          "id": 377,
+          "name": "Djurgardens IF",
+          "logo": "https://media.api-sports.io/football/teams/377.png",
+          "winner": false
+        }
+      },
+      "goals": {
+        "home": 2,
+        "away": 1
+      },
+      "score": {
+        "halftime": {
+          "home": 1,
+          "away": 1
+        },
+        "fulltime": {
+          "home": null,
+          "away": null
+        },
+        "extratime": {
+          "home": null,
+          "away": null
+        },
+        "penalty": {
+          "home": null,
+          "away": null
+        }
+      },
+      "events": [
+        {
+          "time": {
+            "elapsed": 12,
+            "extra": null
+          },
+          "team": {
+            "id": 375,
+            "name": "Malmo FF"
+          },
+          "player": {
+            "id": 1001,
+            "name": "I. Kiese Thelin"
+          },
+          "assist": {
+            "id": 1002,
+            "name": "A. Christiansen"
+          },
+          "type": "Goal",
+          "detail": "Normal Goal",
+          "comments": null
+        },
+        {
+          "time": {
+            "elapsed": 34,
+            "extra": null
+          },
+          "team": {
+            "id": 377,
+            "name": "Djurgardens IF"
+          },
+          "player": {
+            "id": 2001,
+            "name": "T. Asoro"
+          },
+          "assist": {
+            "id": null,
+            "name": null
+          },
+          "type": "Goal",
+          "detail": "Normal Goal",
+          "comments": null
+        },
+        {
+          "time": {
+            "elapsed": 67,
+            "extra": null
+          },
+          "team": {
+            "id": 375,
+            "name": "Malmo FF"
+          },
+          "player": {
+            "id": 1003,
+            "name": "S. Larsson"
+          },
+          "assist": {
+            "id": null,
+            "name": null
+          },
+          "type": "Goal",
+          "detail": "Penalty",
+          "comments": null
+        }
+      ]
+    }
+  ]
+}

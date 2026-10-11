@@ -1,0 +1,108 @@
+{
+  "_shape": "from docs — verify with real key",
+  "get": "games",
+  "parameters": {
+    "date": "2026-10-10",
+    "timezone": "Europe/Stockholm"
+  },
+  "errors": [],
+  "results": 2,
+  "response": [
+    {
+      "id": 51001,
+      "date": "2026-10-10T19:00:00+02:00",
+      "time": "19:00",
+      "timestamp": 1791651600,
+      "timezone": "Europe/Stockholm",
+      "week": null,
+      "timer": "14",
+      "status": {
+        "long": "Second Period",
+        "short": "P2"
+      },
+      "country": {
+        "id": 23,
+        "name": "Sweden"
+      },
+      "league": {
+        "id": 47,
+        "name": "SHL",
+        "type": "League",
+        "season": 2026,
+        "logo": "https://media.api-sports.io/hockey/leagues/47.png"
+      },
+      "teams": {
+        "home": {
+          "id": 653,
+          "name": "Lulea",
+          "logo": "https://media.api-sports.io/hockey/teams/653.png"
+        },
+        "away": {
+          "id": 650,
+          "name": "Frolunda",
+          "logo": "https://media.api-sports.io/hockey/teams/650.png"
+        }
+      },
+      "scores": {
+        "home": 1,
+        "away": 2
+      },
+      "periods": {
+        "first": "1-1",
+        "second": "0-1",
+        "third": null,
+        "overtime": null,
+        "penalties": null
+      },
+      "events": true
+    },
+    {
+      "id": 51002,
+      "date": "2026-10-10T19:00:00+02:00",
+      "time": "19:00",
+      "timestamp": 1791651600,
+      "timezone": "Europe/Stockholm",
+      "week": null,
+      "timer": null,
+      "status": {
+        "long": "Not Started",
+        "short": "NS"
+      },
+      "country": {
+        "id": 23,
+        "name": "Sweden"
+      },
+      "league": {
+        "id": 47,
+        "name": "SHL",
+        "type": "League",
+        "season": 2026,
+        "logo": "https://media.api-sports.io/hockey/leagues/47.png"
+      },
+      "teams": {
+        "home": {
+          "id": 655,
+          "name": "Skelleftea",
+          "logo": "https://media.api-sports.io/hockey/teams/655.png"
+        },
+        "away": {
+          "id": 657,
+          "name": "Farjestad",
+          "logo": "https://media.api-sports.io/hockey/teams/657.png"
+        }
+      },
+      "scores": {
+        "home": null,
+        "away": null
+      },
+      "periods": {
+        "first": null,
+        "second": null,
+        "third": null,
+        "overtime": null,
+        "penalties": null
+      },
+      "events": false
+    }
+  ]
+}

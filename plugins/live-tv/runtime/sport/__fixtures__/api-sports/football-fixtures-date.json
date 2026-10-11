@@ -1,0 +1,24 @@
+{
+  "_shape": "from docs — verify with real key",
+  "get": "fixtures", "parameters": { "date": "2026-10-10", "timezone": "Europe/Stockholm" }, "errors": [], "results": 2, "paging": { "current": 1, "total": 1 },
+  "response": [
+    {
+      "fixture": { "id": 1180001, "referee": null, "timezone": "Europe/Stockholm", "date": "2026-10-10T19:00:00+02:00", "timestamp": 1791651600,
+        "venue": { "id": 1460, "name": "Eleda Stadion", "city": "Malmö" }, "status": { "long": "Second Half", "short": "2H", "elapsed": 67, "extra": null } },
+      "league": { "id": 113, "name": "Allsvenskan", "country": "Sweden", "logo": "https://media.api-sports.io/football/leagues/113.png", "season": 2026, "round": "Regular Season - 27" },
+      "teams": { "home": { "id": 375, "name": "Malmo FF", "logo": "https://media.api-sports.io/football/teams/375.png", "winner": true },
+                 "away": { "id": 377, "name": "Djurgardens IF", "logo": "https://media.api-sports.io/football/teams/377.png", "winner": false } },
+      "goals": { "home": 2, "away": 1 },
+      "score": { "halftime": { "home": 1, "away": 1 }, "fulltime": { "home": null, "away": null }, "extratime": { "home": null, "away": null }, "penalty": { "home": null, "away": null } }
+    },
+    {
+      "fixture": { "id": 1180002, "referee": null, "timezone": "Europe/Stockholm", "date": "2026-10-10T21:00:00+02:00", "timestamp": 1791658800,
+        "venue": { "id": 1454, "name": "Strawberry Arena", "city": "Solna" }, "status": { "long": "Not Started", "short": "NS", "elapsed": null, "extra": null } },
+      "league": { "id": 113, "name": "Allsvenskan", "country": "Sweden", "logo": "https://media.api-sports.io/football/leagues/113.png", "season": 2026, "round": "Regular Season - 27" },
+      "teams": { "home": { "id": 363, "name": "AIK Stockholm", "logo": "https://media.api-sports.io/football/teams/363.png", "winner": null },
+                 "away": { "id": 368, "name": "IFK Goteborg", "logo": "https://media.api-sports.io/football/teams/368.png", "winner": null } },
+      "goals": { "home": null, "away": null },
+      "score": { "halftime": { "home": null, "away": null }, "fulltime": { "home": null, "away": null }, "extratime": { "home": null, "away": null }, "penalty": { "home": null, "away": null } }
+    }
+  ]
+}

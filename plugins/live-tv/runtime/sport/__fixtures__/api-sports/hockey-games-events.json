@@ -1,0 +1,75 @@
+{
+  "_shape": "from docs — verify with real key",
+  "get": "games/events",
+  "parameters": {
+    "game": "51001"
+  },
+  "errors": [],
+  "results": 4,
+  "response": [
+    {
+      "game_id": 51001,
+      "period": "P1",
+      "minute": "05",
+      "team": {
+        "id": 653,
+        "name": "Lulea"
+      },
+      "players": [
+        "J. Omark"
+      ],
+      "assists": [
+        "K. Fransson"
+      ],
+      "comment": null,
+      "type": "goal"
+    },
+    {
+      "game_id": 51001,
+      "period": "P1",
+      "minute": "17",
+      "team": {
+        "id": 650,
+        "name": "Frolunda"
+      },
+      "players": [
+        "R. Lindholm"
+      ],
+      "assists": [],
+      "comment": null,
+      "type": "goal"
+    },
+    {
+      "game_id": 51001,
+      "period": "P2",
+      "minute": "08",
+      "team": {
+        "id": 650,
+        "name": "Frolunda"
+      },
+      "players": [
+        "M. Elfström"
+      ],
+      "assists": [],
+      "comment": "Hooking (2 min)",
+      "type": "penalty"
+    },
+    {
+      "game_id": 51001,
+      "period": "P2",
+      "minute": "12",
+      "team": {
+        "id": 650,
+        "name": "Frolunda"
+      },
+      "players": [
+        "L. Lindgren"
+      ],
+      "assists": [
+        "J. Persson"
+      ],
+      "comment": null,
+      "type": "goal"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "_shape": "from docs — verify with real key",
+  "get": "standings",
+  "parameters": {
+    "league": "113",
+    "season": "2026"
+  },
+  "errors": [],
+  "results": 1,
+  "response": [
+    {
+      "league": {
+        "id": 113,
+        "name": "Allsvenskan",
+        "country": "Sweden",
+        "season": 2026,
+        "standings": [
+          [
+            {
+              "rank": 1,
+              "team": {
+                "id": 363,
+                "name": "AIK Stockholm",
+                "logo": "https://media.api-sports.io/football/teams/363.png"
+              },
+              "points": 58,
+              "goalsDiff": 25,
+              "group": "Allsvenskan",
+              "form": "WWDWW",
+              "status": "same",
+              "description": "Promotion",
+              "all": {
+                "played": 26,
+                "win": 18,
+                "draw": 4,
+                "lose": 4,
+                "goals": {
+                  "for": 50,
+                  "against": 25
+                }
+              }
+            },
+            {
+              "rank": 2,
+              "team": {
+                "id": 375,
+                "name": "Malmo FF",
+                "logo": "https://media.api-sports.io/football/teams/375.png"
+              },
+              "points": 55,
+              "goalsDiff": 30,
+              "group": "Allsvenskan",
+              "form": "WLWWD",
+              "status": "same",
+              "description": null,
+              "all": {
+                "played": 26,
+                "win": 17,
+                "draw": 4,
+                "lose": 5,
+                "goals": {
+                  "for": 55,
+                  "against": 25
+                }
+              }
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,244 @@
+{
+  "_shape": "from docs — verify with real key",
+  "get": "fixtures",
+  "parameters": {
+    "id": "1180001"
+  },
+  "errors": [],
+  "results": 1,
+  "paging": {
+    "current": 1,
+    "total": 1
+  },
+  "response": [
+    {
+      "fixture": {
+        "id": 1180001,
+        "referee": null,
+        "timezone": "Europe/Stockholm",
+        "date": "2026-10-10T19:00:00+02:00",
+        "timestamp": 1791651600,
+        "venue": {
+          "id": 1460,
+          "name": "Eleda Stadion",
+          "city": "Malmö"
+        },
+        "status": {
+          "long": "Second Half",
+          "short": "2H",
+          "elapsed": 67,
+          "extra": null
+        }
+      },
+      "league": {
+        "id": 113,
+        "name": "Allsvenskan",
+        "country": "Sweden",
+        "logo": "https://media.api-sports.io/football/leagues/113.png",
+        "season": 2026,
+        "round": "Regular Season - 27"
+      },
+      "teams": {
+        "home": {
+          "id": 375,
+          "name": "Malmo FF",
+          "logo": "https://media.api-sports.io/football/teams/375.png",
+          "winner": true
+        },
+        "away": {
+          "id": 377,
+          "name": "Djurgardens IF",
+          "logo": "https://media.api-sports.io/football/teams/377.png",
+          "winner": false
+        }
+      },
+      "goals": {
+        "home": 2,
+        "away": 1
+      },
+      "score": {
+        "halftime": {
+          "home": 1,
+          "away": 1
+        },
+        "fulltime": {
+          "home": null,
+          "away": null
+        },
+        "extratime": {
+          "home": null,
+          "away": null
+        },
+        "penalty": {
+          "home": null,
+          "away": null
+        }
+      },
+      "events": [
+        {
+          "time": {
+            "elapsed": 12,
+            "extra": null
+          },
+          "team": {
+            "id": 375
+          },
+          "player": {
+            "name": "I. Kiese Thelin"
+          },
+          "assist": {
+            "name": "A. Christiansen"
+          },
+          "type": "Goal",
+          "detail": "Normal Goal"
+        },
+        {
+          "time": {
+            "elapsed": 29,
+            "extra": null
+          },
+          "team": {
+            "id": 377
+          },
+          "player": {
+            "name": "M. Danielson"
+          },
+          "assist": {
+            "name": null
+          },
+          "type": "Card",
+          "detail": "Yellow Card"
+        },
+        {
+          "time": {
+            "elapsed": 34,
+            "extra": null
+          },
+          "team": {
+            "id": 377
+          },
+          "player": {
+            "name": "T. Asoro"
+          },
+          "assist": {
+            "name": null
+          },
+          "type": "Goal",
+          "detail": "Normal Goal"
+        },
+        {
+          "time": {
+            "elapsed": 67,
+            "extra": null
+          },
+          "team": {
+            "id": 375
+          },
+          "player": {
+            "name": "S. Larsson"
+          },
+          "assist": {
+            "name": null
+          },
+          "type": "Goal",
+          "detail": "Penalty"
+        }
+      ],
+      "lineups": [
+        {
+          "team": {
+            "id": 375,
+            "name": "Malmo FF"
+          },
+          "formation": "4-3-3",
+          "startXI": [
+            {
+              "player": {
+                "id": 1,
+                "name": "J. Dahlin",
+                "number": 1,
+                "pos": "G"
+              }
+            },
+            {
+              "player": {
+                "id": 1001,
+                "name": "I. Kiese Thelin",
+                "number": 9,
+                "pos": "F"
+              }
+            }
+          ],
+          "substitutes": [
+            {
+              "player": {
+                "id": 5,
+                "name": "O. Berg",
+                "number": 20,
+                "pos": "M"
+              }
+            }
+          ]
+        },
+        {
+          "team": {
+            "id": 377,
+            "name": "Djurgardens IF"
+          },
+          "formation": "4-4-2",
+          "startXI": [
+            {
+              "player": {
+                "id": 2,
+                "name": "J. Widell Zetterström",
+                "number": 35,
+                "pos": "G"
+              }
+            }
+          ],
+          "substitutes": []
+        }
+      ],
+      "statistics": [
+        {
+          "team": {
+            "id": 375
+          },
+          "statistics": [
+            {
+              "type": "Ball Possession",
+              "value": "58%"
+            },
+            {
+              "type": "Total Shots",
+              "value": 14
+            },
+            {
+              "type": "Shots on Goal",
+              "value": 6
+            }
+          ]
+        },
+        {
+          "team": {
+            "id": 377
+          },
+          "statistics": [
+            {
+              "type": "Ball Possession",
+              "value": "42%"
+            },
+            {
+              "type": "Total Shots",
+              "value": 7
+            },
+            {
+              "type": "Shots on Goal",
+              "value": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

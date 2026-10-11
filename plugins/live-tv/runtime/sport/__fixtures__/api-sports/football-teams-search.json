@@ -1,0 +1,26 @@
+{
+  "_shape": "from docs — verify with real key",
+  "get": "teams",
+  "parameters": {
+    "search": "malmo"
+  },
+  "errors": [],
+  "results": 1,
+  "response": [
+    {
+      "team": {
+        "id": 375,
+        "name": "Malmo FF",
+        "code": "MAL",
+        "country": "Sweden",
+        "founded": 1910,
+        "national": false,
+        "logo": "https://media.api-sports.io/football/teams/375.png"
+      },
+      "venue": {
+        "id": 1460,
+        "name": "Eleda Stadion"
+      }
+    }
+  ]
+}

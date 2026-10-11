@@ -1,0 +1,80 @@
+{
+  "_shape": "from docs — verify with real key",
+  "get": "standings",
+  "parameters": {
+    "league": "47",
+    "season": "2026"
+  },
+  "errors": [],
+  "results": 1,
+  "response": [
+    [
+      {
+        "position": 1,
+        "stage": "SHL",
+        "group": {
+          "name": "SHL"
+        },
+        "team": {
+          "id": 650,
+          "name": "Frolunda",
+          "logo": "https://media.api-sports.io/hockey/teams/650.png"
+        },
+        "league": {
+          "id": 47,
+          "name": "SHL",
+          "season": 2026
+        },
+        "games": {
+          "played": 10,
+          "win": {
+            "total": 8
+          },
+          "lose": {
+            "total": 2
+          }
+        },
+        "goals": {
+          "for": 35,
+          "against": 18
+        },
+        "points": 24,
+        "form": "WWLWW",
+        "description": null
+      },
+      {
+        "position": 2,
+        "stage": "SHL",
+        "group": {
+          "name": "SHL"
+        },
+        "team": {
+          "id": 653,
+          "name": "Lulea",
+          "logo": "https://media.api-sports.io/hockey/teams/653.png"
+        },
+        "league": {
+          "id": 47,
+          "name": "SHL",
+          "season": 2026
+        },
+        "games": {
+          "played": 10,
+          "win": {
+            "total": 7
+          },
+          "lose": {
+            "total": 3
+          }
+        },
+        "goals": {
+          "for": 30,
+          "against": 22
+        },
+        "points": 20,
+        "form": "WLWWW",
+        "description": null
+      }
+    ]
+  ]
+}
