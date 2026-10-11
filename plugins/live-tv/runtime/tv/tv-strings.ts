@@ -552,6 +552,8 @@ const EN = {
   sportStatShots: 'Shots',
   sportStatShotsOn: 'Shots on target',
   sportStatCorners: 'Corners',
+  sportGoal: 'GOAL!',
+  sportJumpThere: 'Jump there',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -1055,6 +1057,8 @@ const SV: Record<keyof typeof EN, string> = {
   sportStatShots: 'Skott',
   sportStatShotsOn: 'Skott på mål',
   sportStatCorners: 'Hörnor',
+  sportGoal: 'MÅL!',
+  sportJumpThere: 'Hoppa dit',
 }
 
 export type TvStringKey = keyof typeof EN

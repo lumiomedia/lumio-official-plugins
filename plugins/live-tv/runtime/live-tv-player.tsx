@@ -44,6 +44,10 @@ import { useOrientation } from './hooks/useOrientation'
 import { useWakeLock } from './hooks/useWakeLock'
 import { HOST_PROXY_MIME, hostProxyUrl as buildHostProxyUrl, nativeFailureAction } from './live-tv-playback-fallback'
 import { TvPlayerChrome } from './tv/tv-player-chrome'
+import { PlayerGoalOverlay } from './sport/tv/player-goal-overlay'
+import { setPlayingChannel } from './sport/goal-alerts'
+import { usePollDemand } from './sport/live-poller'
+import { useChannelSportLive } from './sport/results-controller'
 import { PHONE_STAGE_BOX } from './tv/mobile/player-chrome-phone'
 import { releaseAllSurfaces } from './tv/video-surface'
 import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv/tv-player-types'
@@ -122,6 +126,11 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
   useEffect(() => {
     recordChannelWatch(channel, listId)
   }, [channel.url, channel.name, listId])
+  // Sportläge: livepollning bara medan kanalen har en pågående match i en täckt sport, och notisen vet vilken kanal som spelar.
+  const playingKey = channelKey(channel)
+  const sportLive = useChannelSportLive(playingKey)
+  usePollDemand('player', !!sportLive)
+  useEffect(() => { setPlayingChannel(playingKey); return () => setPlayingChannel(null) }, [playingKey])
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
@@ -1169,6 +1178,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
           <p className="text-xs text-slate-500">{t('liveTvStreamErrorHelp')}</p>
         </div>
       )}
+      <PlayerGoalOverlay channelKey={playingKey} onJump={(next) => tvChrome?.onSwitchChannel(next)} />
       {tvChrome ? (
         <TvPlayerChrome channel={channel} tv={tvChrome} controls={playerControls} paused={mpvPaused} onTogglePause={toggleMpvPause} onClose={handleClose} phoneLandscape={phoneLandscape} />
       ) : null}
