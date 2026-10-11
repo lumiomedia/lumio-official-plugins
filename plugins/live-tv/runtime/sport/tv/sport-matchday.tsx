@@ -120,7 +120,7 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
             {laneIndex === 0 ? <><LeagueDot leagueKey={row.key} /><span style={ellipsis}>{row.label || ctx.kindLabel(row.kind)}</span></> : null}
           </div>
           <div style={{ position: 'relative', flex: 1, height: dp(42), background: TV.s05, borderRadius: dp(8) }}>
-            {mergeLane(lane).map((m) => <TimelineBlock key={m.id} ctx={ctx} m={m} left={pct(m.start)} width={Math.max(pct(m.stop) - pct(m.start), 1.5)} showLabel={blockShowsLabel(m.stop - m.start, span)} />)}
+            {mergeLane(lane).map((m, i, blocks) => <TimelineBlock key={m.id} ctx={ctx} m={m} prevId={blocks[i - 1]?.id ?? null} nextId={blocks[i + 1]?.id ?? null} left={pct(m.start)} width={Math.max(pct(m.stop) - pct(m.start), 1.5)} showLabel={blockShowsLabel(m.stop - m.start, span)} />)}
             {nowInside ? <div aria-hidden="true" style={{ position: 'absolute', top: -dp(4), bottom: -dp(4), left: `${pct(ctx.now)}%`, width: dp(3), background: TV.acc, boxShadow: `0 0 ${dp(8)}px ${TV.acc}` }} /> : null}
           </div>
         </div>
@@ -129,8 +129,16 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
   )
 }
 
-/** Egen komponent: en hook (`useGoalBlink`) får inte ligga i en `map`. */
-function TimelineBlock({ ctx, m, left, width, showLabel }: { ctx: SportCtx; m: SportMatch; left: number; width: number; showLabel: boolean }) {
+const blockSelector = (id: string): string => `[data-testid="sport-block-${id.replace(/["\\]/g, '\\$&')}"]`
+
+/**
+ * Egen komponent: en hook (`useGoalBlink`) får inte ligga i en `map`.
+ *
+ * Höger/vänster följer raden: grannen i tidsordning är uttalad, och vid radens
+ * ände äter blocket trycket så fokus står kvar. Geometrin hoppade annars till
+ * närmaste block i en ANNAN rad (Jerry 2026-10-11). Upp/ner är geometri.
+ */
+function TimelineBlock({ ctx, m, prevId, nextId, left, width, showLabel }: { ctx: SportCtx; m: SportMatch; prevId: string | null; nextId: string | null; left: number; width: number; showLabel: boolean }) {
   const blink = useGoalBlink(m)
   const st = statusAt(m, ctx.now)
   const base = m.home && m.away ? `${crestText(m.home)}–${crestText(m.away)}` : matchTitle(m)
@@ -142,7 +150,11 @@ function TimelineBlock({ ctx, m, left, width, showLabel }: { ctx: SportCtx; m: S
       data-status={st}
       title={label}
       aria-label={label}
-      {...station(() => ctx.openMatch(m))}
+      {...station(() => ctx.openMatch(m), undefined, { ...(prevId ? { 'data-f-left': blockSelector(prevId) } : null), ...(nextId ? { 'data-f-right': blockSelector(nextId) } : null) })}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); ctx.openMatch(m); return }
+        if ((event.key === 'ArrowRight' && !nextId) || (event.key === 'ArrowLeft' && !prevId)) { event.preventDefault(); event.stopPropagation() }
+      }}
       style={{
         position: 'absolute', top: 0, bottom: 0, left: `${left}%`, width: `${width}%`, boxSizing: 'border-box', padding: showLabel ? `0 ${dp(10)}px` : 0,
         display: 'flex', alignItems: 'center', fontSize: dp(16), fontWeight: 600, borderRadius: dp(8), cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap',

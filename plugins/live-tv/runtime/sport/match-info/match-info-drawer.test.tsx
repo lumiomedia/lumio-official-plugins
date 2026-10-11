@@ -94,6 +94,15 @@ describe('Matchinfon: SE MATCHEN', () => {
     expect(ctx.watch).toHaveBeenCalledWith(m, m.sources[1])
     expect(onClose).toHaveBeenCalled()
   })
+  it('Välj annan kanal ritas helt tät ovanpå matchlådan (ingen genomlysning)', () => {
+    const ctx = fakeCtx({ now })
+    Object.assign(ctx.model, { favouriteChannels: [], groups: [], channels: [] })
+    render(<MatchInfoDrawer ctx={ctx} match={m} onClose={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('mc-pick-channel'))
+    const picker = screen.getByTestId('channel-picker')
+    expect(picker.style.background).toBe('#141519')
+    expect(picker.style.backdropFilter).toBe('none')
+  })
   it('åsidosättningen står först som Ditt val och kan tas bort', () => {
     const override = { key: 'C::http://y/C', name: 'C 4K', url: 'http://y/C', logo: null, group: 'Sport', tvgId: null }
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, { m: override })

@@ -10,7 +10,7 @@ import { setOverride, toggleFollow } from '../sport-store'
 import type { SportCtx } from '../sport-ctx'
 import { eventSummary } from '../match-info-model'
 import { SportIcons } from '../sport-icons'
-import { sportDrawerStyle } from '../surface'
+import { sportDrawerStyle, sportStackedStyle } from '../surface'
 import { SHEET_BG, usePhonePlatform } from '../mobile/phone-sport-sheet'
 import { toggleGoalAlert } from './match-info-text'
 import { useFixtureDetail } from './use-fixture-detail'
@@ -203,7 +203,7 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
         <TvChannelPicker
           model={ctx.model}
           nav={ctx.nav}
-          surface={sportDrawerStyle}
+          surface={sportStackedStyle}
           title={ctx.tt('sportOtherChannel')}
           onPick={(channel) => {
             setOverride(match.id, { key: channelKey(channel), name: channel.name, url: channel.url, logo: channel.logo ?? null, group: channel.group, tvgId: channel.tvgId })

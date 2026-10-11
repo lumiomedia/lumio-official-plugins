@@ -28,10 +28,22 @@ export const sportCardStyle: CSSProperties = { ...cardStyle, ...sportSurface() }
  */
 export const SPORT_DRAWER_PADDING = `${belowTitleBar(dp(28))} ${dp(32)}px ${dp(28)}px`
 export const sportDrawerStyle: CSSProperties = {
-  ...sportSurface(SPORT_PANEL_BG),
+  // --sport-drawer-bg: som kortytan, men minst 85 % i TV-läget där oskärpan saknas.
+  ...sportSurface(`var(--sport-drawer-bg, ${SPORT_PANEL_BG})`),
   borderLeft: '1px solid rgba(255,255,255,0.16)',
   padding: SPORT_DRAWER_PADDING,
   boxSizing: 'border-box',
+}
+
+/**
+ * Lådor som öppnas OVANPÅ matchlådan (Fel kanal?): helt täta, på alla
+ * plattformar — annars läser matchlådans text igenom (Jerry 2026-10-11).
+ */
+export const sportStackedStyle: CSSProperties = {
+  ...sportDrawerStyle,
+  background: '#141519',
+  backdropFilter: 'none',
+  WebkitBackdropFilter: 'none',
 }
 
 /**

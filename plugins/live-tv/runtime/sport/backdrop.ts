@@ -127,12 +127,16 @@ export function averageRgb(data: Uint8ClampedArray): Rgb | null {
 
 const GRAY: Rgb = [28, 29, 34]
 export const CARD_BLUR = 'blur(14px)'
-export type CardSurfaceVars = { '--sport-card-bg': string; '--sport-card-blur': string }
+export type CardSurfaceVars = { '--sport-card-bg': string; '--sport-card-blur': string; '--sport-drawer-bg': string }
+
+/** TV-lägets lådor ritas utan oskärpa och får aldrig vara glesare än så här (Jerry 2026-10-11: sidhuvudet lyste igenom). */
+export const TV_DRAWER_MIN_OPACITY = 85
 
 /** EN uppsättning variabler på Sport-roten; alla kort, rader och paneler läser dem. */
-export function cardSurfaceVars(cards: SportCards, sampled: Rgb | null, opts: { blur: boolean }): CardSurfaceVars {
+export function cardSurfaceVars(cards: SportCards, sampled: Rgb | null, opts: { blur: boolean; tv?: boolean }): CardSurfaceVars {
   const rgb = cards.tone === 'gray' ? GRAY : cards.tone === 'image' && sampled ? darkTone(sampled) : ([0, 0, 0] as Rgb)
-  return { '--sport-card-bg': `rgba(${rgb.join(', ')}, ${cards.opacity / 100})`, '--sport-card-blur': opts.blur ? CARD_BLUR : 'none' }
+  const drawer = opts.tv ? Math.max(cards.opacity, TV_DRAWER_MIN_OPACITY) : cards.opacity
+  return { '--sport-card-bg': `rgba(${rgb.join(', ')}, ${cards.opacity / 100})`, '--sport-card-blur': opts.blur ? CARD_BLUR : 'none', '--sport-drawer-bg': `rgba(${rgb.join(', ')}, ${drawer / 100})` }
 }
 
 export { SPORT_CARD_BG, SPORT_PANEL_BG, sportBg, sportSurface } from './surface'
@@ -380,6 +384,6 @@ export function useSportBackdrop(hero: SportMatch | null, scope: BackdropScope =
   const src = choice.kind === 'image' ? backdropSrc(choice) : null
   const tone = useImageTone(src, settings.cards.tone === 'image')
   // Oskärpan kostar på TV-boxarna (och gamla WebViews saknar den): bara skrivbord och telefon.
-  const surface = choice.kind === 'image' ? cardSurfaceVars(settings.cards, tone, { blur: !tvMode }) : null
+  const surface = choice.kind === 'image' ? cardSurfaceVars(settings.cards, tone, { blur: !tvMode, tv: tvMode }) : null
   return { choice, onBroken, surface }
 }
