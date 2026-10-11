@@ -166,6 +166,8 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   const hasCutouts = cutouts.length > 0
   const view = viewFromParams(params)
   const viewParams = useMemo(() => params ?? {}, [params])
+  const viewParamsRef = useRef(viewParams)
+  viewParamsRef.current = viewParams
 
   const [Player, setPlayer] = useState<PlayerComponent | null>(null)
   const [active, setActive] = useState<PlayRequest | null>(null)
@@ -291,8 +293,14 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   const showLibraryTab = phone && vodCats.total > 0 && getVodMode(model.activePlaylistId) !== 'off'
 
   const go = useCallback((next: TvView, extra: Record<string, string> = {}) => {
-    onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: next, ...extra } })
-  }, [onNavigate])
+    const target: Record<string, string> = { view: next, ...extra }
+    // Samma sida med samma params är värdens "stäng"-växling (browseToggleAction):
+    // omklick på den aktiva räls-/flikposten får aldrig lämna Live TV.
+    const current: Record<string, string> = { ...viewParamsRef.current, view }
+    const tk = Object.keys(target)
+    if (tk.length === Object.keys(current).length && tk.every((k) => current[k] === target[k])) return
+    onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: target })
+  }, [onNavigate, view])
 
   /*
     LIVE TV ÖPPNAR I HEM (Jerry 2026-10-10). Menyvalet öppnar sidan utan

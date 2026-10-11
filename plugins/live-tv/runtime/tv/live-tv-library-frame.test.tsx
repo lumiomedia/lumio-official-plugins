@@ -96,3 +96,14 @@ describe('LiveTvLibraryFrame', () => {
     outside.remove()
   })
 })
+
+describe('LiveTvLibraryFrame omklick', () => {
+  afterEach(cleanup)
+  it('Hem medan VOD-hemmet visas gör ingenting', () => {
+    const props = { onNavigate: vi.fn(), onExit: vi.fn(), onInset: vi.fn(), platform: 'desktop' as const }
+    const { getByTestId } = render(<LiveTvLibraryFrame {...props} />)
+    fireEvent.click(getByTestId('rail-home'))
+    expect(props.onNavigate).not.toHaveBeenCalled()
+    expect(props.onExit).not.toHaveBeenCalled()
+  })
+})
