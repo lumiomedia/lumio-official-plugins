@@ -33,7 +33,7 @@ describe('Följer', () => {
     expect(cards[0]).toHaveTextContent(/Hammarby.*Today \d\d:\d\d · vs AIK/)
     expect(cards[1]).toHaveTextContent('LIVE now · FC Barcelona - Paris SG')
     expect(within(screen.getByTestId('follow-group-hockey')).getByTestId('follow-card')).toHaveTextContent(/Tomorrow \d\d:\d\d · vs Färjestad/)
-    expect(screen.getByText('3 followed · notice 15 min before')).toBeInTheDocument()
+    expect(screen.getByText('3 favourites · reminder 15 min before')).toBeInTheDocument()
   })
   it('stjärnan avföljer, kortet dämpas men ligger kvar', () => {
     const { rerender } = render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
@@ -44,11 +44,11 @@ describe('Följer', () => {
     expect(first).toHaveTextContent('Hammarby')
     expect(first.getAttribute('data-following')).toBe('0')
   })
-  it('avsparksnotisen sparas', () => {
+  it('påminnelsen sparas', () => {
     render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
     fireEvent.click(within(screen.getByTestId('follows-alert')).getByText('At kick-off'))
     expect(getSportSettings().alert).toBe('kickoff')
-    expect(screen.getByText('Notices only arrive while Lumio is running.')).toBeInTheDocument()
+    expect(screen.getByText('Reminders only show while Lumio is running.')).toBeInTheDocument()
   })
   it('tomt läge och Lägg till', () => {
     const ctx = fakeCtx({ now, follows: [] })

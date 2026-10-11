@@ -17,6 +17,7 @@ import { useSportResults } from '../results-controller'
 import { matchStatusLabel, scoreText } from '../score-model'
 import { Crest, ellipsis, overline } from './sport-parts'
 import { MatchScore } from './sport-score'
+import { SportIcons } from './sport-icons'
 
 const MAX_PICK = 4
 const NO_MATCHES: SportMatch[] = []
@@ -187,7 +188,7 @@ export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps
           <div style={{ fontSize: ps(15), color: TV.muted, ...ellipsis }}>{meta}</div>
         </div>
         <MatchScore match={m} size="row" />
-        {now ? <span data-testid="pm-now" style={{ padding: `${ps(3)}px ${ps(10)}px`, borderRadius: 999, border: `1px solid ${TV.accMix(80)}`, color: TV.accText, fontSize: ps(13), fontWeight: 700 }}>{tt('sportNowPill')}</span> : null}
+        {now ? <span data-testid="pm-now" role="img" aria-label={tt('sportNowPill')} title={tt('sportNowPill')} style={{ display: 'inline-flex', color: TV.acc, flexShrink: 0 }}><SportIcons.Play size={ps(20)} /></span> : null}
       </div>
     )
   }

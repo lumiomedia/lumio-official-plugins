@@ -11,7 +11,7 @@ import { setSportSettings } from '../sport-store'
 import { featuredMatch, headerSummary, sportCounts, visibleMatches } from '../sport-day-model'
 import { useSportBackdrop } from '../backdrop'
 import { SportBackdropLayer } from '../sport-backdrop'
-import { useSportCtx } from '../sport-ctx'
+import { summaryLine, useSportCtx } from '../sport-ctx'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import { RateLineView } from './sport-score'
@@ -93,7 +93,7 @@ function SportTv({ model, nav }: TvViewProps) {
     <div data-testid="sport-view" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(22) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(18) }}>
         <span style={{ fontSize: dp(40), fontWeight: 600 }}>{tt('sportTitle')}</span>
-        <span data-testid="sport-summary" style={{ fontSize: dp(19), color: TV.muted }}>{tt('sportSummary', { day: dayLabel(offset), count: summary.total, live: summary.live })}</span>
+        <span data-testid="sport-summary" style={{ fontSize: dp(19), color: TV.muted }}>{summaryLine(tt, dayLabel(offset), summary.total, summary.live)}</span>
         <span style={{ marginLeft: 'auto' }}>{clock}</span>
       </div>
       <RateLineView status={status} tv={tvMode} />

@@ -27,12 +27,12 @@ describe('Sport på telefon', () => {
   it('arket följer hemmalaget', async () => {
     mountSport({}, { phone: true, days: { [today]: [later] } })
     fireEvent.click(await screen.findByTestId('sport-phone-row'))
-    fireEvent.click(within(await screen.findByTestId('sport-phone-sheet')).getByText('Follow AIK'))
+    fireEvent.click(within(await screen.findByTestId('sport-phone-sheet')).getByText('Add AIK to favourites'))
     expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' }])
   })
-  it('Följer: nästa match, avsparksnotis och Lägg till', async () => {
+  it('Mina lag: nästa match, påminnelse och Lägg till', async () => {
     mountSport({}, { phone: true, days: { [today]: [later] }, follows: [{ sport: 'football', kind: 'team', key: 'hammarby', name: 'Hammarby' }] })
-    fireEvent.click(await screen.findByText('Following'))
+    fireEvent.click(await screen.findByText('My teams'))
     await waitFor(() => expect(screen.getByTestId('sport-phone-follow')).toHaveTextContent(/Hammarby.*Today \d\d:\d\d · vs AIK/))
     fireEvent.click(within(screen.getByTestId('sport-phone-alert')).getByText('Off'))
     expect(getSportSettings().alert).toBe('off')

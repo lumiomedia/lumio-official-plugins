@@ -16,7 +16,7 @@ export function goalAlertWanted(match: SportMatch | null, settings: SportSetting
 }
 
 export function goalTitle(e: GoalEvent, tt: TT): string {
-  return `${tt('sportGoal')} ${e.home} ${e.score.home}–${e.score.away} ${e.away}`
+  return `${tt('sportGoal')} · ${e.home} ${e.score.home}–${e.score.away} ${e.away}`
 }
 
 export function goalBody(e: GoalEvent): string {

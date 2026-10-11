@@ -139,6 +139,12 @@ export function sourceChip(m: SportMatch, ctx: SportCtx): string {
   return first.quality ? `${ctx.tt('sportSourcesShort', { n: ranked.length })} · ${first.quality}` : ctx.tt('sportSourcesShort', { n: ranked.length })
 }
 
+/** Rubrikraden: det som pågår först ("4 pågår nu · 10 matcher idag"), bara antalet när inget pågår. */
+export function summaryLine(tt: SportCtx['tt'], day: string, count: number, live: number): string {
+  const dayWord = day.toLocaleLowerCase()
+  return live > 0 ? tt('sportSummary', { live, count, day: dayWord }) : tt('sportSummaryQuiet', { count, day: dayWord })
+}
+
 export function alertLabel(ctx: SportCtx): string {
   return ctx.settings.alert === 'off' ? ctx.tt('sportAlertOff') : ctx.settings.alert === '15' ? ctx.tt('sportAlert15') : ctx.tt('sportAlertKickoff')
 }

@@ -16,7 +16,7 @@ describe('Sportskalet', () => {
   it('rubrik med sammanfattning, hero, exakt en data-init', async () => {
     mountSport({}, { days: { [today]: [live, later] } })
     expect(await screen.findByTestId('sport-hero')).toHaveTextContent('GAIS')
-    expect(screen.getByTestId('sport-summary')).toHaveTextContent('Today · 2 matches · 1 live')
+    expect(screen.getByTestId('sport-summary')).toHaveTextContent('1 in play · 2 matches today')
     expect(document.querySelectorAll('[data-init]')).toHaveLength(1)
   })
   it('Resultat-fliken finns (tre flikar) och visar nyckelkortet utan nyckel, aldrig som banner', async () => {
@@ -43,7 +43,7 @@ describe('Sportskalet', () => {
     await screen.findByTestId('sport-hero')
     fireEvent.click(screen.getByTestId('sport-day-1'))
     expect(await screen.findByTestId('sport-empty')).toBeInTheDocument()
-    expect(screen.getByTestId('sport-summary')).toHaveTextContent('Tomorrow · 0 matches · 0 live')
+    expect(screen.getByTestId('sport-summary')).toHaveTextContent('0 matches tomorrow')
     const days = fetchSpy.mock.calls.map((call) => new URL(String(call[0]), 'http://localhost').searchParams.get('day'))
     expect(days).toContain(shiftDay(today, 1))
   })
@@ -57,7 +57,7 @@ describe('Sportskalet', () => {
     const panel = await screen.findByTestId('choice-panel')
     expect(within(panel).getByTestId('choice-row-Football')).toHaveTextContent('2')
     fireEvent.click(within(panel).getByTestId('choice-row-Ice hockey'))
-    await waitFor(() => expect(screen.getByTestId('sport-summary')).toHaveTextContent('Today · 1 matches · 0 live'))
+    await waitFor(() => expect(screen.getByTestId('sport-summary')).toHaveTextContent('1 matches today'))
   })
   it('en äldre app utan endpointen får ett besked, inte en evig laddning', async () => {
     mountSport({}, { days: 'missing' })
@@ -68,7 +68,7 @@ describe('Sportskalet', () => {
     fireEvent.click(await screen.findByTestId('sport-hero-watch'))
     expect(await screen.findByTestId('player')).toHaveTextContent('TV4 Fotboll FHD SE')
   })
-  it('kortet öppnar matchcentret; Välj annan kanal sparar åsidosättningen; Bakåt stänger lager för lager', async () => {
+  it('kortet öppnar matchcentret; Fel kanal? sparar åsidosättningen; Bakåt stänger lager för lager', async () => {
     const { onNavigate } = mountSport({}, { days: { [today]: [live, later] } })
     await screen.findByTestId('sport-hero')
     fireEvent.click(within(screen.getByTestId('sport-section-later')).getByTestId('sport-card'))

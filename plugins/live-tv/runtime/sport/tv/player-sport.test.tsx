@@ -82,16 +82,16 @@ describe('Matcher-lådan', () => {
     const row = within(drawer).getAllByTestId('pm-row')[0]!
     expect((row.querySelector('[data-crest]') as HTMLElement).style.width).toBe('62px')
   })
-  it('sektioner med NU, klick byter match', () => {
+  it('sektioner med spelas-ikon, klick byter match', () => {
     const sport = sportProps()
     render(<PlayerMatchesDrawer sport={sport} channel={channelB} nowMs={now} locale="en-GB" onClose={() => {}} ps={playerScale(false)} />)
     const drawer = screen.getByTestId('player-matches-drawer')
-    expect(drawer).toHaveTextContent('On this channel')
-    expect(drawer).toHaveTextContent('Live on your channels')
-    expect(drawer).toHaveTextContent('Later today on your channels')
+    expect(drawer).toHaveTextContent('Playing here')
+    expect(drawer).toHaveTextContent('On now')
+    expect(drawer).toHaveTextContent('On later')
     const rows = within(drawer).getAllByTestId('pm-row')
     expect(rows).toHaveLength(3)
-    expect(within(rows[0]!).getByTestId('pm-now')).toHaveTextContent('NOW')
+    expect(within(rows[0]!).getByTestId('pm-now').getAttribute('aria-label')).toBe('Playing')
     fireEvent.click(rows[1]!)
     expect(sport.onSwitchMatch).toHaveBeenCalledWith(elsewhere)
   })

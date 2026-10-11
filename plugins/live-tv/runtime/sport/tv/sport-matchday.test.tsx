@@ -15,7 +15,7 @@ const done = fxMatch({ id: 'done', home: 'Örgryte', away: 'GAIS', start: now - 
 const all = [done, live, next1, next2, next3, next4]
 
 describe('Matchdag', () => {
-  it('hero: pågående match, LIVE-fönster utan ställning, Titta och Matchcenter', () => {
+  it('hero: pågående match, LIVE-fönster utan ställning, Titta och Matchinfo', () => {
     const ctx = fakeCtx({ now })
     render(<SportMatchday ctx={ctx} matches={all} dayFrom={dayFrom} />)
     const hero = screen.getByTestId('sport-hero')
@@ -23,7 +23,7 @@ describe('Matchdag', () => {
     expect(hero).toHaveTextContent('Paris SG')
     expect(hero).toHaveTextContent(/LIVE · \d\d:\d\d–\d\d:\d\d/)
     expect(hero).toHaveTextContent('Champions League · Estadi Olímpic')
-    expect(hero).toHaveTextContent('3 sources in your playlists')
+    expect(hero).toHaveTextContent('On 3 channels')
     expect(hero.querySelector('[data-score]')).toBeNull()
     fireEvent.click(screen.getByTestId('sport-hero-watch'))
     expect(ctx.watch).toHaveBeenCalledWith(live)

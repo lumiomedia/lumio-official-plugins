@@ -58,9 +58,9 @@ describe('märken', () => {
     expect(crestForFollow({ key: 'malmo' }, [m()])).toBe('https://m/375.png')
     expect(crestForFollow({ key: 'aik' }, [m()])).toBeNull()
   })
-  it('"Bara resultat"', () => {
+  it('"Ingen kanal"', () => {
     render(<ResultOnlyTag />)
-    expect(screen.getByText('Bara resultat')).toBeTruthy()
+    expect(screen.getByText('Ingen kanal')).toBeTruthy()
   })
 })
 
