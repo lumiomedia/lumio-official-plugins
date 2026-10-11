@@ -58,7 +58,7 @@ export const TV = {
   liveSoft: 'rgba(251,113,133,0.22)',
   liveText: '#fecdd3',
   glass: 'rgba(58,59,66,0.96)',
-  panel: 'rgba(20,22,30,0.98)',
+  panel: '#141519',
   scrim: 'rgba(0,0,0,0.6)',
   font: "'Avenir Next', 'Trebuchet MS', sans-serif",
   mono: 'ui-monospace, SFMono-Regular, Menlo, monospace',

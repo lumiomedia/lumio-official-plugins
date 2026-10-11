@@ -100,3 +100,13 @@ describe('TvChoicePanel', () => {
     opener.remove()
   })
 })
+
+describe('panel family surface', () => {
+  it('Alla sporter-panelen använder den delade svarta paneltoken, som matchcentret', async () => {
+    const { TV } = await import('./tv-ui')
+    render(<TvChoicePanel nav={makeNav(vi.fn(() => () => {}))} title="Sport" options={options} value={null} onPick={() => {}} onClose={() => {}} />)
+    await settle()
+    expect(TV.panel).toBe('#141519')
+    expect(screen.getByTestId('choice-panel').style.background).toBe('#141519')
+  })
+})

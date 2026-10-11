@@ -188,7 +188,7 @@ export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps
     </div>
   ))
   return (
-    <div ref={rootRef} data-testid="player-matches-drawer" data-panel-root="" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: `min(${ps(780)}px, 100%)`, zIndex: 40, background: '#141519', borderLeft: '1px solid rgba(255,255,255,0.16)', padding: ps(28), boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: ps(14), color: TV.text }}>
+    <div ref={rootRef} data-testid="player-matches-drawer" data-panel-root="" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: `min(${ps(780)}px, 100%)`, zIndex: 40, background: TV.panel, borderLeft: '1px solid rgba(255,255,255,0.16)', padding: ps(28), boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: ps(14), color: TV.text }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: ps(12) }}>
         <span style={{ fontSize: ps(30), fontWeight: 600 }}>{tt('sportMatches')}</span>
         <div data-testid="pm-pick" {...station(() => { setPicking((v) => !v); setPicked([]) })} aria-pressed={picking ? 'true' : 'false'} style={{ marginLeft: 'auto', height: ps(48), minHeight: ps(48), padding: `0 ${ps(16)}px`, borderRadius: ps(12), border: `1px solid ${TV.lineCard}`, background: picking ? TV.s16 : TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: ps(16), fontWeight: 600, cursor: 'pointer' }}>{tt('sportPickSeveral')}</div>
