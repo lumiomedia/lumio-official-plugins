@@ -551,13 +551,14 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   useSwipeBack(back, (!menu || phone) && pending === null)
 
   // Matcher-lådans "Öppna i Multiview": rutorna fylls med de valda kanalerna
-  // och spelaren stängs. Telefonen har ingen sportdel i spelaren (fas 1).
+  // och spelaren stängs. Telefonen får bara källväljaren (spelararket), men
+  // samma fördröjda hämtning — aldrig något anrop under uppspelningsstarten.
   const openSportMultiview = useCallback((keys: string[]) => {
     setMultiviewState(multiviewFor(keys))
     setActive(null)
     go('multi')
   }, [go])
-  const playerSport = usePlayerSport({ playingKey: active !== null && !phone ? channelKey(active.channel) : null, model, play, openMultiview: openSportMultiview })
+  const playerSport = usePlayerSport({ playingKey: active !== null ? channelKey(active.channel) : null, model, play, openMultiview: openSportMultiview })
 
   const View = TV_VIEWS[view]
   const activeChannel: M3uChannel | null = active

@@ -12,6 +12,7 @@ import { MIcons } from './mobile-icons'
 import { MobileLogo } from './mobile-logo'
 import { MobileChannelRow } from './mobile-channel-row'
 import { MobileSheet } from './mobile-sheet'
+import { currentMatchSources } from '../../sport/tv/player-sport'
 
 /**
  * Scenens låda i porträtt (handoffen §10: video överst, 16:9 + lite luft).
@@ -38,7 +39,7 @@ const noLayer = () => () => {}
 const SAFE_SIDE_L = 'max(60px, env(safe-area-inset-left, 0px))'
 const SAFE_SIDE_R = 'max(60px, env(safe-area-inset-right, 0px))'
 
-type Sheet = 'audio' | 'more' | null
+type Sheet = 'audio' | 'more' | 'sources' | null
 
 function Round({ size, label, onPress, background = 'rgba(0,0,0,0.55)', children }: { size: number; label: string; onPress: () => void; background?: string; children: ReactNode }) {
   return (
@@ -48,10 +49,10 @@ function Round({ size, label, onPress, background = 'rgba(0,0,0,0.55)', children
   )
 }
 
-function Pill({ label, onPress, disabled = false }: { label: string; onPress?: () => void; disabled?: boolean }) {
+function Pill({ label, onPress, disabled = false, testId }: { label: string; onPress?: () => void; disabled?: boolean; testId?: string }) {
   const shared: CSSProperties = { height: 44, minHeight: 44, padding: '0 16px', borderRadius: 999, background: MT.s10, border: `1px solid ${MT.line08}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', boxSizing: 'border-box', flexShrink: 0 }
   if (disabled || !onPress) return <div aria-disabled="true" style={{ ...shared, color: MT.muted }}>{label}</div>
-  return <div {...station(onPress)} style={{ ...shared, color: MT.text, cursor: 'pointer' }}>{label}</div>
+  return <div {...station(onPress)} data-testid={testId} style={{ ...shared, color: MT.text, cursor: 'pointer' }}>{label}</div>
 }
 
 function LiveTag({ label }: { label: string }) {
@@ -170,16 +171,27 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
     { key: 'fav', label: favLabel, run: tv.onToggleFavourite },
     { key: 'info', label: tt('menuChannelDetails'), run: tv.onOpenChannelDetails },
   ]
+  // Matchen som spelar och dess källor — ur dagens redan hämtade matcher, inga anrop.
+  const currentKey = channelKey(channel)
+  const matchSources = tv.sport ? currentMatchSources(tv.sport, currentKey, tv.nowMs) : null
+  const sourceItems: TvGlassMenuAction[] = matchSources && tv.sport
+    ? matchSources.sources.map((s) => {
+        const sport = tv.sport!
+        const on = s.channelKey === currentKey
+        return { key: s.channelKey, label: `${on ? '✓ ' : ''}${[s.name, sport.playlistName(s.sourceId), s.quality].filter(Boolean).join(' · ')}`, run: () => { if (!on) sport.onSwitchSource(s) } }
+      })
+    : []
   const sheetNode = sheet ? (
     <MobileSheet
-      title={sheet === 'audio' ? tt('audioSubs') : channel.name}
+      title={sheet === 'audio' ? tt('audioSubs') : sheet === 'sources' ? tt('sportSourcesShort', { n: sourceItems.length }) : channel.name}
       subtitle={info.now?.title}
-      items={sheet === 'audio' ? audioItems : moreItems}
+      items={sheet === 'audio' ? audioItems : sheet === 'sources' ? sourceItems : moreItems}
       onClose={closeSheet}
       pushLayer={noLayer}
-      testId={sheet === 'audio' ? 'phone-audio-sheet' : 'phone-more-sheet'}
+      testId={sheet === 'audio' ? 'phone-audio-sheet' : sheet === 'sources' ? 'phone-sources-sheet' : 'phone-more-sheet'}
     />
   ) : null
+  const sourcesLabel = matchSources ? tt('sportSourcesShort', { n: matchSources.sources.length }) : null
 
   const fade: CSSProperties = { opacity: visible ? 1 : 0, transition: 'opacity 200ms', pointerEvents: visible ? 'auto' : 'none' }
   const muteBtn = (size: number) => (controls ? (
@@ -209,6 +221,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
               <div data-testid="phone-landscape-controls" style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 10 }}>
                 {muteBtn(44)}
                 <Pill label={qualityLabel} disabled />
+                {sourcesLabel ? <Pill label={sourcesLabel} onPress={() => setSheet('sources')} testId="phone-sources" /> : null}
                 <Pill label={tt('menuGuide')} onPress={tv.onOpenGuide} />
                 <Round size={44} label={tt('moreActions')} onPress={() => setSheet('more')} background={MT.s10}><MIcons.DotsThree size={22} /></Round>
               </div>
@@ -262,6 +275,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
           <GridBtn label={qualityLabel} />
           <GridBtn label={tt('menuChannelDetails')} onPress={tv.onOpenChannelDetails} />
           <GridBtn label={tt('menuGuide')} onPress={tv.onOpenGuide} />
+          {sourcesLabel ? <GridBtn label={sourcesLabel} onPress={() => setSheet('sources')} testId="phone-sources" /> : null}
         </div>
         <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{tt('zapList')}</div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -287,8 +301,8 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
 }
 
 /** Knapprutnätets ruta (46 px, radius 12); utan `onPress` ritas den som ett passivt värde. */
-function GridBtn({ label, onPress }: { label: string; onPress?: () => void }) {
+function GridBtn({ label, onPress, testId }: { label: string; onPress?: () => void; testId?: string }) {
   const shared: CSSProperties = { minHeight: 46, padding: '0 12px', borderRadius: 12, background: MT.s08, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, boxSizing: 'border-box' }
   if (!onPress) return <div aria-disabled="true" style={{ ...shared, color: MT.muted }}><span style={ellipsis}>{label}</span></div>
-  return <div {...station(onPress)} style={{ ...shared, color: MT.text, cursor: 'pointer' }}><span style={ellipsis}>{label}</span></div>
+  return <div {...station(onPress)} data-testid={testId} style={{ ...shared, color: MT.text, cursor: 'pointer', gridColumn: testId === 'phone-sources' ? '1 / -1' : undefined }}><span style={ellipsis}>{label}</span></div>
 }

@@ -1,6 +1,6 @@
 import type { M3uChannel } from '../live-tv-data'
 import type { NowNextLater } from '../epg/types'
-import type { SportMatch } from '../sport/sport-model'
+import type { MatchSource, SportMatch } from '../sport/sport-model'
 import type { SportOverrides, SportViewMode } from '../sport/sport-store'
 
 /** Sportläget i spelaren (fas 1): dagens matcher ur EPG:t, inga resultat. */
@@ -12,6 +12,10 @@ export interface PlayerSportProps {
   view: SportViewMode
   /** Byt till matchens bästa källa; spelaren står kvar öppen. */
   onSwitchMatch(match: SportMatch): void
+  /** Byt till en annan källa för matchen som spelar (genom PIN-grinden). */
+  onSwitchSource(source: MatchSource): void
+  /** Spellistans namn för en källas `sourceId`. */
+  playlistName(sourceId: string): string
   /** Öppna kanalerna i Multiview (stänger spelaren). */
   onOpenMultiview(channelKeys: string[]): void
   /** Finns kanalen i den aktiva spellistan? Multiview kan bara visa sådana. */

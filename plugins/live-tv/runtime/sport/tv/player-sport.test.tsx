@@ -7,7 +7,7 @@ import type { LiveTvModel } from '../../live-tv-model'
 import { TvPlayerChrome } from '../../tv/tv-player-chrome'
 import { playerScale } from '../../tv/player-chrome-parts'
 import type { LiveTvPlayerTvProps, PlayerSportProps } from '../../tv/tv-player-types'
-import { PLAYER_SPORT_DELAY_MS, PlayerMatchesDrawer, matchesForPlayer, multiviewFor, usePlayerSport } from './player-sport'
+import { PLAYER_SPORT_DELAY_MS, PlayerMatchesDrawer, currentMatchSources, matchesForPlayer, multiviewFor, usePlayerSport } from './player-sport'
 import { HOUR, MIN, fxList, fxMatch, fxSource, stubSportDays } from '../__sport-fixture'
 
 afterEach(cleanup)
@@ -27,7 +27,7 @@ const ghost = fxMatch({ id: 'ghost', home: 'Örgryte', away: 'GAIS', start: now 
 const channelB = { name: 'B', logo: null, group: 'Sport', url: 'http://x/B', tvgId: null }
 
 function sportProps(over: Partial<PlayerSportProps> = {}): PlayerSportProps {
-  return { matches: [onHere, elsewhere, soon, ghost], overrides: {}, view: 'matchday', onSwitchMatch: vi.fn(), onOpenMultiview: vi.fn(), isKnownChannel: () => true, ...over }
+  return { matches: [onHere, elsewhere, soon, ghost], overrides: {}, view: 'matchday', onSwitchMatch: vi.fn(), onSwitchSource: vi.fn(), onOpenMultiview: vi.fn(), isKnownChannel: () => true, playlistName: (id) => (id === 'src-a' ? 'Xtream' : 'Other'), ...over }
 }
 function tv(over: Partial<LiveTvPlayerTvProps> = {}): LiveTvPlayerTvProps {
   return { channelNumber: 2, quality: null, favourite: false, bannerHideMs: 0, neighbours: [channelB], pinnedKeys: [], nowFor: () => ({ now: null, next: null, later: null }), nowMs: now, locale: 'en-GB', gateOpen: false, phone: false, fullscreenOnRotate: true, keepAwake: true, onToggleFavourite: vi.fn(), onOpenChannelDetails: vi.fn(), onOpenMultiview: vi.fn(), onOpenGuide: vi.fn(), onAddToMultiview: vi.fn(), onSwitchChannel: vi.fn(), ...over }
@@ -154,5 +154,74 @@ describe('kromet', () => {
     render(<TvPlayerChrome channel={{ ...channelB, name: 'Z', url: 'http://x/Z' }} tv={tv({ sport: sportProps() })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     expect(screen.queryByTestId('player-matches')).toBeNull()
     expect(channelKey(channelB)).toBe(here.channelKey)
+  })
+})
+
+describe('källorna för matchen som spelar', () => {
+  const srcB = fxSource('B', { quality: 'FHD' })
+  const srcD = fxSource('D', { quality: 'HD', sourceId: 'src-b' })
+  const multi = fxMatch({ id: 'multi', home: 'Djurgården', away: 'AIK', start: now - 10 * MIN, stop: now + HOUR, sources: [srcD, srcB] })
+  const props = (over: Partial<PlayerSportProps> = {}) => sportProps({ matches: [multi, elsewhere], ...over })
+
+  it('currentMatchSources: rankade källor för matchen på kanalen, bara när den har fler än en', () => {
+    expect(currentMatchSources(props(), here.channelKey, now)?.sources.map((s) => s.name)).toEqual(['D', 'B'])
+    expect(currentMatchSources(sportProps(), here.channelKey, now)).toBeNull()
+    expect(currentMatchSources(props(), 'Z::http://x/Z', now)).toBeNull()
+  })
+  it('kromet: källväljaren i bannern, den som spelar markerad, val byter kanal', () => {
+    const sport = props()
+    render(<TvPlayerChrome channel={channelB} tv={tv({ sport })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    const bar = screen.getByTestId('player-sources')
+    const chips = within(bar).getAllByTestId('player-source')
+    expect(chips.map((c) => c.getAttribute('data-current'))).toEqual(['0', '1'])
+    expect(chips[0]).toHaveTextContent('D')
+    expect(chips[0]).toHaveTextContent('Other')
+    expect(chips[0]).toHaveTextContent('HD')
+    expect(chips[0]!.getAttribute('tabindex')).toBe('0')
+    fireEvent.click(chips[1]!)
+    expect(sport.onSwitchSource).not.toHaveBeenCalled()
+    fireEvent.click(chips[0]!)
+    expect(sport.onSwitchSource).toHaveBeenCalledWith(srcD)
+  })
+  it('kromet: ingen källväljare när matchen bara har en källa', () => {
+    render(<TvPlayerChrome channel={channelB} tv={tv({ sport: sportProps() })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    expect(screen.queryByTestId('player-sources')).toBeNull()
+  })
+  it('Matcher-lådan visar källorna för matchen som spelar', () => {
+    const sport = props()
+    render(<PlayerMatchesDrawer sport={sport} channel={channelB} nowMs={now} locale="en-GB" onClose={() => {}} ps={playerScale(false)} />)
+    const chips = within(screen.getByTestId('player-matches-drawer')).getAllByTestId('player-source')
+    expect(chips).toHaveLength(2)
+    fireEvent.click(chips[0]!)
+    expect(sport.onSwitchSource).toHaveBeenCalledWith(srcD)
+  })
+  it('telefonen: knappen öppnar ett ark med källorna, den som spelar bockad', () => {
+    const sport = props()
+    render(<TvPlayerChrome channel={channelB} tv={tv({ sport, phone: true })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('phone-sources'))
+    const sheet = screen.getByTestId('phone-sources-sheet')
+    const items = sheet.querySelectorAll('[data-sheet-item]')
+    expect(items).toHaveLength(2)
+    expect(items[1]).toHaveTextContent('✓')
+    expect(items[0]).toHaveTextContent('D · Other · HD')
+    fireEvent.click(items[0]!)
+    expect(sport.onSwitchSource).toHaveBeenCalledWith(srcD)
+  })
+  it('usePlayerSport: källbyte går genom play (PIN-grinden), spellistans namn ur modellen', async () => {
+    stubSportDays({})
+    const play = vi.fn()
+    const model = { nowMs: now, byKey: new Map(), lists: [{ ...fxList, source: 'src-b', name: 'Min lista' }] } as unknown as LiveTvModel
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const { result } = renderHook(() => usePlayerSport({ playingKey: srcB.channelKey, model, play, openMultiview: vi.fn() }))
+      await act(async () => { await vi.advanceTimersByTimeAsync(PLAYER_SPORT_DELAY_MS) })
+      await act(async () => {})
+      expect(result.current).toBeDefined()
+      expect(result.current!.playlistName('src-b')).toBe('Min lista')
+      result.current!.onSwitchSource(srcD)
+      expect(play).toHaveBeenCalledWith({ channel: { name: 'D', url: 'http://x/D', logo: null, group: 'Sport', tvgId: null } })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

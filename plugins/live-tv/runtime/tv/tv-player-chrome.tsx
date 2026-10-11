@@ -7,7 +7,7 @@ import type { LiveTvPlayerControls, LiveTvPlayerTvProps } from './tv-player-type
 import { TvFocusStyle } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { TvPlayerChromePhone } from './mobile/player-chrome-phone'
-import { PlayerMatchesDrawer, PlayerSportTicker, matchesForPlayer } from '../sport/tv/player-sport'
+import { PlayerMatchesDrawer, PlayerSourceSwitcher, PlayerSportTicker, matchesForPlayer } from '../sport/tv/player-sport'
 import { PlayerControlRow, PlayerFavouritesRow, PlayerScheduleOverlay, PlayerTopBar, playerScale } from './player-chrome-parts'
 
 export interface TvPlayerChromeProps {
@@ -268,6 +268,7 @@ function TvPlayerChromeDesktop({ channel, tv, controls, paused, onTogglePause, o
         onMouseLeave={release}
         style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 30, padding: `${ps(48)}px ${ps(20)}px ${ps(20)}px`, background: 'linear-gradient(0deg, rgba(0,0,0,0.85), rgba(0,0,0,0.55) 55%, transparent)', opacity: visible ? 1 : 0, transition: 'opacity 200ms', pointerEvents: visible ? 'auto' : 'none', color: '#f3f4f8' }}
       >
+        {tv.sport && sportHere ? <PlayerSourceSwitcher sport={tv.sport} channel={channel} nowMs={tv.nowMs} ps={ps} /> : null}
         {tv.sport && sportHere && tv.sport.view === 'matchday' ? <PlayerSportTicker sport={tv.sport} channel={channel} nowMs={tv.nowMs} variant="ticker" ps={ps} /> : null}
         <PlayerControlRow channel={channel} tv={tv} info={info} ps={ps} isTv={isTv} paused={paused} onTogglePause={onTogglePause} controls={controls} guideOpen={guideOpen} onToggleGuide={toggleGuide} dotsRef={initRef} onOpenMenu={openMenu} volumeRef={volumeRef} sportAvailable={sportHere} matchesOpen={matchesOpen} onToggleMatches={() => { if (matchesOpen) closeMatches(); else { setMatchesOpen(true); setVisible(true); clearTimer() } }} />
         <PlayerFavouritesRow channel={channel} tv={tv} ps={ps} onSwitch={switchChannel} onHold={holdChip} />

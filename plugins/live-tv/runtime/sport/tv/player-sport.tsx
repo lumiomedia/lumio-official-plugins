@@ -9,7 +9,7 @@ import type { MultiviewLayout, MultiviewState } from '../../tv/tv-multiview-stor
 import type { PlayerSportProps } from '../../tv/tv-player-types'
 import { useTvText } from '../../tv/tv-strings'
 import { TV, station } from '../../tv/tv-ui'
-import { crestText, matchTitle, sourceChannel, type SportDay, type SportMatch } from '../sport-model'
+import { crestText, matchTitle, sourceChannel, type MatchSource, type SportDay, type SportMatch } from '../sport-model'
 import { localDayKey, useSportDay } from '../sport-epg'
 import { pickMultiviewKeys, rankedSources, statusAt, visibleMatches } from '../sport-day-model'
 import { useOverrides, useSportSettings } from '../sport-store'
@@ -33,6 +33,19 @@ export function matchesForPlayer(matches: SportMatch[], currentKey: string, now:
   }
 }
 
+/**
+  Källorna för matchen som spelar just nu — rankade som i matchcentret, och
+  bara när det finns fler än en att välja mellan. Ren funktion över dagens
+  redan hämtade matcher: källväljaren kostar inga anrop.
+*/
+export function currentMatchSources(sport: Pick<PlayerSportProps, 'matches' | 'overrides'>, currentKey: string, now: number): { match: SportMatch; sources: MatchSource[] } | null {
+  for (const match of matchesForPlayer(sport.matches, currentKey, now).onChannel) {
+    const sources = rankedSources(match, sport.overrides)
+    if (sources.length > 1) return { match, sources }
+  }
+  return null
+}
+
 /** Hur länge en kanal ska ha spelat innan spelaren frågar efter dagens matcher. */
 export const PLAYER_SPORT_DELAY_MS = 4000
 
@@ -43,6 +56,7 @@ export const PLAYER_SPORT_DELAY_MS = 4000
   innan dess börjar väntan om. `playingKey` är null när spelaren är stängd.
 */
 export function usePlayerSport(args: { playingKey: string | null; model: LiveTvModel; play: (request: PlayRequest) => void; openMultiview: (keys: string[]) => void }): PlayerSportProps | undefined {
+  const { tt } = useTvText()
   const settings = useSportSettings()
   const overrides = useOverrides()
   const { playingKey, model, play, openMultiview } = args
@@ -70,10 +84,12 @@ export function usePlayerSport(args: { playingKey: string | null; model: LiveTvM
         const best = rankedSources(m, overrides)[0]
         if (best) play({ channel: sourceChannel(best) })
       },
+      onSwitchSource: (source) => play({ channel: sourceChannel(source) }),
       onOpenMultiview: openMultiview,
       isKnownChannel: (key) => model.byKey.has(key),
+      playlistName: (sourceId) => model.lists.find((list) => list.source === sourceId)?.name ?? tt('sportPlaylistUnknown'),
     }
-  }, [active, data, overrides, settings.view, play, openMultiview, model.byKey])
+  }, [active, data, overrides, settings.view, play, openMultiview, model.byKey, model.lists, tt])
 }
 
 const shortLabel = (m: SportMatch) => (m.home && m.away ? `${crestText(m.home)} – ${crestText(m.away)}` : m.event ?? m.league)
@@ -103,6 +119,31 @@ export function PlayerSportTicker({ sport, channel, nowMs, variant, ps }: { spor
       {items.map((m) => (
         <span key={m.id} data-testid="pst-item" {...station(pick(m))} style={{ padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV.lineCard}`, background: 'rgba(0,0,0,0.5)', fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'auto', cursor: 'pointer' }}>{shortLabel(m)}</span>
       ))}
+    </div>
+  )
+}
+
+/**
+  Källväljaren för matchen som spelar: ett chip per källa (kanal, spellista,
+  kvalitet), den som spelar markerad. Stationer — nås med fjärren på TV.
+*/
+export function PlayerSourceSwitcher({ sport, channel, nowMs, ps, testId = 'player-sources' }: { sport: PlayerSportProps; channel: M3uChannel; nowMs: number; ps: (n: number) => number; testId?: string }) {
+  const { tt } = useTvText()
+  const currentKey = channelKey(channel)
+  const found = currentMatchSources(sport, currentKey, nowMs)
+  if (!found) return null
+  return (
+    <div data-testid={testId} data-row="" style={{ display: 'flex', alignItems: 'center', gap: ps(8), marginBottom: ps(8), overflowX: 'auto', pointerEvents: 'auto' }}>
+      <span style={{ fontSize: ps(11), fontWeight: 700, letterSpacing: '0.14em', color: TV.dim, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>{tt('sportSourcesShort', { n: found.sources.length })}</span>
+      {found.sources.map((s) => {
+        const on = s.channelKey === currentKey
+        return (
+          <div key={s.channelKey} data-testid="player-source" data-current={on ? '1' : '0'} aria-pressed={on ? 'true' : 'false'} {...station(() => { if (!on) sport.onSwitchSource(s) })} style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, maxWidth: ps(240), padding: `${ps(5)}px ${ps(12)}px`, borderRadius: ps(10), cursor: 'pointer', background: on ? TV.accMix(18) : 'rgba(0,0,0,0.5)', border: `1px solid ${on ? TV.accMix(70) : TV.lineCard}` }}>
+            <span style={{ fontSize: ps(13), fontWeight: 600, ...ellipsis }}>{on ? '● ' : ''}{s.name}</span>
+            <span style={{ fontSize: ps(11), color: TV.muted, ...ellipsis }}>{[sport.playlistName(s.sourceId), s.quality].filter(Boolean).join(' · ')}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -154,6 +195,7 @@ export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps
         <div data-testid="pm-close" {...station(onClose)} aria-label={tt('sportClose')} style={{ width: ps(48), height: ps(48), minHeight: ps(48), borderRadius: ps(12), border: `1px solid ${TV.lineCard}`, background: TV.s08, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>✕</div>
       </div>
       <span style={{ fontSize: ps(16), color: TV.muted }}>{tt('sportMatchesHint')}</span>
+      <PlayerSourceSwitcher sport={sport} channel={channel} nowMs={nowMs} ps={(n) => ps(n * 1.3)} testId="pm-sources" />
       <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: ps(16) }}>
         {section(tt('sportOnThisChannel'), lists.onChannel, true)}
         {section(tt('sportLiveOnChannels'), lists.live, false)}
