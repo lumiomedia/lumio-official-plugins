@@ -1,0 +1,8 @@
+{
+  "_shape": "recorded from sportapi.ai/docs examples 2026-10-11 — verify with real key",
+  "success": true, "fixture_id": 13596176, "available": true,
+  "data": {
+    "home": { "shots": 13, "shots_on_target": 6, "shots_off_target": 7, "fouls": 12, "total_passes": 512, "pass_accuracy": 85.3, "tackles": 12, "tackle_success": 66.7, "saves": 4, "yellow_cards": 1 },
+    "away": { "shots": 11, "shots_on_target": 5, "shots_off_target": 6, "fouls": 20, "total_passes": 356, "pass_accuracy": 78.9, "tackles": 10, "tackle_success": 60, "saves": 4, "yellow_cards": 4 }
+  }
+}

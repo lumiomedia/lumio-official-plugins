@@ -8,7 +8,7 @@
  */
 import type { SportKind } from './sport-model'
 
-export type ProviderId = 'api-sports' | 'thesportsdb'
+export type ProviderId = 'api-sports' | 'thesportsdb' | 'sportapi'
 export type FixtureStatus = 'scheduled' | 'live' | 'ht' | 'finished' | 'postponed'
 export interface FixtureTeam { id: string; name: string; crest: string | null }
 export interface Fixture {
@@ -29,7 +29,8 @@ export interface LineupEntry { number: number | null; name: string; pos: string 
 export interface FixtureLineup { side: 'home' | 'away'; formation: string | null; startXI: LineupEntry[]; subs: LineupEntry[] }
 export interface FixtureDetail { fixture: Fixture; events: FixtureEvent[]; stats: FixtureStat[]; lineups: FixtureLineup[] }
 export interface StandingRow { rank: number; team: FixtureTeam; played: number; points: number; goalDiff: number | null; form: string | null; group: string | null }
-export interface TeamHit { id: string; name: string; crest: string | null; country: string | null }
+/** `provider`: källan som svarade (sätts av sökningen; id:t är den källans). */
+export interface TeamHit { id: string; name: string; crest: string | null; country: string | null; provider?: ProviderId }
 /** Lagets bilder för Sports bakgrund (TheSportsDB `lookupteam`). */
 export interface TeamArt { stadium: string | null; fanart: string | null }
 export interface KeyCheck { ok: boolean; plan: string | null; used: number | null; limit: number | null }

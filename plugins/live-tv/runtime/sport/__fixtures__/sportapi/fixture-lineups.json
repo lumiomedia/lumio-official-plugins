@@ -1,0 +1,11 @@
+{
+  "_shape": "recorded from sportapi.ai/docs examples 2026-10-11 — verify with real key",
+  "success": true, "fixture_id": 13596176, "available": true,
+  "data": {
+    "home": {
+      "starters": [{ "name": "David Raya", "position": "Goalkeeper", "shirt": 1, "is_captain": false, "mins_played": 90 }],
+      "subs": [{ "name": "P. Hincapié", "position": "Substitute", "shirt": 5, "is_captain": false, "mins_played": 8 }]
+    },
+    "away": { "starters": [], "subs": [] }
+  }
+}
