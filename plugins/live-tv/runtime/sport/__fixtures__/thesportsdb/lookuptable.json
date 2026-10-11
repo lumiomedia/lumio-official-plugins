@@ -1,0 +1,45 @@
+{
+  "_shape": "from docs — verify with real key",
+  "table": [
+    {
+      "idStanding": "1",
+      "intRank": "1",
+      "idTeam": "134003",
+      "strTeam": "AIK",
+      "strBadge": "https://r2.thesportsdb.com/images/media/team/badge/aik.png",
+      "idLeague": "4347",
+      "strLeague": "Swedish Allsvenskan",
+      "strSeason": "2026",
+      "strForm": "WWDWW",
+      "strGroup": "",
+      "intPlayed": "26",
+      "intWin": "18",
+      "intLoss": "4",
+      "intDraw": "4",
+      "intGoalsFor": "50",
+      "intGoalsAgainst": "25",
+      "intGoalDifference": "25",
+      "intPoints": "58"
+    },
+    {
+      "idStanding": "2",
+      "intRank": "2",
+      "idTeam": "134001",
+      "strTeam": "Malmo FF",
+      "strBadge": "https://r2.thesportsdb.com/images/media/team/badge/malmo.png",
+      "idLeague": "4347",
+      "strLeague": "Swedish Allsvenskan",
+      "strSeason": "2026",
+      "strForm": "WLWWD",
+      "strGroup": "",
+      "intPlayed": "26",
+      "intWin": "17",
+      "intLoss": "5",
+      "intDraw": "4",
+      "intGoalsFor": "55",
+      "intGoalsAgainst": "25",
+      "intGoalDifference": "30",
+      "intPoints": "55"
+    }
+  ]
+}

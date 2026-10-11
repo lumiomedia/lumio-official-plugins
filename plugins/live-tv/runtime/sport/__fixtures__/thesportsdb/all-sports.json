@@ -1,0 +1,13 @@
+{
+  "_shape": "from docs — verify with real key",
+  "all": [
+    {
+      "idSport": "102",
+      "strSport": "Soccer"
+    },
+    {
+      "idSport": "103",
+      "strSport": "Ice Hockey"
+    }
+  ]
+}

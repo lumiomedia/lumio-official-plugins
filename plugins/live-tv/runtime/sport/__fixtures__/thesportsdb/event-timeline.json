@@ -1,0 +1,41 @@
+{
+  "_shape": "from docs — verify with real key",
+  "lookup": [
+    {
+      "idTimeline": "1",
+      "idEvent": "2100001",
+      "strTimeline": "Goal",
+      "strTimelineDetail": "Normal Goal",
+      "strHome": "Yes",
+      "intTime": "12",
+      "strPlayer": "Isaac Kiese Thelin",
+      "strAssist": "Anders Christiansen",
+      "idTeam": "134001",
+      "strTeam": "Malmo FF"
+    },
+    {
+      "idTimeline": "2",
+      "idEvent": "2100001",
+      "strTimeline": "Card",
+      "strTimelineDetail": "Yellow Card",
+      "strHome": "No",
+      "intTime": "29",
+      "strPlayer": "Marcus Danielson",
+      "strAssist": "",
+      "idTeam": "134002",
+      "strTeam": "Djurgardens IF"
+    },
+    {
+      "idTimeline": "3",
+      "idEvent": "2100001",
+      "strTimeline": "subst",
+      "strTimelineDetail": "Substitution",
+      "strHome": "Yes",
+      "intTime": "60",
+      "strPlayer": "Oscar Berg",
+      "strAssist": "Sebastian Nanasi",
+      "idTeam": "134001",
+      "strTeam": "Malmo FF"
+    }
+  ]
+}

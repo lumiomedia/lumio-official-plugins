@@ -1,0 +1,25 @@
+{
+  "_shape": "from docs — verify with real key",
+  "livescore": [
+    {
+      "idLiveScore": "900001",
+      "idEvent": "2100001",
+      "strSport": "Soccer",
+      "idLeague": "4347",
+      "strLeague": "Swedish Allsvenskan",
+      "idHomeTeam": "134001",
+      "idAwayTeam": "134002",
+      "strHomeTeam": "Malmo FF",
+      "strAwayTeam": "Djurgardens IF",
+      "strHomeTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/malmo.png",
+      "strAwayTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/djurgarden.png",
+      "intHomeScore": "3",
+      "intAwayScore": "1",
+      "strProgress": "71",
+      "strStatus": "2H",
+      "strEventTime": "17:00",
+      "dateEvent": "2026-10-10",
+      "updated": "2026-10-10 18:12:00"
+    }
+  ]
+}

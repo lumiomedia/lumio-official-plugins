@@ -1,0 +1,19 @@
+{
+  "_shape": "from docs — verify with real key",
+  "lookup": [
+    {
+      "idStatistic": "1",
+      "idEvent": "2100001",
+      "strStat": "Ball Possession",
+      "intHome": "58",
+      "intAway": "42"
+    },
+    {
+      "idStatistic": "2",
+      "idEvent": "2100001",
+      "strStat": "Total Shots",
+      "intHome": "14",
+      "intAway": "7"
+    }
+  ]
+}

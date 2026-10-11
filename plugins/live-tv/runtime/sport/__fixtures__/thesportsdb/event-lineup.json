@@ -1,0 +1,49 @@
+{
+  "_shape": "from docs — verify with real key",
+  "lookup": [
+    {
+      "idLineup": "1",
+      "idEvent": "2100001",
+      "strPosition": "Goalkeeper",
+      "strHome": "Yes",
+      "strSubstitute": "No",
+      "intSquadNumber": "1",
+      "strPlayer": "Johan Dahlin",
+      "idTeam": "134001",
+      "strFormation": "4-3-3"
+    },
+    {
+      "idLineup": "2",
+      "idEvent": "2100001",
+      "strPosition": "Forward",
+      "strHome": "Yes",
+      "strSubstitute": "No",
+      "intSquadNumber": "9",
+      "strPlayer": "Isaac Kiese Thelin",
+      "idTeam": "134001",
+      "strFormation": "4-3-3"
+    },
+    {
+      "idLineup": "3",
+      "idEvent": "2100001",
+      "strPosition": "Midfielder",
+      "strHome": "Yes",
+      "strSubstitute": "Yes",
+      "intSquadNumber": "20",
+      "strPlayer": "Oscar Berg",
+      "idTeam": "134001",
+      "strFormation": "4-3-3"
+    },
+    {
+      "idLineup": "4",
+      "idEvent": "2100001",
+      "strPosition": "Goalkeeper",
+      "strHome": "No",
+      "strSubstitute": "No",
+      "intSquadNumber": "35",
+      "strPlayer": "Jacob Widell Zetterström",
+      "idTeam": "134002",
+      "strFormation": "4-4-2"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "_shape": "from docs — verify with real key",
+  "events": [
+    {
+      "idEvent": "2100001",
+      "strEvent": "Malmo FF vs Djurgardens IF",
+      "strSport": "Soccer",
+      "idLeague": "4347",
+      "strLeague": "Swedish Allsvenskan",
+      "strSeason": "2026",
+      "strHomeTeam": "Malmo FF",
+      "strAwayTeam": "Djurgardens IF",
+      "idHomeTeam": "134001",
+      "idAwayTeam": "134002",
+      "intHomeScore": "2",
+      "intAwayScore": "1",
+      "intRound": "27",
+      "strTimestamp": "2026-10-10T17:00:00",
+      "dateEvent": "2026-10-10",
+      "strTime": "17:00:00",
+      "strVenue": "Eleda Stadion",
+      "strStatus": "2H",
+      "strProgress": "67",
+      "strPostponed": "no",
+      "strHomeTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/malmo.png",
+      "strAwayTeamBadge": "https://r2.thesportsdb.com/images/media/team/badge/djurgarden.png"
+    },
+    {
+      "idEvent": "2100002",
+      "strEvent": "AIK vs IFK Goteborg",
+      "strSport": "Soccer",
+      "idLeague": "4347",
+      "strLeague": "Swedish Allsvenskan",
+      "strSeason": "2026",
+      "strHomeTeam": "AIK",
+      "strAwayTeam": "IFK Goteborg",
+      "idHomeTeam": "134003",
+      "idAwayTeam": "134004",
+      "intHomeScore": null,
+      "intAwayScore": null,
+      "intRound": "27",
+      "strTimestamp": "2026-10-10T19:00:00",
+      "dateEvent": "2026-10-10",
+      "strTime": "19:00:00",
+      "strVenue": "Strawberry Arena",
+      "strStatus": "Not Started",
+      "strProgress": null,
+      "strPostponed": "no",
+      "strHomeTeamBadge": null,
+      "strAwayTeamBadge": null
+    }
+  ]
+}

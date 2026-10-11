@@ -1,0 +1,19 @@
+{
+  "_shape": "from docs — verify with real key",
+  "teams": [
+    {
+      "idTeam": "134001",
+      "strTeam": "Malmo FF",
+      "strSport": "Soccer",
+      "strCountry": "Sweden",
+      "strBadge": "https://r2.thesportsdb.com/images/media/team/badge/malmo.png"
+    },
+    {
+      "idTeam": "134900",
+      "strTeam": "Malmo Redhawks",
+      "strSport": "Ice Hockey",
+      "strCountry": "Sweden",
+      "strBadge": null
+    }
+  ]
+}
