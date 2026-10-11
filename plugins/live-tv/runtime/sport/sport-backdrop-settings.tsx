@@ -1,19 +1,32 @@
 'use client'
 
-import { useRef, useState, type ChangeEvent } from 'react'
-import { QRCodeSVG, useTvMode } from '@/lib/plugin-sdk'
-import { LtBtn, LtNote, LtRows, LtSection } from '../settings-ui'
+import { useCallback, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
+import { QRCodeSVG, getTvGlassMenu, useTvMode, type TvGlassMenuAction, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
+import { LtBtn, LtNote, LtRows, LtSection, UI } from '../settings-ui'
 import { Heading, Row } from '../tv/settings-tabs'
 import { TV, dp } from '../tv/tv-ui'
 import { useTvText, type TvStringKey } from '../tv/tv-strings'
+import { MobileSheet } from '../tv/mobile/mobile-sheet'
 import { KIND_KEYS } from './sport-ctx'
 import { SPORT_KINDS } from './sport-model'
-import { customBackdropUrl, removeBackdrop, resolveBackdropMode, uploadBackdrop, useBackdropUploads, type BackdropScope } from './backdrop'
+import { localDayKey } from './sport-epg'
+import {
+  STANDARD_IMAGES, backdropPreview, customBackdropUrl, removeBackdrop, standardImageFor, uploadBackdrop, useBackdropUploads, type BackdropScope,
+} from './backdrop'
 import { useBackdropHandoff } from './backdrop-handoff'
-import { setSportSettings, useSportSettings, type SportBackdropMode, type SportBackdrops, type SportCardTone } from './sport-store'
+import { BUNDLED_IMAGES, setSportSettings, useSportSettings, type SportBackdropMode, type SportBackdrops, type SportCardTone } from './sport-store'
 
-const MODES: SportBackdropMode[] = ['standard', 'auto', 'custom', 'off']
-const MODE_LABEL: Record<SportBackdropMode, TvStringKey> = { standard: 'sportBackdropStandard', auto: 'sportBackdropAuto', custom: 'sportBackdropCustom', off: 'sportBackdropOff' }
+/**
+ * BAKGRUND I SPORT: EN RAD PER SPORT (Jerry 2026-10-11: "ska ju vara en bild
+ * per sport? och kunna manuellt välja per sport vilken bild man vill ha?").
+ *
+ * Alla sporter överst (gäller sporter utan eget val), sedan varje sport. Raden
+ * visar en miniatyr av bilden som gäller och lägets namn; en sport utan eget
+ * val visar "Som Alla sporter" och den ärvda bilden. Raden öppnar väljaren:
+ * glasmenyn på TV, ett bottenark på telefonen och en utfälld panel med
+ * miniatyrer på skrivbordet.
+ */
+
 const SCOPES: BackdropScope[] = ['all', ...SPORT_KINDS]
 const TONES: SportCardTone[] = ['black', 'gray', 'image']
 const TONE_LABEL: Record<SportCardTone, TvStringKey> = { black: 'sportCardsBlack', gray: 'sportCardsGray', image: 'sportCardsImage' }
@@ -21,9 +34,11 @@ const TONE_LABEL: Record<SportCardTone, TvStringKey> = { black: 'sportCardsBlack
 const OPACITY_STEPS = [0, 25, 50, 70, 85, 100]
 const ACCEPT = 'image/jpeg,image/png,image/webp'
 
-type ModeChoice = SportBackdropMode | 'inherit'
+type ChoiceKey = SportBackdropMode | 'inherit' | 'replace' | 'remove'
+interface Choice { key: ChoiceKey; label: string; thumb: string | null; active: boolean }
+interface RowInfo { scope: BackdropScope; label: string; modeLabel: string; thumb: string | null }
 
-function setScopeMode(current: SportBackdrops, scope: BackdropScope, mode: ModeChoice): void {
+function setScopeMode(current: SportBackdrops, scope: BackdropScope, mode: SportBackdropMode | 'inherit'): void {
   if (scope === 'all') {
     if (mode !== 'inherit') setSportSettings({ backdrops: { ...current, all: mode } })
     return
@@ -34,67 +49,146 @@ function setScopeMode(current: SportBackdrops, scope: BackdropScope, mode: ModeC
   setSportSettings({ backdrops: { ...current, sports } })
 }
 
-function useScopeState(scope: BackdropScope) {
-  const s = useSportSettings()
-  const own: ModeChoice = scope === 'all' ? s.backdrops.all : s.backdrops.sports[scope] ?? 'inherit'
-  const { mode, slot } = resolveBackdropMode(s.backdrops, scope)
-  // Egna bilder laddas upp till platsen som faktiskt gäller (ärvd Egen bild = "Alla sporter").
-  return { s, own, mode, slot }
-}
-
-function useUploader(slot: BackdropScope) {
+function useUploader() {
   const { tt } = useTvText()
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const slotRef = useRef<BackdropScope>('all')
   const [status, setStatus] = useState<string | null>(null)
   const onFile = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     setStatus(tt('sportBackdropUploading'))
-    void uploadBackdrop(slot, file).then((r) => setStatus(r.ok ? null : tt('sportBackdropUploadFailed')))
+    void uploadBackdrop(slotRef.current, file).then((r) => setStatus(r.ok ? null : tt('sportBackdropUploadFailed')))
   }
   const input = <input ref={inputRef} data-testid="sport-backdrop-file" type="file" accept={ACCEPT} onChange={onFile} style={{ display: 'none' }} />
-  return { input, pick: () => inputRef.current?.click(), status }
+  const pick = useCallback((slot: BackdropScope) => { slotRef.current = slot; inputRef.current?.click() }, [])
+  return { input, pick, status }
+}
+
+/** Raderna och väljarens innehåll; samma för TV, telefon och skrivbord. */
+function useBackdropModel() {
+  const { tt } = useTvText()
+  const s = useSportSettings()
+  const uploads = useBackdropUploads()
+  const day = localDayKey(Date.now())
+  const scopeLabel = (k: BackdropScope) => (k === 'all' ? tt('sportBackdropAllSports') : tt(KIND_KEYS[k]))
+  const modeLabel = (m: SportBackdropMode): string => {
+    if (m.startsWith('image:')) return tt('sportBackdropPick', { name: tt(KIND_KEYS[m.slice(6) as (typeof BUNDLED_IMAGES)[number]]) })
+    return tt(m === 'standard' ? 'sportBackdropStandard' : m === 'auto' ? 'sportBackdropAuto' : m === 'custom' ? 'sportBackdropCustom' : 'sportBackdropOff')
+  }
+  const rows: RowInfo[] = SCOPES.map((scope) => {
+    const p = backdropPreview(s.backdrops, scope, uploads, day)
+    return { scope, label: scopeLabel(scope), modeLabel: p.inherited ? tt('sportBackdropInherit') : modeLabel(p.mode), thumb: p.url }
+  })
+  const choicesFor = (scope: BackdropScope): Choice[] => {
+    const own: ChoiceKey = scope === 'all' ? s.backdrops.all : s.backdrops.sports[scope] ?? 'inherit'
+    const standard = standardImageFor(scope, day)
+    const ownImage = scope === 'all' ? undefined : STANDARD_IMAGES[scope]
+    const standardLabel = scope === 'all'
+      ? tt('sportBackdropStandardPerSport')
+      : ownImage ? tt('sportBackdropStandardOwn', { name: scopeLabel(scope) }) : tt('sportBackdropStandardDaily')
+    const upload = uploads[scope]
+    const uploadUrl = upload != null ? customBackdropUrl(scope, upload) : null
+    const out: Choice[] = []
+    if (scope !== 'all') {
+      const { sports, ...rest } = s.backdrops
+      const { [scope]: _drop, ...others } = sports
+      out.push({ key: 'inherit', label: tt('sportBackdropInherit'), thumb: backdropPreview({ ...rest, sports: others }, scope, uploads, day).url, active: own === 'inherit' })
+    }
+    out.push({ key: 'standard', label: standardLabel, thumb: standard, active: own === 'standard' })
+    for (const b of BUNDLED_IMAGES) out.push({ key: `image:${b}`, label: tt('sportBackdropPick', { name: tt(KIND_KEYS[b]) }), thumb: STANDARD_IMAGES[b], active: own === `image:${b}` })
+    out.push({ key: 'auto', label: tt('sportBackdropAutoLong'), thumb: standard, active: own === 'auto' })
+    out.push({ key: 'custom', label: tt('sportBackdropCustom'), thumb: uploadUrl, active: own === 'custom' })
+    if (uploadUrl) {
+      out.push({ key: 'replace', label: tt('sportBackdropReplace'), thumb: null, active: false })
+      out.push({ key: 'remove', label: tt('sportBackdropRemove'), thumb: null, active: false })
+    }
+    out.push({ key: 'off', label: tt('sportBackdropOff'), thumb: null, active: own === 'off' })
+    return out
+  }
+  /** Sparar valet; `wantsImage` = Egen bild utan bild än, eller Byt bild: fönstret ska be om en fil. */
+  const apply = (scope: BackdropScope, key: ChoiceKey): { wantsImage: boolean } => {
+    if (key === 'remove') { void removeBackdrop(scope); return { wantsImage: false } }
+    if (key === 'replace') return { wantsImage: true }
+    setScopeMode(s.backdrops, scope, key)
+    return { wantsImage: key === 'custom' && uploads[scope] == null }
+  }
+  return { s, rows, choicesFor, apply }
+}
+
+function Thumb({ scope, url, w, h, radius }: { scope?: BackdropScope; url: string | null; w: number; h: number; radius: number }) {
+  return (
+    <span
+      data-testid={scope ? `sport-backdrop-thumb-${scope}` : undefined}
+      data-src={url ?? undefined}
+      aria-hidden="true"
+      style={{
+        flex: 'none', display: 'inline-block', width: w, height: h, borderRadius: radius, boxSizing: 'border-box',
+        background: url ? `center / cover no-repeat url("${url}")` : 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.12)',
+      }}
+    />
+  )
+}
+
+/** Skrivbordets väljare: fälls ut under raden, med en miniatyr per val. */
+function ChooserPanel({ choices, onPick }: { choices: Choice[]; onPick(key: ChoiceKey): void }) {
+  return (
+    <div data-testid="sport-backdrop-chooser" role="listbox" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 6, padding: '6px 0 12px' }}>
+      {choices.map((c) => (
+        <button
+          key={c.key}
+          type="button"
+          role="option"
+          aria-selected={c.active}
+          data-testid={`sport-backdrop-opt-${c.key}`}
+          onClick={() => onPick(c.key)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: 6, borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+            fontFamily: 'inherit', fontSize: 12.5, color: c.key === 'remove' ? UI.danger : UI.text,
+            background: c.active ? UI.accent900 : 'rgba(255,255,255,0.03)',
+            borderWidth: 1, borderStyle: 'solid', borderColor: c.active ? UI.accent : 'transparent',
+          }}
+        >
+          {c.key === 'replace' || c.key === 'remove' ? null : <Thumb url={c.thumb} w={56} h={32} radius={5} />}
+          <span style={{ minWidth: 0 }}>{c.label}</span>
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export function SportBackdropSettingsDesktop() {
   const { tt } = useTvText()
-  const [scope, setScope] = useState<BackdropScope>('all')
-  const { s, own, mode, slot } = useScopeState(scope)
-  const uploads = useBackdropUploads()
-  const uploader = useUploader(slot)
-  const scopeLabel = (k: BackdropScope) => (k === 'all' ? tt('sportBackdropAllSports') : tt(KIND_KEYS[k]))
-  const choices: ModeChoice[] = scope === 'all' ? MODES : ['inherit', ...MODES]
-  const version = uploads[slot]
+  const { s, rows, choicesFor, apply } = useBackdropModel()
+  const uploader = useUploader()
+  const [open, setOpen] = useState<BackdropScope | null>(null)
+  const pick = (scope: BackdropScope, key: ChoiceKey) => {
+    setOpen(null)
+    if (apply(scope, key).wantsImage) uploader.pick(scope)
+  }
+  const rowStyle = (first: boolean): CSSProperties => ({
+    display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 0', cursor: 'pointer', textAlign: 'left',
+    background: 'transparent', border: 'none', borderTop: `1px solid ${first ? 'transparent' : UI.lineSoft}`, color: UI.text, fontFamily: 'inherit', fontSize: 13,
+  })
   return (
     <div data-testid="sport-backdrop-settings">
       <LtSection title={tt('sportBackdropTitle')} hint={tt('sportBackdropHint')} />
       <LtRows>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '12px 0 4px' }}>
-          {SCOPES.map((k) => (
-            <LtBtn key={k} testId={`sport-backdrop-scope-${k}`} active={scope === k} onClick={() => setScope(k)}>{scopeLabel(k)}</LtBtn>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '8px 0 12px' }}>
-          {choices.map((m) => (
-            <LtBtn key={m} testId={`sport-backdrop-${m}`} active={own === m} onClick={() => setScopeMode(s.backdrops, scope, m)}>
-              {m === 'inherit' ? `${tt('sportBackdropInherit')} (${tt(MODE_LABEL[s.backdrops.all])})` : tt(MODE_LABEL[m])}
-            </LtBtn>
-          ))}
-        </div>
-        {mode === 'custom' ? (
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: '8px 0' }}>
-            {version != null ? (
-              <span data-testid="sport-backdrop-preview" aria-hidden="true" style={{ width: 120, height: 68, borderRadius: 8, background: `center / cover no-repeat url("${customBackdropUrl(slot, version)}")` }} />
-            ) : null}
-            {uploader.input}
-            <LtBtn testId="sport-backdrop-choose" onClick={uploader.pick}>{version != null ? tt('sportBackdropReplace') : tt('sportBackdropChoose')}</LtBtn>
-            {version != null ? <LtBtn variant="danger" testId="sport-backdrop-remove" onClick={() => void removeBackdrop(slot)}>{tt('sportBackdropRemove')}</LtBtn> : null}
-            {slot !== scope ? <LtNote>{`${tt('sportBackdropInherit')}`}</LtNote> : null}
+        {uploader.input}
+        {rows.map((r, i) => (
+          <div key={r.scope}>
+            <button type="button" data-testid={`sport-backdrop-row-${r.scope}`} aria-expanded={open === r.scope} onClick={() => setOpen(open === r.scope ? null : r.scope)} style={rowStyle(i === 0)}>
+              <Thumb scope={r.scope} url={r.thumb} w={64} h={36} radius={6} />
+              <span style={{ flex: 1, minWidth: 0, fontWeight: r.scope === 'all' ? 500 : 400 }}>{r.label}</span>
+              <span style={{ color: UI.muted }}>{r.modeLabel}</span>
+            </button>
+            {open === r.scope ? <ChooserPanel choices={choicesFor(r.scope)} onPick={(k) => pick(r.scope, k)} /> : null}
           </div>
-        ) : null}
-        {uploader.status ? <LtNote>{uploader.status}</LtNote> : null}
-        {mode === 'custom' ? <LtNote>{tt('sportBackdropLocalNote')}</LtNote> : null}
+        ))}
+        {uploader.status ? <LtNote style={{ paddingBottom: 10 }}>{uploader.status}</LtNote> : null}
+        <LtNote style={{ paddingBottom: 12 }}>{tt('sportBackdropLocalNote')}</LtNote>
       </LtRows>
       <LtSection title={tt('sportCardsTitle')} hint={tt('sportCardsHint')} />
       <LtRows>
@@ -114,56 +208,92 @@ export function SportBackdropSettingsDesktop() {
   )
 }
 
-export function SportBackdropSettingsTv({ phone = false }: { phone?: boolean; pushLayer?: (close: () => void) => () => void }) {
+const noLayer = () => () => {}
+
+/**
+ * Inställningssidans rader: TV (glasmeny, bild från telefonen via QR),
+ * telefon (bottenark, filväljare) och skrivbordet i nya designen (utfälld
+ * panel, filväljare).
+ */
+export function SportBackdropSettingsTv({ phone = false, pushLayer }: { phone?: boolean; pushLayer?: (close: () => void) => () => void }) {
   const { tt } = useTvText()
   const tvMode = useTvMode()
-  const [scope, setScope] = useState<BackdropScope>('all')
-  const { s, own, mode, slot } = useScopeState(scope)
-  const uploads = useBackdropUploads()
-  const uploader = useUploader(slot)
-  const [qrOpen, setQrOpen] = useState(false)
+  const { s, rows, choicesFor, apply } = useBackdropModel()
+  const uploader = useUploader()
+  const [menu, setMenu] = useState<TvGlassMenuTarget | null>(null)
+  const [sheet, setSheet] = useState<BackdropScope | null>(null)
+  const [open, setOpen] = useState<BackdropScope | null>(null)
+  const [qrSlot, setQrSlot] = useState<BackdropScope | null>(null)
   // TV-boxen har ingen filväljare: bilden kommer från telefonen. Telefonen och skrivbordet väljer en fil.
   const viaPhone = tvMode && !phone
-  const handoff = useBackdropHandoff(viaPhone && qrOpen && mode === 'custom', slot)
-  const choices: ModeChoice[] = scope === 'all' ? MODES : ['inherit', ...MODES]
-  const nextMode = choices[(choices.indexOf(own) + 1) % choices.length]!
-  const nextScope = SCOPES[(SCOPES.indexOf(scope) + 1) % SCOPES.length]!
-  const scopeLabel = scope === 'all' ? tt('sportBackdropAllSports') : tt(KIND_KEYS[scope])
-  const modeLabel = own === 'inherit' ? `${tt('sportBackdropInherit')} (${tt(MODE_LABEL[s.backdrops.all])})` : tt(MODE_LABEL[own])
-  const version = uploads[slot]
+  const handoff = useBackdropHandoff(viaPhone && qrSlot != null, qrSlot ?? 'all')
+  const GlassMenu = getTvGlassMenu()
+  const pick = (scope: BackdropScope, key: ChoiceKey) => {
+    setOpen(null)
+    const { wantsImage } = apply(scope, key)
+    // På TV:n öppnar Egen bild alltid QR-koden (ingen fil att välja); annars bara när en bild behövs.
+    if (viaPhone) {
+      if (key === 'custom' || key === 'replace') { setQrSlot(scope); handoff.restart() } else setQrSlot(null)
+    } else if (wantsImage) uploader.pick(scope)
+  }
+  const actions = (scope: BackdropScope): TvGlassMenuAction[] =>
+    choicesFor(scope).map((c) => ({ key: c.key, label: c.active ? `${c.label} ✓` : c.label, run: () => pick(scope, c.key) }))
+  const onRow = (scope: BackdropScope) => {
+    if (phone) { setSheet(scope); return }
+    if (tvMode && GlassMenu) {
+      const element = document.querySelector<HTMLElement>(`[data-testid="sport-backdrop-row-${scope}"]`) ?? document.body
+      const own = scope === 'all' ? s.backdrops.all : s.backdrops.sports[scope] ?? 'inherit'
+      setMenu({ title: rows.find((r) => r.scope === scope)!.label, element, actions: actions(scope), initialKey: own } as TvGlassMenuTarget)
+      return
+    }
+    setOpen(open === scope ? null : scope)
+  }
+  const thumbSize = phone ? { w: 48, h: 27, radius: 5 } : { w: dp(80), h: dp(45), radius: dp(6) }
+  const note = { fontSize: phone ? 13 : dp(15), color: TV.dim, padding: phone ? '6px 14px' : 0 }
   const nextOpacity = OPACITY_STEPS.find((n) => n > s.cards.opacity) ?? OPACITY_STEPS[0]!
   const nextTone = TONES[(TONES.indexOf(s.cards.tone) + 1) % TONES.length]!
+  const sheetRow = sheet ? rows.find((r) => r.scope === sheet) : null
   return (
     <div data-testid="sport-backdrop-settings-tv">
       <Heading phone={phone} hint={tt('sportBackdropHint')}>{tt('sportBackdropTitle')}</Heading>
-      <Row phone={phone} testId="sport-backdrop-scope" label={tt('sportBackdropScope')} right={scopeLabel} onOk={() => { setScope(nextScope); setQrOpen(false) }} />
-      <Row phone={phone} testId="sport-backdrop-mode" label={tt('sportBackdropTitle')} right={modeLabel} onOk={() => setScopeMode(s.backdrops, scope, nextMode)} />
-      {mode === 'custom' ? (
-        <>
-          {viaPhone ? (
-            <Row phone={phone} testId="sport-backdrop-phone" label={tt('sportBackdropPhone')} right={version != null ? tt('sportBackdropHasImage') : tt('sportBackdropNoImage')} onOk={() => { setQrOpen(true); handoff.restart() }} />
-          ) : (
-            <>
-              {uploader.input}
-              <Row phone={phone} testId="sport-backdrop-choose" label={version != null ? tt('sportBackdropReplace') : tt('sportBackdropChoose')} right={version != null ? tt('sportBackdropHasImage') : tt('sportBackdropNoImage')} onOk={uploader.pick} />
-            </>
-          )}
-          {version != null ? <Row phone={phone} testId="sport-backdrop-remove" label={tt('sportBackdropRemove')} right="" onOk={() => void removeBackdrop(slot)} /> : null}
-          {viaPhone && qrOpen ? (
-            <figure data-testid="sport-backdrop-handoff" style={{ margin: 0, display: 'flex', gap: dp(20), alignItems: 'center', padding: `${dp(8)}px 0` }}>
-              {handoff.url && !handoff.received ? <div data-testid="sport-backdrop-qr" style={{ background: '#fff', padding: dp(8), borderRadius: dp(8) }}><QRCodeSVG value={handoff.url} size={dp(132)} /></div> : null}
-              <figcaption style={{ fontSize: dp(16), color: TV.dim, maxWidth: dp(360) }}>
-                {handoff.received ? tt('sportBackdropReceived') : handoff.expired ? tt('sportKeyExpired') : tt('sportBackdropPhoneHint')}
-              </figcaption>
-            </figure>
-          ) : null}
-          {uploader.status ? <div role="status" style={{ fontSize: phone ? 13 : dp(16), color: TV.dim, padding: phone ? '6px 14px' : 0 }}>{uploader.status}</div> : null}
-          <div style={{ fontSize: phone ? 13 : dp(15), color: TV.dim, padding: phone ? '6px 14px' : 0 }}>{tt('sportBackdropLocalNote')}</div>
-        </>
+      {viaPhone ? null : uploader.input}
+      {rows.map((r) => (
+        <div key={r.scope}>
+          <Row
+            phone={phone}
+            testId={`sport-backdrop-row-${r.scope}`}
+            label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: phone ? 12 : dp(16) }}><Thumb scope={r.scope} url={r.thumb} {...thumbSize} />{r.label}</span>}
+            right={r.modeLabel}
+            onOk={() => onRow(r.scope)}
+          />
+          {open === r.scope ? <ChooserPanel choices={choicesFor(r.scope)} onPick={(k) => pick(r.scope, k)} /> : null}
+        </div>
+      ))}
+      {viaPhone && qrSlot ? (
+        <figure data-testid="sport-backdrop-handoff" style={{ margin: 0, display: 'flex', gap: dp(20), alignItems: 'center', padding: `${dp(8)}px 0` }}>
+          {handoff.url && !handoff.received ? <div data-testid="sport-backdrop-qr" style={{ background: '#fff', padding: dp(8), borderRadius: dp(8) }}><QRCodeSVG value={handoff.url} size={dp(132)} /></div> : null}
+          <figcaption style={{ fontSize: dp(16), color: TV.dim, maxWidth: dp(360) }}>
+            {handoff.received ? tt('sportBackdropReceived') : handoff.expired ? tt('sportKeyExpired') : `${rows.find((r) => r.scope === qrSlot)!.label}: ${tt('sportBackdropPhoneHint')}`}
+          </figcaption>
+        </figure>
       ) : null}
+      {uploader.status ? <div role="status" style={note}>{uploader.status}</div> : null}
+      <div style={note}>{tt('sportBackdropLocalNote')}</div>
       <Heading phone={phone} hint={tt('sportCardsHint')}>{tt('sportCardsTitle')}</Heading>
       <Row phone={phone} testId="sport-cards-opacity-row" label={tt('sportCardsOpacity')} right={`${s.cards.opacity} %`} onOk={() => setSportSettings({ cards: { ...s.cards, opacity: nextOpacity } })} />
       <Row phone={phone} testId="sport-cards-tone-row" label={tt('sportCardsColor')} right={tt(TONE_LABEL[s.cards.tone])} onOk={() => setSportSettings({ cards: { ...s.cards, tone: nextTone } })} />
+      {menu && GlassMenu ? <GlassMenu target={menu} onClose={() => setMenu(null)} /> : null}
+      {sheetRow ? (
+        <MobileSheet
+          testId="sport-backdrop-sheet"
+          title={sheetRow.label}
+          subtitle={sheetRow.modeLabel}
+          art={<Thumb url={sheetRow.thumb} w={56} h={32} radius={6} />}
+          items={actions(sheetRow.scope)}
+          onClose={() => setSheet(null)}
+          pushLayer={pushLayer ?? noLayer}
+        />
+      ) : null}
     </div>
   )
 }

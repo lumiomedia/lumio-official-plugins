@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import {
-  STANDARD_IMAGES, __resetBackdropForTests, averageRgb, backdropSrc, cardSurfaceVars, chooseSportBackdrop, darkTone, resolveBackdropMode, standardImageFor, useHeroTeamArt,
+  STANDARD_IMAGES, __resetBackdropForTests, backdropPreview, averageRgb, backdropSrc, cardSurfaceVars, chooseSportBackdrop, darkTone, resolveBackdropMode, standardImageFor, useHeroTeamArt,
 } from './backdrop'
 import { apiSports } from './api-sports'
 import { theSportsDb } from './thesportsdb'
@@ -23,6 +23,32 @@ const STD = '/sport-backgrounds/football.webp'
 const base = { mode: 'auto' as const, slot: 'all' as const, hasKey: true, hero, art: null, uploads: {}, standard: STD }
 const DAY = { today: '2026-10-10', tz: 'Europe/Stockholm', dayEndMs: Date.UTC(2026, 9, 10, 22) }
 const std = { kind: 'image', url: STD, from: 'standard' }
+
+describe('en vald medföljande bild', () => {
+  it('visas oavsett sport, nyckel och arena', () => {
+    expect(chooseSportBackdrop({ ...base, mode: 'image:hockey', hero: { ...hero, venueImage: VENUE }, art })).toEqual({ kind: 'image', url: '/sport-backgrounds/hockey.webp', from: 'standard' })
+  })
+  it('går den inte att ladda blir det sportens toning', () => {
+    expect(chooseSportBackdrop({ ...base, mode: 'image:hockey', broken: new Set(['/sport-backgrounds/hockey.webp']) })).toEqual({ kind: 'gradient', sport: 'football' })
+  })
+})
+
+describe('backdropPreview (miniatyren i inställningarna)', () => {
+  const day = '2026-10-11'
+  it('Automatisk från före omtaget utan nyckel visar Standard-bilden, aldrig ingenting', () => {
+    expect(backdropPreview({ all: 'auto', sports: {} }, 'football', {}, day)).toEqual({ mode: 'auto', slot: 'all', inherited: true, url: '/sport-backgrounds/football.webp' })
+  })
+  it('sportens eget val: vald bild, Egen bild med och utan uppladdning, Av', () => {
+    const b = { all: 'standard' as const, sports: { hockey: 'image:tennis' as const, tennis: 'custom' as const, football: 'off' as const, basketball: 'custom' as const } }
+    expect(backdropPreview(b, 'hockey', {}, day).url).toBe('/sport-backgrounds/tennis.webp')
+    expect(backdropPreview(b, 'tennis', { tennis: 3 }, day)).toEqual({ mode: 'custom', slot: 'tennis', inherited: false, url: '/api/live-tv/sport/backdrop?slot=tennis&v=3' })
+    expect(backdropPreview(b, 'basketball', {}, day).url).toBe('/sport-backgrounds/basketball.webp')
+    expect(backdropPreview(b, 'football', {}, day).url).toBeNull()
+  })
+  it('Alla sporter på Standard: dagens bild för Alla sporter', () => {
+    expect(backdropPreview({ all: 'standard', sports: {} }, 'all', {}, day).url).toBe(standardImageFor('all', day))
+  })
+})
 
 describe('chooseSportBackdrop', () => {
   it('Automatisk: arenan, sedan lagets arenabild, sedan fanart, sist Standard-bilden', () => {

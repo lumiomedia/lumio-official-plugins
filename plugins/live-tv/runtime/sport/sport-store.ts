@@ -24,15 +24,19 @@ export type KickoffAlert = 'off' | '15' | 'kickoff'
  * Egen bild = en bild uppladdad till DEN HÄR värden (själva bilden synkas
  * aldrig; saknas den här blir det Standard), Av = ingen bakgrund.
  */
-export type SportBackdropMode = 'standard' | 'auto' | 'custom' | 'off'
-const BACKDROP_MODES: readonly SportBackdropMode[] = ['standard', 'auto', 'custom', 'off']
+/** Appens medföljande bilder (spa/public/sport-backgrounds), valbara för vilken sport som helst. */
+export const BUNDLED_IMAGES = ['football', 'hockey', 'basketball', 'motorsport', 'tennis'] as const
+export type BundledImage = (typeof BUNDLED_IMAGES)[number]
+/** `image:<bild>` = en av de medföljande bilderna, vald för hand (Jerry 2026-10-11). */
+export type SportBackdropMode = 'standard' | 'auto' | 'custom' | 'off' | `image:${BundledImage}`
+const BACKDROP_MODES: readonly string[] = ['standard', 'auto', 'custom', 'off', ...BUNDLED_IMAGES.map((b) => `image:${b}`)]
 /** "Alla sporter" plus egna val per sport; en sport utan eget val ärver "Alla sporter". */
 export interface SportBackdrops { all: SportBackdropMode; sports: Partial<Record<SportKind, SportBackdropMode>> }
 /** Kortens bakgrund medan en bild visas. */
 export type SportCardTone = 'black' | 'gray' | 'image'
 export interface SportCards { opacity: number; tone: SportCardTone }
 
-const isMode = (v: unknown): v is SportBackdropMode => typeof v === 'string' && (BACKDROP_MODES as readonly string[]).includes(v)
+const isMode = (v: unknown): v is SportBackdropMode => typeof v === 'string' && BACKDROP_MODES.includes(v)
 
 function sanitizeBackdrops(raw: unknown, legacy: unknown): SportBackdrops {
   const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
