@@ -14,6 +14,8 @@ import { curationSummary, formatFetchedAt, playlistHost } from './playlist-card'
 import { useEpgStatus } from './hooks/useEpgStatus'
 import { useVodLibrarySources } from './hooks/useVodLibrarySources'
 import { useTvText } from './tv/tv-strings'
+import { setTvSettings, useTvSettings } from './tv/tv-settings-store'
+import { nextStartView, startViewLabelKey } from './tv/start-view'
 import { listGroups } from './index-client'
 import { mergeNameConflict, normalizeCuration, renameMerge } from './list-curation'
 import {
@@ -83,6 +85,7 @@ export function TvSettingsPage() {
   const { tt } = useTvText()
   const toast = useToast()
   const s = useLiveTvSettings()
+  const tvSettings = useTvSettings()
   const form = useXtreamLoginForm({ onImported: (listId, existedBefore) => { if (!existedBefore) s.maybeOpenCurationAfterImport(listId) } })
   const [openList, setOpenList] = useState<string | null>(null)
   const [displayMetrics, setDisplayMetrics] = useState(() => readDisplayMetrics())
@@ -126,6 +129,7 @@ export function TvSettingsPage() {
       <TvFocusStyle />
       <TvRow label={h('useAsHome')} hint={s.homeOverrideError || h('useAsHomeDesc')} toggle={s.homeOverrideEnabled} onToggle={s.toggleHomeOverride} />
       <TvRow label={h('hideHero')} hint={h('hideHeroDesc')} toggle={s.hideHero} onToggle={s.setHideHero} />
+      <TvRow testId="tv-start-view" label={tt('settingStartView')} hint={tt('settingStartViewHint')} value={tt(startViewLabelKey(tvSettings.startView))} onOk={() => setTvSettings({ startView: nextStartView(tvSettings.startView) })} />
 
       <TvEyebrow>{h('playlists')}</TvEyebrow>
       {s.lists.length === 0 ? <TvNote>{h('noPlaylistsYet')}</TvNote> : null}

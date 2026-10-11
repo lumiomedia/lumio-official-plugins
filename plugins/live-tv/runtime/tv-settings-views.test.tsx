@@ -18,6 +18,7 @@ import * as liveTvData from './live-tv-data'
 import { LIVE_TV_PLUGIN_ID, getLiveTvLists, type LiveTvList } from './live-tv-data'
 import { resetM3uFetchProgressForTests } from './m3u-fetch-progress'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
+import { getTvSettings } from './tv/tv-settings-store'
 
 function list(overrides: Partial<LiveTvList> & { id: string; name: string }): LiveTvList {
   return { createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null, ...overrides } as LiveTvList
@@ -50,6 +51,15 @@ const row = (name: RegExp | string) => screen.getByRole('button', { name })
 const panel = (testId: string) => screen.getByTestId(testId)
 
 describe('TV-sidan (handoff §4.2)', () => {
+  it('Startvy är en station som växlar med OK, Hem först', () => {
+    render(<LiveTvSettingsSection />)
+    const startRow = screen.getByTestId('tv-start-view')
+    expect(startRow).toHaveAttribute('data-f')
+    expect(startRow).toHaveTextContent('Home')
+    fireEvent.click(startRow)
+    expect(getTvSettings().startView).toBe('hub')
+    expect(screen.getByTestId('tv-start-view')).toHaveTextContent('Channels')
+  })
   it('sidan är rader: två växlar, PLAYLISTS-raden med meta och sammanfattning, M3U/Xtream-raderna — allt stationer', () => {
     render(<LiveTvSettingsSection />)
     expect(screen.getByRole('switch', { name: 'Use as home page' })).toHaveAttribute('data-f')

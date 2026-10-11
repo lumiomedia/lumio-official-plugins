@@ -18,9 +18,16 @@ describe('tv-settings-store', () => {
       timelineZoom: 'day',
       nowNextDetails: true,
       railLabels: true,
+      startView: 'home',
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()
+  })
+  it('startvyn: Hem som standard, sparas, ogiltig blir Hem', () => {
+    setTvSettings({ startView: 'sport' })
+    expect(getTvSettings().startView).toBe('sport')
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { startView: 'multi' })
+    expect(getTvSettings().startView).toBe('home')
   })
   it('sparar delvisa ändringar', () => {
     setTvSettings({ previewEnabled: false })

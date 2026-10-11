@@ -11,6 +11,7 @@ import { TvSettingsPhone } from './mobile/settings-phone'
 import { useNewGuideSurface } from './guide-surface'
 import { SportKeySettingsTv } from '../sport/sport-key-settings'
 import { SportBackdropSettingsTv } from '../sport/sport-backdrop-settings'
+import { nextStartView, startViewLabelKey } from './start-view'
 
 type Tab = 'appearance' | 'content' | 'playlists' | 'epg' | 'parental' | 'sport'
 const TABS: Tab[] = ['appearance', 'content', 'playlists', 'epg', 'parental', 'sport']
@@ -105,6 +106,7 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
       <section style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
         <Heading>{tt('behaviour')}</Heading>
         <Row testId="setting-previewEnabled" label={tt('settingPreview')} right={<Toggle on={settings.previewEnabled} />} onOk={() => setTvSettings({ previewEnabled: !settings.previewEnabled })} />
+        <Row testId="setting-startView" label={tt('settingStartView')} right={tt(startViewLabelKey(settings.startView))} onOk={() => setTvSettings({ startView: nextStartView(settings.startView) })} />
         <Row testId="setting-startOnLastChannel" label={tt('settingStartLast')} right={<Toggle on={settings.startOnLastChannel} />} onOk={() => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel })} />
         <Row testId="setting-numericZap" label={tt('settingNumericZap')} right={<Toggle on={settings.numericZap} />} onOk={() => setTvSettings({ numericZap: !settings.numericZap })} />
         <Row testId="setting-railLabels" label={tt('settingRailLabels')} right={<Toggle on={settings.railLabels} />} onOk={() => setTvSettings({ railLabels: !settings.railLabels })} />

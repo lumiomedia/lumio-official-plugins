@@ -235,6 +235,35 @@ export function LtToggleRow({ label, desc, checked, onChange, first = true, test
   )
 }
 
+/**
+ * Valraden: etikett + beskrivning till vänster, valen som knappar till höger
+ * (det markerade fyllt, som Mark → Marked). Radbryts under texten när raden
+ * är smal.
+ */
+export function LtChoiceRow<K extends string>({ label, desc, options, value, onChange, first = false, testId }: {
+  label: string
+  desc?: string
+  options: { key: K; label: string }[]
+  value: K
+  onChange: (value: K) => void
+  first?: boolean
+  testId?: string
+}) {
+  return (
+    <div data-testid={testId} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 20px', borderTop: rowSeparator(first), padding: '17px 0' }}>
+      <div style={{ minWidth: 0, flex: '1 1 16rem' }}>
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.35, color: UI.text }}>{label}</p>
+        {desc ? <p style={{ margin: '4px 0 0', fontSize: 12.5, lineHeight: 1.5, color: UI.muted, maxWidth: '56ch' }}>{desc}</p> : null}
+      </div>
+      <div role="group" aria-label={label} style={{ marginLeft: 'auto', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {options.map((option) => (
+          <LtBtn key={option.key} testId={testId ? `${testId}-${option.key}` : undefined} active={option.key === value} onClick={() => onChange(option.key)}>{option.label}</LtBtn>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Textfältet: radie 7, ingen ram, grund 0.055 (dialogens namnfält använder `dark`). */
 export function LtInput({ value, onChange, placeholder, title, onEnter, mono = false, dark = false, secret = false, testId, style, autoFocus }: {
   value: string

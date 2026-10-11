@@ -142,6 +142,9 @@ describe('TvSettingsView', () => {
     expect(getTvSettings().previewEnabled).toBe(false)
     fireEvent.click(screen.getByTestId('setting-bannerHideMs'))
     expect(getTvSettings().bannerHideMs).toBe(6000)
+    expect(screen.getByTestId('setting-startView')).toHaveTextContent('Home')
+    fireEvent.click(screen.getByTestId('setting-startView'))
+    expect(getTvSettings().startView).toBe('hub')
   })
   it('Utseende på LAN/fjärr: de fyra gamla lägena står kvar som standardvy', () => {
     __setTvModeForTests(false)

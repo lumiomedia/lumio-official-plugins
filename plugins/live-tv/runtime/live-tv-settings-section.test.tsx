@@ -21,6 +21,7 @@ import * as liveTvData from './live-tv-data'
 import { LIVE_TV_PLUGIN_ID, getLiveTvLists, getXtreamLogins, isLogoFallbackEnabled, type LiveTvList, type XtreamLogin } from './live-tv-data'
 import { resetM3uFetchProgressForTests } from './m3u-fetch-progress'
 import { LiveTvSettingsSection } from './live-tv-settings-section'
+import { getTvSettings } from './tv/tv-settings-store'
 
 function list(overrides: Partial<LiveTvList> & { id: string; name: string }): LiveTvList {
   return { createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null, ...overrides } as LiveTvList
@@ -59,6 +60,16 @@ afterEach(() => {
 })
 
 describe('LiveTvSettingsSection', () => {
+  it('Startvy: Hem markerad som standard, ett klick sparar valet', () => {
+    render(<LiveTvSettingsSection />)
+    const row = screen.getByTestId('lt-start-view')
+    expect(row).toHaveTextContent('Start view')
+    expect(within(row).getByTestId('lt-start-view-home')).toHaveAttribute('aria-pressed', 'true')
+    expect(within(row).queryByTestId('lt-start-view-multi')).toBeNull()
+    fireEvent.click(within(row).getByTestId('lt-start-view-sport'))
+    expect(getTvSettings().startView).toBe('sport')
+    expect(within(row).getByTestId('lt-start-view-sport')).toHaveAttribute('aria-pressed', 'true')
+  })
   it('visar importjobbets egen räknare, inte bara "Hämtar lista 1 av 1…"', async () => {
     // En enda adress kan vara 17 000 kanaler: köräknaren står still i en
     // minut medan jobbet arbetar, och utan jobbets `received/total` ser det

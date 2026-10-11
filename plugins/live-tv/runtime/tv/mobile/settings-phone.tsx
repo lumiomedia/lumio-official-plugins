@@ -5,7 +5,8 @@ import type { TvViewProps } from '../tv-shell'
 import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
 import { setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
-import { ContentTab, EpgTab, ParentalTab, PhoneCaret, PlaylistsTab } from '../settings-tabs'
+import { ContentTab, EpgTab, ParentalTab, PhoneCaret, PlaylistsTab, Row } from '../settings-tabs'
+import { nextStartView, startViewLabelKey } from '../start-view'
 import { SportKeySettingsTv } from '../../sport/sport-key-settings'
 import { SportBackdropSettingsTv } from '../../sport/sport-backdrop-settings'
 import { MT, ellipsis, sectionLabel } from './mobile-tokens'
@@ -77,6 +78,7 @@ export function TvSettingsPhone(props: TvViewProps) {
 
       <Section label={tt('sectionBehaviour')}>
         <Card>
+          <Row phone testId="setting-startView" label={tt('settingStartView')} right={tt(startViewLabelKey(settings.startView))} onOk={() => setTvSettings({ startView: nextStartView(settings.startView) })} />
           <ToggleRow testId="setting-startOnLastChannel" label={tt('settingStartLast')} on={settings.startOnLastChannel} onOk={() => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel })} />
           <ToggleRow testId="setting-keepAwake" label={tt('settingKeepAwake')} on={settings.keepAwake} onOk={() => setTvSettings({ keepAwake: !settings.keepAwake })} />
           <ToggleRow testId="setting-fullscreenOnRotate" label={tt('settingFullscreenOnRotate')} on={settings.fullscreenOnRotate} onOk={() => setTvSettings({ fullscreenOnRotate: !settings.fullscreenOnRotate })} />

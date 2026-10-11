@@ -25,6 +25,7 @@ import { buildTvPlayerProps } from './tv-player-props'
 import { multiviewFor, usePlayerSport } from '../sport/tv/player-sport'
 import type { LiveTvPlayerTvProps } from './tv-player-types'
 import { TV_VIEWS } from './tv-views'
+import { resolveStartView, startRootView } from './start-view'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { useVodCategories } from '../hooks/useVodLibrary'
 import { getVodMode } from '../vod-data'
@@ -154,10 +155,16 @@ const ZAP_TIMEOUT_MS = 1500
 
 export { RAIL_ITEM_NARROW, RAIL_ITEM_WIDE, RAIL_W_DESKTOP, RAIL_W_NARROW, RAIL_W_TV } from './tv-rail'
 
-function viewFromParams(params?: Record<string, string>): TvView {
-  const raw = params?.view
+/**
+ * Vyn för sidans params. Helt utan params (menyvalet, kallstart rakt in i
+ * Live TV) gäller startvyn ur inställningarna; Hem ritas som Kanaler medan
+ * omdirigeringen till VOD-hemmet pågår (se "LIVE TV ÖPPNAR I HEM" nedan).
+ */
+function viewFromParams(params: Record<string, string> | undefined, root: TvView): TvView {
+  if (params === undefined) return root
+  const raw = params.view
   if (raw && (VIEWS as string[]).includes(raw)) return raw as TvView
-  if (!raw && params?.url) return 'channel'
+  if (!raw && params.url) return 'channel'
   return 'hub'
 }
 
@@ -193,7 +200,12 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
   // Tom lista = ingen nativ yta lever, och skalet målas precis som förut.
   const cutouts = useSurfaceCutouts()
   const hasCutouts = cutouts.length > 0
-  const view = sportOnly ? sportOnlyViewFromParams(params) : viewFromParams(params)
+  // Startvyn (inställningen "Startvy"). "Dölj VOD helt" läses vid varje
+  // rendering — den kan ändras på inställningssidan medan skalet lever.
+  const vodHidden = vodHiddenForActivePlaylist()
+  const startView = resolveStartView(settings.startView, vodHidden)
+  const rootView: TvView = startRootView(settings.startView, vodHidden)
+  const view = sportOnly ? sportOnlyViewFromParams(params) : viewFromParams(params, rootView)
   const viewParams = useMemo(() => params ?? {}, [params])
   const viewParamsRef = useRef(viewParams)
   viewParamsRef.current = viewParams
@@ -343,7 +355,8 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
   // kanal-/EPG-laddningar bara för att kastas vid omdirigeringen.
   // "Dölj VOD helt" (VOD-läget 'off'): aldrig Hem och ingen autoindexering — Kanaler direkt.
   // Sportsidan öppnas också utan params, men den är aldrig Live TV:s hem.
-  const [redirectCheck, setRedirectCheck] = useState(() => !sportOnly && params === undefined && !vodHiddenForActivePlaylist() && shouldRedirectToVodHome(params, Date.now()))
+  // Startvyn avgör: bara Hem omdirigerar, en annan startvy ritas direkt.
+  const [redirectCheck, setRedirectCheck] = useState(() => !sportOnly && params === undefined && startView === 'home' && shouldRedirectToVodHome(params, Date.now()))
   useEffect(() => {
     if (!redirectCheck) return
     let cancelled = false
@@ -493,9 +506,11 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
       return
     }
     if (view === 'channel') { go('guide'); return }
-    if (view !== 'hub') { go('hub'); return }
+    // Roten är startvyn (Kanaler för Hem): Bakåt landar där, och därifrån
+    // lämnas Live TV — samma regel som sportsidan har med Sport som rot.
+    if (view !== rootView) { go(rootView); return }
     requestBrowseBack()
-  }, [menu, pending, active, view, go, sportOnly])
+  }, [menu, pending, active, view, go, sportOnly, rootView])
 
   // Back i capture-fas. Värdens glasmeny sköter sin egen Back, därför avstår
   // skalet medan den är öppen. På telefon är kanalmenyn i stället skalets EGET

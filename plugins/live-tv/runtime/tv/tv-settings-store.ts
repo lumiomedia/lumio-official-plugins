@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
+import { DEFAULT_START_VIEW, sanitizeStartView, type LiveTvStartView } from './start-view'
 
 export const TV_SETTINGS_KEY = 'live_tv_tv_settings_v1'
 export const GUIDE_MODE_KEY = 'live_tv_guide_mode_v1'
@@ -35,6 +36,8 @@ export interface TvSettings {
    * Av = den gamla smala raden med bara ikoner.
    */
   railLabels: boolean
+  /** Vyn Live TV öppnar i när den öppnas utan mål (se `start-view.ts`). Hem är standard. */
+  startView: LiveTvStartView
 }
 
 const DEFAULTS: TvSettings = {
@@ -48,6 +51,7 @@ const DEFAULTS: TvSettings = {
   timelineZoom: 'day',
   nowNextDetails: true,
   railLabels: true,
+  startView: DEFAULT_START_VIEW,
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -65,6 +69,7 @@ function sanitize(raw: unknown): TvSettings {
     timelineZoom,
     nowNextDetails: typeof r.nowNextDetails === 'boolean' ? r.nowNextDetails : DEFAULTS.nowNextDetails,
     railLabels: typeof r.railLabels === 'boolean' ? r.railLabels : DEFAULTS.railLabels,
+    startView: sanitizeStartView(r.startView),
   }
 }
 

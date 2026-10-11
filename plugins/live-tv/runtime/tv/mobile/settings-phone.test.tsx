@@ -50,6 +50,14 @@ describe('Inställningar på telefon', () => {
     expect(getTvSettings().startOnLastChannel).toBe(true)
   })
 
+  it('Startvy finns på telefonen och växlar vid tryck', async () => {
+    mountPhone({ view: 'settings' })
+    const row = await screen.findByTestId('setting-startView')
+    expect(row).toHaveTextContent('Home')
+    fireEvent.click(row)
+    expect(getTvSettings().startView).toBe('hub')
+  })
+
   it('guidens standardvy är ett segment (Now/Timeline/Lists) som skriver guideläget', async () => {
     mountPhone({ view: 'settings' })
     fireEvent.click(await screen.findByTestId('segment-grid'))

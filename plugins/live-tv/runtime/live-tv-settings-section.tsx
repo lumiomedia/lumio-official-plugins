@@ -10,7 +10,7 @@ import {
   useLang,
   useTvMode,
 } from '@/lib/plugin-sdk'
-import { LtCard, LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useToast } from './settings-ui'
+import { LtCard, LtChoiceRow, LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useToast } from './settings-ui'
 import { formatDisplayMetrics, isSceneNotApplied, isViewportMismatch, readDisplayMetrics } from './display-metrics'
 import {
   applyM3uUrls,
@@ -48,6 +48,9 @@ import { VodLibraryCard } from './vod-library-card'
 import { CategoriesDialog } from './category-curation-panel'
 import { PlaylistCard, playlistHost } from './playlist-card'
 import { TvSettingsPage } from './tv-settings-views'
+import { setTvSettings, useTvSettings } from './tv/tv-settings-store'
+import { START_VIEWS, startViewLabelKey } from './tv/start-view'
+import { useTvText } from './tv/tv-strings'
 
 const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.live-tv'
 
@@ -238,6 +241,8 @@ function DesktopPage() {
   const { t } = useLang()
   const { h, locale } = useHubText()
   const s = useLiveTvSettings()
+  const { tt } = useTvText()
+  const tvSettings = useTvSettings()
   const fetchLabel = s.fetchProgress.status === 'fetching' ? h('fetching') : h('fetchList')
 
   return (
@@ -245,6 +250,14 @@ function DesktopPage() {
       <LtRows>
         <LtToggleRow first label={h('useAsHome')} desc={h('useAsHomeDesc')} checked={s.homeOverrideEnabled} onChange={s.toggleHomeOverride} error={s.homeOverrideError || null} />
         <LtToggleRow first={false} label={h('hideHero')} desc={h('hideHeroDesc')} checked={s.hideHero} onChange={s.setHideHero} />
+        <LtChoiceRow
+          testId="lt-start-view"
+          label={tt('settingStartView')}
+          desc={tt('settingStartViewHint')}
+          options={START_VIEWS.map((key) => ({ key, label: tt(startViewLabelKey(key)) }))}
+          value={tvSettings.startView}
+          onChange={(startView) => setTvSettings({ startView })}
+        />
       </LtRows>
 
       <div>

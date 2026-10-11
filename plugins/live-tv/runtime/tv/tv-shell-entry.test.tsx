@@ -10,6 +10,7 @@ vi.mock('../vod-home', async (orig) => ({ ...(await orig<object>()), hasVodIndex
 import { LiveTvTvShell } from './tv-shell'
 import { hasVodIndex, resetVodHomeRedirectForTests, vodHomeTarget } from '../vod-home'
 import { setVodMode } from '../vod-data'
+import { setTvSettings } from './tv-settings-store'
 
 const ch = (name: string, group: string) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch('A', 'Sport'), ch('B', 'News')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
@@ -85,5 +86,42 @@ describe('Live TV öppnar i Hem', () => {
     await waitFor(() => expect(screen.getByRole('status')).toBeTruthy())
     expect(hasVodIndex).not.toHaveBeenCalled()
     expect(onNavigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('Startvyn (inställningen)', () => {
+  it('Guide som startvy: ingen indexkoll, Guide ritas direkt', async () => {
+    setTvSettings({ startView: 'guide' })
+    vi.mocked(hasVodIndex).mockResolvedValue(true)
+    const { onNavigate } = mount(undefined)
+    expect(screen.getByTestId('rail-guide')).toHaveAttribute('data-current')
+    await new Promise((r) => setTimeout(r, 20))
+    expect(hasVodIndex).not.toHaveBeenCalled()
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+  it('Kanaler som startvy: hubben direkt, aldrig Hem', async () => {
+    setTvSettings({ startView: 'hub' })
+    vi.mocked(hasVodIndex).mockResolvedValue(true)
+    const { onNavigate } = mount(undefined)
+    expect(screen.getByTestId('rail-hub')).toHaveAttribute('data-current')
+    await new Promise((r) => setTimeout(r, 20))
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+  it('ett uttryckligt mål vinner över startvyn', () => {
+    setTvSettings({ startView: 'sport' })
+    mount({ view: 'favs' })
+    expect(screen.getByTestId('rail-favs')).toHaveAttribute('data-current')
+  })
+  it('Bibliotek med dold VOD: Kanaler', () => {
+    setVodMode(null, 'off')
+    setTvSettings({ startView: 'library' })
+    mount(undefined)
+    expect(screen.getByTestId('rail-hub')).toHaveAttribute('data-current')
+  })
+  it('Bakåt från en annan vy landar på startvyn', () => {
+    setTvSettings({ startView: 'favs' })
+    const { onNavigate } = mount({ view: 'guide' })
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'favs' } })
   })
 })
