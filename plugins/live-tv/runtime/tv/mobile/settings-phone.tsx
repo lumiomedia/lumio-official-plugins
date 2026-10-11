@@ -6,6 +6,7 @@ import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
 import { setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
 import { ContentTab, EpgTab, ParentalTab, PhoneCaret, PlaylistsTab } from '../settings-tabs'
+import { SportKeySettingsTv } from '../../sport/sport-key-settings'
 import { MT, ellipsis, sectionLabel } from './mobile-tokens'
 import { MobileHeader } from './mobile-header'
 import { MobileSegment } from './mobile-segment'
@@ -38,8 +39,8 @@ export function TvSettingsPhone(props: TvViewProps) {
 
      ContentTab har redan en telefonvariant (`phone`); den renderades bara
      aldrig. */
-  if (params.tab === 'epg' || params.tab === 'parental' || params.tab === 'content') {
-    const rubrik = params.tab === 'epg' ? 'tabEpg' : params.tab === 'parental' ? 'tabParental' : 'tabContent'
+  if (params.tab === 'epg' || params.tab === 'parental' || params.tab === 'content' || params.tab === 'sport') {
+    const rubrik = params.tab === 'epg' ? 'tabEpg' : params.tab === 'parental' ? 'tabParental' : params.tab === 'sport' ? 'tabSport' : 'tabContent'
     return (
       <PhonePage header={<MobileHeader title={tt(rubrik)} back onBack={() => nav.go('settings')} />}>
         <Card>
@@ -47,7 +48,9 @@ export function TvSettingsPhone(props: TvViewProps) {
             ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} phone />
             : params.tab === 'parental'
               ? <ParentalTab model={model} tt={tt} phone />
-              : <ContentTab model={model} tt={tt} phone />}
+              : params.tab === 'sport'
+                ? <SportKeySettingsTv phone />
+                : <ContentTab model={model} tt={tt} phone />}
         </Card>
       </PhonePage>
     )
@@ -86,6 +89,7 @@ export function TvSettingsPhone(props: TvViewProps) {
           <NavRow testId="settings-content-nav" label={tt('tabContent')} onOk={() => nav.go('settings', { tab: 'content' })} />
           <NavRow testId="settings-epg" label={tt('tabEpg')} onOk={() => nav.go('settings', { tab: 'epg' })} />
           <NavRow testId="settings-parental" label={tt('tabParental')} onOk={() => nav.go('settings', { tab: 'parental' })} />
+          <NavRow testId="settings-sport" label={tt('tabSport')} onOk={() => nav.go('settings', { tab: 'sport' })} />
         </Card>
       </Section>
     </PhonePage>

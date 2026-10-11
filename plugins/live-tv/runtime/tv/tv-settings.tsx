@@ -9,9 +9,10 @@ import { BANNER_HIDE_OPTIONS, setGuideMode, setTvSettings, useGuideMode, type Ba
 import { ContentTab, EpgTab, Heading, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
 import { TvSettingsPhone } from './mobile/settings-phone'
 import { useNewGuideSurface } from './guide-surface'
+import { SportKeySettingsTv } from '../sport/sport-key-settings'
 
-type Tab = 'appearance' | 'content' | 'playlists' | 'epg' | 'parental'
-const TABS: Tab[] = ['appearance', 'content', 'playlists', 'epg', 'parental']
+type Tab = 'appearance' | 'content' | 'playlists' | 'epg' | 'parental' | 'sport'
+const TABS: Tab[] = ['appearance', 'content', 'playlists', 'epg', 'parental', 'sport']
 
 type AccentApi = { getAccent?: () => string; setAccent?: (id: string) => void; ACCENT_PRESETS?: Record<string, { label: string; shades: string[] }> }
 const accentApi = sdk as unknown as AccentApi
@@ -34,7 +35,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
   const { tt, locale } = useTvText()
   const initial = (TABS as string[]).includes(params.tab ?? '') ? (params.tab as Tab) : 'appearance'
   const [tab, setTab] = useState<Tab>(initial)
-  const labels: Record<Tab, string> = { appearance: tt('tabAppearance'), content: tt('tabContent'), playlists: tt('tabPlaylists'), epg: tt('tabEpg'), parental: tt('tabParental') }
+  const labels: Record<Tab, string> = { appearance: tt('tabAppearance'), content: tt('tabContent'), playlists: tt('tabPlaylists'), epg: tt('tabEpg'), parental: tt('tabParental'), sport: tt('tabSport') }
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
       <div style={{ width: dp(340), flexShrink: 0, borderRight: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(20)}px 0 ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(6) }}>
@@ -49,6 +50,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
         {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
         {tab === 'epg' ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} /> : null}
         {tab === 'parental' ? <ParentalTab model={model} tt={tt} /> : null}
+        {tab === 'sport' ? <SportKeySettingsTv /> : null}
       </div>
     </div>
   )

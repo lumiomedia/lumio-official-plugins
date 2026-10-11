@@ -512,6 +512,15 @@ const EN = {
   sportNameBasketball: 'basketball',
   sportNameHandball: 'handball',
   sportListAnd: 'and',
+  tabSport: 'Sport',
+  sportSettingsTitle: 'Results and tables',
+  sportSettingsSource: 'Source',
+  sportSettingsKey: 'Key',
+  sportKeyChange: 'Change key',
+  sportKeyRemove: 'Remove key',
+  sportKeyRemoveBody: 'Results, tables and goal alerts stop. Matches from the guide remain.',
+  sportNoKey: 'No key',
+  sportCancel: 'Cancel',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -975,6 +984,15 @@ const SV: Record<keyof typeof EN, string> = {
   sportNameBasketball: 'basket',
   sportNameHandball: 'handboll',
   sportListAnd: 'och',
+  tabSport: 'Sport',
+  sportSettingsTitle: 'Resultat och tabeller',
+  sportSettingsSource: 'Källa',
+  sportSettingsKey: 'Nyckel',
+  sportKeyChange: 'Byt nyckel',
+  sportKeyRemove: 'Ta bort nyckel',
+  sportKeyRemoveBody: 'Resultat, tabeller och målnotiser slutar. Matcherna ur guiden finns kvar.',
+  sportNoKey: 'Ingen nyckel',
+  sportCancel: 'Avbryt',
 }
 
 export type TvStringKey = keyof typeof EN
