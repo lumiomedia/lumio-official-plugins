@@ -39274,7 +39274,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -39448,7 +39448,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       INDEX_CHANGED_EVENT = "lumio-live-tv-index-changed";
@@ -39459,7 +39459,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -39536,14 +39536,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/list-curation.ts
   function splitGroups(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -39634,12 +39634,12 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -40230,7 +40230,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -40255,7 +40255,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -40309,7 +40309,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40321,7 +40321,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       activeLogoLoads += 1;
@@ -40401,7 +40401,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40414,7 +40414,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
     const words = name.trim().split(/\s+/).filter(Boolean);
     const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
@@ -40631,7 +40631,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40671,7 +40671,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
@@ -40694,14 +40694,14 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
@@ -40724,14 +40724,14 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
@@ -40757,7 +40757,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -40765,7 +40765,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -41010,7 +41010,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SCENE_TOP_INSET, TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41134,7 +41134,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = lang === "sv" ? SV2 : EN2;
     let out = table[key] ?? EN2[key];
@@ -41150,7 +41150,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41543,12 +41543,13 @@ ${cue.text}`).join("\n\n")}
         railSport: "Sport",
         sheetSport: "Sport",
         sportTitle: "Sport",
-        sportSummary: "{day} \xB7 {count} matches \xB7 {live} live",
+        sportSummary: "{live} in play \xB7 {count} matches {day}",
+        sportSummaryQuiet: "{count} matches {day}",
         sportYesterday: "Yesterday",
         sportToday: "Today",
         sportTomorrow: "Tomorrow",
-        sportTabForYou: "For you",
-        sportTabFollows: "Following",
+        sportTabForYou: "Overview",
+        sportTabFollows: "My teams",
         sportViewAs: "View as",
         sportMatchday: "Matchday",
         sportFeed: "Feed",
@@ -41572,11 +41573,11 @@ ${cue.text}`).join("\n\n")}
         sportKeyBroken: "The key no longer works",
         sportYouFollow: "You follow",
         sportWatchOn: "Watch on {channel}",
-        sportMatchCenter: "Match center",
-        sportSources: "{n} sources in your playlists",
+        sportMatchCenter: "Match info",
+        sportSources: "On {n} channels",
         sportSourcesShort: "{n} sources",
         sportNextOnChannels: "Next on your channels",
-        sportMatchdayHint: "select a match for the match center",
+        sportMatchdayHint: "select a match for match info",
         sportLiveNow: "Live now",
         sportLater: "Later",
         sportFinished: "Finished",
@@ -41592,49 +41593,48 @@ ${cue.text}`).join("\n\n")}
         sportAlertOff: "Off",
         sportAlert15: "15 min before",
         sportAlertKickoff: "At kick-off",
-        sportFollowAdd: "Add teams or competitions",
-        sportFollowSummary: "{n} followed \xB7 notice {rule}",
-        sportKickoffAlert: "Kick-off notice",
-        sportAlertOnlyRunning: "Notices only arrive while Lumio is running.",
+        sportFollowAdd: "Pick your teams",
+        sportFollowSummary: "{n} favourites \xB7 reminder {rule}",
+        sportKickoffAlert: "Reminder",
+        sportAlertOnlyRunning: "Reminders only show while Lumio is running.",
         sportNoUpcoming: "No match in the guide",
         sportVs: "vs {opponent}",
         sportTodayAt: "Today {time}",
         sportTomorrowAt: "Tomorrow {time}",
         sportLiveNowShort: "LIVE now",
-        sportFollowName: "Follow {name}",
-        sportFollowingName: "Following {name}",
-        sportWhereToWatch: "Where can I watch it",
+        sportFollowName: "Add {name} to favourites",
+        sportFollowingName: "Remove {name} from favourites",
+        sportWhereToWatch: "Showing on",
         sportBest: "BEST",
         sportLatencyUnknown: "\u2014",
         sportWatchQuality: "Watch \xB7 {quality}",
         sportWatch: "Watch",
-        sportPickChannel: "Choose another channel\u2026",
-        sportPickChannelSub: "Point the match at any channel in your playlists",
+        sportPickChannel: "Wrong channel?",
+        sportPickChannelSub: "Link the match to one of your channels",
         sportYourChoice: "Your choice",
         sportUseAutomatic: "Use the automatic choice",
         sportRemindMe: "Remind me",
         sportReminded: "Reminder set",
         sportMatches: "Matches",
-        sportMatchesHint: "Select to switch match. Select several to watch them together.",
-        sportPickSeveral: "Select several",
+        sportMatchesHint: "Select a match to switch channel. Mark several with the Multiview icon to watch them together.",
+        sportMultiviewAdd: "Add {name} to Multiview",
+        sportMultiviewRemove: "Remove {name} from Multiview",
         sportOpenMultiview: "Open in Multiview ({n})",
-        sportOnThisChannel: "On this channel",
-        sportLiveOnChannels: "Live on your channels",
-        sportLaterOnChannels: "Later today on your channels",
-        sportNowPill: "NOW",
+        sportLiveOnChannels: "In play now",
+        sportNowPill: "Playing",
         sportEmptyDay: "No matches in the guide for this day.",
         sportLoading: "Fetching matches\u2026",
         sportNeedsUpdate: "Sport needs a newer version of Lumio.",
         sportError: "Could not read the guide.",
         sportRound: "Round {n}",
         sportPlaylistUnknown: "Playlist",
-        sportFollowEmpty: "Follow a team or a competition and its matches show up here.",
+        sportFollowEmpty: "Tap the heart on a team or league and its matches gather here.",
         sportClose: "Close",
         sportLiveShort: "LIVE",
         sportHalfTime: "HT",
         sportPostponed: "Postponed",
         sportInProgress: "in progress",
-        sportResultOnly: "Results only",
+        sportResultOnly: "No channel",
         sportFollowSearch: "Search teams",
         sportKeyTitle: "Show results and tables \u2013 free, takes 1 minute",
         sportKeyChoice: "API-Sports is free (100 calls a day per sport); TheSportsDB costs $9/month but has no daily limit.",
@@ -41655,7 +41655,7 @@ ${cue.text}`).join("\n\n")}
         sportKeyRetry: "New code",
         sportSearchSubmit: "Search",
         sportBackdropTitle: "Background in Sport",
-        sportBackdropHint: "Pick a background per sport. Sports without their own choice follow All sports.",
+        sportBackdropHint: "Pick a background per sport. Each sport shows its own image by default; Other follows All sports.",
         sportBackdropStandard: "Standard",
         sportBackdropAuto: "Automatic",
         sportBackdropCustom: "Custom image",
@@ -41704,9 +41704,9 @@ ${cue.text}`).join("\n\n")}
         sportCancel: "Cancel",
         sportTabResults: "Results",
         sportResultsAll: "All",
-        sportResultsLive: "Live only",
-        sportResultsMine: "My channels ({n})",
-        sportJumpTo: "JUMP TO",
+        sportResultsLive: "In play",
+        sportResultsMine: "Watchable ({n})",
+        sportJumpTo: "LEAGUES",
         sportYourLeagues: "YOUR LEAGUES",
         sportTopLeagues: "MOST MATCHES",
         sportMoreLeagues: "More leagues\u2026",
@@ -41741,8 +41741,8 @@ ${cue.text}`).join("\n\n")}
         sportStatShots: "Shots",
         sportStatShotsOn: "Shots on target",
         sportStatCorners: "Corners",
-        sportGoal: "GOAL!",
-        sportJumpThere: "Jump there"
+        sportGoal: "Goal",
+        sportJumpThere: "Watch"
       };
       SV2 = {
         categories: "Kategorier",
@@ -42090,12 +42090,13 @@ ${cue.text}`).join("\n\n")}
         railSport: "Sport",
         sheetSport: "Sport",
         sportTitle: "Sport",
-        sportSummary: "{day} \xB7 {count} matcher \xB7 {live} live",
+        sportSummary: "{live} p\xE5g\xE5r nu \xB7 {count} matcher {day}",
+        sportSummaryQuiet: "{count} matcher {day}",
         sportYesterday: "Ig\xE5r",
         sportToday: "Idag",
         sportTomorrow: "Imorgon",
-        sportTabForYou: "F\xF6r dig",
-        sportTabFollows: "F\xF6ljer",
+        sportTabForYou: "\xD6versikt",
+        sportTabFollows: "Mina lag",
         sportViewAs: "Visa som",
         sportMatchday: "Matchdag",
         sportFeed: "Fl\xF6de",
@@ -42119,11 +42120,11 @@ ${cue.text}`).join("\n\n")}
         sportKeyBroken: "Nyckeln fungerar inte l\xE4ngre",
         sportYouFollow: "Du f\xF6ljer",
         sportWatchOn: "Titta p\xE5 {channel}",
-        sportMatchCenter: "Matchcenter",
-        sportSources: "{n} k\xE4llor i dina spellistor",
+        sportMatchCenter: "Matchinfo",
+        sportSources: "S\xE4nds p\xE5 {n} kanaler",
         sportSourcesShort: "{n} k\xE4llor",
         sportNextOnChannels: "N\xE4sta p\xE5 dina kanaler",
-        sportMatchdayHint: "v\xE4lj en match f\xF6r matchcenter",
+        sportMatchdayHint: "v\xE4lj en match f\xF6r matchinfo",
         sportLiveNow: "Live nu",
         sportLater: "Senare",
         sportFinished: "Avslutade",
@@ -42139,49 +42140,48 @@ ${cue.text}`).join("\n\n")}
         sportAlertOff: "Av",
         sportAlert15: "15 min f\xF6re",
         sportAlertKickoff: "Vid avspark",
-        sportFollowAdd: "L\xE4gg till lag eller turneringar",
-        sportFollowSummary: "{n} f\xF6ljs \xB7 notis {rule}",
-        sportKickoffAlert: "Avsparksnotis",
-        sportAlertOnlyRunning: "Notiser kommer bara medan Lumio \xE4r ig\xE5ng.",
+        sportFollowAdd: "V\xE4lj dina lag",
+        sportFollowSummary: "{n} favoriter \xB7 p\xE5minnelse {rule}",
+        sportKickoffAlert: "P\xE5minnelse",
+        sportAlertOnlyRunning: "P\xE5minnelser visas bara medan Lumio \xE4r ig\xE5ng.",
         sportNoUpcoming: "Ingen match i tabl\xE5n",
         sportVs: "mot {opponent}",
         sportTodayAt: "Idag {time}",
         sportTomorrowAt: "Imorgon {time}",
         sportLiveNowShort: "LIVE nu",
-        sportFollowName: "F\xF6lj {name}",
-        sportFollowingName: "F\xF6ljer {name}",
-        sportWhereToWatch: "Var kan jag se den",
+        sportFollowName: "L\xE4gg till {name} i favoriter",
+        sportFollowingName: "Ta bort {name} fr\xE5n favoriter",
+        sportWhereToWatch: "S\xE4nds p\xE5",
         sportBest: "B\xC4ST",
         sportLatencyUnknown: "\u2014",
         sportWatchQuality: "Titta \xB7 {quality}",
         sportWatch: "Titta",
-        sportPickChannel: "V\xE4lj annan kanal\u2026",
-        sportPickChannelSub: "Peka matchen mot valfri kanal i dina spellistor",
+        sportPickChannel: "Fel kanal?",
+        sportPickChannelSub: "Koppla matchen till en av dina kanaler",
         sportYourChoice: "Ditt val",
         sportUseAutomatic: "Anv\xE4nd automatiskt val",
         sportRemindMe: "P\xE5minn mig",
         sportReminded: "P\xE5minnelse satt",
         sportMatches: "Matcher",
-        sportMatchesHint: "V\xE4lj en match f\xF6r att byta. V\xE4lj flera f\xF6r att se dem samtidigt.",
-        sportPickSeveral: "V\xE4lj flera",
+        sportMatchesHint: "V\xE4lj en match f\xF6r att byta kanal. Markera flera med Multiview-ikonen f\xF6r att se dem samtidigt.",
+        sportMultiviewAdd: "L\xE4gg {name} i Multiview",
+        sportMultiviewRemove: "Ta bort {name} ur Multiview",
         sportOpenMultiview: "\xD6ppna i Multiview ({n})",
-        sportOnThisChannel: "P\xE5 den h\xE4r kanalen",
-        sportLiveOnChannels: "Live p\xE5 dina kanaler",
-        sportLaterOnChannels: "Senare idag p\xE5 dina kanaler",
-        sportNowPill: "NU",
+        sportLiveOnChannels: "P\xE5g\xE5r nu",
+        sportNowPill: "Spelas",
         sportEmptyDay: "Inga matcher i tabl\xE5n den h\xE4r dagen.",
         sportLoading: "H\xE4mtar matcher\u2026",
         sportNeedsUpdate: "Sport kr\xE4ver en nyare version av Lumio.",
         sportError: "Kunde inte l\xE4sa tabl\xE5n.",
         sportRound: "Omg\xE5ng {n}",
         sportPlaylistUnknown: "Spellista",
-        sportFollowEmpty: "F\xF6lj ett lag eller en turnering s\xE5 hamnar deras matcher h\xE4r.",
+        sportFollowEmpty: "Tryck p\xE5 hj\xE4rtat vid ett lag eller en liga s\xE5 samlas matcherna h\xE4r.",
         sportClose: "St\xE4ng",
         sportLiveShort: "LIVE",
         sportHalfTime: "Paus",
         sportPostponed: "Uppskjuten",
         sportInProgress: "p\xE5g\xE5r",
-        sportResultOnly: "Bara resultat",
+        sportResultOnly: "Ingen kanal",
         sportFollowSearch: "S\xF6k lag",
         sportKeyTitle: "Visa resultat och tabeller \u2013 gratis, tar 1 minut",
         sportKeyChoice: "API-Sports \xE4r gratis (100 anrop per dag och sport); TheSportsDB kostar 9 USD/m\xE5n men har ingen dagskvot.",
@@ -42202,7 +42202,7 @@ ${cue.text}`).join("\n\n")}
         sportKeyRetry: "Ny kod",
         sportSearchSubmit: "S\xF6k",
         sportBackdropTitle: "Bakgrund i Sport",
-        sportBackdropHint: "V\xE4lj bakgrund per sport. Sporter utan eget val f\xF6ljer Alla sporter.",
+        sportBackdropHint: "V\xE4lj bakgrund per sport. Varje sport visar sin egen bild som standard, \xD6vrigt f\xF6ljer Alla sporter.",
         sportBackdropStandard: "Standard",
         sportBackdropAuto: "Automatisk",
         sportBackdropCustom: "Egen bild",
@@ -42251,9 +42251,9 @@ ${cue.text}`).join("\n\n")}
         sportCancel: "Avbryt",
         sportTabResults: "Resultat",
         sportResultsAll: "Alla",
-        sportResultsLive: "Bara live",
-        sportResultsMine: "Mina kanaler ({n})",
-        sportJumpTo: "HOPPA TILL",
+        sportResultsLive: "P\xE5g\xE5r",
+        sportResultsMine: "Kan ses ({n})",
+        sportJumpTo: "LIGOR",
         sportYourLeagues: "DINA LIGOR",
         sportTopLeagues: "FLEST MATCHER",
         sportMoreLeagues: "Fler ligor\u2026",
@@ -42288,25 +42288,25 @@ ${cue.text}`).join("\n\n")}
         sportStatShots: "Skott",
         sportStatShotsOn: "Skott p\xE5 m\xE5l",
         sportStatCorners: "H\xF6rnor",
-        sportGoal: "M\xC5L!",
-        sportJumpThere: "Hoppa dit"
+        sportGoal: "M\xE5l",
+        sportJumpThere: "Titta"
       };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
@@ -42365,7 +42365,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active3, listeners8;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -42379,7 +42379,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
     while (memo3.size > MAX_ENTRIES4) {
@@ -42411,7 +42411,7 @@ ${cue.text}`).join("\n\n")}
   }
   var MAX_ENTRIES4, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -42420,7 +42420,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -42435,14 +42435,14 @@ ${cue.text}`).join("\n\n")}
     return stored;
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -42500,7 +42500,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -42510,7 +42510,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-history.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/channel-history.ts
   function sanitize2(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -42557,7 +42557,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -42567,7 +42567,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
@@ -42699,7 +42699,7 @@ ${cue.text}`).join("\n\n")}
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42711,7 +42711,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
@@ -42766,7 +42766,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42793,7 +42793,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -43249,7 +43249,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY4, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -43282,10 +43282,198 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  function TvKeyboard({ value, onChange, onDone, initFocus }) {
+    const { tt } = useTvText();
+    const [symbols, setSymbols] = useState(false);
+    const rows = symbols ? SYMBOLS : LETTERS;
+    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
+        style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV2.acc : TV2.s10, color: opts?.accent ? TV2.onAcc : TV2.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
+        children: label
+      },
+      label
+    );
+    return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+      rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(8) }, children: [
+        key("\u2423", () => onChange(value + " "), { flex: true, aria: "Space" }),
+        key("\u232B", () => onChange(value.slice(0, -1)), { width: dp(120), aria: "Backspace" }),
+        key(symbols ? tt("keyLetters") : tt("keySymbols"), () => setSymbols((s) => !s), { width: dp(120) }),
+        key(tt("keyDone"), onDone, { width: dp(140), accent: true })
+      ] })
+    ] });
+  }
+  var LETTERS, SYMBOLS;
+  var init_tv_keyboard = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_jsx_runtime_shim();
+      LETTERS = ["1234567890", "qwertyuiop\xE5", "asdfghjkl\xF6\xE4", "zxcvbnm,.-"];
+      SYMBOLS = ["1234567890", "!?@#%&/()=", `+-*_:;"'<>`, "[]{}~^|\\\u20AC\xA3"];
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  function isComposing(event2) {
+    return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
+  }
+  function useTextPrompt(options) {
+    const tvMode = useTvMode();
+    const Panel = getTvKeyboardPanel();
+    const [prompt, setPrompt] = useState(null);
+    const promptId = useRef(0);
+    const open2 = prompt !== null;
+    const openerRef = useRef(null);
+    useEffect(() => {
+      if (!open2) return;
+      openerRef.current = document.activeElement;
+      return () => {
+        const opener = openerRef.current;
+        window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
+      };
+    }, [open2]);
+    const ask = (title, initial, onDone, kind = "text") => {
+      promptId.current += 1;
+      setPrompt({ id: promptId.current, title, initial, kind, onDone });
+    };
+    let node = null;
+    if (tvMode) {
+      node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(
+        Panel,
+        {
+          title: prompt.title,
+          initial: prompt.initial,
+          onDone: (value) => {
+            setPrompt(null);
+            prompt.onDone(value);
+          },
+          onClose: () => setPrompt((current5) => current5 === prompt ? null : current5)
+        },
+        prompt.id
+      ) }) : null;
+    } else if (prompt) {
+      node = /* @__PURE__ */ jsx(
+        TextPromptDialog,
+        {
+          title: prompt.title,
+          initial: prompt.initial,
+          kind: prompt.kind,
+          pushLayer: options?.pushLayer,
+          onDone: (value) => {
+            setPrompt(null);
+            prompt.onDone(value);
+          },
+          onCancel: () => setPrompt((current5) => current5 === prompt ? null : current5)
+        },
+        prompt.id
+      );
+    }
+    return { available: tvMode ? Panel !== null : true, ask, node };
+  }
+  function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }) {
+    const { tt } = useTvText();
+    const [value, setValue] = useState(initial);
+    const inputRef = useRef(null);
+    useEffect(() => {
+      inputRef.current?.focus();
+    }, []);
+    const cancelRef = useRef(onCancel);
+    useEffect(() => {
+      cancelRef.current = onCancel;
+    });
+    useEffect(() => pushLayer?.(() => cancelRef.current()), [pushLayer]);
+    const submit = () => onDone(value);
+    const field = kind === "password" ? { type: "password", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "url" ? { type: "url", inputMode: "url", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "username" ? { type: "text", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : { type: "text" };
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "text-prompt-dialog",
+        "data-panel-root": "",
+        style: { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: TV2.scrim },
+        children: /* @__PURE__ */ jsxs("div", { style: { width: dp(420), borderRadius: dp(14), background: TV2.panel, border: `1px solid ${TV2.line}`, padding: dp(24), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: title }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              ref: inputRef,
+              "data-testid": "text-prompt-input",
+              ...field,
+              value,
+              onChange: (event2) => setValue(event2.target.value),
+              onKeyDown: (event2) => {
+                if (event2.key === "Enter") {
+                  if (isComposing(event2)) return;
+                  event2.preventDefault();
+                  submit();
+                } else if (event2.key === "Escape") {
+                  event2.preventDefault();
+                  onCancel();
+                }
+              },
+              style: { height: dp(44), borderRadius: dp(8), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, color: TV2.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }
+            }
+          ),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: dp(10) }, children: [
+            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
+            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
+          ] })
+        ] })
+      }
+    );
+  }
+  function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus }) {
+    const tvMode = useTvMode();
+    const inputRef = useRef(null);
+    useEffect(() => {
+      if (!tvMode && autoFocus) inputRef.current?.focus();
+    }, [tvMode, autoFocus]);
+    if (tvMode) {
+      return /* @__PURE__ */ jsx(TvKeyboard, { value, onChange, onDone: onSubmit ?? (() => {
+      }), initFocus: !!autoFocus });
+    }
+    return /* @__PURE__ */ jsx(
+      "input",
+      {
+        ref: inputRef,
+        "data-f": "",
+        value,
+        placeholder,
+        onChange: (event2) => onChange(event2.target.value),
+        onKeyDown: (event2) => {
+          if (event2.key === "Enter") {
+            if (isComposing(event2)) return;
+            event2.preventDefault();
+            onSubmit?.();
+          }
+        },
+        style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, border: `1px solid ${TV2.line}`, color: TV2.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }
+      }
+    );
+  }
+  var init_tv_text_entry = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_tv_ui();
+      init_tv_strings();
+      init_tv_keyboard();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis2, clamp2, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         bg: "#000",
@@ -43364,10 +43552,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -43441,7 +43629,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/api-sports.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/api-sports.ts
   function venueImageUrl(id) {
     const n = num(id);
     return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/venues/${n}.png` : null;
@@ -43551,7 +43739,7 @@ ${cue.text}`).join("\n\n")}
   }
   var API_SPORTS_REGISTER_URL, COVERED, FOOTBALL_STATUS, GAMES_STATUS, PERIOD_OFFSET, arr, resp, num, API_SPORTS_MEDIA, str, enc, parseFixture, fixtures, lineupEntry, apiSports;
   var init_api_sports = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/api-sports.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/api-sports.ts"() {
       "use strict";
       API_SPORTS_REGISTER_URL = "https://dashboard.api-football.com/register";
       COVERED = /* @__PURE__ */ new Set(["football", "hockey", "basketball", "handball"]);
@@ -43692,7 +43880,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/thesportsdb.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/thesportsdb.ts
   function utc(ts, date, time) {
     const raw = str2(ts);
     if (raw) return Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(raw) ? raw : `${raw}Z`);
@@ -43746,7 +43934,7 @@ ${cue.text}`).join("\n\n")}
   }
   var THESPORTSDB_PRICING_URL, SPORTS, arr2, num2, str2, enc2, side, theSportsDb;
   var init_thesportsdb = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
       "use strict";
       THESPORTSDB_PRICING_URL = "https://www.thesportsdb.com/pricing";
       SPORTS = {
@@ -43841,7 +44029,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/providers.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/providers.ts
   function providerFor(id) {
     return id === "thesportsdb" ? theSportsDb : apiSports;
   }
@@ -43849,14 +44037,14 @@ ${cue.text}`).join("\n\n")}
     return id ? providerFor(id).coverage(sport) : "epg";
   }
   var init_providers = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/providers.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/providers.ts"() {
       "use strict";
       init_api_sports();
       init_thesportsdb();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-fetch.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-fetch.ts
   function sportFetchUrl(provider, req, mode) {
     const params = new URLSearchParams({ provider, sport: req.sport, path: req.path, ttl: String(req.ttlS), mode });
     if (req.finalAfter != null) params.set("finalAfter", String(req.finalAfter));
@@ -43888,7 +44076,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KEY_HEADER, FAILED;
   var init_sport_fetch = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
       "use strict";
       "use client";
       SPORT_KEY_HEADER = "x-lumio-sport-key";
@@ -43896,7 +44084,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-model.ts
   function matchTitle(m) {
     return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
   }
@@ -43910,7 +44098,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SPORT_KINDS, SPORT_CHIPS, CREST_SKIP;
   var init_sport_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-model.ts"() {
       "use strict";
       SPORT_KINDS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
       SPORT_CHIPS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis"];
@@ -43918,13 +44106,16 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-store.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-store.ts
   function sanitizeBackdrops(raw, legacy) {
     const r = raw && typeof raw === "object" ? raw : null;
-    if (!r) return { all: legacy === "off" ? "off" : "standard", sports: {} };
+    if (!r) return { all: legacy === "off" ? "off" : "standard", sports: ownImageDefaults() };
     const sportsRaw = r.sports && typeof r.sports === "object" ? r.sports : {};
-    const sports = {};
-    for (const k of SPORT_KINDS) if (isMode(sportsRaw[k])) sports[k] = sportsRaw[k];
+    const sports = ownImageDefaults();
+    for (const k of BACKDROP_SPORTS) {
+      const v = sportsRaw[k];
+      if (isMode(v) || v === "inherit") sports[k] = v;
+    }
     return { all: isMode(r.all) ? r.all : "standard", sports };
   }
   function sanitizeCards(raw) {
@@ -44049,9 +44240,9 @@ ${cue.text}`).join("\n\n")}
     if (skip) next[matchId] = start2;
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, next);
   }
-  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, BUNDLED_IMAGES, BACKDROP_MODES, isMode, DEFAULT_CARDS, DEFAULT_SETTINGS, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
+  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, BUNDLED_IMAGES, BACKDROP_MODES, BACKDROP_SPORTS, OWN_IMAGE_SPORTS, ownImageDefaults, isMode, DEFAULT_CARDS, DEFAULT_SETTINGS, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
   var init_sport_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44063,8 +44254,11 @@ ${cue.text}`).join("\n\n")}
       SPORT_OVERRIDES_KEY = "sport_overrides_v1";
       BUNDLED_IMAGES = ["football", "hockey", "basketball", "motorsport", "tennis"];
       BACKDROP_MODES = ["standard", "auto", "custom", "off", ...BUNDLED_IMAGES.map((b) => `image:${b}`)];
+      BACKDROP_SPORTS = SPORT_KINDS.filter((k) => k !== "handball");
+      OWN_IMAGE_SPORTS = BUNDLED_IMAGES;
+      ownImageDefaults = () => Object.fromEntries(OWN_IMAGE_SPORTS.map((k) => [k, "standard"]));
       isMode = (v) => typeof v === "string" && BACKDROP_MODES.includes(v);
-      DEFAULT_CARDS = { opacity: 85, tone: "black" };
+      DEFAULT_CARDS = { opacity: 85, tone: "image" };
       DEFAULT_SETTINGS = {
         view: "matchday",
         alert: "15",
@@ -44073,7 +44267,7 @@ ${cue.text}`).join("\n\n")}
         provider: "api-sports",
         keyPlan: null,
         goalAlertMatches: {},
-        backdrops: { all: "standard", sports: {} },
+        backdrops: { all: "standard", sports: ownImageDefaults() },
         cards: DEFAULT_CARDS
       };
       SPORT_ALERT_SKIP_KEY = "sport_alert_skip_v1";
@@ -44081,7 +44275,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/budget.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/budget.ts
   function reserveFor(limit) {
     return limit == null ? 0 : Math.max(5, Math.ceil(limit * 0.1));
   }
@@ -44094,7 +44288,7 @@ ${cue.text}`).join("\n\n")}
   }
   var RETRY_MS2, unknownQuota, Budget, current3;
   var init_budget = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/budget.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/budget.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -44306,7 +44500,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-flow.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/key-flow.ts
   function cleanKey(raw) {
     const key = raw.replace(/\s+/g, "");
     return /^[A-Za-z0-9_-]{3,128}$/.test(key) ? key : null;
@@ -44335,7 +44529,7 @@ ${cue.text}`).join("\n\n")}
     setSportSettings({ apiKey: null, keyPlan: null });
   }
   var init_key_flow = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-flow.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/key-flow.ts"() {
       "use strict";
       "use client";
       init_budget();
@@ -44344,10 +44538,91 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/surface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/key-handoff.ts
+  async function startKeyHandoff() {
+    try {
+      const res = await fetch(BASE, { method: "POST" });
+      if (!res.ok) return null;
+      const body = await res.json();
+      return body.code ? { code: body.code, url: body.url ?? null } : null;
+    } catch {
+      return null;
+    }
+  }
+  async function pollKeyHandoff(code) {
+    try {
+      const res = await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { cache: "no-store" });
+      if (!res.ok) return { state: "expired" };
+      return await res.json();
+    } catch {
+      return { state: "waiting" };
+    }
+  }
+  async function cancelKeyHandoff(code) {
+    try {
+      await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { method: "DELETE" });
+    } catch {
+    }
+  }
+  function useKeyHandoff(active4, onKey) {
+    const [url, setUrl] = useState(null);
+    const [expired, setExpired] = useState(false);
+    const [round2, setRound] = useState(0);
+    const onKeyRef = useRef(onKey);
+    onKeyRef.current = onKey;
+    useEffect(() => {
+      if (!active4) return;
+      let stopped = false;
+      let code = null;
+      let done = false;
+      let timer3 = null;
+      setExpired(false);
+      const loop = async () => {
+        if (stopped || done || !code) return;
+        const r = await pollKeyHandoff(code);
+        if (stopped) return;
+        if (r.state === "received" && r.key) {
+          done = true;
+          onKeyRef.current(r.key);
+          return;
+        }
+        if (r.state === "expired") {
+          done = true;
+          setExpired(true);
+          return;
+        }
+        timer3 = setTimeout(() => void loop(), POLL_MS2);
+      };
+      void startKeyHandoff().then((h) => {
+        if (stopped || !h) return;
+        code = h.code;
+        setUrl(h.url);
+        timer3 = setTimeout(() => void loop(), POLL_MS2);
+      });
+      return () => {
+        stopped = true;
+        if (timer3) clearTimeout(timer3);
+        if (code) void cancelKeyHandoff(code);
+      };
+    }, [active4, round2]);
+    const restart = useCallback(() => setRound((n) => n + 1), []);
+    return { url, expired, restart };
+  }
+  var BASE, POLL_MS2;
+  var init_key_handoff = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/key-handoff.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      BASE = "/api/live-tv/sport/key-handoff";
+      POLL_MS2 = 2e3;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/surface.ts
   var sportBg, SPORT_CARD_BG, SPORT_PANEL_BG, sportSurface, sportCardStyle;
   var init_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/surface.ts"() {
       "use strict";
       init_tv_ui();
       sportBg = (fallback) => `var(--sport-card-bg, ${fallback})`;
@@ -44362,7 +44637,117 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/rate-line.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/key-card.tsx
+  function KeyCard({ variant, onDone, pushLayer }) {
+    const { tt } = useTvText();
+    const tv = useTvMode();
+    const settings = useSportSettings();
+    const [provider, setProvider] = useState(settings.provider);
+    const [draft, setDraft] = useState("");
+    const [phase, setPhase] = useState({ kind: "idle" });
+    const [phoneEntry, setPhoneEntry] = useState(false);
+    const prompt = useTextPrompt({ pushLayer });
+    const broken = !!settings.apiKey && !!currentBudget()?.isInvalid();
+    const submit = async (raw) => {
+      setPhase({ kind: "checking" });
+      const result = await saveValidatedKey(provider, raw);
+      setPhase({ kind: "done", result });
+      if (result.ok) setPhoneEntry(false);
+    };
+    const handoff = useKeyHandoff(tv && phoneEntry, (key) => void submit(key));
+    const covered = SPORT_NAMES.filter(([s]) => providerFor(provider).coverage(s) === "full").map(([, k]) => tt(k));
+    const sportsText = covered.length > 1 ? `${covered.slice(0, -1).join(", ")} ${tt("sportListAnd")} ${covered[covered.length - 1]}` : covered.join("");
+    const signupUrl = provider === "api-sports" ? API_SPORTS_REGISTER_URL : THESPORTSDB_PRICING_URL;
+    const message = (() => {
+      if (phase.kind === "checking") return tt("sportKeyChecking");
+      if (phase.kind !== "done") return null;
+      const r = phase.result;
+      if (r.ok) {
+        const plan = r.check.plan && r.check.plan.toLowerCase() === "free" ? tt("sportPlanFree") : r.check.plan ?? "";
+        return r.check.limit != null && r.check.used != null ? tt("sportKeyOk", { used: r.check.used, limit: r.check.limit, plan }) : tt("sportKeyOkNoQuota", { plan });
+      }
+      return r.reason === "network" ? tt("sportKeyNetwork") : r.reason === "rejected" ? tt("sportKeyRejected") : null;
+    })();
+    const btn = (label, onOk, primary = false, testId) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk), style: { minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: "inline-flex", alignItems: "center", fontSize: dp(17), fontWeight: 600, cursor: "pointer", background: primary ? TV2.text : TV2.s12, color: primary ? "#0e0f13" : TV2.text }, children: label });
+    return /* @__PURE__ */ jsxs("section", { "data-testid": `sport-key-card-${variant}`, style: { borderRadius: dp(16), background: sportBg(TV2.s06), border: `1px solid ${TV2.lineCard}`, padding: dp(24), display: "flex", gap: dp(24), flexWrap: "wrap" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: dp(12) }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(24), fontWeight: 600 }, children: broken ? tt("sportKeyBroken") : tt("sportKeyTitle") }),
+        /* @__PURE__ */ jsx(Segment, { options: [{ key: "api-sports", label: "API-Sports" }, { key: "thesportsdb", label: "TheSportsDB" }], value: provider, onChange: (k) => {
+          setProvider(k);
+          setPhase({ kind: "idle" });
+        } }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("sportKeyChoice") }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("sportKeyCovers", { sports: sportsText }) }),
+        tv ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(12), flexWrap: "wrap" }, children: [
+          btn(tt("sportKeyPhone"), () => {
+            setPhoneEntry(true);
+            handoff.restart();
+          }, true),
+          prompt.available ? btn(tt("sportKeyKeyboard"), () => prompt.ask(tt("sportKeyPaste"), "", (v) => void submit(v), "password")) : null
+        ] }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(10), flexWrap: "wrap", alignItems: "center" }, children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              "data-testid": "sport-key-input",
+              value: draft,
+              onChange: (e) => setDraft(e.target.value),
+              placeholder: tt("sportKeyPaste"),
+              autoComplete: "off",
+              spellCheck: false,
+              style: { flex: "1 1 220px", minHeight: 44, borderRadius: 10, border: `1px solid ${TV2.lineStrong}`, background: "rgba(0,0,0,0.25)", color: TV2.text, padding: "0 12px", fontFamily: "ui-monospace, monospace" }
+            }
+          ),
+          btn(tt("sportKeyPaste"), () => {
+            void navigator.clipboard?.readText?.().then((t) => setDraft(t)).catch(() => {
+            });
+          }),
+          btn(tt("sportKeySave"), () => void submit(draft), true)
+        ] }),
+        prompt.node,
+        message ? /* @__PURE__ */ jsx("div", { role: "status", style: { fontSize: dp(16), color: phase.kind === "done" && phase.result.ok ? "#3cd6a3" : TV2.text }, children: message }) : null
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(20), alignItems: "flex-start" }, children: [
+        /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: signupUrl, size: dp(132) }) }),
+          tv ? /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportKeyGetKey") }) : /* @__PURE__ */ jsx("a", { href: signupUrl, target: "_blank", rel: "noreferrer", style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportKeyGetKey") })
+        ] }),
+        tv && phoneEntry ? /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center", maxWidth: dp(180) }, children: [
+          handoff.url ? /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
+          /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(14), color: TV2.dim, textAlign: "center" }, children: handoff.expired ? tt("sportKeyExpired") : tt("sportKeyPhoneHint") }),
+          handoff.expired ? btn(tt("sportKeyRetry"), handoff.restart) : null
+        ] }) : null
+      ] })
+    ] });
+  }
+  var SPORT_NAMES;
+  var init_key_card = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/key-card.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_tv_ui();
+      init_tv_strings();
+      init_tv_text_entry();
+      init_api_sports();
+      init_thesportsdb();
+      init_providers();
+      init_key_flow();
+      init_key_handoff();
+      init_budget();
+      init_sport_store();
+      init_surface();
+      init_jsx_runtime_shim();
+      SPORT_NAMES = [
+        ["football", "sportNameFootball"],
+        ["hockey", "sportNameHockey"],
+        ["basketball", "sportNameBasketball"],
+        ["handball", "sportNameHandball"]
+      ];
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/rate-line.ts
   function svOrdinal(n) {
     const last2 = n % 10;
     const lastTwo = n % 100;
@@ -44391,12 +44776,12 @@ ${cue.text}`).join("\n\n")}
     return { text: `${head}${left}`, showPaidLink: s.provider === "api-sports" && !s.paid };
   }
   var init_rate_line = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/rate-line.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/rate-line.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/day-plan.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/day-plan.ts
   function planKey(c) {
     return c.kind === "day" ? `day|${c.sport}|${c.date}` : `standings|${c.sport}|${c.leagueId}|${c.season}`;
   }
@@ -44447,12 +44832,12 @@ ${cue.text}`).join("\n\n")}
     return { today, yesterday: shift(-1), tomorrow: shift(1), dayEndMs };
   }
   var init_day_plan = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/day-plan.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/day-plan.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/live-poller.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/live-poller.ts
   function emitDemand() {
     for (const cb of [...demandListeners]) cb();
   }
@@ -44582,7 +44967,7 @@ ${cue.text}`).join("\n\n")}
   }
   var demand, demandListeners, defaultVisible, defaultOnVisibility;
   var init_live_poller = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/live-poller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/live-poller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44598,7 +44983,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/goal-events.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/goal-events.ts
   function diffGoals(prev, next, now2) {
     const out = [];
     for (const f of next) {
@@ -44635,13 +45020,13 @@ ${cue.text}`).join("\n\n")}
   }
   var listeners9;
   var init_goal_events = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/goal-events.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/goal-events.ts"() {
       "use strict";
       listeners9 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-epg.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-epg.ts
   function localDayKey(ms2) {
     const d = new Date(ms2);
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -44710,7 +45095,7 @@ ${cue.text}`).join("\n\n")}
   }
   var pad2, SportEndpointMissing, TTL_MS2, cache7;
   var init_sport_epg = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-epg.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-epg.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44726,7 +45111,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-link.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-link.ts
   async function linkFixtures(args) {
     if (args.fixtures.length === 0) return {};
     try {
@@ -44748,7 +45133,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
   var init_sport_link = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-link.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-link.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
@@ -44756,7 +45141,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-day-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-day-model.ts
   function statusAt(m, now2) {
     if (m.phase === "postponed") return "upcoming";
     if (m.fixture && m.status !== "upcoming") return m.status;
@@ -44911,9 +45296,31 @@ ${cue.text}`).join("\n\n")}
   function crestColor(key) {
     return `hsl(${hue(key)} 55% 42%)`;
   }
+  function playerMatchGroups(matches, currentKey, now2) {
+    const withSource = matches.filter((m) => m.sources.length > 0);
+    const onHere = (m) => m.sources.some((s) => s.channelKey === currentKey) ? 0 : 1;
+    const live2 = withSource.filter((m) => statusAt(m, now2) === "live").sort((a, b) => onHere(a) - onHere(b) || a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)));
+    const upcoming = withSource.filter((m) => statusAt(m, now2) === "upcoming").sort((a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)));
+    const groups = live2.length > 0 ? [{ start: null, matches: live2 }] : [];
+    for (const m of upcoming) {
+      const last2 = groups[groups.length - 1];
+      if (last2 && last2.start === m.start) last2.matches.push(m);
+      else groups.push({ start: m.start, matches: [m] });
+    }
+    return groups;
+  }
+  function matchdayStrip(matches, now2) {
+    const byStart = (a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b));
+    const started = matches.filter((m) => statusAt(m, now2) !== "upcoming").sort(byStart);
+    const upcoming = matches.filter((m) => statusAt(m, now2) === "upcoming").sort(byStart);
+    const items2 = [...started, ...upcoming];
+    const firstLive = items2.findIndex((m) => statusAt(m, now2) === "live");
+    const focusIndex = firstLive >= 0 ? firstLive : Math.min(started.length, Math.max(items2.length - 1, 0));
+    return { items: items2, nowIndex: started.length, focusIndex };
+  }
   var HOUR, MIN, LEAGUE_COLORS;
   var init_sport_day_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
       "use strict";
       init_live_tv_model();
       init_sport_model();
@@ -44942,7 +45349,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/merge.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/merge.ts
   function fixtureMatchKey(f) {
     return `fx:${f.provider}:${f.id}`;
   }
@@ -45026,7 +45433,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TWO_HOURS, STATUS, phaseOf;
   var init_merge = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/merge.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/merge.ts"() {
       "use strict";
       init_sport_day_model();
       TWO_HOURS = 2 * 36e5;
@@ -45035,7 +45442,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/results-controller.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/results-controller.ts
   function currentResults() {
     const budget = currentBudget();
     if (!budget) {
@@ -45107,7 +45514,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TEN_MIN, TWO_HOURS2, LIVE_DETAIL_MS, ResultsController, current4, NO_KEY;
   var init_results_controller = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/results-controller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/results-controller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45351,8 +45758,8 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
-  function MobileSheet({ title, subtitle, art, body, items: items2, onClose, pushLayer, testId }) {
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  function MobileSheet({ title, subtitle, art, body, list, items: items2, onClose, pushLayer, testId }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
     useEffect(() => {
@@ -45394,28 +45801,31 @@ ${cue.text}`).join("\n\n")}
               ] })
             ] }),
             body ? /* @__PURE__ */ jsx("div", { "data-testid": "sheet-body", style: { padding: "12px 20px", fontSize: 14, color: MT.muted, maxHeight: "30vh", overflow: "auto" }, children: body }) : null,
-            /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { maxHeight: "55vh", overflowY: "auto" }, children: items2.map((item, index) => /* @__PURE__ */ jsx(
-              "div",
-              {
-                "data-sheet-item": "",
-                ...station(() => {
-                  item.run();
-                  onClose();
-                }, void 0, index === 0 ? { "data-init": "" } : void 0),
-                style: {
-                  minHeight: 56,
-                  padding: "0 20px",
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: 16,
-                  fontWeight: index === 0 ? 600 : 400,
-                  borderBottom: `1px solid ${MT.line07}`,
-                  cursor: "pointer"
+            /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { maxHeight: "55vh", overflowY: "auto" }, children: [
+              list,
+              items2.map((item, index) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  "data-sheet-item": "",
+                  ...station(() => {
+                    item.run();
+                    onClose();
+                  }, void 0, index === 0 ? { "data-init": "" } : void 0),
+                  style: {
+                    minHeight: 56,
+                    padding: "0 20px",
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: 16,
+                    fontWeight: index === 0 ? 600 : 400,
+                    borderBottom: `1px solid ${MT.line07}`,
+                    cursor: "pointer"
+                  },
+                  children: /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis2 }, children: item.label })
                 },
-                children: /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis2 }, children: item.label })
-              },
-              item.key
-            )) }),
+                item.key
+              ))
+            ] }),
             /* @__PURE__ */ jsx("div", { style: { padding: 8 }, children: /* @__PURE__ */ jsx("div", { ...station(onClose), style: { minHeight: 50, borderRadius: 16, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 600, cursor: "pointer" }, children: tt("cancel") }) })
           ]
         }
@@ -45423,7 +45833,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -45433,7 +45843,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-ctx.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-ctx.ts
   function buildSportCtx(input) {
     const { model, nav, tt, overrides, reminders } = input;
     const best = (m) => rankedSources(m, overrides)[0] ?? null;
@@ -45502,20 +45912,29 @@ ${cue.text}`).join("\n\n")}
     if (ranked.length === 1) return first.name;
     return first.quality ? `${ctx.tt("sportSourcesShort", { n: ranked.length })} \xB7 ${first.quality}` : ctx.tt("sportSourcesShort", { n: ranked.length });
   }
+  function summaryLine(tt, day, count, live2) {
+    const dayWord = day.toLocaleLowerCase();
+    return live2 > 0 ? tt("sportSummary", { live: live2, count, day: dayWord }) : tt("sportSummaryQuiet", { count, day: dayWord });
+  }
   function alertLabel(ctx) {
     return ctx.settings.alert === "off" ? ctx.tt("sportAlertOff") : ctx.settings.alert === "15" ? ctx.tt("sportAlert15") : ctx.tt("sportAlertKickoff");
   }
-  function followNextLine(ctx, follow, next) {
-    if (!next) return ctx.tt("sportNoUpcoming");
+  function followNext(ctx, follow, next) {
+    if (!next) return null;
     const time = formatClock2(next.start, ctx.locale);
-    const when = statusAt(next, ctx.now) === "live" ? ctx.tt("sportLiveNowShort") : localDayKey(next.start) === localDayKey(ctx.now) ? ctx.tt("sportTodayAt", { time }) : ctx.tt("sportTomorrowAt", { time });
-    if (follow.kind === "league" || !next.home || !next.away) return `${when} \xB7 ${matchTitle(next)}`;
+    const live2 = statusAt(next, ctx.now) === "live";
+    const when = live2 ? ctx.tt("sportLiveNowShort") : localDayKey(next.start) === localDayKey(ctx.now) ? ctx.tt("sportTodayAt", { time }) : ctx.tt("sportTomorrowAt", { time });
+    if (follow.kind === "league" || !next.home || !next.away) return { when, what: matchTitle(next), live: live2 };
     const opponent = teamKeysMatch(follow.key, next.homeKey) ? next.away : next.home;
-    return `${when} \xB7 ${ctx.tt("sportVs", { opponent })}`;
+    return { when, what: ctx.tt("sportVs", { opponent }), live: live2 };
+  }
+  function followNextLine(ctx, follow, next) {
+    const n = followNext(ctx, follow, next);
+    return n ? `${n.when} \xB7 ${n.what}` : ctx.tt("sportNoUpcoming");
   }
   var KIND_KEYS;
   var init_sport_ctx = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45538,7 +45957,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -45649,7 +46068,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS3, MAX_ENTRIES5, cache8, batches, inflight9, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -45663,7 +46082,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -45692,13 +46111,13 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY5;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY5 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
@@ -45728,7 +46147,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY7;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45738,7 +46157,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -45887,13 +46306,13 @@ ${cue.text}`).join("\n\n")}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useOrientation.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useOrientation.ts
   function read10() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
@@ -45912,14 +46331,14 @@ ${cue.text}`).join("\n\n")}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
@@ -45968,13 +46387,13 @@ ${cue.text}`).join("\n\n")}
     }, [active4]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -45985,13 +46404,13 @@ ${cue.text}`).join("\n\n")}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -46011,7 +46430,7 @@ ${cue.text}`).join("\n\n")}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -46024,7 +46443,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -46068,7 +46487,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -46081,7 +46500,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/score-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/score-model.ts
   function showsScore(m) {
     return m.coverage === "full" && !!m.fixture && !!m.score && m.status !== "upcoming";
   }
@@ -46109,13 +46528,13 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_score_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/score-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/score-model.ts"() {
       "use strict";
       init_sport_store();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-score.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-score.tsx
   function MatchScore({ match, size = "card" }) {
     const blink = useGoalBlink(match);
     if (!showsScore(match) || !match.score) return null;
@@ -46156,7 +46575,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SCORE_SIZE, BLINK_MS;
   var init_sport_score = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46173,7 +46592,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-icons.tsx
   function SportIcon({ kind, size }) {
     switch (kind) {
       case "football":
@@ -46194,7 +46613,7 @@ ${cue.text}`).join("\n\n")}
   }
   var sw2, svg3, SportIcons;
   var init_sport_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -46233,7 +46652,8 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("path", { d: "M4 10h16M9 3v4M15 3v4" })
         ] })),
         Rows: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "M4 7h16M4 12h16M4 17h16" })),
-        Star: ({ size = dp(22), filled = false }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "m12 4 2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z" }), filled),
+        /** Samma hjärta som Live TV:s favoriter (`Icons.Heart` i tv-ui.tsx): favoritlag och -ligor i Sport. */
+        Heart: ({ size = dp(22), filled = false }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
         Bell: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" }),
           /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
@@ -46244,7 +46664,15 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
+  var init_sport_icons2 = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
+      "use strict";
+      init_sport_icons();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
   function Crest({ name, colorKey, size = dp(56), src }) {
     const [broken, setBroken] = useState(false);
     const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
@@ -46263,43 +46691,66 @@ ${cue.text}`).join("\n\n")}
     if (st === "finished") return /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: label ?? ctx.tt("sportEnded") });
     return /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: label ?? formatClock2(match.start, ctx.locale) });
   }
-  function TeamCell({ name, colorKey, align, crest }) {
-    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: align === "end" ? "flex-end" : "flex-start", gap: dp(10), minWidth: 0, flexDirection: align === "end" ? "row" : "row-reverse" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18), fontWeight: 600, ...ellipsis3 }, children: name }),
-      /* @__PURE__ */ jsx(Crest, { name, colorKey, size: dp(42), src: crest })
-    ] });
+  function statusText(match, ctx) {
+    const st = statusAt(match, ctx.now);
+    const label = matchStatusLabel(match, ctx.tt);
+    if (st === "live") return { text: label ?? ctx.tt("live"), live: true };
+    if (st === "finished") return { text: label ?? ctx.tt("sportEnded"), live: false };
+    return { text: label ?? formatClock2(match.start, ctx.locale), live: false };
   }
   function MatchCard({ match, ctx }) {
     const st = statusAt(match, ctx.now);
     const followed = followState(match, ctx.follows).any;
     const reminded = ctx.isReminded(match);
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-card", "data-match-id": match.id, ...station(() => ctx.openMatch(match), () => ctx.watch(match)), style: { ...sportCardStyle, width: dp(450), flexShrink: 0, padding: `${dp(16)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(12), cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(15), color: TV2.muted }, children: [
-        /* @__PURE__ */ jsx(LeagueDot, { leagueKey: match.leagueKey || match.kind }),
-        /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: match.league || ctx.kindLabel(match.kind) }),
-        /* @__PURE__ */ jsx(StatusTag, { match, ctx })
+    const best = rankedSources(match, ctx.overrides)[0] ?? null;
+    const status = statusText(match, ctx);
+    const progress2 = st === "live" ? progressOf(match.start, match.stop, ctx.now) : st === "finished" ? 1 : 0;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-card", "data-match-id": match.id, "data-status": st, ...station(() => ctx.openMatch(match), () => ctx.watch(match)), style: { ...sportCardStyle, position: "relative", width: dp(450), flexShrink: 0, padding: `${dp(14)}px ${dp(16)}px ${dp(16)}px`, display: "flex", alignItems: "center", gap: dp(14), cursor: "pointer", boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsx("div", { "data-testid": "card-anchor", style: { width: dp(84), height: dp(84), flexShrink: 0, borderRadius: dp(12), overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: TV2.s06, color: TV2.muted }, children: best ? /* @__PURE__ */ jsx(ChannelArt, { channel: sourceChannel(best), style: { width: "100%", height: "100%" }, radius: dp(12) }) : /* @__PURE__ */ jsx(SportIcon, { kind: match.kind, size: dp(40) }) }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(6) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(8), minWidth: 0 }, children: [
+          match.home && match.away ? /* @__PURE__ */ jsxs("span", { style: { display: "flex", gap: dp(4), flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: dp(30), src: match.homeCrest }),
+            /* @__PURE__ */ jsx(Crest, { name: match.away, colorKey: match.awayKey ?? match.away, size: dp(30), src: match.awayCrest })
+          ] }) : null,
+          /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: matchTitle(match) }),
+          showsScore(match) ? /* @__PURE__ */ jsx(MatchScore, { match, size: "row" }) : null
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(8), fontSize: dp(15), color: TV2.muted, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("span", { "data-testid": "card-status", "data-live": status.live ? "1" : "0", style: { flexShrink: 0, fontWeight: 600, fontVariantNumeric: "tabular-nums", color: status.live ? TV2.acc : TV2.text }, children: status.text }),
+          /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: match.league || ctx.kindLabel(match.kind) }),
+          followed ? /* @__PURE__ */ jsx("span", { "data-testid": "card-followed", style: { color: TV2.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(18), filled: true }) }) : null,
+          reminded ? /* @__PURE__ */ jsx("span", { "data-testid": "card-reminded", style: { display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(18) }) }) : null
+        ] }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis3 }, children: match.resultOnly ? /* @__PURE__ */ jsx(ResultOnlyTag, {}) : sourceLine(match, ctx) })
       ] }),
-      match.home && match.away ? /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: dp(12) }, children: [
-        /* @__PURE__ */ jsx(TeamCell, { name: match.home, colorKey: match.homeKey ?? match.home, align: "end", crest: match.homeCrest }),
-        showsScore(match) ? /* @__PURE__ */ jsx(MatchScore, { match, size: "card" }) : /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: "\u2013" }),
-        /* @__PURE__ */ jsx(TeamCell, { name: match.away, colorKey: match.awayKey ?? match.away, align: "start", crest: match.awayCrest })
-      ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, ...ellipsis3 }, children: matchTitle(match) }),
-      /* @__PURE__ */ jsx(Progress, { value: st === "live" ? progressOf(match.start, match.stop, ctx.now) : st === "finished" ? 1 : 0, height: dp(4), track: TV2.s10 }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(8), fontSize: dp(15), color: TV2.muted }, children: [
-        /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: match.resultOnly ? /* @__PURE__ */ jsx(ResultOnlyTag, {}) : sourceLine(match, ctx) }),
-        followed ? /* @__PURE__ */ jsx("span", { "data-testid": "card-followed", style: { color: "#fbbf24", display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(18), filled: true }) }) : null,
-        reminded ? /* @__PURE__ */ jsx("span", { "data-testid": "card-reminded", style: { display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(18) }) }) : null
-      ] })
+      /* @__PURE__ */ jsx("div", { "data-testid": "card-progress", "aria-hidden": "true", style: { position: "absolute", left: 0, right: 0, bottom: 0, height: dp(4), background: TV2.s08 }, children: /* @__PURE__ */ jsx("div", { "data-fill": "", style: { width: `${Math.round(progress2 * 100)}%`, height: "100%", background: st === "finished" ? TV2.s18 : TV2.acc } }) })
     ] });
   }
-  function CardRow({ title, matches, ctx, testId }) {
+  function MatchStrip({ title, matches, ctx, testId = "sport-strip" }) {
+    const rowRef = useRef(null);
+    const strip = matchdayStrip(matches, ctx.now);
+    const focusId = strip.items[strip.focusIndex]?.id ?? null;
+    useEffect(() => {
+      const row = rowRef.current;
+      if (!row || !focusId) return;
+      const card2 = row.querySelector(`[data-match-id="${focusId.replace(/"/g, '\\"')}"]`);
+      if (!card2) return;
+      row.scrollLeft = Math.max(0, card2.offsetLeft - row.offsetLeft - dp(80));
+    }, [focusId]);
     if (matches.length === 0) return null;
+    const now2 = /* @__PURE__ */ jsxs("div", { "data-testid": "sport-strip-now", "aria-hidden": "true", style: { flexShrink: 0, alignSelf: "stretch", display: "flex", flexDirection: "column", alignItems: "center", gap: dp(6), padding: `0 ${dp(2)}px` }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: TV2.acc, whiteSpace: "nowrap" }, children: ctx.tt("gridNowAt", { time: formatClock2(ctx.now, ctx.locale) }) }),
+      /* @__PURE__ */ jsx("span", { style: { flex: 1, width: dp(3), borderRadius: dp(3), background: TV2.acc, boxShadow: `0 0 ${dp(8)}px ${TV2.acc}` } })
+    ] }, "now-marker");
+    const cells = strip.items.map((m) => /* @__PURE__ */ jsx(MatchCard, { match: m, ctx }, m.id));
+    cells.splice(strip.nowIndex, 0, now2);
     return /* @__PURE__ */ jsxs("section", { "data-testid": testId, style: { display: "flex", flexDirection: "column", gap: dp(12) }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(12) }, children: [
         /* @__PURE__ */ jsx("span", { style: sectionTitle, children: title }),
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.dim }, children: matches.length })
       ] }),
-      /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(16), overflowX: "auto", paddingBottom: dp(6) }, children: matches.map((m) => /* @__PURE__ */ jsx(MatchCard, { match: m, ctx }, m.id)) })
+      /* @__PURE__ */ jsx("div", { ref: rowRef, "data-row": "", style: { display: "flex", gap: dp(16), overflowX: "auto", paddingBottom: dp(6) }, children: cells })
     ] });
   }
   function Notice({ text, testId }) {
@@ -46307,7 +46758,7 @@ ${cue.text}`).join("\n\n")}
   }
   var ellipsis3, overline, sectionTitle, primaryBtn, secondaryBtn;
   var init_sport_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46319,7 +46770,7 @@ ${cue.text}`).join("\n\n")}
       init_sport_ctx();
       init_score_model();
       init_sport_score();
-      init_sport_icons();
+      init_sport_icons2();
       init_surface();
       init_jsx_runtime_shim();
       ellipsis3 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
@@ -46345,7 +46796,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/player-sport.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/player-sport.tsx
   function multiviewFor(keys2) {
     const picked = keys2.slice(0, MAX_PICK);
     const layout = picked.length <= 2 ? 2 : picked.length === 3 ? 3 : 4;
@@ -46452,58 +46903,68 @@ ${cue.text}`).join("\n\n")}
   }
   function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps }) {
     const { tt } = useTvText();
-    const [picking, setPicking] = useState(false);
     const [picked, setPicked] = useState([]);
     const rootRef = useRef(null);
     useEffect(() => {
       window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
     }, []);
-    const lists = matchesForPlayer(sport.matches, channelKey(channel), nowMs);
-    const all = [...lists.onChannel, ...lists.live, ...lists.later];
+    const currentKey = channelKey(channel);
+    const groups = playerMatchGroups(sport.matches, currentKey, nowMs);
+    const all = groups.flatMap((g) => g.matches);
     const toggle = (m) => setPicked((prev) => prev.includes(m.id) ? prev.filter((id) => id !== m.id) : prev.length >= MAX_PICK ? prev : [...prev, m.id]);
     let rowIndex = 0;
-    const row = (m, now2) => {
-      const index = m.resultOnly ? -1 : rowIndex++;
+    const row = (m) => {
+      const first = rowIndex++ === 0;
+      const st = statusAt(m, nowMs);
       const best = rankedSources(m, sport.overrides)[0];
+      const here = st === "live" && m.sources.some((s) => s.channelKey === currentKey);
       const on = picked.includes(m.id);
-      const meta = [m.league, matchStatusLabel(m, tt) ?? (statusAt(m, nowMs) === "live" ? tt("live") : formatClock2(m.start, locale)), best?.name].filter(Boolean).join(" \xB7 ");
-      const stationProps = m.resultOnly ? {} : station(() => picking ? toggle(m) : sport.onSwitchMatch(m), void 0, index === 0 ? { "data-init": "" } : void 0);
-      return /* @__PURE__ */ jsxs("div", { "data-testid": "pm-row", "data-picked": on ? "1" : "0", ...stationProps, style: { display: "flex", alignItems: "center", gap: ps(14), padding: `${ps(12)}px ${ps(14)}px`, borderRadius: ps(12), cursor: m.resultOnly ? "default" : "pointer", background: now2 ? TV2.accMix(16) : TV2.s08, border: `1px solid ${now2 ? TV2.accMix(60) : TV2.line}` }, children: [
-        picking && !m.resultOnly ? /* @__PURE__ */ jsx("span", { style: { width: ps(30), height: ps(30), borderRadius: ps(8), border: `2px solid ${on ? TV2.acc : TV2.lineStrong}`, background: on ? TV2.acc : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: on ? "\u2713" : "" }) : null,
-        /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexShrink: 0 }, children: [
-          m.home ? /* @__PURE__ */ jsx(Crest, { name: m.home, colorKey: m.homeKey ?? m.home, size: ps(44) }) : null,
-          m.away ? /* @__PURE__ */ jsx("span", { style: { marginLeft: -ps(12) }, children: /* @__PURE__ */ jsx(Crest, { name: m.away, colorKey: m.awayKey ?? m.away, size: ps(44) }) }) : null
+      const title = matchTitle(m);
+      const status = st === "live" ? matchStatusLabel(m, tt) ?? tt("live") : formatClock2(m.start, locale);
+      return /* @__PURE__ */ jsxs("div", { "data-testid": "pm-item", "data-row": "", style: { position: "relative", display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(4)}px ${ps(12)}px`, borderBottom: `1px solid ${TV2.s05}`, background: here ? TV2.accMix(12) : "transparent" }, children: [
+        /* @__PURE__ */ jsxs("div", { "data-testid": "pm-row", "data-picked": on ? "1" : "0", ...station(() => sport.onSwitchMatch(m), void 0, first ? { "data-init": "", "aria-label": title } : { "aria-label": title }), style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: ps(14), padding: `${ps(8)}px ${ps(8)}px`, borderRadius: ps(12), cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", gap: ps(4), flexShrink: 0 }, children: [
+            m.home ? /* @__PURE__ */ jsx(Crest, { name: m.home, colorKey: m.homeKey ?? m.home, size: ps(36), src: m.homeCrest }) : null,
+            m.away ? /* @__PURE__ */ jsx(Crest, { name: m.away, colorKey: m.awayKey ?? m.away, size: ps(36), src: m.awayCrest }) : null
+          ] }),
+          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx("div", { style: { fontSize: ps(18), fontWeight: 600, ...ellipsis3 }, children: title }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: ps(14), color: TV2.muted, ...ellipsis3 }, children: [best?.name, m.league].filter(Boolean).join(" \xB7 ") })
+          ] }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsx(MatchScore, { match: m, size: "row" }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: ps(14), fontWeight: 600, fontVariantNumeric: "tabular-nums", color: st === "live" ? TV2.acc : TV2.muted }, children: status })
+          ] }),
+          here ? /* @__PURE__ */ jsx("span", { "data-testid": "pm-now", role: "img", "aria-label": tt("sportNowPill"), title: tt("sportNowPill"), style: { display: "inline-flex", color: TV2.acc, flexShrink: 0 }, children: /* @__PURE__ */ jsx(SportIcons.Play, { size: ps(20) }) }) : null
         ] }),
-        /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(19), fontWeight: 600, ...ellipsis3 }, children: matchTitle(m) }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(15), color: TV2.muted, ...ellipsis3 }, children: meta })
-        ] }),
-        /* @__PURE__ */ jsx(MatchScore, { match: m, size: "row" }),
-        now2 ? /* @__PURE__ */ jsx("span", { "data-testid": "pm-now", style: { padding: `${ps(3)}px ${ps(10)}px`, borderRadius: 999, border: `1px solid ${TV2.accMix(80)}`, color: TV2.accText, fontSize: ps(13), fontWeight: 700 }, children: tt("sportNowPill") }) : null
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            "data-testid": "pm-mv",
+            ...station(() => toggle(m), void 0, { "aria-label": on ? tt("sportMultiviewRemove", { name: title }) : tt("sportMultiviewAdd", { name: title }) }),
+            "aria-pressed": on ? "true" : "false",
+            title: on ? tt("sportMultiviewRemove", { name: title }) : tt("sportMultiviewAdd", { name: title }),
+            style: { width: ps(44), height: ps(44), minHeight: ps(44), flexShrink: 0, borderRadius: ps(12), display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: on ? TV2.onAcc : TV2.muted, background: on ? TV2.acc : "rgba(252,252,255,0.06)" },
+            children: /* @__PURE__ */ jsx(Icons.SquaresFour, { size: ps(20) })
+          }
+        ),
+        st === "live" ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", left: 0, bottom: 0, height: ps(2), width: `${Math.round(progressOf(m.start, m.stop, nowMs) * 100)}%`, background: TV2.acc } }) : null
       ] }, m.id);
     };
-    const section = (title, list, now2) => list.length === 0 ? null : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: ps(8) }, children: [
-      /* @__PURE__ */ jsx("span", { style: { ...overline, fontSize: ps(15) }, children: title }),
-      list.map((m) => row(m, now2))
-    ] }, title);
-    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "player-matches-drawer", "data-panel-root": "", style: { position: "absolute", top: 0, right: 0, bottom: 0, width: `min(${ps(780)}px, 100%)`, zIndex: 40, background: TV2.panel, borderLeft: "1px solid rgba(255,255,255,0.16)", padding: ps(28), boxSizing: "border-box", display: "flex", flexDirection: "column", gap: ps(14), color: TV2.text }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(12) }, children: [
-        /* @__PURE__ */ jsx("span", { style: { fontSize: ps(30), fontWeight: 600 }, children: tt("sportMatches") }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "pm-pick", ...station(() => {
-          setPicking((v) => !v);
-          setPicked([]);
-        }), "aria-pressed": picking ? "true" : "false", style: { marginLeft: "auto", height: ps(48), minHeight: ps(48), padding: `0 ${ps(16)}px`, borderRadius: ps(12), border: `1px solid ${TV2.lineCard}`, background: picking ? TV2.s16 : TV2.s08, display: "inline-flex", alignItems: "center", fontSize: ps(16), fontWeight: 600, cursor: "pointer" }, children: tt("sportPickSeveral") }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "pm-close", ...station(onClose), "aria-label": tt("sportClose"), style: { width: ps(48), height: ps(48), minHeight: ps(48), borderRadius: ps(12), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: "\u2715" })
+    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "player-matches-drawer", "data-panel-root": "", style: { position: "absolute", top: 0, right: 0, bottom: 0, width: `min(${ps(700)}px, 100%)`, zIndex: 40, display: "flex", flexDirection: "column", borderLeft: `1px solid ${TV2.lineCard}`, borderRadius: `${ps(24)}px 0 0 ${ps(24)}px`, background: "rgba(0,0,0,0.88)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "-20px 0 60px rgba(0,0,0,0.5)", boxSizing: "border-box", fontFamily: TV2.font, color: TV2.text }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(12), padding: `${ps(20)}px ${ps(20)}px ${ps(12)}px`, borderBottom: `1px solid ${TV2.line}`, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(26), fontWeight: 600 }, children: tt("sportMatches") }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(14), color: TV2.dim }, children: tt("sportMatchesHint") })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "pm-close", ...station(onClose), "aria-label": tt("sportClose"), style: { width: ps(44), height: ps(44), minHeight: ps(44), borderRadius: 999, background: "rgba(252,252,255,0.06)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }, children: "\u2715" })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: ps(16), color: TV2.muted }, children: tt("sportMatchesHint") }),
-      /* @__PURE__ */ jsx(PlayerSourceSwitcher, { sport, channel, nowMs, ps: (n) => ps(n * 1.3), testId: "pm-sources" }),
-      /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: ps(16) }, children: [
-        section(tt("sportOnThisChannel"), lists.onChannel, true),
-        section(tt("sportLiveOnChannels"), lists.live, false),
-        section(tt("sportLaterOnChannels"), lists.later, false),
-        section(tt("sportResultOnly"), sport.matches.filter((m) => m.resultOnly), false)
-      ] }),
-      picking ? /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { style: { padding: `${ps(12)}px ${ps(20)}px 0`, flexShrink: 0 }, children: /* @__PURE__ */ jsx(PlayerSourceSwitcher, { sport, channel, nowMs, ps: (n) => ps(n * 1.3), testId: "pm-sources" }) }),
+      /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "thin" }, children: groups.map((g) => /* @__PURE__ */ jsxs("div", { "data-testid": "pm-group", style: { display: "flex", flexDirection: "column" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { padding: `${ps(14)}px ${ps(20)}px ${ps(6)}px`, fontSize: ps(12), fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", fontVariantNumeric: "tabular-nums", color: g.start === null ? TV2.acc : TV2.dim }, children: g.start === null ? tt("sportLiveOnChannels") : formatClock2(g.start, locale) }),
+        g.matches.map(row)
+      ] }, g.start ?? "now")) }),
+      picked.length > 0 ? /* @__PURE__ */ jsx("div", { style: { padding: ps(16), borderTop: `1px solid ${TV2.line}`, flexShrink: 0 }, children: /* @__PURE__ */ jsxs(
         "div",
         {
           "data-testid": "pm-open-multiview",
@@ -46511,16 +46972,18 @@ ${cue.text}`).join("\n\n")}
             const chosen = all.filter((m) => picked.includes(m.id));
             if (chosen.length > 0) sport.onOpenMultiview(pickMultiviewKeys(chosen, sport.overrides, sport.isKnownChannel));
           }),
-          "aria-disabled": picked.length === 0 ? "true" : "false",
-          style: { height: ps(60), minHeight: ps(60), borderRadius: ps(14), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ps(20), fontWeight: 600, cursor: "pointer", opacity: picked.length === 0 ? 0.5 : 1 },
-          children: tt("sportOpenMultiview", { n: picked.length })
+          style: { height: ps(56), minHeight: ps(56), borderRadius: ps(14), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", gap: ps(10), fontSize: ps(18), fontWeight: 600, cursor: "pointer" },
+          children: [
+            /* @__PURE__ */ jsx(Icons.SquaresFour, { size: ps(20) }),
+            tt("sportOpenMultiview", { n: picked.length })
+          ]
         }
-      ) : null
+      ) }) : null
     ] });
   }
   var MAX_PICK, NO_MATCHES, PLAYER_SPORT_DELAY_MS, shortLabel;
   var init_player_sport = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46536,6 +46999,7 @@ ${cue.text}`).join("\n\n")}
       init_score_model();
       init_sport_parts();
       init_sport_score();
+      init_sport_icons2();
       init_jsx_runtime_shim();
       MAX_PICK = 4;
       NO_MATCHES = [];
@@ -46544,7 +47008,448 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  function MobileChips({ items: items2, value, onChange, testId, emphasisKey, dimKeys }) {
+    return /* @__PURE__ */ jsx("div", { "data-testid": testId, "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: items2.map(({ key, label, id }) => {
+      const active4 = key === value;
+      const emphasis = emphasisKey !== void 0 && key === emphasisKey;
+      const dim = dimKeys?.includes(key) ?? false;
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-testid": `chip-${id}`,
+          ...station(() => onChange(key), void 0, { "aria-pressed": String(active4) }),
+          style: {
+            minHeight: 34,
+            padding: "0 14px",
+            borderRadius: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            /*
+                            OVALD CHIP LÅG PÅ 5 % VITT — på en helsvart sida är det
+                            nästan ingenting, och raden lästes som tom (Jerry 2026-09-20:
+                            "dessa filter på live tv, svår att se, skulle behöva standard
+                            grå/glass"). 12 % är appens vanliga glasyta för ett
+                            ovalt piller och syns utan att konkurrera med det valda, som
+                            ligger kvar på 16 % med sin ljusare kant.
+            
+                            Kanten sitter kvar på BÅDA lägena nu: en osynlig kant på det
+                            ovalda gjorde att chippen bytte storlek när man valde dem.
+                          */
+            background: emphasis ? "#f3f4f8" : active4 ? MT.s16 : MT.s12,
+            border: emphasis ? "1px solid transparent" : `1px solid ${active4 ? MT.line20 : MT.line10}`,
+            color: emphasis ? "#111" : active4 ? MT.text : MT.muted70,
+            fontWeight: active4 ? 600 : 400,
+            opacity: dim ? 0.65 : void 0,
+            cursor: "pointer"
+          },
+          children: label
+        },
+        id
+      );
+    }) });
+  }
+  var init_mobile_chips = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx"() {
+      "use strict";
+      init_tv_ui();
+      init_mobile_tokens();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/results-model.ts
+  function groupResults(matches, filter) {
+    const eligible = matches.filter((m) => m.coverage === "full" && m.fixture?.leagueId);
+    const shown = eligible.filter((m) => filter === "live" ? isLive(m) : filter === "mine" ? isMine(m) : true);
+    const groups = /* @__PURE__ */ new Map();
+    for (const m of shown) {
+      const key = `${m.kind}|${m.fixture.leagueId}`;
+      const g = groups.get(key) ?? { key, sport: m.kind, league: m.league, leagueId: m.fixture.leagueId, season: m.fixture.season ?? "", round: m.round ?? null, country: m.fixture.country ?? null, matches: [] };
+      g.matches.push(m);
+      groups.set(key, g);
+    }
+    for (const g of groups.values()) g.matches.sort((a, b) => a.start - b.start);
+    return { groups: [...groups.values()], liveCount: eligible.filter(isLive).length, mineCount: eligible.filter(isMine).length };
+  }
+  function formLetters(form, tt) {
+    const map = { W: tt("sportFormW"), D: tt("sportFormD"), L: tt("sportFormL") };
+    return (form ?? "").toUpperCase().split("").filter((c) => c === "W" || c === "D" || c === "L").map((kind) => ({ kind, letter: map[kind] }));
+  }
+  var isLive, isMine, FORM_COLOR;
+  var init_results_model = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/results-model.ts"() {
+      "use strict";
+      isLive = (m) => m.status === "live";
+      isMine = (m) => m.sources.length > 0 && !m.resultOnly;
+      FORM_COLOR = { W: "#3cd6a3", D: "rgba(243,244,248,0.45)", L: "#e0776a" };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/league-jump.ts
+  function foldText(s) {
+    return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
+  }
+  function leagueEntries(groups, follows) {
+    const names = /* @__PURE__ */ new Map();
+    for (const g of groups) {
+      const k = foldText(g.league);
+      const set = names.get(k) ?? /* @__PURE__ */ new Set();
+      set.add(g.key);
+      names.set(k, set);
+    }
+    return groups.map((g) => {
+      const duplicate = (names.get(foldText(g.league))?.size ?? 0) > 1;
+      return {
+        key: g.key,
+        sport: g.sport,
+        league: g.league,
+        country: g.country,
+        label: duplicate && g.country ? `${g.league} \xB7 ${g.country}` : g.league,
+        count: g.matches.length,
+        live: g.matches.filter((m) => m.status === "live").length,
+        relevant: relevantMatches(g.matches, follows).length > 0,
+        followed: g.matches.some((m) => followState(m, follows).league)
+      };
+    });
+  }
+  function yourLeagues(entries) {
+    const relevant = entries.filter((e) => e.relevant);
+    if (relevant.length === 0) return { entries: [...entries].sort(byCount).slice(0, TOP_LEAGUES_MAX), fallback: true };
+    const rank = (e) => e.followed ? 0 : e.live > 0 ? 1 : 2;
+    return { entries: [...relevant].sort((a, b) => rank(a) - rank(b) || byCount(a, b)).slice(0, YOUR_LEAGUES_MAX), fallback: false };
+  }
+  function countryGroups(entries) {
+    const map = /* @__PURE__ */ new Map();
+    for (const e of entries) {
+      const k = e.country ? foldText(e.country) : "";
+      const g = map.get(k) ?? { country: e.country, total: 0, live: 0, entries: [], collapsed: false };
+      g.total += e.count;
+      g.live += e.live;
+      g.entries.push(e);
+      map.set(k, g);
+    }
+    const tier = (g) => isHomeCountry(g.country) ? 0 : g.country === null ? 2 : 1;
+    const list = [...map.values()].sort((a, b) => tier(a) - tier(b) || b.total - a.total || (a.country ?? "").localeCompare(b.country ?? ""));
+    return list.map((g, i) => ({ ...g, entries: [...g.entries].sort(byCount), collapsed: i >= OPEN_COUNTRIES }));
+  }
+  function searchLeagues(entries, query) {
+    const q = foldText(query);
+    if (!q) return [];
+    const words = q.split(/\s+/);
+    const hits = entries.filter((e) => {
+      const hay = `${foldText(e.league)} ${e.country ? foldText(e.country) : ""}`;
+      return words.every((w) => hay.includes(w));
+    });
+    const prefix = (e) => foldText(e.league).startsWith(q) ? 0 : 1;
+    return hits.sort((a, b) => prefix(a) - prefix(b) || byCount(a, b));
+  }
+  var YOUR_LEAGUES_MAX, TOP_LEAGUES_MAX, OPEN_COUNTRIES, HOME_COUNTRIES, isHomeCountry, byCount;
+  var init_league_jump = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/league-jump.ts"() {
+      "use strict";
+      init_merge();
+      init_sport_day_model();
+      YOUR_LEAGUES_MAX = 10;
+      TOP_LEAGUES_MAX = 6;
+      OPEN_COUNTRIES = 6;
+      HOME_COUNTRIES = /* @__PURE__ */ new Set(["sweden", "sverige"]);
+      isHomeCountry = (c) => c !== null && HOME_COUNTRIES.has(foldText(c));
+      byCount = (a, b) => b.count - a.count || a.label.localeCompare(b.label);
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
+  function PhoneYourLeagues({ entries, fallback, onJump, onMore }) {
+    const { tt } = useTvText();
+    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 2 }, children: [
+      /* @__PURE__ */ jsx("span", { style: sectionLabel, children: fallback ? tt("sportTopLeagues") : tt("sportYourLeagues") }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "phone-your-leagues", "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: [
+        entries.map((e) => /* @__PURE__ */ jsxs("div", { "data-testid": `phone-league-chip-${e.key}`, ...station(() => onJump(e.key)), style: chipStyle, children: [
+          e.live > 0 ? dot : null,
+          /* @__PURE__ */ jsx("span", { children: e.label }),
+          /* @__PURE__ */ jsx("span", { style: { color: MT.dim, fontVariantNumeric: "tabular-nums" }, children: e.count })
+        ] }, e.key)),
+        /* @__PURE__ */ jsx("div", { "data-testid": "phone-league-more", ...station(onMore), style: { ...chipStyle, color: MT.text, border: `1px solid ${MT.line20}` }, children: tt("sportMoreLeagues") })
+      ] })
+    ] });
+  }
+  function Row2({ entry, showCountry, sportLabel, onPick }) {
+    const sub = [showCountry ? entry.country : null, sportLabel].filter(Boolean).join(" \xB7 ");
+    return /* @__PURE__ */ jsxs("div", { "data-testid": `phone-league-row-${entry.key}`, ...station(onPick), style: { minHeight: 52, padding: "6px 20px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${MT.line07}`, cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: entry.league }),
+        sub ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: sub }) : null
+      ] }),
+      entry.live > 0 ? dot : null,
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, fontVariantNumeric: "tabular-nums" }, children: entry.count })
+    ] });
+  }
+  function PhoneLeagueSheet({ entries, kindLabel: kindLabel2, onPick, onClose, pushLayer }) {
+    const { tt } = useTvText();
+    const [query, setQuery] = useState("");
+    const [toggled, setToggled] = useState({});
+    const onCloseRef = useRef(onClose);
+    useEffect(() => {
+      onCloseRef.current = onClose;
+    });
+    useEffect(() => pushLayer(() => onCloseRef.current()), [pushLayer]);
+    const searching = foldText(query) !== "";
+    const hits = searching ? searchLeagues(entries, query) : [];
+    const pick2 = (key) => {
+      onClose();
+      onPick(key);
+    };
+    const sportOf = (e) => kindLabel2 ? kindLabel2(e.sport) : null;
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("div", { "data-testid": "sheet-scrim", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 70, background: MT.scrim } }),
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          role: "dialog",
+          "aria-modal": "true",
+          "data-testid": "phone-league-sheet",
+          "data-live-tv-layer": "",
+          "data-panel-root": "",
+          style: { position: "fixed", left: 8, right: 8, bottom: 8, zIndex: 71, borderRadius: 26, boxSizing: "border-box", background: TV2.panel, border: `1px solid ${MT.line10}`, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", color: MT.text, fontFamily: MT.font, overflow: "hidden", paddingBottom: MT.SAFE_BOTTOM, display: "flex", flexDirection: "column", maxHeight: "85vh" },
+          children: [
+            /* @__PURE__ */ jsxs("div", { style: { padding: "18px 20px 12px", display: "flex", flexDirection: "column", gap: 10, borderBottom: `1px solid ${MT.line08}` }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 16, fontWeight: 600 }, children: tt("sportAllLeagues") }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  "data-testid": "phone-league-search",
+                  value: query,
+                  placeholder: tt("sportLeagueSearch"),
+                  onChange: (e) => setQuery(e.target.value),
+                  autoComplete: "off",
+                  spellCheck: false,
+                  enterKeyHint: "search",
+                  style: { height: MT.HIT, borderRadius: 12, border: `1px solid ${MT.line14}`, background: "rgba(0,0,0,0.25)", color: MT.text, padding: "0 14px", fontSize: 16 }
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: searching ? hits.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: 20, fontSize: 15, color: MT.muted }, children: tt("sportLeagueNoHits") }) : hits.map((e) => /* @__PURE__ */ jsx(Row2, { entry: e, showCountry: true, sportLabel: sportOf(e), onPick: () => pick2(e.key) }, e.key)) : countryGroups(entries).map((g) => {
+              const id = g.country ? foldText(g.country) : "";
+              const open2 = toggled[id] ?? !g.collapsed;
+              return /* @__PURE__ */ jsxs("section", { "data-testid": `phone-league-country-${g.country ?? "other"}`, children: [
+                /* @__PURE__ */ jsxs("div", { ...station(() => setToggled((t) => ({ ...t, [id]: !open2 }))), "aria-expanded": open2 ? "true" : "false", style: { minHeight: MT.HIT, padding: "0 20px", display: "flex", alignItems: "center", gap: 8, background: MT.s05, color: MT.muted, fontSize: 12.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }, children: [
+                  /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, ...ellipsis2 }, children: g.country ?? tt("sportLeagueOther") }),
+                  g.live > 0 ? dot : null,
+                  /* @__PURE__ */ jsx("span", { style: { color: MT.dim, letterSpacing: 0, fontWeight: 400 }, children: tt("sportLeagueMatches", { n: g.total }) }),
+                  /* @__PURE__ */ jsx("span", { "aria-hidden": "true", children: open2 ? "\u25BE" : "\u25B8" })
+                ] }),
+                open2 ? g.entries.map((e) => /* @__PURE__ */ jsx(Row2, { entry: e, showCountry: false, sportLabel: sportOf(e), onPick: () => pick2(e.key) }, e.key)) : null
+              ] }, id || "__other");
+            }) }),
+            /* @__PURE__ */ jsx("div", { style: { padding: 8 }, children: /* @__PURE__ */ jsx("div", { ...station(onClose), style: { minHeight: 50, borderRadius: 16, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 600, cursor: "pointer" }, children: tt("cancel") }) })
+          ]
+        }
+      )
+    ] });
+  }
+  var dot, chipStyle;
+  var init_sport_league_sheet_phone = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_mobile_tokens();
+      init_league_jump();
+      init_jsx_runtime_shim();
+      dot = /* @__PURE__ */ jsx("span", { "data-testid": "league-live-dot", "aria-hidden": "true", style: { width: 7, height: 7, borderRadius: 999, background: MT.live, flexShrink: 0 } });
+      chipStyle = { minHeight: 34, padding: "0 14px", borderRadius: 999, display: "flex", alignItems: "center", gap: 6, fontSize: 14, whiteSpace: "nowrap", flexShrink: 0, background: MT.s12, border: `1px solid ${MT.line10}`, color: MT.muted70, cursor: "pointer" };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
+  function PhoneCrest({ name, src, size = 22 }) {
+    const [broken, setBroken] = useState(false);
+    const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
+    if (url) return /* @__PURE__ */ jsx("img", { "data-crest": "", src: url, alt: "", width: size, height: size, onError: () => setBroken(true), style: { width: size, height: size, objectFit: "contain", flexShrink: 0 } });
+    return /* @__PURE__ */ jsx("span", { "data-crest": "", "aria-hidden": "true", style: { width: size, height: size, borderRadius: 999, background: MT.s12, color: MT.muted, fontSize: Math.round(size * 0.42), fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: crestText(name) });
+  }
+  function PhoneStandings({ rows, tt }) {
+    const cell = { padding: "8px 6px", fontSize: 14 };
+    return /* @__PURE__ */ jsx("div", { style: { maxHeight: "60vh", overflowY: "auto", padding: "4px 14px 12px" }, children: /* @__PURE__ */ jsxs("table", { style: { width: "100%", borderCollapse: "collapse", color: MT.text }, children: [
+      /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { style: { color: MT.dim, textAlign: "left", fontSize: 12 }, children: [
+        /* @__PURE__ */ jsx("th", { style: cell, children: "#" }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColTeam") }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPlayed") }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPoints") }),
+        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColForm") })
+      ] }) }),
+      /* @__PURE__ */ jsx("tbody", { children: rows.map((r) => /* @__PURE__ */ jsxs("tr", { style: { borderTop: `1px solid ${MT.line08}` }, children: [
+        /* @__PURE__ */ jsx("td", { style: cell, children: r.rank }),
+        /* @__PURE__ */ jsx("td", { style: { ...cell, maxWidth: 150 }, children: /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx(PhoneCrest, { name: r.team.name, src: r.team.crest, size: 18 }),
+          /* @__PURE__ */ jsx("span", { style: ellipsis2, children: r.team.name })
+        ] }) }),
+        /* @__PURE__ */ jsx("td", { style: cell, children: r.played }),
+        /* @__PURE__ */ jsx("td", { style: { ...cell, fontWeight: 700 }, children: r.points }),
+        /* @__PURE__ */ jsx("td", { style: cell, children: /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", gap: 3 }, children: formLetters(r.form, tt).slice(-5).map((f, i) => /* @__PURE__ */ jsx("span", { "data-testid": "phone-form", style: { width: 16, height: 16, borderRadius: 4, background: FORM_COLOR[f.kind], color: "#0e0f13", fontSize: 10, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: f.letter }, i)) }) })
+      ] }, `${r.group ?? ""}-${r.rank}-${r.team.id}`)) })
+    ] }) });
+  }
+  function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer, sport = "all", kindLabel: kindLabel2 }) {
+    const { tt } = useTvText();
+    const settings = useSportSettings();
+    const [filter, setFilter] = useState("all");
+    const [table, setTable] = useState(null);
+    const [leagueSheet, setLeagueSheet] = useState(false);
+    const follows = useFollows();
+    const sections = useRef(/* @__PURE__ */ new Map());
+    const forSport = useMemo(() => sport === "all" ? matches : matches.filter((m) => m.kind === sport), [matches, sport]);
+    const { groups, liveCount, mineCount } = useMemo(() => groupResults(forSport, filter), [forSport, filter]);
+    const entries = useMemo(() => leagueEntries(groups, follows), [groups, follows]);
+    const mine = useMemo(() => yourLeagues(entries), [entries]);
+    if (!settings.apiKey || !controller) {
+      return /* @__PURE__ */ jsx(KeyCard, { variant: "tab", pushLayer });
+    }
+    const labels = new Map(entries.map((e) => [e.key, e.label]));
+    const jump = (key) => sections.current.get(key)?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+    const openTable = async (g) => {
+      const cached = controller.standings(g.sport, g.leagueId, g.season);
+      setTable({ group: g, rows: cached });
+      if (cached) return;
+      const rows = await controller.loadStandings(g.sport, g.leagueId, g.season);
+      setTable((t) => t && t.group.key === g.key ? { group: g, rows: rows ?? [] } : t);
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "phone-results", style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+      /* @__PURE__ */ jsx(
+        MobileChips,
+        {
+          testId: "phone-results-filter",
+          items: [
+            { key: "all", label: tt("sportResultsAll"), id: "all" },
+            { key: "live", label: `${tt("sportResultsLive")} (${liveCount})`, id: "live" },
+            { key: "mine", label: tt("sportResultsMine", { n: mineCount }), id: "mine" }
+          ],
+          value: filter,
+          onChange: setFilter
+        }
+      ),
+      groups.length > 0 ? /* @__PURE__ */ jsx(PhoneYourLeagues, { entries: mine.entries, fallback: mine.fallback, onJump: jump, onMore: () => setLeagueSheet(true) }) : null,
+      groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: "24px 4px", fontSize: 15, color: MT.muted }, children: tt("sportResultsEmpty") }) : null,
+      groups.map((g) => /* @__PURE__ */ jsxs("section", { "data-testid": `phone-results-group-${g.key}`, ref: (el) => {
+        if (el) sections.current.set(g.key, el);
+        else sections.current.delete(g.key);
+      }, style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 6, scrollMarginTop: 8 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { flex: 1, fontSize: 17, fontWeight: 600, ...ellipsis2 }, children: g.round != null ? `${labels.get(g.key) ?? g.league} \xB7 ${tt("sportRound", { n: g.round })}` : labels.get(g.key) ?? g.league }),
+          /* @__PURE__ */ jsx("div", { "data-testid": `phone-table-${g.key}`, ...station(() => void openTable(g)), style: { minHeight: MT.HIT, padding: "0 14px", borderRadius: 12, background: MT.s08, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", fontSize: 14, color: MT.muted70, cursor: "pointer", flexShrink: 0 }, children: tt("sportTable") })
+        ] }),
+        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "phone-result-row", ...station(() => onOpenMatch(m)), style: { minHeight: 56, display: "grid", gridTemplateColumns: "46px minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, fontWeight: 700, color: m.status === "live" ? MT.live : MT.muted }, children: matchStatusLabel(m, tt) ?? "" }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 14, ...ellipsis2 }, children: m.home }),
+            /* @__PURE__ */ jsx(PhoneCrest, { name: m.home ?? "", src: m.homeCrest })
+          ] }),
+          /* @__PURE__ */ jsx("span", { "data-testid": "phone-result-score", style: { fontSize: 16, fontWeight: 700, minWidth: 38, textAlign: "center", fontVariantNumeric: "tabular-nums" }, children: scoreText(m) ?? "\u2013" }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx(PhoneCrest, { name: m.away ?? "", src: m.awayCrest }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 14, ...ellipsis2 }, children: m.away })
+          ] })
+        ] }, m.id))
+      ] }, g.key)),
+      leagueSheet ? /* @__PURE__ */ jsx(PhoneLeagueSheet, { entries, kindLabel: sport === "all" ? kindLabel2 ?? null : null, onPick: jump, onClose: () => setLeagueSheet(false), pushLayer }) : null,
+      table ? /* @__PURE__ */ jsx(
+        MobileSheet,
+        {
+          testId: "phone-standings-sheet",
+          title: `${labels.get(table.group.key) ?? table.group.league} \xB7 ${tt("sportTable")}`,
+          body: table.rows === null ? /* @__PURE__ */ jsx("div", { style: { padding: 16, color: MT.muted }, children: tt("sportLoading") }) : /* @__PURE__ */ jsx(PhoneStandings, { rows: table.rows, tt }),
+          items: [],
+          onClose: () => setTable(null),
+          pushLayer
+        }
+      ) : null
+    ] });
+  }
+  var init_sport_results_phone = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_tv_ui();
+      init_tv_strings();
+      init_mobile_tokens();
+      init_mobile_chips();
+      init_mobile_sheet();
+      init_key_card();
+      init_results_model();
+      init_score_model();
+      init_sport_model();
+      init_sport_store();
+      init_league_jump();
+      init_sport_league_sheet_phone();
+      init_surface();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx
+  function PhoneMatchList({ sport, currentKey, nowMs, locale, picked, onTogglePick, onDone }) {
+    const { tt } = useTvText();
+    const groups = playerMatchGroups(sport.matches, currentKey, nowMs);
+    return /* @__PURE__ */ jsx("div", { "data-testid": "phone-matches-list", children: groups.map((g) => /* @__PURE__ */ jsxs("div", { "data-testid": "phone-matches-group", children: [
+      /* @__PURE__ */ jsx("div", { style: { padding: "12px 20px 4px", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: g.start === null ? MT.acc : MT.muted }, children: g.start === null ? tt("sportLiveOnChannels") : formatClock2(g.start, locale) }),
+      g.matches.map((m) => {
+        const st = statusAt(m, nowMs);
+        const title = matchTitle(m);
+        const on = picked.includes(m.id);
+        const here = st === "live" && m.sources.some((s) => s.channelKey === currentKey);
+        const best = rankedSources(m, sport.overrides)[0];
+        const status = st === "live" ? matchStatusLabel(m, tt) ?? tt("live") : formatClock2(m.start, locale);
+        return /* @__PURE__ */ jsxs("div", { style: { position: "relative", display: "flex", alignItems: "center", gap: 8, padding: "0 12px 0 20px", minHeight: 60, borderBottom: `1px solid ${MT.line07}`, background: here ? MT.accMix(12) : "transparent" }, children: [
+          /* @__PURE__ */ jsxs("div", { "data-testid": "phone-match-row", ...station(() => {
+            sport.onSwitchMatch(m);
+            onDone();
+          }, void 0, { "aria-label": title }), style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "8px 0" }, children: [
+            /* @__PURE__ */ jsxs("span", { style: { display: "flex", gap: 3, flexShrink: 0 }, children: [
+              m.home ? /* @__PURE__ */ jsx(PhoneCrest, { name: m.home, src: m.homeCrest, size: 26 }) : null,
+              m.away ? /* @__PURE__ */ jsx(PhoneCrest, { name: m.away, src: m.awayCrest, size: 26 }) : null
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: title }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: [best?.name, m.league].filter(Boolean).join(" \xB7 ") })
+            ] }),
+            /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: [
+              scoreText(m) ? /* @__PURE__ */ jsx("span", { style: { fontSize: 15, fontWeight: 700 }, children: scoreText(m) }) : null,
+              /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, fontWeight: 600, color: st === "live" ? MT.acc : MT.muted }, children: status })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("div", { "data-testid": "phone-match-mv", ...station(() => onTogglePick(m), void 0, { "aria-label": on ? tt("sportMultiviewRemove", { name: title }) : tt("sportMultiviewAdd", { name: title }) }), "aria-pressed": on ? "true" : "false", style: { width: MT.HIT, height: MT.HIT, flexShrink: 0, borderRadius: 12, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: on ? MT.onAcc : MT.muted, background: on ? MT.acc : "transparent" }, children: /* @__PURE__ */ jsx(MIcons.SquaresFour, { size: 20 }) }),
+          st === "live" ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", left: 0, bottom: 0, height: 2, width: `${Math.round(progressOf(m.start, m.stop, nowMs) * 100)}%`, background: MT.acc } }) : null
+        ] }, m.id);
+      })
+    ] }, g.start ?? "now")) });
+  }
+  var init_player_matches_phone = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx"() {
+      "use strict";
+      "use client";
+      init_live_tv_ui();
+      init_tv_strings();
+      init_tv_ui();
+      init_mobile_tokens();
+      init_mobile_icons();
+      init_sport_model();
+      init_sport_day_model();
+      init_score_model();
+      init_sport_results_phone();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
@@ -46606,6 +47511,10 @@ ${cue.text}`).join("\n\n")}
       return () => window.removeEventListener("keydown", onKey, true);
     }, [sheet, tv.gateOpen, onClose]);
     const closeSheet = useCallback(() => setSheet(null), []);
+    const [picked, setPicked] = useState([]);
+    useEffect(() => {
+      if (sheet !== "matches") setPicked([]);
+    }, [sheet]);
     const pinnedSet = useMemo(() => new Set(tv.pinnedKeys), [tv.pinnedKeys]);
     const zap = useMemo(() => {
       const current5 = channelKey(channel);
@@ -46642,15 +47551,34 @@ ${cue.text}`).join("\n\n")}
         if (!on) sport.onSwitchSource(s);
       } };
     }) : [];
+    const sportHere = tv.sport ? matchesForPlayer(tv.sport.matches, currentKey, tv.nowMs).onChannel.length > 0 : false;
+    const matchItems = tv.sport && picked.length > 0 ? [{ key: "open-multiview", label: tt("sportOpenMultiview", { n: picked.length }), run: () => {
+      const sport = tv.sport;
+      const chosen = sport.matches.filter((m) => picked.includes(m.id));
+      sport.onOpenMultiview(pickMultiviewKeys(chosen, sport.overrides, sport.isKnownChannel));
+    } }] : [];
+    const matchList = sheet === "matches" && tv.sport ? /* @__PURE__ */ jsx(
+      PhoneMatchList,
+      {
+        sport: tv.sport,
+        currentKey,
+        nowMs: tv.nowMs,
+        locale: tv.locale,
+        picked,
+        onTogglePick: (m) => setPicked((prev) => prev.includes(m.id) ? prev.filter((id) => id !== m.id) : prev.length >= 4 ? prev : [...prev, m.id]),
+        onDone: closeSheet
+      }
+    ) : null;
     const sheetNode = sheet ? /* @__PURE__ */ jsx(
       MobileSheet,
       {
-        title: sheet === "audio" ? tt("audioSubs") : sheet === "sources" ? tt("sportSourcesShort", { n: sourceItems.length }) : channel.name,
-        subtitle: info.now?.title,
-        items: sheet === "audio" ? audioItems : sheet === "sources" ? sourceItems : moreItems,
+        title: sheet === "audio" ? tt("audioSubs") : sheet === "sources" ? tt("sportSourcesShort", { n: sourceItems.length }) : sheet === "matches" ? tt("sportMatches") : channel.name,
+        subtitle: sheet === "matches" ? tt("sportMatchesHint") : info.now?.title,
+        list: matchList,
+        items: sheet === "audio" ? audioItems : sheet === "sources" ? sourceItems : sheet === "matches" ? matchItems : moreItems,
         onClose: closeSheet,
         pushLayer: noLayer2,
-        testId: sheet === "audio" ? "phone-audio-sheet" : sheet === "sources" ? "phone-sources-sheet" : "phone-more-sheet"
+        testId: sheet === "audio" ? "phone-audio-sheet" : sheet === "sources" ? "phone-sources-sheet" : sheet === "matches" ? "phone-matches-sheet" : "phone-more-sheet"
       }
     ) : null;
     const sourcesLabel = matchSources ? tt("sportSourcesShort", { n: matchSources.sources.length }) : null;
@@ -46680,6 +47608,7 @@ ${cue.text}`).join("\n\n")}
                 muteBtn(44),
                 /* @__PURE__ */ jsx(Pill, { label: qualityLabel, disabled: true }),
                 sourcesLabel ? /* @__PURE__ */ jsx(Pill, { label: sourcesLabel, onPress: () => setSheet("sources"), testId: "phone-sources" }) : null,
+                sportHere ? /* @__PURE__ */ jsx(Pill, { label: tt("sportMatches"), onPress: () => setSheet("matches"), testId: "phone-matches" }) : null,
                 /* @__PURE__ */ jsx(Pill, { label: tt("menuGuide"), onPress: tv.onOpenGuide }),
                 /* @__PURE__ */ jsx(Round, { size: 44, label: tt("moreActions"), onPress: () => setSheet("more"), background: MT.s10, children: /* @__PURE__ */ jsx(MIcons.DotsThree, { size: 22 }) })
               ] })
@@ -46720,7 +47649,8 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx(GridBtn, { label: qualityLabel }),
           /* @__PURE__ */ jsx(GridBtn, { label: tt("menuChannelDetails"), onPress: tv.onOpenChannelDetails }),
           /* @__PURE__ */ jsx(GridBtn, { label: tt("menuGuide"), onPress: tv.onOpenGuide }),
-          sourcesLabel ? /* @__PURE__ */ jsx(GridBtn, { label: sourcesLabel, onPress: () => setSheet("sources"), testId: "phone-sources" }) : null
+          sourcesLabel ? /* @__PURE__ */ jsx(GridBtn, { label: sourcesLabel, onPress: () => setSheet("sources"), testId: "phone-sources" }) : null,
+          sportHere ? /* @__PURE__ */ jsx(GridBtn, { label: tt("sportMatches"), onPress: () => setSheet("matches"), testId: "phone-matches" }) : null
         ] }),
         /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, marginTop: 4 }, children: tt("zapList") }),
         /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column" }, children: zap.map((entry) => /* @__PURE__ */ jsx(
@@ -46749,7 +47679,7 @@ ${cue.text}`).join("\n\n")}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer2, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46763,6 +47693,8 @@ ${cue.text}`).join("\n\n")}
       init_mobile_channel_row();
       init_mobile_sheet();
       init_player_sport();
+      init_player_matches_phone();
+      init_sport_day_model();
       init_jsx_runtime_shim();
       PHONE_STAGE_BOX = { aspectRatio: "16 / 9", maxHeight: "45vh" };
       ZAP_WINDOW = 25;
@@ -46773,7 +47705,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
@@ -47090,7 +48022,7 @@ ${cue.text}`).join("\n\n")}
   }
   var FAV_WINDOW, DAY_MS, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47134,7 +48066,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -47349,7 +48281,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47364,7 +48296,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/goal-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/goal-alerts.ts
   function matchForGoal(e, merged) {
     return merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId) ?? null;
   }
@@ -47373,7 +48305,7 @@ ${cue.text}`).join("\n\n")}
     return followState(match, follows).any || (settings.goalAlertMatches[match.id] ?? 0) > now2;
   }
   function goalTitle(e, tt) {
-    return `${tt("sportGoal")} ${e.home} ${e.score.home}\u2013${e.score.away} ${e.away}`;
+    return `${tt("sportGoal")} \xB7 ${e.home} ${e.score.home}\u2013${e.score.away} ${e.away}`;
   }
   function goalBody(e) {
     const minute = e.minute != null ? `${e.minute}'` : "";
@@ -47387,14 +48319,14 @@ ${cue.text}`).join("\n\n")}
   }
   var playing;
   var init_goal_alerts = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
       "use strict";
       init_sport_day_model();
       playing = null;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
   function PlayerGoalOverlay({ channelKey: channelKey2, onJump }) {
     const { tt } = useTvText();
     const controller = useResultsController();
@@ -47428,7 +48360,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SHOW_MS;
   var init_player_goal_overlay = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47445,7 +48377,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
@@ -47505,7 +48437,7 @@ ${cue.text}`).join("\n\n")}
   }
   var cutouts, listeners10, snapshot;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47515,7 +48447,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -47813,7 +48745,7 @@ ${cue.text}`).join("\n\n")}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47831,7 +48763,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer
@@ -48627,7 +49559,7 @@ ${cue.text}`).join("\n\n")}
   }
   var import_react_dom4, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -48653,7 +49585,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -48663,11 +49595,11 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -48981,7 +49913,7 @@ ${cue.text}`).join("\n\n")}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -49029,16 +49961,16 @@ ${cue.text}`).join("\n\n")}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -49103,7 +50035,7 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
     categories: "Categories",
@@ -49556,10 +50488,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -49611,7 +50543,7 @@ ${cue.text}`).join("\n\n")}
     return { status, urls, refreshing, refresh, reload };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms2, locale) {
     if (!ms2) return null;
@@ -49703,17 +50635,17 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_live_tv_data();
   init_index_client();
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
@@ -49852,7 +50784,7 @@ ${cue.text}`).join("\n\n")}
     return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-data.ts
   init_plugin_sdk();
   init_live_tv_data();
   var VOD_MODE_DEFAULT = "link";
@@ -49938,15 +50870,15 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -50019,7 +50951,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -50041,7 +50973,7 @@ ${cue.text}`).join("\n\n")}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
@@ -50138,7 +51070,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -50186,18 +51118,18 @@ ${cue.text}`).join("\n\n")}
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -50253,7 +51185,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms2 = 300) {
     const [value, setValue] = useState(channel);
@@ -50317,7 +51249,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_jsx_runtime_shim();
   function PickerPanel({
     nav,
@@ -50476,7 +51408,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -50631,195 +51563,20 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-text-entry.tsx
-  init_react_shim();
-  init_plugin_sdk();
-  init_tv_ui();
-  init_tv_strings();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-keyboard.tsx
-  init_react_shim();
-  init_tv_ui();
-  init_tv_strings();
-  init_jsx_runtime_shim();
-  var LETTERS = ["1234567890", "qwertyuiop\xE5", "asdfghjkl\xF6\xE4", "zxcvbnm,.-"];
-  var SYMBOLS = ["1234567890", "!?@#%&/()=", `+-*_:;"'<>`, "[]{}~^|\\\u20AC\xA3"];
-  function TvKeyboard({ value, onChange, onDone, initFocus }) {
-    const { tt } = useTvText();
-    const [symbols, setSymbols] = useState(false);
-    const rows = symbols ? SYMBOLS : LETTERS;
-    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
-      "div",
-      {
-        ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
-        style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV2.acc : TV2.s10, color: opts?.accent ? TV2.onAcc : TV2.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
-        children: label
-      },
-      label
-    );
-    return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
-      rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(8) }, children: [
-        key("\u2423", () => onChange(value + " "), { flex: true, aria: "Space" }),
-        key("\u232B", () => onChange(value.slice(0, -1)), { width: dp(120), aria: "Backspace" }),
-        key(symbols ? tt("keyLetters") : tt("keySymbols"), () => setSymbols((s) => !s), { width: dp(120) }),
-        key(tt("keyDone"), onDone, { width: dp(140), accent: true })
-      ] })
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-text-entry.tsx
-  init_jsx_runtime_shim();
-  function isComposing(event2) {
-    return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
-  }
-  function useTextPrompt(options) {
-    const tvMode = useTvMode();
-    const Panel = getTvKeyboardPanel();
-    const [prompt, setPrompt] = useState(null);
-    const promptId = useRef(0);
-    const open2 = prompt !== null;
-    const openerRef = useRef(null);
-    useEffect(() => {
-      if (!open2) return;
-      openerRef.current = document.activeElement;
-      return () => {
-        const opener = openerRef.current;
-        window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
-      };
-    }, [open2]);
-    const ask = (title, initial, onDone, kind = "text") => {
-      promptId.current += 1;
-      setPrompt({ id: promptId.current, title, initial, kind, onDone });
-    };
-    let node = null;
-    if (tvMode) {
-      node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(
-        Panel,
-        {
-          title: prompt.title,
-          initial: prompt.initial,
-          onDone: (value) => {
-            setPrompt(null);
-            prompt.onDone(value);
-          },
-          onClose: () => setPrompt((current5) => current5 === prompt ? null : current5)
-        },
-        prompt.id
-      ) }) : null;
-    } else if (prompt) {
-      node = /* @__PURE__ */ jsx(
-        TextPromptDialog,
-        {
-          title: prompt.title,
-          initial: prompt.initial,
-          kind: prompt.kind,
-          pushLayer: options?.pushLayer,
-          onDone: (value) => {
-            setPrompt(null);
-            prompt.onDone(value);
-          },
-          onCancel: () => setPrompt((current5) => current5 === prompt ? null : current5)
-        },
-        prompt.id
-      );
-    }
-    return { available: tvMode ? Panel !== null : true, ask, node };
-  }
-  function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }) {
-    const { tt } = useTvText();
-    const [value, setValue] = useState(initial);
-    const inputRef = useRef(null);
-    useEffect(() => {
-      inputRef.current?.focus();
-    }, []);
-    const cancelRef = useRef(onCancel);
-    useEffect(() => {
-      cancelRef.current = onCancel;
-    });
-    useEffect(() => pushLayer?.(() => cancelRef.current()), [pushLayer]);
-    const submit = () => onDone(value);
-    const field = kind === "password" ? { type: "password", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "url" ? { type: "url", inputMode: "url", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "username" ? { type: "text", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : { type: "text" };
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        "data-testid": "text-prompt-dialog",
-        "data-panel-root": "",
-        style: { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: TV2.scrim },
-        children: /* @__PURE__ */ jsxs("div", { style: { width: dp(420), borderRadius: dp(14), background: TV2.panel, border: `1px solid ${TV2.line}`, padding: dp(24), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: title }),
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              ref: inputRef,
-              "data-testid": "text-prompt-input",
-              ...field,
-              value,
-              onChange: (event2) => setValue(event2.target.value),
-              onKeyDown: (event2) => {
-                if (event2.key === "Enter") {
-                  if (isComposing(event2)) return;
-                  event2.preventDefault();
-                  submit();
-                } else if (event2.key === "Escape") {
-                  event2.preventDefault();
-                  onCancel();
-                }
-              },
-              style: { height: dp(44), borderRadius: dp(8), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, color: TV2.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }
-            }
-          ),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: dp(10) }, children: [
-            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
-            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
-          ] })
-        ] })
-      }
-    );
-  }
-  function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus }) {
-    const tvMode = useTvMode();
-    const inputRef = useRef(null);
-    useEffect(() => {
-      if (!tvMode && autoFocus) inputRef.current?.focus();
-    }, [tvMode, autoFocus]);
-    if (tvMode) {
-      return /* @__PURE__ */ jsx(TvKeyboard, { value, onChange, onDone: onSubmit ?? (() => {
-      }), initFocus: !!autoFocus });
-    }
-    return /* @__PURE__ */ jsx(
-      "input",
-      {
-        ref: inputRef,
-        "data-f": "",
-        value,
-        placeholder,
-        onChange: (event2) => onChange(event2.target.value),
-        onKeyDown: (event2) => {
-          if (event2.key === "Enter") {
-            if (isComposing(event2)) return;
-            event2.preventDefault();
-            onSubmit?.();
-          }
-        },
-        style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, border: `1px solid ${TV2.line}`, color: TV2.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }
-      }
-    );
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  init_tv_text_entry();
   init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
   init_mobile_tokens();
   init_jsx_runtime_shim();
   function MobileToggle({ on }) {
     return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_jsx_runtime_shim();
   function Row({ label, right, onOk, testId, phone = false }) {
     if (phone) {
@@ -50834,14 +51591,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var PhoneCaret = () => /* @__PURE__ */ jsx("span", { style: { color: MT.dim, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 16 }) });
+  var HINT_SIZE = dp(18);
+  var HINT_SIZE_PHONE = 14;
   function Heading({ children, hint, phone = false }) {
     if (phone) return /* @__PURE__ */ jsxs("div", { style: { padding: "14px 14px 6px" }, children: [
       /* @__PURE__ */ jsx("div", { style: sectionLabel, children }),
-      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, marginTop: 4 }, children: hint }) : null
+      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: HINT_SIZE_PHONE, color: MT.dim, marginTop: 4 }, children: hint }) : null
     ] });
     return /* @__PURE__ */ jsxs("div", { children: [
       /* @__PURE__ */ jsx("div", { style: { fontSize: dp(26), fontWeight: 600 }, children }),
-      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: hint }) : null
+      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: HINT_SIZE, color: "rgba(243,244,248,0.6)", marginTop: dp(4) }, children: hint }) : null
     ] });
   }
   function hostOf2(url) {
@@ -51382,7 +52141,7 @@ ${cue.text}`).join("\n\n")}
   function VodLibrarySection({ tt, phone }) {
     const { rows, progress: progress2, error, build, disabled } = useVodLibrarySources();
     if (rows.length === 0) return null;
-    const statusText = (row) => {
+    const statusText2 = (row) => {
       if (progress2?.libraryId === row.libraryId) return tt("vodLibraryBuilding", { count: progress2.done.toLocaleString() });
       if (row.importing) return tt("vodLibraryImporting");
       if (row.indexedTitles === null) return tt("vodLibraryNotBuilt", { count: row.vodTitles.toLocaleString() });
@@ -51398,7 +52157,7 @@ ${cue.text}`).join("\n\n")}
           children: [
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), ...ellipsis2 }, children: row.label }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: statusText(row) })
+              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: statusText2(row) })
             ] }),
             /* @__PURE__ */ jsx(
               Action,
@@ -51515,187 +52274,9 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_tv_strings();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-card.tsx
-  init_react_shim();
-  init_plugin_sdk();
-  init_tv_ui();
-  init_tv_strings();
-  init_api_sports();
-  init_thesportsdb();
-  init_providers();
-  init_key_flow();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-handoff.ts
-  init_react_shim();
-  var BASE = "/api/live-tv/sport/key-handoff";
-  var POLL_MS2 = 2e3;
-  async function startKeyHandoff() {
-    try {
-      const res = await fetch(BASE, { method: "POST" });
-      if (!res.ok) return null;
-      const body = await res.json();
-      return body.code ? { code: body.code, url: body.url ?? null } : null;
-    } catch {
-      return null;
-    }
-  }
-  async function pollKeyHandoff(code) {
-    try {
-      const res = await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { cache: "no-store" });
-      if (!res.ok) return { state: "expired" };
-      return await res.json();
-    } catch {
-      return { state: "waiting" };
-    }
-  }
-  async function cancelKeyHandoff(code) {
-    try {
-      await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { method: "DELETE" });
-    } catch {
-    }
-  }
-  function useKeyHandoff(active4, onKey) {
-    const [url, setUrl] = useState(null);
-    const [expired, setExpired] = useState(false);
-    const [round2, setRound] = useState(0);
-    const onKeyRef = useRef(onKey);
-    onKeyRef.current = onKey;
-    useEffect(() => {
-      if (!active4) return;
-      let stopped = false;
-      let code = null;
-      let done = false;
-      let timer3 = null;
-      setExpired(false);
-      const loop = async () => {
-        if (stopped || done || !code) return;
-        const r = await pollKeyHandoff(code);
-        if (stopped) return;
-        if (r.state === "received" && r.key) {
-          done = true;
-          onKeyRef.current(r.key);
-          return;
-        }
-        if (r.state === "expired") {
-          done = true;
-          setExpired(true);
-          return;
-        }
-        timer3 = setTimeout(() => void loop(), POLL_MS2);
-      };
-      void startKeyHandoff().then((h) => {
-        if (stopped || !h) return;
-        code = h.code;
-        setUrl(h.url);
-        timer3 = setTimeout(() => void loop(), POLL_MS2);
-      });
-      return () => {
-        stopped = true;
-        if (timer3) clearTimeout(timer3);
-        if (code) void cancelKeyHandoff(code);
-      };
-    }, [active4, round2]);
-    const restart = useCallback(() => setRound((n) => n + 1), []);
-    return { url, expired, restart };
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-card.tsx
-  init_budget();
-  init_sport_store();
-  init_surface();
-  init_jsx_runtime_shim();
-  var SPORT_NAMES = [
-    ["football", "sportNameFootball"],
-    ["hockey", "sportNameHockey"],
-    ["basketball", "sportNameBasketball"],
-    ["handball", "sportNameHandball"]
-  ];
-  function KeyCard({ variant, onDone, pushLayer }) {
-    const { tt } = useTvText();
-    const tv = useTvMode();
-    const settings = useSportSettings();
-    const [provider, setProvider] = useState(settings.provider);
-    const [draft, setDraft] = useState("");
-    const [phase, setPhase] = useState({ kind: "idle" });
-    const [phoneEntry, setPhoneEntry] = useState(false);
-    const prompt = useTextPrompt({ pushLayer });
-    const broken = !!settings.apiKey && !!currentBudget()?.isInvalid();
-    const submit = async (raw) => {
-      setPhase({ kind: "checking" });
-      const result = await saveValidatedKey(provider, raw);
-      setPhase({ kind: "done", result });
-      if (result.ok) setPhoneEntry(false);
-    };
-    const handoff = useKeyHandoff(tv && phoneEntry, (key) => void submit(key));
-    const covered = SPORT_NAMES.filter(([s]) => providerFor(provider).coverage(s) === "full").map(([, k]) => tt(k));
-    const sportsText = covered.length > 1 ? `${covered.slice(0, -1).join(", ")} ${tt("sportListAnd")} ${covered[covered.length - 1]}` : covered.join("");
-    const signupUrl = provider === "api-sports" ? API_SPORTS_REGISTER_URL : THESPORTSDB_PRICING_URL;
-    const message = (() => {
-      if (phase.kind === "checking") return tt("sportKeyChecking");
-      if (phase.kind !== "done") return null;
-      const r = phase.result;
-      if (r.ok) {
-        const plan = r.check.plan && r.check.plan.toLowerCase() === "free" ? tt("sportPlanFree") : r.check.plan ?? "";
-        return r.check.limit != null && r.check.used != null ? tt("sportKeyOk", { used: r.check.used, limit: r.check.limit, plan }) : tt("sportKeyOkNoQuota", { plan });
-      }
-      return r.reason === "network" ? tt("sportKeyNetwork") : r.reason === "rejected" ? tt("sportKeyRejected") : null;
-    })();
-    const btn = (label, onOk, primary = false, testId) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk), style: { minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: "inline-flex", alignItems: "center", fontSize: dp(17), fontWeight: 600, cursor: "pointer", background: primary ? TV2.text : TV2.s12, color: primary ? "#0e0f13" : TV2.text }, children: label });
-    return /* @__PURE__ */ jsxs("section", { "data-testid": `sport-key-card-${variant}`, style: { borderRadius: dp(16), background: sportBg(TV2.s06), border: `1px solid ${TV2.lineCard}`, padding: dp(24), display: "flex", gap: dp(24), flexWrap: "wrap" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: dp(12) }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(24), fontWeight: 600 }, children: broken ? tt("sportKeyBroken") : tt("sportKeyTitle") }),
-        /* @__PURE__ */ jsx(Segment, { options: [{ key: "api-sports", label: "API-Sports" }, { key: "thesportsdb", label: "TheSportsDB" }], value: provider, onChange: (k) => {
-          setProvider(k);
-          setPhase({ kind: "idle" });
-        } }),
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("sportKeyChoice") }),
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("sportKeyCovers", { sports: sportsText }) }),
-        tv ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(12), flexWrap: "wrap" }, children: [
-          btn(tt("sportKeyPhone"), () => {
-            setPhoneEntry(true);
-            handoff.restart();
-          }, true),
-          prompt.available ? btn(tt("sportKeyKeyboard"), () => prompt.ask(tt("sportKeyPaste"), "", (v) => void submit(v), "password")) : null
-        ] }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(10), flexWrap: "wrap", alignItems: "center" }, children: [
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              "data-testid": "sport-key-input",
-              value: draft,
-              onChange: (e) => setDraft(e.target.value),
-              placeholder: tt("sportKeyPaste"),
-              autoComplete: "off",
-              spellCheck: false,
-              style: { flex: "1 1 220px", minHeight: 44, borderRadius: 10, border: `1px solid ${TV2.lineStrong}`, background: "rgba(0,0,0,0.25)", color: TV2.text, padding: "0 12px", fontFamily: "ui-monospace, monospace" }
-            }
-          ),
-          btn(tt("sportKeyPaste"), () => {
-            void navigator.clipboard?.readText?.().then((t) => setDraft(t)).catch(() => {
-            });
-          }),
-          btn(tt("sportKeySave"), () => void submit(draft), true)
-        ] }),
-        prompt.node,
-        message ? /* @__PURE__ */ jsx("div", { role: "status", style: { fontSize: dp(16), color: phase.kind === "done" && phase.result.ok ? "#3cd6a3" : TV2.text }, children: message }) : null
-      ] }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(20), alignItems: "flex-start" }, children: [
-        /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center" }, children: [
-          /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: signupUrl, size: dp(132) }) }),
-          tv ? /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportKeyGetKey") }) : /* @__PURE__ */ jsx("a", { href: signupUrl, target: "_blank", rel: "noreferrer", style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportKeyGetKey") })
-        ] }),
-        tv && phoneEntry ? /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center", maxWidth: dp(180) }, children: [
-          handoff.url ? /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
-          /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(14), color: TV2.dim, textAlign: "center" }, children: handoff.expired ? tt("sportKeyExpired") : tt("sportKeyPhoneHint") }),
-          handoff.expired ? btn(tt("sportKeyRetry"), handoff.restart) : null
-        ] }) : null
-      ] })
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  init_key_card();
   init_key_flow();
   init_rate_line();
   init_results_controller();
@@ -51761,17 +52342,17 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_react_shim();
   init_plugin_sdk();
+  init_mobile_tokens();
   init_tv_ui();
   init_tv_strings();
   init_mobile_sheet();
   init_sport_ctx();
-  init_sport_model();
   init_sport_epg();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/backdrop.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/backdrop.ts
   init_react_shim();
   init_plugin_sdk();
   init_budget();
@@ -51797,7 +52378,11 @@ ${cue.text}`).join("\n\n")}
     for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
     return h >>> 0;
   }
-  function standardImageFor(scope, dayKey) {
+  function backdropScope(scope) {
+    return scope === "handball" ? "other" : scope;
+  }
+  function standardImageFor(rawScope, dayKey) {
+    const scope = backdropScope(rawScope);
     const own = scope === "all" ? void 0 : STANDARD_IMAGES[scope];
     if (own) return own;
     const all = Object.values(STANDARD_IMAGES);
@@ -51806,7 +52391,8 @@ ${cue.text}`).join("\n\n")}
   function pickedImage(mode) {
     return mode.startsWith("image:") ? STANDARD_IMAGES[mode.slice(6)] ?? null : null;
   }
-  function backdropPreview(b, scope, uploads, dayKey) {
+  function backdropPreview(b, rawScope, uploads, dayKey) {
+    const scope = backdropScope(rawScope);
     const { mode, slot } = resolveBackdropMode(b, scope);
     const inherited = scope !== "all" && slot === "all";
     const standard = standardImageFor(scope, dayKey);
@@ -51814,9 +52400,10 @@ ${cue.text}`).join("\n\n")}
     const url = mode === "off" ? null : mode === "custom" && v != null ? customBackdropUrl(slot, v) : pickedImage(mode) ?? standard;
     return { mode, slot, inherited, url };
   }
-  function resolveBackdropMode(b, scope) {
+  function resolveBackdropMode(b, rawScope) {
+    const scope = backdropScope(rawScope);
     const own = scope === "all" ? void 0 : b.sports[scope];
-    return own ? { mode: own, slot: scope } : { mode: b.all, slot: "all" };
+    return own && own !== "inherit" ? { mode: own, slot: scope } : { mode: b.all, slot: "all" };
   }
   function customBackdropUrl(slot, version3) {
     return `/api/live-tv/sport/backdrop?slot=${slot}&v=${version3}`;
@@ -52072,7 +52659,7 @@ ${cue.text}`).join("\n\n")}
     return { choice, onBroken, surface };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/backdrop-handoff.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/backdrop-handoff.ts
   init_react_shim();
   var BASE2 = "/api/live-tv/sport/backdrop-handoff";
   var POLL_MS3 = 2e3;
@@ -52138,10 +52725,10 @@ ${cue.text}`).join("\n\n")}
     return { url, expired, received, restart };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_sport_store();
   init_jsx_runtime_shim();
-  var SCOPES = ["all", ...SPORT_KINDS];
+  var SCOPES = ["all", ...BACKDROP_SPORTS];
   var TONES = ["black", "gray", "image"];
   var TONE_LABEL = { black: "sportCardsBlack", gray: "sportCardsGray", image: "sportCardsImage" };
   var OPACITY_STEPS = [0, 25, 50, 70, 85, 100];
@@ -52151,9 +52738,7 @@ ${cue.text}`).join("\n\n")}
       if (mode !== "inherit") setSportSettings({ backdrops: { ...current5, all: mode } });
       return;
     }
-    const sports = { ...current5.sports };
-    if (mode === "inherit") delete sports[scope];
-    else sports[scope] = mode;
+    const sports = { ...current5.sports, [scope]: mode };
     setSportSettings({ backdrops: { ...current5, sports } });
   }
   function useUploader() {
@@ -52313,9 +52898,10 @@ ${cue.text}`).join("\n\n")}
           ] }),
           open2 === r.scope ? /* @__PURE__ */ jsx(ChooserPanel, { choices: choicesFor(r.scope), onPick: (k) => pick2(r.scope, k) }) : null
         ] }, r.scope)),
-        uploader.status ? /* @__PURE__ */ jsx(LtNote, { style: { paddingBottom: 10 }, children: uploader.status }) : null,
-        /* @__PURE__ */ jsx(LtNote, { style: { paddingBottom: 12 }, children: tt("sportBackdropLocalNote") })
+        uploader.status ? /* @__PURE__ */ jsx(LtNote, { style: { paddingBottom: 10, fontSize: 13 }, children: uploader.status }) : null,
+        /* @__PURE__ */ jsx(LtNote, { style: { paddingBottom: 12, fontSize: 13 }, children: tt("sportBackdropLocalNote") })
       ] }),
+      /* @__PURE__ */ jsx("div", { style: { height: 28 } }),
       /* @__PURE__ */ jsx(LtSection, { title: tt("sportCardsTitle"), hint: tt("sportCardsHint") }),
       /* @__PURE__ */ jsxs(LtRows, { children: [
         /* @__PURE__ */ jsxs("label", { style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 0" }, children: [
@@ -52378,55 +52964,62 @@ ${cue.text}`).join("\n\n")}
       setOpen(open2 === scope ? null : scope);
     };
     const thumbSize = phone ? { w: 48, h: 27, radius: 5 } : { w: dp(80), h: dp(45), radius: dp(6) };
-    const note = { fontSize: phone ? 13 : dp(15), color: TV2.dim, padding: phone ? "6px 14px" : 0 };
+    const note = { fontSize: phone ? HINT_SIZE_PHONE : HINT_SIZE, color: phone ? MT.dim : "rgba(243,244,248,0.6)", padding: phone ? "6px 14px" : 0 };
     const nextOpacity = OPACITY_STEPS.find((n) => n > s.cards.opacity) ?? OPACITY_STEPS[0];
     const nextTone = TONES[(TONES.indexOf(s.cards.tone) + 1) % TONES.length];
     const sheetRow = sheet ? rows.find((r) => r.scope === sheet) : null;
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-backdrop-settings-tv", children: [
-      /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportBackdropHint"), children: tt("sportBackdropTitle") }),
-      viaPhone ? null : uploader.input,
-      rows.map((r) => /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsx(
-          Row,
+    return (
+      // Två sektioner med samma luft som Live TV:s övriga inställningar (innehållets gap 36, sektionens 10).
+      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-backdrop-settings-tv", style: { display: "flex", flexDirection: "column", gap: phone ? 18 : dp(36) }, children: [
+        /* @__PURE__ */ jsxs("section", { "data-testid": "sport-backdrop-section", style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
+          /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportBackdropHint"), children: tt("sportBackdropTitle") }),
+          viaPhone ? null : uploader.input,
+          rows.map((r) => /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx(
+              Row,
+              {
+                phone,
+                testId: `sport-backdrop-row-${r.scope}`,
+                label: /* @__PURE__ */ jsxs("span", { style: { display: "inline-flex", alignItems: "center", gap: phone ? 12 : dp(16) }, children: [
+                  /* @__PURE__ */ jsx(Thumb, { scope: r.scope, url: r.thumb, ...thumbSize }),
+                  r.label
+                ] }),
+                right: r.modeLabel,
+                onOk: () => onRow(r.scope)
+              }
+            ),
+            open2 === r.scope ? /* @__PURE__ */ jsx(ChooserPanel, { choices: choicesFor(r.scope), onPick: (k) => pick2(r.scope, k) }) : null
+          ] }, r.scope)),
+          viaPhone && qrSlot ? /* @__PURE__ */ jsxs("figure", { "data-testid": "sport-backdrop-handoff", style: { margin: 0, display: "flex", gap: dp(20), alignItems: "center", padding: `${dp(8)}px 0` }, children: [
+            handoff.url && !handoff.received ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-qr", style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
+            /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(16), color: TV2.dim, maxWidth: dp(360) }, children: handoff.received ? tt("sportBackdropReceived") : handoff.expired ? tt("sportKeyExpired") : `${rows.find((r) => r.scope === qrSlot).label}: ${tt("sportBackdropPhoneHint")}` })
+          ] }) : null,
+          uploader.status ? /* @__PURE__ */ jsx("div", { role: "status", style: note, children: uploader.status }) : null,
+          /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-note", style: note, children: tt("sportBackdropLocalNote") })
+        ] }),
+        /* @__PURE__ */ jsxs("section", { "data-testid": "sport-cards-section", style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
+          /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportCardsHint"), children: tt("sportCardsTitle") }),
+          /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-opacity-row", label: tt("sportCardsOpacity"), right: `${s.cards.opacity} %`, onOk: () => setSportSettings({ cards: { ...s.cards, opacity: nextOpacity } }) }),
+          /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-tone-row", label: tt("sportCardsColor"), right: tt(TONE_LABEL[s.cards.tone]), onOk: () => setSportSettings({ cards: { ...s.cards, tone: nextTone } }) })
+        ] }),
+        menu && GlassMenu ? /* @__PURE__ */ jsx(GlassMenu, { target: menu, onClose: () => setMenu(null) }) : null,
+        sheetRow ? /* @__PURE__ */ jsx(
+          MobileSheet,
           {
-            phone,
-            testId: `sport-backdrop-row-${r.scope}`,
-            label: /* @__PURE__ */ jsxs("span", { style: { display: "inline-flex", alignItems: "center", gap: phone ? 12 : dp(16) }, children: [
-              /* @__PURE__ */ jsx(Thumb, { scope: r.scope, url: r.thumb, ...thumbSize }),
-              r.label
-            ] }),
-            right: r.modeLabel,
-            onOk: () => onRow(r.scope)
+            testId: "sport-backdrop-sheet",
+            title: sheetRow.label,
+            subtitle: sheetRow.modeLabel,
+            art: /* @__PURE__ */ jsx(Thumb, { url: sheetRow.thumb, w: 56, h: 32, radius: 6 }),
+            items: actions(sheetRow.scope),
+            onClose: () => setSheet(null),
+            pushLayer: pushLayer ?? noLayer
           }
-        ),
-        open2 === r.scope ? /* @__PURE__ */ jsx(ChooserPanel, { choices: choicesFor(r.scope), onPick: (k) => pick2(r.scope, k) }) : null
-      ] }, r.scope)),
-      viaPhone && qrSlot ? /* @__PURE__ */ jsxs("figure", { "data-testid": "sport-backdrop-handoff", style: { margin: 0, display: "flex", gap: dp(20), alignItems: "center", padding: `${dp(8)}px 0` }, children: [
-        handoff.url && !handoff.received ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-qr", style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
-        /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(16), color: TV2.dim, maxWidth: dp(360) }, children: handoff.received ? tt("sportBackdropReceived") : handoff.expired ? tt("sportKeyExpired") : `${rows.find((r) => r.scope === qrSlot).label}: ${tt("sportBackdropPhoneHint")}` })
-      ] }) : null,
-      uploader.status ? /* @__PURE__ */ jsx("div", { role: "status", style: note, children: uploader.status }) : null,
-      /* @__PURE__ */ jsx("div", { style: note, children: tt("sportBackdropLocalNote") }),
-      /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportCardsHint"), children: tt("sportCardsTitle") }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-opacity-row", label: tt("sportCardsOpacity"), right: `${s.cards.opacity} %`, onOk: () => setSportSettings({ cards: { ...s.cards, opacity: nextOpacity } }) }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-tone-row", label: tt("sportCardsColor"), right: tt(TONE_LABEL[s.cards.tone]), onOk: () => setSportSettings({ cards: { ...s.cards, tone: nextTone } }) }),
-      menu && GlassMenu ? /* @__PURE__ */ jsx(GlassMenu, { target: menu, onClose: () => setMenu(null) }) : null,
-      sheetRow ? /* @__PURE__ */ jsx(
-        MobileSheet,
-        {
-          testId: "sport-backdrop-sheet",
-          title: sheetRow.label,
-          subtitle: sheetRow.modeLabel,
-          art: /* @__PURE__ */ jsx(Thumb, { url: sheetRow.thumb, w: 56, h: 32, radius: 6 }),
-          items: actions(sheetRow.scope),
-          onClose: () => setSheet(null),
-          pushLayer: pushLayer ?? noLayer
-        }
-      ) : null
-    ] });
+        ) : null
+      ] })
+    );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -52586,7 +53179,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
   init_jsx_runtime_shim();
   function VodLibraryCard() {
@@ -52595,7 +53188,7 @@ ${cue.text}`).join("\n\n")}
     const toast = useToast();
     const { rows, progress: progress2, error, build, disabled } = useVodLibrarySources();
     if (rows.length === 0) return null;
-    const statusText = (row) => {
+    const statusText2 = (row) => {
       if (progress2?.libraryId === row.libraryId) return tt("vodLibraryBuilding", { count: fmtInt(progress2.done, locale) });
       if (row.importing) return tt("vodLibraryImporting");
       if (row.indexedTitles === null) return h("titlesReady", { count: fmtInt(row.vodTitles, locale) });
@@ -52611,7 +53204,7 @@ ${cue.text}`).join("\n\n")}
         rows.map((row) => /* @__PURE__ */ jsxs("div", { "data-testid": `vod-library-${row.vodSource}`, style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }, children: [
           /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: "1 1 12rem" }, children: [
             /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 13.5, color: UI.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: row.label }),
-            /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12.5, color: UI.muted }, children: statusText(row) })
+            /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12.5, color: UI.muted }, children: statusText2(row) })
           ] }),
           /* @__PURE__ */ jsx(LtBtn, { variant: "accent", style: { padding: "7px 14px", fontSize: 12.5 }, disabled: disabled(row), onClick: () => {
             void run(row);
@@ -52622,16 +53215,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -52736,7 +53329,7 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -52872,7 +53465,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/category-curation-panel.tsx
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -53034,11 +53627,11 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -53225,7 +53818,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv-settings-views.tsx
   init_index_client();
   init_tv_strings();
   init_index_client();
@@ -53660,7 +54253,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text) {
@@ -53893,26 +54486,26 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_logo_image();
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
@@ -53922,7 +54515,7 @@ ${cue.text}`).join("\n\n")}
     return () => clearTimeout(timer3);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY6 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -53955,7 +54548,7 @@ ${cue.text}`).join("\n\n")}
     return data;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }) {
@@ -53988,7 +54581,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -54018,11 +54611,11 @@ ${cue.text}`).join("\n\n")}
     ) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-shell.tsx
   var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
   function encodeChannelParams(channel) {
     return {
@@ -54034,10 +54627,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-grid.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -54066,7 +54659,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -54131,14 +54724,14 @@ ${cue.text}`).join("\n\n")}
     return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -54178,7 +54771,7 @@ ${cue.text}`).join("\n\n")}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
@@ -54332,7 +54925,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-grid.tsx
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
   var CHANNELS_PER_PAGE = 28;
@@ -55852,13 +56445,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -55875,7 +56468,7 @@ ${cue.text}`).join("\n\n")}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/now-next-later-row.tsx
   init_jsx_runtime_shim();
   function formatTime(ms2) {
     return new Date(ms2).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -55937,7 +56530,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_tv_settings_store();
@@ -56155,12 +56748,12 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-alerts.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_reminders();
@@ -56238,7 +56831,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_live_tv_ui();
   init_jsx_runtime_shim();
   function LiveTvRemindersMount() {
@@ -56302,7 +56895,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
@@ -56345,7 +56938,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -56354,7 +56947,7 @@ ${cue.text}`).join("\n\n")}
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
@@ -56379,7 +56972,7 @@ ${cue.text}`).join("\n\n")}
     return phone;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -56431,15 +57024,15 @@ ${cue.text}`).join("\n\n")}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-rail.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-rail.tsx
   init_tv_strings();
   init_tv_ui();
-  init_sport_icons();
+  init_sport_icons2();
   init_jsx_runtime_shim();
   var RAIL_W_TV = 152;
   var RAIL_W_DESKTOP = 132;
@@ -56496,7 +57089,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -56611,10 +57204,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -56658,12 +57251,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_video_surface();
   init_surface_cutouts();
   init_player_sport();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -56672,12 +57265,12 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -56725,7 +57318,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 36;
   var MAX_CHIPS = 12;
   var REPLAY_DAYS = 3;
@@ -56754,7 +57347,7 @@ ${cue.text}`).join("\n\n")}
     return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -56765,7 +57358,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_ui();
@@ -56822,60 +57415,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
-  init_tv_ui();
-  init_mobile_tokens();
-  init_jsx_runtime_shim();
-  function MobileChips({ items: items2, value, onChange, testId, emphasisKey, dimKeys }) {
-    return /* @__PURE__ */ jsx("div", { "data-testid": testId, "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: items2.map(({ key, label, id }) => {
-      const active4 = key === value;
-      const emphasis = emphasisKey !== void 0 && key === emphasisKey;
-      const dim = dimKeys?.includes(key) ?? false;
-      return /* @__PURE__ */ jsx(
-        "div",
-        {
-          "data-testid": `chip-${id}`,
-          ...station(() => onChange(key), void 0, { "aria-pressed": String(active4) }),
-          style: {
-            minHeight: 34,
-            padding: "0 14px",
-            borderRadius: 999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 14,
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-            /*
-                            OVALD CHIP LÅG PÅ 5 % VITT — på en helsvart sida är det
-                            nästan ingenting, och raden lästes som tom (Jerry 2026-09-20:
-                            "dessa filter på live tv, svår att se, skulle behöva standard
-                            grå/glass"). 12 % är appens vanliga glasyta för ett
-                            ovalt piller och syns utan att konkurrera med det valda, som
-                            ligger kvar på 16 % med sin ljusare kant.
-            
-                            Kanten sitter kvar på BÅDA lägena nu: en osynlig kant på det
-                            ovalda gjorde att chippen bytte storlek när man valde dem.
-                          */
-            background: emphasis ? "#f3f4f8" : active4 ? MT.s16 : MT.s12,
-            border: emphasis ? "1px solid transparent" : `1px solid ${active4 ? MT.line20 : MT.line10}`,
-            color: emphasis ? "#111" : active4 ? MT.text : MT.muted70,
-            fontWeight: active4 ? 600 : 400,
-            opacity: dim ? 0.65 : void 0,
-            cursor: "pointer"
-          },
-          children: label
-        },
-        id
-      );
-    }) });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  init_mobile_chips();
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
   var RECENT_MAX = 8;
@@ -56923,12 +57466,12 @@ ${cue.text}`).join("\n\n")}
       })),
       { key: "__add", label: tt("addPlaylist"), run: () => nav.go("settings", { tab: "playlists" }) }
     ];
-    const pill2 = /* @__PURE__ */ jsxs("div", { "data-testid": "playlist-pill", ...station(() => setPlaylistOpen(true)), style: { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", maxWidth: 180 }, children: [
+    const pill = /* @__PURE__ */ jsxs("div", { "data-testid": "playlist-pill", ...station(() => setPlaylistOpen(true)), style: { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", maxWidth: 180 }, children: [
       /* @__PURE__ */ jsx("span", { style: ellipsis2, children: model.activePlaylistName ?? tt("allPlaylists") }),
       /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 16 }) })
     ] });
     const sheet = playlistOpen ? /* @__PURE__ */ jsx(MobileSheet, { title: tt("playlists"), items: playlistItems, onClose: () => setPlaylistOpen(false), pushLayer: nav.pushLayer, testId: "playlist-sheet" }) : null;
-    const header = /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("liveTv"), right: pill2, close: true, onClose: requestBrowseBack }) });
+    const header = /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("liveTv"), right: pill, close: true, onClose: requestBrowseBack }) });
     if (model.allChannels.length === 0) {
       return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 14 }, children: [
         header,
@@ -57041,7 +57584,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_DESKTOP = 3;
   var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
@@ -57251,7 +57794,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57260,7 +57803,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
   var WINDOW_MS = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
@@ -57285,7 +57828,7 @@ ${cue.text}`).join("\n\n")}
     return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS * 100));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -57315,7 +57858,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57324,7 +57867,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57358,7 +57901,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -57367,14 +57910,14 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -57406,7 +57949,8 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  init_mobile_chips();
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -57475,7 +58019,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -57608,7 +58152,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_jsx_runtime_shim();
   var MAX_GROUPS2 = 12;
   var ROW_STEP3 = 40;
@@ -57733,7 +58277,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57743,7 +58287,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -57781,7 +58325,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57789,7 +58333,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
@@ -57860,9 +58404,10 @@ ${cue.text}`).join("\n\n")}
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
+  init_mobile_chips();
   init_jsx_runtime_shim();
   var MAX_ROWS = 80;
   var ROWS_STEP2 = 80;
@@ -57982,7 +58527,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
@@ -58232,11 +58777,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -58245,7 +58790,7 @@ ${cue.text}`).join("\n\n")}
   init_guide_surface();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-control-row.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -58340,7 +58885,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -58349,11 +58894,11 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -58398,7 +58943,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -58466,7 +59011,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
   var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
@@ -58696,7 +59241,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -58901,7 +59446,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
@@ -59016,7 +59561,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
   function TvGuide(props) {
@@ -59255,7 +59800,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -59263,7 +59808,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -59273,7 +59818,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -59334,7 +59879,7 @@ ${cue.text}`).join("\n\n")}
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
   function TvFavouritesPhone({ model, nav }) {
@@ -59355,7 +59900,7 @@ ${cue.text}`).join("\n\n")}
         setPinnedLiveTvKeys(reorder(keys2, fi, ti));
       }
     });
-    const pill2 = /* @__PURE__ */ jsx(
+    const pill = /* @__PURE__ */ jsx(
       "div",
       {
         "data-testid": "fav-edit-pill",
@@ -59365,7 +59910,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
     return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 4 }, children: [
-      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("favourites"), right: pill2 }) }),
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("favourites"), right: pill }) }),
       /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, marginBottom: 10 }, children: tt("channelsCount", { count: favourites.length }) }),
       favourites.length === 0 ? /* @__PURE__ */ jsx("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24, color: MT.dim, fontSize: 15 }, children: tt("favouritesEmptyPhone") }) : favourites.map((channel, index) => {
         const key = channelKey(channel);
@@ -59430,7 +59975,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
@@ -59510,13 +60055,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
   init_channel_locks();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/channel-detail.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
   init_live_tv_data();
   init_channel_locks();
@@ -59637,12 +60182,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_tv_ui();
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -59654,6 +60199,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_sheet();
   init_mobile_logo();
+  init_mobile_chips();
   init_jsx_runtime_shim();
   var PAST_DAYS = DAY_OFFSETS.filter((o) => o < 0);
   function TvChannelPhone({ model, nav, params }) {
@@ -59821,7 +60367,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_jsx_runtime_shim();
   function TvChannel(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
@@ -59951,7 +60497,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -59959,8 +60505,9 @@ ${cue.text}`).join("\n\n")}
   init_live_tv_ui();
   init_tv_ui();
   init_tv_strings();
+  init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -59994,7 +60541,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -60036,7 +60583,7 @@ ${cue.text}`).join("\n\n")}
     return state2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -60045,6 +60592,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_mobile_tokens();
   init_mobile_icons();
+  init_mobile_chips();
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function TvSearchPhone({ model, nav }) {
@@ -60174,7 +60722,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
     return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
@@ -60289,14 +60837,14 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -60305,10 +60853,10 @@ ${cue.text}`).join("\n\n")}
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/surface-diagnostics.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/surface-diagnostics.ts
   init_surface_cutouts();
   function opaqueAt(x, y) {
     if (typeof document === "undefined" || typeof document.elementsFromPoint !== "function") return "ok\xE4nt";
@@ -60349,7 +60897,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -60399,7 +60947,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -60408,6 +60956,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
   init_mobile_sheet();
+  init_mobile_chips();
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   var MAX_PICKER_ROWS = 200;
@@ -60567,7 +61116,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
     2: { columns: "1fr 1fr", rows: "1fr" },
@@ -60706,7 +61255,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -61234,13 +61783,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -61298,7 +61847,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -61755,7 +62304,7 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -61790,14 +62339,14 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
@@ -61871,7 +62420,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_jsx_runtime_shim();
   var TABS = ["appearance", "content", "playlists", "epg", "parental", "sport"];
@@ -61942,7 +62491,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -61951,7 +62500,7 @@ ${cue.text}`).join("\n\n")}
   init_sport_store();
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-backdrop.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/sport-backdrop.tsx
   init_jsx_runtime_shim();
   function SportBackdropLayer({ choice, phone, onBroken }) {
     if (choice.kind === "none") return null;
@@ -61972,93 +62521,30 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_ctx();
   init_results_controller();
   init_live_poller();
   init_sport_score();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
   init_sport_parts();
   init_sport_score();
+  init_key_card();
   init_sport_store();
+  init_league_jump();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/league-jump.ts
-  init_merge();
-  init_sport_day_model();
-  var YOUR_LEAGUES_MAX = 10;
-  var TOP_LEAGUES_MAX = 6;
-  var OPEN_COUNTRIES = 6;
-  function foldText(s) {
-    return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
-  }
-  var HOME_COUNTRIES = /* @__PURE__ */ new Set(["sweden", "sverige"]);
-  var isHomeCountry = (c) => c !== null && HOME_COUNTRIES.has(foldText(c));
-  function leagueEntries(groups, follows) {
-    const names = /* @__PURE__ */ new Map();
-    for (const g of groups) {
-      const k = foldText(g.league);
-      const set = names.get(k) ?? /* @__PURE__ */ new Set();
-      set.add(g.key);
-      names.set(k, set);
-    }
-    return groups.map((g) => {
-      const duplicate = (names.get(foldText(g.league))?.size ?? 0) > 1;
-      return {
-        key: g.key,
-        sport: g.sport,
-        league: g.league,
-        country: g.country,
-        label: duplicate && g.country ? `${g.league} \xB7 ${g.country}` : g.league,
-        count: g.matches.length,
-        live: g.matches.filter((m) => m.status === "live").length,
-        relevant: relevantMatches(g.matches, follows).length > 0,
-        followed: g.matches.some((m) => followState(m, follows).league)
-      };
-    });
-  }
-  var byCount = (a, b) => b.count - a.count || a.label.localeCompare(b.label);
-  function yourLeagues(entries) {
-    const relevant = entries.filter((e) => e.relevant);
-    if (relevant.length === 0) return { entries: [...entries].sort(byCount).slice(0, TOP_LEAGUES_MAX), fallback: true };
-    const rank = (e) => e.followed ? 0 : e.live > 0 ? 1 : 2;
-    return { entries: [...relevant].sort((a, b) => rank(a) - rank(b) || byCount(a, b)).slice(0, YOUR_LEAGUES_MAX), fallback: false };
-  }
-  function countryGroups(entries) {
-    const map = /* @__PURE__ */ new Map();
-    for (const e of entries) {
-      const k = e.country ? foldText(e.country) : "";
-      const g = map.get(k) ?? { country: e.country, total: 0, live: 0, entries: [], collapsed: false };
-      g.total += e.count;
-      g.live += e.live;
-      g.entries.push(e);
-      map.set(k, g);
-    }
-    const tier = (g) => isHomeCountry(g.country) ? 0 : g.country === null ? 2 : 1;
-    const list = [...map.values()].sort((a, b) => tier(a) - tier(b) || b.total - a.total || (a.country ?? "").localeCompare(b.country ?? ""));
-    return list.map((g, i) => ({ ...g, entries: [...g.entries].sort(byCount), collapsed: i >= OPEN_COUNTRIES }));
-  }
-  function searchLeagues(entries, query) {
-    const q = foldText(query);
-    if (!q) return [];
-    const words = q.split(/\s+/);
-    const hits = entries.filter((e) => {
-      const hay = `${foldText(e.league)} ${e.country ? foldText(e.country) : ""}`;
-      return words.every((w) => hay.includes(w));
-    });
-    const prefix = (e) => foldText(e.league).startsWith(q) ? 0 : 1;
-    return hits.sort((a, b) => prefix(a) - prefix(b) || byCount(a, b));
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
-  init_sport_icons();
+  init_tv_text_entry();
+  init_league_jump();
+  init_sport_icons2();
   init_sport_parts();
   init_jsx_runtime_shim();
   function LiveDot({ size = dp(9) }) {
@@ -62155,30 +62641,10 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/results-model.ts
-  var isLive = (m) => m.status === "live";
-  var isMine = (m) => m.sources.length > 0 && !m.resultOnly;
-  function groupResults(matches, filter) {
-    const eligible = matches.filter((m) => m.coverage === "full" && m.fixture?.leagueId);
-    const shown = eligible.filter((m) => filter === "live" ? isLive(m) : filter === "mine" ? isMine(m) : true);
-    const groups = /* @__PURE__ */ new Map();
-    for (const m of shown) {
-      const key = `${m.kind}|${m.fixture.leagueId}`;
-      const g = groups.get(key) ?? { key, sport: m.kind, league: m.league, leagueId: m.fixture.leagueId, season: m.fixture.season ?? "", round: m.round ?? null, country: m.fixture.country ?? null, matches: [] };
-      g.matches.push(m);
-      groups.set(key, g);
-    }
-    for (const g of groups.values()) g.matches.sort((a, b) => a.start - b.start);
-    return { groups: [...groups.values()], liveCount: eligible.filter(isLive).length, mineCount: eligible.filter(isMine).length };
-  }
-  function formLetters(form, tt) {
-    const map = { W: tt("sportFormW"), D: tt("sportFormD"), L: tt("sportFormL") };
-    return (form ?? "").toUpperCase().split("").filter((c) => c === "W" || c === "D" || c === "L").map((kind) => ({ kind, letter: map[kind] }));
-  }
-  var FORM_COLOR = { W: "#3cd6a3", D: "rgba(243,244,248,0.45)", L: "#e0776a" };
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  init_results_model();
   init_surface();
+  init_results_model();
   init_jsx_runtime_shim();
   function StandingsTable({ rows, tt }) {
     const cell = { padding: `${dp(6)}px ${dp(8)}px`, fontSize: dp(15) };
@@ -62271,11 +62737,11 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_parts();
-  init_sport_icons();
+  init_sport_icons2();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_model();
@@ -62284,22 +62750,19 @@ ${cue.text}`).join("\n\n")}
   init_score_model();
   init_sport_score();
   init_sport_parts();
-  init_sport_icons();
+  init_sport_icons2();
   init_surface();
   init_jsx_runtime_shim();
   function SportMatchday({ ctx, matches, dayFrom }) {
     const hero = featuredMatch(matches, ctx.follows, ctx.now);
     const next = nextOnYourChannels(matches, ctx.now, hero?.id ?? null);
-    const { live: live2, later, finished } = splitSections(matches, ctx.now);
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(28) }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(20), alignItems: "stretch" }, children: [
         hero ? /* @__PURE__ */ jsx(SportHero, { ctx, match: hero }) : null,
         /* @__PURE__ */ jsx(NextOnChannels, { ctx, matches: next })
       ] }),
       /* @__PURE__ */ jsx(MatchdayTimeline, { ctx, matches, dayFrom }),
-      /* @__PURE__ */ jsx(CardRow, { title: ctx.tt("sportLiveNow"), matches: live2, ctx, testId: "sport-section-live" }),
-      /* @__PURE__ */ jsx(CardRow, { title: ctx.tt("sportLater"), matches: later, ctx, testId: "sport-section-later" }),
-      /* @__PURE__ */ jsx(CardRow, { title: ctx.tt("sportFinished"), matches: finished, ctx, testId: "sport-section-finished" })
+      /* @__PURE__ */ jsx(MatchStrip, { title: ctx.tt("sportMatches"), matches, ctx })
     ] });
   }
   function SportHero({ ctx, match }) {
@@ -62423,7 +62886,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_epg();
@@ -62433,7 +62896,7 @@ ${cue.text}`).join("\n\n")}
   init_score_model();
   init_sport_parts();
   init_sport_score();
-  init_sport_icons();
+  init_sport_icons2();
   init_surface();
   init_jsx_runtime_shim();
   var avatarCol = { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(8), width: dp(150), flexShrink: 0, cursor: "pointer" };
@@ -62445,7 +62908,10 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(32) }, children: [
       /* @__PURE__ */ jsxs("section", { "data-testid": "feed-teams", style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(14) }, children: [
-          /* @__PURE__ */ jsx("span", { style: sectionTitle, children: ctx.tt("sportYourTeams") }),
+          /* @__PURE__ */ jsxs("span", { style: { ...sectionTitle, display: "inline-flex", alignItems: "center", gap: dp(12) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { color: TV2.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(26), filled: true }) }),
+            ctx.tt("sportYourTeams")
+          ] }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: ctx.tt("sportYourTeamsHint") })
         ] }),
         /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", gap: dp(24), overflowX: "auto", padding: `${dp(8)}px ${dp(6)}px` }, children: [
@@ -62494,7 +62960,7 @@ ${cue.text}`).join("\n\n")}
                 /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, ...ellipsis3 }, children: matchTitle(m) }),
                 /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted, ...ellipsis3 }, children: [m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(" \xB7 ") })
               ] }),
-              followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24", display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(22), filled: true }) }) : null
+              followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { "data-testid": "feed-plan-fav", style: { color: TV2.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(22), filled: true }) }) : null
             ] }, m.id);
           }) }),
           /* @__PURE__ */ jsxs("div", { "data-testid": "sport-evening", style: { ...sportCardStyle, width: dp(420), flexShrink: 0, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10) }, children: [
@@ -62539,12 +63005,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
+  init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/follow-search.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/follow-search.ts
   init_budget();
   init_merge();
   var MIN_PROVIDER_QUERY = 3;
@@ -62589,14 +63056,15 @@ ${cue.text}`).join("\n\n")}
     return res.filter((x) => x.kind === "team").map(({ kind: _k, sport: _s, ...t }) => t);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_merge();
   init_sport_model();
   init_sport_day_model();
   init_sport_store();
   init_sport_ctx();
+  init_score_model();
   init_sport_parts();
-  init_sport_icons();
+  init_sport_icons2();
   init_surface();
   init_jsx_runtime_shim();
   var same2 = (a, b) => a.kind === b.kind && a.key === b.key;
@@ -62632,21 +63100,32 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("span", { style: sectionTitle, children: ctx.kindLabel(kind) }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.dim }, children: list.length })
         ] }),
-        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: dp(16) }, children: list.map((f) => /* @__PURE__ */ jsx(FollowCard, { ctx, follow: f, days }, `${f.kind}:${f.key}`)) })
+        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${dp(620)}px, 1fr))`, gap: dp(10) }, children: list.map((f) => /* @__PURE__ */ jsx(FollowRow, { ctx, follow: f, days }, `${f.kind}:${f.key}`)) })
       ] }, kind))
     ] });
   }
-  function FollowCard({ ctx, follow, days }) {
+  function FollowRow({ ctx, follow, days }) {
     const following = isFollowing(ctx.follows, follow);
     const next = nextMatchFor(follow, days, ctx.now);
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "follow-card", "data-following": following ? "1" : "0", style: { ...sportCardStyle, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10), opacity: following ? 1 : 0.55 }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-start" }, children: [
-        /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(66) }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "follow-star", ...station(() => toggleFollow(follow)), "aria-pressed": following ? "true" : "false", "aria-label": following ? ctx.tt("sportFollowingName", { name: follow.name }) : ctx.tt("sportFollowName", { name: follow.name }), style: { marginLeft: "auto", color: following ? "#fbbf24" : TV2.dim, display: "inline-flex", cursor: "pointer" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(28), filled: following }) })
+    const info = followNext(ctx, follow, next);
+    const crest = crestForFollow(follow, days.flatMap((d) => d?.matches ?? []));
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "follow-row", "data-following": following ? "1" : "0", style: { ...sportCardStyle, minHeight: dp(88), display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(10)}px ${dp(12)}px ${dp(10)}px ${dp(16)}px`, opacity: following ? 1 : 0.55, boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsxs("div", { ...next ? station(() => ctx.openMatch(next)) : {}, style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: dp(16), cursor: next ? "pointer" : "default", borderRadius: dp(10) }, children: [
+        /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(56), src: crest }),
+        /* @__PURE__ */ jsxs("div", { style: { width: dp(210), flexShrink: 0, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(21), fontWeight: 600, ...ellipsis3 }, children: follow.name }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: TV2.dim, ...ellipsis3 }, children: ctx.kindLabel(follow.sport) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "follow-next", "data-live": info?.live ? "1" : "0", style: { flex: 1, minWidth: 0 }, children: info ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 700, fontVariantNumeric: "tabular-nums", color: info.live ? TV2.liveText : TV2.text, ...ellipsis3 }, children: info.when }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted, ...ellipsis3 }, children: info.what })
+        ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.dim, ...ellipsis3 }, children: ctx.tt("sportNoUpcoming") }) })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis3 }, children: follow.name }),
-      /* @__PURE__ */ jsx("span", { ...next ? station(() => ctx.openMatch(next)) : {}, style: { fontSize: dp(15), color: TV2.muted, ...ellipsis3 }, children: followNextLine(ctx, follow, next) })
+      /* @__PURE__ */ jsx("div", { "data-testid": "follow-heart", ...station(() => toggleFollow(follow)), "aria-pressed": following ? "true" : "false", "aria-label": following ? ctx.tt("sportFollowingName", { name: follow.name }) : ctx.tt("sportFollowName", { name: follow.name }), style: { width: dp(56), height: dp(56), minHeight: dp(56), borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: following ? TV2.accMix(22) : TV2.s12, color: following ? TV2.acc : TV2.text, cursor: "pointer" }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(24), filled: following }) })
     ] });
+  }
+  function HeartMark({ on }) {
+    return /* @__PURE__ */ jsx("span", { "data-testid": "follow-row-heart", "data-on": on ? "1" : "0", style: { marginLeft: "auto", flexShrink: 0, display: "inline-flex", color: on ? TV2.acc : TV2.dim }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(24), filled: on }) });
   }
   function FollowPicker({ ctx, days, onClose }) {
     const [sport, setSport] = useState("all");
@@ -62716,29 +63195,29 @@ ${cue.text}`).join("\n\n")}
         rows: [...rows.map((c, index) => {
           const on = isFollowing(ctx.follows, c) || isFollowing(getFollows(), c);
           return /* @__PURE__ */ jsxs("div", { "data-testid": `follow-row-${c.key}`, ...station(() => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name }), void 0, index === 0 ? { "data-init": "" } : void 0), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
-            /* @__PURE__ */ jsx(Check, { on, label: c.name }),
             /* @__PURE__ */ jsx(Crest, { name: c.name, colorKey: c.key, size: dp(46) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: c.name }),
               /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis3 }, children: ctx.kindLabel(c.sport) })
-            ] })
+            ] }),
+            /* @__PURE__ */ jsx(HeartMark, { on })
           ] }, `${c.kind}:${c.key}`);
         }), ...extra.map(([hit, follow]) => {
           const on = isFollowing(ctx.follows, follow) || isFollowing(getFollows(), follow);
           return /* @__PURE__ */ jsxs("div", { "data-testid": `follow-hit-${hit.kind}-${hit.id}`, ...station(() => toggleFollow(follow)), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
-            /* @__PURE__ */ jsx(Check, { on, label: hit.name }),
             /* @__PURE__ */ jsx(Crest, { name: hit.name, colorKey: follow.key, src: hit.crest, size: dp(46) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: hit.name }),
               /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis3 }, children: [ctx.kindLabel(hit.sport), hit.country].filter(Boolean).join(" \xB7 ") })
-            ] })
+            ] }),
+            /* @__PURE__ */ jsx(HeartMark, { on })
           ] }, `hit-${hit.kind}-${hit.id}`);
         })]
       }
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -62750,7 +63229,7 @@ ${cue.text}`).join("\n\n")}
   init_sport_parts();
   init_sport_score();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-match-center-data.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-match-center-data.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -62759,6 +63238,45 @@ ${cue.text}`).join("\n\n")}
   init_results_controller();
   init_live_poller();
   init_sport_store();
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/event-timeline.ts
+  var REGULATION = {
+    football: { length: 90, periods: [45] },
+    hockey: { length: 60, periods: [20, 40] },
+    handball: { length: 60, periods: [30] },
+    basketball: { length: 48, periods: [12, 24, 36] }
+  };
+  function markerKind(e) {
+    if (e.type === "goal") return "goal";
+    if (e.type === "penalty") return "penalty";
+    if (e.type === "card") return /red/i.test(e.detail) ? "red" : "yellow";
+    return null;
+  }
+  function eventTimeline(events, kind, liveMinute = null) {
+    const base = REGULATION[kind] ?? { length: 90, periods: [] };
+    const last2 = Math.max(0, ...events.map((e) => e.minute ?? 0));
+    let length = base.length;
+    let periods = base.periods;
+    if (last2 > base.length) {
+      if (kind === "football") {
+        length = 120;
+        periods = [...base.periods, 90, 105];
+      } else if (kind === "hockey") {
+        length = 65;
+        periods = [...base.periods, 60];
+      } else length = last2;
+    }
+    const pct2 = (minute) => Math.min(Math.max(minute, 0), length) / length * 100;
+    const markers = [];
+    events.forEach((e, index) => {
+      const k = markerKind(e);
+      if (!k || e.minute == null) return;
+      markers.push({ kind: k, side: e.side, minute: e.minute, at: pct2(e.minute), index });
+    });
+    return { length, periods, markers, now: liveMinute == null ? null : pct2(liveMinute) };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-match-center-data.tsx
   init_jsx_runtime_shim();
   var FOUR_HOURS = 4 * 36e5;
   function eventLabel(e, tt) {
@@ -62825,13 +63343,20 @@ ${cue.text}`).join("\n\n")}
         ] }),
         /* @__PURE__ */ jsx(Toggle, { on: alertOn })
       ] }),
-      detail && detail.events.length > 0 ? /* @__PURE__ */ jsxs("section", { children: [
+      detail && detail.events.length > 0 ? /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
         /* @__PURE__ */ jsx("div", { style: h2, children: tt("sportEvents") }),
-        detail.events.map((e, i) => /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: `${dp(48)}px ${dp(110)}px 1fr`, gap: dp(8), padding: `${dp(6)}px 0`, fontSize: dp(15), borderTop: `1px solid ${TV2.line}` }, children: [
-          /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: e.minute != null ? `${e.minute}'${e.extra ? `+${e.extra}` : ""}` : "" }),
-          /* @__PURE__ */ jsx("span", { children: eventLabel(e, tt) }),
-          /* @__PURE__ */ jsx("span", { children: [e.player, e.assist ? `(${e.assist})` : null, sideName(e.side) ? `\xB7 ${sideName(e.side)}` : null].filter(Boolean).join(" ") })
-        ] }, i))
+        /* @__PURE__ */ jsx(EventTimelineView, { match, events: detail.events }),
+        detail.events.map((e, i) => {
+          const kind = markerKind(e);
+          return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-event", style: { display: "grid", gridTemplateColumns: `${dp(56)}px ${dp(20)}px 1fr`, alignItems: "center", gap: dp(10), padding: `${dp(6)}px 0`, fontSize: dp(16), borderTop: `1px solid ${TV2.line}` }, children: [
+            /* @__PURE__ */ jsx("span", { style: { color: TV2.dim, fontVariantNumeric: "tabular-nums" }, children: e.minute != null ? `${e.minute}'${e.extra ? `+${e.extra}` : ""}` : "" }),
+            /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", justifyContent: "center" }, children: kind ? /* @__PURE__ */ jsx(Marker, { kind }) : null }),
+            /* @__PURE__ */ jsxs("span", { style: { minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("span", { style: { fontWeight: 600 }, children: eventLabel(e, tt) }),
+              /* @__PURE__ */ jsx("span", { style: { color: TV2.muted }, children: [e.player ? ` \xB7 ${e.player}` : "", e.assist ? ` (${e.assist})` : "", sideName(e.side) ? ` \xB7 ${sideName(e.side)}` : ""].join("") })
+            ] })
+          ] }, i);
+        })
       ] }) : null,
       detail && detail.stats.length > 0 ? /* @__PURE__ */ jsxs("section", { children: [
         /* @__PURE__ */ jsx("div", { style: h2, children: tt("sportStats") }),
@@ -62865,27 +63390,55 @@ ${cue.text}`).join("\n\n")}
       ] }) : null
     ] });
   }
+  var MARKER_COLOR = { goal: TV2.acc, yellow: "#facc15", red: "#ef4444", penalty: TV2.muted };
+  function Marker({ kind }) {
+    const goal = kind === "goal";
+    return /* @__PURE__ */ jsx("span", { "data-marker": kind, "aria-hidden": "true", style: { display: "inline-block", width: goal ? dp(14) : dp(10), height: dp(14), borderRadius: goal ? 999 : dp(2), background: MARKER_COLOR[kind], boxShadow: goal ? `0 0 0 ${dp(2)}px rgba(0,0,0,0.5)` : void 0 } });
+  }
+  function EventTimelineView({ match, events }) {
+    const t = eventTimeline(events, match.kind, match.status === "live" ? match.minute ?? null : null);
+    const ticks = [0, ...t.periods, t.length];
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-timeline", "data-length": t.length, style: { position: "relative", height: dp(76), margin: `0 ${dp(8)}px` }, children: [
+      /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", left: 0, right: 0, top: dp(30), height: dp(2), borderRadius: dp(2), background: TV2.s14 } }),
+      t.now != null ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", left: 0, top: dp(30), height: dp(2), width: `${t.now}%`, background: TV2.acc } }) : null,
+      t.periods.map((p) => /* @__PURE__ */ jsx("div", { "data-period": p, "aria-hidden": "true", style: { position: "absolute", left: `${p / t.length * 100}%`, top: dp(20), height: dp(22), width: dp(2), marginLeft: -dp(1), background: TV2.lineStrong } }, p)),
+      ticks.map((m, i) => /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: `${m / t.length * 100}%`, top: dp(52), transform: i === 0 ? "none" : i === ticks.length - 1 ? "translateX(-100%)" : "translateX(-50%)", fontSize: dp(14), color: TV2.dim, fontVariantNumeric: "tabular-nums" }, children: `${m}'` }, `${m}-${i}`)),
+      t.markers.map((mk) => {
+        const e = events[mk.index];
+        return /* @__PURE__ */ jsx("span", { "data-testid": "mc-marker", "data-kind": mk.kind, "data-side": mk.side ?? "", title: `${mk.minute}' ${e.player ?? ""}`.trim(), style: { position: "absolute", left: `${mk.at}%`, top: mk.side === "away" ? dp(36) : dp(10), transform: "translateX(-50%)", display: "inline-flex" }, children: /* @__PURE__ */ jsx(Marker, { kind: mk.kind }) }, mk.index);
+      }),
+      t.now != null ? /* @__PURE__ */ jsx("div", { "data-testid": "mc-timeline-now", "aria-hidden": "true", style: { position: "absolute", left: `${t.now}%`, top: dp(16), height: dp(30), width: dp(3), marginLeft: -dp(1), background: TV2.acc, boxShadow: `0 0 ${dp(8)}px ${TV2.acc}` } }) : null
+    ] });
+  }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
-  init_sport_icons();
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  init_sport_icons2();
   init_surface();
   init_jsx_runtime_shim();
-  var pill = (on) => ({
-    height: dp(52),
-    minHeight: dp(52),
-    padding: `0 ${dp(20)}px`,
+  var iconBtn = (on) => ({
+    height: dp(44),
+    minHeight: dp(44),
+    minWidth: dp(44),
+    padding: `0 ${dp(10)}px`,
+    boxSizing: "border-box",
     borderRadius: 999,
     display: "inline-flex",
     alignItems: "center",
-    gap: dp(8),
-    fontSize: dp(17),
-    fontWeight: 600,
+    justifyContent: "center",
+    gap: dp(6),
     cursor: "pointer",
-    whiteSpace: "nowrap",
-    background: on ? "rgba(251,191,36,0.16)" : TV2.s10,
-    color: on ? "#fde68a" : TV2.text,
-    border: `1px solid ${on ? "rgba(251,191,36,0.45)" : TV2.lineCard}`
+    flexShrink: 0,
+    background: on ? TV2.accMix(18) : TV2.s08,
+    color: on ? TV2.acc : TV2.muted,
+    border: `1px solid ${on ? TV2.accMix(60) : TV2.lineCard}`
   });
+  function FavIcon({ testId, on, name, crest, ctx, onToggle }) {
+    const label = on ? ctx.tt("sportFollowingName", { name }) : ctx.tt("sportFollowName", { name });
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onToggle), "aria-pressed": on ? "true" : "false", "aria-label": label, title: label, style: iconBtn(on), children: [
+      crest ? /* @__PURE__ */ jsx(Crest, { name, colorKey: crest.colorKey, size: dp(26), src: crest.src }) : null,
+      /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(20), filled: on })
+    ] });
+  }
   function SportMatchCenter({ ctx, match, onClose }) {
     const rootRef = useRef(null);
     const openerRef = useRef(null);
@@ -62920,45 +63473,29 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx("div", { "data-live-tv-layer": "", "aria-hidden": "true", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 59, background: TV2.scrim } }),
       /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "match-center", "data-panel-root": "", "data-live-tv-layer": "", "data-scroll": "", role: "dialog", "aria-label": matchTitle(match), style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, ...sportSurface(SPORT_PANEL_BG), borderLeft: "1px solid rgba(255,255,255,0.16)", padding: `${belowTitleBar(dp(28))} ${dp(32)}px ${dp(28)}px`, display: "flex", flexDirection: "column", gap: dp(20), overflowY: "auto", boxSizing: "border-box" }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
-          /* @__PURE__ */ jsx(StatusTag, { match, ctx }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted, ...ellipsis3 }, children: context }),
-          /* @__PURE__ */ jsx(RoundBtn, { "data-testid": "mc-close", ...station(onClose), "aria-label": ctx.tt("sportClose"), style: { marginLeft: "auto" }, children: "\u2715" })
-        ] }),
-        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: dp(20) }, children: match.home && match.away ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(10), minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: dp(99), src: match.homeCrest }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis3 }, children: match.home })
+        /* @__PURE__ */ jsxs("div", { "data-testid": "mc-head", style: { display: "flex", alignItems: "flex-start", gap: dp(16) }, children: [
+          match.home && match.away ? /* @__PURE__ */ jsxs("span", { style: { display: "flex", gap: dp(6), flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: dp(56), src: match.homeCrest }),
+            /* @__PURE__ */ jsx(Crest, { name: match.away, colorKey: match.awayKey ?? match.away, size: dp(56), src: match.awayCrest })
+          ] }) : null,
+          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+            /* @__PURE__ */ jsx("div", { "data-testid": "mc-title", style: { fontSize: dp(30), fontWeight: 600, lineHeight: 1.15, ...ellipsis3 }, children: matchTitle(match) }),
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx(StatusTag, { match, ctx }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted, ...ellipsis3 }, children: context })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { "data-row": "", "data-testid": "mc-actions", style: { display: "flex", gap: dp(10), flexWrap: "wrap" }, children: [
+              match.home && match.homeKey ? /* @__PURE__ */ jsx(FavIcon, { testId: "mc-follow-home", on: fs.home, name: match.home, crest: { colorKey: match.homeKey, src: match.homeCrest }, ctx, onToggle: () => follow("team", match.homeKey, match.home) }) : null,
+              match.away && match.awayKey ? /* @__PURE__ */ jsx(FavIcon, { testId: "mc-follow-away", on: fs.away, name: match.away, crest: { colorKey: match.awayKey, src: match.awayCrest }, ctx, onToggle: () => follow("team", match.awayKey, match.away) }) : null,
+              match.leagueKey ? /* @__PURE__ */ jsx(FavIcon, { testId: "mc-follow-league", on: fs.league, name: match.league, ctx, onToggle: () => follow("league", match.leagueKey, match.league) }) : null,
+              ranked.length > 0 && st !== "finished" ? /* @__PURE__ */ jsx("div", { "data-testid": "mc-remind", ...station(() => ctx.toggleRemind(match)), "aria-pressed": ctx.isReminded(match) ? "true" : "false", "aria-label": ctx.isReminded(match) ? ctx.tt("sportReminded") : ctx.tt("sportRemindMe"), title: ctx.isReminded(match) ? ctx.tt("sportReminded") : ctx.tt("sportRemindMe"), style: iconBtn(ctx.isReminded(match)), children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(20) }) }) : null
+            ] })
           ] }),
-          /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(4) }, children: [
-            showsScore(match) ? /* @__PURE__ */ jsx(MatchScore, { match, size: "hero" }) : null,
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(24), fontWeight: 600, color: st === "live" ? TV2.liveText : TV2.muted, whiteSpace: "nowrap" }, children: heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx) })
+          /* @__PURE__ */ jsxs("span", { "data-testid": "mc-scoreline", style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: dp(4), flexShrink: 0 }, children: [
+            showsScore(match) ? /* @__PURE__ */ jsx("span", { "data-testid": "mc-score", style: { padding: `${dp(2)}px ${dp(14)}px`, borderRadius: dp(10), background: st === "live" ? TV2.accMix(22) : TV2.s12, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MatchScore, { match, size: "card" }) }) : null,
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600, fontVariantNumeric: "tabular-nums", color: st === "live" ? TV2.acc : TV2.muted, whiteSpace: "nowrap" }, children: heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx) })
           ] }),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(10), minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx(Crest, { name: match.away, colorKey: match.awayKey ?? match.away, size: dp(99), src: match.awayCrest }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis3 }, children: match.away })
-          ] })
-        ] }) : /* @__PURE__ */ jsxs("div", { style: { gridColumn: "1 / 4", textAlign: "center" }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(30), fontWeight: 600 }, children: matchTitle(match) }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), color: TV2.muted }, children: timeLine(match, ctx) })
-        ] }) }),
-        /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", gap: dp(10), flexWrap: "wrap" }, children: [
-          match.home && match.homeKey ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-follow-home", ...station(() => follow("team", match.homeKey, match.home)), "aria-pressed": fs.home ? "true" : "false", style: pill(fs.home), children: [
-            /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(18), filled: fs.home }),
-            fs.home ? ctx.tt("sportFollowingName", { name: match.home }) : ctx.tt("sportFollowName", { name: match.home })
-          ] }) : null,
-          match.away && match.awayKey ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-follow-away", ...station(() => follow("team", match.awayKey, match.away)), "aria-pressed": fs.away ? "true" : "false", style: pill(fs.away), children: [
-            /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(18), filled: fs.away }),
-            fs.away ? ctx.tt("sportFollowingName", { name: match.away }) : ctx.tt("sportFollowName", { name: match.away })
-          ] }) : null,
-          match.leagueKey ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-follow-league", ...station(() => follow("league", match.leagueKey, match.league)), "aria-pressed": fs.league ? "true" : "false", style: pill(fs.league), children: [
-            /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(18), filled: fs.league }),
-            fs.league ? ctx.tt("sportFollowingName", { name: match.league }) : ctx.tt("sportFollowName", { name: match.league })
-          ] }) : null,
-          ranked.length > 0 && st !== "finished" ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-remind", ...station(() => ctx.toggleRemind(match)), "aria-pressed": ctx.isReminded(match) ? "true" : "false", style: pill(false), children: [
-            /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(18) }),
-            ctx.isReminded(match) ? ctx.tt("sportReminded") : ctx.tt("sportRemindMe")
-          ] }) : null
+          /* @__PURE__ */ jsx(RoundBtn, { "data-testid": "mc-close", ...station(onClose), "aria-label": ctx.tt("sportClose"), children: "\u2715" })
         ] }),
         /* @__PURE__ */ jsx("span", { style: overline, children: ctx.tt("sportWhereToWatch") }),
         /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: ranked.map((s, i) => {
@@ -62981,14 +63518,10 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx(SportIcons.Play, { size: dp(20) }),
           chosen.quality ? ctx.tt("sportWatchQuality", { quality: chosen.quality }) : ctx.tt("sportWatch")
         ] }) : null,
-        /* @__PURE__ */ jsxs("div", { "data-testid": "mc-pick-channel", ...station(() => setPicking(true)), style: { display: "flex", alignItems: "center", gap: dp(14), padding: `${dp(14)}px ${dp(16)}px`, borderRadius: dp(12), background: TV2.s08, border: `1px solid ${TV2.lineCard}`, cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600 }, children: ctx.tt("sportPickChannel") }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted }, children: ctx.tt("sportPickChannelSub") })
-          ] }),
-          /* @__PURE__ */ jsx("span", { "aria-hidden": "true", children: "\u203A" })
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(20), flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsx("span", { "data-testid": "mc-pick-channel", ...station(() => setPicking(true)), title: ctx.tt("sportPickChannelSub"), style: { fontSize: dp(17), color: TV2.accText, cursor: "pointer", padding: `${dp(8)}px ${dp(4)}px` }, children: ctx.tt("sportPickChannel") }),
+          override ? /* @__PURE__ */ jsx("span", { "data-testid": "mc-clear-override", ...station(() => setOverride(match.id, null)), style: { fontSize: dp(17), color: TV2.accText, cursor: "pointer", padding: `${dp(8)}px ${dp(4)}px` }, children: ctx.tt("sportUseAutomatic") }) : null
         ] }),
-        override ? /* @__PURE__ */ jsx("div", { "data-testid": "mc-clear-override", ...station(() => setOverride(match.id, null)), style: { fontSize: dp(17), color: TV2.accText, cursor: "pointer", padding: `${dp(8)}px ${dp(4)}px` }, children: ctx.tt("sportUseAutomatic") }) : null,
         /* @__PURE__ */ jsx(MatchCenterData, { match })
       ] }),
       picking ? /* @__PURE__ */ jsx(
@@ -63007,238 +63540,31 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_mobile_tokens();
+  init_mobile_chips();
   init_mobile_sheet();
   init_sport_model();
+  init_live_tv_ui();
+  init_mobile_logo();
+  init_sport_icons();
   init_sport_epg();
   init_sport_day_model();
   init_sport_store();
+  init_sport_results_phone();
+  init_mobile_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
-  init_react_shim();
-  init_plugin_sdk();
-  init_tv_ui();
-  init_tv_strings();
-  init_mobile_tokens();
-  init_mobile_sheet();
-  init_score_model();
-  init_sport_model();
-  init_sport_store();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
-  init_react_shim();
-  init_tv_ui();
-  init_tv_strings();
-  init_mobile_tokens();
-  init_jsx_runtime_shim();
-  var dot = /* @__PURE__ */ jsx("span", { "data-testid": "league-live-dot", "aria-hidden": "true", style: { width: 7, height: 7, borderRadius: 999, background: MT.live, flexShrink: 0 } });
-  var chipStyle = { minHeight: 34, padding: "0 14px", borderRadius: 999, display: "flex", alignItems: "center", gap: 6, fontSize: 14, whiteSpace: "nowrap", flexShrink: 0, background: MT.s12, border: `1px solid ${MT.line10}`, color: MT.muted70, cursor: "pointer" };
-  function PhoneYourLeagues({ entries, fallback, onJump, onMore }) {
-    const { tt } = useTvText();
-    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 2 }, children: [
-      /* @__PURE__ */ jsx("span", { style: sectionLabel, children: fallback ? tt("sportTopLeagues") : tt("sportYourLeagues") }),
-      /* @__PURE__ */ jsxs("div", { "data-testid": "phone-your-leagues", "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: [
-        entries.map((e) => /* @__PURE__ */ jsxs("div", { "data-testid": `phone-league-chip-${e.key}`, ...station(() => onJump(e.key)), style: chipStyle, children: [
-          e.live > 0 ? dot : null,
-          /* @__PURE__ */ jsx("span", { children: e.label }),
-          /* @__PURE__ */ jsx("span", { style: { color: MT.dim, fontVariantNumeric: "tabular-nums" }, children: e.count })
-        ] }, e.key)),
-        /* @__PURE__ */ jsx("div", { "data-testid": "phone-league-more", ...station(onMore), style: { ...chipStyle, color: MT.text, border: `1px solid ${MT.line20}` }, children: tt("sportMoreLeagues") })
-      ] })
-    ] });
-  }
-  function Row2({ entry, showCountry, sportLabel, onPick }) {
-    const sub = [showCountry ? entry.country : null, sportLabel].filter(Boolean).join(" \xB7 ");
-    return /* @__PURE__ */ jsxs("div", { "data-testid": `phone-league-row-${entry.key}`, ...station(onPick), style: { minHeight: 52, padding: "6px 20px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${MT.line07}`, cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: entry.league }),
-        sub ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: sub }) : null
-      ] }),
-      entry.live > 0 ? dot : null,
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, fontVariantNumeric: "tabular-nums" }, children: entry.count })
-    ] });
-  }
-  function PhoneLeagueSheet({ entries, kindLabel: kindLabel2, onPick, onClose, pushLayer }) {
-    const { tt } = useTvText();
-    const [query, setQuery] = useState("");
-    const [toggled, setToggled] = useState({});
-    const onCloseRef = useRef(onClose);
-    useEffect(() => {
-      onCloseRef.current = onClose;
-    });
-    useEffect(() => pushLayer(() => onCloseRef.current()), [pushLayer]);
-    const searching = foldText(query) !== "";
-    const hits = searching ? searchLeagues(entries, query) : [];
-    const pick2 = (key) => {
-      onClose();
-      onPick(key);
-    };
-    const sportOf = (e) => kindLabel2 ? kindLabel2(e.sport) : null;
-    return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx("div", { "data-testid": "sheet-scrim", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 70, background: MT.scrim } }),
-      /* @__PURE__ */ jsxs(
-        "div",
-        {
-          role: "dialog",
-          "aria-modal": "true",
-          "data-testid": "phone-league-sheet",
-          "data-live-tv-layer": "",
-          "data-panel-root": "",
-          style: { position: "fixed", left: 8, right: 8, bottom: 8, zIndex: 71, borderRadius: 26, boxSizing: "border-box", background: TV2.panel, border: `1px solid ${MT.line10}`, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", color: MT.text, fontFamily: MT.font, overflow: "hidden", paddingBottom: MT.SAFE_BOTTOM, display: "flex", flexDirection: "column", maxHeight: "85vh" },
-          children: [
-            /* @__PURE__ */ jsxs("div", { style: { padding: "18px 20px 12px", display: "flex", flexDirection: "column", gap: 10, borderBottom: `1px solid ${MT.line08}` }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 16, fontWeight: 600 }, children: tt("sportAllLeagues") }),
-              /* @__PURE__ */ jsx(
-                "input",
-                {
-                  "data-testid": "phone-league-search",
-                  value: query,
-                  placeholder: tt("sportLeagueSearch"),
-                  onChange: (e) => setQuery(e.target.value),
-                  autoComplete: "off",
-                  spellCheck: false,
-                  enterKeyHint: "search",
-                  style: { height: MT.HIT, borderRadius: 12, border: `1px solid ${MT.line14}`, background: "rgba(0,0,0,0.25)", color: MT.text, padding: "0 14px", fontSize: 16 }
-                }
-              )
-            ] }),
-            /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: searching ? hits.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: 20, fontSize: 15, color: MT.muted }, children: tt("sportLeagueNoHits") }) : hits.map((e) => /* @__PURE__ */ jsx(Row2, { entry: e, showCountry: true, sportLabel: sportOf(e), onPick: () => pick2(e.key) }, e.key)) : countryGroups(entries).map((g) => {
-              const id = g.country ? foldText(g.country) : "";
-              const open2 = toggled[id] ?? !g.collapsed;
-              return /* @__PURE__ */ jsxs("section", { "data-testid": `phone-league-country-${g.country ?? "other"}`, children: [
-                /* @__PURE__ */ jsxs("div", { ...station(() => setToggled((t) => ({ ...t, [id]: !open2 }))), "aria-expanded": open2 ? "true" : "false", style: { minHeight: MT.HIT, padding: "0 20px", display: "flex", alignItems: "center", gap: 8, background: MT.s05, color: MT.muted, fontSize: 12.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }, children: [
-                  /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, ...ellipsis2 }, children: g.country ?? tt("sportLeagueOther") }),
-                  g.live > 0 ? dot : null,
-                  /* @__PURE__ */ jsx("span", { style: { color: MT.dim, letterSpacing: 0, fontWeight: 400 }, children: tt("sportLeagueMatches", { n: g.total }) }),
-                  /* @__PURE__ */ jsx("span", { "aria-hidden": "true", children: open2 ? "\u25BE" : "\u25B8" })
-                ] }),
-                open2 ? g.entries.map((e) => /* @__PURE__ */ jsx(Row2, { entry: e, showCountry: false, sportLabel: sportOf(e), onPick: () => pick2(e.key) }, e.key)) : null
-              ] }, id || "__other");
-            }) }),
-            /* @__PURE__ */ jsx("div", { style: { padding: 8 }, children: /* @__PURE__ */ jsx("div", { ...station(onClose), style: { minHeight: 50, borderRadius: 16, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 600, cursor: "pointer" }, children: tt("cancel") }) })
-          ]
-        }
-      )
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
-  init_surface();
-  init_jsx_runtime_shim();
-  function PhoneCrest({ name, src, size = 22 }) {
-    const [broken, setBroken] = useState(false);
-    const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
-    if (url) return /* @__PURE__ */ jsx("img", { "data-crest": "", src: url, alt: "", width: size, height: size, onError: () => setBroken(true), style: { width: size, height: size, objectFit: "contain", flexShrink: 0 } });
-    return /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: size, height: size, borderRadius: 999, background: MT.s12, color: MT.muted, fontSize: Math.round(size * 0.42), fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: crestText(name) });
-  }
-  function PhoneStandings({ rows, tt }) {
-    const cell = { padding: "8px 6px", fontSize: 14 };
-    return /* @__PURE__ */ jsx("div", { style: { maxHeight: "60vh", overflowY: "auto", padding: "4px 14px 12px" }, children: /* @__PURE__ */ jsxs("table", { style: { width: "100%", borderCollapse: "collapse", color: MT.text }, children: [
-      /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { style: { color: MT.dim, textAlign: "left", fontSize: 12 }, children: [
-        /* @__PURE__ */ jsx("th", { style: cell, children: "#" }),
-        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColTeam") }),
-        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPlayed") }),
-        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPoints") }),
-        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColForm") })
-      ] }) }),
-      /* @__PURE__ */ jsx("tbody", { children: rows.map((r) => /* @__PURE__ */ jsxs("tr", { style: { borderTop: `1px solid ${MT.line08}` }, children: [
-        /* @__PURE__ */ jsx("td", { style: cell, children: r.rank }),
-        /* @__PURE__ */ jsx("td", { style: { ...cell, maxWidth: 150 }, children: /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx(PhoneCrest, { name: r.team.name, src: r.team.crest, size: 18 }),
-          /* @__PURE__ */ jsx("span", { style: ellipsis2, children: r.team.name })
-        ] }) }),
-        /* @__PURE__ */ jsx("td", { style: cell, children: r.played }),
-        /* @__PURE__ */ jsx("td", { style: { ...cell, fontWeight: 700 }, children: r.points }),
-        /* @__PURE__ */ jsx("td", { style: cell, children: /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", gap: 3 }, children: formLetters(r.form, tt).slice(-5).map((f, i) => /* @__PURE__ */ jsx("span", { "data-testid": "phone-form", style: { width: 16, height: 16, borderRadius: 4, background: FORM_COLOR[f.kind], color: "#0e0f13", fontSize: 10, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: f.letter }, i)) }) })
-      ] }, `${r.group ?? ""}-${r.rank}-${r.team.id}`)) })
-    ] }) });
-  }
-  function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer, sport = "all", kindLabel: kindLabel2 }) {
-    const { tt } = useTvText();
-    const settings = useSportSettings();
-    const [filter, setFilter] = useState("all");
-    const [table, setTable] = useState(null);
-    const [leagueSheet, setLeagueSheet] = useState(false);
-    const follows = useFollows();
-    const sections = useRef(/* @__PURE__ */ new Map());
-    const forSport = useMemo(() => sport === "all" ? matches : matches.filter((m) => m.kind === sport), [matches, sport]);
-    const { groups, liveCount, mineCount } = useMemo(() => groupResults(forSport, filter), [forSport, filter]);
-    const entries = useMemo(() => leagueEntries(groups, follows), [groups, follows]);
-    const mine = useMemo(() => yourLeagues(entries), [entries]);
-    if (!settings.apiKey || !controller) {
-      return /* @__PURE__ */ jsx(KeyCard, { variant: "tab", pushLayer });
-    }
-    const labels = new Map(entries.map((e) => [e.key, e.label]));
-    const jump = (key) => sections.current.get(key)?.scrollIntoView?.({ block: "start", behavior: "smooth" });
-    const openTable = async (g) => {
-      const cached = controller.standings(g.sport, g.leagueId, g.season);
-      setTable({ group: g, rows: cached });
-      if (cached) return;
-      const rows = await controller.loadStandings(g.sport, g.leagueId, g.season);
-      setTable((t) => t && t.group.key === g.key ? { group: g, rows: rows ?? [] } : t);
-    };
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "phone-results", style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
-      /* @__PURE__ */ jsx(
-        MobileChips,
-        {
-          testId: "phone-results-filter",
-          items: [
-            { key: "all", label: tt("sportResultsAll"), id: "all" },
-            { key: "live", label: `${tt("sportResultsLive")} (${liveCount})`, id: "live" },
-            { key: "mine", label: tt("sportResultsMine", { n: mineCount }), id: "mine" }
-          ],
-          value: filter,
-          onChange: setFilter
-        }
-      ),
-      groups.length > 0 ? /* @__PURE__ */ jsx(PhoneYourLeagues, { entries: mine.entries, fallback: mine.fallback, onJump: jump, onMore: () => setLeagueSheet(true) }) : null,
-      groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: "24px 4px", fontSize: 15, color: MT.muted }, children: tt("sportResultsEmpty") }) : null,
-      groups.map((g) => /* @__PURE__ */ jsxs("section", { "data-testid": `phone-results-group-${g.key}`, ref: (el) => {
-        if (el) sections.current.set(g.key, el);
-        else sections.current.delete(g.key);
-      }, style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 6, scrollMarginTop: 8 }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
-          /* @__PURE__ */ jsx("div", { style: { flex: 1, fontSize: 17, fontWeight: 600, ...ellipsis2 }, children: g.round != null ? `${labels.get(g.key) ?? g.league} \xB7 ${tt("sportRound", { n: g.round })}` : labels.get(g.key) ?? g.league }),
-          /* @__PURE__ */ jsx("div", { "data-testid": `phone-table-${g.key}`, ...station(() => void openTable(g)), style: { minHeight: MT.HIT, padding: "0 14px", borderRadius: 12, background: MT.s08, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", fontSize: 14, color: MT.muted70, cursor: "pointer", flexShrink: 0 }, children: tt("sportTable") })
-        ] }),
-        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "phone-result-row", ...station(() => onOpenMatch(m)), style: { minHeight: 56, display: "grid", gridTemplateColumns: "46px minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, fontWeight: 700, color: m.status === "live" ? MT.live : MT.muted }, children: matchStatusLabel(m, tt) ?? "" }),
-          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("span", { style: { fontSize: 14, ...ellipsis2 }, children: m.home }),
-            /* @__PURE__ */ jsx(PhoneCrest, { name: m.home ?? "", src: m.homeCrest })
-          ] }),
-          /* @__PURE__ */ jsx("span", { "data-testid": "phone-result-score", style: { fontSize: 16, fontWeight: 700, minWidth: 38, textAlign: "center", fontVariantNumeric: "tabular-nums" }, children: scoreText(m) ?? "\u2013" }),
-          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx(PhoneCrest, { name: m.away ?? "", src: m.awayCrest }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: 14, ...ellipsis2 }, children: m.away })
-          ] })
-        ] }, m.id))
-      ] }, g.key)),
-      leagueSheet ? /* @__PURE__ */ jsx(PhoneLeagueSheet, { entries, kindLabel: sport === "all" ? kindLabel2 ?? null : null, onPick: jump, onClose: () => setLeagueSheet(false), pushLayer }) : null,
-      table ? /* @__PURE__ */ jsx(
-        MobileSheet,
-        {
-          testId: "phone-standings-sheet",
-          title: `${labels.get(table.group.key) ?? table.group.league} \xB7 ${tt("sportTable")}`,
-          body: table.rows === null ? /* @__PURE__ */ jsx("div", { style: { padding: 16, color: MT.muted }, children: tt("sportLoading") }) : /* @__PURE__ */ jsx(PhoneStandings, { rows: table.rows, tt }),
-          items: [],
-          onClose: () => setTable(null),
-          pushLayer
-        }
-      ) : null
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
   init_merge();
   init_sport_store();
+  init_sport_results_phone();
+  init_mobile_icons();
   init_jsx_runtime_shim();
   function PhoneFollowSearch({ sport }) {
     const { tt } = useTvText();
@@ -63273,14 +63599,14 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx(PhoneCrest, { name: hit.name, src: hit.crest, size: 26 }),
           /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, ...ellipsis2 }, children: hit.name }),
           hit.country ? /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.muted, flexShrink: 0 }, children: hit.country }) : null,
-          /* @__PURE__ */ jsx("span", { style: { color: on ? "#fbbf24" : MT.dim, flexShrink: 0 }, children: on ? "\u2605" : "\u2606" })
+          /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { color: on ? MT.acc : MT.dim, flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 20, filled: on }) })
         ] }, hit.id);
       }),
       hits && hits.length === 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted }, children: tt("sportFollowSearchEmpty") }) : null
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_results_controller();
   init_live_poller();
   init_score_model();
@@ -63310,7 +63636,7 @@ ${cue.text}`).join("\n\n")}
     const phoneHero = useMemo(() => featuredMatch(visibleMatches(mergedDay, filter), ctx.follows, ctx.now), [mergedDay, filter, ctx.follows, ctx.now]);
     const backdrop = useSportBackdrop(phoneHero, filter, model.nowMs);
     const counts = sportCounts(mergedDay);
-    const { live: live2, later, finished } = splitSections(visibleMatches(mergedDay, filter), ctx.now);
+    const dayMatches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter]);
     const dayLabel = (o) => o === -1 ? tt("sportYesterday") : o === 0 ? tt("sportToday") : tt("sportTomorrow");
     const sheetItems = (m) => {
       const fs = followState(m, ctx.follows);
@@ -63324,7 +63650,7 @@ ${cue.text}`).join("\n\n")}
         ...ranked.length > 0 && statusAt(m, ctx.now) !== "finished" ? [{ key: "remind", label: ctx.isReminded(m) ? tt("sportReminded") : tt("sportRemindMe"), run: () => ctx.toggleRemind(m) }] : []
       ];
     };
-    const notice = selected.state === "missing" ? tt("sportNeedsUpdate") : selected.state === "error" ? tt("sportError") : selected.state === "loading" ? tt("sportLoading") : live2.length + later.length + finished.length === 0 ? tt("sportEmptyDay") : null;
+    const notice = selected.state === "missing" ? tt("sportNeedsUpdate") : selected.state === "error" ? tt("sportError") : selected.state === "loading" ? tt("sportLoading") : dayMatches.length === 0 ? tt("sportEmptyDay") : null;
     return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", ...backdrop.surface }, children: [
       /* @__PURE__ */ jsx(SportBackdropLayer, { choice: backdrop.choice, phone: true, onBroken: backdrop.onBroken }),
       /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone", "data-scroll": "", style: { position: "relative", flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 10 }, children: [
@@ -63334,11 +63660,9 @@ ${cue.text}`).join("\n\n")}
         tab !== "follows" ? /* @__PURE__ */ jsx(MobileChips, { testId: "sport-phone-sports", items: [{ key: "all", label: tt("sportAll"), id: "all" }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k, label: `${ctx.kindLabel(k)} ${counts[k]}`, id: k }))], value: filter, onChange: setFilter }) : null,
         tab === "foryou" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
           notice ? /* @__PURE__ */ jsx("div", { style: { padding: "24px 4px", fontSize: 15, color: MT.muted }, children: notice }) : null,
-          /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLiveNow"), matches: live2 }),
-          /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLater"), matches: later }),
-          /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportFinished"), matches: finished })
+          /* @__PURE__ */ jsx(PhoneMatchday, { ctx, matches: dayMatches })
         ] }) : tab === "results" ? /* @__PURE__ */ jsx(SportResultsPhone, { matches: allMatches, controller, onOpenMatch: openMatch, pushLayer: nav.pushLayer, sport: filter, kindLabel: ctx.kindLabel }) : /* @__PURE__ */ jsx(PhoneFollows, { ctx, days: [todayDay.data, tomorrowDay.data] }),
-        sheet ? /* @__PURE__ */ jsx(MobileSheet, { testId: "sport-phone-sheet", title: matchTitle(sheet), subtitle: [sheet.league || ctx.kindLabel(sheet.kind), timeLine(sheet, ctx)].join(" \xB7 "), items: sheetItems(sheet), onClose: () => setSheet(null), pushLayer: nav.pushLayer }) : null,
+        sheet ? /* @__PURE__ */ jsx(MobileSheet, { testId: "sport-phone-sheet", title: matchTitle(sheet), subtitle: [scoreText(sheet), matchStatusLabel(sheet, ctx.tt) ?? timeLine(sheet, ctx), sheet.league || ctx.kindLabel(sheet.kind)].filter(Boolean).join(" \xB7 "), items: sheetItems(sheet), onClose: () => setSheet(null), pushLayer: nav.pushLayer }) : null,
         adding ? /* @__PURE__ */ jsx(
           MobileSheet,
           {
@@ -63347,7 +63671,7 @@ ${cue.text}`).join("\n\n")}
             body: /* @__PURE__ */ jsx(PhoneFollowSearch, { sport: filter === "all" ? "football" : filter }),
             items: followCandidates([todayDay.data, tomorrowDay.data]).slice(0, 60).map((c) => ({
               key: `${c.kind}:${c.key}`,
-              label: `${isFollowing(ctx.follows, c) ? "\u2605 " : ""}${c.name} \xB7 ${ctx.kindLabel(c.sport)}`,
+              label: `${isFollowing(ctx.follows, c) ? "\u2665\uFE0E " : ""}${c.name} \xB7 ${ctx.kindLabel(c.sport)}`,
               run: () => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name })
             })),
             onClose: () => setAdding(false),
@@ -63357,27 +63681,51 @@ ${cue.text}`).join("\n\n")}
       ] })
     ] });
   }
-  function PhoneSection({ ctx, title, matches }) {
+  function PhoneMatchday({ ctx, matches }) {
     if (matches.length === 0) return null;
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }, children: [
-      /* @__PURE__ */ jsx("div", { style: { fontSize: 17, fontWeight: 600 }, children: title }),
-      matches.map((m) => {
-        const st = statusAt(m, ctx.now);
-        return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-row", ...station(() => ctx.openMatch(m)), style: { minHeight: 64, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("span", { style: { width: 54, flexShrink: 0, display: "flex", flexDirection: "column", fontSize: 13, fontWeight: 700, color: st === "live" ? MT.live : MT.text }, children: showsScore(m) ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-            /* @__PURE__ */ jsx("span", { style: { fontVariantNumeric: "tabular-nums" }, children: scoreText(m) }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 600, color: MT.muted }, children: matchStatusLabel(m, ctx.tt) ?? "" })
-          ] }) : st === "live" ? ctx.tt("live") : st === "finished" ? ctx.tt("sportEnded") : timeLine(m, ctx) }),
-          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: [m.league || ctx.kindLabel(m.kind), sourceLine(m, ctx)].filter(Boolean).join(" \xB7 ") })
-          ] }),
-          followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24" }, children: "\u2605" }) : null
-        ] }, m.id);
-      })
+    const strip = matchdayStrip(matches, ctx.now);
+    const nowLine = /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-now", "aria-hidden": "true", style: { display: "flex", alignItems: "center", gap: 8, margin: "2px 0" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: MT.acc, whiteSpace: "nowrap" }, children: ctx.tt("gridNowAt", { time: formatClock2(ctx.now, ctx.locale) }) }),
+      /* @__PURE__ */ jsx("span", { style: { flex: 1, height: 2, borderRadius: 2, background: MT.acc } })
+    ] }, "now-line");
+    const rows = strip.items.map((m) => /* @__PURE__ */ jsx(PhoneMatchRow, { ctx, match: m }, m.id));
+    rows.splice(strip.nowIndex, 0, nowLine);
+    return /* @__PURE__ */ jsxs("section", { "data-testid": "sport-phone-day", style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { fontSize: 17, fontWeight: 600 }, children: ctx.tt("sportMatches") }),
+      rows
+    ] });
+  }
+  function PhoneMatchRow({ ctx, match: m }) {
+    const st = statusAt(m, ctx.now);
+    const best = rankedSources(m, ctx.overrides)[0] ?? null;
+    const label = matchStatusLabel(m, ctx.tt);
+    const status = st === "live" ? label ?? ctx.tt("live") : st === "finished" ? label ?? ctx.tt("sportEnded") : label ?? formatClock2(m.start, ctx.locale);
+    const progress2 = st === "live" ? progressOf(m.start, m.stop, ctx.now) : st === "finished" ? 1 : 0;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-row", "data-status": st, ...station(() => ctx.openMatch(m)), style: { position: "relative", overflow: "hidden", minHeight: 64, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsx("span", { "data-testid": "sport-phone-anchor", style: { width: 52, height: 36, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: MT.s08, color: MT.muted }, children: best ? /* @__PURE__ */ jsx(MobileLogo, { channel: sourceChannel(best), width: 52, height: 36 }) : /* @__PURE__ */ jsx(SportIcon, { kind: m.kind, size: 22 }) }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
+          m.home && m.away ? /* @__PURE__ */ jsxs("span", { style: { display: "flex", gap: 3, flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsx(PhoneCrest, { name: m.home, src: m.homeCrest, size: 20 }),
+            /* @__PURE__ */ jsx(PhoneCrest, { name: m.away, src: m.awayCrest, size: 20 })
+          ] }) : null,
+          /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
+          showsScore(m) ? /* @__PURE__ */ jsx("span", { style: { fontSize: 15, fontWeight: 700, fontVariantNumeric: "tabular-nums", flexShrink: 0 }, children: scoreText(m) }) : null
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: [
+          /* @__PURE__ */ jsx("span", { "data-testid": "sport-phone-status", style: { fontWeight: 600, color: st === "live" ? MT.acc : MT.text }, children: status }),
+          [m.league || ctx.kindLabel(m.kind), m.resultOnly ? ctx.tt("sportResultOnly") : sourceLine(m, ctx)].filter(Boolean).map((x) => ` \xB7 ${x}`).join("")
+        ] })
+      ] }),
+      followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-phone-row-fav", style: { color: MT.acc, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 16, filled: true }) }) : null,
+      /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 3, background: MT.s08 }, children: /* @__PURE__ */ jsx("span", { style: { display: "block", width: `${Math.round(progress2 * 100)}%`, height: "100%", background: st === "finished" ? MT.s12 : MT.acc } }) })
     ] });
   }
   function PhoneFollows({ ctx, days }) {
+    const [shown, setShown] = useState(ctx.follows);
+    useEffect(() => {
+      setShown((prev) => [...prev, ...ctx.follows.filter((f) => !prev.some((p) => p.kind === f.kind && p.key === f.key))]);
+    }, [ctx.follows]);
     const alertOptions = [
       { key: "off", label: ctx.tt("sportAlertOff") },
       { key: "15", label: ctx.tt("sportAlert15") },
@@ -63391,22 +63739,27 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: MT.dim }, children: ctx.tt("sportAlertOnlyRunning") })
       ] }),
       ctx.follows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 15, color: MT.muted, padding: "16px 4px" }, children: ctx.tt("sportFollowEmpty") }) : null,
-      ctx.follows.map((f) => {
+      shown.map((f) => {
+        const on = isFollowing(ctx.follows, f);
         const next = nextMatchFor(f, days, ctx.now);
-        return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-follow", ...station(() => {
-          if (next) ctx.openMatch(next);
-        }), style: { minHeight: 60, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: sportBg(MT.s07), cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24" }, children: "\u2605" }),
-          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: f.name }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: followNextLine(ctx, f, next) })
-          ] })
+        const crest = crestForFollow(f, days.flatMap((d) => d?.matches ?? []));
+        return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-follow", "data-following": on ? "1" : "0", style: { minHeight: 60, display: "flex", alignItems: "center", gap: 12, padding: "8px 6px 8px 12px", borderRadius: 14, background: sportBg(MT.s07), opacity: on ? 1 : 0.55 }, children: [
+          /* @__PURE__ */ jsxs("div", { ...station(() => {
+            if (next) ctx.openMatch(next);
+          }), style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx(PhoneCrest, { name: f.name, src: crest, size: 36 }),
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: f.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: followNextLine(ctx, f, next) })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-follow-heart", ...station(() => toggleFollow(f)), "aria-pressed": on ? "true" : "false", "aria-label": on ? ctx.tt("sportFollowingName", { name: f.name }) : ctx.tt("sportFollowName", { name: f.name }), style: { width: MT.HIT, height: MT.HIT, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", color: on ? MT.acc : MT.text, cursor: "pointer" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 20, filled: on }) })
         ] }, `${f.kind}:${f.key}`);
       })
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_surface();
   init_jsx_runtime_shim();
   var NO_MATCHES3 = [];
@@ -63462,7 +63815,7 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs("div", { "data-testid": "sport-view", "data-scroll": "", style: { position: "relative", flex: 1, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(22) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(18) }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(40), fontWeight: 600 }, children: tt("sportTitle") }),
-          /* @__PURE__ */ jsx("span", { "data-testid": "sport-summary", style: { fontSize: dp(19), color: TV2.muted }, children: tt("sportSummary", { day: dayLabel(offset), count: summary.total, live: summary.live }) }),
+          /* @__PURE__ */ jsx("span", { "data-testid": "sport-summary", style: { fontSize: dp(19), color: TV2.muted }, children: summaryLine(tt, dayLabel(offset), summary.total, summary.live) }),
           /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto" }, children: clock })
         ] }),
         /* @__PURE__ */ jsx(RateLineView, { status, tv: tvMode }),
@@ -63523,7 +63876,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -63538,7 +63891,7 @@ ${cue.text}`).join("\n\n")}
     sport: TvSport
   };
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -63618,12 +63971,12 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-autoscan.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-home.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
   init_tv_settings_store();
   var LIVE_TV_FRAME_ID = "live-tv";
@@ -63661,7 +64014,7 @@ ${cue.text}`).join("\n\n")}
     lastRedirect = now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-autoscan.ts
   var AUTOSCAN_KEY = "live_tv_vod_autoscan_v1";
   var inFlight2 = false;
   async function maybeAutoScanVod() {
@@ -63694,7 +64047,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_mobile_sheet();
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
@@ -64162,7 +64515,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -64219,7 +64572,7 @@ ${cue.text}`).join("\n\n")}
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -64261,7 +64614,7 @@ ${cue.text}`).join("\n\n")}
     return programmes;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_settings_store();
@@ -64351,7 +64704,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { ref: rootRef, style: { height: "100%", display: "flex", background: TV2.bg, color: TV2.text, fontFamily: TV2.font }, children: /* @__PURE__ */ jsx(TvRail, { active: "home", isTv, narrow, labels: settings.railLabels && !narrow, onSelect: select }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-egen-stil/plugins/live-tv/runtime/index.ts
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,
