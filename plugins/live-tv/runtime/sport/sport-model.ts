@@ -42,6 +42,23 @@ export interface SportMatch {
   round: number | null
   venue: string | null
   sources: MatchSource[]
+  /** Fas 2: allt nedan sätts bara av `merge.ts` ur en källfixtur. Utan `coverage: 'full'` är matchen bara EPG. */
+  coverage?: 'full' | 'epg'
+  /** Paus (live) eller uppskjuten (upcoming); `status` har bara fas 1:s tre värden. */
+  phase?: 'ht' | 'postponed'
+  minute?: number | null
+  score?: { home: number; away: number }
+  homeCrest?: string | null
+  awayCrest?: string | null
+  /** Källans lag-id per källa, för följda lag och tabeller. */
+  homeIds?: Record<string, string>
+  awayIds?: Record<string, string>
+  /** Källans fixtur. `leagueId`/`season` behövs för tabellen. */
+  fixture?: { provider: string; id: string; leagueId?: string; season?: string }
+  /** Fixtur utan kopplad kanal ("Bara resultat"). Visas bara med nyckel. */
+  resultOnly?: boolean
+  /** Senaste målet om källan skickar händelser (målskytt i MÅL!). */
+  lastGoal?: { side: 'home' | 'away' | null; player: string | null; minute: number | null } | null
 }
 
 export interface SportDay {

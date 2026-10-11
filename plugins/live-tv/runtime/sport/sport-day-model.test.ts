@@ -104,3 +104,18 @@ describe('tidslinje, krockar och följkandidater', () => {
     expect(crestColor('gais')).toBe(crestColor('gais'))
   })
 })
+
+describe('statusAt med källfixtur (fas 2)', () => {
+  it('källans status gäller även när EPG-klockan säger något annat', () => {
+    const start = Date.now() - 3 * HOUR
+    const m = fxMatch({ start, stop: start + 2 * HOUR, status: 'live', fixture: { provider: 'api-sports', id: '1' } })
+    expect(statusAt(m, Date.now())).toBe('live')
+    expect(statusAt({ ...m, status: 'finished' }, start)).toBe('finished')
+  })
+  it('uppskjuten är upcoming även efter EPG-slut; okänd källstatus faller tillbaka på klockan', () => {
+    const start = Date.now() - 3 * HOUR
+    const m = fxMatch({ start, stop: start + 2 * HOUR, status: 'upcoming', phase: 'postponed', fixture: { provider: 'api-sports', id: '1' } })
+    expect(statusAt(m, Date.now())).toBe('upcoming')
+    expect(statusAt({ ...m, phase: undefined }, Date.now())).toBe('finished')
+  })
+})

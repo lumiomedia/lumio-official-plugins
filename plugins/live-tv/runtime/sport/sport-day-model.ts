@@ -11,6 +11,9 @@ const HOUR = 3_600_000
 const MIN = 60_000
 
 export function statusAt(m: SportMatch, now: number): MatchStatus {
+  // Fas 2: en match med källfixtur litar på källans status (live efter EPG-slut, avslutad före).
+  if (m.phase === 'postponed') return 'upcoming'
+  if (m.fixture && m.status !== 'upcoming') return m.status
   if (m.status === 'finished' || now >= m.stop) return 'finished'
   if (now >= m.start) return 'live'
   return 'upcoming'
