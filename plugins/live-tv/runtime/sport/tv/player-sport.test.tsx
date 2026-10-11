@@ -127,6 +127,29 @@ describe('kromet', () => {
     expect(screen.queryByTestId('player-matches')).toBeNull()
     expect(screen.queryByTestId('player-sport-ticker')).toBeNull()
   })
+  it('kolumnens rader är stationer: klick byter till matchens bästa källa, matchen på kanalen spelar redan', () => {
+    const sport = sportProps({ view: 'feed' })
+    render(<TvPlayerChrome channel={channelB} tv={tv({ sport })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    const column = screen.getByTestId('player-sport-ticker')
+    const rows = within(column).getAllByTestId('pst-item')
+    expect(rows).toHaveLength(2)
+    for (const r of rows) {
+      expect(r.getAttribute('tabindex')).toBe('0')
+      expect(r.getAttribute('data-f')).toBe('')
+      expect(r.style.pointerEvents).toBe('auto')
+    }
+    fireEvent.click(rows[1]!)
+    expect(sport.onSwitchMatch).toHaveBeenCalledWith(elsewhere)
+    fireEvent.click(rows[0]!)
+    expect(sport.onSwitchMatch).toHaveBeenCalledTimes(1)
+  })
+  it('tickerns chip byter också match', () => {
+    const sport = sportProps()
+    render(<TvPlayerChrome channel={channelB} tv={tv({ sport })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
+    const chips = within(screen.getByTestId('player-sport-ticker')).getAllByTestId('pst-item')
+    fireEvent.click(chips[1]!)
+    expect(sport.onSwitchMatch).toHaveBeenCalledWith(elsewhere)
+  })
   it('matchen på kanalen avgör: ingen knapp på en kanal utan pågående match', () => {
     render(<TvPlayerChrome channel={{ ...channelB, name: 'Z', url: 'http://x/Z' }} tv={tv({ sport: sportProps() })} paused={false} onTogglePause={() => {}} onClose={() => {}} />)
     expect(screen.queryByTestId('player-matches')).toBeNull()

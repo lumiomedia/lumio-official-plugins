@@ -83,11 +83,13 @@ export function PlayerSportTicker({ sport, channel, nowMs, variant, ps }: { spor
   const lists = matchesForPlayer(sport.matches, channelKey(channel), nowMs)
   const items = [...lists.onChannel, ...lists.live].slice(0, variant === 'ticker' ? 6 : 5)
   if (items.length === 0) return null
+  // Matchen på kanalen spelar redan — ett OK där ska inte starta om strömmen.
+  const pick = (m: SportMatch) => () => { if (!lists.onChannel.includes(m)) sport.onSwitchMatch(m) }
   if (variant === 'column') {
     return (
       <div data-testid="player-sport-ticker" data-variant="column" style={{ position: 'absolute', top: ps(96), right: ps(20), width: ps(300), display: 'flex', flexDirection: 'column', gap: ps(6), pointerEvents: 'none', zIndex: 31 }}>
         {items.map((m) => (
-          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: ps(8), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: 'rgba(20,21,25,0.86)', border: `1px solid ${TV.lineCard}`, fontSize: ps(14), fontWeight: 600 }}>
+          <div key={m.id} data-testid="pst-item" {...station(pick(m))} style={{ display: 'flex', alignItems: 'center', gap: ps(8), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: 'rgba(20,21,25,0.86)', border: `1px solid ${TV.lineCard}`, fontSize: ps(14), fontWeight: 600, pointerEvents: 'auto', cursor: 'pointer' }}>
             <span style={{ ...ellipsis, flex: 1 }}>{shortLabel(m)}</span>
             <span style={{ color: TV.live, fontSize: ps(12) }}>{tt('live')}</span>
           </div>
@@ -99,7 +101,7 @@ export function PlayerSportTicker({ sport, channel, nowMs, variant, ps }: { spor
     <div data-testid="player-sport-ticker" data-variant="ticker" style={{ display: 'flex', alignItems: 'center', gap: ps(8), marginBottom: ps(8), overflow: 'hidden' }}>
       <span style={{ fontSize: ps(11), fontWeight: 700, letterSpacing: '0.14em', color: TV.dim }}>{tt('live')}</span>
       {items.map((m) => (
-        <span key={m.id} style={{ padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV.lineCard}`, background: 'rgba(0,0,0,0.5)', fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap' }}>{shortLabel(m)}</span>
+        <span key={m.id} data-testid="pst-item" {...station(pick(m))} style={{ padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV.lineCard}`, background: 'rgba(0,0,0,0.5)', fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'auto', cursor: 'pointer' }}>{shortLabel(m)}</span>
       ))}
     </div>
   )
