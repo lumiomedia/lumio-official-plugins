@@ -13,6 +13,7 @@ import { useSportCtx } from '../sport-ctx'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import { RateLineView } from './sport-score'
+import { SportResults } from './sport-results'
 import { KeyCard, shouldShowKeyBanner } from '../key-card'
 import { Notice } from './sport-parts'
 import { SportIcon } from './sport-icons'
@@ -24,7 +25,7 @@ import { SportPhone } from '../mobile/sport-phone'
 
 const NO_MATCHES: SportMatch[] = []
 
-type SportTab = 'foryou' | 'follows'
+type SportTab = 'foryou' | 'results' | 'follows'
 type DayOffset = -1 | 0 | 1
 const OFFSETS: readonly DayOffset[] = [-1, 0, 1]
 
@@ -55,7 +56,7 @@ function SportTv({ model, nav }: TvViewProps) {
   const tomorrowDay = useSportDay(wantsToday || ctx.settings.view === 'feed' ? shiftDay(today, 1) : null, model.nowMs)
   const yesterdayDay = useSportDay(pickerOpen ? shiftDay(today, -1) : null, model.nowMs)
 
-  const { matches: mergedMatches, status } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
+  const { matches: mergedMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
   const tvMode = useTvMode()
   usePollDemand('sport-view', true)
@@ -73,6 +74,7 @@ function SportTv({ model, nav }: TvViewProps) {
   const body = () => {
     if (selected.state === 'missing') return <Notice testId="sport-missing" text={tt('sportNeedsUpdate')} />
     if (selected.state === 'error') return <Notice testId="sport-error" text={tt('sportError')} />
+    if (tab === 'results') return <SportResults matches={mergedMatches} controller={controller} onOpenMatch={ctx.openMatch} tv={tvMode} />
     if (tab === 'follows') return <SportFollows ctx={ctx} days={[todayDay.data, tomorrowDay.data]} />
     if (selected.state === 'loading') return <Notice testId="sport-loading" text={tt('sportLoading')} />
     if (matches.length === 0) return <Notice testId="sport-empty" text={tt('sportEmptyDay')} />
@@ -91,7 +93,7 @@ function SportTv({ model, nav }: TvViewProps) {
       <RateLineView status={status} tv={tvMode} />
 
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: dp(28), borderBottom: `1px solid ${TV.s12}` }}>
-        {(['foryou', 'follows'] as const).map((key) => (
+        {(['foryou', 'results', 'follows'] as const).map((key) => (
           <div
             key={key}
             data-testid={`sport-tab-${key}`}
@@ -99,7 +101,7 @@ function SportTv({ model, nav }: TvViewProps) {
             aria-selected={key === tab ? 'true' : 'false'}
             style={{ padding: `${dp(8)}px 0 ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: 'pointer', color: key === tab ? TV.text : TV.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV.acc : 'transparent'}`, marginBottom: -1 }}
           >
-            {key === 'foryou' ? tt('sportTabForYou') : tt('sportTabFollows')}
+            {key === 'foryou' ? tt('sportTabForYou') : key === 'results' ? tt('sportTabResults') : tt('sportTabFollows')}
           </div>
         ))}
         {tab === 'foryou' ? (
@@ -136,7 +138,7 @@ function SportTv({ model, nav }: TvViewProps) {
         </div>
       </div>
 
-      {shouldShowKeyBanner(ctx.settings) ? <KeyCard variant="banner" pushLayer={nav.pushLayer} /> : null}
+      {shouldShowKeyBanner(ctx.settings) && tab !== 'results' ? <KeyCard variant="banner" pushLayer={nav.pushLayer} /> : null}
 
       {body()}
 

@@ -521,6 +521,20 @@ const EN = {
   sportKeyRemoveBody: 'Results, tables and goal alerts stop. Matches from the guide remain.',
   sportNoKey: 'No key',
   sportCancel: 'Cancel',
+  sportTabResults: 'Results',
+  sportResultsAll: 'All',
+  sportResultsLive: 'Live only',
+  sportResultsMine: 'My channels ({n})',
+  sportJumpTo: 'JUMP TO',
+  sportTable: 'Table',
+  sportColTeam: 'Team',
+  sportColPlayed: 'P',
+  sportColPoints: 'Pts',
+  sportColForm: 'Form',
+  sportResultsEmpty: 'No results for this day.',
+  sportFormW: 'W',
+  sportFormD: 'D',
+  sportFormL: 'L',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -993,6 +1007,20 @@ const SV: Record<keyof typeof EN, string> = {
   sportKeyRemoveBody: 'Resultat, tabeller och målnotiser slutar. Matcherna ur guiden finns kvar.',
   sportNoKey: 'Ingen nyckel',
   sportCancel: 'Avbryt',
+  sportTabResults: 'Resultat',
+  sportResultsAll: 'Alla',
+  sportResultsLive: 'Bara live',
+  sportResultsMine: 'Mina kanaler ({n})',
+  sportJumpTo: 'HOPPA TILL',
+  sportTable: 'Tabell',
+  sportColTeam: 'Lag',
+  sportColPlayed: 'M',
+  sportColPoints: 'P',
+  sportColForm: 'Form',
+  sportResultsEmpty: 'Inga resultat den här dagen.',
+  sportFormW: 'V',
+  sportFormD: 'O',
+  sportFormL: 'F',
 }
 
 export type TvStringKey = keyof typeof EN
