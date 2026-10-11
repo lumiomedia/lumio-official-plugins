@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { station } from './tv/tv-ui'
+import { belowTitleBar, station } from './tv/tv-ui'
 import { useBackLayer } from './settings-ui'
 
 /**
@@ -278,7 +278,7 @@ export function TvPanel({ title, hint, crumb, onBack, children, testId }: {
     <div ref={rootRef} role="dialog" aria-label={title} data-panel-root="" data-testid={testId} style={{ position: 'fixed', inset: 0, zIndex: 1000, color: TVS.text }}>
       <TvFocusStyle />
       <div aria-hidden onClick={onBack} style={{ position: 'absolute', inset: 0, background: TVS.scrim }} />
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, ...(left !== null ? { left } : { width: TV_PANEL_W, maxWidth: '100%' }), background: TVS.bg, boxShadow: '0 0 60px rgba(0,0,0,.5)', display: 'flex', flexDirection: 'column', padding: '24px 26px 20px' }}>
+      <div data-tv-panel-sheet="" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, ...(left !== null ? { left } : { width: TV_PANEL_W, maxWidth: '100%' }), background: TVS.bg, boxShadow: '0 0 60px rgba(0,0,0,.5)', display: 'flex', flexDirection: 'column', padding: `${belowTitleBar(24)} 26px 20px` }}>
         <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
           {crumb ? (
             <div onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, font: `500 ${ST.small}/1 ${TV_FONT}`, color: TVS.n500, cursor: 'pointer', paddingBottom: 2 }}>

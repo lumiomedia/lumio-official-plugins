@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { channelKey } from '../../live-tv-data'
-import { ChannelArt, RoundBtn, TV, dp, station } from '../../tv/tv-ui'
+import { ChannelArt, RoundBtn, TV, belowTitleBar, dp, station } from '../../tv/tv-ui'
 import { TvChannelPicker } from '../../tv/tv-channel-picker'
 import { matchTitle, sourceChannel, type SportMatch } from '../sport-model'
 import { followState, rankedSources, statusAt } from '../sport-day-model'
@@ -57,7 +57,7 @@ export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match
   return (
     <>
       <div data-live-tv-layer="" aria-hidden="true" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 59, background: TV.scrim }} />
-      <div ref={rootRef} data-testid="match-center" data-panel-root="" data-live-tv-layer="" data-scroll="" role="dialog" aria-label={matchTitle(match)} style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, ...sportSurface(SPORT_PANEL_BG), borderLeft: '1px solid rgba(255,255,255,0.16)', padding: `${dp(28)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', gap: dp(20), overflowY: 'auto', boxSizing: 'border-box' }}>
+      <div ref={rootRef} data-testid="match-center" data-panel-root="" data-live-tv-layer="" data-scroll="" role="dialog" aria-label={matchTitle(match)} style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, ...sportSurface(SPORT_PANEL_BG), borderLeft: '1px solid rgba(255,255,255,0.16)', padding: `${belowTitleBar(dp(28))} ${dp(32)}px ${dp(28)}px`, display: 'flex', flexDirection: 'column', gap: dp(20), overflowY: 'auto', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(12) }}>
           <StatusTag match={match} ctx={ctx} />
           <span style={{ fontSize: dp(17), color: TV.muted, ...ellipsis }}>{context}</span>

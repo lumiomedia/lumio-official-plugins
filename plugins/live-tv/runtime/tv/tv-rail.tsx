@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 import { useTvText } from './tv-strings'
-import { TV, dp, station, Icons } from './tv-ui'
+import { TV, belowTitleBar, dp, station, Icons } from './tv-ui'
 import type { TvView } from './tv-shell'
 import { SportIcons } from '../sport/tv/sport-icons'
 
@@ -117,7 +117,7 @@ export function TvRail({ active, onSelect, isTv, narrow, labels: railLabels }: T
         "utan telefonattribut: ikonraden som förut" i tv-shell-phone.test.tsx.
         På telefon finns ingen rad alls: flik-raden nedan tar över. */
   return (
-      <nav data-testid="tv-rail" aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${dp(narrow ? 16 : 36)}px 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 8) }}>
+      <nav data-testid="tv-rail" aria-label={tt('liveTv')} style={{ width: dp(railWidth), flexShrink: 0, borderRight: `1px solid ${TV.line}`, background: 'linear-gradient(180deg, rgba(252,252,255,0.05), rgba(252,252,255,0.02))', padding: `${belowTitleBar(dp(narrow ? 16 : 36))} 0 ${dp(narrow ? 16 : 32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(narrow ? 8 : 8) }}>
         {/* Märket är ren dekor och det enda "etiketten" raden har. På en smal
             yta går den bort tillsammans med luften ovanför — posterna ska nå
             ner i skärmen, inte trängas under en logotyp. */}

@@ -32,6 +32,21 @@ export function dp(n: number): number {
   return n
 }
 
+/**
+ * MAC-TITELRADEN I SCENEN (Jerry 2026-10-11).
+ *
+ * På skrivbordet går värdens scenlåda och ramen runt VOD-hemmet ända upp och
+ * ner i fönstret, så sidolådorna inte får ett svart band upptill och nertill.
+ * Trafikljusen hålls i stället fria av INNEHÅLLET: värden exponerar
+ * titelradens höjd i designpixlar som `--tv-scene-top-inset` i scenlagren
+ * (0 utanför mac-appen och i TV-läget, där variabeln inte finns). Rälsen och
+ * lådorna lägger den ovanpå sin egen topp-padding.
+ */
+export const SCENE_TOP_INSET = 'var(--tv-scene-top-inset, 0px)'
+export function belowTitleBar(px: number): string {
+  return `calc(${px}px + ${SCENE_TOP_INSET})`
+}
+
 export const TV = {
   bg: '#000',
   text: '#f3f4f8',

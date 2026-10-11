@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../../live-tv-data'
 import { SPORT_OVERRIDES_KEY, getFollows, getOverrides } from '../sport-store'
@@ -64,5 +65,16 @@ describe('Matchcentret', () => {
     expect(first).toHaveTextContent('Your choice')
     fireEvent.click(screen.getByTestId('mc-clear-override'))
     expect(getOverrides().m).toBeUndefined()
+  })
+})
+
+describe('Matchcentret på skrivbordet', () => {
+  it('lådan går hela vägen upp; innehållet går fri från mac-titelraden (--tv-scene-top-inset)', () => {
+    // Serverrendering: happy-dom kastar stilvärden med var() i calc().
+    const markup = renderToStaticMarkup(<SportMatchCenter ctx={fakeCtx({ now })} match={m} onClose={() => {}} />)
+    const host = document.createElement('div')
+    host.innerHTML = markup
+    const style = host.querySelector('[data-testid="match-center"]')?.outerHTML.match(/style="([^"]*)"/)?.[1] ?? ''
+    expect(style).toContain('var(--tv-scene-top-inset, 0px)')
   })
 })

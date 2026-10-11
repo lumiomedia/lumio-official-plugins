@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { channelKey, type M3uChannel, type XtreamCategory } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav } from './tv-shell'
-import { ChannelArt, Chip, TV, dp, station } from './tv-ui'
+import { ChannelArt, Chip, TV, belowTitleBar, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { filterByGroup, useGuideGroups } from './tv-guide-shared'
 import { gp } from './guide-view-shared'
@@ -69,7 +69,7 @@ export function PickerPanel({
       data-testid={testId}
       data-panel-root=""
       data-live-tv-layer=""
-      style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${dp(34)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}
+      style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}
     >
       <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
       {chips}
