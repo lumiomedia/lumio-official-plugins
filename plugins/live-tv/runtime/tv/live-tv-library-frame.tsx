@@ -3,6 +3,8 @@ import { useTvMode, type LibraryFrameProps } from '@/lib/plugin-sdk'
 import { TvRail, type RailKey } from './tv-rail'
 import { MobileCloseButton } from './mobile/mobile-header'
 import { MT } from './mobile/mobile-tokens'
+import { MobileSheet } from './mobile/mobile-sheet'
+import { useTvText } from './tv-strings'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { getActivePlaylistId, useTvSettings } from './tv-settings-store'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
@@ -24,6 +26,8 @@ const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
  */
 function PhoneTabBar({ select, onInsetBottom }: { select: (key: RailKey | 'hub' | 'guide' | 'sport' | 'search' | 'library' | 'home') => void; onInsetBottom?: (px: number) => void }) {
   const tvMode = useTvMode()
+  const { tt } = useTvText()
+  const [moreOpen, setMoreOpen] = useState(false)
   const [showLibrary, setShowLibrary] = useState(false)
   const wrapRef = useRef<HTMLDivElement | null>(null)
   /*
@@ -51,10 +55,23 @@ function PhoneTabBar({ select, onInsetBottom }: { select: (key: RailKey | 'hub' 
       .catch(() => {})
     return () => { cancelled = true }
   }, [tvMode])
-  // "Mer" går till Multiview-vyn: arket hör till Live TV-sidan.
+  // Samma Mer-ark som i Live TV; varje post går in i Live TV-sidan. Ramen har ingen Bakåt-kedja (pushLayer) att anmäla sig i.
   return (
     <div ref={wrapRef}>
-      <MobileTabBar view="hub" activeOverride="home" showLibrary={showLibrary} onGo={select} onMore={() => select('multi')} />
+      <MobileTabBar view="hub" activeOverride="home" showLibrary={showLibrary} onGo={select} onMore={() => setMoreOpen(true)} />
+      {moreOpen ? (
+        <MobileSheet
+          title={tt('moreActions')}
+          items={[
+            { key: 'favs', label: tt('sheetFavourites'), run: () => select('favs') },
+            { key: 'multi', label: tt('sheetMultiview'), run: () => select('multi') },
+            { key: 'settings', label: tt('sheetSettings'), run: () => select('settings') },
+          ]}
+          onClose={() => setMoreOpen(false)}
+          pushLayer={() => () => {}}
+          testId="more-sheet"
+        />
+      ) : null}
     </div>
   )
 }

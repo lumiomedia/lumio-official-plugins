@@ -44,6 +44,15 @@ describe('LiveTvLibraryFrame', () => {
     fireEvent.click(getByTestId('header-close'))
     expect(props.onExit).toHaveBeenCalled()
   })
+  it('telefon: Mer öppnar Mer-arket; Favoriter går till Live TV:s favoritvy', async () => {
+    const props = { ...base, platform: 'phone' as const, onNavigate: vi.fn() }
+    const { getByTestId, findByTestId, getByText } = render(<LiveTvLibraryFrame {...props} />)
+    fireEvent.click(getByTestId('tab-more'))
+    await findByTestId('more-sheet')
+    expect(props.onNavigate).not.toHaveBeenCalled()
+    fireEvent.click(getByText('Favourites'))
+    expect(props.onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'favs' } })
+  })
   it('skrivbord: ingen X', () => {
     const { queryByTestId } = render(<LiveTvLibraryFrame {...base} platform="desktop" />)
     expect(queryByTestId('header-close')).toBeNull()
