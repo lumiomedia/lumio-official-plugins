@@ -144,12 +144,14 @@ function PhoneHero({ ctx, match: m }: { ctx: SportCtx; match: SportMatch }) {
 }
 
 const PX_PER_HOUR = 90
+const TIMELINE_ROWS = 5
 const LABEL_W = 48
 
 /** Tidslinjen: sidledes rullbar, klistrade ligaetiketter, banor för överlapp, nu-linjen. Bara dina kanaler. */
 function PhoneTimelineCard({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: SportMatch[]; dayFrom: number }) {
-  const tl = phoneTimeline(matches, dayFrom, ctx.now)
+  const tl = phoneTimeline(matches, dayFrom, ctx.now, ctx.follows)
   const scroller = useRef<HTMLDivElement | null>(null)
+  const [expanded, setExpanded] = useState(false)
   const hours = tl ? (tl.end - tl.start) / 3_600_000 : 0
   const track = hours * PX_PER_HOUR
   const nowPx = tl?.nowPct != null ? (tl.nowPct / 100) * track : null
@@ -161,6 +163,10 @@ function PhoneTimelineCard({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: 
   }, [tl?.start, tl?.end])
   if (!tl) return null
   const pct = (t: number) => ((Math.min(Math.max(t, tl.start), tl.end) - tl.start) / (tl.end - tl.start)) * 100
+  // Med en riktig spellista kan tjugo ligor ha matcher på dina kanaler: de fem
+  // första (följda, pågående, flest matcher) syns, resten fälls ut.
+  const rows = expanded ? tl.rows : tl.rows.slice(0, TIMELINE_ROWS)
+  const hidden = tl.rows.length - rows.length
   return (
     <div data-testid="sport-phone-timeline" style={{ ...cardStyle, borderRadius: 16, padding: '12px 0 12px 12px', display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, paddingRight: 12 }}>
@@ -174,10 +180,10 @@ function PhoneTimelineCard({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: 
               <span key={h} style={{ position: 'absolute', top: 0, left: `${pct(h)}%`, fontSize: 11, fontWeight: 600, color: P.muted60, paddingLeft: 4, borderLeft: `1px solid ${P.line14}` }}>{formatClock(h, ctx.locale)}</span>
             ))}
           </div>
-          {tl.rows.flatMap((row) => row.lanes.map((lane, laneIndex) => (
+          {rows.flatMap((row) => row.lanes.map((lane, laneIndex) => (
             <div key={`${row.key}-${laneIndex}`} data-testid="sport-phone-lane" style={{ height: 32, display: 'flex', gap: 4 }}>
               <span data-testid={laneIndex === 0 ? 'sport-phone-lane-label' : undefined} style={{ width: LABEL_W, flexShrink: 0, position: 'sticky', left: 0, zIndex: 2, background: '#121216', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: 'rgba(243,244,248,0.85)', overflow: 'hidden' }}>
-                {laneIndex === 0 ? <><span style={{ width: 7, height: 7, borderRadius: 2, background: leagueColor(row.key), flexShrink: 0 }} />{row.abbr || ctx.kindLabel(row.kind).slice(0, 4)}</> : null}
+                {laneIndex === 0 ? <><span style={{ width: 7, height: 7, borderRadius: 2, background: leagueColor(row.key), flexShrink: 0 }} />{row.abbr || ctx.kindLabel(row.kind).slice(0, 3).toUpperCase()}</> : null}
               </span>
               <div style={{ flex: 1, position: 'relative', borderRadius: 7, background: 'rgba(252,252,255,0.04)' }}>
                 {lane.map((m) => <TimelineBlock key={m.id} ctx={ctx} m={m} left={pct(m.start)} width={pct(m.stop) - pct(m.start)} />)}
@@ -187,6 +193,11 @@ function PhoneTimelineCard({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: 
           {nowPx != null ? <div data-testid="sport-phone-now" aria-hidden="true" style={{ position: 'absolute', top: 18, bottom: 0, left: LABEL_W + 4 + nowPx, width: 2, background: P.coral, boxShadow: '0 0 8px rgba(244,132,95,0.8)', pointerEvents: 'none' }} /> : null}
         </div>
       </div>
+      {hidden > 0 ? (
+        <div data-testid="sport-phone-timeline-more" {...station(() => setExpanded(true))} style={{ alignSelf: 'flex-start', minHeight: 32, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: P.coralLight, cursor: 'pointer' }}>
+          {ctx.tt('showMoreN', { n: hidden })}<MIcons.CaretDown size={14} />
+        </div>
+      ) : null}
     </div>
   )
 }

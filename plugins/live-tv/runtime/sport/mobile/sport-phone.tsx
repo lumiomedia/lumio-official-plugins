@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { TvViewProps } from '../../tv/tv-shell'
 import { station } from '../../tv/tv-ui'
 import { MT, ellipsis } from '../../tv/mobile/mobile-tokens'
@@ -53,6 +53,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const [adding, setAdding] = useState<SportKind | null>(null)
   const [sections, setSections] = useState(false)
   const platform = usePhonePlatform()
+  const bodyRef = useRef<HTMLDivElement | null>(null)
   const openMatch = useCallback((m: SportMatch) => setSheet(m), [])
   const openFollowPicker = useCallback(() => setAdding('football'), [])
   const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker })
@@ -64,6 +65,8 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
   usePollDemand('sport-view', true)
   const view = ctx.settings.view
+  // Ny flik, vy eller dag börjar överst (rullytan delas mellan dem).
+  useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0 }, [tab, view, offset])
   const wantsFollow = tab === 'follows' || adding !== null
   const todayDay = useSportDay(wantsFollow ? today : null, model.nowMs)
   const tomorrowDay = useSportDay(wantsFollow || (tab === 'foryou' && view === 'feed') ? shiftDay(today, 1) : null, model.nowMs)
@@ -91,9 +94,9 @@ export function SportPhone({ model, nav }: TvViewProps) {
   return (
     <div data-testid="sport-stage" data-platform={platform} style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#000', ...backdrop.surface }}>
       <SportBackdropLayer choice={backdrop.choice} phone onBroken={backdrop.onBroken} />
-      <div data-testid="sport-phone" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-        {/* Rubrik, flikar och filterraden — står kvar överst medan innehållet rullar. */}
-        <div data-testid="sport-phone-head" style={{ position: 'sticky', top: 0, zIndex: 5, padding: `calc(${MT.SAFE_TOP_GUARD} + 8px) 16px 0`, display: 'flex', flexDirection: 'column', gap: 10, background: 'linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.7) 100%)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+      <div data-testid="sport-phone" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {/* Rubrik, flikar och filterraden står still; bara innehållet under rullar (handoffen). */}
+        <div data-testid="sport-phone-head" style={{ flexShrink: 0, padding: `calc(${MT.SAFE_TOP_GUARD} + 8px) 16px 0`, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div data-testid="sport-phone-title" {...station(() => setSections(true))} aria-label={tt('sportSwitchSection')} aria-haspopup="dialog" style={{ display: 'flex', flexDirection: 'column', minWidth: 0, cursor: 'pointer' }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: P.muted60 }}>{tt('liveTv')}</span>
@@ -120,8 +123,10 @@ export function SportPhone({ model, nav }: TvViewProps) {
           <div data-testid="sport-phone-tabs" data-row="" role="tablist" style={{ display: 'flex', gap: 20, borderBottom: `1px solid ${P.line12}`, overflowX: 'auto' }}>
             {(['foryou', 'results', 'follows'] as const).map((key) => (
               <div key={key} data-testid={`sport-phone-tab-${key}`} {...station(() => setTab(key))} role="tab" aria-selected={key === tab ? 'true' : 'false'}
-                style={{ height: 40, flexShrink: 0, display: 'flex', alignItems: 'center', fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', color: key === tab ? P.text : P.muted60, boxShadow: `inset 0 -3px 0 ${key === tab ? P.coral : 'transparent'}` }}>
+                style={{ position: 'relative', height: 40, flexShrink: 0, display: 'flex', alignItems: 'center', fontSize: 15, fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer', color: key === tab ? P.text : P.muted60 }}>
                 {key === 'foryou' ? tt('sportTabForYou') : key === 'results' ? tt('sportTabResults') : tt('sportTabFollows')}
+                {/* Understrykningen som eget element: telefonens fokusregler nollar box-shadow på stationer. */}
+                {key === tab ? <span data-testid="sport-phone-tab-underline" aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderRadius: 2, background: P.coral }} /> : null}
               </div>
             ))}
           </div>
@@ -146,7 +151,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
           </div>
         </div>
 
-        <div data-testid="sport-phone-body" style={{ padding: `6px 16px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div ref={bodyRef} data-testid="sport-phone-body" data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: `6px 16px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: 'flex', flexDirection: 'column', gap: 18 }}>
           {tab === 'foryou' ? (
             <>
               {notice ? <div data-testid="sport-phone-notice" style={{ borderRadius: 14, border: '1px dashed rgba(255,255,255,0.24)', padding: '28px 16px', textAlign: 'center', fontSize: 15, color: 'rgba(243,244,248,0.75)' }}>{notice}</div> : null}

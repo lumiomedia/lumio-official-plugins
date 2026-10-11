@@ -1,7 +1,7 @@
 import type { TvStringKey } from '../../tv/tv-strings'
 import type { SportMatch } from '../sport-model'
 import type { KickoffAlert, SportFollow } from '../sport-store'
-import { clashes, timelineAxis, timelineRows, type TimelineRow } from '../sport-day-model'
+import { clashes, followState, statusAt, timelineAxis, timelineRows, type TimelineRow } from '../sport-day-model'
 import { groupResults, onlyLeague, type ResultGroup } from '../results-model'
 import { leagueEntries, type LeagueEntry } from '../league-jump'
 
@@ -37,12 +37,21 @@ export interface PhoneTimelineRow extends TimelineRow { abbr: string }
 export interface PhoneTimeline { start: number; end: number; hours: number[]; rows: PhoneTimelineRow[]; nowPct: number | null }
 
 /** Matchdagens tidslinje: BARA matcher på användarens kanaler (handoffen), banor för överlapp, nu-linjen i procent. */
-export function phoneTimeline(matches: SportMatch[], dayFrom: number, now: number): PhoneTimeline | null {
+export function phoneTimeline(matches: SportMatch[], dayFrom: number, now: number, follows: SportFollow[] = []): PhoneTimeline | null {
   const own = matches.filter((m) => m.sources.length > 0)
   if (own.length === 0) return null
   const axis = timelineAxis(own, dayFrom)
   const span = axis.end - axis.start
-  const rows = timelineRows(own).map((r) => ({ ...r, abbr: leagueAbbr(r.label) }))
+  // Telefonen visar de första ligorna och fäller resten: det man följer först,
+  // sedan det som pågår, sedan ligorna med flest matcher (stabil ordning annars).
+  const rank = (r: TimelineRow) => {
+    const all = r.lanes.flat()
+    return [all.some((m) => followState(m, follows).any) ? 0 : 1, all.some((m) => statusAt(m, now) === 'live') ? 0 : 1, -all.length]
+  }
+  const rows = timelineRows(own)
+    .map((r, i) => ({ r, i, k: rank(r) }))
+    .sort((a, b) => a.k[0]! - b.k[0]! || a.k[1]! - b.k[1]! || a.k[2]! - b.k[2]! || a.i - b.i)
+    .map(({ r }) => ({ ...r, abbr: leagueAbbr(r.label) }))
   const nowPct = now >= axis.start && now <= axis.end && span > 0 ? ((now - axis.start) / span) * 100 : null
   return { ...axis, rows, nowPct }
 }

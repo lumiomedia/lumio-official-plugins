@@ -50,6 +50,17 @@ describe('Matchdagens tidslinje på telefon', () => {
       ['SHL', [['d']]],
     ])
   })
+  it('ligorna sorteras: följda först, sedan de med något som pågår, sedan flest matcher', () => {
+    const one = (id: string, league: string, start: number, over: Partial<SportMatch> = {}) => m({ id, league, leagueKey: league.toLowerCase(), start, stop: start + 2 * HOUR, ...over })
+    const rows = [
+      one('a1', 'Bundesliga', at(15)), one('a2', 'Bundesliga', at(16, 30)), one('a3', 'Bundesliga', at(21)),
+      one('b1', 'Serie A', at(18, 30)),
+      one('c1', 'Allsvenskan', at(21)),
+    ]
+    const follows = [{ sport: 'football' as const, kind: 'league' as const, key: 'allsvenskan', name: 'Allsvenskan' }]
+    const tl = phoneTimeline(rows, DAY, at(19), follows)!
+    expect(tl.rows.map((r) => r.label)).toEqual(['Allsvenskan', 'Serie A', 'Bundesliga'])
+  })
   it('axeln är minst 8 timmar och nu-linjen ligger i procent av den; utanför axeln ingen linje', () => {
     const tl = phoneTimeline([m({ id: 'a', start: at(19), stop: at(21) })], DAY, at(19, 15))!
     expect(tl.end - tl.start).toBeGreaterThanOrEqual(8 * HOUR)

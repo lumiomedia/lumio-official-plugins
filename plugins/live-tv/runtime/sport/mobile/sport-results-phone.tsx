@@ -132,7 +132,7 @@ function ResultRow({ m, tt, locale, follows, onOpen, onWatch }: { m: SportMatch;
   const watch = () => { if (can) onWatch!(m) }
   return (
     <div data-testid="phone-result-row" data-status={m.status} {...station(onOpen)} style={{ ...cardStyle, borderRadius: 12, border: `1px solid ${P.line12}`, minHeight: 58, display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', cursor: 'pointer' }}>
-      <span style={{ width: 36, flexShrink: 0, fontSize: 12, fontWeight: 700, color: live ? P.liveMin : upcoming ? P.coralLight : P.muted60 }}>{status}</span>
+      <span style={{ width: 44, flexShrink: 0, whiteSpace: 'nowrap', overflow: 'hidden', fontSize: 12, fontWeight: 700, color: live ? P.liveMin : upcoming ? P.coralLight : P.muted60 }}>{status}</span>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
         <span style={{ fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}><span style={ellipsis}>{m.home ?? m.event ?? m.league}</span>{fs.home ? <span style={{ color: P.coral, display: 'inline-flex', flexShrink: 0 }}><MIcons.Heart size={11} filled /></span> : null}</span>
         {m.away ? <span style={{ fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}><span style={ellipsis}>{m.away}</span>{fs.away ? <span style={{ color: P.coral, display: 'inline-flex', flexShrink: 0 }}><MIcons.Heart size={11} filled /></span> : null}</span> : null}
