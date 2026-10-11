@@ -1,5 +1,7 @@
 // runtime/sport/live-poller.test.ts
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Budget } from './budget'
+import { apiSports } from './api-sports'
 import { __resetPollDemandForTests, acquirePollDemand, createLivePoller, hasPollDemand, type LiveTarget } from './live-poller'
 
 const NOW = Date.UTC(2026, 9, 10, 18)
@@ -92,5 +94,43 @@ describe('livepollern', () => {
     poller.stop()
     await vi.advanceTimersByTimeAsync(5 * 60_000)
     expect(live).not.toHaveBeenCalled()
+  })
+})
+
+describe('spärr som släpper medan vyn står öppen', () => {
+  it('slut kvot: pollern vaknar själv vid dygnsskiftet (UTC) och pollar igen', async () => {
+    const midnight = Date.UTC(2026, 9, 11)
+    vi.setSystemTime(midnight - 30 * 60_000)
+    const fetch = vi.fn(async () => ({ data: { response: [] }, cached: false, fresh: true, fetchedAt: Date.now(), quota: null, error: null }))
+    const budget = new Budget(apiSports, 'k123', { fetch: fetch as never, sleep: async () => {} })
+    budget.noteQuota({ bucket: 'football', limit: 100, remaining: 0, minuteLimit: null, minuteRemaining: null, blockedUntil: midnight, reason: 'exhausted', plan: 'Free' })
+    const poller = createLivePoller({
+      budget, targets: () => [{ sport: 'football', hot: true, windowEndsAt: midnight + 3 * 3_600_000 }],
+      onFixtures: () => {}, liveOpts: () => ({ today: '2026-10-11', tz: 'Europe/Stockholm' }),
+      isVisible: () => true, onVisibility: () => () => {},
+    })
+    poller.start()
+    acquirePollDemand('sport-view')
+    await vi.advanceTimersByTimeAsync(29 * 60_000)
+    expect(fetch).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(60_000 + 20_000) // förbi midnatt + golvet
+    expect(fetch.mock.calls.some(([a]) => (a as { req: { path: string } }).req.path.includes('live='))).toBe(true)
+    poller.stop()
+  })
+
+  it('minutspärr: pollern vaknar när minutfönstret gått ut', async () => {
+    const fetch = vi.fn(async () => ({ data: { response: [] }, cached: false, fresh: true, fetchedAt: Date.now(), quota: null, error: null }))
+    const budget = new Budget(apiSports, 'k123', { fetch: fetch as never, sleep: async () => {} })
+    budget.noteQuota({ bucket: 'football', limit: 7500, remaining: 7000, minuteLimit: 300, minuteRemaining: 0, blockedUntil: NOW + 60_000, reason: 'rate-limited', plan: 'Pro' })
+    const poller = createLivePoller({
+      budget, targets: () => [{ sport: 'football', hot: true, windowEndsAt: NOW + 3 * 3_600_000 }],
+      onFixtures: () => {}, liveOpts: () => ({ today: '2026-10-10', tz: 'Europe/Stockholm' }),
+      isVisible: () => true, onVisibility: () => () => {},
+    })
+    poller.start()
+    acquirePollDemand('sport-view')
+    await vi.advanceTimersByTimeAsync(60_000 + 16_000)
+    expect(fetch).toHaveBeenCalled()
+    poller.stop()
   })
 })

@@ -63,7 +63,26 @@ export class Budget {
   hasKey(): boolean { return !!this.key }
   isInvalid(): boolean { return this.invalid }
 
-  quota(bucket: string): SportQuota { return this.quotas.get(bucket) ?? unknownQuota(bucket) }
+  /**
+   * En spärr som passerat släpps här, utan att vänta på nästa svar: står vyn
+   * öppen över dygnsskiftet ska pollningen komma igång av sig själv. "Slut i
+   * dag" betyder att den lagrade `remaining: 0` är gårdagens, så den blir okänd
+   * (nästa svar sätter den). En minutspärr behåller dygnets siffror.
+   */
+  quota(bucket: string): SportQuota {
+    const q = this.quotas.get(bucket)
+    if (!q) return unknownQuota(bucket)
+    if (q.blockedUntil == null || q.blockedUntil > this.now()) return q
+    return q.reason === 'exhausted'
+      ? { ...q, remaining: null, blockedUntil: null, reason: null }
+      : { ...q, blockedUntil: null, reason: null }
+  }
+
+  /** Tidpunkten då en spärr på hinken släpper, eller `null` om ingen spärr gäller nu. */
+  pausedUntil(bucket: string): number | null {
+    const until = this.quota(bucket).blockedUntil
+    return until != null && until > this.now() ? until : null
+  }
 
   noteQuota(q: SportQuota): void {
     this.quotas.set(q.bucket, q)
@@ -116,8 +135,9 @@ export class Budget {
   }
 
   private spendLocal(bucket: string, n: number): void {
-    const q = this.quotas.get(bucket)
-    if (q && q.remaining != null && n > 0) this.quotas.set(bucket, { ...q, remaining: Math.max(0, q.remaining - n) })
+    if (!this.quotas.has(bucket)) return
+    const q = this.quota(bucket)
+    if (q.remaining != null && n > 0) this.quotas.set(bucket, { ...q, remaining: Math.max(0, q.remaining - n) })
   }
 
   private async prime(sport: SportKind, bucket: string): Promise<void> {

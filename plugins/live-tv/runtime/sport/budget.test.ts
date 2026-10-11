@@ -100,6 +100,15 @@ describe('Budget.run', () => {
     expect(budget.allows('day', 'football', 1)).toBe(true)
   })
 
+  it('slut kvot (remaining 0) släpps vid dygnsskiftet utan nytt svar', () => {
+    const midnight = Date.UTC(2026, 9, 11)
+    const { budget, advance } = harness([{}], q({ remaining: 0, blockedUntil: midnight, reason: 'exhausted' }))
+    expect(budget.liveIntervalMs('football', midnight + 3_600_000)).toBeNull()
+    advance(midnight - NOW + 1)
+    expect(budget.allows('live', 'football', 1)).toBe(true)
+    expect(budget.liveIntervalMs('football', midnight + 3_600_000)).toBe(15_000)
+  })
+
   it('fel nyckel stoppar allt utom validering, utan nät', async () => {
     const { budget, fetch } = harness([{ error: 'unauthorized' }])
     expect(await budget.run('day', 'football', call())).toMatchObject({ ok: false, reason: 'invalid-key' })

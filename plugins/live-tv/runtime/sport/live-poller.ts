@@ -102,11 +102,25 @@ export function createLivePoller(deps: LivePollerDeps): LivePoller {
     return Math.max(0, Math.min(...items.map((i) => i.at)) - now())
   }
 
+  function pauseEndsAt(): number | null {
+    const ends = deps.targets()
+      .filter((t) => t.hot)
+      .map((t) => deps.budget.pausedUntil?.(deps.budget.provider.bucket(t.sport)) ?? null)
+      .filter((x): x is number => x != null)
+    return ends.length ? Math.min(...ends) : null
+  }
+
   function reschedule(): void {
     if (timer != null) { clearTimer(timer); timer = null }
     if (!active()) { due.clear(); return }
     const delay = nextDelayMs()
-    if (delay == null) return
+    if (delay == null) {
+      // Spärrad hink (slut i dag / minutspärr): vakna när spärren släpper och
+      // planera om, så att pollningen kommer igång utan att vyn öppnas igen.
+      const wake = pauseEndsAt()
+      if (wake != null) timer = setTimer(() => { timer = null; reschedule() }, Math.max(0, wake - now()) + 1)
+      return
+    }
     timer = setTimer(() => { timer = null; void tick() }, delay)
   }
 
