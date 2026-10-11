@@ -1,8 +1,8 @@
-import { rankedSources } from './sport-day-model'
+import { followState, rankedSources } from './sport-day-model'
 import type { Fixture, FixtureStatus } from './provider'
 import type { LinkMap } from './sport-link'
 import type { MatchStatus, SportKind, SportMatch } from './sport-model'
-import type { SportOverrides } from './sport-store'
+import type { SportFollow, SportOverrides } from './sport-store'
 
 export function fixtureMatchKey(f: Pick<Fixture, 'provider' | 'id'>): string {
   return `fx:${f.provider}:${f.id}`
@@ -107,4 +107,15 @@ export function mergeLinked(a: MergeArgs): SportMatch[] {
     out.push(fixtureOnly(f, a.overrides))
   }
   return out
+}
+
+/**
+ * Det användaren bryr sig om: EPG-matcherna (med eller utan kopplad fixtur),
+ * och av "Bara resultat" bara följda lag och ligor. En vald kanal (override)
+ * gör redan raden tittbar (`resultOnly: false`). Dagsprogrammet täcker hela
+ * världen; det här är vad vyerna, spelarens låda och livepollningen ser.
+ * Resultat-fliken läser hela listan och pollar inte resten live.
+ */
+export function relevantMatches(all: SportMatch[], follows: SportFollow[]): SportMatch[] {
+  return all.filter((m) => !m.resultOnly || followState(m, follows).any)
 }

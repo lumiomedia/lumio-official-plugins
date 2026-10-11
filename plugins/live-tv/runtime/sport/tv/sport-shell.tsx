@@ -58,7 +58,7 @@ function SportTv({ model, nav }: TvViewProps) {
   const tomorrowDay = useSportDay(wantsToday || ctx.settings.view === 'feed' ? shiftDay(today, 1) : null, model.nowMs)
   const yesterdayDay = useSportDay(pickerOpen ? shiftDay(today, -1) : null, model.nowMs)
 
-  const { matches: mergedMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
+  const { matches: mergedMatches, allMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
   const tvMode = useTvMode()
   usePollDemand('sport-view', true)
@@ -78,7 +78,7 @@ function SportTv({ model, nav }: TvViewProps) {
   const body = () => {
     if (selected.state === 'missing') return <Notice testId="sport-missing" text={tt('sportNeedsUpdate')} />
     if (selected.state === 'error') return <Notice testId="sport-error" text={tt('sportError')} />
-    if (tab === 'results') return <SportResults matches={mergedMatches} controller={controller} onOpenMatch={ctx.openMatch} tv={tvMode} />
+    if (tab === 'results') return <SportResults matches={allMatches} controller={controller} onOpenMatch={ctx.openMatch} tv={tvMode} />
     if (tab === 'follows') return <SportFollows ctx={ctx} days={[todayDay.data, tomorrowDay.data]} />
     if (selected.state === 'loading') return <Notice testId="sport-loading" text={tt('sportLoading')} />
     if (matches.length === 0) return <Notice testId="sport-empty" text={tt('sportEmptyDay')} />

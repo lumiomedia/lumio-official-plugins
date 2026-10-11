@@ -9,10 +9,10 @@ import { createLivePoller, type LivePoller, type LiveTarget } from './live-polle
 import { diffGoals, emitGoals, type Score } from './goal-events'
 import { isPaidPlan } from './key-flow'
 import { linkFixtures, type LinkMap } from './sport-link'
-import { mergeLinked } from './merge'
+import { mergeLinked, relevantMatches } from './merge'
 import { coverageFor } from './providers'
 import { followState } from './sport-day-model'
-import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, useOverrides } from './sport-store'
+import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, useFollows, useOverrides } from './sport-store'
 import type { Fixture, FixtureDetail, ProviderId, StandingRow } from './provider'
 import type { SportKind, SportMatch } from './sport-model'
 
@@ -177,13 +177,22 @@ export class ResultsController {
     return this.tables.get(planKey(call)) ?? null
   }
 
+  /**
+   * Heta sporter och livefönstret räknas BARA på fixturer användaren bryr sig
+   * om: kopplade till en EPG-match, följda eller valda (= de som finns i den
+   * sammanslagna listan). Dagsprogrammet täcker hela världen, och då hade
+   * nästan alltid något varit live någonstans och kvoten spridits tunt.
+   */
   liveTargets(): LiveTarget[] {
     const today = this.dates().today
     const now = this.now()
+    const providerId = this.budget.provider.id
+    const relevant = new Set<string>()
+    for (const m of this.mergedById.values()) if (m.fixture && m.fixture.provider === providerId) relevant.add(m.fixture.id)
     const bySport = new Map<SportKind, Fixture[]>()
     for (const [k, list] of this.days) {
       const [sport, date] = k.split('|') as [SportKind, string]
-      if (date === today) bySport.set(sport, list)
+      if (date === today) bySport.set(sport, list.filter((f) => relevant.has(f.id)))
     }
     const out: LiveTarget[] = []
     for (const [sport, list] of bySport) {
@@ -220,6 +229,7 @@ export class ResultsController {
     const cutoff = this.now() - 36 * 3_600_000
     for (const x of m) this.mergedById.set(x.id, x)
     for (const [id, x] of this.mergedById) if (x.stop < cutoff) this.mergedById.delete(id)
+    this.poller?.reschedule() // mängden heta fixturer kan ha ändrats
     for (const cb of [...this.mergedListeners]) cb()
   }
   merged(): SportMatch[] { return [...this.mergedById.values()] }
@@ -264,9 +274,14 @@ const NO_KEY: RateStatus = { provider: null, state: 'no-key', intervalMs: null, 
  * EPG-dagen (fas 1:s `useSportDay`) plus källans fixturer. `day: null` = ingen plan, ingen länkning och ingen
  * skrivning till den sammanslagna listan (spelarens ticker är avstängd när spelaren är stängd).
  */
-export function useSportResults(opts: { day: string | null; epg: SportMatch[] }): { matches: SportMatch[]; status: RateStatus; controller: ResultsController | null } {
+/**
+ * `matches` = det användaren bryr sig om (EPG + följda/valda "Bara resultat"); vyer, spelarens låda och
+ * livepollningen läser den. `allMatches` = plus hela dagsprogrammet, bara för Resultat-fliken (pollas inte live).
+ */
+export function useSportResults(opts: { day: string | null; epg: SportMatch[] }): { matches: SportMatch[]; allMatches: SportMatch[]; status: RateStatus; controller: ResultsController | null } {
   const controller = useResultsController()
   const overrides = useOverrides()
+  const follows = useFollows()
   const [links, setLinks] = useState<LinkMap>({})
   const providerId = controller?.budget.provider.id ?? null
 
@@ -297,14 +312,15 @@ export function useSportResults(opts: { day: string | null; epg: SportMatch[] })
     // Länka om bara när mängden fixturer ändras, inte vid varje ställningsuppdatering.
   }, [controller, opts.day, fixtureIds])
 
-  const matches = useMemo(() => {
+  const allMatches = useMemo(() => {
     if (!controller) return opts.epg.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }))
     return mergeLinked({ epg: opts.epg, fixtures, links, overrides, coverage: (s) => coverageFor(providerId, s) })
   }, [controller, opts.epg, fixtures, links, overrides, providerId])
+  const matches = useMemo(() => relevantMatches(allMatches, follows), [allMatches, follows])
 
   useEffect(() => { if (opts.day) controller?.setMerged(matches) }, [controller, opts.day, matches])
 
-  return { matches, status: controller ? controller.status() : NO_KEY, controller }
+  return { matches, allMatches, status: controller ? controller.status() : NO_KEY, controller }
 }
 
 /** Matchen som går på kanalen just nu, om den är live i en täckt sport. Driver spelarens efterfrågan och MÅL!. */

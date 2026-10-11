@@ -3,6 +3,7 @@ import { Budget } from './budget'
 import { ResultsController } from './results-controller'
 import { onGoal } from './goal-events'
 import { apiSports } from './api-sports'
+import { fxMatch } from './__sport-fixture'
 import footballDate from './__fixtures__/api-sports/football-fixtures-date.json'
 import type { SportFetchResponse, SportQuota } from './sport-fetch'
 
@@ -76,15 +77,22 @@ describe('ResultsController', () => {
     expect(goals).not.toHaveBeenCalled()
   })
 
-  it('liveTargets: het när en match pågår, fönstret = sista avspark + 2 h', async () => {
+  it('liveTargets: bara fixturer användaren bryr sig om (kopplade, följda, valda) gör en sport het', async () => {
     const { c } = controller(() => ({ data: footballDate }))
     await c.runPlan({ sports: ['football'], leagues: [] })
-    expect(c.liveTargets()).toEqual([{ sport: 'football', hot: true, windowEndsAt: 1791658800000 + 7_200_000 }])
+    // Dagsprogrammet ensamt (hela världen) gör ingenting hett.
+    expect(c.liveTargets()).toEqual([])
+    const [live] = c.fixtures('football', '2026-10-10')
+    c.setMerged([fxMatch({ id: 'm1', kind: 'football', start: live.kickoff, stop: live.kickoff + 7_200_000, fixture: { provider: 'api-sports', id: live.id } })])
+    // Fönstret räknas bara på de relevanta fixturerna (inte världens sista avspark).
+    expect(c.liveTargets()).toEqual([{ sport: 'football', hot: true, windowEndsAt: live.kickoff + 7_200_000 }])
   })
 
   it('status: takt och kvar i dag, paus vid spärr', async () => {
     const { c } = controller(() => ({ data: footballDate }))
     await c.runPlan({ sports: ['football'], leagues: [] })
+    const [live] = c.fixtures('football', '2026-10-10')
+    c.setMerged([fxMatch({ id: 'm1', kind: 'football', start: live.kickoff, stop: live.kickoff + 7_200_000, fixture: { provider: 'api-sports', id: live.id } })])
     expect(c.status()).toMatchObject({ provider: 'api-sports', state: 'ok', remainingToday: 80, paid: false })
     expect(c.status().intervalMs).toBeGreaterThanOrEqual(15_000)
     c.budget.noteQuota({ ...quota, remaining: 0, blockedUntil: Date.UTC(2026, 9, 11), reason: 'exhausted' })

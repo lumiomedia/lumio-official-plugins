@@ -37,7 +37,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const today = localDayKey(model.nowMs)
   const day = shiftDay(today, offset)
   const selected = useSportDay(day, model.nowMs)
-  const { matches: mergedMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
+  const { matches: mergedMatches, allMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
   usePollDemand('sport-view', true)
   const wantsFollow = tab === 'follows' || adding
@@ -83,7 +83,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
           <PhoneSection ctx={ctx} title={tt('sportFinished')} matches={finished} />
         </>
       ) : tab === 'results' ? (
-        <SportResultsPhone matches={mergedMatches} controller={controller} onOpenMatch={openMatch} pushLayer={nav.pushLayer} />
+        <SportResultsPhone matches={allMatches} controller={controller} onOpenMatch={openMatch} pushLayer={nav.pushLayer} />
       ) : (
         <PhoneFollows ctx={ctx} days={[todayDay.data, tomorrowDay.data]} />
       )}

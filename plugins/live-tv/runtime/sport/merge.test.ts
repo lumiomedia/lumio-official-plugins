@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fixtureMatchKey, mergeLinked } from './merge'
+import { fixtureMatchKey, mergeLinked, relevantMatches } from './merge'
 import type { Fixture } from './provider'
 import type { SportMatch } from './sport-model'
 import type { OverrideChannel } from './sport-store'
@@ -79,5 +79,28 @@ describe('mergeLinked', () => {
   it('två fixturer mot samma EPG-match: den andra blir "Bara resultat"', () => {
     const out = mergeLinked({ ...base, epg: [epgMatch()], fixtures: [fixture(), fixture({ id: '2' })], links: { '1180001': { matchId: 'm1', swapped: false }, '2': { matchId: 'm1', swapped: false } } })
     expect(out.map((m) => [m.id, !!m.resultOnly])).toEqual([['m1', false], ['fx:api-sports:2', true]])
+  })
+})
+
+describe('relevantMatches (Bara resultat bara för det användaren bryr sig om)', () => {
+  it('okopplade fixturer stannar bara om laget eller ligan följs eller en kanal valts', () => {
+    const all = mergeLinked({
+      ...base,
+      overrides: { [fixtureMatchKey({ provider: 'api-sports', id: '3' })]: tv4 },
+      epg: [epgMatch()],
+      fixtures: [
+        fixture({ id: '1', home: { id: '1', name: 'Boca Juniors', crest: null }, away: { id: '2', name: 'River Plate', crest: null }, league: { id: '128', name: 'Liga Profesional', season: '2026', round: null, country: 'Argentina' } }),
+        fixture({ id: '2', home: { id: '3', name: 'IFK Göteborg', crest: null }, away: { id: '4', name: 'AIK', crest: null } }),
+        fixture({ id: '3', home: { id: '5', name: 'Wrexham', crest: null }, away: { id: '6', name: 'Stoke', crest: null }, league: { id: '40', name: 'Championship', season: '2026', round: null, country: 'England' } }),
+        fixture({ id: '4', home: { id: '7', name: 'Real Madrid', crest: null }, away: { id: '8', name: 'Getafe', crest: null }, league: { id: '140', name: 'La Liga', season: '2026', round: null, country: 'Spain' } }),
+      ],
+      links: {},
+    })
+    expect(all.filter((m) => m.resultOnly)).toHaveLength(3)
+    const kept = relevantMatches(all, [
+      { sport: 'football', kind: 'team', key: 'ifk goteborg', name: 'IFK Göteborg' },
+      { sport: 'football', kind: 'league', key: 'fx:api-sports:140', name: 'La Liga' },
+    ])
+    expect(kept.map((m) => m.id)).toEqual(['m1', 'fx:api-sports:2', 'fx:api-sports:3', 'fx:api-sports:4'])
   })
 })
