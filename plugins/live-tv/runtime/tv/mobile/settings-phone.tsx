@@ -50,7 +50,7 @@ export function TvSettingsPhone(props: TvViewProps) {
             : params.tab === 'parental'
               ? <ParentalTab model={model} tt={tt} phone />
               : params.tab === 'sport'
-                ? <><SportKeySettingsTv phone /><SportBackdropSettingsTv phone pushLayer={nav.pushLayer} /></>
+                ? <><SportKeySettingsTv phone pushLayer={nav.pushLayer} /><SportBackdropSettingsTv phone pushLayer={nav.pushLayer} /></>
                 : <ContentTab model={model} tt={tt} phone />}
         </Card>
       </PhonePage>

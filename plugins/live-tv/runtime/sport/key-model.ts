@@ -1,6 +1,7 @@
 // runtime/sport/key-model.ts
 import { maskKey } from './key-flow'
-import { PROVIDER_IDS, PROVIDER_LABEL, orderFor, providerFor } from './providers'
+import { PROVIDER_IDS, PROVIDER_LABEL, providerFor } from './providers'
+import { SPORT_CHIPS } from './sport-model'
 import type { Budget } from './budget'
 import type { ProviderId } from './provider'
 import type { SportKind } from './sport-model'
@@ -9,10 +10,19 @@ import type { TvStringKey } from '../tv/tv-strings'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 
-/** Sporterna i Källa per sport (de någon källa kan ge resultat för). */
-export const ORDER_SPORTS: readonly SportKind[] = ['football', 'hockey', 'basketball', 'handball']
-export const SPORT_NAME_KEY: Partial<Record<SportKind, TvStringKey>> = {
-  football: 'sportNameFootball', hockey: 'sportNameHockey', basketball: 'sportNameBasketball', handball: 'sportNameHandball',
+/** Sportens namn i inställningarna: översatt och med versal ("Fotboll", "Ice hockey"). Samma nycklar som sportchipsen. */
+export const SPORT_LABEL_KEY: Record<SportKind, TvStringKey> = {
+  football: 'sportKindFootball', hockey: 'sportKindHockey', basketball: 'sportKindBasketball', handball: 'sportKindHandball',
+  motorsport: 'sportKindMotorsport', tennis: 'sportKindTennis', other: 'sportKindOther',
+}
+export function sportLabel(sport: SportKind, tt: TT): string { return tt(SPORT_LABEL_KEY[sport]) }
+
+/** Sporterna någon källa ger resultat för (motorsport och tennis har ingen källa). */
+export const ORDER_SPORTS: readonly SportKind[] = SPORT_CHIPS.filter((s) => PROVIDER_IDS.some((id) => providerFor(id).coverage(s) === 'full'))
+
+/** Kortets rad om täckning och gräns. */
+export const PROVIDER_BLURB_KEY: Record<ProviderId, TvStringKey> = {
+  sportapi: 'sportKeyBlurbSportApi', 'api-sports': 'sportKeyBlurbApiSports', thesportsdb: 'sportKeyBlurbTheSportsDb',
 }
 
 export interface KeyQuota { bucket: string; used: number; limit: number }
@@ -56,38 +66,30 @@ export function keyRows(s: Pick<SportSettings, 'keys'>, budget: (id: ProviderId)
   })
 }
 
-const BUCKET_NAME: Record<string, TvStringKey> = {
-  football: 'sportNameFootball', hockey: 'sportNameHockey', basketball: 'sportNameBasketball', handball: 'sportNameHandball',
+export type KeyTone = 'ok' | 'none' | 'warn' | 'bad'
+
+/** Kortets statuspiller: "Aktiv · 47 kvar idag", "Ingen nyckel", "Pausad till 02:00", "Nyckeln godtogs inte". */
+export function keyStatus(r: KeyRow, tt: TT, opts: { locale: string; tz?: string }): { text: string; tone: KeyTone } {
+  if (r.state === 'none') return { text: tt('sportKeyStateNone'), tone: 'none' }
+  if (r.state === 'invalid') return { text: tt('sportKeyRejected'), tone: 'bad' }
+  if (r.state === 'paused' && r.until != null) {
+    const time = new Intl.DateTimeFormat(opts.locale, { hour: '2-digit', minute: '2-digit', timeZone: opts.tz }).format(r.until)
+    return { text: tt('sportKeyStatePaused', { time }), tone: 'warn' }
+  }
+  const active = tt('sportKeyStateActive')
+  if (r.noDailyLimit) return { text: `${active} · ${tt('sportKeyNoDailyLimit')}`, tone: 'ok' }
+  // En hink (sportapi.ai): kvar i dag i pillret. Flera (API-Sports, en per sport): raden under kortet.
+  if (bucketsOf(r.id).length === 1 && r.quotas.length === 1) {
+    const q = r.quotas[0]
+    return { text: `${active} · ${tt('sportKeyLeftToday', { n: new Intl.NumberFormat(opts.locale).format(Math.max(0, q.limit - q.used)) })}`, tone: 'ok' }
+  }
+  return { text: active, tone: 'ok' }
 }
 
-/** "OK · ••••3f9a · 12 / 2 000 i dag", "Pausad till 01:00", "Ingen nyckel". */
-export function keyRowText(r: KeyRow, tt: TT, opts: { locale: string; tz?: string }): string {
-  if (r.state === 'none') return tt('sportKeyStateNone')
-  if (r.state === 'invalid') return [tt('sportKeyStateInvalid'), r.masked].filter(Boolean).join(' · ')
-  const nf = new Intl.NumberFormat(opts.locale)
-  const head = r.state === 'paused' && r.until != null
-    ? tt('sportKeyStatePaused', { time: new Intl.DateTimeFormat(opts.locale, { hour: '2-digit', minute: '2-digit', timeZone: opts.tz }).format(r.until) })
-    : tt('sportKeyStateOk')
-  const quota = r.noDailyLimit
-    ? tt('sportKeyNoDailyLimit')
-    : r.quotas.map((q) => {
-      const n = tt('sportKeyQuotaToday', { used: nf.format(q.used), limit: nf.format(q.limit) })
-      return r.quotas.length > 1 && BUCKET_NAME[q.bucket] ? `${tt(BUCKET_NAME[q.bucket])} ${n}` : n
-    }).join(', ')
-  return [head, r.masked, quota].filter(Boolean).join(' · ')
-}
-
-/** Sportens hela ordning (alla källor som täcker den), med nyckelstatus för visningen. */
-export function orderRows(s: Pick<SportSettings, 'keys' | 'order'>, sport: SportKind): Array<{ id: ProviderId; label: string; hasKey: boolean }> {
-  return orderFor(s.order, sport).map((id) => ({ id, label: PROVIDER_LABEL[id], hasKey: !!s.keys[id] }))
-}
-
-/** Flytta en källa ett steg (−1 = upp). Utanför kanten: oförändrat. */
-export function moveProvider(order: ProviderId[], id: ProviderId, dir: -1 | 1): ProviderId[] {
-  const i = order.indexOf(id)
-  const j = i + dir
-  if (i < 0 || j < 0 || j >= order.length) return order
-  const next = [...order]
-  ;[next[i], next[j]] = [next[j], next[i]]
-  return next
+/** Källor med en hink per sport: "Kvar idag: Fotboll 0 · Ishockey 97" (bara kända hinkar). */
+export function keyQuotaDetail(r: KeyRow, tt: TT, locale: string): string | null {
+  if (r.state === 'none' || r.state === 'invalid' || bucketsOf(r.id).length < 2 || r.quotas.length === 0) return null
+  const nf = new Intl.NumberFormat(locale)
+  const list = r.quotas.map((q) => `${sportLabel(q.bucket as SportKind, tt)} ${nf.format(Math.max(0, q.limit - q.used))}`).join(' · ')
+  return tt('sportKeyLeftPerSport', { list })
 }
