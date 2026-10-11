@@ -11,6 +11,7 @@ import { timeLine, type SportCtx } from '../sport-ctx'
 import { heroStatusLine, showsScore } from '../score-model'
 import { Crest, StatusTag, ellipsis, overline, primaryBtn } from './sport-parts'
 import { MatchScore } from './sport-score'
+import { MatchCenterData } from './sport-match-center-data'
 import { SportIcons } from './sport-icons'
 
 const pill = (on: boolean): CSSProperties => ({
@@ -147,6 +148,7 @@ export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match
         {override ? (
           <div data-testid="mc-clear-override" {...station(() => setOverride(match.id, null))} style={{ fontSize: dp(17), color: TV.accText, cursor: 'pointer', padding: `${dp(8)}px ${dp(4)}px` }}>{ctx.tt('sportUseAutomatic')}</div>
         ) : null}
+        <MatchCenterData match={match} />
       </div>
       {picking ? (
         <TvChannelPicker
