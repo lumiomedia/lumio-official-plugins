@@ -101,7 +101,7 @@ describe('spärr som släpper medan vyn står öppen', () => {
   it('slut kvot: pollern vaknar själv vid dygnsskiftet (UTC) och pollar igen', async () => {
     const midnight = Date.UTC(2026, 9, 11)
     vi.setSystemTime(midnight - 30 * 60_000)
-    const fetch = vi.fn(async () => ({ data: { response: [] }, cached: false, fresh: true, fetchedAt: Date.now(), quota: null, error: null }))
+    const fetch = vi.fn(async (_args: { req: { path: string } }) => ({ data: { response: [] }, cached: false, fresh: true, fetchedAt: Date.now(), quota: null, error: null }))
     const budget = new Budget(apiSports, 'k123', { fetch: fetch as never, sleep: async () => {} })
     budget.noteQuota({ bucket: 'football', limit: 100, remaining: 0, minuteLimit: null, minuteRemaining: null, blockedUntil: midnight, reason: 'exhausted', plan: 'Free' })
     const poller = createLivePoller({
@@ -114,7 +114,7 @@ describe('spärr som släpper medan vyn står öppen', () => {
     await vi.advanceTimersByTimeAsync(29 * 60_000)
     expect(fetch).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(60_000 + 20_000) // förbi midnatt + golvet
-    expect(fetch.mock.calls.some(([a]) => (a as { req: { path: string } }).req.path.includes('live='))).toBe(true)
+    expect(fetch.mock.calls.some(([a]) => a.req.path.includes('live='))).toBe(true)
     poller.stop()
   })
 
