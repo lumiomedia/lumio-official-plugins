@@ -206,3 +206,39 @@ export function leagueColor(key: string): string {
 export function crestColor(key: string): string {
   return `hsl(${hue(key)} 55% 42%)`
 }
+
+/**
+  Spelarens matchlåda, grupperad på tid som Guiden: "Pågår nu" (kanalens egen
+  match överst) och sedan en grupp per avsparkstid. Bara matcher med kanal —
+  de utan finns i Resultat. `start: null` = pågår nu.
+*/
+export function playerMatchGroups(matches: SportMatch[], currentKey: string, now: number): { start: number | null; matches: SportMatch[] }[] {
+  const withSource = matches.filter((m) => m.sources.length > 0)
+  const onHere = (m: SportMatch) => (m.sources.some((s) => s.channelKey === currentKey) ? 0 : 1)
+  const live = withSource.filter((m) => statusAt(m, now) === 'live').sort((a, b) => onHere(a) - onHere(b) || a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)))
+  const upcoming = withSource.filter((m) => statusAt(m, now) === 'upcoming').sort((a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)))
+  const groups: { start: number | null; matches: SportMatch[] }[] = live.length > 0 ? [{ start: null, matches: live }] : []
+  for (const m of upcoming) {
+    const last = groups[groups.length - 1]
+    if (last && last.start === m.start) last.matches.push(m)
+    else groups.push({ start: m.start, matches: [m] })
+  }
+  return groups
+}
+
+/**
+  Matchdagens remsa: EN tidsordnad rad i stället för sektionerna Live nu /
+  Senare / Avslutade. Det som startat (avslutat eller pågående) först, sedan
+  nu-markören (`nowIndex` = platsen före det första kommande) och det som
+  kommer. `focusIndex` är matchen remsan ska rullas fram till: första
+  pågående, annars första kommande.
+*/
+export function matchdayStrip(matches: SportMatch[], now: number): { items: SportMatch[]; nowIndex: number; focusIndex: number } {
+  const byStart = (a: SportMatch, b: SportMatch) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b))
+  const started = matches.filter((m) => statusAt(m, now) !== 'upcoming').sort(byStart)
+  const upcoming = matches.filter((m) => statusAt(m, now) === 'upcoming').sort(byStart)
+  const items = [...started, ...upcoming]
+  const firstLive = items.findIndex((m) => statusAt(m, now) === 'live')
+  const focusIndex = firstLive >= 0 ? firstLive : Math.min(started.length, Math.max(items.length - 1, 0))
+  return { items, nowIndex: started.length, focusIndex }
+}
