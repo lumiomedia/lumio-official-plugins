@@ -15,18 +15,21 @@ import { MatchCenterData } from './sport-match-center-data'
 import { SportIcons } from './sport-icons'
 import { SPORT_PANEL_BG, sportSurface } from '../surface'
 
-const pill = (on: boolean): CSSProperties => ({
-  height: dp(52), minHeight: dp(52), padding: `0 ${dp(20)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: dp(8),
-  fontSize: dp(17), fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-  background: on ? TV.accMix(18) : TV.s10, color: TV.text, border: `1px solid ${on ? TV.accMix(60) : TV.lineCard}`,
+const iconBtn = (on: boolean): CSSProperties => ({
+  height: dp(44), minHeight: dp(44), minWidth: dp(44), padding: `0 ${dp(10)}px`, boxSizing: 'border-box', borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: dp(6),
+  cursor: 'pointer', flexShrink: 0, background: on ? TV.accMix(18) : TV.s08, color: on ? TV.acc : TV.muted, border: `1px solid ${on ? TV.accMix(60) : TV.lineCard}`,
 })
 
-/** Favoritknappen: Live TV:s hjärta och namnet. Etiketten (skärmläsare) säger vad ett tryck gör. */
-function FavPill({ testId, on, name, ctx, onToggle }: { testId: string; on: boolean; name: string; ctx: SportCtx; onToggle: () => void }) {
+/**
+  Favoritknappen: en liten ikonknapp — lagets märke (när det finns) och Live
+  TV:s hjärta. Namnet står i etiketten (skärmläsare) och verktygstipset.
+*/
+function FavIcon({ testId, on, name, crest, ctx, onToggle }: { testId: string; on: boolean; name: string; crest?: { colorKey: string; src?: string | null }; ctx: SportCtx; onToggle: () => void }) {
+  const label = on ? ctx.tt('sportFollowingName', { name }) : ctx.tt('sportFollowName', { name })
   return (
-    <div data-testid={testId} {...station(onToggle)} aria-pressed={on ? 'true' : 'false'} aria-label={on ? ctx.tt('sportFollowingName', { name }) : ctx.tt('sportFollowName', { name })} style={pill(on)}>
-      <span style={{ color: on ? TV.acc : TV.muted, display: 'inline-flex' }}><SportIcons.Heart size={dp(20)} filled={on} /></span>
-      {name}
+    <div data-testid={testId} {...station(onToggle)} aria-pressed={on ? 'true' : 'false'} aria-label={label} title={label} style={iconBtn(on)}>
+      {crest ? <Crest name={name} colorKey={crest.colorKey} size={dp(26)} src={crest.src} /> : null}
+      <SportIcons.Heart size={dp(20)} filled={on} />
     </div>
   )
 }
@@ -68,52 +71,44 @@ export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match
     <>
       <div data-live-tv-layer="" aria-hidden="true" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 59, background: TV.scrim }} />
       <div ref={rootRef} data-testid="match-center" data-panel-root="" data-live-tv-layer="" data-scroll="" role="dialog" aria-label={matchTitle(match)} style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, ...sportSurface(SPORT_PANEL_BG), borderLeft: '1px solid rgba(255,255,255,0.16)', padding: `${belowTitleBar(dp(28))} ${dp(32)}px ${dp(28)}px`, display: 'flex', flexDirection: 'column', gap: dp(20), overflowY: 'auto', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: dp(12) }}>
-          <StatusTag match={match} ctx={ctx} />
-          <span style={{ fontSize: dp(17), color: TV.muted, ...ellipsis }}>{context}</span>
-          <RoundBtn data-testid="mc-close" {...station(onClose)} aria-label={ctx.tt('sportClose')} style={{ marginLeft: 'auto' }}>✕</RoundBtn>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: dp(20) }}>
+        {/* Titelraden i Guidens kanalinfo-stil: märkena bredvid varandra, titeln, ställning och minut i samma rad. */}
+        <div data-testid="mc-head" style={{ display: 'flex', alignItems: 'flex-start', gap: dp(16) }}>
           {match.home && match.away ? (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
-                <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(99)} src={match.homeCrest} />
-                <span style={{ fontSize: dp(22), fontWeight: 600, ...ellipsis }}>{match.home}</span>
-              </div>
-              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(4) }}>
-                {showsScore(match) ? <MatchScore match={match} size="hero" /> : null}
-                <span style={{ fontSize: dp(24), fontWeight: 600, color: st === 'live' ? TV.liveText : TV.muted, whiteSpace: 'nowrap' }}>{heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)}</span>
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
-                <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(99)} src={match.awayCrest} />
-                <span style={{ fontSize: dp(22), fontWeight: 600, ...ellipsis }}>{match.away}</span>
-              </div>
-            </>
-          ) : (
-            <div style={{ gridColumn: '1 / 4', textAlign: 'center' }}>
-              <div style={{ fontSize: dp(30), fontWeight: 600 }}>{matchTitle(match)}</div>
-              <div style={{ fontSize: dp(20), color: TV.muted }}>{timeLine(match, ctx)}</div>
+            <span style={{ display: 'flex', gap: dp(6), flexShrink: 0 }}>
+              <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(56)} src={match.homeCrest} />
+              <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(56)} src={match.awayCrest} />
+            </span>
+          ) : null}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(8) }}>
+            <div data-testid="mc-title" style={{ fontSize: dp(30), fontWeight: 600, lineHeight: 1.15, ...ellipsis }}>{matchTitle(match)}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
+              <StatusTag match={match} ctx={ctx} />
+              <span style={{ fontSize: dp(17), color: TV.muted, ...ellipsis }}>{context}</span>
             </div>
-          )}
-        </div>
-
-        <div data-row="" style={{ display: 'flex', gap: dp(10), flexWrap: 'wrap' }}>
-          {match.home && match.homeKey ? (
-            <FavPill testId="mc-follow-home" on={fs.home} name={match.home} ctx={ctx} onToggle={() => follow('team', match.homeKey, match.home)} />
-          ) : null}
-          {match.away && match.awayKey ? (
-            <FavPill testId="mc-follow-away" on={fs.away} name={match.away} ctx={ctx} onToggle={() => follow('team', match.awayKey, match.away)} />
-          ) : null}
-          {match.leagueKey ? (
-            <FavPill testId="mc-follow-league" on={fs.league} name={match.league} ctx={ctx} onToggle={() => follow('league', match.leagueKey, match.league)} />
-          ) : null}
-          {ranked.length > 0 && st !== 'finished' ? (
-            <div data-testid="mc-remind" {...station(() => ctx.toggleRemind(match))} aria-pressed={ctx.isReminded(match) ? 'true' : 'false'} style={pill(false)}>
-              <SportIcons.Bell size={dp(18)} />
-              {ctx.isReminded(match) ? ctx.tt('sportReminded') : ctx.tt('sportRemindMe')}
+            <div data-row="" data-testid="mc-actions" style={{ display: 'flex', gap: dp(10), flexWrap: 'wrap' }}>
+              {match.home && match.homeKey ? (
+                <FavIcon testId="mc-follow-home" on={fs.home} name={match.home} crest={{ colorKey: match.homeKey, src: match.homeCrest }} ctx={ctx} onToggle={() => follow('team', match.homeKey, match.home)} />
+              ) : null}
+              {match.away && match.awayKey ? (
+                <FavIcon testId="mc-follow-away" on={fs.away} name={match.away} crest={{ colorKey: match.awayKey, src: match.awayCrest }} ctx={ctx} onToggle={() => follow('team', match.awayKey, match.away)} />
+              ) : null}
+              {match.leagueKey ? (
+                <FavIcon testId="mc-follow-league" on={fs.league} name={match.league} ctx={ctx} onToggle={() => follow('league', match.leagueKey, match.league)} />
+              ) : null}
+              {ranked.length > 0 && st !== 'finished' ? (
+                <div data-testid="mc-remind" {...station(() => ctx.toggleRemind(match))} aria-pressed={ctx.isReminded(match) ? 'true' : 'false'} aria-label={ctx.isReminded(match) ? ctx.tt('sportReminded') : ctx.tt('sportRemindMe')} title={ctx.isReminded(match) ? ctx.tt('sportReminded') : ctx.tt('sportRemindMe')} style={iconBtn(ctx.isReminded(match))}>
+                  <SportIcons.Bell size={dp(20)} />
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          </div>
+          <span data-testid="mc-scoreline" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: dp(4), flexShrink: 0 }}>
+            {showsScore(match) ? (
+              <span data-testid="mc-score" style={{ padding: `${dp(2)}px ${dp(14)}px`, borderRadius: dp(10), background: st === 'live' ? TV.accMix(22) : TV.s12, display: 'inline-flex' }}><MatchScore match={match} size="card" /></span>
+            ) : null}
+            <span style={{ fontSize: dp(17), fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: st === 'live' ? TV.acc : TV.muted, whiteSpace: 'nowrap' }}>{heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)}</span>
+          </span>
+          <RoundBtn data-testid="mc-close" {...station(onClose)} aria-label={ctx.tt('sportClose')}>✕</RoundBtn>
         </div>
 
         <span style={overline}>{ctx.tt('sportWhereToWatch')}</span>
@@ -140,16 +135,12 @@ export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match
             {chosen.quality ? ctx.tt('sportWatchQuality', { quality: chosen.quality }) : ctx.tt('sportWatch')}
           </div>
         ) : null}
-        <div data-testid="mc-pick-channel" {...station(() => setPicking(true))} style={{ display: 'flex', alignItems: 'center', gap: dp(14), padding: `${dp(14)}px ${dp(16)}px`, borderRadius: dp(12), background: TV.s08, border: `1px solid ${TV.lineCard}`, cursor: 'pointer' }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: dp(19), fontWeight: 600 }}>{ctx.tt('sportPickChannel')}</div>
-            <div style={{ fontSize: dp(15), color: TV.muted }}>{ctx.tt('sportPickChannelSub')}</div>
-          </div>
-          <span aria-hidden="true">›</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: dp(20), flexWrap: 'wrap' }}>
+          <span data-testid="mc-pick-channel" {...station(() => setPicking(true))} title={ctx.tt('sportPickChannelSub')} style={{ fontSize: dp(17), color: TV.accText, cursor: 'pointer', padding: `${dp(8)}px ${dp(4)}px` }}>{ctx.tt('sportPickChannel')}</span>
+          {override ? (
+            <span data-testid="mc-clear-override" {...station(() => setOverride(match.id, null))} style={{ fontSize: dp(17), color: TV.accText, cursor: 'pointer', padding: `${dp(8)}px ${dp(4)}px` }}>{ctx.tt('sportUseAutomatic')}</span>
+          ) : null}
         </div>
-        {override ? (
-          <div data-testid="mc-clear-override" {...station(() => setOverride(match.id, null))} style={{ fontSize: dp(17), color: TV.accText, cursor: 'pointer', padding: `${dp(8)}px ${dp(4)}px` }}>{ctx.tt('sportUseAutomatic')}</div>
-        ) : null}
         <MatchCenterData match={match} />
       </div>
       {picking ? (

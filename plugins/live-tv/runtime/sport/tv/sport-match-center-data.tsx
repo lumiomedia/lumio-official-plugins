@@ -10,6 +10,7 @@ import { usePollDemand } from '../live-poller'
 import { getSportSettings, setSportSettings, useSportSettings } from '../sport-store'
 import type { FixtureDetail, FixtureEvent } from '../provider'
 import type { SportMatch } from '../sport-model'
+import { eventTimeline, markerKind, type MarkerKind } from '../event-timeline'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 const FOUR_HOURS = 4 * 3_600_000
@@ -72,15 +73,22 @@ export function MatchCenterData({ match }: { match: SportMatch }) {
         <Toggle on={alertOn} />
       </div>
       {detail && detail.events.length > 0 ? (
-        <section>
+        <section style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={h2}>{tt('sportEvents')}</div>
-          {detail.events.map((e, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: `${dp(48)}px ${dp(110)}px 1fr`, gap: dp(8), padding: `${dp(6)}px 0`, fontSize: dp(15), borderTop: `1px solid ${TV.line}` }}>
-              <span style={{ color: TV.dim }}>{e.minute != null ? `${e.minute}'${e.extra ? `+${e.extra}` : ''}` : ''}</span>
-              <span>{eventLabel(e, tt)}</span>
-              <span>{[e.player, e.assist ? `(${e.assist})` : null, sideName(e.side) ? `· ${sideName(e.side)}` : null].filter(Boolean).join(' ')}</span>
-            </div>
-          ))}
+          <EventTimelineView match={match} events={detail.events} />
+          {detail.events.map((e, i) => {
+            const kind = markerKind(e)
+            return (
+              <div key={i} data-testid="mc-event" style={{ display: 'grid', gridTemplateColumns: `${dp(56)}px ${dp(20)}px 1fr`, alignItems: 'center', gap: dp(10), padding: `${dp(6)}px 0`, fontSize: dp(16), borderTop: `1px solid ${TV.line}` }}>
+                <span style={{ color: TV.dim, fontVariantNumeric: 'tabular-nums' }}>{e.minute != null ? `${e.minute}'${e.extra ? `+${e.extra}` : ''}` : ''}</span>
+                <span style={{ display: 'inline-flex', justifyContent: 'center' }}>{kind ? <Marker kind={kind} /> : null}</span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ fontWeight: 600 }}>{eventLabel(e, tt)}</span>
+                  <span style={{ color: TV.muted }}>{[e.player ? ` · ${e.player}` : '', e.assist ? ` (${e.assist})` : '', sideName(e.side) ? ` · ${sideName(e.side)}` : ''].join('')}</span>
+                </span>
+              </div>
+            )
+          })}
         </section>
       ) : null}
       {detail && detail.stats.length > 0 ? (
@@ -108,6 +116,43 @@ export function MatchCenterData({ match }: { match: SportMatch }) {
           </div>
         </section>
       ) : null}
+    </div>
+  )
+}
+
+const MARKER_COLOR: Record<MarkerKind, string> = { goal: TV.acc, yellow: '#facc15', red: '#ef4444', penalty: TV.muted }
+
+/** Mål som en rund prick i accentfärg, kort och utvisningar som små rektanglar. */
+function Marker({ kind }: { kind: MarkerKind }) {
+  const goal = kind === 'goal'
+  return <span data-marker={kind} aria-hidden="true" style={{ display: 'inline-block', width: goal ? dp(14) : dp(10), height: dp(14), borderRadius: goal ? 999 : dp(2), background: MARKER_COLOR[kind], boxShadow: goal ? `0 0 0 ${dp(2)}px rgba(0,0,0,0.5)` : undefined }} />
+}
+
+/**
+  Matchens tidslinje: en vågrät linje 0–90' (hockey: tre perioder), streck
+  vid periodgränserna, hemmalagets markörer ovanför och bortalagets under,
+  och en nu-markör på minuten medan matchen pågår.
+*/
+function EventTimelineView({ match, events }: { match: SportMatch; events: FixtureEvent[] }) {
+  const t = eventTimeline(events, match.kind, match.status === 'live' ? match.minute ?? null : null)
+  const ticks = [0, ...t.periods, t.length]
+  return (
+    <div data-testid="mc-timeline" data-length={t.length} style={{ position: 'relative', height: dp(76), margin: `0 ${dp(8)}px` }}>
+      <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: dp(30), height: dp(2), borderRadius: dp(2), background: TV.s14 }} />
+      {t.now != null ? <div aria-hidden="true" style={{ position: 'absolute', left: 0, top: dp(30), height: dp(2), width: `${t.now}%`, background: TV.acc }} /> : null}
+      {t.periods.map((p) => <div key={p} data-period={p} aria-hidden="true" style={{ position: 'absolute', left: `${(p / t.length) * 100}%`, top: dp(20), height: dp(22), width: dp(2), marginLeft: -dp(1), background: TV.lineStrong }} />)}
+      {ticks.map((m, i) => (
+        <span key={`${m}-${i}`} style={{ position: 'absolute', left: `${(m / t.length) * 100}%`, top: dp(52), transform: i === 0 ? 'none' : i === ticks.length - 1 ? 'translateX(-100%)' : 'translateX(-50%)', fontSize: dp(14), color: TV.dim, fontVariantNumeric: 'tabular-nums' }}>{`${m}'`}</span>
+      ))}
+      {t.markers.map((mk) => {
+        const e = events[mk.index]!
+        return (
+          <span key={mk.index} data-testid="mc-marker" data-kind={mk.kind} data-side={mk.side ?? ''} title={`${mk.minute}' ${e.player ?? ''}`.trim()} style={{ position: 'absolute', left: `${mk.at}%`, top: mk.side === 'away' ? dp(36) : dp(10), transform: 'translateX(-50%)', display: 'inline-flex' }}>
+            <Marker kind={mk.kind} />
+          </span>
+        )
+      })}
+      {t.now != null ? <div data-testid="mc-timeline-now" aria-hidden="true" style={{ position: 'absolute', left: `${t.now}%`, top: dp(16), height: dp(30), width: dp(3), marginLeft: -dp(1), background: TV.acc, boxShadow: `0 0 ${dp(8)}px ${TV.acc}` }} /> : null}
     </div>
   )
 }

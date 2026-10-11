@@ -19,7 +19,7 @@ const REGULATION: Partial<Record<SportKind, { length: number; periods: number[] 
   basketball: { length: 48, periods: [12, 24, 36] },
 }
 
-function markerKind(e: FixtureEvent): MarkerKind | null {
+export function markerKind(e: FixtureEvent): MarkerKind | null {
   if (e.type === 'goal') return 'goal'
   if (e.type === 'penalty') return 'penalty'
   if (e.type === 'card') return /red/i.test(e.detail) ? 'red' : 'yellow'

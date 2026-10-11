@@ -56,10 +56,14 @@ describe('Matchcentret', () => {
     fireEvent.click(screen.getByTestId('mc-remind'))
     expect(ctx.toggleRemind).toHaveBeenCalledWith(m)
   })
-  it('favoritknapparna: hjärta och lagnamnet, etiketten säger vad ett tryck gör', () => {
+  it('favoritknapparna: små ikonknappar med märke och hjärta, etiketten säger vad ett tryck gör', () => {
     render(<SportMatchCenter ctx={fakeCtx({ now, follows: [{ sport: 'football', kind: 'team', key: 'barcelona', name: 'FC Barcelona' }] })} match={m} onClose={() => {}} />)
     const home = screen.getByTestId('mc-follow-home')
-    expect(home).toHaveTextContent(/^FC Barcelona$/)
+    expect(home).not.toHaveTextContent('FC Barcelona')
+    expect(home.querySelector('[data-crest]')).not.toBeNull()
+    expect(home.getAttribute('title')).toBe('Remove FC Barcelona from favourites')
+    expect(screen.getByTestId('mc-remind').getAttribute('aria-label')).toBe('Remind me')
+    expect(screen.getByTestId('mc-remind').textContent).toBe('')
     expect(home.getAttribute('aria-pressed')).toBe('true')
     expect(home.getAttribute('aria-label')).toBe('Remove FC Barcelona from favourites')
     expect(home.querySelector('svg path')?.getAttribute('d')).toMatch(/^M12 21s/)
@@ -77,6 +81,31 @@ describe('Matchcentret', () => {
     expect(first).toHaveTextContent('Your choice')
     fireEvent.click(screen.getByTestId('mc-clear-override'))
     expect(getOverrides().m).toBeUndefined()
+  })
+})
+
+describe('Matchcentret utgår från var matchen sänds', () => {
+  it('titelraden: märkena bredvid varandra, titeln, ställningen och minuten i samma rad', () => {
+    const live = { ...m, coverage: 'full' as const, status: 'live' as const, minute: 67, score: { home: 2, away: 1 }, fixture: { provider: 'api-sports' as const, id: '1' } }
+    render(<SportMatchCenter ctx={fakeCtx({ now })} match={live} onClose={() => {}} />)
+    const head = screen.getByTestId('mc-head')
+    expect(head.firstElementChild!.querySelectorAll('[data-crest]')).toHaveLength(2)
+    expect(screen.getByTestId('mc-title')).toHaveTextContent('FC Barcelona - Paris SG')
+    expect(screen.getByTestId('mc-score')).toHaveTextContent('2–1')
+    expect(screen.getByTestId('mc-scoreline')).toHaveTextContent("67'")
+  })
+  it('Sänds på kommer direkt efter titelraden; Fel kanal? är en textlänk efter källorna; data sist', () => {
+    render(<SportMatchCenter ctx={fakeCtx({ now })} match={m} onClose={() => {}} />)
+    const mc = screen.getByTestId('match-center')
+    const kids = Array.from(mc.children)
+    expect(kids[0]).toBe(screen.getByTestId('mc-head'))
+    expect(kids[1]).toHaveTextContent('Showing on')
+    const order = [screen.getAllByTestId('mc-source')[0]!, screen.getByTestId('mc-watch'), screen.getByTestId('mc-pick-channel')]
+    for (let i = 1; i < order.length; i++) expect(order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const link = screen.getByTestId('mc-pick-channel')
+    expect(link.tagName).toBe('SPAN')
+    expect(link).toHaveTextContent(/^Wrong channel\?$/)
+    expect(link.getAttribute('title')).toBe('Link the match to one of your channels')
   })
 })
 
