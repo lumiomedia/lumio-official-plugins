@@ -94,16 +94,20 @@ describe('fas 2-fälten', () => {
   })
 })
 
-const OWN = { football: 'standard', hockey: 'standard', basketball: 'standard', motorsport: 'standard', tennis: 'standard' } as const
+const OWN = { football: 'standard', hockey: 'standard', basketball: 'standard', motorsport: 'standard', tennis: 'standard', other: 'standard' } as const
 
 describe('Bakgrund i Sport', () => {
-  it('standard: varje sport med egen bild har Standard (sin bild), Övrigt och Alla sporter ärver/blandar; korten tonas ur bilden 50 %', () => {
+  it('standard: Alla sporter, varje sport och Övrigt har Standard; korten tonas ur bilden 50 %', () => {
     expect(getSportSettings()).toMatchObject({ backdrops: { all: 'standard', sports: OWN }, cards: { opacity: 50, tone: 'image' } })
-    expect(getSportSettings().backdrops.sports.other).toBeUndefined()
+    expect(getSportSettings().backdrops.sports.other).toBe('standard')
     expect(setSportSettings({ backdrops: { all: 'bogus' as never, sports: { football: 'nope' as never, cricket: 'off' } as never } })).toMatchObject({ backdrops: { all: 'standard', sports: OWN } })
   })
-  it('flytt: en sport utan sparat val (förr underförstått "Som Alla sporter") blir Standard; uttryckliga val står kvar', () => {
+  it('flytt: bakgrundsval från före Standard-överallt nollställs en gång (Jerry 2026-10-11)', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { backdrops: { all: 'custom', sports: { hockey: 'image:tennis', tennis: 'off' } } })
+    expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: OWN })
+  })
+  it('val sparade efter flytten står kvar vid omläsning', () => {
+    setSportSettings({ backdrops: { all: 'custom', sports: { hockey: 'image:tennis', tennis: 'off' } } })
     expect(getSportSettings().backdrops).toEqual({ all: 'custom', sports: { ...OWN, hockey: 'image:tennis', tennis: 'off' } })
   })
   it('"Som Alla sporter" sparas uttryckligen och överlever en omläsning', () => {

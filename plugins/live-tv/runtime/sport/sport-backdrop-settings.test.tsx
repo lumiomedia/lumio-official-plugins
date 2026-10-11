@@ -30,12 +30,12 @@ beforeEach(() => {
 afterEach(() => { cleanup(); __setLangForTests('en'); __setTvModeForTests(false); globalThis.fetch = realFetch })
 
 const SCOPES = ['all', 'football', 'hockey', 'basketball', 'motorsport', 'tennis', 'other']
-const OWN = { football: 'standard', hockey: 'standard', basketball: 'standard', motorsport: 'standard', tennis: 'standard' } as const
+const OWN = { football: 'standard', hockey: 'standard', basketball: 'standard', motorsport: 'standard', tennis: 'standard', other: 'standard' } as const
 const thumb = (scope: string) => screen.getByTestId(`sport-backdrop-thumb-${scope}`).getAttribute('data-src')
 const row = (scope: string) => screen.getByTestId(`sport-backdrop-row-${scope}`)
 
 describe('Bakgrund i Sport, skrivbordskortet', () => {
-  it('en rad per sport med miniatyr, ingen handbollsrad; nya användare har Standard med sportens egen bild, Övrigt följer Alla sporter', () => {
+  it('en rad per sport med miniatyr, ingen handbollsrad; nya användare har Standard överallt, Övrigt med', () => {
     render(<SportBackdropSettingsDesktop />)
     for (const k of SCOPES) expect(row(k)).toBeTruthy()
     expect(screen.queryByTestId('sport-backdrop-row-handball')).toBeNull()
@@ -44,7 +44,8 @@ describe('Bakgrund i Sport, skrivbordskortet', () => {
     expect(row('all').textContent).toContain('Standard')
     expect(row('hockey').textContent).toContain('Standard')
     expect(row('hockey').textContent).not.toContain('Som Alla sporter')
-    expect(row('other').textContent).toContain('Som Alla sporter')
+    expect(row('other').textContent).toContain('Standard')
+    expect(row('other').textContent).not.toContain('Som Alla sporter')
     expect(thumb('football')).toBe('/sport-backgrounds/football.webp')
     expect(thumb('hockey')).toBe('/sport-backgrounds/hockey.webp')
   })
@@ -72,7 +73,8 @@ describe('Bakgrund i Sport, skrivbordskortet', () => {
     expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: { ...OWN, hockey: 'inherit' } })
     expect(row('hockey').textContent).toContain('Som Alla sporter')
   })
-  it('Alla sporter har inget "Som Alla sporter"; dess val ärvs av sporterna utan eget', () => {
+  it('Alla sporter har inget "Som Alla sporter"; dess val ärvs av sporterna som valt det', () => {
+    setSportSettings({ backdrops: { all: 'standard', sports: { other: 'inherit' } } })
     render(<SportBackdropSettingsDesktop />)
     fireEvent.click(row('all'))
     expect(screen.queryByTestId('sport-backdrop-opt-inherit')).toBeNull()

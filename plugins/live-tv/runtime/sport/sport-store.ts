@@ -32,30 +32,31 @@ export type SportBackdropMode = 'standard' | 'auto' | 'custom' | 'off' | `image:
 const BACKDROP_MODES: readonly string[] = ['standard', 'auto', 'custom', 'off', ...BUNDLED_IMAGES.map((b) => `image:${b}`)]
 /**
  * "Alla sporter" plus egna val per sport. `inherit` = "Som Alla sporter",
- * sparat uttryckligen: en sport med egen medföljande bild har Standard (sin
- * egen bild) som standard (Jerry 2026-10-11), så en saknad nyckel betyder
- * Standard för dem och arv bara för Övrigt. Handboll har ingen egen rad —
- * dess matcher följer Övrigt.
+ * sparat uttryckligen. Alla rader, Övrigt med, har Standard som standard
+ * (Jerry 2026-10-11), så en saknad nyckel betyder Standard. Handboll har
+ * ingen egen rad — dess matcher följer Övrigt.
  */
 export type SportBackdropChoice = SportBackdropMode | 'inherit'
 export interface SportBackdrops { all: SportBackdropMode; sports: Partial<Record<SportKind, SportBackdropChoice>> }
 /** Sporterna med en egen rad i inställningarna (handboll följer Övrigt). */
 export const BACKDROP_SPORTS: readonly SportKind[] = SPORT_KINDS.filter((k) => k !== 'handball')
-/** Sporter vars standardläge är Standard med egen bild i stället för arv. */
-const OWN_IMAGE_SPORTS: readonly SportKind[] = BUNDLED_IMAGES
-const ownImageDefaults = (): Partial<Record<SportKind, SportBackdropChoice>> => Object.fromEntries(OWN_IMAGE_SPORTS.map((k) => [k, 'standard']))
+const ownImageDefaults = (): Partial<Record<SportKind, SportBackdropChoice>> => Object.fromEntries(BACKDROP_SPORTS.map((k) => [k, 'standard']))
+/**
+ * Bakgrundsvalens version. Val sparade före 2 (Egen bild på Alla sporter,
+ * Övrigt som ärvde) nollställs en gång till Standard överallt (Jerry 2026-10-11).
+ */
+const BACKDROPS_REV = 2
 /** Kortens bakgrund medan en bild visas. */
 export type SportCardTone = 'black' | 'gray' | 'image'
 export interface SportCards { opacity: number; tone: SportCardTone }
 
 const isMode = (v: unknown): v is SportBackdropMode => typeof v === 'string' && BACKDROP_MODES.includes(v)
 
-function sanitizeBackdrops(raw: unknown, legacy: unknown): SportBackdrops {
+function sanitizeBackdrops(raw: unknown, legacy: unknown, rev: unknown): SportBackdrops {
   const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
   if (!r) return { all: legacy === 'off' ? 'off' : 'standard', sports: ownImageDefaults() }
+  if (rev !== BACKDROPS_REV) return { all: 'standard', sports: ownImageDefaults() }
   const sportsRaw = r.sports && typeof r.sports === 'object' ? (r.sports as Record<string, unknown>) : {}
-  // Flytt: en saknad nyckel var förr det underförstådda "Som Alla sporter" och blir nu Standard
-  // för sporterna med egen bild. Uttryckliga val (även `inherit`) står kvar.
   const sports = ownImageDefaults()
   for (const k of BACKDROP_SPORTS) {
     const v = sportsRaw[k]
@@ -111,6 +112,8 @@ export interface SportSettings {
   goalAlertMatches: Record<string, number>
   /** Bakgrund i Sport per sport, med "Alla sporter" som standard. */
   backdrops: SportBackdrops
+  /** Bakgrundsvalens version (BACKDROPS_REV); sätts av läsningen, skrivs aldrig för hand. */
+  backdropsRev?: number
   /** Kortens bakgrund medan en bild visas. */
   cards: SportCards
 }
@@ -179,7 +182,8 @@ function sanitizeSettings(raw: unknown): SportSettings {
       Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === 'object' ? (r.goalAlertMatches as Record<string, unknown>) : {})
         .filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] > Date.now()),
     ),
-    backdrops: sanitizeBackdrops(r.backdrops, r.backdrop),
+    backdrops: sanitizeBackdrops(r.backdrops, r.backdrop, r.backdropsRev),
+    backdropsRev: BACKDROPS_REV,
     cards: sanitizeCards(r.cards),
   }
 }
