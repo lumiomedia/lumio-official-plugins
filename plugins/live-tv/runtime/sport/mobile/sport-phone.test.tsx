@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { localDayKey } from '../sport-epg'
 import { getFollows, getSportSettings } from '../sport-store'
-import { HOUR, MIN, fxMatch, mountSport } from '../__sport-fixture'
+import { getReminders } from '../../reminders'
+import { HOUR, MIN, fxMatch, fxSource, mountSport } from '../__sport-fixture'
 import { mountPhone } from '../../tv/mobile/__phone-mount'
 
 vi.mock('../../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
@@ -12,58 +13,125 @@ const today = localDayKey(now)
 const live = fxMatch({ id: 'live', home: 'GAIS', away: 'Sirius', start: now - 30 * MIN, stop: now + 90 * MIN })
 const later = fxMatch({ id: 'later', home: 'AIK', away: 'Hammarby', start: now + 2 * HOUR })
 const REMOTE_WORDS = /\bOK\b|håll OK|hold OK|◂|▸/
+const hammarby = { sport: 'football' as const, kind: 'team' as const, key: 'hammarby', name: 'Hammarby' }
 
-describe('Sport på telefon', () => {
-  it('listor per status utan fjärrkontrollsord; tryck öppnar matchinfon och Titta spelar', async () => {
-    const { box } = mountSport({}, { phone: true, days: { [today]: [live, later] } })
-    const rows = await screen.findAllByTestId('sport-phone-row')
-    expect(rows).toHaveLength(2)
+describe('Sport på telefon: rubriken och sektionsarket', () => {
+  it('"LIVE TV" + "Sport ▾"; arket har Kanaler, Guide, Sport, Favoriter, Multiview och byter sektion', async () => {
+    const { onNavigate } = mountSport({}, { phone: true, days: { [today]: [later] } })
+    const title = await screen.findByTestId('sport-phone-title')
+    expect(title).toHaveTextContent(/Live TV\s*Sport/i)
+    fireEvent.click(title)
+    const sheet = await screen.findByTestId('sport-phone-sections')
+    expect(within(sheet).getAllByTestId(/^sport-phone-section-/).map((r) => r.textContent)).toEqual(['Channels', 'Guide', 'Sport', 'Favourites', 'Multiview'])
+    expect(within(sheet).getByTestId('sport-phone-section-sport').getAttribute('aria-pressed')).toBe('true')
+    // Sport (där vi står) stänger bara arket.
+    fireEvent.click(within(sheet).getByTestId('sport-phone-section-sport'))
+    expect(screen.queryByTestId('sport-phone-sections')).toBeNull()
+    expect(onNavigate).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('sport-phone-title'))
+    fireEvent.click(within(await screen.findByTestId('sport-phone-sections')).getByTestId('sport-phone-section-guide'))
+    expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'guide' } })
+  })
+  it('inga egna bottenflikar: skalets flikrad är den enda', async () => {
+    mountSport({}, { phone: true, days: { [today]: [later] } })
+    await screen.findByTestId('sport-phone-title')
+    expect(screen.getAllByRole('navigation')).toHaveLength(1)
+    expect(screen.getByTestId('mobile-tab-bar')).toBeTruthy()
+  })
+  it('toppflikarna Översikt / Tabeller & resultat / Mina lag; Matchdag/Flöde bara på Översikt och sparas', async () => {
+    mountSport({}, { phone: true, days: { [today]: [later] } })
+    const tabs = await screen.findByTestId('sport-phone-tabs')
+    expect(within(tabs).getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Tables & results', 'My teams'])
+    fireEvent.click(screen.getByTestId('sport-phone-view-feed'))
+    expect(getSportSettings().view).toBe('feed')
+    fireEvent.click(within(tabs).getByText('My teams'))
+    expect(screen.queryByTestId('sport-phone-view')).toBeNull()
+  })
+})
+
+describe('Översikt – Matchdag', () => {
+  it('hero med delad Titta-knapp: källarket väljer källa, Titta spelar den', async () => {
+    const two = fxMatch({ id: 'two', home: 'GAIS', away: 'Sirius', start: now - 30 * MIN, stop: now + 90 * MIN, sources: [fxSource('TV4 Fotboll FHD SE', { quality: 'FHD' }), fxSource('B', { quality: 'HD' })] })
+    const { box } = mountSport({}, { phone: true, days: { [today]: [two, later] } })
+    const hero = await screen.findByTestId('sport-phone-hero')
     expect(box.textContent).not.toMatch(REMOTE_WORDS)
-    fireEvent.click(rows[0]!)
-    // Samma matchinfo som på TV, i full bredd.
+    expect(within(hero).getByTestId('sport-phone-hero-watch')).toHaveTextContent('Watch· FHD · 2 sources')
+    fireEvent.click(within(hero).getByTestId('sport-phone-hero-sources'))
+    const sheet = await screen.findByTestId('sport-phone-source-sheet')
+    const rows = within(sheet).getAllByTestId('sport-phone-source-row')
+    expect(rows.map((r) => r.textContent)).toEqual(['TV4 Fotboll FHD SEPlaylist · bestFHD', 'BPlaylistHD'])
+    fireEvent.click(rows[1]!)
+    expect(screen.queryByTestId('sport-phone-source-sheet')).toBeNull()
+    fireEvent.click(within(hero).getByTestId('sport-phone-hero-watch'))
+    expect(await screen.findByTestId('player')).toHaveTextContent('B')
+  })
+  it('Live nu / Senare idag / Avslutade som kort; tryck öppnar matchinfon som bottenark; Titta spelar', async () => {
+    const done = fxMatch({ id: 'done', home: 'Malmö', away: 'Sirius', start: now - 4 * HOUR, stop: now - 2 * HOUR })
+    mountSport({}, { phone: true, days: { [today]: [later, live, done] }, follows: [hammarby] })
+    await screen.findByTestId('sport-phone-section-live')
+    expect(screen.getAllByTestId(/^sport-phone-section-(live|later|finished)$/).map((s) => s.firstElementChild?.textContent)).toEqual(['Live now1 matches', 'Later today1 matches', 'Finished1 matches'])
+    const laterCard = within(screen.getByTestId('sport-phone-section-later')).getByTestId('sport-phone-card')
+    // Följt lag: korallkant och det orange hjärtat (inte handoffens stjärna).
+    expect(laterCard.getAttribute('data-followed')).toBe('1')
+    expect(within(laterCard).getAllByTestId('phone-card-heart')).toHaveLength(1)
+    fireEvent.click(within(screen.getByTestId('sport-phone-section-live')).getByTestId('sport-phone-card'))
     const drawer = await screen.findByTestId('match-center')
-    expect(drawer.style.width).toBe('100%')
+    expect(drawer.style.bottom).toBe('0px')
+    expect(drawer.style.maxHeight).toBe('92%')
+    expect(within(drawer).queryByTestId('mc-close')).toBeNull()
     fireEvent.click(within(drawer).getByTestId('mc-watch'))
     expect(await screen.findByTestId('player')).toHaveTextContent('TV4 Fotboll FHD SE')
   })
-  it('en tidsordnad lista med nu-linje; raderna har kanalens logga som ankare och förloppet som underkant', async () => {
-    const done = fxMatch({ id: 'done', home: 'Malmö', away: 'Sirius', start: now - 4 * HOUR, stop: now - 2 * HOUR })
-    mountSport({}, { phone: true, days: { [today]: [later, live, done] } })
-    const day = await screen.findByTestId('sport-phone-day')
-    await waitFor(() => expect(within(day).getAllByTestId('sport-phone-row')).toHaveLength(3))
-    const order = Array.from(day.children).slice(1).map((c) => c.getAttribute('data-status') ?? c.getAttribute('data-testid'))
-    expect(order).toEqual(['finished', 'live', 'sport-phone-now', 'upcoming'])
-    const liveRow = within(day).getAllByTestId('sport-phone-row')[1]!
-    expect(within(liveRow).getByTestId('sport-phone-status')).toHaveTextContent('LIVE')
-    expect(within(liveRow).getByTestId('sport-phone-anchor').children).toHaveLength(1)
-    expect(liveRow.querySelectorAll('[data-crest]')).toHaveLength(2)
+  it('tidslinjen visar bara matcher på dina kanaler och har en nu-linje', async () => {
+    const noChannel = fxMatch({ id: 'nochan', home: 'Lazio', away: 'Roma', start: now + HOUR, sources: [], resultOnly: true })
+    mountSport({}, { phone: true, days: { [today]: [live, later, noChannel] } })
+    const tl = await screen.findByTestId('sport-phone-timeline')
+    expect(tl.querySelectorAll('[data-testid^="sport-phone-block-"]')).toHaveLength(2)
+    expect(within(tl).queryByTestId('sport-phone-block-nochan')).toBeNull()
+    expect(within(tl).getByTestId('sport-phone-now')).toBeTruthy()
+    fireEvent.click(within(tl).getByTestId('sport-phone-block-later'))
+    expect(await screen.findByTestId('match-center')).toBeTruthy()
   })
-  it('matchinfons följ-pill följer hemmalaget', async () => {
-    mountSport({}, { phone: true, days: { [today]: [later] } })
-    fireEvent.click(await screen.findByTestId('sport-phone-row'))
-    fireEvent.click(within(await screen.findByTestId('match-center')).getByTestId('mc-follow-home'))
-    expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' }])
+})
+
+describe('Översikt – Flöde', () => {
+  it('Dina lag, Just nu och Kvällsplan; bocken sätter en påminnelse', async () => {
+    mountSport({}, { phone: true, days: { [today]: [live, later] }, follows: [hammarby] })
+    fireEvent.click(await screen.findByTestId('sport-phone-view-feed'))
+    const teams = await screen.findByTestId('sport-phone-teams')
+    expect(within(teams).getAllByTestId('sport-phone-team')[0]!.getAttribute('data-ring')).toBe('today')
+    expect(within(screen.getByTestId('sport-phone-now-list')).getAllByTestId('sport-phone-now-row')).toHaveLength(1)
+    const check = within(screen.getByTestId('sport-phone-plan')).getByTestId('sport-phone-plan-check')
+    fireEvent.click(check)
+    await waitFor(() => expect(getReminders(now)).toHaveLength(1))
+    await waitFor(() => expect(screen.getByTestId('sport-phone-plan-sum')).toHaveTextContent('1 chosen'))
+    expect(screen.queryByTestId('match-center')).toBeNull() // bocken öppnar inte matchen
+    fireEvent.click(within(teams).getByTestId('sport-phone-teams-add'))
+    expect(await screen.findByTestId('sport-follows-meta')).toBeTruthy()
   })
-  it('Mina lag: nästa match, påminnelse och Lägg till', async () => {
-    mountSport({}, { phone: true, days: { [today]: [later] }, follows: [{ sport: 'football', kind: 'team', key: 'hammarby', name: 'Hammarby' }] })
+})
+
+describe('Mina lag', () => {
+  it('nästa match, klockan per lag (Av → 15 min → Avspark) och hjärtat; Lägg till lag öppnar arket', async () => {
+    mountSport({}, { phone: true, days: { [today]: [later] }, follows: [hammarby] })
     fireEvent.click(await screen.findByText('My teams'))
     await waitFor(() => expect(screen.getByTestId('sport-phone-follow')).toHaveTextContent(/Hammarby.*Today \d\d:\d\d · vs AIK/))
-    expect(screen.getByTestId('sport-phone-follow').querySelector('[data-crest]')).not.toBeNull()
+    const bell = screen.getByTestId('sport-phone-follow-bell')
+    expect(bell.getAttribute('data-alert')).toBe('15') // den allmänna klockan
+    fireEvent.click(bell)
+    await waitFor(() => expect(getFollows()[0]!.alert).toBe('kickoff'))
+    expect(screen.queryByTestId('match-center')).toBeNull()
     const heart = screen.getByTestId('sport-phone-follow-heart')
-    expect(heart.getAttribute('aria-pressed')).toBe('true')
     expect(heart.querySelector('svg path')?.getAttribute('d')).toMatch(/^M12 21s/)
-    fireEvent.click(within(screen.getByTestId('sport-phone-alert')).getByText('Off'))
-    expect(getSportSettings().alert).toBe('off')
-    fireEvent.click(screen.getByTestId('sport-phone-add'))
+    fireEvent.click(screen.getByTestId('sport-phone-follow-add-football'))
     const sheet = await screen.findByTestId('sport-phone-follow-sheet')
-    fireEvent.click(within(sheet).getByText(/^AIK · Football$/))
+    fireEvent.click(within(sheet).getByTestId('sport-phone-candidate-aik'))
     await waitFor(() => expect(getFollows().map((f) => f.key)).toContain('aik'))
   })
-  it('Resultat är ett tredje segment och visar nyckelkortet utan nyckel', async () => {
+  it('Tabeller & resultat visar nyckelkortet utan nyckel; dagstegaren står kvar', async () => {
     mountSport({}, { phone: true, days: { [today]: [later] } })
     fireEvent.click(await screen.findByText('Tables & results'))
     expect(await screen.findByTestId('sport-key-card-tab')).toBeTruthy()
-    expect(screen.getByTestId('sport-phone-days')).toBeTruthy() // dagstegaren gäller även Resultat
     expect(screen.getByTestId('sport-day-label')).toHaveTextContent('Today')
   })
   it('Mer-arket har Sport', async () => {

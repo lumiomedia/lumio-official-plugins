@@ -34,6 +34,27 @@ describe('kickoffReminders', () => {
   })
 })
 
+describe('klockan per lag (Mina lag på telefon)', () => {
+  it('lagets egen klocka vinner över den allmänna; Av på laget tystar bara det laget', () => {
+    const m = fxMatch({ start: now + 2 * HOUR })
+    expect(kickoffReminders([fxDay('d', [m])], [{ ...hammarby, alert: 'kickoff' }], '15', {}, now)[0]!.leadMs).toBe(0)
+    expect(kickoffReminders([fxDay('d', [m])], [{ ...hammarby, alert: '15' }], 'off', {}, now)[0]!.leadMs).toBe(15 * MIN)
+    expect(kickoffReminders([fxDay('d', [m])], [{ ...hammarby, alert: 'off' }], '15', {}, now)).toEqual([])
+  })
+  it('två följda på samma match: den tidigaste förvarningen gäller', () => {
+    const m = fxMatch({ start: now + 2 * HOUR })
+    const aik = { sport: 'football' as const, kind: 'team' as const, key: 'aik', name: 'AIK', alert: 'kickoff' as const }
+    expect(kickoffReminders([fxDay('d', [m])], [aik, { ...hammarby, alert: '15' }], 'off', {}, now)[0]!.leadMs).toBe(15 * MIN)
+  })
+  it('synken körs när ett lag har egen klocka trots att den allmänna är av', async () => {
+    toggleFollow({ ...hammarby, alert: '15' })
+    setSportSettings({ alert: 'off' })
+    stubSportDays({ [localDayKey(now)]: [fxMatch({ start: now + HOUR })] })
+    await syncKickoffReminders(now)
+    expect(getReminders(now).filter((r) => r.origin === 'sport')).toHaveLength(1)
+  })
+})
+
 describe('replaceSportReminders', () => {
   it('manuell påminnelse på samma program ger ingen dubblett, och avföljning tar bara bort den automatiska', () => {
     const m = fxMatch({ start: now + 2 * HOUR })

@@ -11,6 +11,7 @@ import type { SportCtx } from '../sport-ctx'
 import { eventSummary } from '../match-info-model'
 import { SportIcons } from '../sport-icons'
 import { sportDrawerStyle } from '../surface'
+import { SHEET_BG, usePhonePlatform } from '../mobile/phone-sport-sheet'
 import { toggleGoalAlert } from './match-info-text'
 import { useFixtureDetail } from './use-fixture-detail'
 import { BackBar, DrillRow, IconBtn, Overline, StatusPill, TeamsHeader, ellipsis, rowCard, scaleFor } from './match-info-parts'
@@ -31,6 +32,7 @@ const SLIDE_CSS = '@keyframes lumio-sport-mi-in { from { opacity: 0; transform: 
 
 export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: SportCtx; match: SportMatch; onClose: () => void; phone?: boolean }) {
   const u = scaleFor(phone)
+  const platform = usePhonePlatform()
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)
   // Senaste nav/onClose i refar: lagret registreras EN gång per öppning
@@ -101,7 +103,8 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
           </IconBtn>
         ) : null}
         {bell}
-        <IconBtn u={u} testId="mc-close" label={ctx.tt('sportClose')} onPress={onClose}><SportIcons.Close size={u(20)} /></IconBtn>
+        {/* Telefonens ark stängs med handtaget, scrimmen eller Bakåt (handoffen har inget kryss). */}
+        {phone ? null : <IconBtn u={u} testId="mc-close" label={ctx.tt('sportClose')} onPress={onClose}><SportIcons.Close size={u(20)} /></IconBtn>}
       </div>
       <TeamsHeader u={u} match={match} ctx={ctx} />
 
@@ -168,13 +171,30 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
     )
   }
 
-  const padding = phone ? `calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(env(safe-area-inset-bottom, 0px) + 24px)` : undefined
+  /*
+    TELEFON: ett bottenark (handoffen "Sport på mobil"), högst 92 % av höjden,
+    med plattformens hörn och handtag — samma innehåll och undersidor som
+    lådan på TV och skrivbord.
+  */
+  const surface = phone
+    ? {
+        position: 'fixed', left: 0, right: 0, bottom: 0, width: '100%', maxHeight: '92%', zIndex: 60, boxSizing: 'border-box', overflowY: 'auto',
+        background: SHEET_BG, borderTop: '1px solid rgba(255,255,255,0.16)', borderRadius: platform === 'ios' ? '14px 14px 0 0' : '28px 28px 0 0',
+        padding: '0 16px calc(max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px)) + 24px)',
+      } as const
+    : { position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${u(760)}px, 100%)`, zIndex: 60, ...sportDrawerStyle, overflowY: 'auto' } as const
   return (
     <>
       <style>{SLIDE_CSS}</style>
       <div data-live-tv-layer="" aria-hidden="true" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 59, background: TV.scrim }} />
       <div ref={rootRef} data-testid="match-center" data-page={pageKey ?? 'main'} data-panel-root="" data-live-tv-layer="" data-scroll="" role="dialog" aria-label={matchTitle(match)}
-        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: phone ? '100%' : `min(${u(760)}px, 100%)`, zIndex: 60, ...sportDrawerStyle, ...(padding ? { padding } : {}), overflowY: 'auto' }}>
+        data-platform={phone ? platform : undefined}
+        style={surface}>
+        {phone ? (
+          <div data-testid="mc-grabber" {...station(onClose)} aria-hidden="true" style={{ position: 'sticky', top: 0, zIndex: 1, height: 22, margin: '0 -16px 4px', display: 'grid', placeItems: 'center', background: SHEET_BG, cursor: 'pointer' }}>
+            <span style={{ width: platform === 'ios' ? 36 : 32, height: 5, borderRadius: 3, background: 'rgba(243,244,248,0.35)' }} />
+          </div>
+        ) : null}
         <div key={pageKey ?? 'main'} data-testid="mc-level" style={{ display: 'flex', flexDirection: 'column', gap: u(18), animation: page ? 'lumio-sport-mi-in 220ms ease-out' : undefined }}>
           {page ? sub(page) : main}
         </div>

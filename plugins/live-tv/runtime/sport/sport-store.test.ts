@@ -4,7 +4,7 @@ import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import {
   SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, getFollows, getOverrides, getSportSettings, isFollowing, setOverride,
-  hasAnyKey, removeProviderKey, setProviderKey, setSportOrder, setSportSettings, sportsCompatible, teamKeysMatch, toggleFollow, useFollows,
+  hasAnyKey, removeProviderKey, setFollowAlert, setProviderKey, setSportOrder, setSportSettings, sportsCompatible, teamKeysMatch, toggleFollow, useFollows,
 } from './sport-store'
 
 beforeEach(() => __resetForTests())
@@ -40,6 +40,21 @@ describe('följda lag och turneringar', () => {
     expect(result.current).toEqual([])
     act(() => { toggleFollow(gais) })
     expect(result.current).toEqual([gais])
+  })
+})
+
+describe('klockan per lag', () => {
+  it('sparas på den följda posten, Av inräknat; skräp släpps; okänd post ändrar ingenting', () => {
+    const aik = { sport: 'football' as const, kind: 'team' as const, key: 'aik', name: 'AIK' }
+    toggleFollow(aik)
+    setFollowAlert(aik, 'kickoff')
+    expect(getFollows()).toEqual([{ ...aik, alert: 'kickoff' }])
+    setFollowAlert(aik, 'off')
+    expect(getFollows()[0]!.alert).toBe('off')
+    setFollowAlert({ ...aik, key: 'okand' }, '15')
+    expect(getFollows()).toEqual([{ ...aik, alert: 'off' }])
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, [{ ...aik, alert: 'snart' }])
+    expect(getFollows()).toEqual([aik])
   })
 })
 

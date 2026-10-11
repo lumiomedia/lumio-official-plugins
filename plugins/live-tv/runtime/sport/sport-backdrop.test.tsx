@@ -28,6 +28,16 @@ describe('SportBackdropLayer', () => {
     fireEvent.error(img)
     expect(onBroken).toHaveBeenCalledWith(url)
   })
+  it('telefon (handoffen): bilden på 40 % under den lodräta gradienten .85 → .6 → .85 → svart', () => {
+    render(<SportBackdropLayer choice={{ kind: 'image', url: 'x.jpg', from: 'standard' }} phone onBroken={vi.fn()} />)
+    const layer = screen.getByTestId('sport-backdrop')
+    expect(layer.querySelector('img')!.style.opacity).toBe('0.4')
+    const scrim = layer.querySelector('[data-scrim]')?.getAttribute('style') ?? ''
+    expect(scrim).toContain('#000000d9 0%')
+    expect(scrim).toContain('#00000099 30%')
+    expect(scrim).toContain('#000000d9 70%')
+    expect(scrim).toContain('#000000 100%')
+  })
   it('Av ritar ingenting', () => {
     const { container } = render(<SportBackdropLayer choice={{ kind: 'none' }} phone={false} onBroken={vi.fn()} />)
     expect(container.innerHTML).toBe('')

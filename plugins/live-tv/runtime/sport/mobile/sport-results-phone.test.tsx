@@ -37,21 +37,36 @@ describe('Resultat på telefon', () => {
     expect(screen.queryByText('Inte nu')).toBeNull()
   })
 
-  it('med nyckel: ligagrupp med omgång, ställning, filter och DINA LIGOR; tryck öppnar matchen', () => {
+  it('med nyckel: ligagrupp med omgång och Tabell, raderna med ställning i ruta; tryck öppnar matchen, spelknappen spelar', () => {
     setSportSettings({ apiKey: 'k123' })
     const open = vi.fn()
+    const watch = vi.fn()
     const live = m({ status: 'live', minute: 67, score: { home: 2, away: 1 } })
-    render(<SportResultsPhone matches={[m(), live, m({ kind: 'tennis', coverage: 'epg' })]} controller={fakeController() as never} onOpenMatch={open} pushLayer={pushLayer} />)
+    render(<SportResultsPhone matches={[m(), live, m({ kind: 'tennis', coverage: 'epg' })]} controller={fakeController() as never} onOpenMatch={open} onWatch={watch} pushLayer={pushLayer} />)
     expect(screen.getByText('Allsvenskan · Omgång 27')).toBeTruthy()
-    expect(screen.getByText('DINA LIGOR')).toBeTruthy()
-    expect(screen.getAllByTestId('phone-result-score').map((e) => e.textContent)).toEqual(['2–1', '1–0']) // `live` skapades först och har tidigast start
-    fireEvent.click(screen.getByTestId('chip-live'))
-    expect(screen.getAllByTestId('phone-result-row')).toHaveLength(1)
+    expect(screen.getByTestId('phone-results-league')).toHaveTextContent('Alla ligor')
+    expect(screen.getAllByTestId('phone-result-score').map((e) => e.textContent)).toEqual(['21', '10']) // `live` skapades först och har tidigast start
+    expect(screen.getAllByTestId('phone-result-row')[0]).toHaveTextContent("67'")
+    fireEvent.click(screen.getAllByTestId('phone-result-play')[0]!)
+    expect(watch).toHaveBeenCalledWith(live)
+    expect(open).not.toHaveBeenCalled()
     fireEvent.click(screen.getAllByTestId('phone-result-row')[0]!)
     expect(open).toHaveBeenCalledWith(live)
   })
 
-  it('Tabell öppnar ett ark med M, P och form på svenska', async () => {
+  it('"Bara det jag kan se" gallrar bort matcher utan kanal; spelknappen är ett streck utan kanal', () => {
+    setSportSettings({ apiKey: 'k123' })
+    render(<SportResultsPhone matches={[m(), m({ id: 'nochan', sources: [], resultOnly: true })]} controller={fakeController() as never} onOpenMatch={vi.fn()} onWatch={vi.fn()} pushLayer={pushLayer} />)
+    expect(screen.getAllByTestId('phone-result-row')).toHaveLength(2)
+    expect(screen.getAllByTestId('phone-result-play')[1]!.getAttribute('aria-disabled')).toBe('true')
+    const toggle = screen.getByTestId('phone-results-watchable')
+    expect(toggle).toHaveTextContent('Bara det jag kan se')
+    fireEvent.click(toggle)
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
+    expect(screen.getAllByTestId('phone-result-row')).toHaveLength(1)
+  })
+
+  it('Tabell öppnar ett ark med M, P och formprickar', async () => {
     setSportSettings({ apiKey: 'k123' })
     const controller = fakeController()
     render(<SportResultsPhone matches={[m()]} controller={controller as never} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
@@ -64,7 +79,7 @@ describe('Resultat på telefon', () => {
     expect(controller.loadStandings).toHaveBeenCalledWith('football', '113', '2026')
   })
 
-  it('Dina ligor + Fler ligor…: bottenark per land med sök, land i träffarna, sport per rad vid Alla; val hoppar och stänger', () => {
+  it('ligaväljaren: ark med Alla ligor, Mina lag och länderna (sök, land i träffarna, sport per rad vid Alla); val filtrerar och stänger', () => {
     setSportSettings({ apiKey: 'k123' })
     const fx = (leagueId: string, country: string) => ({ provider: 'api-sports', id: `f${++n}`, leagueId, season: '2026', country })
     const world = [
@@ -75,11 +90,11 @@ describe('Resultat på telefon', () => {
     ]
     const layers: Array<() => void> = []
     render(<SportResultsPhone matches={world} controller={fakeController() as never} onOpenMatch={vi.fn()} pushLayer={(c) => { layers.push(c); return () => {} }} kindLabel={(k) => (k === 'hockey' ? 'Hockey' : 'Fotboll')} />)
-    expect(screen.getAllByTestId(/^phone-league-chip-/).map((c) => c.textContent)).toEqual(['Allsvenskan1'])
     expect(screen.getByText('Primera División · Spain · Omgång 27')).toBeTruthy()
-    fireEvent.click(screen.getByTestId('phone-league-more'))
+    fireEvent.click(screen.getByTestId('phone-results-league'))
     const sheet = screen.getByTestId('phone-league-sheet')
     expect(layers).toHaveLength(1)
+    expect(within(sheet).getByTestId('phone-league-all').getAttribute('aria-pressed')).toBe('true')
     expect(within(sheet).getAllByTestId(/^phone-league-country-/).map((g) => g.getAttribute('data-testid'))).toEqual(['phone-league-country-Sweden', 'phone-league-country-Argentina', 'phone-league-country-Spain'])
     expect(within(screen.getByTestId('phone-league-row-hockey|47')).getByText('Hockey')).toBeTruthy()
     fireEvent.change(within(sheet).getByTestId('phone-league-search'), { target: { value: 'primera' } })
@@ -87,12 +102,11 @@ describe('Resultat på telefon', () => {
     expect(hits.map((h) => h.textContent)).toEqual(['Primera DivisiónArgentina · Fotboll1', 'Primera DivisiónSpain · Fotboll1'])
     fireEvent.click(hits[1]!)
     expect(screen.queryByTestId('phone-league-sheet')).toBeNull()
-    // Valet FILTRERAR till ligan (ingen rullning); "Alla ligor ✕" återställer.
     expect(screen.getAllByTestId(/^phone-results-group-/).map((g) => g.getAttribute('data-testid'))).toEqual(['phone-results-group-football|140'])
-    expect(screen.getByTestId('phone-league-chip-football|140').getAttribute('aria-pressed')).toBe('true')
-    fireEvent.click(screen.getByTestId('phone-league-reset'))
+    expect(screen.getByTestId('phone-results-league')).toHaveTextContent('Primera División · Spain')
+    fireEvent.click(screen.getByTestId('phone-results-league'))
+    fireEvent.click(within(screen.getByTestId('phone-league-sheet')).getByTestId('phone-league-all'))
     expect(screen.getAllByTestId(/^phone-results-group-/)).toHaveLength(4)
-    expect(screen.queryByTestId('phone-league-reset')).toBeNull()
   })
 
   it('Mina lag är förvalt när något följs och visar bara följda lag/ligor', () => {
@@ -100,9 +114,10 @@ describe('Resultat på telefon', () => {
     writeFollows([{ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' }])
     const other = m({ home: 'Lazio', away: 'Roma', homeKey: 'lazio', awayKey: 'roma' })
     render(<SportResultsPhone matches={[m(), other]} controller={fakeController() as never} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
-    expect(screen.getByTestId('chip-followed').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByTestId('phone-results-league')).toHaveTextContent('Mina lag (1)')
     expect(screen.getAllByTestId('phone-result-row')).toHaveLength(1)
-    fireEvent.click(screen.getByTestId('chip-all'))
+    fireEvent.click(screen.getByTestId('phone-results-league'))
+    fireEvent.click(within(screen.getByTestId('phone-league-sheet')).getByTestId('phone-league-all'))
     expect(screen.getAllByTestId('phone-result-row')).toHaveLength(2)
   })
 

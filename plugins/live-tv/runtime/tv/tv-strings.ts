@@ -651,6 +651,21 @@ const EN = {
   sportPlayerYellow: 'Yellow cards',
   sportPlayerRed: 'Red cards',
   sportPlayerSub: 'Substitute',
+  sportSwitchSection: 'Switch Live TV section',
+  sportOnlyWatchable: 'Only what I can watch',
+  sportLaterToday: 'Later today',
+  sportTonight: 'TONIGHT',
+  sportTopMatch: 'Top match',
+  sportKickoffAt: 'Kick-off {time}',
+  sportPickSource: 'Choose source',
+  sportBestLower: 'best',
+  sportMatchdaySwipe: 'your channels · swipe sideways',
+  sportPlanChosen: '{n} chosen',
+  sportPlanHint: 'tick what you want to watch',
+  sportAddTeams: 'Add teams',
+  sportAlertShort15: '15 min',
+  sportAlertShortKickoff: 'Kick-off',
+  sportAlertFor: 'Reminder for {name}: {rule}',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -1253,6 +1268,21 @@ const SV: Record<keyof typeof EN, string> = {
   sportPlayerYellow: 'Gula kort',
   sportPlayerRed: 'Röda kort',
   sportPlayerSub: 'Avbytare',
+  sportSwitchSection: 'Byt Live TV-sektion',
+  sportOnlyWatchable: 'Bara det jag kan se',
+  sportLaterToday: 'Senare idag',
+  sportTonight: 'IKVÄLL',
+  sportTopMatch: 'Toppmatch',
+  sportKickoffAt: 'Avspark {time}',
+  sportPickSource: 'Välj källa',
+  sportBestLower: 'bäst',
+  sportMatchdaySwipe: 'dina kanaler · svep i sidled',
+  sportPlanChosen: '{n} valda',
+  sportPlanHint: 'bocka i det du vill se',
+  sportAddTeams: 'Lägg till lag',
+  sportAlertShort15: '15 min',
+  sportAlertShortKickoff: 'Avspark',
+  sportAlertFor: 'Påminnelse för {name}: {rule}',
 }
 
 export type TvStringKey = keyof typeof EN
