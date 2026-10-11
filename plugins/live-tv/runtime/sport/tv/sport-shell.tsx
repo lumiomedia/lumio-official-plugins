@@ -35,12 +35,23 @@ const MAX_OFFSET: DayOffset = 1
 
 const stepBtn = (enabled: boolean) => ({ width: dp(56), height: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: enabled ? 'pointer' : 'default', color: TV.text, opacity: enabled ? 1 : 0.3, borderRadius: dp(14) }) as const
 
+/**
+ * Innehållets toppluft. `--tv-scene-chrome-inset` är värdens toppkrom
+ * (snabbmeny, pill, klocka) i designpixlar och sätts bara på sportsidan
+ * (menyvalet Sport) på skrivbordet: där står kromet OVANPÅ sportens
+ * bakgrund, som går upp till fönstrets överkant, och bara innehållet dras in
+ * (Jerry 2026-10-11). I Live TV och på TV är variabeln 0.
+ */
+export function sportViewPaddingTop(): string {
+  return `calc(${dp(34)}px + var(--tv-scene-chrome-inset, 0px))`
+}
+
 /** Sportvyn. Skrivbordet ritar samma träd i scenlådan (Live TV:s "everywhere"-modell). */
 export function TvSport(props: TvViewProps) {
   return props.phone ? <SportPhone {...props} /> : <SportTv {...props} />
 }
 
-function SportTv({ model, nav }: TvViewProps) {
+function SportTv({ model, nav, standalone = false }: TvViewProps) {
   const [tab, setTab] = useState<SportTab>('foryou')
   const [offset, setOffset] = useState<DayOffset>(0)
   const [filter, setFilter] = useState<SportFilter>('all')
@@ -64,6 +75,10 @@ function SportTv({ model, nav }: TvViewProps) {
   const { matches: mergedMatches, allMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
   const tvMode = useTvMode()
+  /* Sportsidan på skrivbordet behåller appens toppkrom, och värdens klocka
+     står då uppe till höger som på Hem — en klocka till i rubriken hade
+     dubblerat den (Jerry 2026-10-11: "klockan syns inte till höger heller"). */
+  const ownClock = !standalone || tvMode
   usePollDemand('sport-view', true)
 
   const counts = sportCounts(mergedDay)
@@ -93,11 +108,11 @@ function SportTv({ model, nav }: TvViewProps) {
     <div data-testid="sport-stage" data-sport-stage="" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', ...backdrop.surface }}>
     <style>{SPORT_FOCUS_CSS}</style>
     <SportBackdropLayer choice={backdrop.choice} phone={false} onBroken={backdrop.onBroken} />
-    <div data-testid="sport-view" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(22) }}>
+    <div data-testid="sport-view" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${dp(48)}px ${dp(48)}px`, paddingTop: sportViewPaddingTop(), display: 'flex', flexDirection: 'column', gap: dp(22) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(18) }}>
         <span style={{ fontSize: dp(40), fontWeight: 600 }}>{tt('sportTitle')}</span>
         <span data-testid="sport-summary" style={{ fontSize: dp(19), color: TV.muted }}>{tt('sportHeaderSummary', { day: dayLabel(offset), count: summary.total, live: summary.live, mine: summary.onChannels })}</span>
-        <span style={{ marginLeft: 'auto' }}>{clock}</span>
+        {ownClock ? <span data-testid="sport-clock" style={{ marginLeft: 'auto' }}>{clock}</span> : null}
       </div>
       <RateLineView status={status} tv={tvMode} />
 

@@ -107,9 +107,10 @@ afterEach(() => {
  * `page: true` monterar i stället Sport som egen sida (menyvalet) — params går då in som de är, och
  * utan params får sidan `undefined`, precis som när värden öppnar den från menyn.
  */
-export function mountSport(params: Record<string, string> = {}, opts: { days?: Record<string, SportMatch[]> | 'missing'; phone?: boolean; follows?: SportFollow[]; page?: boolean } = {}) {
+export function mountSport(params: Record<string, string> = {}, opts: { days?: Record<string, SportMatch[]> | 'missing'; phone?: boolean; follows?: SportFollow[]; page?: boolean; tv?: boolean } = {}) {
   __resetForTests()
-  __setTvModeForTests(!opts.phone)
+  // `tv: false` utan `phone` = skrivbordet (scenlådan utanför TV-läge).
+  __setTvModeForTests(opts.tv ?? !opts.phone)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [fxList])
   writePluginJson(LIVE_TV_PLUGIN_ID, 'pins', [])
   if (opts.follows) writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, opts.follows)

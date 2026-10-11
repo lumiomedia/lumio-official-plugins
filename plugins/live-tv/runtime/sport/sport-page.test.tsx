@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup as cleanupAll, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { BROWSE_BACK_EVENT } from '@/lib/plugin-sdk'
 import { localDayKey } from './sport-epg'
 import { setSportSettings } from './sport-store'
 import { MIN, HOUR, fxMatch, mountSport } from './__sport-fixture'
 import { LiveTvPlugin } from '../index'
 import { SPORT_PAGE_ID } from './sport-page'
+import { sportViewPaddingTop } from './tv/sport-shell'
 
 // Spelaren som en knapp: ett klick är "stäng spelaren".
 vi.mock('../live-tv-player', () => ({
@@ -161,5 +162,30 @@ describe('Sport som egen sida: samma utseende som i Live TV', () => {
     await screen.findByTestId('sport-phone-view-feed')
     act(() => { setSportSettings({ phoneView: 'feed' }) })
     expect(screen.getByTestId('sport-phone-view-feed').getAttribute('aria-pressed')).toBe('true')
+  })
+})
+
+describe('Sport som egen sida: under appens toppkrom (skrivbordet)', () => {
+  it('ingen egen klocka i rubriken — värdens klocka står uppe till höger som på Hem', async () => {
+    mountSport({}, { page: true, tv: false, days: { [today]: [live] } })
+    await screen.findByTestId('sport-hero')
+    expect(screen.queryByTestId('sport-clock')).toBeNull()
+  })
+  it('inne i Live TV och på TV har rubriken kvar sin klocka', async () => {
+    mountSport({}, { tv: false, days: { [today]: [live] } })
+    await screen.findByTestId('sport-hero')
+    expect(screen.getByTestId('sport-clock')).toBeInTheDocument()
+    cleanupAll()
+    mountSport({}, { page: true, days: { [today]: [live] } })
+    await screen.findByTestId('sport-hero')
+    expect(screen.getByTestId('sport-clock')).toBeInTheDocument()
+  })
+  it('bakgrunden ligger i scenen utanför det indragna innehållet — bara innehållet flyttas', async () => {
+    mountSport({}, { page: true, tv: false, days: { [today]: [fxMatch({ id: 'a', start: now + HOUR })] } })
+    const layer = await screen.findByTestId('sport-backdrop')
+    expect(layer.closest('[data-testid="sport-view"]')).toBeNull()
+    expect(layer.parentElement).toBe(screen.getByTestId('sport-stage'))
+    // Innehållets topp = rubrikens luft + värdens krom (0 när värden inte satt det).
+    expect(sportViewPaddingTop()).toMatch(/^calc\(\d+(\.\d+)?px \+ var\(--tv-scene-chrome-inset, 0px\)\)$/)
   })
 })
