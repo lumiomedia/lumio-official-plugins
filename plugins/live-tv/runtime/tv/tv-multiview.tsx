@@ -9,6 +9,7 @@ import { useNarrowSurface } from '../hooks/useNarrowSurface'
 import { assignTile, enlargeTile, removeTile, setLayout, setMultiviewState, useMultiviewState, type MultiviewLayout, type MultiviewState } from './tv-multiview-store'
 import { narrowVisibleIndices } from './multiview-slots'
 import { useVideoSurface, videoSurfaceCapabilities } from './video-surface'
+import { logSurfaceStack } from './surface-diagnostics'
 import { TvChannelPicker } from './tv-channel-picker'
 import { TvMultiviewPhone } from './mobile/multiview-phone'
 
@@ -67,6 +68,16 @@ function TvMultiviewDesktop(props: TvViewProps) {
    * "tappar bort sig". Effekten kör bara vid övergången TILL smalt (inte vid
    * varje rendering) och bara om fokus verkligen lämnat vyn.
    */
+  // Felsökningsrad i appens logg (se surface-diagnostics.ts): vad målar över
+  // rutorna när ytorna borde synas? Bara för nativa ytor bakom webbvyn.
+  const nativeBehindDom = caps.nativeBehindDom
+  useEffect(() => {
+    if (!nativeBehindDom) return
+    const tiles = () => Array.from(rootRef.current?.querySelectorAll<HTMLElement>('[data-testid="mv-tile"]') ?? [])
+    const timers = [1500, 5000].map((ms) => window.setTimeout(() => logSurfaceStack(`multivy +${ms} ms`, tiles()), ms))
+    return () => timers.forEach((timer) => window.clearTimeout(timer))
+  }, [nativeBehindDom])
+
   useEffect(() => {
     if (!narrow) return
     const root = rootRef.current
