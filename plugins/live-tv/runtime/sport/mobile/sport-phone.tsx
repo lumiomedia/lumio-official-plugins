@@ -11,8 +11,9 @@ import { MobileSheet } from '../../tv/mobile/mobile-sheet'
 import { SPORT_KINDS, matchTitle, sourceChannel, type SportFilter, type SportMatch } from '../sport-model'
 import { formatClock, progressOf } from '../../live-tv-ui'
 import { MobileLogo } from '../../tv/mobile/mobile-logo'
-import { SportIcon } from '../sport-icons'
-import { localDayKey, shiftDay, useSportDay } from '../sport-epg'
+import { SportIcon, SportIcons } from '../sport-icons'
+import { MatchInfoDrawer } from '../match-info/match-info-drawer'
+import { dayStartMs, localDayKey, shiftDay, useSportDay } from '../sport-epg'
 import { featuredMatch, followCandidates, followState, matchdayStrip, nextMatchFor, rankedSources, sportCounts, statusAt, visibleMatches } from '../sport-day-model'
 import { isFollowing, setSportSettings, toggleFollow, type KickoffAlert, type SportFollow } from '../sport-store'
 import { PhoneCrest, SportResultsPhone } from './sport-results-phone'
@@ -23,7 +24,7 @@ import { SportBackdropLayer } from '../sport-backdrop'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import { crestForFollow, matchStatusLabel, scoreText, showsScore } from '../score-model'
-import { alertLabel, followNextLine, sourceLine, timeLine, useSportCtx, type SportCtx } from '../sport-ctx'
+import { alertLabel, followNextLine, sourceLine, useSportCtx, type SportCtx } from '../sport-ctx'
 import { sportBg } from '../surface'
 
 type DayOffset = -1 | 0 | 1
@@ -36,6 +37,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const [sheet, setSheet] = useState<SportMatch | null>(null)
   const [adding, setAdding] = useState(false)
   const openMatch = useCallback((m: SportMatch) => setSheet(m), [])
+
   const openFollowPicker = useCallback(() => setAdding(true), [])
   const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker })
   const { tt } = ctx
@@ -52,21 +54,9 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const backdrop = useSportBackdrop(phoneHero, filter, model.nowMs)
   const counts = sportCounts(mergedDay)
   const dayMatches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter])
+  // Den öppna matchen följer livedata (ställning, minut) medan lådan står öppen.
+  const liveSheet = sheet ? mergedMatches.find((m) => m.id === sheet.id) ?? null : null
   const dayLabel = (o: DayOffset) => (o === -1 ? tt('sportYesterday') : o === 0 ? tt('sportToday') : tt('sportTomorrow'))
-
-  const sheetItems = (m: SportMatch) => {
-    const fs = followState(m, ctx.follows)
-    const follow = (kind: 'team' | 'league', key: string | null, name: string | null, on: boolean) =>
-      key && name ? [{ key: `follow-${kind}-${key}`, label: on ? tt('sportFollowingName', { name }) : tt('sportFollowName', { name }), run: () => toggleFollow({ sport: m.kind, kind, key, name }) }] : []
-    const ranked = rankedSources(m, ctx.overrides)
-    return [
-      ...ranked.slice(0, 4).map((s, i) => ({ key: `watch-${i}`, label: `${tt('sportWatchOn', { channel: s.name })}${s.quality ? ` · ${s.quality}` : ''}`, run: () => ctx.watch(m, s) })),
-      ...follow('team', m.homeKey, m.home, fs.home),
-      ...follow('team', m.awayKey, m.away, fs.away),
-      ...follow('league', m.leagueKey || null, m.league || null, fs.league),
-      ...(ranked.length > 0 && statusAt(m, ctx.now) !== 'finished' ? [{ key: 'remind', label: ctx.isReminded(m) ? tt('sportReminded') : tt('sportRemindMe'), run: () => ctx.toggleRemind(m) }] : []),
-    ]
-  }
 
   const notice = selected.state === 'missing' ? tt('sportNeedsUpdate') : selected.state === 'error' ? tt('sportError') : selected.state === 'loading' ? tt('sportLoading') : dayMatches.length === 0 ? tt('sportEmptyDay') : null
 
@@ -76,11 +66,22 @@ export function SportPhone({ model, nav }: TvViewProps) {
     <div data-testid="sport-phone" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ margin: `0 -${MT.PAD}px` }}><MobileHeader title={tt('sportTitle')} /></div>
       <MobileSegment testId="sport-phone-tabs" options={[{ key: 'foryou', label: tt('sportTabForYou') }, { key: 'results', label: tt('sportTabResults') }, { key: 'follows', label: tt('sportTabFollows') }]} value={tab} onChange={setTab} />
-      {tab !== 'follows' ? (
-        <MobileChips<DayOffset> testId="sport-phone-days" items={([-1, 0, 1] as const).map((o) => ({ key: o, label: dayLabel(o), id: `day-${o}` }))} value={offset} onChange={setOffset} emphasisKey={0} />
+      <div data-testid="sport-phone-days" style={{ display: 'flex', alignItems: 'center', minHeight: MT.HIT, borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}` }}>
+        <div data-testid="sport-day-prev" {...station(() => setOffset((o) => (o > -1 ? ((o - 1) as DayOffset) : o)))} aria-label={tt('sportDayPrev')} aria-disabled={offset <= -1 ? 'true' : 'false'} style={{ width: MT.HIT, height: MT.HIT, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', opacity: offset > -1 ? 1 : 0.3, cursor: 'pointer' }}><SportIcons.Back size={20} /></div>
+        <span data-testid="sport-day-label" style={{ flex: 1, textAlign: 'center', fontSize: 15 }}>
+          <span style={{ fontWeight: 700 }}>{dayLabel(offset)}</span>
+          <span style={{ color: MT.muted }}>{` ${new Date(dayStartMs(day) + 12 * 3_600_000).toLocaleDateString(ctx.locale, { weekday: 'short', day: 'numeric', month: 'short' })}`}</span>
+        </span>
+        <div data-testid="sport-day-next" {...station(() => setOffset((o) => (o < 1 ? ((o + 1) as DayOffset) : o)))} aria-label={tt('sportDayNext')} aria-disabled={offset >= 1 ? 'true' : 'false'} style={{ width: MT.HIT, height: MT.HIT, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', opacity: offset < 1 ? 1 : 0.3, cursor: 'pointer' }}><SportIcons.Chevron size={20} /></div>
+      </div>
+      {tab === 'follows' ? (
+        <div data-testid="sport-follows-meta" style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 14, color: MT.muted }}>
+          <span>{tt('sportFollowCount', { n: ctx.follows.length })}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: MT.dim }}><SportIcons.Bell size={14} />{tt('sportFollowBellHint')}</span>
+        </div>
       ) : null}
       {tab !== 'follows' ? (
-        <MobileChips<SportFilter> testId="sport-phone-sports" items={[{ key: 'all', label: tt('sportAll'), id: 'all' }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k as SportFilter, label: `${ctx.kindLabel(k)} ${counts[k]}`, id: k }))]} value={filter} onChange={setFilter} />
+        <MobileChips<SportFilter> testId="sport-phone-sports" items={[{ key: 'all', label: tt('sportAllShort'), id: 'all' }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k as SportFilter, label: `${ctx.kindLabel(k)} ${counts[k]}`, id: k }))]} value={filter} onChange={setFilter} />
       ) : null}
       {tab === 'foryou' ? (
         <>
@@ -92,7 +93,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
       ) : (
         <PhoneFollows ctx={ctx} days={[todayDay.data, tomorrowDay.data]} />
       )}
-      {sheet ? <MobileSheet testId="sport-phone-sheet" title={matchTitle(sheet)} subtitle={[scoreText(sheet), matchStatusLabel(sheet, ctx.tt) ?? timeLine(sheet, ctx), sheet.league || ctx.kindLabel(sheet.kind)].filter(Boolean).join(' · ')} items={sheetItems(sheet)} onClose={() => setSheet(null)} pushLayer={nav.pushLayer} /> : null}
+      {sheet ? <MatchInfoDrawer ctx={ctx} match={liveSheet ?? sheet} onClose={() => setSheet(null)} phone /> : null}
       {adding ? (
         <MobileSheet
           testId="sport-phone-follow-sheet"

@@ -3,7 +3,9 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { __resetPluginStorageForTests, __setLangForTests } from '@/lib/plugin-sdk'
 import { SportResultsPhone } from './sport-results-phone'
 import { PhoneFollowSearch } from './sport-follow-search-phone'
-import { getFollows, setSportSettings } from '../sport-store'
+import { getFollows, setSportSettings, toggleFollow } from '../sport-store'
+import type { SportFollow } from '../sport-store'
+const writeFollows = (list: SportFollow[]) => { for (const f of list) toggleFollow(f) }
 import { foldTeamKey } from '../merge'
 import { fxMatch } from '../__sport-fixture'
 import type { SportMatch } from '../sport-model'
@@ -83,11 +85,25 @@ describe('Resultat på telefon', () => {
     fireEvent.change(within(sheet).getByTestId('phone-league-search'), { target: { value: 'primera' } })
     const hits = within(sheet).getAllByTestId(/^phone-league-row-/)
     expect(hits.map((h) => h.textContent)).toEqual(['Primera DivisiónArgentina · Fotboll1', 'Primera DivisiónSpain · Fotboll1'])
-    const scroll = vi.fn()
-    ;(screen.getByTestId('phone-results-group-football|140') as HTMLElement).scrollIntoView = scroll
     fireEvent.click(hits[1]!)
     expect(screen.queryByTestId('phone-league-sheet')).toBeNull()
-    expect(scroll).toHaveBeenCalled()
+    // Valet FILTRERAR till ligan (ingen rullning); "Alla ligor ✕" återställer.
+    expect(screen.getAllByTestId(/^phone-results-group-/).map((g) => g.getAttribute('data-testid'))).toEqual(['phone-results-group-football|140'])
+    expect(screen.getByTestId('phone-league-chip-football|140').getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByTestId('phone-league-reset'))
+    expect(screen.getAllByTestId(/^phone-results-group-/)).toHaveLength(4)
+    expect(screen.queryByTestId('phone-league-reset')).toBeNull()
+  })
+
+  it('Mina lag är förvalt när något följs och visar bara följda lag/ligor', () => {
+    setSportSettings({ apiKey: 'k123' })
+    writeFollows([{ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' }])
+    const other = m({ home: 'Lazio', away: 'Roma', homeKey: 'lazio', awayKey: 'roma' })
+    render(<SportResultsPhone matches={[m(), other]} controller={fakeController() as never} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
+    expect(screen.getByTestId('chip-followed').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getAllByTestId('phone-result-row')).toHaveLength(1)
+    fireEvent.click(screen.getByTestId('chip-all'))
+    expect(screen.getAllByTestId('phone-result-row')).toHaveLength(2)
   })
 
   it('telefonträdet importerar aldrig ur sport/tv (importcykelregeln)', () => {

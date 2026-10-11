@@ -33,3 +33,13 @@ export const sportDrawerStyle: CSSProperties = {
   padding: SPORT_DRAWER_PADDING,
   boxSizing: 'border-box',
 }
+
+/**
+ * EN fokusmarkering i Sport (Jerry 2026-10-11: "ram i ram" på flikarna). Den
+ * vanliga ringen (TvFocusStyle: outline) får stå ensam: kontrollens egen kant
+ * eller understrykning och glöd-/inset-skuggor (appens generella TV-ring)
+ * tas bort medan den har fokus. Bara med fjärr/tangentbord — med pekare syns
+ * ingen ring, och då står kontrollens egen kant kvar. Telefonen ritar ingen ring.
+ */
+const SPORT_FOCUSED = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-sport-stage] [data-f]'
+export const SPORT_FOCUS_CSS = `${SPORT_FOCUSED}:focus, ${SPORT_FOCUSED}[data-fcur="1"] { box-shadow: none !important; border-color: transparent !important; }`

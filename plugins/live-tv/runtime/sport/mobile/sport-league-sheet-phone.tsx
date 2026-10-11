@@ -18,14 +18,20 @@ const dot = <span data-testid="league-live-dot" aria-hidden="true" style={{ widt
 
 const chipStyle = { minHeight: 34, padding: '0 14px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, whiteSpace: 'nowrap', flexShrink: 0, background: MT.s12, border: `1px solid ${MT.line10}`, color: MT.muted70, cursor: 'pointer' } as const
 
-export function PhoneYourLeagues({ entries, fallback, onJump, onMore }: { entries: LeagueEntry[]; fallback: boolean; onJump: (key: string) => void; onMore: () => void }) {
+export function PhoneYourLeagues({ entries, fallback, active = null, activeLabel = null, onJump, onReset, onMore }: { entries: LeagueEntry[]; fallback: boolean; active?: string | null; activeLabel?: string | null; onJump: (key: string) => void; onReset?: () => void; onMore: () => void }) {
   const { tt } = useTvText()
+  const inRow = active ? entries.some((e) => e.key === active) : true
+  const on = { background: MT.text, color: '#12152a' }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <span style={sectionLabel}>{fallback ? tt('sportTopLeagues') : tt('sportYourLeagues')}</span>
       <div data-testid="phone-your-leagues" data-row="" style={{ display: 'flex', gap: 8, overflowX: 'auto', minHeight: 44, padding: '5px 0', alignItems: 'center' }}>
+        {active && onReset ? (
+          <div data-testid="phone-league-reset" {...station(onReset)} style={{ ...chipStyle, color: MT.text, border: `1px solid ${MT.line20}` }}>{tt('sportAllLeaguesReset')} ✕</div>
+        ) : null}
+        {active && !inRow ? <div data-testid={`phone-league-chip-${active}`} aria-pressed="true" {...station(() => onJump(active))} style={{ ...chipStyle, ...on }}>{activeLabel ?? active}</div> : null}
         {entries.map((e) => (
-          <div key={e.key} data-testid={`phone-league-chip-${e.key}`} {...station(() => onJump(e.key))} style={chipStyle}>
+          <div key={e.key} data-testid={`phone-league-chip-${e.key}`} aria-pressed={e.key === active ? 'true' : 'false'} {...station(() => onJump(e.key))} style={{ ...chipStyle, ...(e.key === active ? on : {}) }}>
             {e.live > 0 ? dot : null}
             <span>{e.label}</span>
             <span style={{ color: MT.dim, fontVariantNumeric: 'tabular-nums' }}>{e.count}</span>

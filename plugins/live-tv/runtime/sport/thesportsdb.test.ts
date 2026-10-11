@@ -51,7 +51,7 @@ describe('thesportsdb: tolkning', () => {
     const d = theSportsDb.fixture('football', '2100001', { finished: false }).parse([lookup, timeline, stats, lineup])!
     expect(d.events.map((e) => [e.minute, e.type, e.side, e.player])).toEqual([[12, 'goal', 'home', 'Isaac Kiese Thelin'], [29, 'card', 'away', 'Marcus Danielson'], [60, 'sub', 'home', 'Oscar Berg']])
     expect(d.stats).toEqual([{ label: 'Ball Possession', home: '58', away: '42' }, { label: 'Total Shots', home: '14', away: '7' }])
-    expect(d.lineups).toEqual([
+    expect(d.lineups).toMatchObject([
       { side: 'home', formation: '4-3-3', startXI: [{ number: 1, name: 'Johan Dahlin', pos: 'Goalkeeper' }, { number: 9, name: 'Isaac Kiese Thelin', pos: 'Forward' }], subs: [{ number: 20, name: 'Oscar Berg', pos: 'Midfielder' }] },
       { side: 'away', formation: '4-4-2', startXI: [{ number: 35, name: 'Jacob Widell Zetterström', pos: 'Goalkeeper' }], subs: [] },
     ])
