@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { TvViewProps } from '../../tv/tv-shell'
 import { station } from '../../tv/tv-ui'
 import { MT, ellipsis } from '../../tv/mobile/mobile-tokens'
@@ -11,14 +11,15 @@ import { MobileSheet } from '../../tv/mobile/mobile-sheet'
 import { SPORT_KINDS, matchTitle, type SportFilter, type SportMatch } from '../sport-model'
 import { localDayKey, shiftDay, useSportDay } from '../sport-epg'
 import { featuredMatch, followCandidates, followState, nextMatchFor, rankedSources, sportCounts, splitSections, statusAt, visibleMatches } from '../sport-day-model'
-import { isFollowing, setSportSettings, toggleFollow, type KickoffAlert } from '../sport-store'
-import { SportResultsPhone } from './sport-results-phone'
+import { isFollowing, setSportSettings, toggleFollow, type KickoffAlert, type SportFollow } from '../sport-store'
+import { PhoneCrest, SportResultsPhone } from './sport-results-phone'
+import { MIcons } from '../../tv/mobile/mobile-icons'
 import { PhoneFollowSearch } from './sport-follow-search-phone'
 import { useSportBackdrop } from '../backdrop'
 import { SportBackdropLayer } from '../sport-backdrop'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
-import { matchStatusLabel, scoreText, showsScore } from '../score-model'
+import { crestForFollow, matchStatusLabel, scoreText, showsScore } from '../score-model'
 import { alertLabel, followNextLine, sourceLine, timeLine, useSportCtx, type SportCtx } from '../sport-ctx'
 import { sportBg } from '../surface'
 
@@ -98,7 +99,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
           body={<PhoneFollowSearch sport={filter === 'all' ? 'football' : filter} />}
           items={followCandidates([todayDay.data, tomorrowDay.data]).slice(0, 60).map((c) => ({
             key: `${c.kind}:${c.key}`,
-            label: `${isFollowing(ctx.follows, c) ? '★ ' : ''}${c.name} · ${ctx.kindLabel(c.sport)}`,
+            label: `${isFollowing(ctx.follows, c) ? '\u2665\uFE0E ' : ''}${c.name} · ${ctx.kindLabel(c.sport)}`,
             run: () => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name }),
           }))}
           onClose={() => setAdding(false)}
@@ -126,7 +127,7 @@ function PhoneSection({ ctx, title, matches }: { ctx: SportCtx; title: string; m
               <div style={{ fontSize: 15, fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
               <div style={{ fontSize: 12.5, color: MT.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), sourceLine(m, ctx)].filter(Boolean).join(' · ')}</div>
             </div>
-            {followState(m, ctx.follows).any ? <span style={{ color: '#fbbf24' }}>★</span> : null}
+            {followState(m, ctx.follows).any ? <span data-testid="sport-phone-row-fav" style={{ color: MT.acc, display: 'inline-flex', flexShrink: 0 }}><MIcons.Heart size={16} filled /></span> : null}
           </div>
         )
       })}
@@ -135,6 +136,11 @@ function PhoneSection({ ctx, title, matches }: { ctx: SportCtx; title: string; m
 }
 
 function PhoneFollows({ ctx, days }: { ctx: SportCtx; days: Parameters<typeof nextMatchFor>[1] }) {
+  // Som på TV: en borttagen favorit ligger kvar (dämpad) tills vyn lämnas, så ett feltryck går att ångra.
+  const [shown, setShown] = useState<SportFollow[]>(ctx.follows)
+  useEffect(() => {
+    setShown((prev) => [...prev, ...ctx.follows.filter((f) => !prev.some((p) => p.kind === f.kind && p.key === f.key))])
+  }, [ctx.follows])
   const alertOptions: { key: KickoffAlert; label: string }[] = [
     { key: 'off', label: ctx.tt('sportAlertOff') },
     { key: '15', label: ctx.tt('sportAlert15') },
@@ -149,14 +155,22 @@ function PhoneFollows({ ctx, days }: { ctx: SportCtx; days: Parameters<typeof ne
         <span style={{ fontSize: 12.5, color: MT.dim }}>{ctx.tt('sportAlertOnlyRunning')}</span>
       </div>
       {ctx.follows.length === 0 ? <div style={{ fontSize: 15, color: MT.muted, padding: '16px 4px' }}>{ctx.tt('sportFollowEmpty')}</div> : null}
-      {ctx.follows.map((f) => {
+      {shown.map((f) => {
+        const on = isFollowing(ctx.follows, f)
         const next = nextMatchFor(f, days, ctx.now)
+        const crest = crestForFollow(f, days.flatMap((d) => d?.matches ?? []))
         return (
-          <div key={`${f.kind}:${f.key}`} data-testid="sport-phone-follow" {...station(() => { if (next) ctx.openMatch(next) })} style={{ minHeight: 60, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: sportBg(MT.s07), cursor: 'pointer' }}>
-            <span style={{ color: '#fbbf24' }}>★</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, ...ellipsis }}>{f.name}</div>
-              <div style={{ fontSize: 12.5, color: MT.muted, ...ellipsis }}>{followNextLine(ctx, f, next)}</div>
+          <div key={`${f.kind}:${f.key}`} data-testid="sport-phone-follow" data-following={on ? '1' : '0'} style={{ minHeight: 60, display: 'flex', alignItems: 'center', gap: 12, padding: '8px 6px 8px 12px', borderRadius: 14, background: sportBg(MT.s07), opacity: on ? 1 : 0.55 }}>
+            <div {...station(() => { if (next) ctx.openMatch(next) })} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <PhoneCrest name={f.name} src={crest} size={36} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, ...ellipsis }}>{f.name}</div>
+                <div style={{ fontSize: 12.5, color: MT.muted, ...ellipsis }}>{followNextLine(ctx, f, next)}</div>
+              </div>
+            </div>
+            {/* Samma hjärta som kanalernas favoriter. */}
+            <div data-testid="sport-phone-follow-heart" {...station(() => toggleFollow(f))} aria-pressed={on ? 'true' : 'false'} aria-label={on ? ctx.tt('sportFollowingName', { name: f.name }) : ctx.tt('sportFollowName', { name: f.name })} style={{ width: MT.HIT, height: MT.HIT, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: on ? MT.acc : MT.text, cursor: 'pointer' }}>
+              <MIcons.Heart size={20} filled={on} />
             </div>
           </div>
         )

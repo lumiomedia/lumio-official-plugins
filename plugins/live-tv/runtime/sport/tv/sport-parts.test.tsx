@@ -38,10 +38,10 @@ describe('MatchCard', () => {
     fireEvent.click(card)
     expect(ctx.openMatch).toHaveBeenCalledWith(m)
   })
-  it('kommande visar tid, avslutad SLUT/ENDED, följd stjärna', () => {
+  it('kommande visar tid, avslutad SLUT/ENDED, favorit med hjärta', () => {
     const ctx = fakeCtx({ now, follows: [{ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' }] })
     const { rerender } = render(<MatchCard match={fxMatch({ start: now + HOUR })} ctx={ctx} />)
-    expect(screen.getByTestId('card-followed')).toBeInTheDocument()
+    expect(screen.getByTestId('card-followed').querySelector('svg path')?.getAttribute('d')).toMatch(/^M12 21s/)
     rerender(<MatchCard match={fxMatch({ start: now - 3 * HOUR, stop: now - HOUR })} ctx={ctx} />)
     expect(screen.getByTestId('sport-card')).toHaveTextContent('ENDED')
   })

@@ -56,6 +56,18 @@ describe('Matchcentret', () => {
     fireEvent.click(screen.getByTestId('mc-remind'))
     expect(ctx.toggleRemind).toHaveBeenCalledWith(m)
   })
+  it('favoritknapparna: hjärta och lagnamnet, etiketten säger vad ett tryck gör', () => {
+    render(<SportMatchCenter ctx={fakeCtx({ now, follows: [{ sport: 'football', kind: 'team', key: 'barcelona', name: 'FC Barcelona' }] })} match={m} onClose={() => {}} />)
+    const home = screen.getByTestId('mc-follow-home')
+    expect(home).toHaveTextContent(/^FC Barcelona$/)
+    expect(home.getAttribute('aria-pressed')).toBe('true')
+    expect(home.getAttribute('aria-label')).toBe('Remove FC Barcelona from favourites')
+    expect(home.querySelector('svg path')?.getAttribute('d')).toMatch(/^M12 21s/)
+    expect(home.getAttribute('style')).not.toMatch(/251, ?191, ?36|fde68a/)
+    const league = screen.getByTestId('mc-follow-league')
+    expect(league.getAttribute('aria-pressed')).toBe('false')
+    expect(league.getAttribute('aria-label')).toBe('Add Champions League to favourites')
+  })
   it('åsidosättningen står först som Ditt val och kan tas bort', () => {
     const override = { key: 'C::http://y/C', name: 'C 4K', url: 'http://y/C', logo: null, group: 'Sport', tvgId: null }
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, { m: override })

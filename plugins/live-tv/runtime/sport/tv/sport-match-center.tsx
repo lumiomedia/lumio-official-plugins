@@ -18,8 +18,18 @@ import { SPORT_PANEL_BG, sportSurface } from '../surface'
 const pill = (on: boolean): CSSProperties => ({
   height: dp(52), minHeight: dp(52), padding: `0 ${dp(20)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: dp(8),
   fontSize: dp(17), fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-  background: on ? 'rgba(251,191,36,0.16)' : TV.s10, color: on ? '#fde68a' : TV.text, border: `1px solid ${on ? 'rgba(251,191,36,0.45)' : TV.lineCard}`,
+  background: on ? TV.accMix(18) : TV.s10, color: TV.text, border: `1px solid ${on ? TV.accMix(60) : TV.lineCard}`,
 })
+
+/** Favoritknappen: Live TV:s hjärta och namnet. Etiketten (skärmläsare) säger vad ett tryck gör. */
+function FavPill({ testId, on, name, ctx, onToggle }: { testId: string; on: boolean; name: string; ctx: SportCtx; onToggle: () => void }) {
+  return (
+    <div data-testid={testId} {...station(onToggle)} aria-pressed={on ? 'true' : 'false'} aria-label={on ? ctx.tt('sportFollowingName', { name }) : ctx.tt('sportFollowName', { name })} style={pill(on)}>
+      <span style={{ color: on ? TV.acc : TV.muted, display: 'inline-flex' }}><SportIcons.Heart size={dp(20)} filled={on} /></span>
+      {name}
+    </div>
+  )
+}
 
 export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match: SportMatch; onClose: () => void }) {
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -90,22 +100,13 @@ export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match
 
         <div data-row="" style={{ display: 'flex', gap: dp(10), flexWrap: 'wrap' }}>
           {match.home && match.homeKey ? (
-            <div data-testid="mc-follow-home" {...station(() => follow('team', match.homeKey, match.home))} aria-pressed={fs.home ? 'true' : 'false'} style={pill(fs.home)}>
-              <SportIcons.Star size={dp(18)} filled={fs.home} />
-              {fs.home ? ctx.tt('sportFollowingName', { name: match.home }) : ctx.tt('sportFollowName', { name: match.home })}
-            </div>
+            <FavPill testId="mc-follow-home" on={fs.home} name={match.home} ctx={ctx} onToggle={() => follow('team', match.homeKey, match.home)} />
           ) : null}
           {match.away && match.awayKey ? (
-            <div data-testid="mc-follow-away" {...station(() => follow('team', match.awayKey, match.away))} aria-pressed={fs.away ? 'true' : 'false'} style={pill(fs.away)}>
-              <SportIcons.Star size={dp(18)} filled={fs.away} />
-              {fs.away ? ctx.tt('sportFollowingName', { name: match.away }) : ctx.tt('sportFollowName', { name: match.away })}
-            </div>
+            <FavPill testId="mc-follow-away" on={fs.away} name={match.away} ctx={ctx} onToggle={() => follow('team', match.awayKey, match.away)} />
           ) : null}
           {match.leagueKey ? (
-            <div data-testid="mc-follow-league" {...station(() => follow('league', match.leagueKey, match.league))} aria-pressed={fs.league ? 'true' : 'false'} style={pill(fs.league)}>
-              <SportIcons.Star size={dp(18)} filled={fs.league} />
-              {fs.league ? ctx.tt('sportFollowingName', { name: match.league }) : ctx.tt('sportFollowName', { name: match.league })}
-            </div>
+            <FavPill testId="mc-follow-league" on={fs.league} name={match.league} ctx={ctx} onToggle={() => follow('league', match.leagueKey, match.league)} />
           ) : null}
           {ranked.length > 0 && st !== 'finished' ? (
             <div data-testid="mc-remind" {...station(() => ctx.toggleRemind(match))} aria-pressed={ctx.isReminded(match) ? 'true' : 'false'} style={pill(false)}>

@@ -26,7 +26,7 @@ export function PhoneCrest({ name, src, size = 22 }: { name: string; src?: strin
   const url = src && !broken ? getPluginHttpAssetUrl('/api/m3u-logo', src) : null
   if (url) return <img data-crest="" src={url} alt="" width={size} height={size} onError={() => setBroken(true)} style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
   return (
-    <span aria-hidden="true" style={{ width: size, height: size, borderRadius: 999, background: MT.s12, color: MT.muted, fontSize: Math.round(size * 0.42), fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <span data-crest="" aria-hidden="true" style={{ width: size, height: size, borderRadius: 999, background: MT.s12, color: MT.muted, fontSize: Math.round(size * 0.42), fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       {crestText(name)}
     </span>
   )

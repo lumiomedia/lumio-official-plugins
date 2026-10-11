@@ -10,6 +10,7 @@ import { isFollowing, toggleFollow, useFollows, useSportSettings } from '../spor
 import type { TeamHit } from '../provider'
 import type { SportKind } from '../sport-model'
 import { PhoneCrest } from './sport-results-phone'
+import { MIcons } from '../../tv/mobile/mobile-icons'
 
 /**
  * Följer på telefon: fritext mot källan, som FollowPicker på TV (Task 15 punkt 5).
@@ -49,7 +50,7 @@ export function PhoneFollowSearch({ sport }: { sport: SportKind }) {
             <PhoneCrest name={hit.name} src={hit.crest} size={26} />
             <span style={{ flex: 1, fontSize: 15, ...ellipsis }}>{hit.name}</span>
             {hit.country ? <span style={{ fontSize: 13, color: MT.muted, flexShrink: 0 }}>{hit.country}</span> : null}
-            <span style={{ color: on ? '#fbbf24' : MT.dim, flexShrink: 0 }}>{on ? '★' : '☆'}</span>
+            <span data-on={on ? '1' : '0'} style={{ color: on ? MT.acc : MT.dim, flexShrink: 0, display: 'inline-flex' }}><MIcons.Heart size={20} filled={on} /></span>
           </div>
         )
       })}

@@ -80,7 +80,7 @@ export function MatchCard({ match, ctx }: { match: SportMatch; ctx: SportCtx }) 
       <Progress value={st === 'live' ? progressOf(match.start, match.stop, ctx.now) : st === 'finished' ? 1 : 0} height={dp(4)} track={TV.s10} />
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(8), fontSize: dp(15), color: TV.muted }}>
         <span style={{ ...ellipsis, flex: 1 }}>{match.resultOnly ? <ResultOnlyTag /> : sourceLine(match, ctx)}</span>
-        {followed ? <span data-testid="card-followed" style={{ color: '#fbbf24', display: 'inline-flex' }}><SportIcons.Star size={dp(18)} filled /></span> : null}
+        {followed ? <span data-testid="card-followed" style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(18)} filled /></span> : null}
         {reminded ? <span data-testid="card-reminded" style={{ display: 'inline-flex' }}><SportIcons.Bell size={dp(18)} /></span> : null}
       </div>
     </div>

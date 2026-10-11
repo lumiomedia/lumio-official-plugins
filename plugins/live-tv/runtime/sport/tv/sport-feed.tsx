@@ -25,7 +25,7 @@ export function SportFeed({ ctx, matches, days }: { ctx: SportCtx; matches: Spor
     <div style={{ display: 'flex', flexDirection: 'column', gap: dp(32) }}>
       <section data-testid="feed-teams" style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
-          <span style={sectionTitle}>{ctx.tt('sportYourTeams')}</span>
+          <span style={{ ...sectionTitle, display: 'inline-flex', alignItems: 'center', gap: dp(12) }}><span style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(26)} filled /></span>{ctx.tt('sportYourTeams')}</span>
           <span style={{ fontSize: dp(16), color: TV.dim }}>{ctx.tt('sportYourTeamsHint')}</span>
         </div>
         <div data-row="" style={{ display: 'flex', gap: dp(24), overflowX: 'auto', padding: `${dp(8)}px ${dp(6)}px` }}>
@@ -88,7 +88,7 @@ export function SportFeed({ ctx, matches, days }: { ctx: SportCtx; matches: Spor
                       <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
                       <div style={{ fontSize: dp(15), color: TV.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(' · ')}</div>
                     </div>
-                    {followState(m, ctx.follows).any ? <span style={{ color: '#fbbf24', display: 'inline-flex' }}><SportIcons.Star size={dp(22)} filled /></span> : null}
+                    {followState(m, ctx.follows).any ? <span data-testid="feed-plan-fav" style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(22)} filled /></span> : null}
                   </div>
                 )
               })}

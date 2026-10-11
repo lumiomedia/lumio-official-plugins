@@ -17,7 +17,8 @@ export const SportIcons = {
   Tennis: ({ size = dp(26) }: IconProps) => svg(size, <><circle cx="12" cy="12" r="9" /><path d="M5 6c3 2 3 10 0 12M19 6c-3 2-3 10 0 12" /></>),
   Calendar: ({ size = dp(22) }: IconProps) => svg(size, <><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></>),
   Rows: ({ size = dp(22) }: IconProps) => svg(size, <path d="M4 7h16M4 12h16M4 17h16" />),
-  Star: ({ size = dp(22), filled = false }: IconProps) => svg(size, <path d="m12 4 2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z" />, filled),
+  /** Samma hjärta som Live TV:s favoriter (`Icons.Heart` i tv-ui.tsx): favoritlag och -ligor i Sport. */
+  Heart: ({ size = dp(22), filled = false }: IconProps) => svg(size, <path d="M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" />, filled),
   Bell: ({ size = dp(22) }: IconProps) => svg(size, <><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" /><path d="M10 20a2 2 0 0 0 4 0" /></>),
   Plus: ({ size = dp(22) }: IconProps) => svg(size, <path d="M12 5v14M5 12h14" />),
   Play: ({ size = dp(22) }: IconProps) => svg(size, <path d="M8 5v14l11-7z" />, true),
