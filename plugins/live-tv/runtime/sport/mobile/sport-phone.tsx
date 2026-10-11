@@ -139,7 +139,7 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
             ))}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8 }}>
-            <div data-testid="sport-phone-days" style={{ height: 36, flexShrink: 0, display: 'flex', alignItems: 'center', borderRadius: 10, background: 'rgba(252,252,255,0.08)', border: `1px solid ${P.line14}`, boxSizing: 'border-box' }}>
+            <div data-testid="sport-phone-days" style={{ height: 36, flexShrink: 0, display: 'flex', alignItems: 'center', borderRadius: 10, background: P.card, border: `1px solid ${P.line14}`, boxSizing: 'border-box' }}>
               <div data-testid="sport-day-prev" {...station(() => setOffset((o) => (o > -1 ? ((o - 1) as DayOffset) : o)))} aria-label={tt('sportDayPrev')} aria-disabled={offset <= -1 ? 'true' : 'false'} style={{ width: 32, height: 34, display: 'grid', placeItems: 'center', cursor: 'pointer', opacity: offset > -1 ? 1 : 0.3 }}><MIcons.CaretLeft size={16} /></div>
               <span data-testid="sport-day-label" style={{ minWidth: 62, textAlign: 'center', fontSize: 14, fontWeight: 700 }}>{dayLabel}</span>
               <div data-testid="sport-day-next" {...station(() => setOffset((o) => (o < 1 ? ((o + 1) as DayOffset) : o)))} aria-label={tt('sportDayNext')} aria-disabled={offset >= 1 ? 'true' : 'false'} style={{ width: 32, height: 34, display: 'grid', placeItems: 'center', cursor: 'pointer', opacity: offset < 1 ? 1 : 0.3 }}><MIcons.CaretRight size={16} /></div>

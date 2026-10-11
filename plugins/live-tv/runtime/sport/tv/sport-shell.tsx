@@ -23,7 +23,7 @@ import { SportFeed } from './sport-feed'
 import { FollowPicker, SportFollows } from './sport-follows'
 import { SportMatchCenter } from './sport-match-center'
 import { SportPhone } from '../mobile/sport-phone'
-import { SPORT_FOCUS_CSS, sportBg } from '../surface'
+import { SPORT_FOCUS_CSS, sportCardStyle } from '../surface'
 
 const NO_MATCHES: SportMatch[] = []
 
@@ -137,7 +137,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
       </div>
 
       <div data-row="" style={{ display: 'flex', alignItems: 'center', gap: dp(12), flexWrap: 'wrap' }}>
-        <div data-testid="sport-day-stepper" style={{ height: dp(64), display: 'inline-flex', alignItems: 'center', borderRadius: dp(14), background: sportBg(TV.s10), border: `1px solid ${TV.lineCard}`, boxSizing: 'border-box', flexShrink: 0 }}>
+        <div data-testid="sport-day-stepper" style={{ height: dp(64), display: 'inline-flex', alignItems: 'center', ...sportCardStyle, overflow: 'visible', boxSizing: 'border-box', flexShrink: 0 }}>
           <div data-testid="sport-day-prev" {...station(() => setOffset((o) => (o > MIN_OFFSET ? ((o - 1) as DayOffset) : o)))} aria-label={tt('sportDayPrev')} title={tt('sportDayPrev')} aria-disabled={offset <= MIN_OFFSET ? 'true' : 'false'} style={stepBtn(offset > MIN_OFFSET)}>
             <SportIcons.Back size={dp(22)} />
           </div>

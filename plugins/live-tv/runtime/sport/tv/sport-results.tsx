@@ -14,13 +14,14 @@ import type { TvNav } from '../../tv/tv-shell'
 import { leagueEntries, yourLeagues } from '../league-jump'
 import { LeagueDrawer, YourLeaguesRow } from './sport-league-drawer'
 import { FORM_COLOR, defaultResultsFilter, formLetters, groupResults, onlyLeague, type ResultGroup, type ResultsFilter } from '../results-model'
-import { sportBg } from '../surface'
+import { sportCardStyle } from '../surface'
 export { formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 function StandingsTable({ rows, tt }: { rows: StandingRow[]; tt: TT }) {
   const cell = { padding: `${dp(6)}px ${dp(8)}px`, fontSize: dp(15) } as const
   return (
+    <div data-testid="sport-standings" style={{ ...sportCardStyle, padding: `${dp(4)}px ${dp(8)}px` }}>
     <table style={{ width: '100%', borderCollapse: 'collapse', color: TV.text }}>
       <thead><tr style={{ color: TV.dim, textAlign: 'left' }}><th style={cell}>#</th><th style={cell}>{tt('sportColTeam')}</th><th style={cell}>{tt('sportColPlayed')}</th><th style={cell}>{tt('sportColPoints')}</th><th style={cell}>{tt('sportColForm')}</th></tr></thead>
       <tbody>
@@ -35,6 +36,7 @@ function StandingsTable({ rows, tt }: { rows: StandingRow[]; tt: TT }) {
         ))}
       </tbody>
     </table>
+    </div>
   )
 }
 
@@ -87,7 +89,7 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
             <div {...station(() => void toggleTable(g))} style={{ fontSize: dp(15), color: TV.muted, cursor: 'pointer', padding: `${dp(6)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.s08 }}>{tt('sportTable')}</div>
           </div>
           {g.matches.map((m) => (
-            <div key={m.id} {...station(() => onOpenMatch(m))} style={{ display: 'grid', gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: 'center', gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, borderRadius: dp(10), background: sportBg(TV.s05), cursor: 'pointer' }}>
+            <div key={m.id} {...station(() => onOpenMatch(m))} style={{ display: 'grid', gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: 'center', gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, ...sportCardStyle, borderRadius: dp(10), cursor: 'pointer' }}>
               <span style={{ fontSize: dp(14), color: m.status === 'live' ? TV.live : TV.dim }}>{matchStatusLabel(m, tt) ?? ''}</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: dp(8), justifyContent: 'flex-end' }}>{m.home}<Crest name={m.home ?? ''} colorKey={m.homeKey ?? ''} src={m.homeCrest} size={dp(22)} /></span>
               <MatchScore match={m} size="row" />

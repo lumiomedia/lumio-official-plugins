@@ -9,7 +9,7 @@ import { heroStatusLine, matchStatusLabel, scoreText, showsScore } from '../scor
 import { MatchScore, ResultOnlyTag, useGoalBlink } from './sport-score'
 import { Crest, MatchStrip, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
 import { SportIcons } from './sport-icons'
-import { sportCardStyle } from '../surface'
+import { SPORT_CARD_BG, sportCardStyle } from '../surface'
 
 export function SportMatchday({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: SportMatch[]; dayFrom: number }) {
   const hero = featuredMatch(matches, ctx.follows, ctx.now)
@@ -32,7 +32,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
   const followed = followState(match, ctx.follows).any
   const context = [followed ? ctx.tt('sportYouFollow') : null, match.league || ctx.kindLabel(match.kind), match.venue].filter(Boolean).join(' · ')
   return (
-    <div data-testid="sport-hero" style={{ ...sportCardStyle, flex: 1, minWidth: 0, borderRadius: dp(20), padding: `${dp(24)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(16), background: `radial-gradient(60% 80% at 50% 0%, ${TV.accMix(14)}, transparent), ${TV.s07}` }}>
+    <div data-testid="sport-hero" style={{ ...sportCardStyle, flex: 1, minWidth: 0, borderRadius: dp(20), padding: `${dp(24)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(16), background: `radial-gradient(60% 80% at 50% 0%, ${TV.accMix(14)}, transparent), ${SPORT_CARD_BG}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(12), fontSize: dp(17), color: TV.muted }}>
         {st === 'live' ? <Tag variant="live">{ctx.tt('live')}</Tag> : null}
         <span>{context}</span>
