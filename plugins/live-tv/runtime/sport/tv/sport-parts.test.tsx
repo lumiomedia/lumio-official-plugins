@@ -26,21 +26,34 @@ describe('texterna', () => {
 })
 
 describe('MatchCard', () => {
-  it('live: LIVE-tagg, bästa källan och antal källor; OK öppnar matchcentret', () => {
+  it('Guide-bricka: kanalens logga som ankare, märkena bredvid varandra, LIVE som orange text, förloppet som underkant', () => {
     const ctx = fakeCtx({ now })
     const m = fxMatch({ start: now - 30 * MIN, sources: [fxSource('TV4 Fotboll FHD SE', { quality: 'FHD' }), fxSource('TV4 Fotboll SE')] })
     render(<MatchCard match={m} ctx={ctx} />)
     const card = screen.getByTestId('sport-card')
-    expect(card).toHaveTextContent('LIVE')
+    expect(screen.getByTestId('card-status')).toHaveTextContent(/^LIVE$/)
+    expect(screen.getByTestId('card-status').getAttribute('data-live')).toBe('1')
     expect(card).toHaveTextContent('TV4 Fotboll FHD SE · 2 sources')
-    expect(card).toHaveTextContent('AIK')
+    expect(card).toHaveTextContent('AIK - Hammarby')
+    expect(screen.getByTestId('card-anchor').querySelector('[data-initials]')).toHaveTextContent('TF')
+    expect(card.querySelectorAll('[data-crest]')).toHaveLength(2)
+    const bar = screen.getByTestId('card-progress')
+    expect(bar.style.position).toBe('absolute')
+    expect(bar.style.bottom).toBe('0px')
+    expect(parseFloat((bar.firstElementChild as HTMLElement).style.width)).toBeGreaterThan(0)
     expect(card.textContent).not.toMatch(/\d+\s*[-–]\s*\d+/)
     fireEvent.click(card)
     expect(ctx.openMatch).toHaveBeenCalledWith(m)
   })
+  it('utan kanal: sportens ikon som ankare', () => {
+    render(<MatchCard match={fxMatch({ kind: 'hockey', sources: [], resultOnly: true })} ctx={fakeCtx({ now })} />)
+    expect(screen.getByTestId('card-anchor').querySelector('svg')).not.toBeNull()
+    expect(screen.getByTestId('sport-card')).toHaveTextContent('No channel')
+  })
   it('kommande visar tid, avslutad SLUT/ENDED, favorit med hjärta', () => {
     const ctx = fakeCtx({ now, follows: [{ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' }] })
     const { rerender } = render(<MatchCard match={fxMatch({ start: now + HOUR })} ctx={ctx} />)
+    expect(screen.getByTestId('card-status')).toHaveTextContent(/^\d\d:\d\d$/)
     expect(screen.getByTestId('card-followed').querySelector('svg path')?.getAttribute('d')).toMatch(/^M12 21s/)
     rerender(<MatchCard match={fxMatch({ start: now - 3 * HOUR, stop: now - HOUR })} ctx={ctx} />)
     expect(screen.getByTestId('sport-card')).toHaveTextContent('ENDED')

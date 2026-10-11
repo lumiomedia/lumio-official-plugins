@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
 import { formatClock, progressOf } from '../../live-tv-ui'
-import { Progress, Tag, TV, dp, station } from '../../tv/tv-ui'
-import { crestText, matchTitle, type SportMatch } from '../sport-model'
-import { crestColor, followState, leagueColor, statusAt } from '../sport-day-model'
+import { ChannelArt, Tag, TV, dp, station } from '../../tv/tv-ui'
+import { crestText, matchTitle, sourceChannel, type SportMatch } from '../sport-model'
+import { crestColor, followState, leagueColor, matchdayStrip, rankedSources, statusAt } from '../sport-day-model'
 import { sourceLine, type SportCtx } from '../sport-ctx'
 import { matchStatusLabel, showsScore } from '../score-model'
 import { MatchScore, ResultOnlyTag } from './sport-score'
-import { SportIcons } from './sport-icons'
+import { SportIcon, SportIcons } from './sport-icons'
 import { sportCardStyle } from '../surface'
 
 export const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
@@ -47,56 +47,93 @@ export function StatusTag({ match, ctx }: { match: SportMatch; ctx: SportCtx }) 
   return <Tag variant="neutral">{label ?? formatClock(match.start, ctx.locale)}</Tag>
 }
 
-function TeamCell({ name, colorKey, align, crest }: { name: string; colorKey: string; align: 'start' | 'end'; crest?: string | null }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: align === 'end' ? 'flex-end' : 'flex-start', gap: dp(10), minWidth: 0, flexDirection: align === 'end' ? 'row' : 'row-reverse' }}>
-      <span style={{ fontSize: dp(18), fontWeight: 600, ...ellipsis }}>{name}</span>
-      <Crest name={name} colorKey={colorKey} size={dp(42)} src={crest} />
-    </div>
-  )
+/** Kortets status som text, inte tagg: orange minut/LIVE när det pågår, annars klockslag eller SLUT. */
+export function statusText(match: SportMatch, ctx: SportCtx): { text: string; live: boolean } {
+  const st = statusAt(match, ctx.now)
+  const label = matchStatusLabel(match, ctx.tt)
+  if (st === 'live') return { text: label ?? ctx.tt('live'), live: true }
+  if (st === 'finished') return { text: label ?? ctx.tt('sportEnded'), live: false }
+  return { text: label ?? formatClock(match.start, ctx.locale), live: false }
 }
 
-/** Matchkortet (handoff 300 px på 1280-scenen): OK = matchcenter, håll = titta direkt. */
+/**
+  Matchkortet som en Guide-bricka: kanalens logga (bästa källan) eller
+  sportens ikon som ankare till vänster, lagmärkena bredvid varandra med
+  titeln och ställningen, en metarad (status · liga · kanal) och förloppet
+  som kortets underkant. OK = matchinfo, håll = titta direkt.
+*/
 export function MatchCard({ match, ctx }: { match: SportMatch; ctx: SportCtx }) {
   const st = statusAt(match, ctx.now)
   const followed = followState(match, ctx.follows).any
   const reminded = ctx.isReminded(match)
+  const best = rankedSources(match, ctx.overrides)[0] ?? null
+  const status = statusText(match, ctx)
+  const progress = st === 'live' ? progressOf(match.start, match.stop, ctx.now) : st === 'finished' ? 1 : 0
   return (
-    <div data-testid="sport-card" data-match-id={match.id} {...station(() => ctx.openMatch(match), () => ctx.watch(match))} style={{ ...sportCardStyle, width: dp(450), flexShrink: 0, padding: `${dp(16)}px ${dp(18)}px`, display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(15), color: TV.muted }}>
-        <LeagueDot leagueKey={match.leagueKey || match.kind} />
-        <span style={{ ...ellipsis, flex: 1 }}>{match.league || ctx.kindLabel(match.kind)}</span>
-        <StatusTag match={match} ctx={ctx} />
+    <div data-testid="sport-card" data-match-id={match.id} data-status={st} {...station(() => ctx.openMatch(match), () => ctx.watch(match))} style={{ ...sportCardStyle, position: 'relative', width: dp(450), flexShrink: 0, padding: `${dp(14)}px ${dp(16)}px ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(14), cursor: 'pointer', boxSizing: 'border-box' }}>
+      <div data-testid="card-anchor" style={{ width: dp(84), height: dp(84), flexShrink: 0, borderRadius: dp(12), overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: TV.s06, color: TV.muted }}>
+        {best ? <ChannelArt channel={sourceChannel(best)} style={{ width: '100%', height: '100%' }} radius={dp(12)} /> : <SportIcon kind={match.kind} size={dp(40)} />}
       </div>
-      {match.home && match.away ? (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: dp(12) }}>
-          <TeamCell name={match.home} colorKey={match.homeKey ?? match.home} align="end" crest={match.homeCrest} />
-          {showsScore(match) ? <MatchScore match={match} size="card" /> : <span style={{ fontSize: dp(16), color: TV.dim }}>–</span>}
-          <TeamCell name={match.away} colorKey={match.awayKey ?? match.away} align="start" crest={match.awayCrest} />
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(6) }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: dp(8), minWidth: 0 }}>
+          {match.home && match.away ? (
+            <span style={{ display: 'flex', gap: dp(4), flexShrink: 0 }}>
+              <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(30)} src={match.homeCrest} />
+              <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(30)} src={match.awayCrest} />
+            </span>
+          ) : null}
+          <span style={{ flex: 1, minWidth: 0, fontSize: dp(19), fontWeight: 600, ...ellipsis }}>{matchTitle(match)}</span>
+          {showsScore(match) ? <MatchScore match={match} size="row" /> : null}
         </div>
-      ) : (
-        <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{matchTitle(match)}</div>
-      )}
-      <Progress value={st === 'live' ? progressOf(match.start, match.stop, ctx.now) : st === 'finished' ? 1 : 0} height={dp(4)} track={TV.s10} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: dp(8), fontSize: dp(15), color: TV.muted }}>
-        <span style={{ ...ellipsis, flex: 1 }}>{match.resultOnly ? <ResultOnlyTag /> : sourceLine(match, ctx)}</span>
-        {followed ? <span data-testid="card-followed" style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(18)} filled /></span> : null}
-        {reminded ? <span data-testid="card-reminded" style={{ display: 'inline-flex' }}><SportIcons.Bell size={dp(18)} /></span> : null}
+        <div style={{ display: 'flex', alignItems: 'center', gap: dp(8), fontSize: dp(15), color: TV.muted, minWidth: 0 }}>
+          <span data-testid="card-status" data-live={status.live ? '1' : '0'} style={{ flexShrink: 0, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: status.live ? TV.acc : TV.text }}>{status.text}</span>
+          <span style={{ ...ellipsis, flex: 1 }}>{match.league || ctx.kindLabel(match.kind)}</span>
+          {followed ? <span data-testid="card-followed" style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(18)} filled /></span> : null}
+          {reminded ? <span data-testid="card-reminded" style={{ display: 'inline-flex' }}><SportIcons.Bell size={dp(18)} /></span> : null}
+        </div>
+        <div style={{ fontSize: dp(15), color: TV.dim, ...ellipsis }}>{match.resultOnly ? <ResultOnlyTag /> : sourceLine(match, ctx)}</div>
+      </div>
+      <div data-testid="card-progress" aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: dp(4), background: TV.s08 }}>
+        <div data-fill="" style={{ width: `${Math.round(progress * 100)}%`, height: '100%', background: st === 'finished' ? TV.s18 : TV.acc }} />
       </div>
     </div>
   )
 }
 
-export function CardRow({ title, matches, ctx, testId }: { title: string; matches: SportMatch[]; ctx: SportCtx; testId: string }) {
+/**
+  Matchdagens matcher i EN tidsordnad rad (ersätter Live nu / Senare /
+  Avslutade): det som startat, nu-markören, det som kommer. Raden rullas
+  fram till första pågående match (annars första kommande) när den visas.
+*/
+export function MatchStrip({ title, matches, ctx, testId = 'sport-strip' }: { title: string; matches: SportMatch[]; ctx: SportCtx; testId?: string }) {
+  const rowRef = useRef<HTMLDivElement | null>(null)
+  const strip = matchdayStrip(matches, ctx.now)
+  const focusId = strip.items[strip.focusIndex]?.id ?? null
+  useEffect(() => {
+    const row = rowRef.current
+    if (!row || !focusId) return
+    const card = row.querySelector<HTMLElement>(`[data-match-id="${focusId.replace(/"/g, '\\"')}"]`)
+    if (!card) return
+    // Sätt rullningen direkt: scrollIntoView kan dra med sig hela sidan lodrätt.
+    row.scrollLeft = Math.max(0, card.offsetLeft - row.offsetLeft - dp(80))
+  }, [focusId])
   if (matches.length === 0) return null
+  const now = (
+    <div key="now-marker" data-testid="sport-strip-now" aria-hidden="true" style={{ flexShrink: 0, alignSelf: 'stretch', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(6), padding: `0 ${dp(2)}px` }}>
+      <span style={{ fontSize: dp(13), fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: TV.acc, whiteSpace: 'nowrap' }}>{ctx.tt('gridNowAt', { time: formatClock(ctx.now, ctx.locale) })}</span>
+      <span style={{ flex: 1, width: dp(3), borderRadius: dp(3), background: TV.acc, boxShadow: `0 0 ${dp(8)}px ${TV.acc}` }} />
+    </div>
+  )
+  const cells = strip.items.map((m) => <MatchCard key={m.id} match={m} ctx={ctx} />)
+  cells.splice(strip.nowIndex, 0, now)
   return (
     <section data-testid={testId} style={{ display: 'flex', flexDirection: 'column', gap: dp(12) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(12) }}>
         <span style={sectionTitle}>{title}</span>
         <span style={{ fontSize: dp(17), color: TV.dim }}>{matches.length}</span>
       </div>
-      <div data-row="" style={{ display: 'flex', gap: dp(16), overflowX: 'auto', paddingBottom: dp(6) }}>
-        {matches.map((m) => <MatchCard key={m.id} match={m} ctx={ctx} />)}
+      <div ref={rowRef} data-row="" style={{ display: 'flex', gap: dp(16), overflowX: 'auto', paddingBottom: dp(6) }}>
+        {cells}
       </div>
     </section>
   )

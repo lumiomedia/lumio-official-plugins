@@ -3,18 +3,17 @@
 import { formatClock, progressOf } from '../../live-tv-ui'
 import { Progress, Tag, TV, dp, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, type SportMatch } from '../sport-model'
-import { featuredMatch, followState, leagueColor, nextOnYourChannels, rankedSources, splitSections, statusAt, timelineAxis, timelineRows } from '../sport-day-model'
+import { featuredMatch, followState, leagueColor, nextOnYourChannels, rankedSources, statusAt, timelineAxis, timelineRows } from '../sport-day-model'
 import { timeLine, type SportCtx } from '../sport-ctx'
 import { heroStatusLine, matchStatusLabel, scoreText, showsScore } from '../score-model'
 import { MatchScore, ResultOnlyTag, useGoalBlink } from './sport-score'
-import { CardRow, Crest, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
+import { Crest, MatchStrip, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
 import { SportIcons } from './sport-icons'
 import { sportCardStyle } from '../surface'
 
 export function SportMatchday({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: SportMatch[]; dayFrom: number }) {
   const hero = featuredMatch(matches, ctx.follows, ctx.now)
   const next = nextOnYourChannels(matches, ctx.now, hero?.id ?? null)
-  const { live, later, finished } = splitSections(matches, ctx.now)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: dp(28) }}>
       <div style={{ display: 'flex', gap: dp(20), alignItems: 'stretch' }}>
@@ -22,9 +21,7 @@ export function SportMatchday({ ctx, matches, dayFrom }: { ctx: SportCtx; matche
         <NextOnChannels ctx={ctx} matches={next} />
       </div>
       <MatchdayTimeline ctx={ctx} matches={matches} dayFrom={dayFrom} />
-      <CardRow title={ctx.tt('sportLiveNow')} matches={live} ctx={ctx} testId="sport-section-live" />
-      <CardRow title={ctx.tt('sportLater')} matches={later} ctx={ctx} testId="sport-section-later" />
-      <CardRow title={ctx.tt('sportFinished')} matches={finished} ctx={ctx} testId="sport-section-finished" />
+      <MatchStrip title={ctx.tt('sportMatches')} matches={matches} ctx={ctx} />
     </div>
   )
 }

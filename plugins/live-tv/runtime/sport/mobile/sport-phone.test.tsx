@@ -24,6 +24,18 @@ describe('Sport på telefon', () => {
     fireEvent.click(within(sheet).getByText('Watch on TV4 Fotboll FHD SE · FHD'))
     expect(await screen.findByTestId('player')).toHaveTextContent('TV4 Fotboll FHD SE')
   })
+  it('en tidsordnad lista med nu-linje; raderna har kanalens logga som ankare och förloppet som underkant', async () => {
+    const done = fxMatch({ id: 'done', home: 'Malmö', away: 'Sirius', start: now - 4 * HOUR, stop: now - 2 * HOUR })
+    mountSport({}, { phone: true, days: { [today]: [later, live, done] } })
+    const day = await screen.findByTestId('sport-phone-day')
+    await waitFor(() => expect(within(day).getAllByTestId('sport-phone-row')).toHaveLength(3))
+    const order = Array.from(day.children).slice(1).map((c) => c.getAttribute('data-status') ?? c.getAttribute('data-testid'))
+    expect(order).toEqual(['finished', 'live', 'sport-phone-now', 'upcoming'])
+    const liveRow = within(day).getAllByTestId('sport-phone-row')[1]!
+    expect(within(liveRow).getByTestId('sport-phone-status')).toHaveTextContent('LIVE')
+    expect(within(liveRow).getByTestId('sport-phone-anchor').children).toHaveLength(1)
+    expect(liveRow.querySelectorAll('[data-crest]')).toHaveLength(2)
+  })
   it('arket följer hemmalaget', async () => {
     mountSport({}, { phone: true, days: { [today]: [later] } })
     fireEvent.click(await screen.findByTestId('sport-phone-row'))

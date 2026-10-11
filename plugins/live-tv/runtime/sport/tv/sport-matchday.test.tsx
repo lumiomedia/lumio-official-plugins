@@ -50,10 +50,14 @@ describe('Matchdag', () => {
     fireEvent.click(screen.getByTestId('sport-block-n3'))
     expect(ctx.openMatch).toHaveBeenCalledWith(next3)
   })
-  it('sektionerna Live nu / Senare / Avslutade', () => {
+  it('en tidsordnad rad med nu-markör i stället för Live nu / Senare / Avslutade', () => {
     render(<SportMatchday ctx={fakeCtx({ now })} matches={all} dayFrom={dayFrom} />)
-    expect(within(screen.getByTestId('sport-section-live')).getAllByTestId('sport-card')).toHaveLength(1)
-    expect(within(screen.getByTestId('sport-section-later')).getAllByTestId('sport-card')).toHaveLength(4)
-    expect(within(screen.getByTestId('sport-section-finished')).getByTestId('sport-card')).toHaveTextContent('ENDED')
+    expect(screen.queryByTestId('sport-section-live')).toBeNull()
+    const strip = screen.getByTestId('sport-strip')
+    const row = strip.querySelector('[data-row]')!
+    const order = Array.from(row.children).map((c) => c.getAttribute('data-match-id') ?? c.getAttribute('data-testid'))
+    expect(order).toEqual(['done', 'live', 'sport-strip-now', 'n1', 'n2', 'n3', 'n4'])
+    expect(within(strip).getByTestId('sport-strip-now')).toHaveTextContent('Now 19:15')
+    expect(within(strip).getAllByTestId('sport-card')[0]).toHaveTextContent('ENDED')
   })
 })
