@@ -23,6 +23,7 @@ import { SportFeed } from './sport-feed'
 import { FollowPicker, SportFollows } from './sport-follows'
 import { SportMatchCenter } from './sport-match-center'
 import { SportPhone } from '../mobile/sport-phone'
+import { sportBg } from '../surface'
 
 const NO_MATCHES: SportMatch[] = []
 
@@ -65,7 +66,7 @@ function SportTv({ model, nav }: TvViewProps) {
   const counts = sportCounts(mergedDay)
   const matches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter])
   const hero = useMemo(() => featuredMatch(matches, ctx.follows, ctx.now), [matches, ctx.follows, ctx.now])
-  const backdrop = useSportBackdrop(hero)
+  const backdrop = useSportBackdrop(hero, filter, model.nowMs)
   const summary = headerSummary(matches, ctx.now)
   const total = SPORT_KINDS.reduce((sum, k) => sum + counts[k], 0)
   const open = useMemo(() => {
@@ -87,7 +88,7 @@ function SportTv({ model, nav }: TvViewProps) {
   }
 
   return (
-    <div data-testid="sport-stage" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+    <div data-testid="sport-stage" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', ...backdrop.surface }}>
     <SportBackdropLayer choice={backdrop.choice} phone={false} onBroken={backdrop.onBroken} />
     <div data-testid="sport-view" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(22) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(18) }}>
@@ -121,7 +122,7 @@ function SportTv({ model, nav }: TvViewProps) {
         {OFFSETS.map((o) => {
           const active = o === offset
           return (
-            <div key={o} data-testid={`sport-day-${o}`} {...station(() => setOffset(o))} aria-pressed={active ? 'true' : 'false'} style={{ minWidth: dp(144), height: dp(68), padding: `0 ${dp(18)}px`, borderRadius: dp(14), display: 'flex', flexDirection: 'column', justifyContent: 'center', cursor: 'pointer', boxSizing: 'border-box', background: active ? TV.text : TV.s10, color: active ? '#12152a' : TV.text, border: `1px solid ${active ? TV.text : TV.lineCard}` }}>
+            <div key={o} data-testid={`sport-day-${o}`} {...station(() => setOffset(o))} aria-pressed={active ? 'true' : 'false'} style={{ minWidth: dp(144), height: dp(68), padding: `0 ${dp(18)}px`, borderRadius: dp(14), display: 'flex', flexDirection: 'column', justifyContent: 'center', cursor: 'pointer', boxSizing: 'border-box', background: active ? TV.text : sportBg(TV.s10), color: active ? '#12152a' : TV.text, border: `1px solid ${active ? TV.text : TV.lineCard}` }}>
               <span style={{ fontSize: dp(20), fontWeight: 700 }}>{dayLabel(o)}</span>
               <span style={{ fontSize: dp(15), opacity: 0.7 }}>{new Date(dayStartMs(shiftDay(today, o)) + 12 * 3_600_000).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
             </div>
@@ -131,7 +132,7 @@ function SportTv({ model, nav }: TvViewProps) {
           {SPORT_CHIPS.filter((k) => counts[k] > 0).map((k) => {
             const active = filter === k
             return (
-              <div key={k} data-testid={`sport-chip-${k}`} {...station(() => setFilter(active ? 'all' : k))} aria-label={ctx.kindLabel(k)} title={ctx.kindLabel(k)} aria-pressed={active ? 'true' : 'false'} style={{ height: dp(68), minWidth: dp(68), padding: active ? `0 ${dp(18)}px` : 0, boxSizing: 'border-box', borderRadius: dp(14), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: dp(8), cursor: 'pointer', background: active ? TV.accMix(22) : TV.s10, color: active ? TV.accText : TV.text, border: `1px solid ${active ? TV.acc : TV.lineCard}`, fontSize: dp(18), fontWeight: 600 }}>
+              <div key={k} data-testid={`sport-chip-${k}`} {...station(() => setFilter(active ? 'all' : k))} aria-label={ctx.kindLabel(k)} title={ctx.kindLabel(k)} aria-pressed={active ? 'true' : 'false'} style={{ height: dp(68), minWidth: dp(68), padding: active ? `0 ${dp(18)}px` : 0, boxSizing: 'border-box', borderRadius: dp(14), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: dp(8), cursor: 'pointer', background: active ? TV.accMix(22) : sportBg(TV.s10), color: active ? TV.accText : TV.text, border: `1px solid ${active ? TV.acc : TV.lineCard}`, fontSize: dp(18), fontWeight: 600 }}>
                 <SportIcon kind={k} size={dp(26)} />
                 {active ? ctx.kindLabel(k) : null}
               </div>

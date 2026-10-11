@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
-import { Chip, Segment, TV, cardStyle, dp, station } from '../../tv/tv-ui'
+import { Chip, Segment, TV, dp, station } from '../../tv/tv-ui'
 import { Check, PickerPanel } from '../../tv/tv-list-picker'
 import { useTextPrompt } from '../../tv/tv-text-entry'
 import { searchProviderTeams } from '../follow-search'
@@ -15,6 +15,7 @@ import { getFollows as getStoredFollows, isFollowing, setSportSettings, toggleFo
 import { alertLabel, followNextLine, type SportCtx } from '../sport-ctx'
 import { Crest, ellipsis, primaryBtn, sectionTitle } from './sport-parts'
 import { SportIcon, SportIcons } from './sport-icons'
+import { sportCardStyle } from '../surface'
 
 const same = (a: Pick<SportFollow, 'kind' | 'key'>, b: Pick<SportFollow, 'kind' | 'key'>) => a.kind === b.kind && a.key === b.key
 
@@ -38,14 +39,14 @@ export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | n
           {ctx.tt('sportFollowAdd')}
         </div>
         <span style={{ fontSize: dp(17), color: TV.muted }}>{ctx.tt('sportFollowSummary', { n: ctx.follows.length, rule: alertLabel(ctx).toLowerCase() })}</span>
-        <div data-testid="follows-alert" style={{ ...cardStyle, marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(12), padding: `${dp(8)}px ${dp(12)}px` }}>
+        <div data-testid="follows-alert" style={{ ...sportCardStyle, marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(12), padding: `${dp(8)}px ${dp(12)}px` }}>
           <SportIcons.Bell size={dp(20)} />
           <span style={{ fontSize: dp(17), fontWeight: 600 }}>{ctx.tt('sportKickoffAlert')}</span>
           <Segment options={alertOptions} value={ctx.settings.alert} onChange={(alert) => setSportSettings({ alert })} />
         </div>
       </div>
       <span style={{ fontSize: dp(15), color: TV.dim }}>{ctx.tt('sportAlertOnlyRunning')}</span>
-      {shown.length === 0 ? <div data-testid="follows-empty" style={{ ...cardStyle, padding: dp(28), fontSize: dp(20), color: TV.muted }}>{ctx.tt('sportFollowEmpty')}</div> : null}
+      {shown.length === 0 ? <div data-testid="follows-empty" style={{ ...sportCardStyle, padding: dp(28), fontSize: dp(20), color: TV.muted }}>{ctx.tt('sportFollowEmpty')}</div> : null}
       {groups.map(([kind, list]) => (
         <section key={kind} data-testid={`follow-group-${kind}`} style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: dp(12) }}>
@@ -66,7 +67,7 @@ function FollowCard({ ctx, follow, days }: { ctx: SportCtx; follow: SportFollow;
   const following = isFollowing(ctx.follows, follow)
   const next = nextMatchFor(follow, days, ctx.now)
   return (
-    <div data-testid="follow-card" data-following={following ? '1' : '0'} style={{ ...cardStyle, padding: dp(20), display: 'flex', flexDirection: 'column', gap: dp(10), opacity: following ? 1 : 0.55 }}>
+    <div data-testid="follow-card" data-following={following ? '1' : '0'} style={{ ...sportCardStyle, padding: dp(20), display: 'flex', flexDirection: 'column', gap: dp(10), opacity: following ? 1 : 0.55 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start' }}>
         <Crest name={follow.name} colorKey={follow.key} size={dp(66)} />
         <div data-testid="follow-star" {...station(() => toggleFollow(follow))} aria-pressed={following ? 'true' : 'false'} aria-label={following ? ctx.tt('sportFollowingName', { name: follow.name }) : ctx.tt('sportFollowName', { name: follow.name })} style={{ marginLeft: 'auto', color: following ? '#fbbf24' : TV.dim, display: 'inline-flex', cursor: 'pointer' }}>

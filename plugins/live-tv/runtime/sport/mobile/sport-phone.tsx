@@ -20,6 +20,7 @@ import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import { matchStatusLabel, scoreText, showsScore } from '../score-model'
 import { alertLabel, followNextLine, sourceLine, timeLine, useSportCtx, type SportCtx } from '../sport-ctx'
+import { sportBg } from '../surface'
 
 type DayOffset = -1 | 0 | 1
 const NO_MATCHES: SportMatch[] = []
@@ -44,7 +45,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const todayDay = useSportDay(wantsFollow ? today : null, model.nowMs)
   const tomorrowDay = useSportDay(wantsFollow ? shiftDay(today, 1) : null, model.nowMs)
   const phoneHero = useMemo(() => featuredMatch(visibleMatches(mergedDay, filter), ctx.follows, ctx.now), [mergedDay, filter, ctx.follows, ctx.now])
-  const backdrop = useSportBackdrop(phoneHero)
+  const backdrop = useSportBackdrop(phoneHero, filter, model.nowMs)
   const counts = sportCounts(mergedDay)
   const { live, later, finished } = splitSections(visibleMatches(mergedDay, filter), ctx.now)
   const dayLabel = (o: DayOffset) => (o === -1 ? tt('sportYesterday') : o === 0 ? tt('sportToday') : tt('sportTomorrow'))
@@ -66,7 +67,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const notice = selected.state === 'missing' ? tt('sportNeedsUpdate') : selected.state === 'error' ? tt('sportError') : selected.state === 'loading' ? tt('sportLoading') : live.length + later.length + finished.length === 0 ? tt('sportEmptyDay') : null
 
   return (
-    <div data-testid="sport-stage" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+    <div data-testid="sport-stage" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', ...backdrop.surface }}>
     <SportBackdropLayer choice={backdrop.choice} phone onBroken={backdrop.onBroken} />
     <div data-testid="sport-phone" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ margin: `0 -${MT.PAD}px` }}><MobileHeader title={tt('sportTitle')} /></div>
@@ -115,7 +116,7 @@ function PhoneSection({ ctx, title, matches }: { ctx: SportCtx; title: string; m
       {matches.map((m) => {
         const st = statusAt(m, ctx.now)
         return (
-          <div key={m.id} data-testid="sport-phone-row" {...station(() => ctx.openMatch(m))} style={{ minHeight: 64, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: MT.s07, border: `1px solid ${MT.line08}`, cursor: 'pointer' }}>
+          <div key={m.id} data-testid="sport-phone-row" {...station(() => ctx.openMatch(m))} style={{ minHeight: 64, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: 'pointer' }}>
             <span style={{ width: 54, flexShrink: 0, display: 'flex', flexDirection: 'column', fontSize: 13, fontWeight: 700, color: st === 'live' ? MT.live : MT.text }}>
               {showsScore(m) ? <><span style={{ fontVariantNumeric: 'tabular-nums' }}>{scoreText(m)}</span><span style={{ fontSize: 11, fontWeight: 600, color: MT.muted }}>{matchStatusLabel(m, ctx.tt) ?? ''}</span></> : st === 'live' ? ctx.tt('live') : st === 'finished' ? ctx.tt('sportEnded') : timeLine(m, ctx)}
             </span>
@@ -149,7 +150,7 @@ function PhoneFollows({ ctx, days }: { ctx: SportCtx; days: Parameters<typeof ne
       {ctx.follows.map((f) => {
         const next = nextMatchFor(f, days, ctx.now)
         return (
-          <div key={`${f.kind}:${f.key}`} data-testid="sport-phone-follow" {...station(() => { if (next) ctx.openMatch(next) })} style={{ minHeight: 60, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: MT.s07, cursor: 'pointer' }}>
+          <div key={`${f.kind}:${f.key}`} data-testid="sport-phone-follow" {...station(() => { if (next) ctx.openMatch(next) })} style={{ minHeight: 60, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: sportBg(MT.s07), cursor: 'pointer' }}>
             <span style={{ color: '#fbbf24' }}>★</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 600, ...ellipsis }}>{f.name}</div>

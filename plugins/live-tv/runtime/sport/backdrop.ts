@@ -1,28 +1,105 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { getHomeBackgroundUrls, getPluginHttpAssetUrl, onHomeBackgroundChanged } from '@/lib/plugin-sdk'
+import { getPluginHttpAssetUrl, useTvMode } from '@/lib/plugin-sdk'
 import { currentBudget } from './budget'
-import { useSportSettings, type SportBackdropCustom, type SportBackdropMode } from './sport-store'
+import { useSportSettings, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
 import type { TeamArt } from './provider'
 import type { SportKind, SportMatch } from './sport-model'
+import { localDayKey } from './sport-epg'
+
+/** "Alla sporter" eller en sport: var ett val och en egen bild hör hemma. */
+export type BackdropScope = 'all' | SportKind
+export type Rgb = [number, number, number]
 
 export type BackdropChoice =
   | { kind: 'none' }
-  | { kind: 'image'; url: string; from: 'venue' | 'stadium' | 'fanart' | 'custom' }
+  | { kind: 'image'; url: string; from: 'venue' | 'stadium' | 'fanart' | 'custom' | 'standard' }
   | { kind: 'gradient'; sport: SportKind }
 
 export interface BackdropInput {
   mode: SportBackdropMode
+  /** Platsen vars egna bild gäller (sportens egen, eller "all" vid arv). */
+  slot: BackdropScope
   hasKey: boolean
   hero: Pick<SportMatch, 'kind' | 'venueImage'> | null
   /** Hemmalagets bilder (TheSportsDB). `null` = okänt, eller API-Sports som inte har någon. */
   art: TeamArt | null
-  /** Egen bild, redan uppslagen (http(s) eller startsidans data-URL). */
-  custom: string | null
+  /** Egna bilder på DEN HÄR värden: plats → version. */
+  uploads: Partial<Record<BackdropScope, number>>
+  /** Standard-bilden för vyn. */
+  standard: string
   /** Bilder som inte gick att ladda i den här sessionen. */
   broken?: ReadonlySet<string>
 }
+
+/** Appens medföljande bilder (spa/public/sport-backgrounds), 1920 px WebP. */
+export const STANDARD_IMAGES: Partial<Record<SportKind, string>> = {
+  football: '/sport-backgrounds/football.webp',
+  hockey: '/sport-backgrounds/hockey.webp',
+  basketball: '/sport-backgrounds/basketball.webp',
+  motorsport: '/sport-backgrounds/motorsport.webp',
+  tennis: '/sport-backgrounds/tennis.webp',
+}
+/** Medelfärgen per medföljande bild (uppmätt vid komprimeringen): ingen provtagning behövs. */
+export const STANDARD_TONES: Record<string, Rgb> = {
+  '/sport-backgrounds/football.webp': [54, 75, 45],
+  '/sport-backgrounds/hockey.webp': [84, 76, 77],
+  '/sport-backgrounds/basketball.webp': [63, 58, 59],
+  '/sport-backgrounds/motorsport.webp': [51, 56, 52],
+  '/sport-backgrounds/tennis.webp': [41, 69, 79],
+}
+
+function hash(text: string): number {
+  let h = 2166136261
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619)
+  return h >>> 0
+}
+
+/** Sportens egen bild, annars en av dem vald per dag (stabil hela dagen: inget flimmer). */
+export function standardImageFor(scope: BackdropScope, dayKey: string): string {
+  const own = scope === 'all' ? undefined : STANDARD_IMAGES[scope]
+  if (own) return own
+  const all = Object.values(STANDARD_IMAGES) as string[]
+  return all[hash(`${dayKey}|${scope}`) % all.length]!
+}
+
+export function resolveBackdropMode(b: SportBackdrops, scope: BackdropScope): { mode: SportBackdropMode; slot: BackdropScope } {
+  const own = scope === 'all' ? undefined : b.sports[scope]
+  return own ? { mode: own, slot: scope } : { mode: b.all, slot: 'all' }
+}
+
+export function customBackdropUrl(slot: BackdropScope, version: number): string {
+  return `/api/live-tv/sport/backdrop?slot=${slot}&v=${version}`
+}
+
+/** Tonen ur bilden mörkas så att vit text alltid läses (luminans ≤ 42). */
+export function darkTone([r, g, b]: Rgb): Rgb {
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  const f = Math.min(0.6, lum > 0 ? 42 / lum : 0.6)
+  return [Math.round(r * f), Math.round(g * f), Math.round(b * f)]
+}
+
+export function averageRgb(data: Uint8ClampedArray): Rgb | null {
+  let r = 0, g = 0, b = 0, n = 0
+  for (let i = 0; i + 3 < data.length; i += 4) {
+    if (data[i + 3]! < 16) continue
+    r += data[i]!; g += data[i + 1]!; b += data[i + 2]!; n++
+  }
+  return n === 0 ? null : [Math.round(r / n), Math.round(g / n), Math.round(b / n)]
+}
+
+const GRAY: Rgb = [28, 29, 34]
+export const CARD_BLUR = 'blur(14px)'
+export type CardSurfaceVars = { '--sport-card-bg': string; '--sport-card-blur': string }
+
+/** EN uppsättning variabler på Sport-roten; alla kort, rader och paneler läser dem. */
+export function cardSurfaceVars(cards: SportCards, sampled: Rgb | null, opts: { blur: boolean }): CardSurfaceVars {
+  const rgb = cards.tone === 'gray' ? GRAY : cards.tone === 'image' && sampled ? darkTone(sampled) : ([0, 0, 0] as Rgb)
+  return { '--sport-card-bg': `rgba(${rgb.join(', ')}, ${cards.opacity / 100})`, '--sport-card-blur': opts.blur ? CARD_BLUR : 'none' }
+}
+
+export { SPORT_CARD_BG, SPORT_PANEL_BG, sportBg, sportSurface } from './surface'
 
 /** Neutral bakgrund per sport: mörk och svagt tonad, aldrig en bild. */
 export const SPORT_GRADIENTS: Record<SportKind, string> = {
@@ -36,39 +113,163 @@ export const SPORT_GRADIENTS: Record<SportKind, string> = {
 }
 
 /** (Hex med alfa i st.f. rgba(): happy-dom släpper gradienter med rgba, så testet kan inte läsa dem annars.) */
-/** Läsbarheten (handoffens hero över arenafotot): mörkt till vänster där texten står, bilden syns till höger. */
-export const BACKDROP_SCRIM = 'linear-gradient(90deg, #000000eb 0%, #000000c7 38%, #00000073 70%, #0000004d 100%)'
+/**
+ * Läsbarheten: hela bilden mörkas ~50 % (#00000080), mer till vänster där
+ * rubrik och hero står och upptill där flikarna ligger. Korten har dessutom
+ * egen grund (svart 85 % som standard), så texten och tidslinjens block
+ * läses över vilken bild som helst.
+ */
+export const BACKDROP_SCRIM = 'linear-gradient(180deg, #00000073 0%, #00000026 30%, #00000000 55%), linear-gradient(90deg, #000000a6 0%, #00000059 40%, #00000000 75%), linear-gradient(#00000080, #00000080)'
 /** Telefonen: texten går över hela bredden, så bilden tonas också ned uppifrån och ned. */
-export const BACKDROP_SCRIM_PHONE = `linear-gradient(180deg, #00000080 0%, #000000d9 45%, #000 100%), ${BACKDROP_SCRIM}`
+export const BACKDROP_SCRIM_PHONE = `linear-gradient(180deg, #00000080 0%, #000000b3 45%, #000000e6 100%), linear-gradient(#00000059, #00000059)`
 
 export function chooseSportBackdrop(i: BackdropInput): BackdropChoice {
   if (i.mode === 'off') return { kind: 'none' }
   const sport = i.hero?.kind ?? 'other'
   const usable = (url: string | null | undefined): url is string => !!url && !i.broken?.has(url)
-  if (i.mode === 'custom') return usable(i.custom) ? { kind: 'image', url: i.custom, from: 'custom' } : { kind: 'gradient', sport }
-  if (!i.hasKey || !i.hero) return { kind: 'gradient', sport }
+  const standard = (): BackdropChoice => (usable(i.standard) ? { kind: 'image', url: i.standard, from: 'standard' } : { kind: 'gradient', sport })
+  if (i.mode === 'standard') return standard()
+  if (i.mode === 'custom') {
+    const v = i.uploads[i.slot]
+    const url = v != null ? customBackdropUrl(i.slot, v) : null
+    return usable(url) ? { kind: 'image', url, from: 'custom' } : standard()
+  }
+  if (!i.hasKey || !i.hero) return standard()
   if (usable(i.hero.venueImage)) return { kind: 'image', url: i.hero.venueImage, from: 'venue' }
   const stadium = i.art?.stadium
   const fanart = i.art?.fanart
   if (usable(stadium)) return { kind: 'image', url: stadium, from: 'stadium' }
   if (usable(fanart)) return { kind: 'image', url: fanart, from: 'fanart' }
-  return { kind: 'gradient', sport }
+  return standard()
 }
 
-export function resolveCustomBackdrop(c: SportBackdropCustom | null, homeUrls: string[]): string | null {
-  if (!c) return null
-  return c.from === 'url' ? c.url : homeUrls[c.index] ?? null
-}
-
-/** Källornas bilder via appens bildcache (en hämtning per bild); Egen bild som den är, som startsidan gör. */
+/** Källornas bilder via appens bildcache (en hämtning per bild); Standard och Egen bild serveras redan av värden. */
 export function backdropSrc(c: Extract<BackdropChoice, { kind: 'image' }>): string | null {
-  return c.from === 'custom' ? c.url : getPluginHttpAssetUrl('/api/live-tv/sport/image', c.url)
+  return c.from === 'custom' || c.from === 'standard' ? c.url : getPluginHttpAssetUrl('/api/live-tv/sport/image', c.url)
 }
 
-export function useHomeBackgrounds(): string[] {
-  const [urls, setUrls] = useState(getHomeBackgroundUrls)
-  useEffect(() => onHomeBackgroundChanged(() => setUrls(getHomeBackgroundUrls())), [])
-  return urls
+// ---------------------------------------------------------------- egna bilder på värden
+
+const UPLOADS_EVENT = 'lumio-sport-backdrops-changed'
+type Uploads = Partial<Record<BackdropScope, number>>
+let uploadsCache: Uploads | null = null
+
+export async function fetchBackdropUploads(): Promise<Uploads> {
+  try {
+    const res = await fetch('/api/live-tv/sport/backdrops', { cache: 'no-store' })
+    if (!res.ok) return {}
+    const body = (await res.json()) as { slots?: Record<string, unknown> }
+    const out: Uploads = {}
+    for (const [k, v] of Object.entries(body.slots ?? {})) if (typeof v === 'number') out[k as BackdropScope] = v
+    return out
+  } catch {
+    return {}
+  }
+}
+
+/** Efter en uppladdning, en överlämning från telefonen eller en borttagning. */
+export function notifyBackdropUploadsChanged(): void {
+  uploadsCache = null
+  try { window.dispatchEvent(new Event(UPLOADS_EVENT)) } catch { /* ingen window i test */ }
+}
+
+export function useBackdropUploads(): Uploads {
+  const [uploads, setUploads] = useState<Uploads>(() => uploadsCache ?? {})
+  useEffect(() => {
+    let alive = true
+    const load = () => void fetchBackdropUploads().then((u) => { uploadsCache = u; if (alive) setUploads(u) })
+    if (!uploadsCache) load()
+    window.addEventListener(UPLOADS_EVENT, load)
+    return () => { alive = false; window.removeEventListener(UPLOADS_EVENT, load) }
+  }, [])
+  return uploads
+}
+
+/** Laddar upp en fil från skrivbordet (eller telefonen som fjärrklient) till värden. */
+export async function uploadBackdrop(slot: BackdropScope, file: Blob): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const res = await fetch(`/api/live-tv/sport/backdrop?slot=${slot}`, { method: 'POST', headers: { 'content-type': file.type || 'application/octet-stream' }, body: file })
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      return { ok: false, error: body.error ?? 'failed' }
+    }
+    notifyBackdropUploadsChanged()
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'network' }
+  }
+}
+
+export async function removeBackdrop(slot: BackdropScope): Promise<void> {
+  try { await fetch(`/api/live-tv/sport/backdrop?slot=${slot}`, { method: 'DELETE' }) } catch { /* värden borta */ }
+  notifyBackdropUploadsChanged()
+}
+
+// ---------------------------------------------------------------- ton ur bilden
+
+const TONE_KEY = 'lumio.sport.backdrop-tones.v1'
+const tones = new Map<string, Rgb | null>()
+function readToneStore(): Record<string, Rgb> {
+  try { return JSON.parse(window.localStorage.getItem(TONE_KEY) ?? '{}') as Record<string, Rgb> } catch { return {} }
+}
+function writeTone(src: string, rgb: Rgb): void {
+  try {
+    const all = readToneStore()
+    all[src] = rgb
+    const keys = Object.keys(all)
+    for (const k of keys.slice(0, Math.max(0, keys.length - 40))) delete all[k]
+    window.localStorage.setItem(TONE_KEY, JSON.stringify(all))
+  } catch { /* privat läge eller fullt: bara minnet */ }
+}
+
+function sampleTone(src: string): Promise<Rgb | null> {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.decoding = 'async'
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas')
+          canvas.width = 24
+          canvas.height = 24
+          const ctx = canvas.getContext('2d')
+          if (!ctx) return resolve(null)
+          ctx.drawImage(img, 0, 0, 24, 24)
+          resolve(averageRgb(ctx.getImageData(0, 0, 24, 24).data))
+        } catch { resolve(null) }
+      }
+      img.onerror = () => resolve(null)
+      img.src = src
+    } catch { resolve(null) }
+  })
+}
+
+/** Medelfärgen för en bild: medföljande bilder ur tabellen, andra provas EN gång och cachas. */
+export function useImageTone(src: string | null, wanted: boolean): Rgb | null {
+  const known = (s: string | null): Rgb | null | undefined => {
+    if (!s) return null
+    if (STANDARD_TONES[s]) return STANDARD_TONES[s]!
+    if (tones.has(s)) return tones.get(s) ?? null
+    const stored = readToneStore()[s]
+    if (stored) { tones.set(s, stored); return stored }
+    return undefined
+  }
+  const [tone, setTone] = useState<Rgb | null>(() => (wanted ? known(src) ?? null : null))
+  useEffect(() => {
+    if (!wanted || !src) { setTone(null); return }
+    const hit = known(src)
+    if (hit !== undefined) { setTone(hit); return }
+    let alive = true
+    void sampleTone(src).then((rgb) => {
+      tones.set(src, rgb)
+      if (rgb) writeTone(src, rgb)
+      if (alive) setTone(rgb)
+    })
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, wanted])
+  return tone
 }
 
 // `källa:sport:lag` → bilder. Bara lyckade svar sparas; en spärr eller ett nätfel försöks igen nästa gång.
@@ -106,19 +307,35 @@ export function useHeroTeamArt(hero: SportMatch | null): TeamArt | null {
   return key ? art : null
 }
 
-export function useSportBackdrop(hero: SportMatch | null): { choice: BackdropChoice; onBroken(url: string): void } {
+export interface SportBackdropState {
+  choice: BackdropChoice
+  onBroken(url: string): void
+  /** Variablerna för Sport-roten; `null` = ingen bild, ytorna behåller sina vanliga färger. */
+  surface: CardSurfaceVars | null
+}
+
+/** `scope`: vyns sportfilter ("all" = Alla sporter). */
+export function useSportBackdrop(hero: SportMatch | null, scope: BackdropScope = 'all', nowMs: number = Date.now()): SportBackdropState {
   const settings = useSportSettings()
-  const homeUrls = useHomeBackgrounds()
+  const uploads = useBackdropUploads()
+  const tvMode = useTvMode()
   const [broken, setBroken] = useState<ReadonlySet<string>>(() => new Set())
-  const art = useHeroTeamArt(settings.backdrop === 'auto' && settings.apiKey ? hero : null)
+  const { mode, slot } = resolveBackdropMode(settings.backdrops, scope)
+  const art = useHeroTeamArt(mode === 'auto' && settings.apiKey ? hero : null)
   const onBroken = useCallback((url: string) => setBroken((b) => (b.has(url) ? b : new Set(b).add(url))), [])
   const choice = chooseSportBackdrop({
-    mode: settings.backdrop,
+    mode,
+    slot,
     hasKey: !!settings.apiKey,
     hero,
     art,
-    custom: resolveCustomBackdrop(settings.backdropCustom, homeUrls),
+    uploads,
+    standard: standardImageFor(scope, localDayKey(nowMs)),
     broken,
   })
-  return { choice, onBroken }
+  const src = choice.kind === 'image' ? backdropSrc(choice) : null
+  const tone = useImageTone(src, settings.cards.tone === 'image')
+  // Oskärpan kostar på TV-boxarna (och gamla WebViews saknar den): bara skrivbord och telefon.
+  const surface = choice.kind === 'image' ? cardSurfaceVars(settings.cards, tone, { blur: !tvMode }) : null
+  return { choice, onBroken, surface }
 }

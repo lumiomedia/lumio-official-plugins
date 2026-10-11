@@ -13,6 +13,7 @@ import { Crest, StatusTag, ellipsis, overline, primaryBtn } from './sport-parts'
 import { MatchScore } from './sport-score'
 import { MatchCenterData } from './sport-match-center-data'
 import { SportIcons } from './sport-icons'
+import { SPORT_PANEL_BG, sportSurface } from '../surface'
 
 const pill = (on: boolean): CSSProperties => ({
   height: dp(52), minHeight: dp(52), padding: `0 ${dp(20)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: dp(8),
@@ -56,7 +57,7 @@ export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match
   return (
     <>
       <div data-live-tv-layer="" aria-hidden="true" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 59, background: TV.scrim }} />
-      <div ref={rootRef} data-testid="match-center" data-panel-root="" data-live-tv-layer="" data-scroll="" role="dialog" aria-label={matchTitle(match)} style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: '1px solid rgba(255,255,255,0.16)', padding: `${dp(28)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', gap: dp(20), overflowY: 'auto', boxSizing: 'border-box' }}>
+      <div ref={rootRef} data-testid="match-center" data-panel-root="" data-live-tv-layer="" data-scroll="" role="dialog" aria-label={matchTitle(match)} style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, ...sportSurface(SPORT_PANEL_BG), borderLeft: '1px solid rgba(255,255,255,0.16)', padding: `${dp(28)}px ${dp(32)}px`, display: 'flex', flexDirection: 'column', gap: dp(20), overflowY: 'auto', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(12) }}>
           <StatusTag match={match} ctx={ctx} />
           <span style={{ fontSize: dp(17), color: TV.muted, ...ellipsis }}>{context}</span>

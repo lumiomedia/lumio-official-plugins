@@ -3,13 +3,14 @@
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
 import { formatClock, progressOf } from '../../live-tv-ui'
-import { Progress, Tag, TV, cardStyle, dp, station } from '../../tv/tv-ui'
+import { Progress, Tag, TV, dp, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, type SportMatch } from '../sport-model'
 import { crestColor, followState, leagueColor, statusAt } from '../sport-day-model'
 import { sourceLine, type SportCtx } from '../sport-ctx'
 import { matchStatusLabel, showsScore } from '../score-model'
 import { MatchScore, ResultOnlyTag } from './sport-score'
 import { SportIcons } from './sport-icons'
+import { sportCardStyle } from '../surface'
 
 export const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
 export const overline: CSSProperties = { fontSize: dp(15), fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: TV.dim }
@@ -61,7 +62,7 @@ export function MatchCard({ match, ctx }: { match: SportMatch; ctx: SportCtx }) 
   const followed = followState(match, ctx.follows).any
   const reminded = ctx.isReminded(match)
   return (
-    <div data-testid="sport-card" data-match-id={match.id} {...station(() => ctx.openMatch(match), () => ctx.watch(match))} style={{ ...cardStyle, width: dp(450), flexShrink: 0, padding: `${dp(16)}px ${dp(18)}px`, display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
+    <div data-testid="sport-card" data-match-id={match.id} {...station(() => ctx.openMatch(match), () => ctx.watch(match))} style={{ ...sportCardStyle, width: dp(450), flexShrink: 0, padding: `${dp(16)}px ${dp(18)}px`, display: 'flex', flexDirection: 'column', gap: dp(12), cursor: 'pointer' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(15), color: TV.muted }}>
         <LeagueDot leagueKey={match.leagueKey || match.kind} />
         <span style={{ ...ellipsis, flex: 1 }}>{match.league || ctx.kindLabel(match.kind)}</span>
@@ -102,5 +103,5 @@ export function CardRow({ title, matches, ctx, testId }: { title: string; matche
 }
 
 export function Notice({ text, testId }: { text: ReactNode; testId?: string }) {
-  return <div data-testid={testId} style={{ ...cardStyle, padding: `${dp(28)}px ${dp(32)}px`, fontSize: dp(20), color: TV.muted }}>{text}</div>
+  return <div data-testid={testId} style={{ ...sportCardStyle, padding: `${dp(28)}px ${dp(32)}px`, fontSize: dp(20), color: TV.muted }}>{text}</div>
 }
