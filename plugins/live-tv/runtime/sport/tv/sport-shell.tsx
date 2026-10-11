@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useMemo, useState, type CSSProperties, type FocusEvent } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from '../../tv/tv-shell'
 import { Segment, TV, dp, station, useTvClockNode } from '../../tv/tv-ui'
@@ -40,6 +40,18 @@ const MAX_OFFSET: DayOffset = 1
  * 2026-10-11). Hittas ingen faller motorn tillbaka på geometrin.
  */
 const BODY_FIRST = '[data-sport-body] [data-f]'
+
+/**
+ * Fokus i rubriken (flikar, Visa som, dag- och filterraden) rullar sidan hela
+ * vägen upp. Motorn rullar bara fram stationen, så efter en tur ner och upp
+ * stod sidan kvar några pixlar ner och rubriken låg under menypillret
+ * (Jerry 2026-10-11). Lådor och flikens innehåll rullas som förut.
+ */
+function revealHeaderFully(event: FocusEvent<HTMLDivElement>) {
+  const target = event.target as HTMLElement
+  if (target.closest('[data-sport-body], [data-panel-root]')) return
+  event.currentTarget.scrollTop = 0
+}
 
 const VIEW_AS_FIRST = '[data-testid="sport-view-as"] [data-f]'
 
@@ -132,7 +144,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
     <div data-testid="sport-stage" data-sport-stage="" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', ...backdrop.surface }}>
     <style>{SPORT_FOCUS_CSS}</style>
     <SportBackdropLayer choice={backdrop.choice} phone={false} onBroken={backdrop.onBroken} />
-    <div data-testid="sport-view" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${dp(48)}px ${dp(48)}px`, ...sportViewTop(tvMode), display: 'flex', flexDirection: 'column', gap: dp(22) }}>
+    <div data-testid="sport-view" data-scroll="" onFocusCapture={revealHeaderFully} style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${dp(48)}px ${dp(48)}px`, ...sportViewTop(tvMode), display: 'flex', flexDirection: 'column', gap: dp(22) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(18) }}>
         <span style={{ fontSize: dp(40), fontWeight: 600 }}>{tt('sportTitle')}</span>
         <span data-testid="sport-summary" style={{ fontSize: dp(19), color: TV.muted }}>{tt('sportHeaderSummary', { day: dayLabel(offset), count: summary.total, live: summary.live, mine: summary.onChannels })}</span>

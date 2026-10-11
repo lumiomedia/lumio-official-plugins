@@ -108,6 +108,20 @@ describe('Sportskalet', () => {
     expect(downOf('sport-chip-all')).toBe(firstInBody())
     expect(firstInBody()).not.toBeNull()
   })
+  it('fokus i rubriken rullar sidan hela vägen upp — en tur ner och upp lämnar rubriken där den stod (Jerry 2026-10-11)', async () => {
+    mountSport({}, { days: { [today]: [live, later] } })
+    await screen.findByTestId('sport-hero')
+    const view = screen.getByTestId('sport-view')
+    view.scrollTop = 300
+    fireEvent.focus(screen.getByTestId('sport-hero-watch'))
+    expect(view.scrollTop).toBe(300)
+    view.scrollTop = 13
+    fireEvent.focus(screen.getByTestId('sport-tab-foryou'))
+    expect(view.scrollTop).toBe(0)
+    view.scrollTop = 40
+    fireEvent.focus(screen.getByTestId('sport-chip-all'))
+    expect(view.scrollTop).toBe(0)
+  })
   it('Visa som nås från flikraden och tillbaka, i TV-storlek', async () => {
     mountSport({}, { days: { [today]: [live] } })
     await screen.findByTestId('sport-hero')
