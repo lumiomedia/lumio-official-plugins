@@ -18,6 +18,7 @@
   "sdkCapabilities": [
     "settings-section",
     "home-override",
-    "browse-page"
+    "browse-page",
+    "main-menu-item"
   ]
 }

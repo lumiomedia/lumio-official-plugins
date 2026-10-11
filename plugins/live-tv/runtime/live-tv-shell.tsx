@@ -10,6 +10,11 @@ import type { M3uChannel } from './live-tv-data'
  * påminnelsemonteringen delar.
  */
 export const LIVE_TV_BROWSE_PAGE_ID = 'live-tv-browse'
+/**
+ * Sport som egen sida (menyvalet "Sport"). Samma id på sidan och menyvalet:
+ * värdens nya menyer gör nyckeln till sidans id och läser aldrig `target`.
+ */
+export const LIVE_TV_SPORT_PAGE_ID = 'live-tv-sport'
 
 export function encodeChannelParams(channel: M3uChannel): Record<string, string> {
   return {

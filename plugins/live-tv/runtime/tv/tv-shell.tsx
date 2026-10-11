@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { getTvGlassMenu, requestBrowseBack, useTvMode, type BrowsePageProps, type TvGlassMenuAction, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import { useLiveTvModel, type LiveTvModel } from '../live-tv-model'
-import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams, type PlayRequest } from '../live-tv-shell'
+import { LIVE_TV_BROWSE_PAGE_ID, LIVE_TV_SPORT_PAGE_ID, encodeChannelParams, type PlayRequest } from '../live-tv-shell'
 import { PinGate } from '../live-tv-ui'
 import { activeProfileHasPin, isUnlockedThisSession, markUnlockedThisSession, pinSupportAvailable, toggleChannelLock, verifyActiveProfilePin } from '../channel-locks'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
@@ -156,7 +156,31 @@ function viewFromParams(params?: Record<string, string>): TvView {
   return 'hub'
 }
 
-export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
+/**
+ * Sportsidans vyer. Allt annat Live TV har (kanaler, guide, favoriter …) bor
+ * kvar i Live TV — en länk dit från sporten är en länk IN i Live TV.
+ */
+const SPORT_ONLY_VIEWS: TvView[] = ['sport', 'multi']
+
+function sportOnlyViewFromParams(params?: Record<string, string>): TvView {
+  const raw = params?.view as TvView | undefined
+  return raw && SPORT_ONLY_VIEWS.includes(raw) ? raw : 'sport'
+}
+
+export interface LiveTvTvShellProps extends BrowsePageProps {
+  /**
+   * SPORT SOM EGEN SIDA (menyvalet "Sport", Jerry 2026-10-11).
+   *
+   * Samma skal, samma inställningar, samma rotstil och samma sportvy som inne
+   * i Live TV — men utan ikonrad och flikrad, och med Sport som rot: Bakåt i
+   * roten lämnar sidan som vilken bläddringssida som helst, och en stängd
+   * spelare landar på Sport. Multivyn stannar på sidan; övriga vyer öppnas i
+   * Live TV.
+   */
+  sportOnly?: boolean
+}
+
+export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvTvShellProps) {
   const { tt, locale } = useTvText()
   const model = useLiveTvModel()
   const settings = useTvSettings()
@@ -164,7 +188,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   // Tom lista = ingen nativ yta lever, och skalet målas precis som förut.
   const cutouts = useSurfaceCutouts()
   const hasCutouts = cutouts.length > 0
-  const view = viewFromParams(params)
+  const view = sportOnly ? sportOnlyViewFromParams(params) : viewFromParams(params)
   const viewParams = useMemo(() => params ?? {}, [params])
   const viewParamsRef = useRef(viewParams)
   viewParamsRef.current = viewParams
@@ -299,8 +323,10 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     const current: Record<string, string> = { ...viewParamsRef.current, view }
     const tk = Object.keys(target)
     if (tk.length === Object.keys(current).length && tk.every((k) => current[k] === target[k])) return
-    onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: target })
-  }, [onNavigate, view])
+    // Sportsidan behåller sina egna vyer; resten är Live TV:s.
+    const pageId = sportOnly && SPORT_ONLY_VIEWS.includes(next) ? LIVE_TV_SPORT_PAGE_ID : LIVE_TV_BROWSE_PAGE_ID
+    onNavigate({ pageId, params: target })
+  }, [onNavigate, view, sportOnly])
 
   /*
     LIVE TV ÖPPNAR I HEM (Jerry 2026-10-10). Menyvalet öppnar sidan utan
@@ -311,7 +337,8 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
   // Bara när värden öppnar sidan helt utan params (undefined). Medan kollen pågår ritas ingen vy: hubben hade annars startat sina
   // kanal-/EPG-laddningar bara för att kastas vid omdirigeringen.
   // "Dölj VOD helt" (VOD-läget 'off'): aldrig Hem och ingen autoindexering — Kanaler direkt.
-  const [redirectCheck, setRedirectCheck] = useState(() => params === undefined && !vodHiddenForActivePlaylist() && shouldRedirectToVodHome(params, Date.now()))
+  // Sportsidan öppnas också utan params, men den är aldrig Live TV:s hem.
+  const [redirectCheck, setRedirectCheck] = useState(() => !sportOnly && params === undefined && !vodHiddenForActivePlaylist() && shouldRedirectToVodHome(params, Date.now()))
   useEffect(() => {
     if (!redirectCheck) return
     let cancelled = false
@@ -435,10 +462,17 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     if (active) { setActive(null); return }
     const top = layersRef.current[layersRef.current.length - 1]
     if (top) { top(); return }
+    // Sportsidans rot är Sport: multivyn backar dit, och Sport självt lämnar
+    // sidan via värdens Bakåt — aldrig till Live TV:s hubb.
+    if (sportOnly) {
+      if (view !== 'sport') { go('sport'); return }
+      requestBrowseBack()
+      return
+    }
     if (view === 'channel') { go('guide'); return }
     if (view !== 'hub') { go('hub'); return }
     requestBrowseBack()
-  }, [menu, pending, active, view, go])
+  }, [menu, pending, active, view, go, sportOnly])
 
   // Back i capture-fas. Värdens glasmeny sköter sin egen Back, därför avstår
   // skalet medan den är öppen. På telefon är kanalmenyn i stället skalets EGET
@@ -652,7 +686,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
     >
       {hasCutouts ? <SurfaceBackdrop cutouts={cutouts} /> : null}
       <TvFocusStyle />
-      {phone ? null : (
+      {phone || sportOnly ? null : (
         <TvRail
           active={shellRailActive(view, redirectCheck)}
           isTv={isTv}
@@ -670,7 +704,7 @@ export function LiveTvTvShell({ params, onNavigate }: BrowsePageProps) {
       </main>
       {/* Flik-raden (telefon): borta medan spelaren är öppen — den ligger
           `position: fixed` och hade annars legat över bilden. */}
-      {phone && active === null ? <MobileTabBar view={view} onGo={(v) => (v === 'home' ? goVodHome() : go(v))} onMore={() => setMoreOpen(true)} showLibrary={showLibraryTab} /> : null}
+      {phone && !sportOnly && active === null ? <MobileTabBar view={view} onGo={(v) => (v === 'home' ? goVodHome() : go(v))} onMore={() => setMoreOpen(true)} showLibrary={showLibraryTab} /> : null}
       {phone && moreOpen ? (
         <MobileSheet
           title={tt('moreActions')}

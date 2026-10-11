@@ -4,6 +4,7 @@ import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetFo
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, type LiveTvList } from '../live-tv-data'
 import { LiveTvTvShell } from '../tv/tv-shell'
+import { LiveTvSportPage, SPORT_PAGE_ID } from './sport-page'
 import { SPORT_FOLLOWS_KEY, type SportFollow } from './sport-store'
 import { __resetSportDayCache } from './sport-epg'
 import type { MatchSource, SportDay, SportKind, SportMatch } from './sport-model'
@@ -101,8 +102,12 @@ afterEach(() => {
   for (const box of boxes.splice(0)) box.remove()
 })
 
-/** Monterar skalet på Sport-vyn. TV-läge som standard; `phone: true` märker lådan som värdens telefonscen. */
-export function mountSport(params: Record<string, string> = {}, opts: { days?: Record<string, SportMatch[]> | 'missing'; phone?: boolean; follows?: SportFollow[] } = {}) {
+/**
+ * Monterar skalet på Sport-vyn. TV-läge som standard; `phone: true` märker lådan som värdens telefonscen.
+ * `page: true` monterar i stället Sport som egen sida (menyvalet) — params går då in som de är, och
+ * utan params får sidan `undefined`, precis som när värden öppnar den från menyn.
+ */
+export function mountSport(params: Record<string, string> = {}, opts: { days?: Record<string, SportMatch[]> | 'missing'; phone?: boolean; follows?: SportFollow[]; page?: boolean } = {}) {
   __resetForTests()
   __setTvModeForTests(!opts.phone)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [fxList])
@@ -119,6 +124,8 @@ export function mountSport(params: Record<string, string> = {}, opts: { days?: R
   }
   document.body.appendChild(box)
   boxes.push(box)
-  const view = render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'sport', ...params }} onNavigate={onNavigate} onOpenDetails={() => {}} />, { container: box })
+  const view = opts.page
+    ? render(<LiveTvSportPage pageId={SPORT_PAGE_ID} params={Object.keys(params).length > 0 ? params : undefined} onNavigate={onNavigate} onOpenDetails={() => {}} />, { container: box })
+    : render(<LiveTvTvShell pageId="live-tv-browse" params={{ view: 'sport', ...params }} onNavigate={onNavigate} onOpenDetails={() => {}} />, { container: box })
   return { ...view, onNavigate, fetchSpy, box }
 }
