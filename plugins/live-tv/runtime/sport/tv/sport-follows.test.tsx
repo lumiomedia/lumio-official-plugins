@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../../live-tv-data'
 import { SPORT_FOLLOWS_KEY, getFollows, getSportSettings, type SportFollow } from '../sport-store'
@@ -7,7 +7,7 @@ import { FollowPicker, SportFollows } from './sport-follows'
 import { HOUR, MIN, fakeCtx, fxDay, fxMatch } from '../__sport-fixture'
 
 const h = vi.hoisted(() => ({ search: vi.fn() }))
-vi.mock('../follow-search', () => ({ searchProviderTeams: h.search }))
+vi.mock('../follow-search', async (orig) => ({ ...(await orig<typeof import('../follow-search')>()), searchFollowTargets: h.search }))
 
 afterEach(cleanup)
 const now = new Date(2026, 9, 10, 18, 0).getTime()
@@ -74,18 +74,77 @@ describe('Följväljaren', () => {
     expect(screen.getByTestId('follow-row-frolunda')).toBeInTheDocument()
     expect(ctx.nav.pushLayer).toHaveBeenCalledTimes(1)
   })
-  it('sök i källan: skickas med Enter, träffen sparas med providerIds', async () => {
+  it('skrivandet filtrerar listan direkt, accentokänsligt', () => {
     __resetForTests()
-    h.search.mockResolvedValue([{ id: '375', name: 'Malmö FF', crest: 'https://m/375.png', country: 'Sweden' }])
-    const ctx = fakeCtx({ now, settings: { view: 'matchday', alert: '15', apiKey: 'k123', provider: 'api-sports' } as never })
-    render(<FollowPicker ctx={ctx} days={[null, ...days]} onClose={() => {}} />)
+    render(<FollowPicker ctx={fakeCtx({ now })} days={[null, ...days]} onClose={() => {}} />)
     const input = screen.getByTestId('follow-search') as HTMLInputElement
-    fireEvent.change(input, { target: { value: 'malmo' } })
-    expect(h.search).not.toHaveBeenCalled()
-    fireEvent.keyDown(input, { key: 'Enter' })
-    await waitFor(() => expect(screen.getByTestId('follow-hit-375')).toBeInTheDocument())
-    expect(h.search).toHaveBeenCalledWith('football', 'malmo')
-    fireEvent.click(screen.getByTestId('follow-hit-375'))
-    expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: 'malmo ff', name: 'Malmö FF', providerIds: { 'api-sports': '375' } }])
+    fireEvent.change(input, { target: { value: 'frol' } })
+    expect(screen.getByTestId('follow-row-frolunda')).toBeInTheDocument()
+    expect(screen.queryByTestId('follow-row-aik')).toBeNull()
+    expect(screen.queryByTestId('follow-row-allsvenskan')).toBeNull()
+    fireEvent.change(input, { target: { value: 'Milan' } })
+    expect(screen.queryByTestId('follow-row-aik')).toBeNull()
+    expect(screen.queryByTestId('follow-row-shl')).toBeNull()
+  })
+  it('sökfältet finns även utan nyckel (lokal filtrering), men källan frågas inte', () => {
+    vi.useFakeTimers()
+    try {
+      __resetForTests()
+      h.search.mockReset()
+      render(<FollowPicker ctx={fakeCtx({ now })} days={[null, ...days]} onClose={() => {}} />)
+      fireEvent.change(screen.getByTestId('follow-search'), { target: { value: 'Milan' } })
+      act(() => { vi.advanceTimersByTime(1000) })
+      expect(h.search).not.toHaveBeenCalled()
+    } finally { vi.useRealTimers() }
+  })
+  it('sök i källan: en gång efter 400 ms paus, minst 3 tecken; träffen sparas med providerIds', async () => {
+    vi.useFakeTimers()
+    try {
+      __resetForTests()
+      h.search.mockReset()
+      h.search.mockResolvedValue([
+        { kind: 'team', sport: 'football', id: '489', name: 'AC Milan', crest: 'https://m/489.png', country: 'Italy' },
+        { kind: 'league', sport: 'football', id: '135', name: 'Serie A', crest: null, country: 'Italy' },
+      ])
+      const ctx = fakeCtx({ now, settings: { view: 'matchday', alert: '15', apiKey: 'k123', provider: 'api-sports' } as never })
+      render(<FollowPicker ctx={ctx} days={[null, ...days]} onClose={() => {}} />)
+      const input = screen.getByTestId('follow-search') as HTMLInputElement
+      fireEvent.change(input, { target: { value: 'Mi' } })
+      act(() => { vi.advanceTimersByTime(1000) })
+      expect(h.search).not.toHaveBeenCalled()
+      for (const v of ['Mil', 'Mila', 'Milan']) {
+        fireEvent.change(input, { target: { value: v } })
+        act(() => { vi.advanceTimersByTime(100) })
+      }
+      expect(h.search).not.toHaveBeenCalled()
+      await act(async () => { vi.advanceTimersByTime(400) })
+      expect(h.search).toHaveBeenCalledTimes(1)
+      expect(h.search).toHaveBeenCalledWith('football', 'Milan')
+      const hit = screen.getByTestId('follow-hit-team-489')
+      expect(hit).toHaveTextContent('AC Milan')
+      expect(hit).toHaveTextContent('Football · Italy')
+      fireEvent.click(hit)
+      fireEvent.click(screen.getByTestId('follow-hit-league-135'))
+      expect(getFollows()).toEqual([
+        { sport: 'football', kind: 'team', key: 'ac milan', name: 'AC Milan', providerIds: { 'api-sports': '489' } },
+        { sport: 'football', kind: 'league', key: 'fx:api-sports:135', name: 'Serie A', providerIds: { 'api-sports': '135' } },
+      ])
+    } finally { vi.useRealTimers() }
+  })
+  it('källträffar som redan finns i listan visas inte två gånger', async () => {
+    vi.useFakeTimers()
+    try {
+      __resetForTests()
+      h.search.mockReset()
+      h.search.mockResolvedValue([{ kind: 'team', sport: 'hockey', id: '7', name: 'Frölunda', crest: null, country: 'Sweden' }])
+      const ctx = fakeCtx({ now, settings: { view: 'matchday', alert: '15', apiKey: 'k123', provider: 'api-sports' } as never })
+      render(<FollowPicker ctx={ctx} days={[null, ...days]} onClose={() => {}} />)
+      fireEvent.click(screen.getByTestId('follow-chip-hockey'))
+      fireEvent.change(screen.getByTestId('follow-search'), { target: { value: 'Frolunda' } })
+      await act(async () => { vi.advanceTimersByTime(400) })
+      expect(h.search).toHaveBeenCalledWith('hockey', 'Frolunda')
+      expect(screen.getByTestId('follow-row-frolunda')).toBeInTheDocument()
+      expect(screen.queryByTestId('follow-hit-team-7')).toBeNull()
+    } finally { vi.useRealTimers() }
   })
 })

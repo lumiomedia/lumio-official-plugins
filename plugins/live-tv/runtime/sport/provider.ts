@@ -44,6 +44,8 @@ export interface SportsProvider {
   fixture(sport: SportKind, id: string, opts: { finished: boolean }): ProviderCall<FixtureDetail | null>
   standings(sport: SportKind, leagueId: string, season: string): ProviderCall<StandingRow[]>
   searchTeams(sport: SportKind, q: string): ProviderCall<TeamHit[]>
+  /** Turneringar per namn. Saknas = källan kan inte söka turneringar, och då görs inget anrop. */
+  searchLeagues?(sport: SportKind, q: string): ProviderCall<TeamHit[]>
   validateKey(): ProviderCall<KeyCheck>
   quotaProbe(sport: SportKind): ProviderCall<KeyCheck> | null
   crestUrl(team: FixtureTeam): string | null
