@@ -1,0 +1,9 @@
+{
+  "_shape": "recorded from sportapi.ai/docs examples 2026-10-11 — verify with real key",
+  "success": true,
+  "data": [
+    { "id": 24, "name": "Premier League", "slug": "premier-league", "zone": "England", "geo": "GB-ENG", "domestic": 1, "has_standings": true, "has_fixtures": true, "fixtures_count": 737, "teams_count": 24 },
+    { "id": 61, "name": "Allsvenskan", "slug": "allsvenskan", "zone": "Sweden", "geo": "SE", "domestic": 1, "has_standings": true, "has_fixtures": true, "fixtures_count": 240, "teams_count": 16 },
+    { "id": 2, "name": "UEFA Champions League", "slug": "champions-league", "zone": "Europe", "geo": "", "domestic": 0, "has_standings": true, "has_fixtures": true, "fixtures_count": 189, "teams_count": 36 }
+  ]
+}

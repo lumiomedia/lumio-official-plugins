@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import type { TvNav } from './tv-shell'
 import { TV, belowTitleBar, dp } from './tv-ui'
 
@@ -21,6 +21,7 @@ export function PickerPanel({
   onClose,
   testId = 'list-picker',
   opener,
+  surface,
 }: {
   nav: TvNav
   title: string
@@ -42,6 +43,8 @@ export function PickerPanel({
    * hade landat på body.
    */
   opener?: HTMLElement | null
+  /** Sport: samma ytvariabler/kant/padding som matchlådan (`sportDrawerStyle`). Utan den: oförändrat utseende. */
+  surface?: CSSProperties
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)
@@ -73,7 +76,7 @@ export function PickerPanel({
       data-testid={testId}
       data-panel-root=""
       data-live-tv-layer=""
-      style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}
+      style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18), boxSizing: 'border-box', ...surface }}
     >
       <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
       {chips}

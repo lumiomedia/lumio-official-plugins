@@ -28,6 +28,10 @@ describe('Flöde', () => {
     expect(teams[2]).toHaveTextContent('Tomorrow')
     fireEvent.click(screen.getByTestId('feed-add'))
     expect(ctx.openFollowPicker).toHaveBeenCalled()
+    // Favoriter märks med Live TV:s hjärta, inte en stjärna: AIK–Hammarby i kvällsplanen.
+    const planRows = screen.getAllByTestId('feed-plan-row')
+    expect(within(planRows[0]!).getByTestId('feed-plan-fav').querySelector('svg path')?.getAttribute('d')).toMatch(/^M12 21s/)
+    expect(within(planRows[1]!).queryByTestId('feed-plan-fav')).toBeNull()
   })
   it('Just nu: källchip med antal och kvalitet, spela startar matchen', () => {
     const ctx = fakeCtx({ now, follows })

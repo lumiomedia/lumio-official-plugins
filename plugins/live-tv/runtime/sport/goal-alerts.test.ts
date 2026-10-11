@@ -23,7 +23,7 @@ describe('goal-alerts', () => {
     expect(goalAlertWanted(null, settings(), [])).toBe(false)
   })
   it('texterna', () => {
-    expect(goalTitle(e, tt)).toBe('MÅL! Malmo FF 3–1 AIK')
+    expect(goalTitle(e, tt)).toBe('Mål · Malmo FF 3–1 AIK')
     expect(goalBody(e)).toBe("S. Larsson 67'")
     expect(goalBody({ ...e, scorer: null })).toBe("67'")
   })

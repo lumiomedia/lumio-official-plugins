@@ -1,12 +1,13 @@
 'use client'
 
-import { currentBudget } from './budget'
+import { currentRouter } from './router'
 import { foldTeamKey } from './merge'
-import type { TeamHit } from './provider'
+import type { ProviderId, TeamHit } from './provider'
 import type { SportKind } from './sport-model'
 
 /** En träff i källan: lag eller turnering, med sporten den söktes i. */
-export interface FollowHit extends TeamHit { kind: 'team' | 'league'; sport: SportKind }
+/** `provider`: källan som svarade (id:t är källans). */
+export interface FollowHit extends TeamHit { kind: 'team' | 'league'; sport: SportKind; provider?: ProviderId }
 
 export const MIN_PROVIDER_QUERY = 3
 export const PROVIDER_SEARCH_DEBOUNCE_MS = 400
@@ -29,26 +30,27 @@ export function __resetFollowSearchForTests(): void { cache.clear() }
  * tre tecken. Varje anrop går genom budgeten som `search` och skyddas av reserven.
  */
 export function searchFollowTargets(sport: SportKind, q: string): Promise<FollowHit[]> {
-  const budget = currentBudget()
+  const router = currentRouter()
   const query = q.trim()
-  if (!budget || query.length < MIN_PROVIDER_QUERY || budget.provider.coverage(sport) !== 'full') return Promise.resolve([])
-  const id = `${budget.provider.id}|${sport}|${foldTeamKey(query)}`
+  if (!router || query.length < MIN_PROVIDER_QUERY || router.coverage(sport) !== 'full') return Promise.resolve([])
+  // Sökningen går till sportens källor i ordning (sportapi.ai saknar lagsök: då nästa källa).
+  const id = `${router.candidates(sport).map((b) => b.provider.id).join(',')}|${sport}|${foldTeamKey(query)}`
   const hit = cache.get(id)
   if (hit) return hit
   const run = (async () => {
-    const [teams, leagues] = await Promise.all([budget.searchTeams(sport, query), budget.searchLeagues(sport, query)])
+    const [teams, leagues] = await Promise.all([router.searchTeams(sport, query), router.searchLeagues(sport, query)])
     const out: FollowHit[] = []
     const seen = new Set<string>()
-    const add = (kind: FollowHit['kind'], list: TeamHit[] | null | undefined) => {
+    const add = (kind: FollowHit['kind'], list: TeamHit[] | null | undefined, provider: ProviderId | null | undefined) => {
       for (const t of list ?? []) {
         const k = `${kind}:${t.id}`
         if (!t.id || !t.name || seen.has(k)) continue
         seen.add(k)
-        out.push({ kind, sport, ...t })
+        out.push({ kind, sport, ...t, ...(provider ? { provider } : {}) })
       }
     }
-    add('team', teams.data)
-    add('league', leagues?.data)
+    add('team', teams.data, teams.provider)
+    add('league', leagues?.data, leagues?.provider)
     return out
   })()
   cache.set(id, run)
@@ -57,8 +59,8 @@ export function searchFollowTargets(sport: SportKind, q: string): Promise<Follow
   return run
 }
 
-/** Bara lag (telefonens sökruta). */
-export async function searchProviderTeams(sport: SportKind, q: string): Promise<TeamHit[]> {
+/** Bara lag (telefonens sökruta). `provider` = källan som svarade (id:t är dess). */
+export async function searchProviderTeams(sport: SportKind, q: string): Promise<Array<TeamHit & { provider?: ProviderId }>> {
   const res = await searchFollowTargets(sport, q)
   return res.filter((x) => x.kind === 'team').map(({ kind: _k, sport: _s, ...t }) => t)
 }

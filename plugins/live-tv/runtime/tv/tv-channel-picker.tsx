@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { channelKey, type M3uChannel } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav } from './tv-shell'
@@ -10,7 +10,7 @@ import { MORE_GROUPS, filterByGroup, useGuideGroups } from './tv-guide-shared'
 import { groupCounts } from './group-chips'
 import { TvGroupPanel } from './tv-group-picker'
 
-export function TvChannelPicker({ model, nav, title, onPick, onClose }: { model: LiveTvModel; nav: TvNav; title: string; onPick: (channel: M3uChannel) => void; onClose: () => void }) {
+export function TvChannelPicker({ model, nav, title, onPick, onClose, surface }: { model: LiveTvModel; nav: TvNav; title: string; onPick: (channel: M3uChannel) => void; onClose: () => void; surface?: CSSProperties }) {
   const { tt } = useTvText()
   const [group, setGroup] = useState<string | null>(null)
   const groups = useGuideGroups(model, tt, group)
@@ -39,7 +39,7 @@ export function TvChannelPicker({ model, nav, title, onPick, onClose }: { model:
   }, [])
 
   return (
-    <div ref={rootRef} data-testid="channel-picker" data-panel-root="" data-live-tv-layer="" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}>
+    <div ref={rootRef} data-testid="channel-picker" data-panel-root="" data-live-tv-layer="" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18), boxSizing: 'border-box', ...surface }}>
       <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
       <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto' }}>
         {groups.map((chip) => <Chip key={chip.id} active={group === chip.key} {...station(() => (chip.key === MORE_GROUPS ? setGroupsOpen(true) : setGroup(chip.key)))} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}

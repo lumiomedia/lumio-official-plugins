@@ -31,27 +31,27 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); __setLangForTests('en'); h.controller = null })
 
 describe('PlayerGoalOverlay', () => {
-  it('mål i matchen på kanalen: MÅL! med ställning och målskytt, borta efter 6 s', () => {
+  it('mål i matchen på kanalen: Mål med ställning och målskytt, borta efter 6 s', () => {
     render(<PlayerGoalOverlay channelKey="cmore1" onJump={vi.fn()} />)
     act(() => emitGoals([goal('1')]))
-    expect(screen.getByText('MÅL!')).toBeTruthy()
+    expect(screen.getByText('Mål')).toBeTruthy()
     expect(screen.getByText('Malmo FF 3–1 AIK')).toBeTruthy()
     expect(screen.getByText("S. Larsson 67'")).toBeTruthy()
-    expect(screen.queryByText('Hoppa dit')).toBeNull()
+    expect(screen.queryByText('Titta')).toBeNull()
     act(() => { vi.advanceTimersByTime(6_001) })
-    expect(screen.queryByText('MÅL!')).toBeNull()
+    expect(screen.queryByText('Mål')).toBeNull()
   })
-  it('följd match på annan kanal: Hoppa dit byter kanal', () => {
+  it('följd match på annan kanal: Titta byter kanal', () => {
     setSportSettings({ goalAlerts: true, goalAlertMatches: { m2: Date.now() + 3_600_000 } })
     const onJump = vi.fn()
     render(<PlayerGoalOverlay channelKey="cmore1" onJump={onJump} />)
     act(() => emitGoals([goal('2')]))
-    fireEvent.click(screen.getByText('Hoppa dit'))
+    fireEvent.click(screen.getByText('Titta'))
     expect(onJump).toHaveBeenCalledWith(expect.objectContaining({ url: 'http://x/tv4' }))
   })
   it('ej följd match på annan kanal: ingenting', () => {
     render(<PlayerGoalOverlay channelKey="cmore1" onJump={vi.fn()} />)
     act(() => emitGoals([goal('2')]))
-    expect(screen.queryByText('MÅL!')).toBeNull()
+    expect(screen.queryByText('Mål')).toBeNull()
   })
 })

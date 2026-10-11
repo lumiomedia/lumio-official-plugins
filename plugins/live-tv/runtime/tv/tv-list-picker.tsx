@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { channelKey, type M3uChannel, type XtreamCategory } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav } from './tv-shell'
@@ -136,13 +136,14 @@ export interface ChoiceOption { key: string | null; label: string; count?: numbe
  * fjärren landar där man står i stället för högst upp i en lång lista.
  * Rader 56 px och antal i 45 % enligt handoffen (§Ram och kontrollrad).
  */
-export function TvChoicePanel({ nav, title, options, value, onPick, onClose }: {
+export function TvChoicePanel({ nav, title, options, value, onPick, onClose, surface }: {
   nav: TvNav
   title: string
   options: ChoiceOption[]
   value: string | null
   onPick: (key: string | null) => void
   onClose: () => void
+  surface?: CSSProperties
 }) {
   const initIndex = Math.max(0, options.findIndex((option) => option.key === value))
   return (
@@ -152,6 +153,7 @@ export function TvChoicePanel({ nav, title, options, value, onPick, onClose }: {
       onClose={onClose}
       chips={null}
       testId="choice-panel"
+      surface={surface}
       rows={(close) => options.map((option, index) => {
         const on = option.key === value
         return (

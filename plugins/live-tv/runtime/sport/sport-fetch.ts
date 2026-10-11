@@ -65,9 +65,10 @@ export async function sportFetch(args: { provider: ProviderId; key: string; req:
   }
 }
 
-export async function sportQuota(provider: ProviderId): Promise<SportQuota[]> {
+/** Värdens kvotbok för nyckeln (lokalt, kostar ingen kvot). Utan nyckel: alla källans hinkar (felsökning). */
+export async function sportQuota(provider: ProviderId, key?: string): Promise<SportQuota[]> {
   try {
-    const res = await fetch(`/api/live-tv/sport/quota?provider=${provider}`, { cache: 'no-store' })
+    const res = await fetch(`/api/live-tv/sport/quota?provider=${provider}`, { cache: 'no-store', ...(key ? { headers: { [SPORT_KEY_HEADER]: key } } : {}) })
     if (!res.ok) return []
     const body = (await res.json()) as { buckets?: SportQuota[] }
     return Array.isArray(body.buckets) ? body.buckets : []

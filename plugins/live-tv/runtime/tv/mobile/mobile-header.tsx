@@ -10,6 +10,19 @@ import { MIcons } from './mobile-icons'
  * titeln och delar rad med den. Sidluften är sidans vanliga `PAD` — se noten
  * vid `padding` nedan om varför värdens menychip inte reserveras plats här.
  */
+/** Den runda glass-X:en som lämnar Live TV. Delas av sidhuvudet och den inramade VOD-hemmet. */
+export function MobileCloseButton({ onClose }: { onClose?: () => void }) {
+  const { tt } = useTvText()
+  return (
+    <div
+      {...station(onClose ?? (() => {}), undefined, { 'aria-label': tt('closeLiveTv'), 'data-testid': 'header-close' })}
+      style={{ width: 40, height: 40, minHeight: 40, borderRadius: 999, background: TV.glass, border: `1px solid ${MT.line14}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
+    >
+      <MIcons.X />
+    </div>
+  )
+}
+
 export function MobileHeader({ title, right, back, onBack, close, onClose, testId }: {
   title: ReactNode
   right?: ReactNode
@@ -50,12 +63,7 @@ export function MobileHeader({ title, right, back, onBack, close, onClose, testI
       }}
     >
       {close ? (
-        <div
-          {...station(onClose ?? (() => {}), undefined, { 'aria-label': tt('closeLiveTv'), 'data-testid': 'header-close' })}
-          style={{ width: 40, height: 40, minHeight: 40, borderRadius: 999, background: TV.glass, border: `1px solid ${MT.line14}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}
-        >
-          <MIcons.X />
-        </div>
+        <MobileCloseButton onClose={onClose} />
       ) : null}
       {back ? (
         <div

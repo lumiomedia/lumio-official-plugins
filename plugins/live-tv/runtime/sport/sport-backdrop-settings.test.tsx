@@ -29,18 +29,23 @@ beforeEach(() => {
 })
 afterEach(() => { cleanup(); __setLangForTests('en'); __setTvModeForTests(false); globalThis.fetch = realFetch })
 
-const SCOPES = ['all', 'football', 'hockey', 'basketball', 'handball', 'motorsport', 'tennis', 'other']
+const SCOPES = ['all', 'football', 'hockey', 'basketball', 'motorsport', 'tennis', 'other']
+const OWN = { football: 'standard', hockey: 'standard', basketball: 'standard', motorsport: 'standard', tennis: 'standard', other: 'standard' } as const
 const thumb = (scope: string) => screen.getByTestId(`sport-backdrop-thumb-${scope}`).getAttribute('data-src')
 const row = (scope: string) => screen.getByTestId(`sport-backdrop-row-${scope}`)
 
 describe('Bakgrund i Sport, skrivbordskortet', () => {
-  it('en rad per sport med miniatyr; nya användare har Standard och sporterna följer Alla sporter', () => {
+  it('en rad per sport med miniatyr, ingen handbollsrad; nya användare har Standard överallt, Övrigt med', () => {
     render(<SportBackdropSettingsDesktop />)
     for (const k of SCOPES) expect(row(k)).toBeTruthy()
+    expect(screen.queryByTestId('sport-backdrop-row-handball')).toBeNull()
     expect(screen.queryByTestId('sport-backdrop-scope')).toBeNull()
     expect(row('all').textContent).toContain('Alla sporter')
     expect(row('all').textContent).toContain('Standard')
-    expect(row('hockey').textContent).toContain('Som Alla sporter')
+    expect(row('hockey').textContent).toContain('Standard')
+    expect(row('hockey').textContent).not.toContain('Som Alla sporter')
+    expect(row('other').textContent).toContain('Standard')
+    expect(row('other').textContent).not.toContain('Som Alla sporter')
     expect(thumb('football')).toBe('/sport-backgrounds/football.webp')
     expect(thumb('hockey')).toBe('/sport-backgrounds/hockey.webp')
   })
@@ -59,27 +64,30 @@ describe('Bakgrund i Sport, skrivbordskortet', () => {
     }
     expect(screen.getByTestId('sport-backdrop-opt-standard').textContent).toContain('Ishockey')
     fireEvent.click(screen.getByTestId('sport-backdrop-opt-image:tennis'))
-    expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: { hockey: 'image:tennis' } })
+    expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: { ...OWN, hockey: 'image:tennis' } })
     expect(screen.queryByTestId('sport-backdrop-chooser')).toBeNull()
     expect(thumb('hockey')).toBe('/sport-backgrounds/tennis.webp')
     expect(row('hockey').textContent).toContain('Bild: Tennis')
     fireEvent.click(row('hockey'))
     fireEvent.click(screen.getByTestId('sport-backdrop-opt-inherit'))
-    expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: {} })
+    expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: { ...OWN, hockey: 'inherit' } })
+    expect(row('hockey').textContent).toContain('Som Alla sporter')
   })
-  it('Alla sporter har inget "Som Alla sporter"; dess val ärvs av sporterna utan eget', () => {
+  it('Alla sporter har inget "Som Alla sporter"; dess val ärvs av sporterna som valt det', () => {
+    setSportSettings({ backdrops: { all: 'standard', sports: { other: 'inherit' } } })
     render(<SportBackdropSettingsDesktop />)
     fireEvent.click(row('all'))
     expect(screen.queryByTestId('sport-backdrop-opt-inherit')).toBeNull()
     fireEvent.click(screen.getByTestId('sport-backdrop-opt-image:motorsport'))
     expect(getSportSettings().backdrops.all).toBe('image:motorsport')
-    expect(thumb('football')).toBe('/sport-backgrounds/motorsport.webp')
+    expect(thumb('other')).toBe('/sport-backgrounds/motorsport.webp')
+    expect(thumb('football')).toBe('/sport-backgrounds/football.webp')
   })
   it('Egen bild: filväljaren laddar upp till sportens plats', async () => {
     render(<SportBackdropSettingsDesktop />)
     fireEvent.click(row('hockey'))
     fireEvent.click(screen.getByTestId('sport-backdrop-opt-custom'))
-    expect(getSportSettings().backdrops.sports).toEqual({ hockey: 'custom' })
+    expect(getSportSettings().backdrops.sports).toEqual({ ...OWN, hockey: 'custom' })
     const input = screen.getByTestId('sport-backdrop-file') as HTMLInputElement
     expect(input.getAttribute('accept')).toBe('image/jpeg,image/png,image/webp')
     const file = new File([new Uint8Array([1, 2, 3])], 'hall.jpg', { type: 'image/jpeg' })
@@ -90,9 +98,9 @@ describe('Bakgrund i Sport, skrivbordskortet', () => {
   it('kortens bakgrund: opacitet och färg', () => {
     render(<SportBackdropSettingsDesktop />)
     fireEvent.change(screen.getByTestId('sport-cards-opacity'), { target: { value: '40' } })
-    expect(getSportSettings().cards).toEqual({ opacity: 40, tone: 'black' })
-    fireEvent.click(screen.getByText('Ton från bilden'))
-    expect(getSportSettings().cards.tone).toBe('image')
+    expect(getSportSettings().cards).toEqual({ opacity: 40, tvOpacity: null, tone: 'image' })
+    fireEvent.click(screen.getByText('Svart'))
+    expect(getSportSettings().cards.tone).toBe('black')
     fireEvent.click(screen.getByText('Mörkgrå'))
     expect(getSportSettings().cards.tone).toBe('gray')
   })
@@ -108,7 +116,7 @@ describe('Bakgrund i Sport, TV-raderna', () => {
     const menu = screen.getByTestId('tv-glass-menu')
     expect(menu.textContent).toContain('Som Alla sporter')
     fireEvent.click(screen.getByText('Bild: Ishockey'))
-    expect(getSportSettings().backdrops.sports).toEqual({ football: 'image:hockey' })
+    expect(getSportSettings().backdrops.sports).toEqual({ ...OWN, football: 'image:hockey' })
     expect(screen.queryByTestId('tv-glass-menu')).toBeNull()
     expect(thumb('football')).toBe('/sport-backgrounds/hockey.webp')
   })
@@ -122,14 +130,42 @@ describe('Bakgrund i Sport, TV-raderna', () => {
     await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url === '/api/live-tv/sport/backdrop-handoff?slot=all')).toBe(true))
     expect(await screen.findByTestId('sport-backdrop-qr')).toBeTruthy()
   })
+  /* Jerry 2026-10-11: "50 på desktop, 85 på TV-mode". */
+  it('TV-läget visar och stegar TV:ns egen opacitet (standard 85 %), skrivbordets rörs inte', () => {
+    __setTvModeForTests(true)
+    render(<SportBackdropSettingsTv />)
+    expect(screen.getByTestId('sport-cards-opacity-row').textContent).toContain('85 %')
+    fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
+    expect(getSportSettings().cards).toMatchObject({ opacity: null, tvOpacity: 100 })
+  })
+  it('skrivbordets reglage visar 50 % utan eget val', () => {
+    __setTvModeForTests(false)
+    render(<SportBackdropSettingsDesktop />)
+    expect((screen.getByTestId('sport-cards-opacity') as HTMLInputElement).value).toBe('50')
+  })
   it('kortens opacitet och färg stegas', () => {
     render(<SportBackdropSettingsTv />)
+    fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
+    expect(getSportSettings().cards.opacity).toBe(70)
+    fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
     fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
     expect(getSportSettings().cards.opacity).toBe(100)
     fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
     expect(getSportSettings().cards.opacity).toBe(0)
     fireEvent.click(screen.getByTestId('sport-cards-tone-row'))
-    expect(getSportSettings().cards.tone).toBe('gray')
+    expect(getSportSettings().cards.tone).toBe('black')
+  })
+})
+
+describe('Bakgrund i Sport, luft och textstorlek', () => {
+  it('två sektioner med Live TV-inställningarnas luft emellan; hjälptexterna i beskrivningarnas storlek', () => {
+    render(<SportBackdropSettingsTv />)
+    const root = screen.getByTestId('sport-backdrop-settings-tv')
+    expect(root.style.gap).toBe('36px')
+    expect(screen.getByTestId('sport-backdrop-section').parentElement).toBe(root)
+    expect(screen.getByTestId('sport-cards-section').parentElement).toBe(root)
+    expect(screen.getByTestId('sport-backdrop-note').style.fontSize).toBe('18px')
+    expect(screen.getByText('Välj bakgrund per sport. Varje sport visar sin egen bild som standard, Övrigt följer Alla sporter.', { exact: false }).style.fontSize).toBe('18px')
   })
 })
 
@@ -139,7 +175,7 @@ describe('Bakgrund i Sport, telefonen', () => {
     fireEvent.click(row('tennis'))
     expect(screen.getByTestId('sport-backdrop-sheet')).toBeTruthy()
     fireEvent.click(screen.getByText('Av'))
-    expect(getSportSettings().backdrops.sports).toEqual({ tennis: 'off' })
+    expect(getSportSettings().backdrops.sports).toEqual({ ...OWN, tennis: 'off' })
     expect(thumb('tennis')).toBeNull()
   })
 })

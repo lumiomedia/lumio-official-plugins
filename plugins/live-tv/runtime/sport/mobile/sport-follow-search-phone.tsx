@@ -10,6 +10,7 @@ import { isFollowing, toggleFollow, useFollows, useSportSettings } from '../spor
 import type { TeamHit } from '../provider'
 import type { SportKind } from '../sport-model'
 import { PhoneCrest } from './sport-results-phone'
+import { MIcons } from '../../tv/mobile/mobile-icons'
 
 /**
  * Följer på telefon: fritext mot källan, som FollowPicker på TV (Task 15 punkt 5).
@@ -42,14 +43,14 @@ export function PhoneFollowSearch({ sport }: { sport: SportKind }) {
         <button type="submit" data-testid="phone-follow-search-go" disabled={busy || tooShort} style={{ height: MT.HIT, padding: '0 16px', borderRadius: 12, border: 'none', background: MT.acc, color: MT.onAcc, fontSize: 15, fontWeight: 600, fontFamily: MT.font, opacity: busy || tooShort ? 0.5 : 1 }}>{tt('sportSearchSubmit')}</button>
       </form>
       {hits?.map((hit) => {
-        const follow = { sport, kind: 'team' as const, key: foldTeamKey(hit.name), name: hit.name, providerIds: { [settings.provider]: hit.id } }
+        const follow = { sport, kind: 'team' as const, key: foldTeamKey(hit.name), name: hit.name, providerIds: { [hit.provider ?? settings.provider]: hit.id }, ...(hit.crest ? { crest: hit.crest } : {}) }
         const on = isFollowing(follows, follow)
         return (
           <div key={hit.id} data-testid={`phone-follow-hit-${hit.id}`} {...station(() => toggleFollow(follow))} style={{ minHeight: 48, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
             <PhoneCrest name={hit.name} src={hit.crest} size={26} />
             <span style={{ flex: 1, fontSize: 15, ...ellipsis }}>{hit.name}</span>
             {hit.country ? <span style={{ fontSize: 13, color: MT.muted, flexShrink: 0 }}>{hit.country}</span> : null}
-            <span style={{ color: on ? '#fbbf24' : MT.dim, flexShrink: 0 }}>{on ? '★' : '☆'}</span>
+            <span data-on={on ? '1' : '0'} style={{ color: on ? MT.acc : MT.dim, flexShrink: 0, display: 'inline-flex' }}><MIcons.Heart size={20} filled={on} /></span>
           </div>
         )
       })}

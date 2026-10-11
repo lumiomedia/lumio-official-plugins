@@ -29,10 +29,11 @@ export function heroStatusLine(m: SportMatch, tt: TT): string | null {
   return matchStatusLabel(m, tt)
 }
 
-export function crestForFollow(f: { key: string }, matches: SportMatch[]): string | null {
+/** Märket ur en match som bär det (alla inlästa dagar), annars det som sparades på posten. */
+export function crestForFollow(f: { key: string; crest?: string | null }, matches: SportMatch[]): string | null {
   for (const m of matches) {
     if (m.homeCrest && teamKeysMatch(f.key, m.homeKey)) return m.homeCrest
     if (m.awayCrest && teamKeysMatch(f.key, m.awayKey)) return m.awayCrest
   }
-  return null
+  return f.crest ?? null
 }

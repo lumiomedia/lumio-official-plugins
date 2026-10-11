@@ -69,8 +69,13 @@ export function rankedSources(m: SportMatch, overrides: SportOverrides): MatchSo
   return [chosen, ...m.sources.filter((s) => s.channelKey !== o.key)]
 }
 
+/** Hur intressant en match är: följda lag/ligor först, sedan fler källor. Samma mått som heron och hemradernas "Live nu". */
+export function matchInterest(m: SportMatch, follows: SportFollow[]): number {
+  return (followState(m, follows).any ? 1000 : 0) + m.sources.length
+}
+
 export function featuredMatch(matches: SportMatch[], follows: SportFollow[], now: number): SportMatch | null {
-  const score = (m: SportMatch) => (followState(m, follows).any ? 1000 : 0) + m.sources.length
+  const score = (m: SportMatch) => matchInterest(m, follows)
   const best = (list: SportMatch[]) => [...list].sort((a, b) => score(b) - score(a) || a.start - b.start)[0] ?? null
   const live = matches.filter((m) => statusAt(m, now) === 'live')
   const upcoming = matches.filter((m) => statusAt(m, now) === 'upcoming')
@@ -121,6 +126,24 @@ export function timelineRows(matches: SportMatch[]): TimelineRow[] {
   return [...rows.values()]
 }
 
+const MERGE_GAP_MS = 5 * MIN
+
+/** Angränsande block med samma titel (<= 5 min mellan) blir ett — F1-raden fylls annars av småbitar. */
+export function mergeLane(lane: SportMatch[]): SportMatch[] {
+  const out: SportMatch[] = []
+  for (const m of lane) {
+    const prev = out[out.length - 1]
+    if (prev && matchTitle(prev) === matchTitle(m) && m.start - prev.stop <= MERGE_GAP_MS) out[out.length - 1] = { ...prev, stop: Math.max(prev.stop, m.stop) }
+    else out.push(m)
+  }
+  return out
+}
+
+/** Under ~6 % av axeln finns inte plats för en läsbar titel — då visas bara färgstapeln. */
+export function blockShowsLabel(durationMs: number, axisSpanMs: number, minShare = 0.06): boolean {
+  return axisSpanMs > 0 && durationMs / axisSpanMs >= minShare
+}
+
 export function clashes(matches: SportMatch[], minutes = 100): Set<string> {
   const sorted = [...matches].sort((a, b) => a.start - b.start)
   const out = new Set<string>()
@@ -138,6 +161,8 @@ export interface FollowCandidate {
   kind: 'team' | 'league'
   key: string
   name: string
+  /** Lagets märke ur första match som bär det; ligor har ingen logga i matchmodellen. */
+  crest?: string
   count: number
 }
 
@@ -146,15 +171,17 @@ export function followCandidates(days: (SportDay | null)[]): FollowCandidate[] {
   const add = (c: Omit<FollowCandidate, 'count'>) => {
     const id = `${c.kind}:${c.key}`
     const hit = out.get(id)
-    if (hit) hit.count += 1
-    else out.set(id, { ...c, count: 1 })
+    if (hit) {
+      hit.count += 1
+      if (!hit.crest && c.crest) hit.crest = c.crest
+    } else out.set(id, { ...c, count: 1 })
   }
   for (const day of days) {
     for (const m of day?.matches ?? []) {
       if (m.rerun) continue
       if (m.leagueKey) add({ sport: m.kind, kind: 'league', key: m.leagueKey, name: m.league })
-      if (m.home && m.homeKey) add({ sport: m.kind, kind: 'team', key: m.homeKey, name: m.home })
-      if (m.away && m.awayKey) add({ sport: m.kind, kind: 'team', key: m.awayKey, name: m.away })
+      if (m.home && m.homeKey) add({ sport: m.kind, kind: 'team', key: m.homeKey, name: m.home, ...(m.homeCrest ? { crest: m.homeCrest } : {}) })
+      if (m.away && m.awayKey) add({ sport: m.kind, kind: 'team', key: m.awayKey, name: m.away, ...(m.awayCrest ? { crest: m.awayCrest } : {}) })
     }
   }
   return [...out.values()].sort((a, b) =>
@@ -205,4 +232,40 @@ export function leagueColor(key: string): string {
 
 export function crestColor(key: string): string {
   return `hsl(${hue(key)} 55% 42%)`
+}
+
+/**
+  Spelarens matchlåda, grupperad på tid som Guiden: "Pågår nu" (kanalens egen
+  match överst) och sedan en grupp per avsparkstid. Bara matcher med kanal —
+  de utan finns i Resultat. `start: null` = pågår nu.
+*/
+export function playerMatchGroups(matches: SportMatch[], currentKey: string, now: number): { start: number | null; matches: SportMatch[] }[] {
+  const withSource = matches.filter((m) => m.sources.length > 0)
+  const onHere = (m: SportMatch) => (m.sources.some((s) => s.channelKey === currentKey) ? 0 : 1)
+  const live = withSource.filter((m) => statusAt(m, now) === 'live').sort((a, b) => onHere(a) - onHere(b) || a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)))
+  const upcoming = withSource.filter((m) => statusAt(m, now) === 'upcoming').sort((a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)))
+  const groups: { start: number | null; matches: SportMatch[] }[] = live.length > 0 ? [{ start: null, matches: live }] : []
+  for (const m of upcoming) {
+    const last = groups[groups.length - 1]
+    if (last && last.start === m.start) last.matches.push(m)
+    else groups.push({ start: m.start, matches: [m] })
+  }
+  return groups
+}
+
+/**
+  Matchdagens remsa: EN tidsordnad rad i stället för sektionerna Live nu /
+  Senare / Avslutade. Det som startat (avslutat eller pågående) först, sedan
+  nu-markören (`nowIndex` = platsen före det första kommande) och det som
+  kommer. `focusIndex` är matchen remsan ska rullas fram till: första
+  pågående, annars första kommande.
+*/
+export function matchdayStrip(matches: SportMatch[], now: number): { items: SportMatch[]; nowIndex: number; focusIndex: number } {
+  const byStart = (a: SportMatch, b: SportMatch) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b))
+  const started = matches.filter((m) => statusAt(m, now) !== 'upcoming').sort(byStart)
+  const upcoming = matches.filter((m) => statusAt(m, now) === 'upcoming').sort(byStart)
+  const items = [...started, ...upcoming]
+  const firstLive = items.findIndex((m) => statusAt(m, now) === 'live')
+  const focusIndex = firstLive >= 0 ? firstLive : Math.min(started.length, Math.max(items.length - 1, 0))
+  return { items, nowIndex: started.length, focusIndex }
 }

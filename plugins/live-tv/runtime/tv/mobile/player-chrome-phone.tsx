@@ -12,7 +12,9 @@ import { MIcons } from './mobile-icons'
 import { MobileLogo } from './mobile-logo'
 import { MobileChannelRow } from './mobile-channel-row'
 import { MobileSheet } from './mobile-sheet'
-import { currentMatchSources } from '../../sport/tv/player-sport'
+import { currentMatchSources, matchesForPlayer } from '../../sport/tv/player-sport'
+import { PhoneMatchList } from '../../sport/mobile/player-matches-phone'
+import { pickMultiviewKeys } from '../../sport/sport-day-model'
 
 /**
  * Scenens låda i porträtt (handoffen §10: video överst, 16:9 + lite luft).
@@ -39,7 +41,7 @@ const noLayer = () => () => {}
 const SAFE_SIDE_L = 'max(60px, env(safe-area-inset-left, 0px))'
 const SAFE_SIDE_R = 'max(60px, env(safe-area-inset-right, 0px))'
 
-type Sheet = 'audio' | 'more' | 'sources' | null
+type Sheet = 'audio' | 'more' | 'sources' | 'matches' | null
 
 function Round({ size, label, onPress, background = 'rgba(0,0,0,0.55)', children }: { size: number; label: string; onPress: () => void; background?: string; children: ReactNode }) {
   return (
@@ -131,6 +133,9 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
   }, [sheet, tv.gateOpen, onClose])
 
   const closeSheet = useCallback(() => setSheet(null), [])
+  /** Matcher-arkets Multiview-markeringar (högst fyra), nollställs när arket stängs. */
+  const [picked, setPicked] = useState<string[]>([])
+  useEffect(() => { if (sheet !== 'matches') setPicked([]) }, [sheet])
 
   /**
    * Zap-listan: favoriterna först, sedan ett FÖNSTER runt den spelande
@@ -181,14 +186,35 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
         return { key: s.channelKey, label: `${on ? '✓ ' : ''}${[s.name, sport.playlistName(s.sourceId), s.quality].filter(Boolean).join(' · ')}`, run: () => { if (!on) sport.onSwitchSource(s) } }
       })
     : []
+  // Matcher: knappen bara när kanalen sänder en pågående match (som skrivbordets låda).
+  const sportHere = tv.sport ? matchesForPlayer(tv.sport.matches, currentKey, tv.nowMs).onChannel.length > 0 : false
+  const matchItems: TvGlassMenuAction[] = tv.sport && picked.length > 0
+    ? [{ key: 'open-multiview', label: tt('sportOpenMultiview', { n: picked.length }), run: () => {
+        const sport = tv.sport!
+        const chosen = sport.matches.filter((m) => picked.includes(m.id))
+        sport.onOpenMultiview(pickMultiviewKeys(chosen, sport.overrides, sport.isKnownChannel))
+      } }]
+    : []
+  const matchList = sheet === 'matches' && tv.sport ? (
+    <PhoneMatchList
+      sport={tv.sport}
+      currentKey={currentKey}
+      nowMs={tv.nowMs}
+      locale={tv.locale}
+      picked={picked}
+      onTogglePick={(m) => setPicked((prev) => (prev.includes(m.id) ? prev.filter((id) => id !== m.id) : prev.length >= 4 ? prev : [...prev, m.id]))}
+      onDone={closeSheet}
+    />
+  ) : null
   const sheetNode = sheet ? (
     <MobileSheet
-      title={sheet === 'audio' ? tt('audioSubs') : sheet === 'sources' ? tt('sportSourcesShort', { n: sourceItems.length }) : channel.name}
-      subtitle={info.now?.title}
-      items={sheet === 'audio' ? audioItems : sheet === 'sources' ? sourceItems : moreItems}
+      title={sheet === 'audio' ? tt('audioSubs') : sheet === 'sources' ? tt('sportSourcesShort', { n: sourceItems.length }) : sheet === 'matches' ? tt('sportMatches') : channel.name}
+      subtitle={sheet === 'matches' ? tt('sportMatchesHint') : info.now?.title}
+      list={matchList}
+      items={sheet === 'audio' ? audioItems : sheet === 'sources' ? sourceItems : sheet === 'matches' ? matchItems : moreItems}
       onClose={closeSheet}
       pushLayer={noLayer}
-      testId={sheet === 'audio' ? 'phone-audio-sheet' : sheet === 'sources' ? 'phone-sources-sheet' : 'phone-more-sheet'}
+      testId={sheet === 'audio' ? 'phone-audio-sheet' : sheet === 'sources' ? 'phone-sources-sheet' : sheet === 'matches' ? 'phone-matches-sheet' : 'phone-more-sheet'}
     />
   ) : null
   const sourcesLabel = matchSources ? tt('sportSourcesShort', { n: matchSources.sources.length }) : null
@@ -222,6 +248,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
                 {muteBtn(44)}
                 <Pill label={qualityLabel} disabled />
                 {sourcesLabel ? <Pill label={sourcesLabel} onPress={() => setSheet('sources')} testId="phone-sources" /> : null}
+                {sportHere ? <Pill label={tt('sportMatches')} onPress={() => setSheet('matches')} testId="phone-matches" /> : null}
                 <Pill label={tt('menuGuide')} onPress={tv.onOpenGuide} />
                 <Round size={44} label={tt('moreActions')} onPress={() => setSheet('more')} background={MT.s10}><MIcons.DotsThree size={22} /></Round>
               </div>
@@ -276,6 +303,7 @@ export function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePau
           <GridBtn label={tt('menuChannelDetails')} onPress={tv.onOpenChannelDetails} />
           <GridBtn label={tt('menuGuide')} onPress={tv.onOpenGuide} />
           {sourcesLabel ? <GridBtn label={sourcesLabel} onPress={() => setSheet('sources')} testId="phone-sources" /> : null}
+          {sportHere ? <GridBtn label={tt('sportMatches')} onPress={() => setSheet('matches')} testId="phone-matches" /> : null}
         </div>
         <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{tt('zapList')}</div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>

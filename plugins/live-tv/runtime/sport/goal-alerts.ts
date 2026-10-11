@@ -7,7 +7,11 @@ import type { TvStringKey } from '../tv/tv-strings'
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
 
 export function matchForGoal(e: GoalEvent, merged: SportMatch[]): SportMatch | null {
-  return merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId) ?? null
+  const direct = merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId)
+  if (direct || !e.aliases?.length) return direct ?? null
+  // Målet kom från en annan källa än den sammanslagna raden (källbyte mitt i matchen).
+  const keys = new Set(e.aliases)
+  return merged.find((m) => !!m.fixture && keys.has(`fx:${m.fixture.provider}:${m.fixture.id}`)) ?? null
 }
 
 export function goalAlertWanted(match: SportMatch | null, settings: SportSettings, follows: SportFollow[], now: number = Date.now()): boolean {
@@ -16,7 +20,7 @@ export function goalAlertWanted(match: SportMatch | null, settings: SportSetting
 }
 
 export function goalTitle(e: GoalEvent, tt: TT): string {
-  return `${tt('sportGoal')} ${e.home} ${e.score.home}–${e.score.away} ${e.away}`
+  return `${tt('sportGoal')} · ${e.home} ${e.score.home}–${e.score.away} ${e.away}`
 }
 
 export function goalBody(e: GoalEvent): string {

@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTvMode, type LibraryFrameProps } from '@/lib/plugin-sdk'
 import { TvRail, type RailKey } from './tv-rail'
+import { MobileCloseButton } from './mobile/mobile-header'
+import { MT } from './mobile/mobile-tokens'
+import { MobileSheet } from './mobile/mobile-sheet'
+import { useTvText } from './tv-strings'
 import { MobileTabBar } from './mobile/mobile-tab-bar'
 import { getActivePlaylistId, useTvSettings } from './tv-settings-store'
 import { useNarrowSurface } from '../hooks/useNarrowSurface'
@@ -20,8 +24,10 @@ const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
  * Aktiv källa läses ur lagringen precis som modellen gör, ett enda anrop, ingen polling.
  * Monteras bara på telefon.
  */
-function PhoneTabBar({ select, onInsetBottom }: { select: (key: RailKey | 'hub' | 'guide' | 'favs' | 'search' | 'library' | 'home') => void; onInsetBottom?: (px: number) => void }) {
+function PhoneTabBar({ select, onInsetBottom }: { select: (key: RailKey | 'hub' | 'guide' | 'sport' | 'search' | 'library' | 'home') => void; onInsetBottom?: (px: number) => void }) {
   const tvMode = useTvMode()
+  const { tt } = useTvText()
+  const [moreOpen, setMoreOpen] = useState(false)
   const [showLibrary, setShowLibrary] = useState(false)
   const wrapRef = useRef<HTMLDivElement | null>(null)
   /*
@@ -49,10 +55,23 @@ function PhoneTabBar({ select, onInsetBottom }: { select: (key: RailKey | 'hub' 
       .catch(() => {})
     return () => { cancelled = true }
   }, [tvMode])
-  // "Mer" går till Multiview-vyn: arket hör till Live TV-sidan.
+  // Samma Mer-ark som i Live TV; varje post går in i Live TV-sidan. Ramen har ingen Bakåt-kedja (pushLayer) att anmäla sig i.
   return (
     <div ref={wrapRef}>
-      <MobileTabBar view="hub" activeOverride="home" showLibrary={showLibrary} onGo={select} onMore={() => select('multi')} />
+      <MobileTabBar view="hub" activeOverride="home" showLibrary={showLibrary} onGo={select} onMore={() => setMoreOpen(true)} />
+      {moreOpen ? (
+        <MobileSheet
+          title={tt('moreActions')}
+          items={[
+            { key: 'favs', label: tt('sheetFavourites'), run: () => select('favs') },
+            { key: 'multi', label: tt('sheetMultiview'), run: () => select('multi') },
+            { key: 'settings', label: tt('sheetSettings'), run: () => select('settings') },
+          ]}
+          onClose={() => setMoreOpen(false)}
+          pushLayer={() => () => {}}
+          testId="more-sheet"
+        />
+      ) : null}
     </div>
   )
 }
@@ -70,7 +89,7 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onIn
   const isTv = platform === 'tv'
   const phone = platform === 'phone'
   const narrow = useNarrowSurface(rootRef) && !isTv
-  const select = (key: RailKey | 'hub' | 'guide' | 'favs' | 'search' | 'library' | 'home') => {
+  const select = (key: RailKey | 'hub' | 'guide' | 'sport' | 'search' | 'library' | 'home') => {
     if (key === 'back') { onExit(); return }
     if (key === 'home') return
     onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: { view: key } })
@@ -108,7 +127,15 @@ export function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onIn
   }, [phone, onExit])
 
   if (phone) {
-    return <PhoneTabBar select={select} onInsetBottom={onInsetBottom} />
+    // Samma X som på Kanaler, på samma plats (sidluft PAD, 6 px under systemradens inset = mitt i en 52 px hög rad).
+    return (
+      <>
+        <div data-testid="frame-exit" style={{ position: 'fixed', top: `calc(${MT.SAFE_TOP_GUARD} + 6px)`, left: MT.PAD, zIndex: 51 }}>
+          <MobileCloseButton onClose={onExit} />
+        </div>
+        <PhoneTabBar select={select} onInsetBottom={onInsetBottom} />
+      </>
+    )
   }
   return (
     <div ref={rootRef} style={{ height: '100%', display: 'flex', background: TV.bg, color: TV.text, fontFamily: TV.font }}>

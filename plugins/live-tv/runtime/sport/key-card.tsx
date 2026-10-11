@@ -7,11 +7,12 @@ import { useTvText, type TvStringKey } from '../tv/tv-strings'
 import { useTextPrompt } from '../tv/tv-text-entry'
 import { API_SPORTS_REGISTER_URL } from './api-sports'
 import { THESPORTSDB_PRICING_URL } from './thesportsdb'
-import { providerFor } from './providers'
+import { SPORTAPI_REGISTER_URL } from './sportapi'
+import { PROVIDER_IDS, PROVIDER_LABEL, providerFor } from './providers'
 import { saveValidatedKey, type KeyFlowResult } from './key-flow'
 import { useKeyHandoff } from './key-handoff'
-import { currentBudget } from './budget'
-import { setSportSettings, useSportSettings, type SportSettings } from './sport-store'
+import { currentRouter } from './router'
+import { useSportSettings } from './sport-store'
 import type { ProviderId } from './provider'
 import type { SportKind } from './sport-model'
 import { sportBg } from './surface'
@@ -22,28 +23,43 @@ const SPORT_NAMES: Array<[SportKind, TvStringKey]> = [
 
 type Phase = { kind: 'idle' } | { kind: 'checking' } | { kind: 'done'; result: KeyFlowResult }
 
-export function KeyCard({ variant, onDone, pushLayer }: { variant: 'banner' | 'tab' | 'settings'; onDone?: () => void; pushLayer?: (close: () => void) => () => void }) {
+const SIGNUP: Record<ProviderId, string> = { sportapi: SPORTAPI_REGISTER_URL, 'api-sports': API_SPORTS_REGISTER_URL, thesportsdb: THESPORTSDB_PRICING_URL }
+
+/**
+ * Nyckelkortet. Utan `provider` väljer användaren källa (start: första källan
+ * utan nyckel, sportapi.ai först). Med `provider` gäller kortet bara den källan
+ * (Nycklar: Lägg till / Byt nyckel). En nyckel för en källa som redan har en
+ * ERSÄTTER den — en nyckel per källa.
+ */
+export function KeyCard({ variant, onDone, pushLayer, provider: fixed, current, onRemove }: {
+  variant: 'banner' | 'tab' | 'settings'; onDone?: () => void; pushLayer?: (close: () => void) => () => void; provider?: ProviderId
+  /** Inställningarnas redigerare: källans nuvarande nyckel (maskad) och dagens kvot per sport. */
+  current?: { masked: string; detail?: string | null }
+  /** Ta bort nyckeln — bor här, där nyckeln skrivs in (inga separata Ta bort-rader). */
+  onRemove?: () => void
+}) {
   const { tt } = useTvText()
   const tv = useTvMode()
   const settings = useSportSettings()
-  const [provider, setProvider] = useState<ProviderId>(settings.provider)
+  const [chosen, setProvider] = useState<ProviderId>(() => PROVIDER_IDS.find((id) => !settings.keys[id]) ?? 'sportapi')
+  const provider = fixed ?? chosen
   const [draft, setDraft] = useState('')
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
   const [phoneEntry, setPhoneEntry] = useState(false)
   const prompt = useTextPrompt({ pushLayer })
-  const broken = !!settings.apiKey && !!currentBudget()?.isInvalid()
+  const broken = !!settings.keys[provider] && !!currentRouter()?.budget(provider)?.isInvalid()
 
   const submit = async (raw: string) => {
     setPhase({ kind: 'checking' })
     const result = await saveValidatedKey(provider, raw)
     setPhase({ kind: 'done', result })
-    if (result.ok) setPhoneEntry(false)
+    if (result.ok) { setPhoneEntry(false); onDone?.() }
   }
   const handoff = useKeyHandoff(tv && phoneEntry, (key) => void submit(key))
 
   const covered = SPORT_NAMES.filter(([s]) => providerFor(provider).coverage(s) === 'full').map(([, k]) => tt(k))
   const sportsText = covered.length > 1 ? `${covered.slice(0, -1).join(', ')} ${tt('sportListAnd')} ${covered[covered.length - 1]}` : covered.join('')
-  const signupUrl = provider === 'api-sports' ? API_SPORTS_REGISTER_URL : THESPORTSDB_PRICING_URL
+  const signupUrl = SIGNUP[provider]
 
   const message = (() => {
     if (phase.kind === 'checking') return tt('sportKeyChecking')
@@ -56,21 +72,30 @@ export function KeyCard({ variant, onDone, pushLayer }: { variant: 'banner' | 't
     return r.reason === 'network' ? tt('sportKeyNetwork') : r.reason === 'rejected' ? tt('sportKeyRejected') : null
   })()
 
-  const btn = (label: string, onOk: () => void, primary = false, testId?: string) => (
-    <div data-testid={testId} {...station(onOk)} style={{ minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: 'inline-flex', alignItems: 'center', fontSize: dp(17), fontWeight: 600, cursor: 'pointer', background: primary ? TV.text : TV.s12, color: primary ? '#0e0f13' : TV.text }}>{label}</div>
+  const btn = (label: string, onOk: () => void, primary = false, testId?: string, danger = false) => (
+    <div data-testid={testId} {...station(onOk)} style={{ minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: 'inline-flex', alignItems: 'center', fontSize: dp(17), fontWeight: 600, cursor: 'pointer', background: primary ? TV.text : danger ? 'rgba(224,119,106,0.16)' : TV.s12, color: primary ? '#0e0f13' : danger ? '#e0776a' : TV.text }}>{label}</div>
   )
+  const removeBtn = fixed && current && onRemove ? btn(tt('sportKeyRemove'), onRemove, false, 'sport-key-remove', true) : null
 
   return (
     <section data-testid={`sport-key-card-${variant}`} style={{ borderRadius: dp(16), background: sportBg(TV.s06), border: `1px solid ${TV.lineCard}`, padding: dp(24), display: 'flex', gap: dp(24), flexWrap: 'wrap' }}>
       <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(12) }}>
-        <div style={{ fontSize: dp(24), fontWeight: 600 }}>{broken ? tt('sportKeyBroken') : tt('sportKeyTitle')}</div>
-        <Segment options={[{ key: 'api-sports' as ProviderId, label: 'API-Sports' }, { key: 'thesportsdb' as ProviderId, label: 'TheSportsDB' }]} value={provider} onChange={(k) => { setProvider(k); setPhase({ kind: 'idle' }) }} />
-        <div style={{ fontSize: dp(16), color: TV.muted }}>{tt('sportKeyChoice')}</div>
-        <div style={{ fontSize: dp(16), color: TV.muted }}>{tt('sportKeyCovers', { sports: sportsText })}</div>
+        <div style={{ fontSize: dp(24), fontWeight: 600 }}>{broken ? tt('sportKeyBroken') : fixed ? `${PROVIDER_LABEL[fixed]} · ${tt(settings.keys[fixed] ? 'sportKeyChange' : 'sportKeyAdd')}` : tt('sportKeyTitle')}</div>
+        {fixed ? null : <Segment size={tv ? 'lg' : 'md'} options={PROVIDER_IDS.map((id) => ({ key: id, label: PROVIDER_LABEL[id] }))} value={provider} onChange={(k) => { setProvider(k); setPhase({ kind: 'idle' }) }} />}
+        {fixed ? null : <div style={{ fontSize: dp(18), color: TV.muted }}>{tt('sportKeyChoice')}</div>}
+        {fixed && current ? (
+          <div data-testid="sport-key-current" style={{ display: 'flex', flexDirection: 'column', gap: dp(6) }}>
+            <div style={{ fontSize: dp(16), color: TV.text }}>{tt('sportKeyCurrent', { key: current.masked })}</div>
+            {current.detail ? <div style={{ fontSize: dp(16), color: TV.muted, fontVariantNumeric: 'tabular-nums' }}>{current.detail}</div> : null}
+          </div>
+        ) : null}
+        {provider === 'sportapi' ? <div data-testid="sport-key-sportapi-free" style={{ fontSize: dp(18), color: TV.text }}>{tt('sportKeySportApiFree')}</div> : null}
+        <div style={{ fontSize: dp(18), color: TV.muted }}>{tt('sportKeyCovers', { sports: sportsText })}</div>
         {tv ? (
           <div style={{ display: 'flex', gap: dp(12), flexWrap: 'wrap' }}>
             {btn(tt('sportKeyPhone'), () => { setPhoneEntry(true); handoff.restart() }, true)}
             {prompt.available ? btn(tt('sportKeyKeyboard'), () => prompt.ask(tt('sportKeyPaste'), '', (v) => void submit(v), 'password')) : null}
+            {removeBtn}
           </div>
         ) : (
           <div style={{ display: 'flex', gap: dp(10), flexWrap: 'wrap', alignItems: 'center' }}>
@@ -80,18 +105,19 @@ export function KeyCard({ variant, onDone, pushLayer }: { variant: 'banner' | 't
             {btn(tt('sportKeySave'), () => void submit(draft), true)}
           </div>
         )}
+        {!tv && removeBtn ? <div style={{ display: 'flex' }}>{removeBtn}</div> : null}
         {prompt.node}
         {message ? <div role="status" style={{ fontSize: dp(16), color: phase.kind === 'done' && phase.result.ok ? '#3cd6a3' : TV.text }}>{message}</div> : null}
       </div>
       <div style={{ display: 'flex', gap: dp(20), alignItems: 'flex-start' }}>
         <figure style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: dp(8), alignItems: 'center' }}>
           <div style={{ background: '#fff', padding: dp(8), borderRadius: dp(8) }}><QRCodeSVG value={signupUrl} size={dp(132)} /></div>
-          {tv ? <figcaption style={{ fontSize: dp(14), color: TV.dim }}>{tt('sportKeyGetKey')}</figcaption> : <a href={signupUrl} target="_blank" rel="noreferrer" style={{ fontSize: dp(14), color: TV.dim }}>{tt('sportKeyGetKey')}</a>}
+          {tv ? <figcaption style={{ fontSize: dp(17), color: TV.muted }}>{tt('sportKeyGetKey')}</figcaption> : <a href={signupUrl} target="_blank" rel="noreferrer" style={{ fontSize: dp(14), color: TV.dim }}>{tt('sportKeyGetKey')}</a>}
         </figure>
         {tv && phoneEntry ? (
           <figure style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: dp(8), alignItems: 'center', maxWidth: dp(180) }}>
             {handoff.url ? <div style={{ background: '#fff', padding: dp(8), borderRadius: dp(8) }}><QRCodeSVG value={handoff.url} size={dp(132)} /></div> : null}
-            <figcaption style={{ fontSize: dp(14), color: TV.dim, textAlign: 'center' }}>{handoff.expired ? tt('sportKeyExpired') : tt('sportKeyPhoneHint')}</figcaption>
+            <figcaption style={{ fontSize: dp(17), color: TV.muted, textAlign: 'center' }}>{handoff.expired ? tt('sportKeyExpired') : tt('sportKeyPhoneHint')}</figcaption>
             {handoff.expired ? btn(tt('sportKeyRetry'), handoff.restart) : null}
           </figure>
         ) : null}

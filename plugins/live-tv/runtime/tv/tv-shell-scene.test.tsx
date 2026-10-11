@@ -58,8 +58,9 @@ describe('Live TV-skalet utanför TV-läget', () => {
       registerBrowsePage: (page: Record<string, unknown>) => { pages.push(page) },
     }
     LiveTvPlugin.register(ctx as never)
-    expect(pages).toHaveLength(1)
-    expect(pages[0].tvSceneBox).toBe(true)
+    // Live TV och Sport som egen sida — båda i scenlådan.
+    expect(pages.map((p) => p.id)).toEqual(['live-tv-browse', 'live-tv-sport'])
+    expect(pages.every((p) => p.tvSceneBox === true)).toBe(true)
   })
 
   it('saknad scenlåda ritar ändå skalet', () => {

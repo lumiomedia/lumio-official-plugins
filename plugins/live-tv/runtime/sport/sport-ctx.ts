@@ -139,20 +139,33 @@ export function sourceChip(m: SportMatch, ctx: SportCtx): string {
   return first.quality ? `${ctx.tt('sportSourcesShort', { n: ranked.length })} · ${first.quality}` : ctx.tt('sportSourcesShort', { n: ranked.length })
 }
 
+/** Rubrikraden: det som pågår först ("4 pågår nu · 10 matcher idag"), bara antalet när inget pågår. */
+export function summaryLine(tt: SportCtx['tt'], day: string, count: number, live: number): string {
+  const dayWord = day.toLocaleLowerCase()
+  return live > 0 ? tt('sportSummary', { live, count, day: dayWord }) : tt('sportSummaryQuiet', { count, day: dayWord })
+}
+
 export function alertLabel(ctx: SportCtx): string {
   return ctx.settings.alert === 'off' ? ctx.tt('sportAlertOff') : ctx.settings.alert === '15' ? ctx.tt('sportAlert15') : ctx.tt('sportAlertKickoff')
 }
 
-/** Följkortets rad: "Idag 19:50 · mot AIK" / "LIVE nu · AIK - Hammarby" / "Ingen match i tablån". */
-export function followNextLine(ctx: SportCtx, follow: SportFollow, next: SportMatch | null): string {
-  if (!next) return ctx.tt('sportNoUpcoming')
+/** Favoritradens nästa match i två delar: när ("Idag 19:50" / "LIVE nu") och vad ("mot AIK" / matchtiteln). */
+export function followNext(ctx: SportCtx, follow: SportFollow, next: SportMatch | null): { when: string; what: string; live: boolean } | null {
+  if (!next) return null
   const time = formatClock(next.start, ctx.locale)
-  const when = statusAt(next, ctx.now) === 'live'
+  const live = statusAt(next, ctx.now) === 'live'
+  const when = live
     ? ctx.tt('sportLiveNowShort')
     : localDayKey(next.start) === localDayKey(ctx.now)
       ? ctx.tt('sportTodayAt', { time })
       : ctx.tt('sportTomorrowAt', { time })
-  if (follow.kind === 'league' || !next.home || !next.away) return `${when} · ${matchTitle(next)}`
+  if (follow.kind === 'league' || !next.home || !next.away) return { when, what: matchTitle(next), live }
   const opponent = teamKeysMatch(follow.key, next.homeKey) ? next.away : next.home
-  return `${when} · ${ctx.tt('sportVs', { opponent })}`
+  return { when, what: ctx.tt('sportVs', { opponent }), live }
+}
+
+/** Samma sak på en rad: "Idag 19:50 · mot AIK" / "LIVE nu · AIK - Hammarby" / "Ingen match i tablån". */
+export function followNextLine(ctx: SportCtx, follow: SportFollow, next: SportMatch | null): string {
+  const n = followNext(ctx, follow, next)
+  return n ? `${n.when} · ${n.what}` : ctx.tt('sportNoUpcoming')
 }

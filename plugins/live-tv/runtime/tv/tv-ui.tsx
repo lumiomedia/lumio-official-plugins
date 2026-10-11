@@ -414,15 +414,21 @@ export function Chip({ active, children, style, glass = false, ...rest }: { acti
  * ännu smalare yta — skrivbordets sceruta och telefonen — så att växeln inte
  * kan svämma ut ur sin rad. Vid 1920 ändras ingenting: raden hade redan plats.
  */
-export function Segment<K extends string>({ options, value, onChange, style }: { options: { key: K; label: string }[]; value: K; onChange: (key: K) => void; style?: CSSProperties }) {
+/**
+ * `size: 'lg'` — TV-storlek i nivå med Sports filterchips (Jerry 2026-10-11:
+ * "dom behövs nog vara lite större i TV-mode"). `optionAttrs` ger enskilda
+ * poster uttalade grannar (`data-f-left` m.fl.) där geometrin landar fel.
+ */
+export function Segment<K extends string>({ options, value, onChange, style, size = 'md', optionAttrs }: { options: { key: K; label: string }[]; value: K; onChange: (key: K) => void; style?: CSSProperties; size?: 'md' | 'lg'; optionAttrs?: (index: number) => Record<string, string> | undefined }) {
+  const h = size === 'lg' ? dp(46) : dp(38)
   return (
     <div data-testid="tv-segment" style={{ display: 'inline-flex', padding: dp(4), borderRadius: 999, background: TV.s08, gap: dp(2), flexShrink: 0, whiteSpace: 'nowrap', maxWidth: '100%', ...style }}>
-      {options.map((option) => (
+      {options.map((option, index) => (
         <div
           key={option.key}
           data-testid="tv-segment-option"
-          {...station(() => onChange(option.key))}
-          style={{ height: dp(38), minHeight: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: dp(16), whiteSpace: 'nowrap', cursor: 'pointer', background: option.key === value ? TV.s16 : 'transparent', color: option.key === value ? TV.text : TV.muted }}
+          {...station(() => onChange(option.key), undefined, optionAttrs?.(index))}
+          style={{ height: h, minHeight: h, padding: `0 ${size === 'lg' ? dp(20) : dp(18)}px`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', fontSize: size === 'lg' ? dp(18) : dp(16), fontWeight: size === 'lg' ? 600 : undefined, whiteSpace: 'nowrap', cursor: 'pointer', background: option.key === value ? TV.s16 : 'transparent', color: option.key === value ? TV.text : TV.muted }}
         >
           {option.label}
         </div>

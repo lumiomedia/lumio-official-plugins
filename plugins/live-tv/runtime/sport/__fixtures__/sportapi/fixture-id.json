@@ -1,0 +1,20 @@
+{
+  "_shape": "recorded from sportapi.ai/docs examples 2026-10-11 — verify with real key",
+  "success": true,
+  "fixture": {
+    "id": 13596176, "home_id": 311, "away_id": 352, "date": "2026-10-10", "datetime": "2026-10-10 13:30:00",
+    "kickoff_utc": "2026-10-10T11:30:00Z", "home_score": 2, "away_score": 1, "ht_home": 1, "ht_away": 0,
+    "status": "FT", "minute": null, "stage": "", "league_id": 24, "league_name": "Premier League", "league_zone": "England",
+    "home_team": "Arsenal", "home_logo": "espn-359.png", "away_team": "Leeds United", "away_logo": "espn-357.png",
+    "home_stadium": "Emirates Stadium", "home_city": "London", "home_coach": "Mikel Arteta", "home_founded": 1886,
+    "away_stadium": "Elland Road", "away_city": "Leeds", "away_coach": "Daniel Farke", "away_founded": 1919,
+    "penalty_home": null, "penalty_away": null, "winner": "home"
+  },
+  "events": [
+    { "id": 19194401, "event_type": "goal", "team_side": "home", "player_name": "B. Saka", "player_urn": "urn:bbc:sportsdata:football:player:a", "minute": "23'", "extra_info": "Goal" },
+    { "id": 19194450, "event_type": "yellow_card", "team_side": "away", "player_name": "E. Ampadu", "player_urn": "urn:bbc:sportsdata:football:player:b", "minute": "41'", "extra_info": "Yellow Card" },
+    { "id": 19194470, "event_type": "goal", "team_side": "away", "player_name": "J. Justin", "player_urn": "urn:bbc:sportsdata:football:player:s-6icypdqtfk2k81ax0i49j5xpl", "minute": "55'", "extra_info": "Goal" },
+    { "id": 19194480, "event_type": "substitution", "team_side": "home", "player_name": "P. Hincapié", "player_urn": "urn:bbc:sportsdata:football:player:c", "minute": "82'", "extra_info": "Substitution" },
+    { "id": 19194490, "event_type": "goal", "team_side": "home", "player_name": "V. Gyökeres", "player_urn": "urn:bbc:sportsdata:football:player:d", "minute": "90+3'", "extra_info": "Penalty" }
+  ]
+}

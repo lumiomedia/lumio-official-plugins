@@ -15,7 +15,7 @@ const done = fxMatch({ id: 'done', home: 'Örgryte', away: 'GAIS', start: now - 
 const all = [done, live, next1, next2, next3, next4]
 
 describe('Matchdag', () => {
-  it('hero: pågående match, LIVE-fönster utan ställning, Titta och Matchcenter', () => {
+  it('hero: pågående match, LIVE-fönster utan ställning, Titta och Matchinfo', () => {
     const ctx = fakeCtx({ now })
     render(<SportMatchday ctx={ctx} matches={all} dayFrom={dayFrom} />)
     const hero = screen.getByTestId('sport-hero')
@@ -23,7 +23,7 @@ describe('Matchdag', () => {
     expect(hero).toHaveTextContent('Paris SG')
     expect(hero).toHaveTextContent(/LIVE · \d\d:\d\d–\d\d:\d\d/)
     expect(hero).toHaveTextContent('Champions League · Estadi Olímpic')
-    expect(hero).toHaveTextContent('3 sources in your playlists')
+    expect(hero).toHaveTextContent('On 3 channels')
     expect(hero.querySelector('[data-score]')).toBeNull()
     fireEvent.click(screen.getByTestId('sport-hero-watch'))
     expect(ctx.watch).toHaveBeenCalledWith(live)
@@ -50,10 +50,36 @@ describe('Matchdag', () => {
     fireEvent.click(screen.getByTestId('sport-block-n3'))
     expect(ctx.openMatch).toHaveBeenCalledWith(next3)
   })
-  it('sektionerna Live nu / Senare / Avslutade', () => {
+  it('en tidsordnad rad med nu-markör i stället för Live nu / Senare / Avslutade', () => {
     render(<SportMatchday ctx={fakeCtx({ now })} matches={all} dayFrom={dayFrom} />)
-    expect(within(screen.getByTestId('sport-section-live')).getAllByTestId('sport-card')).toHaveLength(1)
-    expect(within(screen.getByTestId('sport-section-later')).getAllByTestId('sport-card')).toHaveLength(4)
-    expect(within(screen.getByTestId('sport-section-finished')).getByTestId('sport-card')).toHaveTextContent('ENDED')
+    expect(screen.queryByTestId('sport-section-live')).toBeNull()
+    const strip = screen.getByTestId('sport-strip')
+    const row = strip.querySelector('[data-row]')!
+    const order = Array.from(row.children).map((c) => c.getAttribute('data-match-id') ?? c.getAttribute('data-testid'))
+    expect(order).toEqual(['done', 'live', 'sport-strip-now', 'n1', 'n2', 'n3', 'n4'])
+    expect(within(strip).getByTestId('sport-strip-now')).toHaveTextContent('Now 19:15')
+    expect(within(strip).getAllByTestId('sport-card')[0]).toHaveTextContent('ENDED')
+  })
+  it('TV: höger/vänster stannar i samma rad, upp/ner byter rad (uttalade grannar, inget hopp vid radens slut)', () => {
+    const lane = (id: string, from: number) => fxMatch({ id, home: id, away: 'X' + id, league: 'Allsvenskan', leagueKey: 'allsvenskan', start: now + from * HOUR, stop: now + (from + 1) * HOUR })
+    const other = fxMatch({ id: 'other', home: 'Real', away: 'Inter', league: 'Premier League', leagueKey: 'premier-league', start: now + 8 * HOUR, stop: now + 9 * HOUR })
+    render(<SportMatchday ctx={fakeCtx({ now })} matches={[lane('a1', 1), lane('a2', 3), lane('a3', 5), other]} dayFrom={dayFrom} />)
+    const [a1, a2, a3] = ['a1', 'a2', 'a3'].map((id) => screen.getByTestId(`sport-block-${id}`))
+    expect(document.querySelector(a1!.getAttribute('data-f-right')!)).toBe(a2)
+    expect(document.querySelector(a2!.getAttribute('data-f-right')!)).toBe(a3)
+    expect(document.querySelector(a2!.getAttribute('data-f-left')!)).toBe(a1)
+    expect(document.querySelector(a3!.getAttribute('data-f-left')!)).toBe(a2)
+    expect(a1!.getAttribute('data-f-left')).toBeNull()
+    expect(a3!.getAttribute('data-f-right')).toBeNull()
+    // Motorn lyssnar på window: radens ändar äter trycket så fokus står kvar.
+    const seen: string[] = []
+    const spy = (e: KeyboardEvent) => seen.push(e.key)
+    window.addEventListener('keydown', spy)
+    fireEvent.keyDown(a3!, { key: 'ArrowRight' })
+    fireEvent.keyDown(a1!, { key: 'ArrowLeft' })
+    fireEvent.keyDown(a3!, { key: 'ArrowDown' })
+    fireEvent.keyDown(a2!, { key: 'ArrowRight' })
+    window.removeEventListener('keydown', spy)
+    expect(seen).toEqual(['ArrowDown', 'ArrowRight'])
   })
 })

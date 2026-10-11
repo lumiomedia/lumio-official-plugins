@@ -2,7 +2,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import type { Budget } from './budget'
+import type { BudgetResult } from './budget'
 import type { Fixture, LiveOpts } from './provider'
 import type { SportKind } from './sport-model'
 
@@ -50,8 +50,15 @@ export function __resetPollDemandForTests(): void {
 
 export interface LiveTarget { sport: SportKind; hot: boolean; windowEndsAt: number }
 
+/** Det pollern behöver av routern: takt och spärr PER SPORT (källan sporten använder just nu) och anropet. */
+export interface LiveSource {
+  live(sport: SportKind, opts: LiveOpts): Promise<BudgetResult<Fixture[]>>
+  liveIntervalMs(sport: SportKind, windowEndsAt: number): number | null
+  pausedUntil?(sport: SportKind): number | null
+}
+
 export interface LivePollerDeps {
-  budget: Budget
+  budget: LiveSource
   targets(): LiveTarget[]
   onFixtures(sport: SportKind, fixtures: Fixture[], fetchedAt: number | null): void
   liveOpts(): LiveOpts
@@ -89,7 +96,7 @@ export function createLivePoller(deps: LivePollerDeps): LivePoller {
     const out: Array<{ sport: SportKind; at: number }> = []
     for (const t of deps.targets()) {
       if (!t.hot) { due.delete(t.sport); continue }
-      const interval = deps.budget.liveIntervalMs(deps.budget.provider.bucket(t.sport), t.windowEndsAt)
+      const interval = deps.budget.liveIntervalMs(t.sport, t.windowEndsAt)
       if (interval == null) { due.delete(t.sport); continue }
       if (!due.has(t.sport)) due.set(t.sport, now() + interval)
       out.push({ sport: t.sport, at: due.get(t.sport)! })
@@ -107,7 +114,7 @@ export function createLivePoller(deps: LivePollerDeps): LivePoller {
   function pauseEndsAt(): number | null {
     const ends = deps.targets()
       .filter((t) => t.hot)
-      .map((t) => deps.budget.pausedUntil?.(deps.budget.provider.bucket(t.sport)) ?? null)
+      .map((t) => deps.budget.pausedUntil?.(t.sport) ?? null)
       .filter((x): x is number => x != null)
     return ends.length ? Math.min(...ends) : null
   }

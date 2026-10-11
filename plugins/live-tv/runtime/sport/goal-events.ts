@@ -5,6 +5,8 @@ export interface Score { home: number; away: number }
 export interface GoalEvent {
   fixtureId: string; provider: ProviderId; sport: SportKind; side: 'home' | 'away'; score: Score
   scorer: string | null; minute: number | null; at: number; home: string; away: string
+  /** Matchens id hos alla källor som sett den (`fx:källa:id`). Sätts av resultatlagret; ett källbyte ändrar inte vilken match målet gäller. */
+  aliases?: string[]
 }
 
 /**
@@ -12,11 +14,12 @@ export interface GoalEvent {
  * fixtur. Första observationen ger aldrig mål (appen öppnas mitt i en
  * match). En ställning som går ned (VAR) ger inget.
  */
-export function diffGoals(prev: ReadonlyMap<string, Score>, next: Fixture[], now: number): GoalEvent[] {
+export function diffGoals(prev: ReadonlyMap<string, Score>, next: Fixture[], now: number, keyOf: (f: Fixture) => string = (f) => f.id): GoalEvent[] {
   const out: GoalEvent[] = []
   for (const f of next) {
     if (!f.score) continue
-    const before = prev.get(f.id)
+    // Jämförelsen gäller STÄLLNINGEN under matchens nyckel, inte källans id: ett källbyte är inget mål.
+    const before = prev.get(keyOf(f))
     if (!before) continue
     for (const side of ['home', 'away'] as const) {
       if (f.score[side] <= before[side]) continue

@@ -1,11 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Budget } from './budget'
+import { SportRouter } from './router'
 import { ResultsController } from './results-controller'
+import { sportApi } from './sportapi'
 import { onGoal } from './goal-events'
 import { apiSports } from './api-sports'
 import { fxMatch } from './__sport-fixture'
 import footballDate from './__fixtures__/api-sports/football-fixtures-date.json'
 import type { SportFetchResponse, SportQuota } from './sport-fetch'
+import type { BudgetDeps } from './budget'
+import type { Fixture } from './provider'
+
+const API_SPORTS = { 'api-sports': { key: 'k123', plan: 'Free' } }
+const routerFor = (deps: BudgetDeps, keys: Record<string, { key: string; plan: string | null }> = API_SPORTS) => new SportRouter(keys, {}, deps)
 
 const NOW = Date.UTC(2026, 9, 10, 18) // 20:00 i Stockholm
 const quota: SportQuota = { bucket: 'football', limit: 100, remaining: 80, minuteLimit: 10, minuteRemaining: 9, blockedUntil: null, reason: null, plan: 'Free' }
@@ -16,10 +22,11 @@ function controller(respond: (path: string) => Partial<SportFetchResponse>) {
     if (mode !== 'cache-only') paths.push(req.path)
     return { data: null, cached: false, fresh: true, fetchedAt: NOW, quota, error: null, ...respond(req.path) } as SportFetchResponse
   })
-  const budget = new Budget(apiSports, 'k123', { fetch: fetch as never, now: () => NOW, sleep: async () => {} })
+  const router = routerFor({ fetch: fetch as never, now: () => NOW, sleep: async () => {} })
+  const budget = router.budget('api-sports')!
   budget.noteQuota(quota)
   budget.noteQuota({ ...quota, bucket: 'hockey' })
-  return { c: new ResultsController(budget, { tz: 'Europe/Stockholm', now: () => NOW, startPoller: false }), paths }
+  return { c: new ResultsController(router, { tz: 'Europe/Stockholm', now: () => NOW, startPoller: false }), paths, budget }
 }
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(NOW) })
@@ -27,14 +34,14 @@ afterEach(() => { vi.useRealTimers() })
 
 describe('ResultsController', () => {
   it('dygnsplanen: idag först, igår/imorgon en gång, och planerat räknas ned per hink', async () => {
-    const { c, paths } = controller(() => ({ data: { response: [] } }))
+    const { c, paths, budget } = controller(() => ({ data: { response: [] } }))
     await c.runPlan({ sports: ['football', 'tennis'], leagues: [] })
     expect(paths).toEqual([
       '/fixtures?date=2026-10-10&timezone=Europe%2FStockholm',
       '/fixtures?date=2026-10-09&timezone=Europe%2FStockholm',
       '/fixtures?date=2026-10-11&timezone=Europe%2FStockholm',
     ])
-    expect(c.budget.plannedFor('football')).toBe(0)
+    expect(budget.plannedFor('football')).toBe(0)
     await c.runPlan({ sports: ['football'], leagues: [] })
     expect(paths.length).toBe(4) // bara idag igen
   })
@@ -60,9 +67,9 @@ describe('ResultsController', () => {
     const older = JSON.parse(JSON.stringify(footballDate)) as typeof footballDate
     older.response[0].goals = { home: 2, away: 0 } // före 2–1
     const fetch = vi.fn(async () => ({ data: older, cached: true, fresh: true, fetchedAt: NOW - 10 * 60_000, quota, error: null }) as SportFetchResponse)
-    const budget = new Budget(apiSports, 'k123', { fetch: fetch as never, now: () => now, sleep: async () => {} })
-    budget.noteQuota(quota)
-    const c = new ResultsController(budget, { tz: 'Europe/Stockholm', now: () => now, startPoller: false })
+    const router = routerFor({ fetch: fetch as never, now: () => now, sleep: async () => {} })
+    router.budget('api-sports')!.noteQuota(quota)
+    const c = new ResultsController(router, { tz: 'Europe/Stockholm', now: () => now, startPoller: false })
     const fresh = apiSports.day('football', '2026-10-10', { today: '2026-10-10', tz: 'Europe/Stockholm', dayEndMs: NOW + 6 * 3_600_000 }).parse([footballDate])
     const goals = vi.fn()
     const off = onGoal(goals)
@@ -89,13 +96,13 @@ describe('ResultsController', () => {
   })
 
   it('status: takt och kvar i dag, paus vid spärr', async () => {
-    const { c } = controller(() => ({ data: footballDate }))
+    const { c, budget } = controller(() => ({ data: footballDate }))
     await c.runPlan({ sports: ['football'], leagues: [] })
     const [live] = c.fixtures('football', '2026-10-10')
     c.setMerged([fxMatch({ id: 'm1', kind: 'football', start: live.kickoff, stop: live.kickoff + 7_200_000, fixture: { provider: 'api-sports', id: live.id } })])
     expect(c.status()).toMatchObject({ provider: 'api-sports', state: 'ok', remainingToday: 80, paid: false })
     expect(c.status().intervalMs).toBeGreaterThanOrEqual(15_000)
-    c.budget.noteQuota({ ...quota, remaining: 0, blockedUntil: Date.UTC(2026, 9, 11), reason: 'exhausted' })
+    budget.noteQuota({ ...quota, remaining: 0, blockedUntil: Date.UTC(2026, 9, 11), reason: 'exhausted' })
     expect(c.status()).toMatchObject({ state: 'paused', pausedUntil: Date.UTC(2026, 9, 11), intervalMs: null })
   })
 
@@ -106,21 +113,78 @@ describe('ResultsController', () => {
       paths.push({ path: req.path, mode })
       return { data: { response: [footballDate.response[0]] }, cached: mode === 'cache-only', fresh: true, fetchedAt: now, quota: null, error: null } as SportFetchResponse
     })
-    const budget = new Budget(apiSports, 'k123', { fetch: fetch as never, now: () => now, sleep: async () => {} })
+    const router = routerFor({ fetch: fetch as never, now: () => now, sleep: async () => {} })
+    const budget = router.budget('api-sports')!
     budget.noteQuota({ ...quota, remaining: 12 }) // reserven = 10
-    const c = new ResultsController(budget, { tz: 'Europe/Stockholm', now: () => now, startPoller: false })
-    await c.loadFixture('football', '1180001', false) // första öppningen får ta ur reserven
+    const c = new ResultsController(router, { tz: 'Europe/Stockholm', now: () => now, startPoller: false })
+    await c.loadFixture('football', { provider: 'api-sports', id: '1180001' }, false) // första öppningen får ta ur reserven
     now += 61_000
     budget.setPlanned('football', 1)
-    await c.loadFixture('football', '1180001', false) // 11 − 1 < 10 + 1 → bara cachen
+    await c.loadFixture('football', { provider: 'api-sports', id: '1180001' }, false) // 11 − 1 < 10 + 1 → bara cachen
     expect(paths.map((p) => p.mode)).toEqual(['cache-first', 'cache-only'])
   })
 
   it('matchcentret cachas i minnet; avslutad hämtas inte om', async () => {
     const { c, paths } = controller(() => ({ data: { response: [footballDate.response[0]] } }))
-    const d = await c.loadFixture('football', '1180001', true)
+    const d = await c.loadFixture('football', { provider: 'api-sports', id: '1180001' }, true)
     expect(d?.fixture.id).toBe('1180001')
-    await c.loadFixture('football', '1180001', true)
+    await c.loadFixture('football', { provider: 'api-sports', id: '1180001' }, true)
     expect(paths.filter((p) => p.startsWith('/fixtures?id=')).length).toBe(1)
+  })
+
+  describe('flera källor samma dag', () => {
+    const DAY = { today: '2026-10-10', tz: 'Europe/Stockholm', dayEndMs: NOW + 6 * 3_600_000 }
+    const BOTH = { sportapi: { key: 'sk_live_1', plan: null }, 'api-sports': { key: 'k123', plan: 'Free' } }
+    const two = () => new ResultsController(routerFor({ fetch: vi.fn() as never, now: () => NOW, sleep: async () => {} }, BOTH), { tz: 'Europe/Stockholm', now: () => NOW, startPoller: false })
+    /** Samma match (Malmö–AIK 19:00) i båda källornas form. */
+    const fromSportApi = (home: number, away: number): Fixture => ({
+      ...sportApi.day('football', '2026-10-10', DAY).parse([{ success: true, data: [{ id: 13596201, home_id: 410, away_id: 412, home_team: 'Malmö FF', away_team: 'AIK', kickoff_utc: '2026-10-10T17:00:00Z', status: 'LIVE', minute: "60'", home_score: home, away_score: away, league_id: 61, league_name: 'Allsvenskan' }] }])[0],
+    })
+    const fromApiSports = (home: number, away: number): Fixture => ({ ...apiSports.day('football', '2026-10-10', DAY).parse([footballDate])[0], kickoff: Date.parse('2026-10-10T17:00:00Z'), home: { id: '375', name: 'Malmo FF', crest: null }, away: { id: '377', name: 'AIK Stockholm', crest: null }, score: { home, away } })
+
+    it('samma match hos två källor blir EN rad, med den nyaste källans data', () => {
+      const c = two()
+      c.applyFixtures('football', '2026-10-10', [fromSportApi(1, 0)], 'live', NOW)
+      c.applyFixtures('football', '2026-10-10', [fromApiSports(1, 0)], 'live', NOW + 1_000)
+      const list = c.fixtures('football', '2026-10-10')
+      expect(list).toHaveLength(1)
+      expect(list[0].provider).toBe('api-sports')
+    })
+
+    it('källbytet ger inget falskt MÅL!; en eftersläpande källa sänker inte ställningen; ett riktigt mål räknas en gång', () => {
+      const c = two()
+      const goals = vi.fn()
+      const off = onGoal(goals)
+      c.applyFixtures('football', '2026-10-10', [fromSportApi(1, 0)], 'live', NOW)
+      c.applyFixtures('football', '2026-10-10', [fromApiSports(0, 0)], 'live', NOW + 1_000) // byte till en eftersläpande källa
+      c.applyFixtures('football', '2026-10-10', [fromApiSports(1, 0)], 'live', NOW + 2_000) // ikapp: samma mål, inget nytt
+      expect(c.fixtures('football', '2026-10-10')[0].score).toEqual({ home: 1, away: 0 })
+      expect(goals).not.toHaveBeenCalled()
+      c.applyFixtures('football', '2026-10-10', [fromApiSports(2, 0)], 'live', NOW + 4_000)
+      c.applyFixtures('football', '2026-10-10', [fromSportApi(2, 0)], 'live', NOW + 5_000) // tillbaka efter midnatt-liknande byte
+      off()
+      expect(goals).toHaveBeenCalledTimes(1)
+      expect(goals.mock.calls[0][0]).toMatchObject({ provider: 'api-sports', side: 'home', score: { home: 2, away: 0 } })
+      expect(goals.mock.calls[0][0].aliases).toEqual(expect.arrayContaining(['fx:sportapi:13596201', `fx:api-sports:${fromApiSports(0, 0).id}`]))
+    })
+
+    it('en match kopplad med den första källans id är fortfarande het när en annan källa levererar den', () => {
+      const c = two()
+      const a = fromSportApi(1, 0)
+      c.applyFixtures('football', '2026-10-10', [a], 'live', NOW)
+      c.applyFixtures('football', '2026-10-10', [fromApiSports(1, 0)], 'live', NOW + 1_000)
+      c.setMerged([fxMatch({ id: 'm1', kind: 'football', start: a.kickoff, stop: a.kickoff + 7_200_000, fixture: { provider: 'sportapi', id: a.id } })])
+      expect(c.liveTargets()).toEqual([{ sport: 'football', hot: true, windowEndsAt: a.kickoff + 7_200_000 }])
+      expect(c.canonicalOf(fromApiSports(1, 0))).toEqual({ provider: 'sportapi', id: '13596201' })
+    })
+
+    it('takraden säger vilken källa sporten faktiskt använder', () => {
+      const c = two()
+      c.router.budget('sportapi')!.noteQuota({ ...quota, limit: 2000, remaining: 1500 })
+      expect(c.status('football')).toMatchObject({ provider: 'sportapi', multi: true, state: 'ok' })
+      expect(c.status('hockey')).toMatchObject({ provider: 'api-sports' })
+      c.router.budget('sportapi')!.noteQuota({ ...quota, limit: 2000, remaining: 0, blockedUntil: Date.UTC(2026, 9, 11), reason: 'exhausted' })
+      expect(c.status('football')).toMatchObject({ provider: 'api-sports', state: 'ok' })
+    })
   })
 })

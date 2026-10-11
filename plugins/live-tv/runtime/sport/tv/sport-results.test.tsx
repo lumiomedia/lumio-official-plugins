@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { __resetPluginStorageForTests, __setLangForTests } from '@/lib/plugin-sdk'
 import { SportResults, formLetters, groupResults } from './sport-results'
 import { tvText } from '../../tv/tv-strings'
-import { setSportSettings } from '../sport-store'
+import { setSportSettings, toggleFollow } from '../sport-store'
 import { fxMatch } from '../__sport-fixture'
 import type { SportMatch } from '../sport-model'
 
@@ -38,6 +38,27 @@ describe('groupResults', () => {
   })
 })
 
+describe('SportResults: Mina lag', () => {
+  it('förvalt när användaren följer något; visar följda lag och kan bytas till Alla', () => {
+    setSportSettings({ apiKey: 'k123' })
+    toggleFollow({ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' })
+    const controller = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => null), subscribe: () => () => {} }
+    const other = m({ home: 'Lazio', away: 'Roma', homeKey: 'lazio', awayKey: 'roma', fixture: { provider: 'api-sports', id: 'x', leagueId: '135', season: '2026' } })
+    render(<SportResults matches={[m(), other]} controller={controller as never} onOpenMatch={vi.fn()} tv={false} />)
+    expect(screen.getByTestId('results-filter-followed')).toHaveTextContent('Mina lag (1)')
+    expect(screen.getAllByTestId(/^results-group-/).map((g) => g.getAttribute('data-testid'))).toEqual(['results-group-football|113'])
+    fireEvent.click(screen.getByTestId('results-filter-all'))
+    expect(screen.getAllByTestId(/^results-group-/)).toHaveLength(2)
+  })
+  it('utan följda: Alla förvalt', () => {
+    setSportSettings({ apiKey: 'k123' })
+    const controller = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => null), subscribe: () => () => {} }
+    render(<SportResults matches={[m()]} controller={controller as never} onOpenMatch={vi.fn()} tv={false} />)
+    expect(screen.getByTestId('results-group-football|113')).toBeTruthy()
+    expect(screen.getByTestId('results-filter-followed')).toHaveTextContent('Mina lag (0)')
+  })
+})
+
 describe('SportResults', () => {
   it('utan nyckel: nyckelkortet (inget "Inte nu")', () => {
     render(<SportResults matches={[]} controller={null} onOpenMatch={vi.fn()} tv={false} />)
@@ -57,7 +78,7 @@ describe('SportResults', () => {
     expect(screen.getByText('58')).toBeTruthy()
   })
 
-  it('Dina ligor: kort rad med kopplade ligor, dubblettnamn med land, sportchipet respekteras; Fler ligor… öppnar lådan per land och hoppar', async () => {
+  it('Dina ligor: kort rad med kopplade ligor, dubblettnamn med land, sportchipet respekteras; Fler ligor… öppnar lådan per land och filtrerar', async () => {
     setSportSettings({ apiKey: 'k123' })
     const controller = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => null), subscribe: () => () => {} }
     const fx = (leagueId: string, country: string) => ({ provider: 'api-sports', id: `f${++n}`, leagueId, season: '2026', country })
@@ -85,11 +106,18 @@ describe('SportResults', () => {
     const hits = drawer.querySelectorAll('[data-testid^="league-row-"]')
     expect(hits).toHaveLength(1)
     expect(hits[0].textContent).toContain('Spain')
-    const scroll = vi.fn()
-    ;(screen.getByTestId('results-group-football|140') as HTMLElement).scrollIntoView = scroll
     fireEvent.click(hits[0])
     expect(layers).toHaveLength(1)
-    await waitFor(() => expect(scroll).toHaveBeenCalled())
+    // Valet FILTRERAR till ligan; den valda står markerad och "Alla ligor ✕" återställer.
+    await waitFor(() => expect(screen.getAllByTestId(/^results-group-/).map((g) => g.getAttribute('data-testid'))).toEqual(['results-group-football|140']))
+    expect(screen.getByTestId('league-chip-football|140').getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByTestId('league-reset'))
+    expect(screen.getAllByTestId(/^results-group-/).length).toBeGreaterThan(1)
+    // Ett chip i Dina ligor filtrerar likadant, och ett andra tryck släpper.
+    fireEvent.click(screen.getByTestId('league-chip-football|113'))
+    expect(screen.getAllByTestId(/^results-group-/).map((g) => g.getAttribute('data-testid'))).toEqual(['results-group-football|113'])
+    fireEvent.click(screen.getByTestId('league-chip-football|113'))
+    expect(screen.getAllByTestId(/^results-group-/).length).toBeGreaterThan(1)
 
     rerender(<SportResults matches={world} controller={controller as never} onOpenMatch={vi.fn()} tv={false} nav={nav as never} sport="hockey" />)
     expect(screen.getByText('FLEST MATCHER')).toBeTruthy()

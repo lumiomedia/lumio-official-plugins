@@ -76,7 +76,10 @@ describe('api-sports: tolkning', () => {
       { label: 'Total Shots', home: '14', away: '7' },
       { label: 'Shots on Goal', home: '6', away: '0' },
     ])
-    expect(d.lineups[0]).toEqual({ side: 'home', formation: '4-3-3', startXI: [{ number: 1, name: 'J. Dahlin', pos: 'G' }, { number: 9, name: 'I. Kiese Thelin', pos: 'F' }], subs: [{ number: 20, name: 'O. Berg', pos: 'M' }] })
+    expect(d.lineups[0]).toMatchObject({ side: 'home', formation: '4-3-3', startXI: [{ number: 1, name: 'J. Dahlin', pos: 'G' }, { number: 9, name: 'I. Kiese Thelin', pos: 'F' }], subs: [{ number: 20, name: 'O. Berg', pos: 'M' }] })
+    // Spelarbild och arenans stad följer med i samma svar — inga extra anrop.
+    expect(d.lineups[0]!.startXI[1]!.photo).toBe('https://media.api-sports.io/football/players/1001.png')
+    expect(d.fixture.venueCity).toBe('Malmö')
   })
   it('hockeyns dagsprogram och händelser (minut räknas över perioderna)', () => {
     const [g, ns] = apiSports.day('hockey', '2026-10-10', DAY).parse([hockeyDate])

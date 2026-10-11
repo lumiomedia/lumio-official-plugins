@@ -4,6 +4,7 @@ import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../../live-tv-data'
 import { SPORT_FOLLOWS_KEY, getFollows, getSportSettings, type SportFollow } from '../sport-store'
 import { FollowPicker, SportFollows } from './sport-follows'
+import { followNext } from '../sport-ctx'
 import { HOUR, MIN, fakeCtx, fxDay, fxMatch } from '../__sport-fixture'
 
 const h = vi.hoisted(() => ({ search: vi.fn() }))
@@ -11,7 +12,7 @@ vi.mock('../follow-search', async (orig) => ({ ...(await orig<typeof import('../
 
 afterEach(cleanup)
 const now = new Date(2026, 9, 10, 18, 0).getTime()
-const ham = fxMatch({ id: 'ham', home: 'AIK', away: 'Hammarby', start: now + 110 * MIN })
+const ham = fxMatch({ id: 'ham', home: 'AIK', away: 'Hammarby', awayCrest: 'https://c/hammarby.png', start: now + 110 * MIN })
 const cl = fxMatch({ id: 'cl', league: 'Champions League', leagueKey: 'uefa-champions-league', home: 'FC Barcelona', away: 'Paris SG', homeKey: 'barcelona', start: now - 30 * MIN })
 const shl = fxMatch({ id: 'shl', kind: 'hockey', league: 'SHL', leagueKey: 'shl', home: 'Frölunda', away: 'Färjestad', homeKey: 'frolunda', awayKey: 'farjestad', start: now + 24 * HOUR })
 const days = [fxDay('d0', [ham, cl]), fxDay('d1', [shl])]
@@ -25,30 +26,67 @@ beforeEach(() => {
   writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, follows)
 })
 
-describe('Följer', () => {
-  it('grupper per sport med nästa match', () => {
+describe('followNext', () => {
+  it('delar nästa match i när (stort) och vad (motståndare eller matchtitel)', () => {
+    const ctx = fakeCtx({ now })
+    expect(followNext(ctx, follows[0]!, ham)).toEqual({ when: expect.stringMatching(/^Today \d\d:\d\d$/), what: 'vs AIK', live: false })
+    expect(followNext(ctx, follows[1]!, cl)).toEqual({ when: 'LIVE now', what: 'FC Barcelona - Paris SG', live: true })
+    expect(followNext(ctx, follows[2]!, shl)).toEqual({ when: expect.stringMatching(/^Tomorrow \d\d:\d\d$/), what: 'vs Färjestad', live: false })
+    expect(followNext(ctx, follows[0]!, null)).toBeNull()
+  })
+})
+
+describe('Mina lag: fokusordningen (Jerry 2026-10-11)', () => {
+  it('▾ från Välj dina lag och från Påminnelse landar på FÖRSTA lagkortet, inte det närmaste', () => {
+    render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
+    const first = within(screen.getAllByTestId('follow-row')[0]!).getAllByRole('button')[0]!
+    const down = (el: Element) => document.querySelector(el.getAttribute('data-f-down')!)
+    expect(down(screen.getByTestId('follows-add'))).toBe(first)
+    for (const option of within(screen.getByTestId('follows-alert')).getAllByTestId('tv-segment-option')) expect(down(option)).toBe(first)
+  })
+  it('▴ från översta kortraden tillbaka till Välj dina lag', () => {
+    render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
+    const firstRow = within(screen.getAllByTestId('follow-row')[0]!).getAllByRole('button')
+    for (const st of firstRow) expect(document.querySelector(st.getAttribute('data-f-up')!)).toBe(screen.getByTestId('follows-add'))
+  })
+})
+
+describe('Mina lag', () => {
+  it('liggande rader per sport: märket till vänster, nästa match som huvudinfo, hjärta till höger', () => {
     render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
     const football = screen.getByTestId('follow-group-football')
-    const cards = within(football).getAllByTestId('follow-card')
-    expect(cards[0]).toHaveTextContent(/Hammarby.*Today \d\d:\d\d · vs AIK/)
-    expect(cards[1]).toHaveTextContent('LIVE now · FC Barcelona - Paris SG')
-    expect(within(screen.getByTestId('follow-group-hockey')).getByTestId('follow-card')).toHaveTextContent(/Tomorrow \d\d:\d\d · vs Färjestad/)
-    expect(screen.getByText('3 followed · notice 15 min before')).toBeInTheDocument()
+    const rows = within(football).getAllByTestId('follow-row')
+    expect(rows[0]).toHaveTextContent('Hammarby')
+    expect(rows[0]).toHaveTextContent('Football')
+    expect(within(rows[0]!).getByTestId('follow-next')).toHaveTextContent(/Today \d\d:\d\d\s*vs AIK/)
+    // Lagets riktiga märke när någon match har det, annars initialcirkeln.
+    expect(rows[0]!.querySelector('img[data-crest]')).not.toBeNull()
+    expect(rows[1]!.querySelector('[data-crest]')).not.toBeNull()
+    const live = within(rows[1]!).getByTestId('follow-next')
+    expect(live).toHaveTextContent(/LIVE now\s*FC Barcelona - Paris SG/)
+    expect(live.getAttribute('data-live')).toBe('1')
+    expect(within(screen.getByTestId('follow-group-hockey')).getByTestId('follow-next')).toHaveTextContent(/Tomorrow \d\d:\d\d\s*vs Färjestad/)
+    const heart = within(rows[0]!).getByTestId('follow-heart')
+    expect(heart.getAttribute('aria-pressed')).toBe('true')
+    expect(heart.getAttribute('aria-label')).toBe('Remove Hammarby from favourites')
+    expect(heart.querySelector('svg path')?.getAttribute('d')).toMatch(/^M12 21s/) // Live TV:s favorithjärta
+    expect(screen.getByText('3 favourites · reminder 15 min before')).toBeInTheDocument()
   })
-  it('stjärnan avföljer, kortet dämpas men ligger kvar', () => {
+  it('hjärtat tar bort favoriten, raden dämpas men ligger kvar', () => {
     const { rerender } = render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
-    fireEvent.click(within(screen.getAllByTestId('follow-card')[0]!).getByTestId('follow-star'))
+    fireEvent.click(within(screen.getAllByTestId('follow-row')[0]!).getByTestId('follow-heart'))
     expect(getFollows().map((f) => f.key)).toEqual(['uefa-champions-league', 'frolunda'])
     rerender(<SportFollows ctx={fakeCtx({ now, follows: getFollows() })} days={days} />)
-    const first = screen.getAllByTestId('follow-card')[0]!
+    const first = screen.getAllByTestId('follow-row')[0]!
     expect(first).toHaveTextContent('Hammarby')
     expect(first.getAttribute('data-following')).toBe('0')
+    expect(within(first).getByTestId('follow-heart').getAttribute('aria-label')).toBe('Add Hammarby to favourites')
   })
-  it('avsparksnotisen sparas', () => {
+  it('påminnelsen sparas', () => {
     render(<SportFollows ctx={fakeCtx({ now, follows })} days={days} />)
     fireEvent.click(within(screen.getByTestId('follows-alert')).getByText('At kick-off'))
     expect(getSportSettings().alert).toBe('kickoff')
-    expect(screen.getByText('Notices only arrive while Lumio is running.')).toBeInTheDocument()
+    expect(screen.getByText('Reminders only show while Lumio is running.')).toBeInTheDocument()
   })
   it('tomt läge och Lägg till', () => {
     const ctx = fakeCtx({ now, follows: [] })
@@ -63,12 +101,15 @@ describe('Följväljaren', () => {
   it('lag och turneringar ur EPG:t, filter per sport, rad växlar följning', () => {
     __resetForTests()
     const ctx = fakeCtx({ now })
-    render(<FollowPicker ctx={ctx} days={[null, ...days]} onClose={() => {}} />)
+    const { rerender } = render(<FollowPicker ctx={ctx} days={[null, ...days]} onClose={() => {}} />)
     expect(screen.getByTestId('follow-picker')).toBeInTheDocument()
     expect(screen.getByTestId('follow-row-aik')).toBeInTheDocument()
     expect(screen.getByTestId('follow-row-shl')).toBeInTheDocument()
+    expect(within(screen.getByTestId('follow-row-aik')).getByTestId('follow-row-heart').getAttribute('data-on')).toBe('0')
     fireEvent.click(screen.getByTestId('follow-row-aik'))
     expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' }])
+    rerender(<FollowPicker ctx={ctx} days={[null, ...days]} onClose={() => {}} />)
+    expect(within(screen.getByTestId('follow-row-aik')).getByTestId('follow-row-heart').getAttribute('data-on')).toBe('1')
     fireEvent.click(screen.getByTestId('follow-chip-hockey'))
     expect(screen.queryByTestId('follow-row-aik')).toBeNull()
     expect(screen.getByTestId('follow-row-frolunda')).toBeInTheDocument()
@@ -126,7 +167,7 @@ describe('Följväljaren', () => {
       fireEvent.click(hit)
       fireEvent.click(screen.getByTestId('follow-hit-league-135'))
       expect(getFollows()).toEqual([
-        { sport: 'football', kind: 'team', key: 'ac milan', name: 'AC Milan', providerIds: { 'api-sports': '489' } },
+        { sport: 'football', kind: 'team', key: 'ac milan', name: 'AC Milan', providerIds: { 'api-sports': '489' }, crest: 'https://m/489.png' },
         { sport: 'football', kind: 'league', key: 'fx:api-sports:135', name: 'Serie A', providerIds: { 'api-sports': '135' } },
       ])
     } finally { vi.useRealTimers() }

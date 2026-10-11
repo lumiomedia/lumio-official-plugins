@@ -162,9 +162,9 @@
       return `${m.phase}=${m.offsetMs}${via}`;
     }).join(" ")}`;
   }
-  function sendToDebugLog(line) {
+  function sendToDebugLog(line2) {
     if (typeof window === "undefined") return;
-    void fetch(`/api/debug-log?msg=${encodeURIComponent(line)}`).catch(() => {
+    void fetch(`/api/debug-log?msg=${encodeURIComponent(line2)}`).catch(() => {
     });
   }
   function emitStreamTimeline(send = sendToDebugLog) {
@@ -388,7 +388,7 @@
           handler(eventData);
         }, options);
       }
-      async function emit3(event2, payload) {
+      async function emit4(event2, payload) {
         await core.invoke("plugin:event|emit", {
           event: event2,
           payload
@@ -402,7 +402,7 @@
           payload
         });
       }
-      exports.emit = emit3;
+      exports.emit = emit4;
       exports.emitTo = emitTo;
       exports.listen = listen3;
       exports.once = once;
@@ -477,7 +477,7 @@
       return {};
     }
   }
-  function getPluginPersistedState(pluginId, defaultOrder, defaults = {}) {
+  function getPluginPersistedState(pluginId, defaultOrder2, defaults = {}) {
     const all = readAll();
     return normalizeState(all[pluginId], {
       installed: true,
@@ -485,11 +485,11 @@
       sourceType: "builtin",
       runtimeAvailable: true,
       ...defaults,
-      order: defaults.order ?? defaultOrder
+      order: defaults.order ?? defaultOrder2
     });
   }
-  function isPluginEnabled(pluginId, defaultOrder = 0, defaults = {}) {
-    const state2 = getPluginPersistedState(pluginId, defaultOrder, defaults);
+  function isPluginEnabled(pluginId, defaultOrder2 = 0, defaults = {}) {
+    const state2 = getPluginPersistedState(pluginId, defaultOrder2, defaults);
     return Boolean(state2.installed && state2.active);
   }
   var STORAGE_KEY;
@@ -1022,8 +1022,8 @@
         setStats((prev2) => {
           const next = s.stats ?? null;
           if (!next || !prev2) return next;
-          const same3 = Object.keys(next).every((key) => prev2[key] === next[key]);
-          return same3 ? prev2 : next;
+          const same4 = Object.keys(next).every((key) => prev2[key] === next[key]);
+          return same4 ? prev2 : next;
         });
         setCoreIdle(!s.fileLoaded || s.paused);
         setSid(s.selectedSub > 0 ? s.selectedSub : null);
@@ -1220,14 +1220,14 @@
       captureSupported: true,
       maxSurfaces: () => MAX_HTML,
       create(id) {
-        const listeners11 = /* @__PURE__ */ new Set();
+        const listeners12 = /* @__PURE__ */ new Set();
         let video = null;
         let hls = null;
         let pendingRect = null;
         let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-        const emit3 = (patch) => {
+        const emit4 = (patch) => {
           state2 = { ...state2, ...patch };
-          for (const l of [...listeners11]) l(state2);
+          for (const l of [...listeners12]) l(state2);
         };
         const teardown = async () => {
           hls?.destroy();
@@ -1250,10 +1250,10 @@
             v.playsInline = true;
             v.style.cssText = "position:absolute;object-fit:contain;background:#000;left:0;top:0;width:0;height:0";
             if (pendingRect) applyRect(v, pendingRect);
-            v.addEventListener("loadeddata", () => emit3({ fileLoaded: true }));
-            v.addEventListener("playing", () => emit3({ firstFrameRendered: true, paused: false }));
-            v.addEventListener("pause", () => emit3({ paused: true }));
-            v.addEventListener("error", () => emit3({ loadFailed: true }));
+            v.addEventListener("loadeddata", () => emit4({ fileLoaded: true }));
+            v.addEventListener("playing", () => emit4({ firstFrameRendered: true, paused: false }));
+            v.addEventListener("pause", () => emit4({ paused: true }));
+            v.addEventListener("error", () => emit4({ loadFailed: true }));
             ensureLayer().appendChild(v);
             video = v;
             const src = sourceCacheUrl(opts.url, opts.requestHeaders) ?? opts.url;
@@ -1300,15 +1300,15 @@
             return res.ok;
           },
           onState(l) {
-            listeners11.add(l);
-            return () => listeners11.delete(l);
+            listeners12.add(l);
+            return () => listeners12.delete(l);
           },
           // Värdstängning (yta 0 öppnas) ger ett sista loadFailed; en
           // anroparinitierad destroy() är tyst — samma regel i alla tre motorer.
           async destroy(reason) {
             await teardown();
-            if (reason) emit3({ loadFailed: true });
-            listeners11.clear();
+            if (reason) emit4({ loadFailed: true });
+            listeners12.clear();
           }
         };
       }
@@ -1362,21 +1362,21 @@
     }
   }
   function createMpvSurfaceBackend() {
-    const listeners11 = /* @__PURE__ */ new Set();
+    const listeners12 = /* @__PURE__ */ new Set();
     let rustId = null;
     let destroyed = false;
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit3 = (patch) => {
+    const emit4 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners11]) listener(state2);
+      for (const listener of [...listeners12]) listener(state2);
     };
     const dispatch = (next) => {
       state2 = next;
-      for (const listener of [...listeners11]) listener(next);
+      for (const listener of [...listeners12]) listener(next);
     };
     const createPromise = createRustSurface(() => destroyed).then((sid) => {
       if (sid === null) {
-        if (!destroyed) emit3({ loadFailed: true });
+        if (!destroyed) emit4({ loadFailed: true });
         return null;
       }
       rustId = sid;
@@ -1398,7 +1398,7 @@
             }
           });
         } catch {
-          emit3({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
+          emit4({ loadFailed: true, fileLoaded: false, firstFrameRendered: false });
           return;
         }
         if (!opts.muted) {
@@ -1448,15 +1448,15 @@
         }
       },
       onState(listener) {
-        listeners11.add(listener);
+        listeners12.add(listener);
         return () => {
-          listeners11.delete(listener);
+          listeners12.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
-        if (reason) emit3({ loadFailed: true });
-        listeners11.clear();
+        if (reason) emit4({ loadFailed: true });
+        listeners12.clear();
         const surface = rustId !== null ? rustId : await createPromise;
         if (surface !== null) {
           dispatchersByRustId.delete(surface);
@@ -1519,18 +1519,18 @@
     };
   }
   function createDroidSurfaceBackend() {
-    const listeners11 = /* @__PURE__ */ new Set();
+    const listeners12 = /* @__PURE__ */ new Set();
     let state2 = { fileLoaded: false, firstFrameRendered: false, loadFailed: false, paused: false };
-    const emit3 = (patch) => {
+    const emit4 = (patch) => {
       state2 = { ...state2, ...patch };
-      for (const listener of [...listeners11]) listener(state2);
+      for (const listener of [...listeners12]) listener(state2);
     };
     let nativeId = null;
     let destroyed = false;
     let createPromise = null;
     let pollHandle = null;
     let pendingRect = null;
-    let generation = 0;
+    let generation2 = 0;
     function stopPolling() {
       if (pollHandle === null) return;
       clearInterval(pollHandle);
@@ -1549,21 +1549,21 @@
     }
     function startPolling(surface, myGeneration) {
       stopPolling();
-      if (myGeneration !== generation) {
+      if (myGeneration !== generation2) {
         stopPolling();
         return;
       }
       pollHandle = setInterval(() => {
-        if (myGeneration !== generation) {
+        if (myGeneration !== generation2) {
           stopPolling();
           return;
         }
         void np({ cmd: "surfaceStatus", surface }).then((value) => {
-          if (myGeneration !== generation) return;
+          if (myGeneration !== generation2) return;
           const next = toSurfaceState(value);
           if (!next) return;
           state2 = next;
-          for (const listener of [...listeners11]) listener(next);
+          for (const listener of [...listeners12]) listener(next);
         });
       }, 250);
     }
@@ -1584,7 +1584,7 @@
       if (!createPromise) {
         createPromise = createNativeSurface().then((id) => {
           if (id === null) {
-            if (!destroyed) emit3({ loadFailed: true });
+            if (!destroyed) emit4({ loadFailed: true });
             return null;
           }
           nativeId = id;
@@ -1596,9 +1596,9 @@
     }
     return {
       async open(opts) {
-        const myGeneration = generation;
+        const myGeneration = generation2;
         const surface = await ensureCreated();
-        if (surface === null || myGeneration !== generation) return;
+        if (surface === null || myGeneration !== generation2) return;
         await np({
           cmd: "surfaceOpen",
           surface,
@@ -1607,11 +1607,11 @@
           start: opts.start ?? 0,
           muted: opts.muted
         });
-        if (myGeneration !== generation) return;
+        if (myGeneration !== generation2) return;
         startPolling(surface, myGeneration);
       },
       async close() {
-        generation++;
+        generation2++;
         stopPolling();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
@@ -1636,17 +1636,17 @@
         return false;
       },
       onState(listener) {
-        listeners11.add(listener);
+        listeners12.add(listener);
         return () => {
-          listeners11.delete(listener);
+          listeners12.delete(listener);
         };
       },
       async destroy(reason) {
         destroyed = true;
-        generation++;
+        generation2++;
         stopPolling();
-        if (reason) emit3({ loadFailed: true });
-        listeners11.clear();
+        if (reason) emit4({ loadFailed: true });
+        listeners12.clear();
         const surface = nativeId !== null ? nativeId : await (createPromise ?? Promise.resolve(null)).catch(() => null);
         if (surface === null) return;
         await np({ cmd: "surfaceDestroy", surface }).catch(() => {
@@ -2255,10 +2255,10 @@
     if (store) return store;
     const seeded = /* @__PURE__ */ new Map();
     if (typeof window !== "undefined") {
-      const snapshot2 = window.__lumioNativeStorageSnapshot;
-      if (snapshot2) {
+      const snapshot3 = window.__lumioNativeStorageSnapshot;
+      if (snapshot3) {
         if (nativeState === "unknown") nativeState = "durable";
-        for (const [key, value] of Object.entries(snapshot2)) {
+        for (const [key, value] of Object.entries(snapshot3)) {
           seeded.set(key, String(value));
         }
       }
@@ -2274,8 +2274,8 @@
     }
     if (typeof window !== "undefined") {
       try {
-        const snapshot2 = window.__lumioNativeStorageSnapshot;
-        const snapRaw = snapshot2?.["app_profiles"];
+        const snapshot3 = window.__lumioNativeStorageSnapshot;
+        const snapRaw = snapshot3?.["app_profiles"];
         const localRaw = seeded.get("app_profiles");
         const revOf = (raw) => {
           if (!raw) return -1;
@@ -5796,15 +5796,15 @@
           qmEyebrow: "Quick menu",
           qmShow: "Show quick menu",
           qmStyle: "Style",
-          qmStyleHint: "Horizon and Sentence scroll and hold up to 10 items. The others hold 6.",
+          qmStyleHint: "Horizon and Sentence scroll and hold up to 10 items. The others hold 7.",
           qmScrollsTen: "Scrolls \xB7 up to 10 items",
-          qmUpToSix: "Up to 6 items",
+          qmUpToSix: "Up to 7 items",
           qmItems: "Items",
           qmItemsHint: "Pages in the quick menu, in order.",
           qmItemsPanelHint: "OK on an item to move or remove it.",
           qmAddPage: "Add page",
           qmSlotsLeft: "{n} slots left",
-          qmFull: "{style} holds 6. Horizon and Sentence hold 10.",
+          qmFull: "{style} holds 7. Horizon and Sentence hold 10.",
           qmHiddenWarn: "{n} items are hidden with {style}. Pick a scrolling style or remove items.",
           qmHidden: "Hidden",
           qmReset: "Reset to default",
@@ -9807,15 +9807,15 @@
           qmEyebrow: "Snabbmeny",
           qmShow: "Visa snabbmeny",
           qmStyle: "Stil",
-          qmStyleHint: "Horisont och Mening scrollar och rymmer upp till 10 poster. \xD6vriga rymmer 6.",
+          qmStyleHint: "Horisont och Mening scrollar och rymmer upp till 10 poster. \xD6vriga rymmer 7.",
           qmScrollsTen: "Scrollar \xB7 upp till 10 poster",
-          qmUpToSix: "Upp till 6 poster",
+          qmUpToSix: "Upp till 7 poster",
           qmItems: "Poster",
           qmItemsHint: "Sidor i snabbmenyn, i ordning.",
           qmItemsPanelHint: "OK p\xE5 en post f\xF6r att flytta eller ta bort den.",
           qmAddPage: "L\xE4gg till sida",
           qmSlotsLeft: "{n} platser kvar",
-          qmFull: "{style} rymmer 6. Horisont och Mening rymmer 10.",
+          qmFull: "{style} rymmer 7. Horisont och Mening rymmer 10.",
           qmHiddenWarn: "{n} poster d\xF6ljs med {style}. V\xE4lj en stil som scrollar eller ta bort poster.",
           qmHidden: "Dold",
           qmReset: "\xC5terst\xE4ll standard",
@@ -11342,18 +11342,18 @@
   async function runLibraryScan(provider, source, options) {
     if (running) throw new Error("library scan already running");
     running = true;
-    const controller = new AbortController();
-    activeController = controller;
+    const controller2 = new AbortController();
+    activeController = controller2;
     const outer = options.signal;
-    const forward = () => controller.abort();
-    if (outer?.aborted) controller.abort();
+    const forward = () => controller2.abort();
+    if (outer?.aborted) controller2.abort();
     else outer?.addEventListener("abort", forward, { once: true });
     setActive2({ sourceId: source.id, progress: { phase: "listing", done: 0 } });
     const onProgress = options.onProgress;
     try {
       return await runLibraryScanInner(provider, source, {
         ...options,
-        signal: controller.signal,
+        signal: controller2.signal,
         onProgress: (progress2) => {
           setActive2({ sourceId: source.id, progress: progress2 });
           onProgress?.(progress2);
@@ -11375,7 +11375,7 @@
     let titles = 0;
     let unmatched = 0;
     const report = (progress2) => options.onProgress?.(progress2);
-    const emit3 = async (incoming) => {
+    const emit4 = async (incoming) => {
       if (options.signal?.aborted) return;
       const batch = incoming.upsert?.length ? { ...incoming, upsert: await fillIds(incoming.upsert, options.signal) } : incoming;
       for (const title of batch.upsert ?? []) {
@@ -11388,7 +11388,7 @@
     };
     report({ phase: "listing", done: 0 });
     const before = options.mode === "full" ? new Set(await io.fetchKeys(source.id)) : /* @__PURE__ */ new Set();
-    const result = options.mode === "full" ? await provider.scanAll(source, emit3, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit3, report, options.signal ?? new AbortController().signal);
+    const result = options.mode === "full" ? await provider.scanAll(source, emit4, report, options.signal ?? new AbortController().signal) : await provider.scanDelta(source, source.cursor ?? null, emit4, report, options.signal ?? new AbortController().signal);
     let removed = 0;
     if (options.mode === "full" && !options.signal?.aborted) {
       report({ phase: "pruning", done: titles });
@@ -11578,12 +11578,12 @@
     const n = parseInt(m[1], 16);
     return `${n >> 16 & 255} ${n >> 8 & 255} ${n & 255}`;
   }
-  function shade(hex, pct2) {
+  function shade(hex, pct3) {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
     if (!m) return null;
     const n = parseInt(m[1], 16);
-    const target2 = pct2 >= 0 ? 255 : 0;
-    const p = Math.abs(pct2);
+    const target2 = pct3 >= 0 ? 255 : 0;
+    const p = Math.abs(pct3);
     const ch = (v) => Math.round(v + (target2 - v) * p);
     return `${ch(n >> 16 & 255)} ${ch(n >> 8 & 255)} ${ch(n & 255)}`;
   }
@@ -12939,8 +12939,8 @@
     }, TRAKT_WATCHLIST_PREFETCH_DELAY_MS);
   }
   async function prefetchWatchlistItems(entries) {
-    for (let start2 = 0; start2 < entries.length; start2 += TRAKT_WATCHLIST_PREFETCH_BATCH_SIZE) {
-      const batch = entries.slice(start2, start2 + TRAKT_WATCHLIST_PREFETCH_BATCH_SIZE);
+    for (let start3 = 0; start3 < entries.length; start3 += TRAKT_WATCHLIST_PREFETCH_BATCH_SIZE) {
+      const batch = entries.slice(start3, start3 + TRAKT_WATCHLIST_PREFETCH_BATCH_SIZE);
       const updates = await Promise.all(
         batch.map(async (entry) => {
           try {
@@ -13459,30 +13459,30 @@
   function generatePath(modules, margin = 0) {
     const ops = [];
     modules.forEach(function(row, y) {
-      let start2 = null;
+      let start3 = null;
       row.forEach(function(cell, x) {
-        if (!cell && start2 !== null) {
+        if (!cell && start3 !== null) {
           ops.push(
-            `M${start2 + margin} ${y + margin}h${x - start2}v1H${start2 + margin}z`
+            `M${start3 + margin} ${y + margin}h${x - start3}v1H${start3 + margin}z`
           );
-          start2 = null;
+          start3 = null;
           return;
         }
         if (x === row.length - 1) {
           if (!cell) {
             return;
           }
-          if (start2 === null) {
+          if (start3 === null) {
             ops.push(`M${x + margin},${y + margin} h1v1H${x + margin}z`);
           } else {
             ops.push(
-              `M${start2 + margin},${y + margin} h${x + 1 - start2}v1H${start2 + margin}z`
+              `M${start3 + margin},${y + margin} h${x + 1 - start3}v1H${start3 + margin}z`
             );
           }
           return;
         }
-        if (cell && start2 === null) {
-          start2 = x;
+        if (cell && start3 === null) {
+          start3 = x;
         }
       });
     });
@@ -14251,14 +14251,14 @@
             return result;
           }
           // Returns a new array of bytes representing the given string encoded in UTF-8.
-          static toUtf8ByteArray(str3) {
-            str3 = encodeURI(str3);
+          static toUtf8ByteArray(str4) {
+            str4 = encodeURI(str4);
             let result = [];
-            for (let i = 0; i < str3.length; i++) {
-              if (str3.charAt(i) != "%")
-                result.push(str3.charCodeAt(i));
+            for (let i = 0; i < str4.length; i++) {
+              if (str4.charAt(i) != "%")
+                result.push(str4.charCodeAt(i));
               else {
-                result.push(parseInt(str3.substring(i + 1, i + 3), 16));
+                result.push(parseInt(str4.substring(i + 1, i + 3), 16));
                 i += 2;
               }
             }
@@ -14690,11 +14690,11 @@
     return new Promise((resolve) => {
       const startedAt = Date.now();
       let done = false;
-      let timer3 = setTimeout(() => finish(), ms2);
+      let timer4 = setTimeout(() => finish(), ms2);
       const finish = () => {
         if (done) return;
         done = true;
-        clearTimeout(timer3);
+        clearTimeout(timer4);
         document.removeEventListener("visibilitychange", wake);
         window.removeEventListener("focus", wake);
         resolve();
@@ -14707,8 +14707,8 @@
           finish();
           return;
         }
-        clearTimeout(timer3);
-        timer3 = setTimeout(() => finish(), WAKE_MIN_DELAY_MS - elapsed);
+        clearTimeout(timer4);
+        timer4 = setTimeout(() => finish(), WAKE_MIN_DELAY_MS - elapsed);
       };
       document.addEventListener("visibilitychange", wake);
       window.addEventListener("focus", wake);
@@ -14737,7 +14737,7 @@
       setNoticeKey(null);
       setErrorKey(null);
     }, []);
-    const start2 = useCallback(() => {
+    const start3 = useCallback(() => {
       const run = ++runRef.current;
       const alive = () => runRef.current === run;
       setPhase("starting");
@@ -14855,7 +14855,7 @@
       activationUrl: traktActivationUrl(verificationUrl),
       notice: noticeKey ? t(noticeKey) : "",
       error: errorKey ? t(errorKey) : "",
-      start: start2,
+      start: start3,
       cancel
     };
   }
@@ -15184,11 +15184,11 @@
     return getScopedStorageItem(KEY_RAW_MPV_CONF) ?? "";
   }
   function parseRawMpvConf(raw) {
-    return raw.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#")).map((line) => {
-      const eq = line.indexOf("=");
+    return raw.split("\n").map((line2) => line2.trim()).filter((line2) => line2 && !line2.startsWith("#")).map((line2) => {
+      const eq = line2.indexOf("=");
       if (eq <= 0) return null;
-      const name = line.slice(0, eq).trim();
-      const value = line.slice(eq + 1).trim();
+      const name = line2.slice(0, eq).trim();
+      const value = line2.slice(eq + 1).trim();
       return name ? [name, value] : null;
     }).filter((entry) => entry != null);
   }
@@ -15720,17 +15720,17 @@
     ].join(":");
   }
   async function fetchJsonWithTimeout(input, init, timeoutMs) {
-    const controller = new AbortController();
-    const timer3 = setTimeout(() => controller.abort(), timeoutMs);
+    const controller2 = new AbortController();
+    const timer4 = setTimeout(() => controller2.abort(), timeoutMs);
     try {
       const response = await fetch(input, {
         ...init ?? {},
-        signal: controller.signal
+        signal: controller2.signal
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } finally {
-      clearTimeout(timer3);
+      clearTimeout(timer4);
     }
   }
   async function fetchEpisodeStreamResults(imdbId, season, episode) {
@@ -15923,17 +15923,17 @@
     ].join(":");
   }
   async function fetchJsonWithTimeout2(input, init, timeoutMs) {
-    const controller = new AbortController();
-    const timer3 = setTimeout(() => controller.abort(), timeoutMs);
+    const controller2 = new AbortController();
+    const timer4 = setTimeout(() => controller2.abort(), timeoutMs);
     try {
       const response = await fetch(input, {
         ...init ?? {},
-        signal: controller.signal
+        signal: controller2.signal
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } finally {
-      clearTimeout(timer3);
+      clearTimeout(timer4);
     }
   }
   async function fetchStreamResults(imdbId) {
@@ -16412,7 +16412,7 @@
   // lib/pagination-range.ts
   function paginationRange(total, page, siblings, boundaries) {
     if (total <= 0) return [];
-    const range = (start2, end) => end < start2 ? [] : Array.from({ length: end - start2 + 1 }, (_, i) => start2 + i);
+    const range = (start3, end) => end < start3 ? [] : Array.from({ length: end - start3 + 1 }, (_, i) => start3 + i);
     const startPages = range(1, Math.min(boundaries, total));
     const endPages = range(Math.max(total - boundaries + 1, boundaries + 1), total);
     const siblingsStart = Math.max(
@@ -17672,8 +17672,8 @@
         async listen(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners11 = this.listeners[event$1];
-              listeners11.splice(listeners11.indexOf(handler), 1);
+              const listeners12 = this.listeners[event$1];
+              listeners12.splice(listeners12.indexOf(handler), 1);
             };
           }
           return event2.listen(event$1, handler, {
@@ -17702,8 +17702,8 @@
         async once(event$1, handler) {
           if (this._handleTauriEvent(event$1, handler)) {
             return () => {
-              const listeners11 = this.listeners[event$1];
-              listeners11.splice(listeners11.indexOf(handler), 1);
+              const listeners12 = this.listeners[event$1];
+              listeners12.splice(listeners12.indexOf(handler), 1);
             };
           }
           return event2.once(event$1, handler, {
@@ -20091,8 +20091,8 @@
     return `#${hex(r)}${hex(g)}${hex(b)}`;
   }
   async function sampleNative() {
-    const start2 = await np({ cmd: "sampleColorStart" });
-    if (!start2?.started) return null;
+    const start3 = await np({ cmd: "sampleColorStart" });
+    if (!start3?.started) return null;
     for (let attempt = 0; attempt < 8; attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 120));
       const value = await np({ cmd: "sampleColorResult" });
@@ -20491,24 +20491,24 @@
     });
   }
   async function fetchWithTimeout(input, init = {}, timeoutMs = 5e3, signal) {
-    const controller = new AbortController();
+    const controller2 = new AbortController();
     let timedOut = false;
-    const abortFromSignal = () => controller.abort();
+    const abortFromSignal = () => controller2.abort();
     if (signal) {
       if (signal.aborted) {
-        controller.abort();
+        controller2.abort();
       } else {
         signal.addEventListener("abort", abortFromSignal, { once: true });
       }
     }
     const timeoutId = window.setTimeout(() => {
       timedOut = true;
-      controller.abort();
+      controller2.abort();
     }, timeoutMs);
     try {
       return await fetch(input, {
         ...init,
-        signal: controller.signal
+        signal: controller2.signal
       });
     } catch (error) {
       if (isAbortError(error) && timedOut) throw new Error(FETCH_TIMEOUT_ERROR);
@@ -21010,7 +21010,7 @@
       void loadBarcodes();
       const state2 = createSamplerState();
       const columns = settings.columns;
-      const timer3 = setInterval(() => {
+      const timer4 = setInterval(() => {
         const snap = args.snapshotRef.current;
         const existing = getBarcode(id);
         const n = existing?.columns ?? columns;
@@ -21044,7 +21044,7 @@
         });
       }, TICK_MS);
       return () => {
-        clearInterval(timer3);
+        clearInterval(timer4);
         void endRecording(id);
       };
     }, [applies, id]);
@@ -21219,8 +21219,8 @@
         useEffect(() => {
           if (!state2.status) return;
           setChipUntil(Date.now() + CHIP_MS);
-          const timer3 = setTimeout(() => setChipUntil(0), CHIP_MS);
-          return () => clearTimeout(timer3);
+          const timer4 = setTimeout(() => setChipUntil(0), CHIP_MS);
+          return () => clearTimeout(timer4);
         }, [state2.status]);
         const shown = useMemo(() => {
           if (barcode) return barcode;
@@ -22333,24 +22333,24 @@
       params.set("season", String(target2.season));
       params.set("episode", String(target2.episode));
     }
-    const controller = new AbortController();
-    const onAbort = () => controller.abort();
+    const controller2 = new AbortController();
+    const onAbort = () => controller2.abort();
     signal?.addEventListener("abort", onAbort);
-    const timer3 = setTimeout(() => controller.abort(), timeoutMs + 500);
+    const timer4 = setTimeout(() => controller2.abort(), timeoutMs + 500);
     try {
       const response = await fetch(`/api/streams?${params}`, {
         headers: {
           "x-source-manifest-url": addon.url,
           "x-source-timeout-ms": String(Math.max(5e3, Math.min(6e4, timeoutMs)))
         },
-        signal: controller.signal
+        signal: controller2.signal
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
       if (payload.error) throw new Error(payload.error);
       return payload.streams ?? [];
     } finally {
-      clearTimeout(timer3);
+      clearTimeout(timer4);
       signal?.removeEventListener("abort", onAbort);
     }
   }
@@ -22689,10 +22689,10 @@
     const fetchOnce = async () => {
       let lastError = null;
       for (let attempt = 0; attempt < 2; attempt += 1) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+        const controller2 = new AbortController();
+        const timeout = setTimeout(() => controller2.abort(), FETCH_TIMEOUT_MS);
         try {
-          const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+          const res = await fetch(url, { cache: "no-store", signal: controller2.signal });
           if (!res.ok) {
             if (attempt === 0 && (res.status === 429 || res.status >= 500)) {
               await sleep2(180);
@@ -22857,12 +22857,12 @@
       setErrorKind(null);
       setExpanded(defaultExpanded);
       setBioExpanded(false);
-      const controller = new AbortController();
+      const controller2 = new AbortController();
       void fetchApiJsonCached(`/api/person?id=${personId}`, {
         timeoutMs: 5200,
         retries: 1,
         retryDelayMs: 220,
-        signal: controller.signal,
+        signal: controller2.signal,
         ttlMs: 5 * 6e4,
         priority: "high"
       }).then((data) => {
@@ -22873,7 +22873,7 @@
         setErrorKind(classifyFetchError(error));
         setFetchError(true);
       });
-      return () => controller.abort();
+      return () => controller2.abort();
     }, [defaultExpanded, personId]);
     if (fetchError) {
       return /* @__PURE__ */ jsx("div", { className: `mb-4 flex items-center gap-3 px-1 py-1 text-sm text-white/40 ${className}`, children: errorKind === "rate_limited" ? "Could not load person info (rate limited)" : personName ?? "Could not load person info" });
@@ -23248,13 +23248,13 @@
         return;
       }
       let cancelled = false;
-      const controller = new AbortController();
+      const controller2 = new AbortController();
       const requestId = `${mediaType}:${tmdbId ?? "none"}:${imdbId ?? "none"}:${Date.now()}`;
       void fetchWikiCached(params, {
         timeoutMs: 5200,
         retries: 1,
         retryDelayMs: 280,
-        signal: controller.signal
+        signal: controller2.signal
       }).then((d) => {
         if (cancelled) return;
         setData(d);
@@ -23268,7 +23268,7 @@
       });
       return () => {
         cancelled = true;
-        controller.abort();
+        controller2.abort();
       };
     }, [tmdbId, mediaType, imdbId]);
     useEffect(() => {
@@ -23461,12 +23461,12 @@
       const params = new URLSearchParams({ title });
       if (year) params.set("year", String(year));
       let cancelled = false;
-      const controller = new AbortController();
+      const controller2 = new AbortController();
       void fetchSoundtrackCached(params, {
         timeoutMs: 9e3,
         retries: 2,
         retryDelayMs: 420,
-        signal: controller.signal
+        signal: controller2.signal
       }).then((data) => {
         if (cancelled) return;
         setResult(data);
@@ -23478,7 +23478,7 @@
       });
       return () => {
         cancelled = true;
-        controller.abort();
+        controller2.abort();
       };
     }, [title, year]);
     useEffect(() => {
@@ -24291,12 +24291,12 @@
       swipeStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
     }, []);
     const onTouchEnd = useCallback((event2) => {
-      const start2 = swipeStartRef.current;
+      const start3 = swipeStartRef.current;
       swipeStartRef.current = null;
       const touch = event2.changedTouches[0];
-      if (!start2 || !touch) return;
-      const dx = touch.clientX - start2.x;
-      const dy = touch.clientY - start2.y;
+      if (!start3 || !touch) return;
+      const dx = touch.clientX - start3.x;
+      const dy = touch.clientY - start3.y;
       if (Math.abs(dx) < 45 || Math.abs(dx) <= Math.abs(dy)) return;
       step(dx < 0 ? 1 : -1);
     }, [step]);
@@ -24577,12 +24577,12 @@
     const running2 = inflightRequests.get(key);
     if (running2) return running2;
     const request = (async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6e3);
+      const controller2 = new AbortController();
+      const timeout = setTimeout(() => controller2.abort(), 6e3);
       try {
         const response = await fetch(
           `/api/title-logo?tmdbId=${encodeURIComponent(tmdbId)}&type=${type}`,
-          { signal: controller.signal }
+          { signal: controller2.signal }
         );
         if (!response.ok) return null;
         const payload = await response.json().catch(() => null);
@@ -24820,9 +24820,9 @@
   function buildCandidates(selected, all, max = 4) {
     const lang = subtitleLangGroup(selected.lang3);
     const sameLang = (c) => subtitleLangGroup(c.lang3) === lang;
-    const same3 = all.filter((c) => c.id !== selected.id && sameLang(c));
+    const same4 = all.filter((c) => c.id !== selected.id && sameLang(c));
     const rank = (c) => c.hashMatch ? 0 : 1;
-    const targets = same3.map((c, i) => ({ c, i })).sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i).map(({ c }) => c).slice(0, max);
+    const targets = same4.map((c, i) => ({ c, i })).sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i).map(({ c }) => c).slice(0, max);
     const references = all.filter((c) => c.id !== selected.id && !sameLang(c) && c.hashMatch);
     return [...targets, ...references];
   }
@@ -25025,10 +25025,10 @@ ${effectiveName(url, id)}`;
     if (typeof r.retryAfterPlayedS === "number") parts2.push(`igen-om=${r.retryAfterPlayedS}s`);
     return parts2.join(" ");
   }
-  function logSubsyncClient(line) {
+  function logSubsyncClient(line2) {
     if (typeof fetch !== "function") return;
     try {
-      void fetch(`/api/debug-log?msg=${encodeURIComponent(line)}`).catch(() => {
+      void fetch(`/api/debug-log?msg=${encodeURIComponent(line2)}`).catch(() => {
       });
     } catch {
     }
@@ -25119,10 +25119,10 @@ ${effectiveName(url, id)}`;
       if (!sel) return;
       handledTokenRef.current = args.selectionToken;
       abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
+      const controller2 = new AbortController();
+      abortRef.current = controller2;
       const token = guardRef.current.begin();
-      const current5 = () => guardRef.current.isCurrent(token) && !controller.signal.aborted;
+      const current5 = () => guardRef.current.isCurrent(token) && !controller2.signal.aborted;
       const valid = () => isRunValid({ current: current5(), userBlocked: userBlocked(), enabled: getSubtitleAutoSync(), optedOut: isAutoSyncOptedOut(key, sel.id) });
       inFlightRef.current = true;
       let dropLogged = false;
@@ -25168,7 +25168,7 @@ ${effectiveName(url, id)}`;
             setAutoSyncOptOut(key, sub.id);
             setAutoSyncOptOut(key, sel.id);
             logSubsyncClient(`${CLIENT_PREFIX} \xE5ngrad av anv\xE4ndaren undertext=${subLabel(sel.id)} fil=${file}`);
-            controller.abort();
+            controller2.abort();
             void a.restoreOriginal(sel, { undo: true });
           }
         });
@@ -25188,10 +25188,10 @@ ${effectiveName(url, id)}`;
             const id = setTimeout(done, 1e3);
             function done() {
               clearTimeout(id);
-              controller.signal.removeEventListener("abort", done);
+              controller2.signal.removeEventListener("abort", done);
               resolve();
             }
-            controller.signal.addEventListener("abort", done);
+            controller2.signal.addEventListener("abort", done);
           });
           if (!valid()) {
             drop();
@@ -25217,7 +25217,7 @@ ${effectiveName(url, id)}`;
                 ...identity,
                 selected: toCandidate(sel),
                 candidates
-              }, controller.signal);
+              }, controller2.signal);
             },
             waitPlayed,
             onResult: async (r) => {
@@ -25265,7 +25265,7 @@ ${effectiveName(url, id)}`;
           if (last2.status === "ambiguous" && last2.jobId) {
             if (!await waitPlayed(AUDIO_WAIT_PLAYED_SECONDS)) return;
             logSubsyncClient(`${CLIENT_PREFIX} ljudkontroll skickad fil=${file} undertext=${subLabel(sel.id)}`);
-            const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller.signal);
+            const v = await requestAudioVerification(last2.jobId, a.mediaUrl, controller2.signal);
             logSubsyncClient(describeResult(v, "ljud"));
             if (!current5()) return;
             markIfFinal(v);
@@ -25304,11 +25304,11 @@ ${effectiveName(url, id)}`;
   });
 
   // lib/tauri-avplayer.ts
-  async function avplayerPrepare(url, start2, sub) {
+  async function avplayerPrepare(url, start3, sub) {
     if (!isTauriEnv) return { streamUrl: url, offset: 0 };
     return (0, import_core4.invoke)("avplayer_prepare", {
       url,
-      start: start2 ?? null,
+      start: start3 ?? null,
       subContent: sub?.subContent ?? null,
       subIndex: sub?.subIndex ?? null,
       audioTrack: sub?.audioTrack ?? null,
@@ -25410,7 +25410,10 @@ ${effectiveName(url, id)}`;
         // Stjärna — bevakningslistan HETER stjärnlistan, så formen är dess egen och
         // inte en tillfällighet. Den ligger här i stället för att falla igenom till
         // reservformen nedan, som numera aldrig ger en stjärna.
-        watchlist_star: "M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2Z"
+        watchlist_star: "M12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2Z",
+        // Boll — Sport som eget menyval (Live TV-pluginets sida `live-tv-sport`):
+        // ring, femhörning i mitten och fem sömmar ut mot kanten.
+        "live-tv-sport": "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 8l3.8 2.76-1.45 4.47h-4.7L8.2 10.76zM12 8V3M15.8 10.76l4.75-1.54M14.35 15.23l2.94 4.04M9.65 15.23l-2.94 4.04M8.2 10.76 3.45 9.22"
       };
     }
   });
@@ -25670,9 +25673,9 @@ ${effectiveName(url, id)}`;
       params.set("s", String(target2.season));
       params.set("e", String(target2.episode));
     }
-    const start2 = Math.max(0, Math.floor(target2.seconds));
-    params.set("t", String(start2));
-    if (target2.endSeconds != null && Math.floor(target2.endSeconds) > start2) {
+    const start3 = Math.max(0, Math.floor(target2.seconds));
+    params.set("t", String(start3));
+    if (target2.endSeconds != null && Math.floor(target2.endSeconds) > start3) {
       params.set("end", String(Math.floor(target2.endSeconds)));
     }
     return `${base.replace(/\/+$/, "")}/?${params.toString()}`;
@@ -25961,14 +25964,14 @@ ${effectiveName(url, id)}`;
     const touch = size === "touch";
     const trackRef = useRef(null);
     const lastHandle = useRef("out");
-    const start2 = state2.windowStart;
+    const start3 = state2.windowStart;
     const end = clipWindowEnd(state2);
-    const span = Math.max(1, end - start2);
-    const percent = (sec) => Math.min(100, Math.max(0, (sec - start2) / span * 100));
+    const span = Math.max(1, end - start3);
+    const percent = (sec) => Math.min(100, Math.max(0, (sec - start3) / span * 100));
     const secAt = (clientX) => {
       const rect = trackRef.current?.getBoundingClientRect();
-      if (!rect || rect.width === 0) return start2;
-      return start2 + (clientX - rect.left) / rect.width * span;
+      if (!rect || rect.width === 0) return start3;
+      return start3 + (clientX - rect.left) / rect.width * span;
     };
     const startDrag = (handle) => (event2) => {
       event2.preventDefault();
@@ -25991,7 +25994,7 @@ ${effectiveName(url, id)}`;
       {
         role: "slider",
         "aria-label": which === "in" ? "In" : "Out",
-        "aria-valuemin": Math.round(start2),
+        "aria-valuemin": Math.round(start3),
         "aria-valuemax": Math.round(end),
         "aria-valuenow": Math.round(sec),
         className: `absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none bg-white shadow-[0_1px_6px_rgba(0,0,0,0.6)] ${touch ? "h-[28px] w-[14px] rounded-[5px]" : "h-[22px] w-[10px] rounded"}`,
@@ -26034,14 +26037,14 @@ ${effectiveName(url, id)}`;
       return /* @__PURE__ */ jsxs("div", { children: [
         /* @__PURE__ */ jsx("div", { className: "flex", children: track }),
         /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between text-[13px] tabular-nums text-slate-300", children: [
-          /* @__PURE__ */ jsx("span", { children: formatClipTime(start2) }),
+          /* @__PURE__ */ jsx("span", { children: formatClipTime(start3) }),
           /* @__PURE__ */ jsx("span", { className: "font-medium text-white", children: t ? t("clipZoomed") : "" }),
           /* @__PURE__ */ jsx("span", { children: formatClipTime(end) })
         ] })
       ] });
     }
     return /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3.5", children: [
-      /* @__PURE__ */ jsx("span", { className: timePillClass, children: formatClipTime(start2) }),
+      /* @__PURE__ */ jsx("span", { className: timePillClass, children: formatClipTime(start3) }),
       track,
       /* @__PURE__ */ jsx("span", { className: timePillClass, children: formatClipTime(end) })
     ] });
@@ -26213,9 +26216,9 @@ ${effectiveName(url, id)}`;
     ctx.fillStyle = HATCH_BASE;
     ctx.fillRect(r.x, r.y, r.w, r.h);
     const period = 7 * scale;
-    const line = 3 * scale;
+    const line2 = 3 * scale;
     ctx.strokeStyle = HATCH_LINE;
-    ctx.lineWidth = line;
+    ctx.lineWidth = line2;
     ctx.beginPath();
     for (let d = -r.h; d < r.w + r.h; d += period) {
       ctx.moveTo(r.x + d, r.y + r.h);
@@ -26406,11 +26409,11 @@ ${effectiveName(url, id)}`;
       if (last2 != null && ctx.measureText(`${last2} ${word}`).width <= maxW) lines[lines.length - 1] = `${last2} ${word}`;
       else lines.push(word);
     }
-    if (lines.length <= maxLines) return lines.map((line) => clip(ctx, line, maxW));
+    if (lines.length <= maxLines) return lines.map((line2) => clip(ctx, line2, maxW));
     const kept = lines.slice(0, maxLines);
     kept[maxLines - 1] = clip(ctx, `${lines.slice(maxLines - 1).join(" ")}`, maxW);
     if (!kept[maxLines - 1].endsWith("\u2026")) kept[maxLines - 1] = clip(ctx, `${kept[maxLines - 1]}\u2026`, maxW);
-    return kept.map((line) => clip(ctx, line, maxW));
+    return kept.map((line2) => clip(ctx, line2, maxW));
   }
   function parseColor(color) {
     const hex = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
@@ -26464,8 +26467,8 @@ ${effectiveName(url, id)}`;
   }
   function drawRing(ctx, fills, cx, cy, radius, holeColor) {
     const n = fills.length;
-    const start2 = -Math.PI / 2;
-    const angle = (i2) => start2 + i2 / Math.max(1, n) * Math.PI * 2;
+    const start3 = -Math.PI / 2;
+    const angle = (i2) => start3 + i2 / Math.max(1, n) * Math.PI * 2;
     const colorAt = (i2) => fills[i2] === "hatch" ? Math.floor(i2 / n * 360) % 2 === 0 ? HATCH_BASE : HATCH_LINE : fills[i2];
     const overlap = 0.6 / radius;
     let i = 0;
@@ -26475,7 +26478,7 @@ ${effectiveName(url, id)}`;
       while (j < n && colorAt(j) === color) j++;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius, angle(i), Math.min(angle(j) + overlap, start2 + Math.PI * 2));
+      ctx.arc(cx, cy, radius, angle(i), Math.min(angle(j) + overlap, start3 + Math.PI * 2));
       ctx.closePath();
       ctx.fillStyle = color;
       ctx.fill();
@@ -26585,8 +26588,8 @@ ${effectiveName(url, id)}`;
         const size7 = 6.5 * s;
         const lineH = 6.5 * 1.5 * s;
         const spacing = 0.04 * size7;
-        for (let start2 = 0; start2 < columns.length; start2 += perRow) {
-          const rowCols = columns.slice(start2, start2 + perRow);
+        for (let start3 = 0; start3 < columns.length; start3 += perRow) {
+          const rowCols = columns.slice(start3, start3 + perRow);
           const rows = Math.max(...rowCols.map((c) => c.names.length));
           rowCols.forEach((c, k) => {
             const x = padX + k * (colW + colGap);
@@ -26672,7 +26675,7 @@ ${effectiveName(url, id)}`;
       const titleLH = 24 * 1.05 * s;
       ctx.fillStyle = paper.ink;
       ctx.textAlign = "left";
-      titleLines.forEach((line, k) => ctx.fillText(line, padX, baseline(top + k * titleLH, titleLH, 24 * s)));
+      titleLines.forEach((line2, k) => ctx.fillText(line2, padX, baseline(top + k * titleLH, titleLH, 24 * s)));
       if (year) {
         setFont(ctx, 300, 16 * s);
         ctx.fillStyle = paper.dim;
@@ -26710,7 +26713,7 @@ ${effectiveName(url, id)}`;
           draw: (y) => {
             setFont(ctx, 400, 6.5 * s);
             ctx.fillStyle = paper.dim;
-            lines.forEach((line, k) => ctx.fillText(line, bx, baseline(y + 5 * s + k * lh, lh, 6.5 * s)));
+            lines.forEach((line2, k) => ctx.fillText(line2, bx, baseline(y + 5 * s + k * lh, lh, 6.5 * s)));
           }
         });
       }
@@ -27152,16 +27155,16 @@ ${effectiveName(url, id)}`;
     const delar = [{ start: 0, kind: "main" }];
     const slutpunkter = [];
     if (input.intro) {
-      const start2 = input.intro.startMs / 1e3;
+      const start3 = input.intro.startMs / 1e3;
       const slut = input.intro.endMs / 1e3;
-      if (slut > start2 && start2 < l\u00E4ngd) {
-        delar.push({ start: start2, kind: input.introKind === "recap" ? "recap" : "intro" });
+      if (slut > start3 && start3 < l\u00E4ngd) {
+        delar.push({ start: start3, kind: input.introKind === "recap" ? "recap" : "intro" });
         slutpunkter.push(slut);
       }
     }
     if (input.outro) {
-      const start2 = input.outro.startMs / 1e3;
-      if (start2 > 0 && start2 < l\u00E4ngd) delar.push({ start: start2, kind: "credits" });
+      const start3 = input.outro.startMs / 1e3;
+      if (start3 > 0 && start3 < l\u00E4ngd) delar.push({ start: start3, kind: "credits" });
     }
     if (delar.length === 1) return [];
     for (const slut of slutpunkter) {
@@ -27338,8 +27341,8 @@ ${cue.text}`).join("\n\n")}
     return +parts2[0] * 60 + parseFloat(parts2[1]);
   }
   function stripSdhText(text) {
-    const lines = text.split("\n").map((line) => line.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
-    return lines.filter((line) => line.length > 0 && line !== "-").join("\n");
+    const lines = text.split("\n").map((line2) => line2.replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/♪[^♪]*♪?/g, "").replace(/^\s*-?\s*[A-ZÅÄÖ][A-ZÅÄÖ0-9 .'’-]{1,24}:\s*/, (match) => match.trim().startsWith("-") ? "- " : "").replace(/\s{2,}/g, " ").trim());
+    return lines.filter((line2) => line2.length > 0 && line2 !== "-").join("\n");
   }
   function parseVtt(vtt) {
     const cues = [];
@@ -27348,10 +27351,10 @@ ${cue.text}`).join("\n\n")}
       const timeLine2 = lines.find((l) => l.includes("-->"));
       if (!timeLine2) continue;
       const [s, e] = timeLine2.split("-->");
-      const start2 = parseTimestamp(s);
+      const start3 = parseTimestamp(s);
       const end = parseTimestamp(e.trim().split(/\s+/)[0]);
       const text = lines.filter((l) => !l.includes("-->") && !/^\d+$/.test(l.trim()) && l.trim() !== "WEBVTT").join("\n").trim().replace(/<\d{2}:\d{2}[^>]*>/g, "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
-      if (text) cues.push({ start: start2, end, text });
+      if (text) cues.push({ start: start3, end, text });
     }
     return cues;
   }
@@ -27480,10 +27483,10 @@ ${cue.text}`).join("\n\n")}
       return false;
     }
   }
-  function buildStreamQuery(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode) {
+  function buildStreamQuery(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode) {
     const p = new URLSearchParams({ url: originalUrl });
     if (track !== null) p.set("track", String(track));
-    if (start2 > 0) p.set("start", String(Math.floor(start2)));
+    if (start3 > 0) p.set("start", String(Math.floor(start3)));
     if (vcodec) p.set("vcodec", vcodec);
     if (channels && channels > 0) p.set("channels", String(channels));
     if (audioMode) p.set("audioMode", audioMode);
@@ -27491,9 +27494,9 @@ ${cue.text}`).join("\n\n")}
     if (transcode) p.set("transcode", "1");
     return p;
   }
-  function buildProxyUrl(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode) {
-    const p = buildStreamQuery(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode);
-    console.log("[sync] buildProxyUrl", { track, start: Math.floor(start2), vcodec, channels, audioMode, transcode: Boolean(transcode) });
+  function buildProxyUrl(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode) {
+    const p = buildStreamQuery(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode);
+    console.log("[sync] buildProxyUrl", { track, start: Math.floor(start3), vcodec, channels, audioMode, transcode: Boolean(transcode) });
     return `/api/proxy-stream?${p.toString()}`;
   }
   function getAnchoredMenuStyle(trigger, menuWidth = 0) {
@@ -27515,9 +27518,9 @@ ${cue.text}`).join("\n\n")}
       overflowY: "auto"
     };
   }
-  async function initHlsStream(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode) {
-    const p = buildStreamQuery(originalUrl, track, start2, vcodec, channels, audioMode, nightMode, transcode);
-    console.log("[sync] initHlsStream", { track, start: Math.floor(start2), vcodec, channels, audioMode, transcode: Boolean(transcode) });
+  async function initHlsStream(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode) {
+    const p = buildStreamQuery(originalUrl, track, start3, vcodec, channels, audioMode, nightMode, transcode);
+    console.log("[sync] initHlsStream", { track, start: Math.floor(start3), vcodec, channels, audioMode, transcode: Boolean(transcode) });
     const res = await fetch(`/api/hls-stream/init?${p.toString()}`);
     if (!res.ok) throw new Error(`hls init failed: ${res.status}`);
     return await res.json();
@@ -27568,9 +27571,9 @@ ${cue.text}`).join("\n\n")}
       const time = video.currentTime;
       const ranges = video.buffered;
       for (let i = 0; i < ranges.length; i += 1) {
-        const start2 = ranges.start(i);
+        const start3 = ranges.start(i);
         const end = ranges.end(i);
-        if (time >= start2 && time <= end) {
+        if (time >= start3 && time <= end) {
           return Math.max(0, end - time);
         }
       }
@@ -27700,11 +27703,11 @@ ${cue.text}`).join("\n\n")}
     const droidRevealLogRef = useRef({ last: "", at: 0 });
     useEffect(() => {
       if (!isDroidEngine) return;
-      const line = `fileLoaded=${mpv.fileLoaded} firstFrame=${mpv.firstFrameRendered} tracksReady=${mpvStartupTracksReady} holdReady=${mpvStartupHoldReady} reveal=${mpvRevealPlaybackReady} started=${hasStarted} failed=${mpv.loadFailed} url=\u2026${url.slice(-32)}`;
+      const line2 = `fileLoaded=${mpv.fileLoaded} firstFrame=${mpv.firstFrameRendered} tracksReady=${mpvStartupTracksReady} holdReady=${mpvStartupHoldReady} reveal=${mpvRevealPlaybackReady} started=${hasStarted} failed=${mpv.loadFailed} url=\u2026${url.slice(-32)}`;
       const now2 = Date.now();
-      if (line !== droidRevealLogRef.current.last && now2 - droidRevealLogRef.current.at > 2e3) {
-        droidRevealLogRef.current = { last: line, at: now2 };
-        void fetch(`/api/debug-log?msg=${encodeURIComponent(`[droid-reveal] ${line}`)}`).catch(() => {
+      if (line2 !== droidRevealLogRef.current.last && now2 - droidRevealLogRef.current.at > 2e3) {
+        droidRevealLogRef.current = { last: line2, at: now2 };
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(`[droid-reveal] ${line2}`)}`).catch(() => {
         });
       }
     });
@@ -27793,14 +27796,14 @@ ${cue.text}`).join("\n\n")}
       void fetch(`/api/hls-stream/${sessionId}/playlist.m3u8`, { method: "DELETE" }).catch(() => {
       });
     }, []);
-    const applyStreamSrc = useCallback((originalUrl, track, start2, vcodec, channels, audioMode, night, transcode) => {
+    const applyStreamSrc = useCallback((originalUrl, track, start3, vcodec, channels, audioMode, night, transcode) => {
       setProxyBufferReady(false);
       if (!useHlsForProxy) {
-        setVideoSrc(buildProxyUrl(originalUrl, track, start2, vcodec, channels, audioMode, night, transcode));
+        setVideoSrc(buildProxyUrl(originalUrl, track, start3, vcodec, channels, audioMode, night, transcode));
         return;
       }
       const prev = hlsSessionIdRef.current;
-      void initHlsStream(originalUrl, track, start2, vcodec, channels, audioMode, night, transcode).then(({ sessionId, playlistUrl }) => {
+      void initHlsStream(originalUrl, track, start3, vcodec, channels, audioMode, night, transcode).then(({ sessionId, playlistUrl }) => {
         if (prev && prev !== sessionId) endHlsSessionOnServer(prev);
         hlsSessionIdRef.current = sessionId;
         hlsTranscodeRef.current = transcode;
@@ -27831,7 +27834,7 @@ ${cue.text}`).join("\n\n")}
       });
     }, [url, title, posterUrl, backdropUrl, mediaType, imdbId, tmdbId, season, episode]);
     useEffect(() => {
-      const controller = new AbortController();
+      const controller2 = new AbortController();
       void prefetchMediaWarmup({
         tmdbId: wikiTmdbId ?? null,
         imdbId: imdbId ?? null,
@@ -27841,10 +27844,10 @@ ${cue.text}`).join("\n\n")}
         season: inferredMediaType === "tv" ? season ?? null : null,
         episode: inferredMediaType === "tv" ? episode ?? null : null,
         includePlaybackWarmup: true,
-        signal: controller.signal
+        signal: controller2.signal
       }).catch(() => {
       });
-      return () => controller.abort();
+      return () => controller2.abort();
     }, [wikiTmdbId, imdbId, inferredMediaType, title, year, season, episode]);
     const playbackSessionIdentity = useMemo(() => {
       return [
@@ -28096,12 +28099,12 @@ ${cue.text}`).join("\n\n")}
           } catch {
           }
         };
-        const timer3 = window.setTimeout(() => {
+        const timer4 = window.setTimeout(() => {
           void probe();
         }, 1200);
         return () => {
           cancelled = true;
-          window.clearTimeout(timer3);
+          window.clearTimeout(timer4);
         };
       }
       const v = videoRef.current;
@@ -28366,14 +28369,14 @@ ${cue.text}`).join("\n\n")}
       if (!clientOwnsSplash || startError) return;
       if (hasStarted || hasEverStarted) return;
       if (isDirectLocalFileSource) return;
-      const timer3 = window.setTimeout(() => {
+      const timer4 = window.setTimeout(() => {
         void fetch(`/api/debug-log?msg=${encodeURIComponent(
           `[browser-start-timeout] no first playable in ${BROWSER_START_TIMEOUT_MS}ms src=${(videoSrc || "(pending probe)").slice(0, 90)}`
         )}`).catch(() => {
         });
         escalateBrowserFailureRef.current();
       }, BROWSER_START_TIMEOUT_MS);
-      return () => window.clearTimeout(timer3);
+      return () => window.clearTimeout(timer4);
     }, [clientOwnsSplash, startError, hasStarted, hasEverStarted, isDirectLocalFileSource, videoSrc]);
     const loadFailHandledTokenRef = useRef(0);
     const [subtitleClockOverride, setSubtitleClockOverride] = useState(null);
@@ -28539,19 +28542,19 @@ ${cue.text}`).join("\n\n")}
       };
       holdStill();
       markPlayerReadyToReveal();
-      const timer3 = window.setInterval(() => {
+      const timer4 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           holdStill();
           return;
         }
-        window.clearInterval(timer3);
+        window.clearInterval(timer4);
         const target2 = initialTime ?? 0;
         if (Math.abs(cinemaTimePosRef.current - target2) > 1.5) void mpvCommand2(["seek", target2, "absolute"]);
         void mpvCommand2(["set_property", "mute", userMuted ? "yes" : "no"]);
         cinemaMute.held = false;
         setMpvStartupHoldReady(true);
       }, 200);
-      return () => window.clearInterval(timer3);
+      return () => window.clearInterval(timer4);
     }, [isDroidEngine, mpv.firstFrameRendered]);
     const openMpvPlayer2 = isDroidEngine ? async (args) => {
       if (args.shouldAbort?.()) return;
@@ -28819,7 +28822,7 @@ ${cue.text}`).join("\n\n")}
       const userMuted = cinemaMute.userMuted;
       v.muted = true;
       let pausedByUs = false;
-      const timer3 = window.setInterval(() => {
+      const timer4 = window.setInterval(() => {
         if (isPlayerRevealHeld()) {
           if (!v.muted) v.muted = true;
           if (hasStartedForUrlRef.current) {
@@ -28831,7 +28834,7 @@ ${cue.text}`).join("\n\n")}
           }
           return;
         }
-        window.clearInterval(timer3);
+        window.clearInterval(timer4);
         v.muted = userMuted;
         cinemaMute.held = false;
         if (!pausedByUs) return;
@@ -28843,7 +28846,7 @@ ${cue.text}`).join("\n\n")}
         void v.play().catch(() => {
         });
       }, 120);
-      return () => window.clearInterval(timer3);
+      return () => window.clearInterval(timer4);
     }, [useMpv, videoSrc]);
     useEffect(() => {
       if (!useMpv || !mpvStartupHoldReady) return;
@@ -29193,7 +29196,7 @@ ${cue.text}`).join("\n\n")}
         const values = await Promise.all(props.map((name) => mpvCommand2(["get_property", name]).catch(() => null)));
         if (cancelled) return;
         const [codec, hwdec, w, h, bitrate, fps, drops, cache10, acodec, arate, spd] = values;
-        const num3 = (v) => {
+        const num5 = (v) => {
           if (typeof v === "number") return Number.isFinite(v) ? v : null;
           if (typeof v === "string") {
             const parsed = Number.parseFloat(v.trim());
@@ -29203,12 +29206,12 @@ ${cue.text}`).join("\n\n")}
         };
         const heap = performance.memory?.usedJSHeapSize;
         const lines = [
-          `Video  ${String(codec ?? "\u2013")}  ${num3(w) ?? "?"}\xD7${num3(h) ?? "?"}  ${num3(fps) != null ? `${num3(fps).toFixed(1)} fps` : ""}`,
+          `Video  ${String(codec ?? "\u2013")}  ${num5(w) ?? "?"}\xD7${num5(h) ?? "?"}  ${num5(fps) != null ? `${num5(fps).toFixed(1)} fps` : ""}`,
           `Hwdec  ${String(hwdec ?? "no")}`,
-          `Bitrate  ${num3(bitrate) != null ? `${(num3(bitrate) / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
-          `Drops  ${num3(drops) ?? 0}   Cache  ${num3(cache10) != null ? `${num3(cache10).toFixed(0)} s` : "\u2013"}`,
-          `Audio  ${String(acodec ?? "\u2013")}  ${num3(arate) != null ? `${num3(arate)} Hz` : ""}`,
-          `Speed  ${num3(spd) ?? 1}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
+          `Bitrate  ${num5(bitrate) != null ? `${(num5(bitrate) / 1e6).toFixed(1)} Mbit/s` : "\u2013"}`,
+          `Drops  ${num5(drops) ?? 0}   Cache  ${num5(cache10) != null ? `${num5(cache10).toFixed(0)} s` : "\u2013"}`,
+          `Audio  ${String(acodec ?? "\u2013")}  ${num5(arate) != null ? `${num5(arate)} Hz` : ""}`,
+          `Speed  ${num5(spd) ?? 1}\xD7${heap ? `   Heap ${(heap / 1048576).toFixed(0)} MB` : ""}`
         ];
         setStatsLines(lines);
       };
@@ -29340,16 +29343,16 @@ ${cue.text}`).join("\n\n")}
       const interval = window.setInterval(() => {
         const callback = onTimeUpdateRef.current;
         if (!callback) return;
-        const snapshot2 = parentPlaybackSnapshotRef.current;
-        if (!snapshot2.hasStarted || snapshot2.totalDuration <= 0) return;
+        const snapshot3 = parentPlaybackSnapshotRef.current;
+        if (!snapshot3.hasStarted || snapshot3.totalDuration <= 0) return;
         const now2 = Date.now();
-        const second = Math.floor(snapshot2.realTime);
+        const second = Math.floor(snapshot3.realTime);
         if (second === lastParentTimeUpdateSecondRef.current && now2 - lastParentTimeUpdateAtRef.current < PLAYER_PARENT_TIMEUPDATE_TICK_MS) {
           return;
         }
         lastParentTimeUpdateSecondRef.current = second;
         lastParentTimeUpdateAtRef.current = now2;
-        callback(snapshot2.realTime, snapshot2.totalDuration);
+        callback(snapshot3.realTime, snapshot3.totalDuration);
       }, PLAYER_PARENT_TIMEUPDATE_TICK_MS);
       return () => window.clearInterval(interval);
     }, []);
@@ -29497,7 +29500,7 @@ ${cue.text}`).join("\n\n")}
         boundsSyncFrameRef.current = null;
         syncPlayerBounds();
       });
-      boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
+      boundsResyncTimersRef.current.forEach((timer4) => window.clearTimeout(timer4));
       boundsResyncTimersRef.current = [window.setTimeout(() => {
         syncPlayerBounds();
       }, 220)];
@@ -29713,8 +29716,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!hasStarted || !getShowTitleOnStart()) return;
       setShowStartTitle(true);
-      const timer3 = window.setTimeout(() => setShowStartTitle(false), 4e3);
-      return () => window.clearTimeout(timer3);
+      const timer4 = window.setTimeout(() => setShowStartTitle(false), 4e3);
+      return () => window.clearTimeout(timer4);
     }, [hasStarted, title]);
     useEffect(() => {
       setAutoplayDurationHint(totalDuration > 0 ? totalDuration : null);
@@ -30127,7 +30130,7 @@ ${cue.text}`).join("\n\n")}
             window.cancelAnimationFrame(boundsSyncFrameRef.current);
             boundsSyncFrameRef.current = null;
           }
-          boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
+          boundsResyncTimersRef.current.forEach((timer4) => window.clearTimeout(timer4));
           boundsResyncTimersRef.current = [];
         };
       }
@@ -30138,7 +30141,7 @@ ${cue.text}`).join("\n\n")}
           window.cancelAnimationFrame(boundsSyncFrameRef.current);
           boundsSyncFrameRef.current = null;
         }
-        boundsResyncTimersRef.current.forEach((timer3) => window.clearTimeout(timer3));
+        boundsResyncTimersRef.current.forEach((timer4) => window.clearTimeout(timer4));
         boundsResyncTimersRef.current = [];
       };
     }, [portalEl, scheduleBoundsResync, useMpv]);
@@ -30495,8 +30498,8 @@ ${cue.text}`).join("\n\n")}
             return;
           }
         }
-        const controller = new AbortController();
-        subtitleDownloadAbortRef.current = controller;
+        const controller2 = new AbortController();
+        subtitleDownloadAbortRef.current = controller2;
         let subtitleVtt;
         try {
           subtitleVtt = await fetchTextWithRetry("/api/subtitles/download", {
@@ -30507,7 +30510,7 @@ ${cue.text}`).join("\n\n")}
             timeoutMs: 4e3,
             retries: 1,
             retryDelayMs: 200,
-            signal: controller.signal
+            signal: controller2.signal
           });
         } catch (primaryError) {
           if (isAbortLikeError(primaryError)) throw primaryError;
@@ -30518,7 +30521,7 @@ ${cue.text}`).join("\n\n")}
               timeoutMs: 4e3,
               retries: 1,
               retryDelayMs: 200,
-              signal: controller.signal
+              signal: controller2.signal
             }
           );
         }
@@ -30618,9 +30621,9 @@ ${cue.text}`).join("\n\n")}
       };
     }, [mediaType, wikiTmdbId, imdbId, season, episode]);
     const scrobbleProgress = useCallback(() => {
-      const snapshot2 = progressSnapshotRef.current;
-      if (snapshot2.totalDuration <= 0) return 0;
-      return snapshot2.realTime / snapshot2.totalDuration * 100;
+      const snapshot3 = progressSnapshotRef.current;
+      if (snapshot3.totalDuration <= 0) return 0;
+      return snapshot3.realTime / snapshot3.totalDuration * 100;
     }, []);
     const scrobbleStartedRef = useRef(false);
     useEffect(() => {
@@ -30656,8 +30659,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!mediaId || !url) return;
       function save(final = false) {
-        const snapshot2 = progressSnapshotRef.current;
-        if (!mediaId || !url || snapshot2.totalDuration <= 0) return;
+        const snapshot3 = progressSnapshotRef.current;
+        if (!mediaId || !url || snapshot3.totalDuration <= 0) return;
         if (watchedMarkedRef.current) return;
         if (!durationConfirmedRef.current) return;
         saveStreamProgress({
@@ -30670,8 +30673,8 @@ ${cue.text}`).join("\n\n")}
           type: mediaType ?? "movie",
           year: year ?? null,
           imdbId: imdbId ?? null,
-          currentTime: snapshot2.realTime,
-          duration: snapshot2.totalDuration,
+          currentTime: snapshot3.realTime,
+          duration: snapshot3.totalDuration,
           url,
           infoHash: sourceInfoHash ?? null,
           watchedAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -30687,8 +30690,8 @@ ${cue.text}`).join("\n\n")}
           title: mediaTitle ?? title,
           posterUrl: posterUrl ?? null,
           year: year ?? null,
-          position: snapshot2.realTime,
-          duration: snapshot2.totalDuration
+          position: snapshot3.realTime,
+          duration: snapshot3.totalDuration
         }, final);
       }
       const interval = setInterval(() => save(), 5e3);
@@ -30843,7 +30846,7 @@ ${cue.text}`).join("\n\n")}
     }, [playbackSessionIdentity, url, inferredMediaType, mediaType, season, episode, shouldProxyPlayback, useMpv, initialTime, imdbId, tmdbId, wikiTmdbId, mediaId, title]);
     useEffect(() => {
       if (useMpv || hasStarted) return;
-      const timer3 = window.setInterval(() => {
+      const timer4 = window.setInterval(() => {
         const v = videoRef.current;
         if (!v) return;
         if (!v.paused && v.currentTime > 0.15) {
@@ -30854,7 +30857,7 @@ ${cue.text}`).join("\n\n")}
           onFirstPlay?.();
         }
       }, 350);
-      return () => window.clearInterval(timer3);
+      return () => window.clearInterval(timer4);
     }, [hasStarted, onFirstPlay, useMpv]);
     useEffect(() => {
       if (imdbId) {
@@ -30873,15 +30876,15 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       const requestId = ++wikiResolveRequestIdRef.current;
-      const controller = new AbortController();
+      const controller2 = new AbortController();
       wikiResolveAbortRef.current?.abort();
-      wikiResolveAbortRef.current = controller;
+      wikiResolveAbortRef.current = controller2;
       const params = new URLSearchParams({ tmdbId: wikiTmdbId, type: inferredMediaType });
       void fetchWikiCached(params, {
         timeoutMs: 4200,
         retries: 2,
         retryDelayMs: 220,
-        signal: controller.signal
+        signal: controller2.signal
       }).then((data) => {
         if (wikiResolveRequestIdRef.current !== requestId) return;
         if (data.imdbId) {
@@ -30901,7 +30904,7 @@ ${cue.text}`).join("\n\n")}
               timeoutMs: 4600,
               retries: 1,
               retryDelayMs: 220,
-              signal: controller.signal
+              signal: controller2.signal
             }
           );
           if (wikiResolveRequestIdRef.current !== requestId) return;
@@ -30915,8 +30918,8 @@ ${cue.text}`).join("\n\n")}
         }
       });
       return () => {
-        if (wikiResolveAbortRef.current === controller) wikiResolveAbortRef.current = null;
-        controller.abort();
+        if (wikiResolveAbortRef.current === controller2) wikiResolveAbortRef.current = null;
+        controller2.abort();
       };
     }, [imdbId, inferredMediaType, wikiTmdbId]);
     useEffect(() => {
@@ -31165,10 +31168,10 @@ ${cue.text}`).join("\n\n")}
       const OUTRO_RE = /\b(credits|outro|ending|ed ?\d*|eftertexter|sluttexter)\b/i;
       const introIndex = chapters.findIndex((c) => INTRO_RE.test(c.title));
       if (introIndex >= 0) {
-        const start2 = chapters[introIndex].time;
-        const end = introIndex + 1 < chapters.length ? chapters[introIndex + 1].time : start2 + 90;
-        if (end > start2 && end - start2 <= 240) {
-          setIntroSegment({ startMs: Math.round(start2 * 1e3), endMs: Math.round(end * 1e3) });
+        const start3 = chapters[introIndex].time;
+        const end = introIndex + 1 < chapters.length ? chapters[introIndex + 1].time : start3 + 90;
+        if (end > start3 && end - start3 <= 240) {
+          setIntroSegment({ startMs: Math.round(start3 * 1e3), endMs: Math.round(end * 1e3) });
           setIntroKind("intro");
         }
       }
@@ -31328,9 +31331,9 @@ ${cue.text}`).join("\n\n")}
       setSubtitleDebugInfo(null);
       let cancelled = false;
       const requestId = ++subtitleListRequestIdRef.current;
-      const controller = new AbortController();
+      const controller2 = new AbortController();
       subtitleListAbortRef.current?.abort();
-      subtitleListAbortRef.current = controller;
+      subtitleListAbortRef.current = controller2;
       const effectiveSeason = season ?? inferredSeasonFromText;
       const effectiveEpisode = episode ?? inferredEpisodeFromText;
       void (async () => {
@@ -31395,8 +31398,8 @@ ${cue.text}`).join("\n\n")}
       });
       return () => {
         cancelled = true;
-        controller.abort();
-        if (subtitleListAbortRef.current === controller) subtitleListAbortRef.current = null;
+        controller2.abort();
+        if (subtitleListAbortRef.current === controller2) subtitleListAbortRef.current = null;
       };
     }, [resolvedImdbId, inferredMediaType, season, episode, inferredSeasonFromText, inferredEpisodeFromText]);
     useEffect(() => {
@@ -31439,7 +31442,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (useMpv || hasStarted || !videoSrc) return;
       if (startupRecoveryAttemptRef.current >= 2) return;
-      const timer3 = window.setTimeout(() => {
+      const timer4 = window.setTimeout(() => {
         if (useMpv || hasStarted || startupRecoveryAttemptRef.current >= 2) return;
         if (Date.now() - lastProxyRestartAtRef.current < PROXY_RESTART_MIN_GAP_MS) return;
         const currentReal = (videoRef.current?.currentTime ?? 0) + streamStartRef.current;
@@ -31477,7 +31480,7 @@ ${cue.text}`).join("\n\n")}
         );
       }, 2e4);
       return () => {
-        window.clearTimeout(timer3);
+        window.clearTimeout(timer4);
       };
     }, [activeAudioTrack, effectiveProxyAudioMode, hasStarted, isDirectLocalFileSource, nightMode, shouldProxyPlayback, url, useMpv, videoCodec, videoSrc]);
     useEffect(() => {
@@ -31834,17 +31837,17 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       setSeasonLookupSettled(false);
-      const controller = new AbortController();
-      void fetch(`/api/tv-info?tmdbId=${seriesTmdbId}`, { signal: controller.signal }).then((response) => response.json()).then((data) => {
-        if (controller.signal.aborted) return;
+      const controller2 = new AbortController();
+      void fetch(`/api/tv-info?tmdbId=${seriesTmdbId}`, { signal: controller2.signal }).then((response) => response.json()).then((data) => {
+        if (controller2.signal.aborted) return;
         const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
         const next = (data.seasons ?? []).filter((entry) => entry.season_number > currentSeason && entry.episode_count > 0).filter((entry) => typeof entry.air_date === "string" && entry.air_date.length > 0 && entry.air_date <= today).sort((a, b) => a.season_number - b.season_number)[0];
         setNextSeasonNumber(next?.season_number ?? null);
       }).catch(() => {
       }).finally(() => {
-        if (!controller.signal.aborted) setSeasonLookupSettled(true);
+        if (!controller2.signal.aborted) setSeasonLookupSettled(true);
       });
-      return () => controller.abort();
+      return () => controller2.abort();
     }, [mediaType, isLastEpisodeOfSeason, wikiTmdbId, tmdbId, episodes?.seasonNumber, season]);
     const creditsModeAllowed = Boolean(
       getCreditsRecommendations() && !getAdvanceAtOutro() && (mediaType === "tv" ? getCreditsRecommendationsTv() && isLastEpisodeOfSeason && seasonLookupSettled && nextSeasonNumber === null : true)
@@ -31866,11 +31869,11 @@ ${cue.text}`).join("\n\n")}
     }, [url]);
     const creditsLogRef = useRef({ last: "", at: 0 });
     useEffect(() => {
-      const line = `till\xE5tet=${creditsModeAllowed} setting=${getCreditsRecommendations()} outroFlytt=${getAdvanceAtOutro()} typ=${mediaType ?? "-"} sistaAvsnitt=${isLastEpisodeOfSeason} s\xE4songKlar=${seasonLookupSettled} n\xE4staS\xE4song=${nextSeasonNumber} speltid=${Math.round(totalDuration)} bekr\xE4ftad=${durationConfirmed} tr\xF6skel=${creditsTriggerSeconds == null ? "null" : Math.round(creditsTriggerSeconds)} startad=${hasStarted}`;
+      const line2 = `till\xE5tet=${creditsModeAllowed} setting=${getCreditsRecommendations()} outroFlytt=${getAdvanceAtOutro()} typ=${mediaType ?? "-"} sistaAvsnitt=${isLastEpisodeOfSeason} s\xE4songKlar=${seasonLookupSettled} n\xE4staS\xE4song=${nextSeasonNumber} speltid=${Math.round(totalDuration)} bekr\xE4ftad=${durationConfirmed} tr\xF6skel=${creditsTriggerSeconds == null ? "null" : Math.round(creditsTriggerSeconds)} startad=${hasStarted}`;
       const now2 = Date.now();
-      if (line !== creditsLogRef.current.last && now2 - creditsLogRef.current.at > 2e3) {
-        creditsLogRef.current = { last: line, at: now2 };
-        void fetch(`/api/debug-log?msg=${encodeURIComponent(`[credits] ${line}`)}`).catch(() => {
+      if (line2 !== creditsLogRef.current.last && now2 - creditsLogRef.current.at > 2e3) {
+        creditsLogRef.current = { last: line2, at: now2 };
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(`[credits] ${line2}`)}`).catch(() => {
         });
       }
     });
@@ -31904,31 +31907,31 @@ ${cue.text}`).join("\n\n")}
       if (!creditsMode) return;
       const recommendationTmdbId = wikiTmdbId ?? tmdbId;
       if (!recommendationTmdbId) return;
-      const controller = new AbortController();
+      const controller2 = new AbortController();
       const type = mediaType === "tv" ? "tv" : "movie";
       void (async () => {
         try {
           const listResponse = await fetch(
             `/api/recommendations?tmdbId=${recommendationTmdbId}&type=${type}`,
-            { signal: controller.signal }
+            { signal: controller2.signal }
           );
           const list = await listResponse.json();
           const ids = (list.items ?? []).map((entry) => String(entry?.id ?? "").replace(/^(?:movie|tv)-/, "")).filter((id) => /^\d+$/.test(id)).slice(0, creditsLibraryIdSets ? 24 : 5);
-          if (controller.signal.aborted) return;
+          if (controller2.signal.aborted) return;
           if (ids.length === 0) {
             leaveCreditsModeRef.current();
             return;
           }
           const hydrated = await Promise.all(ids.map(async (id) => {
             try {
-              const response = await fetch(`/api/item?tmdbId=${id}&type=${type}`, { signal: controller.signal });
+              const response = await fetch(`/api/item?tmdbId=${id}&type=${type}`, { signal: controller2.signal });
               const data = await response.json();
               return data.item ?? null;
             } catch {
               return null;
             }
           }));
-          if (controller.signal.aborted) return;
+          if (controller2.signal.aborted) return;
           const hydratedItems = hydrated.filter((entry) => entry !== null);
           const usable = creditsLibraryIdSets ? hydratedItems.filter((entry) => itemInLibrary(entry, creditsLibraryIdSets)).slice(0, 5) : hydratedItems;
           if (usable.length === 0) {
@@ -31939,7 +31942,7 @@ ${cue.text}`).join("\n\n")}
         } catch {
         }
       })();
-      return () => controller.abort();
+      return () => controller2.abort();
     }, [creditsMode, wikiTmdbId, tmdbId, mediaType, creditsLibraryIdSets]);
     const [creditsLogos, setCreditsLogos] = useState({});
     useEffect(() => {
@@ -31986,10 +31989,10 @@ ${cue.text}`).join("\n\n")}
     }, [creditsItems, creditsLogos, t, onCreditsOpenDetails]);
     const creditsProgress = (() => {
       if (totalDuration <= 0) return 0;
-      const start2 = creditsTriggerSeconds;
-      if (start2 == null) return 0;
-      const span = Math.max(1, totalDuration - start2);
-      return Math.max(0, Math.min(1, (realTime - start2) / span));
+      const start3 = creditsTriggerSeconds;
+      if (start3 == null) return 0;
+      const span = Math.max(1, totalDuration - start3);
+      return Math.max(0, Math.min(1, (realTime - start3) / span));
     })();
     const creditsRemainingSeconds = Math.max(0, totalDuration - realTime);
     const creditsPipMounted = creditsMode && creditsCards.length > 0;
@@ -32021,7 +32024,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!creditsMode || !useMpv) return;
       const waitMs = creditsCards.length === 0 ? 8e3 : 600;
-      const timer3 = window.setTimeout(() => {
+      const timer4 = window.setTimeout(() => {
         const pip = creditsPipRef.current;
         if (pip) {
           const rect = pip.getBoundingClientRect();
@@ -32029,7 +32032,7 @@ ${cue.text}`).join("\n\n")}
         }
         leaveCreditsMode();
       }, waitMs);
-      return () => window.clearTimeout(timer3);
+      return () => window.clearTimeout(timer4);
     }, [creditsMode, useMpv, creditsCards.length, leaveCreditsMode]);
     const currentTitleAsItem = useCallback(() => {
       if (!tmdbId) return null;
@@ -32305,7 +32308,7 @@ ${cue.text}`).join("\n\n")}
     }, [airplaySession, useMpv]);
     useEffect(() => {
       if (!airplaySession || airplayWasExternalRef.current || showCastMenu) return;
-      const timer3 = window.setTimeout(() => {
+      const timer4 = window.setTimeout(() => {
         if (!airplayWasExternalRef.current) {
           stopAirplayVideo();
           void avplayerTeardown();
@@ -32313,7 +32316,7 @@ ${cue.text}`).join("\n\n")}
           setAirplayPrepare("idle");
         }
       }, 1e4);
-      return () => window.clearTimeout(timer3);
+      return () => window.clearTimeout(timer4);
     }, [showCastMenu, airplaySession]);
     const dtIconButtonClass = playerIconButtonClass;
     const dtLabelButtonClass = playerLabelButtonClass;
@@ -34579,7 +34582,7 @@ ${cue.text}`).join("\n\n")}
                     className: "pointer-events-none absolute right-4 top-4 z-40 rounded-xl border border-white/10 px-3 py-2 font-mono text-[11px] leading-[1.5] text-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.35)]",
                     style: { background: "rgba(58, 59, 66, 0.92)" },
                     "aria-hidden": true,
-                    children: statsLines.map((line) => /* @__PURE__ */ jsx("div", { children: line }, line.split(" ")[0]))
+                    children: statsLines.map((line2) => /* @__PURE__ */ jsx("div", { children: line2 }, line2.split(" ")[0]))
                   }
                 ),
                 (overlayPrimaryText || overlaySecondaryText || secondaryNotice || syncNotice) && /* @__PURE__ */ jsxs(
@@ -34608,24 +34611,24 @@ ${cue.text}`).join("\n\n")}
                       [
                         { text: overlayPrimaryText, scale: 1, color: subTextColor, key: "primary" },
                         { text: overlaySecondaryText, scale: 0.85, color: secondarySubColor, key: "secondary" }
-                      ].filter((line) => line.text).map((line) => /* @__PURE__ */ jsx(
+                      ].filter((line2) => line2.text).map((line2) => /* @__PURE__ */ jsx(
                         "div",
                         {
                           className: "rounded px-3 py-1 text-center",
                           style: {
                             ...subDomTypography,
-                            fontSize: `${subSize / 100 * 1.25 * line.scale}rem`,
-                            color: line.color,
+                            fontSize: `${subSize / 100 * 1.25 * line2.scale}rem`,
+                            color: line2.color,
                             backgroundColor: subBackgroundColor,
                             opacity: subOpacity / 100,
                             textShadow: `0 1px 6px ${subOutlineColor}, 0 0 2px ${subOutlineColor}, 1px 1px 3px ${subOutlineColor}, -1px -1px 3px ${subOutlineColor}`
                           },
-                          children: line.text.split("\n").map((part, i) => /* @__PURE__ */ jsxs("span", { children: [
+                          children: line2.text.split("\n").map((part, i) => /* @__PURE__ */ jsxs("span", { children: [
                             i > 0 && /* @__PURE__ */ jsx("br", {}),
                             part
                           ] }, i))
                         },
-                        line.key
+                        line2.key
                       ))
                     ]
                   }
@@ -37160,8 +37163,8 @@ ${cue.text}`).join("\n\n")}
     const nativeInputRef = useRef(null);
     useEffect(() => {
       if (!nativeInput) return;
-      const timer3 = window.setTimeout(() => nativeInputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer3);
+      const timer4 = window.setTimeout(() => nativeInputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer4);
     }, [nativeInput]);
     const [shift, setShift] = useState(initial.length === 0);
     const ref = useRef(null);
@@ -37480,8 +37483,8 @@ ${cue.text}`).join("\n\n")}
       };
     }, [tmdbId, mediaType, reloadToken]);
     useEffect(() => {
-      const timer3 = window.setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 200);
-      return () => window.clearTimeout(timer3);
+      const timer4 = window.setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 200);
+      return () => window.clearTimeout(timer4);
     }, [query]);
     useEffect(() => {
       if (personId == null) {
@@ -37490,7 +37493,7 @@ ${cue.text}`).join("\n\n")}
         setBioExpanded(false);
         return;
       }
-      const controller = new AbortController();
+      const controller2 = new AbortController();
       setPerson(null);
       setPersonError(false);
       setBioExpanded(false);
@@ -37498,7 +37501,7 @@ ${cue.text}`).join("\n\n")}
         timeoutMs: 5200,
         retries: 1,
         retryDelayMs: 220,
-        signal: controller.signal,
+        signal: controller2.signal,
         ttlMs: 5 * 6e4,
         priority: "high"
       }).then((payload) => {
@@ -37508,7 +37511,7 @@ ${cue.text}`).join("\n\n")}
         if (error instanceof DOMException && error.name === "AbortError") return;
         setPersonError(true);
       });
-      return () => controller.abort();
+      return () => controller2.abort();
     }, [personId]);
     const personIdRef = useRef(personId);
     personIdRef.current = personId;
@@ -37654,11 +37657,11 @@ ${cue.text}`).join("\n\n")}
             swipeStartRef.current = event2.touches[0]?.clientX ?? null;
           },
           onTouchEnd: (event2) => {
-            const start2 = swipeStartRef.current;
+            const start3 = swipeStartRef.current;
             swipeStartRef.current = null;
             const end = event2.changedTouches[0]?.clientX;
-            if (start2 == null || end == null) return;
-            const delta = end - start2;
+            if (start3 == null || end == null) return;
+            const delta = end - start3;
             if (Math.abs(delta) < 40) return;
             event2.stopPropagation();
             stepStill(delta < 0 ? 1 : -1);
@@ -38117,10 +38120,10 @@ ${cue.text}`).join("\n\n")}
     const playButtonRef = useRef(null);
     useEffect(() => {
       if (!isTv) return;
-      let timer3 = null;
+      let timer4 = null;
       const arm = () => {
-        if (timer3) clearTimeout(timer3);
-        timer3 = setTimeout(() => {
+        if (timer4) clearTimeout(timer4);
+        timer4 = setTimeout(() => {
           const btn = playButtonRef.current;
           if (btn && btn.isConnected && document.activeElement !== btn) btn.focus();
         }, 1e4);
@@ -38128,7 +38131,7 @@ ${cue.text}`).join("\n\n")}
       arm();
       window.addEventListener("keydown", arm, true);
       return () => {
-        if (timer3) clearTimeout(timer3);
+        if (timer4) clearTimeout(timer4);
         window.removeEventListener("keydown", arm, true);
       };
     }, [isTv]);
@@ -38433,8 +38436,8 @@ ${cue.text}`).join("\n\n")}
          */
         emit(eventName, arg) {
           if (eventName in this.eventListeners) {
-            const listeners11 = this.eventListeners[eventName];
-            for (const listener of listeners11)
+            const listeners12 = this.eventListeners[eventName];
+            for (const listener of listeners12)
               listener(arg);
             return true;
           }
@@ -39274,7 +39277,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/index-client.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/index-client.ts
   function emitIndexChanged() {
     window.dispatchEvent(new CustomEvent(INDEX_CHANGED_EVENT));
   }
@@ -39448,7 +39451,7 @@ ${cue.text}`).join("\n\n")}
   }
   var INDEX_CHANGED_EVENT, QUERY_PAGE_LIMIT, LOOKUP_CHUNK_SIZE, EPG_SCHEDULE_CHUNK_SIZE, BATCH_CHUNK_SIZE;
   var init_index_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/index-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/index-client.ts"() {
       "use strict";
       "use client";
       INDEX_CHANGED_EVENT = "lumio-live-tv-index-changed";
@@ -39459,7 +39462,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-client.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-client.ts
   function onVodChanged(cb) {
     const handler = () => cb();
     window.addEventListener(VOD_CHANGED_EVENT, handler);
@@ -39536,14 +39539,14 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_CHANGED_EVENT;
   var init_vod_client = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-client.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-client.ts"() {
       "use strict";
       "use client";
       VOD_CHANGED_EVENT = "lumio-live-tv-vod-changed";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/list-curation.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/list-curation.ts
   function splitGroups(group) {
     return group.split(";").map((s) => s.trim()).filter(Boolean);
   }
@@ -39634,12 +39637,12 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
   var init_list_curation = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/list-curation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/list-curation.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-data.ts
   function sanitizeArchive(raw) {
     if (!raw || typeof raw !== "object") return void 0;
     const a = raw;
@@ -39754,14 +39757,14 @@ ${cue.text}`).join("\n\n")}
   }
   function dedupeChannels(channels) {
     const seen = /* @__PURE__ */ new Set();
-    const unique = [];
+    const unique2 = [];
     for (const channel of channels) {
       const key = channelKey(channel);
       if (seen.has(key)) continue;
       seen.add(key);
-      unique.push(channel);
+      unique2.push(channel);
     }
-    return unique;
+    return unique2;
   }
   function getLiveTvLogoSrc(logo) {
     return getPluginHttpAssetUrl("/api/m3u-logo", logo);
@@ -40230,7 +40233,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LIVE_TV_PLUGIN_ID, LIVE_TV_GLOBAL_EPG_ID, M3U_URLS_KEY, M3U_DRAFT_URLS_KEY, LIVE_TV_LISTS_KEY, LIVE_TV_PINS_KEY, LIVE_TV_CHANNELS_PREFIX, LIVE_TV_LOGO_BUCKET, MAX_CUSTOM_LIST_CHANNELS, XTREAM_LOGINS_KEY, XTREAM_URL_PREFIX, importMissingSourcesInFlight, XTREAM_ACCOUNT_TTL_MS, xtreamAccountCache, HIDE_HERO_KEY;
   var init_live_tv_data = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-data.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-data.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -40255,7 +40258,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-locks.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/channel-locks.ts
   function bridge() {
     return plugin_sdk_exports;
   }
@@ -40309,7 +40312,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LOCKED_CHANNELS_KEY, unlockedThisSession;
   var init_channel_locks = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-locks.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/channel-locks.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40321,7 +40324,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-logo-image.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-logo-image.tsx
   function drainLogoQueue() {
     while (activeLogoLoads < MAX_CONCURRENT_LOGO_LOADS && pendingLogoLoads.length > 0) {
       activeLogoLoads += 1;
@@ -40329,8 +40332,8 @@ ${cue.text}`).join("\n\n")}
       next?.();
     }
   }
-  function requestLogoLoad(start2) {
-    pendingLogoLoads.push(start2);
+  function requestLogoLoad(start3) {
+    pendingLogoLoads.push(start3);
     drainLogoQueue();
   }
   function finishLogoLoad(src) {
@@ -40401,7 +40404,7 @@ ${cue.text}`).join("\n\n")}
   }
   var loadedLogoSrcs, pendingLogoLoads, activeLogoLoads, MAX_CONCURRENT_LOGO_LOADS;
   var init_live_tv_logo_image = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-logo-image.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40414,15 +40417,15 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-ui.tsx
   function initialsOf(name) {
     const words = name.trim().split(/\s+/).filter(Boolean);
     const letters = words.slice(0, 2).map((word) => word[0]?.toUpperCase() ?? "");
     return letters.join("") || "\u2022";
   }
-  function progressOf(start2, stop, nowMs) {
-    if (stop <= start2) return 0;
-    return Math.min(1, Math.max(0, (nowMs - start2) / (stop - start2)));
+  function progressOf(start3, stop2, nowMs) {
+    if (stop2 <= start3) return 0;
+    return Math.min(1, Math.max(0, (nowMs - start3) / (stop2 - start3)));
   }
   function formatClock2(ms2, locale) {
     return new Date(ms2).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
@@ -40564,8 +40567,8 @@ ${cue.text}`).join("\n\n")}
       if (!open2) return;
       setPin("");
       setWrong(false);
-      const timer3 = window.setTimeout(() => inputRef.current?.focus(), 30);
-      return () => window.clearTimeout(timer3);
+      const timer4 = window.setTimeout(() => inputRef.current?.focus(), 30);
+      return () => window.clearTimeout(timer4);
     }, [open2]);
     if (!open2) return null;
     const submit = async () => {
@@ -40631,7 +40634,7 @@ ${cue.text}`).join("\n\n")}
   }
   var LT, surfaceCard;
   var init_live_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -40671,7 +40674,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useInSceneBox.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useInSceneBox.ts
   function useInSceneBox(ref) {
     const [inBox, setInBox] = useState(false);
     useEffect(() => {
@@ -40694,14 +40697,14 @@ ${cue.text}`).join("\n\n")}
     return inBox;
   }
   var init_useInSceneBox = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useInSceneBox.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useNarrowSurface.ts
   function useNarrowSurface(ref) {
     const [narrow, setNarrow] = useState(false);
     useEffect(() => {
@@ -40724,14 +40727,14 @@ ${cue.text}`).join("\n\n")}
     return narrow;
   }
   var init_useNarrowSurface = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useNarrowSurface.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts
   function useSceneBoxScale() {
     const [scale, setScale] = useState(null);
     useEffect(() => {
@@ -40757,7 +40760,7 @@ ${cue.text}`).join("\n\n")}
     return scale;
   }
   var init_useSceneBoxScale = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useSceneBoxScale.ts"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -40765,7 +40768,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-ui.tsx
   function dp(n) {
     return n;
   }
@@ -40904,8 +40907,8 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   function Progress({ value, height = dp(5), track = TV2.s14, style }) {
-    const pct2 = Math.round(Math.min(1, Math.max(0, value)) * 100);
-    return /* @__PURE__ */ jsx("div", { style: { height, borderRadius: height, background: track, overflow: "hidden", ...style }, children: /* @__PURE__ */ jsx("div", { "data-fill": "", style: { width: `${pct2}%`, height: "100%", background: TV2.acc } }) });
+    const pct3 = Math.round(Math.min(1, Math.max(0, value)) * 100);
+    return /* @__PURE__ */ jsx("div", { style: { height, borderRadius: height, background: track, overflow: "hidden", ...style }, children: /* @__PURE__ */ jsx("div", { "data-fill": "", style: { width: `${pct3}%`, height: "100%", background: TV2.acc } }) });
   }
   function ChannelArt({ channel, frameVersion, height, aspect, radius, children, style }) {
     const [frameFailed, setFrameFailed] = useState(false);
@@ -40940,13 +40943,14 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function Segment({ options, value, onChange, style }) {
-    return /* @__PURE__ */ jsx("div", { "data-testid": "tv-segment", style: { display: "inline-flex", padding: dp(4), borderRadius: 999, background: TV2.s08, gap: dp(2), flexShrink: 0, whiteSpace: "nowrap", maxWidth: "100%", ...style }, children: options.map((option) => /* @__PURE__ */ jsx(
+  function Segment({ options, value, onChange, style, size = "md", optionAttrs }) {
+    const h = size === "lg" ? dp(46) : dp(38);
+    return /* @__PURE__ */ jsx("div", { "data-testid": "tv-segment", style: { display: "inline-flex", padding: dp(4), borderRadius: 999, background: TV2.s08, gap: dp(2), flexShrink: 0, whiteSpace: "nowrap", maxWidth: "100%", ...style }, children: options.map((option, index) => /* @__PURE__ */ jsx(
       "div",
       {
         "data-testid": "tv-segment-option",
-        ...station(() => onChange(option.key)),
-        style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: dp(16), whiteSpace: "nowrap", cursor: "pointer", background: option.key === value ? TV2.s16 : "transparent", color: option.key === value ? TV2.text : TV2.muted },
+        ...station(() => onChange(option.key), void 0, optionAttrs?.(index)),
+        style: { height: h, minHeight: h, padding: `0 ${size === "lg" ? dp(20) : dp(18)}px`, borderRadius: 999, display: "inline-flex", alignItems: "center", fontSize: size === "lg" ? dp(18) : dp(16), fontWeight: size === "lg" ? 600 : void 0, whiteSpace: "nowrap", cursor: "pointer", background: option.key === value ? TV2.s16 : "transparent", color: option.key === value ? TV2.text : TV2.muted },
         children: option.label
       },
       option.key
@@ -40980,14 +40984,14 @@ ${cue.text}`).join("\n\n")}
     const [now2, setNow] = useState(() => /* @__PURE__ */ new Date());
     useEffect(() => {
       if (useHostClock) return;
-      let timer3 = 0;
+      let timer4 = 0;
       const tick2 = () => {
         const next = /* @__PURE__ */ new Date();
         setNow(next);
-        timer3 = window.setTimeout(tick2, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
+        timer4 = window.setTimeout(tick2, 6e4 - (next.getSeconds() * 1e3 + next.getMilliseconds()));
       };
       tick2();
-      return () => window.clearTimeout(timer3);
+      return () => window.clearTimeout(timer4);
     }, [useHostClock]);
     if (useHostClock) {
       if (inSceneBox) {
@@ -41010,7 +41014,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SCENE_TOP_INSET, TV2, cardStyle, USE_PLAYER_FRAMES, sw, svg, Icons;
   var init_tv_ui = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-ui.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41043,7 +41047,7 @@ ${cue.text}`).join("\n\n")}
         lineCard: "rgba(255,255,255,0.10)",
         lineStrong: "rgba(255,255,255,0.22)",
         acc: "rgb(var(--accent-500))",
-        accMix: (pct2) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct2}%, transparent)`,
+        accMix: (pct3) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct3}%, transparent)`,
         accText: "#ffd9c9",
         onAcc: "#fff",
         live: "#fb7185",
@@ -41134,7 +41138,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-strings.ts
   function tvText(lang, key, vars) {
     const table = lang === "sv" ? SV2 : EN2;
     let out = table[key] ?? EN2[key];
@@ -41150,7 +41154,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EN2, SV2;
   var init_tv_strings = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-strings.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-strings.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -41542,13 +41546,15 @@ ${cue.text}`).join("\n\n")}
         // Sportläge (fas 1, EPG)
         railSport: "Sport",
         sheetSport: "Sport",
+        sheetFavourites: "Favourites",
         sportTitle: "Sport",
-        sportSummary: "{day} \xB7 {count} matches \xB7 {live} live",
+        sportSummary: "{live} in play \xB7 {count} matches {day}",
+        sportSummaryQuiet: "{count} matches {day}",
         sportYesterday: "Yesterday",
         sportToday: "Today",
         sportTomorrow: "Tomorrow",
-        sportTabForYou: "For you",
-        sportTabFollows: "Following",
+        sportTabForYou: "Overview",
+        sportTabFollows: "My teams",
         sportViewAs: "View as",
         sportMatchday: "Matchday",
         sportFeed: "Feed",
@@ -41572,11 +41578,11 @@ ${cue.text}`).join("\n\n")}
         sportKeyBroken: "The key no longer works",
         sportYouFollow: "You follow",
         sportWatchOn: "Watch on {channel}",
-        sportMatchCenter: "Match center",
-        sportSources: "{n} sources in your playlists",
+        sportMatchCenter: "Match info",
+        sportSources: "On {n} channels",
         sportSourcesShort: "{n} sources",
         sportNextOnChannels: "Next on your channels",
-        sportMatchdayHint: "select a match for the match center",
+        sportMatchdayHint: "select a match for match info",
         sportLiveNow: "Live now",
         sportLater: "Later",
         sportFinished: "Finished",
@@ -41592,52 +41598,51 @@ ${cue.text}`).join("\n\n")}
         sportAlertOff: "Off",
         sportAlert15: "15 min before",
         sportAlertKickoff: "At kick-off",
-        sportFollowAdd: "Add teams or competitions",
-        sportFollowSummary: "{n} followed \xB7 notice {rule}",
-        sportKickoffAlert: "Kick-off notice",
-        sportAlertOnlyRunning: "Notices only arrive while Lumio is running.",
+        sportFollowAdd: "Pick your teams",
+        sportFollowSummary: "{n} favourites \xB7 reminder {rule}",
+        sportKickoffAlert: "Reminder",
+        sportAlertOnlyRunning: "Reminders only show while Lumio is running.",
         sportNoUpcoming: "No match in the guide",
         sportVs: "vs {opponent}",
         sportTodayAt: "Today {time}",
         sportTomorrowAt: "Tomorrow {time}",
         sportLiveNowShort: "LIVE now",
-        sportFollowName: "Follow {name}",
-        sportFollowingName: "Following {name}",
-        sportWhereToWatch: "Where can I watch it",
+        sportFollowName: "Add {name} to favourites",
+        sportFollowingName: "Remove {name} from favourites",
+        sportWhereToWatch: "Showing on",
         sportBest: "BEST",
         sportLatencyUnknown: "\u2014",
         sportWatchQuality: "Watch \xB7 {quality}",
         sportWatch: "Watch",
-        sportPickChannel: "Choose another channel\u2026",
-        sportPickChannelSub: "Point the match at any channel in your playlists",
+        sportPickChannel: "Wrong channel?",
+        sportPickChannelSub: "Link the match to one of your channels",
         sportYourChoice: "Your choice",
         sportUseAutomatic: "Use the automatic choice",
         sportRemindMe: "Remind me",
         sportReminded: "Reminder set",
         sportMatches: "Matches",
-        sportMatchesHint: "Select to switch match. Select several to watch them together.",
-        sportPickSeveral: "Select several",
+        sportMatchesHint: "Select a match to switch channel. Mark several with the Multiview icon to watch them together.",
+        sportMultiviewAdd: "Add {name} to Multiview",
+        sportMultiviewRemove: "Remove {name} from Multiview",
         sportOpenMultiview: "Open in Multiview ({n})",
-        sportOnThisChannel: "On this channel",
-        sportLiveOnChannels: "Live on your channels",
-        sportLaterOnChannels: "Later today on your channels",
-        sportNowPill: "NOW",
+        sportLiveOnChannels: "In play now",
+        sportNowPill: "Playing",
         sportEmptyDay: "No matches in the guide for this day.",
         sportLoading: "Fetching matches\u2026",
         sportNeedsUpdate: "Sport needs a newer version of Lumio.",
         sportError: "Could not read the guide.",
         sportRound: "Round {n}",
         sportPlaylistUnknown: "Playlist",
-        sportFollowEmpty: "Follow a team or a competition and its matches show up here.",
+        sportFollowEmpty: "Tap the heart on a team or league and its matches gather here.",
         sportClose: "Close",
         sportLiveShort: "LIVE",
         sportHalfTime: "HT",
         sportPostponed: "Postponed",
         sportInProgress: "in progress",
-        sportResultOnly: "Results only",
+        sportResultOnly: "No channel",
         sportFollowSearch: "Search teams",
         sportKeyTitle: "Show results and tables \u2013 free, takes 1 minute",
-        sportKeyChoice: "API-Sports is free (100 calls a day per sport); TheSportsDB costs $9/month but has no daily limit.",
+        sportKeyChoice: "sportapi.ai is free for football (2,000 calls a day); API-Sports is free (100 calls a day per sport); TheSportsDB costs $9/month but has no daily limit. You can add several.",
         sportKeyCovers: "Results for {sports}.",
         sportKeyGetKey: "Get a key",
         sportKeyPaste: "Paste key",
@@ -41655,7 +41660,7 @@ ${cue.text}`).join("\n\n")}
         sportKeyRetry: "New code",
         sportSearchSubmit: "Search",
         sportBackdropTitle: "Background in Sport",
-        sportBackdropHint: "Pick a background per sport. Sports without their own choice follow All sports.",
+        sportBackdropHint: "Pick a background per sport. Each sport shows its own image by default; Other follows All sports.",
         sportBackdropStandard: "Standard",
         sportBackdropAuto: "Automatic",
         sportBackdropCustom: "Custom image",
@@ -41700,13 +41705,31 @@ ${cue.text}`).join("\n\n")}
         sportKeyChange: "Change key",
         sportKeyRemove: "Remove key",
         sportKeyRemoveBody: "Results, tables and goal alerts stop. Matches from the guide remain.",
+        sportKeysTitle: "Keys",
+        sportKeysHint: "One key per source. Several sources can be active at once; each sport uses the first source with calls left.",
+        sportKeyStateNone: "No key",
+        sportKeyStateOk: "OK",
+        sportKeyStatePaused: "Paused until {time}",
+        sportKeyStateInvalid: "Key not working",
+        sportKeyQuotaToday: "{used} / {limit} today",
+        sportKeyNoDailyLimit: "No daily limit",
+        sportKeyAdd: "Add key",
+        sportKeySportApiFree: "Football: 2,000 calls/day free",
+        sportKeyBlurbSportApi: "Football \xB7 2,000 calls/day free",
+        sportKeyBlurbApiSports: "All sports \xB7 100/day per sport free",
+        sportKeyBlurbTheSportsDb: "All sports \xB7 USD 9/month",
+        sportKeyStateActive: "Active",
+        sportKeyLeftToday: "{n} left today",
+        sportKeyLeftPerSport: "Left today: {list}",
+        sportKeyCurrent: "Current key: {key}",
+        sportRateVia: "via {source}",
         sportNoKey: "No key",
         sportCancel: "Cancel",
-        sportTabResults: "Results",
+        sportTabResults: "Tables & results",
         sportResultsAll: "All",
-        sportResultsLive: "Live only",
-        sportResultsMine: "My channels ({n})",
-        sportJumpTo: "JUMP TO",
+        sportResultsLive: "In play",
+        sportResultsMine: "Watchable ({n})",
+        sportJumpTo: "LEAGUES",
         sportYourLeagues: "YOUR LEAGUES",
         sportTopLeagues: "MOST MATCHES",
         sportMoreLeagues: "More leagues\u2026",
@@ -41741,8 +41764,77 @@ ${cue.text}`).join("\n\n")}
         sportStatShots: "Shots",
         sportStatShotsOn: "Shots on target",
         sportStatCorners: "Corners",
-        sportGoal: "GOAL!",
-        sportJumpThere: "Jump there"
+        sportGoal: "Goal",
+        sportJumpThere: "Watch",
+        sportHeaderSummary: "{day} \xB7 {count} matches \xB7 {live} live \xB7 {mine} on your channels",
+        sportDayPrev: "Previous day",
+        sportDayNext: "Next day",
+        sportAllShort: "All",
+        sportFollowCount: "{n} teams and competitions",
+        sportFollowBellHint: "Use the bell to choose reminders",
+        sportResultsFollowed: "My teams ({n})",
+        sportAllLeaguesReset: "All leagues",
+        sportFollowing: "Following",
+        sportFollow: "Follow",
+        sportFollowLeague: "Follow {name}",
+        sportWatchMatch: "Watch the match",
+        sportDelay: "{s} s delay",
+        sportOtherChannel: "Choose another channel",
+        sportTheMatch: "The match",
+        sportEventsStats: "Events & statistics",
+        sportEventsSummary: "{goals} goals \xB7 {cards} cards",
+        sportStartingXI: "Starting line-ups",
+        sportPickPlayer: "Select a player to see the profile",
+        sportPosGk: "Goalkeeper",
+        sportPosDef: "Defence",
+        sportPosMid: "Midfield",
+        sportPosAtt: "Attack",
+        sportPosOther: "Other",
+        sportBack: "Back",
+        sportAssist: "Assist: {name}",
+        sportNoEvents: "No events yet.",
+        sportDetailLoading: "Fetching match data\u2026",
+        sportDetailNone: "The source has no data for this match.",
+        sportVenueCity: "City",
+        sportVenueOnly: "The source has no more about the venue.",
+        sportPlayerNumber: "Number",
+        sportPlayerPosition: "Position",
+        sportPlayerTeam: "Team",
+        sportPlayerThisMatch: "This match",
+        sportPlayerGoals: "Goals",
+        sportPlayerAssists: "Assists",
+        sportPlayerYellow: "Yellow cards",
+        sportPlayerRed: "Red cards",
+        sportPlayerSub: "Substitute",
+        sportSwitchSection: "Switch Live TV section",
+        sportOnlyWatchable: "Only what I can watch",
+        sportLaterToday: "Later today",
+        sportTonight: "TONIGHT",
+        sportTopMatch: "Top match",
+        sportKickoffAt: "Kick-off {time}",
+        sportPickSource: "Choose source",
+        sportBestLower: "best",
+        sportMatchdaySwipe: "your channels \xB7 swipe sideways",
+        sportPlanChosen: "{n} chosen",
+        sportPlanHint: "tick what you want to watch",
+        sportAddTeams: "Add teams",
+        sportAlertShort15: "15 min",
+        sportAlertShortKickoff: "Kick-off",
+        sportAlertFor: "Reminder for {name}: {rule}",
+        sportRowLiveNow: "Live now",
+        sportRowMyTeams: "My teams",
+        sportRowTonight: "Tonight",
+        sportRowZap: "Zap live",
+        sportRowLeague: "League",
+        sportRowResults: "Results for my teams",
+        sportRowSource: "Sport: {name}",
+        sportRowOptionSport: "Sport",
+        sportRowOptionLeague: "League",
+        sportRowLeagueAuto: "First followed league",
+        sportRowOptionScores: "Scores",
+        sportRowShowScores: "Show",
+        sportRowHideScores: "Hide scores",
+        sportRowFollowNote: "You follow {name}"
       };
       SV2 = {
         categories: "Kategorier",
@@ -42089,13 +42181,15 @@ ${cue.text}`).join("\n\n")}
         // Sportläge (fas 1, EPG)
         railSport: "Sport",
         sheetSport: "Sport",
+        sheetFavourites: "Favoriter",
         sportTitle: "Sport",
-        sportSummary: "{day} \xB7 {count} matcher \xB7 {live} live",
+        sportSummary: "{live} p\xE5g\xE5r nu \xB7 {count} matcher {day}",
+        sportSummaryQuiet: "{count} matcher {day}",
         sportYesterday: "Ig\xE5r",
         sportToday: "Idag",
         sportTomorrow: "Imorgon",
-        sportTabForYou: "F\xF6r dig",
-        sportTabFollows: "F\xF6ljer",
+        sportTabForYou: "\xD6versikt",
+        sportTabFollows: "Mina lag",
         sportViewAs: "Visa som",
         sportMatchday: "Matchdag",
         sportFeed: "Fl\xF6de",
@@ -42119,11 +42213,11 @@ ${cue.text}`).join("\n\n")}
         sportKeyBroken: "Nyckeln fungerar inte l\xE4ngre",
         sportYouFollow: "Du f\xF6ljer",
         sportWatchOn: "Titta p\xE5 {channel}",
-        sportMatchCenter: "Matchcenter",
-        sportSources: "{n} k\xE4llor i dina spellistor",
+        sportMatchCenter: "Matchinfo",
+        sportSources: "S\xE4nds p\xE5 {n} kanaler",
         sportSourcesShort: "{n} k\xE4llor",
         sportNextOnChannels: "N\xE4sta p\xE5 dina kanaler",
-        sportMatchdayHint: "v\xE4lj en match f\xF6r matchcenter",
+        sportMatchdayHint: "v\xE4lj en match f\xF6r matchinfo",
         sportLiveNow: "Live nu",
         sportLater: "Senare",
         sportFinished: "Avslutade",
@@ -42139,52 +42233,51 @@ ${cue.text}`).join("\n\n")}
         sportAlertOff: "Av",
         sportAlert15: "15 min f\xF6re",
         sportAlertKickoff: "Vid avspark",
-        sportFollowAdd: "L\xE4gg till lag eller turneringar",
-        sportFollowSummary: "{n} f\xF6ljs \xB7 notis {rule}",
-        sportKickoffAlert: "Avsparksnotis",
-        sportAlertOnlyRunning: "Notiser kommer bara medan Lumio \xE4r ig\xE5ng.",
+        sportFollowAdd: "V\xE4lj dina lag",
+        sportFollowSummary: "{n} favoriter \xB7 p\xE5minnelse {rule}",
+        sportKickoffAlert: "P\xE5minnelse",
+        sportAlertOnlyRunning: "P\xE5minnelser visas bara medan Lumio \xE4r ig\xE5ng.",
         sportNoUpcoming: "Ingen match i tabl\xE5n",
         sportVs: "mot {opponent}",
         sportTodayAt: "Idag {time}",
         sportTomorrowAt: "Imorgon {time}",
         sportLiveNowShort: "LIVE nu",
-        sportFollowName: "F\xF6lj {name}",
-        sportFollowingName: "F\xF6ljer {name}",
-        sportWhereToWatch: "Var kan jag se den",
+        sportFollowName: "L\xE4gg till {name} i favoriter",
+        sportFollowingName: "Ta bort {name} fr\xE5n favoriter",
+        sportWhereToWatch: "S\xE4nds p\xE5",
         sportBest: "B\xC4ST",
         sportLatencyUnknown: "\u2014",
         sportWatchQuality: "Titta \xB7 {quality}",
         sportWatch: "Titta",
-        sportPickChannel: "V\xE4lj annan kanal\u2026",
-        sportPickChannelSub: "Peka matchen mot valfri kanal i dina spellistor",
+        sportPickChannel: "Fel kanal?",
+        sportPickChannelSub: "Koppla matchen till en av dina kanaler",
         sportYourChoice: "Ditt val",
         sportUseAutomatic: "Anv\xE4nd automatiskt val",
         sportRemindMe: "P\xE5minn mig",
         sportReminded: "P\xE5minnelse satt",
         sportMatches: "Matcher",
-        sportMatchesHint: "V\xE4lj en match f\xF6r att byta. V\xE4lj flera f\xF6r att se dem samtidigt.",
-        sportPickSeveral: "V\xE4lj flera",
+        sportMatchesHint: "V\xE4lj en match f\xF6r att byta kanal. Markera flera med Multiview-ikonen f\xF6r att se dem samtidigt.",
+        sportMultiviewAdd: "L\xE4gg {name} i Multiview",
+        sportMultiviewRemove: "Ta bort {name} ur Multiview",
         sportOpenMultiview: "\xD6ppna i Multiview ({n})",
-        sportOnThisChannel: "P\xE5 den h\xE4r kanalen",
-        sportLiveOnChannels: "Live p\xE5 dina kanaler",
-        sportLaterOnChannels: "Senare idag p\xE5 dina kanaler",
-        sportNowPill: "NU",
+        sportLiveOnChannels: "P\xE5g\xE5r nu",
+        sportNowPill: "Spelas",
         sportEmptyDay: "Inga matcher i tabl\xE5n den h\xE4r dagen.",
         sportLoading: "H\xE4mtar matcher\u2026",
         sportNeedsUpdate: "Sport kr\xE4ver en nyare version av Lumio.",
         sportError: "Kunde inte l\xE4sa tabl\xE5n.",
         sportRound: "Omg\xE5ng {n}",
         sportPlaylistUnknown: "Spellista",
-        sportFollowEmpty: "F\xF6lj ett lag eller en turnering s\xE5 hamnar deras matcher h\xE4r.",
+        sportFollowEmpty: "Tryck p\xE5 hj\xE4rtat vid ett lag eller en liga s\xE5 samlas matcherna h\xE4r.",
         sportClose: "St\xE4ng",
         sportLiveShort: "LIVE",
         sportHalfTime: "Paus",
         sportPostponed: "Uppskjuten",
         sportInProgress: "p\xE5g\xE5r",
-        sportResultOnly: "Bara resultat",
+        sportResultOnly: "Ingen kanal",
         sportFollowSearch: "S\xF6k lag",
         sportKeyTitle: "Visa resultat och tabeller \u2013 gratis, tar 1 minut",
-        sportKeyChoice: "API-Sports \xE4r gratis (100 anrop per dag och sport); TheSportsDB kostar 9 USD/m\xE5n men har ingen dagskvot.",
+        sportKeyChoice: "sportapi.ai \xE4r gratis f\xF6r fotboll (2 000 anrop per dag); API-Sports \xE4r gratis (100 anrop per dag och sport); TheSportsDB kostar 9 USD/m\xE5n men har ingen dagskvot. Du kan l\xE4gga till flera.",
         sportKeyCovers: "Resultat f\xF6r {sports}.",
         sportKeyGetKey: "Skaffa nyckel",
         sportKeyPaste: "Klistra in nyckel",
@@ -42202,7 +42295,7 @@ ${cue.text}`).join("\n\n")}
         sportKeyRetry: "Ny kod",
         sportSearchSubmit: "S\xF6k",
         sportBackdropTitle: "Bakgrund i Sport",
-        sportBackdropHint: "V\xE4lj bakgrund per sport. Sporter utan eget val f\xF6ljer Alla sporter.",
+        sportBackdropHint: "V\xE4lj bakgrund per sport. Varje sport visar sin egen bild som standard, \xD6vrigt f\xF6ljer Alla sporter.",
         sportBackdropStandard: "Standard",
         sportBackdropAuto: "Automatisk",
         sportBackdropCustom: "Egen bild",
@@ -42247,13 +42340,31 @@ ${cue.text}`).join("\n\n")}
         sportKeyChange: "Byt nyckel",
         sportKeyRemove: "Ta bort nyckel",
         sportKeyRemoveBody: "Resultat, tabeller och m\xE5lnotiser slutar. Matcherna ur guiden finns kvar.",
+        sportKeysTitle: "Nycklar",
+        sportKeysHint: "En nyckel per k\xE4lla. Flera k\xE4llor kan vara aktiva samtidigt; varje sport anv\xE4nder f\xF6rsta k\xE4llan med anrop kvar.",
+        sportKeyStateNone: "Ingen nyckel",
+        sportKeyStateOk: "OK",
+        sportKeyStatePaused: "Pausad till {time}",
+        sportKeyStateInvalid: "Nyckeln fungerar inte",
+        sportKeyQuotaToday: "{used} / {limit} i dag",
+        sportKeyNoDailyLimit: "Ingen dagsgr\xE4ns",
+        sportKeyAdd: "L\xE4gg till nyckel",
+        sportKeySportApiFree: "Fotboll: 2 000 anrop/dag gratis",
+        sportKeyBlurbSportApi: "Fotboll \xB7 2 000 anrop/dag gratis",
+        sportKeyBlurbApiSports: "Alla sporter \xB7 100/dag per sport gratis",
+        sportKeyBlurbTheSportsDb: "Alla sporter \xB7 9 USD/m\xE5n",
+        sportKeyStateActive: "Aktiv",
+        sportKeyLeftToday: "{n} kvar idag",
+        sportKeyLeftPerSport: "Kvar idag: {list}",
+        sportKeyCurrent: "Nuvarande nyckel: {key}",
+        sportRateVia: "via {source}",
         sportNoKey: "Ingen nyckel",
         sportCancel: "Avbryt",
-        sportTabResults: "Resultat",
+        sportTabResults: "Tabeller & resultat",
         sportResultsAll: "Alla",
-        sportResultsLive: "Bara live",
-        sportResultsMine: "Mina kanaler ({n})",
-        sportJumpTo: "HOPPA TILL",
+        sportResultsLive: "P\xE5g\xE5r",
+        sportResultsMine: "Kan ses ({n})",
+        sportJumpTo: "LIGOR",
         sportYourLeagues: "DINA LIGOR",
         sportTopLeagues: "FLEST MATCHER",
         sportMoreLeagues: "Fler ligor\u2026",
@@ -42288,31 +42399,100 @@ ${cue.text}`).join("\n\n")}
         sportStatShots: "Skott",
         sportStatShotsOn: "Skott p\xE5 m\xE5l",
         sportStatCorners: "H\xF6rnor",
-        sportGoal: "M\xC5L!",
-        sportJumpThere: "Hoppa dit"
+        sportGoal: "M\xE5l",
+        sportJumpThere: "Titta",
+        sportHeaderSummary: "{day} \xB7 {count} matcher \xB7 {live} live \xB7 {mine} p\xE5 dina kanaler",
+        sportDayPrev: "F\xF6reg\xE5ende dag",
+        sportDayNext: "N\xE4sta dag",
+        sportAllShort: "Alla",
+        sportFollowCount: "{n} lag och turneringar",
+        sportFollowBellHint: "Tryck p\xE5 klockan f\xF6r att v\xE4lja notis",
+        sportResultsFollowed: "Mina lag ({n})",
+        sportAllLeaguesReset: "Alla ligor",
+        sportFollowing: "F\xF6ljer",
+        sportFollow: "F\xF6lj",
+        sportFollowLeague: "F\xF6lj {name}",
+        sportWatchMatch: "Se matchen",
+        sportDelay: "{s} s f\xF6rdr\xF6jning",
+        sportOtherChannel: "V\xE4lj annan kanal",
+        sportTheMatch: "Matchen",
+        sportEventsStats: "H\xE4ndelser & statistik",
+        sportEventsSummary: "{goals} m\xE5l \xB7 {cards} kort",
+        sportStartingXI: "Startelvor",
+        sportPickPlayer: "V\xE4lj en spelare f\xF6r att se profilen",
+        sportPosGk: "M\xE5lvakt",
+        sportPosDef: "F\xF6rsvar",
+        sportPosMid: "Mittf\xE4lt",
+        sportPosAtt: "Anfall",
+        sportPosOther: "\xD6vriga",
+        sportBack: "Tillbaka",
+        sportAssist: "Assist: {name}",
+        sportNoEvents: "Inga h\xE4ndelser \xE4n.",
+        sportDetailLoading: "H\xE4mtar matchdata\u2026",
+        sportDetailNone: "K\xE4llan har inga uppgifter om matchen.",
+        sportVenueCity: "Stad",
+        sportVenueOnly: "K\xE4llan har inget mer om arenan.",
+        sportPlayerNumber: "Nummer",
+        sportPlayerPosition: "Position",
+        sportPlayerTeam: "Lag",
+        sportPlayerThisMatch: "Den h\xE4r matchen",
+        sportPlayerGoals: "M\xE5l",
+        sportPlayerAssists: "Assist",
+        sportPlayerYellow: "Gula kort",
+        sportPlayerRed: "R\xF6da kort",
+        sportPlayerSub: "Avbytare",
+        sportSwitchSection: "Byt Live TV-sektion",
+        sportOnlyWatchable: "Bara det jag kan se",
+        sportLaterToday: "Senare idag",
+        sportTonight: "IKV\xC4LL",
+        sportTopMatch: "Toppmatch",
+        sportKickoffAt: "Avspark {time}",
+        sportPickSource: "V\xE4lj k\xE4lla",
+        sportBestLower: "b\xE4st",
+        sportMatchdaySwipe: "dina kanaler \xB7 svep i sidled",
+        sportPlanChosen: "{n} valda",
+        sportPlanHint: "bocka i det du vill se",
+        sportAddTeams: "L\xE4gg till lag",
+        sportAlertShort15: "15 min",
+        sportAlertShortKickoff: "Avspark",
+        sportAlertFor: "P\xE5minnelse f\xF6r {name}: {rule}",
+        sportRowLiveNow: "Live nu",
+        sportRowMyTeams: "Mina lag",
+        sportRowTonight: "I kv\xE4ll",
+        sportRowZap: "Zappa live",
+        sportRowLeague: "Liga",
+        sportRowResults: "Resultat f\xF6r mina lag",
+        sportRowSource: "Sport: {name}",
+        sportRowOptionSport: "Sport",
+        sportRowOptionLeague: "Liga",
+        sportRowLeagueAuto: "F\xF6rsta f\xF6ljda ligan",
+        sportRowOptionScores: "St\xE4llning",
+        sportRowShowScores: "Visa",
+        sportRowHideScores: "D\xF6lj st\xE4llning",
+        sportRowFollowNote: "Du f\xF6ljer {name}"
       };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/store-id.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg/store-id.ts
   function epgStoreId(listId) {
     return listId === null ? null : LIVE_TV_GLOBAL_EPG_ID;
   }
   var init_store_id = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/store-id.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg/store-id.ts"() {
       "use strict";
       "use client";
       init_live_tv_data();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/now-snapshot.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg/now-snapshot.ts
   function snapshotKey(listId, source) {
     return `${epgStoreId(listId)}|${source ?? ""}`;
   }
-  function nowSnapshotNeedsRefetch(snapshot2, nowMs) {
-    if (nowMs - snapshot2.loadedAt >= NOW_SNAPSHOT_MAX_AGE_MS) return true;
-    const items2 = snapshot2.items;
+  function nowSnapshotNeedsRefetch(snapshot3, nowMs) {
+    if (nowMs - snapshot3.loadedAt >= NOW_SNAPSHOT_MAX_AGE_MS) return true;
+    const items2 = snapshot3.items;
     for (const key in items2) {
       const entry = items2[key];
       if (!entry) continue;
@@ -42331,16 +42511,16 @@ ${cue.text}`).join("\n\n")}
     const existing = inflight8.get(key);
     if (existing) return existing;
     const request = epgNow({ listId: epgStoreId(listId), source: source ?? void 0 }).then((data) => {
-      const snapshot2 = {
+      const snapshot3 = {
         at: data.at,
         fetchedAt: data.fetchedAt,
         items: data.items,
         count: Object.keys(data.items).length,
         loadedAt: Date.now()
       };
-      snapshots.set(key, snapshot2);
-      publish2({ snapshot: snapshot2, failed: false });
-      return snapshot2;
+      snapshots.set(key, snapshot3);
+      publish2({ snapshot: snapshot3, failed: false });
+      return snapshot3;
     }).catch((err) => {
       publish2({ snapshot: snapshots.get(key) ?? null, failed: true });
       throw err;
@@ -42365,7 +42545,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS, snapshots, inflight8, NOW_SNAPSHOT_MAX_AGE_MS, active3, listeners8;
   var init_now_snapshot = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg/now-snapshot.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -42379,7 +42559,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-resolver.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/channel-resolver.ts
   function remember(key, value) {
     memo3.set(key, value);
     while (memo3.size > MAX_ENTRIES4) {
@@ -42411,7 +42591,7 @@ ${cue.text}`).join("\n\n")}
   }
   var MAX_ENTRIES4, memo3;
   var init_channel_resolver = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-resolver.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/channel-resolver.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -42420,7 +42600,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-surface.ts
   function isDesktopTauri() {
     if (typeof location !== "undefined" && new URLSearchParams(location.search).has("desktopguide")) return true;
     return isDesktopTauriEnv === true;
@@ -42435,14 +42615,14 @@ ${cue.text}`).join("\n\n")}
     return stored;
   }
   var init_guide_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-surface.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/storage-v2-migration.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/storage-v2-migration.ts
   function computeGroups2(channels) {
     const counts = /* @__PURE__ */ new Map();
     for (const channel of channels) {
@@ -42500,7 +42680,7 @@ ${cue.text}`).join("\n\n")}
   }
   var STORAGE_V2_MIGRATED_KEY;
   var init_storage_v2_migration = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/storage-v2-migration.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/storage-v2-migration.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -42510,7 +42690,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-history.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/channel-history.ts
   function sanitize2(raw) {
     if (!Array.isArray(raw)) return [];
     const out = [];
@@ -42557,7 +42737,7 @@ ${cue.text}`).join("\n\n")}
   }
   var CHANNEL_HISTORY_KEY, CHANNEL_HISTORY_LIMIT;
   var init_channel_history = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/channel-history.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/channel-history.ts"() {
       "use strict";
       "use client";
       init_plugin_sdk();
@@ -42567,7 +42747,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/reminders.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/reminders.ts
   function reminderId(channel, programme) {
     return `${channelKey(channel)}@${programme.start}`;
   }
@@ -42662,11 +42842,11 @@ ${cue.text}`).join("\n\n")}
       }
     };
     tick2();
-    const timer3 = window.setInterval(tick2, 3e4);
+    const timer4 = window.setInterval(tick2, 3e4);
     const off = onRemindersChanged(tick2);
     return () => {
       stopped = true;
-      window.clearInterval(timer3);
+      window.clearInterval(timer4);
       off();
     };
   }
@@ -42689,17 +42869,17 @@ ${cue.text}`).join("\n\n")}
       const sync = () => setList(getReminders());
       sync();
       const off = onRemindersChanged(sync);
-      const timer3 = window.setInterval(sync, 6e4);
+      const timer4 = window.setInterval(sync, 6e4);
       return () => {
         off();
-        window.clearInterval(timer3);
+        window.clearInterval(timer4);
       };
     }, []);
     return list;
   }
   var REMINDERS_KEY, REMINDER_LEAD_MS, REMINDER_GRACE_MS;
   var init_reminders = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/reminders.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/reminders.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42711,7 +42891,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-settings-store.ts
   function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
@@ -42766,7 +42946,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -42793,7 +42973,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-model.ts
   function isPlayableChannel(channel) {
     if (!channel.url) return false;
     const trimmedName = channel.name.trim();
@@ -42843,7 +43023,7 @@ ${cue.text}`).join("\n\n")}
     });
   }
   function invalidateChannels() {
-    for (const controller of channelAborts.values()) controller.abort();
+    for (const controller2 of channelAborts.values()) controller2.abort();
     channelAborts.clear();
     channelLoads.clear();
     clearPluginMemoryCacheByPrefix(LIVE_TV_PLUGIN_ID, LIVE_TV_CHANNELS_PREFIX);
@@ -42852,12 +43032,12 @@ ${cue.text}`).join("\n\n")}
   function logoFallbackStateSnapshot() {
     const lists = getLiveTvLists();
     const sources = new Set(lists.map((list) => list.source).filter((source) => Boolean(source)));
-    const snapshot2 = /* @__PURE__ */ new Map();
+    const snapshot3 = /* @__PURE__ */ new Map();
     for (const source of sources) {
       const list = lists.find((entry) => entry.source === source);
-      if (list) snapshot2.set(source, isLogoFallbackEnabled(list));
+      if (list) snapshot3.set(source, isLogoFallbackEnabled(list));
     }
-    return snapshot2;
+    return snapshot3;
   }
   function ensureLogoFallbackSwitchSubscription() {
     if (logoFallbackSwitchSubscription || typeof window === "undefined") return;
@@ -42877,12 +43057,12 @@ ${cue.text}`).join("\n\n")}
     return getLiveTvLists().find((entry) => entry.source === source)?.curation;
   }
   function curationSnapshot() {
-    const snapshot2 = /* @__PURE__ */ new Map();
+    const snapshot3 = /* @__PURE__ */ new Map();
     for (const list of getLiveTvLists()) {
-      if (!list.source || snapshot2.has(list.source)) continue;
-      snapshot2.set(list.source, JSON.stringify(list.curation ?? null));
+      if (!list.source || snapshot3.has(list.source)) continue;
+      snapshot3.set(list.source, JSON.stringify(list.curation ?? null));
     }
-    return snapshot2;
+    return snapshot3;
   }
   function ensureCurationSubscription() {
     if (curationSubscription || typeof window === "undefined") return;
@@ -42948,18 +43128,18 @@ ${cue.text}`).join("\n\n")}
     if (cached) return Promise.resolve(cached);
     const existing = channelLoads.get(cacheKey3);
     if (existing) return existing;
-    const controller = typeof AbortController === "function" ? new AbortController() : null;
-    if (controller) channelAborts.set(cacheKey3, controller);
+    const controller2 = typeof AbortController === "function" ? new AbortController() : null;
+    if (controller2) channelAborts.set(cacheKey3, controller2);
     const request = (async () => {
       await ensureBootstrap();
-      const items2 = source === null ? await loadEveryChannel(controller?.signal) : await loadAllChannels(source, void 0, controller?.signal);
+      const items2 = source === null ? await loadEveryChannel(controller2?.signal) : await loadAllChannels(source, void 0, controller2?.signal);
       if (source !== null) applyLogoFallbackSwitch(source, items2);
       const curated = source !== null ? applyCuration(items2, curationForSource(source)) : items2;
       setPluginMemoryCache(LIVE_TV_PLUGIN_ID, cacheKey3, curated);
       return curated;
     })().finally(() => {
       if (channelLoads.get(cacheKey3) === request) channelLoads.delete(cacheKey3);
-      if (channelAborts.get(cacheKey3) === controller) channelAborts.delete(cacheKey3);
+      if (channelAborts.get(cacheKey3) === controller2) channelAborts.delete(cacheKey3);
     });
     channelLoads.set(cacheKey3, request);
     return request;
@@ -43110,14 +43290,14 @@ ${cue.text}`).join("\n\n")}
       [lists]
     );
     const sourcesId = sources.join("|");
-    const [snapshot2, setSnapshot] = useState(
+    const [snapshot3, setSnapshot] = useState(
       () => getCachedNowSnapshot(LIVE_TV_GLOBAL_EPG_ID, null)
     );
     const [epgLoading, setEpgLoading] = useState(false);
     const [epgTick, setEpgTick] = useState(0);
     useEffect(() => {
       const visible = () => typeof document === "undefined" || document.visibilityState === "visible";
-      const timer3 = window.setInterval(() => {
+      const timer4 = window.setInterval(() => {
         setNowMs(Date.now());
         if (visible()) setEpgTick((tick2) => tick2 + 1);
       }, tickMs);
@@ -43128,7 +43308,7 @@ ${cue.text}`).join("\n\n")}
       };
       document.addEventListener("visibilitychange", onVisibility);
       return () => {
-        window.clearInterval(timer3);
+        window.clearInterval(timer4);
         document.removeEventListener("visibilitychange", onVisibility);
       };
     }, [tickMs]);
@@ -43177,12 +43357,12 @@ ${cue.text}`).join("\n\n")}
       };
     }, [activeSource, epgUrlsId, sourcesId, reloadToken, epgTick]);
     const nowFor = useMemo(() => {
-      const items2 = snapshot2?.items ?? null;
+      const items2 = snapshot3?.items ?? null;
       return (channel) => {
         if (!items2) return EMPTY4;
         return items2[channelKey(channel)] ?? EMPTY4;
       };
-    }, [snapshot2]);
+    }, [snapshot3]);
     const favouriteChannels = useMemo(
       () => pinnedKeys.map((key) => byKey.get(key)).filter((channel) => Boolean(channel)),
       [pinnedKeys, byKey]
@@ -43221,10 +43401,10 @@ ${cue.text}`).join("\n\n")}
       epgListId,
       epgUrls,
       // `count` räknas en gång när svaret kommer — inte per render över 17 000 nycklar.
-      hasEpg: (snapshot2?.count ?? 0) > 0,
+      hasEpg: (snapshot3?.count ?? 0) > 0,
       channelsLoading,
       epgLoading,
-      epgFetchedAt: snapshot2?.fetchedAt ?? null,
+      epgFetchedAt: snapshot3?.fetchedAt ?? null,
       appTooOld,
       resolveKeys,
       nowFor,
@@ -43249,7 +43429,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY4, PLACEHOLDER_NAME_RE, EPG_TTL_MS, bootstrapPromise, appTooOldFlag, epgRefreshRequested, channelLoads, channelAborts, generationListeners, indexSubscription, logoFallbackStateBySource, logoFallbackSwitchSubscription, curationSubscription, curationBySource;
   var init_live_tv_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-model.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -43282,10 +43462,198 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-keyboard.tsx
+  function TvKeyboard({ value, onChange, onDone, initFocus }) {
+    const { tt } = useTvText();
+    const [symbols, setSymbols] = useState(false);
+    const rows = symbols ? SYMBOLS : LETTERS;
+    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
+      "div",
+      {
+        ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
+        style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV2.acc : TV2.s10, color: opts?.accent ? TV2.onAcc : TV2.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
+        children: label
+      },
+      label
+    );
+    return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+      rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(8) }, children: [
+        key("\u2423", () => onChange(value + " "), { flex: true, aria: "Space" }),
+        key("\u232B", () => onChange(value.slice(0, -1)), { width: dp(120), aria: "Backspace" }),
+        key(symbols ? tt("keyLetters") : tt("keySymbols"), () => setSymbols((s) => !s), { width: dp(120) }),
+        key(tt("keyDone"), onDone, { width: dp(140), accent: true })
+      ] })
+    ] });
+  }
+  var LETTERS, SYMBOLS;
+  var init_tv_keyboard = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-keyboard.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_jsx_runtime_shim();
+      LETTERS = ["1234567890", "qwertyuiop\xE5", "asdfghjkl\xF6\xE4", "zxcvbnm,.-"];
+      SYMBOLS = ["1234567890", "!?@#%&/()=", `+-*_:;"'<>`, "[]{}~^|\\\u20AC\xA3"];
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-text-entry.tsx
+  function isComposing(event2) {
+    return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
+  }
+  function useTextPrompt(options) {
+    const tvMode = useTvMode();
+    const Panel = getTvKeyboardPanel();
+    const [prompt, setPrompt] = useState(null);
+    const promptId = useRef(0);
+    const open2 = prompt !== null;
+    const openerRef = useRef(null);
+    useEffect(() => {
+      if (!open2) return;
+      openerRef.current = document.activeElement;
+      return () => {
+        const opener = openerRef.current;
+        window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
+      };
+    }, [open2]);
+    const ask = (title, initial, onDone, kind = "text") => {
+      promptId.current += 1;
+      setPrompt({ id: promptId.current, title, initial, kind, onDone });
+    };
+    let node = null;
+    if (tvMode) {
+      node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(
+        Panel,
+        {
+          title: prompt.title,
+          initial: prompt.initial,
+          onDone: (value) => {
+            setPrompt(null);
+            prompt.onDone(value);
+          },
+          onClose: () => setPrompt((current5) => current5 === prompt ? null : current5)
+        },
+        prompt.id
+      ) }) : null;
+    } else if (prompt) {
+      node = /* @__PURE__ */ jsx(
+        TextPromptDialog,
+        {
+          title: prompt.title,
+          initial: prompt.initial,
+          kind: prompt.kind,
+          pushLayer: options?.pushLayer,
+          onDone: (value) => {
+            setPrompt(null);
+            prompt.onDone(value);
+          },
+          onCancel: () => setPrompt((current5) => current5 === prompt ? null : current5)
+        },
+        prompt.id
+      );
+    }
+    return { available: tvMode ? Panel !== null : true, ask, node };
+  }
+  function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }) {
+    const { tt } = useTvText();
+    const [value, setValue] = useState(initial);
+    const inputRef = useRef(null);
+    useEffect(() => {
+      inputRef.current?.focus();
+    }, []);
+    const cancelRef = useRef(onCancel);
+    useEffect(() => {
+      cancelRef.current = onCancel;
+    });
+    useEffect(() => pushLayer?.(() => cancelRef.current()), [pushLayer]);
+    const submit = () => onDone(value);
+    const field = kind === "password" ? { type: "password", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "url" ? { type: "url", inputMode: "url", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "username" ? { type: "text", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : { type: "text" };
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": "text-prompt-dialog",
+        "data-panel-root": "",
+        style: { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: TV2.scrim },
+        children: /* @__PURE__ */ jsxs("div", { style: { width: dp(420), borderRadius: dp(14), background: TV2.panel, border: `1px solid ${TV2.line}`, padding: dp(24), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: title }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              ref: inputRef,
+              "data-testid": "text-prompt-input",
+              ...field,
+              value,
+              onChange: (event2) => setValue(event2.target.value),
+              onKeyDown: (event2) => {
+                if (event2.key === "Enter") {
+                  if (isComposing(event2)) return;
+                  event2.preventDefault();
+                  submit();
+                } else if (event2.key === "Escape") {
+                  event2.preventDefault();
+                  onCancel();
+                }
+              },
+              style: { height: dp(44), borderRadius: dp(8), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, color: TV2.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }
+            }
+          ),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: dp(10) }, children: [
+            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
+            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
+          ] })
+        ] })
+      }
+    );
+  }
+  function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus }) {
+    const tvMode = useTvMode();
+    const inputRef = useRef(null);
+    useEffect(() => {
+      if (!tvMode && autoFocus) inputRef.current?.focus();
+    }, [tvMode, autoFocus]);
+    if (tvMode) {
+      return /* @__PURE__ */ jsx(TvKeyboard, { value, onChange, onDone: onSubmit ?? (() => {
+      }), initFocus: !!autoFocus });
+    }
+    return /* @__PURE__ */ jsx(
+      "input",
+      {
+        ref: inputRef,
+        "data-f": "",
+        value,
+        placeholder,
+        onChange: (event2) => onChange(event2.target.value),
+        onKeyDown: (event2) => {
+          if (event2.key === "Enter") {
+            if (isComposing(event2)) return;
+            event2.preventDefault();
+            onSubmit?.();
+          }
+        },
+        style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, border: `1px solid ${TV2.line}`, color: TV2.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }
+      }
+    );
+  }
+  var init_tv_text_entry = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-text-entry.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_tv_ui();
+      init_tv_strings();
+      init_tv_keyboard();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts
   var MT, ellipsis2, clamp2, sectionLabel;
   var init_mobile_tokens = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-tokens.ts"() {
       "use strict";
       MT = {
         bg: "#000",
@@ -43311,7 +43679,7 @@ ${cue.text}`).join("\n\n")}
         sheet: "rgba(38,39,45,0.98)",
         scrim: "rgba(0,0,0,0.6)",
         acc: "rgb(var(--accent-500))",
-        accMix: (pct2) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct2}%, transparent)`,
+        accMix: (pct3) => `color-mix(in srgb, rgb(var(--accent-500)) ${pct3}%, transparent)`,
         onAcc: "#fff",
         live: "#fb7185",
         liveSoft: "rgba(251,113,133,0.22)",
@@ -43364,10 +43732,10 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx
   var svg2, MIcons;
   var init_mobile_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_jsx_runtime_shim();
@@ -43383,6 +43751,11 @@ ${cue.text}`).join("\n\n")}
         ] }), filled),
         List: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M4 6h16M4 12h16M4 18h16" })),
         Heart: ({ size = 22, filled = false }) => svg2(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
+        Trophy: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M8 4h8v5a4 4 0 0 1-8 0z" }),
+          /* @__PURE__ */ jsx("path", { d: "M8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4" }),
+          /* @__PURE__ */ jsx("path", { d: "M12 13v4M8 20h8M10 17h4" })
+        ] })),
         MagnifyingGlass: ({ size = 22 }) => svg2(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
           /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
@@ -43441,7 +43814,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/api-sports.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
+  function MobileToggle({ on }) {
+    return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
+  }
+  var init_mobile_toggle = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx"() {
+      "use strict";
+      init_mobile_tokens();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/api-sports.ts
   function venueImageUrl(id) {
     const n = num(id);
     return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/venues/${n}.png` : null;
@@ -43484,6 +43869,7 @@ ${cue.text}`).join("\n\n")}
       score: gh != null && ga != null ? { home: gh, away: ga } : null,
       venue: str(raw.fixture.venue?.name),
       venueImage: venueImageUrl(raw.fixture.venue?.id),
+      venueCity: str(raw.fixture.venue?.city),
       lastGoal: footballLastGoal(raw)
     };
   }
@@ -43520,6 +43906,10 @@ ${cue.text}`).join("\n\n")}
     const fmt2 = (v) => v == null ? "0" : String(v);
     return arr(h.statistics).map((s) => ({ label: String(s?.type ?? ""), home: fmt2(s?.value), away: fmt2(away.get(s?.type)) }));
   }
+  function playerPhotoUrl(id) {
+    const n = num(id);
+    return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/players/${n}.png` : null;
+  }
   function footballLineups(raw) {
     return arr(raw?.lineups).map((l) => ({
       side: sideOf(raw?.teams?.home?.id, raw?.teams?.away?.id, l?.team?.id) ?? "home",
@@ -43551,7 +43941,7 @@ ${cue.text}`).join("\n\n")}
   }
   var API_SPORTS_REGISTER_URL, COVERED, FOOTBALL_STATUS, GAMES_STATUS, PERIOD_OFFSET, arr, resp, num, API_SPORTS_MEDIA, str, enc, parseFixture, fixtures, lineupEntry, apiSports;
   var init_api_sports = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/api-sports.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/api-sports.ts"() {
       "use strict";
       API_SPORTS_REGISTER_URL = "https://dashboard.api-football.com/register";
       COVERED = /* @__PURE__ */ new Set(["football", "hockey", "basketball", "handball"]);
@@ -43612,7 +44002,7 @@ ${cue.text}`).join("\n\n")}
       enc = encodeURIComponent;
       parseFixture = (sport, raw) => sport === "football" ? footballFixture(raw) : gameFixture(sport, raw);
       fixtures = (sport) => (bodies) => resp(bodies[0]).map((r) => parseFixture(sport, r)).filter((f) => f !== null);
-      lineupEntry = (x) => ({ number: num(x?.player?.number), name: String(x?.player?.name ?? ""), pos: str(x?.player?.pos) });
+      lineupEntry = (x) => ({ number: num(x?.player?.number), name: String(x?.player?.name ?? ""), pos: str(x?.player?.pos), photo: playerPhotoUrl(x?.player?.id) });
       apiSports = {
         id: "api-sports",
         liveFloorMs: 15e3,
@@ -43692,7 +44082,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/thesportsdb.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/thesportsdb.ts
   function utc(ts, date, time) {
     const raw = str2(ts);
     if (raw) return Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(raw) ? raw : `${raw}Z`);
@@ -43726,6 +44116,7 @@ ${cue.text}`).join("\n\n")}
       away: { id: String(e.idAwayTeam ?? ""), name: String(e.strAwayTeam ?? ""), crest: str2(e.strAwayTeamBadge) },
       score: h != null && a != null ? { home: h, away: a } : null,
       venue: str2(e.strVenue),
+      venueCity: str2(e.strCity),
       lastGoal: null
     };
   }
@@ -43739,14 +44130,14 @@ ${cue.text}`).join("\n\n")}
     for (const s of ["home", "away"]) {
       const mine = rows.filter((r) => side(r) === s);
       if (mine.length === 0) continue;
-      const entry = (r) => ({ number: num2(r?.intSquadNumber), name: String(r?.strPlayer ?? ""), pos: str2(r?.strPosition) });
+      const entry = (r) => ({ number: num2(r?.intSquadNumber), name: String(r?.strPlayer ?? ""), pos: str2(r?.strPosition), photo: str2(r?.strCutout) ?? str2(r?.strThumb) });
       out.push({ side: s, formation: str2(mine[0]?.strFormation), startXI: mine.filter((r) => r?.strSubstitute !== "Yes").map(entry), subs: mine.filter((r) => r?.strSubstitute === "Yes").map(entry) });
     }
     return out;
   }
   var THESPORTSDB_PRICING_URL, SPORTS, arr2, num2, str2, enc2, side, theSportsDb;
   var init_thesportsdb = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/thesportsdb.ts"() {
       "use strict";
       THESPORTSDB_PRICING_URL = "https://www.thesportsdb.com/pricing";
       SPORTS = {
@@ -43841,22 +44232,239 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/providers.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sportapi.ts
+  function sportApiMinute(v) {
+    if (typeof v === "number" && Number.isFinite(v)) return { minute: v, extra: null };
+    const m = /^\s*(\d+)(?:\s*\+\s*(\d+))?/.exec(String(v ?? ""));
+    return m ? { minute: Number(m[1]), extra: m[2] != null ? Number(m[2]) : null } : { minute: null, extra: null };
+  }
+  function sportApiCrest(logo) {
+    const s = str3(logo);
+    if (!s) return null;
+    if (/^https:\/\//.test(s)) return s;
+    const m = /^espn-(\d{1,9})\.(png|svg)$/.exec(s);
+    return m ? `${ESPN_CREST}/${m[1]}.png` : null;
+  }
+  function kickoffOf(raw) {
+    const utc2 = str3(raw?.kickoff_utc);
+    if (utc2) {
+      const t2 = Date.parse(utc2);
+      if (Number.isFinite(t2)) return t2;
+    }
+    const local = str3(raw?.datetime);
+    const t = local ? Date.parse(`${local.replace(" ", "T")}+01:00`) : NaN;
+    return Number.isFinite(t) ? t : 0;
+  }
+  function fixtureOf(raw) {
+    if (raw?.id == null) return null;
+    const short = String(raw.status ?? "Scheduled");
+    const status = STATUS[short.trim().toLowerCase()] ?? "scheduled";
+    const h = num3(raw.home_score);
+    const a = num3(raw.away_score);
+    return {
+      provider: "sportapi",
+      id: String(raw.id),
+      sport: "football",
+      // Ingen säsong i svaret, och tabellen tar bara ligans id: "current" håller dygnsplanens tabellregel igång.
+      league: { id: String(raw.league_id ?? ""), name: String(raw.league_name ?? ""), season: "current", round: null, country: str3(raw.league_zone) },
+      kickoff: kickoffOf(raw),
+      status,
+      statusShort: short,
+      minute: status === "live" ? sportApiMinute(raw.minute).minute : null,
+      home: { id: String(raw.home_id ?? ""), name: String(raw.home_team ?? ""), crest: sportApiCrest(raw.home_logo) },
+      away: { id: String(raw.away_id ?? ""), name: String(raw.away_team ?? ""), crest: sportApiCrest(raw.away_logo) },
+      score: status !== "scheduled" && h != null && a != null ? { home: h, away: a } : null,
+      venue: str3(raw.home_stadium),
+      venueCity: str3(raw.home_city),
+      lastGoal: null
+    };
+  }
+  function eventOf(e) {
+    const kind = String(e?.event_type ?? "").toLowerCase();
+    const info = String(e?.extra_info ?? "");
+    const missed = /miss/i.test(kind) || /miss/i.test(info);
+    const type = kind.includes("goal") && !missed ? "goal" : kind.includes("card") || kind === "yellow" || kind === "red" ? "card" : kind.includes("sub") ? "sub" : kind.includes("var") ? "var" : "other";
+    const { minute, extra } = sportApiMinute(e?.minute);
+    return { minute, extra, side: side2(e?.team_side), type, detail: info, player: str3(e?.player_name), assist: null };
+  }
+  function statsOf(body) {
+    const d = body?.data;
+    if (!d || body?.available === false || typeof d.home !== "object" || typeof d.away !== "object" || !d.home || !d.away) return [];
+    const fmt2 = (v, pct3) => num3(v) == null ? "0" : `${num3(v)}${pct3 ? "%" : ""}`;
+    return STAT_LABELS.filter(([k]) => k in d.home || k in d.away).map(([k, label, pct3]) => ({ label, home: fmt2(d.home[k], pct3), away: fmt2(d.away[k], pct3) }));
+  }
+  function lineupsOf(body) {
+    const d = body?.data;
+    if (!d || body?.available === false) return [];
+    const entry = (p) => {
+      const pos = str3(p?.position);
+      return { number: num3(p?.shirt), name: String(p?.name ?? ""), pos: pos && pos.toLowerCase() !== "substitute" ? pos : null, photo: null };
+    };
+    const out = [];
+    for (const s of ["home", "away"]) {
+      const t = d[s];
+      const startXI = arr3(t?.starters).map(entry);
+      const subs = arr3(t?.subs).map(entry);
+      if (startXI.length || subs.length) out.push({ side: s, formation: null, startXI, subs });
+    }
+    return out;
+  }
+  function standingRow(r) {
+    const form = arr3(r?.form).map((x) => str3(x?.result)).filter((x) => !!x).join("");
+    return {
+      rank: num3(r?.position) ?? 0,
+      team: { id: String(r?.team?.id ?? ""), name: String(r?.team?.name ?? ""), crest: sportApiCrest(r?.team?.logo) },
+      played: num3(r?.played) ?? 0,
+      points: num3(r?.points) ?? 0,
+      goalDiff: num3(r?.goal_difference),
+      form: form || null,
+      group: str3(r?.group)
+    };
+  }
+  var SPORTAPI_REGISTER_URL, ESPN_CREST, arr3, num3, str3, enc3, foldTeamKey, STATUS, side2, STAT_LABELS, listOf, okBody, sportApi;
+  var init_sportapi = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sportapi.ts"() {
+      "use strict";
+      SPORTAPI_REGISTER_URL = "https://sportapi.ai/pricing";
+      ESPN_CREST = "https://a.espncdn.com/i/teamlogos/soccer/500";
+      arr3 = (v) => Array.isArray(v) ? v : [];
+      num3 = (v) => typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+      str3 = (v) => typeof v === "string" && v.trim() ? v : null;
+      enc3 = encodeURIComponent;
+      foldTeamKey = (name) => name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+      STATUS = {
+        scheduled: "scheduled",
+        ns: "scheduled",
+        tbd: "scheduled",
+        live: "live",
+        "1h": "live",
+        "2h": "live",
+        et: "live",
+        p: "live",
+        suspended: "live",
+        ht: "ht",
+        break: "ht",
+        ft: "finished",
+        aet: "finished",
+        pens: "finished",
+        pen: "finished",
+        postponed: "postponed",
+        cancelled: "postponed",
+        canceled: "postponed",
+        abandoned: "postponed"
+      };
+      side2 = (v) => v === "home" || v === "away" ? v : null;
+      STAT_LABELS = [
+        ["shots", "Total Shots"],
+        ["shots_on_target", "Shots on Goal"],
+        ["shots_off_target", "Shots off Goal"],
+        ["fouls", "Fouls"],
+        ["total_passes", "Total passes"],
+        ["pass_accuracy", "Passes %", true],
+        ["tackles", "Tackles"],
+        ["tackle_success", "Tackles %", true],
+        ["saves", "Goalkeeper Saves"],
+        ["yellow_cards", "Yellow Cards"]
+      ];
+      listOf = (body) => arr3(body?.data).map(fixtureOf).filter((f) => f !== null);
+      okBody = (body) => body?.success === true;
+      sportApi = {
+        id: "sportapi",
+        liveFloorMs: 6e4,
+        coverage: (sport) => sport === "football" ? "full" : "epg",
+        bucket: () => "football",
+        day(sport, date, opts) {
+          const past = date < opts.today;
+          return {
+            requests: [{ sport, path: `/fixtures/date/${date}`, ttlS: date === opts.today ? 900 : 21600, ...past ? { finalAfter: opts.dayEndMs + 3 * 36e5 } : {} }],
+            parse: (bodies) => listOf(bodies[0])
+          };
+        },
+        live(sport, opts) {
+          return { requests: [{ sport, path: `/fixtures/date/${opts.today}`, ttlS: 30 }], parse: (bodies) => listOf(bodies[0]) };
+        },
+        fixture(sport, id, opts) {
+          const ttl = opts.finished ? -1 : 60;
+          const base = `/fixtures/${enc3(id)}`;
+          return {
+            // Uppställningen ändras sällan under match: tio minuter räcker.
+            requests: [{ sport, path: base, ttlS: ttl }, { sport, path: `${base}/stats`, ttlS: ttl }, { sport, path: `${base}/lineups`, ttlS: opts.finished ? -1 : 600 }],
+            parse: (bodies) => {
+              const body = bodies[0];
+              if (!okBody(body)) return null;
+              const fixture = fixtureOf(body?.fixture);
+              if (!fixture) return null;
+              const events = arr3(body?.events ?? body?.fixture?.events).map(eventOf);
+              const goal = [...events].reverse().find((e) => e.type === "goal");
+              return {
+                fixture: { ...fixture, lastGoal: goal ? { side: goal.side, player: goal.player, minute: goal.minute } : null },
+                events,
+                stats: statsOf(bodies[1]),
+                lineups: lineupsOf(bodies[2])
+              };
+            }
+          };
+        },
+        standings(sport, leagueId) {
+          return {
+            requests: [{ sport, path: `/standings/${enc3(leagueId)}`, ttlS: 86400 }],
+            parse: (bodies) => arr3(bodies[0]?.data).flatMap((r) => Array.isArray(r?.rows) ? r.rows : [r]).map(standingRow)
+          };
+        },
+        searchTeams() {
+          return { requests: [], parse: () => [] };
+        },
+        searchLeagues(sport, q) {
+          const needle = foldTeamKey(q);
+          if (needle.length < 3) return { requests: [], parse: () => [] };
+          return {
+            requests: [{ sport, path: "/leagues", ttlS: 604800 }],
+            parse: (bodies) => arr3(bodies[0]?.data).filter((l) => foldTeamKey(String(l?.name ?? "")).includes(needle) || foldTeamKey(String(l?.zone ?? "")).includes(needle)).map((l) => ({ id: String(l?.id ?? ""), name: String(l?.name ?? ""), crest: null, country: str3(l?.zone) }))
+          };
+        },
+        validateKey: () => ({
+          requests: [{ sport: "football", path: "/leagues", ttlS: 0 }],
+          parse: (bodies) => okBody(bodies[0]) || Array.isArray(bodies[0]?.data) ? { ok: true, plan: null, used: null, limit: null } : { ok: false, plan: null, used: null, limit: null }
+        }),
+        quotaProbe: () => null,
+        crestUrl: (t) => t.crest,
+        teamArt: () => null
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/providers.ts
   function providerFor(id) {
-    return id === "thesportsdb" ? theSportsDb : apiSports;
+    return id === "thesportsdb" ? theSportsDb : id === "sportapi" ? sportApi : apiSports;
+  }
+  function defaultOrder(sport) {
+    return sport === "football" ? ["sportapi", "api-sports", "thesportsdb"] : ["api-sports", "thesportsdb"];
+  }
+  function orderFor(order, sport) {
+    const covering = PROVIDER_IDS.filter((id) => providerFor(id).coverage(sport) === "full");
+    const out = (order[sport] ?? []).filter((id) => covering.includes(id));
+    for (const id of [...defaultOrder(sport), ...covering]) if (covering.includes(id) && !out.includes(id)) out.push(id);
+    return out;
+  }
+  function effectiveOrder(s, sport) {
+    return orderFor(s.order, sport).filter((id) => !!s.keys[id]);
   }
   function coverageFor(id, sport) {
     return id ? providerFor(id).coverage(sport) : "epg";
   }
+  var PROVIDER_IDS, PROVIDER_LABEL;
   var init_providers = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/providers.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/providers.ts"() {
       "use strict";
       init_api_sports();
       init_thesportsdb();
+      init_sportapi();
+      PROVIDER_IDS = ["sportapi", "api-sports", "thesportsdb"];
+      PROVIDER_LABEL = { sportapi: "sportapi.ai", "api-sports": "API-Sports", thesportsdb: "TheSportsDB" };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-fetch.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-fetch.ts
   function sportFetchUrl(provider, req, mode) {
     const params = new URLSearchParams({ provider, sport: req.sport, path: req.path, ttl: String(req.ttlS), mode });
     if (req.finalAfter != null) params.set("finalAfter", String(req.finalAfter));
@@ -43886,9 +44494,19 @@ ${cue.text}`).join("\n\n")}
       error: body.error ?? null
     };
   }
+  async function sportQuota(provider, key) {
+    try {
+      const res = await fetch(`/api/live-tv/sport/quota?provider=${provider}`, { cache: "no-store", ...key ? { headers: { [SPORT_KEY_HEADER]: key } } : {} });
+      if (!res.ok) return [];
+      const body = await res.json();
+      return Array.isArray(body.buckets) ? body.buckets : [];
+    } catch {
+      return [];
+    }
+  }
   var SPORT_KEY_HEADER, FAILED;
   var init_sport_fetch = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-fetch.ts"() {
       "use strict";
       "use client";
       SPORT_KEY_HEADER = "x-lumio-sport-key";
@@ -43896,232 +44514,46 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-model.ts
-  function matchTitle(m) {
-    return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
-  }
-  function crestText(name) {
-    const words = name.split(/\s+/).filter(Boolean);
-    const word = words.find((w) => !CREST_SKIP.has(w.toLowerCase()) && /\p{L}/u.test(w)) ?? words[0] ?? "?";
-    return word.slice(0, 3).toUpperCase();
-  }
-  function sourceChannel(s) {
-    return { name: s.name, url: s.url, logo: s.logo, group: s.group, tvgId: s.tvgId };
-  }
-  var SPORT_KINDS, SPORT_CHIPS, CREST_SKIP;
-  var init_sport_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-model.ts"() {
-      "use strict";
-      SPORT_KINDS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
-      SPORT_CHIPS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis"];
-      CREST_SKIP = /* @__PURE__ */ new Set(["fc", "if", "ik", "ifk", "aif", "bk", "sk", "hc", "ff", "is", "cf", "afc", "ssc", "hf", "bik", "gik"]);
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-store.ts
-  function sanitizeBackdrops(raw, legacy) {
-    const r = raw && typeof raw === "object" ? raw : null;
-    if (!r) return { all: legacy === "off" ? "off" : "standard", sports: {} };
-    const sportsRaw = r.sports && typeof r.sports === "object" ? r.sports : {};
-    const sports = {};
-    for (const k of SPORT_KINDS) if (isMode(sportsRaw[k])) sports[k] = sportsRaw[k];
-    return { all: isMode(r.all) ? r.all : "standard", sports };
-  }
-  function sanitizeCards(raw) {
-    const r = raw && typeof raw === "object" ? raw : {};
-    const n = typeof r.opacity === "number" && Number.isFinite(r.opacity) ? Math.round(Math.min(100, Math.max(0, r.opacity))) : DEFAULT_CARDS.opacity;
-    const tone = r.tone === "gray" || r.tone === "image" || r.tone === "black" ? r.tone : DEFAULT_CARDS.tone;
-    return { opacity: n, tone };
-  }
-  function sanitizeSettings(raw) {
-    const r = raw && typeof raw === "object" ? raw : {};
-    return {
-      view: r.view === "feed" || r.view === "matchday" ? r.view : DEFAULT_SETTINGS.view,
-      alert: r.alert === "off" || r.alert === "15" || r.alert === "kickoff" ? r.alert : DEFAULT_SETTINGS.alert,
-      apiKey: typeof r.apiKey === "string" && r.apiKey ? r.apiKey : null,
-      goalAlerts: r.goalAlerts !== false,
-      provider: r.provider === "thesportsdb" ? "thesportsdb" : "api-sports",
-      keyPlan: typeof r.keyPlan === "string" ? r.keyPlan : null,
-      goalAlertMatches: Object.fromEntries(
-        Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === "object" ? r.goalAlertMatches : {}).filter((e) => typeof e[1] === "number" && e[1] > Date.now())
-      ),
-      backdrops: sanitizeBackdrops(r.backdrops, r.backdrop),
-      cards: sanitizeCards(r.cards)
-    };
-  }
-  function getSportSettings() {
-    return sanitizeSettings(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, DEFAULT_SETTINGS));
-  }
-  function setSportSettings(patch) {
-    const next = sanitizeSettings({ ...getSportSettings(), ...patch });
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, next);
-    return next;
-  }
-  function useStored(key, read11) {
-    const [value, setValue] = useState(read11);
-    useEffect(() => {
-      setValue(read11());
-      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, () => setValue(read11()));
-    }, [key]);
-    return value;
-  }
-  function useSportSettings() {
-    return useStored(SPORT_SETTINGS_KEY, getSportSettings);
-  }
-  function teamKeysMatch(a, b) {
-    if (!a || !b) return false;
-    if (a === b || `${a}s` === b || `${b}s` === a) return true;
-    const [short, long] = a.length <= b.length ? [a, b] : [b, a];
-    const sw3 = short.split(" ");
-    const lw = long.split(" ");
-    if (sw3.length >= lw.length) return false;
-    const head = lw.slice(0, sw3.length).join(" ");
-    const tail = lw.slice(lw.length - sw3.length).join(" ");
-    return head === short || tail === short;
-  }
-  function sportsCompatible(a, b) {
-    return a === b || a === "other" || b === "other";
-  }
-  function sanitizeFollows(raw) {
-    if (!Array.isArray(raw)) return [];
-    const out = [];
-    for (const item of raw) {
-      if (!item || typeof item !== "object") continue;
-      const f = item;
-      if (!SPORT_KINDS.includes(f.sport)) continue;
-      if (f.kind !== "team" && f.kind !== "league") continue;
-      if (typeof f.key !== "string" || !f.key) continue;
-      const ids = f.providerIds && typeof f.providerIds === "object" ? Object.fromEntries(Object.entries(f.providerIds).filter((e) => typeof e[1] === "string")) : null;
-      out.push({ sport: f.sport, kind: f.kind, key: f.key, name: typeof f.name === "string" && f.name ? f.name : f.key, ...ids && Object.keys(ids).length > 0 ? { providerIds: ids } : {} });
-    }
-    return out;
-  }
-  function getFollows() {
-    return sanitizeFollows(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, []));
-  }
-  function isFollowing(follows, f) {
-    return follows.some((x) => x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key));
-  }
-  function toggleFollow(f) {
-    const current5 = getFollows();
-    const next = isFollowing(current5, f) ? current5.filter((x) => !(x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key))) : [...current5, f];
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
-    return next;
-  }
-  function useFollows() {
-    return useStored(SPORT_FOLLOWS_KEY, getFollows);
-  }
-  function sanitizeOverrides(raw) {
-    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-    const out = {};
-    for (const [id, value] of Object.entries(raw)) {
-      const c = value;
-      if (!c || typeof c.key !== "string" || typeof c.url !== "string" || typeof c.name !== "string") continue;
-      out[id] = { key: c.key, name: c.name, url: c.url, logo: typeof c.logo === "string" ? c.logo : null, group: typeof c.group === "string" ? c.group : "", tvgId: typeof c.tvgId === "string" ? c.tvgId : null };
-    }
-    return out;
-  }
-  function getOverrides() {
-    return sanitizeOverrides(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, {}));
-  }
-  function setOverride(matchId, channel) {
-    const next = { ...getOverrides() };
-    if (channel) next[matchId] = channel;
-    else delete next[matchId];
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, next);
-    return next;
-  }
-  function useOverrides() {
-    return useStored(SPORT_OVERRIDES_KEY, getOverrides);
-  }
-  function getAlertSkips() {
-    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, {});
-    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-    const out = {};
-    for (const [id, start2] of Object.entries(raw)) if (typeof start2 === "number") out[id] = start2;
-    return out;
-  }
-  function setAlertSkip(matchId, start2, skip, now2 = Date.now()) {
-    const current5 = getAlertSkips();
-    if (!skip && !(matchId in current5)) return;
-    const next = {};
-    for (const [id, s] of Object.entries(current5)) if (s + SKIP_KEEP_MS > now2 && id !== matchId) next[id] = s;
-    if (skip) next[matchId] = start2;
-    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, next);
-  }
-  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, BUNDLED_IMAGES, BACKDROP_MODES, isMode, DEFAULT_CARDS, DEFAULT_SETTINGS, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
-  var init_sport_store = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-store.ts"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_plugin_sdk();
-      init_live_tv_data();
-      init_sport_model();
-      SPORT_SETTINGS_KEY = "sport_settings_v1";
-      SPORT_FOLLOWS_KEY = "sport_follows_v1";
-      SPORT_OVERRIDES_KEY = "sport_overrides_v1";
-      BUNDLED_IMAGES = ["football", "hockey", "basketball", "motorsport", "tennis"];
-      BACKDROP_MODES = ["standard", "auto", "custom", "off", ...BUNDLED_IMAGES.map((b) => `image:${b}`)];
-      isMode = (v) => typeof v === "string" && BACKDROP_MODES.includes(v);
-      DEFAULT_CARDS = { opacity: 85, tone: "black" };
-      DEFAULT_SETTINGS = {
-        view: "matchday",
-        alert: "15",
-        apiKey: null,
-        goalAlerts: true,
-        provider: "api-sports",
-        keyPlan: null,
-        goalAlertMatches: {},
-        backdrops: { all: "standard", sports: {} },
-        cards: DEFAULT_CARDS
-      };
-      SPORT_ALERT_SKIP_KEY = "sport_alert_skip_v1";
-      SKIP_KEEP_MS = 24 * 60 * 6e4;
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/budget.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/budget.ts
   function reserveFor(limit) {
     return limit == null ? 0 : Math.max(5, Math.ceil(limit * 0.1));
   }
-  function currentBudget() {
-    const { provider, apiKey } = getSportSettings();
-    const id = `${provider}|${apiKey ?? ""}`;
-    if (current3?.id === id) return current3.budget;
-    current3 = { id, budget: apiKey ? new Budget(providerFor(provider), apiKey) : null };
-    return current3.budget;
-  }
-  var RETRY_MS2, unknownQuota, Budget, current3;
+  var RETRY_MS2, DAY_MS, unknownQuota, Budget;
   var init_budget = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/budget.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/budget.ts"() {
       "use strict";
       "use client";
-      init_plugin_sdk();
-      init_live_tv_data();
       init_sport_fetch();
-      init_providers();
-      init_sport_store();
       RETRY_MS2 = 2e3;
+      DAY_MS = 864e5;
       unknownQuota = (bucket) => ({ bucket, limit: null, remaining: null, minuteLimit: null, minuteRemaining: null, blockedUntil: null, reason: null, plan: null });
       Budget = class {
         constructor(provider, key, deps = {}) {
           __publicField(this, "provider", provider);
           __publicField(this, "key", key);
           __publicField(this, "quotas", /* @__PURE__ */ new Map());
+          /** När varje hinks kvot senast kom från ett svar. Dygnskvoter nollställs 00:00 UTC. */
+          __publicField(this, "notedAt", /* @__PURE__ */ new Map());
           __publicField(this, "planned", /* @__PURE__ */ new Map());
           __publicField(this, "primed", /* @__PURE__ */ new Set());
           __publicField(this, "invalid", false);
           __publicField(this, "listeners", /* @__PURE__ */ new Set());
           __publicField(this, "fetchImpl");
+          __publicField(this, "ledgerImpl");
           __publicField(this, "now");
           __publicField(this, "sleep");
           this.fetchImpl = deps.fetch ?? sportFetch;
+          this.ledgerImpl = deps.ledger ?? sportQuota;
           this.now = deps.now ?? Date.now;
           this.sleep = deps.sleep ?? ((ms2) => new Promise((resolve) => setTimeout(resolve, ms2)));
         }
         hasKey() {
           return !!this.key;
+        }
+        /** Dagens kvot ur värdens bok (delas av TV och telefon). Lokalt anrop, kostar ingen kvot: för inställningarnas Nycklar. */
+        async loadLedger() {
+          if (!this.key) return;
+          for (const q of await this.ledgerImpl(this.provider.id, this.key)) this.noteQuota(q);
         }
         isInvalid() {
           return this.invalid;
@@ -44135,6 +44567,9 @@ ${cue.text}`).join("\n\n")}
         quota(bucket) {
           const q = this.quotas.get(bucket);
           if (!q) return unknownQuota(bucket);
+          if (q.limit != null && Math.floor((this.notedAt.get(bucket) ?? 0) / DAY_MS) < Math.floor(this.now() / DAY_MS)) {
+            return q.reason === "exhausted" || q.blockedUntil == null || q.blockedUntil <= this.now() ? { ...q, remaining: null, blockedUntil: null, reason: null } : { ...q, remaining: null };
+          }
           if (q.blockedUntil == null || q.blockedUntil > this.now()) return q;
           return q.reason === "exhausted" ? { ...q, remaining: null, blockedUntil: null, reason: null } : { ...q, blockedUntil: null, reason: null };
         }
@@ -44145,6 +44580,7 @@ ${cue.text}`).join("\n\n")}
         }
         noteQuota(q) {
           this.quotas.set(q.bucket, q);
+          this.notedAt.set(q.bucket, this.now());
           this.emit();
         }
         setPlanned(bucket, n) {
@@ -44299,14 +44735,282 @@ ${cue.text}`).join("\n\n")}
           }
         }
       };
-      current3 = null;
-      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => {
-        current3 = null;
-      });
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-flow.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-model.ts
+  function matchTitle(m) {
+    return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
+  }
+  function crestText(name) {
+    const words = name.split(/\s+/).filter(Boolean);
+    const word = words.find((w) => !CREST_SKIP.has(w.toLowerCase()) && /\p{L}/u.test(w)) ?? words[0] ?? "?";
+    return word.slice(0, 3).toUpperCase();
+  }
+  function sourceChannel(s) {
+    return { name: s.name, url: s.url, logo: s.logo, group: s.group, tvgId: s.tvgId };
+  }
+  var SPORT_KINDS, SPORT_CHIPS, CREST_SKIP;
+  var init_sport_model = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-model.ts"() {
+      "use strict";
+      SPORT_KINDS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis", "other"];
+      SPORT_CHIPS = ["football", "hockey", "basketball", "handball", "motorsport", "tennis"];
+      CREST_SKIP = /* @__PURE__ */ new Set(["fc", "if", "ik", "ifk", "aif", "bk", "sk", "hc", "ff", "is", "cf", "afc", "ssc", "hf", "bik", "gik"]);
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-store.ts
+  function cardOpacity(cards, tv) {
+    const own = tv ? cards.tvOpacity : cards.opacity;
+    return typeof own === "number" ? own : tv ? CARD_OPACITY_DEFAULT.tv : CARD_OPACITY_DEFAULT.desktop;
+  }
+  function withCardOpacity(cards, tv, value) {
+    return tv ? { ...cards, tvOpacity: value } : { ...cards, opacity: value };
+  }
+  function sanitizeBackdrops(raw, legacy, rev) {
+    const r = raw && typeof raw === "object" ? raw : null;
+    if (!r) return { all: legacy === "off" ? "off" : "standard", sports: ownImageDefaults() };
+    if (rev !== BACKDROPS_REV) return { all: "standard", sports: ownImageDefaults() };
+    const sportsRaw = r.sports && typeof r.sports === "object" ? r.sports : {};
+    const sports = ownImageDefaults();
+    for (const k of BACKDROP_SPORTS) {
+      const v = sportsRaw[k];
+      if (isMode(v) || v === "inherit") sports[k] = v;
+    }
+    return { all: isMode(r.all) ? r.all : "standard", sports };
+  }
+  function sanitizeCards(raw, rev) {
+    const r = raw && typeof raw === "object" ? raw : {};
+    const tone = r.tone === "gray" || r.tone === "image" || r.tone === "black" ? r.tone : DEFAULT_CARDS.tone;
+    if (rev !== CARDS_REV) {
+      const old = pct2(r.opacity);
+      const chosen = old === null || old === 50 ? null : old;
+      return { opacity: chosen, tvOpacity: chosen, tone };
+    }
+    return { opacity: pct2(r.opacity), tvOpacity: pct2(r.tvOpacity), tone };
+  }
+  function sanitizeKeys(raw) {
+    const out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    for (const [id, v] of Object.entries(raw)) {
+      const e = v && typeof v === "object" ? v : null;
+      if (!isProvider(id) || !e || typeof e.key !== "string" || !KEY_RE.test(e.key)) continue;
+      out[id] = { key: e.key, plan: typeof e.plan === "string" ? e.plan : null };
+    }
+    return out;
+  }
+  function legacyKeys(r) {
+    if (typeof r.apiKey !== "string" || !KEY_RE.test(r.apiKey)) return {};
+    const id = r.provider === "thesportsdb" ? "thesportsdb" : "api-sports";
+    return { [id]: { key: r.apiKey, plan: typeof r.keyPlan === "string" ? r.keyPlan : null } };
+  }
+  function sanitizeOrder(raw) {
+    const out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    for (const [sport, list] of Object.entries(raw)) {
+      if (!SPORT_KINDS.includes(sport) || !Array.isArray(list)) continue;
+      const ids = [...new Set(list.filter(isProvider))];
+      if (ids.length) out[sport] = ids;
+    }
+    return out;
+  }
+  function primaryProvider(keys2) {
+    return ALL_PROVIDERS.find((id) => keys2[id]) ?? "api-sports";
+  }
+  function hasAnyKey(s) {
+    return ALL_PROVIDERS.some((id) => !!s.keys[id]);
+  }
+  function sanitizeSettings(raw) {
+    const r = raw && typeof raw === "object" ? raw : {};
+    const keys2 = r.keys && typeof r.keys === "object" ? sanitizeKeys(r.keys) : legacyKeys(r);
+    const provider = primaryProvider(keys2);
+    return {
+      view: r.view === "feed" || r.view === "matchday" ? r.view : DEFAULT_SETTINGS.view,
+      phoneView: r.phoneView === "feed" || r.phoneView === "matchday" ? r.phoneView : null,
+      alert: r.alert === "off" || r.alert === "15" || r.alert === "kickoff" ? r.alert : DEFAULT_SETTINGS.alert,
+      keys: keys2,
+      order: sanitizeOrder(r.order),
+      apiKey: keys2[provider]?.key ?? null,
+      goalAlerts: r.goalAlerts !== false,
+      provider,
+      keyPlan: keys2[provider]?.plan ?? null,
+      goalAlertMatches: Object.fromEntries(
+        Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === "object" ? r.goalAlertMatches : {}).filter((e) => typeof e[1] === "number" && e[1] > Date.now())
+      ),
+      backdrops: sanitizeBackdrops(r.backdrops, r.backdrop, r.backdropsRev),
+      backdropsRev: BACKDROPS_REV,
+      cards: sanitizeCards(r.cards, r.cardsRev),
+      cardsRev: CARDS_REV
+    };
+  }
+  function getSportSettings() {
+    return sanitizeSettings(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, DEFAULT_SETTINGS));
+  }
+  function setSportSettings(patch) {
+    const current5 = getSportSettings();
+    let keys2 = patch.keys ?? current5.keys;
+    if ("apiKey" in patch) {
+      const id = patch.provider ?? current5.provider;
+      keys2 = { ...keys2 };
+      if (patch.apiKey) keys2[id] = { key: patch.apiKey, plan: patch.keyPlan ?? null };
+      else delete keys2[id];
+    }
+    const next = sanitizeSettings({ ...current5, ...patch, keys: keys2 });
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, next);
+    return next;
+  }
+  function setProviderKey(id, key, plan) {
+    return setSportSettings({ keys: { ...getSportSettings().keys, [id]: { key, plan } } });
+  }
+  function removeProviderKey(id) {
+    const keys2 = { ...getSportSettings().keys };
+    delete keys2[id];
+    return setSportSettings({ keys: keys2 });
+  }
+  function useStored(key, read11) {
+    const [value, setValue] = useState(read11);
+    useEffect(() => {
+      setValue(read11());
+      return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, key, () => setValue(read11()));
+    }, [key]);
+    return value;
+  }
+  function useSportSettings() {
+    return useStored(SPORT_SETTINGS_KEY, getSportSettings);
+  }
+  function teamKeysMatch(a, b) {
+    if (!a || !b) return false;
+    if (a === b || `${a}s` === b || `${b}s` === a) return true;
+    const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+    const sw3 = short.split(" ");
+    const lw = long.split(" ");
+    if (sw3.length >= lw.length) return false;
+    const head = lw.slice(0, sw3.length).join(" ");
+    const tail = lw.slice(lw.length - sw3.length).join(" ");
+    return head === short || tail === short;
+  }
+  function sportsCompatible(a, b) {
+    return a === b || a === "other" || b === "other";
+  }
+  function sanitizeFollows(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const item of raw) {
+      if (!item || typeof item !== "object") continue;
+      const f = item;
+      if (!SPORT_KINDS.includes(f.sport)) continue;
+      if (f.kind !== "team" && f.kind !== "league") continue;
+      if (typeof f.key !== "string" || !f.key) continue;
+      const ids = f.providerIds && typeof f.providerIds === "object" ? Object.fromEntries(Object.entries(f.providerIds).filter((e) => typeof e[1] === "string")) : null;
+      const alert = f.alert === "off" || f.alert === "15" || f.alert === "kickoff" ? f.alert : null;
+      out.push({ sport: f.sport, kind: f.kind, key: f.key, name: typeof f.name === "string" && f.name ? f.name : f.key, ...ids && Object.keys(ids).length > 0 ? { providerIds: ids } : {}, ...alert ? { alert } : {}, ...typeof f.crest === "string" && f.crest ? { crest: f.crest } : {} });
+    }
+    return out;
+  }
+  function getFollows() {
+    return sanitizeFollows(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, []));
+  }
+  function isFollowing(follows, f) {
+    return follows.some((x) => x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key));
+  }
+  function toggleFollow(f) {
+    const current5 = getFollows();
+    const next = isFollowing(current5, f) ? current5.filter((x) => !(x.kind === f.kind && sportsCompatible(x.sport, f.sport) && (f.kind === "team" ? teamKeysMatch(x.key, f.key) : x.key === f.key))) : [...current5, f];
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
+    return next;
+  }
+  function setFollowAlert(f, alert) {
+    const next = getFollows().map((x) => isFollowing([x], f) ? { ...x, alert } : x);
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
+    return next;
+  }
+  function useFollows() {
+    return useStored(SPORT_FOLLOWS_KEY, getFollows);
+  }
+  function sanitizeOverrides(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    const out = {};
+    for (const [id, value] of Object.entries(raw)) {
+      const c = value;
+      if (!c || typeof c.key !== "string" || typeof c.url !== "string" || typeof c.name !== "string") continue;
+      out[id] = { key: c.key, name: c.name, url: c.url, logo: typeof c.logo === "string" ? c.logo : null, group: typeof c.group === "string" ? c.group : "", tvgId: typeof c.tvgId === "string" ? c.tvgId : null };
+    }
+    return out;
+  }
+  function getOverrides() {
+    return sanitizeOverrides(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, {}));
+  }
+  function setOverride(matchId, channel) {
+    const next = { ...getOverrides() };
+    if (channel) next[matchId] = channel;
+    else delete next[matchId];
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, next);
+    return next;
+  }
+  function useOverrides() {
+    return useStored(SPORT_OVERRIDES_KEY, getOverrides);
+  }
+  function getAlertSkips() {
+    const raw = readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, {});
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    const out = {};
+    for (const [id, start3] of Object.entries(raw)) if (typeof start3 === "number") out[id] = start3;
+    return out;
+  }
+  function setAlertSkip(matchId, start3, skip, now2 = Date.now()) {
+    const current5 = getAlertSkips();
+    if (!skip && !(matchId in current5)) return;
+    const next = {};
+    for (const [id, s] of Object.entries(current5)) if (s + SKIP_KEEP_MS > now2 && id !== matchId) next[id] = s;
+    if (skip) next[matchId] = start3;
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_ALERT_SKIP_KEY, next);
+  }
+  var SPORT_SETTINGS_KEY, SPORT_FOLLOWS_KEY, SPORT_OVERRIDES_KEY, BUNDLED_IMAGES, BACKDROP_MODES, BACKDROP_SPORTS, ownImageDefaults, BACKDROPS_REV, CARD_OPACITY_DEFAULT, CARDS_REV, isMode, pct2, DEFAULT_CARDS, ALL_PROVIDERS, DEFAULT_SETTINGS, isProvider, KEY_RE, followAlert, SPORT_ALERT_SKIP_KEY, SKIP_KEEP_MS;
+  var init_sport_store = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-store.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_sport_model();
+      SPORT_SETTINGS_KEY = "sport_settings_v1";
+      SPORT_FOLLOWS_KEY = "sport_follows_v1";
+      SPORT_OVERRIDES_KEY = "sport_overrides_v1";
+      BUNDLED_IMAGES = ["football", "hockey", "basketball", "motorsport", "tennis"];
+      BACKDROP_MODES = ["standard", "auto", "custom", "off", ...BUNDLED_IMAGES.map((b) => `image:${b}`)];
+      BACKDROP_SPORTS = SPORT_KINDS.filter((k) => k !== "handball");
+      ownImageDefaults = () => Object.fromEntries(BACKDROP_SPORTS.map((k) => [k, "standard"]));
+      BACKDROPS_REV = 2;
+      CARD_OPACITY_DEFAULT = { desktop: 50, tv: 85 };
+      CARDS_REV = 2;
+      isMode = (v) => typeof v === "string" && BACKDROP_MODES.includes(v);
+      pct2 = (v) => typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(100, Math.max(0, v))) : null;
+      DEFAULT_CARDS = { opacity: null, tvOpacity: null, tone: "image" };
+      ALL_PROVIDERS = ["sportapi", "api-sports", "thesportsdb"];
+      DEFAULT_SETTINGS = {
+        view: "matchday",
+        alert: "15",
+        keys: {},
+        order: {},
+        apiKey: null,
+        goalAlerts: true,
+        provider: "api-sports",
+        keyPlan: null,
+        goalAlertMatches: {},
+        backdrops: { all: "standard", sports: ownImageDefaults() },
+        cards: DEFAULT_CARDS
+      };
+      isProvider = (v) => typeof v === "string" && ALL_PROVIDERS.includes(v);
+      KEY_RE = /^[A-Za-z0-9_-]{3,128}$/;
+      followAlert = (f, global) => f.alert ?? global;
+      SPORT_ALERT_SKIP_KEY = "sport_alert_skip_v1";
+      SKIP_KEEP_MS = 24 * 60 * 6e4;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/key-flow.ts
   function cleanKey(raw) {
     const key = raw.replace(/\s+/g, "");
     return /^[A-Za-z0-9_-]{3,128}$/.test(key) ? key : null;
@@ -44316,26 +45020,32 @@ ${cue.text}`).join("\n\n")}
   }
   function isPaidPlan(plan, provider) {
     if (provider === "thesportsdb") return true;
+    if (provider === "sportapi") return !!plan && plan.toLowerCase() !== "free";
     return !!plan && plan.toLowerCase() !== "free";
   }
   async function validateKey(provider, raw, deps = {}) {
     const key = cleanKey(raw);
     if (!key) return { ok: false, reason: "empty" };
-    const result = await new Budget(providerFor(provider), key, { fetch: deps.fetch }).validate();
-    if (result.ok && result.data.ok) return { ok: true, key, check: result.data };
+    const budget = new Budget(providerFor(provider), key, { fetch: deps.fetch });
+    const result = await budget.validate();
+    if (result.ok && result.data.ok) {
+      const q = budget.quota(budget.provider.bucket("football"));
+      const check = result.data.used == null && q.limit != null && q.remaining != null ? { ...result.data, used: Math.max(0, q.limit - q.remaining), limit: q.limit, plan: result.data.plan ?? q.plan } : result.data;
+      return { ok: true, key, check };
+    }
     if (!result.ok && result.reason === "network") return { ok: false, reason: "network" };
     return { ok: false, reason: "rejected" };
   }
   async function saveValidatedKey(provider, raw, deps = {}) {
     const result = await validateKey(provider, raw, deps);
-    if (result.ok) setSportSettings({ apiKey: result.key, provider, keyPlan: result.check.plan });
+    if (result.ok) setProviderKey(provider, result.key, result.check.plan);
     return result;
   }
-  function removeKey() {
-    setSportSettings({ apiKey: null, keyPlan: null });
+  function removeKey(provider) {
+    removeProviderKey(provider ?? getSportSettings().provider);
   }
   var init_key_flow = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-flow.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/key-flow.ts"() {
       "use strict";
       "use client";
       init_budget();
@@ -44344,10 +45054,275 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/surface.ts
-  var sportBg, SPORT_CARD_BG, SPORT_PANEL_BG, sportSurface, sportCardStyle;
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/key-handoff.ts
+  async function startKeyHandoff() {
+    try {
+      const res = await fetch(BASE, { method: "POST" });
+      if (!res.ok) return null;
+      const body = await res.json();
+      return body.code ? { code: body.code, url: body.url ?? null } : null;
+    } catch {
+      return null;
+    }
+  }
+  async function pollKeyHandoff(code) {
+    try {
+      const res = await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { cache: "no-store" });
+      if (!res.ok) return { state: "expired" };
+      return await res.json();
+    } catch {
+      return { state: "waiting" };
+    }
+  }
+  async function cancelKeyHandoff(code) {
+    try {
+      await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { method: "DELETE" });
+    } catch {
+    }
+  }
+  function useKeyHandoff(active4, onKey) {
+    const [url, setUrl] = useState(null);
+    const [expired, setExpired] = useState(false);
+    const [round2, setRound] = useState(0);
+    const onKeyRef = useRef(onKey);
+    onKeyRef.current = onKey;
+    useEffect(() => {
+      if (!active4) return;
+      let stopped = false;
+      let code = null;
+      let done = false;
+      let timer4 = null;
+      setExpired(false);
+      const loop = async () => {
+        if (stopped || done || !code) return;
+        const r = await pollKeyHandoff(code);
+        if (stopped) return;
+        if (r.state === "received" && r.key) {
+          done = true;
+          onKeyRef.current(r.key);
+          return;
+        }
+        if (r.state === "expired") {
+          done = true;
+          setExpired(true);
+          return;
+        }
+        timer4 = setTimeout(() => void loop(), POLL_MS2);
+      };
+      void startKeyHandoff().then((h) => {
+        if (stopped || !h) return;
+        code = h.code;
+        setUrl(h.url);
+        timer4 = setTimeout(() => void loop(), POLL_MS2);
+      });
+      return () => {
+        stopped = true;
+        if (timer4) clearTimeout(timer4);
+        if (code) void cancelKeyHandoff(code);
+      };
+    }, [active4, round2]);
+    const restart = useCallback(() => setRound((n) => n + 1), []);
+    return { url, expired, restart };
+  }
+  var BASE, POLL_MS2;
+  var init_key_handoff = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/key-handoff.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      BASE = "/api/live-tv/sport/key-handoff";
+      POLL_MS2 = 2e3;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/router.ts
+  function currentRouter() {
+    const { keys: keys2 } = getSportSettings();
+    const order = {};
+    const id = JSON.stringify([keys2, order]);
+    if (current3?.id === id) return current3.router;
+    const make = (pid, key) => {
+      const k = `${pid}|${key}`;
+      let b = budgets.get(k);
+      if (!b) {
+        b = new Budget(providerFor(pid), key);
+        budgets.set(k, b);
+      }
+      return b;
+    };
+    const router = new SportRouter(keys2, order, {}, make);
+    current3 = { id, router: router.hasKey() ? router : null };
+    return current3.router;
+  }
+  var FALL_THROUGH, SportRouter, current3, budgets;
+  var init_router = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/router.ts"() {
+      "use strict";
+      "use client";
+      init_budget();
+      init_sport_store();
+      init_providers();
+      FALL_THROUGH = /* @__PURE__ */ new Set(["paused", "over-budget", "invalid-key"]);
+      SportRouter = class {
+        /** `make`: återanvänd en källas kvothanterare (samma nyckel) när bara ordningen eller en annan källas nyckel ändras. */
+        constructor(keys2, order, deps = {}, make) {
+          __publicField(this, "keys", keys2);
+          __publicField(this, "order", order);
+          __publicField(this, "budgets", /* @__PURE__ */ new Map());
+          for (const [id, k] of Object.entries(keys2)) {
+            if (k?.key) this.budgets.set(id, make ? make(id, k.key) : new Budget(providerFor(id), k.key, deps));
+          }
+        }
+        budget(id) {
+          return this.budgets.get(id) ?? null;
+        }
+        hasKey() {
+          return this.budgets.size > 0;
+        }
+        /** Fler än en källa med nyckel: då säger takraden vilken källa som används. */
+        multi() {
+          return this.budgets.size > 1;
+        }
+        /** Alla nycklar ogiltiga (en ogiltig bland flera är bara den källans problem). */
+        isInvalid() {
+          return this.budgets.size > 0 && [...this.budgets.values()].every((b) => b.isInvalid());
+        }
+        /** Sportens källor med nyckel, i ordning. */
+        candidates(sport) {
+          return effectiveOrder({ keys: this.keys, order: this.order }, sport).map((id) => this.budgets.get(id)).filter((b) => !!b);
+        }
+        coverage(sport) {
+          return this.candidates(sport).length > 0 ? "full" : "epg";
+        }
+        usable(b, kind, sport, n = 1) {
+          return !b.isInvalid() && b.allows(kind, b.provider.bucket(sport), n);
+        }
+        /** Källan sporten använder just nu (för livetakten och takraden). `null` = ingen har kvot. */
+        active(sport, kind = "live") {
+          return this.candidates(sport).find((b) => this.usable(b, kind, sport)) ?? null;
+        }
+        activeProvider(sport) {
+          return this.active(sport)?.provider.id ?? null;
+        }
+        /** Kvoten hos källan sporten använder (eller den första, när ingen har kvot kvar). */
+        quotaFor(sport) {
+          const b = this.active(sport) ?? this.candidates(sport)[0];
+          return b ? { provider: b.provider.id, quota: b.quota(b.provider.bucket(sport)) } : null;
+        }
+        liveIntervalMs(sport, windowEndsAt) {
+          const b = this.active(sport);
+          return b ? b.liveIntervalMs(b.provider.bucket(sport), windowEndsAt) : null;
+        }
+        /** När den första spärren släpper, om ingen källa har kvot nu (pollern vaknar då). */
+        pausedUntil(sport) {
+          if (this.active(sport)) return null;
+          const ends = this.candidates(sport).map((b) => b.pausedUntil(b.provider.bucket(sport))).filter((x) => x != null);
+          return ends.length ? Math.min(...ends) : null;
+        }
+        /** Dygnsplanens återstående anrop per sport, bokförda på den källa sporten använder. */
+        setPlanned(perSport) {
+          const sums = /* @__PURE__ */ new Map();
+          for (const b of this.budgets.values()) sums.set(b, /* @__PURE__ */ new Map());
+          for (const [sport, n] of perSport) {
+            for (const b2 of this.candidates(sport)) {
+              const m2 = sums.get(b2);
+              const bucket2 = b2.provider.bucket(sport);
+              m2.set(bucket2, m2.get(bucket2) ?? 0);
+            }
+            const b = this.active(sport, "day") ?? this.candidates(sport)[0];
+            if (!b) continue;
+            const m = sums.get(b);
+            const bucket = b.provider.bucket(sport);
+            m.set(bucket, (m.get(bucket) ?? 0) + n);
+          }
+          for (const [b, m] of sums) for (const [bucket, n] of m) b.setPlanned(bucket, n);
+        }
+        subscribe(cb) {
+          const offs = [...this.budgets.values()].map((b) => b.subscribe(cb));
+          return () => {
+            for (const off of offs) off();
+          };
+        }
+        /**
+         * Sportens källor i ordning. En källa som inte kan svara på frågan alls (inga
+         * förfrågningar, t.ex. lagsök hos sportapi.ai) hoppas över; en utan kvot också.
+         * Ingen källa med kvot: den första svarar ur cachen (Budget går då `cache-only`).
+         */
+        async route(kind, sport, build) {
+          const all = this.candidates(sport);
+          if (all.length === 0) {
+            return { ok: false, reason: this.hasKey() ? "no-coverage" : "no-key", data: null, fetchedAt: null, until: null, provider: null };
+          }
+          const able = all.map((b2) => ({ b: b2, call: build(b2.provider) })).filter((x) => !!x.call && x.call.requests.length > 0);
+          if (able.length === 0) {
+            const first = build(all[0].provider);
+            return { ok: true, data: first ? first.parse([]) : null, cached: true, fetchedAt: null, provider: all[0].provider.id };
+          }
+          let last2 = null;
+          for (const { b: b2, call: call2 } of able) {
+            if (!this.usable(b2, kind, sport, call2.requests.length)) continue;
+            const res = await b2.run(kind, sport, call2);
+            const routed = { ...res, provider: b2.provider.id };
+            if (res.ok || !FALL_THROUGH.has(res.reason)) return routed;
+            last2 = routed;
+          }
+          if (last2) return last2;
+          const { b, call } = able[0];
+          return { ...await b.run(kind, sport, call), provider: b.provider.id };
+        }
+        day(sport, date, opts) {
+          return this.route("day", sport, (p) => p.day(sport, date, opts));
+        }
+        live(sport, opts) {
+          return this.route("live", sport, (p) => p.live(sport, opts));
+        }
+        searchTeams(sport, q) {
+          return this.route("search", sport, (p) => p.searchTeams(sport, q));
+        }
+        searchLeagues(sport, q) {
+          return this.route("search", sport, (p) => p.searchLeagues?.(sport, q) ?? null);
+        }
+        /** Matchcentret: ägarens id först, sedan samma match hos andra källor (alias). */
+        async fixture(sport, refs, opts) {
+          const kind = opts.refresh && !opts.finished ? "fixture-refresh" : "fixture";
+          const owned = refs.map((r2) => ({ r: r2, b: this.budgets.get(r2.provider) })).filter((x) => !!x.b && x.b.provider.coverage(sport) === "full");
+          if (owned.length === 0) return { ok: false, reason: this.hasKey() ? "no-coverage" : "no-key", data: null, fetchedAt: null, until: null, provider: null };
+          let last2 = null;
+          for (const { r: r2, b: b2 } of owned) {
+            const call = b2.provider.fixture(sport, r2.id, { finished: opts.finished });
+            if (!this.usable(b2, kind, sport, call.requests.length)) continue;
+            const res = { ...await b2.run(kind, sport, call), provider: r2.provider };
+            if (res.ok || !FALL_THROUGH.has(res.reason)) return res;
+            last2 = res;
+          }
+          if (last2) return last2;
+          const { r, b } = owned[0];
+          return { ...await b.run(kind, sport, b.provider.fixture(sport, r.id, { finished: opts.finished })), provider: r.provider };
+        }
+        /** Tabellen tillhör ligans källa (ligans id är källans). */
+        async standings(sport, provider, leagueId, season) {
+          const b = this.budgets.get(provider);
+          if (!b) return { ok: false, reason: "no-key", data: null, fetchedAt: null, until: null, provider };
+          return { ...await b.standings(sport, leagueId, season), provider };
+        }
+        /** Startvärdet ur diskcachen: första källan i ordningen som har något sparat. Kostar aldrig kvot. */
+        async peek(sport, build) {
+          for (const b of this.candidates(sport)) {
+            const data = await b.peek(sport, build(b.provider));
+            if (data != null) return { data, provider: b.provider.id };
+          }
+          return null;
+        }
+      };
+      current3 = null;
+      budgets = /* @__PURE__ */ new Map();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/surface.ts
+  var sportBg, SPORT_CARD_BG, SPORT_PANEL_BG, sportSurface, sportCardStyle, SPORT_DRAWER_PADDING, sportDrawerStyle, sportStackedStyle, SPORT_FOCUSED, SPORT_PANEL_FOCUSED, SPORT_FOCUS_CSS;
   var init_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/surface.ts"() {
       "use strict";
       init_tv_ui();
       sportBg = (fallback) => `var(--sport-card-bg, ${fallback})`;
@@ -44359,10 +45334,152 @@ ${cue.text}`).join("\n\n")}
         WebkitBackdropFilter: "var(--sport-card-blur, none)"
       });
       sportCardStyle = { ...cardStyle, ...sportSurface() };
+      SPORT_DRAWER_PADDING = `${belowTitleBar(dp(28))} ${dp(32)}px ${dp(28)}px`;
+      sportDrawerStyle = {
+        // --sport-drawer-bg: som kortytan, men minst 85 % i TV-läget där oskärpan saknas.
+        ...sportSurface(`var(--sport-drawer-bg, ${SPORT_PANEL_BG})`),
+        borderLeft: "1px solid rgba(255,255,255,0.16)",
+        padding: SPORT_DRAWER_PADDING,
+        boxSizing: "border-box"
+      };
+      sportStackedStyle = {
+        ...sportDrawerStyle,
+        background: "#141519",
+        backdropFilter: "none",
+        WebkitBackdropFilter: "none"
+      };
+      SPORT_FOCUSED = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-sport-stage] [data-f]';
+      SPORT_PANEL_FOCUSED = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]):not([data-live-tv-desktop="1"]) [data-sport-stage] [data-panel-root] [data-f]';
+      SPORT_FOCUS_CSS = `${SPORT_FOCUSED}:focus, ${SPORT_FOCUSED}[data-fcur="1"] { box-shadow: none !important; border-color: transparent !important; }
+${SPORT_PANEL_FOCUSED}:focus, ${SPORT_PANEL_FOCUSED}[data-fcur="1"] { outline-offset: -2px !important; }`;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/rate-line.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/key-card.tsx
+  function KeyCard({ variant, onDone, pushLayer, provider: fixed, current: current5, onRemove }) {
+    const { tt } = useTvText();
+    const tv = useTvMode();
+    const settings = useSportSettings();
+    const [chosen, setProvider] = useState(() => PROVIDER_IDS.find((id) => !settings.keys[id]) ?? "sportapi");
+    const provider = fixed ?? chosen;
+    const [draft, setDraft] = useState("");
+    const [phase, setPhase] = useState({ kind: "idle" });
+    const [phoneEntry, setPhoneEntry] = useState(false);
+    const prompt = useTextPrompt({ pushLayer });
+    const broken = !!settings.keys[provider] && !!currentRouter()?.budget(provider)?.isInvalid();
+    const submit = async (raw) => {
+      setPhase({ kind: "checking" });
+      const result = await saveValidatedKey(provider, raw);
+      setPhase({ kind: "done", result });
+      if (result.ok) {
+        setPhoneEntry(false);
+        onDone?.();
+      }
+    };
+    const handoff = useKeyHandoff(tv && phoneEntry, (key) => void submit(key));
+    const covered = SPORT_NAMES.filter(([s]) => providerFor(provider).coverage(s) === "full").map(([, k]) => tt(k));
+    const sportsText = covered.length > 1 ? `${covered.slice(0, -1).join(", ")} ${tt("sportListAnd")} ${covered[covered.length - 1]}` : covered.join("");
+    const signupUrl = SIGNUP[provider];
+    const message = (() => {
+      if (phase.kind === "checking") return tt("sportKeyChecking");
+      if (phase.kind !== "done") return null;
+      const r = phase.result;
+      if (r.ok) {
+        const plan = r.check.plan && r.check.plan.toLowerCase() === "free" ? tt("sportPlanFree") : r.check.plan ?? "";
+        return r.check.limit != null && r.check.used != null ? tt("sportKeyOk", { used: r.check.used, limit: r.check.limit, plan }) : tt("sportKeyOkNoQuota", { plan });
+      }
+      return r.reason === "network" ? tt("sportKeyNetwork") : r.reason === "rejected" ? tt("sportKeyRejected") : null;
+    })();
+    const btn = (label, onOk, primary = false, testId, danger = false) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk), style: { minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: "inline-flex", alignItems: "center", fontSize: dp(17), fontWeight: 600, cursor: "pointer", background: primary ? TV2.text : danger ? "rgba(224,119,106,0.16)" : TV2.s12, color: primary ? "#0e0f13" : danger ? "#e0776a" : TV2.text }, children: label });
+    const removeBtn = fixed && current5 && onRemove ? btn(tt("sportKeyRemove"), onRemove, false, "sport-key-remove", true) : null;
+    return /* @__PURE__ */ jsxs("section", { "data-testid": `sport-key-card-${variant}`, style: { borderRadius: dp(16), background: sportBg(TV2.s06), border: `1px solid ${TV2.lineCard}`, padding: dp(24), display: "flex", gap: dp(24), flexWrap: "wrap" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: dp(12) }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(24), fontWeight: 600 }, children: broken ? tt("sportKeyBroken") : fixed ? `${PROVIDER_LABEL[fixed]} \xB7 ${tt(settings.keys[fixed] ? "sportKeyChange" : "sportKeyAdd")}` : tt("sportKeyTitle") }),
+        fixed ? null : /* @__PURE__ */ jsx(Segment, { size: tv ? "lg" : "md", options: PROVIDER_IDS.map((id) => ({ key: id, label: PROVIDER_LABEL[id] })), value: provider, onChange: (k) => {
+          setProvider(k);
+          setPhase({ kind: "idle" });
+        } }),
+        fixed ? null : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: TV2.muted }, children: tt("sportKeyChoice") }),
+        fixed && current5 ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-key-current", style: { display: "flex", flexDirection: "column", gap: dp(6) }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.text }, children: tt("sportKeyCurrent", { key: current5.masked }) }),
+          current5.detail ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted, fontVariantNumeric: "tabular-nums" }, children: current5.detail }) : null
+        ] }) : null,
+        provider === "sportapi" ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-key-sportapi-free", style: { fontSize: dp(18), color: TV2.text }, children: tt("sportKeySportApiFree") }) : null,
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(18), color: TV2.muted }, children: tt("sportKeyCovers", { sports: sportsText }) }),
+        tv ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(12), flexWrap: "wrap" }, children: [
+          btn(tt("sportKeyPhone"), () => {
+            setPhoneEntry(true);
+            handoff.restart();
+          }, true),
+          prompt.available ? btn(tt("sportKeyKeyboard"), () => prompt.ask(tt("sportKeyPaste"), "", (v) => void submit(v), "password")) : null,
+          removeBtn
+        ] }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(10), flexWrap: "wrap", alignItems: "center" }, children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              "data-testid": "sport-key-input",
+              value: draft,
+              onChange: (e) => setDraft(e.target.value),
+              placeholder: tt("sportKeyPaste"),
+              autoComplete: "off",
+              spellCheck: false,
+              style: { flex: "1 1 220px", minHeight: 44, borderRadius: 10, border: `1px solid ${TV2.lineStrong}`, background: "rgba(0,0,0,0.25)", color: TV2.text, padding: "0 12px", fontFamily: "ui-monospace, monospace" }
+            }
+          ),
+          btn(tt("sportKeyPaste"), () => {
+            void navigator.clipboard?.readText?.().then((t) => setDraft(t)).catch(() => {
+            });
+          }),
+          btn(tt("sportKeySave"), () => void submit(draft), true)
+        ] }),
+        !tv && removeBtn ? /* @__PURE__ */ jsx("div", { style: { display: "flex" }, children: removeBtn }) : null,
+        prompt.node,
+        message ? /* @__PURE__ */ jsx("div", { role: "status", style: { fontSize: dp(16), color: phase.kind === "done" && phase.result.ok ? "#3cd6a3" : TV2.text }, children: message }) : null
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(20), alignItems: "flex-start" }, children: [
+        /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: signupUrl, size: dp(132) }) }),
+          tv ? /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(17), color: TV2.muted }, children: tt("sportKeyGetKey") }) : /* @__PURE__ */ jsx("a", { href: signupUrl, target: "_blank", rel: "noreferrer", style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportKeyGetKey") })
+        ] }),
+        tv && phoneEntry ? /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center", maxWidth: dp(180) }, children: [
+          handoff.url ? /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
+          /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(17), color: TV2.muted, textAlign: "center" }, children: handoff.expired ? tt("sportKeyExpired") : tt("sportKeyPhoneHint") }),
+          handoff.expired ? btn(tt("sportKeyRetry"), handoff.restart) : null
+        ] }) : null
+      ] })
+    ] });
+  }
+  var SPORT_NAMES, SIGNUP;
+  var init_key_card = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/key-card.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_tv_ui();
+      init_tv_strings();
+      init_tv_text_entry();
+      init_api_sports();
+      init_thesportsdb();
+      init_sportapi();
+      init_providers();
+      init_key_flow();
+      init_key_handoff();
+      init_router();
+      init_sport_store();
+      init_surface();
+      init_jsx_runtime_shim();
+      SPORT_NAMES = [
+        ["football", "sportNameFootball"],
+        ["hockey", "sportNameHockey"],
+        ["basketball", "sportNameBasketball"],
+        ["handball", "sportNameHandball"]
+      ];
+      SIGNUP = { sportapi: SPORTAPI_REGISTER_URL, "api-sports": API_SPORTS_REGISTER_URL, thesportsdb: THESPORTSDB_PRICING_URL };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/rate-line.ts
   function svOrdinal(n) {
     const last2 = n % 10;
     const lastTwo = n % 100;
@@ -44388,15 +45505,17 @@ ${cue.text}`).join("\n\n")}
     if (s.state === "rate-limited") return { text: tt("sportRateMinute"), showPaidLink: false };
     const left = s.remainingToday != null ? ` \xB7 ${tt("sportRateLeft", { n: s.remainingToday })}` : "";
     const head = s.intervalMs != null ? tt("sportRateEvery", { every: everyText(s.intervalMs, opts.lang) }) : tt("sportRateIdle");
-    return { text: `${head}${left}`, showPaidLink: s.provider === "api-sports" && !s.paid };
+    const via = s.multi && s.provider ? ` \xB7 ${tt("sportRateVia", { source: PROVIDER_LABEL[s.provider] })}` : "";
+    return { text: `${head}${left}${via}`, showPaidLink: s.provider === "api-sports" && !s.paid };
   }
   var init_rate_line = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/rate-line.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/rate-line.ts"() {
       "use strict";
+      init_providers();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/day-plan.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/day-plan.ts
   function planKey(c) {
     return c.kind === "day" ? `day|${c.sport}|${c.date}` : `standings|${c.sport}|${c.leagueId}|${c.season}`;
   }
@@ -44412,7 +45531,7 @@ ${cue.text}`).join("\n\n")}
     const seen = /* @__PURE__ */ new Set();
     for (const l of input.leagues) {
       if (provider.coverage(l.sport) !== "full") continue;
-      const c = { kind: "standings", sport: l.sport, leagueId: l.leagueId, season: l.season };
+      const c = { kind: "standings", sport: l.sport, leagueId: l.leagueId, season: l.season, ...l.provider ? { provider: l.provider } : {} };
       const k = planKey(c);
       if (seen.has(k) || input.done.has(k)) continue;
       seen.add(k);
@@ -44420,9 +45539,9 @@ ${cue.text}`).join("\n\n")}
     }
     return out;
   }
-  function plannedPerBucket(calls, provider) {
+  function plannedPerSport(calls) {
     const out = /* @__PURE__ */ new Map();
-    for (const c of calls) out.set(provider.bucket(c.sport), (out.get(provider.bucket(c.sport)) ?? 0) + 1);
+    for (const c of calls) out.set(c.sport, (out.get(c.sport) ?? 0) + 1);
     return out;
   }
   function ymd(ms2, tz) {
@@ -44447,12 +45566,75 @@ ${cue.text}`).join("\n\n")}
     return { today, yesterday: shift(-1), tomorrow: shift(1), dayEndMs };
   }
   var init_day_plan = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/day-plan.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/day-plan.ts"() {
       "use strict";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/live-poller.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/event-index.ts
+  var WINDOW_MS, fold, aliasKey, EventIndex;
+  var init_event_index = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/event-index.ts"() {
+      "use strict";
+      init_sport_store();
+      WINDOW_MS = 15 * 6e4;
+      fold = (name) => name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+      aliasKey = (provider, id) => `${provider}:${id}`;
+      EventIndex = class {
+        constructor() {
+          __publicField(this, "aliases", /* @__PURE__ */ new Map());
+          __publicField(this, "buckets", /* @__PURE__ */ new Map());
+        }
+        bucketKey(sport, kickoff, shift = 0) {
+          return `${sport}|${Math.floor(kickoff / WINDOW_MS) + shift}`;
+        }
+        sameEvent(e, f, home, away) {
+          if (e.sport !== f.sport || Math.abs(e.kickoff - f.kickoff) > WINDOW_MS || e.ids[f.provider] != null) return false;
+          return teamKeysMatch(e.home, home) || teamKeysMatch(e.away, away) || teamKeysMatch(e.home, away) && teamKeysMatch(e.away, home);
+        }
+        /** Händelsenyckeln för fixturen. Första gången den ses kopplas den till en känd match hos en annan källa, om en sådan finns. */
+        resolve(f) {
+          const alias = aliasKey(f.provider, f.id);
+          const known = this.aliases.get(alias);
+          if (known) return known.key;
+          const home = fold(f.home.name);
+          const away = fold(f.away.name);
+          for (const shift of [0, -1, 1]) {
+            const hit = (this.buckets.get(this.bucketKey(f.sport, f.kickoff, shift)) ?? []).find((e) => this.sameEvent(e, f, home, away));
+            if (hit) {
+              hit.ids[f.provider] = f.id;
+              this.aliases.set(alias, hit);
+              return hit.key;
+            }
+          }
+          const entry = { key: alias, sport: f.sport, kickoff: f.kickoff, home, away, ids: { [f.provider]: f.id } };
+          this.aliases.set(alias, entry);
+          const b = this.bucketKey(f.sport, f.kickoff);
+          this.buckets.set(b, [...this.buckets.get(b) ?? [], entry]);
+          return entry.key;
+        }
+        /** Händelsenyckeln för ett id som redan setts, annars `null`. */
+        keyOf(provider, id) {
+          return this.aliases.get(aliasKey(provider, id))?.key ?? null;
+        }
+        /** Matchens id hos varje källa som sett den (den givna först). */
+        refsOf(provider, id) {
+          const e = this.aliases.get(aliasKey(provider, id));
+          const others = e ? Object.entries(e.ids).filter(([p]) => p !== provider).map(([p, i]) => ({ provider: p, id: i })) : [];
+          return [{ provider, id }, ...others];
+        }
+        /** Den första källans id (händelsenyckeln uppdelad): stabilt id för "Bara resultat"-rader över ett källbyte. */
+        canonicalOf(f) {
+          const key = this.keyOf(f.provider, f.id);
+          if (!key) return { provider: f.provider, id: f.id };
+          const i = key.indexOf(":");
+          return { provider: key.slice(0, i), id: key.slice(i + 1) };
+        }
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/live-poller.ts
   function emitDemand() {
     for (const cb of [...demandListeners]) cb();
   }
@@ -44487,10 +45669,10 @@ ${cue.text}`).join("\n\n")}
     const clearTimer = deps.clearTimer ?? ((h) => clearTimeout(h));
     const isVisible = deps.isVisible ?? defaultVisible;
     const due = /* @__PURE__ */ new Map();
-    let timer3 = null;
+    let timer4 = null;
     let running2 = false;
     let ticking = false;
-    let unsubs = [];
+    let unsubs2 = [];
     const active4 = () => running2 && hasPollDemand() && isVisible();
     function plan() {
       const out = [];
@@ -44499,7 +45681,7 @@ ${cue.text}`).join("\n\n")}
           due.delete(t.sport);
           continue;
         }
-        const interval = deps.budget.liveIntervalMs(deps.budget.provider.bucket(t.sport), t.windowEndsAt);
+        const interval = deps.budget.liveIntervalMs(t.sport, t.windowEndsAt);
         if (interval == null) {
           due.delete(t.sport);
           continue;
@@ -44516,14 +45698,14 @@ ${cue.text}`).join("\n\n")}
       return Math.max(0, Math.min(...items2.map((i) => i.at)) - now2());
     }
     function pauseEndsAt() {
-      const ends = deps.targets().filter((t) => t.hot).map((t) => deps.budget.pausedUntil?.(deps.budget.provider.bucket(t.sport)) ?? null).filter((x) => x != null);
+      const ends = deps.targets().filter((t) => t.hot).map((t) => deps.budget.pausedUntil?.(t.sport) ?? null).filter((x) => x != null);
       return ends.length ? Math.min(...ends) : null;
     }
     function reschedule() {
       if (ticking) return;
-      if (timer3 != null) {
-        clearTimer(timer3);
-        timer3 = null;
+      if (timer4 != null) {
+        clearTimer(timer4);
+        timer4 = null;
       }
       if (!active4()) {
         due.clear();
@@ -44532,14 +45714,14 @@ ${cue.text}`).join("\n\n")}
       const delay = nextDelayMs();
       if (delay == null) {
         const wake = pauseEndsAt();
-        if (wake != null) timer3 = setTimer(() => {
-          timer3 = null;
+        if (wake != null) timer4 = setTimer(() => {
+          timer4 = null;
           reschedule();
         }, Math.max(0, wake - now2()) + 1);
         return;
       }
-      timer3 = setTimer(() => {
-        timer3 = null;
+      timer4 = setTimer(() => {
+        timer4 = null;
         void tick2();
       }, delay);
     }
@@ -44563,16 +45745,16 @@ ${cue.text}`).join("\n\n")}
       start() {
         if (running2) return;
         running2 = true;
-        unsubs = [onPollDemandChanged(reschedule), (deps.onVisibility ?? defaultOnVisibility)(reschedule)];
+        unsubs2 = [onPollDemandChanged(reschedule), (deps.onVisibility ?? defaultOnVisibility)(reschedule)];
         reschedule();
       },
       stop() {
         running2 = false;
-        for (const u of unsubs) u();
-        unsubs = [];
-        if (timer3 != null) {
-          clearTimer(timer3);
-          timer3 = null;
+        for (const u of unsubs2) u();
+        unsubs2 = [];
+        if (timer4 != null) {
+          clearTimer(timer4);
+          timer4 = null;
         }
         due.clear();
       },
@@ -44582,7 +45764,7 @@ ${cue.text}`).join("\n\n")}
   }
   var demand, demandListeners, defaultVisible, defaultOnVisibility;
   var init_live_poller = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/live-poller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/live-poller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44598,21 +45780,21 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/goal-events.ts
-  function diffGoals(prev, next, now2) {
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/goal-events.ts
+  function diffGoals(prev, next, now2, keyOf = (f) => f.id) {
     const out = [];
     for (const f of next) {
       if (!f.score) continue;
-      const before = prev.get(f.id);
+      const before = prev.get(keyOf(f));
       if (!before) continue;
-      for (const side2 of ["home", "away"]) {
-        if (f.score[side2] <= before[side2]) continue;
-        const own = f.lastGoal?.side === side2 ? f.lastGoal : null;
+      for (const side3 of ["home", "away"]) {
+        if (f.score[side3] <= before[side3]) continue;
+        const own = f.lastGoal?.side === side3 ? f.lastGoal : null;
         out.push({
           fixtureId: f.id,
           provider: f.provider,
           sport: f.sport,
-          side: side2,
+          side: side3,
           score: { ...f.score },
           scorer: own?.player ?? null,
           minute: own?.minute ?? f.minute,
@@ -44635,13 +45817,13 @@ ${cue.text}`).join("\n\n")}
   }
   var listeners9;
   var init_goal_events = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/goal-events.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/goal-events.ts"() {
       "use strict";
       listeners9 = /* @__PURE__ */ new Set();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-epg.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-epg.ts
   function localDayKey(ms2) {
     const d = new Date(ms2);
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -44710,7 +45892,7 @@ ${cue.text}`).join("\n\n")}
   }
   var pad2, SportEndpointMissing, TTL_MS2, cache7;
   var init_sport_epg = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-epg.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-epg.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -44726,37 +45908,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-link.ts
-  async function linkFixtures(args) {
-    if (args.fixtures.length === 0) return {};
-    try {
-      const res = await fetch("/api/live-tv/sport/link", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          listId: LIVE_TV_GLOBAL_EPG_ID,
-          day: args.day,
-          tzOffset: tzOffsetFor(args.day),
-          fixtures: args.fixtures.map((f) => ({ id: f.id, sport: f.sport, home: f.home.name, away: f.away.name, league: f.league.name, kickoff: f.kickoff }))
-        })
-      });
-      if (!res.ok) return {};
-      const body = await res.json();
-      return body.links ?? {};
-    } catch {
-      return {};
-    }
-  }
-  var init_sport_link = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-link.ts"() {
-      "use strict";
-      "use client";
-      init_live_tv_data();
-      init_sport_epg();
-    }
-  });
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-day-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-day-model.ts
   function statusAt(m, now2) {
     if (m.phase === "postponed") return "upcoming";
     if (m.fixture && m.status !== "upcoming") return m.status;
@@ -44779,9 +45931,6 @@ ${cue.text}`).join("\n\n")}
       later: matches.filter((m) => statusAt(m, now2) === "upcoming"),
       finished: matches.filter((m) => statusAt(m, now2) === "finished")
     };
-  }
-  function headerSummary(matches, now2) {
-    return { total: matches.length, live: matches.filter((m) => statusAt(m, now2) === "live").length };
   }
   function matchesFollow(m, f) {
     if (!sportsCompatible(f.sport, m.kind)) return false;
@@ -44814,8 +45963,11 @@ ${cue.text}`).join("\n\n")}
     };
     return [chosen, ...m.sources.filter((s) => s.channelKey !== o.key)];
   }
+  function matchInterest(m, follows) {
+    return (followState(m, follows).any ? 1e3 : 0) + m.sources.length;
+  }
   function featuredMatch(matches, follows, now2) {
-    const score = (m) => (followState(m, follows).any ? 1e3 : 0) + m.sources.length;
+    const score = (m) => matchInterest(m, follows);
     const best = (list) => [...list].sort((a, b) => score(b) - score(a) || a.start - b.start)[0] ?? null;
     const live2 = matches.filter((m) => statusAt(m, now2) === "live");
     const upcoming = matches.filter((m) => statusAt(m, now2) === "upcoming");
@@ -44826,19 +45978,19 @@ ${cue.text}`).join("\n\n")}
   }
   function timelineAxis(matches, dayFrom) {
     const dayTo = dayFrom + 24 * HOUR;
-    let start2 = dayFrom + 15 * HOUR;
+    let start3 = dayFrom + 15 * HOUR;
     let end = dayFrom + 23 * HOUR;
     if (matches.length > 0) {
-      start2 = Math.max(dayFrom, Math.floor(Math.min(...matches.map((m) => m.start)) / HOUR) * HOUR);
+      start3 = Math.max(dayFrom, Math.floor(Math.min(...matches.map((m) => m.start)) / HOUR) * HOUR);
       end = Math.min(dayTo, Math.ceil(Math.max(...matches.map((m) => m.stop)) / HOUR) * HOUR);
-      if (end - start2 < 8 * HOUR) {
-        end = Math.min(dayTo, start2 + 8 * HOUR);
-        start2 = Math.max(dayFrom, end - 8 * HOUR);
+      if (end - start3 < 8 * HOUR) {
+        end = Math.min(dayTo, start3 + 8 * HOUR);
+        start3 = Math.max(dayFrom, end - 8 * HOUR);
       }
     }
     const hours = [];
-    for (let t = start2; t < end; t += HOUR) hours.push(t);
-    return { start: start2, end, hours };
+    for (let t = start3; t < end; t += HOUR) hours.push(t);
+    return { start: start3, end, hours };
   }
   function timelineRows(matches) {
     const rows = /* @__PURE__ */ new Map();
@@ -44851,6 +46003,18 @@ ${cue.text}`).join("\n\n")}
       else row.lanes.push([m]);
     }
     return [...rows.values()];
+  }
+  function mergeLane(lane) {
+    const out = [];
+    for (const m of lane) {
+      const prev = out[out.length - 1];
+      if (prev && matchTitle(prev) === matchTitle(m) && m.start - prev.stop <= MERGE_GAP_MS) out[out.length - 1] = { ...prev, stop: Math.max(prev.stop, m.stop) };
+      else out.push(m);
+    }
+    return out;
+  }
+  function blockShowsLabel(durationMs, axisSpanMs, minShare = 0.06) {
+    return axisSpanMs > 0 && durationMs / axisSpanMs >= minShare;
   }
   function clashes(matches, minutes = 100) {
     const sorted = [...matches].sort((a, b) => a.start - b.start);
@@ -44868,15 +46032,17 @@ ${cue.text}`).join("\n\n")}
     const add = (c) => {
       const id = `${c.kind}:${c.key}`;
       const hit = out.get(id);
-      if (hit) hit.count += 1;
-      else out.set(id, { ...c, count: 1 });
+      if (hit) {
+        hit.count += 1;
+        if (!hit.crest && c.crest) hit.crest = c.crest;
+      } else out.set(id, { ...c, count: 1 });
     };
     for (const day of days) {
       for (const m of day?.matches ?? []) {
         if (m.rerun) continue;
         if (m.leagueKey) add({ sport: m.kind, kind: "league", key: m.leagueKey, name: m.league });
-        if (m.home && m.homeKey) add({ sport: m.kind, kind: "team", key: m.homeKey, name: m.home });
-        if (m.away && m.awayKey) add({ sport: m.kind, kind: "team", key: m.awayKey, name: m.away });
+        if (m.home && m.homeKey) add({ sport: m.kind, kind: "team", key: m.homeKey, name: m.home, ...m.homeCrest ? { crest: m.homeCrest } : {} });
+        if (m.away && m.awayKey) add({ sport: m.kind, kind: "team", key: m.awayKey, name: m.away, ...m.awayCrest ? { crest: m.awayCrest } : {} });
       }
     }
     return [...out.values()].sort((a, b) => SPORT_KINDS.indexOf(a.sport) - SPORT_KINDS.indexOf(b.sport) || (a.kind === b.kind ? 0 : a.kind === "league" ? -1 : 1) || a.name.localeCompare(b.name));
@@ -44911,15 +46077,38 @@ ${cue.text}`).join("\n\n")}
   function crestColor(key) {
     return `hsl(${hue(key)} 55% 42%)`;
   }
-  var HOUR, MIN, LEAGUE_COLORS;
+  function playerMatchGroups(matches, currentKey, now2) {
+    const withSource = matches.filter((m) => m.sources.length > 0);
+    const onHere = (m) => m.sources.some((s) => s.channelKey === currentKey) ? 0 : 1;
+    const live2 = withSource.filter((m) => statusAt(m, now2) === "live").sort((a, b) => onHere(a) - onHere(b) || a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)));
+    const upcoming = withSource.filter((m) => statusAt(m, now2) === "upcoming").sort((a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)));
+    const groups = live2.length > 0 ? [{ start: null, matches: live2 }] : [];
+    for (const m of upcoming) {
+      const last2 = groups[groups.length - 1];
+      if (last2 && last2.start === m.start) last2.matches.push(m);
+      else groups.push({ start: m.start, matches: [m] });
+    }
+    return groups;
+  }
+  function matchdayStrip(matches, now2) {
+    const byStart2 = (a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b));
+    const started = matches.filter((m) => statusAt(m, now2) !== "upcoming").sort(byStart2);
+    const upcoming = matches.filter((m) => statusAt(m, now2) === "upcoming").sort(byStart2);
+    const items2 = [...started, ...upcoming];
+    const firstLive = items2.findIndex((m) => statusAt(m, now2) === "live");
+    const focusIndex = firstLive >= 0 ? firstLive : Math.min(started.length, Math.max(items2.length - 1, 0));
+    return { items: items2, nowIndex: started.length, focusIndex };
+  }
+  var HOUR, MIN, MERGE_GAP_MS, LEAGUE_COLORS;
   var init_sport_day_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-day-model.ts"() {
       "use strict";
       init_live_tv_model();
       init_sport_model();
       init_sport_store();
       HOUR = 36e5;
       MIN = 6e4;
+      MERGE_GAP_MS = 5 * MIN;
       LEAGUE_COLORS = {
         allsvenskan: "#3b82f6",
         superettan: "#60a5fa",
@@ -44942,11 +46131,11 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/merge.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/merge.ts
   function fixtureMatchKey(f) {
     return `fx:${f.provider}:${f.id}`;
   }
-  function foldTeamKey(name) {
+  function foldTeamKey2(name) {
     return name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   }
   function fromFixture(f) {
@@ -44957,7 +46146,7 @@ ${cue.text}`).join("\n\n")}
       awayCrest: f.away.crest,
       homeIds: { [f.provider]: f.home.id },
       awayIds: { [f.provider]: f.away.id },
-      status: STATUS[f.status],
+      status: STATUS2[f.status],
       phase: phaseOf(f.status),
       minute: f.minute,
       score: f.score ?? void 0,
@@ -44974,23 +46163,23 @@ ${cue.text}`).join("\n\n")}
       ...m,
       ...fromFixture(f),
       league: f.league.name || m.league,
-      homeKey: homeKey ?? foldTeamKey(f.home.name),
-      awayKey: awayKey ?? foldTeamKey(f.away.name),
+      homeKey: homeKey ?? foldTeamKey2(f.home.name),
+      awayKey: awayKey ?? foldTeamKey2(f.away.name),
       round: f.league.round ?? m.round,
       venue: f.venue ?? m.venue,
       resultOnly: false
     };
   }
-  function fixtureOnly(f, overrides) {
+  function fixtureOnly(f, overrides, canonical = f) {
     const match = {
-      id: fixtureMatchKey(f),
+      id: fixtureMatchKey(canonical),
       kind: f.sport,
       league: f.league.name,
       leagueKey: `fx:${f.provider}:${f.league.id}`,
       home: f.home.name,
       away: f.away.name,
-      homeKey: foldTeamKey(f.home.name),
-      awayKey: foldTeamKey(f.away.name),
+      homeKey: foldTeamKey2(f.home.name),
+      awayKey: foldTeamKey2(f.away.name),
       event: null,
       start: f.kickoff,
       stop: f.kickoff + TWO_HOURS,
@@ -45010,73 +46199,103 @@ ${cue.text}`).join("\n\n")}
     const used = /* @__PURE__ */ new Set();
     for (const f of a.fixtures) {
       if (a.coverage(f.sport) !== "full") continue;
-      const link = a.links[f.id];
+      const link = a.links[fixtureMatchKey(f)] ?? a.links[f.id];
       const i = link ? index.get(link.matchId) : void 0;
       if (link && i !== void 0 && !used.has(link.matchId) && out[i].coverage === "full") {
         used.add(link.matchId);
         out[i] = applyFixture(out[i], f, link.swapped);
         continue;
       }
-      out.push(fixtureOnly(f, a.overrides));
+      out.push(fixtureOnly(f, a.overrides, a.canonical?.(f)));
     }
     return out;
   }
   function relevantMatches(all, follows) {
     return all.filter((m) => !m.resultOnly || followState(m, follows).any);
   }
-  var TWO_HOURS, STATUS, phaseOf;
+  var TWO_HOURS, STATUS2, phaseOf;
   var init_merge = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/merge.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/merge.ts"() {
       "use strict";
       init_sport_day_model();
       TWO_HOURS = 2 * 36e5;
-      STATUS = { scheduled: "upcoming", postponed: "upcoming", live: "live", ht: "live", finished: "finished" };
+      STATUS2 = { scheduled: "upcoming", postponed: "upcoming", live: "live", ht: "live", finished: "finished" };
       phaseOf = (s) => s === "ht" || s === "postponed" ? s : void 0;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/results-controller.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-link.ts
+  async function linkFixtures(args) {
+    if (args.fixtures.length === 0) return {};
+    try {
+      const res = await fetch("/api/live-tv/sport/link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          listId: LIVE_TV_GLOBAL_EPG_ID,
+          day: args.day,
+          tzOffset: tzOffsetFor(args.day),
+          fixtures: args.fixtures.map((f) => ({ id: fixtureMatchKey(f), sport: f.sport, home: f.home.name, away: f.away.name, league: f.league.name, kickoff: f.kickoff }))
+        })
+      });
+      if (!res.ok) return {};
+      const body = await res.json();
+      return body.links ?? {};
+    } catch {
+      return {};
+    }
+  }
+  var init_sport_link = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-link.ts"() {
+      "use strict";
+      "use client";
+      init_live_tv_data();
+      init_sport_epg();
+      init_merge();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/results-controller.ts
   function currentResults() {
-    const budget = currentBudget();
-    if (!budget) {
+    const router = currentRouter();
+    if (!router) {
       current4?.controller.dispose();
       current4 = null;
       return null;
     }
-    if (current4?.budget !== budget) {
+    if (current4?.router !== router) {
       current4?.controller.dispose();
-      current4 = { budget, controller: new ResultsController(budget) };
+      current4 = { router, controller: new ResultsController(router) };
     }
     return current4.controller;
   }
   function useResultsController() {
     const [, bump] = useReducer((n) => n + 1, 0);
-    const [controller, setController] = useState(() => currentResults());
+    const [controller2, setController] = useState(() => currentResults());
     useEffect(() => onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => setController(currentResults())), []);
-    useEffect(() => controller ? controller.subscribe(bump) : void 0, [controller]);
-    return controller;
+    useEffect(() => controller2 ? controller2.subscribe(bump) : void 0, [controller2]);
+    return controller2;
   }
   function useSportResults(opts) {
-    const controller = useResultsController();
+    const controller2 = useResultsController();
     const overrides = useOverrides();
     const follows = useFollows();
-    const [links, setLinks] = useState({});
-    const providerId = controller?.budget.provider.id ?? null;
+    const [links2, setLinks] = useState({});
     const sports = useMemo(() => {
       const follows2 = getFollows();
       return [.../* @__PURE__ */ new Set([...opts.epg.map((m) => m.kind), ...follows2.map((f) => f.sport)])].sort();
     }, [opts.epg]);
     useEffect(() => {
-      if (!controller || !opts.day) return;
+      if (!controller2 || !opts.day) return;
       const follows2 = getFollows();
-      const leagues = controller.merged().filter((m) => m.fixture?.leagueId && m.fixture.season && followState(m, follows2).any).map((m) => ({ sport: m.kind, leagueId: m.fixture.leagueId, season: m.fixture.season }));
-      void controller.runPlan({ sports, leagues });
-    }, [controller, opts.day, sports.join(",")]);
-    const version3 = controller?.version ?? 0;
-    const fixtures2 = useMemo(() => controller && opts.day ? controller.allFixtures(opts.day) : [], [controller, opts.day, version3]);
-    const fixtureIds = fixtures2.map((f) => f.id).sort().join(",");
+      const leagues = controller2.merged().filter((m) => m.fixture?.leagueId && m.fixture.season && followState(m, follows2).any).map((m) => ({ sport: m.kind, leagueId: m.fixture.leagueId, season: m.fixture.season, provider: m.fixture.provider }));
+      void controller2.runPlan({ sports, leagues });
+    }, [controller2, opts.day, sports.join(",")]);
+    const version3 = controller2?.version ?? 0;
+    const fixtures2 = useMemo(() => controller2 && opts.day ? controller2.allFixtures(opts.day) : [], [controller2, opts.day, version3]);
+    const fixtureIds = fixtures2.map(fixtureMatchKey).sort().join(",");
     useEffect(() => {
-      if (!controller || !opts.day || fixtures2.length === 0) {
+      if (!controller2 || !opts.day || fixtures2.length === 0) {
         setLinks({});
         return;
       }
@@ -45087,34 +46306,35 @@ ${cue.text}`).join("\n\n")}
       return () => {
         cancelled = true;
       };
-    }, [controller, opts.day, fixtureIds]);
+    }, [controller2, opts.day, fixtureIds]);
     const allMatches = useMemo(() => {
-      if (!controller) return opts.epg.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }));
-      return mergeLinked({ epg: opts.epg, fixtures: fixtures2, links, overrides, coverage: (s) => coverageFor(providerId, s) });
-    }, [controller, opts.epg, fixtures2, links, overrides, providerId]);
+      if (!controller2) return opts.epg.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }));
+      return mergeLinked({ epg: opts.epg, fixtures: fixtures2, links: links2, overrides, coverage: (s) => controller2.router.coverage(s), canonical: (f) => controller2.canonicalOf(f) });
+    }, [controller2, opts.epg, fixtures2, links2, overrides]);
     const matches = useMemo(() => relevantMatches(allMatches, follows), [allMatches, follows]);
     useEffect(() => {
-      if (opts.day) controller?.setMerged(matches);
-    }, [controller, opts.day, matches]);
-    return { matches, allMatches, status: controller ? controller.status() : NO_KEY, controller };
+      if (opts.day) controller2?.setMerged(matches);
+    }, [controller2, opts.day, matches]);
+    return { matches, allMatches, status: controller2 ? controller2.status() : NO_KEY, controller: controller2 };
   }
   function useChannelSportLive(channelKey2) {
-    const controller = useResultsController();
+    const controller2 = useResultsController();
     const [, bump] = useReducer((n) => n + 1, 0);
-    useEffect(() => controller ? controller.onMerged(bump) : void 0, [controller]);
-    if (!controller || !channelKey2) return null;
-    return controller.merged().find((m) => m.coverage === "full" && !!m.fixture && m.status === "live" && m.sources.some((s) => s.channelKey === channelKey2)) ?? null;
+    useEffect(() => controller2 ? controller2.onMerged(bump) : void 0, [controller2]);
+    if (!controller2 || !channelKey2) return null;
+    return controller2.merged().find((m) => m.coverage === "full" && !!m.fixture && m.status === "live" && m.sources.some((s) => s.channelKey === channelKey2)) ?? null;
   }
   var TEN_MIN, TWO_HOURS2, LIVE_DETAIL_MS, ResultsController, current4, NO_KEY;
   var init_results_controller = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/results-controller.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/results-controller.ts"() {
       "use strict";
       "use client";
       init_react_shim();
       init_plugin_sdk();
       init_live_tv_data();
-      init_budget();
+      init_router();
       init_day_plan();
+      init_event_index();
       init_live_poller();
       init_goal_events();
       init_key_flow();
@@ -45127,12 +46347,17 @@ ${cue.text}`).join("\n\n")}
       TWO_HOURS2 = 2 * 36e5;
       LIVE_DETAIL_MS = 6e4;
       ResultsController = class {
-        constructor(budget, deps = {}) {
-          __publicField(this, "budget", budget);
+        constructor(router, deps = {}) {
+          __publicField(this, "router", router);
+          /** sport|datum → händelsenyckel → senast sedda fixtur (från vilken källa som helst). */
           __publicField(this, "days", /* @__PURE__ */ new Map());
+          __publicField(this, "events", new EventIndex());
+          /** Ställning per händelsenyckel, med källan som lämnade den. */
           __publicField(this, "scores", /* @__PURE__ */ new Map());
-          /** När källan såg varje fixtur senast (svarets `fetchedAt`). Äldre data skriver aldrig över nyare. */
+          /** När källan såg varje match senast (svarets `fetchedAt`), per händelsenyckel. Äldre data skriver aldrig över nyare. */
           __publicField(this, "observed", /* @__PURE__ */ new Map());
+          /** Ligans källa (sport|ligans id), för tabellanrop från vyer som bara har ligans id. */
+          __publicField(this, "leagueProvider", /* @__PURE__ */ new Map());
           __publicField(this, "done", /* @__PURE__ */ new Set());
           __publicField(this, "doneDay", "");
           __publicField(this, "details", /* @__PURE__ */ new Map());
@@ -45148,13 +46373,13 @@ ${cue.text}`).join("\n\n")}
           __publicField(this, "mergedListeners", /* @__PURE__ */ new Set());
           this.tz = deps.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
           this.now = deps.now ?? Date.now;
-          this.unsubBudget = budget.subscribe(() => {
+          this.unsubBudget = router.subscribe(() => {
             this.poller?.reschedule();
             this.emit();
           });
           if (deps.startPoller !== false) {
             this.poller = createLivePoller({
-              budget,
+              budget: router,
               targets: () => this.liveTargets(),
               onFixtures: (sport, list, fetchedAt) => this.applyFixtures(sport, this.dates().today, list, "live", fetchedAt ?? this.now()),
               liveOpts: () => ({ today: this.dates().today, tz: this.tz }),
@@ -45180,12 +46405,16 @@ ${cue.text}`).join("\n\n")}
           for (const cb of [...this.listeners]) cb();
         }
         fixtures(sport, date) {
-          return this.days.get(this.dayKey(sport, date)) ?? [];
+          return [...this.days.get(this.dayKey(sport, date))?.values() ?? []].sort((a, b) => a.kickoff - b.kickoff);
         }
         allFixtures(date) {
           const out = [];
-          for (const [k, list] of this.days) if (k.endsWith(`|${date}`)) out.push(...list);
+          for (const [k, byKey] of this.days) if (k.endsWith(`|${date}`)) out.push(...[...byKey.values()].sort((a, b) => a.kickoff - b.kickoff));
           return out;
+        }
+        /** Matchens första källa och id för dagen: "Bara resultat"-radens stabila id över ett källbyte. */
+        canonicalOf(f) {
+          return this.events.canonicalOf(f);
         }
         /**
          * Målhändelser BARA från livepollningen. En äldre cachepost följd av ett
@@ -45198,17 +46427,24 @@ ${cue.text}`).join("\n\n")}
          * data som är STRIKT nyare än förra observationen.
          */
         applyFixtures(sport, date, list, source, observedAt = this.now()) {
-          const seen = (f) => this.observed.get(f.id) ?? -Infinity;
+          const keyOf = new Map(list.map((f) => [f, this.events.resolve(f)]));
+          const key = (f) => keyOf.get(f) ?? this.events.resolve(f);
+          const seen = (f) => this.observed.get(key(f)) ?? -Infinity;
           const accepted = list.filter((f) => observedAt >= seen(f));
           const newer = accepted.filter((f) => observedAt > seen(f));
-          const goals = source === "live" ? diffGoals(this.scores, newer, this.now()) : [];
+          const goals = (source === "live" ? diffGoals(this.scores, newer, this.now(), key) : []).map((g) => ({ ...g, aliases: this.events.refsOf(g.provider, g.fixtureId).map(fixtureMatchKey) }));
           for (const f of accepted) {
-            this.observed.set(f.id, observedAt);
-            if (f.score) this.scores.set(f.id, f.score);
+            const k = key(f);
+            this.observed.set(k, observedAt);
+            if (f.league.id) this.leagueProvider.set(`${f.sport}|${f.league.id}`, f.provider);
+            if (!f.score) continue;
+            const prev = this.scores.get(k);
+            this.scores.set(k, prev && prev.provider !== f.provider ? { home: Math.max(prev.home, f.score.home), away: Math.max(prev.away, f.score.away), provider: f.provider } : { ...f.score, provider: f.provider });
           }
-          const byId = new Map(this.fixtures(sport, date).map((f) => [f.id, f]));
-          for (const f of accepted) byId.set(f.id, f);
-          this.days.set(this.dayKey(sport, date), [...byId.values()].sort((a, b) => a.kickoff - b.kickoff));
+          const dk = this.dayKey(sport, date);
+          const byKey = this.days.get(dk) ?? /* @__PURE__ */ new Map();
+          for (const f of accepted) byKey.set(key(f), f);
+          this.days.set(dk, byKey);
           if (goals.length) emitGoals(goals);
           this.poller?.reschedule();
           this.emit();
@@ -45223,17 +46459,17 @@ ${cue.text}`).join("\n\n")}
         async runPlan(input) {
           this.rollDone();
           const d = this.dates();
-          const provider = this.budget.provider;
-          const calls = planDay({ today: d.today, yesterday: d.yesterday, tomorrow: d.tomorrow, sports: input.sports, leagues: input.leagues, done: this.done }, provider);
+          const calls = planDay({ today: d.today, yesterday: d.yesterday, tomorrow: d.tomorrow, sports: input.sports, leagues: input.leagues, done: this.done }, this.router);
           for (const call of calls) {
             if (call.kind !== "day" || call.date !== d.today || this.fixtures(call.sport, d.today).length > 0) continue;
-            const cached = await this.budget.peek(call.sport, provider.day(call.sport, d.today, { today: d.today, tz: this.tz, dayEndMs: d.dayEndMs(d.today) }));
-            if (cached) this.applyFixtures(call.sport, d.today, cached, "cache", 0);
+            const cached = await this.router.peek(call.sport, (p) => p.day(call.sport, d.today, { today: d.today, tz: this.tz, dayEndMs: d.dayEndMs(d.today) }));
+            if (cached) this.applyFixtures(call.sport, d.today, cached.data, "cache", 0);
           }
           const remaining2 = [...calls];
           const syncPlanned = () => {
-            const per = plannedPerBucket(remaining2, provider);
-            for (const bucket of /* @__PURE__ */ new Set([...per.keys(), ...calls.map((c) => provider.bucket(c.sport))])) this.budget.setPlanned(bucket, per.get(bucket) ?? 0);
+            const per = plannedPerSport(remaining2);
+            for (const c of calls) if (!per.has(c.sport)) per.set(c.sport, 0);
+            this.router.setPlanned(per);
           };
           syncPlanned();
           for (const call of calls) {
@@ -45244,23 +46480,29 @@ ${cue.text}`).join("\n\n")}
         }
         async runPlanned(call, today, dayEndMs) {
           if (call.kind === "day") {
-            const res2 = await this.budget.day(call.sport, call.date, { today, tz: this.tz, dayEndMs: dayEndMs(call.date) });
+            const res2 = await this.router.day(call.sport, call.date, { today, tz: this.tz, dayEndMs: dayEndMs(call.date) });
             if (res2.data) this.applyFixtures(call.sport, call.date, res2.data, "day", res2.fetchedAt ?? 0);
             if (res2.ok && call.date !== today) this.done.add(planKey(call));
             return;
           }
-          const res = await this.budget.standings(call.sport, call.leagueId, call.season);
+          const provider = call.provider ?? this.leagueProvider.get(`${call.sport}|${call.leagueId}`) ?? this.router.candidates(call.sport)[0]?.provider.id;
+          if (!provider) return;
+          const res = await this.router.standings(call.sport, provider, call.leagueId, call.season);
           if (res.data) {
             this.tables.set(planKey(call), res.data);
             this.emit();
           }
           if (res.ok) this.done.add(planKey(call));
         }
-        async loadFixture(sport, id, finished) {
-          const key = `${sport}|${id}`;
+        /**
+         * Matchcentret. `ref` = matchens källa och id. Är källan spärrad hämtas samma
+         * match hos en annan källa som sett den i dag (händelseindexets alias).
+         */
+        async loadFixture(sport, ref, finished) {
+          const key = `${sport}|${this.events.keyOf(ref.provider, ref.id) ?? `${ref.provider}:${ref.id}`}`;
           const hit = this.details.get(key);
           if (hit && (finished || this.now() - hit.at < LIVE_DETAIL_MS)) return hit.detail;
-          const res = await this.budget.fixture(sport, id, { finished, refresh: !!hit });
+          const res = await this.router.fixture(sport, this.events.refsOf(ref.provider, ref.id), { finished, refresh: !!hit });
           if (res.data) {
             this.details.set(key, { at: this.now(), detail: res.data });
             this.emit();
@@ -45271,8 +46513,9 @@ ${cue.text}`).join("\n\n")}
         standings(sport, leagueId, season) {
           return this.tables.get(planKey({ kind: "standings", sport, leagueId, season })) ?? null;
         }
-        async loadStandings(sport, leagueId, season) {
-          const call = { kind: "standings", sport, leagueId, season };
+        /** `provider` saknas = ligans källa ur dagens fixturer (vyerna har bara ligans id). */
+        async loadStandings(sport, leagueId, season, provider) {
+          const call = { kind: "standings", sport, leagueId, season, ...provider ? { provider } : {} };
           const cached = this.tables.get(planKey(call));
           if (cached && this.done.has(planKey(call))) return cached;
           await this.runPlanned(call, this.dates().today, this.dates().dayEndMs);
@@ -45287,13 +46530,16 @@ ${cue.text}`).join("\n\n")}
         liveTargets() {
           const today = this.dates().today;
           const now2 = this.now();
-          const providerId = this.budget.provider.id;
           const relevant = /* @__PURE__ */ new Set();
-          for (const m of this.mergedById.values()) if (m.fixture && m.fixture.provider === providerId) relevant.add(m.fixture.id);
+          for (const m of this.mergedById.values()) {
+            if (!m.fixture) continue;
+            const k = this.events.keyOf(m.fixture.provider, m.fixture.id);
+            if (k) relevant.add(k);
+          }
           const bySport = /* @__PURE__ */ new Map();
-          for (const [k, list] of this.days) {
+          for (const [k, byKey] of this.days) {
             const [sport, date] = k.split("|");
-            if (date === today) bySport.set(sport, list.filter((f) => relevant.has(f.id)));
+            if (date === today) bySport.set(sport, [...byKey].filter(([key]) => relevant.has(key)).map(([, f]) => f));
           }
           const out = [];
           for (const [sport, list] of bySport) {
@@ -45304,19 +46550,30 @@ ${cue.text}`).join("\n\n")}
           }
           return out;
         }
-        status() {
-          const provider = this.budget.provider;
-          const base = { provider: provider.id, intervalMs: null, remainingToday: null, pausedUntil: null, paid: false };
-          if (this.budget.isInvalid()) return { ...base, state: "invalid-key" };
+        /**
+         * Takraden för en sport (utan sport: den heta sporten, annars den första
+         * med fixturer, annars fotboll). Källan är den sporten FAKTISKT använder
+         * nu — efter genomfall när den första källans kvot är slut.
+         */
+        status(sport) {
+          const multi = this.router.multi();
+          const none = { provider: null, multi, intervalMs: null, remainingToday: null, pausedUntil: null, paid: false };
+          if (this.router.isInvalid()) return { ...none, state: "invalid-key" };
           const targets = this.liveTargets();
-          const hot = targets.find((t) => t.hot);
-          const bucket = provider.bucket(hot?.sport ?? targets[0]?.sport ?? "football");
-          const q = this.budget.quota(bucket);
-          const paid = isPaidPlan(q.plan ?? getSportSettings().keyPlan, provider.id);
-          if (q.blockedUntil != null && q.blockedUntil > this.now()) {
-            return { ...base, state: q.reason === "rate-limited" ? "rate-limited" : "paused", pausedUntil: q.blockedUntil, remainingToday: q.remaining, paid };
+          const s = sport ?? targets.find((t) => t.hot)?.sport ?? targets[0]?.sport ?? "football";
+          const hot = targets.find((t) => t.hot && t.sport === s);
+          const all = this.router.candidates(s);
+          if (all.length > 0 && all.every((b) => b.isInvalid())) return { ...none, provider: all[0].provider.id, state: "invalid-key" };
+          const used = this.router.quotaFor(s);
+          if (!used) return { ...none, state: "ok" };
+          const q = used.quota;
+          const base = { ...none, provider: used.provider };
+          const paid = isPaidPlan(q.plan ?? getSportSettings().keys[used.provider]?.plan ?? null, used.provider);
+          if (!this.router.activeProvider(s)) {
+            const until = this.router.pausedUntil(s);
+            if (until != null) return { ...base, state: q.reason === "rate-limited" ? "rate-limited" : "paused", pausedUntil: until, remainingToday: q.remaining, paid };
           }
-          return { ...base, state: "ok", intervalMs: hot ? this.budget.liveIntervalMs(bucket, hot.windowEndsAt) : null, remainingToday: q.remaining, paid };
+          return { ...base, state: "ok", intervalMs: hot ? this.router.liveIntervalMs(s, hot.windowEndsAt) : null, remainingToday: q.remaining, paid };
         }
         /**
          * Den sammanslagna listan, som spelaren läser (MÅL!, efterfrågan). Den
@@ -45347,12 +46604,12 @@ ${cue.text}`).join("\n\n")}
         }
       };
       current4 = null;
-      NO_KEY = { provider: null, state: "no-key", intervalMs: null, remainingToday: null, pausedUntil: null, paid: false };
+      NO_KEY = { provider: null, multi: false, state: "no-key", intervalMs: null, remainingToday: null, pausedUntil: null, paid: false };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
-  function MobileSheet({ title, subtitle, art, body, items: items2, onClose, pushLayer, testId }) {
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx
+  function MobileSheet({ title, subtitle, art, body, list, items: items2, onClose, pushLayer, testId }) {
     const { tt } = useTvText();
     const onCloseRef = useRef(onClose);
     useEffect(() => {
@@ -45394,28 +46651,31 @@ ${cue.text}`).join("\n\n")}
               ] })
             ] }),
             body ? /* @__PURE__ */ jsx("div", { "data-testid": "sheet-body", style: { padding: "12px 20px", fontSize: 14, color: MT.muted, maxHeight: "30vh", overflow: "auto" }, children: body }) : null,
-            /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { maxHeight: "55vh", overflowY: "auto" }, children: items2.map((item, index) => /* @__PURE__ */ jsx(
-              "div",
-              {
-                "data-sheet-item": "",
-                ...station(() => {
-                  item.run();
-                  onClose();
-                }, void 0, index === 0 ? { "data-init": "" } : void 0),
-                style: {
-                  minHeight: 56,
-                  padding: "0 20px",
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: 16,
-                  fontWeight: index === 0 ? 600 : 400,
-                  borderBottom: `1px solid ${MT.line07}`,
-                  cursor: "pointer"
+            /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { maxHeight: "55vh", overflowY: "auto" }, children: [
+              list,
+              items2.map((item, index) => /* @__PURE__ */ jsx(
+                "div",
+                {
+                  "data-sheet-item": "",
+                  ...station(() => {
+                    item.run();
+                    onClose();
+                  }, void 0, index === 0 ? { "data-init": "" } : void 0),
+                  style: {
+                    minHeight: 56,
+                    padding: "0 20px",
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: 16,
+                    fontWeight: index === 0 ? 600 : 400,
+                    borderBottom: `1px solid ${MT.line07}`,
+                    cursor: "pointer"
+                  },
+                  children: /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis2 }, children: item.label })
                 },
-                children: /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis2 }, children: item.label })
-              },
-              item.key
-            )) }),
+                item.key
+              ))
+            ] }),
             /* @__PURE__ */ jsx("div", { style: { padding: 8 }, children: /* @__PURE__ */ jsx("div", { ...station(onClose), style: { minHeight: 50, borderRadius: 16, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 600, cursor: "pointer" }, children: tt("cancel") }) })
           ]
         }
@@ -45423,7 +46683,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var init_mobile_sheet = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-sheet.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -45433,7 +46693,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-ctx.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-ctx.ts
   function buildSportCtx(input) {
     const { model, nav, tt, overrides, reminders } = input;
     const best = (m) => rankedSources(m, overrides)[0] ?? null;
@@ -45505,17 +46765,22 @@ ${cue.text}`).join("\n\n")}
   function alertLabel(ctx) {
     return ctx.settings.alert === "off" ? ctx.tt("sportAlertOff") : ctx.settings.alert === "15" ? ctx.tt("sportAlert15") : ctx.tt("sportAlertKickoff");
   }
-  function followNextLine(ctx, follow, next) {
-    if (!next) return ctx.tt("sportNoUpcoming");
+  function followNext(ctx, follow, next) {
+    if (!next) return null;
     const time = formatClock2(next.start, ctx.locale);
-    const when = statusAt(next, ctx.now) === "live" ? ctx.tt("sportLiveNowShort") : localDayKey(next.start) === localDayKey(ctx.now) ? ctx.tt("sportTodayAt", { time }) : ctx.tt("sportTomorrowAt", { time });
-    if (follow.kind === "league" || !next.home || !next.away) return `${when} \xB7 ${matchTitle(next)}`;
+    const live2 = statusAt(next, ctx.now) === "live";
+    const when = live2 ? ctx.tt("sportLiveNowShort") : localDayKey(next.start) === localDayKey(ctx.now) ? ctx.tt("sportTodayAt", { time }) : ctx.tt("sportTomorrowAt", { time });
+    if (follow.kind === "league" || !next.home || !next.away) return { when, what: matchTitle(next), live: live2 };
     const opponent = teamKeysMatch(follow.key, next.homeKey) ? next.away : next.home;
-    return `${when} \xB7 ${ctx.tt("sportVs", { opponent })}`;
+    return { when, what: ctx.tt("sportVs", { opponent }), live: live2 };
+  }
+  function followNextLine(ctx, follow, next) {
+    const n = followNext(ctx, follow, next);
+    return n ? `${n.when} \xB7 ${n.what}` : ctx.tt("sportNoUpcoming");
   }
   var KIND_KEYS;
   var init_sport_ctx = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-ctx.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45538,7 +46803,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/schedule-cache.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg/schedule-cache.ts
   function queueBatch(listId, keys2, from, to) {
     const id = `${epgStoreId(listId)}|${from}|${to}`;
     let batch = batches.get(id);
@@ -45618,8 +46883,8 @@ ${cue.text}`).join("\n\n")}
     return { schedules: hits, missing };
   }
   async function fetchSchedules(listId, keys2, from, to) {
-    const unique = [...new Set(keys2.filter((key) => key.length > 0))];
-    const { hits, missing } = split(listId, unique, from, to, Date.now());
+    const unique2 = [...new Set(keys2.filter((key) => key.length > 0))];
+    const { hits, missing } = split(listId, unique2, from, to, Date.now());
     if (missing.length === 0) return hits;
     const waiting = /* @__PURE__ */ new Set();
     const queue2 = [];
@@ -45649,7 +46914,7 @@ ${cue.text}`).join("\n\n")}
   }
   var TTL_MS3, MAX_ENTRIES5, cache8, batches, inflight9, HOUR_MS;
   var init_schedule_cache = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg/schedule-cache.ts"() {
       "use strict";
       "use client";
       init_index_client();
@@ -45663,7 +46928,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/lookup.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg/lookup.ts
   function findCurrentIndex(programmes, now2) {
     let lo = 0;
     let hi = programmes.length - 1;
@@ -45692,13 +46957,13 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY5;
   var init_lookup2 = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/lookup.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg/lookup.ts"() {
       "use strict";
       EMPTY5 = { now: null, next: null, later: null };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSchedules.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
     const keysId = keys2.join(",");
@@ -45728,7 +46993,7 @@ ${cue.text}`).join("\n\n")}
   }
   var EMPTY7;
   var init_useSchedules = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useSchedules.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -45738,7 +47003,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts
   function useHtmlVideoPlayer(enabled, videoRef) {
     const [timePos, setTimePos] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -45758,10 +47023,10 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!enabled) return;
       if (videoRef.current) return;
-      const timer3 = window.setInterval(() => {
+      const timer4 = window.setInterval(() => {
         if (videoRef.current) setAttachTick((tick2) => tick2 + 1);
       }, 60);
-      return () => window.clearInterval(timer3);
+      return () => window.clearInterval(timer4);
     }, [enabled, videoRef, attachTick]);
     useEffect(() => {
       if (!enabled) return;
@@ -45887,13 +47152,13 @@ ${cue.text}`).join("\n\n")}
     };
   }
   var init_useHtmlVideoPlayer = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useHtmlVideoPlayer.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useOrientation.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useOrientation.ts
   function read10() {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "portrait";
     return window.matchMedia(QUERY).matches ? "landscape" : "portrait";
@@ -45912,14 +47177,14 @@ ${cue.text}`).join("\n\n")}
   }
   var QUERY;
   var init_useOrientation = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useOrientation.ts"() {
       "use strict";
       init_react_shim();
       QUERY = "(orientation: landscape)";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useWakeLock.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useWakeLock.ts
   function wakeLockOf() {
     if (typeof navigator === "undefined") return null;
     const candidate = navigator.wakeLock;
@@ -45968,13 +47233,13 @@ ${cue.text}`).join("\n\n")}
     }, [active4]);
   }
   var init_useWakeLock = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useWakeLock.ts"() {
       "use strict";
       init_react_shim();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-playback-fallback.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-playback-fallback.ts
   function hostProxyUrl(origin, url) {
     return `${origin}/api/m3u?stream=${encodeURIComponent(url)}`;
   }
@@ -45985,13 +47250,13 @@ ${cue.text}`).join("\n\n")}
   }
   var HOST_PROXY_MIME;
   var init_live_tv_playback_fallback = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-playback-fallback.ts"() {
       "use strict";
       HOST_PROXY_MIME = "application/x-mpegURL";
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx
   function MobileLogo({ channel, width, height, radius = 8, frame = true }) {
     const [frameFailed, setFrameFailed] = useState(false);
     const [logoFailed, setLogoFailed] = useState(false);
@@ -46011,7 +47276,7 @@ ${cue.text}`).join("\n\n")}
     ) : /* @__PURE__ */ jsx("span", { "data-initials": "", "aria-hidden": "true", style: { fontSize: 13, fontWeight: 600, color: MT.dim, letterSpacing: "0.04em" }, children: initialsOf(channel.name) }) });
   }
   var init_mobile_logo = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-logo.tsx"() {
       "use strict";
       init_react_shim();
       init_plugin_sdk();
@@ -46024,7 +47289,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx
   function MobileChannelRow({ channel, number, now: now2, nowMs, locale, pinned = false, locked = false, variant = "guide", noProgrammeLabel, onPress, onLongPress, init, testId = "mobile-channel-row" }) {
     const { tt } = useTvText();
     const logo = variant === "zap" ? { w: 48, h: 32 } : { w: 56, h: 38 };
@@ -46068,7 +47333,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_mobile_channel_row = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-channel-row.tsx"() {
       "use strict";
       init_live_tv_ui();
       init_live_tv_model();
@@ -46081,7 +47346,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/score-model.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/score-model.ts
   function showsScore(m) {
     return m.coverage === "full" && !!m.fixture && !!m.score && m.status !== "upcoming";
   }
@@ -46106,16 +47371,16 @@ ${cue.text}`).join("\n\n")}
       if (m.homeCrest && teamKeysMatch(f.key, m.homeKey)) return m.homeCrest;
       if (m.awayCrest && teamKeysMatch(f.key, m.awayKey)) return m.awayCrest;
     }
-    return null;
+    return f.crest ?? null;
   }
   var init_score_model = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/score-model.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/score-model.ts"() {
       "use strict";
       init_sport_store();
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-score.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-score.tsx
   function MatchScore({ match, size = "card" }) {
     const blink = useGoalBlink(match);
     if (!showsScore(match) || !match.score) return null;
@@ -46144,11 +47409,11 @@ ${cue.text}`).join("\n\n")}
   }
   function RateLineView({ status, tv }) {
     const { tt, lang, locale } = useTvText();
-    const line = rateLine(status, tt, { lang, locale });
-    if (!line) return null;
+    const line2 = rateLine(status, tt, { lang, locale });
+    if (!line2) return null;
     return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-rate-line", style: { fontSize: dp(14), color: TV2.faint, display: "flex", gap: dp(10), flexWrap: "wrap" }, children: [
-      /* @__PURE__ */ jsx("span", { children: line.text }),
-      line.showPaidLink ? tv ? /* @__PURE__ */ jsxs("span", { children: [
+      /* @__PURE__ */ jsx("span", { children: line2.text }),
+      line2.showPaidLink ? tv ? /* @__PURE__ */ jsxs("span", { children: [
         "\xB7 ",
         tt("sportRateFaster")
       ] }) : /* @__PURE__ */ jsx("a", { href: API_SPORTS_REGISTER_URL, target: "_blank", rel: "noreferrer", style: { color: TV2.dim }, children: tt("sportRateFaster") }) : null
@@ -46156,7 +47421,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SCORE_SIZE, BLINK_MS;
   var init_sport_score = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-score.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46173,7 +47438,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-icons.tsx
   function SportIcon({ kind, size }) {
     switch (kind) {
       case "football":
@@ -46194,7 +47459,7 @@ ${cue.text}`).join("\n\n")}
   }
   var sw2, svg3, SportIcons;
   var init_sport_icons = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-icons.tsx"() {
       "use strict";
       init_react_shim();
       init_tv_ui();
@@ -46233,18 +47498,43 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("path", { d: "M4 10h16M9 3v4M15 3v4" })
         ] })),
         Rows: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "M4 7h16M4 12h16M4 17h16" })),
-        Star: ({ size = dp(22), filled = false }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "m12 4 2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z" }), filled),
+        /** Samma hjärta som Live TV:s favoriter (`Icons.Heart` i tv-ui.tsx): favoritlag och -ligor i Sport. */
+        Heart: ({ size = dp(22), filled = false }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "M12 21s-7-4.6-9.3-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.3 12C19 16.4 12 21 12 21z" }), filled),
         Bell: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" }),
           /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
         ] })),
         Plus: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" })),
-        Play: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true)
+        Play: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }), true),
+        /** Matchinfons rader (skisserna 2026-10-11). */
+        Stats: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "M4 20h16M6 20v-6M10 20V9M14 20v-8M18 20V5" })),
+        People: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("circle", { cx: "8", cy: "9", r: "3" }),
+          /* @__PURE__ */ jsx("circle", { cx: "16", cy: "9", r: "3" }),
+          /* @__PURE__ */ jsx("path", { d: "M3 19c.8-3 2.7-4.5 5-4.5s4.2 1.5 5 4.5M11 19c.8-3 2.7-4.5 5-4.5s4.2 1.5 5 4.5" })
+        ] })),
+        Pin: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z" }),
+          /* @__PURE__ */ jsx("circle", { cx: "12", cy: "10", r: "2.4" })
+        ] })),
+        Chevron: ({ size = dp(20) }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" })),
+        Back: ({ size = dp(22) }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "m15 6-6 6 6 6" })),
+        Close: ({ size = dp(20) }) => svg3(size, /* @__PURE__ */ jsx("path", { d: "M6 6l12 12M18 6 6 18" })),
+        /** Gult/rött kort i händelselistan. */
+        Card: ({ size = dp(20), filled = true }) => svg3(size, /* @__PURE__ */ jsx("rect", { x: "7", y: "4", width: "10", height: "15", rx: "1.5" }), filled)
       };
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-icons.tsx
+  var init_sport_icons2 = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-icons.tsx"() {
+      "use strict";
+      init_sport_icons();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/crest.tsx
   function Crest({ name, colorKey, size = dp(56), src }) {
     const [broken, setBroken] = useState(false);
     const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
@@ -46253,53 +47543,83 @@ ${cue.text}`).join("\n\n")}
     }
     return /* @__PURE__ */ jsx("span", { "data-crest": "", "aria-hidden": "true", style: { width: size, height: size, borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: crestColor(colorKey), color: "#fff", fontSize: Math.round(size * 0.32), fontWeight: 700, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.18)" }, children: crestText(name) });
   }
+  var init_crest = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/crest.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_tv_ui();
+      init_sport_model();
+      init_sport_day_model();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-parts.tsx
   function LeagueDot({ leagueKey, size = dp(12) }) {
     return /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: size, height: size, borderRadius: dp(3), background: leagueColor(leagueKey), flexShrink: 0 } });
   }
-  function StatusTag({ match, ctx }) {
+  function statusText(match, ctx) {
     const st = statusAt(match, ctx.now);
     const label = matchStatusLabel(match, ctx.tt);
-    if (st === "live") return /* @__PURE__ */ jsx(Tag2, { variant: "live", children: label ?? ctx.tt("live") });
-    if (st === "finished") return /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: label ?? ctx.tt("sportEnded") });
-    return /* @__PURE__ */ jsx(Tag2, { variant: "neutral", children: label ?? formatClock2(match.start, ctx.locale) });
-  }
-  function TeamCell({ name, colorKey, align, crest }) {
-    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: align === "end" ? "flex-end" : "flex-start", gap: dp(10), minWidth: 0, flexDirection: align === "end" ? "row" : "row-reverse" }, children: [
-      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18), fontWeight: 600, ...ellipsis3 }, children: name }),
-      /* @__PURE__ */ jsx(Crest, { name, colorKey, size: dp(42), src: crest })
-    ] });
+    if (st === "live") return { text: label ?? ctx.tt("live"), live: true };
+    if (st === "finished") return { text: label ?? ctx.tt("sportEnded"), live: false };
+    return { text: label ?? formatClock2(match.start, ctx.locale), live: false };
   }
   function MatchCard({ match, ctx }) {
     const st = statusAt(match, ctx.now);
     const followed = followState(match, ctx.follows).any;
     const reminded = ctx.isReminded(match);
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-card", "data-match-id": match.id, ...station(() => ctx.openMatch(match), () => ctx.watch(match)), style: { ...sportCardStyle, width: dp(450), flexShrink: 0, padding: `${dp(16)}px ${dp(18)}px`, display: "flex", flexDirection: "column", gap: dp(12), cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(15), color: TV2.muted }, children: [
-        /* @__PURE__ */ jsx(LeagueDot, { leagueKey: match.leagueKey || match.kind }),
-        /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: match.league || ctx.kindLabel(match.kind) }),
-        /* @__PURE__ */ jsx(StatusTag, { match, ctx })
+    const best = rankedSources(match, ctx.overrides)[0] ?? null;
+    const status = statusText(match, ctx);
+    const progress2 = st === "live" ? progressOf(match.start, match.stop, ctx.now) : st === "finished" ? 1 : 0;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-card", "data-match-id": match.id, "data-status": st, ...station(() => ctx.openMatch(match), () => ctx.watch(match)), style: { ...sportCardStyle, position: "relative", width: dp(450), flexShrink: 0, padding: `${dp(14)}px ${dp(16)}px ${dp(16)}px`, display: "flex", alignItems: "center", gap: dp(14), cursor: "pointer", boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsx("div", { "data-testid": "card-anchor", style: { width: dp(84), height: dp(84), flexShrink: 0, borderRadius: dp(12), overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: TV2.s06, color: TV2.muted }, children: best ? /* @__PURE__ */ jsx(ChannelArt, { channel: sourceChannel(best), style: { width: "100%", height: "100%" }, radius: dp(12) }) : /* @__PURE__ */ jsx(SportIcon, { kind: match.kind, size: dp(40) }) }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(6) }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(8), minWidth: 0 }, children: [
+          match.home && match.away ? /* @__PURE__ */ jsxs("span", { style: { display: "flex", gap: dp(4), flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: dp(30), src: match.homeCrest }),
+            /* @__PURE__ */ jsx(Crest, { name: match.away, colorKey: match.awayKey ?? match.away, size: dp(30), src: match.awayCrest })
+          ] }) : null,
+          /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: matchTitle(match) }),
+          showsScore(match) ? /* @__PURE__ */ jsx(MatchScore, { match, size: "row" }) : null
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(8), fontSize: dp(15), color: TV2.muted, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("span", { "data-testid": "card-status", "data-live": status.live ? "1" : "0", style: { flexShrink: 0, fontWeight: 600, fontVariantNumeric: "tabular-nums", color: status.live ? TV2.acc : TV2.text }, children: status.text }),
+          /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: match.league || ctx.kindLabel(match.kind) }),
+          followed ? /* @__PURE__ */ jsx("span", { "data-testid": "card-followed", style: { color: TV2.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(18), filled: true }) }) : null,
+          reminded ? /* @__PURE__ */ jsx("span", { "data-testid": "card-reminded", style: { display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(18) }) }) : null
+        ] }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis3 }, children: match.resultOnly ? /* @__PURE__ */ jsx(ResultOnlyTag, {}) : sourceLine(match, ctx) })
       ] }),
-      match.home && match.away ? /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: dp(12) }, children: [
-        /* @__PURE__ */ jsx(TeamCell, { name: match.home, colorKey: match.homeKey ?? match.home, align: "end", crest: match.homeCrest }),
-        showsScore(match) ? /* @__PURE__ */ jsx(MatchScore, { match, size: "card" }) : /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: "\u2013" }),
-        /* @__PURE__ */ jsx(TeamCell, { name: match.away, colorKey: match.awayKey ?? match.away, align: "start", crest: match.awayCrest })
-      ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, ...ellipsis3 }, children: matchTitle(match) }),
-      /* @__PURE__ */ jsx(Progress, { value: st === "live" ? progressOf(match.start, match.stop, ctx.now) : st === "finished" ? 1 : 0, height: dp(4), track: TV2.s10 }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(8), fontSize: dp(15), color: TV2.muted }, children: [
-        /* @__PURE__ */ jsx("span", { style: { ...ellipsis3, flex: 1 }, children: match.resultOnly ? /* @__PURE__ */ jsx(ResultOnlyTag, {}) : sourceLine(match, ctx) }),
-        followed ? /* @__PURE__ */ jsx("span", { "data-testid": "card-followed", style: { color: "#fbbf24", display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(18), filled: true }) }) : null,
-        reminded ? /* @__PURE__ */ jsx("span", { "data-testid": "card-reminded", style: { display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(18) }) }) : null
-      ] })
+      /* @__PURE__ */ jsx("div", { "data-testid": "card-progress", "aria-hidden": "true", style: { position: "absolute", left: 0, right: 0, bottom: 0, height: dp(4), background: TV2.s08 }, children: /* @__PURE__ */ jsx("div", { "data-fill": "", style: { width: `${Math.round(progress2 * 100)}%`, height: "100%", background: st === "finished" ? TV2.s18 : TV2.acc } }) })
     ] });
   }
-  function CardRow({ title, matches, ctx, testId }) {
+  function MatchStrip({ title, matches, ctx, testId = "sport-strip" }) {
+    const rowRef = useRef(null);
+    const strip = matchdayStrip(matches, ctx.now);
+    const focusId = strip.items[strip.focusIndex]?.id ?? null;
+    useEffect(() => {
+      const row = rowRef.current;
+      if (!row || !focusId) return;
+      const card2 = row.querySelector(`[data-match-id="${focusId.replace(/"/g, '\\"')}"]`);
+      if (!card2) return;
+      row.scrollLeft = Math.max(0, card2.offsetLeft - row.offsetLeft - dp(80));
+    }, [focusId]);
     if (matches.length === 0) return null;
+    const now2 = /* @__PURE__ */ jsxs("div", { "data-testid": "sport-strip-now", "aria-hidden": "true", style: { flexShrink: 0, alignSelf: "stretch", display: "flex", flexDirection: "column", alignItems: "center", gap: dp(6), padding: `0 ${dp(2)}px` }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(13), fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: TV2.acc, whiteSpace: "nowrap" }, children: ctx.tt("gridNowAt", { time: formatClock2(ctx.now, ctx.locale) }) }),
+      /* @__PURE__ */ jsx("span", { style: { flex: 1, width: dp(3), borderRadius: dp(3), background: TV2.acc, boxShadow: `0 0 ${dp(8)}px ${TV2.acc}` } })
+    ] }, "now-marker");
+    const cells = strip.items.map((m) => /* @__PURE__ */ jsx(MatchCard, { match: m, ctx }, m.id));
+    cells.splice(strip.nowIndex, 0, now2);
     return /* @__PURE__ */ jsxs("section", { "data-testid": testId, style: { display: "flex", flexDirection: "column", gap: dp(12) }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(12) }, children: [
         /* @__PURE__ */ jsx("span", { style: sectionTitle, children: title }),
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.dim }, children: matches.length })
       ] }),
-      /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(16), overflowX: "auto", paddingBottom: dp(6) }, children: matches.map((m) => /* @__PURE__ */ jsx(MatchCard, { match: m, ctx }, m.id)) })
+      /* @__PURE__ */ jsx("div", { ref: rowRef, "data-row": "", style: { display: "flex", gap: dp(16), overflowX: "auto", padding: dp(6), margin: `-${dp(6)}px -${dp(6)}px 0` }, children: cells })
     ] });
   }
   function Notice({ text, testId }) {
@@ -46307,11 +47627,10 @@ ${cue.text}`).join("\n\n")}
   }
   var ellipsis3, overline, sectionTitle, primaryBtn, secondaryBtn;
   var init_sport_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
-      init_plugin_sdk();
       init_live_tv_ui();
       init_tv_ui();
       init_sport_model();
@@ -46319,8 +47638,9 @@ ${cue.text}`).join("\n\n")}
       init_sport_ctx();
       init_score_model();
       init_sport_score();
-      init_sport_icons();
+      init_sport_icons2();
       init_surface();
+      init_crest();
       init_jsx_runtime_shim();
       ellipsis3 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
       overline = { fontSize: dp(15), fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: TV2.dim };
@@ -46345,7 +47665,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/player-sport.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/player-sport.tsx
   function multiviewFor(keys2) {
     const picked = keys2.slice(0, MAX_PICK);
     const layout = picked.length <= 2 ? 2 : picked.length === 3 ? 3 : 4;
@@ -46377,8 +47697,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       setArmed(false);
       if (playingKey === null) return;
-      const timer3 = window.setTimeout(() => setArmed(true), PLAYER_SPORT_DELAY_MS);
-      return () => window.clearTimeout(timer3);
+      const timer4 = window.setTimeout(() => setArmed(true), PLAYER_SPORT_DELAY_MS);
+      return () => window.clearTimeout(timer4);
     }, [playingKey]);
     const { data: fresh } = useSportDay(active4 && armed ? localDayKey(model.nowMs) : null, model.nowMs);
     const last2 = useRef(null);
@@ -46452,58 +47772,68 @@ ${cue.text}`).join("\n\n")}
   }
   function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps }) {
     const { tt } = useTvText();
-    const [picking, setPicking] = useState(false);
     const [picked, setPicked] = useState([]);
     const rootRef = useRef(null);
     useEffect(() => {
       window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
     }, []);
-    const lists = matchesForPlayer(sport.matches, channelKey(channel), nowMs);
-    const all = [...lists.onChannel, ...lists.live, ...lists.later];
+    const currentKey = channelKey(channel);
+    const groups = playerMatchGroups(sport.matches, currentKey, nowMs);
+    const all = groups.flatMap((g) => g.matches);
     const toggle = (m) => setPicked((prev) => prev.includes(m.id) ? prev.filter((id) => id !== m.id) : prev.length >= MAX_PICK ? prev : [...prev, m.id]);
     let rowIndex = 0;
-    const row = (m, now2) => {
-      const index = m.resultOnly ? -1 : rowIndex++;
+    const row = (m) => {
+      const first = rowIndex++ === 0;
+      const st = statusAt(m, nowMs);
       const best = rankedSources(m, sport.overrides)[0];
+      const here = st === "live" && m.sources.some((s) => s.channelKey === currentKey);
       const on = picked.includes(m.id);
-      const meta = [m.league, matchStatusLabel(m, tt) ?? (statusAt(m, nowMs) === "live" ? tt("live") : formatClock2(m.start, locale)), best?.name].filter(Boolean).join(" \xB7 ");
-      const stationProps = m.resultOnly ? {} : station(() => picking ? toggle(m) : sport.onSwitchMatch(m), void 0, index === 0 ? { "data-init": "" } : void 0);
-      return /* @__PURE__ */ jsxs("div", { "data-testid": "pm-row", "data-picked": on ? "1" : "0", ...stationProps, style: { display: "flex", alignItems: "center", gap: ps(14), padding: `${ps(12)}px ${ps(14)}px`, borderRadius: ps(12), cursor: m.resultOnly ? "default" : "pointer", background: now2 ? TV2.accMix(16) : TV2.s08, border: `1px solid ${now2 ? TV2.accMix(60) : TV2.line}` }, children: [
-        picking && !m.resultOnly ? /* @__PURE__ */ jsx("span", { style: { width: ps(30), height: ps(30), borderRadius: ps(8), border: `2px solid ${on ? TV2.acc : TV2.lineStrong}`, background: on ? TV2.acc : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: on ? "\u2713" : "" }) : null,
-        /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexShrink: 0 }, children: [
-          m.home ? /* @__PURE__ */ jsx(Crest, { name: m.home, colorKey: m.homeKey ?? m.home, size: ps(44) }) : null,
-          m.away ? /* @__PURE__ */ jsx("span", { style: { marginLeft: -ps(12) }, children: /* @__PURE__ */ jsx(Crest, { name: m.away, colorKey: m.awayKey ?? m.away, size: ps(44) }) }) : null
+      const title = matchTitle(m);
+      const status = st === "live" ? matchStatusLabel(m, tt) ?? tt("live") : formatClock2(m.start, locale);
+      return /* @__PURE__ */ jsxs("div", { "data-testid": "pm-item", "data-row": "", style: { position: "relative", display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(4)}px ${ps(12)}px`, borderBottom: `1px solid ${TV2.s05}`, background: here ? TV2.accMix(12) : "transparent" }, children: [
+        /* @__PURE__ */ jsxs("div", { "data-testid": "pm-row", "data-picked": on ? "1" : "0", ...station(() => sport.onSwitchMatch(m), void 0, first ? { "data-init": "", "aria-label": title } : { "aria-label": title }), style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: ps(14), padding: `${ps(8)}px ${ps(8)}px`, borderRadius: ps(12), cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", gap: ps(4), flexShrink: 0 }, children: [
+            m.home ? /* @__PURE__ */ jsx(Crest, { name: m.home, colorKey: m.homeKey ?? m.home, size: ps(36), src: m.homeCrest }) : null,
+            m.away ? /* @__PURE__ */ jsx(Crest, { name: m.away, colorKey: m.awayKey ?? m.away, size: ps(36), src: m.awayCrest }) : null
+          ] }),
+          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx("div", { style: { fontSize: ps(18), fontWeight: 600, ...ellipsis3 }, children: title }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: ps(14), color: TV2.muted, ...ellipsis3 }, children: [best?.name, m.league].filter(Boolean).join(" \xB7 ") })
+          ] }),
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsx(MatchScore, { match: m, size: "row" }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: ps(14), fontWeight: 600, fontVariantNumeric: "tabular-nums", color: st === "live" ? TV2.acc : TV2.muted }, children: status })
+          ] }),
+          here ? /* @__PURE__ */ jsx("span", { "data-testid": "pm-now", role: "img", "aria-label": tt("sportNowPill"), title: tt("sportNowPill"), style: { display: "inline-flex", color: TV2.acc, flexShrink: 0 }, children: /* @__PURE__ */ jsx(SportIcons.Play, { size: ps(20) }) }) : null
         ] }),
-        /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(19), fontWeight: 600, ...ellipsis3 }, children: matchTitle(m) }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(15), color: TV2.muted, ...ellipsis3 }, children: meta })
-        ] }),
-        /* @__PURE__ */ jsx(MatchScore, { match: m, size: "row" }),
-        now2 ? /* @__PURE__ */ jsx("span", { "data-testid": "pm-now", style: { padding: `${ps(3)}px ${ps(10)}px`, borderRadius: 999, border: `1px solid ${TV2.accMix(80)}`, color: TV2.accText, fontSize: ps(13), fontWeight: 700 }, children: tt("sportNowPill") }) : null
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            "data-testid": "pm-mv",
+            ...station(() => toggle(m), void 0, { "aria-label": on ? tt("sportMultiviewRemove", { name: title }) : tt("sportMultiviewAdd", { name: title }) }),
+            "aria-pressed": on ? "true" : "false",
+            title: on ? tt("sportMultiviewRemove", { name: title }) : tt("sportMultiviewAdd", { name: title }),
+            style: { width: ps(44), height: ps(44), minHeight: ps(44), flexShrink: 0, borderRadius: ps(12), display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: on ? TV2.onAcc : TV2.muted, background: on ? TV2.acc : "rgba(252,252,255,0.06)" },
+            children: /* @__PURE__ */ jsx(Icons.SquaresFour, { size: ps(20) })
+          }
+        ),
+        st === "live" ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", left: 0, bottom: 0, height: ps(2), width: `${Math.round(progressOf(m.start, m.stop, nowMs) * 100)}%`, background: TV2.acc } }) : null
       ] }, m.id);
     };
-    const section = (title, list, now2) => list.length === 0 ? null : /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: ps(8) }, children: [
-      /* @__PURE__ */ jsx("span", { style: { ...overline, fontSize: ps(15) }, children: title }),
-      list.map((m) => row(m, now2))
-    ] }, title);
-    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "player-matches-drawer", "data-panel-root": "", style: { position: "absolute", top: 0, right: 0, bottom: 0, width: `min(${ps(780)}px, 100%)`, zIndex: 40, background: TV2.panel, borderLeft: "1px solid rgba(255,255,255,0.16)", padding: ps(28), boxSizing: "border-box", display: "flex", flexDirection: "column", gap: ps(14), color: TV2.text }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(12) }, children: [
-        /* @__PURE__ */ jsx("span", { style: { fontSize: ps(30), fontWeight: 600 }, children: tt("sportMatches") }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "pm-pick", ...station(() => {
-          setPicking((v) => !v);
-          setPicked([]);
-        }), "aria-pressed": picking ? "true" : "false", style: { marginLeft: "auto", height: ps(48), minHeight: ps(48), padding: `0 ${ps(16)}px`, borderRadius: ps(12), border: `1px solid ${TV2.lineCard}`, background: picking ? TV2.s16 : TV2.s08, display: "inline-flex", alignItems: "center", fontSize: ps(16), fontWeight: 600, cursor: "pointer" }, children: tt("sportPickSeveral") }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "pm-close", ...station(onClose), "aria-label": tt("sportClose"), style: { width: ps(48), height: ps(48), minHeight: ps(48), borderRadius: ps(12), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: "\u2715" })
+    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "player-matches-drawer", "data-panel-root": "", style: { position: "absolute", top: 0, right: 0, bottom: 0, width: `min(${ps(700)}px, 100%)`, zIndex: 40, display: "flex", flexDirection: "column", borderLeft: `1px solid ${TV2.lineCard}`, borderRadius: `${ps(24)}px 0 0 ${ps(24)}px`, background: "rgba(0,0,0,0.88)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "-20px 0 60px rgba(0,0,0,0.5)", boxSizing: "border-box", fontFamily: TV2.font, color: TV2.text }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(12), padding: `${ps(20)}px ${ps(20)}px ${ps(12)}px`, borderBottom: `1px solid ${TV2.line}`, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(26), fontWeight: 600 }, children: tt("sportMatches") }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: ps(14), color: TV2.dim }, children: tt("sportMatchesHint") })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "pm-close", ...station(onClose), "aria-label": tt("sportClose"), style: { width: ps(44), height: ps(44), minHeight: ps(44), borderRadius: 999, background: "rgba(252,252,255,0.06)", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }, children: "\u2715" })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: ps(16), color: TV2.muted }, children: tt("sportMatchesHint") }),
-      /* @__PURE__ */ jsx(PlayerSourceSwitcher, { sport, channel, nowMs, ps: (n) => ps(n * 1.3), testId: "pm-sources" }),
-      /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: ps(16) }, children: [
-        section(tt("sportOnThisChannel"), lists.onChannel, true),
-        section(tt("sportLiveOnChannels"), lists.live, false),
-        section(tt("sportLaterOnChannels"), lists.later, false),
-        section(tt("sportResultOnly"), sport.matches.filter((m) => m.resultOnly), false)
-      ] }),
-      picking ? /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { style: { padding: `${ps(12)}px ${ps(20)}px 0`, flexShrink: 0 }, children: /* @__PURE__ */ jsx(PlayerSourceSwitcher, { sport, channel, nowMs, ps: (n) => ps(n * 1.3), testId: "pm-sources" }) }),
+      /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "thin" }, children: groups.map((g) => /* @__PURE__ */ jsxs("div", { "data-testid": "pm-group", style: { display: "flex", flexDirection: "column" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { padding: `${ps(14)}px ${ps(20)}px ${ps(6)}px`, fontSize: ps(12), fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", fontVariantNumeric: "tabular-nums", color: g.start === null ? TV2.acc : TV2.dim }, children: g.start === null ? tt("sportLiveOnChannels") : formatClock2(g.start, locale) }),
+        g.matches.map(row)
+      ] }, g.start ?? "now")) }),
+      picked.length > 0 ? /* @__PURE__ */ jsx("div", { style: { padding: ps(16), borderTop: `1px solid ${TV2.line}`, flexShrink: 0 }, children: /* @__PURE__ */ jsxs(
         "div",
         {
           "data-testid": "pm-open-multiview",
@@ -46511,16 +47841,18 @@ ${cue.text}`).join("\n\n")}
             const chosen = all.filter((m) => picked.includes(m.id));
             if (chosen.length > 0) sport.onOpenMultiview(pickMultiviewKeys(chosen, sport.overrides, sport.isKnownChannel));
           }),
-          "aria-disabled": picked.length === 0 ? "true" : "false",
-          style: { height: ps(60), minHeight: ps(60), borderRadius: ps(14), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ps(20), fontWeight: 600, cursor: "pointer", opacity: picked.length === 0 ? 0.5 : 1 },
-          children: tt("sportOpenMultiview", { n: picked.length })
+          style: { height: ps(56), minHeight: ps(56), borderRadius: ps(14), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", gap: ps(10), fontSize: ps(18), fontWeight: 600, cursor: "pointer" },
+          children: [
+            /* @__PURE__ */ jsx(Icons.SquaresFour, { size: ps(20) }),
+            tt("sportOpenMultiview", { n: picked.length })
+          ]
         }
-      ) : null
+      ) }) : null
     ] });
   }
   var MAX_PICK, NO_MATCHES, PLAYER_SPORT_DELAY_MS, shortLabel;
   var init_player_sport = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/player-sport.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46536,6 +47868,7 @@ ${cue.text}`).join("\n\n")}
       init_score_model();
       init_sport_parts();
       init_sport_score();
+      init_sport_icons2();
       init_jsx_runtime_shim();
       MAX_PICK = 4;
       NO_MATCHES = [];
@@ -46544,11 +47877,714 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/results-model.ts
+  function groupResults(matches, filter, follows = []) {
+    const eligible = matches.filter((m) => m.coverage === "full" && m.fixture?.leagueId);
+    const isFollowed = (m) => followState(m, follows).any;
+    const shown = eligible.filter((m) => filter === "live" ? isLive(m) : filter === "mine" ? isMine(m) : filter === "followed" ? isFollowed(m) : true);
+    const groups = /* @__PURE__ */ new Map();
+    for (const m of shown) {
+      const key = `${m.kind}|${m.fixture.leagueId}`;
+      const g = groups.get(key) ?? { key, sport: m.kind, league: m.league, leagueId: m.fixture.leagueId, season: m.fixture.season ?? "", round: m.round ?? null, country: m.fixture.country ?? null, matches: [] };
+      g.matches.push(m);
+      groups.set(key, g);
+    }
+    for (const g of groups.values()) g.matches.sort((a, b) => a.start - b.start);
+    return { groups: [...groups.values()], liveCount: eligible.filter(isLive).length, mineCount: eligible.filter(isMine).length, followedCount: eligible.filter(isFollowed).length };
+  }
+  function defaultResultsFilter(follows) {
+    return follows.length > 0 ? "followed" : "all";
+  }
+  function onlyLeague(groups, key) {
+    return key ? groups.filter((g) => g.key === key) : groups;
+  }
+  function formLetters(form, tt) {
+    const map = { W: tt("sportFormW"), D: tt("sportFormD"), L: tt("sportFormL") };
+    return (form ?? "").toUpperCase().split("").filter((c) => c === "W" || c === "D" || c === "L").map((kind) => ({ kind, letter: map[kind] }));
+  }
+  var isLive, isMine, FORM_COLOR;
+  var init_results_model = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/results-model.ts"() {
+      "use strict";
+      init_sport_day_model();
+      isLive = (m) => m.status === "live";
+      isMine = (m) => m.sources.length > 0 && !m.resultOnly;
+      FORM_COLOR = { W: "#3cd6a3", D: "rgba(243,244,248,0.45)", L: "#e0776a" };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/league-jump.ts
+  function foldText(s) {
+    return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
+  }
+  function leagueEntries(groups, follows) {
+    const names = /* @__PURE__ */ new Map();
+    for (const g of groups) {
+      const k = foldText(g.league);
+      const set = names.get(k) ?? /* @__PURE__ */ new Set();
+      set.add(g.key);
+      names.set(k, set);
+    }
+    return groups.map((g) => {
+      const duplicate = (names.get(foldText(g.league))?.size ?? 0) > 1;
+      return {
+        key: g.key,
+        sport: g.sport,
+        league: g.league,
+        country: g.country,
+        label: duplicate && g.country ? `${g.league} \xB7 ${g.country}` : g.league,
+        count: g.matches.length,
+        live: g.matches.filter((m) => m.status === "live").length,
+        relevant: relevantMatches(g.matches, follows).length > 0,
+        followed: g.matches.some((m) => followState(m, follows).league)
+      };
+    });
+  }
+  function yourLeagues(entries) {
+    const relevant = entries.filter((e) => e.relevant);
+    if (relevant.length === 0) return { entries: [...entries].sort(byCount).slice(0, TOP_LEAGUES_MAX), fallback: true };
+    const rank = (e) => e.followed ? 0 : e.live > 0 ? 1 : 2;
+    return { entries: [...relevant].sort((a, b) => rank(a) - rank(b) || byCount(a, b)).slice(0, YOUR_LEAGUES_MAX), fallback: false };
+  }
+  function countryGroups(entries) {
+    const map = /* @__PURE__ */ new Map();
+    for (const e of entries) {
+      const k = e.country ? foldText(e.country) : "";
+      const g = map.get(k) ?? { country: e.country, total: 0, live: 0, entries: [], collapsed: false };
+      g.total += e.count;
+      g.live += e.live;
+      g.entries.push(e);
+      map.set(k, g);
+    }
+    const tier = (g) => isHomeCountry(g.country) ? 0 : g.country === null ? 2 : 1;
+    const list = [...map.values()].sort((a, b) => tier(a) - tier(b) || b.total - a.total || (a.country ?? "").localeCompare(b.country ?? ""));
+    return list.map((g, i) => ({ ...g, entries: [...g.entries].sort(byCount), collapsed: i >= OPEN_COUNTRIES }));
+  }
+  function searchLeagues(entries, query) {
+    const q = foldText(query);
+    if (!q) return [];
+    const words = q.split(/\s+/);
+    const hits = entries.filter((e) => {
+      const hay = `${foldText(e.league)} ${e.country ? foldText(e.country) : ""}`;
+      return words.every((w) => hay.includes(w));
+    });
+    const prefix = (e) => foldText(e.league).startsWith(q) ? 0 : 1;
+    return hits.sort((a, b) => prefix(a) - prefix(b) || byCount(a, b));
+  }
+  var YOUR_LEAGUES_MAX, TOP_LEAGUES_MAX, OPEN_COUNTRIES, HOME_COUNTRIES, isHomeCountry, byCount;
+  var init_league_jump = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/league-jump.ts"() {
+      "use strict";
+      init_merge();
+      init_sport_day_model();
+      YOUR_LEAGUES_MAX = 10;
+      TOP_LEAGUES_MAX = 6;
+      OPEN_COUNTRIES = 6;
+      HOME_COUNTRIES = /* @__PURE__ */ new Set(["sweden", "sverige"]);
+      isHomeCountry = (c) => c !== null && HOME_COUNTRIES.has(foldText(c));
+      byCount = (a, b) => b.count - a.count || a.label.localeCompare(b.label);
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts
+  function sectionTarget(key, current5 = "sport") {
+    return key === current5 ? null : key;
+  }
+  function leagueAbbr(name) {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return "";
+    if (words.length === 1) return words[0].slice(0, 4).toUpperCase();
+    return words.slice(0, 4).map((w) => w[0]).join("").toUpperCase();
+  }
+  function phoneTimeline(matches, dayFrom, now2, follows = []) {
+    const own = matches.filter((m) => m.sources.length > 0);
+    if (own.length === 0) return null;
+    const axis = timelineAxis(own, dayFrom);
+    const span = axis.end - axis.start;
+    const rank = (r) => {
+      const all = r.lanes.flat();
+      return [all.some((m) => followState(m, follows).any) ? 0 : 1, all.some((m) => statusAt(m, now2) === "live") ? 0 : 1, -all.length];
+    };
+    const rows = timelineRows(own).map((r, i) => ({ r, i, k: rank(r) })).sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1] || a.k[2] - b.k[2] || a.i - b.i).map(({ r }) => ({ ...r, abbr: leagueAbbr(r.label) }));
+    const nowPct = now2 >= axis.start && now2 <= axis.end && span > 0 ? (now2 - axis.start) / span * 100 : null;
+    return { ...axis, rows, nowPct };
+  }
+  function phoneResults(matches, opts, follows) {
+    const base = opts.watchable ? matches.filter(watchable) : matches;
+    const all = groupResults(base, "all", follows);
+    const entries = leagueEntries(all.groups, follows);
+    if (opts.scope === "all") return { groups: all.groups, entries, followedCount: all.followedCount };
+    if (opts.scope === "followed") return { groups: groupResults(base, "followed", follows).groups, entries, followedCount: all.followedCount };
+    return { groups: onlyLeague(all.groups, opts.scope), entries, followedCount: all.followedCount };
+  }
+  function eveningPlan(later, isReminded2) {
+    const on = later.filter(isReminded2);
+    const clash = clashes(on);
+    return { rows: later.map((match) => ({ match, on: on.includes(match), clash: clash.has(match.id) })), chosen: on.length };
+  }
+  function nextAlert(a) {
+    return a === "off" ? "15" : a === "15" ? "kickoff" : "off";
+  }
+  function phonePlatform(ua, androidTauri) {
+    return androidTauri || /Android/i.test(ua) ? "android" : "ios";
+  }
+  var PHONE_SECTIONS, watchable;
+  var init_phone_sport_model = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/phone-sport-model.ts"() {
+      "use strict";
+      init_sport_day_model();
+      init_results_model();
+      init_league_jump();
+      PHONE_SECTIONS = [
+        { key: "hub", label: "tabChannels" },
+        { key: "guide", label: "tabGuide" },
+        { key: "sport", label: "sheetSport" },
+        { key: "favs", label: "tabFavourites" },
+        { key: "multi", label: "sheetMultiview" }
+      ];
+      watchable = (m) => m.sources.length > 0 && !m.resultOnly;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx
+  function usePhonePlatform() {
+    return phonePlatform(typeof navigator === "undefined" ? "" : navigator.userAgent || "", isAndroidTauriEnv);
+  }
+  function PhoneSportSheet({ onClose, pushLayer, testId, max = "70%", children, label }) {
+    const platform = usePhonePlatform();
+    const onCloseRef = useRef(onClose);
+    useEffect(() => {
+      onCloseRef.current = onClose;
+    });
+    useEffect(() => pushLayer(() => onCloseRef.current()), [pushLayer]);
+    const ios = platform === "ios";
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("div", { "data-testid": "sheet-scrim", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 70, background: "rgba(0,0,0,0.55)" } }),
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          role: "dialog",
+          "aria-modal": "true",
+          "aria-label": label,
+          "data-testid": testId,
+          "data-platform": platform,
+          "data-live-tv-layer": "",
+          "data-panel-root": "",
+          style: {
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 71,
+            maxHeight: max,
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            background: SHEET_BG,
+            borderTop: "1px solid rgba(255,255,255,0.16)",
+            borderRadius: ios ? "14px 14px 0 0" : "28px 28px 0 0",
+            color: MT.text,
+            fontFamily: MT.font,
+            boxShadow: "0 -18px 50px rgba(0,0,0,0.5)"
+          },
+          children: [
+            /* @__PURE__ */ jsx("div", { "data-testid": "sheet-grabber", ...station(onClose), "aria-hidden": "true", style: { height: 22, minHeight: 22, flexShrink: 0, display: "grid", placeItems: "center", cursor: "pointer" }, children: /* @__PURE__ */ jsx("span", { style: { width: ios ? 36 : 32, height: 5, borderRadius: 3, background: "rgba(243,244,248,0.35)" } }) }),
+            /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", padding: `0 16px calc(${MT.SAFE_BOTTOM_GUARD} + 28px)`, display: "flex", flexDirection: "column", gap: 10 }, children })
+          ]
+        }
+      )
+    ] });
+  }
+  function SheetRow({ on, onPress, testId, height = 52, children }) {
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": testId,
+        ...station(onPress),
+        "aria-pressed": on ? "true" : "false",
+        style: { minHeight: height, flexShrink: 0, borderRadius: 12, display: "flex", alignItems: "center", gap: 12, padding: "0 12px", cursor: "pointer", background: on ? MT.text : "rgba(252,252,255,0.06)", color: on ? "#12152a" : MT.text },
+        children
+      }
+    );
+  }
+  var SHEET_BG, sheetTitle, overline2;
+  var init_phone_sport_sheet = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/phone-sport-sheet.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_tv_ui();
+      init_mobile_tokens();
+      init_phone_sport_model();
+      init_jsx_runtime_shim();
+      SHEET_BG = "#17181d";
+      sheetTitle = { fontSize: 17, fontWeight: 600, flexShrink: 0 };
+      overline2 = { fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(243,244,248,0.6)" };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
+  function Row2({ entry, on, showCountry, sportLabel: sportLabel2, onPick }) {
+    const sub = [showCountry ? entry.country : null, sportLabel2].filter(Boolean).join(" \xB7 ");
+    return /* @__PURE__ */ jsxs(SheetRow, { testId: `phone-league-row-${entry.key}`, on, height: 50, onPress: onPick, children: [
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: entry.league }),
+        sub ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12, opacity: 0.7, ...ellipsis2 }, children: sub }) : null
+      ] }),
+      entry.live > 0 ? dot : null,
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 13, opacity: 0.7, fontVariantNumeric: "tabular-nums" }, children: entry.count })
+    ] });
+  }
+  function PhoneLeagueSheet({ entries, scope, followedCount, kindLabel: kindLabel2, onPick, onClose, pushLayer }) {
+    const { tt } = useTvText();
+    const [query, setQuery] = useState("");
+    const [toggled, setToggled] = useState({});
+    const searching = foldText(query) !== "";
+    const hits = searching ? searchLeagues(entries, query) : [];
+    const pick2 = (key) => {
+      onClose();
+      onPick(key);
+    };
+    const sportOf2 = (e) => kindLabel2 ? kindLabel2(e.sport) : null;
+    const total = entries.reduce((n, e) => n + e.count, 0);
+    return /* @__PURE__ */ jsxs(PhoneSportSheet, { testId: "phone-league-sheet", label: tt("sportAllLeagues"), onClose, pushLayer, children: [
+      /* @__PURE__ */ jsx("span", { style: sheetTitle, children: tt("sportAllLeagues") }),
+      /* @__PURE__ */ jsxs(SheetRow, { testId: "phone-league-all", on: scope === "all", height: 50, onPress: () => pick2("all"), children: [
+        /* @__PURE__ */ jsx("span", { style: { width: 10, height: 10, borderRadius: 3, background: "rgba(243,244,248,0.5)" } }),
+        /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, fontWeight: 600 }, children: tt("sportAllLeagues") }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 13, opacity: 0.7 }, children: total })
+      ] }),
+      /* @__PURE__ */ jsxs(SheetRow, { testId: "phone-league-followed", on: scope === "followed", height: 50, onPress: () => pick2("followed"), children: [
+        /* @__PURE__ */ jsx("span", { style: { width: 10, height: 10, borderRadius: 3, background: MT.acc } }),
+        /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, fontWeight: 600 }, children: tt("sportTabFollows") }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 13, opacity: 0.7 }, children: followedCount })
+      ] }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          "data-testid": "phone-league-search",
+          value: query,
+          placeholder: tt("sportLeagueSearch"),
+          onChange: (e) => setQuery(e.target.value),
+          autoComplete: "off",
+          spellCheck: false,
+          enterKeyHint: "search",
+          style: { height: MT.HIT, flexShrink: 0, borderRadius: 12, border: `1px solid ${MT.line14}`, background: "rgba(0,0,0,0.25)", color: MT.text, padding: "0 14px", fontSize: 16, marginTop: 4 }
+        }
+      ),
+      searching ? hits.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: 8, fontSize: 15, color: MT.muted }, children: tt("sportLeagueNoHits") }) : hits.map((e) => /* @__PURE__ */ jsx(Row2, { entry: e, on: scope === e.key, showCountry: true, sportLabel: sportOf2(e), onPick: () => pick2(e.key) }, e.key)) : countryGroups(entries).map((g) => {
+        const id = g.country ? foldText(g.country) : "";
+        const open2 = toggled[id] ?? !g.collapsed;
+        return /* @__PURE__ */ jsxs("section", { "data-testid": `phone-league-country-${g.country ?? "other"}`, style: { display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }, children: [
+          /* @__PURE__ */ jsxs("div", { ...station(() => setToggled((t) => ({ ...t, [id]: !open2 }))), "aria-expanded": open2 ? "true" : "false", style: { minHeight: 36, display: "flex", alignItems: "center", gap: 8, color: MT.muted, fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, ...ellipsis2 }, children: g.country ?? tt("sportLeagueOther") }),
+            g.live > 0 ? dot : null,
+            /* @__PURE__ */ jsx("span", { style: { color: MT.dim, letterSpacing: 0, fontWeight: 400, textTransform: "none" }, children: tt("sportLeagueMatches", { n: g.total }) }),
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", children: open2 ? "\u25BE" : "\u25B8" })
+          ] }),
+          open2 ? g.entries.map((e) => /* @__PURE__ */ jsx(Row2, { entry: e, on: scope === e.key, showCountry: false, sportLabel: sportOf2(e), onPick: () => pick2(e.key) }, e.key)) : null
+        ] }, id || "__other");
+      })
+    ] });
+  }
+  var dot;
+  var init_sport_league_sheet_phone = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_mobile_tokens();
+      init_league_jump();
+      init_phone_sport_sheet();
+      init_jsx_runtime_shim();
+      dot = /* @__PURE__ */ jsx("span", { "data-testid": "league-live-dot", "aria-hidden": "true", style: { width: 7, height: 7, borderRadius: 999, background: MT.live, flexShrink: 0 } });
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx
+  function PhoneTeamCrest({ name, colorKey, src, size }) {
+    return /* @__PURE__ */ jsx(Crest, { name, colorKey: colorKey ?? name, src, size });
+  }
+  function Tag3({ text, bg, color = "#fff", testId }) {
+    return /* @__PURE__ */ jsx("span", { "data-testid": testId, style: { height: 20, padding: "0 7px", borderRadius: 6, flexShrink: 0, display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", background: bg, color, whiteSpace: "nowrap" }, children: text });
+  }
+  function matchProgress(m, now2) {
+    const st = statusAt(m, now2);
+    if (st === "finished") return 1;
+    if (st === "upcoming") return 0;
+    if (m.kind === "football" && m.minute != null) return Math.min(m.minute / 90, 1);
+    return progressOf(m.start, m.stop, now2);
+  }
+  function cardTag(m, ctx) {
+    const st = statusAt(m, ctx.now);
+    const label = matchStatusLabel(m, ctx.tt);
+    if (st === "live") {
+      const live2 = ctx.tt("sportLiveShort");
+      return { text: label && label !== live2 ? `${live2} ${label}` : live2, bg: P.live, color: "#fff" };
+    }
+    if (st === "finished") return { text: label ?? ctx.tt("sportEnded"), bg: "rgba(252,252,255,0.14)", color: P.text };
+    return { text: label ?? formatClock2(m.start, ctx.locale), bg: P.coralSoft, color: P.coralLight };
+  }
+  function PhoneMatchCard({ ctx, match: m }) {
+    const st = statusAt(m, ctx.now);
+    const fs = followState(m, ctx.follows);
+    const tag = cardTag(m, ctx);
+    const score = showsScore(m) ? m.score ?? null : null;
+    const pct3 = matchProgress(m, ctx.now);
+    const hasChannel = m.sources.length > 0;
+    const team2 = (side3) => {
+      const name = side3 === "home" ? m.home : m.away;
+      return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+        /* @__PURE__ */ jsx(PhoneTeamCrest, { name, colorKey: side3 === "home" ? m.homeKey : m.awayKey, src: side3 === "home" ? m.homeCrest : m.awayCrest, size: 22 }),
+        /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: name }),
+        fs[side3] ? /* @__PURE__ */ jsx("span", { "data-testid": "phone-card-heart", style: { color: P.coral, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 13, filled: true }) }) : null,
+        /* @__PURE__ */ jsx("span", { style: { width: 22, textAlign: "right", fontSize: 17, fontWeight: 700, fontVariantNumeric: "tabular-nums" }, children: score ? score[side3] : "" })
+      ] });
+    };
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-testid": "sport-phone-card",
+        "data-status": st,
+        "data-followed": fs.any ? "1" : "0",
+        ...station(() => ctx.openMatch(m)),
+        style: { ...cardStyle2, border: `1px solid ${fs.any ? P.coralBorder : P.line14}`, overflow: "hidden", cursor: "pointer", flexShrink: 0 },
+        children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 7, padding: "10px 12px 0" }, children: [
+            /* @__PURE__ */ jsx("span", { style: { width: 7, height: 7, borderRadius: 2, background: leagueColor(m.leagueKey || m.kind), flexShrink: 0 } }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 12, color: P.muted70, ...ellipsis2 }, children: m.league || ctx.kindLabel(m.kind) }),
+            /* @__PURE__ */ jsx(Tag3, { testId: "sport-phone-card-tag", text: tag.text, bg: tag.bg, color: tag.color })
+          ] }),
+          /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 5, padding: "8px 12px 10px" }, children: m.home && m.away ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            team2("home"),
+            team2("away")
+          ] }) : /* @__PURE__ */ jsx("span", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }) }),
+          /* @__PURE__ */ jsx("div", { style: { height: 3, background: "rgba(252,252,255,0.1)" }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${Math.round(pct3 * 100)}%`, background: st === "live" ? P.live : "rgba(243,244,248,0.35)" } }) }),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 7, padding: "8px 12px", fontSize: 12, color: hasChannel ? P.muted80 : "rgba(243,244,248,0.55)" }, children: [
+            hasChannel ? /* @__PURE__ */ jsx(PIcons.Tv, {}) : /* @__PURE__ */ jsx(PIcons.ListNumbers, {}),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis2 }, children: hasChannel ? sourceLine(m, ctx) : ctx.tt("sportResultOnly") }),
+            ctx.isReminded(m) ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-phone-card-bell", style: { color: P.coralLight, display: "inline-flex" }, children: /* @__PURE__ */ jsx(PIcons.BellOn, {}) }) : null
+          ] })
+        ]
+      }
+    );
+  }
+  function SectionHead({ dot: dot2, title, sub, testId }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+      dot2 ? /* @__PURE__ */ jsx("span", { style: { width: 8, height: 8, borderRadius: 999, background: dot2 } }) : null,
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 18, fontWeight: 600 }, children: title }),
+      sub ? /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: P.muted60 }, children: sub }) : null
+    ] });
+  }
+  var P, cardStyle2, svg4, PIcons;
+  var init_phone_sport_parts = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/phone-sport-parts.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_ui();
+      init_tv_ui();
+      init_mobile_tokens();
+      init_mobile_icons();
+      init_sport_model();
+      init_sport_day_model();
+      init_score_model();
+      init_sport_ctx();
+      init_crest();
+      init_surface();
+      init_jsx_runtime_shim();
+      P = {
+        card: sportBg("rgba(18,18,22,0.75)"),
+        line14: "rgba(255,255,255,0.14)",
+        line16: "rgba(255,255,255,0.16)",
+        line18: "rgba(255,255,255,0.18)",
+        line12: "rgba(255,255,255,0.12)",
+        text: "#f3f4f8",
+        muted80: "rgba(243,244,248,0.8)",
+        muted70: "rgba(243,244,248,0.7)",
+        muted65: "rgba(243,244,248,0.65)",
+        muted60: "rgba(243,244,248,0.6)",
+        coral: "#f4845f",
+        coralLight: "#ffd9c9",
+        live: "#fb7185",
+        liveMin: "#fda4af",
+        ring: "#ef4444",
+        ink: "#12152a",
+        coralBorder: "rgba(244,132,95,0.45)",
+        coralSoft: "rgba(244,132,95,0.22)"
+      };
+      cardStyle2 = { background: P.card, border: `1px solid ${P.line14}`, borderRadius: 14, boxSizing: "border-box" };
+      svg4 = (size, children, filled = false) => createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", "aria-hidden": "true", fill: filled ? "currentColor" : "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" }, children);
+      PIcons = {
+        Tv: ({ size = 14 }) => svg4(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "3", y: "6", width: "18", height: "12", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "m9 3 3 3 3-3" })
+        ] })),
+        ListNumbers: ({ size = 14 }) => svg4(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M10 6h10M10 12h10M10 18h10" }),
+          /* @__PURE__ */ jsx("path", { d: "M4 5h1v4M4 15.5c.5-.7 2-.7 2 .3 0 .9-2 1.6-2 3.2h2" })
+        ] })),
+        Calendar: ({ size = 18 }) => svg4(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "5", width: "16", height: "15", rx: "2" }),
+          /* @__PURE__ */ jsx("path", { d: "M4 10h16M9 3v4M15 3v4" })
+        ] })),
+        Rows: ({ size = 18 }) => svg4(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "5", width: "16", height: "6", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "16", height: "6", rx: "1.5" })
+        ] })),
+        Check: ({ size = 16 }) => svg4(size, /* @__PURE__ */ jsx("path", { d: "m5 12.5 4.5 4.5L19 7.5" })),
+        Warning: ({ size = 18 }) => svg4(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M12 4 2.8 19.5h18.4z", fill: "currentColor", stroke: "none" }),
+          /* @__PURE__ */ jsx("path", { d: "M12 10v4.2M12 17h.01", stroke: "#12152a", strokeWidth: "2" })
+        ] })),
+        BellOn: ({ size = 14 }) => svg4(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z", fill: "currentColor" }),
+          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0" })
+        ] })),
+        BellOff: ({ size = 14 }) => svg4(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("path", { d: "M6 16V11a6 6 0 0 1 9.3-5" }),
+          /* @__PURE__ */ jsx("path", { d: "M18 10.5V16l1.5 2H8" }),
+          /* @__PURE__ */ jsx("path", { d: "M10 20a2 2 0 0 0 4 0M4 4l16 16" })
+        ] })),
+        Minus: ({ size = 16 }) => svg4(size, /* @__PURE__ */ jsx("path", { d: "M6 12h12" })),
+        Grid: ({ size = 20 }) => svg4(size, /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "4", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "4", y: "13", width: "7", height: "7", rx: "1.5" }),
+          /* @__PURE__ */ jsx("rect", { x: "13", y: "13", width: "7", height: "7", rx: "1.5" })
+        ] }))
+      };
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
+  function PhoneCrest({ name, src, size = 22 }) {
+    return /* @__PURE__ */ jsx(Crest, { name, colorKey: name, src, size });
+  }
+  function PhoneStandings({ rows, tt, follows }) {
+    const cols = "22px minmax(0,1fr) 26px 30px 72px";
+    const followed = (name) => follows.some((f) => f.kind === "team" && f.name.toLowerCase() === name.toLowerCase());
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: cols, gap: 6, fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: P.muted60, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx("span", { children: "#" }),
+        /* @__PURE__ */ jsx("span", { children: tt("sportColTeam") }),
+        /* @__PURE__ */ jsx("span", { children: tt("sportColPlayed") }),
+        /* @__PURE__ */ jsx("span", { children: tt("sportColPoints") }),
+        /* @__PURE__ */ jsx("span", { children: tt("sportColForm") })
+      ] }),
+      rows.map((r) => /* @__PURE__ */ jsxs("div", { "data-testid": "phone-standings-row", style: { display: "grid", gridTemplateColumns: cols, gap: 6, alignItems: "center", minHeight: 38, flexShrink: 0, fontSize: 14, borderRadius: 8, background: followed(r.team.name) ? "rgba(244,132,95,0.18)" : "transparent" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { color: P.muted65, paddingLeft: 4 }, children: r.rank }),
+        /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx(PhoneCrest, { name: r.team.name, src: r.team.crest, size: 18 }),
+          /* @__PURE__ */ jsx("span", { style: { fontWeight: 600, ...ellipsis2 }, children: r.team.name })
+        ] }),
+        /* @__PURE__ */ jsx("span", { style: { color: P.muted70 }, children: r.played }),
+        /* @__PURE__ */ jsx("span", { style: { fontWeight: 700 }, children: r.points }),
+        /* @__PURE__ */ jsx("span", { style: { display: "flex", gap: 3 }, children: formLetters(r.form, tt).slice(-5).map((f, i) => /* @__PURE__ */ jsx("span", { "data-testid": "phone-form", title: f.letter, style: { width: 12, height: 12, borderRadius: 999, background: FORM_COLOR[f.kind], color: "transparent", fontSize: 0 }, children: f.letter }, i)) })
+      ] }, `${r.group ?? ""}-${r.rank}-${r.team.id}`))
+    ] });
+  }
+  function SportResultsPhone({ matches, controller: controller2, onOpenMatch, onWatch, pushLayer, sport = "all", kindLabel: kindLabel2 }) {
+    const { tt, locale } = useTvText();
+    const settings = useSportSettings();
+    const follows = useFollows();
+    const [watchable3, setWatchable] = useState(false);
+    const [scope, setScope] = useState(() => defaultResultsFilter(follows) === "followed" ? "followed" : "all");
+    const [table, setTable] = useState(null);
+    const [leagueSheet, setLeagueSheet] = useState(false);
+    const forSport = useMemo(() => sport === "all" ? matches : matches.filter((m) => m.kind === sport), [matches, sport]);
+    const { groups, entries, followedCount } = useMemo(() => phoneResults(forSport, { watchable: watchable3, scope }, follows), [forSport, watchable3, scope, follows]);
+    if (!settings.apiKey || !controller2) {
+      return /* @__PURE__ */ jsx(KeyCard, { variant: "tab", pushLayer });
+    }
+    const labels = new Map(entries.map((e) => [e.key, e.label]));
+    const scopeLabel = scope === "all" ? tt("sportAllLeagues") : scope === "followed" ? tt("sportResultsFollowed", { n: followedCount }) : labels.get(scope) ?? tt("sportAllLeagues");
+    const openTable = async (g) => {
+      const cached = controller2.standings(g.sport, g.leagueId, g.season);
+      setTable({ group: g, rows: cached });
+      if (cached) return;
+      const rows = await controller2.loadStandings(g.sport, g.leagueId, g.season);
+      setTable((t) => t && t.group.key === g.key ? { group: g, rows: rows ?? [] } : t);
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "phone-results", style: { display: "flex", flexDirection: "column", gap: 18 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+        /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "phone-results-watchable",
+            ...station(() => setWatchable((w) => !w)),
+            role: "switch",
+            "aria-checked": watchable3 ? "true" : "false",
+            style: { ...cardStyle2, borderRadius: 10, height: 38, flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, padding: "0 10px", cursor: "pointer", fontSize: 13, fontWeight: 600 },
+            children: [
+              /* @__PURE__ */ jsx("span", { style: { flex: 1, ...ellipsis2 }, children: tt("sportOnlyWatchable") }),
+              /* @__PURE__ */ jsx(MobileToggle, { on: watchable3 })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "div",
+          {
+            "data-testid": "phone-results-league",
+            ...station(() => setLeagueSheet(true)),
+            style: { ...cardStyle2, borderRadius: 10, height: 38, maxWidth: 160, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, padding: "0 10px", cursor: "pointer", fontSize: 13, fontWeight: 600 },
+            children: [
+              /* @__PURE__ */ jsx("span", { style: ellipsis2, children: scopeLabel }),
+              /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 14 })
+            ]
+          }
+        )
+      ] }),
+      groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { borderRadius: 14, border: "1px dashed rgba(255,255,255,0.24)", padding: "28px 16px", textAlign: "center", fontSize: 15, color: "rgba(243,244,248,0.75)" }, children: tt("sportResultsEmpty") }) : null,
+      groups.map((g) => /* @__PURE__ */ jsxs("section", { "data-testid": `phone-results-group-${g.key}`, style: { display: "flex", flexDirection: "column", gap: 6 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+          /* @__PURE__ */ jsx("span", { style: { width: 10, height: 10, borderRadius: 3, background: leagueColor(g.matches[0]?.leagueKey || g.sport), flexShrink: 0 } }),
+          /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: 600, ...ellipsis2 }, children: g.round != null ? `${labels.get(g.key) ?? g.league} \xB7 ${tt("sportRound", { n: g.round })}` : labels.get(g.key) ?? g.league }),
+          /* @__PURE__ */ jsxs("div", { "data-testid": `phone-table-${g.key}`, ...station(() => void openTable(g)), style: { height: 28, padding: "0 10px", borderRadius: 8, background: "rgba(252,252,255,0.12)", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }, children: [
+            tt("sportTable"),
+            /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 12 })
+          ] })
+        ] }),
+        g.matches.map((m) => /* @__PURE__ */ jsx(ResultRow, { m, tt, locale, follows, onOpen: () => onOpenMatch(m), onWatch }, m.id))
+      ] }, g.key)),
+      leagueSheet ? /* @__PURE__ */ jsx(PhoneLeagueSheet, { entries, scope, followedCount, kindLabel: sport === "all" ? kindLabel2 ?? null : null, onPick: setScope, onClose: () => setLeagueSheet(false), pushLayer }) : null,
+      table ? /* @__PURE__ */ jsxs(PhoneSportSheet, { testId: "phone-standings-sheet", label: tt("sportTable"), onClose: () => setTable(null), pushLayer, children: [
+        /* @__PURE__ */ jsx("span", { style: sheetTitle, children: `${labels.get(table.group.key) ?? table.group.league} \xB7 ${tt("sportTable")}` }),
+        table.rows === null ? /* @__PURE__ */ jsx("div", { style: { padding: 8, color: MT.muted }, children: tt("sportLoading") }) : /* @__PURE__ */ jsx(PhoneStandings, { rows: table.rows, tt, follows })
+      ] }) : null
+    ] });
+  }
+  function ResultRow({ m, tt, locale, follows, onOpen, onWatch }) {
+    const live2 = m.status === "live";
+    const upcoming = m.status === "upcoming";
+    const status = matchStatusLabel(m, tt) ?? formatClock2(m.start, locale);
+    const score = showsScore(m) ? m.score ?? null : null;
+    const can = m.sources.length > 0 && !m.resultOnly && !!onWatch;
+    const fs = followState(m, follows);
+    const watch = () => {
+      if (can) onWatch(m);
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "phone-result-row", "data-status": m.status, ...station(onOpen), style: { ...cardStyle2, borderRadius: 12, border: `1px solid ${P.line12}`, minHeight: 58, display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { width: 44, flexShrink: 0, whiteSpace: "nowrap", overflow: "hidden", fontSize: 12, fontWeight: 700, color: live2 ? P.liveMin : upcoming ? P.coralLight : P.muted60 }, children: status }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }, children: [
+        /* @__PURE__ */ jsxs("span", { style: { fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("span", { style: ellipsis2, children: m.home ?? m.event ?? m.league }),
+          fs.home ? /* @__PURE__ */ jsx("span", { style: { color: P.coral, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 11, filled: true }) }) : null
+        ] }),
+        m.away ? /* @__PURE__ */ jsxs("span", { style: { fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("span", { style: ellipsis2, children: m.away }),
+          fs.away ? /* @__PURE__ */ jsx("span", { style: { color: P.coral, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 11, filled: true }) }) : null
+        ] }) : null
+      ] }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "phone-result-score", style: { width: 28, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, fontSize: 15, fontWeight: 700, borderRadius: 7, padding: "3px 0", fontVariantNumeric: "tabular-nums", background: live2 ? "rgba(251,113,133,0.24)" : "rgba(252,252,255,0.10)" }, children: [
+        /* @__PURE__ */ jsx("span", { children: score ? score.home : "\u2013" }),
+        /* @__PURE__ */ jsx("span", { children: score ? score.away : "\u2013" })
+      ] }),
+      /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-testid": "phone-result-play",
+          ...can ? station(watch) : {},
+          onClick: (e) => {
+            e.stopPropagation();
+            watch();
+          },
+          "aria-label": tt("sportWatch"),
+          "aria-disabled": can ? "false" : "true",
+          style: { width: 34, height: 34, borderRadius: 999, flexShrink: 0, display: "grid", placeItems: "center", background: can ? P.coralSoft : "transparent", color: can ? P.coralLight : "rgba(243,244,248,0.4)", cursor: can ? "pointer" : "default" },
+          children: can ? /* @__PURE__ */ jsx(MIcons.Play, { size: 14 }) : /* @__PURE__ */ jsx(PIcons.Minus, {})
+        }
+      )
+    ] });
+  }
+  var init_sport_results_phone = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_mobile_tokens();
+      init_mobile_icons();
+      init_key_card();
+      init_results_model();
+      init_score_model();
+      init_sport_day_model();
+      init_sport_store();
+      init_live_tv_ui();
+      init_sport_league_sheet_phone();
+      init_crest();
+      init_phone_sport_model();
+      init_phone_sport_parts();
+      init_phone_sport_sheet();
+      init_mobile_toggle();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx
+  function PhoneMatchList({ sport, currentKey, nowMs, locale, picked, onTogglePick, onDone }) {
+    const { tt } = useTvText();
+    const groups = playerMatchGroups(sport.matches, currentKey, nowMs);
+    return /* @__PURE__ */ jsx("div", { "data-testid": "phone-matches-list", children: groups.map((g) => /* @__PURE__ */ jsxs("div", { "data-testid": "phone-matches-group", children: [
+      /* @__PURE__ */ jsx("div", { style: { padding: "12px 20px 4px", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: g.start === null ? MT.acc : MT.muted }, children: g.start === null ? tt("sportLiveOnChannels") : formatClock2(g.start, locale) }),
+      g.matches.map((m) => {
+        const st = statusAt(m, nowMs);
+        const title = matchTitle(m);
+        const on = picked.includes(m.id);
+        const here = st === "live" && m.sources.some((s) => s.channelKey === currentKey);
+        const best = rankedSources(m, sport.overrides)[0];
+        const status = st === "live" ? matchStatusLabel(m, tt) ?? tt("live") : formatClock2(m.start, locale);
+        return /* @__PURE__ */ jsxs("div", { style: { position: "relative", display: "flex", alignItems: "center", gap: 8, padding: "0 12px 0 20px", minHeight: 60, borderBottom: `1px solid ${MT.line07}`, background: here ? MT.accMix(12) : "transparent" }, children: [
+          /* @__PURE__ */ jsxs("div", { "data-testid": "phone-match-row", ...station(() => {
+            sport.onSwitchMatch(m);
+            onDone();
+          }, void 0, { "aria-label": title }), style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "8px 0" }, children: [
+            /* @__PURE__ */ jsxs("span", { style: { display: "flex", gap: 3, flexShrink: 0 }, children: [
+              m.home ? /* @__PURE__ */ jsx(PhoneCrest, { name: m.home, src: m.homeCrest, size: 26 }) : null,
+              m.away ? /* @__PURE__ */ jsx(PhoneCrest, { name: m.away, src: m.awayCrest, size: 26 }) : null
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: title }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: [best?.name, m.league].filter(Boolean).join(" \xB7 ") })
+            ] }),
+            /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0, fontVariantNumeric: "tabular-nums" }, children: [
+              scoreText(m) ? /* @__PURE__ */ jsx("span", { style: { fontSize: 15, fontWeight: 700 }, children: scoreText(m) }) : null,
+              /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, fontWeight: 600, color: st === "live" ? MT.acc : MT.muted }, children: status })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("div", { "data-testid": "phone-match-mv", ...station(() => onTogglePick(m), void 0, { "aria-label": on ? tt("sportMultiviewRemove", { name: title }) : tt("sportMultiviewAdd", { name: title }) }), "aria-pressed": on ? "true" : "false", style: { width: MT.HIT, height: MT.HIT, flexShrink: 0, borderRadius: 12, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: on ? MT.onAcc : MT.muted, background: on ? MT.acc : "transparent" }, children: /* @__PURE__ */ jsx(MIcons.SquaresFour, { size: 20 }) }),
+          st === "live" ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", left: 0, bottom: 0, height: 2, width: `${Math.round(progressOf(m.start, m.stop, nowMs) * 100)}%`, background: MT.acc } }) : null
+        ] }, m.id);
+      })
+    ] }, g.start ?? "now")) });
+  }
+  var init_player_matches_phone = __esm({
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/player-matches-phone.tsx"() {
+      "use strict";
+      "use client";
+      init_live_tv_ui();
+      init_tv_strings();
+      init_tv_ui();
+      init_mobile_tokens();
+      init_mobile_icons();
+      init_sport_model();
+      init_sport_day_model();
+      init_score_model();
+      init_sport_results_phone();
+      init_jsx_runtime_shim();
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
   function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
     return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
   }
-  function Pill({ label, onPress, disabled = false, testId }) {
+  function Pill2({ label, onPress, disabled = false, testId }) {
     const shared = { height: 44, minHeight: 44, padding: "0 16px", borderRadius: 999, background: MT.s10, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", boxSizing: "border-box", flexShrink: 0 };
     if (disabled || !onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: label });
     return /* @__PURE__ */ jsx("div", { ...station(onPress), "data-testid": testId, style: { ...shared, color: MT.text, cursor: "pointer" }, children: label });
@@ -46606,6 +48642,10 @@ ${cue.text}`).join("\n\n")}
       return () => window.removeEventListener("keydown", onKey, true);
     }, [sheet, tv.gateOpen, onClose]);
     const closeSheet = useCallback(() => setSheet(null), []);
+    const [picked, setPicked] = useState([]);
+    useEffect(() => {
+      if (sheet !== "matches") setPicked([]);
+    }, [sheet]);
     const pinnedSet = useMemo(() => new Set(tv.pinnedKeys), [tv.pinnedKeys]);
     const zap = useMemo(() => {
       const current5 = channelKey(channel);
@@ -46642,15 +48682,34 @@ ${cue.text}`).join("\n\n")}
         if (!on) sport.onSwitchSource(s);
       } };
     }) : [];
+    const sportHere = tv.sport ? matchesForPlayer(tv.sport.matches, currentKey, tv.nowMs).onChannel.length > 0 : false;
+    const matchItems = tv.sport && picked.length > 0 ? [{ key: "open-multiview", label: tt("sportOpenMultiview", { n: picked.length }), run: () => {
+      const sport = tv.sport;
+      const chosen = sport.matches.filter((m) => picked.includes(m.id));
+      sport.onOpenMultiview(pickMultiviewKeys(chosen, sport.overrides, sport.isKnownChannel));
+    } }] : [];
+    const matchList = sheet === "matches" && tv.sport ? /* @__PURE__ */ jsx(
+      PhoneMatchList,
+      {
+        sport: tv.sport,
+        currentKey,
+        nowMs: tv.nowMs,
+        locale: tv.locale,
+        picked,
+        onTogglePick: (m) => setPicked((prev) => prev.includes(m.id) ? prev.filter((id) => id !== m.id) : prev.length >= 4 ? prev : [...prev, m.id]),
+        onDone: closeSheet
+      }
+    ) : null;
     const sheetNode = sheet ? /* @__PURE__ */ jsx(
       MobileSheet,
       {
-        title: sheet === "audio" ? tt("audioSubs") : sheet === "sources" ? tt("sportSourcesShort", { n: sourceItems.length }) : channel.name,
-        subtitle: info.now?.title,
-        items: sheet === "audio" ? audioItems : sheet === "sources" ? sourceItems : moreItems,
+        title: sheet === "audio" ? tt("audioSubs") : sheet === "sources" ? tt("sportSourcesShort", { n: sourceItems.length }) : sheet === "matches" ? tt("sportMatches") : channel.name,
+        subtitle: sheet === "matches" ? tt("sportMatchesHint") : info.now?.title,
+        list: matchList,
+        items: sheet === "audio" ? audioItems : sheet === "sources" ? sourceItems : sheet === "matches" ? matchItems : moreItems,
         onClose: closeSheet,
         pushLayer: noLayer2,
-        testId: sheet === "audio" ? "phone-audio-sheet" : sheet === "sources" ? "phone-sources-sheet" : "phone-more-sheet"
+        testId: sheet === "audio" ? "phone-audio-sheet" : sheet === "sources" ? "phone-sources-sheet" : sheet === "matches" ? "phone-matches-sheet" : "phone-more-sheet"
       }
     ) : null;
     const sourcesLabel = matchSources ? tt("sportSourcesShort", { n: matchSources.sources.length }) : null;
@@ -46678,9 +48737,10 @@ ${cue.text}`).join("\n\n")}
               ] }),
               /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape-controls", style: { flex: "0 0 auto", display: "flex", alignItems: "center", gap: 10 }, children: [
                 muteBtn(44),
-                /* @__PURE__ */ jsx(Pill, { label: qualityLabel, disabled: true }),
-                sourcesLabel ? /* @__PURE__ */ jsx(Pill, { label: sourcesLabel, onPress: () => setSheet("sources"), testId: "phone-sources" }) : null,
-                /* @__PURE__ */ jsx(Pill, { label: tt("menuGuide"), onPress: tv.onOpenGuide }),
+                /* @__PURE__ */ jsx(Pill2, { label: qualityLabel, disabled: true }),
+                sourcesLabel ? /* @__PURE__ */ jsx(Pill2, { label: sourcesLabel, onPress: () => setSheet("sources"), testId: "phone-sources" }) : null,
+                sportHere ? /* @__PURE__ */ jsx(Pill2, { label: tt("sportMatches"), onPress: () => setSheet("matches"), testId: "phone-matches" }) : null,
+                /* @__PURE__ */ jsx(Pill2, { label: tt("menuGuide"), onPress: tv.onOpenGuide }),
                 /* @__PURE__ */ jsx(Round, { size: 44, label: tt("moreActions"), onPress: () => setSheet("more"), background: MT.s10, children: /* @__PURE__ */ jsx(MIcons.DotsThree, { size: 22 }) })
               ] })
             ] }),
@@ -46720,7 +48780,8 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx(GridBtn, { label: qualityLabel }),
           /* @__PURE__ */ jsx(GridBtn, { label: tt("menuChannelDetails"), onPress: tv.onOpenChannelDetails }),
           /* @__PURE__ */ jsx(GridBtn, { label: tt("menuGuide"), onPress: tv.onOpenGuide }),
-          sourcesLabel ? /* @__PURE__ */ jsx(GridBtn, { label: sourcesLabel, onPress: () => setSheet("sources"), testId: "phone-sources" }) : null
+          sourcesLabel ? /* @__PURE__ */ jsx(GridBtn, { label: sourcesLabel, onPress: () => setSheet("sources"), testId: "phone-sources" }) : null,
+          sportHere ? /* @__PURE__ */ jsx(GridBtn, { label: tt("sportMatches"), onPress: () => setSheet("matches"), testId: "phone-matches" }) : null
         ] }),
         /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, marginTop: 4 }, children: tt("zapList") }),
         /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column" }, children: zap.map((entry) => /* @__PURE__ */ jsx(
@@ -46749,7 +48810,7 @@ ${cue.text}`).join("\n\n")}
   }
   var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer2, SAFE_SIDE_L, SAFE_SIDE_R;
   var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -46763,6 +48824,8 @@ ${cue.text}`).join("\n\n")}
       init_mobile_channel_row();
       init_mobile_sheet();
       init_player_sport();
+      init_player_matches_phone();
+      init_sport_day_model();
       init_jsx_runtime_shim();
       PHONE_STAGE_BOX = { aspectRatio: "16 / 9", maxHeight: "45vh" };
       ZAP_WINDOW = 25;
@@ -46773,7 +48836,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/player-chrome-parts.tsx
   function playerScale(isTv) {
     return (n) => isTv ? Math.round(n * 1.4) : n;
   }
@@ -47022,8 +49085,8 @@ ${cue.text}`).join("\n\n")}
     const { tt } = useTvText();
     const dayStart = startOfLocalDay(tv.nowMs);
     const scheduleChannels = useMemo(() => open2 ? [channel] : [], [open2, channel]);
-    const { schedules, loading: loading2 } = useSchedules(scheduleChannels, dayStart, dayStart + DAY_MS);
-    const programmes = useMemo(() => sliceSchedule(schedules[channelKey(channel)] ?? [], dayStart, dayStart + DAY_MS), [schedules, channel, dayStart]);
+    const { schedules, loading: loading2 } = useSchedules(scheduleChannels, dayStart, dayStart + DAY_MS2);
+    const programmes = useMemo(() => sliceSchedule(schedules[channelKey(channel)] ?? [], dayStart, dayStart + DAY_MS2), [schedules, channel, dayStart]);
     const [tick2, setTick] = useState(0);
     useEffect(() => onRemindersChanged(() => setTick((v) => v + 1)), []);
     void tick2;
@@ -47088,9 +49151,9 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx("div", { style: { flexShrink: 0, padding: `0 ${ps(20)}px ${ps(10)}px`, borderTop: `1px solid ${TV2.line}` }, children: /* @__PURE__ */ jsx(PlayerFavouritesRow, { channel, tv, ps, onSwitch, onHold: onHoldChip }) })
     ] });
   }
-  var FAV_WINDOW, DAY_MS, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
+  var FAV_WINDOW, DAY_MS2, VOLUME_STEP, stroke, CtlIcon, PlayIcon, PauseIcon, FullscreenIcon, ExitFullscreenIcon, GuideIcon, SpeakerOn, SpeakerOff, AspectIcon, CloseIcon;
   var init_player_chrome_parts = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/player-chrome-parts.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47105,7 +49168,7 @@ ${cue.text}`).join("\n\n")}
       init_tv_strings();
       init_jsx_runtime_shim();
       FAV_WINDOW = 25;
-      DAY_MS = 864e5;
+      DAY_MS2 = 864e5;
       VOLUME_STEP = 0.1;
       stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
       CtlIcon = ({ size, children, fill: fill2 }) => /* @__PURE__ */ jsx("svg", { width: size, height: size, viewBox: "0 0 24 24", ...stroke, fill: fill2 ? "currentColor" : "none", stroke: fill2 ? "none" : "currentColor", children });
@@ -47134,7 +49197,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-player-chrome.tsx
   function TvPlayerChrome(props) {
     if (props.tv.phone) {
       const { phoneLandscape, ...rest } = props;
@@ -47349,7 +49412,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var init_tv_player_chrome = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-player-chrome.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47364,16 +49427,19 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/goal-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/goal-alerts.ts
   function matchForGoal(e, merged) {
-    return merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId) ?? null;
+    const direct = merged.find((m) => m.fixture?.provider === e.provider && m.fixture.id === e.fixtureId);
+    if (direct || !e.aliases?.length) return direct ?? null;
+    const keys2 = new Set(e.aliases);
+    return merged.find((m) => !!m.fixture && keys2.has(`fx:${m.fixture.provider}:${m.fixture.id}`)) ?? null;
   }
   function goalAlertWanted(match, settings, follows, now2 = Date.now()) {
     if (!match || !settings.goalAlerts) return false;
     return followState(match, follows).any || (settings.goalAlertMatches[match.id] ?? 0) > now2;
   }
   function goalTitle(e, tt) {
-    return `${tt("sportGoal")} ${e.home} ${e.score.home}\u2013${e.score.away} ${e.away}`;
+    return `${tt("sportGoal")} \xB7 ${e.home} ${e.score.home}\u2013${e.score.away} ${e.away}`;
   }
   function goalBody(e) {
     const minute = e.minute != null ? `${e.minute}'` : "";
@@ -47387,25 +49453,25 @@ ${cue.text}`).join("\n\n")}
   }
   var playing;
   var init_goal_alerts = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/goal-alerts.ts"() {
       "use strict";
       init_sport_day_model();
       playing = null;
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx
   function PlayerGoalOverlay({ channelKey: channelKey2, onJump }) {
     const { tt } = useTvText();
-    const controller = useResultsController();
+    const controller2 = useResultsController();
     const [shown, setShown] = useState(null);
     useEffect(() => onGoal((e2) => {
-      const match2 = controller ? matchForGoal(e2, controller.merged()) : null;
+      const match2 = controller2 ? matchForGoal(e2, controller2.merged()) : null;
       if (!match2) return;
       const here2 = match2.sources.some((s) => s.channelKey === channelKey2);
       if (!here2 && !goalAlertWanted(match2, getSportSettings(), getFollows())) return;
       setShown({ e: e2, match: match2, here: here2 });
-    }), [controller, channelKey2]);
+    }), [controller2, channelKey2]);
     useEffect(() => {
       if (!shown) return;
       const t = setTimeout(() => setShown(null), SHOW_MS);
@@ -47428,7 +49494,7 @@ ${cue.text}`).join("\n\n")}
   }
   var SHOW_MS;
   var init_player_goal_overlay = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/player-goal-overlay.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47445,7 +49511,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/surface-cutouts.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
@@ -47505,7 +49571,7 @@ ${cue.text}`).join("\n\n")}
   }
   var cutouts, listeners10, snapshot;
   var init_surface_cutouts = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47515,7 +49581,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/video-surface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/video-surface.ts
   function videoSurfaceCapabilities() {
     if (typeof host.createVideoSurface === "function" && typeof host.getVideoSurfaceCapabilities === "function") {
       const caps = host.getVideoSurfaceCapabilities();
@@ -47682,7 +49748,7 @@ ${cue.text}`).join("\n\n")}
         if (setBounds) setBounds(rect);
         if (cutoutLive) registerSurfaceCutout(cutoutKey, { ...rect, radius: cornerRadius(rectRef.current) });
       };
-      const start2 = async () => {
+      const start3 = async () => {
         setFailed(false);
         setReady(false);
         if (caps.engine === "host" && host.createVideoSurface) {
@@ -47759,7 +49825,7 @@ ${cue.text}`).join("\n\n")}
         ownerClose = closeOnce;
         sync();
       };
-      void start2();
+      void start3();
       const settleTimers = [];
       let settleFrame = 0;
       if (!anchored) {
@@ -47791,7 +49857,7 @@ ${cue.text}`).join("\n\n")}
         dropCutout();
         window.clearTimeout(readyTimer);
         window.cancelAnimationFrame(settleFrame);
-        settleTimers.forEach((timer3) => window.clearTimeout(timer3));
+        settleTimers.forEach((timer4) => window.clearTimeout(timer4));
         observer?.disconnect();
         if (!anchored) {
           window.removeEventListener("resize", sync);
@@ -47813,7 +49879,7 @@ ${cue.text}`).join("\n\n")}
   }
   var host, owner, ownerClose, hostSurfaces, waiters2, POSITIONED;
   var init_video_surface = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/video-surface.ts"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/video-surface.ts"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -47831,7 +49897,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-player.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-player.tsx
   var live_tv_player_exports = {};
   __export(live_tv_player_exports, {
     LiveTvPlayer: () => LiveTvPlayer
@@ -48204,7 +50270,7 @@ ${cue.text}`).join("\n\n")}
         });
         return () => {
           cancelled2 = true;
-          boundsTimers.forEach((timer3) => window.clearTimeout(timer3));
+          boundsTimers.forEach((timer4) => window.clearTimeout(timer4));
           resizeObs?.disconnect();
           window.removeEventListener("resize", sync);
           window.removeEventListener("scroll", sync, true);
@@ -48627,7 +50693,7 @@ ${cue.text}`).join("\n\n")}
   }
   var import_react_dom4, usePipAvailableSafe, MPV_STARTUP_TIMEOUT_MS, MPV_FIRST_ATTEMPT_TIMEOUT_MS;
   var init_live_tv_player = __esm({
-    "../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-player.tsx"() {
+    "../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-player.tsx"() {
       "use strict";
       "use client";
       init_react_shim();
@@ -48653,7 +50719,7 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/index.ts
   var runtime_exports = {};
   __export(runtime_exports, {
     LiveTvBrowsePage: () => LiveTvBrowsePage,
@@ -48663,11 +50729,11 @@ ${cue.text}`).join("\n\n")}
   init_plugin_sdk();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/settings-ui.tsx
   init_react_shim();
   var import_react_dom3 = __toESM(require_react_dom(), 1);
   init_plugin_sdk();
@@ -48946,17 +51012,17 @@ ${cue.text}`).join("\n\n")}
   }
   function ToastRoot({ children }) {
     const [text, setText] = useState(null);
-    const timer3 = useRef(null);
+    const timer4 = useRef(null);
     const toast = useCallback((next) => {
       setText(next);
-      if (timer3.current !== null) window.clearTimeout(timer3.current);
-      timer3.current = window.setTimeout(() => {
-        timer3.current = null;
+      if (timer4.current !== null) window.clearTimeout(timer4.current);
+      timer4.current = window.setTimeout(() => {
+        timer4.current = null;
         setText(null);
       }, 2400);
     }, []);
     useEffect(() => () => {
-      if (timer3.current !== null) window.clearTimeout(timer3.current);
+      if (timer4.current !== null) window.clearTimeout(timer4.current);
     }, []);
     const node = useMemo(() => text ? /* @__PURE__ */ jsxs("div", { role: "status", style: { position: "fixed", left: "50%", bottom: 32, transform: "translateX(-50%)", zIndex: 1100, display: "flex", alignItems: "center", gap: 9, borderRadius: 999, background: UI.dialog, padding: "11px 20px", boxShadow: "0 18px 40px rgba(0,0,0,0.55)", pointerEvents: "none" }, children: [
       /* @__PURE__ */ jsx("span", { style: { height: 5, width: 5, borderRadius: 999, background: UI.green } }),
@@ -48981,7 +51047,7 @@ ${cue.text}`).join("\n\n")}
     return value.toLocaleString(locale);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/display-metrics.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/display-metrics.ts
   function readDisplayMetrics() {
     if (typeof window === "undefined") return null;
     const visual = window.visualViewport;
@@ -49029,16 +51095,16 @@ ${cue.text}`).join("\n\n")}
     return Math.abs(m.layoutWidth - m.visualWidth) > 1 || Math.abs(m.layoutHeight - m.visualHeight) > 1;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/list-import-flags.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/list-import-flags.ts
   init_live_tv_data();
   function recordListImportOutcome(listId, error) {
     replaceLiveTvLists(getLiveTvLists().map((list) => list.id === listId ? { ...list, needsReimport: Boolean(error), lastImportError: error } : list));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/m3u-fetch-progress.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/m3u-fetch-progress.ts
   var IDLE = {
     status: "idle",
     current: 0,
@@ -49103,7 +51169,7 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hub-strings.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hub-strings.ts
   init_plugin_sdk();
   var EN = {
     categories: "Categories",
@@ -49556,10 +51622,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg-sources-section.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useEpgStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useEpgStatus.ts
   init_react_shim();
   init_live_tv_data();
   init_index_client();
@@ -49591,7 +51657,7 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [urlsKey, readStatus]);
-    const refresh = useCallback(async () => {
+    const refresh2 = useCallback(async () => {
       if (refreshingRef.current) return;
       refreshingRef.current = true;
       setRefreshing(true);
@@ -49608,10 +51674,10 @@ ${cue.text}`).join("\n\n")}
         setRefreshing(false);
       }
     }, [readStatus]);
-    return { status, urls, refreshing, refresh, reload };
+    return { status, urls, refreshing, refresh: refresh2, reload };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg-sources-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg-sources-section.tsx
   init_jsx_runtime_shim();
   function formatRelative(ms2, locale) {
     if (!ms2) return null;
@@ -49629,14 +51695,14 @@ ${cue.text}`).join("\n\n")}
   }
   function EpgStatusCard() {
     const { h, locale } = useHubText();
-    const { status, urls, refreshing, refresh } = useEpgStatus();
+    const { status, urls, refreshing, refresh: refresh2 } = useEpgStatus();
     const toast = useToast();
     const statusRef = useRef(status);
     statusRef.current = status;
     if (urls.length === 0) return null;
     const overallFetched = formatRelative(status?.fetchedAt ?? null, locale);
     const doRefresh = async () => {
-      await refresh();
+      await refresh2();
       toast(h("guideFetchedToast", { programmes: fmtInt(statusRef.current?.programmes ?? 0, locale) }));
     };
     return /* @__PURE__ */ jsxs("div", { children: [
@@ -49703,17 +51769,17 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-key-settings.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/settings-tabs.tsx
   init_react_shim();
   init_live_tv_data();
   init_index_client();
   init_channel_locks();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useVodLibrary.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useVodLibrary.ts
   init_react_shim();
   init_vod_client();
   init_live_tv_data();
@@ -49756,16 +51822,16 @@ ${cue.text}`).join("\n\n")}
     const reload = useCallback(() => setNonce((n) => n + 1), []);
     useEffect(() => {
       let cancelled = false;
-      let timer3 = null;
-      const controller = new AbortController();
+      let timer4 = null;
+      const controller2 = new AbortController();
       const load = async () => {
         try {
-          const result = await listVodCategories(source, controller.signal);
+          const result = await listVodCategories(source, controller2.signal);
           if (cancelled) return;
           setState({ ...result, loading: false, error: null });
-          if (result.importing) timer3 = setTimeout(load, IMPORT_POLL_MS);
+          if (result.importing) timer4 = setTimeout(load, IMPORT_POLL_MS);
         } catch (err) {
-          if (cancelled || controller.signal.aborted) return;
+          if (cancelled || controller2.signal.aborted) return;
           setState((prev) => ({
             ...prev,
             loading: false,
@@ -49777,8 +51843,8 @@ ${cue.text}`).join("\n\n")}
       const off = onVodChanged(load);
       return () => {
         cancelled = true;
-        controller.abort();
-        if (timer3) clearTimeout(timer3);
+        controller2.abort();
+        if (timer4) clearTimeout(timer4);
         off();
       };
     }, [source, nonce]);
@@ -49809,7 +51875,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       let cancelled = false;
-      const controller = new AbortController();
+      const controller2 = new AbortController();
       const first = wanted === 1;
       if (first) setLoading(true);
       else setLoadingMore(true);
@@ -49823,7 +51889,7 @@ ${cue.text}`).join("\n\n")}
             sort,
             offset: 0,
             limit: limit * wanted,
-            signal: controller.signal
+            signal: controller2.signal
           });
           if (cancelled) return;
           setItems(uniqueByKey(page.items));
@@ -49831,7 +51897,7 @@ ${cue.text}`).join("\n\n")}
           setKnown(page.known);
           setError(null);
         } catch (err) {
-          if (cancelled || controller.signal.aborted) return;
+          if (cancelled || controller2.signal.aborted) return;
           setError(err instanceof Error ? err.message : String(err));
         } finally {
           if (!cancelled) {
@@ -49842,7 +51908,7 @@ ${cue.text}`).join("\n\n")}
       })();
       return () => {
         cancelled = true;
-        controller.abort();
+        controller2.abort();
       };
     }, [filterKey, wanted, enabled, limit]);
     const hasMore = items2.length < total;
@@ -49852,7 +51918,7 @@ ${cue.text}`).join("\n\n")}
     return { items: items2, total, known, loading: loading2, loadingMore, error, hasMore, loadMore };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-data.ts
   init_plugin_sdk();
   init_live_tv_data();
   var VOD_MODE_DEFAULT = "link";
@@ -49938,15 +52004,15 @@ ${cue.text}`).join("\n\n")}
     return true;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-library-rows.ts
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-map.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-library-map.ts
   var VOD_LIBRARY_PROVIDER_ID = "xtream-vod";
   function vodLibrarySourceId(vodSource) {
     return `${VOD_LIBRARY_PROVIDER_ID}:${vodSource}`;
@@ -50019,7 +52085,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-library-rows.ts
   function vodLibraryRows(sources, library) {
     return sources.filter((source) => source.total > 0).map((source) => {
       const libraryId = vodLibrarySourceId(source.id);
@@ -50041,7 +52107,7 @@ ${cue.text}`).join("\n\n")}
     return scanning || row.importing;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-provider.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-library-provider.ts
   init_vod_client();
   init_live_tv_data();
   var VOD_SCAN_PAGE = 200;
@@ -50050,7 +52116,7 @@ ${cue.text}`).join("\n\n")}
     return libraryId.startsWith(prefix) ? libraryId.slice(prefix.length) || null : null;
   }
   var defaultDeps = { query: queryVod, status: vodStatus };
-  async function scanVodSource(libraryId, emit3, progress2, signal, deps = defaultDeps) {
+  async function scanVodSource(libraryId, emit4, progress2, signal, deps = defaultDeps) {
     const source = vodSourceFromLibraryId(libraryId);
     if (!source) return { titles: 0, cursor: null };
     const sources = await deps.status();
@@ -50063,7 +52129,7 @@ ${cue.text}`).join("\n\n")}
       const page = await deps.query({ source, offset, limit: VOD_SCAN_PAGE, sort: "new", signal });
       const upsert = page.items.map((item) => vodItemToLibraryTitle(item, source)).filter((title) => title !== null);
       if (upsert.length > 0) {
-        await emit3({ upsert });
+        await emit4({ upsert });
         titles += upsert.length;
         progress2({ phase: "titles", done: titles });
       }
@@ -50086,15 +52152,15 @@ ${cue.text}`).join("\n\n")}
     id: VOD_LIBRARY_PROVIDER_ID,
     label: { en: "Xtream VOD", sv: "Xtream VOD" },
     pluginId: "com.lumio.live-tv",
-    async scanAll(source, emit3, progress2, signal) {
-      const out = await scanVodSource(source.id, emit3, progress2, signal);
+    async scanAll(source, emit4, progress2, signal) {
+      const out = await scanVodSource(source.id, emit4, progress2, signal);
       return { titles: out.titles, cursor: out.cursor };
     },
-    async scanDelta(source, cursor, emit3, progress2, signal) {
+    async scanDelta(source, cursor, emit4, progress2, signal) {
       const account = vodSourceFromLibraryId(source.id);
       const updatedAt = account ? (await vodStatus()).find((entry) => entry.id === account)?.updatedAt ?? null : null;
       if (!vodDeltaNeeded(cursor, updatedAt)) return { titles: 0, cursor };
-      const out = await scanVodSource(source.id, emit3, progress2, signal);
+      const out = await scanVodSource(source.id, emit4, progress2, signal);
       return { titles: out.titles, cursor: out.cursor };
     },
     /**
@@ -50138,7 +52204,7 @@ ${cue.text}`).join("\n\n")}
     }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useVodLibrarySources.ts
   function useVodLibrarySources() {
     const [sources, setSources] = useState([]);
     const [library, setLibrary] = useState(null);
@@ -50153,14 +52219,14 @@ ${cue.text}`).join("\n\n")}
     const scanning = ownScan || hostScan;
     const [progress2, setProgress] = useState(null);
     const [error, setError] = useState(null);
-    const refresh = useCallback(() => {
+    const refresh2 = useCallback(() => {
       void vodStatus().then(setSources).catch(() => setSources([]));
       void fetchLibraryStatus().then(setLibrary).catch(() => setLibrary(null));
     }, []);
     useEffect(() => {
-      refresh();
-      return onVodChanged(refresh);
-    }, [refresh]);
+      refresh2();
+      return onVodChanged(refresh2);
+    }, [refresh2]);
     const rows = useMemo(() => vodLibraryRows(sources, library), [sources, library]);
     const build = useCallback(async (row) => {
       if (isLibraryScanRunning2()) return;
@@ -50179,25 +52245,25 @@ ${cue.text}`).join("\n\n")}
       } finally {
         setOwnScan(false);
         setProgress(null);
-        refresh();
+        refresh2();
       }
-    }, [library, refresh]);
+    }, [library, refresh2]);
     const disabled = useCallback((row) => vodLibraryBuildDisabled(row, scanning), [scanning]);
     return { rows, scanning, progress: progress2, error, build, disabled };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_react_shim();
   init_live_tv_model();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-view-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-view-shared.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -50226,18 +52292,18 @@ ${cue.text}`).join("\n\n")}
     } };
   }
   function useHoverSelect(enabled, onSelect) {
-    const timer3 = useRef(null);
+    const timer4 = useRef(null);
     const clear = () => {
-      if (timer3.current !== null) window.clearTimeout(timer3.current);
-      timer3.current = null;
+      if (timer4.current !== null) window.clearTimeout(timer4.current);
+      timer4.current = null;
     };
     useEffect(() => clear, []);
     if (!enabled) return { enter: void 0, leave: void 0 };
     return {
       enter: (sel) => {
         clear();
-        timer3.current = window.setTimeout(() => {
-          timer3.current = null;
+        timer4.current = window.setTimeout(() => {
+          timer4.current = null;
           onSelect(sel);
         }, HOVER_MS);
       },
@@ -50253,13 +52319,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-guide-shared.tsx
   init_jsx_runtime_shim();
   function useDebouncedChannel(channel, ms2 = 300) {
     const [value, setValue] = useState(channel);
     useEffect(() => {
-      const timer3 = window.setTimeout(() => setValue(channel), ms2);
-      return () => window.clearTimeout(timer3);
+      const timer4 = window.setTimeout(() => setValue(channel), ms2);
+      return () => window.clearTimeout(timer4);
     }, [channel, ms2]);
     return value;
   }
@@ -50317,7 +52383,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-list-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-list-picker.tsx
   init_jsx_runtime_shim();
   function PickerPanel({
     nav,
@@ -50325,7 +52391,8 @@ ${cue.text}`).join("\n\n")}
     chips,
     rows,
     onClose,
-    testId = "list-picker"
+    testId = "list-picker",
+    surface
   }) {
     const rootRef = useRef(null);
     const openerRef = useRef(null);
@@ -50354,7 +52421,7 @@ ${cue.text}`).join("\n\n")}
         "data-testid": testId,
         "data-panel-root": "",
         "data-live-tv-layer": "",
-        style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: "flex", flexDirection: "column", gap: dp(18) },
+        style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: "flex", flexDirection: "column", gap: dp(18), boxSizing: "border-box", ...surface },
         children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
           chips,
@@ -50442,7 +52509,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function TvChoicePanel({ nav, title, options, value, onPick, onClose }) {
+  function TvChoicePanel({ nav, title, options, value, onPick, onClose, surface }) {
     const initIndex = Math.max(0, options.findIndex((option) => option.key === value));
     return /* @__PURE__ */ jsx(
       PickerPanel,
@@ -50452,6 +52519,7 @@ ${cue.text}`).join("\n\n")}
         onClose,
         chips: null,
         testId: "choice-panel",
+        surface,
         rows: (close) => options.map((option, index) => {
           const on = option.key === value;
           return /* @__PURE__ */ jsxs(
@@ -50476,7 +52544,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-curation-picker.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -50631,195 +52699,12 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-text-entry.tsx
-  init_react_shim();
-  init_plugin_sdk();
-  init_tv_ui();
-  init_tv_strings();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-keyboard.tsx
-  init_react_shim();
-  init_tv_ui();
-  init_tv_strings();
-  init_jsx_runtime_shim();
-  var LETTERS = ["1234567890", "qwertyuiop\xE5", "asdfghjkl\xF6\xE4", "zxcvbnm,.-"];
-  var SYMBOLS = ["1234567890", "!?@#%&/()=", `+-*_:;"'<>`, "[]{}~^|\\\u20AC\xA3"];
-  function TvKeyboard({ value, onChange, onDone, initFocus }) {
-    const { tt } = useTvText();
-    const [symbols, setSymbols] = useState(false);
-    const rows = symbols ? SYMBOLS : LETTERS;
-    const key = (label, onOk, opts) => /* @__PURE__ */ jsx(
-      "div",
-      {
-        ...station(onOk, void 0, { ...opts?.init ? { "data-init": "" } : {}, ...opts?.aria ? { "aria-label": opts.aria } : {} }),
-        style: { height: dp(58), borderRadius: dp(10), background: opts?.accent ? TV2.acc : TV2.s10, color: opts?.accent ? TV2.onAcc : TV2.text, fontWeight: opts?.accent ? 600 : 400, fontSize: dp(24), display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", width: opts?.width, flex: opts?.flex ? 1 : void 0 },
-        children: label
-      },
-      label
-    );
-    return /* @__PURE__ */ jsxs("div", { "data-live-tv-keyboard": "", style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
-      rows.map((row, rowIndex) => /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: dp(8) }, children: row.split("").map((c, i) => key(c, () => onChange(value + c), { init: initFocus && rowIndex === 0 && i === 0 })) }, row)),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(8) }, children: [
-        key("\u2423", () => onChange(value + " "), { flex: true, aria: "Space" }),
-        key("\u232B", () => onChange(value.slice(0, -1)), { width: dp(120), aria: "Backspace" }),
-        key(symbols ? tt("keyLetters") : tt("keySymbols"), () => setSymbols((s) => !s), { width: dp(120) }),
-        key(tt("keyDone"), onDone, { width: dp(140), accent: true })
-      ] })
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-text-entry.tsx
-  init_jsx_runtime_shim();
-  function isComposing(event2) {
-    return event2.nativeEvent.isComposing === true || event2.keyCode === 229;
-  }
-  function useTextPrompt(options) {
-    const tvMode = useTvMode();
-    const Panel = getTvKeyboardPanel();
-    const [prompt, setPrompt] = useState(null);
-    const promptId = useRef(0);
-    const open2 = prompt !== null;
-    const openerRef = useRef(null);
-    useEffect(() => {
-      if (!open2) return;
-      openerRef.current = document.activeElement;
-      return () => {
-        const opener = openerRef.current;
-        window.setTimeout(() => opener?.focus({ preventScroll: true }), 0);
-      };
-    }, [open2]);
-    const ask = (title, initial, onDone, kind = "text") => {
-      promptId.current += 1;
-      setPrompt({ id: promptId.current, title, initial, kind, onDone });
-    };
-    let node = null;
-    if (tvMode) {
-      node = Panel && prompt ? /* @__PURE__ */ jsx("div", { "data-live-tv-host-ui": "", style: { position: "fixed", inset: 0, zIndex: 70 }, children: /* @__PURE__ */ jsx(
-        Panel,
-        {
-          title: prompt.title,
-          initial: prompt.initial,
-          onDone: (value) => {
-            setPrompt(null);
-            prompt.onDone(value);
-          },
-          onClose: () => setPrompt((current5) => current5 === prompt ? null : current5)
-        },
-        prompt.id
-      ) }) : null;
-    } else if (prompt) {
-      node = /* @__PURE__ */ jsx(
-        TextPromptDialog,
-        {
-          title: prompt.title,
-          initial: prompt.initial,
-          kind: prompt.kind,
-          pushLayer: options?.pushLayer,
-          onDone: (value) => {
-            setPrompt(null);
-            prompt.onDone(value);
-          },
-          onCancel: () => setPrompt((current5) => current5 === prompt ? null : current5)
-        },
-        prompt.id
-      );
-    }
-    return { available: tvMode ? Panel !== null : true, ask, node };
-  }
-  function TextPromptDialog({ title, initial, kind, pushLayer, onDone, onCancel }) {
-    const { tt } = useTvText();
-    const [value, setValue] = useState(initial);
-    const inputRef = useRef(null);
-    useEffect(() => {
-      inputRef.current?.focus();
-    }, []);
-    const cancelRef = useRef(onCancel);
-    useEffect(() => {
-      cancelRef.current = onCancel;
-    });
-    useEffect(() => pushLayer?.(() => cancelRef.current()), [pushLayer]);
-    const submit = () => onDone(value);
-    const field = kind === "password" ? { type: "password", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "url" ? { type: "url", inputMode: "url", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : kind === "username" ? { type: "text", autoCapitalize: "none", autoCorrect: "off", spellCheck: false } : { type: "text" };
-    return /* @__PURE__ */ jsx(
-      "div",
-      {
-        "data-testid": "text-prompt-dialog",
-        "data-panel-root": "",
-        style: { position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", background: TV2.scrim },
-        children: /* @__PURE__ */ jsxs("div", { style: { width: dp(420), borderRadius: dp(14), background: TV2.panel, border: `1px solid ${TV2.line}`, padding: dp(24), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: title }),
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              ref: inputRef,
-              "data-testid": "text-prompt-input",
-              ...field,
-              value,
-              onChange: (event2) => setValue(event2.target.value),
-              onKeyDown: (event2) => {
-                if (event2.key === "Enter") {
-                  if (isComposing(event2)) return;
-                  event2.preventDefault();
-                  submit();
-                } else if (event2.key === "Escape") {
-                  event2.preventDefault();
-                  onCancel();
-                }
-              },
-              style: { height: dp(44), borderRadius: dp(8), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, color: TV2.text, padding: `0 ${dp(12)}px`, fontSize: dp(16) }
-            }
-          ),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "flex-end", gap: dp(10) }, children: [
-            /* @__PURE__ */ jsx("div", { ...station(onCancel), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.s12, display: "inline-flex", alignItems: "center", fontSize: dp(15), cursor: "pointer" }, children: tt("cancel") }),
-            /* @__PURE__ */ jsx("div", { ...station(submit), style: { height: dp(38), minHeight: dp(38), padding: `0 ${dp(16)}px`, borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", fontSize: dp(15), fontWeight: 600, cursor: "pointer" }, children: tt("keyDone") })
-          ] })
-        ] })
-      }
-    );
-  }
-  function TvTextField({ value, onChange, onSubmit, placeholder, autoFocus }) {
-    const tvMode = useTvMode();
-    const inputRef = useRef(null);
-    useEffect(() => {
-      if (!tvMode && autoFocus) inputRef.current?.focus();
-    }, [tvMode, autoFocus]);
-    if (tvMode) {
-      return /* @__PURE__ */ jsx(TvKeyboard, { value, onChange, onDone: onSubmit ?? (() => {
-      }), initFocus: !!autoFocus });
-    }
-    return /* @__PURE__ */ jsx(
-      "input",
-      {
-        ref: inputRef,
-        "data-f": "",
-        value,
-        placeholder,
-        onChange: (event2) => onChange(event2.target.value),
-        onKeyDown: (event2) => {
-          if (event2.key === "Enter") {
-            if (isComposing(event2)) return;
-            event2.preventDefault();
-            onSubmit?.();
-          }
-        },
-        style: { height: dp(64), borderRadius: dp(14), background: TV2.s10, border: `1px solid ${TV2.line}`, color: TV2.text, padding: `0 ${dp(20)}px`, fontSize: dp(20) }
-      }
-    );
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  init_tv_text_entry();
   init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-toggle.tsx
-  init_mobile_tokens();
-  init_jsx_runtime_shim();
-  function MobileToggle({ on }) {
-    return /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { width: 44, height: 26, borderRadius: 999, background: on ? MT.acc : MT.s16, position: "relative", display: "inline-block", flexShrink: 0 }, children: /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 120ms" } }) });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/settings-tabs.tsx
+  init_mobile_toggle();
   init_jsx_runtime_shim();
   function Row({ label, right, onOk, testId, phone = false }) {
     if (phone) {
@@ -50834,14 +52719,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
   var PhoneCaret = () => /* @__PURE__ */ jsx("span", { style: { color: MT.dim, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 16 }) });
+  var HINT_SIZE = dp(18);
+  var HINT_SIZE_PHONE = 14;
   function Heading({ children, hint, phone = false }) {
     if (phone) return /* @__PURE__ */ jsxs("div", { style: { padding: "14px 14px 6px" }, children: [
       /* @__PURE__ */ jsx("div", { style: sectionLabel, children }),
-      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, marginTop: 4 }, children: hint }) : null
+      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: HINT_SIZE_PHONE, color: MT.dim, marginTop: 4 }, children: hint }) : null
     ] });
     return /* @__PURE__ */ jsxs("div", { children: [
       /* @__PURE__ */ jsx("div", { style: { fontSize: dp(26), fontWeight: 600 }, children }),
-      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: "rgba(243,244,248,0.5)" }, children: hint }) : null
+      hint ? /* @__PURE__ */ jsx("div", { style: { fontSize: HINT_SIZE, color: "rgba(243,244,248,0.6)", marginTop: dp(4) }, children: hint }) : null
     ] });
   }
   function hostOf2(url) {
@@ -51382,7 +53269,7 @@ ${cue.text}`).join("\n\n")}
   function VodLibrarySection({ tt, phone }) {
     const { rows, progress: progress2, error, build, disabled } = useVodLibrarySources();
     if (rows.length === 0) return null;
-    const statusText = (row) => {
+    const statusText2 = (row) => {
       if (progress2?.libraryId === row.libraryId) return tt("vodLibraryBuilding", { count: progress2.done.toLocaleString() });
       if (row.importing) return tt("vodLibraryImporting");
       if (row.indexedTitles === null) return tt("vodLibraryNotBuilt", { count: row.vodTitles.toLocaleString() });
@@ -51398,7 +53285,7 @@ ${cue.text}`).join("\n\n")}
           children: [
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 15 : dp(19), ...ellipsis2 }, children: row.label }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: statusText(row) })
+              /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? 13 : dp(16), color: phone ? MT.dim : TV2.dim }, children: statusText2(row) })
             ] }),
             /* @__PURE__ */ jsx(
               Action,
@@ -51421,7 +53308,7 @@ ${cue.text}`).join("\n\n")}
   }
   function EpgTab({ lists, nav, tt, locale, phone = false }) {
     const keyboard = useTextPrompt({ pushLayer: nav.pushLayer });
-    const { status, urls: statusUrls, refreshing, refresh } = useEpgStatus();
+    const { status, urls: statusUrls, refreshing, refresh: refresh2 } = useEpgStatus();
     const urls = useMemo(() => lists.flatMap((list) => [
       ...list.urlTvg && !list.autoEpgDisabled ? [{ listId: list.id, url: list.urlTvg, fromPlaylist: true }] : [],
       ...list.epgUrls.map((url) => ({ listId: list.id, url, fromPlaylist: false }))
@@ -51453,7 +53340,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsxs("div", { style: phone ? { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, paddingRight: 14 } : { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dp(16) }, children: [
           /* @__PURE__ */ jsx(Heading, { phone, children: tt("epgStatusTitle") }),
           /* @__PURE__ */ jsx(Action, { phone, testId: "epg-refresh", label: refreshing ? tt("epgRefreshing") : tt("epgRefresh"), disabled: refreshing, onOk: () => {
-            void refresh();
+            void refresh2();
           } })
         ] }),
         statusUrls.map((url) => {
@@ -51515,266 +53402,265 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-key-settings.tsx
-  init_tv_strings();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-card.tsx
-  init_react_shim();
-  init_plugin_sdk();
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  init_mobile_tokens();
   init_tv_ui();
   init_tv_strings();
-  init_api_sports();
-  init_thesportsdb();
+  init_key_card();
+  init_key_flow();
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/key-model.ts
+  init_key_flow();
   init_providers();
-  init_key_flow();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-handoff.ts
-  init_react_shim();
-  var BASE = "/api/live-tv/sport/key-handoff";
-  var POLL_MS2 = 2e3;
-  async function startKeyHandoff() {
-    try {
-      const res = await fetch(BASE, { method: "POST" });
-      if (!res.ok) return null;
-      const body = await res.json();
-      return body.code ? { code: body.code, url: body.url ?? null } : null;
-    } catch {
-      return null;
-    }
+  init_sport_model();
+  var SPORT_LABEL_KEY = {
+    football: "sportKindFootball",
+    hockey: "sportKindHockey",
+    basketball: "sportKindBasketball",
+    handball: "sportKindHandball",
+    motorsport: "sportKindMotorsport",
+    tennis: "sportKindTennis",
+    other: "sportKindOther"
+  };
+  function sportLabel(sport, tt) {
+    return tt(SPORT_LABEL_KEY[sport]);
   }
-  async function pollKeyHandoff(code) {
-    try {
-      const res = await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { cache: "no-store" });
-      if (!res.ok) return { state: "expired" };
-      return await res.json();
-    } catch {
-      return { state: "waiting" };
-    }
+  var ORDER_SPORTS = SPORT_CHIPS.filter((s) => PROVIDER_IDS.some((id) => providerFor(id).coverage(s) === "full"));
+  var PROVIDER_BLURB_KEY = {
+    sportapi: "sportKeyBlurbSportApi",
+    "api-sports": "sportKeyBlurbApiSports",
+    thesportsdb: "sportKeyBlurbTheSportsDb"
+  };
+  function bucketsOf(id) {
+    const p = providerFor(id);
+    return [...new Set(ORDER_SPORTS.filter((s) => p.coverage(s) === "full").map((s) => p.bucket(s)))];
   }
-  async function cancelKeyHandoff(code) {
-    try {
-      await fetch(`${BASE}?code=${encodeURIComponent(code)}`, { method: "DELETE" });
-    } catch {
-    }
-  }
-  function useKeyHandoff(active4, onKey) {
-    const [url, setUrl] = useState(null);
-    const [expired, setExpired] = useState(false);
-    const [round2, setRound] = useState(0);
-    const onKeyRef = useRef(onKey);
-    onKeyRef.current = onKey;
-    useEffect(() => {
-      if (!active4) return;
-      let stopped = false;
-      let code = null;
-      let done = false;
-      let timer3 = null;
-      setExpired(false);
-      const loop = async () => {
-        if (stopped || done || !code) return;
-        const r = await pollKeyHandoff(code);
-        if (stopped) return;
-        if (r.state === "received" && r.key) {
-          done = true;
-          onKeyRef.current(r.key);
-          return;
-        }
-        if (r.state === "expired") {
-          done = true;
-          setExpired(true);
-          return;
-        }
-        timer3 = setTimeout(() => void loop(), POLL_MS2);
-      };
-      void startKeyHandoff().then((h) => {
-        if (stopped || !h) return;
-        code = h.code;
-        setUrl(h.url);
-        timer3 = setTimeout(() => void loop(), POLL_MS2);
-      });
-      return () => {
-        stopped = true;
-        if (timer3) clearTimeout(timer3);
-        if (code) void cancelKeyHandoff(code);
-      };
-    }, [active4, round2]);
-    const restart = useCallback(() => setRound((n) => n + 1), []);
-    return { url, expired, restart };
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/key-card.tsx
-  init_budget();
-  init_sport_store();
-  init_surface();
-  init_jsx_runtime_shim();
-  var SPORT_NAMES = [
-    ["football", "sportNameFootball"],
-    ["hockey", "sportNameHockey"],
-    ["basketball", "sportNameBasketball"],
-    ["handball", "sportNameHandball"]
-  ];
-  function KeyCard({ variant, onDone, pushLayer }) {
-    const { tt } = useTvText();
-    const tv = useTvMode();
-    const settings = useSportSettings();
-    const [provider, setProvider] = useState(settings.provider);
-    const [draft, setDraft] = useState("");
-    const [phase, setPhase] = useState({ kind: "idle" });
-    const [phoneEntry, setPhoneEntry] = useState(false);
-    const prompt = useTextPrompt({ pushLayer });
-    const broken = !!settings.apiKey && !!currentBudget()?.isInvalid();
-    const submit = async (raw) => {
-      setPhase({ kind: "checking" });
-      const result = await saveValidatedKey(provider, raw);
-      setPhase({ kind: "done", result });
-      if (result.ok) setPhoneEntry(false);
-    };
-    const handoff = useKeyHandoff(tv && phoneEntry, (key) => void submit(key));
-    const covered = SPORT_NAMES.filter(([s]) => providerFor(provider).coverage(s) === "full").map(([, k]) => tt(k));
-    const sportsText = covered.length > 1 ? `${covered.slice(0, -1).join(", ")} ${tt("sportListAnd")} ${covered[covered.length - 1]}` : covered.join("");
-    const signupUrl = provider === "api-sports" ? API_SPORTS_REGISTER_URL : THESPORTSDB_PRICING_URL;
-    const message = (() => {
-      if (phase.kind === "checking") return tt("sportKeyChecking");
-      if (phase.kind !== "done") return null;
-      const r = phase.result;
-      if (r.ok) {
-        const plan = r.check.plan && r.check.plan.toLowerCase() === "free" ? tt("sportPlanFree") : r.check.plan ?? "";
-        return r.check.limit != null && r.check.used != null ? tt("sportKeyOk", { used: r.check.used, limit: r.check.limit, plan }) : tt("sportKeyOkNoQuota", { plan });
+  function keyRows(s, budget, now2) {
+    return PROVIDER_IDS.map((id) => {
+      const k = s.keys[id];
+      const base = { id, label: PROVIDER_LABEL[id], state: "none", masked: null, until: null, quotas: [], noDailyLimit: id === "thesportsdb" };
+      if (!k) return base;
+      const b = budget(id);
+      const masked = maskKey(k.key);
+      if (!b) return { ...base, state: "ok", masked };
+      if (b.isInvalid()) return { ...base, state: "invalid", masked };
+      const quotas = [];
+      const untils = [];
+      for (const bucket of bucketsOf(id)) {
+        const q = b.quota(bucket);
+        if (q.limit != null && q.remaining != null) quotas.push({ bucket, used: Math.max(0, q.limit - q.remaining), limit: q.limit });
+        if (q.blockedUntil != null && q.blockedUntil > now2) untils.push(q.blockedUntil);
       }
-      return r.reason === "network" ? tt("sportKeyNetwork") : r.reason === "rejected" ? tt("sportKeyRejected") : null;
-    })();
-    const btn = (label, onOk, primary = false, testId) => /* @__PURE__ */ jsx("div", { "data-testid": testId, ...station(onOk), style: { minHeight: dp(48), padding: `0 ${dp(18)}px`, borderRadius: dp(10), display: "inline-flex", alignItems: "center", fontSize: dp(17), fontWeight: 600, cursor: "pointer", background: primary ? TV2.text : TV2.s12, color: primary ? "#0e0f13" : TV2.text }, children: label });
-    return /* @__PURE__ */ jsxs("section", { "data-testid": `sport-key-card-${variant}`, style: { borderRadius: dp(16), background: sportBg(TV2.s06), border: `1px solid ${TV2.lineCard}`, padding: dp(24), display: "flex", gap: dp(24), flexWrap: "wrap" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: dp(12) }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(24), fontWeight: 600 }, children: broken ? tt("sportKeyBroken") : tt("sportKeyTitle") }),
-        /* @__PURE__ */ jsx(Segment, { options: [{ key: "api-sports", label: "API-Sports" }, { key: "thesportsdb", label: "TheSportsDB" }], value: provider, onChange: (k) => {
-          setProvider(k);
-          setPhase({ kind: "idle" });
-        } }),
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("sportKeyChoice") }),
-        /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("sportKeyCovers", { sports: sportsText }) }),
-        tv ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(12), flexWrap: "wrap" }, children: [
-          btn(tt("sportKeyPhone"), () => {
-            setPhoneEntry(true);
-            handoff.restart();
-          }, true),
-          prompt.available ? btn(tt("sportKeyKeyboard"), () => prompt.ask(tt("sportKeyPaste"), "", (v) => void submit(v), "password")) : null
-        ] }) : /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(10), flexWrap: "wrap", alignItems: "center" }, children: [
-          /* @__PURE__ */ jsx(
-            "input",
-            {
-              "data-testid": "sport-key-input",
-              value: draft,
-              onChange: (e) => setDraft(e.target.value),
-              placeholder: tt("sportKeyPaste"),
-              autoComplete: "off",
-              spellCheck: false,
-              style: { flex: "1 1 220px", minHeight: 44, borderRadius: 10, border: `1px solid ${TV2.lineStrong}`, background: "rgba(0,0,0,0.25)", color: TV2.text, padding: "0 12px", fontFamily: "ui-monospace, monospace" }
-            }
-          ),
-          btn(tt("sportKeyPaste"), () => {
-            void navigator.clipboard?.readText?.().then((t) => setDraft(t)).catch(() => {
-            });
-          }),
-          btn(tt("sportKeySave"), () => void submit(draft), true)
-        ] }),
-        prompt.node,
-        message ? /* @__PURE__ */ jsx("div", { role: "status", style: { fontSize: dp(16), color: phase.kind === "done" && phase.result.ok ? "#3cd6a3" : TV2.text }, children: message }) : null
-      ] }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(20), alignItems: "flex-start" }, children: [
-        /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center" }, children: [
-          /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: signupUrl, size: dp(132) }) }),
-          tv ? /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportKeyGetKey") }) : /* @__PURE__ */ jsx("a", { href: signupUrl, target: "_blank", rel: "noreferrer", style: { fontSize: dp(14), color: TV2.dim }, children: tt("sportKeyGetKey") })
-        ] }),
-        tv && phoneEntry ? /* @__PURE__ */ jsxs("figure", { style: { margin: 0, display: "flex", flexDirection: "column", gap: dp(8), alignItems: "center", maxWidth: dp(180) }, children: [
-          handoff.url ? /* @__PURE__ */ jsx("div", { style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
-          /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(14), color: TV2.dim, textAlign: "center" }, children: handoff.expired ? tt("sportKeyExpired") : tt("sportKeyPhoneHint") }),
-          handoff.expired ? btn(tt("sportKeyRetry"), handoff.restart) : null
-        ] }) : null
-      ] })
-    ] });
+      return { ...base, masked, quotas, state: untils.length ? "paused" : "ok", until: untils.length ? Math.min(...untils) : null };
+    });
+  }
+  function keyStatus(r, tt, opts) {
+    if (r.state === "none") return { text: tt("sportKeyStateNone"), tone: "none" };
+    if (r.state === "invalid") return { text: tt("sportKeyRejected"), tone: "bad" };
+    if (r.state === "paused" && r.until != null) {
+      const time = new Intl.DateTimeFormat(opts.locale, { hour: "2-digit", minute: "2-digit", timeZone: opts.tz }).format(r.until);
+      return { text: tt("sportKeyStatePaused", { time }), tone: "warn" };
+    }
+    const active4 = tt("sportKeyStateActive");
+    if (r.noDailyLimit) return { text: `${active4} \xB7 ${tt("sportKeyNoDailyLimit")}`, tone: "ok" };
+    if (bucketsOf(r.id).length === 1 && r.quotas.length === 1) {
+      const q = r.quotas[0];
+      return { text: `${active4} \xB7 ${tt("sportKeyLeftToday", { n: new Intl.NumberFormat(opts.locale).format(Math.max(0, q.limit - q.used)) })}`, tone: "ok" };
+    }
+    return { text: active4, tone: "ok" };
+  }
+  function keyQuotaDetail(r, tt, locale) {
+    if (r.state === "none" || r.state === "invalid" || bucketsOf(r.id).length < 2 || r.quotas.length === 0) return null;
+    const nf = new Intl.NumberFormat(locale);
+    const list = r.quotas.map((q) => `${sportLabel(q.bucket, tt)} ${nf.format(Math.max(0, q.limit - q.used))}`).join(" \xB7 ");
+    return tt("sportKeyLeftPerSport", { list });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-key-settings.tsx
-  init_key_flow();
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-key-settings.tsx
+  init_providers();
   init_rate_line();
   init_results_controller();
+  init_router();
   init_sport_store();
   init_jsx_runtime_shim();
-  var PROVIDER_LABEL = { "api-sports": "API-Sports", thesportsdb: "TheSportsDB" };
   function useQuotaText() {
     const { tt, lang, locale } = useTvText();
-    const controller = useResultsController();
-    return controller ? rateLine(controller.status(), tt, { lang, locale })?.text ?? null : null;
+    const controller2 = useResultsController();
+    return controller2 ? rateLine(controller2.status(), tt, { lang, locale })?.text ?? null : null;
+  }
+  function useRouterView(s) {
+    const router = useMemo(() => currentRouter(), [s.keys]);
+    const [, bump] = useReducer((n) => n + 1, 0);
+    useEffect(() => {
+      if (!router) return;
+      const off = router.subscribe(bump);
+      for (const id of PROVIDER_IDS) void router.budget(id)?.loadLedger();
+      return off;
+    }, [router]);
+    return router;
+  }
+  function useKeyRows(s) {
+    const router = useRouterView(s);
+    return keyRows(s, (id) => router?.budget(id) ?? null, Date.now());
+  }
+  var TONE = {
+    ok: { fg: "#3cd6a3", bg: "rgba(60,214,163,0.14)" },
+    none: { fg: "rgba(243,244,248,0.7)", bg: "rgba(252,252,255,0.10)" },
+    warn: { fg: "#f5c26b", bg: "rgba(245,194,107,0.14)" },
+    bad: { fg: "#e0776a", bg: "rgba(224,119,106,0.16)" }
+  };
+  function Pill({ tone, children, size, testId }) {
+    const fs = size === "tv" ? dp(16) : size === "phone" ? 12.5 : 12;
+    const pad4 = size === "tv" ? `${dp(5)}px ${dp(12)}px` : "3px 9px";
+    return /* @__PURE__ */ jsx("span", { "data-testid": testId, style: { display: "inline-flex", alignItems: "center", borderRadius: 999, padding: pad4, fontSize: fs, fontWeight: 500, lineHeight: 1.3, color: TONE[tone].fg, background: TONE[tone].bg, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }, children });
+  }
+  function KeyCardBody({ r, size }) {
+    const { tt, locale } = useTvText();
+    const status = keyStatus(r, tt, { locale });
+    const m = size === "tv" ? { title: dp(22), text: HINT_SIZE, gap: dp(10), muted: "rgba(243,244,248,0.62)" } : size === "phone" ? { title: 15, text: HINT_SIZE_PHONE, gap: 6, muted: MT.muted } : { title: 14, text: 12.5, gap: 8, muted: UI.muted };
+    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: m.gap, minWidth: 0, textAlign: "left" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: m.gap * 1.5, flexWrap: "wrap" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: m.title, fontWeight: 600, lineHeight: 1.3 }, children: r.label }),
+        /* @__PURE__ */ jsx(Pill, { tone: status.tone, size, testId: `sport-key-status-${r.id}`, children: status.text })
+      ] }),
+      /* @__PURE__ */ jsx("div", { style: { fontSize: m.text, lineHeight: 1.45, color: m.muted, overflowWrap: "anywhere" }, children: tt(PROVIDER_BLURB_KEY[r.id]) })
+    ] });
+  }
+  function Editor({ r, onClose, onRemove, pushLayer, children }) {
+    const { tt, locale } = useTvText();
+    const current5 = r.masked ? { masked: r.masked, detail: keyQuotaDetail(r, tt, locale) } : void 0;
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(KeyCard, { variant: "settings", provider: r.id, current: current5, onRemove: current5 ? onRemove : void 0, onDone: onClose, pushLayer }),
+      children
+    ] });
   }
   function SportKeySettingsDesktop() {
     const { tt } = useTvText();
     const s = useSportSettings();
     const quota = useQuotaText();
-    const [changing, setChanging] = useState(false);
-    const [confirm, setConfirm] = useState(false);
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-key-settings", children: [
+    const rows = useKeyRows(s);
+    const [editing, setEditing] = useState(null);
+    const [confirm, setConfirm] = useState(null);
+    const editRow = editing ? rows.find((r) => r.id === editing) ?? null : null;
+    const card2 = (active4) => ({
+      borderRadius: 10,
+      background: active4 ? "rgba(255,255,255,0.07)" : UI.card,
+      padding: "16px 18px",
+      color: UI.text,
+      cursor: "pointer",
+      fontFamily: "inherit",
+      border: `1px solid ${active4 ? UI.lineBox : "transparent"}`,
+      display: "block",
+      width: "100%"
+    });
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-key-settings", style: { display: "flex", flexDirection: "column", gap: 28 }, children: [
       /* @__PURE__ */ jsx(LtSection, { eyebrow: tt("tabSport"), title: tt("sportSettingsTitle") }),
-      !s.apiKey || changing ? /* @__PURE__ */ jsx(KeyCard, { variant: "settings", onDone: () => setChanging(false) }) : /* @__PURE__ */ jsxs(LtRows, { children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0" }, children: [
-          /* @__PURE__ */ jsx("span", { children: tt("sportSettingsSource") }),
-          /* @__PURE__ */ jsx("span", { children: PROVIDER_LABEL[s.provider] })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0" }, children: [
-          /* @__PURE__ */ jsx("span", { children: tt("sportSettingsKey") }),
-          /* @__PURE__ */ jsx("span", { style: { fontFamily: "ui-monospace, monospace" }, children: maskKey(s.apiKey) })
-        ] }),
-        quota ? /* @__PURE__ */ jsx(LtNote, { children: quota }) : null,
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, padding: "12px 0" }, children: [
-          /* @__PURE__ */ jsx(LtBtn, { onClick: () => setChanging(true), children: tt("sportKeyChange") }),
-          /* @__PURE__ */ jsx(LtBtn, { variant: "danger", onClick: () => setConfirm(true), children: tt("sportKeyRemove") })
-        ] })
+      !hasAnyKey(s) && !editRow ? /* @__PURE__ */ jsx(KeyCard, { variant: "settings" }) : null,
+      /* @__PURE__ */ jsxs("section", { "data-testid": "sport-keys-section", style: { display: "flex", flexDirection: "column", gap: 16 }, children: [
+        /* @__PURE__ */ jsx(LtSection, { title: tt("sportKeysTitle"), hint: tt("sportKeysHint") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }, children: rows.map((r) => /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            "data-testid": `sport-key-row-${r.id}`,
+            "aria-expanded": editing === r.id,
+            onClick: () => setEditing(editing === r.id ? null : r.id),
+            style: card2(editing === r.id),
+            children: /* @__PURE__ */ jsx(KeyCardBody, { r, size: "desktop" })
+          },
+          r.id
+        )) }),
+        editRow ? /* @__PURE__ */ jsx(Editor, { r: editRow, onClose: () => setEditing(null), onRemove: () => setConfirm(editRow.id), children: /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsx(LtBtn, { testId: "sport-key-close", onClick: () => setEditing(null), children: tt("sportCancel") }) }) }) : null,
+        quota ? /* @__PURE__ */ jsx(LtNote, { children: quota }) : null
       ] }),
       confirm ? /* @__PURE__ */ jsx(
         LtConfirm,
         {
-          title: tt("sportKeyRemove"),
+          title: `${tt("sportKeyRemove")} \xB7 ${PROVIDER_LABEL[confirm]}`,
           body: tt("sportKeyRemoveBody"),
           confirmLabel: tt("sportKeyRemove"),
           cancelLabel: tt("sportCancel"),
-          onCancel: () => setConfirm(false),
+          testId: "sport-key-remove-confirm",
+          onCancel: () => setConfirm(null),
           onConfirm: () => {
-            removeKey();
-            setConfirm(false);
+            removeKey(confirm);
+            setConfirm(null);
+            setEditing(null);
           }
         }
       ) : null
     ] });
   }
-  function SportKeySettingsTv({ phone = false }) {
+  function SportKeySettingsTv({ phone = false, pushLayer }) {
     const { tt } = useTvText();
     const s = useSportSettings();
     const quota = useQuotaText();
-    const [changing, setChanging] = useState(false);
-    if (!s.apiKey || changing) return /* @__PURE__ */ jsx(KeyCard, { variant: "settings", onDone: () => setChanging(false) });
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-key-settings-tv", children: [
-      /* @__PURE__ */ jsx(Heading, { phone, hint: quota ?? void 0, children: tt("sportSettingsTitle") }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-key-source", label: tt("sportSettingsSource"), right: PROVIDER_LABEL[s.provider], onOk: () => setChanging(true) }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-key-masked", label: tt("sportSettingsKey"), right: maskKey(s.apiKey), onOk: () => setChanging(true) }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-key-change", label: tt("sportKeyChange"), right: "", onOk: () => setChanging(true) }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-key-remove", label: tt("sportKeyRemove"), right: "", onOk: () => removeKey() })
-    ] });
+    const rows = useKeyRows(s);
+    const [editing, setEditing] = useState(null);
+    const [confirm, setConfirm] = useState(null);
+    const editRow = editing ? rows.find((r) => r.id === editing) ?? null : null;
+    if (editRow) {
+      const remove = () => {
+        if (phone) setConfirm(editRow.id);
+        else {
+          removeKey(editRow.id);
+          setEditing(null);
+        }
+      };
+      return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-key-settings-tv", style: { display: "flex", flexDirection: "column", gap: phone ? 12 : dp(16), padding: phone ? 14 : 0 }, children: [
+        /* @__PURE__ */ jsx(Editor, { r: editRow, onClose: () => setEditing(null), onRemove: remove, pushLayer, children: /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsx(Action, { phone, testId: "sport-key-cancel", label: tt("sportCancel"), onOk: () => setEditing(null) }) }) }),
+        confirm ? /* @__PURE__ */ jsx(
+          LtConfirm,
+          {
+            title: `${tt("sportKeyRemove")} \xB7 ${PROVIDER_LABEL[confirm]}`,
+            body: tt("sportKeyRemoveBody"),
+            confirmLabel: tt("sportKeyRemove"),
+            cancelLabel: tt("sportCancel"),
+            testId: "sport-key-remove-confirm",
+            onCancel: () => setConfirm(null),
+            onConfirm: () => {
+              removeKey(confirm);
+              setConfirm(null);
+              setEditing(null);
+            }
+          }
+        ) : null
+      ] });
+    }
+    if (!hasAnyKey(s)) return /* @__PURE__ */ jsx(KeyCard, { variant: "settings", pushLayer });
+    return (
+      // Samma luft som Live TV:s övriga inställningar: rubriken med beskrivning, luft, sedan korten med luft emellan.
+      /* @__PURE__ */ jsxs("section", { "data-testid": "sport-key-settings-tv", style: { display: "flex", flexDirection: "column", gap: phone ? 10 : dp(14), paddingBottom: phone ? 14 : 0 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { marginBottom: phone ? 2 : dp(8) }, children: /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportKeysHint"), children: tt("sportKeysTitle") }) }),
+        rows.map((r) => /* @__PURE__ */ jsx(
+          "div",
+          {
+            "data-testid": `sport-key-${r.id}`,
+            ...station(() => setEditing(r.id)),
+            style: phone ? { margin: "0 14px", borderRadius: 12, background: MT.s06, padding: "14px 16px", cursor: "pointer" } : { borderRadius: dp(14), background: TV2.s06, padding: `${dp(20)}px ${dp(24)}px`, cursor: "pointer" },
+            children: /* @__PURE__ */ jsx(KeyCardBody, { r, size: phone ? "phone" : "tv" })
+          },
+          r.id
+        )),
+        quota ? /* @__PURE__ */ jsx("div", { style: { fontSize: phone ? HINT_SIZE_PHONE : HINT_SIZE, lineHeight: 1.45, color: phone ? MT.dim : "rgba(243,244,248,0.6)", padding: phone ? "2px 14px 0" : `${dp(4)}px 0 0` }, children: quota }) : null
+      ] })
+    );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_react_shim();
   init_plugin_sdk();
+  init_mobile_tokens();
   init_tv_ui();
   init_tv_strings();
   init_mobile_sheet();
   init_sport_ctx();
-  init_sport_model();
   init_sport_epg();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/backdrop.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/backdrop.ts
   init_react_shim();
   init_plugin_sdk();
-  init_budget();
+  init_router();
   init_sport_store();
   init_sport_epg();
   init_surface();
@@ -51797,7 +53683,11 @@ ${cue.text}`).join("\n\n")}
     for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
     return h >>> 0;
   }
-  function standardImageFor(scope, dayKey) {
+  function backdropScope(scope) {
+    return scope === "handball" ? "other" : scope;
+  }
+  function standardImageFor(rawScope, dayKey) {
+    const scope = backdropScope(rawScope);
     const own = scope === "all" ? void 0 : STANDARD_IMAGES[scope];
     if (own) return own;
     const all = Object.values(STANDARD_IMAGES);
@@ -51806,7 +53696,8 @@ ${cue.text}`).join("\n\n")}
   function pickedImage(mode) {
     return mode.startsWith("image:") ? STANDARD_IMAGES[mode.slice(6)] ?? null : null;
   }
-  function backdropPreview(b, scope, uploads, dayKey) {
+  function backdropPreview(b, rawScope, uploads, dayKey) {
+    const scope = backdropScope(rawScope);
     const { mode, slot } = resolveBackdropMode(b, scope);
     const inherited = scope !== "all" && slot === "all";
     const standard = standardImageFor(scope, dayKey);
@@ -51814,9 +53705,10 @@ ${cue.text}`).join("\n\n")}
     const url = mode === "off" ? null : mode === "custom" && v != null ? customBackdropUrl(slot, v) : pickedImage(mode) ?? standard;
     return { mode, slot, inherited, url };
   }
-  function resolveBackdropMode(b, scope) {
+  function resolveBackdropMode(b, rawScope) {
+    const scope = backdropScope(rawScope);
     const own = scope === "all" ? void 0 : b.sports[scope];
-    return own ? { mode: own, slot: scope } : { mode: b.all, slot: "all" };
+    return own && own !== "inherit" ? { mode: own, slot: scope } : { mode: b.all, slot: "all" };
   }
   function customBackdropUrl(slot, version3) {
     return `/api/live-tv/sport/backdrop?slot=${slot}&v=${version3}`;
@@ -51839,9 +53731,12 @@ ${cue.text}`).join("\n\n")}
   }
   var GRAY = [28, 29, 34];
   var CARD_BLUR = "blur(14px)";
+  var TV_DRAWER_MIN_OPACITY = 85;
   function cardSurfaceVars(cards, sampled, opts) {
     const rgb = cards.tone === "gray" ? GRAY : cards.tone === "image" && sampled ? darkTone(sampled) : [0, 0, 0];
-    return { "--sport-card-bg": `rgba(${rgb.join(", ")}, ${cards.opacity / 100})`, "--sport-card-blur": opts.blur ? CARD_BLUR : "none" };
+    const opacity = cardOpacity(cards, opts.tv === true);
+    const drawer = opts.tv ? Math.max(opacity, TV_DRAWER_MIN_OPACITY) : opacity;
+    return { "--sport-card-bg": `rgba(${rgb.join(", ")}, ${opacity / 100})`, "--sport-card-blur": opts.blur ? CARD_BLUR : "none", "--sport-drawer-bg": `rgba(${rgb.join(", ")}, ${drawer / 100})` };
   }
   var SPORT_GRADIENTS = {
     football: "radial-gradient(120% 90% at 85% 10%, #1f3b2c 0%, #0d1611 55%, #050806 100%)",
@@ -51853,7 +53748,8 @@ ${cue.text}`).join("\n\n")}
     other: "radial-gradient(120% 90% at 85% 10%, #2a2c33 0%, #111216 55%, #060608 100%)"
   };
   var BACKDROP_SCRIM = "linear-gradient(180deg, #00000073 0%, #00000026 30%, #00000000 55%), linear-gradient(90deg, #000000a6 0%, #00000059 40%, #00000000 75%), linear-gradient(#00000080, #00000080)";
-  var BACKDROP_SCRIM_PHONE = `linear-gradient(180deg, #00000080 0%, #000000b3 45%, #000000e6 100%), linear-gradient(#00000059, #00000059)`;
+  var BACKDROP_SCRIM_PHONE = "linear-gradient(180deg, #000000d9 0%, #00000099 30%, #000000d9 70%, #000000 100%)";
+  var BACKDROP_PHONE_OPACITY = 0.4;
   function chooseSportBackdrop(i) {
     if (i.mode === "off") return { kind: "none" };
     const sport = i.hero?.kind ?? "other";
@@ -52031,7 +53927,7 @@ ${cue.text}`).join("\n\n")}
         setArt(artCache.get(key) ?? null);
         return;
       }
-      const budget = currentBudget();
+      const budget = currentRouter()?.budget(provider) ?? null;
       const call = budget?.provider.teamArt(hero.kind, teamId) ?? null;
       if (!budget || !call) {
         setArt(null);
@@ -52054,12 +53950,12 @@ ${cue.text}`).join("\n\n")}
     const tvMode = useTvMode();
     const [broken, setBroken] = useState(() => /* @__PURE__ */ new Set());
     const { mode, slot } = resolveBackdropMode(settings.backdrops, scope);
-    const art = useHeroTeamArt(mode === "auto" && settings.apiKey ? hero : null);
+    const art = useHeroTeamArt(mode === "auto" && hasAnyKey(settings) ? hero : null);
     const onBroken = useCallback((url) => setBroken((b) => b.has(url) ? b : new Set(b).add(url)), []);
     const choice = chooseSportBackdrop({
       mode,
       slot,
-      hasKey: !!settings.apiKey,
+      hasKey: hasAnyKey(settings),
       hero,
       art,
       uploads,
@@ -52068,11 +53964,11 @@ ${cue.text}`).join("\n\n")}
     });
     const src = choice.kind === "image" ? backdropSrc(choice) : null;
     const tone = useImageTone(src, settings.cards.tone === "image");
-    const surface = choice.kind === "image" ? cardSurfaceVars(settings.cards, tone, { blur: !tvMode }) : null;
+    const surface = choice.kind === "image" ? cardSurfaceVars(settings.cards, tone, { blur: !tvMode, tv: tvMode }) : null;
     return { choice, onBroken, surface };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/backdrop-handoff.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/backdrop-handoff.ts
   init_react_shim();
   var BASE2 = "/api/live-tv/sport/backdrop-handoff";
   var POLL_MS3 = 2e3;
@@ -52088,7 +53984,7 @@ ${cue.text}`).join("\n\n")}
       let stopped = false;
       let code = null;
       let done = false;
-      let timer3 = null;
+      let timer4 = null;
       setExpired(false);
       setReceived(false);
       setUrl(null);
@@ -52113,7 +54009,7 @@ ${cue.text}`).join("\n\n")}
           setExpired(true);
           return;
         }
-        timer3 = setTimeout(() => void loop(), POLL_MS3);
+        timer4 = setTimeout(() => void loop(), POLL_MS3);
       };
       void (async () => {
         try {
@@ -52123,13 +54019,13 @@ ${cue.text}`).join("\n\n")}
           if (!body.code || stopped) return;
           code = body.code;
           setUrl(body.url ?? null);
-          timer3 = setTimeout(() => void loop(), POLL_MS3);
+          timer4 = setTimeout(() => void loop(), POLL_MS3);
         } catch {
         }
       })();
       return () => {
         stopped = true;
-        if (timer3) clearTimeout(timer3);
+        if (timer4) clearTimeout(timer4);
         if (code && !done) void fetch(`${BASE2}?code=${encodeURIComponent(code)}`, { method: "DELETE" }).catch(() => {
         });
       };
@@ -52138,10 +54034,10 @@ ${cue.text}`).join("\n\n")}
     return { url, expired, received, restart };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-backdrop-settings.tsx
   init_sport_store();
   init_jsx_runtime_shim();
-  var SCOPES = ["all", ...SPORT_KINDS];
+  var SCOPES = ["all", ...BACKDROP_SPORTS];
   var TONES = ["black", "gray", "image"];
   var TONE_LABEL = { black: "sportCardsBlack", gray: "sportCardsGray", image: "sportCardsImage" };
   var OPACITY_STEPS = [0, 25, 50, 70, 85, 100];
@@ -52151,9 +54047,7 @@ ${cue.text}`).join("\n\n")}
       if (mode !== "inherit") setSportSettings({ backdrops: { ...current5, all: mode } });
       return;
     }
-    const sports = { ...current5.sports };
-    if (mode === "inherit") delete sports[scope];
-    else sports[scope] = mode;
+    const sports = { ...current5.sports, [scope]: mode };
     setSportSettings({ backdrops: { ...current5, sports } });
   }
   function useUploader() {
@@ -52313,9 +54207,10 @@ ${cue.text}`).join("\n\n")}
           ] }),
           open2 === r.scope ? /* @__PURE__ */ jsx(ChooserPanel, { choices: choicesFor(r.scope), onPick: (k) => pick2(r.scope, k) }) : null
         ] }, r.scope)),
-        uploader.status ? /* @__PURE__ */ jsx(LtNote, { style: { paddingBottom: 10 }, children: uploader.status }) : null,
-        /* @__PURE__ */ jsx(LtNote, { style: { paddingBottom: 12 }, children: tt("sportBackdropLocalNote") })
+        uploader.status ? /* @__PURE__ */ jsx(LtNote, { style: { paddingBottom: 10, fontSize: 13 }, children: uploader.status }) : null,
+        /* @__PURE__ */ jsx(LtNote, { style: { paddingBottom: 12, fontSize: 13 }, children: tt("sportBackdropLocalNote") })
       ] }),
+      /* @__PURE__ */ jsx("div", { style: { height: 28 } }),
       /* @__PURE__ */ jsx(LtSection, { title: tt("sportCardsTitle"), hint: tt("sportCardsHint") }),
       /* @__PURE__ */ jsxs(LtRows, { children: [
         /* @__PURE__ */ jsxs("label", { style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 0" }, children: [
@@ -52328,12 +54223,12 @@ ${cue.text}`).join("\n\n")}
               min: 0,
               max: 100,
               step: 5,
-              value: s.cards.opacity,
-              onChange: (e) => setSportSettings({ cards: { ...s.cards, opacity: Number(e.target.value) } }),
+              value: cardOpacity(s.cards, false),
+              onChange: (e) => setSportSettings({ cards: withCardOpacity(s.cards, false, Number(e.target.value)) }),
               style: { flex: 1, accentColor: "rgb(var(--accent-500))" }
             }
           ),
-          /* @__PURE__ */ jsx("span", { style: { minWidth: 44, textAlign: "right", fontVariantNumeric: "tabular-nums" }, children: `${s.cards.opacity} %` })
+          /* @__PURE__ */ jsx("span", { style: { minWidth: 44, textAlign: "right", fontVariantNumeric: "tabular-nums" }, children: `${cardOpacity(s.cards, false)} %` })
         ] }),
         /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", padding: "4px 0 12px" }, children: TONES.map((t) => /* @__PURE__ */ jsx(LtBtn, { testId: `sport-cards-tone-${t}`, active: s.cards.tone === t, onClick: () => setSportSettings({ cards: { ...s.cards, tone: t } }), children: tt(TONE_LABEL[t]) }, t)) })
       ] })
@@ -52378,55 +54273,64 @@ ${cue.text}`).join("\n\n")}
       setOpen(open2 === scope ? null : scope);
     };
     const thumbSize = phone ? { w: 48, h: 27, radius: 5 } : { w: dp(80), h: dp(45), radius: dp(6) };
-    const note = { fontSize: phone ? 13 : dp(15), color: TV2.dim, padding: phone ? "6px 14px" : 0 };
-    const nextOpacity = OPACITY_STEPS.find((n) => n > s.cards.opacity) ?? OPACITY_STEPS[0];
+    const note = { fontSize: phone ? HINT_SIZE_PHONE : HINT_SIZE, color: phone ? MT.dim : "rgba(243,244,248,0.6)", padding: phone ? "6px 14px" : 0 };
+    const tvCards = tvMode && !phone;
+    const opacityNow = cardOpacity(s.cards, tvCards);
+    const nextOpacity = OPACITY_STEPS.find((n) => n > opacityNow) ?? OPACITY_STEPS[0];
     const nextTone = TONES[(TONES.indexOf(s.cards.tone) + 1) % TONES.length];
     const sheetRow = sheet ? rows.find((r) => r.scope === sheet) : null;
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-backdrop-settings-tv", children: [
-      /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportBackdropHint"), children: tt("sportBackdropTitle") }),
-      viaPhone ? null : uploader.input,
-      rows.map((r) => /* @__PURE__ */ jsxs("div", { children: [
-        /* @__PURE__ */ jsx(
-          Row,
+    return (
+      // Två sektioner med samma luft som Live TV:s övriga inställningar (innehållets gap 36, sektionens 10).
+      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-backdrop-settings-tv", style: { display: "flex", flexDirection: "column", gap: phone ? 18 : dp(36) }, children: [
+        /* @__PURE__ */ jsxs("section", { "data-testid": "sport-backdrop-section", style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
+          /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportBackdropHint"), children: tt("sportBackdropTitle") }),
+          viaPhone ? null : uploader.input,
+          rows.map((r) => /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx(
+              Row,
+              {
+                phone,
+                testId: `sport-backdrop-row-${r.scope}`,
+                label: /* @__PURE__ */ jsxs("span", { style: { display: "inline-flex", alignItems: "center", gap: phone ? 12 : dp(16) }, children: [
+                  /* @__PURE__ */ jsx(Thumb, { scope: r.scope, url: r.thumb, ...thumbSize }),
+                  r.label
+                ] }),
+                right: r.modeLabel,
+                onOk: () => onRow(r.scope)
+              }
+            ),
+            open2 === r.scope ? /* @__PURE__ */ jsx(ChooserPanel, { choices: choicesFor(r.scope), onPick: (k) => pick2(r.scope, k) }) : null
+          ] }, r.scope)),
+          viaPhone && qrSlot ? /* @__PURE__ */ jsxs("figure", { "data-testid": "sport-backdrop-handoff", style: { margin: 0, display: "flex", gap: dp(20), alignItems: "center", padding: `${dp(8)}px 0` }, children: [
+            handoff.url && !handoff.received ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-qr", style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
+            /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(16), color: TV2.dim, maxWidth: dp(360) }, children: handoff.received ? tt("sportBackdropReceived") : handoff.expired ? tt("sportKeyExpired") : `${rows.find((r) => r.scope === qrSlot).label}: ${tt("sportBackdropPhoneHint")}` })
+          ] }) : null,
+          uploader.status ? /* @__PURE__ */ jsx("div", { role: "status", style: note, children: uploader.status }) : null,
+          /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-note", style: note, children: tt("sportBackdropLocalNote") })
+        ] }),
+        /* @__PURE__ */ jsxs("section", { "data-testid": "sport-cards-section", style: { display: "flex", flexDirection: "column", gap: phone ? 0 : dp(10) }, children: [
+          /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportCardsHint"), children: tt("sportCardsTitle") }),
+          /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-opacity-row", label: tt("sportCardsOpacity"), right: `${opacityNow} %`, onOk: () => setSportSettings({ cards: withCardOpacity(s.cards, tvCards, nextOpacity) }) }),
+          /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-tone-row", label: tt("sportCardsColor"), right: tt(TONE_LABEL[s.cards.tone]), onOk: () => setSportSettings({ cards: { ...s.cards, tone: nextTone } }) })
+        ] }),
+        menu && GlassMenu ? /* @__PURE__ */ jsx(GlassMenu, { target: menu, onClose: () => setMenu(null) }) : null,
+        sheetRow ? /* @__PURE__ */ jsx(
+          MobileSheet,
           {
-            phone,
-            testId: `sport-backdrop-row-${r.scope}`,
-            label: /* @__PURE__ */ jsxs("span", { style: { display: "inline-flex", alignItems: "center", gap: phone ? 12 : dp(16) }, children: [
-              /* @__PURE__ */ jsx(Thumb, { scope: r.scope, url: r.thumb, ...thumbSize }),
-              r.label
-            ] }),
-            right: r.modeLabel,
-            onOk: () => onRow(r.scope)
+            testId: "sport-backdrop-sheet",
+            title: sheetRow.label,
+            subtitle: sheetRow.modeLabel,
+            art: /* @__PURE__ */ jsx(Thumb, { url: sheetRow.thumb, w: 56, h: 32, radius: 6 }),
+            items: actions(sheetRow.scope),
+            onClose: () => setSheet(null),
+            pushLayer: pushLayer ?? noLayer
           }
-        ),
-        open2 === r.scope ? /* @__PURE__ */ jsx(ChooserPanel, { choices: choicesFor(r.scope), onPick: (k) => pick2(r.scope, k) }) : null
-      ] }, r.scope)),
-      viaPhone && qrSlot ? /* @__PURE__ */ jsxs("figure", { "data-testid": "sport-backdrop-handoff", style: { margin: 0, display: "flex", gap: dp(20), alignItems: "center", padding: `${dp(8)}px 0` }, children: [
-        handoff.url && !handoff.received ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-backdrop-qr", style: { background: "#fff", padding: dp(8), borderRadius: dp(8) }, children: /* @__PURE__ */ jsx(QRCodeSVG, { value: handoff.url, size: dp(132) }) }) : null,
-        /* @__PURE__ */ jsx("figcaption", { style: { fontSize: dp(16), color: TV2.dim, maxWidth: dp(360) }, children: handoff.received ? tt("sportBackdropReceived") : handoff.expired ? tt("sportKeyExpired") : `${rows.find((r) => r.scope === qrSlot).label}: ${tt("sportBackdropPhoneHint")}` })
-      ] }) : null,
-      uploader.status ? /* @__PURE__ */ jsx("div", { role: "status", style: note, children: uploader.status }) : null,
-      /* @__PURE__ */ jsx("div", { style: note, children: tt("sportBackdropLocalNote") }),
-      /* @__PURE__ */ jsx(Heading, { phone, hint: tt("sportCardsHint"), children: tt("sportCardsTitle") }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-opacity-row", label: tt("sportCardsOpacity"), right: `${s.cards.opacity} %`, onOk: () => setSportSettings({ cards: { ...s.cards, opacity: nextOpacity } }) }),
-      /* @__PURE__ */ jsx(Row, { phone, testId: "sport-cards-tone-row", label: tt("sportCardsColor"), right: tt(TONE_LABEL[s.cards.tone]), onOk: () => setSportSettings({ cards: { ...s.cards, tone: nextTone } }) }),
-      menu && GlassMenu ? /* @__PURE__ */ jsx(GlassMenu, { target: menu, onClose: () => setMenu(null) }) : null,
-      sheetRow ? /* @__PURE__ */ jsx(
-        MobileSheet,
-        {
-          testId: "sport-backdrop-sheet",
-          title: sheetRow.label,
-          subtitle: sheetRow.modeLabel,
-          art: /* @__PURE__ */ jsx(Thumb, { url: sheetRow.thumb, w: 56, h: 32, radius: 6 }),
-          items: actions(sheetRow.scope),
-          onClose: () => setSheet(null),
-          pushLayer: pushLayer ?? noLayer
-        }
-      ) : null
-    ] });
+        ) : null
+      ] })
+    );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/xtream-login-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/xtream-login-section.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -52586,7 +54490,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-library-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-library-card.tsx
   init_tv_strings();
   init_jsx_runtime_shim();
   function VodLibraryCard() {
@@ -52595,7 +54499,7 @@ ${cue.text}`).join("\n\n")}
     const toast = useToast();
     const { rows, progress: progress2, error, build, disabled } = useVodLibrarySources();
     if (rows.length === 0) return null;
-    const statusText = (row) => {
+    const statusText2 = (row) => {
       if (progress2?.libraryId === row.libraryId) return tt("vodLibraryBuilding", { count: fmtInt(progress2.done, locale) });
       if (row.importing) return tt("vodLibraryImporting");
       if (row.indexedTitles === null) return h("titlesReady", { count: fmtInt(row.vodTitles, locale) });
@@ -52611,7 +54515,7 @@ ${cue.text}`).join("\n\n")}
         rows.map((row) => /* @__PURE__ */ jsxs("div", { "data-testid": `vod-library-${row.vodSource}`, style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }, children: [
           /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: "1 1 12rem" }, children: [
             /* @__PURE__ */ jsx("p", { style: { margin: 0, fontSize: 13.5, color: UI.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: row.label }),
-            /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12.5, color: UI.muted }, children: statusText(row) })
+            /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: 12.5, color: UI.muted }, children: statusText2(row) })
           ] }),
           /* @__PURE__ */ jsx(LtBtn, { variant: "accent", style: { padding: "7px 14px", fontSize: 12.5 }, disabled: disabled(row), onClick: () => {
             void run(row);
@@ -52622,16 +54526,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/category-curation-panel.tsx
   init_react_shim();
   init_index_client();
   init_list_curation();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/playlist-card.tsx
   init_react_shim();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/server-categories.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/server-categories.tsx
   init_react_shim();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -52736,7 +54640,7 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/playlist-card.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/playlist-card.tsx
   init_index_client();
   init_live_tv_data();
   init_jsx_runtime_shim();
@@ -52872,7 +54776,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/category-curation-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/category-curation-panel.tsx
   init_jsx_runtime_shim();
   function cloneCuration(curation) {
     return {
@@ -53034,11 +54938,11 @@ ${cue.text}`).join("\n\n")}
     ] }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv-settings-views.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv-settings-ui.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv-settings-ui.tsx
   init_react_shim();
   init_tv_ui();
   init_jsx_runtime_shim();
@@ -53171,7 +55075,7 @@ ${cue.text}`).join("\n\n")}
           return;
         }
         const settingsRoot = overlay.closest("[data-tv-settings]") ?? document;
-        const side2 = settingsRoot.querySelector('[data-col="side"]');
+        const side3 = settingsRoot.querySelector('[data-col="side"]');
         const column = overlay.closest('[data-col="content"]') ?? settingsRoot.querySelector('[data-col="content"]');
         const o = overlay.getBoundingClientRect();
         if (o.width === 0 || overlay.offsetWidth === 0) {
@@ -53179,7 +55083,7 @@ ${cue.text}`).join("\n\n")}
           return;
         }
         const scale = o.width / overlay.offsetWidth;
-        const edge = side2 ? side2.getBoundingClientRect().right : column ? column.getBoundingClientRect().left : null;
+        const edge = side3 ? side3.getBoundingClientRect().right : column ? column.getBoundingClientRect().left : null;
         if (edge === null) {
           setLeft(null);
           return;
@@ -53225,7 +55129,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv-settings-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv-settings-views.tsx
   init_index_client();
   init_tv_strings();
   init_index_client();
@@ -53269,7 +55173,7 @@ ${cue.text}`).join("\n\n")}
       window.addEventListener("resize", sync);
       return () => window.removeEventListener("resize", sync);
     }, []);
-    const epg = useEpgStatus();
+    const epg2 = useEpgStatus();
     const vod = useVodLibrarySources();
     const openedList = openList ? s.lists.find((l) => l.id === openList) ?? null : null;
     useEffect(() => {
@@ -53282,10 +55186,10 @@ ${cue.text}`).join("\n\n")}
       if (!ms2) return null;
       return formatFetchedAt2(new Date(ms2).toISOString(), locale);
     };
-    const guideFetched = fetchedAt(epg.status?.fetchedAt ?? null);
+    const guideFetched = fetchedAt(epg2.status?.fetchedAt ?? null);
     const refetchGuide = async () => {
-      await epg.refresh();
-      toast(h("guideFetchedToast", { programmes: fmtInt(epg.status?.programmes ?? 0, locale) }));
+      await epg2.refresh();
+      toast(h("guideFetchedToast", { programmes: fmtInt(epg2.status?.programmes ?? 0, locale) }));
     };
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 8, color: TVS.text }, children: [
       /* @__PURE__ */ jsx(TvFocusStyle2, {}),
@@ -53313,17 +55217,17 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsx(TvTextRow, { label: h("username"), value: form.username, onChange: form.setUsername }),
       /* @__PURE__ */ jsx(TvTextRow, { label: h("password"), value: form.password, secret: true, onChange: form.setPassword }),
       /* @__PURE__ */ jsx(TvRow, { label: h("loginAndFetch"), hint: loginHint, value: loginValue, caret: true, onOk: () => void form.connect(), disabled: form.state === "working" }),
-      epg.urls.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+      epg2.urls.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
         /* @__PURE__ */ jsx(TvEyebrow, { children: h("epgStatusTitle") }),
         /* @__PURE__ */ jsx(TvNote, { children: h("epgStatusAllLists") }),
         /* @__PURE__ */ jsx(
           TvRow,
           {
-            label: epg.refreshing ? h("fetchingGuide") : guideFetched ? h("tvGuideFetched", { time: guideFetched }) : h("epgNeverFetched"),
-            hint: h("epgSourceStats", { channels: fmtInt(epg.status?.channels ?? 0, locale), programmes: fmtInt(epg.status?.programmes ?? 0, locale) }),
+            label: epg2.refreshing ? h("fetchingGuide") : guideFetched ? h("tvGuideFetched", { time: guideFetched }) : h("epgNeverFetched"),
+            hint: h("epgSourceStats", { channels: fmtInt(epg2.status?.channels ?? 0, locale), programmes: fmtInt(epg2.status?.programmes ?? 0, locale) }),
             value: h("epgRefresh"),
             onOk: () => void refetchGuide(),
-            disabled: epg.refreshing
+            disabled: epg2.refreshing
           }
         )
       ] }) : null,
@@ -53660,7 +55564,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-settings-section.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-settings-section.tsx
   init_jsx_runtime_shim();
   var HOME_OVERRIDE_PLUGIN_ID = "com.lumio.live-tv";
   function splitUrls(text) {
@@ -53893,36 +55797,36 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_react_shim();
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-grid.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_logo_image();
   init_live_tv_model();
   init_live_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/now-badge.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/epg/auto-roll.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/epg/auto-roll.ts
   function scheduleNextBoundary(data, onBoundary) {
     const target2 = data.now?.stop ?? data.next?.start ?? null;
     if (target2 === null) return () => {
     };
     const delay = Math.max(0, target2 - Date.now());
-    const timer3 = setTimeout(onBoundary, delay);
-    return () => clearTimeout(timer3);
+    const timer4 = setTimeout(onBoundary, delay);
+    return () => clearTimeout(timer4);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useEpgNowNextLater.ts
   init_live_tv_data();
   var EMPTY6 = { now: null, next: null, later: null };
   function useEpgNowNextLater(channel, listId, urls, enabled = true) {
@@ -53955,7 +55859,7 @@ ${cue.text}`).join("\n\n")}
     return data;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/now-badge.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/now-badge.tsx
   init_react_shim();
   init_jsx_runtime_shim();
   function NowBadge({ channel, listId, urls, showTrigger = true, forceRequested = false }) {
@@ -53988,7 +55892,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/results-pagination.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/results-pagination.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
   function ResultsPagination2({ currentPage, totalPages, onPageChange }) {
@@ -54018,12 +55922,13 @@ ${cue.text}`).join("\n\n")}
     ) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-shell.tsx
   var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
+  var LIVE_TV_SPORT_PAGE_ID = "live-tv-sport";
   function encodeChannelParams(channel) {
     return {
       url: channel.url,
@@ -54034,10 +55939,10 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-grid.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-player-props.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-player-props.ts
   init_live_tv_data();
   init_live_tv_model();
   function buildTvPlayerProps(args) {
@@ -54066,7 +55971,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-multiview-store.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-multiview-store.ts
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -54131,14 +56036,14 @@ ${cue.text}`).join("\n\n")}
     return assignTile(state2, free === -1 ? state2.tiles.length - 1 : free, key);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-grid.tsx
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/view-helpers.ts
   init_react_shim();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/catch-up.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/catch-up.ts
   init_live_tv_data();
   function channelSupportsCatchUp(channel) {
     const a = channel.archive;
@@ -54178,14 +56083,14 @@ ${cue.text}`).join("\n\n")}
     return all.sort((left, right) => right.programme.start - left.programme.start).slice(0, limit);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/view-helpers.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/view-helpers.ts
   init_index_client();
   init_list_curation();
   init_live_tv_model();
   function useChannelGeneration() {
-    const [generation, setGeneration] = useState(0);
+    const [generation2, setGeneration] = useState(0);
     useEffect(() => subscribeChannelGeneration(() => setGeneration((value) => value + 1)), []);
-    return generation;
+    return generation2;
   }
   var EMPTY_BY_SOURCE = {};
   function useChannelsBySource(sources) {
@@ -54195,7 +56100,7 @@ ${cue.text}`).join("\n\n")}
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [wantedId]
     );
-    const generation = useChannelGeneration();
+    const generation2 = useChannelGeneration();
     const [state2, setState] = useState(() => ({ bySource: EMPTY_BY_SOURCE, loading: false, error: null }));
     useEffect(() => {
       if (wanted.length === 0) {
@@ -54233,7 +56138,7 @@ ${cue.text}`).join("\n\n")}
       return () => {
         live2 = false;
       };
-    }, [wantedId, generation]);
+    }, [wantedId, generation2]);
     return state2;
   }
   function isAbort(err) {
@@ -54259,7 +56164,7 @@ ${cue.text}`).join("\n\n")}
     return { byListId, loading: loading2 };
   }
   function useChannelsPage(lists, limit, offset = 0) {
-    const generation = useChannelGeneration();
+    const generation2 = useChannelGeneration();
     const listsId = lists.map((list) => `${list.id}:${list.kind ?? ""}:${list.source ?? ""}`).join("|");
     const [state2, setState] = useState(() => ({ byListId: {}, totalByListId: {}, loading: false }));
     useEffect(() => {
@@ -54277,7 +56182,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       let live2 = true;
-      const controller = typeof AbortController === "function" ? new AbortController() : null;
+      const controller2 = typeof AbortController === "function" ? new AbortController() : null;
       setState((prev) => ({ ...prev, loading: true }));
       void (async () => {
         const byListId = { ...embedded };
@@ -54295,7 +56200,7 @@ ${cue.text}`).join("\n\n")}
                 source: list.source,
                 offset,
                 limit,
-                signal: controller?.signal
+                signal: controller2?.signal
               });
               byListId[list.id] = applyCuration(page.items, list.curation);
               totalByListId[list.id] = page.total;
@@ -54312,9 +56217,9 @@ ${cue.text}`).join("\n\n")}
       });
       return () => {
         live2 = false;
-        controller?.abort();
+        controller2?.abort();
       };
-    }, [listsId, limit, offset, generation]);
+    }, [listsId, limit, offset, generation2]);
     return state2;
   }
   var MAX_REPLAY_CHANNELS = 40;
@@ -54332,7 +56237,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-grid.tsx
   init_jsx_runtime_shim();
   var rememberedChannelLogoSrcs = /* @__PURE__ */ new Map();
   var CHANNELS_PER_PAGE = 28;
@@ -55852,13 +57757,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_logo_image();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/now-next-later-row.tsx
   init_plugin_sdk();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useEpgLoadStatus.ts
   init_react_shim();
   init_now_snapshot();
   function useEpgLoadStatus(listId, urls) {
@@ -55875,7 +57780,7 @@ ${cue.text}`).join("\n\n")}
     return "loading";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/now-next-later-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/now-next-later-row.tsx
   init_jsx_runtime_shim();
   function formatTime(ms2) {
     return new Date(ms2).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -55937,7 +57842,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-home-override.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
   init_tv_settings_store();
@@ -55971,11 +57876,11 @@ ${cue.text}`).join("\n\n")}
     }, []);
     const { byListId: firstPages, totalByListId } = useChannelsPage(lists, HERO_WINDOW, 0);
     const spans = useMemo(() => {
-      let start2 = 0;
+      let start3 = 0;
       return lists.map((list) => {
         const count = totalByListId[list.id] ?? 0;
-        const span = { list, start: start2, count };
-        start2 += count;
+        const span = { list, start: start3, count };
+        start3 += count;
         return span;
       });
     }, [lists, totalByListId]);
@@ -56155,12 +58060,12 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-alerts.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-alerts.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_reminders();
@@ -56170,12 +58075,17 @@ ${cue.text}`).join("\n\n")}
   init_sport_store();
   var KICKOFF_LEAD_MS = { "15": 15 * 6e4, kickoff: 0 };
   var SPORT_ALERT_SYNC_MS = 30 * 6e4;
+  var anyAlertOn = (follows, global) => follows.some((f) => followAlert(f, global) !== "off");
+  var EARLIEST = ["15", "kickoff"];
   function kickoffReminders(days, follows, alert, overrides, now2, skip = {}) {
-    if (alert === "off" || follows.length === 0) return [];
+    if (!anyAlertOn(follows, alert)) return [];
     const out = [];
     for (const day of days) {
       for (const m of day?.matches ?? []) {
-        if (m.rerun || m.id in skip || statusAt(m, now2) !== "upcoming" || !followState(m, follows).any) continue;
+        if (m.rerun || m.id in skip || statusAt(m, now2) !== "upcoming") continue;
+        const wanted = new Set(follows.filter((f) => followState(m, [f]).any).map((f) => followAlert(f, alert)));
+        const lead = EARLIEST.find((a) => wanted.has(a));
+        if (!lead) continue;
         const source = rankedSources(m, overrides)[0];
         if (!source) continue;
         const channel = sourceChannel(source);
@@ -56191,7 +58101,7 @@ ${cue.text}`).join("\n\n")}
           start: source.programmeStart,
           stop: source.programmeStop,
           createdAt: now2,
-          leadMs: KICKOFF_LEAD_MS[alert],
+          leadMs: KICKOFF_LEAD_MS[lead],
           origin: "sport"
         });
       }
@@ -56201,7 +58111,7 @@ ${cue.text}`).join("\n\n")}
   async function syncKickoffReminders(now2 = Date.now()) {
     const follows = getFollows();
     const { alert } = getSportSettings();
-    if (alert === "off" || follows.length === 0) {
+    if (!anyAlertOn(follows, alert)) {
       replaceSportReminders([], now2);
       return;
     }
@@ -56223,7 +58133,7 @@ ${cue.text}`).join("\n\n")}
       ready = true;
       run();
     }, SPORT_ALERT_START_DELAY_MS);
-    const timer3 = window.setInterval(run, SPORT_ALERT_SYNC_MS);
+    const timer4 = window.setInterval(run, SPORT_ALERT_SYNC_MS);
     const onVisibility = () => {
       if (!hidden()) run();
     };
@@ -56232,13 +58142,13 @@ ${cue.text}`).join("\n\n")}
     return () => {
       stopped = true;
       window.clearTimeout(startTimer);
-      window.clearInterval(timer3);
+      window.clearInterval(timer4);
       document.removeEventListener("visibilitychange", onVisibility);
       for (const off of offs) off();
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_live_tv_ui();
   init_jsx_runtime_shim();
   function LiveTvRemindersMount() {
@@ -56254,8 +58164,8 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => startSportAlertSync(), []);
     useEffect(() => {
       if (!banner) return;
-      const timer3 = window.setTimeout(() => setBanner(null), 2e4);
-      return () => window.clearTimeout(timer3);
+      const timer4 = window.setTimeout(() => setBanner(null), 2e4);
+      return () => window.clearTimeout(timer4);
     }, [banner]);
     if (!banner) return null;
     const channel = reminderToChannel(banner);
@@ -56302,7 +58212,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-goal-mount.tsx
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
@@ -56345,16 +58255,139 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
   init_live_tv_model();
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/channel-detail.ts
+  init_react_shim();
+  init_live_tv_data();
+  init_channel_locks();
+  init_live_tv_model();
+  init_reminders();
+  init_lookup2();
+  init_useSchedules();
+  init_tv_strings();
+  var DAY_OFFSETS = [-2, -1, 0, 1, 2];
+  var DAY_MS3 = 864e5;
+  function channelFromParams(params, byUrl) {
+    const url = params.url?.trim();
+    if (!url) return null;
+    return byUrl.get(url) ?? {
+      name: params.name?.trim() || "Unknown",
+      logo: params.logo?.trim() || null,
+      group: params.group?.trim() || "Other",
+      url,
+      tvgId: params.tvgId?.trim() || null
+    };
+  }
+  function kindOf(p, nowMs) {
+    if (p.stop <= nowMs) return "past";
+    if (p.start > nowMs) return "future";
+    return "now";
+  }
+  function useChannelDetail(model, nav, params) {
+    const { tt, locale } = useTvText();
+    const channel = useMemo(() => channelFromParams(params, model.byUrl), [params, model.byUrl]);
+    const [dayOffset, setDayOffset] = useState(0);
+    const [selectedStart, setSelectedStart] = useState(params.programme ? Number(params.programme) : null);
+    const dayStart = startOfLocalDay(model.nowMs, dayOffset);
+    const archiveDays = channel?.archive?.days ?? 0;
+    const windowFrom = dayStart - Math.max(1, archiveDays) * DAY_MS3;
+    const windowTo = dayStart + DAY_MS3;
+    const scheduleChannels = useMemo(() => channel ? [channel] : [], [channel]);
+    const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, windowFrom, windowTo);
+    const schedule3 = channel ? schedules[channelKey(channel)] ?? [] : [];
+    const programmes = useMemo(
+      () => sliceSchedule(schedule3, dayStart, dayStart + DAY_MS3),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [schedule3, dayStart]
+    );
+    const yesterday = useMemo(
+      () => dayOffset === 0 ? sliceSchedule(schedule3, dayStart - DAY_MS3, dayStart).slice(-2) : [],
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [schedule3, dayStart, dayOffset]
+    );
+    const rows = useMemo(
+      () => [...yesterday.map((p) => ({ p, day: "yesterday" })), ...programmes.map((p) => ({ p, day: "today" }))],
+      [yesterday, programmes]
+    );
+    const catchUpByStart = useMemo(() => {
+      if (!channel) return /* @__PURE__ */ new Map();
+      const items2 = catchUpForChannel(channel, schedule3, model.nowMs, 500);
+      return new Map(items2.map((item) => [item.programme.start, true]));
+    }, [channel, schedule3, model.nowMs]);
+    const selected = useMemo(
+      () => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === "now")?.p ?? rows[0]?.p ?? null,
+      [rows, selectedStart, model.nowMs]
+    );
+    const kind = selected ? kindOf(selected, model.nowMs) : null;
+    const canReplaySelected = selected ? catchUpByStart.has(selected.start) : false;
+    const reminded = channel && selected && kind === "future" ? isReminded(channel, selected) : false;
+    const key = channel ? channelKey(channel) : "";
+    const pinned = model.pinnedSet.has(key);
+    const locked = model.locked.has(key);
+    const lockAvailable = pinSupportAvailable() && activeProfileHasPin2();
+    const mountedRef = useRef(false);
+    useEffect(() => {
+      if (!mountedRef.current) {
+        mountedRef.current = true;
+        return;
+      }
+      setSelectedStart(null);
+    }, [dayOffset]);
+    const primary = () => {
+      if (!channel) return;
+      if (!selected) {
+        nav.play({ channel });
+        return;
+      }
+      if (kind === "now") {
+        nav.play({ channel });
+        return;
+      }
+      if (kind === "past") {
+        const url = canReplaySelected ? buildTimeshiftUrl(channel, selected.start, selected.stop - selected.start) : null;
+        if (url) nav.play({ channel, url, label: selected.title });
+        else nav.play({ channel });
+        return;
+      }
+      toggleReminder(channel, selected, model.nowMs);
+    };
+    const primaryLabel = kind === "past" ? canReplaySelected ? tt("playReplay") : tt("watchNow") : kind === "future" ? reminded ? tt("removeReminder") : tt("remindMe") : tt("watchNow");
+    const dayLabel = (offset) => {
+      const d = new Date(model.nowMs + offset * DAY_MS3);
+      return { top: offset === 0 ? tt("today") : offset === -1 ? tt("yesterday") : offset === 1 ? tt("tomorrow") : d.toLocaleDateString(locale, { weekday: "short" }), bottom: d.toLocaleDateString(locale, { day: "numeric", month: "short" }) };
+    };
+    return {
+      channel,
+      dayOffset,
+      setDayOffset,
+      rows,
+      selected,
+      setSelectedStart,
+      kind,
+      canReplaySelected,
+      reminded,
+      pinned,
+      locked,
+      lockAvailable,
+      scheduleLoading,
+      catchUpByStart,
+      primary,
+      primaryLabel,
+      dayLabel
+    };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_live_tv_ui();
   init_channel_locks();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/usePhoneSurface.ts
   init_react_shim();
   init_plugin_sdk();
   function usePhoneSurface(ref) {
@@ -56379,7 +58412,7 @@ ${cue.text}`).join("\n\n")}
     return phone;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useSwipeBack.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useSwipeBack.ts
   init_react_shim();
   init_plugin_sdk();
   var SWIPE_BACK_EDGE_PX = 32;
@@ -56398,18 +58431,18 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!enabled || tvMode) return;
       if (typeof document === "undefined") return;
-      let start2 = null;
+      let start3 = null;
       const onTouchStart = (event2) => {
         if (event2.touches.length !== 1) {
-          start2 = null;
+          start3 = null;
           return;
         }
         const touch = event2.touches[0];
-        start2 = { x: touch.clientX, y: touch.clientY };
+        start3 = { x: touch.clientX, y: touch.clientY };
       };
       const onTouchEnd = (event2) => {
-        const from = start2;
-        start2 = null;
+        const from = start3;
+        start3 = null;
         if (!from) return;
         const touch = event2.changedTouches[0];
         if (!touch) return;
@@ -56418,7 +58451,7 @@ ${cue.text}`).join("\n\n")}
         }
       };
       const onTouchCancel = () => {
-        start2 = null;
+        start3 = null;
       };
       document.addEventListener("touchstart", onTouchStart, { passive: true });
       document.addEventListener("touchend", onTouchEnd, { passive: true });
@@ -56431,15 +58464,15 @@ ${cue.text}`).join("\n\n")}
     }, [onBack, enabled, tvMode]);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_strings();
   init_guide_surface();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-rail.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-rail.tsx
   init_tv_strings();
   init_tv_ui();
-  init_sport_icons();
+  init_sport_icons2();
   init_jsx_runtime_shim();
   var RAIL_W_TV = 152;
   var RAIL_W_DESKTOP = 132;
@@ -56496,7 +58529,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-hold-affordance.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_strings();
@@ -56611,10 +58644,10 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-zap.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-zap.ts
   function resolveZap(digits, favourites, channels) {
     const n = Number.parseInt(digits, 10);
     if (!Number.isFinite(n) || n <= 0) return null;
@@ -56624,10 +58657,10 @@ ${cue.text}`).join("\n\n")}
   var ZAP_MAX_DIGITS = 4;
   function createZapBuffer(opts) {
     let digits = "";
-    let timer3 = null;
+    let timer4 = null;
     const clearTimer = () => {
-      if (timer3 !== null) window.clearTimeout(timer3);
-      timer3 = null;
+      if (timer4 !== null) window.clearTimeout(timer4);
+      timer4 = null;
     };
     const commit = () => {
       clearTimer();
@@ -56644,7 +58677,7 @@ ${cue.text}`).join("\n\n")}
         digits += digit;
         opts.onChange(digits);
         clearTimer();
-        timer3 = window.setTimeout(commit, opts.timeoutMs);
+        timer4 = window.setTimeout(commit, opts.timeoutMs);
       },
       commit,
       clear() {
@@ -56658,12 +58691,12 @@ ${cue.text}`).join("\n\n")}
     };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_video_surface();
   init_surface_cutouts();
   init_player_sport();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -56672,12 +58705,12 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/hub-data.ts
   init_react_shim();
   init_live_tv_model();
   init_useSchedules();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-spotlight.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-spotlight.ts
   init_live_tv_data();
   function shuffleWithSeed(items2, seed) {
     let a = seed >>> 0 || 1;
@@ -56725,7 +58758,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/hub-data.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/hub-data.ts
   var ALL_STEP = 36;
   var MAX_CHIPS = 12;
   var REPLAY_DAYS = 3;
@@ -56754,7 +58787,7 @@ ${cue.text}`).join("\n\n")}
     return { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -56765,13 +58798,25 @@ ${cue.text}`).join("\n\n")}
   init_mobile_tokens();
   init_mobile_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-header.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_ui();
   init_mobile_tokens();
   init_mobile_icons();
   init_jsx_runtime_shim();
+  function MobileCloseButton({ onClose }) {
+    const { tt } = useTvText();
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        ...station(onClose ?? (() => {
+        }), void 0, { "aria-label": tt("closeLiveTv"), "data-testid": "header-close" }),
+        style: { width: 40, height: 40, minHeight: 40, borderRadius: 999, background: TV2.glass, border: `1px solid ${MT.line14}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" },
+        children: /* @__PURE__ */ jsx(MIcons.X, {})
+      }
+    );
+  }
   function MobileHeader({ title, right, back, onBack, close, onClose, testId }) {
     const { tt } = useTvText();
     return /* @__PURE__ */ jsxs(
@@ -56797,15 +58842,7 @@ ${cue.text}`).join("\n\n")}
           gap: 10
         },
         children: [
-          close ? /* @__PURE__ */ jsx(
-            "div",
-            {
-              ...station(onClose ?? (() => {
-              }), void 0, { "aria-label": tt("closeLiveTv"), "data-testid": "header-close" }),
-              style: { width: 40, height: 40, minHeight: 40, borderRadius: 999, background: TV2.glass, border: `1px solid ${MT.line14}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" },
-              children: /* @__PURE__ */ jsx(MIcons.X, {})
-            }
-          ) : null,
+          close ? /* @__PURE__ */ jsx(MobileCloseButton, { onClose }) : null,
           back ? /* @__PURE__ */ jsx(
             "div",
             {
@@ -56822,11 +58859,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_mobile_sheet();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-chips.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -56875,7 +58912,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/hub-phone.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_PHONE = 1;
   var RECENT_MAX = 8;
@@ -56904,7 +58941,7 @@ ${cue.text}`).join("\n\n")}
     const { favourites, recent, spotlight, replays, chips, filtered, shown, group, setGroup, visible, setVisible, epgStatus: epgStatus2 } = useHubData(model, SPOTLIGHT_COUNT_PHONE);
     const noProgrammeLabel = epgStatus2 === "loading" ? tt("loadingGuide") : tt("noProgramme");
     const reasonLabel = (reason) => reason === "favouriteLive" ? tt("spotlightFavouriteLive") : reason === "favourite" ? tt("spotlightFavourite") : reason === "recent" ? tt("spotlightRecent") : tt("spotlightOnNow");
-    const minutesLeft = (stop) => tt("minutesLeft", { min: Math.max(0, Math.round((stop - model.nowMs) / 6e4)) });
+    const minutesLeft = (stop2) => tt("minutesLeft", { min: Math.max(0, Math.round((stop2 - model.nowMs) / 6e4)) });
     const cardStation = (channel, extra) => station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), extra);
     const chipItems = [
       { key: null, label: tt("allGroups"), id: "all" },
@@ -56923,12 +58960,12 @@ ${cue.text}`).join("\n\n")}
       })),
       { key: "__add", label: tt("addPlaylist"), run: () => nav.go("settings", { tab: "playlists" }) }
     ];
-    const pill2 = /* @__PURE__ */ jsxs("div", { "data-testid": "playlist-pill", ...station(() => setPlaylistOpen(true)), style: { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", maxWidth: 180 }, children: [
+    const pill = /* @__PURE__ */ jsxs("div", { "data-testid": "playlist-pill", ...station(() => setPlaylistOpen(true)), style: { minHeight: 36, padding: "0 12px", borderRadius: 999, background: MT.s12, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600, cursor: "pointer", maxWidth: 180 }, children: [
       /* @__PURE__ */ jsx("span", { style: ellipsis2, children: model.activePlaylistName ?? tt("allPlaylists") }),
       /* @__PURE__ */ jsx("span", { style: { flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 16 }) })
     ] });
     const sheet = playlistOpen ? /* @__PURE__ */ jsx(MobileSheet, { title: tt("playlists"), items: playlistItems, onClose: () => setPlaylistOpen(false), pushLayer: nav.pushLayer, testId: "playlist-sheet" }) : null;
-    const header = /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("liveTv"), right: pill2, close: true, onClose: requestBrowseBack }) });
+    const header = /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("liveTv"), right: pill, close: true, onClose: requestBrowseBack }) });
     if (model.allChannels.length === 0) {
       return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 14 }, children: [
         header,
@@ -57041,7 +59078,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-hub.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-hub.tsx
   init_jsx_runtime_shim();
   var SPOTLIGHT_COUNT_DESKTOP = 3;
   var ALL_CHANNELS_COLUMNS_DESKTOP = 6;
@@ -57080,7 +59117,7 @@ ${cue.text}`).join("\n\n")}
       return off;
     }, [playlistOpen]);
     const reasonLabel = (reason) => reason === "favouriteLive" ? tt("spotlightFavouriteLive") : reason === "favourite" ? tt("spotlightFavourite") : reason === "recent" ? tt("spotlightRecent") : tt("spotlightOnNow");
-    const minutesLeft = (stop) => tt("minutesLeft", { min: Math.max(0, Math.round((stop - model.nowMs) / 6e4)) });
+    const minutesLeft = (stop2) => tt("minutesLeft", { min: Math.max(0, Math.round((stop2 - model.nowMs) / 6e4)) });
     const cardStation = (channel, extra) => station(() => nav.play({ channel }), (el) => nav.channelMenu(channel, el), extra);
     if (model.allChannels.length === 0) {
       return /* @__PURE__ */ jsxs("div", { style: { padding: dp(48), display: "flex", flexDirection: "column", gap: dp(16) }, children: [
@@ -57251,7 +59288,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57260,32 +59297,32 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-schedule-window.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-schedule-window.ts
   var MINUTE = 6e4;
-  var WINDOW_MS = 2 * 60 * MINUTE;
+  var WINDOW_MS2 = 2 * 60 * MINUTE;
   function scheduleWindow(nowMs) {
     const d = new Date(nowMs);
     d.setSeconds(0, 0);
     d.setMinutes(d.getMinutes() < 30 ? 0 : 30);
-    const start2 = d.getTime() - 30 * MINUTE;
-    return { start: start2, end: start2 + WINDOW_MS };
+    const start3 = d.getTime() - 30 * MINUTE;
+    return { start: start3, end: start3 + WINDOW_MS2 };
   }
   function timeTicks(win) {
     return [0, 1, 2, 3].map((i) => win.start + i * 30 * MINUTE);
   }
   function blockGeometry(p, win) {
-    const start2 = Math.max(p.start, win.start);
-    const stop = Math.min(p.stop, win.end);
-    if (stop <= start2) return null;
-    const leftPct = (start2 - win.start) / WINDOW_MS * 100;
-    const widthPct = (stop - start2) / WINDOW_MS * 100;
+    const start3 = Math.max(p.start, win.start);
+    const stop2 = Math.min(p.stop, win.end);
+    if (stop2 <= start3) return null;
+    const leftPct = (start3 - win.start) / WINDOW_MS2 * 100;
+    const widthPct = (stop2 - start3) / WINDOW_MS2 * 100;
     return { leftPct, widthPct };
   }
   function nowLinePct(nowMs, win) {
-    return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS * 100));
+    return Math.min(100, Math.max(0, (nowMs - win.start) / WINDOW_MS2 * 100));
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-preview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-preview.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -57315,7 +59352,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57324,7 +59361,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/list-tree.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/list-tree.ts
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57358,7 +59395,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, channelsLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -57367,14 +59404,14 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_channel_row();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-segment.tsx
   init_tv_ui();
   init_mobile_tokens();
   init_jsx_runtime_shim();
@@ -57406,7 +59443,7 @@ ${cue.text}`).join("\n\n")}
     }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/guide-phone.tsx
   init_mobile_channel_row();
   init_jsx_runtime_shim();
   function phoneGuideMode(stored) {
@@ -57475,7 +59512,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/guide-lists-phone.tsx
   init_jsx_runtime_shim();
   var GROUPS_PREVIEW = 6;
   var ROW_STEP2 = 40;
@@ -57608,7 +59645,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-guide-playlists.tsx
   init_jsx_runtime_shim();
   var MAX_GROUPS2 = 12;
   var ROW_STEP3 = 40;
@@ -57733,7 +59770,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57743,7 +59780,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/grid-rows.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/grid-rows.ts
   init_react_shim();
   init_live_tv_data();
   init_useSchedules();
@@ -57781,7 +59818,7 @@ ${cue.text}`).join("\n\n")}
     return { rows, withoutEpg, hasMore, schedulesLoading };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -57789,7 +59826,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/epg-grid-geometry.ts
   init_live_tv_model();
   var HOUR_PX = 240;
   var PX_PER_MIN = HOUR_PX / 60;
@@ -57807,11 +59844,11 @@ ${cue.text}`).join("\n\n")}
     return "full";
   }
   function epgBlockBox(programme, windowStart, windowEnd, pxPerMin = PX_PER_MIN, thresholds) {
-    const start2 = Math.max(programme.start, windowStart);
-    const stop = Math.min(programme.stop, windowEnd);
-    if (stop <= start2) return null;
-    const width = (stop - start2) / 6e4 * pxPerMin;
-    const left = (start2 - windowStart) / 6e4 * pxPerMin;
+    const start3 = Math.max(programme.start, windowStart);
+    const stop2 = Math.min(programme.stop, windowEnd);
+    if (stop2 <= start3) return null;
+    const width = (stop2 - start3) / 6e4 * pxPerMin;
+    const left = (start3 - windowStart) / 6e4 * pxPerMin;
     const shape = shapeFor(width, thresholds ?? DEFAULT_THRESHOLDS);
     const paddingX = thresholds ? 0 : shape === "marker" ? 0 : Math.min(8, width / 3);
     return {
@@ -57860,7 +59897,7 @@ ${cue.text}`).join("\n\n")}
   var GRID_WINDOW_MS = 3 * 36e5;
   var PCT_PER_MIN_GRID = 100 / 180;
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/guide-grid-phone.tsx
   init_mobile_tokens();
   init_mobile_logo();
   init_jsx_runtime_shim();
@@ -57982,7 +60019,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-guide-grid.tsx
   init_jsx_runtime_shim();
   var MAX_ROWS2 = 80;
   var EPG_ROWS_STEP = 80;
@@ -58232,11 +60269,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_useSchedules();
   init_guide_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -58245,7 +60282,7 @@ ${cue.text}`).join("\n\n")}
   init_guide_surface();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-control-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-control-row.tsx
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -58340,7 +60377,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -58349,11 +60386,11 @@ ${cue.text}`).join("\n\n")}
   init_tv_strings();
   init_live_tv_model();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_live_tv_ui();
   init_tv_ui();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/live-preview-art.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/live-preview-art.tsx
   init_react_shim();
   init_tv_ui();
   init_video_surface();
@@ -58398,7 +60435,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-detail-panel.tsx
   init_tv_settings_store();
   init_tv_strings();
   init_jsx_runtime_shim();
@@ -58466,7 +60503,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-grid-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-grid-view.tsx
   init_jsx_runtime_shim();
   var ROW_H_PX = gp(68);
   var HALF_HOUR_MS2 = 30 * 6e4;
@@ -58696,7 +60733,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-nownext-view.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -58901,7 +60938,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/guide-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/guide-shell.tsx
   init_jsx_runtime_shim();
   function TvGuideShell({ model, nav, params }) {
     const { tt, locale } = useTvText();
@@ -59016,7 +61053,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-guide.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-guide.tsx
   init_jsx_runtime_shim();
   var ROW_STEP4 = 40;
   function TvGuide(props) {
@@ -59110,7 +61147,7 @@ ${cue.text}`).join("\n\n")}
     const info = selected ? model.nowFor(selected) : { now: null, next: null, later: null };
     const previewOn = settings.previewEnabled;
     const headlineSize = previewOn ? dp(40) : dp(34);
-    const minutesLeft = (stop) => tt("minutesLeft", { min: Math.max(0, Math.round((stop - model.nowMs) / 6e4)) });
+    const minutesLeft = (stop2) => tt("minutesLeft", { min: Math.max(0, Math.round((stop2 - model.nowMs) / 6e4)) });
     const modeOptions = [{ key: "now", label: tt("modeNow") }, { key: "tl", label: tt("modeTimeline") }, { key: "grid", label: tt("modeGrid") }, { key: "playlists", label: tt("modePlaylists") }];
     const stepCategory = (delta) => {
       if (groups.length === 0) return;
@@ -59255,7 +61292,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -59263,7 +61300,7 @@ ${cue.text}`).join("\n\n")}
   init_tv_ui();
   init_tv_strings();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_ui();
@@ -59273,7 +61310,7 @@ ${cue.text}`).join("\n\n")}
   init_mobile_icons();
   init_mobile_logo();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/use-drag-reorder.ts
   init_react_shim();
   function reorder(items2, from, to) {
     const next = items2.slice();
@@ -59334,7 +61371,7 @@ ${cue.text}`).join("\n\n")}
     return { dragging, offsetY, handleProps };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/favourites-phone.tsx
   init_jsx_runtime_shim();
   var ROW_HEIGHT = 74;
   function TvFavouritesPhone({ model, nav }) {
@@ -59355,7 +61392,7 @@ ${cue.text}`).join("\n\n")}
         setPinnedLiveTvKeys(reorder(keys2, fi, ti));
       }
     });
-    const pill2 = /* @__PURE__ */ jsx(
+    const pill = /* @__PURE__ */ jsx(
       "div",
       {
         "data-testid": "fav-edit-pill",
@@ -59365,7 +61402,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
     return /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 4 }, children: [
-      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("favourites"), right: pill2 }) }),
+      /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("favourites"), right: pill }) }),
       /* @__PURE__ */ jsx("div", { style: { fontSize: 13, color: MT.dim, marginBottom: 10 }, children: tt("channelsCount", { count: favourites.length }) }),
       favourites.length === 0 ? /* @__PURE__ */ jsx("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24, color: MT.dim, fontSize: 15 }, children: tt("favouritesEmptyPhone") }) : favourites.map((channel, index) => {
         const key = channelKey(channel);
@@ -59430,7 +61467,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-favourites.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-favourites.tsx
   init_jsx_runtime_shim();
   function escapeKey(key) {
     return typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key.replace(/"/g, '\\"');
@@ -59510,139 +61547,16 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
   init_channel_locks();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/channel-detail.ts
-  init_react_shim();
-  init_live_tv_data();
-  init_channel_locks();
-  init_live_tv_model();
-  init_reminders();
-  init_lookup2();
-  init_useSchedules();
-  init_tv_strings();
-  var DAY_OFFSETS = [-2, -1, 0, 1, 2];
-  var DAY_MS2 = 864e5;
-  function channelFromParams(params, byUrl) {
-    const url = params.url?.trim();
-    if (!url) return null;
-    return byUrl.get(url) ?? {
-      name: params.name?.trim() || "Unknown",
-      logo: params.logo?.trim() || null,
-      group: params.group?.trim() || "Other",
-      url,
-      tvgId: params.tvgId?.trim() || null
-    };
-  }
-  function kindOf(p, nowMs) {
-    if (p.stop <= nowMs) return "past";
-    if (p.start > nowMs) return "future";
-    return "now";
-  }
-  function useChannelDetail(model, nav, params) {
-    const { tt, locale } = useTvText();
-    const channel = useMemo(() => channelFromParams(params, model.byUrl), [params, model.byUrl]);
-    const [dayOffset, setDayOffset] = useState(0);
-    const [selectedStart, setSelectedStart] = useState(params.programme ? Number(params.programme) : null);
-    const dayStart = startOfLocalDay(model.nowMs, dayOffset);
-    const archiveDays = channel?.archive?.days ?? 0;
-    const windowFrom = dayStart - Math.max(1, archiveDays) * DAY_MS2;
-    const windowTo = dayStart + DAY_MS2;
-    const scheduleChannels = useMemo(() => channel ? [channel] : [], [channel]);
-    const { schedules, loading: scheduleLoading } = useSchedules(scheduleChannels, windowFrom, windowTo);
-    const schedule3 = channel ? schedules[channelKey(channel)] ?? [] : [];
-    const programmes = useMemo(
-      () => sliceSchedule(schedule3, dayStart, dayStart + DAY_MS2),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [schedule3, dayStart]
-    );
-    const yesterday = useMemo(
-      () => dayOffset === 0 ? sliceSchedule(schedule3, dayStart - DAY_MS2, dayStart).slice(-2) : [],
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [schedule3, dayStart, dayOffset]
-    );
-    const rows = useMemo(
-      () => [...yesterday.map((p) => ({ p, day: "yesterday" })), ...programmes.map((p) => ({ p, day: "today" }))],
-      [yesterday, programmes]
-    );
-    const catchUpByStart = useMemo(() => {
-      if (!channel) return /* @__PURE__ */ new Map();
-      const items2 = catchUpForChannel(channel, schedule3, model.nowMs, 500);
-      return new Map(items2.map((item) => [item.programme.start, true]));
-    }, [channel, schedule3, model.nowMs]);
-    const selected = useMemo(
-      () => rows.find((r) => r.p.start === selectedStart)?.p ?? rows.find((r) => kindOf(r.p, model.nowMs) === "now")?.p ?? rows[0]?.p ?? null,
-      [rows, selectedStart, model.nowMs]
-    );
-    const kind = selected ? kindOf(selected, model.nowMs) : null;
-    const canReplaySelected = selected ? catchUpByStart.has(selected.start) : false;
-    const reminded = channel && selected && kind === "future" ? isReminded(channel, selected) : false;
-    const key = channel ? channelKey(channel) : "";
-    const pinned = model.pinnedSet.has(key);
-    const locked = model.locked.has(key);
-    const lockAvailable = pinSupportAvailable() && activeProfileHasPin2();
-    const mountedRef = useRef(false);
-    useEffect(() => {
-      if (!mountedRef.current) {
-        mountedRef.current = true;
-        return;
-      }
-      setSelectedStart(null);
-    }, [dayOffset]);
-    const primary = () => {
-      if (!channel) return;
-      if (!selected) {
-        nav.play({ channel });
-        return;
-      }
-      if (kind === "now") {
-        nav.play({ channel });
-        return;
-      }
-      if (kind === "past") {
-        const url = canReplaySelected ? buildTimeshiftUrl(channel, selected.start, selected.stop - selected.start) : null;
-        if (url) nav.play({ channel, url, label: selected.title });
-        else nav.play({ channel });
-        return;
-      }
-      toggleReminder(channel, selected, model.nowMs);
-    };
-    const primaryLabel = kind === "past" ? canReplaySelected ? tt("playReplay") : tt("watchNow") : kind === "future" ? reminded ? tt("removeReminder") : tt("remindMe") : tt("watchNow");
-    const dayLabel = (offset) => {
-      const d = new Date(model.nowMs + offset * DAY_MS2);
-      return { top: offset === 0 ? tt("today") : offset === -1 ? tt("yesterday") : offset === 1 ? tt("tomorrow") : d.toLocaleDateString(locale, { weekday: "short" }), bottom: d.toLocaleDateString(locale, { day: "numeric", month: "short" }) };
-    };
-    return {
-      channel,
-      dayOffset,
-      setDayOffset,
-      rows,
-      selected,
-      setSelectedStart,
-      kind,
-      canReplaySelected,
-      reminded,
-      pinned,
-      locked,
-      lockAvailable,
-      scheduleLoading,
-      catchUpByStart,
-      primary,
-      primaryLabel,
-      dayLabel
-    };
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_tv_ui();
   init_tv_strings();
   init_reminders();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/channel-phone.tsx
   init_react_shim();
   init_live_tv_model();
   init_live_tv_ui();
@@ -59821,7 +61735,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-channel.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-channel.tsx
   init_jsx_runtime_shim();
   function TvChannel(props) {
     if (props.phone) return /* @__PURE__ */ jsx(TvChannelPhone, { ...props });
@@ -59951,7 +61865,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-search.tsx
   init_react_shim();
   init_plugin_sdk();
   init_live_tv_data();
@@ -59959,8 +61873,9 @@ ${cue.text}`).join("\n\n")}
   init_live_tv_ui();
   init_tv_ui();
   init_tv_strings();
+  init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-search-logic.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-search-logic.ts
   function norm(s) {
     return s.trim().toLowerCase();
   }
@@ -59994,7 +61909,7 @@ ${cue.text}`).join("\n\n")}
     return out;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useProgrammeSearch.ts
   init_react_shim();
   init_index_client();
   init_channel_resolver();
@@ -60005,16 +61920,16 @@ ${cue.text}`).join("\n\n")}
     const listId = opts?.listId === void 0 ? LIVE_TV_GLOBAL_EPG_ID : opts.listId;
     const limit = opts?.limit ?? 30;
     const [state2, setState] = useState(() => ({ hits: EMPTY8, loading: false }));
-    const generation = useRef(0);
+    const generation2 = useRef(0);
     useEffect(() => {
       const q = query.trim();
-      const mine = ++generation.current;
+      const mine = ++generation2.current;
       if (!listId || q.length === 0) {
         setState({ hits: EMPTY8, loading: false });
         return;
       }
       setState((prev) => ({ hits: prev.hits, loading: true }));
-      const timer3 = window.setTimeout(() => {
+      const timer4 = window.setTimeout(() => {
         epgSearch(listId, q, dayStart, dayEnd, limit).then(async (items2) => {
           const channels = await resolveChannelKeys(items2.map((item) => item.key));
           const byKey = new Map(channels.map((channel) => [channel.key, channel]));
@@ -60024,19 +61939,19 @@ ${cue.text}`).join("\n\n")}
             if (channel) hits.push({ channel, programme: item.programme });
           }
           hits.sort((left, right) => left.programme.start - right.programme.start);
-          if (generation.current === mine) setState({ hits, loading: false });
+          if (generation2.current === mine) setState({ hits, loading: false });
         }).catch(() => {
-          if (generation.current === mine) setState({ hits: EMPTY8, loading: false });
+          if (generation2.current === mine) setState({ hits: EMPTY8, loading: false });
         });
       }, DEBOUNCE_MS);
       return () => {
-        window.clearTimeout(timer3);
+        window.clearTimeout(timer4);
       };
     }, [query, dayStart, dayEnd, listId, limit]);
     return state2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/search-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_live_tv_model();
@@ -60052,8 +61967,8 @@ ${cue.text}`).join("\n\n")}
     const [query, setQuery] = useState("");
     const [focused, setFocused] = useState(false);
     const day = useMemo(() => {
-      const start2 = startOfLocalDay(model.nowMs);
-      return { start: start2, end: start2 + 864e5 };
+      const start3 = startOfLocalDay(model.nowMs);
+      return { start: start3, end: start3 + 864e5 };
     }, [model.nowMs]);
     const channels = useMemo(() => searchChannels(query, model.channels), [query, model.channels]);
     const { hits: programmes, loading: programmesLoading } = useProgrammeSearch(query, day.start, day.end);
@@ -60174,7 +62089,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-search.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-search.tsx
   init_jsx_runtime_shim();
   function TvSearch(props) {
     return props.phone ? /* @__PURE__ */ jsx(TvSearchPhone, { ...props }) : /* @__PURE__ */ jsx(TvSearchDesktop, { ...props });
@@ -60196,8 +62111,8 @@ ${cue.text}`).join("\n\n")}
       limit: 20
     });
     const day = useMemo(() => {
-      const start2 = startOfLocalDay(model.nowMs);
-      return { start: start2, end: start2 + 864e5 };
+      const start3 = startOfLocalDay(model.nowMs);
+      return { start: start3, end: start3 + 864e5 };
     }, [model.nowMs]);
     const channels = useMemo(() => searchChannels(query, model.channels), [query, model.channels]);
     const { hits: programmes, loading: programmesLoading } = useProgrammeSearch(query, day.start, day.end);
@@ -60289,14 +62204,14 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_useNarrowSurface();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/multiview-slots.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/multiview-slots.ts
   function narrowVisibleIndices(state2) {
     const count = state2.tiles.length;
     const audioIdx = state2.audioIndex;
@@ -60305,10 +62220,10 @@ ${cue.text}`).join("\n\n")}
     return [audioIdx, second];
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_video_surface();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/surface-diagnostics.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/surface-diagnostics.ts
   init_surface_cutouts();
   function opaqueAt(x, y) {
     if (typeof document === "undefined" || typeof document.elementsFromPoint !== "function") return "ok\xE4nt";
@@ -60349,13 +62264,13 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-channel-picker.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_tv_strings();
   init_jsx_runtime_shim();
-  function TvChannelPicker({ model, nav, title, onPick, onClose }) {
+  function TvChannelPicker({ model, nav, title, onPick, onClose, surface }) {
     const { tt } = useTvText();
     const groups = useGuideGroups(model, tt);
     const [group, setGroup] = useState(null);
@@ -60378,7 +62293,7 @@ ${cue.text}`).join("\n\n")}
       window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
       return off;
     }, []);
-    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "channel-picker", "data-panel-root": "", "data-live-tv-layer": "", style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: "flex", flexDirection: "column", gap: dp(18) }, children: [
+    return /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "channel-picker", "data-panel-root": "", "data-live-tv-layer": "", style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV2.panel, borderLeft: `1px solid ${TV2.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: "flex", flexDirection: "column", gap: dp(18), boxSizing: "border-box", ...surface }, children: [
       /* @__PURE__ */ jsx("div", { style: { fontSize: dp(28), fontWeight: 600 }, children: title }),
       /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: groups.map((chip) => /* @__PURE__ */ jsx(Chip, { active: group === chip.key, ...station(() => setGroup(chip.key)), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.id)) }),
       /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: rows.map((channel, index) => {
@@ -60399,7 +62314,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/multiview-phone.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
@@ -60567,7 +62482,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-multiview.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-multiview.tsx
   init_jsx_runtime_shim();
   var GRID = {
     2: { columns: "1fr 1fr", rows: "1fr" },
@@ -60594,7 +62509,7 @@ ${cue.text}`).join("\n\n")}
       if (!nativeBehindDom) return;
       const tiles = () => Array.from(rootRef.current?.querySelectorAll('[data-testid="mv-tile"]') ?? []);
       const timers2 = [1500, 5e3].map((ms2) => window.setTimeout(() => logSurfaceStack(`multivy +${ms2} ms`, tiles()), ms2));
-      return () => timers2.forEach((timer3) => window.clearTimeout(timer3));
+      return () => timers2.forEach((timer4) => window.clearTimeout(timer4));
     }, [nativeBehindDom]);
     useEffect(() => {
       if (!narrow) return;
@@ -60706,7 +62621,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-library.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-library.tsx
   init_react_shim();
   init_plugin_sdk();
   init_useNarrowSurface();
@@ -60786,8 +62701,8 @@ ${cue.text}`).join("\n\n")}
     const [query, setQuery] = useState("");
     const [q, setQ] = useState("");
     useEffect(() => {
-      const timer3 = window.setTimeout(() => setQ(query.trim()), 250);
-      return () => window.clearTimeout(timer3);
+      const timer4 = window.setTimeout(() => setQ(query.trim()), 250);
+      return () => window.clearTimeout(timer4);
     }, [query]);
     const validSelected = useMemo(() => {
       if (selected === ALL_CATEGORY || cats.categories.length === 0) return ALL_CATEGORY;
@@ -61234,13 +63149,13 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_react_shim();
   init_plugin_sdk();
   init_vod_client();
   init_live_tv_data();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-title.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-title.ts
   var CAST_LIMIT = 20;
   function asNumber(value) {
     const n = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
@@ -61298,7 +63213,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-library-title.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-library-title.tsx
   init_useNarrowSurface();
   init_tv_ui();
   init_mobile_tokens();
@@ -61336,14 +63251,14 @@ ${cue.text}`).join("\n\n")}
       setInfo(null);
       setLogoUrl(null);
       if (!item?.tmdbId) return;
-      const controller = new AbortController();
-      void fetchVodTitleInfo(item.tmdbId, mediaType, controller.signal).then((next) => {
-        if (!controller.signal.aborted) setInfo(next);
+      const controller2 = new AbortController();
+      void fetchVodTitleInfo(item.tmdbId, mediaType, controller2.signal).then((next) => {
+        if (!controller2.signal.aborted) setInfo(next);
       });
-      void fetchTitleLogo(item.tmdbId, mediaType, controller.signal).then((url) => {
-        if (!controller.signal.aborted) setLogoUrl(url);
+      void fetchTitleLogo(item.tmdbId, mediaType, controller2.signal).then((url) => {
+        if (!controller2.signal.aborted) setLogoUrl(url);
       });
-      return () => controller.abort();
+      return () => controller2.abort();
     }, [item?.tmdbId, mediaType]);
     useEffect(() => {
       setEpisodes(null);
@@ -61755,7 +63670,7 @@ ${cue.text}`).join("\n\n")}
     return null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-library-cast.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-library-cast.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
@@ -61790,18 +63705,19 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsx("div", { "data-testid": "tv-library-cast", style: { flex: 1, minHeight: 0, position: "relative" }, children: /* @__PURE__ */ jsx(Page, { tmdbId, mediaType, initialTitle: params.title ?? "", onClose: back }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/settings-phone.tsx
   init_tv_ui();
   init_tv_strings();
   init_tv_settings_store();
   init_mobile_tokens();
+  init_mobile_toggle();
   init_jsx_runtime_shim();
   function TvSettingsPhone(props) {
     const { model, nav, params, settings } = props;
@@ -61810,7 +63726,7 @@ ${cue.text}`).join("\n\n")}
     if (params.tab === "epg" || params.tab === "parental" || params.tab === "content" || params.tab === "sport") {
       const rubrik = params.tab === "epg" ? "tabEpg" : params.tab === "parental" ? "tabParental" : params.tab === "sport" ? "tabSport" : "tabContent";
       return /* @__PURE__ */ jsx(PhonePage, { header: /* @__PURE__ */ jsx(MobileHeader, { title: tt(rubrik), back: true, onBack: () => nav.go("settings") }), children: /* @__PURE__ */ jsx(Card3, { children: params.tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale, phone: true }) : params.tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt, phone: true }) : params.tab === "sport" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-        /* @__PURE__ */ jsx(SportKeySettingsTv, { phone: true }),
+        /* @__PURE__ */ jsx(SportKeySettingsTv, { phone: true, pushLayer: nav.pushLayer }),
         /* @__PURE__ */ jsx(SportBackdropSettingsTv, { phone: true, pushLayer: nav.pushLayer })
       ] }) : /* @__PURE__ */ jsx(ContentTab, { model, tt, phone: true }) }) });
     }
@@ -61871,7 +63787,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-settings.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-settings.tsx
   init_guide_surface();
   init_jsx_runtime_shim();
   var TABS = ["appearance", "content", "playlists", "epg", "parental", "sport"];
@@ -61898,7 +63814,7 @@ ${cue.text}`).join("\n\n")}
         tab === "epg" ? /* @__PURE__ */ jsx(EpgTab, { lists: model.lists, nav, tt, locale }) : null,
         tab === "parental" ? /* @__PURE__ */ jsx(ParentalTab, { model, tt }) : null,
         tab === "sport" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx(SportKeySettingsTv, {}),
+          /* @__PURE__ */ jsx(SportKeySettingsTv, { pushLayer: nav.pushLayer }),
           /* @__PURE__ */ jsx(SportBackdropSettingsTv, { pushLayer: nav.pushLayer })
         ] }) : null
       ] })
@@ -61942,7 +63858,7 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
@@ -61951,7 +63867,88 @@ ${cue.text}`).join("\n\n")}
   init_sport_store();
   init_sport_day_model();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/sport-backdrop.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/match-info-model.ts
+  init_sport_day_model();
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/event-timeline.ts
+  function markerKind(e) {
+    if (e.type === "goal") return "goal";
+    if (e.type === "penalty") return "penalty";
+    if (e.type === "card") return /red/i.test(e.detail) ? "red" : "yellow";
+    return null;
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/match-info-model.ts
+  function dayHeaderCounts(matches, now2) {
+    return {
+      total: matches.length,
+      live: matches.filter((m) => statusAt(m, now2) === "live").length,
+      onChannels: matches.filter((m) => m.sources.length > 0 && !m.resultOnly).length
+    };
+  }
+  function eventSummary(events) {
+    return { goals: events.filter((e) => e.type === "goal").length, cards: events.filter((e) => e.type === "card").length };
+  }
+  var SHOWN = /* @__PURE__ */ new Set(["goal", "card", "penalty", "var"]);
+  function eventRows(events) {
+    const out = [];
+    events.forEach((e, index) => {
+      if (!SHOWN.has(e.type)) return;
+      out.push({
+        index,
+        minute: e.minute != null ? `${e.minute}'${e.extra ? `+${e.extra}` : ""}` : "",
+        marker: markerKind(e),
+        player: e.player,
+        assist: e.assist,
+        event: e,
+        align: e.side === "away" ? "end" : "start"
+      });
+    });
+    return out;
+  }
+  var num4 = (v) => {
+    const n = Number(String(v).replace("%", "").trim());
+    return Number.isFinite(n) ? n : 0;
+  };
+  function statBars(stats) {
+    return stats.map((s) => {
+      const h = num4(s.home);
+      const a = num4(s.away);
+      return { label: s.label, home: s.home, away: s.away, sum: h + a, h };
+    }).filter((s) => s.sum > 0).map(({ label, home, away, sum, h }) => ({ label, home, away, homeShare: h / sum }));
+  }
+  var POSITION_ORDER = ["gk", "def", "mid", "att", "other"];
+  function positionGroup(pos) {
+    const p = (pos ?? "").trim().toLowerCase();
+    if (!p) return "other";
+    if (p === "g" || /goal|keeper/.test(p)) return "gk";
+    if (p === "m" || /midfield/.test(p)) return "mid";
+    if (p === "d" || /back|defen/.test(p)) return "def";
+    if (p === "f" || /forward|striker|wing|attack/.test(p)) return "att";
+    return "other";
+  }
+  function lineupGroups(lineups2) {
+    const side3 = (s) => lineups2.find((l) => l.side === s)?.startXI ?? [];
+    const home = side3("home");
+    const away = side3("away");
+    return POSITION_ORDER.map((group) => ({ group, home: home.filter((p) => positionGroup(p.pos) === group), away: away.filter((p) => positionGroup(p.pos) === group) })).filter((g) => g.home.length > 0 || g.away.length > 0);
+  }
+  function playerInitials(name) {
+    const words = name.split(/\s+/).map((w) => w.replace(/[^\p{L}]/gu, "")).filter(Boolean);
+    if (words.length === 0) return "?";
+    return words.slice(0, 2).map((w) => w.charAt(0)).join("").toUpperCase();
+  }
+  function playerMatchFacts(name, events) {
+    const mine = (e) => e.player === name;
+    return {
+      goals: events.filter((e) => e.type === "goal" && mine(e)).length,
+      assists: events.filter((e) => e.type === "goal" && e.assist === name).length,
+      yellow: events.filter((e) => e.type === "card" && mine(e) && markerKind(e) === "yellow").length,
+      red: events.filter((e) => e.type === "card" && mine(e) && markerKind(e) === "red").length
+    };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-backdrop.tsx
   init_jsx_runtime_shim();
   function SportBackdropLayer({ choice, phone, onBroken }) {
     if (choice.kind === "none") return null;
@@ -61965,100 +63962,38 @@ ${cue.text}`).join("\n\n")}
         "aria-hidden": "true",
         style: { position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", background: choice.kind === "gradient" ? SPORT_GRADIENTS[choice.sport] : "#000" },
         children: image && src ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsx("img", { src, alt: "", decoding: "async", onError: () => onBroken(image.url), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" } }),
+          /* @__PURE__ */ jsx("img", { src, alt: "", decoding: "async", onError: () => onBroken(image.url), style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: phone ? "center top" : "center 30%", ...phone ? { opacity: BACKDROP_PHONE_OPACITY } : {} } }),
           /* @__PURE__ */ jsx("div", { "data-scrim": "", style: { position: "absolute", inset: 0, backgroundImage: phone ? BACKDROP_SCRIM_PHONE : BACKDROP_SCRIM } })
         ] }) : null
       }
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_ctx();
   init_results_controller();
   init_live_poller();
   init_sport_score();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-results.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
   init_sport_parts();
   init_sport_score();
+  init_key_card();
   init_sport_store();
+  init_league_jump();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/league-jump.ts
-  init_merge();
-  init_sport_day_model();
-  var YOUR_LEAGUES_MAX = 10;
-  var TOP_LEAGUES_MAX = 6;
-  var OPEN_COUNTRIES = 6;
-  function foldText(s) {
-    return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
-  }
-  var HOME_COUNTRIES = /* @__PURE__ */ new Set(["sweden", "sverige"]);
-  var isHomeCountry = (c) => c !== null && HOME_COUNTRIES.has(foldText(c));
-  function leagueEntries(groups, follows) {
-    const names = /* @__PURE__ */ new Map();
-    for (const g of groups) {
-      const k = foldText(g.league);
-      const set = names.get(k) ?? /* @__PURE__ */ new Set();
-      set.add(g.key);
-      names.set(k, set);
-    }
-    return groups.map((g) => {
-      const duplicate = (names.get(foldText(g.league))?.size ?? 0) > 1;
-      return {
-        key: g.key,
-        sport: g.sport,
-        league: g.league,
-        country: g.country,
-        label: duplicate && g.country ? `${g.league} \xB7 ${g.country}` : g.league,
-        count: g.matches.length,
-        live: g.matches.filter((m) => m.status === "live").length,
-        relevant: relevantMatches(g.matches, follows).length > 0,
-        followed: g.matches.some((m) => followState(m, follows).league)
-      };
-    });
-  }
-  var byCount = (a, b) => b.count - a.count || a.label.localeCompare(b.label);
-  function yourLeagues(entries) {
-    const relevant = entries.filter((e) => e.relevant);
-    if (relevant.length === 0) return { entries: [...entries].sort(byCount).slice(0, TOP_LEAGUES_MAX), fallback: true };
-    const rank = (e) => e.followed ? 0 : e.live > 0 ? 1 : 2;
-    return { entries: [...relevant].sort((a, b) => rank(a) - rank(b) || byCount(a, b)).slice(0, YOUR_LEAGUES_MAX), fallback: false };
-  }
-  function countryGroups(entries) {
-    const map = /* @__PURE__ */ new Map();
-    for (const e of entries) {
-      const k = e.country ? foldText(e.country) : "";
-      const g = map.get(k) ?? { country: e.country, total: 0, live: 0, entries: [], collapsed: false };
-      g.total += e.count;
-      g.live += e.live;
-      g.entries.push(e);
-      map.set(k, g);
-    }
-    const tier = (g) => isHomeCountry(g.country) ? 0 : g.country === null ? 2 : 1;
-    const list = [...map.values()].sort((a, b) => tier(a) - tier(b) || b.total - a.total || (a.country ?? "").localeCompare(b.country ?? ""));
-    return list.map((g, i) => ({ ...g, entries: [...g.entries].sort(byCount), collapsed: i >= OPEN_COUNTRIES }));
-  }
-  function searchLeagues(entries, query) {
-    const q = foldText(query);
-    if (!q) return [];
-    const words = q.split(/\s+/);
-    const hits = entries.filter((e) => {
-      const hay = `${foldText(e.league)} ${e.country ? foldText(e.country) : ""}`;
-      return words.every((w) => hay.includes(w));
-    });
-    const prefix = (e) => foldText(e.league).startsWith(q) ? 0 : 1;
-    return hits.sort((a, b) => prefix(a) - prefix(b) || byCount(a, b));
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-league-drawer.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
   init_tv_strings();
-  init_sport_icons();
+  init_tv_text_entry();
+  init_league_jump();
+  init_surface();
+  init_sport_icons2();
   init_sport_parts();
   init_jsx_runtime_shim();
   function LiveDot({ size = dp(9) }) {
@@ -62112,6 +64047,7 @@ ${cue.text}`).join("\n\n")}
         title: tt("sportAllLeagues"),
         onClose,
         testId: "league-drawer",
+        surface: sportDrawerStyle,
         chips: /* @__PURE__ */ jsxs(Fragment2, { children: [
           searchField,
           prompt.node
@@ -62146,43 +64082,29 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function YourLeaguesRow({ entries, fallback, onJump, onMore, tv }) {
+  function YourLeaguesRow({ entries, fallback, active: active4 = null, activeLabel = null, onJump, onReset, onMore, tv }) {
     const { tt } = useTvText();
+    const inRow = active4 ? entries.some((e) => e.key === active4) : true;
     return /* @__PURE__ */ jsxs("div", { "data-testid": "your-leagues", "data-row": "", style: { display: "flex", gap: dp(10), alignItems: "center", flexWrap: tv ? "nowrap" : "wrap", overflowX: tv ? "auto" : void 0 }, children: [
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(13), letterSpacing: "0.12em", color: TV2.dim, flexShrink: 0 }, children: fallback ? tt("sportTopLeagues") : tt("sportYourLeagues") }),
-      entries.map((e) => /* @__PURE__ */ jsx(Chip, { "data-testid": `league-chip-${e.key}`, active: false, ...station(() => onJump(e.key)), children: /* @__PURE__ */ jsx(LeagueChipBody, { entry: e }) }, e.key)),
+      active4 && onReset ? /* @__PURE__ */ jsxs(Chip, { "data-testid": "league-reset", active: false, ...station(onReset), style: { border: `1px solid ${TV2.lineStrong}`, color: TV2.text, gap: dp(8) }, children: [
+        tt("sportAllLeaguesReset"),
+        /* @__PURE__ */ jsx("span", { "aria-hidden": "true", children: "\u2715" })
+      ] }) : null,
+      active4 && !inRow ? /* @__PURE__ */ jsx(Chip, { "data-testid": `league-chip-${active4}`, active: true, "aria-pressed": "true", ...station(() => onJump(active4)), children: activeLabel ?? active4 }) : null,
+      entries.map((e) => /* @__PURE__ */ jsx(Chip, { "data-testid": `league-chip-${e.key}`, active: e.key === active4, "aria-pressed": e.key === active4 ? "true" : "false", ...station(() => onJump(e.key)), children: /* @__PURE__ */ jsx(LeagueChipBody, { entry: e }) }, e.key)),
       /* @__PURE__ */ jsx(Chip, { "data-testid": "league-more", active: false, ...station(onMore), style: { border: `1px solid ${TV2.lineStrong}`, color: TV2.text }, children: tt("sportMoreLeagues") })
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/results-model.ts
-  var isLive = (m) => m.status === "live";
-  var isMine = (m) => m.sources.length > 0 && !m.resultOnly;
-  function groupResults(matches, filter) {
-    const eligible = matches.filter((m) => m.coverage === "full" && m.fixture?.leagueId);
-    const shown = eligible.filter((m) => filter === "live" ? isLive(m) : filter === "mine" ? isMine(m) : true);
-    const groups = /* @__PURE__ */ new Map();
-    for (const m of shown) {
-      const key = `${m.kind}|${m.fixture.leagueId}`;
-      const g = groups.get(key) ?? { key, sport: m.kind, league: m.league, leagueId: m.fixture.leagueId, season: m.fixture.season ?? "", round: m.round ?? null, country: m.fixture.country ?? null, matches: [] };
-      g.matches.push(m);
-      groups.set(key, g);
-    }
-    for (const g of groups.values()) g.matches.sort((a, b) => a.start - b.start);
-    return { groups: [...groups.values()], liveCount: eligible.filter(isLive).length, mineCount: eligible.filter(isMine).length };
-  }
-  function formLetters(form, tt) {
-    const map = { W: tt("sportFormW"), D: tt("sportFormD"), L: tt("sportFormL") };
-    return (form ?? "").toUpperCase().split("").filter((c) => c === "W" || c === "D" || c === "L").map((kind) => ({ kind, letter: map[kind] }));
-  }
-  var FORM_COLOR = { W: "#3cd6a3", D: "rgba(243,244,248,0.45)", L: "#e0776a" };
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-results.tsx
+  init_results_model();
   init_surface();
+  init_results_model();
   init_jsx_runtime_shim();
   function StandingsTable({ rows, tt }) {
     const cell = { padding: `${dp(6)}px ${dp(8)}px`, fontSize: dp(15) };
-    return /* @__PURE__ */ jsxs("table", { style: { width: "100%", borderCollapse: "collapse", color: TV2.text }, children: [
+    return /* @__PURE__ */ jsx("div", { "data-testid": "sport-standings", style: { ...sportCardStyle, padding: `${dp(4)}px ${dp(8)}px` }, children: /* @__PURE__ */ jsxs("table", { style: { width: "100%", borderCollapse: "collapse", color: TV2.text }, children: [
       /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { style: { color: TV2.dim, textAlign: "left" }, children: [
         /* @__PURE__ */ jsx("th", { style: cell, children: "#" }),
         /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColTeam") }),
@@ -62200,23 +64122,24 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("td", { style: { ...cell, fontWeight: 600 }, children: r.points }),
         /* @__PURE__ */ jsx("td", { style: cell, children: /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", gap: dp(4) }, children: formLetters(r.form, tt).map((f, i) => /* @__PURE__ */ jsx("span", { style: { width: dp(18), height: dp(18), borderRadius: dp(4), background: FORM_COLOR[f.kind], color: "#0e0f13", fontSize: dp(11), fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: f.letter }, i)) }) })
       ] }, `${r.group ?? ""}-${r.rank}-${r.team.id}`)) })
-    ] });
+    ] }) });
   }
   var NO_LAYER = { pushLayer: () => () => {
   } };
-  function SportResults({ matches, controller, onOpenMatch, tv, sport = "all", nav = NO_LAYER }) {
+  function SportResults({ matches, controller: controller2, onOpenMatch, tv, sport = "all", nav = NO_LAYER }) {
     const { tt } = useTvText();
     const settings = useSportSettings();
-    const [filter, setFilter] = useState("all");
+    const follows = useFollows();
+    const [filter, setFilter] = useState(() => defaultResultsFilter(follows));
+    const [league, setLeague] = useState(null);
     const [tables, setTables] = useState({});
     const [drawer, setDrawer] = useState(false);
-    const follows = useFollows();
-    const groupRefs = useRef(/* @__PURE__ */ new Map());
     const forSport = useMemo(() => sport === "all" ? matches : matches.filter((m) => m.kind === sport), [matches, sport]);
-    const { groups, liveCount, mineCount } = useMemo(() => groupResults(forSport, filter), [forSport, filter]);
+    const { groups, liveCount, mineCount, followedCount } = useMemo(() => groupResults(forSport, filter, follows), [forSport, filter, follows]);
+    const shown = useMemo(() => onlyLeague(groups, league), [groups, league]);
     const entries = useMemo(() => leagueEntries(groups, follows), [groups, follows]);
     const mine = useMemo(() => yourLeagues(entries), [entries]);
-    if (!settings.apiKey || !controller) {
+    if (!settings.apiKey || !controller2) {
       return /* @__PURE__ */ jsx(KeyCard, { variant: "tab" });
     }
     const toggleTable = async (g) => {
@@ -62228,32 +64151,26 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       setTables((t) => ({ ...t, [g.key]: "loading" }));
-      const rows = controller.standings(g.sport, g.leagueId, g.season) ?? await controller.loadStandings(g.sport, g.leagueId, g.season);
+      const rows = controller2.standings(g.sport, g.leagueId, g.season) ?? await controller2.loadStandings(g.sport, g.leagueId, g.season);
       setTables((t) => ({ ...t, [g.key]: rows ?? [] }));
     };
-    const jump = (key) => window.setTimeout(() => {
-      const el = groupRefs.current.get(key);
-      el?.scrollIntoView?.({ block: "start" });
-      el?.querySelector("[data-f]")?.focus({ preventScroll: true });
-    }, 0);
+    const pickLeague = (key) => setLeague((cur) => cur === key ? null : key);
     const labels = new Map(entries.map((e) => [e.key, e.label]));
     return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-results", style: { display: "flex", flexDirection: "column", gap: dp(20) }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(10), flexWrap: "wrap" }, children: [
-        /* @__PURE__ */ jsx(Chip, { active: filter === "all", ...station(() => setFilter("all"), void 0, tv ? { "data-init": "" } : void 0), children: tt("sportResultsAll") }),
+        /* @__PURE__ */ jsx(Chip, { "data-testid": "results-filter-all", active: filter === "all", ...station(() => setFilter("all"), void 0, tv ? { "data-init": "" } : void 0), children: tt("sportResultsAll") }),
+        /* @__PURE__ */ jsx(Chip, { "data-testid": "results-filter-followed", active: filter === "followed", ...station(() => setFilter("followed")), children: tt("sportResultsFollowed", { n: followedCount }) }),
         /* @__PURE__ */ jsx(Chip, { active: filter === "live", ...station(() => setFilter("live")), children: `${tt("sportResultsLive")} (${liveCount})` }),
         /* @__PURE__ */ jsx(Chip, { active: filter === "mine", ...station(() => setFilter("mine")), children: tt("sportResultsMine", { n: mineCount }) })
       ] }),
-      groups.length > 0 ? /* @__PURE__ */ jsx(YourLeaguesRow, { entries: mine.entries, fallback: mine.fallback, onJump: jump, onMore: () => setDrawer(true), tv }) : null,
-      groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { color: TV2.dim, fontSize: dp(16) }, children: tt("sportResultsEmpty") }) : null,
-      groups.map((g) => /* @__PURE__ */ jsxs("section", { "data-testid": `results-group-${g.key}`, ref: (el) => {
-        if (el) groupRefs.current.set(g.key, el);
-        else groupRefs.current.delete(g.key);
-      }, style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+      groups.length > 0 || league ? /* @__PURE__ */ jsx(YourLeaguesRow, { entries: mine.entries, fallback: mine.fallback, active: league, activeLabel: league ? labels.get(league) ?? null : null, onJump: pickLeague, onReset: () => setLeague(null), onMore: () => setDrawer(true), tv }) : null,
+      shown.length === 0 ? /* @__PURE__ */ jsx("div", { style: { color: TV2.dim, fontSize: dp(16) }, children: tt("sportResultsEmpty") }) : null,
+      shown.map((g) => /* @__PURE__ */ jsxs("section", { "data-testid": `results-group-${g.key}`, style: { display: "flex", flexDirection: "column", gap: dp(8) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600 }, children: g.round != null ? `${labels.get(g.key) ?? g.league} \xB7 ${tt("sportRound", { n: g.round })}` : labels.get(g.key) ?? g.league }),
           /* @__PURE__ */ jsx("div", { ...station(() => void toggleTable(g)), style: { fontSize: dp(15), color: TV2.muted, cursor: "pointer", padding: `${dp(6)}px ${dp(12)}px`, borderRadius: dp(8), background: TV2.s08 }, children: tt("sportTable") })
         ] }),
-        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { ...station(() => onOpenMatch(m)), style: { display: "grid", gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: "center", gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, borderRadius: dp(10), background: sportBg(TV2.s05), cursor: "pointer" }, children: [
+        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { ...station(() => onOpenMatch(m)), style: { display: "grid", gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: "center", gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, ...sportCardStyle, borderRadius: dp(10), cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), color: m.status === "live" ? TV2.live : TV2.dim }, children: matchStatusLabel(m, tt) ?? "" }),
           /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: dp(8), justifyContent: "flex-end" }, children: [
             m.home,
@@ -62267,15 +64184,15 @@ ${cue.text}`).join("\n\n")}
         ] }, m.id)),
         tables[g.key] && tables[g.key] !== "loading" ? /* @__PURE__ */ jsx(StandingsTable, { rows: tables[g.key], tt }) : null
       ] }, g.key)),
-      drawer ? /* @__PURE__ */ jsx(LeagueDrawer, { nav, entries, showSport: sport === "all", onPick: jump, onClose: () => setDrawer(false) }) : null
+      drawer ? /* @__PURE__ */ jsx(LeagueDrawer, { nav, entries, showSport: sport === "all", onPick: (key) => setLeague(key), onClose: () => setDrawer(false) }) : null
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_sport_parts();
   init_sport_icons();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-matchday.tsx
   init_live_tv_ui();
   init_tv_ui();
   init_sport_model();
@@ -62284,22 +64201,19 @@ ${cue.text}`).join("\n\n")}
   init_score_model();
   init_sport_score();
   init_sport_parts();
-  init_sport_icons();
+  init_sport_icons2();
   init_surface();
   init_jsx_runtime_shim();
   function SportMatchday({ ctx, matches, dayFrom }) {
     const hero = featuredMatch(matches, ctx.follows, ctx.now);
     const next = nextOnYourChannels(matches, ctx.now, hero?.id ?? null);
-    const { live: live2, later, finished } = splitSections(matches, ctx.now);
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(28) }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: dp(20), alignItems: "stretch" }, children: [
         hero ? /* @__PURE__ */ jsx(SportHero, { ctx, match: hero }) : null,
         /* @__PURE__ */ jsx(NextOnChannels, { ctx, matches: next })
       ] }),
       /* @__PURE__ */ jsx(MatchdayTimeline, { ctx, matches, dayFrom }),
-      /* @__PURE__ */ jsx(CardRow, { title: ctx.tt("sportLiveNow"), matches: live2, ctx, testId: "sport-section-live" }),
-      /* @__PURE__ */ jsx(CardRow, { title: ctx.tt("sportLater"), matches: later, ctx, testId: "sport-section-later" }),
-      /* @__PURE__ */ jsx(CardRow, { title: ctx.tt("sportFinished"), matches: finished, ctx, testId: "sport-section-finished" })
+      /* @__PURE__ */ jsx(MatchStrip, { title: ctx.tt("sportMatches"), matches, ctx })
     ] });
   }
   function SportHero({ ctx, match }) {
@@ -62307,7 +64221,7 @@ ${cue.text}`).join("\n\n")}
     const st = statusAt(match, ctx.now);
     const followed = followState(match, ctx.follows).any;
     const context = [followed ? ctx.tt("sportYouFollow") : null, match.league || ctx.kindLabel(match.kind), match.venue].filter(Boolean).join(" \xB7 ");
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-hero", style: { ...sportCardStyle, flex: 1, minWidth: 0, borderRadius: dp(20), padding: `${dp(24)}px ${dp(32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(16), background: `radial-gradient(60% 80% at 50% 0%, ${TV2.accMix(14)}, transparent), ${TV2.s07}` }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-hero", style: { ...sportCardStyle, flex: 1, minWidth: 0, borderRadius: dp(20), padding: `${dp(24)}px ${dp(32)}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: dp(16), background: `radial-gradient(60% 80% at 50% 0%, ${TV2.accMix(14)}, transparent), ${SPORT_CARD_BG}` }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12), fontSize: dp(17), color: TV2.muted }, children: [
         st === "live" ? /* @__PURE__ */ jsx(Tag2, { variant: "live", children: ctx.tt("live") }) : null,
         /* @__PURE__ */ jsx("span", { children: context })
@@ -62361,30 +64275,31 @@ ${cue.text}`).join("\n\n")}
     const axis = timelineAxis(matches, dayFrom);
     const rows = timelineRows(matches);
     const span = axis.end - axis.start;
-    const pct2 = (t) => (Math.min(Math.max(t, axis.start), axis.end) - axis.start) / span * 100;
+    const pct3 = (t) => (Math.min(Math.max(t, axis.start), axis.end) - axis.start) / span * 100;
     const nowInside = ctx.now >= axis.start && ctx.now <= axis.end;
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-timeline", style: { ...sportCardStyle, padding: `${dp(20)}px ${dp(24)}px`, display: "flex", flexDirection: "column", gap: dp(8) }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-timeline", style: { ...sportCardStyle, padding: `${dp(20)}px ${dp(24)}px`, display: "flex", flexDirection: "column", gap: dp(14) }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(14) }, children: [
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(26), fontWeight: 600 }, children: ctx.tt("sportMatchday") }),
-        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: ctx.tt("sportMatchdayHint") })
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted }, children: ctx.tt("sportMatchdayHint") })
       ] }),
       /* @__PURE__ */ jsxs("div", { style: { display: "flex" }, children: [
         /* @__PURE__ */ jsx("div", { style: { width: dp(LABEL_W), flexShrink: 0 } }),
-        /* @__PURE__ */ jsx("div", { style: { position: "relative", flex: 1, height: dp(26) }, children: axis.hours.map((h) => /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: `${pct2(h)}%`, fontSize: dp(14), color: TV2.dim }, children: formatClock2(h, ctx.locale) }, h)) })
+        /* @__PURE__ */ jsx("div", { style: { position: "relative", flex: 1, height: dp(26) }, children: axis.hours.map((h) => /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: `${pct3(h)}%`, fontSize: dp(15), color: TV2.muted }, children: formatClock2(h, ctx.locale) }, h)) })
       ] }),
-      rows.flatMap((row) => row.lanes.map((lane, laneIndex) => /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", alignItems: "center", height: dp(50) }, children: [
-        /* @__PURE__ */ jsx("div", { style: { width: dp(LABEL_W), flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(16), fontWeight: 600, paddingRight: dp(10), boxSizing: "border-box" }, children: laneIndex === 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+      rows.flatMap((row, rowIndex) => row.lanes.map((lane, laneIndex) => /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", alignItems: "center", height: dp(50), marginTop: laneIndex === 0 && rowIndex > 0 ? dp(10) : 0 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { width: dp(LABEL_W), flexShrink: 0, display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(18), fontWeight: 600, paddingRight: dp(10), boxSizing: "border-box" }, children: laneIndex === 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
           /* @__PURE__ */ jsx(LeagueDot, { leagueKey: row.key }),
           /* @__PURE__ */ jsx("span", { style: ellipsis3, children: row.label || ctx.kindLabel(row.kind) })
         ] }) : null }),
         /* @__PURE__ */ jsxs("div", { style: { position: "relative", flex: 1, height: dp(42), background: TV2.s05, borderRadius: dp(8) }, children: [
-          lane.map((m) => /* @__PURE__ */ jsx(TimelineBlock, { ctx, m, left: pct2(m.start), width: Math.max(pct2(m.stop) - pct2(m.start), 1.5) }, m.id)),
-          nowInside ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", top: -dp(4), bottom: -dp(4), left: `${pct2(ctx.now)}%`, width: dp(3), background: TV2.acc, boxShadow: `0 0 ${dp(8)}px ${TV2.acc}` } }) : null
+          mergeLane(lane).map((m, i, blocks) => /* @__PURE__ */ jsx(TimelineBlock, { ctx, m, prevId: blocks[i - 1]?.id ?? null, nextId: blocks[i + 1]?.id ?? null, left: pct3(m.start), width: Math.max(pct3(m.stop) - pct3(m.start), 1.5), showLabel: blockShowsLabel(m.stop - m.start, span) }, m.id)),
+          nowInside ? /* @__PURE__ */ jsx("div", { "aria-hidden": "true", style: { position: "absolute", top: -dp(4), bottom: -dp(4), left: `${pct3(ctx.now)}%`, width: dp(3), background: TV2.acc, boxShadow: `0 0 ${dp(8)}px ${TV2.acc}` } }) : null
         ] })
       ] }, `${row.key}-${laneIndex}`)))
     ] });
   }
-  function TimelineBlock({ ctx, m, left, width }) {
+  var blockSelector = (id) => `[data-testid="sport-block-${id.replace(/["\\]/g, "\\$&")}"]`;
+  function TimelineBlock({ ctx, m, prevId, nextId, left, width, showLabel }) {
     const blink = useGoalBlink(m);
     const st = statusAt(m, ctx.now);
     const base = m.home && m.away ? `${crestText(m.home)}\u2013${crestText(m.away)}` : matchTitle(m);
@@ -62395,7 +64310,20 @@ ${cue.text}`).join("\n\n")}
       {
         "data-testid": `sport-block-${m.id}`,
         "data-status": st,
-        ...station(() => ctx.openMatch(m)),
+        title: label,
+        "aria-label": label,
+        ...station(() => ctx.openMatch(m), void 0, { ...prevId ? { "data-f-left": blockSelector(prevId) } : null, ...nextId ? { "data-f-right": blockSelector(nextId) } : null }),
+        onKeyDown: (event2) => {
+          if (event2.key === "Enter" || event2.key === " ") {
+            event2.preventDefault();
+            ctx.openMatch(m);
+            return;
+          }
+          if (event2.key === "ArrowRight" && !nextId || event2.key === "ArrowLeft" && !prevId) {
+            event2.preventDefault();
+            event2.stopPropagation();
+          }
+        },
         style: {
           position: "absolute",
           top: 0,
@@ -62403,10 +64331,10 @@ ${cue.text}`).join("\n\n")}
           left: `${left}%`,
           width: `${width}%`,
           boxSizing: "border-box",
-          padding: `0 ${dp(10)}px`,
+          padding: showLabel ? `0 ${dp(10)}px` : 0,
           display: "flex",
           alignItems: "center",
-          fontSize: dp(15),
+          fontSize: dp(16),
           fontWeight: 600,
           borderRadius: dp(8),
           cursor: "pointer",
@@ -62418,22 +64346,50 @@ ${cue.text}`).join("\n\n")}
           outline: blink ? `2px solid ${TV2.live}` : void 0,
           color: st === "finished" ? TV2.dim : TV2.text
         },
-        children: label
+        children: showLabel ? label : null
       }
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
+  init_react_shim();
   init_live_tv_ui();
   init_tv_ui();
   init_sport_epg();
   init_sport_model();
   init_sport_day_model();
   init_sport_ctx();
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/follow-crest.ts
+  init_react_shim();
+  init_plugin_sdk();
+  init_live_tv_data();
+  init_score_model();
+  init_sport_store();
+  function backfillFollowCrests(matches) {
+    const current5 = getFollows();
+    let changed = false;
+    const next = current5.map((f) => {
+      if (f.crest || f.kind !== "team") return f;
+      const crest = crestForFollow(f, matches);
+      if (!crest) return f;
+      changed = true;
+      return { ...f, crest };
+    });
+    if (changed) writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next);
+    return changed;
+  }
+  function useBackfillFollowCrests(matches) {
+    useEffect(() => {
+      backfillFollowCrests(matches);
+    }, [matches]);
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-feed.tsx
   init_score_model();
   init_sport_parts();
   init_sport_score();
-  init_sport_icons();
+  init_sport_icons2();
   init_surface();
   init_jsx_runtime_shim();
   var avatarCol = { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(8), width: dp(150), flexShrink: 0, cursor: "pointer" };
@@ -62442,14 +64398,19 @@ ${cue.text}`).join("\n\n")}
     const planned = later.filter((m) => ctx.isReminded(m));
     const clash = clashes(planned);
     const dayMatches = days[0]?.matches ?? [];
+    const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days]);
+    useBackfillFollowCrests(allMatches);
     return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(32) }, children: [
-      /* @__PURE__ */ jsxs("section", { "data-testid": "feed-teams", style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
+      /* @__PURE__ */ jsxs("section", { "data-testid": "feed-teams", style: { ...sportCardStyle, display: "flex", flexDirection: "column", gap: dp(14), padding: `${dp(20)}px ${dp(24)}px` }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(14) }, children: [
-          /* @__PURE__ */ jsx("span", { style: sectionTitle, children: ctx.tt("sportYourTeams") }),
+          /* @__PURE__ */ jsxs("span", { style: { ...sectionTitle, display: "inline-flex", alignItems: "center", gap: dp(12) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { color: TV2.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(26), filled: true }) }),
+            ctx.tt("sportYourTeams")
+          ] }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: ctx.tt("sportYourTeamsHint") })
         ] }),
         /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", gap: dp(24), overflowX: "auto", padding: `${dp(8)}px ${dp(6)}px` }, children: [
-          ctx.follows.map((f) => /* @__PURE__ */ jsx(TeamAvatar, { ctx, follow: f, dayMatches, days }, `${f.kind}:${f.key}`)),
+          ctx.follows.map((f) => /* @__PURE__ */ jsx(TeamAvatar, { ctx, follow: f, dayMatches, allMatches, days }, `${f.kind}:${f.key}`)),
           /* @__PURE__ */ jsxs("div", { "data-testid": "feed-add", ...station(ctx.openFollowPicker), style: avatarCol, children: [
             /* @__PURE__ */ jsx("span", { style: { width: dp(108), height: dp(108), borderRadius: 999, border: `2px dashed ${TV2.lineStrong}`, display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsx(SportIcons.Plus, { size: dp(36) }) }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: ctx.tt("sportAddTeam") })
@@ -62494,7 +64455,7 @@ ${cue.text}`).join("\n\n")}
                 /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 600, ...ellipsis3 }, children: matchTitle(m) }),
                 /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted, ...ellipsis3 }, children: [m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(" \xB7 ") })
               ] }),
-              followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24", display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(22), filled: true }) }) : null
+              followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { "data-testid": "feed-plan-fav", style: { color: TV2.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(22), filled: true }) }) : null
             ] }, m.id);
           }) }),
           /* @__PURE__ */ jsxs("div", { "data-testid": "sport-evening", style: { ...sportCardStyle, width: dp(420), flexShrink: 0, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10) }, children: [
@@ -62521,7 +64482,7 @@ ${cue.text}`).join("\n\n")}
       ] }) : null
     ] });
   }
-  function TeamAvatar({ ctx, follow, dayMatches, days }) {
+  function TeamAvatar({ ctx, follow, dayMatches, allMatches, days }) {
     const ring = teamRing(follow, dayMatches, ctx.now);
     const next = nextMatchFor(follow, days, ctx.now);
     const liveMatch = ring === "live" ? dayMatches.find((m) => statusAt(m, ctx.now) === "live" && followState(m, [follow]).any) : void 0;
@@ -62531,7 +64492,7 @@ ${cue.text}`).join("\n\n")}
       if (next) ctx.openMatch(next);
     }), style: avatarCol, children: [
       /* @__PURE__ */ jsxs("span", { style: { position: "relative", borderRadius: 999, boxShadow: ringShadow, display: "inline-flex" }, children: [
-        /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(108), src: crestForFollow(follow, dayMatches) }),
+        /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(108), src: crestForFollow(follow, allMatches) }),
         ring === "live" ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: "50%", bottom: -dp(10), transform: "translateX(-50%)", padding: `${dp(2)}px ${dp(8)}px`, borderRadius: dp(6), background: "#ef4444", color: "#fff", fontSize: dp(12), fontWeight: 700, letterSpacing: "0.1em" }, children: ctx.tt("live") }) : null
       ] }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600, maxWidth: "100%", textAlign: "center", ...ellipsis3, marginTop: dp(6) }, children: follow.name }),
@@ -62539,43 +64500,44 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_react_shim();
   init_plugin_sdk();
   init_tv_ui();
+  init_tv_text_entry();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/follow-search.ts
-  init_budget();
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/follow-search.ts
+  init_router();
   init_merge();
   var MIN_PROVIDER_QUERY = 3;
   var PROVIDER_SEARCH_DEBOUNCE_MS = 400;
   function matchesQuery(c, q) {
-    const needle = foldTeamKey(q);
+    const needle = foldTeamKey2(q);
     if (!needle) return true;
-    return foldTeamKey(c.name).includes(needle) || foldTeamKey(c.key).includes(needle);
+    return foldTeamKey2(c.name).includes(needle) || foldTeamKey2(c.key).includes(needle);
   }
   var cache9 = /* @__PURE__ */ new Map();
   function searchFollowTargets(sport, q) {
-    const budget = currentBudget();
+    const router = currentRouter();
     const query = q.trim();
-    if (!budget || query.length < MIN_PROVIDER_QUERY || budget.provider.coverage(sport) !== "full") return Promise.resolve([]);
-    const id = `${budget.provider.id}|${sport}|${foldTeamKey(query)}`;
+    if (!router || query.length < MIN_PROVIDER_QUERY || router.coverage(sport) !== "full") return Promise.resolve([]);
+    const id = `${router.candidates(sport).map((b) => b.provider.id).join(",")}|${sport}|${foldTeamKey2(query)}`;
     const hit = cache9.get(id);
     if (hit) return hit;
     const run = (async () => {
-      const [teams, leagues] = await Promise.all([budget.searchTeams(sport, query), budget.searchLeagues(sport, query)]);
+      const [teams, leagues] = await Promise.all([router.searchTeams(sport, query), router.searchLeagues(sport, query)]);
       const out = [];
       const seen = /* @__PURE__ */ new Set();
-      const add = (kind, list) => {
+      const add = (kind, list, provider) => {
         for (const t of list ?? []) {
           const k = `${kind}:${t.id}`;
           if (!t.id || !t.name || seen.has(k)) continue;
           seen.add(k);
-          out.push({ kind, sport, ...t });
+          out.push({ kind, sport, ...t, ...provider ? { provider } : {} });
         }
       };
-      add("team", teams.data);
-      add("league", leagues?.data);
+      add("team", teams.data, teams.provider);
+      add("league", leagues?.data, leagues?.provider);
       return out;
     })();
     cache9.set(id, run);
@@ -62589,19 +64551,23 @@ ${cue.text}`).join("\n\n")}
     return res.filter((x) => x.kind === "team").map(({ kind: _k, sport: _s, ...t }) => t);
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-follows.tsx
   init_merge();
   init_sport_model();
   init_sport_day_model();
   init_sport_store();
   init_sport_ctx();
+  init_score_model();
   init_sport_parts();
-  init_sport_icons();
+  init_sport_icons2();
   init_surface();
   init_jsx_runtime_shim();
   var same2 = (a, b) => a.kind === b.kind && a.key === b.key;
+  var FIRST_FOLLOW = '[data-testid="follow-row"] [data-f]';
   function SportFollows({ ctx, days }) {
     const [shown, setShown] = useState(ctx.follows);
+    const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days]);
+    useBackfillFollowCrests(allMatches);
     useEffect(() => {
       setShown((prev) => [...prev, ...ctx.follows.filter((f) => !prev.some((p) => same2(p, f)))]);
     }, [ctx.follows]);
@@ -62611,9 +64577,27 @@ ${cue.text}`).join("\n\n")}
       { key: "kickoff", label: ctx.tt("sportAlertKickoff") }
     ];
     const groups = SPORT_KINDS.map((kind) => [kind, shown.filter((f) => f.sport === kind)]).filter(([, list]) => list.length > 0);
-    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(24) }, children: [
+    const rootRef = useRef(null);
+    useLayoutEffect(() => {
+      const root = rootRef.current;
+      if (!root) return;
+      const mark = () => {
+        const cards = Array.from(root.querySelectorAll('[data-testid="follow-row"]'));
+        const top = cards[0]?.offsetTop;
+        for (const card2 of cards) {
+          for (const st of card2.querySelectorAll("[data-f]")) {
+            if (card2.offsetTop === top) st.setAttribute("data-f-up", '[data-testid="follows-add"]');
+            else st.removeAttribute("data-f-up");
+          }
+        }
+      };
+      mark();
+      window.addEventListener("resize", mark);
+      return () => window.removeEventListener("resize", mark);
+    });
+    return /* @__PURE__ */ jsxs("div", { ref: rootRef, style: { display: "flex", flexDirection: "column", gap: dp(24) }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(18), flexWrap: "wrap" }, children: [
-        /* @__PURE__ */ jsxs("div", { "data-testid": "follows-add", ...station(ctx.openFollowPicker), style: primaryBtn, children: [
+        /* @__PURE__ */ jsxs("div", { "data-testid": "follows-add", ...station(ctx.openFollowPicker, void 0, { "data-f-right": '[data-testid="follows-alert"] [data-f]', "data-f-down": FIRST_FOLLOW }), style: primaryBtn, children: [
           /* @__PURE__ */ jsx(SportIcons.Plus, { size: dp(20) }),
           ctx.tt("sportFollowAdd")
         ] }),
@@ -62621,10 +64605,10 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsxs("div", { "data-testid": "follows-alert", style: { ...sportCardStyle, marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(12), padding: `${dp(8)}px ${dp(12)}px` }, children: [
           /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(20) }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), fontWeight: 600 }, children: ctx.tt("sportKickoffAlert") }),
-          /* @__PURE__ */ jsx(Segment, { options: alertOptions, value: ctx.settings.alert, onChange: (alert) => setSportSettings({ alert }) })
+          /* @__PURE__ */ jsx(Segment, { size: "lg", options: alertOptions, value: ctx.settings.alert, onChange: (alert) => setSportSettings({ alert }), optionAttrs: (index) => index === 0 ? { "data-f-left": '[data-testid="follows-add"]', "data-f-down": FIRST_FOLLOW } : { "data-f-down": FIRST_FOLLOW } })
         ] })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: TV2.dim }, children: ctx.tt("sportAlertOnlyRunning") }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted }, children: ctx.tt("sportAlertOnlyRunning") }),
       shown.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "follows-empty", style: { ...sportCardStyle, padding: dp(28), fontSize: dp(20), color: TV2.muted }, children: ctx.tt("sportFollowEmpty") }) : null,
       groups.map(([kind, list]) => /* @__PURE__ */ jsxs("section", { "data-testid": `follow-group-${kind}`, style: { display: "flex", flexDirection: "column", gap: dp(14) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
@@ -62632,21 +64616,32 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("span", { style: sectionTitle, children: ctx.kindLabel(kind) }),
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.dim }, children: list.length })
         ] }),
-        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: dp(16) }, children: list.map((f) => /* @__PURE__ */ jsx(FollowCard, { ctx, follow: f, days }, `${f.kind}:${f.key}`)) })
+        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${dp(620)}px, 1fr))`, gap: dp(10) }, children: list.map((f) => /* @__PURE__ */ jsx(FollowRow, { ctx, follow: f, days }, `${f.kind}:${f.key}`)) })
       ] }, kind))
     ] });
   }
-  function FollowCard({ ctx, follow, days }) {
+  function FollowRow({ ctx, follow, days }) {
     const following = isFollowing(ctx.follows, follow);
     const next = nextMatchFor(follow, days, ctx.now);
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "follow-card", "data-following": following ? "1" : "0", style: { ...sportCardStyle, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10), opacity: following ? 1 : 0.55 }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-start" }, children: [
-        /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(66) }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "follow-star", ...station(() => toggleFollow(follow)), "aria-pressed": following ? "true" : "false", "aria-label": following ? ctx.tt("sportFollowingName", { name: follow.name }) : ctx.tt("sportFollowName", { name: follow.name }), style: { marginLeft: "auto", color: following ? "#fbbf24" : TV2.dim, display: "inline-flex", cursor: "pointer" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(28), filled: following }) })
+    const info = followNext(ctx, follow, next);
+    const crest = crestForFollow(follow, days.flatMap((d) => d?.matches ?? []));
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "follow-row", "data-following": following ? "1" : "0", style: { ...sportCardStyle, minHeight: dp(88), display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(10)}px ${dp(12)}px ${dp(10)}px ${dp(16)}px`, opacity: following ? 1 : 0.55, boxSizing: "border-box" }, children: [
+      /* @__PURE__ */ jsxs("div", { ...next ? station(() => ctx.openMatch(next)) : {}, style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: dp(16), cursor: next ? "pointer" : "default", borderRadius: dp(10) }, children: [
+        /* @__PURE__ */ jsx(Crest, { name: follow.name, colorKey: follow.key, size: dp(56), src: crest }),
+        /* @__PURE__ */ jsxs("div", { style: { width: dp(210), flexShrink: 0, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(21), fontWeight: 600, ...ellipsis3 }, children: follow.name }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(14), color: TV2.dim, ...ellipsis3 }, children: ctx.kindLabel(follow.sport) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "follow-next", "data-live": info?.live ? "1" : "0", style: { flex: 1, minWidth: 0 }, children: info ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), fontWeight: 700, fontVariantNumeric: "tabular-nums", color: info.live ? TV2.liveText : TV2.text, ...ellipsis3 }, children: info.when }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.muted, ...ellipsis3 }, children: info.what })
+        ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: dp(16), color: TV2.dim, ...ellipsis3 }, children: ctx.tt("sportNoUpcoming") }) })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis3 }, children: follow.name }),
-      /* @__PURE__ */ jsx("span", { ...next ? station(() => ctx.openMatch(next)) : {}, style: { fontSize: dp(15), color: TV2.muted, ...ellipsis3 }, children: followNextLine(ctx, follow, next) })
+      /* @__PURE__ */ jsx("div", { "data-testid": "follow-heart", ...station(() => toggleFollow(follow)), "aria-pressed": following ? "true" : "false", "aria-label": following ? ctx.tt("sportFollowingName", { name: follow.name }) : ctx.tt("sportFollowName", { name: follow.name }), style: { width: dp(56), height: dp(56), minHeight: dp(56), borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", background: following ? TV2.accMix(22) : TV2.s12, color: following ? TV2.acc : TV2.text, cursor: "pointer" }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(24), filled: following }) })
     ] });
+  }
+  function HeartMark({ on }) {
+    return /* @__PURE__ */ jsx("span", { "data-testid": "follow-row-heart", "data-on": on ? "1" : "0", style: { marginLeft: "auto", flexShrink: 0, display: "inline-flex", color: on ? TV2.acc : TV2.dim }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: dp(24), filled: on }) });
   }
   function FollowPicker({ ctx, days, onClose }) {
     const [sport, setSport] = useState("all");
@@ -62663,7 +64658,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       let live2 = true;
-      const timer3 = setTimeout(() => {
+      const timer4 = setTimeout(() => {
         void searchFollowTargets(searchSport, q).then((res) => {
           if (live2) setHits(res);
         }, () => {
@@ -62672,7 +64667,7 @@ ${cue.text}`).join("\n\n")}
       }, PROVIDER_SEARCH_DEBOUNCE_MS);
       return () => {
         live2 = false;
-        clearTimeout(timer3);
+        clearTimeout(timer4);
       };
     }, [query, searchSport, hasKey]);
     const all = followCandidates(days);
@@ -62680,9 +64675,11 @@ ${cue.text}`).join("\n\n")}
     const hitFollow = (hit) => ({
       sport: hit.sport,
       kind: hit.kind,
-      key: hit.kind === "league" ? `fx:${ctx.settings.provider}:${hit.id}` : foldTeamKey(hit.name),
+      // Id:t är källans som svarade (sportens källa kan vara en annan än den primära).
+      key: hit.kind === "league" ? `fx:${hit.provider ?? ctx.settings.provider}:${hit.id}` : foldTeamKey2(hit.name),
       name: hit.name,
-      providerIds: { [ctx.settings.provider]: hit.id }
+      providerIds: { [hit.provider ?? ctx.settings.provider]: hit.id },
+      ...hit.crest ? { crest: hit.crest } : {}
     });
     const extra = hits.map((hit) => [hit, hitFollow(hit)]).filter(([, f]) => !rows.some((c) => c.kind === f.kind && c.key === f.key));
     const chips = [
@@ -62696,6 +64693,7 @@ ${cue.text}`).join("\n\n")}
         title: ctx.tt("sportFollowAdd"),
         onClose,
         testId: "follow-picker",
+        surface: sportDrawerStyle,
         chips: /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
           tv ? /* @__PURE__ */ jsx("div", { "data-testid": "follow-search", ...station(() => prompt.ask(ctx.tt("sportFollowSearch"), query, setQuery)), style: { height: dp(48), minHeight: dp(48), padding: `0 ${dp(16)}px`, borderRadius: dp(10), background: TV2.s08, border: `1px solid ${TV2.lineCard}`, display: "flex", alignItems: "center", fontSize: dp(17), color: query ? TV2.text : TV2.dim, cursor: "pointer" }, children: query || ctx.tt("sportFollowSearch") }) : /* @__PURE__ */ jsx(
             "input",
@@ -62711,55 +64709,46 @@ ${cue.text}`).join("\n\n")}
             }
           ),
           prompt.node,
-          /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: chips.map((chip, index) => /* @__PURE__ */ jsx(Chip, { "data-testid": `follow-chip-${chip.key}`, active: sport === chip.key, ...station(() => setSport(chip.key), void 0, rows.length === 0 && index === 0 ? { "data-init": "" } : void 0), style: { height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.key)) })
+          /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: dp(8), overflowX: "auto" }, children: chips.map((chip, index) => /* @__PURE__ */ jsx(Chip, { "data-testid": `follow-chip-${chip.key}`, active: sport === chip.key, ...station(() => setSport(chip.key), void 0, rows.length === 0 && index === 0 ? { "data-init": "" } : void 0), style: { height: dp(44), minHeight: dp(44), fontSize: dp(17), padding: `0 ${dp(18)}px` }, children: chip.label }, chip.key)) })
         ] }),
         rows: [...rows.map((c, index) => {
           const on = isFollowing(ctx.follows, c) || isFollowing(getFollows(), c);
-          return /* @__PURE__ */ jsxs("div", { "data-testid": `follow-row-${c.key}`, ...station(() => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name }), void 0, index === 0 ? { "data-init": "" } : void 0), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
-            /* @__PURE__ */ jsx(Check, { on, label: c.name }),
+          return /* @__PURE__ */ jsxs("div", { "data-testid": `follow-row-${c.key}`, ...station(() => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name, ...c.crest ? { crest: c.crest } : {} }), void 0, index === 0 ? { "data-init": "" } : void 0), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
             /* @__PURE__ */ jsx(Crest, { name: c.name, colorKey: c.key, size: dp(46) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: c.name }),
               /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis3 }, children: ctx.kindLabel(c.sport) })
-            ] })
+            ] }),
+            /* @__PURE__ */ jsx(HeartMark, { on })
           ] }, `${c.kind}:${c.key}`);
         }), ...extra.map(([hit, follow]) => {
           const on = isFollowing(ctx.follows, follow) || isFollowing(getFollows(), follow);
           return /* @__PURE__ */ jsxs("div", { "data-testid": `follow-hit-${hit.kind}-${hit.id}`, ...station(() => toggleFollow(follow)), style: { height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: "flex", alignItems: "center", gap: dp(14), padding: `0 ${dp(12)}px`, cursor: "pointer" }, children: [
-            /* @__PURE__ */ jsx(Check, { on, label: hit.name }),
             /* @__PURE__ */ jsx(Crest, { name: hit.name, colorKey: follow.key, src: hit.crest, size: dp(46) }),
             /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
               /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: hit.name }),
               /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.dim, ...ellipsis3 }, children: [ctx.kindLabel(hit.sport), hit.country].filter(Boolean).join(" \xB7 ") })
-            ] })
+            ] }),
+            /* @__PURE__ */ jsx(HeartMark, { on })
           ] }, `hit-${hit.kind}-${hit.id}`);
         })]
       }
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
   init_react_shim();
   init_live_tv_data();
   init_tv_ui();
   init_sport_model();
   init_sport_day_model();
   init_sport_store();
-  init_sport_ctx();
-  init_score_model();
-  init_sport_parts();
-  init_sport_score();
+  init_sport_icons();
+  init_surface();
+  init_phone_sport_sheet();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-match-center-data.tsx
-  init_react_shim();
-  init_plugin_sdk();
-  init_tv_ui();
-  init_tv_strings();
-  init_sport_score();
-  init_results_controller();
-  init_live_poller();
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/match-info/match-info-text.ts
   init_sport_store();
-  init_jsx_runtime_shim();
   var FOUR_HOURS = 4 * 36e5;
   function eventLabel(e, tt) {
     switch (e.type) {
@@ -62786,107 +64775,306 @@ ${cue.text}`).join("\n\n")}
   function statLabel(label, tt) {
     return STAT_KEYS[label] ? tt(STAT_KEYS[label]) : label;
   }
+  var POS_KEYS = { gk: "sportPosGk", def: "sportPosDef", mid: "sportPosMid", att: "sportPosAtt", other: "sportPosOther" };
+  var positionLabel = (g, tt) => tt(POS_KEYS[g]);
   function toggleGoalAlert(match) {
     const current5 = { ...getSportSettings().goalAlertMatches };
     if (current5[match.id]) delete current5[match.id];
     else current5[match.id] = match.start + FOUR_HOURS;
     setSportSettings({ goalAlertMatches: current5 });
   }
-  function MatchCenterData({ match }) {
-    const { tt } = useTvText();
-    const tv = useTvMode();
-    const controller = useResultsController();
-    const settings = useSportSettings();
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/match-info/use-fixture-detail.ts
+  init_react_shim();
+  init_results_controller();
+  init_live_poller();
+  function useFixtureDetail(match) {
+    const controller2 = useResultsController();
     const [detail, setDetail] = useState(null);
+    const [done, setDone] = useState(false);
     const covered = match.coverage === "full" && !!match.fixture;
-    const live2 = match.status === "live";
-    usePollDemand("match-center", covered && live2);
+    usePollDemand("match-center", covered && match.status === "live");
     useEffect(() => {
-      if (!covered || !controller || !match.fixture) return;
+      if (!covered || !controller2 || !match.fixture) return;
       let cancelled = false;
-      void controller.loadFixture(match.kind, match.fixture.id, match.status === "finished").then((d) => {
-        if (!cancelled) setDetail(d);
+      void controller2.loadFixture(match.kind, { provider: match.fixture.provider, id: match.fixture.id }, match.status === "finished").then((d) => {
+        if (cancelled) return;
+        setDetail(d);
+        setDone(true);
       });
       return () => {
         cancelled = true;
       };
-    }, [covered, controller, match.kind, match.fixture?.id, match.status, match.score?.home, match.score?.away]);
-    if (!covered) return null;
-    const alertOn = !!settings.goalAlertMatches[match.id];
-    const h2 = { fontSize: dp(18), fontWeight: 600, marginTop: dp(12) };
-    const sideName = (s) => s === "home" ? match.home ?? "" : s === "away" ? match.away ?? "" : "";
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-match-center-data", style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
-      controller ? /* @__PURE__ */ jsx(RateLineView, { status: controller.status(), tv }) : null,
-      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-goal-alert", ...station(() => toggleGoalAlert(match)), "aria-pressed": alertOn ? "true" : "false", style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: dp(12), padding: `${dp(10)}px ${dp(12)}px`, borderRadius: dp(10), background: TV2.s06, cursor: "pointer" }, children: [
-        /* @__PURE__ */ jsxs("span", { children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16) }, children: tt("sportGoalAlert") }),
-          /* @__PURE__ */ jsx("br", {}),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(13), color: TV2.dim }, children: tt("sportAppRunningOnly") })
-        ] }),
-        /* @__PURE__ */ jsx(Toggle, { on: alertOn })
-      ] }),
-      detail && detail.events.length > 0 ? /* @__PURE__ */ jsxs("section", { children: [
-        /* @__PURE__ */ jsx("div", { style: h2, children: tt("sportEvents") }),
-        detail.events.map((e, i) => /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: `${dp(48)}px ${dp(110)}px 1fr`, gap: dp(8), padding: `${dp(6)}px 0`, fontSize: dp(15), borderTop: `1px solid ${TV2.line}` }, children: [
-          /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: e.minute != null ? `${e.minute}'${e.extra ? `+${e.extra}` : ""}` : "" }),
-          /* @__PURE__ */ jsx("span", { children: eventLabel(e, tt) }),
-          /* @__PURE__ */ jsx("span", { children: [e.player, e.assist ? `(${e.assist})` : null, sideName(e.side) ? `\xB7 ${sideName(e.side)}` : null].filter(Boolean).join(" ") })
-        ] }, i))
-      ] }) : null,
-      detail && detail.stats.length > 0 ? /* @__PURE__ */ jsxs("section", { children: [
-        /* @__PURE__ */ jsx("div", { style: h2, children: tt("sportStats") }),
-        detail.stats.map((s) => /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: dp(8), padding: `${dp(6)}px 0`, fontSize: dp(15), borderTop: `1px solid ${TV2.line}` }, children: [
-          /* @__PURE__ */ jsx("span", { style: { textAlign: "right" }, children: s.home }),
-          /* @__PURE__ */ jsx("span", { style: { color: TV2.dim }, children: statLabel(s.label, tt) }),
-          /* @__PURE__ */ jsx("span", { children: s.away })
-        ] }, s.label))
-      ] }) : null,
-      detail && detail.lineups.length > 0 ? /* @__PURE__ */ jsxs("section", { children: [
-        /* @__PURE__ */ jsx("div", { style: h2, children: tt("sportLineups") }),
-        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: dp(16) }, children: detail.lineups.map((l) => /* @__PURE__ */ jsxs("div", { "data-lineup": l.side, style: { display: "flex", flexDirection: "column", gap: dp(4), fontSize: dp(14) }, children: [
-          /* @__PURE__ */ jsxs("div", { style: { fontWeight: 600 }, children: [
-            sideName(l.side),
-            l.formation ? ` \xB7 ${l.formation}` : ""
-          ] }),
-          l.startXI.map((p, i) => /* @__PURE__ */ jsxs("div", { children: [
-            /* @__PURE__ */ jsx("span", { style: { color: TV2.dim, display: "inline-block", width: dp(28) }, children: p.number ?? "" }),
-            /* @__PURE__ */ jsx("span", { children: p.name }),
-            p.pos ? /* @__PURE__ */ jsxs("span", { style: { color: TV2.faint }, children: [
-              " ",
-              p.pos
-            ] }) : null
-          ] }, `s${i}`)),
-          l.subs.length > 0 ? /* @__PURE__ */ jsx("div", { style: { color: TV2.dim, marginTop: dp(6) }, children: tt("sportSubs") }) : null,
-          l.subs.map((p, i) => /* @__PURE__ */ jsxs("div", { style: { color: TV2.muted }, children: [
-            /* @__PURE__ */ jsx("span", { style: { display: "inline-block", width: dp(28) }, children: p.number ?? "" }),
-            p.name
-          ] }, `b${i}`))
-        ] }, l.side)) })
-      ] }) : null
-    ] });
+    }, [covered, controller2, match.kind, match.fixture?.id, match.status, match.score?.home, match.score?.away]);
+    if (!covered || !controller2) return { detail: null, state: "none" };
+    return { detail, state: detail || done ? "ready" : "loading" };
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/match-info/match-info-parts.tsx
+  init_plugin_sdk();
+  init_tv_ui();
+  init_sport_model();
+  init_sport_day_model();
+  init_score_model();
+  init_sport_ctx();
+  init_sport_store();
+  init_crest();
   init_sport_icons();
   init_surface();
   init_jsx_runtime_shim();
-  var pill = (on) => ({
-    height: dp(52),
-    minHeight: dp(52),
-    padding: `0 ${dp(20)}px`,
-    borderRadius: 999,
-    display: "inline-flex",
-    alignItems: "center",
-    gap: dp(8),
-    fontSize: dp(17),
-    fontWeight: 600,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    background: on ? "rgba(251,191,36,0.16)" : TV2.s10,
-    color: on ? "#fde68a" : TV2.text,
-    border: `1px solid ${on ? "rgba(251,191,36,0.45)" : TV2.lineCard}`
-  });
-  function SportMatchCenter({ ctx, match, onClose }) {
+  var scaleFor = (phone) => (n) => Math.round(dp(n) * (phone ? 0.8 : 1));
+  var ellipsis4 = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  var overlineStyle = (u) => ({ fontSize: u(15), fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: TV2.dim });
+  var rowCard = (u) => ({ background: sportBg(TV2.s07), border: `1px solid ${TV2.lineCard}`, borderRadius: u(14), boxSizing: "border-box" });
+  function Overline({ u, children, center }) {
+    return /* @__PURE__ */ jsx("div", { style: { ...overlineStyle(u), textAlign: center ? "center" : void 0 }, children });
+  }
+  function IconBtn({ u, testId, on, label, onPress, children }) {
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": testId,
+        ...station(onPress),
+        "aria-pressed": on === void 0 ? void 0 : on ? "true" : "false",
+        "aria-label": label,
+        title: label,
+        style: { width: u(48), height: u(48), flexShrink: 0, borderRadius: u(12), display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: on ? TV2.accMix(18) : TV2.s08, color: on ? TV2.acc : TV2.muted, border: `1px solid ${on ? TV2.accMix(60) : TV2.lineCard}`, boxSizing: "border-box" },
+        children
+      }
+    );
+  }
+  function StatusPill({ u, match, ctx }) {
+    const st = statusAt(match, ctx.now);
+    const live2 = st === "live";
+    const text = live2 ? ctx.tt("sportLiveShort") : timeLine(match, ctx);
+    return /* @__PURE__ */ jsxs("span", { "data-testid": "mc-status", "data-live": live2 ? "1" : "0", style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: u(6), height: u(30), padding: `0 ${u(12)}px`, borderRadius: u(8), fontSize: u(15), fontWeight: 700, letterSpacing: "0.06em", background: live2 ? TV2.live : TV2.s12, color: TV2.text }, children: [
+      live2 ? /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: u(7), height: u(7), borderRadius: 999, background: TV2.text } }) : null,
+      text
+    ] });
+  }
+  function FollowPill({ u, testId, on, name, ctx, onToggle }) {
+    const label = on ? ctx.tt("sportFollowingName", { name }) : ctx.tt("sportFollowName", { name });
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-testid": testId,
+        ...station(onToggle),
+        "aria-pressed": on ? "true" : "false",
+        "aria-label": label,
+        title: label,
+        style: { display: "inline-flex", alignItems: "center", gap: u(6), height: u(36), padding: `0 ${u(14)}px`, borderRadius: 999, cursor: "pointer", fontSize: u(15), fontWeight: 700, background: on ? TV2.accMix(20) : TV2.s10, color: on ? TV2.accText : TV2.text, border: `1px solid ${on ? TV2.accMix(50) : TV2.lineCard}`, boxSizing: "border-box" },
+        children: [
+          /* @__PURE__ */ jsx("span", { style: { color: TV2.acc, display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: u(16), filled: on }) }),
+          on ? ctx.tt("sportFollowing") : ctx.tt("sportFollow")
+        ]
+      }
+    );
+  }
+  function TeamsHeader({ u, match, ctx, compact = false }) {
+    const st = statusAt(match, ctx.now);
+    const fs = followState(match, ctx.follows);
+    const crest = compact ? u(64) : u(84);
+    const status = heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx);
+    if (!match.home || !match.away) {
+      return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-head", style: { display: "flex", flexDirection: "column", gap: u(6) }, children: [
+        /* @__PURE__ */ jsx("div", { "data-testid": "mc-title", style: { fontSize: u(30), fontWeight: 700, lineHeight: 1.15 }, children: matchTitle(match) }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: u(17), fontWeight: 600, color: st === "live" ? TV2.live : TV2.muted }, children: status })
+      ] });
+    }
+    const team2 = (side3) => {
+      const name = side3 === "home" ? match.home : match.away;
+      const key = side3 === "home" ? match.homeKey : match.awayKey;
+      const src = side3 === "home" ? match.homeCrest : match.awayCrest;
+      return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: u(8), minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx(Crest, { name, colorKey: key ?? name, size: crest, src }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: u(21), fontWeight: 700, textAlign: "center", maxWidth: "100%", ...ellipsis4 }, children: name }),
+        key ? /* @__PURE__ */ jsx(FollowPill, { u, testId: `mc-follow-${side3}`, on: fs[side3], name, ctx, onToggle: () => toggleFollow({ sport: match.kind, kind: "team", key, name, ...src ? { crest: src } : {} }) }) : null
+      ] });
+    };
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-head", "aria-label": matchTitle(match), style: { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto minmax(0,1fr)", alignItems: "start", gap: u(12) }, children: [
+      team2("home"),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "mc-scoreline", style: { display: "flex", flexDirection: "column", alignItems: "center", gap: u(6), paddingTop: u(compact ? 6 : 14) }, children: [
+        showsScore(match) && match.score ? /* @__PURE__ */ jsx("span", { "data-testid": "mc-score", style: { fontSize: compact ? u(52) : u(64), fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }, children: `${match.score.home} : ${match.score.away}` }) : null,
+        /* @__PURE__ */ jsx("span", { style: { fontSize: u(17), fontWeight: 600, fontVariantNumeric: "tabular-nums", color: st === "live" ? TV2.live : TV2.muted, whiteSpace: "nowrap" }, children: status })
+      ] }),
+      team2("away")
+    ] });
+  }
+  function DrillRow({ u, testId, icon, label, value, onOpen, init }) {
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, ...station(onOpen, void 0, init ? { "data-init": "" } : void 0), style: { ...rowCard(u), minHeight: u(72), display: "flex", alignItems: "center", gap: u(14), padding: `0 ${u(20)}px`, cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { color: TV2.muted, display: "inline-flex", flexShrink: 0 }, children: icon }),
+      /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, fontSize: u(19), fontWeight: 700, ...ellipsis4 }, children: label }),
+      value ? /* @__PURE__ */ jsx("span", { style: { fontSize: u(16), color: TV2.muted, flexShrink: 0 }, children: value }) : null,
+      /* @__PURE__ */ jsx("span", { style: { color: TV2.muted, display: "inline-flex", flexShrink: 0 }, children: /* @__PURE__ */ jsx(SportIcons.Chevron, { size: u(20) }) })
+    ] });
+  }
+  function PlayerAvatar({ u, name, photo, size }) {
+    const s = size ?? u(44);
+    const url = photo ? getPluginHttpAssetUrl("/api/m3u-logo", photo) : null;
+    return /* @__PURE__ */ jsx("span", { "data-avatar": "", "aria-hidden": "true", style: { width: s, height: s, borderRadius: 999, flexShrink: 0, overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "center", background: crestColor(name), color: "#fff", fontSize: Math.round(s * 0.32), fontWeight: 700, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.18)" }, children: url ? /* @__PURE__ */ jsx("img", { src: url, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" }, onError: (e) => {
+      e.currentTarget.style.display = "none";
+    } }) : playerInitials(name) });
+  }
+  function BackBar({ u, title, onBack, label }) {
+    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: u(12) }, children: [
+      /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-testid": "mc-back",
+          ...station(onBack, void 0, { "data-init": "" }),
+          "aria-label": label,
+          title: label,
+          style: { width: u(48), height: u(48), flexShrink: 0, borderRadius: u(12), display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: TV2.s08, border: `1px solid ${TV2.lineCard}`, color: TV2.text, boxSizing: "border-box" },
+          children: /* @__PURE__ */ jsx(SportIcons.Back, { size: u(22) })
+        }
+      ),
+      /* @__PURE__ */ jsx("span", { "data-testid": "mc-page-title", style: { flex: 1, minWidth: 0, fontSize: u(22), fontWeight: 700, ...ellipsis4 }, children: title })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/match-info/match-info-pages.tsx
+  init_plugin_sdk();
+  init_tv_ui();
+  init_tv_strings();
+  init_rate_line();
+  init_results_controller();
+  init_sport_icons();
+  init_jsx_runtime_shim();
+  var NOOP = () => {
+  };
+  var sideName = (match, side3) => side3 === "home" ? match.home ?? "" : side3 === "away" ? match.away ?? "" : "";
+  function EventIcon({ u, row }) {
+    if (row.marker === "yellow" || row.marker === "red") return /* @__PURE__ */ jsx("span", { style: { color: row.marker === "red" ? "#ef4444" : "#facc15", display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Card, { size: u(20) }) });
+    return /* @__PURE__ */ jsx("span", { style: { color: TV2.text, display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Ball, { size: u(22) }) });
+  }
+  function EventCard({ u, row, match, ctx }) {
+    const end = row.align === "end";
+    const detail = [eventLabel(row.event, ctx.tt), row.assist ? ctx.tt("sportAssist", { name: row.assist }) : null, sideName(match, row.event.side) || null].filter(Boolean).join(" \xB7 ");
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-event", "data-align": row.align, ...station(NOOP), style: { ...rowCard(u), display: "flex", flexDirection: end ? "row-reverse" : "row", alignItems: "center", gap: u(16), padding: `${u(14)}px ${u(22)}px`, textAlign: end ? "right" : "left" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { width: u(44), flexShrink: 0, fontSize: u(19), fontWeight: 700, color: TV2.accText, fontVariantNumeric: "tabular-nums", textAlign: end ? "right" : "left" }, children: row.minute }),
+      /* @__PURE__ */ jsx(EventIcon, { u, row }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: u(19), fontWeight: 700, ...ellipsis4 }, children: row.player ?? eventLabel(row.event, ctx.tt) }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: u(15), color: TV2.muted, ...ellipsis4 }, children: detail })
+      ] })
+    ] });
+  }
+  function EventsPage({ u, match, ctx, detail }) {
+    const { lang, locale } = useTvText();
+    const controller2 = useResultsController();
+    const rows = detail ? eventRows(detail.events) : [];
+    const bars = detail ? statBars(detail.stats) : [];
+    const rate = controller2 ? rateLine(controller2.status(match.kind), ctx.tt, { lang, locale }) : null;
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportEvents") }),
+      rows.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "mc-no-events", style: { fontSize: u(17), color: TV2.dim }, children: detail ? ctx.tt("sportNoEvents") : ctx.tt("sportDetailLoading") }) : null,
+      /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: u(10) }, children: rows.map((r) => /* @__PURE__ */ jsx(EventCard, { u, row: r, match, ctx }, r.index)) }),
+      bars.length > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportStats") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: u(14) }, children: bars.map((b) => /* @__PURE__ */ jsxs("div", { "data-testid": "mc-stat", ...station(NOOP), style: { display: "flex", flexDirection: "column", gap: u(6) }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: u(10), fontSize: u(17) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontWeight: 700, fontVariantNumeric: "tabular-nums" }, children: b.home }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, textAlign: "center", color: TV2.muted }, children: statLabel(b.label, ctx.tt) }),
+            /* @__PURE__ */ jsx("span", { style: { fontWeight: 700, fontVariantNumeric: "tabular-nums" }, children: b.away })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { "aria-hidden": "true", style: { display: "flex", gap: u(6), height: u(6) }, children: [
+            /* @__PURE__ */ jsx("span", { "data-bar": "home", style: { flex: `${b.homeShare} 1 0`, borderRadius: u(3), background: TV2.acc } }),
+            /* @__PURE__ */ jsx("span", { "data-bar": "away", style: { flex: `${1 - b.homeShare} 1 0`, borderRadius: u(3), background: "rgba(243,244,248,0.45)" } })
+          ] })
+        ] }, b.label)) })
+      ] }) : null,
+      rate ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-rate-line", style: { fontSize: u(14), color: TV2.faint }, children: rate.text }) : null
+    ] });
+  }
+  function PlayerCard({ u, side: side3, player, onPick }) {
+    const end = side3 === "away";
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-player", "data-side": side3, ...station(onPick), style: { ...rowCard(u), display: "flex", flexDirection: end ? "row-reverse" : "row", alignItems: "center", gap: u(12), padding: `${u(12)}px ${u(14)}px`, cursor: "pointer", textAlign: end ? "right" : "left", minWidth: 0 }, children: [
+      /* @__PURE__ */ jsx(PlayerAvatar, { u, name: player.name }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { fontSize: u(18), fontWeight: 700, ...ellipsis4 }, children: player.name }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: u(15), color: TV2.muted }, children: player.number ?? "" })
+      ] })
+    ] });
+  }
+  function PairGrid({ u, home, away, onPick, sub }) {
+    const n = Math.max(home.length, away.length);
+    const cells = [];
+    for (let i = 0; i < n; i += 1) {
+      const h = home[i];
+      const a = away[i];
+      cells.push(h ? /* @__PURE__ */ jsx(PlayerCard, { u, side: "home", player: h, onPick: () => onPick({ side: "home", player: h, sub }) }, `h${i}`) : /* @__PURE__ */ jsx("span", {}, `h${i}`));
+      cells.push(a ? /* @__PURE__ */ jsx(PlayerCard, { u, side: "away", player: a, onPick: () => onPick({ side: "away", player: a, sub }) }, `a${i}`) : /* @__PURE__ */ jsx("span", {}, `a${i}`));
+    }
+    return /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: u(10) }, children: cells });
+  }
+  function LineupsPage({ u, ctx, detail, onPick }) {
+    const groups = detail ? lineupGroups(detail.lineups) : [];
+    const subs = (side3) => detail?.lineups.find((l) => l.side === side3)?.subs ?? [];
+    const hasSubs = subs("home").length > 0 || subs("away").length > 0;
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportPickPlayer") }),
+      groups.map((g) => /* @__PURE__ */ jsxs("section", { "data-testid": `mc-lineup-${g.group}`, style: { display: "flex", flexDirection: "column", gap: u(10) }, children: [
+        /* @__PURE__ */ jsx(Overline, { u, center: true, children: positionLabel(g.group, ctx.tt) }),
+        /* @__PURE__ */ jsx(PairGrid, { u, home: g.home, away: g.away, onPick, sub: false })
+      ] }, g.group)),
+      hasSubs ? /* @__PURE__ */ jsxs("section", { "data-testid": "mc-lineup-subs", style: { display: "flex", flexDirection: "column", gap: u(10) }, children: [
+        /* @__PURE__ */ jsx(Overline, { u, center: true, children: ctx.tt("sportSubs") }),
+        /* @__PURE__ */ jsx(PairGrid, { u, home: subs("home"), away: subs("away"), onPick, sub: true })
+      ] }) : null
+    ] });
+  }
+  function FactRow({ u, label, value }) {
+    return /* @__PURE__ */ jsxs("div", { ...station(NOOP), style: { ...rowCard(u), display: "flex", alignItems: "center", gap: u(12), minHeight: u(60), padding: `0 ${u(20)}px` }, children: [
+      /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: u(17), color: TV2.muted }, children: label }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: u(18), fontWeight: 700 }, children: value })
+    ] });
+  }
+  function PlayerPage({ u, match, ctx, detail, picked }) {
+    const p = picked.player;
+    const facts = playerMatchFacts(p.name, detail?.events ?? []);
+    const group = positionGroup(p.pos);
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-player-profile", style: { display: "flex", flexDirection: "column", gap: u(12) }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: u(18) }, children: [
+        /* @__PURE__ */ jsx(PlayerAvatar, { u, name: p.name, photo: p.photo, size: u(96) }),
+        /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { fontSize: u(28), fontWeight: 700, ...ellipsis4 }, children: p.name }),
+          /* @__PURE__ */ jsx("div", { style: { fontSize: u(17), color: TV2.muted }, children: [p.number != null ? `#${p.number}` : null, sideName(match, picked.side)].filter(Boolean).join(" \xB7 ") })
+        ] })
+      ] }),
+      p.number != null ? /* @__PURE__ */ jsx(FactRow, { u, label: ctx.tt("sportPlayerNumber"), value: p.number }) : null,
+      /* @__PURE__ */ jsx(FactRow, { u, label: ctx.tt("sportPlayerPosition"), value: picked.sub ? `${positionLabel(group, ctx.tt)} \xB7 ${ctx.tt("sportPlayerSub")}` : positionLabel(group, ctx.tt) }),
+      /* @__PURE__ */ jsx(FactRow, { u, label: ctx.tt("sportPlayerTeam"), value: sideName(match, picked.side) }),
+      facts.goals + facts.assists + facts.yellow + facts.red > 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportPlayerThisMatch") }),
+        facts.goals > 0 ? /* @__PURE__ */ jsx(FactRow, { u, label: ctx.tt("sportPlayerGoals"), value: facts.goals }) : null,
+        facts.assists > 0 ? /* @__PURE__ */ jsx(FactRow, { u, label: ctx.tt("sportPlayerAssists"), value: facts.assists }) : null,
+        facts.yellow > 0 ? /* @__PURE__ */ jsx(FactRow, { u, label: ctx.tt("sportPlayerYellow"), value: facts.yellow }) : null,
+        facts.red > 0 ? /* @__PURE__ */ jsx(FactRow, { u, label: ctx.tt("sportPlayerRed"), value: facts.red }) : null
+      ] }) : null
+    ] });
+  }
+  function VenuePage({ u, ctx, name, city, image }) {
+    const url = image ? getPluginHttpAssetUrl("/api/m3u-logo", image) : null;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-venue", style: { display: "flex", flexDirection: "column", gap: u(12) }, children: [
+      url ? /* @__PURE__ */ jsx("img", { "data-testid": "mc-venue-image", src: url, alt: "", onError: (e) => {
+        e.currentTarget.style.display = "none";
+      }, style: { width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: u(14) } }) : null,
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: u(12) }, children: [
+        /* @__PURE__ */ jsx("span", { style: { color: TV2.muted, display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Pin, { size: u(26) }) }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: u(26), fontWeight: 700 }, children: name })
+      ] }),
+      city ? /* @__PURE__ */ jsx(FactRow, { u, label: ctx.tt("sportVenueCity"), value: city }) : null,
+      !city && !url ? /* @__PURE__ */ jsx("div", { ...station(NOOP), style: { fontSize: u(16), color: TV2.dim }, children: ctx.tt("sportVenueOnly") }) : null
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/match-info/match-info-drawer.tsx
+  init_jsx_runtime_shim();
+  var parentOf = (p) => p.kind === "player" ? { kind: "lineups" } : null;
+  var SLIDE_CSS = "@keyframes lumio-sport-mi-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }";
+  function MatchInfoDrawer({ ctx, match, onClose, phone = false }) {
+    const u = scaleFor(phone);
+    const platform = usePhonePlatform();
     const rootRef = useRef(null);
     const openerRef = useRef(null);
     const navRef = useRef(ctx.nav);
@@ -62897,106 +65085,143 @@ ${cue.text}`).join("\n\n")}
     });
     const [picking, setPicking] = useState(false);
     const [selected, setSelected] = useState(0);
+    const [page, setPage] = useState(null);
+    const { detail, state: state2 } = useFixtureDetail(match);
     useEffect(() => {
       openerRef.current = document.activeElement;
       const close = () => {
         onCloseRef.current();
         window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0);
       };
-      const off = navRef.current.pushLayer(close);
-      window.setTimeout(() => rootRef.current?.querySelector("[data-init]")?.focus({ preventScroll: true }), 0);
-      return off;
+      return navRef.current.pushLayer(close);
     }, []);
+    const pageKey = page ? page.kind : null;
+    useEffect(() => {
+      if (!page) return;
+      const parent = parentOf(page);
+      return navRef.current.pushLayer(() => setPage(parent));
+    }, [pageKey]);
+    useEffect(() => {
+      const t = window.setTimeout(() => {
+        const root = rootRef.current;
+        if (!root) return;
+        root.scrollTop = 0;
+        root.querySelector("[data-init]")?.focus({ preventScroll: true });
+      }, 0);
+      return () => window.clearTimeout(t);
+    }, [pageKey]);
     const ranked = rankedSources(match, ctx.overrides);
     const override = ctx.overrides[match.id];
     const index = Math.min(selected, Math.max(ranked.length - 1, 0));
     const chosen = ranked[index] ?? null;
     const fs = followState(match, ctx.follows);
     const st = statusAt(match, ctx.now);
-    const context = [match.league || ctx.kindLabel(match.kind), match.venue, match.round ? ctx.tt("sportRound", { n: match.round }) : null].filter(Boolean).join(" \xB7 ");
-    const follow = (kind, key, name) => {
-      if (key && name) toggleFollow({ sport: match.kind, kind, key, name });
-    };
-    return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx("div", { "data-live-tv-layer": "", "aria-hidden": "true", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 59, background: TV2.scrim } }),
-      /* @__PURE__ */ jsxs("div", { ref: rootRef, "data-testid": "match-center", "data-panel-root": "", "data-live-tv-layer": "", "data-scroll": "", role: "dialog", "aria-label": matchTitle(match), style: { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, ...sportSurface(SPORT_PANEL_BG), borderLeft: "1px solid rgba(255,255,255,0.16)", padding: `${belowTitleBar(dp(28))} ${dp(32)}px ${dp(28)}px`, display: "flex", flexDirection: "column", gap: dp(20), overflowY: "auto", boxSizing: "border-box" }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
-          /* @__PURE__ */ jsx(StatusTag, { match, ctx }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted, ...ellipsis3 }, children: context }),
-          /* @__PURE__ */ jsx(RoundBtn, { "data-testid": "mc-close", ...station(onClose), "aria-label": ctx.tt("sportClose"), style: { marginLeft: "auto" }, children: "\u2715" })
-        ] }),
-        /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: dp(20) }, children: match.home && match.away ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(10), minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx(Crest, { name: match.home, colorKey: match.homeKey ?? match.home, size: dp(99), src: match.homeCrest }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis3 }, children: match.home })
-          ] }),
-          /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(4) }, children: [
-            showsScore(match) ? /* @__PURE__ */ jsx(MatchScore, { match, size: "hero" }) : null,
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(24), fontWeight: 600, color: st === "live" ? TV2.liveText : TV2.muted, whiteSpace: "nowrap" }, children: heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx) })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: dp(10), minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx(Crest, { name: match.away, colorKey: match.awayKey ?? match.away, size: dp(99), src: match.awayCrest }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(22), fontWeight: 600, ...ellipsis3 }, children: match.away })
-          ] })
-        ] }) : /* @__PURE__ */ jsxs("div", { style: { gridColumn: "1 / 4", textAlign: "center" }, children: [
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(30), fontWeight: 600 }, children: matchTitle(match) }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: dp(20), color: TV2.muted }, children: timeLine(match, ctx) })
-        ] }) }),
-        /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", gap: dp(10), flexWrap: "wrap" }, children: [
-          match.home && match.homeKey ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-follow-home", ...station(() => follow("team", match.homeKey, match.home)), "aria-pressed": fs.home ? "true" : "false", style: pill(fs.home), children: [
-            /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(18), filled: fs.home }),
-            fs.home ? ctx.tt("sportFollowingName", { name: match.home }) : ctx.tt("sportFollowName", { name: match.home })
-          ] }) : null,
-          match.away && match.awayKey ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-follow-away", ...station(() => follow("team", match.awayKey, match.away)), "aria-pressed": fs.away ? "true" : "false", style: pill(fs.away), children: [
-            /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(18), filled: fs.away }),
-            fs.away ? ctx.tt("sportFollowingName", { name: match.away }) : ctx.tt("sportFollowName", { name: match.away })
-          ] }) : null,
-          match.leagueKey ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-follow-league", ...station(() => follow("league", match.leagueKey, match.league)), "aria-pressed": fs.league ? "true" : "false", style: pill(fs.league), children: [
-            /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(18), filled: fs.league }),
-            fs.league ? ctx.tt("sportFollowingName", { name: match.league }) : ctx.tt("sportFollowName", { name: match.league })
-          ] }) : null,
-          ranked.length > 0 && st !== "finished" ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-remind", ...station(() => ctx.toggleRemind(match)), "aria-pressed": ctx.isReminded(match) ? "true" : "false", style: pill(false), children: [
-            /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(18) }),
-            ctx.isReminded(match) ? ctx.tt("sportReminded") : ctx.tt("sportRemindMe")
-          ] }) : null
-        ] }),
-        /* @__PURE__ */ jsx("span", { style: overline, children: ctx.tt("sportWhereToWatch") }),
-        /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: ranked.map((s, i) => {
-          const on = i === index;
-          return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-source", "data-selected": on ? "1" : "0", ...station(() => setSelected(i), void 0, i === 0 ? { "data-init": "" } : void 0), style: { display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(12)}px ${dp(16)}px`, borderRadius: dp(12), cursor: "pointer", background: on ? TV2.text : TV2.s08, color: on ? "#12152a" : TV2.text, border: `1px solid ${on ? TV2.text : TV2.lineCard}` }, children: [
-            /* @__PURE__ */ jsx(ChannelArt, { channel: sourceChannel(s), style: { width: dp(72), height: dp(46), flexShrink: 0 }, radius: dp(8) }),
-            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600, ...ellipsis3 }, children: s.name }),
-              /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), opacity: 0.7, ...ellipsis3 }, children: `${ctx.playlistName(s.sourceId)} \xB7 ${ctx.tt("sportLatencyUnknown")}` })
-            ] }),
-            override && i === 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(14), fontWeight: 600 }, children: ctx.tt("sportYourChoice") }) : null,
-            s.quality ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), fontWeight: 700 }, children: s.quality }) : null,
-            i === 0 && ranked.length > 1 ? /* @__PURE__ */ jsx("span", { "data-testid": "mc-best", style: { fontSize: dp(14), fontWeight: 700, letterSpacing: "0.1em", color: on ? "#c2410c" : TV2.accText }, children: ctx.tt("sportBest") }) : null
-          ] }, s.channelKey);
-        }) }),
-        chosen ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-watch", ...station(() => {
-          ctx.watch(match, chosen);
-          onClose();
-        }), style: { ...primaryBtn, justifyContent: "center" }, children: [
-          /* @__PURE__ */ jsx(SportIcons.Play, { size: dp(20) }),
-          chosen.quality ? ctx.tt("sportWatchQuality", { quality: chosen.quality }) : ctx.tt("sportWatch")
-        ] }) : null,
-        /* @__PURE__ */ jsxs("div", { "data-testid": "mc-pick-channel", ...station(() => setPicking(true)), style: { display: "flex", alignItems: "center", gap: dp(14), padding: `${dp(14)}px ${dp(16)}px`, borderRadius: dp(12), background: TV2.s08, border: `1px solid ${TV2.lineCard}`, cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(19), fontWeight: 600 }, children: ctx.tt("sportPickChannel") }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: dp(15), color: TV2.muted }, children: ctx.tt("sportPickChannelSub") })
-          ] }),
-          /* @__PURE__ */ jsx("span", { "aria-hidden": "true", children: "\u203A" })
-        ] }),
-        override ? /* @__PURE__ */ jsx("div", { "data-testid": "mc-clear-override", ...station(() => setOverride(match.id, null)), style: { fontSize: dp(17), color: TV2.accText, cursor: "pointer", padding: `${dp(8)}px ${dp(4)}px` }, children: ctx.tt("sportUseAutomatic") }) : null,
-        /* @__PURE__ */ jsx(MatchCenterData, { match })
+    const covered = match.coverage === "full" && !!match.fixture;
+    const context = [match.league || ctx.kindLabel(match.kind), match.venue].filter(Boolean).join(" \xB7 ");
+    const venueName = match.venue ?? detail?.fixture.venue ?? null;
+    const goalAlertOn = !!ctx.settings.goalAlertMatches?.[match.id];
+    const summary = detail ? eventSummary(detail.events) : null;
+    const bell = covered && st === "live" ? /* @__PURE__ */ jsx(IconBtn, { u, testId: "mc-goal-alert", on: goalAlertOn, label: ctx.tt("sportGoalAlert"), onPress: () => toggleGoalAlert(match), children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: u(20) }) }) : ranked.length > 0 && st !== "finished" ? /* @__PURE__ */ jsx(IconBtn, { u, testId: "mc-remind", on: ctx.isReminded(match), label: ctx.isReminded(match) ? ctx.tt("sportReminded") : ctx.tt("sportRemindMe"), onPress: () => ctx.toggleRemind(match), children: /* @__PURE__ */ jsx(SportIcons.Bell, { size: u(20) }) }) : null;
+    const main = /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "mc-top", style: { display: "flex", alignItems: "center", gap: u(12) }, children: [
+        /* @__PURE__ */ jsx(StatusPill, { u, match, ctx }),
+        /* @__PURE__ */ jsx("span", { "data-testid": "mc-context", style: { flex: 1, minWidth: 0, fontSize: u(17), color: TV2.muted, ...ellipsis4 }, children: context }),
+        match.leagueKey ? /* @__PURE__ */ jsx(IconBtn, { u, testId: "mc-follow-league", on: fs.league, label: fs.league ? ctx.tt("sportFollowingName", { name: match.league }) : ctx.tt("sportFollowName", { name: match.league }), onPress: () => toggleFollow({ sport: match.kind, kind: "league", key: match.leagueKey, name: match.league }), children: /* @__PURE__ */ jsx(SportIcons.Heart, { size: u(20), filled: fs.league }) }) : null,
+        bell,
+        phone ? null : /* @__PURE__ */ jsx(IconBtn, { u, testId: "mc-close", label: ctx.tt("sportClose"), onPress: onClose, children: /* @__PURE__ */ jsx(SportIcons.Close, { size: u(20) }) })
       ] }),
+      /* @__PURE__ */ jsx(TeamsHeader, { u, match, ctx }),
+      /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportWatchMatch") }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: u(10) }, children: [
+        ranked.map((s, i) => {
+          const on = i === index;
+          return /* @__PURE__ */ jsxs("div", { "data-testid": "mc-source", "data-selected": on ? "1" : "0", ...station(() => setSelected(i), void 0, i === 0 ? { "data-init": "" } : void 0), style: { ...rowCard(u), display: "flex", alignItems: "center", gap: u(16), padding: `${u(12)}px ${u(18)}px`, cursor: "pointer", background: on ? TV2.text : rowCard(u).background, color: on ? "#12152a" : TV2.text, border: `1px solid ${on ? TV2.text : TV2.lineCard}` }, children: [
+            /* @__PURE__ */ jsx(ChannelArt, { channel: sourceChannel(s), style: { width: u(64), height: u(42), flexShrink: 0 }, radius: u(8) }),
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: u(19), fontWeight: 700, ...ellipsis4 }, children: s.name }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: u(15), opacity: 0.7, ...ellipsis4 }, children: ctx.playlistName(s.sourceId) })
+            ] }),
+            override && i === 0 ? /* @__PURE__ */ jsx("span", { style: { fontSize: u(14), fontWeight: 600 }, children: ctx.tt("sportYourChoice") }) : null,
+            s.quality ? /* @__PURE__ */ jsx("span", { style: { fontSize: u(16), fontWeight: 800, minWidth: u(44), textAlign: "center" }, children: s.quality }) : null,
+            i === 0 && ranked.length > 1 ? /* @__PURE__ */ jsx("span", { "data-testid": "mc-best", style: { fontSize: u(14), fontWeight: 800, letterSpacing: "0.08em", color: on ? "#c2410c" : TV2.accText }, children: ctx.tt("sportBest") }) : null
+          ] }, s.channelKey);
+        }),
+        /* @__PURE__ */ jsxs("div", { "data-testid": "mc-pick-channel", ...station(() => setPicking(true), void 0, ranked.length === 0 ? { "data-init": "" } : void 0), title: ctx.tt("sportPickChannelSub"), style: { minHeight: u(64), display: "flex", alignItems: "center", gap: u(12), padding: `0 ${u(18)}px`, borderRadius: u(14), border: `1px dashed ${TV2.lineStrong}`, color: TV2.text, cursor: "pointer", fontSize: u(17), fontWeight: 600, boxSizing: "border-box" }, children: [
+          /* @__PURE__ */ jsx(SportIcons.Plus, { size: u(20) }),
+          ctx.tt("sportOtherChannel")
+        ] }),
+        override ? /* @__PURE__ */ jsx("span", { "data-testid": "mc-clear-override", ...station(() => setOverride(match.id, null)), style: { alignSelf: "flex-start", fontSize: u(16), color: TV2.accText, cursor: "pointer", padding: `${u(6)}px ${u(4)}px` }, children: ctx.tt("sportUseAutomatic") }) : null
+      ] }),
+      chosen ? /* @__PURE__ */ jsxs("div", { "data-testid": "mc-watch", ...station(() => {
+        ctx.watch(match, chosen);
+        onClose();
+      }), style: { height: u(64), borderRadius: u(14), background: TV2.acc, color: TV2.onAcc, display: "flex", alignItems: "center", justifyContent: "center", gap: u(10), fontSize: u(20), fontWeight: 700, cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsx(SportIcons.Play, { size: u(20) }),
+        chosen.quality ? ctx.tt("sportWatchQuality", { quality: chosen.quality }) : ctx.tt("sportWatch")
+      ] }) : null,
+      state2 !== "none" || venueName ? /* @__PURE__ */ jsx(Overline, { u, children: ctx.tt("sportTheMatch") }) : null,
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: u(10) }, children: [
+        state2 !== "none" ? /* @__PURE__ */ jsx(DrillRow, { u, testId: "mc-row-events", icon: /* @__PURE__ */ jsx(SportIcons.Stats, { size: u(22) }), label: ctx.tt("sportEventsStats"), value: summary ? ctx.tt("sportEventsSummary", summary) : "\u2026", onOpen: () => setPage({ kind: "events" }) }) : null,
+        detail && detail.lineups.length > 0 ? /* @__PURE__ */ jsx(DrillRow, { u, testId: "mc-row-lineups", icon: /* @__PURE__ */ jsx(SportIcons.People, { size: u(22) }), label: ctx.tt("sportLineups"), value: ctx.tt("sportStartingXI"), onOpen: () => setPage({ kind: "lineups" }) }) : null,
+        venueName ? /* @__PURE__ */ jsx(DrillRow, { u, testId: "mc-row-venue", icon: /* @__PURE__ */ jsx(SportIcons.Pin, { size: u(22) }), label: venueName, onOpen: () => setPage({ kind: "venue" }) }) : null
+      ] })
+    ] });
+    const sub = (p) => {
+      const back = () => setPage(parentOf(p));
+      const title = p.kind === "events" ? ctx.tt("sportEventsStats") : p.kind === "lineups" ? ctx.tt("sportLineups") : p.kind === "venue" ? venueName ?? "" : p.picked.player.name;
+      return /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx(BackBar, { u, title, onBack: back, label: ctx.tt("sportBack") }),
+        p.kind === "events" || p.kind === "lineups" ? /* @__PURE__ */ jsx(TeamsHeader, { u, match, ctx, compact: true }) : null,
+        p.kind === "events" ? /* @__PURE__ */ jsx(EventsPage, { u, match, ctx, detail }) : null,
+        p.kind === "lineups" ? /* @__PURE__ */ jsx(LineupsPage, { u, ctx, detail, onPick: (picked) => setPage({ kind: "player", picked }) }) : null,
+        p.kind === "player" ? /* @__PURE__ */ jsx(PlayerPage, { u, match, ctx, detail, picked: p.picked }) : null,
+        p.kind === "venue" ? /* @__PURE__ */ jsx(VenuePage, { u, ctx, name: venueName ?? "", city: detail?.fixture.venueCity ?? null, image: match.venueImage ?? detail?.fixture.venueImage ?? null }) : null
+      ] });
+    };
+    const surface = phone ? {
+      position: "fixed",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: "100%",
+      maxHeight: "92%",
+      zIndex: 60,
+      boxSizing: "border-box",
+      overflowY: "auto",
+      background: SHEET_BG,
+      borderTop: "1px solid rgba(255,255,255,0.16)",
+      borderRadius: platform === "ios" ? "14px 14px 0 0" : "28px 28px 0 0",
+      padding: "0 16px calc(max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px)) + 24px)"
+    } : { position: "fixed", top: 0, right: 0, bottom: 0, width: `min(${u(760)}px, 100%)`, zIndex: 60, ...sportDrawerStyle, overflowY: "auto" };
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("style", { children: SLIDE_CSS }),
+      /* @__PURE__ */ jsx("div", { "data-live-tv-layer": "", "aria-hidden": "true", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 59, background: TV2.scrim } }),
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          ref: rootRef,
+          "data-testid": "match-center",
+          "data-page": pageKey ?? "main",
+          "data-panel-root": "",
+          "data-live-tv-layer": "",
+          "data-scroll": "",
+          role: "dialog",
+          "aria-label": matchTitle(match),
+          "data-platform": phone ? platform : void 0,
+          style: surface,
+          children: [
+            phone ? /* @__PURE__ */ jsx("div", { "data-testid": "mc-grabber", ...station(onClose), "aria-hidden": "true", style: { position: "sticky", top: 0, zIndex: 1, height: 22, margin: "0 -16px 4px", display: "grid", placeItems: "center", background: SHEET_BG, cursor: "pointer" }, children: /* @__PURE__ */ jsx("span", { style: { width: platform === "ios" ? 36 : 32, height: 5, borderRadius: 3, background: "rgba(243,244,248,0.35)" } }) }) : null,
+            /* @__PURE__ */ jsx("div", { "data-testid": "mc-level", style: { display: "flex", flexDirection: "column", gap: u(18), animation: page ? "lumio-sport-mi-in 220ms ease-out" : void 0 }, children: page ? sub(page) : main }, pageKey ?? "main")
+          ]
+        }
+      ),
       picking ? /* @__PURE__ */ jsx(
         TvChannelPicker,
         {
           model: ctx.model,
           nav: ctx.nav,
-          title: ctx.tt("sportPickChannel"),
+          surface: sportStackedStyle,
+          title: ctx.tt("sportOtherChannel"),
           onPick: (channel) => {
             setOverride(match.id, { key: channelKey(channel), name: channel.name, url: channel.url, logo: channel.logo ?? null, group: channel.group, tvgId: channel.tvgId });
             setSelected(0);
@@ -63007,238 +65232,36 @@ ${cue.text}`).join("\n\n")}
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-match-center.tsx
+  init_jsx_runtime_shim();
+  function SportMatchCenter({ ctx, match, onClose }) {
+    return /* @__PURE__ */ jsx(MatchInfoDrawer, { ctx, match, onClose });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_mobile_tokens();
-  init_mobile_sheet();
+  init_mobile_icons();
   init_sport_model();
   init_sport_epg();
   init_sport_day_model();
   init_sport_store();
+  init_results_controller();
+  init_live_poller();
+  init_sport_ctx();
+  init_sport_icons();
+  init_sport_results_phone();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
-  init_react_shim();
-  init_plugin_sdk();
-  init_tv_ui();
-  init_tv_strings();
-  init_mobile_tokens();
-  init_mobile_sheet();
-  init_score_model();
-  init_sport_model();
-  init_sport_store();
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-league-sheet-phone.tsx
-  init_react_shim();
-  init_tv_ui();
-  init_tv_strings();
-  init_mobile_tokens();
-  init_jsx_runtime_shim();
-  var dot = /* @__PURE__ */ jsx("span", { "data-testid": "league-live-dot", "aria-hidden": "true", style: { width: 7, height: 7, borderRadius: 999, background: MT.live, flexShrink: 0 } });
-  var chipStyle = { minHeight: 34, padding: "0 14px", borderRadius: 999, display: "flex", alignItems: "center", gap: 6, fontSize: 14, whiteSpace: "nowrap", flexShrink: 0, background: MT.s12, border: `1px solid ${MT.line10}`, color: MT.muted70, cursor: "pointer" };
-  function PhoneYourLeagues({ entries, fallback, onJump, onMore }) {
-    const { tt } = useTvText();
-    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 2 }, children: [
-      /* @__PURE__ */ jsx("span", { style: sectionLabel, children: fallback ? tt("sportTopLeagues") : tt("sportYourLeagues") }),
-      /* @__PURE__ */ jsxs("div", { "data-testid": "phone-your-leagues", "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", minHeight: 44, padding: "5px 0", alignItems: "center" }, children: [
-        entries.map((e) => /* @__PURE__ */ jsxs("div", { "data-testid": `phone-league-chip-${e.key}`, ...station(() => onJump(e.key)), style: chipStyle, children: [
-          e.live > 0 ? dot : null,
-          /* @__PURE__ */ jsx("span", { children: e.label }),
-          /* @__PURE__ */ jsx("span", { style: { color: MT.dim, fontVariantNumeric: "tabular-nums" }, children: e.count })
-        ] }, e.key)),
-        /* @__PURE__ */ jsx("div", { "data-testid": "phone-league-more", ...station(onMore), style: { ...chipStyle, color: MT.text, border: `1px solid ${MT.line20}` }, children: tt("sportMoreLeagues") })
-      ] })
-    ] });
-  }
-  function Row2({ entry, showCountry, sportLabel, onPick }) {
-    const sub = [showCountry ? entry.country : null, sportLabel].filter(Boolean).join(" \xB7 ");
-    return /* @__PURE__ */ jsxs("div", { "data-testid": `phone-league-row-${entry.key}`, ...station(onPick), style: { minHeight: 52, padding: "6px 20px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${MT.line07}`, cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-        /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: entry.league }),
-        sub ? /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: sub }) : null
-      ] }),
-      entry.live > 0 ? dot : null,
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.dim, fontVariantNumeric: "tabular-nums" }, children: entry.count })
-    ] });
-  }
-  function PhoneLeagueSheet({ entries, kindLabel: kindLabel2, onPick, onClose, pushLayer }) {
-    const { tt } = useTvText();
-    const [query, setQuery] = useState("");
-    const [toggled, setToggled] = useState({});
-    const onCloseRef = useRef(onClose);
-    useEffect(() => {
-      onCloseRef.current = onClose;
-    });
-    useEffect(() => pushLayer(() => onCloseRef.current()), [pushLayer]);
-    const searching = foldText(query) !== "";
-    const hits = searching ? searchLeagues(entries, query) : [];
-    const pick2 = (key) => {
-      onClose();
-      onPick(key);
-    };
-    const sportOf = (e) => kindLabel2 ? kindLabel2(e.sport) : null;
-    return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx("div", { "data-testid": "sheet-scrim", onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 70, background: MT.scrim } }),
-      /* @__PURE__ */ jsxs(
-        "div",
-        {
-          role: "dialog",
-          "aria-modal": "true",
-          "data-testid": "phone-league-sheet",
-          "data-live-tv-layer": "",
-          "data-panel-root": "",
-          style: { position: "fixed", left: 8, right: 8, bottom: 8, zIndex: 71, borderRadius: 26, boxSizing: "border-box", background: TV2.panel, border: `1px solid ${MT.line10}`, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", color: MT.text, fontFamily: MT.font, overflow: "hidden", paddingBottom: MT.SAFE_BOTTOM, display: "flex", flexDirection: "column", maxHeight: "85vh" },
-          children: [
-            /* @__PURE__ */ jsxs("div", { style: { padding: "18px 20px 12px", display: "flex", flexDirection: "column", gap: 10, borderBottom: `1px solid ${MT.line08}` }, children: [
-              /* @__PURE__ */ jsx("div", { style: { fontSize: 16, fontWeight: 600 }, children: tt("sportAllLeagues") }),
-              /* @__PURE__ */ jsx(
-                "input",
-                {
-                  "data-testid": "phone-league-search",
-                  value: query,
-                  placeholder: tt("sportLeagueSearch"),
-                  onChange: (e) => setQuery(e.target.value),
-                  autoComplete: "off",
-                  spellCheck: false,
-                  enterKeyHint: "search",
-                  style: { height: MT.HIT, borderRadius: 12, border: `1px solid ${MT.line14}`, background: "rgba(0,0,0,0.25)", color: MT.text, padding: "0 14px", fontSize: 16 }
-                }
-              )
-            ] }),
-            /* @__PURE__ */ jsx("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: searching ? hits.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: 20, fontSize: 15, color: MT.muted }, children: tt("sportLeagueNoHits") }) : hits.map((e) => /* @__PURE__ */ jsx(Row2, { entry: e, showCountry: true, sportLabel: sportOf(e), onPick: () => pick2(e.key) }, e.key)) : countryGroups(entries).map((g) => {
-              const id = g.country ? foldText(g.country) : "";
-              const open2 = toggled[id] ?? !g.collapsed;
-              return /* @__PURE__ */ jsxs("section", { "data-testid": `phone-league-country-${g.country ?? "other"}`, children: [
-                /* @__PURE__ */ jsxs("div", { ...station(() => setToggled((t) => ({ ...t, [id]: !open2 }))), "aria-expanded": open2 ? "true" : "false", style: { minHeight: MT.HIT, padding: "0 20px", display: "flex", alignItems: "center", gap: 8, background: MT.s05, color: MT.muted, fontSize: 12.5, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" }, children: [
-                  /* @__PURE__ */ jsx("span", { style: { flex: 1, minWidth: 0, ...ellipsis2 }, children: g.country ?? tt("sportLeagueOther") }),
-                  g.live > 0 ? dot : null,
-                  /* @__PURE__ */ jsx("span", { style: { color: MT.dim, letterSpacing: 0, fontWeight: 400 }, children: tt("sportLeagueMatches", { n: g.total }) }),
-                  /* @__PURE__ */ jsx("span", { "aria-hidden": "true", children: open2 ? "\u25BE" : "\u25B8" })
-                ] }),
-                open2 ? g.entries.map((e) => /* @__PURE__ */ jsx(Row2, { entry: e, showCountry: false, sportLabel: sportOf(e), onPick: () => pick2(e.key) }, e.key)) : null
-              ] }, id || "__other");
-            }) }),
-            /* @__PURE__ */ jsx("div", { style: { padding: 8 }, children: /* @__PURE__ */ jsx("div", { ...station(onClose), style: { minHeight: 50, borderRadius: 16, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 600, cursor: "pointer" }, children: tt("cancel") }) })
-          ]
-        }
-      )
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-results-phone.tsx
-  init_surface();
-  init_jsx_runtime_shim();
-  function PhoneCrest({ name, src, size = 22 }) {
-    const [broken, setBroken] = useState(false);
-    const url = src && !broken ? getPluginHttpAssetUrl("/api/m3u-logo", src) : null;
-    if (url) return /* @__PURE__ */ jsx("img", { "data-crest": "", src: url, alt: "", width: size, height: size, onError: () => setBroken(true), style: { width: size, height: size, objectFit: "contain", flexShrink: 0 } });
-    return /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: size, height: size, borderRadius: 999, background: MT.s12, color: MT.muted, fontSize: Math.round(size * 0.42), fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }, children: crestText(name) });
-  }
-  function PhoneStandings({ rows, tt }) {
-    const cell = { padding: "8px 6px", fontSize: 14 };
-    return /* @__PURE__ */ jsx("div", { style: { maxHeight: "60vh", overflowY: "auto", padding: "4px 14px 12px" }, children: /* @__PURE__ */ jsxs("table", { style: { width: "100%", borderCollapse: "collapse", color: MT.text }, children: [
-      /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { style: { color: MT.dim, textAlign: "left", fontSize: 12 }, children: [
-        /* @__PURE__ */ jsx("th", { style: cell, children: "#" }),
-        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColTeam") }),
-        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPlayed") }),
-        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColPoints") }),
-        /* @__PURE__ */ jsx("th", { style: cell, children: tt("sportColForm") })
-      ] }) }),
-      /* @__PURE__ */ jsx("tbody", { children: rows.map((r) => /* @__PURE__ */ jsxs("tr", { style: { borderTop: `1px solid ${MT.line08}` }, children: [
-        /* @__PURE__ */ jsx("td", { style: cell, children: r.rank }),
-        /* @__PURE__ */ jsx("td", { style: { ...cell, maxWidth: 150 }, children: /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
-          /* @__PURE__ */ jsx(PhoneCrest, { name: r.team.name, src: r.team.crest, size: 18 }),
-          /* @__PURE__ */ jsx("span", { style: ellipsis2, children: r.team.name })
-        ] }) }),
-        /* @__PURE__ */ jsx("td", { style: cell, children: r.played }),
-        /* @__PURE__ */ jsx("td", { style: { ...cell, fontWeight: 700 }, children: r.points }),
-        /* @__PURE__ */ jsx("td", { style: cell, children: /* @__PURE__ */ jsx("span", { style: { display: "inline-flex", gap: 3 }, children: formLetters(r.form, tt).slice(-5).map((f, i) => /* @__PURE__ */ jsx("span", { "data-testid": "phone-form", style: { width: 16, height: 16, borderRadius: 4, background: FORM_COLOR[f.kind], color: "#0e0f13", fontSize: 10, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }, children: f.letter }, i)) }) })
-      ] }, `${r.group ?? ""}-${r.rank}-${r.team.id}`)) })
-    ] }) });
-  }
-  function SportResultsPhone({ matches, controller, onOpenMatch, pushLayer, sport = "all", kindLabel: kindLabel2 }) {
-    const { tt } = useTvText();
-    const settings = useSportSettings();
-    const [filter, setFilter] = useState("all");
-    const [table, setTable] = useState(null);
-    const [leagueSheet, setLeagueSheet] = useState(false);
-    const follows = useFollows();
-    const sections = useRef(/* @__PURE__ */ new Map());
-    const forSport = useMemo(() => sport === "all" ? matches : matches.filter((m) => m.kind === sport), [matches, sport]);
-    const { groups, liveCount, mineCount } = useMemo(() => groupResults(forSport, filter), [forSport, filter]);
-    const entries = useMemo(() => leagueEntries(groups, follows), [groups, follows]);
-    const mine = useMemo(() => yourLeagues(entries), [entries]);
-    if (!settings.apiKey || !controller) {
-      return /* @__PURE__ */ jsx(KeyCard, { variant: "tab", pushLayer });
-    }
-    const labels = new Map(entries.map((e) => [e.key, e.label]));
-    const jump = (key) => sections.current.get(key)?.scrollIntoView?.({ block: "start", behavior: "smooth" });
-    const openTable = async (g) => {
-      const cached = controller.standings(g.sport, g.leagueId, g.season);
-      setTable({ group: g, rows: cached });
-      if (cached) return;
-      const rows = await controller.loadStandings(g.sport, g.leagueId, g.season);
-      setTable((t) => t && t.group.key === g.key ? { group: g, rows: rows ?? [] } : t);
-    };
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "phone-results", style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
-      /* @__PURE__ */ jsx(
-        MobileChips,
-        {
-          testId: "phone-results-filter",
-          items: [
-            { key: "all", label: tt("sportResultsAll"), id: "all" },
-            { key: "live", label: `${tt("sportResultsLive")} (${liveCount})`, id: "live" },
-            { key: "mine", label: tt("sportResultsMine", { n: mineCount }), id: "mine" }
-          ],
-          value: filter,
-          onChange: setFilter
-        }
-      ),
-      groups.length > 0 ? /* @__PURE__ */ jsx(PhoneYourLeagues, { entries: mine.entries, fallback: mine.fallback, onJump: jump, onMore: () => setLeagueSheet(true) }) : null,
-      groups.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: "24px 4px", fontSize: 15, color: MT.muted }, children: tt("sportResultsEmpty") }) : null,
-      groups.map((g) => /* @__PURE__ */ jsxs("section", { "data-testid": `phone-results-group-${g.key}`, ref: (el) => {
-        if (el) sections.current.set(g.key, el);
-        else sections.current.delete(g.key);
-      }, style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 6, scrollMarginTop: 8 }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
-          /* @__PURE__ */ jsx("div", { style: { flex: 1, fontSize: 17, fontWeight: 600, ...ellipsis2 }, children: g.round != null ? `${labels.get(g.key) ?? g.league} \xB7 ${tt("sportRound", { n: g.round })}` : labels.get(g.key) ?? g.league }),
-          /* @__PURE__ */ jsx("div", { "data-testid": `phone-table-${g.key}`, ...station(() => void openTable(g)), style: { minHeight: MT.HIT, padding: "0 14px", borderRadius: 12, background: MT.s08, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", fontSize: 14, color: MT.muted70, cursor: "pointer", flexShrink: 0 }, children: tt("sportTable") })
-        ] }),
-        g.matches.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "phone-result-row", ...station(() => onOpenMatch(m)), style: { minHeight: 56, display: "grid", gridTemplateColumns: "46px minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, fontWeight: 700, color: m.status === "live" ? MT.live : MT.muted }, children: matchStatusLabel(m, tt) ?? "" }),
-          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("span", { style: { fontSize: 14, ...ellipsis2 }, children: m.home }),
-            /* @__PURE__ */ jsx(PhoneCrest, { name: m.home ?? "", src: m.homeCrest })
-          ] }),
-          /* @__PURE__ */ jsx("span", { "data-testid": "phone-result-score", style: { fontSize: 16, fontWeight: 700, minWidth: 38, textAlign: "center", fontVariantNumeric: "tabular-nums" }, children: scoreText(m) ?? "\u2013" }),
-          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx(PhoneCrest, { name: m.away ?? "", src: m.awayCrest }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: 14, ...ellipsis2 }, children: m.away })
-          ] })
-        ] }, m.id))
-      ] }, g.key)),
-      leagueSheet ? /* @__PURE__ */ jsx(PhoneLeagueSheet, { entries, kindLabel: sport === "all" ? kindLabel2 ?? null : null, onPick: jump, onClose: () => setLeagueSheet(false), pushLayer }) : null,
-      table ? /* @__PURE__ */ jsx(
-        MobileSheet,
-        {
-          testId: "phone-standings-sheet",
-          title: `${labels.get(table.group.key) ?? table.group.league} \xB7 ${tt("sportTable")}`,
-          body: table.rows === null ? /* @__PURE__ */ jsx("div", { style: { padding: 16, color: MT.muted }, children: tt("sportLoading") }) : /* @__PURE__ */ jsx(PhoneStandings, { rows: table.rows, tt }),
-          items: [],
-          onClose: () => setTable(null),
-          pushLayer
-        }
-      ) : null
-    ] });
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/sport-follow-search-phone.tsx
   init_react_shim();
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
   init_merge();
   init_sport_store();
+  init_sport_results_phone();
+  init_mobile_icons();
   init_jsx_runtime_shim();
   function PhoneFollowSearch({ sport }) {
     const { tt } = useTvText();
@@ -63267,159 +65290,608 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("button", { type: "submit", "data-testid": "phone-follow-search-go", disabled: busy || tooShort, style: { height: MT.HIT, padding: "0 16px", borderRadius: 12, border: "none", background: MT.acc, color: MT.onAcc, fontSize: 15, fontWeight: 600, fontFamily: MT.font, opacity: busy || tooShort ? 0.5 : 1 }, children: tt("sportSearchSubmit") })
       ] }),
       hits?.map((hit) => {
-        const follow = { sport, kind: "team", key: foldTeamKey(hit.name), name: hit.name, providerIds: { [settings.provider]: hit.id } };
+        const follow = { sport, kind: "team", key: foldTeamKey2(hit.name), name: hit.name, providerIds: { [hit.provider ?? settings.provider]: hit.id }, ...hit.crest ? { crest: hit.crest } : {} };
         const on = isFollowing(follows, follow);
         return /* @__PURE__ */ jsxs("div", { "data-testid": `phone-follow-hit-${hit.id}`, ...station(() => toggleFollow(follow)), style: { minHeight: 48, display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }, children: [
           /* @__PURE__ */ jsx(PhoneCrest, { name: hit.name, src: hit.crest, size: 26 }),
           /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, ...ellipsis2 }, children: hit.name }),
           hit.country ? /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.muted, flexShrink: 0 }, children: hit.country }) : null,
-          /* @__PURE__ */ jsx("span", { style: { color: on ? "#fbbf24" : MT.dim, flexShrink: 0 }, children: on ? "\u2605" : "\u2606" })
+          /* @__PURE__ */ jsx("span", { "data-on": on ? "1" : "0", style: { color: on ? MT.acc : MT.dim, flexShrink: 0, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 20, filled: on }) })
         ] }, hit.id);
       }),
       hits && hits.length === 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted }, children: tt("sportFollowSearchEmpty") }) : null
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
-  init_results_controller();
-  init_live_poller();
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/sport-overview-phone.tsx
+  init_react_shim();
+  init_live_tv_ui();
+  init_tv_ui();
+  init_mobile_tokens();
+  init_mobile_icons();
+  init_sport_epg();
+  init_sport_model();
+  init_sport_day_model();
+  init_score_model();
   init_score_model();
   init_sport_ctx();
-  init_surface();
+  init_phone_sport_model();
+  init_phone_sport_parts();
+  init_phone_sport_sheet();
+  init_jsx_runtime_shim();
+  function PhoneMatchday({ ctx, matches, dayFrom, offset }) {
+    const hero = useMemo(() => featuredMatch(matches.filter((m) => m.sources.length > 0), ctx.follows, ctx.now), [matches, ctx.follows, ctx.now]);
+    const next = nextOnYourChannels(matches, ctx.now, hero?.id ?? null, 8);
+    const { live: live2, later, finished } = splitSections(matches, ctx.now);
+    const laterTitle = offset === 1 ? ctx.tt("sportTomorrow") : offset === 0 ? ctx.tt("sportLaterToday") : ctx.tt("sportLater");
+    const sections = [
+      { key: "live", title: ctx.tt("sportLiveNow"), dot: P.live, list: live2 },
+      { key: "later", title: laterTitle, dot: P.coral, list: later },
+      { key: "finished", title: ctx.tt("sportFinished"), dot: "rgba(243,244,248,0.4)", list: finished }
+    ].filter((s) => s.list.length > 0);
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      hero ? /* @__PURE__ */ jsx(PhoneHero, { ctx, match: hero }) : null,
+      next.length > 0 ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-next", style: { display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: P.muted60 }, children: ctx.tt("sportNextOnChannels") }),
+        /* @__PURE__ */ jsx("div", { "data-row": "", style: { display: "flex", gap: 8, overflowX: "auto", margin: "0 -16px", padding: "0 16px" }, children: next.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-next-card", ...station(() => ctx.openMatch(m)), style: { ...cardStyle2, borderRadius: 12, flex: "0 0 200px", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 2, cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 15, fontWeight: 700, color: P.coralLight }, children: formatClock2(m.start, ctx.locale) }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 14, fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: P.muted65, ...ellipsis2 }, children: rankedSources(m, ctx.overrides)[0]?.name ?? "" })
+        ] }, m.id)) })
+      ] }) : null,
+      /* @__PURE__ */ jsx(PhoneTimelineCard, { ctx, matches, dayFrom }),
+      sections.map((s) => /* @__PURE__ */ jsxs("section", { "data-testid": `sport-phone-section-${s.key}`, style: { display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx(SectionHead, { dot: s.dot, title: s.title, sub: ctx.tt("sportJustNowSub", { n: s.list.length }) }),
+        s.list.map((m) => /* @__PURE__ */ jsx(PhoneMatchCard, { ctx, match: m }, m.id))
+      ] }, s.key))
+    ] });
+  }
+  function heroTag(m, ctx) {
+    const st = statusAt(m, ctx.now);
+    if (st === "live") return { text: `\u25CF ${ctx.tt("sportLiveShort")}`, bg: P.live };
+    if (st === "finished") return { text: ctx.tt("sportEnded"), bg: "rgba(252,252,255,0.22)" };
+    const evening = localDayKey(m.start) === localDayKey(ctx.now) && new Date(m.start).getHours() >= 17;
+    return { text: evening ? ctx.tt("sportTonight") : formatClock2(m.start, ctx.locale), bg: "rgba(252,252,255,0.22)" };
+  }
+  function sourceLabel(ctx, ranked, chosen) {
+    if (ranked.length === 1) return chosen.name;
+    return [chosen.quality, ctx.tt("sportSourcesShort", { n: ranked.length })].filter(Boolean).join(" \xB7 ");
+  }
+  function PhoneHero({ ctx, match: m }) {
+    const [picked, setPicked] = useState(0);
+    const [sheet, setSheet] = useState(false);
+    const ranked = rankedSources(m, ctx.overrides);
+    const index = Math.min(picked, Math.max(ranked.length - 1, 0));
+    const chosen = ranked[index] ?? null;
+    const st = statusAt(m, ctx.now);
+    const tag = heroTag(m, ctx);
+    const followed = followState(m, ctx.follows).any;
+    const kicker = `${followed ? ctx.tt("sportYouFollow") : ctx.tt("sportTopMatch")} \xB7 ${m.league || ctx.kindLabel(m.kind)}`;
+    const score = showsScore(m) ? m.score ?? null : null;
+    const status = st === "live" ? heroStatusLine(m, ctx.tt) ?? timeLine(m, ctx) : st === "upcoming" ? ctx.tt("sportKickoffAt", { time: formatClock2(m.start, ctx.locale) }) : matchStatusLabel(m, ctx.tt) ?? ctx.tt("sportEnded");
+    const team2 = (side3) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+      /* @__PURE__ */ jsx(PhoneTeamCrest, { name: side3 === "home" ? m.home : m.away, colorKey: side3 === "home" ? m.homeKey : m.awayKey, src: side3 === "home" ? m.homeCrest : m.awayCrest, size: 34 }),
+      /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 20, fontWeight: 600, ...ellipsis2 }, children: side3 === "home" ? m.home : m.away }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 28, fontWeight: 700, fontVariantNumeric: "tabular-nums" }, children: score ? score[side3] : "" })
+    ] });
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-hero", style: { ...cardStyle2, borderRadius: 18, border: `1px solid ${P.line18}`, backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", padding: 14, display: "flex", flexDirection: "column", gap: 12, flexShrink: 0 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+        /* @__PURE__ */ jsx("span", { "data-testid": "sport-phone-hero-tag", style: { height: 22, padding: "0 8px", borderRadius: 6, background: tag.bg, color: "#fff", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", display: "inline-flex", alignItems: "center", flexShrink: 0 }, children: tag.text }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: P.muted80, ...ellipsis2 }, children: kicker })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-hero-board", ...station(() => ctx.openMatch(m)), style: { display: "flex", flexDirection: "column", gap: 8, cursor: "pointer" }, children: [
+        m.home && m.away ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          team2("home"),
+          team2("away")
+        ] }) : /* @__PURE__ */ jsx("span", { style: { fontSize: 20, fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+          /* @__PURE__ */ jsx("div", { style: { flex: 1, height: 4, borderRadius: 2, background: "rgba(252,252,255,0.2)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${Math.round(matchProgress(m, ctx.now) * 100)}%`, background: P.coral } }) }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 13, fontWeight: 700, color: st === "live" ? P.liveMin : P.coralLight, whiteSpace: "nowrap" }, children: status }),
+          /* @__PURE__ */ jsxs("span", { style: { fontSize: 12, color: P.muted60, display: "inline-flex", alignItems: "center", gap: 2, whiteSpace: "nowrap" }, children: [
+            ctx.tt("sportMatchCenter"),
+            /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 12 })
+          ] })
+        ] })
+      ] }),
+      chosen ? /* @__PURE__ */ jsxs("div", { style: { display: "flex" }, children: [
+        /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-hero-watch", ...station(() => ctx.watch(m, chosen)), style: { flex: 1, minWidth: 0, height: 46, borderRadius: "12px 0 0 12px", background: P.coral, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 15, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", overflow: "hidden" }, children: [
+          /* @__PURE__ */ jsx(MIcons.Play, { size: 16 }),
+          ctx.tt("sportWatch"),
+          /* @__PURE__ */ jsx("span", { style: { fontWeight: 500, opacity: 0.9, ...ellipsis2 }, children: `\xB7 ${sourceLabel(ctx, ranked, chosen)}` })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-hero-sources", ...station(() => setSheet(true)), "aria-label": ctx.tt("sportPickSource"), style: { width: 46, height: 46, borderRadius: "0 12px 12px 0", background: P.coral, color: "#fff", borderLeft: "1px solid rgba(0,0,0,0.25)", display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0 }, children: /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 18 }) })
+      ] }) : null,
+      sheet ? /* @__PURE__ */ jsxs(PhoneSportSheet, { testId: "sport-phone-source-sheet", label: ctx.tt("sportPickSource"), onClose: () => setSheet(false), pushLayer: ctx.nav.pushLayer, children: [
+        /* @__PURE__ */ jsx("span", { style: sheetTitle, children: ctx.tt("sportPickSource") }),
+        ranked.map((s, i) => /* @__PURE__ */ jsxs(SheetRow, { testId: "sport-phone-source-row", on: i === index, height: 56, onPress: () => {
+          setPicked(i);
+          setSheet(false);
+        }, children: [
+          /* @__PURE__ */ jsx("span", { style: { width: 16, display: "inline-flex" }, children: i === index ? /* @__PURE__ */ jsx(PIcons.Check, {}) : null }),
+          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis2 }, children: s.name }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 11, opacity: 0.7, ...ellipsis2 }, children: [ctx.playlistName(s.sourceId), i === 0 && ranked.length > 1 ? ctx.tt("sportBestLower") : null].filter(Boolean).join(" \xB7 ") })
+          ] }),
+          s.quality ? /* @__PURE__ */ jsx("span", { style: { fontSize: 12, fontWeight: 700 }, children: s.quality }) : null
+        ] }, s.channelKey))
+      ] }) : null
+    ] });
+  }
+  var PX_PER_HOUR = 90;
+  var TIMELINE_ROWS = 5;
+  var LABEL_W2 = 48;
+  function PhoneTimelineCard({ ctx, matches, dayFrom }) {
+    const tl = phoneTimeline(matches, dayFrom, ctx.now, ctx.follows);
+    const scroller = useRef(null);
+    const [expanded, setExpanded] = useState(false);
+    const hours = tl ? (tl.end - tl.start) / 36e5 : 0;
+    const track = hours * PX_PER_HOUR;
+    const nowPx = tl?.nowPct != null ? tl.nowPct / 100 * track : null;
+    useEffect(() => {
+      const el = scroller.current;
+      if (el && nowPx != null) el.scrollLeft = Math.max(0, nowPx - 90);
+    }, [tl?.start, tl?.end]);
+    if (!tl) return null;
+    const pct3 = (t) => (Math.min(Math.max(t, tl.start), tl.end) - tl.start) / (tl.end - tl.start) * 100;
+    const rows = expanded ? tl.rows : tl.rows.slice(0, TIMELINE_ROWS);
+    const hidden2 = tl.rows.length - rows.length;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-timeline", style: { ...cardStyle2, borderRadius: 16, padding: "12px 0 12px 12px", display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 8, paddingRight: 12 }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 17, fontWeight: 600 }, children: ctx.tt("sportMatchday") }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: P.muted60, ...ellipsis2 }, children: ctx.tt("sportMatchdaySwipe") })
+      ] }),
+      /* @__PURE__ */ jsx("div", { ref: scroller, "data-row": "", style: { overflowX: "auto" }, children: /* @__PURE__ */ jsxs("div", { style: { width: LABEL_W2 + 4 + track + 12, position: "relative", display: "flex", flexDirection: "column", gap: 4, paddingRight: 12, boxSizing: "border-box" }, children: [
+        /* @__PURE__ */ jsx("div", { style: { height: 18, position: "relative", marginLeft: LABEL_W2 + 4 }, children: tl.hours.map((h) => /* @__PURE__ */ jsx("span", { style: { position: "absolute", top: 0, left: `${pct3(h)}%`, fontSize: 11, fontWeight: 600, color: P.muted60, paddingLeft: 4, borderLeft: `1px solid ${P.line14}` }, children: formatClock2(h, ctx.locale) }, h)) }),
+        rows.flatMap((row) => row.lanes.map((lane, laneIndex) => /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-lane", style: { height: 32, display: "flex", gap: 4 }, children: [
+          /* @__PURE__ */ jsx("span", { "data-testid": laneIndex === 0 ? "sport-phone-lane-label" : void 0, style: { width: LABEL_W2, flexShrink: 0, position: "sticky", left: 0, zIndex: 2, background: "#121216", display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "rgba(243,244,248,0.85)", overflow: "hidden" }, children: laneIndex === 0 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("span", { style: { width: 7, height: 7, borderRadius: 2, background: leagueColor(row.key), flexShrink: 0 } }),
+            row.abbr || ctx.kindLabel(row.kind).slice(0, 3).toUpperCase()
+          ] }) : null }),
+          /* @__PURE__ */ jsx("div", { style: { flex: 1, position: "relative", borderRadius: 7, background: "rgba(252,252,255,0.04)" }, children: lane.map((m) => /* @__PURE__ */ jsx(TimelineBlock2, { ctx, m, left: pct3(m.start), width: pct3(m.stop) - pct3(m.start) }, m.id)) })
+        ] }, `${row.key}-${laneIndex}`))),
+        nowPx != null ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-now", "aria-hidden": "true", style: { position: "absolute", top: 18, bottom: 0, left: LABEL_W2 + 4 + nowPx, width: 2, background: P.coral, boxShadow: "0 0 8px rgba(244,132,95,0.8)", pointerEvents: "none" } }) : null
+      ] }) }),
+      hidden2 > 0 ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-timeline-more", ...station(() => setExpanded(true)), style: { alignSelf: "flex-start", minHeight: 32, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: P.coralLight, cursor: "pointer" }, children: [
+        ctx.tt("showMoreN", { n: hidden2 }),
+        /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 14 })
+      ] }) : null
+    ] });
+  }
+  function TimelineBlock2({ ctx, m, left, width }) {
+    const st = statusAt(m, ctx.now);
+    const pair = m.home && m.away ? `${crestText(m.home)}\u2013${crestText(m.away)}` : matchTitle(m);
+    const score = showsScore(m) && m.score && m.home && m.away ? `${crestText(m.home)} ${m.score.home}\u2013${m.score.away} ${crestText(m.away)}` : null;
+    const label = st === "upcoming" ? `${formatClock2(m.start, ctx.locale)} ${pair}` : score ?? pair;
+    return /* @__PURE__ */ jsx(
+      "div",
+      {
+        "data-testid": `sport-phone-block-${m.id}`,
+        "data-status": st,
+        ...station(() => ctx.openMatch(m)),
+        title: matchTitle(m),
+        "aria-label": `${matchTitle(m)} ${formatClock2(m.start, ctx.locale)}`,
+        style: {
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: `${left}%`,
+          width: `calc(${Math.max(width, 1.5)}% - 3px)`,
+          boxSizing: "border-box",
+          borderRadius: 7,
+          padding: "0 7px",
+          display: "flex",
+          alignItems: "center",
+          fontSize: 11,
+          fontWeight: 700,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          cursor: "pointer",
+          background: st === "live" ? "rgba(244,132,95,0.32)" : st === "finished" ? "rgba(252,252,255,0.07)" : "rgba(252,252,255,0.14)",
+          border: `1px solid ${st === "live" ? "rgba(244,132,95,0.85)" : P.line14}`,
+          color: st === "finished" ? P.muted60 : P.text
+        },
+        children: label
+      }
+    );
+  }
+  function PhoneFeed({ ctx, matches, days, onAddTeam }) {
+    const { live: live2, later } = splitSections(matches, ctx.now);
+    const plan = eveningPlan(later, ctx.isReminded);
+    const dayMatches = days[0]?.matches ?? [];
+    const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days]);
+    useBackfillFollowCrests(allMatches);
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsxs("section", { "data-testid": "sport-phone-teams", style: { ...cardStyle2, borderRadius: 16, border: `1px solid ${P.line16}`, padding: "12px 0 10px 12px", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 17, fontWeight: 600 }, children: ctx.tt("sportYourTeams") }),
+        /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", gap: 12, overflowX: "auto", padding: "4px 12px 4px 0" }, children: [
+          ctx.follows.map((f) => /* @__PURE__ */ jsx(TeamAvatar2, { ctx, follow: f, dayMatches, allMatches, days }, `${f.kind}:${f.key}`)),
+          /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-teams-add", ...station(onAddTeam), style: { flex: "0 0 70px", display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsx("span", { style: { width: 56, height: 56, borderRadius: 999, border: "2px dashed rgba(255,255,255,0.35)", boxSizing: "border-box", display: "grid", placeItems: "center" }, children: /* @__PURE__ */ jsx(MIcons.Plus, { size: 22 }) }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 12, fontWeight: 600 }, children: ctx.tt("sportAddTeam") })
+          ] })
+        ] })
+      ] }),
+      live2.length > 0 ? /* @__PURE__ */ jsxs("section", { "data-testid": "sport-phone-now-list", style: { display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx(SectionHead, { dot: P.live, title: ctx.tt("sportJustNow"), sub: ctx.tt("sportJustNowSub", { n: live2.length }) }),
+        live2.map((m) => {
+          const has = m.sources.length > 0;
+          const score = scoreText(m);
+          const title = score && m.home && m.away ? `${m.home} ${score} ${m.away}` : matchTitle(m);
+          return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-now-row", ...station(() => ctx.openMatch(m)), style: { ...cardStyle2, minHeight: 64, display: "flex", alignItems: "center", gap: 10, padding: "0 10px 0 0", overflow: "hidden", cursor: "pointer", flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsx("div", { style: { width: 4, alignSelf: "stretch", background: leagueColor(m.leagueKey || m.kind) } }),
+            /* @__PURE__ */ jsx("span", { style: { width: 34, flexShrink: 0, fontSize: 13, fontWeight: 700, color: P.liveMin }, children: matchStatusLabel(m, ctx.tt) ?? ctx.tt("sportLiveShort") }),
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: title }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: P.muted65, ...ellipsis2 }, children: [m.league || ctx.kindLabel(m.kind), has ? sourceLine(m, ctx) : ctx.tt("sportResultOnly")].join(" \xB7 ") })
+            ] }),
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                "data-testid": "sport-phone-now-play",
+                ...has ? station(() => ctx.watch(m)) : {},
+                onClick: (e) => {
+                  e.stopPropagation();
+                  if (has) ctx.watch(m);
+                },
+                "aria-label": ctx.tt("sportWatch"),
+                "aria-disabled": has ? "false" : "true",
+                style: { width: 40, height: 40, borderRadius: 999, flexShrink: 0, display: "grid", placeItems: "center", background: has ? P.coral : "rgba(252,252,255,0.14)", color: "#fff", opacity: has ? 1 : 0.4, cursor: has ? "pointer" : "default" },
+                children: /* @__PURE__ */ jsx(MIcons.Play, { size: 16 })
+              }
+            )
+          ] }, m.id);
+        })
+      ] }) : null,
+      later.length > 0 ? /* @__PURE__ */ jsxs("section", { "data-testid": "sport-phone-plan", style: { display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 8 }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 18, fontWeight: 600 }, children: ctx.tt("sportEveningPlan") }),
+          /* @__PURE__ */ jsx("span", { "data-testid": "sport-phone-plan-sum", style: { fontSize: 13, color: P.muted60 }, children: plan.chosen > 0 ? ctx.tt("sportPlanChosen", { n: plan.chosen }) : ctx.tt("sportPlanHint") })
+        ] }),
+        plan.rows.map(({ match: m, on, clash }) => {
+          const best = rankedSources(m, ctx.overrides)[0];
+          return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-plan-row", "data-on": on ? "1" : "0", ...station(() => ctx.openMatch(m)), style: { minHeight: 58, flexShrink: 0, borderRadius: 14, background: on ? "rgba(244,132,95,0.12)" : P.card, border: `1px solid ${on ? "rgba(244,132,95,0.55)" : P.line14}`, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", cursor: "pointer", boxSizing: "border-box" }, children: [
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                "data-testid": "sport-phone-plan-check",
+                ...best ? station(() => ctx.toggleRemind(m)) : {},
+                role: "checkbox",
+                "aria-checked": on ? "true" : "false",
+                "aria-label": ctx.tt("sportRemindMe"),
+                onClick: (e) => {
+                  e.stopPropagation();
+                  if (best) ctx.toggleRemind(m);
+                },
+                style: { width: 28, height: 28, borderRadius: 8, flexShrink: 0, boxSizing: "border-box", display: "grid", placeItems: "center", background: on ? P.coral : "transparent", border: `2px solid ${on ? P.coral : "rgba(255,255,255,0.4)"}`, color: "#fff", opacity: best ? 1 : 0.4, cursor: best ? "pointer" : "default" },
+                children: on ? /* @__PURE__ */ jsx(PIcons.Check, { size: 16 }) : null
+              }
+            ),
+            /* @__PURE__ */ jsx("span", { style: { width: 44, flexShrink: 0, fontSize: 15, fontWeight: 700, color: P.coralLight }, children: formatClock2(m.start, ctx.locale) }),
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 14, fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
+              /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: P.muted65, ...ellipsis2 }, children: [m.league || ctx.kindLabel(m.kind), best?.name ?? ctx.tt("sportResultOnly")].join(" \xB7 ") })
+            ] }),
+            followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { style: { color: P.coral, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 14, filled: true }) }) : null,
+            clash ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-phone-plan-clash", title: ctx.tt("sportClash"), "aria-label": ctx.tt("sportClash"), style: { color: "#fbbf24", display: "inline-flex" }, children: /* @__PURE__ */ jsx(PIcons.Warning, {}) }) : null
+          ] }, m.id);
+        })
+      ] }) : null
+    ] });
+  }
+  function TeamAvatar2({ ctx, follow, dayMatches, allMatches, days }) {
+    const ring = teamRing(follow, dayMatches, ctx.now);
+    const next = nextMatchFor(follow, days, ctx.now);
+    const liveMatch = ring === "live" ? dayMatches.find((m) => statusAt(m, ctx.now) === "live" && followState(m, [follow]).any) : void 0;
+    const status = ring === "live" ? (liveMatch ? scoreText(liveMatch) : null) ?? ctx.tt("sportLiveShort") : next ? localDayKey(next.start) === localDayKey(ctx.now) ? formatClock2(next.start, ctx.locale) : ctx.tt("sportTomorrow") : "\u2013";
+    const ringColor = ring === "live" ? P.ring : ring === "today" ? P.text : "rgba(255,255,255,0.18)";
+    const open2 = liveMatch ?? next;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-team", "data-ring": ring, ...station(() => {
+      if (open2) ctx.openMatch(open2);
+    }), style: { flex: "0 0 70px", display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: "pointer", textAlign: "center" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { width: 56, height: 56, borderRadius: 999, padding: 3, boxSizing: "border-box", border: `3px solid ${ringColor}`, position: "relative", display: "grid", placeItems: "center" }, children: [
+        /* @__PURE__ */ jsx(PhoneTeamCrest, { name: follow.name, colorKey: follow.key, src: crestForFollow(follow, allMatches), size: 44 }),
+        ring === "live" ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", bottom: -7, left: "50%", transform: "translateX(-50%)", height: 15, padding: "0 5px", borderRadius: 4, background: P.ring, color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center" }, children: ctx.tt("sportLiveShort") }) : null
+      ] }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 12, fontWeight: 600, lineHeight: 1.2, maxWidth: 70, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: follow.name }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 700, color: ring === "live" ? P.liveMin : ring === "today" ? P.coralLight : P.muted60 }, children: status })
+    ] });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/sport-follows-phone.tsx
+  init_react_shim();
+  init_tv_ui();
+  init_mobile_tokens();
+  init_mobile_icons();
+  init_sport_model();
+  init_sport_day_model();
+  init_sport_store();
+  init_sport_ctx();
+  init_score_model();
+  init_sport_icons();
+  init_phone_sport_model();
+  init_phone_sport_parts();
+  init_jsx_runtime_shim();
+  var same3 = (a, b) => a.kind === b.kind && a.key === b.key;
+  function PhoneFollows({ ctx, days, onAdd }) {
+    const [shown, setShown] = useState(ctx.follows);
+    const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days]);
+    useBackfillFollowCrests(allMatches);
+    useEffect(() => {
+      setShown((prev) => [...prev.map((p) => ctx.follows.find((f) => same3(f, p)) ?? p), ...ctx.follows.filter((f) => !prev.some((p) => same3(p, f)))]);
+    }, [ctx.follows]);
+    const groups = SPORT_KINDS.map((kind) => [kind, shown.filter((f) => f.sport === kind)]).filter(([, list]) => list.length > 0);
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("span", { "data-testid": "sport-follows-meta", style: { fontSize: 13, color: P.muted70, flexShrink: 0 }, children: `${ctx.tt("sportFollowCount", { n: ctx.follows.length })} \xB7 ${ctx.tt("sportFollowBellHint").toLocaleLowerCase(ctx.locale)}` }),
+      groups.length === 0 ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-follow-empty", style: { borderRadius: 14, border: "1px dashed rgba(255,255,255,0.24)", padding: "28px 16px", textAlign: "center", fontSize: 15, color: "rgba(243,244,248,0.75)", flexShrink: 0 }, children: ctx.tt("sportFollowEmpty") }) : null,
+      groups.map(([kind, list]) => /* @__PURE__ */ jsxs("section", { "data-testid": `sport-phone-follow-group-${kind}`, style: { display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+          /* @__PURE__ */ jsx(SportIcon, { kind, size: 18 }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 17, fontWeight: 600 }, children: ctx.kindLabel(kind) })
+        ] }),
+        list.map((f) => /* @__PURE__ */ jsx(FollowRow2, { ctx, follow: f, days }, `${f.kind}:${f.key}`)),
+        /* @__PURE__ */ jsxs("div", { "data-testid": `sport-phone-follow-add-${kind}`, ...station(() => onAdd(kind)), style: { height: 48, flexShrink: 0, borderRadius: 12, border: "1px dashed rgba(255,255,255,0.26)", display: "flex", alignItems: "center", gap: 8, padding: "0 12px", fontSize: 14, fontWeight: 600, color: P.muted80, cursor: "pointer" }, children: [
+          /* @__PURE__ */ jsx(MIcons.Plus, { size: 16 }),
+          ctx.tt("sportAddTeams")
+        ] })
+      ] }, kind)),
+      groups.length === 0 ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-follow-add", ...station(() => onAdd("football")), style: { height: 48, flexShrink: 0, borderRadius: 12, border: "1px dashed rgba(255,255,255,0.26)", display: "flex", alignItems: "center", gap: 8, padding: "0 12px", fontSize: 14, fontWeight: 600, color: P.muted80, cursor: "pointer" }, children: [
+        /* @__PURE__ */ jsx(MIcons.Plus, { size: 16 }),
+        ctx.tt("sportFollowAdd")
+      ] }) : null,
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 12, color: P.muted60, flexShrink: 0 }, children: ctx.tt("sportAlertOnlyRunning") })
+    ] });
+  }
+  function FollowRow2({ ctx, follow, days }) {
+    const on = isFollowing(ctx.follows, follow);
+    const next = nextMatchFor(follow, days, ctx.now);
+    const crest = crestForFollow(follow, days.flatMap((d) => d?.matches ?? []));
+    const alert = followAlert(follow, ctx.settings.alert);
+    const alertText = (a) => a === "off" ? ctx.tt("sportAlertOff") : a === "15" ? ctx.tt("sportAlertShort15") : ctx.tt("sportAlertShortKickoff");
+    const ruleText = (a) => a === "off" ? ctx.tt("sportAlertOff") : a === "15" ? ctx.tt("sportAlert15") : ctx.tt("sportAlertKickoff");
+    const cycle = () => {
+      const n = nextAlert(alert);
+      setFollowAlert(follow, n);
+      ctx.nav.toast(ctx.tt("sportAlertFor", { name: follow.name, rule: ruleText(n).toLocaleLowerCase(ctx.locale) }));
+    };
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        "data-testid": "sport-phone-follow",
+        "data-following": on ? "1" : "0",
+        ...station(() => {
+          if (next) ctx.openMatch(next);
+        }),
+        style: { ...cardStyle2, minHeight: 64, display: "flex", alignItems: "center", gap: 10, padding: "8px 4px 8px 12px", opacity: on ? 1 : 0.55, cursor: next ? "pointer" : "default", flexShrink: 0 },
+        children: [
+          /* @__PURE__ */ jsx(PhoneTeamCrest, { name: follow.name, colorKey: follow.key, src: crest, size: 40 }),
+          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: follow.name }),
+            /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: P.muted70, ...ellipsis2 }, children: followNextLine(ctx, follow, next) })
+          ] }),
+          on ? /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": "sport-phone-follow-bell",
+              "data-alert": alert,
+              ...station(cycle),
+              onClick: (e) => {
+                e.stopPropagation();
+                cycle();
+              },
+              "aria-label": ctx.tt("sportAlertFor", { name: follow.name, rule: ruleText(alert) }),
+              style: { height: 30, padding: "0 8px", borderRadius: 999, flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, cursor: "pointer", background: alert !== "off" ? "rgba(244,132,95,0.2)" : "rgba(252,252,255,0.10)", color: alert !== "off" ? P.coralLight : P.muted70 },
+              children: [
+                alert !== "off" ? /* @__PURE__ */ jsx(PIcons.BellOn, {}) : /* @__PURE__ */ jsx(PIcons.BellOff, {}),
+                alertText(alert)
+              ]
+            }
+          ) : null,
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              "data-testid": "sport-phone-follow-heart",
+              ...station(() => toggleFollow(follow)),
+              onClick: (e) => {
+                e.stopPropagation();
+                toggleFollow(follow);
+              },
+              "aria-pressed": on ? "true" : "false",
+              "aria-label": on ? ctx.tt("sportFollowingName", { name: follow.name }) : ctx.tt("sportFollowName", { name: follow.name }),
+              style: { width: 44, height: 44, flexShrink: 0, display: "grid", placeItems: "center", color: on ? P.coral : P.text, cursor: "pointer" },
+              children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 20, filled: on })
+            }
+          )
+        ]
+      }
+    );
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/mobile/sport-phone.tsx
+  init_phone_sport_model();
+  init_phone_sport_sheet();
+  init_phone_sport_parts();
   init_jsx_runtime_shim();
   var NO_MATCHES2 = [];
-  function SportPhone({ model, nav }) {
+  var SECTION_ICONS = {
+    hub: () => /* @__PURE__ */ jsx(PIcons.Tv, { size: 20 }),
+    guide: () => /* @__PURE__ */ jsx(PIcons.Calendar, { size: 20 }),
+    sport: () => /* @__PURE__ */ jsx(SportIcons.Ball, { size: 20 }),
+    favs: () => /* @__PURE__ */ jsx(MIcons.Heart, { size: 20 }),
+    multi: () => /* @__PURE__ */ jsx(PIcons.Grid, { size: 20 })
+  };
+  function SportPhone({ model, nav, standalone = false }) {
     const [tab, setTab] = useState("foryou");
     const [offset, setOffset] = useState(0);
     const [filter, setFilter] = useState("all");
     const [sheet, setSheet] = useState(null);
-    const [adding, setAdding] = useState(false);
+    const [adding, setAdding] = useState(null);
+    const [sections, setSections] = useState(false);
+    const platform = usePhonePlatform();
+    const bodyRef = useRef(null);
     const openMatch = useCallback((m) => setSheet(m), []);
-    const openFollowPicker = useCallback(() => setAdding(true), []);
+    const openFollowPicker = useCallback(() => setAdding("football"), []);
     const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker });
     const { tt } = ctx;
     const today = localDayKey(model.nowMs);
     const day = shiftDay(today, offset);
     const selected = useSportDay(day, model.nowMs);
-    const { matches: mergedMatches, allMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES2 });
+    const { matches: mergedMatches, allMatches, controller: controller2 } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES2 });
     const mergedDay = useMemo(() => selected.data ? { ...selected.data, matches: mergedMatches } : null, [selected.data, mergedMatches]);
     usePollDemand("sport-view", true);
-    const wantsFollow = tab === "follows" || adding;
+    const view = ctx.settings.phoneView ?? "matchday";
+    useEffect(() => {
+      if (bodyRef.current) bodyRef.current.scrollTop = 0;
+    }, [tab, view, offset]);
+    const wantsFollow = tab === "follows" || adding !== null;
     const todayDay = useSportDay(wantsFollow ? today : null, model.nowMs);
-    const tomorrowDay = useSportDay(wantsFollow ? shiftDay(today, 1) : null, model.nowMs);
-    const phoneHero = useMemo(() => featuredMatch(visibleMatches(mergedDay, filter), ctx.follows, ctx.now), [mergedDay, filter, ctx.follows, ctx.now]);
-    const backdrop = useSportBackdrop(phoneHero, filter, model.nowMs);
+    const tomorrowDay = useSportDay(wantsFollow || tab === "foryou" && view === "feed" ? shiftDay(today, 1) : null, model.nowMs);
     const counts = sportCounts(mergedDay);
-    const { live: live2, later, finished } = splitSections(visibleMatches(mergedDay, filter), ctx.now);
-    const dayLabel = (o) => o === -1 ? tt("sportYesterday") : o === 0 ? tt("sportToday") : tt("sportTomorrow");
-    const sheetItems = (m) => {
-      const fs = followState(m, ctx.follows);
-      const follow = (kind, key, name, on) => key && name ? [{ key: `follow-${kind}-${key}`, label: on ? tt("sportFollowingName", { name }) : tt("sportFollowName", { name }), run: () => toggleFollow({ sport: m.kind, kind, key, name }) }] : [];
-      const ranked = rankedSources(m, ctx.overrides);
-      return [
-        ...ranked.slice(0, 4).map((s, i) => ({ key: `watch-${i}`, label: `${tt("sportWatchOn", { channel: s.name })}${s.quality ? ` \xB7 ${s.quality}` : ""}`, run: () => ctx.watch(m, s) })),
-        ...follow("team", m.homeKey, m.home, fs.home),
-        ...follow("team", m.awayKey, m.away, fs.away),
-        ...follow("league", m.leagueKey || null, m.league || null, fs.league),
-        ...ranked.length > 0 && statusAt(m, ctx.now) !== "finished" ? [{ key: "remind", label: ctx.isReminded(m) ? tt("sportReminded") : tt("sportRemindMe"), run: () => ctx.toggleRemind(m) }] : []
-      ];
+    const dayMatches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter]);
+    const phoneHero = useMemo(() => featuredMatch(dayMatches.filter((m) => m.sources.length > 0), ctx.follows, ctx.now) ?? featuredMatch(dayMatches, ctx.follows, ctx.now), [dayMatches, ctx.follows, ctx.now]);
+    const backdrop = useSportBackdrop(phoneHero, filter, model.nowMs);
+    const liveSheet = sheet ? [mergedMatches, todayDay.data?.matches ?? [], tomorrowDay.data?.matches ?? []].flat().find((m) => m.id === sheet.id) ?? null : null;
+    const dayLabel = offset === -1 ? tt("sportYesterday") : offset === 0 ? tt("sportToday") : tt("sportTomorrow");
+    const notice = selected.state === "missing" ? tt("sportNeedsUpdate") : selected.state === "error" ? tt("sportError") : selected.state === "loading" ? tt("sportLoading") : dayMatches.length === 0 ? tt("sportEmptyDay") : null;
+    const goSection = (key) => {
+      setSections(false);
+      const target2 = sectionTarget(key);
+      if (target2) nav.go(target2);
     };
-    const notice = selected.state === "missing" ? tt("sportNeedsUpdate") : selected.state === "error" ? tt("sportError") : selected.state === "loading" ? tt("sportLoading") : live2.length + later.length + finished.length === 0 ? tt("sportEmptyDay") : null;
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", ...backdrop.surface }, children: [
-      /* @__PURE__ */ jsx(SportBackdropLayer, { choice: backdrop.choice, phone: true, onBroken: backdrop.onBroken }),
-      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone", "data-scroll": "", style: { position: "relative", flex: 1, overflowY: "auto", padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 10 }, children: [
-        /* @__PURE__ */ jsx("div", { style: { margin: `0 -${MT.PAD}px` }, children: /* @__PURE__ */ jsx(MobileHeader, { title: tt("sportTitle") }) }),
-        /* @__PURE__ */ jsx(MobileSegment, { testId: "sport-phone-tabs", options: [{ key: "foryou", label: tt("sportTabForYou") }, { key: "results", label: tt("sportTabResults") }, { key: "follows", label: tt("sportTabFollows") }], value: tab, onChange: setTab }),
-        tab !== "follows" ? /* @__PURE__ */ jsx(MobileChips, { testId: "sport-phone-days", items: [-1, 0, 1].map((o) => ({ key: o, label: dayLabel(o), id: `day-${o}` })), value: offset, onChange: setOffset, emphasisKey: 0 }) : null,
-        tab !== "follows" ? /* @__PURE__ */ jsx(MobileChips, { testId: "sport-phone-sports", items: [{ key: "all", label: tt("sportAll"), id: "all" }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k, label: `${ctx.kindLabel(k)} ${counts[k]}`, id: k }))], value: filter, onChange: setFilter }) : null,
-        tab === "foryou" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-          notice ? /* @__PURE__ */ jsx("div", { style: { padding: "24px 4px", fontSize: 15, color: MT.muted }, children: notice }) : null,
-          /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLiveNow"), matches: live2 }),
-          /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLater"), matches: later }),
-          /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportFinished"), matches: finished })
-        ] }) : tab === "results" ? /* @__PURE__ */ jsx(SportResultsPhone, { matches: allMatches, controller, onOpenMatch: openMatch, pushLayer: nav.pushLayer, sport: filter, kindLabel: ctx.kindLabel }) : /* @__PURE__ */ jsx(PhoneFollows, { ctx, days: [todayDay.data, tomorrowDay.data] }),
-        sheet ? /* @__PURE__ */ jsx(MobileSheet, { testId: "sport-phone-sheet", title: matchTitle(sheet), subtitle: [sheet.league || ctx.kindLabel(sheet.kind), timeLine(sheet, ctx)].join(" \xB7 "), items: sheetItems(sheet), onClose: () => setSheet(null), pushLayer: nav.pushLayer }) : null,
-        adding ? /* @__PURE__ */ jsx(
-          MobileSheet,
-          {
-            testId: "sport-phone-follow-sheet",
-            title: tt("sportFollowAdd"),
-            body: /* @__PURE__ */ jsx(PhoneFollowSearch, { sport: filter === "all" ? "football" : filter }),
-            items: followCandidates([todayDay.data, tomorrowDay.data]).slice(0, 60).map((c) => ({
-              key: `${c.kind}:${c.key}`,
-              label: `${isFollowing(ctx.follows, c) ? "\u2605 " : ""}${c.name} \xB7 ${ctx.kindLabel(c.sport)}`,
-              run: () => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name })
-            })),
-            onClose: () => setAdding(false),
-            pushLayer: nav.pushLayer
-          }
-        ) : null
-      ] })
-    ] });
-  }
-  function PhoneSection({ ctx, title, matches }) {
-    if (matches.length === 0) return null;
-    return /* @__PURE__ */ jsxs("section", { style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }, children: [
-      /* @__PURE__ */ jsx("div", { style: { fontSize: 17, fontWeight: 600 }, children: title }),
-      matches.map((m) => {
-        const st = statusAt(m, ctx.now);
-        return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-row", ...station(() => ctx.openMatch(m)), style: { minHeight: 64, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: sportBg(MT.s07), border: `1px solid ${MT.line08}`, cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("span", { style: { width: 54, flexShrink: 0, display: "flex", flexDirection: "column", fontSize: 13, fontWeight: 700, color: st === "live" ? MT.live : MT.text }, children: showsScore(m) ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-            /* @__PURE__ */ jsx("span", { style: { fontVariantNumeric: "tabular-nums" }, children: scoreText(m) }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 600, color: MT.muted }, children: matchStatusLabel(m, ctx.tt) ?? "" })
-          ] }) : st === "live" ? ctx.tt("live") : st === "finished" ? ctx.tt("sportEnded") : timeLine(m, ctx) }),
-          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: matchTitle(m) }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: [m.league || ctx.kindLabel(m.kind), sourceLine(m, ctx)].filter(Boolean).join(" \xB7 ") })
-          ] }),
-          followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24" }, children: "\u2605" }) : null
-        ] }, m.id);
-      })
-    ] });
-  }
-  function PhoneFollows({ ctx, days }) {
-    const alertOptions = [
-      { key: "off", label: ctx.tt("sportAlertOff") },
-      { key: "15", label: ctx.tt("sportAlert15") },
-      { key: "kickoff", label: ctx.tt("sportAlertKickoff") }
+    const chips = [
+      { key: "all", label: tt("sportAllShort"), count: null },
+      ...SPORT_CHIPS.filter((k) => counts[k] > 0).map((k) => ({ key: k, label: ctx.kindLabel(k), count: counts[k] }))
     ];
-    return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
-      /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-add", ...station(ctx.openFollowPicker), style: { minHeight: 48, borderRadius: 14, background: MT.acc, color: MT.onAcc, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 600, cursor: "pointer" }, children: ctx.tt("sportFollowAdd") }),
-      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-alert", style: { display: "flex", flexDirection: "column", gap: 6 }, children: [
-        /* @__PURE__ */ jsx("span", { style: { fontSize: 13, color: MT.muted }, children: `${ctx.tt("sportKickoffAlert")} \xB7 ${alertLabel(ctx)}` }),
-        /* @__PURE__ */ jsx(MobileSegment, { options: alertOptions, value: ctx.settings.alert, onChange: (alert) => setSportSettings({ alert }) }),
-        /* @__PURE__ */ jsx("span", { style: { fontSize: 12.5, color: MT.dim }, children: ctx.tt("sportAlertOnlyRunning") })
-      ] }),
-      ctx.follows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 15, color: MT.muted, padding: "16px 4px" }, children: ctx.tt("sportFollowEmpty") }) : null,
-      ctx.follows.map((f) => {
-        const next = nextMatchFor(f, days, ctx.now);
-        return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-follow", ...station(() => {
-          if (next) ctx.openMatch(next);
-        }), style: { minHeight: 60, display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, background: sportBg(MT.s07), cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24" }, children: "\u2605" }),
-          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: f.name }),
-            /* @__PURE__ */ jsx("div", { style: { fontSize: 12.5, color: MT.muted, ...ellipsis2 }, children: followNextLine(ctx, f, next) })
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", "data-platform": platform, style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "#000", ...backdrop.surface }, children: [
+      /* @__PURE__ */ jsx(SportBackdropLayer, { choice: backdrop.choice, phone: true, onBroken: backdrop.onBroken }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }, children: [
+        /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-head", style: { flexShrink: 0, padding: `calc(${MT.SAFE_TOP_GUARD} + 8px) 16px 0`, display: "flex", flexDirection: "column", gap: 10 }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+            standalone ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-title", style: { display: "flex", flexDirection: "column", minWidth: 0 }, children: /* @__PURE__ */ jsx("span", { style: { fontSize: platform === "ios" ? 32 : 26, fontWeight: 700, lineHeight: 1.1 }, children: tt("sportTitle") }) }) : /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-title", ...station(() => setSections(true)), "aria-label": tt("sportSwitchSection"), "aria-haspopup": "dialog", style: { display: "flex", flexDirection: "column", minWidth: 0, cursor: "pointer" }, children: [
+              /* @__PURE__ */ jsx("span", { style: { fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: P.muted60 }, children: tt("liveTv") }),
+              /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: platform === "ios" ? 32 : 26, fontWeight: 700, lineHeight: 1.1 }, children: [
+                tt("sportTitle"),
+                /* @__PURE__ */ jsx("span", { style: { color: P.muted70, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.CaretDown, { size: 18 }) })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
+            tab === "foryou" ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-view", style: { display: "flex", padding: 3, borderRadius: 12, background: "rgba(252,252,255,0.10)", border: `1px solid ${P.line14}` }, children: [["matchday", tt("sportMatchday"), /* @__PURE__ */ jsx(PIcons.Calendar, {}, "c")], ["feed", tt("sportFeed"), /* @__PURE__ */ jsx(PIcons.Rows, {}, "r")]].map(([key, label, icon]) => {
+              const on = view === key;
+              return /* @__PURE__ */ jsx(
+                "div",
+                {
+                  "data-testid": `sport-phone-view-${key}`,
+                  ...station(() => setSportSettings({ phoneView: key })),
+                  "aria-pressed": on ? "true" : "false",
+                  "aria-label": label,
+                  title: label,
+                  style: { width: 40, height: 34, borderRadius: 9, display: "grid", placeItems: "center", cursor: "pointer", background: on ? P.text : "transparent", color: on ? P.ink : P.muted80 },
+                  children: icon
+                },
+                key
+              );
+            }) }) : null
+          ] }),
+          /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-tabs", "data-row": "", role: "tablist", style: { display: "flex", gap: 20, borderBottom: `1px solid ${P.line12}`, overflowX: "auto" }, children: ["foryou", "results", "follows"].map((key) => /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "data-testid": `sport-phone-tab-${key}`,
+              ...station(() => setTab(key)),
+              role: "tab",
+              "aria-selected": key === tab ? "true" : "false",
+              style: { position: "relative", height: 40, flexShrink: 0, display: "flex", alignItems: "center", fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer", color: key === tab ? P.text : P.muted60 },
+              children: [
+                key === "foryou" ? tt("sportTabForYou") : key === "results" ? tt("sportTabResults") : tt("sportTabFollows"),
+                key === tab ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-phone-tab-underline", "aria-hidden": "true", style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 3, borderRadius: 2, background: P.coral } }) : null
+              ]
+            },
+            key
+          )) }),
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, paddingBottom: 8 }, children: [
+            /* @__PURE__ */ jsxs("div", { "data-testid": "sport-phone-days", style: { height: 36, flexShrink: 0, display: "flex", alignItems: "center", borderRadius: 10, background: P.card, border: `1px solid ${P.line14}`, boxSizing: "border-box" }, children: [
+              /* @__PURE__ */ jsx("div", { "data-testid": "sport-day-prev", ...station(() => setOffset((o) => o > -1 ? o - 1 : o)), "aria-label": tt("sportDayPrev"), "aria-disabled": offset <= -1 ? "true" : "false", style: { width: 32, height: 34, display: "grid", placeItems: "center", cursor: "pointer", opacity: offset > -1 ? 1 : 0.3 }, children: /* @__PURE__ */ jsx(MIcons.CaretLeft, { size: 16 }) }),
+              /* @__PURE__ */ jsx("span", { "data-testid": "sport-day-label", style: { minWidth: 62, textAlign: "center", fontSize: 14, fontWeight: 700 }, children: dayLabel }),
+              /* @__PURE__ */ jsx("div", { "data-testid": "sport-day-next", ...station(() => setOffset((o) => o < 1 ? o + 1 : o)), "aria-label": tt("sportDayNext"), "aria-disabled": offset >= 1 ? "true" : "false", style: { width: 32, height: 34, display: "grid", placeItems: "center", cursor: "pointer", opacity: offset < 1 ? 1 : 0.3 }, children: /* @__PURE__ */ jsx(MIcons.CaretRight, { size: 16 }) })
+            ] }),
+            /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-sports", "data-row": "", style: { flex: 1, minWidth: 0, display: "flex", gap: 2, overflowX: "auto" }, children: chips.map((c) => {
+              const on = filter === c.key;
+              return /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  "data-testid": `chip-${c.key}`,
+                  ...station(() => setFilter(c.key)),
+                  "aria-pressed": on ? "true" : "false",
+                  style: { height: 34, flexShrink: 0, padding: "0 10px", borderRadius: 9, display: "flex", alignItems: "center", gap: 5, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", cursor: "pointer", background: on ? P.text : "transparent", color: on ? P.ink : "rgba(243,244,248,0.75)" },
+                  children: [
+                    c.label,
+                    c.count != null ? /* @__PURE__ */ jsx("span", { style: { fontSize: 11, opacity: 0.6 }, children: c.count }) : null
+                  ]
+                },
+                c.key
+              );
+            }) })
           ] })
-        ] }, `${f.kind}:${f.key}`);
-      })
+        ] }),
+        /* @__PURE__ */ jsx("div", { ref: bodyRef, "data-testid": "sport-phone-body", "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", padding: `6px 16px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: "flex", flexDirection: "column", gap: 18 }, children: tab === "foryou" ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+          notice ? /* @__PURE__ */ jsx("div", { "data-testid": "sport-phone-notice", style: { borderRadius: 14, border: "1px dashed rgba(255,255,255,0.24)", padding: "28px 16px", textAlign: "center", fontSize: 15, color: "rgba(243,244,248,0.75)" }, children: notice }) : null,
+          dayMatches.length > 0 ? view === "feed" ? /* @__PURE__ */ jsx(PhoneFeed, { ctx, matches: dayMatches, days: [mergedDay, tomorrowDay.data], onAddTeam: () => setTab("follows") }) : /* @__PURE__ */ jsx(PhoneMatchday, { ctx, matches: dayMatches, dayFrom: dayStartMs(day), offset }) : null
+        ] }) : tab === "results" ? /* @__PURE__ */ jsx(SportResultsPhone, { matches: allMatches, controller: controller2, onOpenMatch: openMatch, onWatch: (m) => ctx.watch(m), pushLayer: nav.pushLayer, sport: filter, kindLabel: ctx.kindLabel }) : /* @__PURE__ */ jsx(PhoneFollows, { ctx, days: [todayDay.data, tomorrowDay.data], onAdd: (k) => setAdding(k) }) })
+      ] }),
+      sheet ? /* @__PURE__ */ jsx(MatchInfoDrawer, { ctx, match: liveSheet ?? sheet, onClose: () => setSheet(null), phone: true }) : null,
+      sections && !standalone ? /* @__PURE__ */ jsxs(PhoneSportSheet, { testId: "sport-phone-sections", label: tt("sportSwitchSection"), onClose: () => setSections(false), pushLayer: nav.pushLayer, children: [
+        /* @__PURE__ */ jsx("span", { style: overline2, children: tt("liveTv") }),
+        PHONE_SECTIONS.map((s) => {
+          const on = s.key === "sport";
+          const Icon2 = SECTION_ICONS[s.key];
+          return /* @__PURE__ */ jsxs(SheetRow, { testId: `sport-phone-section-${s.key}`, on, onPress: () => goSection(s.key), children: [
+            /* @__PURE__ */ jsx("span", { style: { display: "inline-flex" }, children: /* @__PURE__ */ jsx(Icon2, {}) }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 16, fontWeight: 600 }, children: tt(s.label) }),
+            on ? /* @__PURE__ */ jsx(PIcons.Check, {}) : null
+          ] }, s.key);
+        })
+      ] }) : null,
+      adding ? /* @__PURE__ */ jsxs(PhoneSportSheet, { testId: "sport-phone-follow-sheet", label: tt("sportFollowAdd"), onClose: () => setAdding(null), pushLayer: nav.pushLayer, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 17, fontWeight: 600 }, children: `${tt("sportFollowAdd")} \xB7 ${ctx.kindLabel(adding)}` }),
+        /* @__PURE__ */ jsx(PhoneFollowSearch, { sport: adding }),
+        followCandidates([todayDay.data, tomorrowDay.data]).filter((c) => c.sport === adding).slice(0, 60).map((c) => {
+          const on = isFollowing(ctx.follows, c);
+          return /* @__PURE__ */ jsxs(SheetRow, { testId: `sport-phone-candidate-${c.key}`, on: false, height: 56, onPress: () => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name, ...c.crest ? { crest: c.crest } : {} }), children: [
+            /* @__PURE__ */ jsx(PhoneTeamCrest, { name: c.name, colorKey: c.key, size: 32 }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, fontWeight: 600, ...ellipsis2 }, children: c.name }),
+            /* @__PURE__ */ jsx("span", { style: { color: on ? P.coral : P.muted60, display: "inline-flex" }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 20, filled: on }) })
+          ] }, `${c.kind}:${c.key}`);
+        })
+      ] }) : null
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/tv/sport-shell.tsx
   init_surface();
   init_jsx_runtime_shim();
   var NO_MATCHES3 = [];
-  var OFFSETS = [-1, 0, 1];
+  var MIN_OFFSET = -1;
+  var MAX_OFFSET = 1;
+  var BODY_FIRST = "[data-sport-body] [data-f]";
+  function revealHeaderFully(event2) {
+    const target2 = event2.target;
+    if (target2.closest("[data-sport-body], [data-panel-root]")) return;
+    event2.currentTarget.scrollTop = 0;
+  }
+  var VIEW_AS_FIRST = '[data-testid="sport-view-as"] [data-f]';
+  var stepBtn = (enabled) => ({ width: dp(56), height: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: enabled ? "pointer" : "default", color: TV2.text, opacity: enabled ? 1 : 0.3, borderRadius: dp(14) });
+  function sportViewPaddingTop() {
+    return `calc(${dp(34)}px + var(--tv-scene-chrome-inset, 0px))`;
+  }
+  function sportViewTop(tv) {
+    return tv ? { marginTop: "var(--tv-scene-chrome-inset, 0px)", paddingTop: dp(34) } : { paddingTop: sportViewPaddingTop() };
+  }
   function TvSport(props) {
     return props.phone ? /* @__PURE__ */ jsx(SportPhone, { ...props }) : /* @__PURE__ */ jsx(SportTv, { ...props });
   }
-  function SportTv({ model, nav }) {
+  function SportTv({ model, nav, standalone = false }) {
     const [tab, setTab] = useState("foryou");
     const [offset, setOffset] = useState(0);
     const [filter, setFilter] = useState("all");
     const [openId, setOpenId] = useState(null);
-    const [allOpen, setAllOpen] = useState(false);
     const [pickerOpen, setPickerOpen] = useState(false);
     const openMatch = useCallback((m) => setOpenId(m.id), []);
     const openFollowPicker = useCallback(() => setPickerOpen(true), []);
@@ -63433,16 +65905,16 @@ ${cue.text}`).join("\n\n")}
     const todayDay = useSportDay(wantsToday ? today : null, model.nowMs);
     const tomorrowDay = useSportDay(wantsToday || ctx.settings.view === "feed" ? shiftDay(today, 1) : null, model.nowMs);
     const yesterdayDay = useSportDay(pickerOpen ? shiftDay(today, -1) : null, model.nowMs);
-    const { matches: mergedMatches, allMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES3 });
+    const { matches: mergedMatches, allMatches, status, controller: controller2 } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES3 });
     const mergedDay = useMemo(() => selected.data ? { ...selected.data, matches: mergedMatches } : null, [selected.data, mergedMatches]);
     const tvMode = useTvMode();
+    const ownClock = !standalone;
     usePollDemand("sport-view", true);
     const counts = sportCounts(mergedDay);
     const matches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter]);
     const hero = useMemo(() => featuredMatch(matches, ctx.follows, ctx.now), [matches, ctx.follows, ctx.now]);
     const backdrop = useSportBackdrop(hero, filter, model.nowMs);
-    const summary = headerSummary(matches, ctx.now);
-    const total = SPORT_KINDS.reduce((sum, k) => sum + counts[k], 0);
+    const summary = dayHeaderCounts(matches, ctx.now);
     const open2 = useMemo(() => {
       if (!openId) return null;
       return [mergedDay, todayDay.data, tomorrowDay.data].flatMap((d) => d?.matches ?? []).find((m) => m.id === openId) ?? null;
@@ -63451,19 +65923,20 @@ ${cue.text}`).join("\n\n")}
     const body = () => {
       if (selected.state === "missing") return /* @__PURE__ */ jsx(Notice, { testId: "sport-missing", text: tt("sportNeedsUpdate") });
       if (selected.state === "error") return /* @__PURE__ */ jsx(Notice, { testId: "sport-error", text: tt("sportError") });
-      if (tab === "results") return /* @__PURE__ */ jsx(SportResults, { matches: allMatches, controller, onOpenMatch: ctx.openMatch, tv: tvMode, sport: filter, nav });
+      if (tab === "results") return /* @__PURE__ */ jsx(SportResults, { matches: allMatches, controller: controller2, onOpenMatch: ctx.openMatch, tv: tvMode, sport: filter, nav });
       if (tab === "follows") return /* @__PURE__ */ jsx(SportFollows, { ctx, days: [todayDay.data, tomorrowDay.data] });
       if (selected.state === "loading") return /* @__PURE__ */ jsx(Notice, { testId: "sport-loading", text: tt("sportLoading") });
       if (matches.length === 0) return /* @__PURE__ */ jsx(Notice, { testId: "sport-empty", text: tt("sportEmptyDay") });
       return ctx.settings.view === "feed" ? /* @__PURE__ */ jsx(SportFeed, { ctx, matches, days: [mergedDay, tomorrowDay.data] }) : /* @__PURE__ */ jsx(SportMatchday, { ctx, matches, dayFrom: dayStartMs(day) });
     };
-    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", ...backdrop.surface }, children: [
+    return /* @__PURE__ */ jsxs("div", { "data-testid": "sport-stage", "data-sport-stage": "", style: { position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", ...backdrop.surface }, children: [
+      /* @__PURE__ */ jsx("style", { children: SPORT_FOCUS_CSS }),
       /* @__PURE__ */ jsx(SportBackdropLayer, { choice: backdrop.choice, phone: false, onBroken: backdrop.onBroken }),
-      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-view", "data-scroll": "", style: { position: "relative", flex: 1, overflowY: "auto", padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: "flex", flexDirection: "column", gap: dp(22) }, children: [
+      /* @__PURE__ */ jsxs("div", { "data-testid": "sport-view", "data-scroll": "", onFocusCapture: revealHeaderFully, style: { position: "relative", flex: 1, overflowY: "auto", padding: `0 ${dp(48)}px ${dp(48)}px`, ...sportViewTop(tvMode), display: "flex", flexDirection: "column", gap: dp(22) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dp(18) }, children: [
           /* @__PURE__ */ jsx("span", { style: { fontSize: dp(40), fontWeight: 600 }, children: tt("sportTitle") }),
-          /* @__PURE__ */ jsx("span", { "data-testid": "sport-summary", style: { fontSize: dp(19), color: TV2.muted }, children: tt("sportSummary", { day: dayLabel(offset), count: summary.total, live: summary.live }) }),
-          /* @__PURE__ */ jsx("span", { style: { marginLeft: "auto" }, children: clock })
+          /* @__PURE__ */ jsx("span", { "data-testid": "sport-summary", style: { fontSize: dp(19), color: TV2.muted }, children: tt("sportHeaderSummary", { day: dayLabel(offset), count: summary.total, live: summary.live, mine: summary.onChannels }) }),
+          ownClock ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-clock", style: { marginLeft: "auto" }, children: clock }) : null
         ] }),
         /* @__PURE__ */ jsx(RateLineView, { status, tv: tvMode }),
         /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", gap: dp(28), borderBottom: `1px solid ${TV2.s12}` }, children: [
@@ -63471,59 +65944,64 @@ ${cue.text}`).join("\n\n")}
             "div",
             {
               "data-testid": `sport-tab-${key}`,
-              ...station(() => setTab(key), void 0, key === tab ? { "data-init": "" } : void 0),
+              ...station(() => setTab(key), void 0, {
+                ...key === tab ? { "data-init": "" } : null,
+                // Visa som står långt till höger; geometrin tog filterchipsen
+                // under i stället, och väljaren gick inte att nå (Jerry 2026-10-11).
+                ...key === "follows" && tab === "foryou" ? { "data-f-right": VIEW_AS_FIRST } : null
+              }),
               "aria-selected": key === tab ? "true" : "false",
-              style: { padding: `${dp(8)}px 0 ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: "pointer", color: key === tab ? TV2.text : TV2.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV2.acc : "transparent"}`, marginBottom: -1 },
+              style: { padding: `${dp(8)}px ${dp(4)}px ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: "pointer", color: key === tab ? TV2.text : TV2.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV2.acc : "transparent"}`, marginBottom: -1 },
               children: key === "foryou" ? tt("sportTabForYou") : key === "results" ? tt("sportTabResults") : tt("sportTabFollows")
             },
             key
           )),
-          tab === "foryou" ? /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(12), paddingBottom: dp(8) }, children: [
-            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.dim }, children: tt("sportViewAs") }),
-            /* @__PURE__ */ jsx(Segment, { options: [{ key: "matchday", label: tt("sportMatchday") }, { key: "feed", label: tt("sportFeed") }], value: ctx.settings.view, onChange: (view) => setSportSettings({ view }) })
+          tab === "foryou" ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-view-as", style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(12), paddingBottom: dp(8) }, children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(18), color: TV2.muted }, children: tt("sportViewAs") }),
+            /* @__PURE__ */ jsx(
+              Segment,
+              {
+                size: "lg",
+                options: [{ key: "matchday", label: tt("sportMatchday") }, { key: "feed", label: tt("sportFeed") }],
+                value: ctx.settings.view,
+                onChange: (view) => setSportSettings({ view }),
+                optionAttrs: (index) => index === 0 ? { "data-f-left": '[data-testid="sport-tab-follows"]' } : void 0
+              }
+            )
           ] }) : null
         ] }),
-        /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", alignItems: "center", gap: dp(12) }, children: [
-          OFFSETS.map((o) => {
-            const active4 = o === offset;
-            return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-day-${o}`, ...station(() => setOffset(o)), "aria-pressed": active4 ? "true" : "false", style: { minWidth: dp(144), height: dp(68), padding: `0 ${dp(18)}px`, borderRadius: dp(14), display: "flex", flexDirection: "column", justifyContent: "center", cursor: "pointer", boxSizing: "border-box", background: active4 ? TV2.text : sportBg(TV2.s10), color: active4 ? "#12152a" : TV2.text, border: `1px solid ${active4 ? TV2.text : TV2.lineCard}` }, children: [
-              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 700 }, children: dayLabel(o) }),
-              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), opacity: 0.7 }, children: new Date(dayStartMs(shiftDay(today, o)) + 12 * 36e5).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }) })
-            ] }, o);
-          }),
-          /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: dp(10) }, children: [
-            SPORT_CHIPS.filter((k) => counts[k] > 0).map((k) => {
-              const active4 = filter === k;
-              return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-chip-${k}`, ...station(() => setFilter(active4 ? "all" : k)), "aria-label": ctx.kindLabel(k), title: ctx.kindLabel(k), "aria-pressed": active4 ? "true" : "false", style: { height: dp(68), minWidth: dp(68), padding: active4 ? `0 ${dp(18)}px` : 0, boxSizing: "border-box", borderRadius: dp(14), display: "inline-flex", alignItems: "center", justifyContent: "center", gap: dp(8), cursor: "pointer", background: active4 ? TV2.accMix(22) : sportBg(TV2.s10), color: active4 ? TV2.accText : TV2.text, border: `1px solid ${active4 ? TV2.acc : TV2.lineCard}`, fontSize: dp(18), fontWeight: 600 }, children: [
-                /* @__PURE__ */ jsx(SportIcon, { kind: k, size: dp(26) }),
-                active4 ? ctx.kindLabel(k) : null
-              ] }, k);
-            }),
-            /* @__PURE__ */ jsxs(Chip, { "data-testid": "sport-all", active: filter === "all", ...station(() => setAllOpen(true)), children: [
-              filter === "all" ? tt("sportAll") : ctx.kindLabel(filter),
-              " \u25BE"
-            ] })
-          ] })
+        /* @__PURE__ */ jsxs("div", { "data-row": "", style: { display: "flex", alignItems: "center", gap: dp(12), flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsxs("div", { "data-testid": "sport-day-stepper", style: { height: dp(64), display: "inline-flex", alignItems: "center", ...sportCardStyle, overflow: "visible", boxSizing: "border-box", flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsx("div", { "data-testid": "sport-day-prev", ...station(() => setOffset((o) => o > MIN_OFFSET ? o - 1 : o), void 0, { "data-f-right": '[data-testid="sport-day-next"]', "data-f-down": BODY_FIRST }), "aria-label": tt("sportDayPrev"), title: tt("sportDayPrev"), "aria-disabled": offset <= MIN_OFFSET ? "true" : "false", style: stepBtn(offset > MIN_OFFSET), children: /* @__PURE__ */ jsx(SportIcons.Back, { size: dp(22) }) }),
+            /* @__PURE__ */ jsxs("span", { "data-testid": "sport-day-label", style: { minWidth: dp(170), display: "inline-flex", alignItems: "baseline", justifyContent: "center", gap: dp(10), padding: `0 ${dp(6)}px` }, children: [
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 700 }, children: dayLabel(offset) }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: dp(17), color: TV2.muted }, children: new Date(dayStartMs(day) + 12 * 36e5).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" }) })
+            ] }),
+            /* @__PURE__ */ jsx("div", { "data-testid": "sport-day-next", ...station(() => setOffset((o) => o < MAX_OFFSET ? o + 1 : o), void 0, { "data-f-left": '[data-testid="sport-day-prev"]', "data-f-down": BODY_FIRST }), "aria-label": tt("sportDayNext"), title: tt("sportDayNext"), "aria-disabled": offset >= MAX_OFFSET ? "true" : "false", style: stepBtn(offset < MAX_OFFSET), children: /* @__PURE__ */ jsx(SportIcons.Chevron, { size: dp(22) }) })
+          ] }),
+          /* @__PURE__ */ jsx("div", { style: { display: "flex", alignItems: "center", gap: dp(6), flexWrap: "wrap" }, children: ["all", ...SPORT_CHIPS.filter((k) => counts[k] > 0)].map((k) => {
+            const active4 = filter === k;
+            return /* @__PURE__ */ jsxs("div", { "data-testid": `sport-chip-${k}`, ...station(() => setFilter(k), void 0, { "data-f-down": BODY_FIRST }), "aria-pressed": active4 ? "true" : "false", style: { height: dp(52), padding: `0 ${dp(18)}px`, boxSizing: "border-box", borderRadius: dp(12), display: "inline-flex", alignItems: "center", gap: dp(8), cursor: "pointer", background: active4 ? TV2.text : "transparent", color: active4 ? "#12152a" : TV2.text, fontSize: dp(19), fontWeight: 700 }, children: [
+              k === "all" ? tt("sportAllShort") : ctx.kindLabel(k),
+              k !== "all" ? /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), fontWeight: 600, opacity: 0.55, fontVariantNumeric: "tabular-nums" }, children: counts[k] }) : null
+            ] }, k);
+          }) })
         ] }),
-        body(),
-        allOpen ? /* @__PURE__ */ jsx(
-          TvChoicePanel,
-          {
-            nav,
-            title: tt("sportAll"),
-            options: [{ key: null, label: tt("sportAll"), count: total }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k, label: ctx.kindLabel(k), count: counts[k] }))],
-            value: filter === "all" ? null : filter,
-            onPick: (key) => setFilter(key ?? "all"),
-            onClose: () => setAllOpen(false)
-          }
-        ) : null,
+        tab === "follows" ? /* @__PURE__ */ jsxs("div", { "data-testid": "sport-follows-meta", style: { display: "flex", alignItems: "center", gap: dp(16), fontSize: dp(18), color: TV2.muted }, children: [
+          /* @__PURE__ */ jsx("span", { children: tt("sportFollowCount", { n: ctx.follows.length }) }),
+          /* @__PURE__ */ jsxs("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: dp(8), fontSize: dp(16), color: TV2.dim }, children: [
+            /* @__PURE__ */ jsx(SportIcons.Bell, { size: dp(18) }),
+            tt("sportFollowBellHint")
+          ] })
+        ] }) : null,
+        /* @__PURE__ */ jsx("div", { "data-sport-body": "", style: { display: "contents" }, children: body() }),
         open2 ? /* @__PURE__ */ jsx(SportMatchCenter, { ctx, match: open2, onClose: () => setOpenId(null) }) : null,
         pickerOpen ? /* @__PURE__ */ jsx(FollowPicker, { ctx, days: [yesterdayDay.data, todayDay.data, tomorrowDay.data], onClose: () => setPickerOpen(false) }) : null
       ] })
     ] });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-views.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-views.tsx
   var TV_VIEWS = {
     hub: TvHub,
     guide: TvGuide,
@@ -63538,7 +66016,7 @@ ${cue.text}`).join("\n\n")}
     sport: TvSport
   };
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/mobile/mobile-tab-bar.tsx
   init_tv_ui();
   init_tv_strings();
   init_mobile_tokens();
@@ -63548,7 +66026,7 @@ ${cue.text}`).join("\n\n")}
     { key: "home", icon: MIcons.House, label: "tabHome" },
     { key: "hub", icon: MIcons.SquaresFour, label: "tabChannels" },
     { key: "guide", icon: MIcons.List, label: "tabGuide" },
-    { key: "favs", icon: MIcons.Heart, label: "tabFavourites" },
+    { key: "sport", icon: MIcons.Trophy, label: "tabSport" },
     { key: "search", icon: MIcons.MagnifyingGlass, label: "tabSearch" }
   ];
   var LIBRARY_TAB = { key: "library", icon: MIcons.FilmStrip, label: "tabLibrary" };
@@ -63559,7 +66037,7 @@ ${cue.text}`).join("\n\n")}
   function tabForView(view) {
     if (view === "channel") return "guide";
     if (view === "title" || view === "cast") return "library";
-    if (view === "multi" || view === "settings" || view === "sport") return "more";
+    if (view === "multi" || view === "settings" || view === "favs") return "more";
     return view;
   }
   function MobileTabBar({ view, activeOverride, onGo, onMore, showLibrary = false }) {
@@ -63618,12 +66096,12 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-autoscan.ts
   init_plugin_sdk();
   init_live_tv_data();
   init_vod_client();
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-home.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
   init_tv_settings_store();
   var LIVE_TV_FRAME_ID = "live-tv";
@@ -63638,17 +66116,17 @@ ${cue.text}`).join("\n\n")}
   }
   var VOD_INDEX_TIMEOUT_MS = 5e3;
   async function hasVodIndex(timeoutMs = VOD_INDEX_TIMEOUT_MS) {
-    let timer3;
+    let timer4;
     try {
       const timeout = new Promise((resolve) => {
-        timer3 = setTimeout(() => resolve(null), timeoutMs);
+        timer4 = setTimeout(() => resolve(null), timeoutMs);
       });
       const status = await Promise.race([fetchLibraryStatus(), timeout]);
       return Boolean(status?.sources?.some((entry) => entry.id.startsWith(`${VOD_LIBRARY_PROVIDER_ID}:`) && entry.lastFullSync));
     } catch {
       return false;
     } finally {
-      if (timer3 !== void 0) clearTimeout(timer3);
+      if (timer4 !== void 0) clearTimeout(timer4);
     }
   }
   var REDIRECT_COOLDOWN_MS = 1e4;
@@ -63661,7 +66139,7 @@ ${cue.text}`).join("\n\n")}
     lastRedirect = now2;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-autoscan.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-autoscan.ts
   var AUTOSCAN_KEY = "live_tv_vod_autoscan_v1";
   var inFlight2 = false;
   async function maybeAutoScanVod() {
@@ -63694,7 +66172,7 @@ ${cue.text}`).join("\n\n")}
     }
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/tv-shell.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/tv-shell.tsx
   init_mobile_sheet();
   init_jsx_runtime_shim();
   function SurfaceBackdrop({ cutouts: cutouts2 }) {
@@ -63738,13 +66216,18 @@ ${cue.text}`).join("\n\n")}
     if (!raw && params?.url) return "channel";
     return "hub";
   }
-  function LiveTvTvShell({ params, onNavigate }) {
+  var SPORT_ONLY_VIEWS = ["sport", "multi"];
+  function sportOnlyViewFromParams(params) {
+    const raw = params?.view;
+    return raw && SPORT_ONLY_VIEWS.includes(raw) ? raw : "sport";
+  }
+  function LiveTvTvShell({ params, onNavigate, sportOnly = false }) {
     const { tt, locale } = useTvText();
     const model = useLiveTvModel();
     const settings = useTvSettings();
     const cutouts2 = useSurfaceCutouts();
     const hasCutouts = cutouts2.length > 0;
-    const view = viewFromParams(params);
+    const view = sportOnly ? sportOnlyViewFromParams(params) : viewFromParams(params);
     const viewParams = useMemo(() => params ?? {}, [params]);
     const viewParamsRef = useRef(viewParams);
     viewParamsRef.current = viewParams;
@@ -63815,9 +66298,10 @@ ${cue.text}`).join("\n\n")}
       const current5 = { ...viewParamsRef.current, view };
       const tk = Object.keys(target2);
       if (tk.length === Object.keys(current5).length && tk.every((k) => current5[k] === target2[k])) return;
-      onNavigate({ pageId: LIVE_TV_BROWSE_PAGE_ID, params: target2 });
-    }, [onNavigate, view]);
-    const [redirectCheck, setRedirectCheck] = useState(() => params === void 0 && !vodHiddenForActivePlaylist() && shouldRedirectToVodHome(params, Date.now()));
+      const pageId = sportOnly && SPORT_ONLY_VIEWS.includes(next) ? LIVE_TV_SPORT_PAGE_ID : LIVE_TV_BROWSE_PAGE_ID;
+      onNavigate({ pageId, params: target2 });
+    }, [onNavigate, view, sportOnly]);
+    const [redirectCheck, setRedirectCheck] = useState(() => !sportOnly && params === void 0 && !vodHiddenForActivePlaylist() && shouldRedirectToVodHome(params, Date.now()));
     useEffect(() => {
       if (!redirectCheck) return;
       let cancelled = false;
@@ -63868,6 +66352,16 @@ ${cue.text}`).join("\n\n")}
       }
       void releaseAllSurfaces().finally(() => setActive3(request));
     }, [cancelPendingMulti]);
+    const autoplayedRef = useRef(null);
+    useEffect(() => {
+      if (!sportOnly || params?.autoplay !== "1") return;
+      const key = JSON.stringify(params);
+      if (autoplayedRef.current === key) return;
+      autoplayedRef.current = key;
+      const channel = channelFromParams(params, modelRef.current.byUrl);
+      if (channel) play({ channel });
+      onNavigate({ pageId: LIVE_TV_SPORT_PAGE_ID, params: { view } });
+    }, [sportOnly, params, play, onNavigate, view]);
     const openChannel = useCallback((channel, programmeStart) => {
       go("channel", { ...encodeChannelParams(channel), ...programmeStart ? { programme: String(programmeStart) } : {} });
     }, [go]);
@@ -63924,6 +66418,14 @@ ${cue.text}`).join("\n\n")}
         top();
         return;
       }
+      if (sportOnly) {
+        if (view !== "sport") {
+          go("sport");
+          return;
+        }
+        requestBrowseBack();
+        return;
+      }
       if (view === "channel") {
         go("guide");
         return;
@@ -63933,7 +66435,7 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       requestBrowseBack();
-    }, [menu, pending5, active4, view, go]);
+    }, [menu, pending5, active4, view, go, sportOnly]);
     useEffect(() => {
       const onKey = (event2) => {
         if (!BACK_KEYS2.has(event2.key)) return;
@@ -63948,6 +66450,7 @@ ${cue.text}`).join("\n\n")}
         const target2 = event2.target;
         if (target2 && (target2.tagName === "INPUT" || target2.tagName === "TEXTAREA")) return;
         if (target2?.closest?.("[data-live-tv-host-ui]")) return;
+        if (target2?.closest?.("[data-panel-root]") && !rootRef.current?.contains(target2)) return;
         event2.preventDefault();
         event2.stopPropagation();
         back();
@@ -64082,7 +66585,7 @@ ${cue.text}`).join("\n\n")}
         children: [
           hasCutouts ? /* @__PURE__ */ jsx(SurfaceBackdrop, { cutouts: cutouts2 }) : null,
           /* @__PURE__ */ jsx(TvFocusStyle, {}),
-          phone ? null : /* @__PURE__ */ jsx(
+          phone || sportOnly ? null : /* @__PURE__ */ jsx(
             TvRail,
             {
               active: shellRailActive(view, redirectCheck),
@@ -64096,14 +66599,14 @@ ${cue.text}`).join("\n\n")}
               }
             }
           ),
-          /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: redirectCheck ? null : /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone }, view) }),
-          phone && active4 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => v === "home" ? goVodHome() : go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
+          /* @__PURE__ */ jsx("main", { ref: mainRef, style: { flex: 1, minWidth: 0, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }, children: redirectCheck ? null : /* @__PURE__ */ jsx(View, { model, nav, params: viewParams, settings, phone, standalone: sportOnly }, view) }),
+          phone && !sportOnly && active4 === null ? /* @__PURE__ */ jsx(MobileTabBar, { view, onGo: (v) => v === "home" ? goVodHome() : go(v), onMore: () => setMoreOpen(true), showLibrary: showLibraryTab }) : null,
           phone && moreOpen ? /* @__PURE__ */ jsx(
             MobileSheet,
             {
               title: tt("moreActions"),
               items: [
-                { key: "sport", label: tt("sheetSport"), run: () => go("sport") },
+                { key: "favs", label: tt("sheetFavourites"), run: () => go("favs") },
                 { key: "multi", label: tt("sheetMultiview"), run: () => go("multi") },
                 { key: "settings", label: tt("sheetSettings"), run: () => go("settings") }
               ],
@@ -64162,7 +66665,557 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/vod-streams.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/sport-page.tsx
+  init_react_shim();
+  var SPORT_PAGE_ID = LIVE_TV_SPORT_PAGE_ID;
+  function LiveTvSportPage(props) {
+    return createElement(LiveTvTvShell, { ...props, sportOnly: true });
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/home-rows/register.ts
+  init_react_shim();
+  init_tv_strings();
+  init_sport_ctx();
+  init_sport_model();
+  init_sport_store();
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
+  init_react_shim();
+  init_plugin_sdk();
+  init_plugin_sdk();
+  init_live_tv_data();
+  init_day_plan();
+  init_merge();
+  init_providers();
+  init_results_controller();
+  init_sport_epg();
+  init_sport_link();
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/home-rows/rows-model.ts
+  init_score_model();
+  init_sport_day_model();
+  init_sport_model();
+  init_sport_store();
+  var HOUR2 = 36e5;
+  var WEEK_MS = 7 * 24 * HOUR2;
+  function unique(matches) {
+    const seen = /* @__PURE__ */ new Set();
+    return matches.filter((m) => {
+      if (m.rerun || seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }
+  var ofSport = (m, sport) => sport === "all" || m.kind === sport;
+  var watchable2 = (m, overrides) => rankedSources(m, overrides).length > 0;
+  var byStart = (a, b) => a.start - b.start;
+  function liveNowRow(matches, follows, overrides, now2, sport) {
+    return unique(matches).filter((m) => ofSport(m, sport) && statusAt(m, now2) === "live" && watchable2(m, overrides)).sort((a, b) => matchInterest(b, follows) - matchInterest(a, follows) || byStart(a, b));
+  }
+  function myTeamsRow(matches, follows, now2) {
+    if (follows.length === 0) return [];
+    const mine = unique(matches).filter((m) => followState(m, follows).any);
+    const live2 = mine.filter((m) => statusAt(m, now2) === "live").sort(byStart);
+    const upcoming = mine.filter((m) => statusAt(m, now2) === "upcoming" && m.start <= now2 + WEEK_MS).sort(byStart);
+    return [...live2, ...upcoming];
+  }
+  function tonightEnd(now2) {
+    const d = new Date(now2);
+    const threeAm = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 3, 0, 0, 0).getTime();
+    return Math.min(threeAm, now2 + 12 * HOUR2);
+  }
+  function tonightRow(matches, overrides, now2, sport) {
+    const end = tonightEnd(now2);
+    return unique(matches).filter((m) => ofSport(m, sport) && statusAt(m, now2) === "upcoming" && m.start <= end && watchable2(m, overrides)).sort(byStart);
+  }
+  function random(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = a + 1831565813 >>> 0;
+      let t = a;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function zapRow(matches, overrides, now2, sport, seed) {
+    const list = unique(matches).filter((m) => ofSport(m, sport) && statusAt(m, now2) === "live" && watchable2(m, overrides)).sort((a, b) => a.id.localeCompare(b.id));
+    const next = random(seed);
+    for (let i = list.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(next() * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    return list;
+  }
+  function leagueRow(matches, leagueKey, now2) {
+    if (!leagueKey) return [];
+    const league = unique(matches).filter((m) => m.leagueKey === leagueKey);
+    const live2 = league.filter((m) => statusAt(m, now2) === "live").sort(byStart);
+    const upcoming = league.filter((m) => statusAt(m, now2) === "upcoming").sort(byStart);
+    const finished = league.filter((m) => statusAt(m, now2) === "finished").sort((a, b) => b.start - a.start);
+    return [...live2, ...upcoming, ...finished];
+  }
+  function resolveLeague(option, follows) {
+    return option || follows.find((f) => f.kind === "league")?.key || null;
+  }
+  function leaguesOf(matches) {
+    const out = /* @__PURE__ */ new Map();
+    for (const m of matches) if (m.leagueKey && m.league && !out.has(m.leagueKey)) out.set(m.leagueKey, m.league);
+    return [...out].map(([key, name]) => ({ key, name }));
+  }
+  function leagueChoices(follows, seen) {
+    const out = /* @__PURE__ */ new Map();
+    for (const f of follows) if (f.kind === "league" && !out.has(f.key)) out.set(f.key, f.name);
+    const rest = seen.filter((l) => !out.has(l.key)).sort((a, b) => a.name.localeCompare(b.name));
+    for (const l of rest) if (!out.has(l.key)) out.set(l.key, l.name);
+    return [...out].map(([key, name]) => ({ key, name }));
+  }
+  function leagueName(leagueKey, follows, matches) {
+    return matches.find((m) => m.leagueKey === leagueKey)?.league ?? follows.find((f) => f.kind === "league" && f.key === leagueKey)?.name ?? null;
+  }
+  function resultsRow(matches, follows, now2) {
+    const teams = follows.filter((f) => f.kind === "team");
+    if (teams.length === 0) return [];
+    return unique(matches).filter((m) => statusAt(m, now2) === "finished" && showsScore(m) && teams.some((f) => teamKeysMatch(f.key, m.homeKey) || teamKeysMatch(f.key, m.awayKey))).sort((a, b) => b.start - a.start);
+  }
+  function sportRowTarget(m, overrides) {
+    const best = rankedSources(m, overrides)[0];
+    if (!best) return { pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: "sport" } };
+    return { pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: "sport", autoplay: "1", ...encodeChannelParams(sourceChannel(best)) } };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
+  init_sport_store();
+  var REFRESH_MS = 6e4;
+  var WEEK_DAYS = [2, 3, 4, 5, 6];
+  var listeners11 = /* @__PURE__ */ new Set();
+  var weekWanted = 0;
+  var snapshot2 = { matches: [], ready: false };
+  var epg = /* @__PURE__ */ new Map();
+  var links = /* @__PURE__ */ new Map();
+  var linking = /* @__PURE__ */ new Set();
+  var peeked = /* @__PURE__ */ new Set();
+  var controller = null;
+  var cacheOwner = null;
+  var unsubs = [];
+  var timer3 = null;
+  var generation = 0;
+  var seenLeagues = /* @__PURE__ */ new Map();
+  function emit3() {
+    for (const cb of [...listeners11]) cb();
+  }
+  function bindController() {
+    const next = currentResults();
+    if (next === controller) return;
+    controller = next;
+    if (next !== cacheOwner) {
+      cacheOwner = next;
+      links.clear();
+      peeked.clear();
+    }
+    unsubs = unsubs.filter((u) => u !== unbindController);
+    unbindController = controller ? controller.subscribe(recompute) : () => {
+    };
+    unsubs.push(unbindController);
+  }
+  var unbindController = () => {
+  };
+  function recompute() {
+    const follows = getFollows();
+    const overrides = getOverrides();
+    const c = controller;
+    const out = [];
+    for (const [day, list] of epg) {
+      const fixtures2 = c ? c.allFixtures(day) : [];
+      let merged;
+      if (!c) {
+        merged = list.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }));
+      } else {
+        const ids = fixtures2.map(fixtureMatchKey).sort().join(",");
+        const linked = links.get(day);
+        if (fixtures2.length > 0 && linked?.ids !== ids) ensureLinks(day, ids, fixtures2);
+        const ready = linked?.ids === ids;
+        merged = mergeLinked({
+          epg: list,
+          fixtures: ready ? fixtures2 : [],
+          links: ready ? linked.map : {},
+          overrides,
+          coverage: (s) => c.router.coverage(s),
+          canonical: (f) => c.canonicalOf(f)
+        });
+      }
+      out.push(...relevantMatches(merged, follows));
+    }
+    noteLeagues(out);
+    snapshot2 = { matches: out, ready: true };
+    emit3();
+  }
+  function noteLeagues(matches) {
+    let added = false;
+    for (const l of leaguesOf(matches)) {
+      if (seenLeagues.has(l.key)) continue;
+      seenLeagues.set(l.key, l.name);
+      added = true;
+    }
+    if (!added) return;
+    const notify2 = notifyPluginRegistryChanged;
+    if (typeof notify2 === "function") notify2();
+  }
+  function ensureLinks(day, ids, fixtures2) {
+    const key = `${day}|${ids}`;
+    if (linking.has(key)) return;
+    linking.add(key);
+    const gen = generation;
+    void linkFixtures({ day, fixtures: fixtures2 }).then((map) => {
+      linking.delete(key);
+      if (gen !== generation) return;
+      links.set(day, { ids, map });
+      recompute();
+    });
+  }
+  async function prime(days) {
+    const c = controller;
+    if (!c) return;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const d = localDates(Date.now(), tz);
+    const sports = /* @__PURE__ */ new Set([...(epg.get(days.today) ?? []).map((m) => m.kind), ...getFollows().map((f) => f.sport)]);
+    for (const sport of sports) {
+      for (const date of [days.today, days.yesterday]) {
+        const key = `${sport}|${date}`;
+        if (peeked.has(key) || c.fixtures(sport, date).length > 0) continue;
+        peeked.add(key);
+        const cached = await c.router.peek(sport, (p) => p.day(sport, date, { today: d.today, tz, dayEndMs: d.dayEndMs(date) })).catch(() => null);
+        if (cached && controller === c) c.applyFixtures(sport, date, cached.data, "cache", 0);
+      }
+    }
+  }
+  async function refresh() {
+    const gen = generation;
+    const now2 = Date.now();
+    const today = localDayKey(now2);
+    const yesterday = shiftDay(today, -1);
+    const days = [yesterday, today, shiftDay(today, 1), ...weekWanted > 0 ? WEEK_DAYS.map((n) => shiftDay(today, n)) : []];
+    const loaded = await Promise.all(days.map((day) => fetchSportDay(day, now2).then((d) => d.matches).catch(() => null)));
+    if (gen !== generation) return;
+    const next = /* @__PURE__ */ new Map();
+    days.forEach((day, i) => {
+      const list = loaded[i];
+      if (list) next.set(day, list);
+    });
+    epg = next;
+    recompute();
+    void prime({ today, yesterday });
+  }
+  function start2() {
+    generation += 1;
+    controller = null;
+    bindController();
+    unsubs.push(
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => {
+        bindController();
+        recompute();
+      }),
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, recompute),
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, recompute)
+    );
+    timer3 = setInterval(() => {
+      void refresh();
+    }, REFRESH_MS);
+    void refresh();
+  }
+  function stop() {
+    generation += 1;
+    for (const u of unsubs) u();
+    unsubs = [];
+    unbindController = () => {
+    };
+    controller = null;
+    if (timer3 != null) clearInterval(timer3);
+    timer3 = null;
+  }
+  function subscribe2(cb, week) {
+    listeners11.add(cb);
+    if (week) weekWanted += 1;
+    if (listeners11.size === 1) start2();
+    else if (week && weekWanted === 1) void refresh();
+    return () => {
+      listeners11.delete(cb);
+      if (week) weekWanted -= 1;
+      if (listeners11.size === 0) stop();
+    };
+  }
+  var subscribeDay = (cb) => subscribe2(cb, false);
+  var subscribeWeek = (cb) => subscribe2(cb, true);
+  var getSnapshot = () => snapshot2;
+  function useSportRows(opts = {}) {
+    return useSyncExternalStore(opts.week ? subscribeWeek : subscribeDay, getSnapshot, getSnapshot);
+  }
+  var leaguesPrimedAt = -Infinity;
+  function seenSportLeagues(now2 = Date.now()) {
+    if (seenLeagues.size === 0 && now2 - leaguesPrimedAt > 5 * 6e4) {
+      leaguesPrimedAt = now2;
+      const today = localDayKey(now2);
+      void Promise.all([today, shiftDay(today, 1)].map((day) => fetchSportDay(day, now2).then((d) => d.matches).catch(() => []))).then((days) => noteLeagues(days.flat().filter((m) => !m.rerun)));
+    }
+    return [...seenLeagues].map(([key, name]) => ({ key, name }));
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
+  init_react_shim();
+  init_tv_strings();
+  init_crest();
+  init_sport_ctx();
+  init_sport_day_model();
+  init_score_model();
+  init_sport_model();
+  init_sport_store();
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/home-rows/rows-mirror.ts
+  init_live_tv_ui();
+  init_sport_ctx();
+  init_sport_epg();
+  init_sport_day_model();
+  init_score_model();
+  init_sport_model();
+  function whenText(m, now2, locale, tt) {
+    const time = formatClock2(m.start, locale);
+    const day = localDayKey(m.start);
+    const today = localDayKey(now2);
+    if (day === today) return time;
+    if (day === shiftDay(today, 1)) return tt("sportTomorrowAt", { time });
+    return `${new Date(m.start).toLocaleDateString(locale, { weekday: "short" })} ${time}`;
+  }
+  function sportHeroBackdrop(m, d) {
+    const standard = standardImageFor(m.kind, localDayKey(d.now));
+    const { mode, slot } = resolveBackdropMode(d.settings.backdrops, m.kind);
+    const choice = chooseSportBackdrop({
+      mode,
+      slot,
+      hasKey: Object.values(d.settings.keys).some(Boolean),
+      hero: m,
+      art: null,
+      uploads: d.uploads,
+      standard
+    });
+    return (choice.kind === "image" ? backdropSrc(choice) : null) ?? standard;
+  }
+  function sportHeroMirror(m, d) {
+    const { tt } = d;
+    const st = statusAt(m, d.now);
+    const label = matchStatusLabel(m, tt);
+    const kicker = st === "live" ? [tt("live"), label && label !== tt("sportLiveShort") ? label : null].filter(Boolean).join(" \xB7 ") : st === "finished" ? label ?? tt("sportEnded") : label ?? tt("sportKickoffAt", { time: whenText(m, d.now, d.locale, tt) });
+    const title = m.home && m.away ? `${m.home} \u2013 ${m.away}` : matchTitle(m);
+    const score = !d.hideScore && showsScore(m) && m.score ? `${m.score.home}\u2013${m.score.away}` : null;
+    const metaLine2 = [m.league || null, tt(KIND_KEYS[m.kind]), m.venue || null, score].filter(Boolean).join(" \xB7 ");
+    const ranked = rankedSources(m, d.overrides);
+    const best = ranked[0] ?? null;
+    const followed = d.follows.find((f) => matchesFollow(m, f)) ?? null;
+    const overview = [
+      best ? best.name : tt("sportResultOnly"),
+      ranked.length > 1 ? tt("sportSourcesShort", { n: ranked.length }) : null,
+      best?.quality ?? null,
+      `${formatClock2(m.start, d.locale)}\u2013${formatClock2(m.stop, d.locale)}`,
+      followed ? tt("sportRowFollowNote", { name: followed.name }) : null
+    ].filter(Boolean).join(" \xB7 ");
+    return { kicker, title, metaLine: metaLine2, overview, backdropUrl: sportHeroBackdrop(m, d) };
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
+  init_jsx_runtime_shim();
+  var TEXT2 = "#f8fafc";
+  var MUTED = "#94a3c8";
+  var DIM3 = "rgba(248,250,252,0.55)";
+  var LIVE = "#ef4444";
+  function useNow(stepMs) {
+    const [now2, setNow] = useState(() => Date.now());
+    useEffect(() => {
+      const t = setInterval(() => setNow(Date.now()), stepMs);
+      return () => clearInterval(t);
+    }, [stepMs]);
+    return now2;
+  }
+  var sportOf = (option) => option && SPORT_KINDS.includes(option) ? option : "all";
+  var TITLE_KEYS = {
+    "live-now": "sportRowLiveNow",
+    "my-teams": "sportRowMyTeams",
+    tonight: "sportRowTonight",
+    zap: "sportRowZap",
+    league: "sportRowLeague",
+    results: "sportRowResults"
+  };
+  function SportHomeRow({ kind, onNavigate, layout = "slider", count = 20, sliderCardWidth = "calc((100% - 5 * 0.75rem) / 6)", option }) {
+    const { tt, locale } = useTvText();
+    const feed = useSportRows({ week: kind === "my-teams" });
+    const follows = useFollows();
+    const overrides = useOverrides();
+    const settings = useSportSettings();
+    const now2 = useNow(3e4);
+    const uploads = useBackdropUploads();
+    const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31));
+    const sport = sportOf(option);
+    const league = kind === "league" ? resolveLeague(option, follows) : null;
+    const matches = useMemo(() => {
+      const all = feed.matches;
+      switch (kind) {
+        case "live-now":
+          return liveNowRow(all, follows, overrides, now2, sport);
+        case "my-teams":
+          return myTeamsRow(all, follows, now2);
+        case "tonight":
+          return tonightRow(all, overrides, now2, sport);
+        case "zap":
+          return zapRow(all, overrides, now2, sport, seed);
+        case "league":
+          return leagueRow(all, league, now2);
+        case "results":
+          return hasAnyKey(settings) ? resultsRow(all, follows, now2) : [];
+      }
+    }, [kind, feed.matches, follows, overrides, now2, sport, seed, league, settings]);
+    if (!feed.ready || matches.length === 0) return null;
+    const shown = matches.slice(0, count);
+    const title = kind === "league" && league ? leagueName(league, follows, feed.matches) ?? tt("sportRowLeague") : tt(TITLE_KEYS[kind]);
+    const subtitle = (kind === "live-now" || kind === "tonight" || kind === "zap") && sport !== "all" ? tt(KIND_KEYS[sport]) : null;
+    const hideScores = kind === "results" && option === "hide";
+    const slider = layout === "slider";
+    const cardWidth = slider ? `clamp(15rem, calc(${sliderCardWidth} * 2 + 0.75rem), 24rem)` : "100%";
+    return /* @__PURE__ */ jsxs("section", { "data-sport-home-row": kind, children: [
+      /* @__PURE__ */ jsx("div", { className: "mb-4 flex items-end justify-between gap-3", children: /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+        /* @__PURE__ */ jsx("h2", { "data-home-row-title": "", className: "truncate font-semibold text-white", style: { fontSize: "var(--home-row-heading, 1.25rem)", letterSpacing: "-0.2px" }, children: title }),
+        subtitle ? /* @__PURE__ */ jsx("p", { className: "mt-0.5 truncate", style: { fontSize: "var(--st-small, 0.8125rem)", color: MUTED }, children: subtitle }) : null
+      ] }) }),
+      /* @__PURE__ */ jsx(
+        "div",
+        {
+          "data-row": "",
+          className: slider ? "thin-slider-scrollbar flex gap-3 overflow-x-auto pb-3" : void 0,
+          style: slider ? void 0 : { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(15rem, 1fr))", gap: "0.75rem" },
+          children: shown.map((m) => /* @__PURE__ */ jsx(
+            SportRowCard,
+            {
+              match: m,
+              now: now2,
+              locale,
+              tt,
+              overrides,
+              hideScore: hideScores,
+              width: cardWidth,
+              mirror: JSON.stringify(sportHeroMirror(m, { now: now2, locale, tt, overrides, follows, settings, uploads, hideScore: hideScores })),
+              onOpen: () => onNavigate(sportRowTarget(m, overrides))
+            },
+            m.id
+          ))
+        }
+      )
+    ] });
+  }
+  var line = { display: "block", minWidth: 0, maxWidth: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  var twoLines = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", minWidth: 0, maxWidth: "100%", overflow: "hidden", whiteSpace: "normal", overflowWrap: "anywhere" };
+  var CARD_BG = "rgba(17, 20, 32, 0.94)";
+  function SportRowCard({ match: m, now: now2, locale, tt, overrides, hideScore, width, mirror, onOpen }) {
+    const st = statusAt(m, now2);
+    const label = matchStatusLabel(m, tt);
+    const score = !hideScore && showsScore(m) && m.score ? m.score : null;
+    const ranked = rankedSources(m, overrides);
+    const best = ranked[0] ?? null;
+    const channel = best ? ranked.length > 1 ? `${best.name} \xB7 ${tt("sportSourcesShort", { n: ranked.length })}` : best.name : tt("sportResultOnly");
+    const teams = m.home && m.away;
+    return /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        "data-f": "",
+        "data-tv-card": "",
+        "data-tv-mirror": mirror,
+        "data-sport-row-card": "",
+        "data-match-id": m.id,
+        "data-status": st,
+        className: "focus-card-ring",
+        onClick: onOpen,
+        "aria-label": `${matchTitle(m)} \xB7 ${m.league}`,
+        style: {
+          width,
+          flex: "none",
+          boxSizing: "border-box",
+          textAlign: "left",
+          cursor: "pointer",
+          color: TEXT2,
+          borderRadius: 14,
+          padding: "0.75rem 0.875rem",
+          background: CARD_BG,
+          overflow: "hidden",
+          minWidth: 0,
+          border: "1px solid rgba(255,255,255,0.12)",
+          display: "block"
+        },
+        children: /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column", gap: "0.55rem", minWidth: 0, width: "100%" }, children: [
+          /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: "0.45rem", minWidth: 0, fontSize: "var(--st-label, 0.6875rem)", color: MUTED }, children: [
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 8, height: 8, borderRadius: 2, background: leagueColor(m.leagueKey || m.kind), flexShrink: 0 } }),
+            /* @__PURE__ */ jsx("span", { style: { ...line, flex: "1 1 0%", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }, children: m.league || tt(KIND_KEYS[m.kind]) }),
+            st === "live" ? /* @__PURE__ */ jsxs("span", { "data-testid": "sport-row-live", style: { display: "inline-flex", alignItems: "center", gap: "0.35rem", flexShrink: 0 }, children: [
+              /* @__PURE__ */ jsx("span", { style: { padding: "1px 6px", borderRadius: 6, background: LIVE, color: "#fff", fontWeight: 700, letterSpacing: "0.06em" }, children: tt("live") }),
+              label && label !== tt("sportLiveShort") ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-row-minute", style: { color: TEXT2, fontWeight: 600, fontVariantNumeric: "tabular-nums" }, children: label }) : null
+            ] }) : /* @__PURE__ */ jsx("span", { "data-testid": "sport-row-when", style: { ...line, flex: "0 1 auto", color: TEXT2, fontWeight: 600, fontVariantNumeric: "tabular-nums" }, children: st === "finished" ? label ?? tt("sportEnded") : label ?? whenText(m, now2, locale, tt) })
+          ] }),
+          teams ? /* @__PURE__ */ jsx("span", { style: { display: "flex", flexDirection: "column", gap: "0.35rem", minWidth: 0 }, children: [["home", m.home, m.homeKey, m.homeCrest], ["away", m.away, m.awayKey, m.awayCrest]].map(([side3, name, key, crest]) => /* @__PURE__ */ jsxs("span", { style: { display: "flex", alignItems: "center", gap: "0.5rem", minWidth: 0 }, children: [
+            /* @__PURE__ */ jsx(Crest, { name, colorKey: key ?? name, size: 24, src: crest }),
+            /* @__PURE__ */ jsx("span", { "data-testid": "sport-row-team", style: { ...line, flex: "1 1 0%", fontSize: "var(--st-body, 0.875rem)", fontWeight: 600 }, children: name }),
+            score ? /* @__PURE__ */ jsx("span", { "data-testid": "sport-row-score", style: { flexShrink: 0, fontSize: "var(--st-h3, 1rem)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }, children: side3 === "home" ? score.home : score.away }) : null
+          ] }, side3)) }) : (
+            // maxHeight = två rader även där line-clamp saknas (gamla webbvyer).
+            /* @__PURE__ */ jsx("span", { "data-testid": "sport-row-title", style: { ...twoLines, fontSize: "var(--st-body, 0.875rem)", fontWeight: 600, lineHeight: 1.3, maxHeight: "2.6em" }, children: matchTitle(m) })
+          ),
+          /* @__PURE__ */ jsx("span", { "data-testid": "sport-row-channel", style: { ...line, fontSize: "var(--st-small, 0.75rem)", color: DIM3 }, children: channel })
+        ] })
+      }
+    );
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/sport/home-rows/register.ts
+  var both = (key, vars) => ({ en: tvText("en", key, vars), sv: tvText("sv", key, vars) });
+  var sportOption = {
+    label: both("sportRowOptionSport"),
+    choices: () => [{ value: "", label: both("sportAll") }, ...SPORT_CHIPS.map((k) => ({ value: k, label: both(KIND_KEYS[k]) }))]
+  };
+  var leagueOption = {
+    label: both("sportRowOptionLeague"),
+    choices: () => [
+      { value: "", label: both("sportRowLeagueAuto") },
+      ...leagueChoices(getFollows(), seenSportLeagues()).map((l) => ({ value: l.key, label: l.name }))
+    ]
+  };
+  var scoresOption = {
+    label: both("sportRowOptionScores"),
+    choices: () => [{ value: "", label: both("sportRowShowScores") }, { value: "hide", label: both("sportRowHideScores") }]
+  };
+  var SPORT_HOME_ROWS = [
+    { kind: "live-now", id: "sport-live-now", title: "sportRowLiveNow", option: sportOption },
+    { kind: "my-teams", id: "sport-my-teams", title: "sportRowMyTeams" },
+    { kind: "tonight", id: "sport-tonight", title: "sportRowTonight", option: sportOption },
+    { kind: "zap", id: "sport-zap", title: "sportRowZap", option: sportOption },
+    { kind: "league", id: "sport-league", title: "sportRowLeague", option: leagueOption },
+    { kind: "results", id: "sport-results", title: "sportRowResults", option: scoresOption }
+  ];
+  var ROWS = Object.fromEntries(SPORT_HOME_ROWS.map((def) => {
+    const Row3 = (props) => createElement(SportHomeRow, { ...props, kind: def.kind });
+    Row3.displayName = `SportHomeRow(${def.kind})`;
+    return [def.kind, Row3];
+  }));
+  function registerSportHomeRows(ctx) {
+    const host2 = ctx;
+    if (typeof host2.registerHomeRow !== "function" || typeof host2.registerHomeSource !== "function") return;
+    for (const def of SPORT_HOME_ROWS) {
+      const rowId = `${def.id}-row`;
+      host2.registerHomeRow.call(ctx, { id: rowId, title: both(def.title), showOnHome: false, Row: ROWS[def.kind] });
+      host2.registerHomeSource.call(ctx, {
+        id: def.id,
+        label: { en: tvText("en", "sportRowSource", { name: tvText("en", def.title) }), sv: tvText("sv", "sportRowSource", { name: tvText("sv", def.title) }) },
+        rowId,
+        ...def.option ? { option: def.option } : {}
+      });
+    }
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/vod-streams.ts
   init_live_tv_data();
   init_vod_client();
   function xtreamSources() {
@@ -64219,7 +67272,7 @@ ${cue.text}`).join("\n\n")}
     return ext && ext.length <= 4 ? `Xtream \xB7 ${ext}` : "Xtream";
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/hooks/useChannelSchedule.ts
   init_react_shim();
   init_schedule_cache();
   init_lookup2();
@@ -64234,7 +67287,7 @@ ${cue.text}`).join("\n\n")}
       }
       let cancelled = false;
       let fetched = [];
-      const recompute = () => {
+      const recompute2 = () => {
         if (cancelled) return;
         const now2 = Date.now();
         setProgrammes(sliceSchedule(fetched, now2 - hoursBack * 36e5, now2 + hoursAhead * 36e5));
@@ -64242,28 +67295,31 @@ ${cue.text}`).join("\n\n")}
       const { from, to } = hourWindow(Date.now(), hoursBack + 1, hoursAhead + 1);
       fetchSchedules(listId, [key], from, to).then((schedules) => {
         fetched = schedules[key] ?? [];
-        recompute();
+        recompute2();
       }).catch(() => {
         if (!cancelled) setProgrammes([]);
       });
       const msToNextMinute = 6e4 - Date.now() % 6e4;
       const timers2 = [];
       const tick2 = () => {
-        recompute();
+        recompute2();
         timers2.push(window.setTimeout(tick2, 6e4));
       };
       timers2.push(window.setTimeout(tick2, msToNextMinute));
       return () => {
         cancelled = true;
-        for (const timer3 of timers2) window.clearTimeout(timer3);
+        for (const timer4 of timers2) window.clearTimeout(timer4);
       };
     }, [key, listId, urls.join("|"), hoursAhead, hoursBack]);
     return programmes;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/tv/live-tv-library-frame.tsx
   init_react_shim();
   init_plugin_sdk();
+  init_mobile_tokens();
+  init_mobile_sheet();
+  init_tv_strings();
   init_tv_settings_store();
   init_useNarrowSurface();
   init_tv_ui();
@@ -64274,6 +67330,8 @@ ${cue.text}`).join("\n\n")}
   var BACK_KEYS3 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   function PhoneTabBar({ select, onInsetBottom }) {
     const tvMode = useTvMode();
+    const { tt } = useTvText();
+    const [moreOpen, setMoreOpen] = useState(false);
     const [showLibrary, setShowLibrary] = useState(false);
     const wrapRef = useRef(null);
     useEffect(() => {
@@ -64302,7 +67360,24 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [tvMode]);
-    return /* @__PURE__ */ jsx("div", { ref: wrapRef, children: /* @__PURE__ */ jsx(MobileTabBar, { view: "hub", activeOverride: "home", showLibrary, onGo: select, onMore: () => select("multi") }) });
+    return /* @__PURE__ */ jsxs("div", { ref: wrapRef, children: [
+      /* @__PURE__ */ jsx(MobileTabBar, { view: "hub", activeOverride: "home", showLibrary, onGo: select, onMore: () => setMoreOpen(true) }),
+      moreOpen ? /* @__PURE__ */ jsx(
+        MobileSheet,
+        {
+          title: tt("moreActions"),
+          items: [
+            { key: "favs", label: tt("sheetFavourites"), run: () => select("favs") },
+            { key: "multi", label: tt("sheetMultiview"), run: () => select("multi") },
+            { key: "settings", label: tt("sheetSettings"), run: () => select("settings") }
+          ],
+          onClose: () => setMoreOpen(false),
+          pushLayer: () => () => {
+          },
+          testId: "more-sheet"
+        }
+      ) : null
+    ] });
   }
   function LiveTvLibraryFrame({ platform, onNavigate, onExit, onInset, onInsetBottom }) {
     const settings = useTvSettings();
@@ -64346,12 +67421,15 @@ ${cue.text}`).join("\n\n")}
       return () => window.removeEventListener("keydown", onKey, true);
     }, [phone, onExit]);
     if (phone) {
-      return /* @__PURE__ */ jsx(PhoneTabBar, { select, onInsetBottom });
+      return /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsx("div", { "data-testid": "frame-exit", style: { position: "fixed", top: `calc(${MT.SAFE_TOP_GUARD} + 6px)`, left: MT.PAD, zIndex: 51 }, children: /* @__PURE__ */ jsx(MobileCloseButton, { onClose: onExit }) }),
+        /* @__PURE__ */ jsx(PhoneTabBar, { select, onInsetBottom })
+      ] });
     }
     return /* @__PURE__ */ jsx("div", { ref: rootRef, style: { height: "100%", display: "flex", background: TV2.bg, color: TV2.text, fontFamily: TV2.font }, children: /* @__PURE__ */ jsx(TvRail, { active: "home", isTv, narrow, labels: settings.railLabels && !narrow, onSelect: select }) });
   }
 
-  // ../../../lumio-official-plugins/.worktrees/fullheight/plugins/live-tv/runtime/index.ts
+  // ../../../lumio-official-plugins/.worktrees/sport-tvmode-4/plugins/live-tv/runtime/index.ts
   if (typeof window !== "undefined") {
     window.__LumioLiveTvEpg = {
       useEpgNowNextLater,
@@ -64400,6 +67478,23 @@ ${cue.text}`).join("\n\n")}
         // minAppVersion höjd i plugin.json i stället för att gissa här.
         tvSceneBox: true
       });
+      ctx.registerBrowsePage({
+        id: SPORT_PAGE_ID,
+        label: { en: "Sport", sv: "Sport" },
+        Page: LiveTvSportPage,
+        hideHero: true,
+        tvSceneBox: true
+      });
+      const registerMenuItem = ctx.registerMainMenuItem;
+      if (typeof registerMenuItem === "function") {
+        registerMenuItem.call(ctx, {
+          id: SPORT_PAGE_ID,
+          label: { en: "Sport", sv: "Sport" },
+          target: { pageId: SPORT_PAGE_ID },
+          defaultEnabled: false
+        });
+      }
+      registerSportHomeRows(ctx);
       const registerLibrary = ctx.registerLibraryProvider;
       if (typeof registerLibrary === "function") registerLibrary.call(ctx, vodLibraryProvider);
       const registerFrame = ctx.registerLibraryFrame;

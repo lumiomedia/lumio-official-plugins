@@ -4,19 +4,20 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { channelKey, type M3uChannel } from '../../live-tv-data'
 import type { LiveTvModel } from '../../live-tv-model'
 import type { PlayRequest } from '../../live-tv-shell'
-import { formatClock } from '../../live-tv-ui'
+import { formatClock, progressOf } from '../../live-tv-ui'
 import type { MultiviewLayout, MultiviewState } from '../../tv/tv-multiview-store'
 import type { PlayerSportProps } from '../../tv/tv-player-types'
 import { useTvText } from '../../tv/tv-strings'
-import { TV, station } from '../../tv/tv-ui'
+import { Icons, TV, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, sourceChannel, type MatchSource, type SportDay, type SportMatch } from '../sport-model'
 import { localDayKey, useSportDay } from '../sport-epg'
-import { pickMultiviewKeys, rankedSources, statusAt, visibleMatches } from '../sport-day-model'
+import { pickMultiviewKeys, playerMatchGroups, rankedSources, statusAt, visibleMatches } from '../sport-day-model'
 import { useOverrides, useSportSettings } from '../sport-store'
 import { useSportResults } from '../results-controller'
 import { matchStatusLabel, scoreText } from '../score-model'
-import { Crest, ellipsis, overline } from './sport-parts'
+import { Crest, ellipsis } from './sport-parts'
 import { MatchScore } from './sport-score'
+import { SportIcons } from './sport-icons'
 
 const MAX_PICK = 4
 const NO_MATCHES: SportMatch[] = []
@@ -155,74 +156,99 @@ export function PlayerSourceSwitcher({ sport, channel, nowMs, ps, testId = 'play
   )
 }
 
-/** Lådan ligger i spelarportalen utanför scenlådan — alla mått via spelarens `ps()` (1,4× på TV). */
+/**
+  Matcher-lådan: spelarens egen glasyta (samma som Guide-överlägget), raderna
+  grupperade på tid som i Guiden — "Pågår nu" och sedan en grupp per
+  avsparkstid. Lagmärkena står bredvid varandra, kanalen är underrad, och
+  varje rad har en egen Multiview-ikon: markera två till fyra och öppna dem
+  samtidigt. Ligger i spelarportalen utanför scenlådan — alla mått via
+  spelarens `ps()` (1,4× på TV).
+*/
 export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps }: { sport: PlayerSportProps; channel: M3uChannel; nowMs: number; locale: string; onClose: () => void; ps: (n: number) => number }) {
   const { tt } = useTvText()
-  const [picking, setPicking] = useState(false)
   const [picked, setPicked] = useState<string[]>([])
   const rootRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     window.setTimeout(() => rootRef.current?.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true }), 0)
   }, [])
-  const lists = matchesForPlayer(sport.matches, channelKey(channel), nowMs)
-  const all = [...lists.onChannel, ...lists.live, ...lists.later]
+  const currentKey = channelKey(channel)
+  const groups = playerMatchGroups(sport.matches, currentKey, nowMs)
+  const all = groups.flatMap((g) => g.matches)
   const toggle = (m: SportMatch) => setPicked((prev) => (prev.includes(m.id) ? prev.filter((id) => id !== m.id) : prev.length >= MAX_PICK ? prev : [...prev, m.id]))
   let rowIndex = 0
-  const row = (m: SportMatch, now: boolean) => {
-    const index = m.resultOnly ? -1 : rowIndex++
+  const row = (m: SportMatch) => {
+    const first = rowIndex++ === 0
+    const st = statusAt(m, nowMs)
     const best = rankedSources(m, sport.overrides)[0]
+    const here = st === 'live' && m.sources.some((s) => s.channelKey === currentKey)
     const on = picked.includes(m.id)
-    const meta = [m.league, matchStatusLabel(m, tt) ?? (statusAt(m, nowMs) === 'live' ? tt('live') : formatClock(m.start, locale)), best?.name].filter(Boolean).join(' · ')
-    // "Bara resultat" har ingen källa: ingen station, så fjärren hoppar över raden och Multiview kan inte välja den.
-    const stationProps = m.resultOnly ? {} : station(() => (picking ? toggle(m) : sport.onSwitchMatch(m)), undefined, index === 0 ? { 'data-init': '' } : undefined)
+    const title = matchTitle(m)
+    const status = st === 'live' ? matchStatusLabel(m, tt) ?? tt('live') : formatClock(m.start, locale)
     return (
-      <div key={m.id} data-testid="pm-row" data-picked={on ? '1' : '0'} {...stationProps} style={{ display: 'flex', alignItems: 'center', gap: ps(14), padding: `${ps(12)}px ${ps(14)}px`, borderRadius: ps(12), cursor: m.resultOnly ? 'default' : 'pointer', background: now ? TV.accMix(16) : TV.s08, border: `1px solid ${now ? TV.accMix(60) : TV.line}` }}>
-        {picking && !m.resultOnly ? <span style={{ width: ps(30), height: ps(30), borderRadius: ps(8), border: `2px solid ${on ? TV.acc : TV.lineStrong}`, background: on ? TV.acc : 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span> : null}
-        <span style={{ display: 'flex', flexShrink: 0 }}>
-          {m.home ? <Crest name={m.home} colorKey={m.homeKey ?? m.home} size={ps(44)} /> : null}
-          {m.away ? <span style={{ marginLeft: -ps(12) }}><Crest name={m.away} colorKey={m.awayKey ?? m.away} size={ps(44)} /></span> : null}
-        </span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: ps(19), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
-          <div style={{ fontSize: ps(15), color: TV.muted, ...ellipsis }}>{meta}</div>
+      <div key={m.id} data-testid="pm-item" data-row="" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: ps(8), padding: `${ps(4)}px ${ps(12)}px`, borderBottom: `1px solid ${TV.s05}`, background: here ? TV.accMix(12) : 'transparent' }}>
+        <div data-testid="pm-row" data-picked={on ? '1' : '0'} {...station(() => sport.onSwitchMatch(m), undefined, first ? { 'data-init': '', 'aria-label': title } : { 'aria-label': title })} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: ps(14), padding: `${ps(8)}px ${ps(8)}px`, borderRadius: ps(12), cursor: 'pointer' }}>
+          <span style={{ display: 'flex', gap: ps(4), flexShrink: 0 }}>
+            {m.home ? <Crest name={m.home} colorKey={m.homeKey ?? m.home} size={ps(36)} src={m.homeCrest} /> : null}
+            {m.away ? <Crest name={m.away} colorKey={m.awayKey ?? m.away} size={ps(36)} src={m.awayCrest} /> : null}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: ps(18), fontWeight: 600, ...ellipsis }}>{title}</div>
+            <div style={{ fontSize: ps(14), color: TV.muted, ...ellipsis }}>{[best?.name, m.league].filter(Boolean).join(' · ')}</div>
+          </div>
+          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+            <MatchScore match={m} size="row" />
+            <span style={{ fontSize: ps(14), fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: st === 'live' ? TV.acc : TV.muted }}>{status}</span>
+          </span>
+          {here ? <span data-testid="pm-now" role="img" aria-label={tt('sportNowPill')} title={tt('sportNowPill')} style={{ display: 'inline-flex', color: TV.acc, flexShrink: 0 }}><SportIcons.Play size={ps(20)} /></span> : null}
         </div>
-        <MatchScore match={m} size="row" />
-        {now ? <span data-testid="pm-now" style={{ padding: `${ps(3)}px ${ps(10)}px`, borderRadius: 999, border: `1px solid ${TV.accMix(80)}`, color: TV.accText, fontSize: ps(13), fontWeight: 700 }}>{tt('sportNowPill')}</span> : null}
+        <div
+          data-testid="pm-mv"
+          {...station(() => toggle(m), undefined, { 'aria-label': on ? tt('sportMultiviewRemove', { name: title }) : tt('sportMultiviewAdd', { name: title }) })}
+          aria-pressed={on ? 'true' : 'false'}
+          title={on ? tt('sportMultiviewRemove', { name: title }) : tt('sportMultiviewAdd', { name: title })}
+          style={{ width: ps(44), height: ps(44), minHeight: ps(44), flexShrink: 0, borderRadius: ps(12), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: on ? TV.onAcc : TV.muted, background: on ? TV.acc : 'rgba(252,252,255,0.06)' }}
+        >
+          <Icons.SquaresFour size={ps(20)} />
+        </div>
+        {st === 'live' ? <div aria-hidden="true" style={{ position: 'absolute', left: 0, bottom: 0, height: ps(2), width: `${Math.round(progressOf(m.start, m.stop, nowMs) * 100)}%`, background: TV.acc }} /> : null}
       </div>
     )
   }
-  const section = (title: string, list: SportMatch[], now: boolean) => (list.length === 0 ? null : (
-    <div key={title} style={{ display: 'flex', flexDirection: 'column', gap: ps(8) }}>
-      <span style={{ ...overline, fontSize: ps(15) }}>{title}</span>
-      {list.map((m) => row(m, now))}
-    </div>
-  ))
   return (
-    <div ref={rootRef} data-testid="player-matches-drawer" data-panel-root="" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: `min(${ps(780)}px, 100%)`, zIndex: 40, background: TV.panel, borderLeft: '1px solid rgba(255,255,255,0.16)', padding: ps(28), boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: ps(14), color: TV.text }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: ps(12) }}>
-        <span style={{ fontSize: ps(30), fontWeight: 600 }}>{tt('sportMatches')}</span>
-        <div data-testid="pm-pick" {...station(() => { setPicking((v) => !v); setPicked([]) })} aria-pressed={picking ? 'true' : 'false'} style={{ marginLeft: 'auto', height: ps(48), minHeight: ps(48), padding: `0 ${ps(16)}px`, borderRadius: ps(12), border: `1px solid ${TV.lineCard}`, background: picking ? TV.s16 : TV.s08, display: 'inline-flex', alignItems: 'center', fontSize: ps(16), fontWeight: 600, cursor: 'pointer' }}>{tt('sportPickSeveral')}</div>
-        <div data-testid="pm-close" {...station(onClose)} aria-label={tt('sportClose')} style={{ width: ps(48), height: ps(48), minHeight: ps(48), borderRadius: ps(12), border: `1px solid ${TV.lineCard}`, background: TV.s08, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>✕</div>
+    <div ref={rootRef} data-testid="player-matches-drawer" data-panel-root="" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: `min(${ps(700)}px, 100%)`, zIndex: 40, display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${TV.lineCard}`, borderRadius: `${ps(24)}px 0 0 ${ps(24)}px`, background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '-20px 0 60px rgba(0,0,0,0.5)', boxSizing: 'border-box', fontFamily: TV.font, color: TV.text }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: ps(12), padding: `${ps(20)}px ${ps(20)}px ${ps(12)}px`, borderBottom: `1px solid ${TV.line}`, flexShrink: 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: ps(26), fontWeight: 600 }}>{tt('sportMatches')}</div>
+          <div style={{ fontSize: ps(14), color: TV.dim }}>{tt('sportMatchesHint')}</div>
+        </div>
+        <div data-testid="pm-close" {...station(onClose)} aria-label={tt('sportClose')} style={{ width: ps(44), height: ps(44), minHeight: ps(44), borderRadius: 999, background: 'rgba(252,252,255,0.06)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>✕</div>
       </div>
-      <span style={{ fontSize: ps(16), color: TV.muted }}>{tt('sportMatchesHint')}</span>
-      <PlayerSourceSwitcher sport={sport} channel={channel} nowMs={nowMs} ps={(n) => ps(n * 1.3)} testId="pm-sources" />
-      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: ps(16) }}>
-        {section(tt('sportOnThisChannel'), lists.onChannel, true)}
-        {section(tt('sportLiveOnChannels'), lists.live, false)}
-        {section(tt('sportLaterOnChannels'), lists.later, false)}
-        {section(tt('sportResultOnly'), sport.matches.filter((m) => m.resultOnly), false)}
+      <div style={{ padding: `${ps(12)}px ${ps(20)}px 0`, flexShrink: 0 }}>
+        <PlayerSourceSwitcher sport={sport} channel={channel} nowMs={nowMs} ps={(n) => ps(n * 1.3)} testId="pm-sources" />
       </div>
-      {picking ? (
-        <div
-          data-testid="pm-open-multiview"
-          {...station(() => {
-            const chosen = all.filter((m) => picked.includes(m.id))
-            if (chosen.length > 0) sport.onOpenMultiview(pickMultiviewKeys(chosen, sport.overrides, sport.isKnownChannel))
-          })}
-          aria-disabled={picked.length === 0 ? 'true' : 'false'}
-          style={{ height: ps(60), minHeight: ps(60), borderRadius: ps(14), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: ps(20), fontWeight: 600, cursor: 'pointer', opacity: picked.length === 0 ? 0.5 : 1 }}
-        >
-          {tt('sportOpenMultiview', { n: picked.length })}
+      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+        {groups.map((g) => (
+          <div key={g.start ?? 'now'} data-testid="pm-group" style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ padding: `${ps(14)}px ${ps(20)}px ${ps(6)}px`, fontSize: ps(12), fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums', color: g.start === null ? TV.acc : TV.dim }}>
+              {g.start === null ? tt('sportLiveOnChannels') : formatClock(g.start, locale)}
+            </span>
+            {g.matches.map(row)}
+          </div>
+        ))}
+      </div>
+      {picked.length > 0 ? (
+        <div style={{ padding: ps(16), borderTop: `1px solid ${TV.line}`, flexShrink: 0 }}>
+          <div
+            data-testid="pm-open-multiview"
+            {...station(() => {
+              const chosen = all.filter((m) => picked.includes(m.id))
+              if (chosen.length > 0) sport.onOpenMultiview(pickMultiviewKeys(chosen, sport.overrides, sport.isKnownChannel))
+            })}
+            style={{ height: ps(56), minHeight: ps(56), borderRadius: ps(14), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: ps(10), fontSize: ps(18), fontWeight: 600, cursor: 'pointer' }}
+          >
+            <Icons.SquaresFour size={ps(20)} />
+            {tt('sportOpenMultiview', { n: picked.length })}
+          </div>
         </div>
       ) : null}
     </div>

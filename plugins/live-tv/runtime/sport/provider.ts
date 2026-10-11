@@ -8,7 +8,7 @@
  */
 import type { SportKind } from './sport-model'
 
-export type ProviderId = 'api-sports' | 'thesportsdb'
+export type ProviderId = 'api-sports' | 'thesportsdb' | 'sportapi'
 export type FixtureStatus = 'scheduled' | 'live' | 'ht' | 'finished' | 'postponed'
 export interface FixtureTeam { id: string; name: string; crest: string | null }
 export interface Fixture {
@@ -17,16 +17,20 @@ export interface Fixture {
   kickoff: number; status: FixtureStatus; statusShort: string; minute: number | null
   home: FixtureTeam; away: FixtureTeam; score: { home: number; away: number } | null; venue: string | null
   venueImage?: string | null
+  /** Arenans stad, när källan skickar den i samma svar (API-Sports fotboll). */
+  venueCity?: string | null
   lastGoal: { side: 'home' | 'away' | null; player: string | null; minute: number | null } | null
 }
 export type EventType = 'goal' | 'card' | 'sub' | 'var' | 'penalty' | 'other'
 export interface FixtureEvent { minute: number | null; extra: number | null; side: 'home' | 'away' | null; type: EventType; detail: string; player: string | null; assist: string | null }
 export interface FixtureStat { label: string; home: string; away: string }
-export interface LineupEntry { number: number | null; name: string; pos: string | null }
+/** `photo`: spelarens bild på källans CDN (kostar inget anrop), när källan har den. */
+export interface LineupEntry { number: number | null; name: string; pos: string | null; photo?: string | null }
 export interface FixtureLineup { side: 'home' | 'away'; formation: string | null; startXI: LineupEntry[]; subs: LineupEntry[] }
 export interface FixtureDetail { fixture: Fixture; events: FixtureEvent[]; stats: FixtureStat[]; lineups: FixtureLineup[] }
 export interface StandingRow { rank: number; team: FixtureTeam; played: number; points: number; goalDiff: number | null; form: string | null; group: string | null }
-export interface TeamHit { id: string; name: string; crest: string | null; country: string | null }
+/** `provider`: källan som svarade (sätts av sökningen; id:t är den källans). */
+export interface TeamHit { id: string; name: string; crest: string | null; country: string | null; provider?: ProviderId }
 /** Lagets bilder för Sports bakgrund (TheSportsDB `lookupteam`). */
 export interface TeamArt { stadium: string | null; fanart: string | null }
 export interface KeyCheck { ok: boolean; plan: string | null; used: number | null; limit: number | null }

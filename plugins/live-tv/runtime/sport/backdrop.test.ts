@@ -11,9 +11,9 @@ import lookupteam from './__fixtures__/thesportsdb/lookupteam.json'
 import type { SportMatch } from './sport-model'
 
 const h = vi.hoisted(() => ({ run: vi.fn() }))
-vi.mock('./budget', async () => {
+vi.mock('./router', async () => {
   const { theSportsDb: provider } = await import('./thesportsdb')
-  return { currentBudget: () => ({ provider, run: h.run }) }
+  return { currentRouter: () => ({ budget: (id: string) => (id === 'thesportsdb' ? { provider, run: h.run } : null) }) }
 })
 
 const VENUE = 'https://media.api-sports.io/football/venues/1460.png'
@@ -111,8 +111,18 @@ describe('Standard-bilderna', () => {
 
 describe('kortens bakgrund', () => {
   it('standardvärdena (inget eget val): svart 85 % med oskärpa utanför TV:n', () => {
-    expect(cardSurfaceVars({ opacity: 85, tone: 'black' }, null, { blur: true })).toEqual({ '--sport-card-bg': 'rgba(0, 0, 0, 0.85)', '--sport-card-blur': 'blur(14px)' })
+    expect(cardSurfaceVars({ opacity: 85, tone: 'black' }, null, { blur: true })).toEqual({ '--sport-card-bg': 'rgba(0, 0, 0, 0.85)', '--sport-card-blur': 'blur(14px)', '--sport-drawer-bg': 'rgba(0, 0, 0, 0.85)' })
     expect(cardSurfaceVars({ opacity: 85, tone: 'black' }, null, { blur: false })['--sport-card-blur']).toBe('none')
+  })
+  it('lådan i TV-läget: minst 85 % även när kortinställningen är lägre, högre värden hålls', () => {
+    expect(cardSurfaceVars({ opacity: 50, tone: 'black' }, null, { blur: false, tv: true })['--sport-drawer-bg']).toBe('rgba(0, 0, 0, 0.85)')
+    expect(cardSurfaceVars({ opacity: 50, tvOpacity: 95, tone: 'black' }, null, { blur: false, tv: true })['--sport-drawer-bg']).toBe('rgba(0, 0, 0, 0.95)')
+    expect(cardSurfaceVars({ opacity: 50, tvOpacity: 60, tone: 'black' }, null, { blur: false, tv: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.6)')
+    // Inget val: 85 på TV, 50 på skrivbordet.
+    expect(cardSurfaceVars({ opacity: null, tone: 'black' }, null, { blur: false, tv: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.85)')
+    expect(cardSurfaceVars({ opacity: null, tone: 'black' }, null, { blur: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.5)')
+    expect(cardSurfaceVars({ opacity: 50, tone: 'black' }, null, { blur: true })['--sport-drawer-bg']).toBe('rgba(0, 0, 0, 0.5)')
+    expect(cardSurfaceVars({ opacity: 50, tone: 'black' }, null, { blur: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.5)')
   })
   it('mörkgrå, och ton ur bilden (mörkad); utan prov blir tonen svart', () => {
     expect(cardSurfaceVars({ opacity: 50, tone: 'gray' }, null, { blur: false })['--sport-card-bg']).toBe('rgba(28, 29, 34, 0.5)')
@@ -171,5 +181,17 @@ describe('useHeroTeamArt', () => {
     renderHook(() => useHeroTeamArt(null))
     renderHook(() => useHeroTeamArt(tsdbHero({ fixture: undefined })))
     expect(h.run).not.toHaveBeenCalled()
+  })
+})
+
+describe('handboll följer Övrigt, arv sparas uttryckligen', () => {
+  it('handbollens matcher läser Övrigts val och plats', () => {
+    const b = { all: 'standard' as const, sports: { other: 'off' as const } }
+    expect(resolveBackdropMode(b, 'handball')).toEqual({ mode: 'off', slot: 'other' })
+    expect(standardImageFor('handball', '2026-10-11')).toBe(standardImageFor('other', '2026-10-11'))
+  })
+  it('"inherit" = Alla sporters val', () => {
+    expect(resolveBackdropMode({ all: 'auto', sports: { football: 'inherit' } }, 'football')).toEqual({ mode: 'auto', slot: 'all' })
+    expect(resolveBackdropMode({ all: 'auto', sports: { football: 'standard' } }, 'football')).toEqual({ mode: 'standard', slot: 'football' })
   })
 })

@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { getPluginHttpAssetUrl, useTvMode } from '@/lib/plugin-sdk'
-import { currentBudget } from './budget'
-import { useSportSettings, type BundledImage, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
-import type { TeamArt } from './provider'
+import { currentRouter } from './router'
+import { cardOpacity, hasAnyKey, useSportSettings, type BundledImage, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
+import type { ProviderId, TeamArt } from './provider'
 import type { SportKind, SportMatch } from './sport-model'
 import { localDayKey } from './sport-epg'
 
@@ -57,7 +57,13 @@ function hash(text: string): number {
 }
 
 /** Sportens egen bild, annars en av dem vald per dag (stabil hela dagen: inget flimmer). */
-export function standardImageFor(scope: BackdropScope, dayKey: string): string {
+/** Handbollen har ingen egen rad: dess matcher följer Övrigt. */
+export function backdropScope(scope: BackdropScope): BackdropScope {
+  return scope === 'handball' ? 'other' : scope
+}
+
+export function standardImageFor(rawScope: BackdropScope, dayKey: string): string {
+  const scope = backdropScope(rawScope)
   const own = scope === 'all' ? undefined : STANDARD_IMAGES[scope]
   if (own) return own
   const all = Object.values(STANDARD_IMAGES) as string[]
@@ -83,7 +89,8 @@ export interface BackdropPreview {
  * Automatisk visar Standard-bilden (arenan är bara känd med nyckel och en
  * utvald match), Egen bild utan uppladdning likaså — precis som vyn.
  */
-export function backdropPreview(b: SportBackdrops, scope: BackdropScope, uploads: Partial<Record<BackdropScope, number>>, dayKey: string): BackdropPreview {
+export function backdropPreview(b: SportBackdrops, rawScope: BackdropScope, uploads: Partial<Record<BackdropScope, number>>, dayKey: string): BackdropPreview {
+  const scope = backdropScope(rawScope)
   const { mode, slot } = resolveBackdropMode(b, scope)
   const inherited = scope !== 'all' && slot === 'all'
   const standard = standardImageFor(scope, dayKey)
@@ -92,9 +99,10 @@ export function backdropPreview(b: SportBackdrops, scope: BackdropScope, uploads
   return { mode, slot, inherited, url }
 }
 
-export function resolveBackdropMode(b: SportBackdrops, scope: BackdropScope): { mode: SportBackdropMode; slot: BackdropScope } {
+export function resolveBackdropMode(b: SportBackdrops, rawScope: BackdropScope): { mode: SportBackdropMode; slot: BackdropScope } {
+  const scope = backdropScope(rawScope)
   const own = scope === 'all' ? undefined : b.sports[scope]
-  return own ? { mode: own, slot: scope } : { mode: b.all, slot: 'all' }
+  return own && own !== 'inherit' ? { mode: own, slot: scope } : { mode: b.all, slot: 'all' }
 }
 
 export function customBackdropUrl(slot: BackdropScope, version: number): string {
@@ -119,12 +127,18 @@ export function averageRgb(data: Uint8ClampedArray): Rgb | null {
 
 const GRAY: Rgb = [28, 29, 34]
 export const CARD_BLUR = 'blur(14px)'
-export type CardSurfaceVars = { '--sport-card-bg': string; '--sport-card-blur': string }
+export type CardSurfaceVars = { '--sport-card-bg': string; '--sport-card-blur': string; '--sport-drawer-bg': string }
+
+/** TV-lägets lådor ritas utan oskärpa och får aldrig vara glesare än så här (Jerry 2026-10-11: sidhuvudet lyste igenom). */
+export const TV_DRAWER_MIN_OPACITY = 85
 
 /** EN uppsättning variabler på Sport-roten; alla kort, rader och paneler läser dem. */
-export function cardSurfaceVars(cards: SportCards, sampled: Rgb | null, opts: { blur: boolean }): CardSurfaceVars {
+export function cardSurfaceVars(cards: SportCards, sampled: Rgb | null, opts: { blur: boolean; tv?: boolean }): CardSurfaceVars {
   const rgb = cards.tone === 'gray' ? GRAY : cards.tone === 'image' && sampled ? darkTone(sampled) : ([0, 0, 0] as Rgb)
-  return { '--sport-card-bg': `rgba(${rgb.join(', ')}, ${cards.opacity / 100})`, '--sport-card-blur': opts.blur ? CARD_BLUR : 'none' }
+  // Plattformens opacitet: eget val, annars 50 på skrivbord/telefon och 85 på TV.
+  const opacity = cardOpacity(cards, opts.tv === true)
+  const drawer = opts.tv ? Math.max(opacity, TV_DRAWER_MIN_OPACITY) : opacity
+  return { '--sport-card-bg': `rgba(${rgb.join(', ')}, ${opacity / 100})`, '--sport-card-blur': opts.blur ? CARD_BLUR : 'none', '--sport-drawer-bg': `rgba(${rgb.join(', ')}, ${drawer / 100})` }
 }
 
 export { SPORT_CARD_BG, SPORT_PANEL_BG, sportBg, sportSurface } from './surface'
@@ -144,12 +158,17 @@ export const SPORT_GRADIENTS: Record<SportKind, string> = {
 /**
  * Läsbarheten: hela bilden mörkas ~50 % (#00000080), mer till vänster där
  * rubrik och hero står och upptill där flikarna ligger. Korten har dessutom
- * egen grund (svart 85 % som standard), så texten och tidslinjens block
+ * egen grund (50 % som standard), så texten och tidslinjens block
  * läses över vilken bild som helst.
  */
 export const BACKDROP_SCRIM = 'linear-gradient(180deg, #00000073 0%, #00000026 30%, #00000000 55%), linear-gradient(90deg, #000000a6 0%, #00000059 40%, #00000000 75%), linear-gradient(#00000080, #00000080)'
-/** Telefonen: texten går över hela bredden, så bilden tonas också ned uppifrån och ned. */
-export const BACKDROP_SCRIM_PHONE = `linear-gradient(180deg, #00000080 0%, #000000b3 45%, #000000e6 100%), linear-gradient(#00000059, #00000059)`
+/**
+ * Telefonen (handoffen "Sport på mobil"): bilden ligger på 40 % över svart och
+ * tonas lodrätt .85 → .6 → .85 → helsvart, så rubriken upptill och listorna
+ * längre ned läses över vilken bild som helst.
+ */
+export const BACKDROP_SCRIM_PHONE = 'linear-gradient(180deg, #000000d9 0%, #00000099 30%, #000000d9 70%, #000000 100%)'
+export const BACKDROP_PHONE_OPACITY = 0.4
 
 export function chooseSportBackdrop(i: BackdropInput): BackdropChoice {
   if (i.mode === 'off') return { kind: 'none' }
@@ -322,7 +341,8 @@ export function useHeroTeamArt(hero: SportMatch | null): TeamArt | null {
   useEffect(() => {
     if (!key || !hero || !teamId) { setArt(null); return }
     if (artCache.has(key)) { setArt(artCache.get(key) ?? null); return }
-    const budget = currentBudget()
+    // Lagbilderna hör till källan som äger lagets id (fixturens källa), inte till sportens förstaval.
+    const budget = currentRouter()?.budget(provider as ProviderId) ?? null
     const call = budget?.provider.teamArt(hero.kind, teamId) ?? null
     if (!budget || !call) { setArt(null); return }
     let alive = true
@@ -351,12 +371,12 @@ export function useSportBackdrop(hero: SportMatch | null, scope: BackdropScope =
   const tvMode = useTvMode()
   const [broken, setBroken] = useState<ReadonlySet<string>>(() => new Set())
   const { mode, slot } = resolveBackdropMode(settings.backdrops, scope)
-  const art = useHeroTeamArt(mode === 'auto' && settings.apiKey ? hero : null)
+  const art = useHeroTeamArt(mode === 'auto' && hasAnyKey(settings) ? hero : null)
   const onBroken = useCallback((url: string) => setBroken((b) => (b.has(url) ? b : new Set(b).add(url))), [])
   const choice = chooseSportBackdrop({
     mode,
     slot,
-    hasKey: !!settings.apiKey,
+    hasKey: hasAnyKey(settings),
     hero,
     art,
     uploads,
@@ -366,6 +386,6 @@ export function useSportBackdrop(hero: SportMatch | null, scope: BackdropScope =
   const src = choice.kind === 'image' ? backdropSrc(choice) : null
   const tone = useImageTone(src, settings.cards.tone === 'image')
   // Oskärpan kostar på TV-boxarna (och gamla WebViews saknar den): bara skrivbord och telefon.
-  const surface = choice.kind === 'image' ? cardSurfaceVars(settings.cards, tone, { blur: !tvMode }) : null
+  const surface = choice.kind === 'image' ? cardSurfaceVars(settings.cards, tone, { blur: !tvMode, tv: tvMode }) : null
   return { choice, onBroken, surface }
 }

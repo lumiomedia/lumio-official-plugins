@@ -8,6 +8,7 @@ import { PickerPanel } from '../../tv/tv-list-picker'
 import { useTextPrompt } from '../../tv/tv-text-entry'
 import type { TvNav } from '../../tv/tv-shell'
 import { countryGroups, foldText, searchLeagues, type LeagueEntry } from '../league-jump'
+import { sportDrawerStyle } from '../surface'
 import { SportIcon } from './sport-icons'
 import { ellipsis } from './sport-parts'
 
@@ -75,6 +76,7 @@ export function LeagueDrawer({ nav, entries, showSport, onPick, onClose }: { nav
       title={tt('sportAllLeagues')}
       onClose={onClose}
       testId="league-drawer"
+      surface={sportDrawerStyle}
       chips={<>{searchField}{prompt.node}</>}
       rows={(close) => {
         const pick = (key: string) => { close(); onPick(key) }
@@ -106,14 +108,25 @@ export function LeagueDrawer({ nav, entries, showSport, onPick, onClose }: { nav
   )
 }
 
-/** Raden ovanför resultaten: "Dina ligor" (eller de största) + "Fler ligor…". */
-export function YourLeaguesRow({ entries, fallback, onJump, onMore, tv }: { entries: LeagueEntry[]; fallback: boolean; onJump: (key: string) => void; onMore: () => void; tv: boolean }) {
+/**
+ * Raden ovanför resultaten: "Dina ligor" (eller de största) + "Fler ligor…".
+ * Ett val filtrerar till ligan; då står "Alla ligor ×" först (återställer) och
+ * den valda ligan markerad — även när den kom ur lådan och inte finns i raden.
+ */
+export function YourLeaguesRow({ entries, fallback, active = null, activeLabel = null, onJump, onReset, onMore, tv }: { entries: LeagueEntry[]; fallback: boolean; active?: string | null; activeLabel?: string | null; onJump: (key: string) => void; onReset?: () => void; onMore: () => void; tv: boolean }) {
   const { tt } = useTvText()
+  const inRow = active ? entries.some((e) => e.key === active) : true
   return (
     <div data-testid="your-leagues" data-row="" style={{ display: 'flex', gap: dp(10), alignItems: 'center', flexWrap: tv ? 'nowrap' : 'wrap', overflowX: tv ? 'auto' : undefined }}>
       <span style={{ fontSize: dp(13), letterSpacing: '0.12em', color: TV.dim, flexShrink: 0 }}>{fallback ? tt('sportTopLeagues') : tt('sportYourLeagues')}</span>
+      {active && onReset ? (
+        <Chip data-testid="league-reset" active={false} {...station(onReset)} style={{ border: `1px solid ${TV.lineStrong}`, color: TV.text, gap: dp(8) }}>{tt('sportAllLeaguesReset')}<span aria-hidden="true">✕</span></Chip>
+      ) : null}
+      {active && !inRow ? (
+        <Chip data-testid={`league-chip-${active}`} active aria-pressed="true" {...station(() => onJump(active))}>{activeLabel ?? active}</Chip>
+      ) : null}
       {entries.map((e) => (
-        <Chip key={e.key} data-testid={`league-chip-${e.key}`} active={false} {...station(() => onJump(e.key))}><LeagueChipBody entry={e} /></Chip>
+        <Chip key={e.key} data-testid={`league-chip-${e.key}`} active={e.key === active} aria-pressed={e.key === active ? 'true' : 'false'} {...station(() => onJump(e.key))}><LeagueChipBody entry={e} /></Chip>
       ))}
       <Chip data-testid="league-more" active={false} {...station(onMore)} style={{ border: `1px solid ${TV.lineStrong}`, color: TV.text }}>{tt('sportMoreLeagues')}</Chip>
     </div>

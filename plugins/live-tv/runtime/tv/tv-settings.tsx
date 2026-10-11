@@ -51,7 +51,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
         {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
         {tab === 'epg' ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} /> : null}
         {tab === 'parental' ? <ParentalTab model={model} tt={tt} /> : null}
-        {tab === 'sport' ? <><SportKeySettingsTv /><SportBackdropSettingsTv pushLayer={nav.pushLayer} /></> : null}
+        {tab === 'sport' ? <><SportKeySettingsTv pushLayer={nav.pushLayer} /><SportBackdropSettingsTv pushLayer={nav.pushLayer} /></> : null}
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import type { CSSProperties } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import { formatClock, progressOf } from '../../live-tv-ui'
 import { Progress, TV, dp, station } from '../../tv/tv-ui'
 import { localDayKey } from '../sport-epg'
@@ -8,6 +8,7 @@ import { matchTitle, type SportDay, type SportMatch } from '../sport-model'
 import { clashes, followState, leagueColor, nextMatchFor, splitSections, statusAt, teamRing } from '../sport-day-model'
 import { alertLabel, sourceChip, type SportCtx } from '../sport-ctx'
 import type { SportFollow } from '../sport-store'
+import { useBackfillFollowCrests } from '../follow-crest'
 import { crestForFollow, matchStatusLabel, scoreText } from '../score-model'
 import { Crest, ellipsis, overline, sectionTitle } from './sport-parts'
 import { MatchScore } from './sport-score'
@@ -21,15 +22,18 @@ export function SportFeed({ ctx, matches, days }: { ctx: SportCtx; matches: Spor
   const planned = later.filter((m) => ctx.isReminded(m))
   const clash = clashes(planned)
   const dayMatches = days[0]?.matches ?? []
+  const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days])
+  useBackfillFollowCrests(allMatches)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: dp(32) }}>
-      <section data-testid="feed-teams" style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
+      {/* Egen ruta, som övriga sektioner med kortbakgrund (Jerry 2026-10-11). */}
+      <section data-testid="feed-teams" style={{ ...sportCardStyle, display: 'flex', flexDirection: 'column', gap: dp(14), padding: `${dp(20)}px ${dp(24)}px` }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
-          <span style={sectionTitle}>{ctx.tt('sportYourTeams')}</span>
+          <span style={{ ...sectionTitle, display: 'inline-flex', alignItems: 'center', gap: dp(12) }}><span style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(26)} filled /></span>{ctx.tt('sportYourTeams')}</span>
           <span style={{ fontSize: dp(16), color: TV.dim }}>{ctx.tt('sportYourTeamsHint')}</span>
         </div>
         <div data-row="" style={{ display: 'flex', gap: dp(24), overflowX: 'auto', padding: `${dp(8)}px ${dp(6)}px` }}>
-          {ctx.follows.map((f) => <TeamAvatar key={`${f.kind}:${f.key}`} ctx={ctx} follow={f} dayMatches={dayMatches} days={days} />)}
+          {ctx.follows.map((f) => <TeamAvatar key={`${f.kind}:${f.key}`} ctx={ctx} follow={f} dayMatches={dayMatches} allMatches={allMatches} days={days} />)}
           <div data-testid="feed-add" {...station(ctx.openFollowPicker)} style={avatarCol}>
             <span style={{ width: dp(108), height: dp(108), borderRadius: 999, border: `2px dashed ${TV.lineStrong}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><SportIcons.Plus size={dp(36)} /></span>
             <span style={{ fontSize: dp(17), fontWeight: 600 }}>{ctx.tt('sportAddTeam')}</span>
@@ -88,7 +92,7 @@ export function SportFeed({ ctx, matches, days }: { ctx: SportCtx; matches: Spor
                       <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
                       <div style={{ fontSize: dp(15), color: TV.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(' · ')}</div>
                     </div>
-                    {followState(m, ctx.follows).any ? <span style={{ color: '#fbbf24', display: 'inline-flex' }}><SportIcons.Star size={dp(22)} filled /></span> : null}
+                    {followState(m, ctx.follows).any ? <span data-testid="feed-plan-fav" style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(22)} filled /></span> : null}
                   </div>
                 )
               })}
@@ -126,7 +130,7 @@ export function SportFeed({ ctx, matches, days }: { ctx: SportCtx; matches: Spor
   )
 }
 
-function TeamAvatar({ ctx, follow, dayMatches, days }: { ctx: SportCtx; follow: SportFollow; dayMatches: SportMatch[]; days: (SportDay | null)[] }) {
+function TeamAvatar({ ctx, follow, dayMatches, allMatches, days }: { ctx: SportCtx; follow: SportFollow; dayMatches: SportMatch[]; allMatches: SportMatch[]; days: (SportDay | null)[] }) {
   const ring = teamRing(follow, dayMatches, ctx.now)
   const next = nextMatchFor(follow, days, ctx.now)
   const liveMatch = ring === 'live' ? dayMatches.find((m) => statusAt(m, ctx.now) === 'live' && followState(m, [follow]).any) : undefined
@@ -139,7 +143,7 @@ function TeamAvatar({ ctx, follow, dayMatches, days }: { ctx: SportCtx; follow: 
   return (
     <div data-testid="feed-team" data-ring={ring} {...station(() => { if (next) ctx.openMatch(next) })} style={avatarCol}>
       <span style={{ position: 'relative', borderRadius: 999, boxShadow: ringShadow, display: 'inline-flex' }}>
-        <Crest name={follow.name} colorKey={follow.key} size={dp(108)} src={crestForFollow(follow, dayMatches)} />
+        <Crest name={follow.name} colorKey={follow.key} size={dp(108)} src={crestForFollow(follow, allMatches)} />
         {ring === 'live' ? <span style={{ position: 'absolute', left: '50%', bottom: -dp(10), transform: 'translateX(-50%)', padding: `${dp(2)}px ${dp(8)}px`, borderRadius: dp(6), background: '#ef4444', color: '#fff', fontSize: dp(12), fontWeight: 700, letterSpacing: '0.1em' }}>{ctx.tt('live')}</span> : null}
       </span>
       <span style={{ fontSize: dp(17), fontWeight: 600, maxWidth: '100%', textAlign: 'center', ...ellipsis, marginTop: dp(6) }}>{follow.name}</span>

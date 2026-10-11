@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   clashes, crestColor, featuredMatch, followCandidates, followState, headerSummary, leagueColor, nextMatchFor,
   nextOnYourChannels, pickMultiviewKeys, rankedSources, splitSections, sportCounts, statusAt, teamRing,
-  timelineAxis, timelineRows, visibleMatches,
+  timelineAxis, timelineRows, mergeLane, blockShowsLabel, visibleMatches, playerMatchGroups, matchdayStrip,
 } from './sport-day-model'
 import { HOUR, MIN, fxDay, fxMatch, fxSource } from './__sport-fixture'
 
@@ -91,6 +91,11 @@ describe('tidslinje, krockar och följkandidater', () => {
     expect(cands.filter((c) => c.kind === 'league').map((c) => c.key)).toEqual(['allsvenskan', 'shl'])
     expect(cands.find((c) => c.key === 'gais')).toMatchObject({ kind: 'team', count: 1, sport: 'football' })
   })
+  it('kandidater bär lagets märke när en match har det', () => {
+    const c = followCandidates([fxDay('d', [{ ...later, homeCrest: 'https://m/h.png' }])])
+    expect(c.find((x) => x.key === later.homeKey)?.crest).toBe('https://m/h.png')
+    expect(c.find((x) => x.kind === 'league')?.crest).toBeUndefined()
+  })
   it('nästa match och ringen för ett följt lag', () => {
     const f = { sport: 'football' as const, kind: 'team' as const, key: 'gais', name: 'GAIS' }
     expect(nextMatchFor(f, [fxDay('d', [done, live, later])], now)?.id).toBe('live')
@@ -117,5 +122,62 @@ describe('statusAt med källfixtur (fas 2)', () => {
     const m = fxMatch({ start, stop: start + 2 * HOUR, status: 'upcoming', phase: 'postponed', fixture: { provider: 'api-sports', id: '1' } })
     expect(statusAt(m, Date.now())).toBe('upcoming')
     expect(statusAt({ ...m, phase: undefined }, Date.now())).toBe('finished')
+  })
+})
+
+describe('spelarens matchlåda: grupperad på tid som Guiden', () => {
+  const here = fxSource('B')
+  const onHere = fxMatch({ id: 'here', start: now - 10 * MIN, stop: now + HOUR, sources: [here] })
+  const liveEarly = fxMatch({ id: 'early', start: now - 40 * MIN, stop: now + HOUR, sources: [fxSource('C')] })
+  const at2030a = fxMatch({ id: 'a', home: 'Real', away: 'Inter', start: now + 90 * MIN, sources: [fxSource('D')] })
+  const at2030b = fxMatch({ id: 'b', home: 'AIK', away: 'Hammarby', start: now + 90 * MIN, sources: [fxSource('E')] })
+  const at2000 = fxMatch({ id: 'c', start: now + HOUR, sources: [fxSource('F')] })
+  const noSource = fxMatch({ id: 'ghost', start: now - 5 * MIN, stop: now + HOUR, sources: [] })
+  const ended = fxMatch({ id: 'ended', start: now - 4 * HOUR, stop: now - 2 * HOUR })
+  it('Pågår nu först (kanalens match överst), sedan en grupp per avsparkstid; utan kanal och avslutade syns inte', () => {
+    const groups = playerMatchGroups([at2030a, liveEarly, ended, at2000, noSource, onHere, at2030b], here.channelKey, now)
+    expect(groups.map((g) => [g.start, g.matches.map((m) => m.id)])).toEqual([
+      [null, ['here', 'early']],
+      [now + HOUR, ['c']],
+      [now + 90 * MIN, ['b', 'a']],
+    ])
+  })
+  it('inget pågår: bara tidsgrupper', () => {
+    expect(playerMatchGroups([at2000], here.channelKey, now).map((g) => g.start)).toEqual([now + HOUR])
+    expect(playerMatchGroups([], here.channelKey, now)).toEqual([])
+  })
+})
+
+describe('matchdagens remsa: en tidsordnad rad med nu-markör', () => {
+  it('det som startat i tidsordning, markören, sedan det som kommer; fokus på första pågående', () => {
+    const strip = matchdayStrip([later, live, shl, done], now)
+    expect(strip.items.map((m) => m.id)).toEqual(['done', 'live', 'shl', 'later'])
+    expect(strip.nowIndex).toBe(2)
+    expect(strip.focusIndex).toBe(1)
+  })
+  it('inget pågår: fokus på första kommande; allt slut: markören sist', () => {
+    expect(matchdayStrip([later, done], now)).toMatchObject({ nowIndex: 1, focusIndex: 1 })
+    expect(matchdayStrip([done], now)).toMatchObject({ nowIndex: 1, focusIndex: 0 })
+    expect(matchdayStrip([], now)).toEqual({ items: [], nowIndex: 0, focusIndex: 0 })
+  })
+  it('uppskjuten match räknas som kommande', () => {
+    const postponed = fxMatch({ id: 'pp', start: now - HOUR, phase: 'postponed' })
+    expect(matchdayStrip([postponed, done], now).items.map((m) => m.id)).toEqual(['done', 'pp'])
+  })
+})
+
+describe('tidslinjens block', () => {
+  const f1 = (id: string, start: number, stop: number, title = 'The Race') => fxMatch({ id, kind: 'football', home: null, away: null, event: title, start, stop })
+  it('slår ihop angränsande block med samma titel inom 5 min', () => {
+    const merged = mergeLane([f1('a', now, now + 10 * MIN), f1('b', now + 12 * MIN, now + 20 * MIN), f1('c', now + 40 * MIN, now + 50 * MIN)])
+    expect(merged.map((m) => [m.id, m.start, m.stop])).toEqual([['a', now, now + 20 * MIN], ['c', now + 40 * MIN, now + 50 * MIN]])
+  })
+  it('olika titlar slås aldrig ihop', () => {
+    expect(mergeLane([f1('a', now, now + 10 * MIN, 'X'), f1('b', now + 10 * MIN, now + 20 * MIN, 'Y')])).toHaveLength(2)
+  })
+  it('text bara när blocket är brett nog', () => {
+    const span = 12 * HOUR
+    expect(blockShowsLabel(10 * MIN, span)).toBe(false)
+    expect(blockShowsLabel(2 * HOUR, span)).toBe(true)
   })
 })

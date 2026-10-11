@@ -1,27 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({ budget: null as any }))
-vi.mock('./budget', () => ({ currentBudget: () => h.budget }))
+vi.mock('./router', () => ({ currentRouter: () => h.budget }))
 
 import { __resetFollowSearchForTests, matchesQuery, searchFollowTargets } from './follow-search'
 
 function fakeBudget(coverage: 'full' | 'epg' = 'full', withLeagues = true) {
   return {
-    provider: { id: 'api-sports', coverage: () => coverage },
-    searchTeams: vi.fn(async () => ({ ok: true, data: [{ id: '489', name: 'AC Milan', crest: null, country: 'Italy' }, { id: '489', name: 'AC Milan', crest: null, country: 'Italy' }] })),
-    searchLeagues: vi.fn(() => (withLeagues ? Promise.resolve({ ok: true, data: [{ id: '135', name: 'Serie A', crest: null, country: 'Italy' }] }) : null)),
+    coverage: () => coverage,
+    candidates: () => [{ provider: { id: 'api-sports' } }],
+    searchTeams: vi.fn(async () => ({ ok: true, provider: 'api-sports', data: [{ id: '489', name: 'AC Milan', crest: null, country: 'Italy' }, { id: '489', name: 'AC Milan', crest: null, country: 'Italy' }] })),
+    searchLeagues: vi.fn(async () => (withLeagues ? { ok: true, provider: 'sportapi', data: [{ id: '135', name: 'Serie A', crest: null, country: 'Italy' }] } : { ok: true, provider: 'api-sports', data: [] })),
   }
 }
 
 beforeEach(() => { __resetFollowSearchForTests(); h.budget = null })
 
 describe('searchFollowTargets', () => {
-  it('lag + turneringar via budgeten, dubbletter bort, sport på varje träff', async () => {
+  it('lag + turneringar via routern, dubbletter bort, sport och svarande källa på varje träff', async () => {
     h.budget = fakeBudget()
     const res = await searchFollowTargets('football', 'Milan')
     expect(res).toEqual([
-      { kind: 'team', sport: 'football', id: '489', name: 'AC Milan', crest: null, country: 'Italy' },
-      { kind: 'league', sport: 'football', id: '135', name: 'Serie A', crest: null, country: 'Italy' },
+      { kind: 'team', sport: 'football', id: '489', name: 'AC Milan', crest: null, country: 'Italy', provider: 'api-sports' },
+      { kind: 'league', sport: 'football', id: '135', name: 'Serie A', crest: null, country: 'Italy', provider: 'sportapi' },
     ])
     expect(h.budget.searchTeams).toHaveBeenCalledWith('football', 'Milan')
     expect(h.budget.searchLeagues).toHaveBeenCalledWith('football', 'Milan')

@@ -7,6 +7,8 @@ import { LiveTvHomeOverride } from './live-tv-home-override'
 import { LiveTvRemindersMount } from './live-tv-reminders-mount'
 import { SportGoalMount } from './sport/sport-goal-mount'
 import { LiveTvTvShell } from './tv/tv-shell'
+import { LiveTvSportPage, SPORT_PAGE_ID } from './sport/sport-page'
+import { registerSportHomeRows } from './sport/home-rows/register'
 import { getVodStreams } from './vod-streams'
 import { useEpgNowNextLater } from './hooks/useEpgNowNextLater'
 import { useEpgLoadStatus } from './hooks/useEpgLoadStatus'
@@ -109,6 +111,35 @@ export const LiveTvPlugin: LumioPlugin = {
       // minAppVersion höjd i plugin.json i stället för att gissa här.
       tvSceneBox: true,
     } as Parameters<typeof ctx.registerBrowsePage>[0])
+    /*
+      SPORT SOM EGET MENYVAL. Samma sportvy som i Live TV, öppnad som egen sida
+      (ingen ikonrad, egen spelare, Bakåt lämnar sidan). Av som standard —
+      användaren slår på den i menyredigeraren. Sidan och menyvalet delar id:
+      värdens nya menyer gör nyckeln till sidans id och läser aldrig `target`.
+      Menyvalet är valfritt som de andra senare facken: en äldre värd utan
+      `registerMainMenuItem` får sidan men inget val.
+    */
+    ctx.registerBrowsePage({
+      id: SPORT_PAGE_ID,
+      label: { en: 'Sport', sv: 'Sport' },
+      Page: LiveTvSportPage,
+      hideHero: true,
+      tvSceneBox: true,
+    } as Parameters<typeof ctx.registerBrowsePage>[0])
+    const registerMenuItem = (ctx as unknown as {
+      registerMainMenuItem?: (item: { id: string; label: { en: string; sv: string }; target: { pageId: string }; defaultEnabled?: boolean }) => void
+    }).registerMainMenuItem
+    if (typeof registerMenuItem === 'function') {
+      registerMenuItem.call(ctx, {
+        id: SPORT_PAGE_ID,
+        label: { en: 'Sport', sv: 'Sport' },
+        target: { pageId: SPORT_PAGE_ID },
+        defaultEnabled: false,
+      })
+    }
+    // Sportens hemrader (Live nu, Mina lag, I kväll, Zappa live, Liga, Resultat) som
+    // källor i appens radväljare. Valfritt fack: en äldre värd får sporten utan dem.
+    registerSportHomeRows(ctx)
     /**
      * Spellistans film och serier som en strömkälla i appens detaljvy.
      *

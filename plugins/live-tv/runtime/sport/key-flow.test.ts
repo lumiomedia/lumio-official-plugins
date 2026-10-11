@@ -52,3 +52,29 @@ describe('nyckeln', () => {
     expect(getSportSettings()).toMatchObject({ provider: 'api-sports', keyPlan: null, goalAlertMatches: {} })
   })
 })
+
+describe('en nyckel per källa, flera källor samtidigt', () => {
+  const leagues = { success: true, data: [{ id: 24, name: 'Premier League' }] }
+  const sportApiFetch = vi.fn(async () => ({ data: leagues, cached: false, fresh: true, fetchedAt: 1, quota: { bucket: 'football', limit: 2000, remaining: 1988, minuteLimit: null, minuteRemaining: null, blockedUntil: null, reason: null, plan: null }, error: null }))
+
+  it('en godkänd sportapi.ai-nyckel läggs till BREDVID API-Sports; förbrukningen kommer ur kvotheadern', async () => {
+    await saveValidatedKey('api-sports', 'aaaa1111', { fetch: okFetch as never })
+    const r = await saveValidatedKey('sportapi', 'sk_live_1', { fetch: sportApiFetch as never })
+    expect(r).toMatchObject({ ok: true, check: { ok: true, used: 12, limit: 2000 } })
+    expect(Object.keys(getSportSettings().keys).sort()).toEqual(['api-sports', 'sportapi'])
+  })
+  it('en andra nyckel för SAMMA källa ersätter den första (ingen rotation av gratisnycklar)', async () => {
+    await saveValidatedKey('sportapi', 'sk_live_1', { fetch: sportApiFetch as never })
+    await saveValidatedKey('sportapi', 'sk_live_2', { fetch: sportApiFetch as never })
+    expect(getSportSettings().keys).toEqual({ sportapi: { key: 'sk_live_2', plan: null } })
+  })
+  it('Ta bort en källas nyckel lämnar de andra', async () => {
+    await saveValidatedKey('api-sports', 'aaaa1111', { fetch: okFetch as never })
+    await saveValidatedKey('sportapi', 'sk_live_1', { fetch: sportApiFetch as never })
+    removeKey('sportapi')
+    expect(Object.keys(getSportSettings().keys)).toEqual(['api-sports'])
+  })
+  it('sportapi.ai utan plan räknas som gratis', () => {
+    expect(isPaidPlan(null, 'sportapi')).toBe(false)
+  })
+})

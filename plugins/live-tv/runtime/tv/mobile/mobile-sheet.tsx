@@ -11,6 +11,8 @@ export interface MobileSheetProps {
   art?: ReactNode
   /** Fri text/beskrivning under huvudet (Task 8: programark, kanalinfo-ark). */
   body?: ReactNode
+  /** Egna rader överst i arkets rullyta (före `items`), t.ex. spelarens matchlista. */
+  list?: ReactNode
   /** SAMMA typ som värdens glasmeny */
   items: TvGlassMenuAction[]
   onClose: () => void
@@ -33,7 +35,7 @@ export interface MobileSheetProps {
  * appens Bakåt stänger arket i stället för att lämna skärmen — samma mönster
  * som skalets övriga lager (kanalväljare, spellistmeny).
  */
-export function MobileSheet({ title, subtitle, art, body, items, onClose, pushLayer, testId, header, footer, activeKey }: MobileSheetProps) {
+export function MobileSheet({ title, subtitle, art, body, list, items, onClose, pushLayer, testId, header, footer, activeKey }: MobileSheetProps) {
   const { tt } = useTvText()
   // Alltid senaste onClose i lagrets stängningsfunktion, utan att effekten
   // (och därmed pushLayer/off-paret) körs om varje gång föräldern skickar en
@@ -71,6 +73,7 @@ export function MobileSheet({ title, subtitle, art, body, items, onClose, pushLa
         {body ? <div data-testid="sheet-body" style={{ padding: '12px 20px', fontSize: 14, color: MT.muted, maxHeight: '30vh', overflow: 'auto' }}>{body}</div> : null}
         {header}
         <div data-scroll="" style={{ maxHeight: '55vh', overflowY: 'auto' }}>
+          {list}
           {items.map((item, index) => (
             <div
               key={item.key}

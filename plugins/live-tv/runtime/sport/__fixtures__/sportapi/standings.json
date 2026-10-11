@@ -1,0 +1,18 @@
+{
+  "_shape": "recorded from sportapi.ai/docs examples 2026-10-11 — verify with real key",
+  "success": true,
+  "data": [
+    {
+      "position": 1, "team": { "id": 324, "name": "Manchester City", "short_name": "Man City", "slug": "manchester-city", "logo": "espn-382.png" },
+      "played": 5, "won": 5, "draw": 0, "lost": 0, "goals_for": 13, "goals_against": 5, "goal_difference": 8, "points": 15,
+      "form": [
+        { "result": "W", "date": "2026-09-13", "home_team": "Manchester United", "away_team": "Manchester City", "home_score": 0, "away_score": 1, "is_home": false },
+        { "result": "W", "date": "2026-09-20", "home_team": "Manchester City", "away_team": "Everton", "home_score": 3, "away_score": 1, "is_home": true }
+      ]
+    },
+    {
+      "position": 2, "team": { "id": 311, "name": "Arsenal", "short_name": "Arsenal", "slug": "arsenal", "logo": "espn-359.png" },
+      "played": 5, "won": 4, "draw": 0, "lost": 1, "goals_for": 10, "goals_against": 4, "goal_difference": 6, "points": 12, "form": []
+    }
+  ]
+}

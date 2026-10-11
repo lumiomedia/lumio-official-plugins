@@ -6,7 +6,7 @@ import { Crest } from './sport-parts'
 import { searchProviderTeams } from '../follow-search'
 import { crestForFollow } from '../score-model'
 import { setSportSettings } from '../sport-store'
-import { __resetBudgetForTests } from '../budget'
+import { __resetRouterForTests as __resetBudgetForTests } from '../router'
 import { tvText } from '../../tv/tv-strings'
 import { emitGoals } from '../goal-events'
 import { fxMatch } from '../__sport-fixture'
@@ -58,9 +58,14 @@ describe('märken', () => {
     expect(crestForFollow({ key: 'malmo' }, [m()])).toBe('https://m/375.png')
     expect(crestForFollow({ key: 'aik' }, [m()])).toBeNull()
   })
-  it('"Bara resultat"', () => {
+  it('saknas märke i matcherna gäller det lagrade; matchens märke går först', () => {
+    expect(crestForFollow({ key: 'aik', crest: 'https://s/aik.png' }, [m()])).toBe('https://s/aik.png')
+    expect(crestForFollow({ key: 'malmo', crest: 'https://s/old.png' }, [m()])).toBe('https://m/375.png')
+    expect(crestForFollow({ key: 'aik', crest: null }, [])).toBeNull()
+  })
+  it('"Ingen kanal"', () => {
     render(<ResultOnlyTag />)
-    expect(screen.getByText('Bara resultat')).toBeTruthy()
+    expect(screen.getByText('Ingen kanal')).toBeTruthy()
   })
 })
 
