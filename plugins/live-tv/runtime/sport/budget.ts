@@ -193,10 +193,7 @@ let current: { id: string; budget: Budget | null } | null = null
 
 /** EN kvothanterare per (källa, nyckel). `null` utan nyckel: då görs inga anrop. */
 export function currentBudget(): Budget | null {
-  // Fas 1:s SportSettings saknar apiKey och provider tills Task 13 lägger dem. Castas bort i Task 13.
-  const s = getSportSettings() as { apiKey?: string | null; provider?: ProviderId }
-  const provider: ProviderId = s.provider ?? 'api-sports'
-  const apiKey = s.apiKey ?? null
+  const { provider, apiKey } = getSportSettings()
   const id = `${provider}|${apiKey ?? ''}`
   if (current?.id === id) return current.budget
   current = { id, budget: apiKey ? new Budget(providerFor(provider), apiKey) : null }

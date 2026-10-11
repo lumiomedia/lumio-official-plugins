@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
+import type { ProviderId } from './provider'
 import { SPORT_KINDS, type SportKind } from './sport-model'
 
 /*
@@ -18,16 +19,40 @@ export const SPORT_OVERRIDES_KEY = 'sport_overrides_v1'
 export type SportViewMode = 'matchday' | 'feed'
 export type KickoffAlert = 'off' | '15' | 'kickoff'
 export interface SportSettings {
-  view: SportViewMode
-  alert: KickoffAlert
+  view: SportViewMode // fas 1
+  alert: KickoffAlert // fas 1
+  /** Fas 2: användarens egen nyckel. `null` = inga anrop. */
+  apiKey: string | null
+  /** Fas 2: målnotis. På som standard, och gäller bara följda matcher eller matcher med "Notis vid mål". */
+  goalAlerts: boolean
+  /** Fas 2: vilken källa nyckeln hör till. */
+  provider: ProviderId
+  /** Fas 2: källans plan vid senaste validering ("Free", "Pro", "Premium"). */
+  keyPlan: string | null
+  /** Fas 2: "Inte nu" på nyckelkortet. Efter det visas bara en diskret rad i Resultat. */
+  keyCardDismissed: boolean
+  /** Fas 2: "Notis vid mål" per match (matchens id → utgår ms, avspark + 4 h). */
+  goalAlertMatches: Record<string, number>
 }
-const DEFAULT_SETTINGS: SportSettings = { view: 'matchday', alert: '15' }
+
+const DEFAULT_SETTINGS: SportSettings = {
+  view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {},
+}
 
 function sanitizeSettings(raw: unknown): SportSettings {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof SportSettings, unknown>>
   return {
     view: r.view === 'feed' || r.view === 'matchday' ? r.view : DEFAULT_SETTINGS.view,
     alert: r.alert === 'off' || r.alert === '15' || r.alert === 'kickoff' ? r.alert : DEFAULT_SETTINGS.alert,
+    apiKey: typeof r.apiKey === 'string' && r.apiKey ? r.apiKey : null,
+    goalAlerts: r.goalAlerts !== false,
+    provider: r.provider === 'thesportsdb' ? 'thesportsdb' : 'api-sports',
+    keyPlan: typeof r.keyPlan === 'string' ? r.keyPlan : null,
+    keyCardDismissed: r.keyCardDismissed === true,
+    goalAlertMatches: Object.fromEntries(
+      Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === 'object' ? (r.goalAlertMatches as Record<string, unknown>) : {})
+        .filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] > Date.now()),
+    ),
   }
 }
 
@@ -80,6 +105,8 @@ export interface SportFollow {
   /** Normaliserad nyckel (Rusts `team_key`, eller ligans nyckel). */
   key: string
   name: string
+  /** Fas 2: källans id per källa, känt när laget följdes ur en sökning i källan. */
+  providerIds?: Record<string, string>
 }
 
 function sanitizeFollows(raw: unknown): SportFollow[] {
@@ -91,7 +118,10 @@ function sanitizeFollows(raw: unknown): SportFollow[] {
     if (!SPORT_KINDS.includes(f.sport as SportKind)) continue
     if (f.kind !== 'team' && f.kind !== 'league') continue
     if (typeof f.key !== 'string' || !f.key) continue
-    out.push({ sport: f.sport as SportKind, kind: f.kind, key: f.key, name: typeof f.name === 'string' && f.name ? f.name : f.key })
+    const ids = f.providerIds && typeof f.providerIds === 'object'
+      ? Object.fromEntries(Object.entries(f.providerIds).filter((e): e is [string, string] => typeof e[1] === 'string'))
+      : null
+    out.push({ sport: f.sport as SportKind, kind: f.kind, key: f.key, name: typeof f.name === 'string' && f.name ? f.name : f.key, ...(ids && Object.keys(ids).length > 0 ? { providerIds: ids } : {}) })
   }
   return out
 }

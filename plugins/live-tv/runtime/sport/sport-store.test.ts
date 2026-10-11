@@ -11,11 +11,11 @@ beforeEach(() => __resetForTests())
 
 describe('sportinställningar', () => {
   it('standard och sanering av skräp', () => {
-    expect(getSportSettings()).toEqual({ view: 'matchday', alert: '15' })
+    expect(getSportSettings()).toMatchObject({ view: 'matchday', alert: '15' })
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { view: 'grid', alert: 5 })
-    expect(getSportSettings()).toEqual({ view: 'matchday', alert: '15' })
-    expect(setSportSettings({ view: 'feed' })).toEqual({ view: 'feed', alert: '15' })
-    expect(setSportSettings({ alert: 'kickoff' })).toEqual({ view: 'feed', alert: 'kickoff' })
+    expect(getSportSettings()).toMatchObject({ view: 'matchday', alert: '15' })
+    expect(setSportSettings({ view: 'feed' })).toMatchObject({ view: 'feed', alert: '15' })
+    expect(setSportSettings({ alert: 'kickoff' })).toMatchObject({ view: 'feed', alert: 'kickoff' })
   })
 })
 
@@ -67,5 +67,14 @@ describe('teamKeysMatch (samma regel som Rust)', () => {
   it('sportsCompatible', () => {
     expect(sportsCompatible('hockey', 'other')).toBe(true)
     expect(sportsCompatible('hockey', 'football')).toBe(false)
+  })
+})
+
+describe('fas 2-fälten', () => {
+  it('standardvärden, och providerIds bevaras på följda lag', () => {
+    expect(getSportSettings()).toMatchObject({ apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {} })
+    const f = { sport: 'football' as const, kind: 'team' as const, key: 'malmo', name: 'Malmö FF', providerIds: { 'api-sports': '375' } }
+    toggleFollow(f)
+    expect(getFollows()).toEqual([f])
   })
 })
