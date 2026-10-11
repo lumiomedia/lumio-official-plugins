@@ -50,4 +50,15 @@ describe('Flöde', () => {
     expect(within(evening).getAllByTestId('evening-clash')).toHaveLength(2)
     expect(within(screen.getByTestId('feed-finished')).getByText(/Örgryte - GAIS/)).toBeInTheDocument()
   })
+  it('Din kväll börjar i höjd med kvällsplanens första rad — rubriken står ovanför båda kolumnerna', () => {
+    const ctx = fakeCtx({ now })
+    render(<SportFeed ctx={ctx} matches={matches} days={[fxDay('d0', matches), null]} />)
+    const body = screen.getByTestId('feed-plan-body')
+    const list = screen.getAllByTestId('feed-plan-row')[0]!.parentElement!
+    expect(list.parentElement).toBe(body)
+    expect(screen.getByTestId('sport-evening').parentElement).toBe(body)
+    expect(list.firstElementChild).toBe(screen.getAllByTestId('feed-plan-row')[0])
+    expect(within(body).queryByText('Evening plan')).toBeNull()
+    expect(within(screen.getByTestId('feed-plan')).getByText('Evening plan')).toBeInTheDocument()
+  })
 })
