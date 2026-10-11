@@ -88,7 +88,7 @@ with the section id and the page where it belongs.
 | Method | What it contributes |
 | --- | --- |
 | `registerHomeRow` | A row on the native Home. |
-| `registerHomeSource` | A source for user-configurable home sections. |
+| `registerHomeSource` | A source for user-configurable home sections. Optional `option` (`{ label, choices() }`) gives the row one per-row setting in the row editor; the row receives it as `option` (app with home-row options; older apps omit it). |
 | `registerHero` | A hero override for Home. |
 | `registerHomeOverride` | A full custom Home view replacing native rows (user-armed). |
 | `registerBrowsePage` | A browsable page owned by the plugin. |
