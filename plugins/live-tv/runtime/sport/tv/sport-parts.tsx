@@ -1,11 +1,14 @@
 'use client'
 
-import type { CSSProperties, ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
 import { formatClock, progressOf } from '../../live-tv-ui'
 import { Progress, Tag, TV, cardStyle, dp, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, type SportMatch } from '../sport-model'
 import { crestColor, followState, leagueColor, statusAt } from '../sport-day-model'
 import { sourceLine, type SportCtx } from '../sport-ctx'
+import { matchStatusLabel, showsScore } from '../score-model'
+import { MatchScore, ResultOnlyTag } from './sport-score'
 import { SportIcons } from './sport-icons'
 
 export const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
@@ -17,8 +20,13 @@ export const primaryBtn: CSSProperties = {
 }
 export const secondaryBtn: CSSProperties = { ...primaryBtn, background: TV.s12, color: TV.text, border: `1px solid ${TV.lineCard}` }
 
-/** Handoffens initialcirkel (riktiga märken kommer i fas 2). */
-export function Crest({ name, colorKey, size = dp(56) }: { name: string; colorKey: string; size?: number }) {
+/** Handoffens initialcirkel. Med `src` (källans märke) ritas märket via appens bildcache i stället. */
+export function Crest({ name, colorKey, size = dp(56), src }: { name: string; colorKey: string; size?: number; src?: string | null }) {
+  const [broken, setBroken] = useState(false)
+  const url = src && !broken ? getPluginHttpAssetUrl('/api/m3u-logo', src) : null
+  if (url) {
+    return <img data-crest="" src={url} alt="" width={size} height={size} onError={() => setBroken(true)} style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />
+  }
   return (
     <span data-crest="" aria-hidden="true" style={{ width: size, height: size, borderRadius: 999, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: crestColor(colorKey), color: '#fff', fontSize: Math.round(size * 0.32), fontWeight: 700, boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.18)' }}>
       {crestText(name)}
@@ -32,16 +40,17 @@ export function LeagueDot({ leagueKey, size = dp(12) }: { leagueKey: string; siz
 
 export function StatusTag({ match, ctx }: { match: SportMatch; ctx: SportCtx }) {
   const st = statusAt(match, ctx.now)
-  if (st === 'live') return <Tag variant="live">{ctx.tt('live')}</Tag>
-  if (st === 'finished') return <Tag variant="neutral">{ctx.tt('sportEnded')}</Tag>
-  return <Tag variant="neutral">{formatClock(match.start, ctx.locale)}</Tag>
+  const label = matchStatusLabel(match, ctx.tt) // null utan fixtur: fas 1:s egen status
+  if (st === 'live') return <Tag variant="live">{label ?? ctx.tt('live')}</Tag>
+  if (st === 'finished') return <Tag variant="neutral">{label ?? ctx.tt('sportEnded')}</Tag>
+  return <Tag variant="neutral">{label ?? formatClock(match.start, ctx.locale)}</Tag>
 }
 
-function TeamCell({ name, colorKey, align }: { name: string; colorKey: string; align: 'start' | 'end' }) {
+function TeamCell({ name, colorKey, align, crest }: { name: string; colorKey: string; align: 'start' | 'end'; crest?: string | null }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: align === 'end' ? 'flex-end' : 'flex-start', gap: dp(10), minWidth: 0, flexDirection: align === 'end' ? 'row' : 'row-reverse' }}>
       <span style={{ fontSize: dp(18), fontWeight: 600, ...ellipsis }}>{name}</span>
-      <Crest name={name} colorKey={colorKey} size={dp(42)} />
+      <Crest name={name} colorKey={colorKey} size={dp(42)} src={crest} />
     </div>
   )
 }
@@ -60,16 +69,16 @@ export function MatchCard({ match, ctx }: { match: SportMatch; ctx: SportCtx }) 
       </div>
       {match.home && match.away ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: dp(12) }}>
-          <TeamCell name={match.home} colorKey={match.homeKey ?? match.home} align="end" />
-          <span style={{ fontSize: dp(16), color: TV.dim }}>–</span>
-          <TeamCell name={match.away} colorKey={match.awayKey ?? match.away} align="start" />
+          <TeamCell name={match.home} colorKey={match.homeKey ?? match.home} align="end" crest={match.homeCrest} />
+          {showsScore(match) ? <MatchScore match={match} size="card" /> : <span style={{ fontSize: dp(16), color: TV.dim }}>–</span>}
+          <TeamCell name={match.away} colorKey={match.awayKey ?? match.away} align="start" crest={match.awayCrest} />
         </div>
       ) : (
         <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{matchTitle(match)}</div>
       )}
       <Progress value={st === 'live' ? progressOf(match.start, match.stop, ctx.now) : st === 'finished' ? 1 : 0} height={dp(4)} track={TV.s10} />
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(8), fontSize: dp(15), color: TV.muted }}>
-        <span style={{ ...ellipsis, flex: 1 }}>{sourceLine(match, ctx)}</span>
+        <span style={{ ...ellipsis, flex: 1 }}>{match.resultOnly ? <ResultOnlyTag /> : sourceLine(match, ctx)}</span>
         {followed ? <span data-testid="card-followed" style={{ color: '#fbbf24', display: 'inline-flex' }}><SportIcons.Star size={dp(18)} filled /></span> : null}
         {reminded ? <span data-testid="card-reminded" style={{ display: 'inline-flex' }}><SportIcons.Bell size={dp(18)} /></span> : null}
       </div>

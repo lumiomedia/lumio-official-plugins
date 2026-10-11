@@ -1,8 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTvMode } from '@/lib/plugin-sdk'
 import { Chip, Segment, TV, cardStyle, dp, station } from '../../tv/tv-ui'
 import { Check, PickerPanel } from '../../tv/tv-list-picker'
+import { useTextPrompt } from '../../tv/tv-text-entry'
+import { searchProviderTeams } from '../follow-search'
+import { foldTeamKey } from '../merge'
+import type { TeamHit } from '../provider'
 import { SPORT_KINDS, type SportDay, type SportKind } from '../sport-model'
 import { followCandidates, nextMatchFor } from '../sport-day-model'
 // `getStoredFollows`: väljarens bockar ska visa ett klick direkt, innan skalets `useFollows` hunnit rita om kontexten.
@@ -76,6 +81,17 @@ function FollowCard({ ctx, follow, days }: { ctx: SportCtx; follow: SportFollow;
 
 export function FollowPicker({ ctx, days, onClose }: { ctx: SportCtx; days: (SportDay | null)[]; onClose: () => void }) {
   const [sport, setSport] = useState<SportKind | 'all'>('all')
+  const [query, setQuery] = useState('')
+  const [hits, setHits] = useState<TeamHit[]>([])
+  const tv = useTvMode()
+  const prompt = useTextPrompt({ pushLayer: ctx.nav.pushLayer })
+  const hasKey = !!ctx.settings.apiKey
+  // Sökningen SKICKAS (OK eller Enter), aldrig per tecken: varje sökning är ett anrop mot kvoten.
+  const submit = async (q: string) => {
+    setQuery(q)
+    const res = await searchProviderTeams(sport === 'all' ? 'football' : sport, q)
+    setHits(res)
+  }
   const all = followCandidates(days)
   const rows = all.filter((c) => sport === 'all' || c.sport === sport)
   const chips: { key: SportKind | 'all'; label: string }[] = [
@@ -89,13 +105,24 @@ export function FollowPicker({ ctx, days, onClose }: { ctx: SportCtx; days: (Spo
       onClose={onClose}
       testId="follow-picker"
       chips={(
+        <div style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+        {hasKey ? (
+          tv ? (
+            <div data-testid="follow-search" {...station(() => prompt.ask(ctx.tt('sportFollowSearch'), query, (v) => void submit(v)))} style={{ height: dp(48), minHeight: dp(48), padding: `0 ${dp(16)}px`, borderRadius: dp(10), background: TV.s08, border: `1px solid ${TV.lineCard}`, display: 'flex', alignItems: 'center', fontSize: dp(17), color: query ? TV.text : TV.dim, cursor: 'pointer' }}>{query || ctx.tt('sportFollowSearch')}</div>
+          ) : (
+            <input data-testid="follow-search" value={query} placeholder={ctx.tt('sportFollowSearch')} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void submit(query) }} autoComplete="off" spellCheck={false}
+              style={{ height: dp(48), borderRadius: dp(10), border: `1px solid ${TV.lineStrong}`, background: 'rgba(0,0,0,0.25)', color: TV.text, padding: `0 ${dp(14)}px`, fontSize: dp(17) }} />
+          )
+        ) : null}
+        {prompt.node}
         <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto' }}>
           {chips.map((chip, index) => (
             <Chip key={chip.key} data-testid={`follow-chip-${chip.key}`} active={sport === chip.key} {...station(() => setSport(chip.key), undefined, rows.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
           ))}
         </div>
+        </div>
       )}
-      rows={rows.map((c, index) => {
+      rows={[...rows.map((c, index) => {
         const on = isFollowing(ctx.follows, c) || isFollowing(getStoredFollows(), c)
         return (
           <div key={`${c.kind}:${c.key}`} data-testid={`follow-row-${c.key}`} {...station(() => toggleFollow({ sport: c.sport, kind: c.kind, key: c.key, name: c.name }), undefined, index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
@@ -107,7 +134,20 @@ export function FollowPicker({ ctx, days, onClose }: { ctx: SportCtx; days: (Spo
             </div>
           </div>
         )
-      })}
+      }), ...hits.map((hit) => {
+        const hitFollow = { sport: (sport === 'all' ? 'football' : sport) as SportKind, kind: 'team' as const, key: foldTeamKey(hit.name), name: hit.name }
+        const on = isFollowing(ctx.follows, hitFollow) || isFollowing(getStoredFollows(), hitFollow)
+        return (
+          <div key={`hit-${hit.id}`} data-testid={`follow-hit-${hit.id}`} {...station(() => toggleFollow({ ...hitFollow, providerIds: { [ctx.settings.provider]: hit.id } }))} style={{ height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
+            <Check on={on} label={hit.name} />
+            <Crest name={hit.name} colorKey={hitFollow.key} src={hit.crest} size={dp(46)} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: dp(19), fontWeight: 600, ...ellipsis }}>{hit.name}</div>
+              <div style={{ fontSize: dp(15), color: TV.dim, ...ellipsis }}>{hit.country ?? ''}</div>
+            </div>
+          </div>
+        )
+      })]}
     />
   )
 }

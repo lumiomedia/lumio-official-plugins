@@ -482,6 +482,12 @@ const EN = {
   sportPlaylistUnknown: 'Playlist',
   sportFollowEmpty: 'Follow a team or a competition and its matches show up here.',
   sportClose: 'Close',
+  sportLiveShort: 'LIVE',
+  sportHalfTime: 'HT',
+  sportPostponed: 'Postponed',
+  sportInProgress: 'in progress',
+  sportResultOnly: 'Results only',
+  sportFollowSearch: 'Search teams',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -915,6 +921,12 @@ const SV: Record<keyof typeof EN, string> = {
   sportPlaylistUnknown: 'Spellista',
   sportFollowEmpty: 'Följ ett lag eller en turnering så hamnar deras matcher här.',
   sportClose: 'Stäng',
+  sportLiveShort: 'LIVE',
+  sportHalfTime: 'Paus',
+  sportPostponed: 'Uppskjuten',
+  sportInProgress: 'pågår',
+  sportResultOnly: 'Bara resultat',
+  sportFollowSearch: 'Sök lag',
 }
 
 export type TvStringKey = keyof typeof EN

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { TvViewProps } from '../../tv/tv-shell'
 import { station } from '../../tv/tv-ui'
 import { MT, ellipsis } from '../../tv/mobile/mobile-tokens'
@@ -12,9 +12,13 @@ import { SPORT_KINDS, matchTitle, type SportFilter, type SportMatch } from '../s
 import { localDayKey, shiftDay, useSportDay } from '../sport-epg'
 import { followCandidates, followState, nextMatchFor, rankedSources, sportCounts, splitSections, statusAt, visibleMatches } from '../sport-day-model'
 import { isFollowing, setSportSettings, toggleFollow, type KickoffAlert } from '../sport-store'
+import { useSportResults } from '../results-controller'
+import { usePollDemand } from '../live-poller'
+import { matchStatusLabel, scoreText, showsScore } from '../score-model'
 import { alertLabel, followNextLine, sourceLine, timeLine, useSportCtx, type SportCtx } from '../sport-ctx'
 
 type DayOffset = -1 | 0 | 1
+const NO_MATCHES: SportMatch[] = []
 
 export function SportPhone({ model, nav }: TvViewProps) {
   const [tab, setTab] = useState<'foryou' | 'follows'>('foryou')
@@ -27,12 +31,16 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker })
   const { tt } = ctx
   const today = localDayKey(model.nowMs)
-  const selected = useSportDay(shiftDay(today, offset), model.nowMs)
+  const day = shiftDay(today, offset)
+  const selected = useSportDay(day, model.nowMs)
+  const { matches: mergedMatches } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
+  const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
+  usePollDemand('sport-view', true)
   const wantsFollow = tab === 'follows' || adding
   const todayDay = useSportDay(wantsFollow ? today : null, model.nowMs)
   const tomorrowDay = useSportDay(wantsFollow ? shiftDay(today, 1) : null, model.nowMs)
-  const counts = sportCounts(selected.data)
-  const { live, later, finished } = splitSections(visibleMatches(selected.data, filter), ctx.now)
+  const counts = sportCounts(mergedDay)
+  const { live, later, finished } = splitSections(visibleMatches(mergedDay, filter), ctx.now)
   const dayLabel = (o: DayOffset) => (o === -1 ? tt('sportYesterday') : o === 0 ? tt('sportToday') : tt('sportTomorrow'))
 
   const sheetItems = (m: SportMatch) => {
@@ -94,7 +102,9 @@ function PhoneSection({ ctx, title, matches }: { ctx: SportCtx; title: string; m
         const st = statusAt(m, ctx.now)
         return (
           <div key={m.id} data-testid="sport-phone-row" {...station(() => ctx.openMatch(m))} style={{ minHeight: 64, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: MT.s07, border: `1px solid ${MT.line08}`, cursor: 'pointer' }}>
-            <span style={{ width: 54, flexShrink: 0, fontSize: 13, fontWeight: 700, color: st === 'live' ? MT.live : MT.text }}>{st === 'live' ? ctx.tt('live') : st === 'finished' ? ctx.tt('sportEnded') : timeLine(m, ctx)}</span>
+            <span style={{ width: 54, flexShrink: 0, display: 'flex', flexDirection: 'column', fontSize: 13, fontWeight: 700, color: st === 'live' ? MT.live : MT.text }}>
+              {showsScore(m) ? <><span style={{ fontVariantNumeric: 'tabular-nums' }}>{scoreText(m)}</span><span style={{ fontSize: 11, fontWeight: 600, color: MT.muted }}>{matchStatusLabel(m, ctx.tt) ?? ''}</span></> : st === 'live' ? ctx.tt('live') : st === 'finished' ? ctx.tt('sportEnded') : timeLine(m, ctx)}
+            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
               <div style={{ fontSize: 12.5, color: MT.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), sourceLine(m, ctx)].filter(Boolean).join(' · ')}</div>

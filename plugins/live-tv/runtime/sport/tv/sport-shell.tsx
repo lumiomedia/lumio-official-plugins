@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from '../../tv/tv-shell'
 import { TvChoicePanel } from '../../tv/tv-list-picker'
 import { Chip, Segment, TV, dp, station, useTvClockNode } from '../../tv/tv-ui'
@@ -9,6 +10,9 @@ import { dayStartMs, localDayKey, shiftDay, useSportDay } from '../sport-epg'
 import { setSportSettings } from '../sport-store'
 import { headerSummary, sportCounts, visibleMatches } from '../sport-day-model'
 import { useSportCtx } from '../sport-ctx'
+import { useSportResults } from '../results-controller'
+import { usePollDemand } from '../live-poller'
+import { RateLineView } from './sport-score'
 import { Notice } from './sport-parts'
 import { SportIcon } from './sport-icons'
 import { SportMatchday } from './sport-matchday'
@@ -16,6 +20,8 @@ import { SportFeed } from './sport-feed'
 import { FollowPicker, SportFollows } from './sport-follows'
 import { SportMatchCenter } from './sport-match-center'
 import { SportPhone } from '../mobile/sport-phone'
+
+const NO_MATCHES: SportMatch[] = []
 
 type SportTab = 'foryou' | 'follows'
 type DayOffset = -1 | 0 | 1
@@ -48,14 +54,19 @@ function SportTv({ model, nav }: TvViewProps) {
   const tomorrowDay = useSportDay(wantsToday || ctx.settings.view === 'feed' ? shiftDay(today, 1) : null, model.nowMs)
   const yesterdayDay = useSportDay(pickerOpen ? shiftDay(today, -1) : null, model.nowMs)
 
-  const counts = sportCounts(selected.data)
-  const matches = useMemo(() => visibleMatches(selected.data, filter), [selected.data, filter])
+  const { matches: mergedMatches, status } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
+  const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
+  const tvMode = useTvMode()
+  usePollDemand('sport-view', true)
+
+  const counts = sportCounts(mergedDay)
+  const matches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter])
   const summary = headerSummary(matches, ctx.now)
   const total = SPORT_KINDS.reduce((sum, k) => sum + counts[k], 0)
   const open = useMemo(() => {
     if (!openId) return null
-    return [selected.data, todayDay.data, tomorrowDay.data].flatMap((d) => d?.matches ?? []).find((m) => m.id === openId) ?? null
-  }, [openId, selected.data, todayDay.data, tomorrowDay.data])
+    return [mergedDay, todayDay.data, tomorrowDay.data].flatMap((d) => d?.matches ?? []).find((m) => m.id === openId) ?? null
+  }, [openId, mergedDay, todayDay.data, tomorrowDay.data])
   const dayLabel = (o: DayOffset) => (o === -1 ? tt('sportYesterday') : o === 0 ? tt('sportToday') : tt('sportTomorrow'))
 
   const body = () => {
@@ -65,7 +76,7 @@ function SportTv({ model, nav }: TvViewProps) {
     if (selected.state === 'loading') return <Notice testId="sport-loading" text={tt('sportLoading')} />
     if (matches.length === 0) return <Notice testId="sport-empty" text={tt('sportEmptyDay')} />
     return ctx.settings.view === 'feed'
-      ? <SportFeed ctx={ctx} matches={matches} days={[selected.data, tomorrowDay.data]} />
+      ? <SportFeed ctx={ctx} matches={matches} days={[mergedDay, tomorrowDay.data]} />
       : <SportMatchday ctx={ctx} matches={matches} dayFrom={dayStartMs(day)} />
   }
 
@@ -76,6 +87,7 @@ function SportTv({ model, nav }: TvViewProps) {
         <span data-testid="sport-summary" style={{ fontSize: dp(19), color: TV.muted }}>{tt('sportSummary', { day: dayLabel(offset), count: summary.total, live: summary.live })}</span>
         <span style={{ marginLeft: 'auto' }}>{clock}</span>
       </div>
+      <RateLineView status={status} tv={tvMode} />
 
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: dp(28), borderBottom: `1px solid ${TV.s12}` }}>
         {(['foryou', 'follows'] as const).map((key) => (

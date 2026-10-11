@@ -5,6 +5,8 @@ import { Progress, Tag, TV, cardStyle, dp, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, type SportMatch } from '../sport-model'
 import { featuredMatch, followState, leagueColor, nextOnYourChannels, rankedSources, splitSections, statusAt, timelineAxis, timelineRows } from '../sport-day-model'
 import { timeLine, type SportCtx } from '../sport-ctx'
+import { heroStatusLine, matchStatusLabel, scoreText, showsScore } from '../score-model'
+import { MatchScore, ResultOnlyTag, useGoalBlink } from './sport-score'
 import { CardRow, Crest, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
 import { SportIcons } from './sport-icons'
 
@@ -41,11 +43,14 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: dp(28), width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: dp(18), minWidth: 0 }}>
             <span style={{ fontSize: dp(42), fontWeight: 600, ...ellipsis }}>{match.home}</span>
-            <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(84)} />
+            <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(84)} src={match.homeCrest} />
           </div>
-          <span style={{ fontSize: dp(22), fontWeight: 600, color: st === 'live' ? TV.liveText : TV.muted, textAlign: 'center', whiteSpace: 'nowrap' }}>{timeLine(match, ctx)}</span>
+          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(4) }}>
+            {showsScore(match) ? <MatchScore match={match} size="hero" /> : null}
+            <span style={{ fontSize: dp(22), fontWeight: 600, color: st === 'live' ? TV.liveText : TV.muted, whiteSpace: 'nowrap' }}>{heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)}</span>
+          </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: dp(18), minWidth: 0 }}>
-            <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(84)} />
+            <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(84)} src={match.awayCrest} />
             <span style={{ fontSize: dp(42), fontWeight: 600, ...ellipsis }}>{match.away}</span>
           </div>
         </div>
@@ -55,7 +60,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
           <span style={{ fontSize: dp(22), color: st === 'live' ? TV.liveText : TV.muted }}>{timeLine(match, ctx)}</span>
         </div>
       )}
-      {st === 'live' ? <Progress value={progressOf(match.start, match.stop, ctx.now)} height={dp(5)} style={{ width: '40%' }} /> : null}
+      {st === 'live' ? <Progress value={match.minute != null && match.kind === 'football' ? Math.min(match.minute / 90, 1) : progressOf(match.start, match.stop, ctx.now)} height={dp(5)} style={{ width: '40%' }} /> : null}
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(14), flexWrap: 'wrap', justifyContent: 'center' }}>
         {best ? (
           <div data-testid="sport-hero-watch" {...station(() => ctx.watch(match))} style={primaryBtn}>
@@ -64,7 +69,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
           </div>
         ) : null}
         <div data-testid="sport-hero-mc" {...station(() => ctx.openMatch(match))} style={secondaryBtn}>{ctx.tt('sportMatchCenter')}</div>
-        {match.sources.length > 0 ? <span style={{ fontSize: dp(16), color: '#86efac' }}>{ctx.tt('sportSources', { n: match.sources.length })}</span> : null}
+        {match.resultOnly ? <ResultOnlyTag /> : match.sources.length > 0 ? <span style={{ fontSize: dp(16), color: '#86efac' }}>{ctx.tt('sportSources', { n: match.sources.length })}</span> : null}
       </div>
     </div>
   )
@@ -117,34 +122,38 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
             {laneIndex === 0 ? <><LeagueDot leagueKey={row.key} /><span style={ellipsis}>{row.label || ctx.kindLabel(row.kind)}</span></> : null}
           </div>
           <div style={{ position: 'relative', flex: 1, height: dp(42), background: TV.s05, borderRadius: dp(8) }}>
-            {lane.map((m) => {
-              const st = statusAt(m, ctx.now)
-              const left = pct(m.start)
-              const width = Math.max(pct(m.stop) - left, 1.5)
-              const label = m.home && m.away ? `${crestText(m.home)}–${crestText(m.away)}` : matchTitle(m)
-              return (
-                <div
-                  key={m.id}
-                  data-testid={`sport-block-${m.id}`}
-                  data-status={st}
-                  {...station(() => ctx.openMatch(m))}
-                  style={{
-                    position: 'absolute', top: 0, bottom: 0, left: `${left}%`, width: `${width}%`, boxSizing: 'border-box', padding: `0 ${dp(10)}px`,
-                    display: 'flex', alignItems: 'center', fontSize: dp(15), fontWeight: 600, borderRadius: dp(8), cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap',
-                    background: st === 'live' ? TV.accMix(30) : st === 'finished' ? TV.s07 : TV.s14,
-                    border: `1px solid ${st === 'live' ? TV.accMix(85) : TV.lineCard}`,
-                    borderLeft: `${dp(4)}px solid ${leagueColor(m.leagueKey || m.kind)}`,
-                    color: st === 'finished' ? TV.dim : TV.text,
-                  }}
-                >
-                  {st === 'upcoming' ? `${formatClock(m.start, ctx.locale)} ${label}` : label}
-                </div>
-              )
-            })}
+            {lane.map((m) => <TimelineBlock key={m.id} ctx={ctx} m={m} left={pct(m.start)} width={Math.max(pct(m.stop) - pct(m.start), 1.5)} />)}
             {nowInside ? <div aria-hidden="true" style={{ position: 'absolute', top: -dp(4), bottom: -dp(4), left: `${pct(ctx.now)}%`, width: dp(3), background: TV.acc, boxShadow: `0 0 ${dp(8)}px ${TV.acc}` }} /> : null}
           </div>
         </div>
       )))}
+    </div>
+  )
+}
+
+/** Egen komponent: en hook (`useGoalBlink`) får inte ligga i en `map`. */
+function TimelineBlock({ ctx, m, left, width }: { ctx: SportCtx; m: SportMatch; left: number; width: number }) {
+  const blink = useGoalBlink(m)
+  const st = statusAt(m, ctx.now)
+  const base = m.home && m.away ? `${crestText(m.home)}–${crestText(m.away)}` : matchTitle(m)
+  const tail = scoreText(m) ?? (st === 'finished' ? matchStatusLabel(m, ctx.tt) : null)
+  const label = st === 'upcoming' ? `${formatClock(m.start, ctx.locale)} ${base}` : [base, tail].filter(Boolean).join(' ')
+  return (
+    <div
+      data-testid={`sport-block-${m.id}`}
+      data-status={st}
+      {...station(() => ctx.openMatch(m))}
+      style={{
+        position: 'absolute', top: 0, bottom: 0, left: `${left}%`, width: `${width}%`, boxSizing: 'border-box', padding: `0 ${dp(10)}px`,
+        display: 'flex', alignItems: 'center', fontSize: dp(15), fontWeight: 600, borderRadius: dp(8), cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap',
+        background: st === 'live' ? TV.accMix(30) : st === 'finished' ? TV.s07 : TV.s14,
+        border: `1px solid ${st === 'live' ? TV.accMix(85) : TV.lineCard}`,
+        borderLeft: `${dp(4)}px solid ${leagueColor(m.leagueKey || m.kind)}`,
+        outline: blink ? `2px solid ${TV.live}` : undefined,
+        color: st === 'finished' ? TV.dim : TV.text,
+      }}
+    >
+      {label}
     </div>
   )
 }

@@ -8,7 +8,9 @@ import { matchTitle, sourceChannel, type SportMatch } from '../sport-model'
 import { followState, rankedSources, statusAt } from '../sport-day-model'
 import { setOverride, toggleFollow } from '../sport-store'
 import { timeLine, type SportCtx } from '../sport-ctx'
+import { heroStatusLine, showsScore } from '../score-model'
 import { Crest, StatusTag, ellipsis, overline, primaryBtn } from './sport-parts'
+import { MatchScore } from './sport-score'
 import { SportIcons } from './sport-icons'
 
 const pill = (on: boolean): CSSProperties => ({
@@ -64,12 +66,15 @@ export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match
           {match.home && match.away ? (
             <>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
-                <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(99)} />
+                <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(99)} src={match.homeCrest} />
                 <span style={{ fontSize: dp(22), fontWeight: 600, ...ellipsis }}>{match.home}</span>
               </div>
-              <span style={{ fontSize: dp(24), fontWeight: 600, color: st === 'live' ? TV.liveText : TV.muted, whiteSpace: 'nowrap' }}>{timeLine(match, ctx)}</span>
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(4) }}>
+                {showsScore(match) ? <MatchScore match={match} size="hero" /> : null}
+                <span style={{ fontSize: dp(24), fontWeight: 600, color: st === 'live' ? TV.liveText : TV.muted, whiteSpace: 'nowrap' }}>{heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)}</span>
+              </span>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(10), minWidth: 0 }}>
-                <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(99)} />
+                <Crest name={match.away} colorKey={match.awayKey ?? match.away} size={dp(99)} src={match.awayCrest} />
                 <span style={{ fontSize: dp(22), fontWeight: 600, ...ellipsis }}>{match.away}</span>
               </div>
             </>

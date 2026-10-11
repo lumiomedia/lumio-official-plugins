@@ -1,10 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../../live-tv-data'
 import { SPORT_FOLLOWS_KEY, getFollows, getSportSettings, type SportFollow } from '../sport-store'
 import { FollowPicker, SportFollows } from './sport-follows'
 import { HOUR, MIN, fakeCtx, fxDay, fxMatch } from '../__sport-fixture'
+
+const h = vi.hoisted(() => ({ search: vi.fn() }))
+vi.mock('../follow-search', () => ({ searchProviderTeams: h.search }))
 
 afterEach(cleanup)
 const now = new Date(2026, 9, 10, 18, 0).getTime()
@@ -70,5 +73,19 @@ describe('Följväljaren', () => {
     expect(screen.queryByTestId('follow-row-aik')).toBeNull()
     expect(screen.getByTestId('follow-row-frolunda')).toBeInTheDocument()
     expect(ctx.nav.pushLayer).toHaveBeenCalledTimes(1)
+  })
+  it('sök i källan: skickas med Enter, träffen sparas med providerIds', async () => {
+    __resetForTests()
+    h.search.mockResolvedValue([{ id: '375', name: 'Malmö FF', crest: 'https://m/375.png', country: 'Sweden' }])
+    const ctx = fakeCtx({ now, settings: { view: 'matchday', alert: '15', apiKey: 'k123', provider: 'api-sports' } as never })
+    render(<FollowPicker ctx={ctx} days={[null, ...days]} onClose={() => {}} />)
+    const input = screen.getByTestId('follow-search') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'malmo' } })
+    expect(h.search).not.toHaveBeenCalled()
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(screen.getByTestId('follow-hit-375')).toBeInTheDocument())
+    expect(h.search).toHaveBeenCalledWith('football', 'malmo')
+    fireEvent.click(screen.getByTestId('follow-hit-375'))
+    expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: 'malmo ff', name: 'Malmö FF', providerIds: { 'api-sports': '375' } }])
   })
 })

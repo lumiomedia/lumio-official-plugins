@@ -13,9 +13,13 @@ import { crestText, matchTitle, sourceChannel, type MatchSource, type SportDay, 
 import { localDayKey, useSportDay } from '../sport-epg'
 import { pickMultiviewKeys, rankedSources, statusAt, visibleMatches } from '../sport-day-model'
 import { useOverrides, useSportSettings } from '../sport-store'
+import { useSportResults } from '../results-controller'
+import { matchStatusLabel, scoreText } from '../score-model'
 import { Crest, ellipsis, overline } from './sport-parts'
+import { MatchScore } from './sport-score'
 
 const MAX_PICK = 4
+const NO_MATCHES: SportMatch[] = []
 
 export function multiviewFor(keys: string[]): MultiviewState {
   const picked = keys.slice(0, MAX_PICK)
@@ -74,10 +78,13 @@ export function usePlayerSport(args: { playingKey: string | null; model: LiveTvM
   if (!active) last.current = null
   else if (fresh) last.current = fresh
   const data = active ? fresh ?? last.current : null
+  // Sammanslagning på samma dag som spelaren hämtar. `day: null` (spelaren stängd eller väntar) = inga anrop.
+  const { matches: mergedMatches } = useSportResults({ day: active && armed ? localDayKey(model.nowMs) : null, epg: data?.matches ?? NO_MATCHES })
+  const mergedData = useMemo(() => (data ? { ...data, matches: mergedMatches } : null), [data, mergedMatches])
   return useMemo(() => {
-    if (!active || !data) return undefined
+    if (!active || !mergedData) return undefined
     return {
-      matches: visibleMatches(data, 'all'),
+      matches: visibleMatches(mergedData, 'all'),
       overrides,
       view: settings.view,
       onSwitchMatch: (m) => {
@@ -89,7 +96,7 @@ export function usePlayerSport(args: { playingKey: string | null; model: LiveTvM
       isKnownChannel: (key) => model.byKey.has(key),
       playlistName: (sourceId) => model.lists.find((list) => list.source === sourceId)?.name ?? tt('sportPlaylistUnknown'),
     }
-  }, [active, data, overrides, settings.view, play, openMultiview, model.byKey, model.lists, tt])
+  }, [active, mergedData, overrides, settings.view, play, openMultiview, model.byKey, model.lists, tt])
 }
 
 const shortLabel = (m: SportMatch) => (m.home && m.away ? `${crestText(m.home)} – ${crestText(m.away)}` : m.event ?? m.league)
@@ -106,7 +113,7 @@ export function PlayerSportTicker({ sport, channel, nowMs, variant, ps }: { spor
       <div data-testid="player-sport-ticker" data-variant="column" style={{ position: 'absolute', top: ps(96), right: ps(20), width: ps(300), display: 'flex', flexDirection: 'column', gap: ps(6), pointerEvents: 'none', zIndex: 31 }}>
         {items.map((m) => (
           <div key={m.id} data-testid="pst-item" {...station(pick(m))} style={{ display: 'flex', alignItems: 'center', gap: ps(8), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: 'rgba(20,21,25,0.86)', border: `1px solid ${TV.lineCard}`, fontSize: ps(14), fontWeight: 600, pointerEvents: 'auto', cursor: 'pointer' }}>
-            <span style={{ ...ellipsis, flex: 1 }}>{shortLabel(m)}</span>
+            <span style={{ ...ellipsis, flex: 1 }}>{shortLabel(m)}{scoreText(m) ? ` ${scoreText(m)}` : ''}</span>
             <span style={{ color: TV.live, fontSize: ps(12) }}>{tt('live')}</span>
           </div>
         ))}
@@ -117,7 +124,7 @@ export function PlayerSportTicker({ sport, channel, nowMs, variant, ps }: { spor
     <div data-testid="player-sport-ticker" data-variant="ticker" style={{ display: 'flex', alignItems: 'center', gap: ps(8), marginBottom: ps(8), overflow: 'hidden' }}>
       <span style={{ fontSize: ps(11), fontWeight: 700, letterSpacing: '0.14em', color: TV.dim }}>{tt('live')}</span>
       {items.map((m) => (
-        <span key={m.id} data-testid="pst-item" {...station(pick(m))} style={{ padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV.lineCard}`, background: 'rgba(0,0,0,0.5)', fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'auto', cursor: 'pointer' }}>{shortLabel(m)}</span>
+        <span key={m.id} data-testid="pst-item" {...station(pick(m))} style={{ padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV.lineCard}`, background: 'rgba(0,0,0,0.5)', fontSize: ps(13), fontWeight: 600, whiteSpace: 'nowrap', pointerEvents: 'auto', cursor: 'pointer' }}>{shortLabel(m)}{scoreText(m) ? ` ${scoreText(m)}` : ''}</span>
       ))}
     </div>
   )
@@ -162,13 +169,15 @@ export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps
   const toggle = (m: SportMatch) => setPicked((prev) => (prev.includes(m.id) ? prev.filter((id) => id !== m.id) : prev.length >= MAX_PICK ? prev : [...prev, m.id]))
   let rowIndex = 0
   const row = (m: SportMatch, now: boolean) => {
-    const index = rowIndex++
+    const index = m.resultOnly ? -1 : rowIndex++
     const best = rankedSources(m, sport.overrides)[0]
     const on = picked.includes(m.id)
-    const meta = [m.league, statusAt(m, nowMs) === 'live' ? tt('live') : formatClock(m.start, locale), best?.name].filter(Boolean).join(' · ')
+    const meta = [m.league, matchStatusLabel(m, tt) ?? (statusAt(m, nowMs) === 'live' ? tt('live') : formatClock(m.start, locale)), best?.name].filter(Boolean).join(' · ')
+    // "Bara resultat" har ingen källa: ingen station, så fjärren hoppar över raden och Multiview kan inte välja den.
+    const stationProps = m.resultOnly ? {} : station(() => (picking ? toggle(m) : sport.onSwitchMatch(m)), undefined, index === 0 ? { 'data-init': '' } : undefined)
     return (
-      <div key={m.id} data-testid="pm-row" data-picked={on ? '1' : '0'} {...station(() => (picking ? toggle(m) : sport.onSwitchMatch(m)), undefined, index === 0 ? { 'data-init': '' } : undefined)} style={{ display: 'flex', alignItems: 'center', gap: ps(14), padding: `${ps(12)}px ${ps(14)}px`, borderRadius: ps(12), cursor: 'pointer', background: now ? TV.accMix(16) : TV.s08, border: `1px solid ${now ? TV.accMix(60) : TV.line}` }}>
-        {picking ? <span style={{ width: ps(30), height: ps(30), borderRadius: ps(8), border: `2px solid ${on ? TV.acc : TV.lineStrong}`, background: on ? TV.acc : 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span> : null}
+      <div key={m.id} data-testid="pm-row" data-picked={on ? '1' : '0'} {...stationProps} style={{ display: 'flex', alignItems: 'center', gap: ps(14), padding: `${ps(12)}px ${ps(14)}px`, borderRadius: ps(12), cursor: m.resultOnly ? 'default' : 'pointer', background: now ? TV.accMix(16) : TV.s08, border: `1px solid ${now ? TV.accMix(60) : TV.line}` }}>
+        {picking && !m.resultOnly ? <span style={{ width: ps(30), height: ps(30), borderRadius: ps(8), border: `2px solid ${on ? TV.acc : TV.lineStrong}`, background: on ? TV.acc : 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{on ? '✓' : ''}</span> : null}
         <span style={{ display: 'flex', flexShrink: 0 }}>
           {m.home ? <Crest name={m.home} colorKey={m.homeKey ?? m.home} size={ps(44)} /> : null}
           {m.away ? <span style={{ marginLeft: -ps(12) }}><Crest name={m.away} colorKey={m.awayKey ?? m.away} size={ps(44)} /></span> : null}
@@ -177,6 +186,7 @@ export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps
           <div style={{ fontSize: ps(19), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
           <div style={{ fontSize: ps(15), color: TV.muted, ...ellipsis }}>{meta}</div>
         </div>
+        <MatchScore match={m} size="row" />
         {now ? <span data-testid="pm-now" style={{ padding: `${ps(3)}px ${ps(10)}px`, borderRadius: 999, border: `1px solid ${TV.accMix(80)}`, color: TV.accText, fontSize: ps(13), fontWeight: 700 }}>{tt('sportNowPill')}</span> : null}
       </div>
     )
@@ -200,6 +210,7 @@ export function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps
         {section(tt('sportOnThisChannel'), lists.onChannel, true)}
         {section(tt('sportLiveOnChannels'), lists.live, false)}
         {section(tt('sportLaterOnChannels'), lists.later, false)}
+        {section(tt('sportResultOnly'), sport.matches.filter((m) => m.resultOnly), false)}
       </div>
       {picking ? (
         <div

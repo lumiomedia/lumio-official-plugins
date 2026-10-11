@@ -197,9 +197,13 @@ const TEST_STRINGS: Record<string, string> = {
   liveTvRemaining: '{time} left',
 }
 
+let langForTests: 'en' | 'sv' = 'en'
+/** UI-tester som kontrollerar svensk copy sätter `sv` (och tillbaka till `en` efteråt). */
+export function __setLangForTests(lang: 'en' | 'sv'): void { langForTests = lang }
+
 export function useLang() {
   return {
-    lang: 'en' as const,
+    lang: langForTests,
     setLang: (_lang: 'en' | 'sv') => {},
     t: (key: string) => TEST_STRINGS[key] ?? key,
   }
@@ -210,6 +214,7 @@ export function __resetForTests(): void {
   memory.clear()
   listeners.clear()
   pluginMemoryCache.clear()
+  langForTests = 'en'
   pinForTests = null
   sceneBoxPortalTargetForTests = null
   hostClockForTests = null
