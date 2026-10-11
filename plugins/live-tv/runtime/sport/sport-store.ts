@@ -18,6 +18,21 @@ export const SPORT_OVERRIDES_KEY = 'sport_overrides_v1'
 
 export type SportViewMode = 'matchday' | 'feed'
 export type KickoffAlert = 'off' | '15' | 'kickoff'
+export type SportBackdropMode = 'auto' | 'custom' | 'off'
+/**
+ * Egen bild: en av appens egna bakgrunder (Inställningar > Startsida) per index,
+ * eller en http(s)-länk. Bilden själv kopieras aldrig hit: lagringen synkas med
+ * WebDAV, och uppladdade bilder är data-URL:er på flera MB.
+ */
+export type SportBackdropCustom = { from: 'home'; index: number } | { from: 'url'; url: string }
+
+function sanitizeBackdropCustom(raw: unknown): SportBackdropCustom | null {
+  const c = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
+  if (c?.from === 'home' && typeof c.index === 'number' && Number.isInteger(c.index) && c.index >= 0) return { from: 'home', index: c.index }
+  if (c?.from === 'url' && typeof c.url === 'string' && /^https?:\/\/\S+$/i.test(c.url.trim())) return { from: 'url', url: c.url.trim() }
+  return null
+}
+
 export interface SportSettings {
   view: SportViewMode // fas 1
   alert: KickoffAlert // fas 1
@@ -33,10 +48,13 @@ export interface SportSettings {
   keyCardDismissed: boolean
   /** Fas 2: "Notis vid mål" per match (matchens id → utgår ms, avspark + 4 h). */
   goalAlertMatches: Record<string, number>
+  /** Bakgrund i Sport: Automatisk (arenan), Egen bild eller Av. */
+  backdrop: SportBackdropMode
+  backdropCustom: SportBackdropCustom | null
 }
 
 const DEFAULT_SETTINGS: SportSettings = {
-  view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {},
+  view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, keyCardDismissed: false, goalAlertMatches: {}, backdrop: 'auto', backdropCustom: null,
 }
 
 function sanitizeSettings(raw: unknown): SportSettings {
@@ -53,6 +71,8 @@ function sanitizeSettings(raw: unknown): SportSettings {
       Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === 'object' ? (r.goalAlertMatches as Record<string, unknown>) : {})
         .filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] > Date.now()),
     ),
+    backdrop: r.backdrop === 'custom' || r.backdrop === 'off' ? r.backdrop : 'auto',
+    backdropCustom: sanitizeBackdropCustom(r.backdropCustom),
   }
 }
 

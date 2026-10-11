@@ -10,10 +10,12 @@ import { MobileChips } from '../../tv/mobile/mobile-chips'
 import { MobileSheet } from '../../tv/mobile/mobile-sheet'
 import { SPORT_KINDS, matchTitle, type SportFilter, type SportMatch } from '../sport-model'
 import { localDayKey, shiftDay, useSportDay } from '../sport-epg'
-import { followCandidates, followState, nextMatchFor, rankedSources, sportCounts, splitSections, statusAt, visibleMatches } from '../sport-day-model'
+import { featuredMatch, followCandidates, followState, nextMatchFor, rankedSources, sportCounts, splitSections, statusAt, visibleMatches } from '../sport-day-model'
 import { isFollowing, setSportSettings, toggleFollow, type KickoffAlert } from '../sport-store'
 import { SportResultsPhone } from './sport-results-phone'
 import { PhoneFollowSearch } from './sport-follow-search-phone'
+import { useSportBackdrop } from '../backdrop'
+import { SportBackdropLayer } from '../sport-backdrop'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import { matchStatusLabel, scoreText, showsScore } from '../score-model'
@@ -41,6 +43,8 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const wantsFollow = tab === 'follows' || adding
   const todayDay = useSportDay(wantsFollow ? today : null, model.nowMs)
   const tomorrowDay = useSportDay(wantsFollow ? shiftDay(today, 1) : null, model.nowMs)
+  const phoneHero = useMemo(() => featuredMatch(visibleMatches(mergedDay, filter), ctx.follows, ctx.now), [mergedDay, filter, ctx.follows, ctx.now])
+  const backdrop = useSportBackdrop(phoneHero)
   const counts = sportCounts(mergedDay)
   const { live, later, finished } = splitSections(visibleMatches(mergedDay, filter), ctx.now)
   const dayLabel = (o: DayOffset) => (o === -1 ? tt('sportYesterday') : o === 0 ? tt('sportToday') : tt('sportTomorrow'))
@@ -62,7 +66,9 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const notice = selected.state === 'missing' ? tt('sportNeedsUpdate') : selected.state === 'error' ? tt('sportError') : selected.state === 'loading' ? tt('sportLoading') : live.length + later.length + finished.length === 0 ? tt('sportEmptyDay') : null
 
   return (
-    <div data-testid="sport-phone" data-scroll="" style={{ flex: 1, overflowY: 'auto', padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div data-testid="sport-stage" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+    <SportBackdropLayer choice={backdrop.choice} phone onBroken={backdrop.onBroken} />
+    <div data-testid="sport-phone" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ margin: `0 -${MT.PAD}px` }}><MobileHeader title={tt('sportTitle')} /></div>
       <MobileSegment testId="sport-phone-tabs" options={[{ key: 'foryou', label: tt('sportTabForYou') }, { key: 'results', label: tt('sportTabResults') }, { key: 'follows', label: tt('sportTabFollows') }]} value={tab} onChange={setTab} />
       {tab !== 'follows' ? (
@@ -96,6 +102,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
           pushLayer={nav.pushLayer}
         />
       ) : null}
+    </div>
     </div>
   )
 }

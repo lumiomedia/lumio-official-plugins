@@ -7,6 +7,7 @@ import { useTvText } from '../tv-strings'
 import { setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
 import { ContentTab, EpgTab, ParentalTab, PhoneCaret, PlaylistsTab } from '../settings-tabs'
 import { SportKeySettingsTv } from '../../sport/sport-key-settings'
+import { SportBackdropSettingsTv } from '../../sport/sport-backdrop-settings'
 import { MT, ellipsis, sectionLabel } from './mobile-tokens'
 import { MobileHeader } from './mobile-header'
 import { MobileSegment } from './mobile-segment'
@@ -49,7 +50,7 @@ export function TvSettingsPhone(props: TvViewProps) {
             : params.tab === 'parental'
               ? <ParentalTab model={model} tt={tt} phone />
               : params.tab === 'sport'
-                ? <SportKeySettingsTv phone />
+                ? <><SportKeySettingsTv phone /><SportBackdropSettingsTv phone pushLayer={nav.pushLayer} /></>
                 : <ContentTab model={model} tt={tt} phone />}
         </Card>
       </PhonePage>

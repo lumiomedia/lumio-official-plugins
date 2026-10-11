@@ -16,6 +16,7 @@ export interface Fixture {
   league: { id: string; name: string; season: string; round: number | null; country: string | null }
   kickoff: number; status: FixtureStatus; statusShort: string; minute: number | null
   home: FixtureTeam; away: FixtureTeam; score: { home: number; away: number } | null; venue: string | null
+  venueImage?: string | null
   lastGoal: { side: 'home' | 'away' | null; player: string | null; minute: number | null } | null
 }
 export type EventType = 'goal' | 'card' | 'sub' | 'var' | 'penalty' | 'other'
@@ -26,6 +27,8 @@ export interface FixtureLineup { side: 'home' | 'away'; formation: string | null
 export interface FixtureDetail { fixture: Fixture; events: FixtureEvent[]; stats: FixtureStat[]; lineups: FixtureLineup[] }
 export interface StandingRow { rank: number; team: FixtureTeam; played: number; points: number; goalDiff: number | null; form: string | null; group: string | null }
 export interface TeamHit { id: string; name: string; crest: string | null; country: string | null }
+/** Lagets bilder för Sports bakgrund (TheSportsDB `lookupteam`). */
+export interface TeamArt { stadium: string | null; fanart: string | null }
 export interface KeyCheck { ok: boolean; plan: string | null; used: number | null; limit: number | null }
 export interface ProviderRequest { sport: SportKind; path: string; ttlS: number; finalAfter?: number }
 export interface ProviderCall<T> { requests: ProviderRequest[]; parse(bodies: unknown[]): T }
@@ -44,4 +47,6 @@ export interface SportsProvider {
   validateKey(): ProviderCall<KeyCheck>
   quotaProbe(sport: SportKind): ProviderCall<KeyCheck> | null
   crestUrl(team: FixtureTeam): string | null
+  /** Bilder för bakgrunden. `null` = källan har ingen sådan uppslagning, och då görs inget anrop. */
+  teamArt(sport: SportKind, teamId: string): ProviderCall<TeamArt | null> | null
 }

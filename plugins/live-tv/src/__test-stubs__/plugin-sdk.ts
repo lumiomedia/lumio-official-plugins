@@ -24,8 +24,23 @@ export function writePluginJson<T>(pluginId: string, k: string, value: T, option
 }
 
 /** Tömmer lagringen mellan test — annars läcker ett läge in i nästa test. */
+let homeBackgrounds: string[] = []
+const homeBackgroundListeners = new Set<() => void>()
+export function getHomeBackgroundUrls(): string[] {
+  return homeBackgrounds
+}
+export function onHomeBackgroundChanged(listener: () => void): () => void {
+  homeBackgroundListeners.add(listener)
+  return () => { homeBackgroundListeners.delete(listener) }
+}
+export function __setHomeBackgroundUrlsForTests(urls: string[]): void {
+  homeBackgrounds = urls
+  for (const listener of homeBackgroundListeners) listener()
+}
+
 export function __resetPluginStorageForTests(): void {
   memory.clear()
+  homeBackgrounds = []
 }
 
 export function emitPluginStorageChanged(pluginId: string, k: string): void {

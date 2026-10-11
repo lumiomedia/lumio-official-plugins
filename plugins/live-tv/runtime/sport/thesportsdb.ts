@@ -1,7 +1,7 @@
 // runtime/sport/thesportsdb.ts
 /* eslint-disable @typescript-eslint/no-explicit-any -- tolkar extern JSON fält för fält */
 import type { SportKind } from './sport-model'
-import type { DayOpts, Fixture, FixtureDetail, FixtureEvent, FixtureLineup, FixtureStatus, KeyCheck, LineupEntry, ProviderCall, SportsProvider, StandingRow, TeamHit } from './provider'
+import type { DayOpts, Fixture, FixtureDetail, FixtureEvent, FixtureLineup, FixtureStatus, KeyCheck, LineupEntry, ProviderCall, SportsProvider, StandingRow, TeamArt, TeamHit } from './provider'
 
 /**
  * TheSportsDB premium (9 USD/mån, alla sporter, 100 anrop/min, ingen
@@ -142,4 +142,14 @@ export const theSportsDb: SportsProvider = {
   }),
   quotaProbe: () => null,
   crestUrl: (t) => t.crest,
+  teamArt(sport, teamId): ProviderCall<TeamArt | null> {
+    return {
+      requests: [{ sport, path: `/v1/lookupteam.php?id=${enc(teamId)}`, ttlS: 2_592_000 }],
+      parse: (bodies) => {
+        const t = arr((bodies[0] as any)?.teams)[0]
+        if (!t) return null
+        return { stadium: str(t.strStadiumThumb), fanart: str(t.strFanart1) ?? str(t.strFanart2) }
+      },
+    }
+  },
 }

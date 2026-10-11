@@ -78,3 +78,16 @@ describe('fas 2-fälten', () => {
     expect(getFollows()).toEqual([f])
   })
 })
+
+describe('Bakgrund i Sport', () => {
+  it('standard Automatisk; okända värden faller tillbaka', () => {
+    expect(getSportSettings()).toMatchObject({ backdrop: 'auto', backdropCustom: null })
+    expect(setSportSettings({ backdrop: 'bogus' as never })).toMatchObject({ backdrop: 'auto' })
+  })
+  it('Egen bild: startsidans bild per index eller en http(s)-länk; data-URL:er sparas aldrig i den synkade lagringen', () => {
+    expect(setSportSettings({ backdrop: 'custom', backdropCustom: { from: 'home', index: 2 } })).toMatchObject({ backdrop: 'custom', backdropCustom: { from: 'home', index: 2 } })
+    expect(setSportSettings({ backdropCustom: { from: 'url', url: '  https://x.example/y.jpg ' } }).backdropCustom).toEqual({ from: 'url', url: 'https://x.example/y.jpg' })
+    expect(setSportSettings({ backdropCustom: { from: 'url', url: 'data:image/png;base64,AAAA' } }).backdropCustom).toBeNull()
+    expect(setSportSettings({ backdropCustom: { from: 'home', index: -1 } }).backdropCustom).toBeNull()
+  })
+})

@@ -10,6 +10,7 @@ import { ContentTab, EpgTab, Heading, ParentalTab, PlaylistsTab, Row } from './s
 import { TvSettingsPhone } from './mobile/settings-phone'
 import { useNewGuideSurface } from './guide-surface'
 import { SportKeySettingsTv } from '../sport/sport-key-settings'
+import { SportBackdropSettingsTv } from '../sport/sport-backdrop-settings'
 
 type Tab = 'appearance' | 'content' | 'playlists' | 'epg' | 'parental' | 'sport'
 const TABS: Tab[] = ['appearance', 'content', 'playlists', 'epg', 'parental', 'sport']
@@ -50,7 +51,7 @@ function TvSettingsDesktop({ model, nav, params, settings }: TvViewProps) {
         {tab === 'playlists' ? <PlaylistsTab model={model} nav={nav} lists={model.lists} tt={tt} locale={locale} toast={nav.toast} /> : null}
         {tab === 'epg' ? <EpgTab lists={model.lists} nav={nav} tt={tt} locale={locale} /> : null}
         {tab === 'parental' ? <ParentalTab model={model} tt={tt} /> : null}
-        {tab === 'sport' ? <SportKeySettingsTv /> : null}
+        {tab === 'sport' ? <><SportKeySettingsTv /><SportBackdropSettingsTv pushLayer={nav.pushLayer} /></> : null}
       </div>
     </div>
   )

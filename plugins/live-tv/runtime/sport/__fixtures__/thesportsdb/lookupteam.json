@@ -1,0 +1,13 @@
+{
+  "_shape": "from docs — verify with real key",
+  "teams": [
+    {
+      "idTeam": "134001",
+      "strTeam": "Malmo FF",
+      "strStadium": "Eleda Stadion",
+      "strStadiumThumb": "https://r2.thesportsdb.com/images/media/team/stadium/malmo.jpg",
+      "strFanart1": "https://r2.thesportsdb.com/images/media/team/fanart/malmo1.jpg",
+      "strFanart2": null
+    }
+  ]
+}

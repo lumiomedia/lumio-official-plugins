@@ -21,6 +21,7 @@ const fake: SportsProvider = {
   validateKey: () => ({ requests: [{ sport: 'football', path: '/status', ttlS: 0 }], parse: (b) => ({ ok: b[0] != null, plan: 'Free', used: 12, limit: 100 }) }),
   quotaProbe: (sport) => ({ requests: [{ sport, path: '/status', ttlS: 0 }], parse: () => ({ ok: true, plan: 'Free', used: 0, limit: 100 }) }),
   crestUrl: () => null,
+  teamArt: () => null,
 }
 
 function harness(responses: Array<Partial<SportFetchResponse>>, quota: SportQuota | null = q()) {

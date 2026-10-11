@@ -33,6 +33,13 @@ const arr = (v: any): any[] => (Array.isArray(v) ? v : [])
 const resp = (body: unknown): any[] => arr((body as any)?.response)
 const num = (v: any): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null
+export const API_SPORTS_MEDIA = 'https://media.api-sports.io'
+
+/** Arenans bild på källans CDN. Kostar inget anrop, och bara fotbollens fixtur bär venue-id. */
+export function venueImageUrl(id: unknown): string | null {
+  const n = num(id)
+  return n != null && n > 0 ? `${API_SPORTS_MEDIA}/football/venues/${n}.png` : null
+}
 const str = (v: any): string | null => (typeof v === 'string' && v.trim() ? v : null)
 const enc = encodeURIComponent
 
@@ -72,6 +79,7 @@ function footballFixture(raw: any): Fixture | null {
     home: team(raw.teams?.home), away: team(raw.teams?.away),
     score: gh != null && ga != null ? { home: gh, away: ga } : null,
     venue: str(raw.fixture.venue?.name),
+    venueImage: venueImageUrl(raw.fixture.venue?.id),
     lastGoal: footballLastGoal(raw),
   }
 }
@@ -213,4 +221,5 @@ export const apiSports: SportsProvider = {
   validateKey: () => ({ requests: [{ sport: 'football', path: '/status', ttlS: 0 }], parse: (bodies) => keyCheck(bodies[0]) }),
   quotaProbe: (sport) => (COVERED.has(sport) ? { requests: [{ sport, path: '/status', ttlS: 0 }], parse: (bodies) => keyCheck(bodies[0]) } : null),
   crestUrl: (t) => t.crest,
+  teamArt: () => null,
 }

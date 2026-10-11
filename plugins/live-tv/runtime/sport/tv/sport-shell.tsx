@@ -8,7 +8,9 @@ import { Chip, Segment, TV, dp, station, useTvClockNode } from '../../tv/tv-ui'
 import { SPORT_CHIPS, SPORT_KINDS, type SportFilter, type SportKind, type SportMatch } from '../sport-model'
 import { dayStartMs, localDayKey, shiftDay, useSportDay } from '../sport-epg'
 import { setSportSettings } from '../sport-store'
-import { headerSummary, sportCounts, visibleMatches } from '../sport-day-model'
+import { featuredMatch, headerSummary, sportCounts, visibleMatches } from '../sport-day-model'
+import { useSportBackdrop } from '../backdrop'
+import { SportBackdropLayer } from '../sport-backdrop'
 import { useSportCtx } from '../sport-ctx'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
@@ -63,6 +65,8 @@ function SportTv({ model, nav }: TvViewProps) {
 
   const counts = sportCounts(mergedDay)
   const matches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter])
+  const hero = useMemo(() => featuredMatch(matches, ctx.follows, ctx.now), [matches, ctx.follows, ctx.now])
+  const backdrop = useSportBackdrop(hero)
   const summary = headerSummary(matches, ctx.now)
   const total = SPORT_KINDS.reduce((sum, k) => sum + counts[k], 0)
   const open = useMemo(() => {
@@ -84,7 +88,9 @@ function SportTv({ model, nav }: TvViewProps) {
   }
 
   return (
-    <div data-testid="sport-view" data-scroll="" style={{ flex: 1, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(22) }}>
+    <div data-testid="sport-stage" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+    <SportBackdropLayer choice={backdrop.choice} phone={false} onBroken={backdrop.onBroken} />
+    <div data-testid="sport-view" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `${dp(34)}px ${dp(48)}px ${dp(48)}px`, display: 'flex', flexDirection: 'column', gap: dp(22) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(18) }}>
         <span style={{ fontSize: dp(40), fontWeight: 600 }}>{tt('sportTitle')}</span>
         <span data-testid="sport-summary" style={{ fontSize: dp(19), color: TV.muted }}>{tt('sportSummary', { day: dayLabel(offset), count: summary.total, live: summary.live })}</span>
@@ -154,6 +160,7 @@ function SportTv({ model, nav }: TvViewProps) {
       ) : null}
       {open ? <SportMatchCenter ctx={ctx} match={open} onClose={() => setOpenId(null)} /> : null}
       {pickerOpen ? <FollowPicker ctx={ctx} days={[yesterdayDay.data, todayDay.data, tomorrowDay.data]} onClose={() => setPickerOpen(false)} /> : null}
+    </div>
     </div>
   )
 }

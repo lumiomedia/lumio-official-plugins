@@ -42,6 +42,7 @@ import {
 import { useHubText } from './hub-strings'
 import { EpgStatusCard } from './epg-sources-section'
 import { SportKeySettingsDesktop } from './sport/sport-key-settings'
+import { SportBackdropSettingsDesktop } from './sport/sport-backdrop-settings'
 import { XtreamLoginSection, prefillXtreamLogin } from './xtream-login-section'
 import { VodLibraryCard } from './vod-library-card'
 import { CategoriesDialog } from './category-curation-panel'
@@ -333,6 +334,8 @@ function DesktopPage() {
       <DisplayMetricsCard />
 
       <SportKeySettingsDesktop />
+
+      <SportBackdropSettingsDesktop />
 
       {s.curationList ? (
         <CategoriesDialog list={s.curationList.list} mode={s.curationList.mode} onClose={() => s.setCurationList(null)} />

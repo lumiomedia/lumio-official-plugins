@@ -58,6 +58,7 @@ export interface SportMatch {
   /** Fixtur utan kopplad kanal ("Bara resultat"). Visas bara med nyckel. */
   resultOnly?: boolean
   /** Senaste målet om källan skickar händelser (målskytt i MÅL!). */
+  venueImage?: string | null
   lastGoal?: { side: 'home' | 'away' | null; player: string | null; minute: number | null } | null
 }
 
