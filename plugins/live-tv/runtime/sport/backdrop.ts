@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { getPluginHttpAssetUrl, useTvMode } from '@/lib/plugin-sdk'
-import { currentBudget } from './budget'
-import { useSportSettings, type BundledImage, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
-import type { TeamArt } from './provider'
+import { currentRouter } from './router'
+import { hasAnyKey, useSportSettings, type BundledImage, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
+import type { ProviderId, TeamArt } from './provider'
 import type { SportKind, SportMatch } from './sport-model'
 import { localDayKey } from './sport-epg'
 
@@ -330,7 +330,8 @@ export function useHeroTeamArt(hero: SportMatch | null): TeamArt | null {
   useEffect(() => {
     if (!key || !hero || !teamId) { setArt(null); return }
     if (artCache.has(key)) { setArt(artCache.get(key) ?? null); return }
-    const budget = currentBudget()
+    // Lagbilderna hör till källan som äger lagets id (fixturens källa), inte till sportens förstaval.
+    const budget = currentRouter()?.budget(provider as ProviderId) ?? null
     const call = budget?.provider.teamArt(hero.kind, teamId) ?? null
     if (!budget || !call) { setArt(null); return }
     let alive = true
@@ -359,12 +360,12 @@ export function useSportBackdrop(hero: SportMatch | null, scope: BackdropScope =
   const tvMode = useTvMode()
   const [broken, setBroken] = useState<ReadonlySet<string>>(() => new Set())
   const { mode, slot } = resolveBackdropMode(settings.backdrops, scope)
-  const art = useHeroTeamArt(mode === 'auto' && settings.apiKey ? hero : null)
+  const art = useHeroTeamArt(mode === 'auto' && hasAnyKey(settings) ? hero : null)
   const onBroken = useCallback((url: string) => setBroken((b) => (b.has(url) ? b : new Set(b).add(url))), [])
   const choice = chooseSportBackdrop({
     mode,
     slot,
-    hasKey: !!settings.apiKey,
+    hasKey: hasAnyKey(settings),
     hero,
     art,
     uploads,

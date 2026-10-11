@@ -4,7 +4,7 @@ import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import {
   SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, getFollows, getOverrides, getSportSettings, isFollowing, setOverride,
-  setSportSettings, sportsCompatible, teamKeysMatch, toggleFollow, useFollows,
+  hasAnyKey, removeProviderKey, setProviderKey, setSportOrder, setSportSettings, sportsCompatible, teamKeysMatch, toggleFollow, useFollows,
 } from './sport-store'
 
 beforeEach(() => __resetForTests())
@@ -118,5 +118,55 @@ describe('Bakgrund i Sport', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { backdrop: 'custom', backdropCustom: { from: 'home', index: 1 } })
     expect(getSportSettings().backdrops).toEqual({ all: 'standard', sports: OWN })
     expect(getSportSettings()).not.toHaveProperty('backdropCustom')
+  })
+})
+
+describe('nycklar per källa (flera källor samtidigt, EN nyckel per källa)', () => {
+  it('flytt: en äldre enkel nyckel + källa blir en post i nyckelkartan, med planen', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { apiKey: 'old12345', provider: 'thesportsdb', keyPlan: 'Premium', view: 'feed' })
+    const s = getSportSettings()
+    expect(s.keys).toEqual({ thesportsdb: { key: 'old12345', plan: 'Premium' } })
+    expect(s).toMatchObject({ view: 'feed', apiKey: 'old12345', provider: 'thesportsdb', keyPlan: 'Premium' })
+    expect(hasAnyKey(s)).toBe(true)
+  })
+  it('flytt: äldre post utan källa var API-Sports; utan nyckel blir kartan tom', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { apiKey: 'old12345' })
+    expect(getSportSettings().keys).toEqual({ 'api-sports': { key: 'old12345', plan: null } })
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { apiKey: null, provider: 'thesportsdb' })
+    expect(getSportSettings().keys).toEqual({})
+    expect(hasAnyKey(getSportSettings())).toBe(false)
+  })
+  it('en ny post med nyckelkarta flyttas aldrig igen (kartan vinner över de härledda fälten)', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { keys: { sportapi: { key: 'sk_live_1', plan: null } }, apiKey: 'stale999', provider: 'api-sports' })
+    expect(getSportSettings().keys).toEqual({ sportapi: { key: 'sk_live_1', plan: null } })
+    expect(getSportSettings()).toMatchObject({ apiKey: 'sk_live_1', provider: 'sportapi' })
+  })
+  it('flera källor samtidigt; en andra nyckel för SAMMA källa ersätter den första', () => {
+    setProviderKey('api-sports', 'aaaa1111', 'Free')
+    setProviderKey('sportapi', 'sk_live_1', null)
+    setProviderKey('thesportsdb', '123456', 'Premium')
+    expect(Object.keys(getSportSettings().keys).sort()).toEqual(['api-sports', 'sportapi', 'thesportsdb'])
+    setProviderKey('api-sports', 'bbbb2222', 'Pro')
+    expect(getSportSettings().keys['api-sports']).toEqual({ key: 'bbbb2222', plan: 'Pro' })
+    expect(Object.keys(getSportSettings().keys)).toHaveLength(3)
+  })
+  it('ta bort en källas nyckel rör inte de andra', () => {
+    setProviderKey('api-sports', 'aaaa1111', 'Free')
+    setProviderKey('sportapi', 'sk_live_1', null)
+    removeProviderKey('api-sports')
+    expect(getSportSettings().keys).toEqual({ sportapi: { key: 'sk_live_1', plan: null } })
+  })
+  it('skräp i kartan släpps (okänd källa, ogiltig nyckel)', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { keys: { bogus: { key: 'x1234' }, 'api-sports': { key: '' }, sportapi: 'sk_live_1', thesportsdb: { key: '123456', plan: 7 } } })
+    expect(getSportSettings().keys).toEqual({ thesportsdb: { key: '123456', plan: null } })
+  })
+  it('en äldre skrivning ({ apiKey }) sätter den primära källans nyckel och lämnar andra källor', () => {
+    setProviderKey('sportapi', 'sk_live_1', null)
+    setSportSettings({ apiKey: 'aaaa1111', provider: 'api-sports' })
+    expect(getSportSettings().keys).toEqual({ sportapi: { key: 'sk_live_1', plan: null }, 'api-sports': { key: 'aaaa1111', plan: null } })
+  })
+  it('källordning per sport: bara kända källor, inga dubbletter', () => {
+    setSportOrder('football', ['api-sports', 'sportapi', 'api-sports', 'bogus' as never])
+    expect(getSportSettings().order).toEqual({ football: ['api-sports', 'sportapi'] })
   })
 })

@@ -11,9 +11,9 @@ import lookupteam from './__fixtures__/thesportsdb/lookupteam.json'
 import type { SportMatch } from './sport-model'
 
 const h = vi.hoisted(() => ({ run: vi.fn() }))
-vi.mock('./budget', async () => {
+vi.mock('./router', async () => {
   const { theSportsDb: provider } = await import('./thesportsdb')
-  return { currentBudget: () => ({ provider, run: h.run }) }
+  return { currentRouter: () => ({ budget: (id: string) => (id === 'thesportsdb' ? { provider, run: h.run } : null) }) }
 })
 
 const VENUE = 'https://media.api-sports.io/football/venues/1460.png'

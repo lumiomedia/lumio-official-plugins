@@ -19,6 +19,11 @@ export interface MergeArgs {
   links: LinkMap
   overrides: SportOverrides
   coverage(sport: SportKind): 'full' | 'epg'
+  /**
+   * Matchens första källa och id för dagen (resultatlagrets händelseindex). "Bara resultat"-raden
+   * får sitt id därifrån, så att den behåller id (följd, "Notis vid mål", vald kanal) över ett källbyte.
+   */
+  canonical?(f: Fixture): Pick<Fixture, 'provider' | 'id'>
 }
 
 const TWO_HOURS = 2 * 3_600_000
@@ -60,9 +65,9 @@ function applyFixture(m: SportMatch, f: Fixture, swapped: boolean): SportMatch {
   }
 }
 
-function fixtureOnly(f: Fixture, overrides: SportOverrides): SportMatch {
+function fixtureOnly(f: Fixture, overrides: SportOverrides, canonical: Pick<Fixture, 'provider' | 'id'> = f): SportMatch {
   const match: SportMatch = {
-    id: fixtureMatchKey(f),
+    id: fixtureMatchKey(canonical),
     kind: f.sport,
     league: f.league.name,
     leagueKey: `fx:${f.provider}:${f.league.id}`,
@@ -97,14 +102,15 @@ export function mergeLinked(a: MergeArgs): SportMatch[] {
   const used = new Set<string>()
   for (const f of a.fixtures) {
     if (a.coverage(f.sport) !== 'full') continue
-    const link = a.links[f.id]
+    // Kopplingen är nycklad på källa + id (flera källors id kan krocka); äldre kartor på bara id.
+    const link = a.links[fixtureMatchKey(f)] ?? a.links[f.id]
     const i = link ? index.get(link.matchId) : undefined
     if (link && i !== undefined && !used.has(link.matchId) && out[i].coverage === 'full') {
       used.add(link.matchId)
       out[i] = applyFixture(out[i], f, link.swapped)
       continue
     }
-    out.push(fixtureOnly(f, a.overrides))
+    out.push(fixtureOnly(f, a.overrides, a.canonical?.(f)))
   }
   return out
 }

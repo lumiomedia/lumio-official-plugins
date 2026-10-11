@@ -3,8 +3,9 @@
 import { LIVE_TV_GLOBAL_EPG_ID } from '../live-tv-data'
 import type { Fixture } from './provider'
 import { tzOffsetFor } from './sport-epg'
+import { fixtureMatchKey } from './merge'
 
-/** fixtureId → EPG-matchens id (fas 1:s gruppering) och om hemma/borta är omvända. */
+/** `fx:källa:id` (merge.ts `fixtureMatchKey`) → EPG-matchens id (fas 1:s gruppering) och om hemma/borta är omvända. */
 export type LinkMap = Record<string, { matchId: string; swapped: boolean } | null>
 
 /** Lokalt anrop till den egna värden (`/sport/link`, samma dag och tidszon som `/sport/day`). Kostar ingen kvot. */
@@ -16,7 +17,7 @@ export async function linkFixtures(args: { day: string; fixtures: Fixture[] }): 
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         listId: LIVE_TV_GLOBAL_EPG_ID, day: args.day, tzOffset: tzOffsetFor(args.day),
-        fixtures: args.fixtures.map((f) => ({ id: f.id, sport: f.sport, home: f.home.name, away: f.away.name, league: f.league.name, kickoff: f.kickoff })),
+        fixtures: args.fixtures.map((f) => ({ id: fixtureMatchKey(f), sport: f.sport, home: f.home.name, away: f.away.name, league: f.league.name, kickoff: f.kickoff })),
       }),
     })
     if (!res.ok) return {}

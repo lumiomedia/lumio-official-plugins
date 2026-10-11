@@ -74,16 +74,36 @@ function sanitizeCards(raw: unknown): SportCards {
 /** Standard 50 % i en ton ur bilden (Jerry 2026-10-11: "sätt standard opacitet till 50%"). */
 export const DEFAULT_CARDS: SportCards = { opacity: 50, tone: 'image' }
 
+/** Alla källor, i den ordning de visas i Nycklar. */
+export const ALL_PROVIDERS: readonly ProviderId[] = ['sportapi', 'api-sports', 'thesportsdb']
+/** En källas nyckel och planen vid senaste validering. */
+export interface ProviderKey { key: string; plan: string | null }
+/**
+ * EN nyckel per källa. Flera nycklar för samma källa stöds med flit inte:
+ * att rotera gratisnycklar runt en gräns bryter mot källornas villkor.
+ */
+export type ProviderKeys = Partial<Record<ProviderId, ProviderKey>>
+/** Användarens egen källordning per sport; saknad sport = standardordningen (providers.ts). */
+export type SportOrder = Partial<Record<SportKind, ProviderId[]>>
+
 export interface SportSettings {
   view: SportViewMode // fas 1
   alert: KickoffAlert // fas 1
-  /** Fas 2: användarens egen nyckel. `null` = inga anrop. */
+  /** Nycklarna, en per källa. Sanningen; `apiKey`/`provider`/`keyPlan` härleds ur den. */
+  keys: ProviderKeys
+  /** Källordning per sport (Källa per sport). */
+  order: SportOrder
+  /**
+   * HÄRLEDD: den primära källans nyckel (`null` = inga nycklar). Sparas med
+   * för äldre appversioner som synkar samma inställningar. Skriv nycklar med
+   * `setProviderKey`; en skrivning av `apiKey` gäller den primära källan.
+   */
   apiKey: string | null
   /** Fas 2: målnotis. På som standard, och gäller bara följda matcher eller matcher med "Notis vid mål". */
   goalAlerts: boolean
-  /** Fas 2: vilken källa nyckeln hör till. */
+  /** HÄRLEDD: den primära källan (första med nyckel i ALL_PROVIDERS; API-Sports utan nycklar). */
   provider: ProviderId
-  /** Fas 2: källans plan vid senaste validering ("Free", "Pro", "Premium"). */
+  /** HÄRLEDD: den primära källans plan vid senaste validering ("Free", "Pro", "Premium"). */
   keyPlan: string | null
   /** Fas 2: "Notis vid mål" per match (matchens id → utgår ms, avspark + 4 h). */
   goalAlertMatches: Record<string, number>
@@ -94,19 +114,64 @@ export interface SportSettings {
 }
 
 const DEFAULT_SETTINGS: SportSettings = {
-  view: 'matchday', alert: '15', apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, backdrops: { all: 'standard', sports: ownImageDefaults() }, cards: DEFAULT_CARDS,
+  view: 'matchday', alert: '15', keys: {}, order: {}, apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, backdrops: { all: 'standard', sports: ownImageDefaults() }, cards: DEFAULT_CARDS,
+}
+
+const isProvider = (v: unknown): v is ProviderId => typeof v === 'string' && (ALL_PROVIDERS as readonly string[]).includes(v)
+const KEY_RE = /^[A-Za-z0-9_-]{3,128}$/
+
+function sanitizeKeys(raw: unknown): ProviderKeys {
+  const out: ProviderKeys = {}
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    const e = v && typeof v === 'object' ? (v as Record<string, unknown>) : null
+    if (!isProvider(id) || !e || typeof e.key !== 'string' || !KEY_RE.test(e.key)) continue
+    out[id] = { key: e.key, plan: typeof e.plan === 'string' ? e.plan : null }
+  }
+  return out
+}
+
+/** Flytt från fas 2:s enkla nyckel: `{apiKey, provider, keyPlan}` → en post i kartan. */
+function legacyKeys(r: Record<string, unknown>): ProviderKeys {
+  if (typeof r.apiKey !== 'string' || !KEY_RE.test(r.apiKey)) return {}
+  const id: ProviderId = r.provider === 'thesportsdb' ? 'thesportsdb' : 'api-sports'
+  return { [id]: { key: r.apiKey, plan: typeof r.keyPlan === 'string' ? r.keyPlan : null } }
+}
+
+function sanitizeOrder(raw: unknown): SportOrder {
+  const out: SportOrder = {}
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out
+  for (const [sport, list] of Object.entries(raw as Record<string, unknown>)) {
+    if (!SPORT_KINDS.includes(sport as SportKind) || !Array.isArray(list)) continue
+    const ids = [...new Set(list.filter(isProvider))]
+    if (ids.length) out[sport as SportKind] = ids
+  }
+  return out
+}
+
+export function primaryProvider(keys: ProviderKeys): ProviderId {
+  return ALL_PROVIDERS.find((id) => keys[id]) ?? 'api-sports'
+}
+
+export function hasAnyKey(s: Pick<SportSettings, 'keys'>): boolean {
+  return ALL_PROVIDERS.some((id) => !!s.keys[id])
 }
 
 function sanitizeSettings(raw: unknown): SportSettings {
   // `backdrop`/`backdropCustom` är fas 2:s första form (länk eller startsidans bild); bara Av följer med.
   const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof SportSettings | 'backdrop', unknown>>
+  // En post med nyckelkarta flyttas aldrig igen: kartan är sanningen, de härledda fälten bara en spegel.
+  const keys = r.keys && typeof r.keys === 'object' ? sanitizeKeys(r.keys) : legacyKeys(r as Record<string, unknown>)
+  const provider = primaryProvider(keys)
   return {
     view: r.view === 'feed' || r.view === 'matchday' ? r.view : DEFAULT_SETTINGS.view,
     alert: r.alert === 'off' || r.alert === '15' || r.alert === 'kickoff' ? r.alert : DEFAULT_SETTINGS.alert,
-    apiKey: typeof r.apiKey === 'string' && r.apiKey ? r.apiKey : null,
+    keys,
+    order: sanitizeOrder(r.order),
+    apiKey: keys[provider]?.key ?? null,
     goalAlerts: r.goalAlerts !== false,
-    provider: r.provider === 'thesportsdb' ? 'thesportsdb' : 'api-sports',
-    keyPlan: typeof r.keyPlan === 'string' ? r.keyPlan : null,
+    provider,
+    keyPlan: keys[provider]?.plan ?? null,
     goalAlertMatches: Object.fromEntries(
       Object.entries(r.goalAlertMatches && typeof r.goalAlertMatches === 'object' ? (r.goalAlertMatches as Record<string, unknown>) : {})
         .filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] > Date.now()),
@@ -121,9 +186,33 @@ export function getSportSettings(): SportSettings {
 }
 
 export function setSportSettings(patch: Partial<SportSettings>): SportSettings {
-  const next = sanitizeSettings({ ...getSportSettings(), ...patch })
+  const current = getSportSettings()
+  let keys = patch.keys ?? current.keys
+  if ('apiKey' in patch) {
+    // Äldre skrivform (en nyckel): gäller den angivna eller den primära källan, och lämnar andra källor.
+    const id = patch.provider ?? current.provider
+    keys = { ...keys }
+    if (patch.apiKey) keys[id] = { key: patch.apiKey, plan: patch.keyPlan ?? null }
+    else delete keys[id]
+  }
+  const next = sanitizeSettings({ ...current, ...patch, keys })
   writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, next)
   return next
+}
+
+/** Sparar (eller ERSÄTTER) källans enda nyckel. */
+export function setProviderKey(id: ProviderId, key: string, plan: string | null): SportSettings {
+  return setSportSettings({ keys: { ...getSportSettings().keys, [id]: { key, plan } } })
+}
+
+export function removeProviderKey(id: ProviderId): SportSettings {
+  const keys = { ...getSportSettings().keys }
+  delete keys[id]
+  return setSportSettings({ keys })
+}
+
+export function setSportOrder(sport: SportKind, order: ProviderId[]): SportSettings {
+  return setSportSettings({ order: { ...getSportSettings().order, [sport]: order } })
 }
 
 function useStored<T>(key: string, read: () => T): T {

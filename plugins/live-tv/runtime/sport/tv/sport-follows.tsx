@@ -130,9 +130,10 @@ export function FollowPicker({ ctx, days, onClose }: { ctx: SportCtx; days: (Spo
   const hitFollow = (hit: FollowHit): SportFollow => ({
     sport: hit.sport,
     kind: hit.kind,
-    key: hit.kind === 'league' ? `fx:${ctx.settings.provider}:${hit.id}` : foldTeamKey(hit.name),
+    // Id:t är källans som svarade (sportens källa kan vara en annan än den primära).
+    key: hit.kind === 'league' ? `fx:${hit.provider ?? ctx.settings.provider}:${hit.id}` : foldTeamKey(hit.name),
     name: hit.name,
-    providerIds: { [ctx.settings.provider]: hit.id },
+    providerIds: { [hit.provider ?? ctx.settings.provider]: hit.id },
   })
   const extra = hits.map((hit) => [hit, hitFollow(hit)] as const).filter(([, f]) => !rows.some((c) => c.kind === f.kind && c.key === f.key))
   const chips: { key: SportKind | 'all'; label: string }[] = [

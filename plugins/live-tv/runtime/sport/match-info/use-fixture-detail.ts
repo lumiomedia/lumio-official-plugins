@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useResultsController } from '../results-controller'
 import { usePollDemand } from '../live-poller'
-import type { FixtureDetail } from '../provider'
+import type { FixtureDetail, ProviderId } from '../provider'
 import type { SportMatch } from '../sport-model'
 
 export type DetailState = 'none' | 'loading' | 'ready'
@@ -23,7 +23,7 @@ export function useFixtureDetail(match: SportMatch): { detail: FixtureDetail | n
   useEffect(() => {
     if (!covered || !controller || !match.fixture) return
     let cancelled = false
-    void controller.loadFixture(match.kind, match.fixture.id, match.status === 'finished').then((d) => {
+    void controller.loadFixture(match.kind, { provider: match.fixture.provider as ProviderId, id: match.fixture.id }, match.status === 'finished').then((d) => {
       if (cancelled) return
       setDetail(d)
       setDone(true)

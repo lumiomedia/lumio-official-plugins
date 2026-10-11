@@ -1,18 +1,20 @@
 // runtime/sport/day-plan.ts
-import type { SportsProvider } from './provider'
+import type { ProviderId, SportsProvider } from './provider'
 import type { SportKind } from './sport-model'
 
-export interface LeagueRef { sport: SportKind; leagueId: string; season: string }
+/** `provider`: ligans källa (ligans id är källans). */
+export interface LeagueRef { sport: SportKind; leagueId: string; season: string; provider?: ProviderId }
 export interface DayPlanInput { today: string; yesterday: string; tomorrow: string; sports: SportKind[]; leagues: LeagueRef[]; done: Set<string> }
 export type PlannedCall =
   | { kind: 'day'; sport: SportKind; date: string }
-  | { kind: 'standings'; sport: SportKind; leagueId: string; season: string }
+  | { kind: 'standings'; sport: SportKind; leagueId: string; season: string; provider?: ProviderId }
 
 export function planKey(c: PlannedCall): string {
   return c.kind === 'day' ? `day|${c.sport}|${c.date}` : `standings|${c.sport}|${c.leagueId}|${c.season}`
 }
 
-export function planDay(input: DayPlanInput, provider: SportsProvider): PlannedCall[] {
+/** Bara täckningen behövs: en källa eller routern (täckt = någon källa med nyckel täcker sporten). */
+export function planDay(input: DayPlanInput, provider: Pick<SportsProvider, 'coverage'>): PlannedCall[] {
   const sports = [...new Set(input.sports)].filter((s) => provider.coverage(s) === 'full')
   const out: PlannedCall[] = sports.map((sport) => ({ kind: 'day', sport, date: input.today }))
   for (const sport of sports) {
@@ -24,7 +26,7 @@ export function planDay(input: DayPlanInput, provider: SportsProvider): PlannedC
   const seen = new Set<string>()
   for (const l of input.leagues) {
     if (provider.coverage(l.sport) !== 'full') continue
-    const c: PlannedCall = { kind: 'standings', sport: l.sport, leagueId: l.leagueId, season: l.season }
+    const c: PlannedCall = { kind: 'standings', sport: l.sport, leagueId: l.leagueId, season: l.season, ...(l.provider ? { provider: l.provider } : {}) }
     const k = planKey(c)
     if (seen.has(k) || input.done.has(k)) continue
     seen.add(k)
@@ -36,6 +38,13 @@ export function planDay(input: DayPlanInput, provider: SportsProvider): PlannedC
 export function plannedPerBucket(calls: PlannedCall[], provider: SportsProvider): Map<string, number> {
   const out = new Map<string, number>()
   for (const c of calls) out.set(provider.bucket(c.sport), (out.get(provider.bucket(c.sport)) ?? 0) + 1)
+  return out
+}
+
+/** Återstående planerade anrop per sport (routern bokför dem på källan sporten använder). */
+export function plannedPerSport(calls: PlannedCall[]): Map<SportKind, number> {
+  const out = new Map<SportKind, number>()
+  for (const c of calls) out.set(c.sport, (out.get(c.sport) ?? 0) + 1)
   return out
 }
 

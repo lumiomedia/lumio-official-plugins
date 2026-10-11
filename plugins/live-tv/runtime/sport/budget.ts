@@ -1,11 +1,7 @@
 // runtime/sport/budget.ts
 'use client'
 
-import { onPluginStorageChanged } from '@/lib/plugin-sdk'
-import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
-import { sportFetch, type FetchMode, type SportFetchResponse, type SportQuota } from './sport-fetch'
-import { providerFor } from './providers'
-import { SPORT_SETTINGS_KEY, getSportSettings } from './sport-store'
+import { sportFetch, sportQuota, type FetchMode, type SportFetchResponse, type SportQuota } from './sport-fetch'
 import type { DayOpts, Fixture, FixtureDetail, KeyCheck, LiveOpts, ProviderCall, ProviderId, SportsProvider, StandingRow, TeamHit } from './provider'
 import type { SportKind } from './sport-model'
 
@@ -32,11 +28,13 @@ export type BudgetResult<T> =
 
 export interface BudgetDeps {
   fetch?: typeof sportFetch
+  ledger?: typeof sportQuota
   now?: () => number
   sleep?: (ms: number) => Promise<void>
 }
 
 const RETRY_MS = 2_000
+const DAY_MS = 86_400_000
 
 export function reserveFor(limit: number | null): number {
   return limit == null ? 0 : Math.max(5, Math.ceil(limit * 0.1))
@@ -46,21 +44,31 @@ const unknownQuota = (bucket: string): SportQuota => ({ bucket, limit: null, rem
 
 export class Budget {
   private quotas = new Map<string, SportQuota>()
+  /** När varje hinks kvot senast kom från ett svar. Dygnskvoter nollställs 00:00 UTC. */
+  private notedAt = new Map<string, number>()
   private planned = new Map<string, number>()
   private primed = new Set<string>()
   private invalid = false
   private listeners = new Set<() => void>()
   private readonly fetchImpl: typeof sportFetch
+  private readonly ledgerImpl: typeof sportQuota
   private readonly now: () => number
   private readonly sleep: (ms: number) => Promise<void>
 
   constructor(readonly provider: SportsProvider, readonly key: string | null, deps: BudgetDeps = {}) {
     this.fetchImpl = deps.fetch ?? sportFetch
+    this.ledgerImpl = deps.ledger ?? sportQuota
     this.now = deps.now ?? Date.now
     this.sleep = deps.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
   }
 
   hasKey(): boolean { return !!this.key }
+
+  /** Dagens kvot ur värdens bok (delas av TV och telefon). Lokalt anrop, kostar ingen kvot: för inställningarnas Nycklar. */
+  async loadLedger(): Promise<void> {
+    if (!this.key) return
+    for (const q of await this.ledgerImpl(this.provider.id, this.key)) this.noteQuota(q)
+  }
   isInvalid(): boolean { return this.invalid }
 
   /**
@@ -72,6 +80,14 @@ export class Budget {
   quota(bucket: string): SportQuota {
     const q = this.quotas.get(bucket)
     if (!q) return unknownQuota(bucket)
+    // Dygnskvoten nollställs 00:00 UTC (API-Sports och sportapi.ai). Gårdagens
+    // siffror är okända i dag; nästa svar sätter dem. Utan det hade en källa som
+    // räknats ned lokalt till 0 (utan spärr) aldrig kommit tillbaka.
+    if (q.limit != null && Math.floor((this.notedAt.get(bucket) ?? 0) / DAY_MS) < Math.floor(this.now() / DAY_MS)) {
+      return q.reason === 'exhausted' || q.blockedUntil == null || q.blockedUntil <= this.now()
+        ? { ...q, remaining: null, blockedUntil: null, reason: null }
+        : { ...q, remaining: null }
+    }
     if (q.blockedUntil == null || q.blockedUntil > this.now()) return q
     return q.reason === 'exhausted'
       ? { ...q, remaining: null, blockedUntil: null, reason: null }
@@ -86,6 +102,7 @@ export class Budget {
 
   noteQuota(q: SportQuota): void {
     this.quotas.set(q.bucket, q)
+    this.notedAt.set(q.bucket, this.now())
     this.emit()
   }
 
@@ -221,17 +238,5 @@ export class Budget {
   }
 }
 
-let current: { id: string; budget: Budget | null } | null = null
-
-/** EN kvothanterare per (källa, nyckel). `null` utan nyckel: då görs inga anrop. */
-export function currentBudget(): Budget | null {
-  const { provider, apiKey } = getSportSettings()
-  const id = `${provider}|${apiKey ?? ''}`
-  if (current?.id === id) return current.budget
-  current = { id, budget: apiKey ? new Budget(providerFor(provider), apiKey) : null }
-  return current.budget
-}
-
-onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => { current = null })
-
-export function __resetBudgetForTests(): void { current = null }
+/** Kvar för äldre tester; routern (router.ts) äger nu singeltonen. */
+export function __resetBudgetForTests(): void { /* ingen modulstatus här längre */ }

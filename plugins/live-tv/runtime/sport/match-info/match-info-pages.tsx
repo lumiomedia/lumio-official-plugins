@@ -47,7 +47,8 @@ export function EventsPage({ u, match, ctx, detail }: { u: U; match: SportMatch;
   const controller = useResultsController()
   const rows = detail ? eventRows(detail.events) : []
   const bars = detail ? statBars(detail.stats) : []
-  const rate = controller ? rateLine(controller.status(), ctx.tt, { lang, locale }) : null
+  // Takraden för MATCHENS sport: källan den sporten faktiskt använder just nu.
+  const rate = controller ? rateLine(controller.status(match.kind), ctx.tt, { lang, locale }) : null
   return (
     <>
       <Overline u={u}>{ctx.tt('sportEvents')}</Overline>

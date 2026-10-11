@@ -33,4 +33,9 @@ describe('rate-line', () => {
     expect(rateLine({ ...base, state: 'invalid-key' }, tt, opts)?.text).toBe('Nyckeln fungerar inte längre')
     expect(rateLine({ ...base, state: 'no-key' }, tt, opts)).toBeNull()
   })
+  it('flera källor: raden säger vilken källa sporten faktiskt använder', () => {
+    expect(rateLine({ ...base, multi: true, provider: 'sportapi', remainingToday: 1500 }, tt, opts)?.text).toBe('Uppdateras var 3:e min · 1500 anrop kvar i dag · via sportapi.ai')
+    expect(rateLine({ ...base, multi: true }, tt, opts)?.text).toBe('Uppdateras var 3:e min · 41 anrop kvar i dag · via API-Sports')
+    expect(rateLine({ ...base, multi: false, provider: 'sportapi' }, tt, opts)?.text).toBe('Uppdateras var 3:e min · 41 anrop kvar i dag')
+  })
 })

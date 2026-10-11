@@ -1,5 +1,6 @@
 import type { TvStringKey } from '../tv/tv-strings'
 import type { RateStatus } from './results-controller'
+import { PROVIDER_LABEL } from './providers'
 
 function svOrdinal(n: number): string {
   const last = n % 10
@@ -33,5 +34,7 @@ export function rateLine(
   if (s.state === 'rate-limited') return { text: tt('sportRateMinute'), showPaidLink: false }
   const left = s.remainingToday != null ? ` · ${tt('sportRateLeft', { n: s.remainingToday })}` : ''
   const head = s.intervalMs != null ? tt('sportRateEvery', { every: everyText(s.intervalMs, opts.lang) }) : tt('sportRateIdle')
-  return { text: `${head}${left}`, showPaidLink: s.provider === 'api-sports' && !s.paid }
+  // Flera källor: säg vilken sporten faktiskt använder (efter genomfall när den förstas kvot är slut).
+  const via = s.multi && s.provider ? ` · ${tt('sportRateVia', { source: PROVIDER_LABEL[s.provider] })}` : ''
+  return { text: `${head}${left}${via}`, showPaidLink: s.provider === 'api-sports' && !s.paid }
 }
