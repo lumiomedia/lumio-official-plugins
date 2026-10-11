@@ -43785,222 +43785,6 @@ ${cue.text}`).join("\n\n")}
     }
   });
 
-  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
-  function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
-    return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
-  }
-  function Pill({ label, onPress, disabled = false }) {
-    const shared = { height: 44, minHeight: 44, padding: "0 16px", borderRadius: 999, background: MT.s10, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", boxSizing: "border-box", flexShrink: 0 };
-    if (disabled || !onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: label });
-    return /* @__PURE__ */ jsx("div", { ...station(onPress), style: { ...shared, color: MT.text, cursor: "pointer" }, children: label });
-  }
-  function LiveTag2({ label }) {
-    return /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", padding: "3px 7px", borderRadius: 7, background: MT.liveSoft, color: MT.liveText, flexShrink: 0 }, children: label });
-  }
-  function ProgressBar2({ value, height }) {
-    return /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, height, borderRadius: height, background: "rgba(252,252,255,0.22)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`, height: "100%", background: MT.acc } }) });
-  }
-  function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePause, onClose, landscape }) {
-    const { tt } = useTvText();
-    const [visible, setVisible] = useState(true);
-    const [sheet, setSheet] = useState(null);
-    const timerRef = useRef(null);
-    const info = tv.nowFor(channel);
-    const hideMs = tv.bannerHideMs;
-    const clearTimer = useCallback(() => {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }, []);
-    const reveal = useCallback(() => {
-      setVisible(true);
-      clearTimer();
-      if (hideMs > 0 && !sheet) timerRef.current = window.setTimeout(() => setVisible(false), hideMs);
-    }, [hideMs, sheet, clearTimer]);
-    useEffect(() => {
-      reveal();
-      return clearTimer;
-    }, [reveal, clearTimer, channel]);
-    const onStageTap = useCallback((event) => {
-      const target2 = event.target instanceof Element ? event.target : null;
-      if (target2?.closest('[role="button"]')) {
-        reveal();
-        return;
-      }
-      if (visible) {
-        clearTimer();
-        setVisible(false);
-      } else reveal();
-    }, [visible, reveal, clearTimer]);
-    useEffect(() => {
-      const onKey = (event) => {
-        if (event.key !== "Escape" && event.key !== "Backspace") return;
-        if (tv.gateOpen) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (sheet) {
-          setSheet(null);
-          return;
-        }
-        onClose();
-      };
-      window.addEventListener("keydown", onKey, true);
-      return () => window.removeEventListener("keydown", onKey, true);
-    }, [sheet, tv.gateOpen, onClose]);
-    const closeSheet = useCallback(() => setSheet(null), []);
-    const pinnedSet = useMemo(() => new Set(tv.pinnedKeys), [tv.pinnedKeys]);
-    const zap = useMemo(() => {
-      const current3 = channelKey(channel);
-      const pinned = [];
-      const rest = [];
-      tv.neighbours.forEach((c, i) => (pinnedSet.has(channelKey(c)) ? pinned : rest).push({ channel: c, number: i + 1 }));
-      const index = rest.findIndex((entry) => channelKey(entry.channel) === current3);
-      const window2 = index < 0 ? rest.slice(0, ZAP_WINDOW * 2) : rest.slice(Math.max(0, index - ZAP_WINDOW), index + ZAP_WINDOW + 1);
-      return [...pinned, ...window2];
-    }, [tv.neighbours, pinnedSet, channel]);
-    const numberName = `${tv.channelNumber ? `${tv.channelNumber} \xB7 ` : ""}${channel.name}`;
-    const minutesLeft = info.now ? tt("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 6e4)) }) : null;
-    const timeLine2 = info.now ? `${formatClock2(info.now.start, tv.locale)}\u2013${formatClock2(info.now.stop, tv.locale)} \xB7 ${minutesLeft}` : null;
-    const nextLine = info.next ? `${tt("nextLabel")} ${info.next.title} \xB7 ${formatClock2(info.next.start, tv.locale)}` : null;
-    const progress2 = info.now ? progressOf(info.now.start, info.now.stop, tv.nowMs) : 0;
-    const qualityLabel = tv.quality ?? tt("autoQuality");
-    const favLabel = tv.favourite ? tt("menuRemoveFavourite") : tt("menuAddFavourite");
-    const audioItems = controls ? [
-      { key: "aspect", label: `${tt("playerAspect")}: ${controls.aspectLabel}`, run: controls.onCycleAspect },
-      { key: "mute", label: controls.muted ? tt("playerUnmute") : tt("playerMute"), run: controls.onToggleMute }
-    ] : [];
-    const moreItems = [
-      { key: "multi", label: tt("menuMultiview"), run: tv.onOpenMultiview },
-      { key: "pause", label: paused ? tt("menuResume") : tt("menuPause"), run: onTogglePause },
-      { key: "fav", label: favLabel, run: tv.onToggleFavourite },
-      { key: "info", label: tt("menuChannelDetails"), run: tv.onOpenChannelDetails }
-    ];
-    const sheetNode = sheet ? /* @__PURE__ */ jsx(
-      MobileSheet,
-      {
-        title: sheet === "audio" ? tt("audioSubs") : channel.name,
-        subtitle: info.now?.title,
-        items: sheet === "audio" ? audioItems : moreItems,
-        onClose: closeSheet,
-        pushLayer: noLayer,
-        testId: sheet === "audio" ? "phone-audio-sheet" : "phone-more-sheet"
-      }
-    ) : null;
-    const fade = { opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none" };
-    const muteBtn = (size) => controls ? /* @__PURE__ */ jsx(Round, { size, label: controls.muted ? tt("playerUnmute") : tt("playerMute"), onPress: controls.onToggleMute, background: size >= 44 ? MT.s10 : "rgba(0,0,0,0.55)", children: controls.muted ? /* @__PURE__ */ jsx(MIcons.SpeakerSlash, { size: 22 }) : /* @__PURE__ */ jsx(MIcons.SpeakerHigh, { size: 22 }) }) : null;
-    if (landscape) {
-      return /* @__PURE__ */ jsxs(Fragment2, { children: [
-        /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape", onPointerDown: onStageTap, style: { position: "absolute", inset: 0, zIndex: 30, color: MT.text, fontFamily: MT.font }, children: [
-          /* @__PURE__ */ jsxs("div", { style: { position: "absolute", top: 0, left: 0, right: 0, padding: `max(44px, env(safe-area-inset-top, 0px)) ${SAFE_SIDE_R} 0 ${SAFE_SIDE_L}`, display: "flex", alignItems: "center", gap: 12, ...fade }, children: [
-            /* @__PURE__ */ jsx(Round, { size: 40, label: tt("back"), onPress: onClose, children: /* @__PURE__ */ jsx(MIcons.CaretLeft, { size: 22 }) }),
-            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, color: "rgba(243,244,248,0.78)", ...ellipsis }, children: numberName }),
-            /* @__PURE__ */ jsxs("span", { style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 10, fontSize: 14, color: "rgba(243,244,248,0.78)" }, children: [
-              info.now ? /* @__PURE__ */ jsx(LiveTag2, { label: tt("live") }) : null,
-              /* @__PURE__ */ jsx("span", { children: [tv.quality, formatClock2(tv.nowMs, tv.locale)].filter(Boolean).join(" \xB7 ") })
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: `72px ${SAFE_SIDE_R} max(22px, env(safe-area-inset-bottom, 0px)) ${SAFE_SIDE_L}`, background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.9) 55%)", display: "flex", flexDirection: "column", gap: 12, ...fade }, children: [
-            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", gap: 16 }, children: [
-              /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape-info", style: { flex: 1, minWidth: "0px", display: "flex", flexDirection: "column", gap: 4 }, children: [
-                /* @__PURE__ */ jsx("div", { style: { fontSize: 26, fontWeight: 600, ...ellipsis }, children: info.now?.title ?? channel.name }),
-                timeLine2 ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis }, children: [
-                  timeLine2,
-                  nextLine ? ` \xB7 ${nextLine}` : ""
-                ] }) : null
-              ] }),
-              /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape-controls", style: { flex: "0 0 auto", display: "flex", alignItems: "center", gap: 10 }, children: [
-                muteBtn(44),
-                /* @__PURE__ */ jsx(Pill, { label: qualityLabel, disabled: true }),
-                /* @__PURE__ */ jsx(Pill, { label: tt("menuGuide"), onPress: tv.onOpenGuide }),
-                /* @__PURE__ */ jsx(Round, { size: 44, label: tt("moreActions"), onPress: () => setSheet("more"), background: MT.s10, children: /* @__PURE__ */ jsx(MIcons.DotsThree, { size: 22 }) })
-              ] })
-            ] }),
-            /* @__PURE__ */ jsx("div", { "data-testid": "phone-landscape-progress", style: { display: "flex" }, children: /* @__PURE__ */ jsx(ProgressBar2, { value: progress2, height: 5 }) })
-          ] })
-        ] }),
-        sheetNode
-      ] });
-    }
-    return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx("div", { "data-testid": "phone-stage-tap", onPointerDown: onStageTap, style: { position: "absolute", top: 0, left: 0, right: 0, ...PHONE_STAGE_BOX, zIndex: 30, color: MT.text, fontFamily: MT.font }, children: /* @__PURE__ */ jsxs("div", { "data-testid": "phone-overlay", style: { position: "absolute", inset: 0, ...fade }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { position: "absolute", top: 12, left: 12, right: 12, display: "flex", alignItems: "center", gap: 10 }, children: [
-          /* @__PURE__ */ jsx(Round, { size: 40, label: tt("back"), onPress: onClose, children: /* @__PURE__ */ jsx(MIcons.CaretLeft, { size: 22 }) }),
-          /* @__PURE__ */ jsxs("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(243,244,248,0.85)" }, children: [
-            info.now ? /* @__PURE__ */ jsx(LiveTag2, { label: tt("live") }) : null,
-            tv.quality ? /* @__PURE__ */ jsx("span", { children: tv.quality }) : null
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", alignItems: "center", gap: 12 }, children: [
-          muteBtn(40),
-          /* @__PURE__ */ jsx(ProgressBar2, { value: progress2, height: 4 }),
-          controls?.onEnterPip ? /* @__PURE__ */ jsx(Round, { size: 40, label: tt("playerPip"), onPress: controls.onEnterPip, children: /* @__PURE__ */ jsx(MIcons.Pip, { size: 22 }) }) : null,
-          controls ? /* @__PURE__ */ jsx(Round, { size: 40, label: tt("playerFullscreen"), onPress: controls.onToggleFullscreen, children: /* @__PURE__ */ jsx(MIcons.ArrowsOut, { size: 22 }) }) : null
-        ] })
-      ] }) }),
-      /* @__PURE__ */ jsxs("div", { "data-testid": "phone-info", style: { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 16, paddingBottom: `calc(16px + ${MT.SAFE_BOTTOM})`, display: "flex", flexDirection: "column", gap: 14, background: MT.bg, color: MT.text, fontFamily: MT.font }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, minHeight: 44 }, children: [
-          /* @__PURE__ */ jsx(MobileLogo, { channel, width: 52, height: 34 }),
-          /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 14, color: MT.muted70, ...ellipsis }, children: numberName }),
-          /* @__PURE__ */ jsx(Round, { size: 44, label: favLabel, onPress: tv.onToggleFavourite, background: tv.favourite ? MT.accMix(22) : MT.s10, children: /* @__PURE__ */ jsx("span", { style: { display: "flex", color: tv.favourite ? MT.acc : MT.text }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 22, filled: tv.favourite }) }) })
-        ] }),
-        /* @__PURE__ */ jsx("div", { "data-testid": "phone-title", style: { fontSize: 22, fontWeight: 600, lineHeight: 1.2, ...clamp2 }, children: info.now?.title ?? channel.name }),
-        timeLine2 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis }, children: timeLine2 }) : null,
-        nextLine ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted, ...ellipsis }, children: nextLine }) : null,
-        /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }, children: [
-          /* @__PURE__ */ jsx(GridBtn, { label: tt("audioSubs"), onPress: () => setSheet("audio") }),
-          /* @__PURE__ */ jsx(GridBtn, { label: qualityLabel }),
-          /* @__PURE__ */ jsx(GridBtn, { label: tt("menuChannelDetails"), onPress: tv.onOpenChannelDetails }),
-          /* @__PURE__ */ jsx(GridBtn, { label: tt("menuGuide"), onPress: tv.onOpenGuide })
-        ] }),
-        /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, marginTop: 4 }, children: tt("zapList") }),
-        /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column" }, children: zap.map((entry) => /* @__PURE__ */ jsx(
-          MobileChannelRow,
-          {
-            channel: entry.channel,
-            number: entry.number,
-            now: tv.nowFor(entry.channel),
-            nowMs: tv.nowMs,
-            locale: tv.locale,
-            pinned: pinnedSet.has(channelKey(entry.channel)),
-            variant: "zap",
-            noProgrammeLabel: tt("noProgramme"),
-            onPress: () => tv.onSwitchChannel(entry.channel)
-          },
-          channelKey(entry.channel)
-        )) })
-      ] }),
-      sheetNode
-    ] });
-  }
-  function GridBtn({ label, onPress }) {
-    const shared = { minHeight: 46, padding: "0 12px", borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, boxSizing: "border-box" };
-    if (!onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }) });
-    return /* @__PURE__ */ jsx("div", { ...station(onPress), style: { ...shared, color: MT.text, cursor: "pointer" }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }) });
-  }
-  var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
-  var init_player_chrome_phone = __esm({
-    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
-      "use strict";
-      "use client";
-      init_react_shim();
-      init_live_tv_data();
-      init_live_tv_ui();
-      init_tv_ui();
-      init_tv_strings();
-      init_mobile_tokens();
-      init_mobile_icons();
-      init_mobile_logo();
-      init_mobile_channel_row();
-      init_mobile_sheet();
-      init_jsx_runtime_shim();
-      PHONE_STAGE_BOX = { aspectRatio: "16 / 9", maxHeight: "45vh" };
-      ZAP_WINDOW = 25;
-      noLayer = () => () => {
-      };
-      SAFE_SIDE_L = "max(60px, env(safe-area-inset-left, 0px))";
-      SAFE_SIDE_R = "max(60px, env(safe-area-inset-right, 0px))";
-    }
-  });
-
   // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/sport-model.ts
   function matchTitle(m) {
     return m.home && m.away ? `${m.home} - ${m.away}` : m.event ?? m.league;
@@ -44698,7 +44482,15 @@ ${cue.text}`).join("\n\n")}
       later: withSource.filter((m) => statusAt(m, now2) === "upcoming")
     };
   }
+  function currentMatchSources(sport, currentKey, now2) {
+    for (const match of matchesForPlayer(sport.matches, currentKey, now2).onChannel) {
+      const sources = rankedSources(match, sport.overrides);
+      if (sources.length > 1) return { match, sources };
+    }
+    return null;
+  }
   function usePlayerSport(args) {
+    const { tt } = useTvText();
     const settings = useSportSettings();
     const overrides = useOverrides();
     const { playingKey, model, play, openMultiview } = args;
@@ -44725,25 +44517,51 @@ ${cue.text}`).join("\n\n")}
           const best = rankedSources(m, overrides)[0];
           if (best) play({ channel: sourceChannel(best) });
         },
+        onSwitchSource: (source) => play({ channel: sourceChannel(source) }),
         onOpenMultiview: openMultiview,
-        isKnownChannel: (key) => model.byKey.has(key)
+        isKnownChannel: (key) => model.byKey.has(key),
+        playlistName: (sourceId) => model.lists.find((list) => list.source === sourceId)?.name ?? tt("sportPlaylistUnknown")
       };
-    }, [active4, data, overrides, settings.view, play, openMultiview, model.byKey]);
+    }, [active4, data, overrides, settings.view, play, openMultiview, model.byKey, model.lists, tt]);
   }
   function PlayerSportTicker({ sport, channel, nowMs, variant, ps }) {
     const { tt } = useTvText();
     const lists = matchesForPlayer(sport.matches, channelKey(channel), nowMs);
     const items2 = [...lists.onChannel, ...lists.live].slice(0, variant === "ticker" ? 6 : 5);
     if (items2.length === 0) return null;
+    const pick2 = (m) => () => {
+      if (!lists.onChannel.includes(m)) sport.onSwitchMatch(m);
+    };
     if (variant === "column") {
-      return /* @__PURE__ */ jsx("div", { "data-testid": "player-sport-ticker", "data-variant": "column", style: { position: "absolute", top: ps(96), right: ps(20), width: ps(300), display: "flex", flexDirection: "column", gap: ps(6), pointerEvents: "none", zIndex: 31 }, children: items2.map((m) => /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: "rgba(20,21,25,0.86)", border: `1px solid ${TV2.lineCard}`, fontSize: ps(14), fontWeight: 600 }, children: [
+      return /* @__PURE__ */ jsx("div", { "data-testid": "player-sport-ticker", "data-variant": "column", style: { position: "absolute", top: ps(96), right: ps(20), width: ps(300), display: "flex", flexDirection: "column", gap: ps(6), pointerEvents: "none", zIndex: 31 }, children: items2.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "pst-item", ...station(pick2(m)), style: { display: "flex", alignItems: "center", gap: ps(8), padding: `${ps(8)}px ${ps(12)}px`, borderRadius: ps(10), background: "rgba(20,21,25,0.86)", border: `1px solid ${TV2.lineCard}`, fontSize: ps(14), fontWeight: 600, pointerEvents: "auto", cursor: "pointer" }, children: [
         /* @__PURE__ */ jsx("span", { style: { ...ellipsis2, flex: 1 }, children: shortLabel(m) }),
         /* @__PURE__ */ jsx("span", { style: { color: TV2.live, fontSize: ps(12) }, children: tt("live") })
       ] }, m.id)) });
     }
     return /* @__PURE__ */ jsxs("div", { "data-testid": "player-sport-ticker", "data-variant": "ticker", style: { display: "flex", alignItems: "center", gap: ps(8), marginBottom: ps(8), overflow: "hidden" }, children: [
       /* @__PURE__ */ jsx("span", { style: { fontSize: ps(11), fontWeight: 700, letterSpacing: "0.14em", color: TV2.dim }, children: tt("live") }),
-      items2.map((m) => /* @__PURE__ */ jsx("span", { style: { padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV2.lineCard}`, background: "rgba(0,0,0,0.5)", fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap" }, children: shortLabel(m) }, m.id))
+      items2.map((m) => /* @__PURE__ */ jsx("span", { "data-testid": "pst-item", ...station(pick2(m)), style: { padding: `${ps(4)}px ${ps(10)}px`, borderRadius: ps(8), border: `1px solid ${TV2.lineCard}`, background: "rgba(0,0,0,0.5)", fontSize: ps(13), fontWeight: 600, whiteSpace: "nowrap", pointerEvents: "auto", cursor: "pointer" }, children: shortLabel(m) }, m.id))
+    ] });
+  }
+  function PlayerSourceSwitcher({ sport, channel, nowMs, ps, testId = "player-sources" }) {
+    const { tt } = useTvText();
+    const currentKey = channelKey(channel);
+    const found = currentMatchSources(sport, currentKey, nowMs);
+    if (!found) return null;
+    return /* @__PURE__ */ jsxs("div", { "data-testid": testId, "data-row": "", style: { display: "flex", alignItems: "center", gap: ps(8), marginBottom: ps(8), overflowX: "auto", pointerEvents: "auto" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: ps(11), fontWeight: 700, letterSpacing: "0.14em", color: TV2.dim, whiteSpace: "nowrap", textTransform: "uppercase" }, children: tt("sportSourcesShort", { n: found.sources.length }) }),
+      found.sources.map((s) => {
+        const on = s.channelKey === currentKey;
+        return /* @__PURE__ */ jsxs("div", { "data-testid": "player-source", "data-current": on ? "1" : "0", "aria-pressed": on ? "true" : "false", ...station(() => {
+          if (!on) sport.onSwitchSource(s);
+        }), style: { display: "flex", flexDirection: "column", flexShrink: 0, maxWidth: ps(240), padding: `${ps(5)}px ${ps(12)}px`, borderRadius: ps(10), cursor: "pointer", background: on ? TV2.accMix(18) : "rgba(0,0,0,0.5)", border: `1px solid ${on ? TV2.accMix(70) : TV2.lineCard}` }, children: [
+          /* @__PURE__ */ jsxs("span", { style: { fontSize: ps(13), fontWeight: 600, ...ellipsis2 }, children: [
+            on ? "\u25CF " : "",
+            s.name
+          ] }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: ps(11), color: TV2.muted, ...ellipsis2 }, children: [sport.playlistName(s.sourceId), s.quality].filter(Boolean).join(" \xB7 ") })
+        ] }, s.channelKey);
+      })
     ] });
   }
   function PlayerMatchesDrawer({ sport, channel, nowMs, locale, onClose, ps }) {
@@ -44790,6 +44608,7 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("div", { "data-testid": "pm-close", ...station(onClose), "aria-label": tt("sportClose"), style: { width: ps(48), height: ps(48), minHeight: ps(48), borderRadius: ps(12), border: `1px solid ${TV2.lineCard}`, background: TV2.s08, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children: "\u2715" })
       ] }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: ps(16), color: TV2.muted }, children: tt("sportMatchesHint") }),
+      /* @__PURE__ */ jsx(PlayerSourceSwitcher, { sport, channel, nowMs, ps: (n) => ps(n * 1.3), testId: "pm-sources" }),
       /* @__PURE__ */ jsxs("div", { "data-scroll": "", style: { flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: ps(16) }, children: [
         section(tt("sportOnThisChannel"), lists.onChannel, true),
         section(tt("sportLiveOnChannels"), lists.live, false),
@@ -44829,6 +44648,235 @@ ${cue.text}`).join("\n\n")}
       MAX_PICK = 4;
       PLAYER_SPORT_DELAY_MS = 4e3;
       shortLabel = (m) => m.home && m.away ? `${crestText(m.home)} \u2013 ${crestText(m.away)}` : m.event ?? m.league;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx
+  function Round({ size, label, onPress, background = "rgba(0,0,0,0.55)", children }) {
+    return /* @__PURE__ */ jsx("div", { ...station(onPress, void 0, { "aria-label": label }), style: { width: size, height: size, minHeight: size, flexShrink: 0, borderRadius: 999, background, color: MT.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }, children });
+  }
+  function Pill({ label, onPress, disabled = false, testId }) {
+    const shared = { height: 44, minHeight: 44, padding: "0 16px", borderRadius: 999, background: MT.s10, border: `1px solid ${MT.line08}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", boxSizing: "border-box", flexShrink: 0 };
+    if (disabled || !onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: label });
+    return /* @__PURE__ */ jsx("div", { ...station(onPress), "data-testid": testId, style: { ...shared, color: MT.text, cursor: "pointer" }, children: label });
+  }
+  function LiveTag2({ label }) {
+    return /* @__PURE__ */ jsx("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", padding: "3px 7px", borderRadius: 7, background: MT.liveSoft, color: MT.liveText, flexShrink: 0 }, children: label });
+  }
+  function ProgressBar2({ value, height }) {
+    return /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, height, borderRadius: height, background: "rgba(252,252,255,0.22)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`, height: "100%", background: MT.acc } }) });
+  }
+  function TvPlayerChromePhone({ channel, tv, controls, paused, onTogglePause, onClose, landscape }) {
+    const { tt } = useTvText();
+    const [visible, setVisible] = useState(true);
+    const [sheet, setSheet] = useState(null);
+    const timerRef = useRef(null);
+    const info = tv.nowFor(channel);
+    const hideMs = tv.bannerHideMs;
+    const clearTimer = useCallback(() => {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }, []);
+    const reveal = useCallback(() => {
+      setVisible(true);
+      clearTimer();
+      if (hideMs > 0 && !sheet) timerRef.current = window.setTimeout(() => setVisible(false), hideMs);
+    }, [hideMs, sheet, clearTimer]);
+    useEffect(() => {
+      reveal();
+      return clearTimer;
+    }, [reveal, clearTimer, channel]);
+    const onStageTap = useCallback((event) => {
+      const target2 = event.target instanceof Element ? event.target : null;
+      if (target2?.closest('[role="button"]')) {
+        reveal();
+        return;
+      }
+      if (visible) {
+        clearTimer();
+        setVisible(false);
+      } else reveal();
+    }, [visible, reveal, clearTimer]);
+    useEffect(() => {
+      const onKey = (event) => {
+        if (event.key !== "Escape" && event.key !== "Backspace") return;
+        if (tv.gateOpen) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (sheet) {
+          setSheet(null);
+          return;
+        }
+        onClose();
+      };
+      window.addEventListener("keydown", onKey, true);
+      return () => window.removeEventListener("keydown", onKey, true);
+    }, [sheet, tv.gateOpen, onClose]);
+    const closeSheet = useCallback(() => setSheet(null), []);
+    const pinnedSet = useMemo(() => new Set(tv.pinnedKeys), [tv.pinnedKeys]);
+    const zap = useMemo(() => {
+      const current3 = channelKey(channel);
+      const pinned = [];
+      const rest = [];
+      tv.neighbours.forEach((c, i) => (pinnedSet.has(channelKey(c)) ? pinned : rest).push({ channel: c, number: i + 1 }));
+      const index = rest.findIndex((entry) => channelKey(entry.channel) === current3);
+      const window2 = index < 0 ? rest.slice(0, ZAP_WINDOW * 2) : rest.slice(Math.max(0, index - ZAP_WINDOW), index + ZAP_WINDOW + 1);
+      return [...pinned, ...window2];
+    }, [tv.neighbours, pinnedSet, channel]);
+    const numberName = `${tv.channelNumber ? `${tv.channelNumber} \xB7 ` : ""}${channel.name}`;
+    const minutesLeft = info.now ? tt("minutesLeft", { min: Math.max(0, Math.round((info.now.stop - tv.nowMs) / 6e4)) }) : null;
+    const timeLine2 = info.now ? `${formatClock2(info.now.start, tv.locale)}\u2013${formatClock2(info.now.stop, tv.locale)} \xB7 ${minutesLeft}` : null;
+    const nextLine = info.next ? `${tt("nextLabel")} ${info.next.title} \xB7 ${formatClock2(info.next.start, tv.locale)}` : null;
+    const progress2 = info.now ? progressOf(info.now.start, info.now.stop, tv.nowMs) : 0;
+    const qualityLabel = tv.quality ?? tt("autoQuality");
+    const favLabel = tv.favourite ? tt("menuRemoveFavourite") : tt("menuAddFavourite");
+    const audioItems = controls ? [
+      { key: "aspect", label: `${tt("playerAspect")}: ${controls.aspectLabel}`, run: controls.onCycleAspect },
+      { key: "mute", label: controls.muted ? tt("playerUnmute") : tt("playerMute"), run: controls.onToggleMute }
+    ] : [];
+    const moreItems = [
+      { key: "multi", label: tt("menuMultiview"), run: tv.onOpenMultiview },
+      { key: "pause", label: paused ? tt("menuResume") : tt("menuPause"), run: onTogglePause },
+      { key: "fav", label: favLabel, run: tv.onToggleFavourite },
+      { key: "info", label: tt("menuChannelDetails"), run: tv.onOpenChannelDetails }
+    ];
+    const currentKey = channelKey(channel);
+    const matchSources = tv.sport ? currentMatchSources(tv.sport, currentKey, tv.nowMs) : null;
+    const sourceItems = matchSources && tv.sport ? matchSources.sources.map((s) => {
+      const sport = tv.sport;
+      const on = s.channelKey === currentKey;
+      return { key: s.channelKey, label: `${on ? "\u2713 " : ""}${[s.name, sport.playlistName(s.sourceId), s.quality].filter(Boolean).join(" \xB7 ")}`, run: () => {
+        if (!on) sport.onSwitchSource(s);
+      } };
+    }) : [];
+    const sheetNode = sheet ? /* @__PURE__ */ jsx(
+      MobileSheet,
+      {
+        title: sheet === "audio" ? tt("audioSubs") : sheet === "sources" ? tt("sportSourcesShort", { n: sourceItems.length }) : channel.name,
+        subtitle: info.now?.title,
+        items: sheet === "audio" ? audioItems : sheet === "sources" ? sourceItems : moreItems,
+        onClose: closeSheet,
+        pushLayer: noLayer,
+        testId: sheet === "audio" ? "phone-audio-sheet" : sheet === "sources" ? "phone-sources-sheet" : "phone-more-sheet"
+      }
+    ) : null;
+    const sourcesLabel = matchSources ? tt("sportSourcesShort", { n: matchSources.sources.length }) : null;
+    const fade = { opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none" };
+    const muteBtn = (size) => controls ? /* @__PURE__ */ jsx(Round, { size, label: controls.muted ? tt("playerUnmute") : tt("playerMute"), onPress: controls.onToggleMute, background: size >= 44 ? MT.s10 : "rgba(0,0,0,0.55)", children: controls.muted ? /* @__PURE__ */ jsx(MIcons.SpeakerSlash, { size: 22 }) : /* @__PURE__ */ jsx(MIcons.SpeakerHigh, { size: 22 }) }) : null;
+    if (landscape) {
+      return /* @__PURE__ */ jsxs(Fragment2, { children: [
+        /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape", onPointerDown: onStageTap, style: { position: "absolute", inset: 0, zIndex: 30, color: MT.text, fontFamily: MT.font }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { position: "absolute", top: 0, left: 0, right: 0, padding: `max(44px, env(safe-area-inset-top, 0px)) ${SAFE_SIDE_R} 0 ${SAFE_SIDE_L}`, display: "flex", alignItems: "center", gap: 12, ...fade }, children: [
+            /* @__PURE__ */ jsx(Round, { size: 40, label: tt("back"), onPress: onClose, children: /* @__PURE__ */ jsx(MIcons.CaretLeft, { size: 22 }) }),
+            /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 15, color: "rgba(243,244,248,0.78)", ...ellipsis }, children: numberName }),
+            /* @__PURE__ */ jsxs("span", { style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 10, fontSize: 14, color: "rgba(243,244,248,0.78)" }, children: [
+              info.now ? /* @__PURE__ */ jsx(LiveTag2, { label: tt("live") }) : null,
+              /* @__PURE__ */ jsx("span", { children: [tv.quality, formatClock2(tv.nowMs, tv.locale)].filter(Boolean).join(" \xB7 ") })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 0, right: 0, bottom: 0, padding: `72px ${SAFE_SIDE_R} max(22px, env(safe-area-inset-bottom, 0px)) ${SAFE_SIDE_L}`, background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.9) 55%)", display: "flex", flexDirection: "column", gap: 12, ...fade }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", gap: 16 }, children: [
+              /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape-info", style: { flex: 1, minWidth: "0px", display: "flex", flexDirection: "column", gap: 4 }, children: [
+                /* @__PURE__ */ jsx("div", { style: { fontSize: 26, fontWeight: 600, ...ellipsis }, children: info.now?.title ?? channel.name }),
+                timeLine2 ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis }, children: [
+                  timeLine2,
+                  nextLine ? ` \xB7 ${nextLine}` : ""
+                ] }) : null
+              ] }),
+              /* @__PURE__ */ jsxs("div", { "data-testid": "phone-landscape-controls", style: { flex: "0 0 auto", display: "flex", alignItems: "center", gap: 10 }, children: [
+                muteBtn(44),
+                /* @__PURE__ */ jsx(Pill, { label: qualityLabel, disabled: true }),
+                sourcesLabel ? /* @__PURE__ */ jsx(Pill, { label: sourcesLabel, onPress: () => setSheet("sources"), testId: "phone-sources" }) : null,
+                /* @__PURE__ */ jsx(Pill, { label: tt("menuGuide"), onPress: tv.onOpenGuide }),
+                /* @__PURE__ */ jsx(Round, { size: 44, label: tt("moreActions"), onPress: () => setSheet("more"), background: MT.s10, children: /* @__PURE__ */ jsx(MIcons.DotsThree, { size: 22 }) })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx("div", { "data-testid": "phone-landscape-progress", style: { display: "flex" }, children: /* @__PURE__ */ jsx(ProgressBar2, { value: progress2, height: 5 }) })
+          ] })
+        ] }),
+        sheetNode
+      ] });
+    }
+    return /* @__PURE__ */ jsxs(Fragment2, { children: [
+      /* @__PURE__ */ jsx("div", { "data-testid": "phone-stage-tap", onPointerDown: onStageTap, style: { position: "absolute", top: 0, left: 0, right: 0, ...PHONE_STAGE_BOX, zIndex: 30, color: MT.text, fontFamily: MT.font }, children: /* @__PURE__ */ jsxs("div", { "data-testid": "phone-overlay", style: { position: "absolute", inset: 0, ...fade }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { position: "absolute", top: 12, left: 12, right: 12, display: "flex", alignItems: "center", gap: 10 }, children: [
+          /* @__PURE__ */ jsx(Round, { size: 40, label: tt("back"), onPress: onClose, children: /* @__PURE__ */ jsx(MIcons.CaretLeft, { size: 22 }) }),
+          /* @__PURE__ */ jsxs("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(243,244,248,0.85)" }, children: [
+            info.now ? /* @__PURE__ */ jsx(LiveTag2, { label: tt("live") }) : null,
+            tv.quality ? /* @__PURE__ */ jsx("span", { children: tv.quality }) : null
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { style: { position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", alignItems: "center", gap: 12 }, children: [
+          muteBtn(40),
+          /* @__PURE__ */ jsx(ProgressBar2, { value: progress2, height: 4 }),
+          controls?.onEnterPip ? /* @__PURE__ */ jsx(Round, { size: 40, label: tt("playerPip"), onPress: controls.onEnterPip, children: /* @__PURE__ */ jsx(MIcons.Pip, { size: 22 }) }) : null,
+          controls ? /* @__PURE__ */ jsx(Round, { size: 40, label: tt("playerFullscreen"), onPress: controls.onToggleFullscreen, children: /* @__PURE__ */ jsx(MIcons.ArrowsOut, { size: 22 }) }) : null
+        ] })
+      ] }) }),
+      /* @__PURE__ */ jsxs("div", { "data-testid": "phone-info", style: { flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 16, paddingBottom: `calc(16px + ${MT.SAFE_BOTTOM})`, display: "flex", flexDirection: "column", gap: 14, background: MT.bg, color: MT.text, fontFamily: MT.font }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, minHeight: 44 }, children: [
+          /* @__PURE__ */ jsx(MobileLogo, { channel, width: 52, height: 34 }),
+          /* @__PURE__ */ jsx("span", { style: { flex: 1, fontSize: 14, color: MT.muted70, ...ellipsis }, children: numberName }),
+          /* @__PURE__ */ jsx(Round, { size: 44, label: favLabel, onPress: tv.onToggleFavourite, background: tv.favourite ? MT.accMix(22) : MT.s10, children: /* @__PURE__ */ jsx("span", { style: { display: "flex", color: tv.favourite ? MT.acc : MT.text }, children: /* @__PURE__ */ jsx(MIcons.Heart, { size: 22, filled: tv.favourite }) }) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { "data-testid": "phone-title", style: { fontSize: 22, fontWeight: 600, lineHeight: 1.2, ...clamp2 }, children: info.now?.title ?? channel.name }),
+        timeLine2 ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted70, ...ellipsis }, children: timeLine2 }) : null,
+        nextLine ? /* @__PURE__ */ jsx("div", { style: { fontSize: 14, color: MT.muted, ...ellipsis }, children: nextLine }) : null,
+        /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }, children: [
+          /* @__PURE__ */ jsx(GridBtn, { label: tt("audioSubs"), onPress: () => setSheet("audio") }),
+          /* @__PURE__ */ jsx(GridBtn, { label: qualityLabel }),
+          /* @__PURE__ */ jsx(GridBtn, { label: tt("menuChannelDetails"), onPress: tv.onOpenChannelDetails }),
+          /* @__PURE__ */ jsx(GridBtn, { label: tt("menuGuide"), onPress: tv.onOpenGuide }),
+          sourcesLabel ? /* @__PURE__ */ jsx(GridBtn, { label: sourcesLabel, onPress: () => setSheet("sources"), testId: "phone-sources" }) : null
+        ] }),
+        /* @__PURE__ */ jsx("div", { style: { fontSize: 15, fontWeight: 600, marginTop: 4 }, children: tt("zapList") }),
+        /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column" }, children: zap.map((entry) => /* @__PURE__ */ jsx(
+          MobileChannelRow,
+          {
+            channel: entry.channel,
+            number: entry.number,
+            now: tv.nowFor(entry.channel),
+            nowMs: tv.nowMs,
+            locale: tv.locale,
+            pinned: pinnedSet.has(channelKey(entry.channel)),
+            variant: "zap",
+            noProgrammeLabel: tt("noProgramme"),
+            onPress: () => tv.onSwitchChannel(entry.channel)
+          },
+          channelKey(entry.channel)
+        )) })
+      ] }),
+      sheetNode
+    ] });
+  }
+  function GridBtn({ label, onPress, testId }) {
+    const shared = { minHeight: 46, padding: "0 12px", borderRadius: 12, background: MT.s08, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 600, boxSizing: "border-box" };
+    if (!onPress) return /* @__PURE__ */ jsx("div", { "aria-disabled": "true", style: { ...shared, color: MT.muted }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }) });
+    return /* @__PURE__ */ jsx("div", { ...station(onPress), "data-testid": testId, style: { ...shared, color: MT.text, cursor: "pointer", gridColumn: testId === "phone-sources" ? "1 / -1" : void 0 }, children: /* @__PURE__ */ jsx("span", { style: ellipsis, children: label }) });
+  }
+  var PHONE_STAGE_BOX, ZAP_WINDOW, noLayer, SAFE_SIDE_L, SAFE_SIDE_R;
+  var init_player_chrome_phone = __esm({
+    "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/tv/mobile/player-chrome-phone.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_data();
+      init_live_tv_ui();
+      init_tv_ui();
+      init_tv_strings();
+      init_mobile_tokens();
+      init_mobile_icons();
+      init_mobile_logo();
+      init_mobile_channel_row();
+      init_mobile_sheet();
+      init_player_sport();
+      init_jsx_runtime_shim();
+      PHONE_STAGE_BOX = { aspectRatio: "16 / 9", maxHeight: "45vh" };
+      ZAP_WINDOW = 25;
+      noLayer = () => () => {
+      };
+      SAFE_SIDE_L = "max(60px, env(safe-area-inset-left, 0px))";
+      SAFE_SIDE_R = "max(60px, env(safe-area-inset-right, 0px))";
     }
   });
 
@@ -45383,6 +45431,7 @@ ${cue.text}`).join("\n\n")}
             onMouseLeave: release,
             style: { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 30, padding: `${ps(48)}px ${ps(20)}px ${ps(20)}px`, background: "linear-gradient(0deg, rgba(0,0,0,0.85), rgba(0,0,0,0.55) 55%, transparent)", opacity: visible ? 1 : 0, transition: "opacity 200ms", pointerEvents: visible ? "auto" : "none", color: "#f3f4f8" },
             children: [
+              tv.sport && sportHere ? /* @__PURE__ */ jsx(PlayerSourceSwitcher, { sport: tv.sport, channel, nowMs: tv.nowMs, ps }) : null,
               tv.sport && sportHere && tv.sport.view === "matchday" ? /* @__PURE__ */ jsx(PlayerSportTicker, { sport: tv.sport, channel, nowMs: tv.nowMs, variant: "ticker", ps }) : null,
               /* @__PURE__ */ jsx(PlayerControlRow, { channel, tv, info, ps, isTv, paused, onTogglePause, controls, guideOpen, onToggleGuide: toggleGuide, dotsRef: initRef, onOpenMenu: openMenu, volumeRef, sportAvailable: sportHere, matchesOpen, onToggleMatches: () => {
                 if (matchesOpen) closeMatches();
@@ -59087,10 +59136,10 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx("div", { "data-testid": "feed-play", ...station(() => ctx.watch(m)), "aria-label": ctx.tt("sportWatch"), style: { width: dp(56), height: dp(56), minHeight: dp(56), borderRadius: 999, background: TV2.acc, color: TV2.onAcc, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }, children: /* @__PURE__ */ jsx(SportIcons.Play, { size: dp(22) }) })
         ] }, m.id))
       ] }) : null,
-      later.length > 0 ? /* @__PURE__ */ jsxs("section", { "data-testid": "feed-plan", style: { display: "flex", gap: dp(20), alignItems: "flex-start" }, children: [
-        /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(10) }, children: [
-          /* @__PURE__ */ jsx("span", { style: sectionTitle, children: ctx.tt("sportEveningPlan") }),
-          later.map((m) => {
+      later.length > 0 ? /* @__PURE__ */ jsxs("section", { "data-testid": "feed-plan", style: { display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+        /* @__PURE__ */ jsx("span", { style: sectionTitle, children: ctx.tt("sportEveningPlan") }),
+        /* @__PURE__ */ jsxs("div", { "data-testid": "feed-plan-body", style: { display: "flex", gap: dp(20), alignItems: "flex-start" }, children: [
+          /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: dp(10) }, children: later.map((m) => {
             const reminded = ctx.isReminded(m);
             const best = m.sources[0];
             return /* @__PURE__ */ jsxs("div", { "data-testid": "feed-plan-row", style: { ...cardStyle, display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(12)}px ${dp(16)}px` }, children: [
@@ -59102,20 +59151,20 @@ ${cue.text}`).join("\n\n")}
               ] }),
               followState(m, ctx.follows).any ? /* @__PURE__ */ jsx("span", { style: { color: "#fbbf24", display: "inline-flex" }, children: /* @__PURE__ */ jsx(SportIcons.Star, { size: dp(22), filled: true }) }) : null
             ] }, m.id);
-          })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { "data-testid": "sport-evening", style: { ...cardStyle, width: dp(420), flexShrink: 0, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10) }, children: [
-          /* @__PURE__ */ jsx("span", { style: overline, children: ctx.tt("sportYourEvening") }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 600 }, children: ctx.tt("sportEveningCount", { n: planned.length }) }),
-          /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: TV2.muted }, children: `${ctx.tt("sportKickoffAlert")}: ${alertLabel(ctx)}` }),
-          planned.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "evening-row", style: { display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(16) }, children: [
-            /* @__PURE__ */ jsx("span", { style: { fontWeight: 700 }, children: formatClock2(m.start, ctx.locale) }),
-            /* @__PURE__ */ jsx("span", { style: { ...ellipsis2, flex: 1 }, children: matchTitle(m) }),
-            clash.has(m.id) ? /* @__PURE__ */ jsxs("span", { "data-testid": "evening-clash", title: ctx.tt("sportClash"), style: { color: "#fbbf24" }, children: [
-              "\u26A0 ",
-              ctx.tt("sportClash")
-            ] }) : null
-          ] }, m.id))
+          }) }),
+          /* @__PURE__ */ jsxs("div", { "data-testid": "sport-evening", style: { ...cardStyle, width: dp(420), flexShrink: 0, padding: dp(20), display: "flex", flexDirection: "column", gap: dp(10) }, children: [
+            /* @__PURE__ */ jsx("span", { style: overline, children: ctx.tt("sportYourEvening") }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 600 }, children: ctx.tt("sportEveningCount", { n: planned.length }) }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: dp(15), color: TV2.muted }, children: `${ctx.tt("sportKickoffAlert")}: ${alertLabel(ctx)}` }),
+            planned.map((m) => /* @__PURE__ */ jsxs("div", { "data-testid": "evening-row", style: { display: "flex", alignItems: "center", gap: dp(10), fontSize: dp(16) }, children: [
+              /* @__PURE__ */ jsx("span", { style: { fontWeight: 700 }, children: formatClock2(m.start, ctx.locale) }),
+              /* @__PURE__ */ jsx("span", { style: { ...ellipsis2, flex: 1 }, children: matchTitle(m) }),
+              clash.has(m.id) ? /* @__PURE__ */ jsxs("span", { "data-testid": "evening-clash", title: ctx.tt("sportClash"), style: { color: "#fbbf24" }, children: [
+                "\u26A0 ",
+                ctx.tt("sportClash")
+              ] }) : null
+            ] }, m.id))
+          ] })
         ] })
       ] }) : null,
       finished.length > 0 ? /* @__PURE__ */ jsxs("section", { "data-testid": "feed-finished", style: { display: "flex", flexDirection: "column", gap: dp(12) }, children: [
@@ -60092,7 +60141,7 @@ ${cue.text}`).join("\n\n")}
       setActive3(null);
       go("multi");
     }, [go]);
-    const playerSport = usePlayerSport({ playingKey: active4 !== null && !phone ? channelKey(active4.channel) : null, model, play, openMultiview: openSportMultiview });
+    const playerSport = usePlayerSport({ playingKey: active4 !== null ? channelKey(active4.channel) : null, model, play, openMultiview: openSportMultiview });
     const View = TV_VIEWS[view];
     const activeChannel = active4 ? active4.url ? { ...active4.channel, url: active4.url, name: active4.label ?? active4.channel.name } : active4.channel : null;
     const tvPlayerProps = activeChannel ? buildTvPlayerProps({
