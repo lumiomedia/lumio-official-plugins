@@ -53,7 +53,7 @@ export interface LiveTarget { sport: SportKind; hot: boolean; windowEndsAt: numb
 export interface LivePollerDeps {
   budget: Budget
   targets(): LiveTarget[]
-  onFixtures(sport: SportKind, fixtures: Fixture[]): void
+  onFixtures(sport: SportKind, fixtures: Fixture[], fetchedAt: number | null): void
   liveOpts(): LiveOpts
   now?: () => number
   setTimer?: (fn: () => void, ms: number) => unknown
@@ -117,7 +117,7 @@ export function createLivePoller(deps: LivePollerDeps): LivePoller {
       if (item.at > t) continue
       due.delete(item.sport)
       const res = await deps.budget.live(item.sport, deps.liveOpts())
-      if (res.data) deps.onFixtures(item.sport, res.data)
+      if (res.data) deps.onFixtures(item.sport, res.data, res.fetchedAt)
     }
     reschedule()
   }

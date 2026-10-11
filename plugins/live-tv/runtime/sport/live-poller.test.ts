@@ -51,7 +51,7 @@ describe('livepollern', () => {
     expect(live).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(2_000)
     expect(live).toHaveBeenCalledTimes(1)
-    expect(onFixtures).toHaveBeenCalledWith('football', [])
+    expect(onFixtures).toHaveBeenCalledWith('football', [], NOW)
     await vi.advanceTimersByTimeAsync(60_000)
     expect(live).toHaveBeenCalledTimes(2)
     release()

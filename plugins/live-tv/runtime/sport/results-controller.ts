@@ -37,6 +37,8 @@ const LIVE_DETAIL_MS = 60_000
 export class ResultsController {
   private days = new Map<string, Fixture[]>()
   private scores = new Map<string, Score>()
+  /** När källan såg varje fixtur senast (svarets `fetchedAt`). Äldre data skriver aldrig över nyare. */
+  private observed = new Map<string, number>()
   private done = new Set<string>()
   private doneDay = ''
   private details = new Map<string, { at: number; detail: FixtureDetail }>()
@@ -56,7 +58,7 @@ export class ResultsController {
       this.poller = createLivePoller({
         budget,
         targets: () => this.liveTargets(),
-        onFixtures: (sport, list) => this.applyFixtures(sport, this.dates().today, list, 'live'),
+        onFixtures: (sport, list, fetchedAt) => this.applyFixtures(sport, this.dates().today, list, 'live', fetchedAt ?? this.now()),
         liveOpts: () => ({ today: this.dates().today, tz: this.tz }),
         now: this.now,
       })
@@ -84,12 +86,24 @@ export class ResultsController {
   /**
    * Målhändelser BARA från livepollningen. En äldre cachepost följd av ett
    * färskt dagsprogram är ingen "händelse" som användaren ska få MÅL! för.
+   *
+   * `observedAt` = när källan lämnade datan (svarets `fetchedAt`). En fixtur
+   * som redan setts med nyare data rörs inte: ett dagsprogram ur diskcachen
+   * får aldrig sänka en ställning som livepollningen sett, för då hade nästa
+   * livesvar gett ett falskt MÅL! för ett gammalt mål. Mål räknas bara på
+   * data som är STRIKT nyare än förra observationen.
    */
-  applyFixtures(sport: SportKind, date: string, list: Fixture[], source: 'cache' | 'day' | 'live'): void {
-    const goals = source === 'live' ? diffGoals(this.scores, list, this.now()) : []
-    for (const f of list) if (f.score) this.scores.set(f.id, f.score)
+  applyFixtures(sport: SportKind, date: string, list: Fixture[], source: 'cache' | 'day' | 'live', observedAt: number = this.now()): void {
+    const seen = (f: Fixture) => this.observed.get(f.id) ?? -Infinity
+    const accepted = list.filter((f) => observedAt >= seen(f))
+    const newer = accepted.filter((f) => observedAt > seen(f))
+    const goals = source === 'live' ? diffGoals(this.scores, newer, this.now()) : []
+    for (const f of accepted) {
+      this.observed.set(f.id, observedAt)
+      if (f.score) this.scores.set(f.id, f.score)
+    }
     const byId = new Map(this.fixtures(sport, date).map((f) => [f.id, f]))
-    for (const f of list) byId.set(f.id, f)
+    for (const f of accepted) byId.set(f.id, f)
     this.days.set(this.dayKey(sport, date), [...byId.values()].sort((a, b) => a.kickoff - b.kickoff))
     if (goals.length) emitGoals(goals)
     this.poller?.reschedule()
@@ -110,7 +124,7 @@ export class ResultsController {
     for (const call of calls) {
       if (call.kind !== 'day' || call.date !== d.today || this.fixtures(call.sport, d.today).length > 0) continue
       const cached = await this.budget.peek(call.sport, provider.day(call.sport, d.today, { today: d.today, tz: this.tz, dayEndMs: d.dayEndMs(d.today) }))
-      if (cached) this.applyFixtures(call.sport, d.today, cached, 'cache')
+      if (cached) this.applyFixtures(call.sport, d.today, cached, 'cache', 0) // diskcachen är per definition äldst
     }
     const remaining = [...calls]
     const syncPlanned = () => {
@@ -128,7 +142,7 @@ export class ResultsController {
   private async runPlanned(call: PlannedCall, today: string, dayEndMs: (date: string) => number): Promise<void> {
     if (call.kind === 'day') {
       const res = await this.budget.day(call.sport, call.date, { today, tz: this.tz, dayEndMs: dayEndMs(call.date) })
-      if (res.data) this.applyFixtures(call.sport, call.date, res.data, 'day')
+      if (res.data) this.applyFixtures(call.sport, call.date, res.data, 'day', res.fetchedAt ?? 0)
       if (res.ok && call.date !== today) this.done.add(planKey(call))
       return
     }

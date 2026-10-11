@@ -45,13 +45,35 @@ describe('ResultsController', () => {
     const goals = vi.fn()
     const off = onGoal(goals)
     const [live] = c.fixtures('football', '2026-10-10')
-    c.applyFixtures('football', '2026-10-10', [{ ...live, score: { home: 3, away: 1 } }], 'day')
+    c.applyFixtures('football', '2026-10-10', [{ ...live, score: { home: 3, away: 1 } }], 'day', NOW + 500)
     expect(goals).not.toHaveBeenCalled() // dagsprogram ger aldrig MÅL!
-    c.applyFixtures('football', '2026-10-10', [{ ...live, score: { home: 4, away: 1 } }], 'live')
+    c.applyFixtures('football', '2026-10-10', [{ ...live, score: { home: 4, away: 1 } }], 'live', NOW + 1_000)
     off()
     expect(goals).toHaveBeenCalledTimes(1)
     expect(goals).toHaveBeenCalledWith(expect.objectContaining({ fixtureId: '1180001', side: 'home', score: { home: 4, away: 1 } }))
     expect(c.fixtures('football', '2026-10-10')).toHaveLength(2) // live-svaret ersätter, tappar inte de andra
+  })
+
+  it('ett äldre dagsprogram ur diskcachen skriver inte över nyare livedata och ger inget falskt MÅL!', async () => {
+    let now = NOW
+    const older = JSON.parse(JSON.stringify(footballDate)) as typeof footballDate
+    older.response[0].goals = { home: 2, away: 0 } // före 2–1
+    const fetch = vi.fn(async () => ({ data: older, cached: true, fresh: true, fetchedAt: NOW - 10 * 60_000, quota, error: null }) as SportFetchResponse)
+    const budget = new Budget(apiSports, 'k123', { fetch: fetch as never, now: () => now, sleep: async () => {} })
+    budget.noteQuota(quota)
+    const c = new ResultsController(budget, { tz: 'Europe/Stockholm', now: () => now, startPoller: false })
+    const fresh = apiSports.day('football', '2026-10-10', { today: '2026-10-10', tz: 'Europe/Stockholm', dayEndMs: NOW + 6 * 3_600_000 }).parse([footballDate])
+    const goals = vi.fn()
+    const off = onGoal(goals)
+    c.applyFixtures('football', '2026-10-10', fresh, 'live', now) // live 2–1
+    now += 30_000
+    await c.runPlan({ sports: ['football'], leagues: [] }) // disk 2–0, tio minuter gammal
+    expect(c.fixtures('football', '2026-10-10').find((f) => f.id === '1180001')?.score).toEqual({ home: 2, away: 1 })
+    now += 30_000
+    c.applyFixtures('football', '2026-10-10', fresh, 'live', now) // live 2–1 igen
+    c.applyFixtures('football', '2026-10-10', [{ ...fresh[0], score: { home: 3, away: 1 } }], 'live', now - 45_000) // äldre livesvar
+    off()
+    expect(goals).not.toHaveBeenCalled()
   })
 
   it('liveTargets: het när en match pågår, fönstret = sista avspark + 2 h', async () => {
