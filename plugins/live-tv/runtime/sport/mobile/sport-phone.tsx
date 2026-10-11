@@ -45,7 +45,7 @@ const SECTION_ICONS: Record<PhoneSection, () => ReactNode> = {
   multi: () => <PIcons.Grid size={20} />,
 }
 
-export function SportPhone({ model, nav }: TvViewProps) {
+export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
   const [tab, setTab] = useState<Tab>('foryou')
   const [offset, setOffset] = useState<DayOffset>(0)
   const [filter, setFilter] = useState<SportFilter>('all')
@@ -98,13 +98,21 @@ export function SportPhone({ model, nav }: TvViewProps) {
         {/* Rubrik, flikar och filterraden står still; bara innehållet under rullar (handoffen). */}
         <div data-testid="sport-phone-head" style={{ flexShrink: 0, padding: `calc(${MT.SAFE_TOP_GUARD} + 8px) 16px 0`, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div data-testid="sport-phone-title" {...station(() => setSections(true))} aria-label={tt('sportSwitchSection')} aria-haspopup="dialog" style={{ display: 'flex', flexDirection: 'column', minWidth: 0, cursor: 'pointer' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: P.muted60 }}>{tt('liveTv')}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: platform === 'ios' ? 32 : 26, fontWeight: 700, lineHeight: 1.1 }}>
-                {tt('sportTitle')}
-                <span style={{ color: P.muted70, display: 'inline-flex' }}><MIcons.CaretDown size={18} /></span>
-              </span>
-            </div>
+            {/* Som egen sida (menyvalet Sport) är Sport ingen Live TV-sektion: bara
+                rubriken, utan överrad, pil och sektionsark. */}
+            {standalone ? (
+              <div data-testid="sport-phone-title" style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <span style={{ fontSize: platform === 'ios' ? 32 : 26, fontWeight: 700, lineHeight: 1.1 }}>{tt('sportTitle')}</span>
+              </div>
+            ) : (
+              <div data-testid="sport-phone-title" {...station(() => setSections(true))} aria-label={tt('sportSwitchSection')} aria-haspopup="dialog" style={{ display: 'flex', flexDirection: 'column', minWidth: 0, cursor: 'pointer' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: P.muted60 }}>{tt('liveTv')}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: platform === 'ios' ? 32 : 26, fontWeight: 700, lineHeight: 1.1 }}>
+                  {tt('sportTitle')}
+                  <span style={{ color: P.muted70, display: 'inline-flex' }}><MIcons.CaretDown size={18} /></span>
+                </span>
+              </div>
+            )}
             <span style={{ flex: 1 }} />
             {tab === 'foryou' ? (
               <div data-testid="sport-phone-view" style={{ display: 'flex', padding: 3, borderRadius: 12, background: 'rgba(252,252,255,0.10)', border: `1px solid ${P.line14}` }}>
@@ -170,7 +178,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
       </div>
 
       {sheet ? <MatchInfoDrawer ctx={ctx} match={liveSheet ?? sheet} onClose={() => setSheet(null)} phone /> : null}
-      {sections ? (
+      {sections && !standalone ? (
         <PhoneSportSheet testId="sport-phone-sections" label={tt('sportSwitchSection')} onClose={() => setSections(false)} pushLayer={nav.pushLayer}>
           <span style={overline}>{tt('liveTv')}</span>
           {PHONE_SECTIONS.map((s) => {

@@ -120,7 +120,11 @@ export interface TvNav {
   playerOpen: boolean
 }
 
-export interface TvViewProps { model: LiveTvModel; nav: TvNav; params: Record<string, string>; settings: TvSettings; phone: boolean }
+export interface TvViewProps {
+  model: LiveTvModel; nav: TvNav; params: Record<string, string>; settings: TvSettings; phone: boolean
+  /** Sport som egen sida (`sportOnly`): vyn är ingen sektion i Live TV och ska inte säga det. */
+  standalone?: boolean
+}
 
 /**
  * Vad PIN-grinden väntar på.
@@ -700,7 +704,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
         />
       )}
       <main ref={mainRef} style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-        {redirectCheck ? null : <View key={view} model={model} nav={nav} params={viewParams} settings={settings} phone={phone} />}
+        {redirectCheck ? null : <View key={view} model={model} nav={nav} params={viewParams} settings={settings} phone={phone} standalone={sportOnly} />}
       </main>
       {/* Flik-raden (telefon): borta medan spelaren är öppen — den ligger
           `position: fixed` och hade annars legat över bilden. */}

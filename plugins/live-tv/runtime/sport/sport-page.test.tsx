@@ -107,15 +107,23 @@ describe('Sport som egen sida: skrivbord/TV', () => {
 })
 
 describe('Sport som egen sida: telefon', () => {
-  it('ingen flikrad; sektionsarket leder Guide in i Live TV och Multiview stannar på sidan', async () => {
+  it('egen sida: rubriken är bara "Sport" — ingen Live TV-överrad, ingen pil, inget sektionsark', async () => {
     const { onNavigate } = mountSport({}, { page: true, phone: true, days: { [today]: [later] } })
-    fireEvent.click(await screen.findByTestId('sport-phone-title'))
+    const title = await screen.findByTestId('sport-phone-title')
+    expect(title.textContent).toBe('Sport')
+    expect(title.getAttribute('aria-haspopup')).toBeNull()
+    expect(title.querySelector('svg')).toBeNull()
+    fireEvent.click(title)
+    expect(screen.queryByTestId('sport-phone-sections')).toBeNull()
     expect(screen.queryByTestId('mobile-tab-bar')).toBeNull()
-    fireEvent.click(within(await screen.findByTestId('sport-phone-sections')).getByTestId('sport-phone-section-guide'))
-    expect(onNavigate).toHaveBeenLastCalledWith({ pageId: 'live-tv-browse', params: { view: 'guide' } })
-    fireEvent.click(screen.getByTestId('sport-phone-title'))
-    fireEvent.click(within(await screen.findByTestId('sport-phone-sections')).getByTestId('sport-phone-section-multi'))
-    expect(onNavigate).toHaveBeenLastCalledWith({ pageId: SPORT_PAGE_ID, params: { view: 'multi' } })
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+  it('inne i Live TV är rubriken oförändrad: "Live TV" + "Sport ▾" med sektionsarket', async () => {
+    mountSport({}, { phone: true, days: { [today]: [later] } })
+    const title = await screen.findByTestId('sport-phone-title')
+    expect(title).toHaveTextContent(/Live TV\s*Sport/i)
+    fireEvent.click(title)
+    expect(await screen.findByTestId('sport-phone-sections')).toBeInTheDocument()
   })
   it('Titta på telefonen spelar här och stängning landar på Sport', async () => {
     const live2 = fxMatch({ id: 'l2', home: 'GAIS', away: 'Sirius', start: now - 30 * MIN, stop: now + 90 * MIN })
