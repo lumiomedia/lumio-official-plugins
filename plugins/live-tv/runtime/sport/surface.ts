@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { cardStyle } from '../tv/tv-ui'
+import { cardStyle, belowTitleBar, dp } from '../tv/tv-ui'
 
 /*
   Ytorna i Sport läser EN uppsättning variabler som Sport-roten sätter medan
@@ -20,3 +20,16 @@ export const sportSurface = (fallback: string = SPORT_CARD_BG): CSSProperties =>
 })
 
 export const sportCardStyle: CSSProperties = { ...cardStyle, ...sportSurface() }
+
+/**
+ * EN lådyta för allt som öppnas ur Sport (matchinfo, Fel kanal?, Mina lag,
+ * ligor, Alla sporter): samma bakgrund (Sport-kortvariabeln med bild, annars
+ * TV.panel-färgen), kant och padding. Delade pickers tar den som `surface`.
+ */
+export const SPORT_DRAWER_PADDING = `${belowTitleBar(dp(28))} ${dp(32)}px ${dp(28)}px`
+export const sportDrawerStyle: CSSProperties = {
+  ...sportSurface(SPORT_PANEL_BG),
+  borderLeft: '1px solid rgba(255,255,255,0.16)',
+  padding: SPORT_DRAWER_PADDING,
+  boxSizing: 'border-box',
+}

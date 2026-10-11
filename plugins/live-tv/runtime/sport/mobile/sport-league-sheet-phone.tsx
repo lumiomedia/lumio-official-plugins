@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { TV, station } from '../../tv/tv-ui'
+import { station } from '../../tv/tv-ui'
+import { SPORT_PANEL_BG, sportSurface } from '../surface'
 import { useTvText } from '../../tv/tv-strings'
 import { MT, ellipsis, sectionLabel } from '../../tv/mobile/mobile-tokens'
 import { countryGroups, foldText, searchLeagues, type LeagueEntry } from '../league-jump'
@@ -74,7 +75,7 @@ export function PhoneLeagueSheet({ entries, kindLabel, onPick, onClose, pushLaye
     <>
       <div data-testid="sheet-scrim" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 70, background: MT.scrim }} />
       <div role="dialog" aria-modal="true" data-testid="phone-league-sheet" data-live-tv-layer="" data-panel-root=""
-        style={{ position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: 71, borderRadius: 26, boxSizing: 'border-box', background: TV.panel, border: `1px solid ${MT.line10}`, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', color: MT.text, fontFamily: MT.font, overflow: 'hidden', paddingBottom: MT.SAFE_BOTTOM, display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}>
+        style={{ position: 'fixed', left: 8, right: 8, bottom: 8, zIndex: 71, borderRadius: 26, boxSizing: 'border-box', ...sportSurface(SPORT_PANEL_BG), border: `1px solid ${MT.line10}`, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', color: MT.text, fontFamily: MT.font, overflow: 'hidden', paddingBottom: MT.SAFE_BOTTOM, display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}>
         <div style={{ padding: '18px 20px 12px', display: 'flex', flexDirection: 'column', gap: 10, borderBottom: `1px solid ${MT.line08}` }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>{tt('sportAllLeagues')}</div>
           <input data-testid="phone-league-search" value={query} placeholder={tt('sportLeagueSearch')} onChange={(e) => setQuery(e.target.value)} autoComplete="off" spellCheck={false} enterKeyHint="search"

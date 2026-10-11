@@ -13,7 +13,7 @@ import { Crest, StatusTag, ellipsis, overline, primaryBtn } from './sport-parts'
 import { MatchScore } from './sport-score'
 import { MatchCenterData } from './sport-match-center-data'
 import { SportIcons } from './sport-icons'
-import { SPORT_PANEL_BG, sportSurface } from '../surface'
+import { sportDrawerStyle } from '../surface'
 
 const iconBtn = (on: boolean): CSSProperties => ({
   height: dp(44), minHeight: dp(44), minWidth: dp(44), padding: `0 ${dp(10)}px`, boxSizing: 'border-box', borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: dp(6),
@@ -70,7 +70,7 @@ export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match
   return (
     <>
       <div data-live-tv-layer="" aria-hidden="true" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 59, background: TV.scrim }} />
-      <div ref={rootRef} data-testid="match-center" data-panel-root="" data-live-tv-layer="" data-scroll="" role="dialog" aria-label={matchTitle(match)} style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, ...sportSurface(SPORT_PANEL_BG), borderLeft: '1px solid rgba(255,255,255,0.16)', padding: `${belowTitleBar(dp(28))} ${dp(32)}px ${dp(28)}px`, display: 'flex', flexDirection: 'column', gap: dp(20), overflowY: 'auto', boxSizing: 'border-box' }}>
+      <div ref={rootRef} data-testid="match-center" data-panel-root="" data-live-tv-layer="" data-scroll="" role="dialog" aria-label={matchTitle(match)} style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(840)}px, 100%)`, zIndex: 60, ...sportDrawerStyle, display: 'flex', flexDirection: 'column', gap: dp(20), overflowY: 'auto' }}>
         {/* Titelraden i Guidens kanalinfo-stil: märkena bredvid varandra, titeln, ställning och minut i samma rad. */}
         <div data-testid="mc-head" style={{ display: 'flex', alignItems: 'flex-start', gap: dp(16) }}>
           {match.home && match.away ? (
@@ -147,6 +147,7 @@ export function SportMatchCenter({ ctx, match, onClose }: { ctx: SportCtx; match
         <TvChannelPicker
           model={ctx.model}
           nav={ctx.nav}
+          surface={sportDrawerStyle}
           title={ctx.tt('sportPickChannel')}
           onPick={(channel) => {
             setOverride(match.id, { key: channelKey(channel), name: channel.name, url: channel.url, logo: channel.logo ?? null, group: channel.group, tvgId: channel.tvgId })

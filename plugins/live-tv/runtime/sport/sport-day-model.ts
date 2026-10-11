@@ -121,6 +121,24 @@ export function timelineRows(matches: SportMatch[]): TimelineRow[] {
   return [...rows.values()]
 }
 
+const MERGE_GAP_MS = 5 * MIN
+
+/** Angränsande block med samma titel (<= 5 min mellan) blir ett — F1-raden fylls annars av småbitar. */
+export function mergeLane(lane: SportMatch[]): SportMatch[] {
+  const out: SportMatch[] = []
+  for (const m of lane) {
+    const prev = out[out.length - 1]
+    if (prev && matchTitle(prev) === matchTitle(m) && m.start - prev.stop <= MERGE_GAP_MS) out[out.length - 1] = { ...prev, stop: Math.max(prev.stop, m.stop) }
+    else out.push(m)
+  }
+  return out
+}
+
+/** Under ~6 % av axeln finns inte plats för en läsbar titel — då visas bara färgstapeln. */
+export function blockShowsLabel(durationMs: number, axisSpanMs: number, minShare = 0.06): boolean {
+  return axisSpanMs > 0 && durationMs / axisSpanMs >= minShare
+}
+
 export function clashes(matches: SportMatch[], minutes = 100): Set<string> {
   const sorted = [...matches].sort((a, b) => a.start - b.start)
   const out = new Set<string>()

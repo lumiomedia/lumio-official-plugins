@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { channelKey, type M3uChannel, type XtreamCategory } from '../live-tv-data'
 import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav } from './tv-shell'
@@ -25,6 +25,7 @@ export function PickerPanel({
   rows,
   onClose,
   testId = 'list-picker',
+  surface,
 }: {
   nav: TvNav
   title: string
@@ -39,6 +40,8 @@ export function PickerPanel({
   rows: ReactNode | ((close: () => void) => ReactNode)
   onClose: () => void
   testId?: string
+  /** Sport: samma ytvariabler/kant/padding som matchlådan (`sportDrawerStyle`). Utan den: oförändrat utseende. */
+  surface?: CSSProperties
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)
@@ -69,7 +72,7 @@ export function PickerPanel({
       data-testid={testId}
       data-panel-root=""
       data-live-tv-layer=""
-      style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18) }}
+      style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18), boxSizing: 'border-box', ...surface }}
     >
       <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
       {chips}
@@ -198,13 +201,14 @@ export interface ChoiceOption { key: string | null; label: string; count?: numbe
  * fjärren landar där man står i stället för högst upp i en lång lista.
  * Rader 56 px och antal i 45 % enligt handoffen (§Ram och kontrollrad).
  */
-export function TvChoicePanel({ nav, title, options, value, onPick, onClose }: {
+export function TvChoicePanel({ nav, title, options, value, onPick, onClose, surface }: {
   nav: TvNav
   title: string
   options: ChoiceOption[]
   value: string | null
   onPick: (key: string | null) => void
   onClose: () => void
+  surface?: CSSProperties
 }) {
   const initIndex = Math.max(0, options.findIndex((option) => option.key === value))
   return (
@@ -214,6 +218,7 @@ export function TvChoicePanel({ nav, title, options, value, onPick, onClose }: {
       onClose={onClose}
       chips={null}
       testId="choice-panel"
+      surface={surface}
       rows={(close) => options.map((option, index) => {
         const on = option.key === value
         return (

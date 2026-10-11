@@ -23,7 +23,7 @@ import { SportFeed } from './sport-feed'
 import { FollowPicker, SportFollows } from './sport-follows'
 import { SportMatchCenter } from './sport-match-center'
 import { SportPhone } from '../mobile/sport-phone'
-import { sportBg } from '../surface'
+import { sportBg, sportDrawerStyle } from '../surface'
 
 const NO_MATCHES: SportMatch[] = []
 
@@ -149,6 +149,7 @@ function SportTv({ model, nav }: TvViewProps) {
       {allOpen ? (
         <TvChoicePanel
           nav={nav}
+          surface={sportDrawerStyle}
           title={tt('sportAll')}
           options={[{ key: null, label: tt('sportAll'), count: total }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k, label: ctx.kindLabel(k), count: counts[k] }))]}
           value={filter === 'all' ? null : filter}

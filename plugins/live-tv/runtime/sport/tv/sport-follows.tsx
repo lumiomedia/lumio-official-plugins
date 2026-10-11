@@ -15,7 +15,7 @@ import { alertLabel, followNext, type SportCtx } from '../sport-ctx'
 import { crestForFollow } from '../score-model'
 import { Crest, ellipsis, primaryBtn, sectionTitle } from './sport-parts'
 import { SportIcon, SportIcons } from './sport-icons'
-import { sportCardStyle } from '../surface'
+import { sportCardStyle, sportDrawerStyle } from '../surface'
 
 const same = (a: Pick<SportFollow, 'kind' | 'key'>, b: Pick<SportFollow, 'kind' | 'key'>) => a.kind === b.kind && a.key === b.key
 
@@ -145,6 +145,7 @@ export function FollowPicker({ ctx, days, onClose }: { ctx: SportCtx; days: (Spo
       title={ctx.tt('sportFollowAdd')}
       onClose={onClose}
       testId="follow-picker"
+      surface={sportDrawerStyle}
       chips={(
         <div style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
         {tv ? (

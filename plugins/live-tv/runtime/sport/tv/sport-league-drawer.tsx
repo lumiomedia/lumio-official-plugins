@@ -8,6 +8,7 @@ import { PickerPanel } from '../../tv/tv-list-picker'
 import { useTextPrompt } from '../../tv/tv-text-entry'
 import type { TvNav } from '../../tv/tv-shell'
 import { countryGroups, foldText, searchLeagues, type LeagueEntry } from '../league-jump'
+import { sportDrawerStyle } from '../surface'
 import { SportIcon } from './sport-icons'
 import { ellipsis } from './sport-parts'
 
@@ -75,6 +76,7 @@ export function LeagueDrawer({ nav, entries, showSport, onPick, onClose }: { nav
       title={tt('sportAllLeagues')}
       onClose={onClose}
       testId="league-drawer"
+      surface={sportDrawerStyle}
       chips={<>{searchField}{prompt.node}</>}
       rows={(close) => {
         const pick = (key: string) => { close(); onPick(key) }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   clashes, crestColor, featuredMatch, followCandidates, followState, headerSummary, leagueColor, nextMatchFor,
   nextOnYourChannels, pickMultiviewKeys, rankedSources, splitSections, sportCounts, statusAt, teamRing,
-  timelineAxis, timelineRows, visibleMatches, playerMatchGroups, matchdayStrip,
+  timelineAxis, timelineRows, mergeLane, blockShowsLabel, visibleMatches, playerMatchGroups, matchdayStrip,
 } from './sport-day-model'
 import { HOUR, MIN, fxDay, fxMatch, fxSource } from './__sport-fixture'
 
@@ -158,5 +158,21 @@ describe('matchdagens remsa: en tidsordnad rad med nu-markör', () => {
   it('uppskjuten match räknas som kommande', () => {
     const postponed = fxMatch({ id: 'pp', start: now - HOUR, phase: 'postponed' })
     expect(matchdayStrip([postponed, done], now).items.map((m) => m.id)).toEqual(['done', 'pp'])
+  })
+})
+
+describe('tidslinjens block', () => {
+  const f1 = (id: string, start: number, stop: number, title = 'The Race') => fxMatch({ id, kind: 'football', home: null, away: null, event: title, start, stop })
+  it('slår ihop angränsande block med samma titel inom 5 min', () => {
+    const merged = mergeLane([f1('a', now, now + 10 * MIN), f1('b', now + 12 * MIN, now + 20 * MIN), f1('c', now + 40 * MIN, now + 50 * MIN)])
+    expect(merged.map((m) => [m.id, m.start, m.stop])).toEqual([['a', now, now + 20 * MIN], ['c', now + 40 * MIN, now + 50 * MIN]])
+  })
+  it('olika titlar slås aldrig ihop', () => {
+    expect(mergeLane([f1('a', now, now + 10 * MIN, 'X'), f1('b', now + 10 * MIN, now + 20 * MIN, 'Y')])).toHaveLength(2)
+  })
+  it('text bara när blocket är brett nog', () => {
+    const span = 12 * HOUR
+    expect(blockShowsLabel(10 * MIN, span)).toBe(false)
+    expect(blockShowsLabel(2 * HOUR, span)).toBe(true)
   })
 })
