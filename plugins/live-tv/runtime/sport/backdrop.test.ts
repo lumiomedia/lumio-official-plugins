@@ -116,7 +116,11 @@ describe('kortens bakgrund', () => {
   })
   it('lådan i TV-läget: minst 85 % även när kortinställningen är lägre, högre värden hålls', () => {
     expect(cardSurfaceVars({ opacity: 50, tone: 'black' }, null, { blur: false, tv: true })['--sport-drawer-bg']).toBe('rgba(0, 0, 0, 0.85)')
-    expect(cardSurfaceVars({ opacity: 95, tone: 'black' }, null, { blur: false, tv: true })['--sport-drawer-bg']).toBe('rgba(0, 0, 0, 0.95)')
+    expect(cardSurfaceVars({ opacity: 50, tvOpacity: 95, tone: 'black' }, null, { blur: false, tv: true })['--sport-drawer-bg']).toBe('rgba(0, 0, 0, 0.95)')
+    expect(cardSurfaceVars({ opacity: 50, tvOpacity: 60, tone: 'black' }, null, { blur: false, tv: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.6)')
+    // Inget val: 85 på TV, 50 på skrivbordet.
+    expect(cardSurfaceVars({ opacity: null, tone: 'black' }, null, { blur: false, tv: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.85)')
+    expect(cardSurfaceVars({ opacity: null, tone: 'black' }, null, { blur: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.5)')
     expect(cardSurfaceVars({ opacity: 50, tone: 'black' }, null, { blur: true })['--sport-drawer-bg']).toBe('rgba(0, 0, 0, 0.5)')
     expect(cardSurfaceVars({ opacity: 50, tone: 'black' }, null, { blur: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.5)')
   })

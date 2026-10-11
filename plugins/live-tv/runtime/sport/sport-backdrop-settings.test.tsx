@@ -98,7 +98,7 @@ describe('Bakgrund i Sport, skrivbordskortet', () => {
   it('kortens bakgrund: opacitet och färg', () => {
     render(<SportBackdropSettingsDesktop />)
     fireEvent.change(screen.getByTestId('sport-cards-opacity'), { target: { value: '40' } })
-    expect(getSportSettings().cards).toEqual({ opacity: 40, tone: 'image' })
+    expect(getSportSettings().cards).toEqual({ opacity: 40, tvOpacity: null, tone: 'image' })
     fireEvent.click(screen.getByText('Svart'))
     expect(getSportSettings().cards.tone).toBe('black')
     fireEvent.click(screen.getByText('Mörkgrå'))
@@ -129,6 +129,19 @@ describe('Bakgrund i Sport, TV-raderna', () => {
     expect(screen.queryByTestId('sport-backdrop-file')).toBeNull()
     await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url === '/api/live-tv/sport/backdrop-handoff?slot=all')).toBe(true))
     expect(await screen.findByTestId('sport-backdrop-qr')).toBeTruthy()
+  })
+  /* Jerry 2026-10-11: "50 på desktop, 85 på TV-mode". */
+  it('TV-läget visar och stegar TV:ns egen opacitet (standard 85 %), skrivbordets rörs inte', () => {
+    __setTvModeForTests(true)
+    render(<SportBackdropSettingsTv />)
+    expect(screen.getByTestId('sport-cards-opacity-row').textContent).toContain('85 %')
+    fireEvent.click(screen.getByTestId('sport-cards-opacity-row'))
+    expect(getSportSettings().cards).toMatchObject({ opacity: null, tvOpacity: 100 })
+  })
+  it('skrivbordets reglage visar 50 % utan eget val', () => {
+    __setTvModeForTests(false)
+    render(<SportBackdropSettingsDesktop />)
+    expect((screen.getByTestId('sport-cards-opacity') as HTMLInputElement).value).toBe('50')
   })
   it('kortens opacitet och färg stegas', () => {
     render(<SportBackdropSettingsTv />)

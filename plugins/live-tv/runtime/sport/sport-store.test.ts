@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import {
-  SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, getFollows, getOverrides, getSportSettings, isFollowing, setOverride,
+  SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, cardOpacity, withCardOpacity, getFollows, getOverrides, getSportSettings, isFollowing, setOverride,
   hasAnyKey, removeProviderKey, setFollowAlert, setProviderKey, setSportOrder, setSportSettings, sportsCompatible, teamKeysMatch, toggleFollow, useFollows,
 } from './sport-store'
 import { backfillFollowCrests, useBackfillFollowCrests } from './follow-crest'
@@ -98,8 +98,8 @@ describe('fas 2-fälten', () => {
 const OWN = { football: 'standard', hockey: 'standard', basketball: 'standard', motorsport: 'standard', tennis: 'standard', other: 'standard' } as const
 
 describe('Bakgrund i Sport', () => {
-  it('standard: Alla sporter, varje sport och Övrigt har Standard; korten tonas ur bilden 50 %', () => {
-    expect(getSportSettings()).toMatchObject({ backdrops: { all: 'standard', sports: OWN }, cards: { opacity: 50, tone: 'image' } })
+  it('standard: Alla sporter, varje sport och Övrigt har Standard; korten tonas ur bilden, ingen opacitet vald', () => {
+    expect(getSportSettings()).toMatchObject({ backdrops: { all: 'standard', sports: OWN }, cards: { opacity: null, tvOpacity: null, tone: 'image' } })
     expect(getSportSettings().backdrops.sports.other).toBe('standard')
     expect(setSportSettings({ backdrops: { all: 'bogus' as never, sports: { football: 'nope' as never, cricket: 'off' } as never } })).toMatchObject({ backdrops: { all: 'standard', sports: OWN } })
   })
@@ -128,9 +128,28 @@ describe('Bakgrund i Sport', () => {
     expect(s.backdrops).toEqual({ all: 'image:tennis', sports: { ...OWN, hockey: 'image:football' } })
   })
   it('kortens bakgrund: opacitet 0–100 i heltal, tre färger', () => {
-    expect(setSportSettings({ cards: { opacity: 140, tone: 'gray' } }).cards).toEqual({ opacity: 100, tone: 'gray' })
-    expect(setSportSettings({ cards: { opacity: -3.4, tone: 'image' } }).cards).toEqual({ opacity: 0, tone: 'image' })
-    expect(setSportSettings({ cards: { opacity: 42.6, tone: 'pink' as never } }).cards).toEqual({ opacity: 43, tone: 'image' })
+    expect(setSportSettings({ cards: { opacity: 140, tone: 'gray' } }).cards).toEqual({ opacity: 100, tvOpacity: null, tone: 'gray' })
+    expect(setSportSettings({ cards: { opacity: -3.4, tone: 'image' } }).cards).toEqual({ opacity: 0, tvOpacity: null, tone: 'image' })
+    expect(setSportSettings({ cards: { opacity: 42.6, tvOpacity: 90.2, tone: 'pink' as never } }).cards).toEqual({ opacity: 43, tvOpacity: 90, tone: 'image' })
+  })
+  /* Jerry 2026-10-11: "50 på desktop, 85 på TV-mode". */
+  it('opaciteten per plattform: standard 50 / 85, ett eget val vinner bara på sin plattform', () => {
+    const cards = getSportSettings().cards
+    expect([cardOpacity(cards, false), cardOpacity(cards, true)]).toEqual([50, 85])
+    const tv = setSportSettings({ cards: withCardOpacity(cards, true, 70) }).cards
+    expect([cardOpacity(tv, false), cardOpacity(tv, true)]).toEqual([50, 70])
+    const desk = setSportSettings({ cards: withCardOpacity(tv, false, 25) }).cards
+    expect([cardOpacity(desk, false), cardOpacity(desk, true)]).toEqual([25, 70])
+  })
+  it('flytten: ett gammalt sparat 50 (bieffekt av andra sparningar) räknas som inte valt; ett annat värde gäller båda', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { cards: { opacity: 50, tone: 'gray' } })
+    expect(getSportSettings().cards).toEqual({ opacity: null, tvOpacity: null, tone: 'gray' })
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { cards: { opacity: 70, tone: 'black' } })
+    expect(getSportSettings().cards).toEqual({ opacity: 70, tvOpacity: 70, tone: 'black' })
+    // En gång: efter flytten är 50 ett riktigt val.
+    const chosen = setSportSettings({ cards: withCardOpacity(getSportSettings().cards, false, 50) })
+    expect(chosen.cards.opacity).toBe(50)
+    expect(getSportSettings().cards.opacity).toBe(50)
   })
   it('gamla inställningar läses ofarligt: Av följer med, länken och startsidans bild glöms', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { backdrop: 'off', backdropCustom: { from: 'url', url: 'https://x/y.jpg' } })

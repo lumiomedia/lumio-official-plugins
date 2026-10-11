@@ -48,7 +48,34 @@ const ownImageDefaults = (): Partial<Record<SportKind, SportBackdropChoice>> => 
 const BACKDROPS_REV = 2
 /** Kortens bakgrund medan en bild visas. */
 export type SportCardTone = 'black' | 'gray' | 'image'
-export interface SportCards { opacity: number; tone: SportCardTone }
+/**
+ * `opacity` gäller skrivbordet och telefonen, `tvOpacity` TV-läget. `null` =
+ * inte valt: plattformens standard (CARD_OPACITY_DEFAULT). Jerry 2026-10-11:
+ * "50 på desktop, 85 på TV-mode" — ett eget val vinner på sin plattform.
+ */
+export interface SportCards { opacity: number | null; tvOpacity?: number | null; tone: SportCardTone }
+
+/** Standardopaciteten per plattform. */
+export const CARD_OPACITY_DEFAULT = { desktop: 50, tv: 85 } as const
+
+/** Den opacitet som gäller på plattformen (eget val, annars standarden). */
+export function cardOpacity(cards: SportCards, tv: boolean): number {
+  const own = tv ? cards.tvOpacity : cards.opacity
+  return typeof own === 'number' ? own : tv ? CARD_OPACITY_DEFAULT.tv : CARD_OPACITY_DEFAULT.desktop
+}
+
+/** Kortvalen med plattformens opacitet satt (ett uttryckligt val). */
+export function withCardOpacity(cards: SportCards, tv: boolean, value: number): SportCards {
+  return tv ? { ...cards, tvOpacity: value } : { ...cards, opacity: value }
+}
+
+/**
+ * Kortvalens version. Före 2 fanns ett enda värde, och 50 skrevs som
+ * bieffekt av andra sparningar — det räknas som "inte valt". Ett annat värde
+ * var ett riktigt val och gällde överallt, så det följer med till båda
+ * plattformarna.
+ */
+const CARDS_REV = 2
 
 const isMode = (v: unknown): v is SportBackdropMode => typeof v === 'string' && BACKDROP_MODES.includes(v)
 
@@ -65,15 +92,21 @@ function sanitizeBackdrops(raw: unknown, legacy: unknown, rev: unknown): SportBa
   return { all: isMode(r.all) ? r.all : 'standard', sports }
 }
 
-function sanitizeCards(raw: unknown): SportCards {
+const pct = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.min(100, Math.max(0, v))) : null)
+
+function sanitizeCards(raw: unknown, rev: unknown): SportCards {
   const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
-  const n = typeof r.opacity === 'number' && Number.isFinite(r.opacity) ? Math.round(Math.min(100, Math.max(0, r.opacity))) : DEFAULT_CARDS.opacity
   const tone = r.tone === 'gray' || r.tone === 'image' || r.tone === 'black' ? r.tone : DEFAULT_CARDS.tone
-  return { opacity: n, tone }
+  if (rev !== CARDS_REV) {
+    const old = pct(r.opacity)
+    const chosen = old === null || old === 50 ? null : old
+    return { opacity: chosen, tvOpacity: chosen, tone }
+  }
+  return { opacity: pct(r.opacity), tvOpacity: pct(r.tvOpacity), tone }
 }
 
-/** Standard 50 % i en ton ur bilden (Jerry 2026-10-11: "sätt standard opacitet till 50%"). */
-export const DEFAULT_CARDS: SportCards = { opacity: 50, tone: 'image' }
+/** Ingen opacitet vald (plattformens standard) i en ton ur bilden. */
+export const DEFAULT_CARDS: SportCards = { opacity: null, tvOpacity: null, tone: 'image' }
 
 /** Alla källor, i den ordning de visas i Nycklar. */
 export const ALL_PROVIDERS: readonly ProviderId[] = ['sportapi', 'api-sports', 'thesportsdb']
@@ -116,6 +149,8 @@ export interface SportSettings {
   backdropsRev?: number
   /** Kortens bakgrund medan en bild visas. */
   cards: SportCards
+  /** Kortvalens version (CARDS_REV); sätts av läsningen, skrivs aldrig för hand. */
+  cardsRev?: number
 }
 
 const DEFAULT_SETTINGS: SportSettings = {
@@ -184,7 +219,8 @@ function sanitizeSettings(raw: unknown): SportSettings {
     ),
     backdrops: sanitizeBackdrops(r.backdrops, r.backdrop, r.backdropsRev),
     backdropsRev: BACKDROPS_REV,
-    cards: sanitizeCards(r.cards),
+    cards: sanitizeCards(r.cards, r.cardsRev),
+    cardsRev: CARDS_REV,
   }
 }
 

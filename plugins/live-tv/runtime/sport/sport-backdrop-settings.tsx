@@ -14,7 +14,7 @@ import {
   STANDARD_IMAGES, backdropPreview, customBackdropUrl, removeBackdrop, standardImageFor, uploadBackdrop, useBackdropUploads, type BackdropScope,
 } from './backdrop'
 import { useBackdropHandoff } from './backdrop-handoff'
-import { BACKDROP_SPORTS, BUNDLED_IMAGES, setSportSettings, useSportSettings, type SportBackdropMode, type SportBackdrops, type SportCardTone } from './sport-store'
+import { BACKDROP_SPORTS, BUNDLED_IMAGES, cardOpacity, setSportSettings, withCardOpacity, useSportSettings, type SportBackdropMode, type SportBackdrops, type SportCardTone } from './sport-store'
 
 /**
  * BAKGRUND I SPORT: EN RAD PER SPORT (Jerry 2026-10-11: "ska ju vara en bild
@@ -194,9 +194,9 @@ export function SportBackdropSettingsDesktop() {
       <LtRows>
         <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0' }}>
           <span style={{ minWidth: 90 }}>{tt('sportCardsOpacity')}</span>
-          <input data-testid="sport-cards-opacity" type="range" min={0} max={100} step={5} value={s.cards.opacity}
-            onChange={(e) => setSportSettings({ cards: { ...s.cards, opacity: Number(e.target.value) } })} style={{ flex: 1, accentColor: 'rgb(var(--accent-500))' }} />
-          <span style={{ minWidth: 44, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{`${s.cards.opacity} %`}</span>
+          <input data-testid="sport-cards-opacity" type="range" min={0} max={100} step={5} value={cardOpacity(s.cards, false)}
+            onChange={(e) => setSportSettings({ cards: withCardOpacity(s.cards, false, Number(e.target.value)) })} style={{ flex: 1, accentColor: 'rgb(var(--accent-500))' }} />
+          <span style={{ minWidth: 44, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{`${cardOpacity(s.cards, false)} %`}</span>
         </label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '4px 0 12px' }}>
           {TONES.map((t) => (
@@ -251,7 +251,10 @@ export function SportBackdropSettingsTv({ phone = false, pushLayer }: { phone?: 
   const thumbSize = phone ? { w: 48, h: 27, radius: 5 } : { w: dp(80), h: dp(45), radius: dp(6) }
   /** Hjälptexterna i samma storlek som avsnittens beskrivningar (`HINT_SIZE` i settings-tabs). */
   const note = { fontSize: phone ? HINT_SIZE_PHONE : HINT_SIZE, color: phone ? MT.dim : 'rgba(243,244,248,0.6)', padding: phone ? '6px 14px' : 0 }
-  const nextOpacity = OPACITY_STEPS.find((n) => n > s.cards.opacity) ?? OPACITY_STEPS[0]!
+  // TV-raderna redigerar TV:ns opacitet, telefonens rader skrivbordets/telefonens.
+  const tvCards = tvMode && !phone
+  const opacityNow = cardOpacity(s.cards, tvCards)
+  const nextOpacity = OPACITY_STEPS.find((n) => n > opacityNow) ?? OPACITY_STEPS[0]!
   const nextTone = TONES[(TONES.indexOf(s.cards.tone) + 1) % TONES.length]!
   const sheetRow = sheet ? rows.find((r) => r.scope === sheet) : null
   return (
@@ -285,7 +288,7 @@ export function SportBackdropSettingsTv({ phone = false, pushLayer }: { phone?: 
       </section>
       <section data-testid="sport-cards-section" style={{ display: 'flex', flexDirection: 'column', gap: phone ? 0 : dp(10) }}>
       <Heading phone={phone} hint={tt('sportCardsHint')}>{tt('sportCardsTitle')}</Heading>
-      <Row phone={phone} testId="sport-cards-opacity-row" label={tt('sportCardsOpacity')} right={`${s.cards.opacity} %`} onOk={() => setSportSettings({ cards: { ...s.cards, opacity: nextOpacity } })} />
+      <Row phone={phone} testId="sport-cards-opacity-row" label={tt('sportCardsOpacity')} right={`${opacityNow} %`} onOk={() => setSportSettings({ cards: withCardOpacity(s.cards, tvCards, nextOpacity) })} />
       <Row phone={phone} testId="sport-cards-tone-row" label={tt('sportCardsColor')} right={tt(TONE_LABEL[s.cards.tone])} onOk={() => setSportSettings({ cards: { ...s.cards, tone: nextTone } })} />
       </section>
       {menu && GlassMenu ? <GlassMenu target={menu} onClose={() => setMenu(null)} /> : null}

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getPluginHttpAssetUrl, useTvMode } from '@/lib/plugin-sdk'
 import { currentRouter } from './router'
-import { hasAnyKey, useSportSettings, type BundledImage, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
+import { cardOpacity, hasAnyKey, useSportSettings, type BundledImage, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
 import type { ProviderId, TeamArt } from './provider'
 import type { SportKind, SportMatch } from './sport-model'
 import { localDayKey } from './sport-epg'
@@ -135,8 +135,10 @@ export const TV_DRAWER_MIN_OPACITY = 85
 /** EN uppsättning variabler på Sport-roten; alla kort, rader och paneler läser dem. */
 export function cardSurfaceVars(cards: SportCards, sampled: Rgb | null, opts: { blur: boolean; tv?: boolean }): CardSurfaceVars {
   const rgb = cards.tone === 'gray' ? GRAY : cards.tone === 'image' && sampled ? darkTone(sampled) : ([0, 0, 0] as Rgb)
-  const drawer = opts.tv ? Math.max(cards.opacity, TV_DRAWER_MIN_OPACITY) : cards.opacity
-  return { '--sport-card-bg': `rgba(${rgb.join(', ')}, ${cards.opacity / 100})`, '--sport-card-blur': opts.blur ? CARD_BLUR : 'none', '--sport-drawer-bg': `rgba(${rgb.join(', ')}, ${drawer / 100})` }
+  // Plattformens opacitet: eget val, annars 50 på skrivbord/telefon och 85 på TV.
+  const opacity = cardOpacity(cards, opts.tv === true)
+  const drawer = opts.tv ? Math.max(opacity, TV_DRAWER_MIN_OPACITY) : opacity
+  return { '--sport-card-bg': `rgba(${rgb.join(', ')}, ${opacity / 100})`, '--sport-card-blur': opts.blur ? CARD_BLUR : 'none', '--sport-drawer-bg': `rgba(${rgb.join(', ')}, ${drawer / 100})` }
 }
 
 export { SPORT_CARD_BG, SPORT_PANEL_BG, sportBg, sportSurface } from './surface'
