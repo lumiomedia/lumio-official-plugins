@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getPluginHttpAssetUrl, useTvMode } from '@/lib/plugin-sdk'
 import { currentBudget } from './budget'
-import { useSportSettings, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
+import { useSportSettings, type BundledImage, type SportBackdropMode, type SportBackdrops, type SportCards } from './sport-store'
 import type { TeamArt } from './provider'
 import type { SportKind, SportMatch } from './sport-model'
 import { localDayKey } from './sport-epg'
@@ -34,7 +34,7 @@ export interface BackdropInput {
 }
 
 /** Appens medföljande bilder (spa/public/sport-backgrounds), 1920 px WebP. */
-export const STANDARD_IMAGES: Partial<Record<SportKind, string>> = {
+export const STANDARD_IMAGES: Record<BundledImage, string> & Partial<Record<SportKind, string>> = {
   football: '/sport-backgrounds/football.webp',
   hockey: '/sport-backgrounds/hockey.webp',
   basketball: '/sport-backgrounds/basketball.webp',
@@ -62,6 +62,34 @@ export function standardImageFor(scope: BackdropScope, dayKey: string): string {
   if (own) return own
   const all = Object.values(STANDARD_IMAGES) as string[]
   return all[hash(`${dayKey}|${scope}`) % all.length]!
+}
+
+/** Den medföljande bild ett `image:<bild>`-val pekar på, annars null. */
+export function pickedImage(mode: SportBackdropMode): string | null {
+  return mode.startsWith('image:') ? STANDARD_IMAGES[mode.slice(6) as BundledImage] ?? null : null
+}
+
+export interface BackdropPreview {
+  mode: SportBackdropMode
+  slot: BackdropScope
+  /** Sporten har inget eget val och följer Alla sporter. */
+  inherited: boolean
+  /** Bilden som gäller när ingen arena är känd (`null` = Av). */
+  url: string | null
+}
+
+/**
+ * Miniatyren i inställningarna: bilden som faktiskt visas för platsen.
+ * Automatisk visar Standard-bilden (arenan är bara känd med nyckel och en
+ * utvald match), Egen bild utan uppladdning likaså — precis som vyn.
+ */
+export function backdropPreview(b: SportBackdrops, scope: BackdropScope, uploads: Partial<Record<BackdropScope, number>>, dayKey: string): BackdropPreview {
+  const { mode, slot } = resolveBackdropMode(b, scope)
+  const inherited = scope !== 'all' && slot === 'all'
+  const standard = standardImageFor(scope, dayKey)
+  const v = uploads[slot]
+  const url = mode === 'off' ? null : mode === 'custom' && v != null ? customBackdropUrl(slot, v) : pickedImage(mode) ?? standard
+  return { mode, slot, inherited, url }
 }
 
 export function resolveBackdropMode(b: SportBackdrops, scope: BackdropScope): { mode: SportBackdropMode; slot: BackdropScope } {
@@ -129,6 +157,8 @@ export function chooseSportBackdrop(i: BackdropInput): BackdropChoice {
   const usable = (url: string | null | undefined): url is string => !!url && !i.broken?.has(url)
   const standard = (): BackdropChoice => (usable(i.standard) ? { kind: 'image', url: i.standard, from: 'standard' } : { kind: 'gradient', sport })
   if (i.mode === 'standard') return standard()
+  const picked = pickedImage(i.mode)
+  if (picked) return usable(picked) ? { kind: 'image', url: picked, from: 'standard' } : { kind: 'gradient', sport }
   if (i.mode === 'custom') {
     const v = i.uploads[i.slot]
     const url = v != null ? customBackdropUrl(i.slot, v) : null

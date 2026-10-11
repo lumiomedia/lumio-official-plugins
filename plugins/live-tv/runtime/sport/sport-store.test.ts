@@ -88,6 +88,10 @@ describe('Bakgrund i Sport', () => {
     const s = setSportSettings({ backdrops: { all: 'auto', sports: { football: 'custom', hockey: 'off', tennis: 'standard' } } })
     expect(s.backdrops).toEqual({ all: 'auto', sports: { football: 'custom', hockey: 'off', tennis: 'standard' } })
   })
+  it('en vald medföljande bild sparas per plats; okända bilder släpps', () => {
+    const s = setSportSettings({ backdrops: { all: 'image:tennis', sports: { hockey: 'image:football', football: 'image:cricket' as never } } })
+    expect(s.backdrops).toEqual({ all: 'image:tennis', sports: { hockey: 'image:football' } })
+  })
   it('kortens bakgrund: opacitet 0–100 i heltal, tre färger', () => {
     expect(setSportSettings({ cards: { opacity: 140, tone: 'gray' } }).cards).toEqual({ opacity: 100, tone: 'gray' })
     expect(setSportSettings({ cards: { opacity: -3.4, tone: 'image' } }).cards).toEqual({ opacity: 0, tone: 'image' })
