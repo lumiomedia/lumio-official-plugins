@@ -12,6 +12,8 @@ import { SPORT_KINDS, matchTitle, type SportFilter, type SportMatch } from '../s
 import { localDayKey, shiftDay, useSportDay } from '../sport-epg'
 import { followCandidates, followState, nextMatchFor, rankedSources, sportCounts, splitSections, statusAt, visibleMatches } from '../sport-day-model'
 import { isFollowing, setSportSettings, toggleFollow, type KickoffAlert } from '../sport-store'
+import { SportResultsPhone } from './sport-results-phone'
+import { PhoneFollowSearch } from './sport-follow-search-phone'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import { matchStatusLabel, scoreText, showsScore } from '../score-model'
@@ -21,7 +23,7 @@ type DayOffset = -1 | 0 | 1
 const NO_MATCHES: SportMatch[] = []
 
 export function SportPhone({ model, nav }: TvViewProps) {
-  const [tab, setTab] = useState<'foryou' | 'follows'>('foryou')
+  const [tab, setTab] = useState<'foryou' | 'results' | 'follows'>('foryou')
   const [offset, setOffset] = useState<DayOffset>(0)
   const [filter, setFilter] = useState<SportFilter>('all')
   const [sheet, setSheet] = useState<SportMatch | null>(null)
@@ -33,7 +35,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
   const today = localDayKey(model.nowMs)
   const day = shiftDay(today, offset)
   const selected = useSportDay(day, model.nowMs)
-  const { matches: mergedMatches } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
+  const { matches: mergedMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
   usePollDemand('sport-view', true)
   const wantsFollow = tab === 'follows' || adding
@@ -62,16 +64,20 @@ export function SportPhone({ model, nav }: TvViewProps) {
   return (
     <div data-testid="sport-phone" data-scroll="" style={{ flex: 1, overflowY: 'auto', padding: `0 ${MT.PAD}px`, paddingBottom: MT.SCROLL_PAD_BOTTOM, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ margin: `0 -${MT.PAD}px` }}><MobileHeader title={tt('sportTitle')} /></div>
-      <MobileSegment testId="sport-phone-tabs" options={[{ key: 'foryou', label: tt('sportTabForYou') }, { key: 'follows', label: tt('sportTabFollows') }]} value={tab} onChange={setTab} />
+      <MobileSegment testId="sport-phone-tabs" options={[{ key: 'foryou', label: tt('sportTabForYou') }, { key: 'results', label: tt('sportTabResults') }, { key: 'follows', label: tt('sportTabFollows') }]} value={tab} onChange={setTab} />
+      {tab !== 'follows' ? (
+        <MobileChips<DayOffset> testId="sport-phone-days" items={([-1, 0, 1] as const).map((o) => ({ key: o, label: dayLabel(o), id: `day-${o}` }))} value={offset} onChange={setOffset} emphasisKey={0} />
+      ) : null}
       {tab === 'foryou' ? (
         <>
-          <MobileChips<DayOffset> testId="sport-phone-days" items={([-1, 0, 1] as const).map((o) => ({ key: o, label: dayLabel(o), id: `day-${o}` }))} value={offset} onChange={setOffset} emphasisKey={0} />
           <MobileChips<SportFilter> testId="sport-phone-sports" items={[{ key: 'all', label: tt('sportAll'), id: 'all' }, ...SPORT_KINDS.filter((k) => counts[k] > 0).map((k) => ({ key: k as SportFilter, label: `${ctx.kindLabel(k)} ${counts[k]}`, id: k }))]} value={filter} onChange={setFilter} />
           {notice ? <div style={{ padding: '24px 4px', fontSize: 15, color: MT.muted }}>{notice}</div> : null}
           <PhoneSection ctx={ctx} title={tt('sportLiveNow')} matches={live} />
           <PhoneSection ctx={ctx} title={tt('sportLater')} matches={later} />
           <PhoneSection ctx={ctx} title={tt('sportFinished')} matches={finished} />
         </>
+      ) : tab === 'results' ? (
+        <SportResultsPhone matches={mergedMatches} controller={controller} onOpenMatch={openMatch} pushLayer={nav.pushLayer} />
       ) : (
         <PhoneFollows ctx={ctx} days={[todayDay.data, tomorrowDay.data]} />
       )}
@@ -80,6 +86,7 @@ export function SportPhone({ model, nav }: TvViewProps) {
         <MobileSheet
           testId="sport-phone-follow-sheet"
           title={tt('sportFollowAdd')}
+          body={<PhoneFollowSearch sport={filter === 'all' ? 'football' : filter} />}
           items={followCandidates([todayDay.data, tomorrowDay.data]).slice(0, 60).map((c) => ({
             key: `${c.kind}:${c.key}`,
             label: `${isFollowing(ctx.follows, c) ? '★ ' : ''}${c.name} · ${ctx.kindLabel(c.sport)}`,

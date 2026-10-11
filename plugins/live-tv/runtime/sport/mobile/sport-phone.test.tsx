@@ -41,6 +41,12 @@ describe('Sport på telefon', () => {
     fireEvent.click(within(sheet).getByText(/^AIK · Football$/))
     await waitFor(() => expect(getFollows().map((f) => f.key)).toContain('aik'))
   })
+  it('Resultat är ett tredje segment och visar nyckelkortet utan nyckel', async () => {
+    mountSport({}, { phone: true, days: { [today]: [later] } })
+    fireEvent.click(await screen.findByText('Results'))
+    expect(await screen.findByTestId('sport-key-card-tab')).toBeTruthy()
+    expect(screen.getByTestId('sport-phone-days')).toBeTruthy() // dagchipsen gäller även Resultat
+  })
   it('Mer-arket har Sport', async () => {
     const { onNavigate } = mountPhone({ view: 'hub' })
     fireEvent.click(screen.getByTestId('tab-more'))
