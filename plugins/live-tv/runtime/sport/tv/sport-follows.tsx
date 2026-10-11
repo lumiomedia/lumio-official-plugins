@@ -37,7 +37,10 @@ export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | n
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: dp(24) }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(18), flexWrap: 'wrap' }}>
-        <div data-testid="follows-add" {...station(ctx.openFollowPicker)} style={primaryBtn}>
+        {/* Påminnelsen står längst till höger; geometrin tog dagstegaren snett
+            ovanför i stället (Jerry 2026-10-11: "gå över saker och kolla så
+            allt syns bra på TV-mode"). Grannarna är uttalade åt båda hållen. */}
+        <div data-testid="follows-add" {...station(ctx.openFollowPicker, undefined, { 'data-f-right': '[data-testid="follows-alert"] [data-f]' })} style={primaryBtn}>
           <SportIcons.Plus size={dp(20)} />
           {ctx.tt('sportFollowAdd')}
         </div>
@@ -45,10 +48,10 @@ export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | n
         <div data-testid="follows-alert" style={{ ...sportCardStyle, marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(12), padding: `${dp(8)}px ${dp(12)}px` }}>
           <SportIcons.Bell size={dp(20)} />
           <span style={{ fontSize: dp(17), fontWeight: 600 }}>{ctx.tt('sportKickoffAlert')}</span>
-          <Segment options={alertOptions} value={ctx.settings.alert} onChange={(alert) => setSportSettings({ alert })} />
+          <Segment size="lg" options={alertOptions} value={ctx.settings.alert} onChange={(alert) => setSportSettings({ alert })} optionAttrs={(index) => (index === 0 ? { 'data-f-left': '[data-testid="follows-add"]' } : undefined)} />
         </div>
       </div>
-      <span style={{ fontSize: dp(15), color: TV.dim }}>{ctx.tt('sportAlertOnlyRunning')}</span>
+      <span style={{ fontSize: dp(17), color: TV.muted }}>{ctx.tt('sportAlertOnlyRunning')}</span>
       {shown.length === 0 ? <div data-testid="follows-empty" style={{ ...sportCardStyle, padding: dp(28), fontSize: dp(20), color: TV.muted }}>{ctx.tt('sportFollowEmpty')}</div> : null}
       {groups.map(([kind, list]) => (
         <section key={kind} data-testid={`follow-group-${kind}`} style={{ display: 'flex', flexDirection: 'column', gap: dp(14) }}>
@@ -162,7 +165,7 @@ export function FollowPicker({ ctx, days, onClose }: { ctx: SportCtx; days: (Spo
         {prompt.node}
         <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto' }}>
           {chips.map((chip, index) => (
-            <Chip key={chip.key} data-testid={`follow-chip-${chip.key}`} active={sport === chip.key} {...station(() => setSport(chip.key), undefined, rows.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
+            <Chip key={chip.key} data-testid={`follow-chip-${chip.key}`} active={sport === chip.key} {...station(() => setSport(chip.key), undefined, rows.length === 0 && index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(44), minHeight: dp(44), fontSize: dp(17), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>
           ))}
         </div>
         </div>

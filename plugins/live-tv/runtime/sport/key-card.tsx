@@ -81,16 +81,16 @@ export function KeyCard({ variant, onDone, pushLayer, provider: fixed, current, 
     <section data-testid={`sport-key-card-${variant}`} style={{ borderRadius: dp(16), background: sportBg(TV.s06), border: `1px solid ${TV.lineCard}`, padding: dp(24), display: 'flex', gap: dp(24), flexWrap: 'wrap' }}>
       <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(12) }}>
         <div style={{ fontSize: dp(24), fontWeight: 600 }}>{broken ? tt('sportKeyBroken') : fixed ? `${PROVIDER_LABEL[fixed]} · ${tt(settings.keys[fixed] ? 'sportKeyChange' : 'sportKeyAdd')}` : tt('sportKeyTitle')}</div>
-        {fixed ? null : <Segment options={PROVIDER_IDS.map((id) => ({ key: id, label: PROVIDER_LABEL[id] }))} value={provider} onChange={(k) => { setProvider(k); setPhase({ kind: 'idle' }) }} />}
-        {fixed ? null : <div style={{ fontSize: dp(16), color: TV.muted }}>{tt('sportKeyChoice')}</div>}
+        {fixed ? null : <Segment size={tv ? 'lg' : 'md'} options={PROVIDER_IDS.map((id) => ({ key: id, label: PROVIDER_LABEL[id] }))} value={provider} onChange={(k) => { setProvider(k); setPhase({ kind: 'idle' }) }} />}
+        {fixed ? null : <div style={{ fontSize: dp(18), color: TV.muted }}>{tt('sportKeyChoice')}</div>}
         {fixed && current ? (
           <div data-testid="sport-key-current" style={{ display: 'flex', flexDirection: 'column', gap: dp(6) }}>
             <div style={{ fontSize: dp(16), color: TV.text }}>{tt('sportKeyCurrent', { key: current.masked })}</div>
             {current.detail ? <div style={{ fontSize: dp(16), color: TV.muted, fontVariantNumeric: 'tabular-nums' }}>{current.detail}</div> : null}
           </div>
         ) : null}
-        {provider === 'sportapi' ? <div data-testid="sport-key-sportapi-free" style={{ fontSize: dp(16), color: TV.text }}>{tt('sportKeySportApiFree')}</div> : null}
-        <div style={{ fontSize: dp(16), color: TV.muted }}>{tt('sportKeyCovers', { sports: sportsText })}</div>
+        {provider === 'sportapi' ? <div data-testid="sport-key-sportapi-free" style={{ fontSize: dp(18), color: TV.text }}>{tt('sportKeySportApiFree')}</div> : null}
+        <div style={{ fontSize: dp(18), color: TV.muted }}>{tt('sportKeyCovers', { sports: sportsText })}</div>
         {tv ? (
           <div style={{ display: 'flex', gap: dp(12), flexWrap: 'wrap' }}>
             {btn(tt('sportKeyPhone'), () => { setPhoneEntry(true); handoff.restart() }, true)}
@@ -112,12 +112,12 @@ export function KeyCard({ variant, onDone, pushLayer, provider: fixed, current, 
       <div style={{ display: 'flex', gap: dp(20), alignItems: 'flex-start' }}>
         <figure style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: dp(8), alignItems: 'center' }}>
           <div style={{ background: '#fff', padding: dp(8), borderRadius: dp(8) }}><QRCodeSVG value={signupUrl} size={dp(132)} /></div>
-          {tv ? <figcaption style={{ fontSize: dp(14), color: TV.dim }}>{tt('sportKeyGetKey')}</figcaption> : <a href={signupUrl} target="_blank" rel="noreferrer" style={{ fontSize: dp(14), color: TV.dim }}>{tt('sportKeyGetKey')}</a>}
+          {tv ? <figcaption style={{ fontSize: dp(17), color: TV.muted }}>{tt('sportKeyGetKey')}</figcaption> : <a href={signupUrl} target="_blank" rel="noreferrer" style={{ fontSize: dp(14), color: TV.dim }}>{tt('sportKeyGetKey')}</a>}
         </figure>
         {tv && phoneEntry ? (
           <figure style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: dp(8), alignItems: 'center', maxWidth: dp(180) }}>
             {handoff.url ? <div style={{ background: '#fff', padding: dp(8), borderRadius: dp(8) }}><QRCodeSVG value={handoff.url} size={dp(132)} /></div> : null}
-            <figcaption style={{ fontSize: dp(14), color: TV.dim, textAlign: 'center' }}>{handoff.expired ? tt('sportKeyExpired') : tt('sportKeyPhoneHint')}</figcaption>
+            <figcaption style={{ fontSize: dp(17), color: TV.muted, textAlign: 'center' }}>{handoff.expired ? tt('sportKeyExpired') : tt('sportKeyPhoneHint')}</figcaption>
             {handoff.expired ? btn(tt('sportKeyRetry'), handoff.restart) : null}
           </figure>
         ) : null}

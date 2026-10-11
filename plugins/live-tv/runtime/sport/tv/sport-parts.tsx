@@ -120,7 +120,10 @@ export function MatchStrip({ title, matches, ctx, testId = 'sport-strip' }: { ti
         <span style={sectionTitle}>{title}</span>
         <span style={{ fontSize: dp(17), color: TV.dim }}>{matches.length}</span>
       </div>
-      <div ref={rowRef} data-row="" style={{ display: 'flex', gap: dp(16), overflowX: 'auto', paddingBottom: dp(6) }}>
+      {/* Luft runt korten innanför rullningen så att fokusringen (3 px utanför
+          kortet) inte klipps på första och sista kortet; marginalen tar
+          tillbaka luften så korten står kvar där de stod. */}
+      <div ref={rowRef} data-row="" style={{ display: 'flex', gap: dp(16), overflowX: 'auto', padding: dp(6), margin: `-${dp(6)}px -${dp(6)}px 0` }}>
         {cells}
       </div>
     </section>

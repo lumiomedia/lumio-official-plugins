@@ -106,17 +106,17 @@ function MatchdayTimeline({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: S
     <div data-testid="sport-timeline" style={{ ...sportCardStyle, padding: `${dp(20)}px ${dp(24)}px`, display: 'flex', flexDirection: 'column', gap: dp(14) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(14) }}>
         <span style={{ fontSize: dp(26), fontWeight: 600 }}>{ctx.tt('sportMatchday')}</span>
-        <span style={{ fontSize: dp(16), color: TV.dim }}>{ctx.tt('sportMatchdayHint')}</span>
+        <span style={{ fontSize: dp(17), color: TV.muted }}>{ctx.tt('sportMatchdayHint')}</span>
       </div>
       <div style={{ display: 'flex' }}>
         <div style={{ width: dp(LABEL_W), flexShrink: 0 }} />
         <div style={{ position: 'relative', flex: 1, height: dp(26) }}>
-          {axis.hours.map((h) => <span key={h} style={{ position: 'absolute', left: `${pct(h)}%`, fontSize: dp(14), color: TV.dim }}>{formatClock(h, ctx.locale)}</span>)}
+          {axis.hours.map((h) => <span key={h} style={{ position: 'absolute', left: `${pct(h)}%`, fontSize: dp(15), color: TV.muted }}>{formatClock(h, ctx.locale)}</span>)}
         </div>
       </div>
       {rows.flatMap((row, rowIndex) => row.lanes.map((lane, laneIndex) => (
         <div key={`${row.key}-${laneIndex}`} data-row="" style={{ display: 'flex', alignItems: 'center', height: dp(50), marginTop: laneIndex === 0 && rowIndex > 0 ? dp(10) : 0 }}>
-          <div style={{ width: dp(LABEL_W), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(16), fontWeight: 600, paddingRight: dp(10), boxSizing: 'border-box' }}>
+          <div style={{ width: dp(LABEL_W), flexShrink: 0, display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(18), fontWeight: 600, paddingRight: dp(10), boxSizing: 'border-box' }}>
             {laneIndex === 0 ? <><LeagueDot leagueKey={row.key} /><span style={ellipsis}>{row.label || ctx.kindLabel(row.kind)}</span></> : null}
           </div>
           <div style={{ position: 'relative', flex: 1, height: dp(42), background: TV.s05, borderRadius: dp(8) }}>
@@ -145,7 +145,7 @@ function TimelineBlock({ ctx, m, left, width, showLabel }: { ctx: SportCtx; m: S
       {...station(() => ctx.openMatch(m))}
       style={{
         position: 'absolute', top: 0, bottom: 0, left: `${left}%`, width: `${width}%`, boxSizing: 'border-box', padding: showLabel ? `0 ${dp(10)}px` : 0,
-        display: 'flex', alignItems: 'center', fontSize: dp(15), fontWeight: 600, borderRadius: dp(8), cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap',
+        display: 'flex', alignItems: 'center', fontSize: dp(16), fontWeight: 600, borderRadius: dp(8), cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap',
         background: st === 'live' ? TV.accMix(30) : st === 'finished' ? TV.s07 : TV.s14,
         border: `1px solid ${st === 'live' ? TV.accMix(85) : TV.lineCard}`,
         borderLeft: `${dp(4)}px solid ${leagueColor(m.leagueKey || m.kind)}`,

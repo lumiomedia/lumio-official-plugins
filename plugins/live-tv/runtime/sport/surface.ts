@@ -42,4 +42,13 @@ export const sportDrawerStyle: CSSProperties = {
  * ingen ring, och då står kontrollens egen kant kvar. Telefonen ritar ingen ring.
  */
 const SPORT_FOCUSED = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-sport-stage] [data-f]'
-export const SPORT_FOCUS_CSS = `${SPORT_FOCUSED}:focus, ${SPORT_FOCUSED}[data-fcur="1"] { box-shadow: none !important; border-color: transparent !important; }`
+const SPORT_PANEL_FOCUSED = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]):not([data-live-tv-desktop="1"]) [data-sport-stage] [data-panel-root] [data-f]'
+/*
+  Lådornas listor (Mina lag-väljaren, matchinfo, ligorna) rullar kant i kant
+  med sina rader, och ringen ritas 3 px UTANFÖR raden — sidorna klipptes bort
+  och bara över- och underkanten syntes (Jerry 2026-10-11: "border syns inte
+  på sidorna på TV-mode"). I lådorna ritas ringen därför innanför kanten,
+  som skrivbordets tunna ring (TvFocusStyle).
+*/
+export const SPORT_FOCUS_CSS = `${SPORT_FOCUSED}:focus, ${SPORT_FOCUSED}[data-fcur="1"] { box-shadow: none !important; border-color: transparent !important; }
+${SPORT_PANEL_FOCUSED}:focus, ${SPORT_PANEL_FOCUSED}[data-fcur="1"] { outline-offset: -2px !important; }`

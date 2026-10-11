@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type CSSProperties } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from '../../tv/tv-shell'
 import { Segment, TV, dp, station, useTvClockNode } from '../../tv/tv-ui'
@@ -33,17 +33,32 @@ type DayOffset = -1 | 0 | 1
 const MIN_OFFSET: DayOffset = -1
 const MAX_OFFSET: DayOffset = 1
 
+const VIEW_AS_FIRST = '[data-testid="sport-view-as"] [data-f]'
+
 const stepBtn = (enabled: boolean) => ({ width: dp(56), height: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: enabled ? 'pointer' : 'default', color: TV.text, opacity: enabled ? 1 : 0.3, borderRadius: dp(14) }) as const
 
 /**
  * Innehållets toppluft. `--tv-scene-chrome-inset` är värdens toppkrom
  * (snabbmeny, pill, klocka) i designpixlar och sätts bara på sportsidan
- * (menyvalet Sport) på skrivbordet: där står kromet OVANPÅ sportens
- * bakgrund, som går upp till fönstrets överkant, och bara innehållet dras in
- * (Jerry 2026-10-11). I Live TV och på TV är variabeln 0.
+ * (menyvalet Sport): där står kromet OVANPÅ sportens bakgrund, som går upp
+ * till fönstrets överkant, och bara innehållet dras in (Jerry 2026-10-11).
+ * I Live TV är variabeln 0.
  */
 export function sportViewPaddingTop(): string {
   return `calc(${dp(34)}px + var(--tv-scene-chrome-inset, 0px))`
+}
+
+/**
+ * Rullytans topp. Skrivbordet: indraget som utfyllnad, och värdens topprad
+ * tonar ut det som rullar under kromet. TV-läget har ingen uttoning — där
+ * rullade rubriken rakt in under pillret — så rullytan BÖRJAR under kromet
+ * (marginal) och klipper innehållet där; bakgrunden ligger utanför och når
+ * ändå fönstrets överkant.
+ */
+export function sportViewTop(tv: boolean): CSSProperties {
+  return tv
+    ? { marginTop: 'var(--tv-scene-chrome-inset, 0px)', paddingTop: dp(34) }
+    : { paddingTop: sportViewPaddingTop() }
 }
 
 /** Sportvyn. Skrivbordet ritar samma träd i scenlådan (Live TV:s "everywhere"-modell). */
@@ -75,10 +90,11 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
   const { matches: mergedMatches, allMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
   const tvMode = useTvMode()
-  /* Sportsidan på skrivbordet behåller appens toppkrom, och värdens klocka
-     står då uppe till höger som på Hem — en klocka till i rubriken hade
-     dubblerat den (Jerry 2026-10-11: "klockan syns inte till höger heller"). */
-  const ownClock = !standalone || tvMode
+  /* Sportsidan behåller appens toppkrom, och värdens klocka står då uppe
+     till höger som på Hem — en klocka till i rubriken hade dubblerat den
+     (Jerry 2026-10-11: "klockan syns inte till höger heller"). Gäller även
+     TV-läget sedan värden ritar sin klocka där (app: sportsidan i TV-läget). */
+  const ownClock = !standalone
   usePollDemand('sport-view', true)
 
   const counts = sportCounts(mergedDay)
@@ -108,7 +124,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
     <div data-testid="sport-stage" data-sport-stage="" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', ...backdrop.surface }}>
     <style>{SPORT_FOCUS_CSS}</style>
     <SportBackdropLayer choice={backdrop.choice} phone={false} onBroken={backdrop.onBroken} />
-    <div data-testid="sport-view" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${dp(48)}px ${dp(48)}px`, paddingTop: sportViewPaddingTop(), display: 'flex', flexDirection: 'column', gap: dp(22) }}>
+    <div data-testid="sport-view" data-scroll="" style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${dp(48)}px ${dp(48)}px`, ...sportViewTop(tvMode), display: 'flex', flexDirection: 'column', gap: dp(22) }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: dp(18) }}>
         <span style={{ fontSize: dp(40), fontWeight: 600 }}>{tt('sportTitle')}</span>
         <span data-testid="sport-summary" style={{ fontSize: dp(19), color: TV.muted }}>{tt('sportHeaderSummary', { day: dayLabel(offset), count: summary.total, live: summary.live, mine: summary.onChannels })}</span>
@@ -121,7 +137,12 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
           <div
             key={key}
             data-testid={`sport-tab-${key}`}
-            {...station(() => setTab(key), undefined, key === tab ? { 'data-init': '' } : undefined)}
+            {...station(() => setTab(key), undefined, {
+              ...(key === tab ? { 'data-init': '' } : null),
+              // Visa som står långt till höger; geometrin tog filterchipsen
+              // under i stället, och väljaren gick inte att nå (Jerry 2026-10-11).
+              ...(key === 'follows' && tab === 'foryou' ? { 'data-f-right': VIEW_AS_FIRST } : null),
+            })}
             aria-selected={key === tab ? 'true' : 'false'}
             style={{ padding: `${dp(8)}px ${dp(4)}px ${dp(12)}px`, fontSize: dp(24), fontWeight: 600, cursor: 'pointer', color: key === tab ? TV.text : TV.muted, borderBottom: `${dp(4)}px solid ${key === tab ? TV.acc : 'transparent'}`, marginBottom: -1 }}
           >
@@ -129,23 +150,32 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
           </div>
         ))}
         {tab === 'foryou' ? (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(12), paddingBottom: dp(8) }}>
-            <span style={{ fontSize: dp(16), color: TV.dim }}>{tt('sportViewAs')}</span>
-            <Segment options={[{ key: 'matchday' as const, label: tt('sportMatchday') }, { key: 'feed' as const, label: tt('sportFeed') }]} value={ctx.settings.view} onChange={(view) => setSportSettings({ view })} />
+          <div data-testid="sport-view-as" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: dp(12), paddingBottom: dp(8) }}>
+            <span style={{ fontSize: dp(18), color: TV.muted }}>{tt('sportViewAs')}</span>
+            <Segment
+              size="lg"
+              options={[{ key: 'matchday' as const, label: tt('sportMatchday') }, { key: 'feed' as const, label: tt('sportFeed') }]}
+              value={ctx.settings.view}
+              onChange={(view) => setSportSettings({ view })}
+              optionAttrs={(index) => (index === 0 ? { 'data-f-left': '[data-testid="sport-tab-follows"]' } : undefined)}
+            />
           </div>
         ) : null}
       </div>
 
       <div data-row="" style={{ display: 'flex', alignItems: 'center', gap: dp(12), flexWrap: 'wrap' }}>
         <div data-testid="sport-day-stepper" style={{ height: dp(64), display: 'inline-flex', alignItems: 'center', ...sportCardStyle, overflow: 'visible', boxSizing: 'border-box', flexShrink: 0 }}>
-          <div data-testid="sport-day-prev" {...station(() => setOffset((o) => (o > MIN_OFFSET ? ((o - 1) as DayOffset) : o)))} aria-label={tt('sportDayPrev')} title={tt('sportDayPrev')} aria-disabled={offset <= MIN_OFFSET ? 'true' : 'false'} style={stepBtn(offset > MIN_OFFSET)}>
+          {/* Etiketten mellan pilarna är bred, så Tabeller-fliken snett ovanför
+              låg närmare än › och höger hoppade ur raden (Jerry 2026-10-11:
+              "datum går ej att välja på TV-mode"). Grannarna är uttalade. */}
+          <div data-testid="sport-day-prev" {...station(() => setOffset((o) => (o > MIN_OFFSET ? ((o - 1) as DayOffset) : o)), undefined, { 'data-f-right': '[data-testid="sport-day-next"]' })} aria-label={tt('sportDayPrev')} title={tt('sportDayPrev')} aria-disabled={offset <= MIN_OFFSET ? 'true' : 'false'} style={stepBtn(offset > MIN_OFFSET)}>
             <SportIcons.Back size={dp(22)} />
           </div>
           <span data-testid="sport-day-label" style={{ minWidth: dp(170), display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: dp(10), padding: `0 ${dp(6)}px` }}>
             <span style={{ fontSize: dp(20), fontWeight: 700 }}>{dayLabel(offset)}</span>
             <span style={{ fontSize: dp(17), color: TV.muted }}>{new Date(dayStartMs(day) + 12 * 3_600_000).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
           </span>
-          <div data-testid="sport-day-next" {...station(() => setOffset((o) => (o < MAX_OFFSET ? ((o + 1) as DayOffset) : o)))} aria-label={tt('sportDayNext')} title={tt('sportDayNext')} aria-disabled={offset >= MAX_OFFSET ? 'true' : 'false'} style={stepBtn(offset < MAX_OFFSET)}>
+          <div data-testid="sport-day-next" {...station(() => setOffset((o) => (o < MAX_OFFSET ? ((o + 1) as DayOffset) : o)), undefined, { 'data-f-left': '[data-testid="sport-day-prev"]' })} aria-label={tt('sportDayNext')} title={tt('sportDayNext')} aria-disabled={offset >= MAX_OFFSET ? 'true' : 'false'} style={stepBtn(offset < MAX_OFFSET)}>
             <SportIcons.Chevron size={dp(22)} />
           </div>
         </div>

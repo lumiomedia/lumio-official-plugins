@@ -6,7 +6,7 @@ import { setSportSettings } from './sport-store'
 import { MIN, HOUR, fxMatch, mountSport } from './__sport-fixture'
 import { LiveTvPlugin } from '../index'
 import { LiveTvSportPage, SPORT_PAGE_ID } from './sport-page'
-import { sportViewPaddingTop } from './tv/sport-shell'
+import { sportViewPaddingTop, sportViewTop } from './tv/sport-shell'
 
 // Spelaren som en knapp: ett klick är "stäng spelaren".
 vi.mock('../live-tv-player', () => ({
@@ -203,14 +203,17 @@ describe('Sport som egen sida: under appens toppkrom (skrivbordet)', () => {
     await screen.findByTestId('sport-hero')
     expect(screen.queryByTestId('sport-clock')).toBeNull()
   })
-  it('inne i Live TV och på TV har rubriken kvar sin klocka', async () => {
+  it('inne i Live TV har rubriken kvar sin klocka', async () => {
     mountSport({}, { tv: false, days: { [today]: [live] } })
     await screen.findByTestId('sport-hero')
     expect(screen.getByTestId('sport-clock')).toBeInTheDocument()
-    cleanupAll()
+  })
+  /* Jerry 2026-10-11 (TV-läget): sportsidan behåller toppkromet även där, och
+     värden ritar sin klocka uppe till höger som på Hem. */
+  it('sportsidan i TV-läget: ingen egen klocka heller', async () => {
     mountSport({}, { page: true, days: { [today]: [live] } })
     await screen.findByTestId('sport-hero')
-    expect(screen.getByTestId('sport-clock')).toBeInTheDocument()
+    expect(screen.queryByTestId('sport-clock')).toBeNull()
   })
   it('bakgrunden ligger i scenen utanför det indragna innehållet — bara innehållet flyttas', async () => {
     mountSport({}, { page: true, tv: false, days: { [today]: [fxMatch({ id: 'a', start: now + HOUR })] } })
@@ -219,5 +222,17 @@ describe('Sport som egen sida: under appens toppkrom (skrivbordet)', () => {
     expect(layer.parentElement).toBe(screen.getByTestId('sport-stage'))
     // Innehållets topp = rubrikens luft + värdens krom (0 när värden inte satt det).
     expect(sportViewPaddingTop()).toMatch(/^calc\(\d+(\.\d+)?px \+ var\(--tv-scene-chrome-inset, 0px\)\)$/)
+  })
+  /* TV-läget saknar toppradens uttoning: rubriken rullade in under pillret.
+     Rullytan börjar under kromet i stället, bakgrunden står kvar i scenen. */
+  it('TV-läget: rullytan börjar under kromet, bakgrunden ligger kvar utanför', async () => {
+    mountSport({}, { page: true, days: { [today]: [fxMatch({ id: 'a', start: now + HOUR })] } })
+    const layer = await screen.findByTestId('sport-backdrop')
+    // happy-dom tappar var() i inline-stilen — formen läses ur funktionen.
+    expect(sportViewTop(true).marginTop).toBe('var(--tv-scene-chrome-inset, 0px)')
+    expect(String(sportViewTop(true).paddingTop)).not.toContain('--tv-scene-chrome-inset')
+    expect(sportViewTop(false)).toEqual({ paddingTop: sportViewPaddingTop() })
+    expect(screen.getByTestId('sport-view').style.paddingTop).not.toContain('calc')
+    expect(layer.closest('[data-testid="sport-view"]')).toBeNull()
   })
 })
