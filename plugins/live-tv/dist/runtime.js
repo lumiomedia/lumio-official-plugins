@@ -44043,8 +44043,22 @@ ${cue.text}`).join("\n\n")}
         isInvalid() {
           return this.invalid;
         }
+        /**
+         * En spärr som passerat släpps här, utan att vänta på nästa svar: står vyn
+         * öppen över dygnsskiftet ska pollningen komma igång av sig själv. "Slut i
+         * dag" betyder att den lagrade `remaining: 0` är gårdagens, så den blir okänd
+         * (nästa svar sätter den). En minutspärr behåller dygnets siffror.
+         */
         quota(bucket) {
-          return this.quotas.get(bucket) ?? unknownQuota(bucket);
+          const q = this.quotas.get(bucket);
+          if (!q) return unknownQuota(bucket);
+          if (q.blockedUntil == null || q.blockedUntil > this.now()) return q;
+          return q.reason === "exhausted" ? { ...q, remaining: null, blockedUntil: null, reason: null } : { ...q, blockedUntil: null, reason: null };
+        }
+        /** Tidpunkten då en spärr på hinken släpper, eller `null` om ingen spärr gäller nu. */
+        pausedUntil(bucket) {
+          const until = this.quota(bucket).blockedUntil;
+          return until != null && until > this.now() ? until : null;
         }
         noteQuota(q) {
           this.quotas.set(q.bucket, q);
@@ -44085,6 +44099,7 @@ ${cue.text}`).join("\n\n")}
             case "search":
               return q.remaining - n >= reserve;
             case "live":
+            case "fixture-refresh":
               return q.remaining - n >= reserve + this.plannedFor(bucket);
           }
         }
@@ -44099,8 +44114,9 @@ ${cue.text}`).join("\n\n")}
           return Math.max(floor, Math.ceil(Math.max(0, windowEndsAt - this.now()) / spendable));
         }
         spendLocal(bucket, n) {
-          const q = this.quotas.get(bucket);
-          if (q && q.remaining != null && n > 0) this.quotas.set(bucket, { ...q, remaining: Math.max(0, q.remaining - n) });
+          if (!this.quotas.has(bucket)) return;
+          const q = this.quota(bucket);
+          if (q.remaining != null && n > 0) this.quotas.set(bucket, { ...q, remaining: Math.max(0, q.remaining - n) });
         }
         async prime(sport, bucket) {
           if (this.primed.has(bucket) || this.quota(bucket).remaining != null) return;
@@ -44172,7 +44188,7 @@ ${cue.text}`).join("\n\n")}
           return this.run("live", sport, this.provider.live(sport, opts));
         }
         fixture(sport, id, opts) {
-          return this.run("fixture", sport, this.provider.fixture(sport, id, opts));
+          return this.run(opts.refresh && !opts.finished ? "fixture-refresh" : "fixture", sport, this.provider.fixture(sport, id, { finished: opts.finished }));
         }
         standings(sport, leagueId, season) {
           return this.run("standings", sport, this.provider.standings(sport, leagueId, season));
@@ -44368,6 +44384,7 @@ ${cue.text}`).join("\n\n")}
     const due = /* @__PURE__ */ new Map();
     let timer3 = null;
     let running2 = false;
+    let ticking = false;
     let unsubs = [];
     const active4 = () => running2 && hasPollDemand() && isVisible();
     function plan() {
@@ -44393,7 +44410,12 @@ ${cue.text}`).join("\n\n")}
       if (items2.length === 0) return null;
       return Math.max(0, Math.min(...items2.map((i) => i.at)) - now2());
     }
+    function pauseEndsAt() {
+      const ends = deps.targets().filter((t) => t.hot).map((t) => deps.budget.pausedUntil?.(deps.budget.provider.bucket(t.sport)) ?? null).filter((x) => x != null);
+      return ends.length ? Math.min(...ends) : null;
+    }
     function reschedule() {
+      if (ticking) return;
       if (timer3 != null) {
         clearTimer(timer3);
         timer3 = null;
@@ -44403,20 +44425,32 @@ ${cue.text}`).join("\n\n")}
         return;
       }
       const delay = nextDelayMs();
-      if (delay == null) return;
+      if (delay == null) {
+        const wake = pauseEndsAt();
+        if (wake != null) timer3 = setTimer(() => {
+          timer3 = null;
+          reschedule();
+        }, Math.max(0, wake - now2()) + 1);
+        return;
+      }
       timer3 = setTimer(() => {
         timer3 = null;
         void tick2();
       }, delay);
     }
     async function tick2() {
-      if (!active4()) return;
-      const t = now2();
-      for (const item of plan()) {
-        if (item.at > t) continue;
-        due.delete(item.sport);
-        const res = await deps.budget.live(item.sport, deps.liveOpts());
-        if (res.data) deps.onFixtures(item.sport, res.data);
+      if (!active4() || ticking) return;
+      ticking = true;
+      try {
+        const t = now2();
+        const dueNow = plan().filter((item) => item.at <= t);
+        for (const item of dueNow) due.delete(item.sport);
+        for (const item of dueNow) {
+          const res = await deps.budget.live(item.sport, deps.liveOpts());
+          if (res.data) deps.onFixtures(item.sport, res.data, res.fetchedAt);
+        }
+      } finally {
+        ticking = false;
       }
       reschedule();
     }
@@ -44882,6 +44916,9 @@ ${cue.text}`).join("\n\n")}
     }
     return out;
   }
+  function relevantMatches(all, follows) {
+    return all.filter((m) => !m.resultOnly || followState(m, follows).any);
+  }
   var TWO_HOURS, STATUS, phaseOf;
   var init_merge = __esm({
     "../../../lumio-official-plugins/.worktrees/sportlage/plugins/live-tv/runtime/sport/merge.ts"() {
@@ -44917,16 +44954,17 @@ ${cue.text}`).join("\n\n")}
   function useSportResults(opts) {
     const controller = useResultsController();
     const overrides = useOverrides();
+    const follows = useFollows();
     const [links, setLinks] = useState({});
     const providerId = controller?.budget.provider.id ?? null;
     const sports = useMemo(() => {
-      const follows = getFollows();
-      return [.../* @__PURE__ */ new Set([...opts.epg.map((m) => m.kind), ...follows.map((f) => f.sport)])].sort();
+      const follows2 = getFollows();
+      return [.../* @__PURE__ */ new Set([...opts.epg.map((m) => m.kind), ...follows2.map((f) => f.sport)])].sort();
     }, [opts.epg]);
     useEffect(() => {
       if (!controller || !opts.day) return;
-      const follows = getFollows();
-      const leagues = controller.merged().filter((m) => m.fixture?.leagueId && m.fixture.season && followState(m, follows).any).map((m) => ({ sport: m.kind, leagueId: m.fixture.leagueId, season: m.fixture.season }));
+      const follows2 = getFollows();
+      const leagues = controller.merged().filter((m) => m.fixture?.leagueId && m.fixture.season && followState(m, follows2).any).map((m) => ({ sport: m.kind, leagueId: m.fixture.leagueId, season: m.fixture.season }));
       void controller.runPlan({ sports, leagues });
     }, [controller, opts.day, sports.join(",")]);
     const version3 = controller?.version ?? 0;
@@ -44945,14 +44983,15 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
       };
     }, [controller, opts.day, fixtureIds]);
-    const matches = useMemo(() => {
+    const allMatches = useMemo(() => {
       if (!controller) return opts.epg.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }));
       return mergeLinked({ epg: opts.epg, fixtures: fixtures2, links, overrides, coverage: (s) => coverageFor(providerId, s) });
     }, [controller, opts.epg, fixtures2, links, overrides, providerId]);
+    const matches = useMemo(() => relevantMatches(allMatches, follows), [allMatches, follows]);
     useEffect(() => {
       if (opts.day) controller?.setMerged(matches);
     }, [controller, opts.day, matches]);
-    return { matches, status: controller ? controller.status() : NO_KEY, controller };
+    return { matches, allMatches, status: controller ? controller.status() : NO_KEY, controller };
   }
   function useChannelSportLive(channelKey2) {
     const controller = useResultsController();
@@ -44987,6 +45026,8 @@ ${cue.text}`).join("\n\n")}
           __publicField(this, "budget", budget);
           __publicField(this, "days", /* @__PURE__ */ new Map());
           __publicField(this, "scores", /* @__PURE__ */ new Map());
+          /** När källan såg varje fixtur senast (svarets `fetchedAt`). Äldre data skriver aldrig över nyare. */
+          __publicField(this, "observed", /* @__PURE__ */ new Map());
           __publicField(this, "done", /* @__PURE__ */ new Set());
           __publicField(this, "doneDay", "");
           __publicField(this, "details", /* @__PURE__ */ new Map());
@@ -45010,7 +45051,7 @@ ${cue.text}`).join("\n\n")}
             this.poller = createLivePoller({
               budget,
               targets: () => this.liveTargets(),
-              onFixtures: (sport, list) => this.applyFixtures(sport, this.dates().today, list, "live"),
+              onFixtures: (sport, list, fetchedAt) => this.applyFixtures(sport, this.dates().today, list, "live", fetchedAt ?? this.now()),
               liveOpts: () => ({ today: this.dates().today, tz: this.tz }),
               now: this.now
             });
@@ -45044,12 +45085,24 @@ ${cue.text}`).join("\n\n")}
         /**
          * Målhändelser BARA från livepollningen. En äldre cachepost följd av ett
          * färskt dagsprogram är ingen "händelse" som användaren ska få MÅL! för.
+         *
+         * `observedAt` = när källan lämnade datan (svarets `fetchedAt`). En fixtur
+         * som redan setts med nyare data rörs inte: ett dagsprogram ur diskcachen
+         * får aldrig sänka en ställning som livepollningen sett, för då hade nästa
+         * livesvar gett ett falskt MÅL! för ett gammalt mål. Mål räknas bara på
+         * data som är STRIKT nyare än förra observationen.
          */
-        applyFixtures(sport, date, list, source) {
-          const goals = source === "live" ? diffGoals(this.scores, list, this.now()) : [];
-          for (const f of list) if (f.score) this.scores.set(f.id, f.score);
+        applyFixtures(sport, date, list, source, observedAt = this.now()) {
+          const seen = (f) => this.observed.get(f.id) ?? -Infinity;
+          const accepted = list.filter((f) => observedAt >= seen(f));
+          const newer = accepted.filter((f) => observedAt > seen(f));
+          const goals = source === "live" ? diffGoals(this.scores, newer, this.now()) : [];
+          for (const f of accepted) {
+            this.observed.set(f.id, observedAt);
+            if (f.score) this.scores.set(f.id, f.score);
+          }
           const byId = new Map(this.fixtures(sport, date).map((f) => [f.id, f]));
-          for (const f of list) byId.set(f.id, f);
+          for (const f of accepted) byId.set(f.id, f);
           this.days.set(this.dayKey(sport, date), [...byId.values()].sort((a, b) => a.kickoff - b.kickoff));
           if (goals.length) emitGoals(goals);
           this.poller?.reschedule();
@@ -45070,7 +45123,7 @@ ${cue.text}`).join("\n\n")}
           for (const call of calls) {
             if (call.kind !== "day" || call.date !== d.today || this.fixtures(call.sport, d.today).length > 0) continue;
             const cached = await this.budget.peek(call.sport, provider.day(call.sport, d.today, { today: d.today, tz: this.tz, dayEndMs: d.dayEndMs(d.today) }));
-            if (cached) this.applyFixtures(call.sport, d.today, cached, "cache");
+            if (cached) this.applyFixtures(call.sport, d.today, cached, "cache", 0);
           }
           const remaining2 = [...calls];
           const syncPlanned = () => {
@@ -45087,7 +45140,7 @@ ${cue.text}`).join("\n\n")}
         async runPlanned(call, today, dayEndMs) {
           if (call.kind === "day") {
             const res2 = await this.budget.day(call.sport, call.date, { today, tz: this.tz, dayEndMs: dayEndMs(call.date) });
-            if (res2.data) this.applyFixtures(call.sport, call.date, res2.data, "day");
+            if (res2.data) this.applyFixtures(call.sport, call.date, res2.data, "day", res2.fetchedAt ?? 0);
             if (res2.ok && call.date !== today) this.done.add(planKey(call));
             return;
           }
@@ -45102,7 +45155,7 @@ ${cue.text}`).join("\n\n")}
           const key = `${sport}|${id}`;
           const hit = this.details.get(key);
           if (hit && (finished || this.now() - hit.at < LIVE_DETAIL_MS)) return hit.detail;
-          const res = await this.budget.fixture(sport, id, { finished });
+          const res = await this.budget.fixture(sport, id, { finished, refresh: !!hit });
           if (res.data) {
             this.details.set(key, { at: this.now(), detail: res.data });
             this.emit();
@@ -45120,13 +45173,22 @@ ${cue.text}`).join("\n\n")}
           await this.runPlanned(call, this.dates().today, this.dates().dayEndMs);
           return this.tables.get(planKey(call)) ?? null;
         }
+        /**
+         * Heta sporter och livefönstret räknas BARA på fixturer användaren bryr sig
+         * om: kopplade till en EPG-match, följda eller valda (= de som finns i den
+         * sammanslagna listan). Dagsprogrammet täcker hela världen, och då hade
+         * nästan alltid något varit live någonstans och kvoten spridits tunt.
+         */
         liveTargets() {
           const today = this.dates().today;
           const now2 = this.now();
+          const providerId = this.budget.provider.id;
+          const relevant = /* @__PURE__ */ new Set();
+          for (const m of this.mergedById.values()) if (m.fixture && m.fixture.provider === providerId) relevant.add(m.fixture.id);
           const bySport = /* @__PURE__ */ new Map();
           for (const [k, list] of this.days) {
             const [sport, date] = k.split("|");
-            if (date === today) bySport.set(sport, list);
+            if (date === today) bySport.set(sport, list.filter((f) => relevant.has(f.id)));
           }
           const out = [];
           for (const [sport, list] of bySport) {
@@ -45160,6 +45222,7 @@ ${cue.text}`).join("\n\n")}
           const cutoff = this.now() - 36 * 36e5;
           for (const x of m) this.mergedById.set(x.id, x);
           for (const [id, x] of this.mergedById) if (x.stop < cutoff) this.mergedById.delete(id);
+          this.poller?.reschedule();
           for (const cb of [...this.mergedListeners]) cb();
         }
         merged() {
@@ -61922,7 +61985,7 @@ ${cue.text}`).join("\n\n")}
       return () => {
         cancelled = true;
       };
-    }, [covered, controller, match.kind, match.fixture?.id, match.status, match.score?.home, match.score?.away, match.minute]);
+    }, [covered, controller, match.kind, match.fixture?.id, match.status, match.score?.home, match.score?.away]);
     if (!covered) return null;
     const alertOn = !!settings.goalAlertMatches[match.id];
     const h2 = { fontSize: dp(18), fontWeight: 600, marginTop: dp(12) };
@@ -62318,7 +62381,7 @@ ${cue.text}`).join("\n\n")}
     const today = localDayKey(model.nowMs);
     const day = shiftDay(today, offset);
     const selected = useSportDay(day, model.nowMs);
-    const { matches: mergedMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES2 });
+    const { matches: mergedMatches, allMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES2 });
     const mergedDay = useMemo(() => selected.data ? { ...selected.data, matches: mergedMatches } : null, [selected.data, mergedMatches]);
     usePollDemand("sport-view", true);
     const wantsFollow = tab === "follows" || adding;
@@ -62354,7 +62417,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLiveNow"), matches: live2 }),
           /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportLater"), matches: later }),
           /* @__PURE__ */ jsx(PhoneSection, { ctx, title: tt("sportFinished"), matches: finished })
-        ] }) : tab === "results" ? /* @__PURE__ */ jsx(SportResultsPhone, { matches: mergedMatches, controller, onOpenMatch: openMatch, pushLayer: nav.pushLayer }) : /* @__PURE__ */ jsx(PhoneFollows, { ctx, days: [todayDay.data, tomorrowDay.data] }),
+        ] }) : tab === "results" ? /* @__PURE__ */ jsx(SportResultsPhone, { matches: allMatches, controller, onOpenMatch: openMatch, pushLayer: nav.pushLayer }) : /* @__PURE__ */ jsx(PhoneFollows, { ctx, days: [todayDay.data, tomorrowDay.data] }),
         sheet ? /* @__PURE__ */ jsx(MobileSheet, { testId: "sport-phone-sheet", title: matchTitle(sheet), subtitle: [sheet.league || ctx.kindLabel(sheet.kind), timeLine(sheet, ctx)].join(" \xB7 "), items: sheetItems(sheet), onClose: () => setSheet(null), pushLayer: nav.pushLayer }) : null,
         adding ? /* @__PURE__ */ jsx(
           MobileSheet,
@@ -62449,7 +62512,7 @@ ${cue.text}`).join("\n\n")}
     const todayDay = useSportDay(wantsToday ? today : null, model.nowMs);
     const tomorrowDay = useSportDay(wantsToday || ctx.settings.view === "feed" ? shiftDay(today, 1) : null, model.nowMs);
     const yesterdayDay = useSportDay(pickerOpen ? shiftDay(today, -1) : null, model.nowMs);
-    const { matches: mergedMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES3 });
+    const { matches: mergedMatches, allMatches, status, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES3 });
     const mergedDay = useMemo(() => selected.data ? { ...selected.data, matches: mergedMatches } : null, [selected.data, mergedMatches]);
     const tvMode = useTvMode();
     usePollDemand("sport-view", true);
@@ -62467,7 +62530,7 @@ ${cue.text}`).join("\n\n")}
     const body = () => {
       if (selected.state === "missing") return /* @__PURE__ */ jsx(Notice, { testId: "sport-missing", text: tt("sportNeedsUpdate") });
       if (selected.state === "error") return /* @__PURE__ */ jsx(Notice, { testId: "sport-error", text: tt("sportError") });
-      if (tab === "results") return /* @__PURE__ */ jsx(SportResults, { matches: mergedMatches, controller, onOpenMatch: ctx.openMatch, tv: tvMode });
+      if (tab === "results") return /* @__PURE__ */ jsx(SportResults, { matches: allMatches, controller, onOpenMatch: ctx.openMatch, tv: tvMode });
       if (tab === "follows") return /* @__PURE__ */ jsx(SportFollows, { ctx, days: [todayDay.data, tomorrowDay.data] });
       if (selected.state === "loading") return /* @__PURE__ */ jsx(Notice, { testId: "sport-loading", text: tt("sportLoading") });
       if (matches.length === 0) return /* @__PURE__ */ jsx(Notice, { testId: "sport-empty", text: tt("sportEmptyDay") });
