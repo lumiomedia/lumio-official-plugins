@@ -241,6 +241,10 @@ export async function verifyActiveProfilePin(pin: string): Promise<boolean> {
 export function getPluginHttpAssetUrl(path: string, asset: string | null | undefined): string | null {
   return asset ? `${path}?src=${encodeURIComponent(asset)}` : null
 }
+/** Värden exporterar qrcode.react:s QRCodeSVG. Stubben ritar värdet som attribut så att testerna kan läsa det. */
+export function QRCodeSVG({ value, size }: { value: string; size?: number }) {
+  return createElement('svg', { 'data-testid': 'qr', 'data-value': value, width: size, height: size })
+}
 export function isPluginImageLoaded(): boolean {
   return false
 }

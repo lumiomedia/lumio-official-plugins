@@ -13,6 +13,7 @@ import { useSportCtx } from '../sport-ctx'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import { RateLineView } from './sport-score'
+import { KeyCard, shouldShowKeyBanner } from '../key-card'
 import { Notice } from './sport-parts'
 import { SportIcon } from './sport-icons'
 import { SportMatchday } from './sport-matchday'
@@ -134,6 +135,8 @@ function SportTv({ model, nav }: TvViewProps) {
           </Chip>
         </div>
       </div>
+
+      {shouldShowKeyBanner(ctx.settings) ? <KeyCard variant="banner" pushLayer={nav.pushLayer} /> : null}
 
       {body()}
 
