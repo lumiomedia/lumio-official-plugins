@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef, type FocusEvent, type ReactNode } from 'react'
-import { TV, dp, station } from '../../tv/tv-ui'
+import { SCENE_TOP_INSET, TV, dp, station } from '../../tv/tv-ui'
 import type { TvNav } from '../../tv/tv-shell'
-import { SPORT_PANEL_BG, sportDrawerStyle } from '../surface'
+import { sportDrawerStyle } from '../surface'
 import { SHEET_BG, usePhonePlatform } from '../mobile/phone-sport-sheet'
 
 /*
@@ -51,6 +51,18 @@ export function markColumnNeighbours(root: HTMLElement, scope: string): void {
   for (const el of right) set(el, 'data-f-left', outermost(el, right, 'left') ? nearest(el, left) : null)
 }
 
+/**
+ * Helsidans yta. TÄT bakgrund: kortvariabeln (`--sport-card-bg`) är
+ * genomskinlig medan en bakgrundsbild visas, och då lyste sportsidans rubrik
+ * igenom upptill (Jerry 2026-10-12). Toppen börjar under värdens toppkrom
+ * (menypillret; snabbmenyn och klockan viker när ett sportlager är öppet)
+ * via `--tv-scene-chrome-inset`, samma indrag som sportsidans innehåll, plus
+ * mac-titelraden. Luften runt innehållet gör att fokusringarna aldrig klipps.
+ * Ingen intoning: under den lyste sidan bakom igenom.
+ */
+export const FULL_PAGE_BG = TV.panel
+export const FULL_PAGE_PADDING = `calc(${dp(40)}px + var(--tv-scene-chrome-inset, 0px) + ${SCENE_TOP_INSET}) ${dp(72)}px ${dp(72)}px`
+
 export function SportPageDrawer({ nav, depth, phone, full = false, testId, label, onClose, children }: { nav: TvNav; depth: number; phone: boolean; full?: boolean; testId: string; label: string; onClose: () => void; children: ReactNode }) {
   const platform = usePhonePlatform()
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -94,8 +106,7 @@ export function SportPageDrawer({ nav, depth, phone, full = false, testId, label
         padding: '0 16px calc(max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px)) + 24px)',
       } as const
     : full
-      // Luft runt innehållet så att fokusringarna aldrig klipps mot kanten.
-      ? { position: 'fixed', inset: 0, zIndex: z + 1, boxSizing: 'border-box', overflowY: 'auto', background: SPORT_PANEL_BG, color: TV.text, padding: `${dp(56)}px ${dp(72)}px ${dp(72)}px`, animation: 'lumio-sport-page-in 220ms ease-out' } as const
+      ? { position: 'fixed', inset: 0, zIndex: z + 1, boxSizing: 'border-box', overflowY: 'auto', background: FULL_PAGE_BG, color: TV.text, padding: FULL_PAGE_PADDING } as const
       : { position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(760)}px, 100%)`, zIndex: z + 1, ...sportDrawerStyle, overflowY: 'auto', animation: 'lumio-sport-page-in 220ms ease-out' } as const
   return (
     <>

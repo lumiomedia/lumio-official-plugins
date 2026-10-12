@@ -7,6 +7,7 @@ import { __resetTeamDataForTests } from '../team-data'
 import { fakeCtx, fxMatch, stubSportDays } from '../__sport-fixture'
 import { TeamPage } from './team-page'
 import { LeaguePage } from './league-page'
+import { FULL_PAGE_BG, FULL_PAGE_PADDING } from './sport-page-drawer'
 import { MatchInfoDrawer } from '../match-info/match-info-drawer'
 import { scaleFor } from '../match-info/match-info-parts'
 import { TV } from '../../tv/tv-ui'
@@ -71,6 +72,17 @@ describe('Lagsidan i TV-läget', () => {
     // Trupp och titlar under kolumnerna.
     expect(page.querySelector('[data-col] [data-testid="tp-squad"]')).toBeNull()
     expect(screen.getByTestId('tp-squad')).toBeInTheDocument()
+  })
+
+  it('helsidan är tät och börjar under värdens toppkrom (menypillret), och poängen klipps aldrig', async () => {
+    const page = await mountTv()
+    // Tät färg: kortvariabeln är genomskinlig med bakgrundsbild och sportsidans rubrik lyste igenom.
+    expect(FULL_PAGE_BG).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(page.style.background).toBe(FULL_PAGE_BG)
+    expect(page.style.animation).toBe('')
+    expect(FULL_PAGE_PADDING).toContain('var(--tv-scene-chrome-inset, 0px)')
+    expect(screen.getByTestId('tp-position').style.textOverflow).toBe('')
+    expect(screen.getByTestId('tp-position').style.whiteSpace).toBe('')
   })
 
   it('skrivbordet behåller lådan', async () => {

@@ -102,8 +102,8 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             {openLeague ? (
               <div data-testid={headerIds.league} {...station(openLeague, undefined, { 'data-f-right': sel(headerIds.heart) })} aria-label={ctx.tt('sportLeagueOpen', { name: leagueName })}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: u(6), maxWidth: '100%', fontSize: u(17), color: TV.muted, cursor: 'pointer', borderRadius: u(8), padding: `${u(2)}px ${u(4)}px`, margin: `0 -${u(4)}px` }}>
-                {/* Telefonen bryter raden hellre än att klippa poängen. */}
-                <span data-testid="tp-position" style={phone ? undefined : ellipsis}>{position}</span>
+                {/* Telefonen och TV:n bryter raden hellre än att klippa poängen. */}
+                <span data-testid="tp-position" style={phone || u.tv ? undefined : ellipsis}>{position}</span>
                 <SportIcons.Chevron size={u(16)} />
               </div>
             ) : <div data-testid="tp-position" style={{ fontSize: u(17), color: TV.muted, ...ellipsis }}>{position}</div>}
