@@ -13,6 +13,7 @@ import { useSportBackdrop } from '../backdrop'
 import { SportBackdropLayer } from '../sport-backdrop'
 import { useSportCtx } from '../sport-ctx'
 import { useRowNeighbours } from '../row-nav'
+import { hasToasts } from '../../toast-center'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import { RateLineView } from './sport-score'
@@ -100,6 +101,8 @@ function useSportLayerEdges(nav: TvViewProps['nav']) {
   useEffect(() => { navRef.current = nav })
   useEffect(() => onTvFocusEdge((dir, meta) => {
     if (!sportLayerAt(document.activeElement)) return
+    // En synlig notis nås med ▸/▾ vid kanten (toast-center.tsx): de trycken släpps då.
+    if ((dir === 'right' || dir === 'down') && hasToasts()) return
     meta?.claim?.()
     if (dir === 'left') navRef.current.back()
   }), [])

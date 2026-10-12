@@ -127,7 +127,10 @@ export function averageRgb(data: Uint8ClampedArray): Rgb | null {
 
 const GRAY: Rgb = [28, 29, 34]
 export const CARD_BLUR = 'blur(14px)'
-export type CardSurfaceVars = { '--sport-card-bg': string; '--sport-card-blur': string; '--sport-drawer-bg': string }
+export type CardSurfaceVars = { '--sport-card-bg': string; '--sport-card-blur': string; '--sport-drawer-bg': string; '--sport-drawer-solid': string }
+
+/** Den mörka grunden de täta lådorna läggs på (ungefär scenens svärta under en bild). */
+const SOLID_BASE: Rgb = [11, 12, 16]
 
 /** TV-lägets lådor ritas utan oskärpa och får aldrig vara glesare än så här (Jerry 2026-10-11: sidhuvudet lyste igenom). */
 export const TV_DRAWER_MIN_OPACITY = 85
@@ -138,7 +141,11 @@ export function cardSurfaceVars(cards: SportCards, sampled: Rgb | null, opts: { 
   // Plattformens opacitet: eget val, annars 50 på skrivbord/telefon och 85 på TV.
   const opacity = cardOpacity(cards, opts.tv === true)
   const drawer = opts.tv ? Math.max(opacity, TV_DRAWER_MIN_OPACITY) : opacity
-  return { '--sport-card-bg': `rgba(${rgb.join(', ')}, ${opacity / 100})`, '--sport-card-blur': opts.blur ? CARD_BLUR : 'none', '--sport-drawer-bg': `rgba(${rgb.join(', ')}, ${drawer / 100})` }
+  // Täta lådor (Jerry 2026-10-12: "samma färgschema som övrigt"): matchlådans ton,
+  // lagd över en mörk grund och uträknad till en hel färg — samma nyans, inget lyser igenom.
+  const a = drawer / 100
+  const solid = rgb.map((c, i) => Math.round(c * a + SOLID_BASE[i]! * (1 - a)))
+  return { '--sport-card-bg': `rgba(${rgb.join(', ')}, ${opacity / 100})`, '--sport-card-blur': opts.blur ? CARD_BLUR : 'none', '--sport-drawer-bg': `rgba(${rgb.join(', ')}, ${a})`, '--sport-drawer-solid': `rgb(${solid.join(', ')})` }
 }
 
 export { SPORT_CARD_BG, SPORT_PANEL_BG, sportBg, sportSurface } from './surface'

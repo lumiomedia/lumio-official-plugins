@@ -111,7 +111,7 @@ describe('Standard-bilderna', () => {
 
 describe('kortens bakgrund', () => {
   it('standardvärdena (inget eget val): svart 85 % med oskärpa utanför TV:n', () => {
-    expect(cardSurfaceVars({ opacity: 85, tone: 'black' }, null, { blur: true })).toEqual({ '--sport-card-bg': 'rgba(0, 0, 0, 0.85)', '--sport-card-blur': 'blur(14px)', '--sport-drawer-bg': 'rgba(0, 0, 0, 0.85)' })
+    expect(cardSurfaceVars({ opacity: 85, tone: 'black' }, null, { blur: true })).toEqual({ '--sport-card-bg': 'rgba(0, 0, 0, 0.85)', '--sport-card-blur': 'blur(14px)', '--sport-drawer-bg': 'rgba(0, 0, 0, 0.85)', '--sport-drawer-solid': 'rgb(2, 2, 2)' })
     expect(cardSurfaceVars({ opacity: 85, tone: 'black' }, null, { blur: false })['--sport-card-blur']).toBe('none')
   })
   it('lådan i TV-läget: minst 85 % även när kortinställningen är lägre, högre värden hålls', () => {
@@ -122,6 +122,14 @@ describe('kortens bakgrund', () => {
     expect(cardSurfaceVars({ opacity: null, tone: 'black' }, null, { blur: false, tv: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.85)')
     expect(cardSurfaceVars({ opacity: null, tone: 'black' }, null, { blur: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.5)')
     expect(cardSurfaceVars({ opacity: 50, tone: 'black' }, null, { blur: true })['--sport-drawer-bg']).toBe('rgba(0, 0, 0, 0.5)')
+  })
+  it('den täta lådytan härleds ur samma ton som matchlådan: tonen över en mörk grund, uträknad till en hel färg', () => {
+    // Grå ton (28, 29, 34) på TV (85 %) över grunden (11, 12, 16).
+    expect(cardSurfaceVars({ opacity: 85, tone: 'gray' }, null, { blur: false, tv: true })['--sport-drawer-solid']).toBe('rgb(25, 26, 31)')
+    // Bildtonen följer med: samma rgb som --sport-drawer-bg.
+    const v = cardSurfaceVars({ opacity: 60, tvOpacity: 90, tone: 'image' }, [200, 120, 80], { blur: false, tv: true })
+    const [r, g, b] = /rgba\((\d+), (\d+), (\d+)/.exec(v['--sport-drawer-bg'])!.slice(1).map(Number)
+    expect(v['--sport-drawer-solid']).toBe(`rgb(${[r, g, b].map((c, i) => Math.round(c * 0.9 + [11, 12, 16][i]! * 0.1)).join(', ')})`)
     expect(cardSurfaceVars({ opacity: 50, tone: 'black' }, null, { blur: true })['--sport-card-bg']).toBe('rgba(0, 0, 0, 0.5)')
   })
   it('mörkgrå, och ton ur bilden (mörkad); utan prov blir tonen svart', () => {

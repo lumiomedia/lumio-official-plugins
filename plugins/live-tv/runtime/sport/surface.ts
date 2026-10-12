@@ -39,9 +39,11 @@ export const sportDrawerStyle: CSSProperties = {
  * Lådor som öppnas OVANPÅ matchlådan (Fel kanal?): helt täta, på alla
  * plattformar — annars läser matchlådans text igenom (Jerry 2026-10-11).
  */
+/** Den täta lådytan: matchlådans ton som hel färg (`--sport-drawer-solid`, backdrop.ts), utan bild panelfärgen. */
+export const SPORT_SOLID_BG = 'var(--sport-drawer-solid, #141519)'
 export const sportStackedStyle: CSSProperties = {
   ...sportDrawerStyle,
-  background: '#141519',
+  background: SPORT_SOLID_BG,
   backdropFilter: 'none',
   WebkitBackdropFilter: 'none',
 }

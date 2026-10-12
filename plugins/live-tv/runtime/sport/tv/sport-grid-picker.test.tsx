@@ -81,7 +81,8 @@ describe('Kanalväljaren i Sports utseende', () => {
     fireEvent.click(await screen.findByTestId('mc-pick-channel'))
     const picker = await screen.findByTestId('channel-picker')
     expect(Number(picker.style.zIndex)).toBeGreaterThan(60)
-    expect(picker.style.background).toBe('#141519')
+    // Bakgrunden är var(--sport-drawer-solid, …) (jsdom släpper var() i stilen; konstanten testas i surface.test): ingen oskärpa, ingen genomlysning.
+    expect(picker.style.backdropFilter || '').not.toContain('blur')
     expect(within(picker).getByTestId('picker-row-A').style.border).toContain('1px solid')
   })
 })

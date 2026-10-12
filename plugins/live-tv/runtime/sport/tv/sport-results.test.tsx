@@ -189,7 +189,8 @@ describe('Tabeller & resultat på TV (Jerry 2026-10-12)', () => {
     const drawer = screen.getByTestId('league-drawer')
     expect(drawer.textContent).toContain('Serie A')
     expect(drawer.textContent).toContain('Allsvenskan')
-    expect(drawer.style.background).toBe('#141519')
+    // Bakgrunden är var(--sport-drawer-solid, …) (jsdom släpper var() i stilen; konstanten testas i surface.test): ingen oskärpa, ingen genomlysning.
+    expect(drawer.style.backdropFilter || '').not.toContain('blur')
   })
 
   it('Tabell-knappen nås ur gruppens rader: ▸ från en rad, ▴ från första raden; läsordning Tabell → rader → nästa grupps Tabell', () => {

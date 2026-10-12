@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, type FocusEvent, type ReactNode } from 'react'
 import { SCENE_TOP_INSET, TV, dp, station } from '../../tv/tv-ui'
 import type { TvNav } from '../../tv/tv-shell'
-import { sportDrawerStyle } from '../surface'
+import { SPORT_SOLID_BG, sportStackedStyle } from '../surface'
 import { SHEET_BG, usePhonePlatform } from '../mobile/phone-sport-sheet'
 
 /*
@@ -60,7 +60,7 @@ export function markColumnNeighbours(root: HTMLElement, scope: string): void {
  * mac-titelraden. Luften runt innehållet gör att fokusringarna aldrig klipps.
  * Ingen intoning: under den lyste sidan bakom igenom.
  */
-export const FULL_PAGE_BG = TV.panel
+export const FULL_PAGE_BG = SPORT_SOLID_BG
 export const FULL_PAGE_PADDING = `calc(${dp(40)}px + var(--tv-scene-chrome-inset, 0px) + ${SCENE_TOP_INSET}) ${dp(72)}px 0`
 /**
  * Helsidans rullyta BÖRJAR under rubriken och flikarna, som Sports egen
@@ -126,7 +126,7 @@ export function SportPageDrawer({ nav, depth, phone, full = false, testId, label
       } as const
     : full
       ? { position: 'fixed', inset: 0, zIndex: z + 1, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: FULL_PAGE_BG, color: TV.text, padding: FULL_PAGE_PADDING } as const
-      : { position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(760)}px, 100%)`, zIndex: z + 1, ...sportDrawerStyle, overflowY: 'auto', animation: 'lumio-sport-page-in 220ms ease-out' } as const
+      : { position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(760)}px, 100%)`, zIndex: z + 1, ...sportStackedStyle, overflowY: 'auto', animation: 'lumio-sport-page-in 220ms ease-out' } as const
   return (
     <>
       <style>{SLIDE_CSS}</style>

@@ -126,8 +126,7 @@ describe('Lagsidan i TV-läget', () => {
   it('helsidan är tät och börjar under värdens toppkrom (menypillret), och poängen klipps aldrig', async () => {
     const page = await mountTv()
     // Tät färg: kortvariabeln är genomskinlig med bakgrundsbild och sportsidans rubrik lyste igenom.
-    expect(FULL_PAGE_BG).toMatch(/^#[0-9a-f]{6}$/i)
-    expect(page.style.background).toBe(FULL_PAGE_BG)
+    expect(FULL_PAGE_BG).toBe('var(--sport-drawer-solid, #141519)')
     expect(page.style.animation).toBe('')
     expect(FULL_PAGE_PADDING).toContain('var(--tv-scene-chrome-inset, 0px)')
     expect(screen.getByTestId('tp-position').style.textOverflow).toBe('')

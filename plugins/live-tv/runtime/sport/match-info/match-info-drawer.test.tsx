@@ -100,7 +100,8 @@ describe('Matchinfon: SE MATCHEN', () => {
     render(<MatchInfoDrawer ctx={ctx} match={m} onClose={vi.fn()} />)
     fireEvent.click(screen.getByTestId('mc-pick-channel'))
     const picker = screen.getByTestId('channel-picker')
-    expect(picker.style.background).toBe('#141519')
+    // Bakgrunden är var(--sport-drawer-solid, …) (jsdom släpper var() i stilen; konstanten testas i surface.test): ingen oskärpa, ingen genomlysning.
+    expect(picker.style.backdropFilter || '').not.toContain('blur')
     expect(picker.style.backdropFilter).toBe('none')
   })
   it('åsidosättningen står först som Ditt val och kan tas bort', () => {

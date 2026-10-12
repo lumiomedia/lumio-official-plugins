@@ -6,7 +6,8 @@ describe('lådytor', () => {
     expect(sportDrawerStyle.background).toBe('var(--sport-drawer-bg, var(--sport-card-bg, #141519))')
   })
   it('lådor ovanpå matchlådan (Fel kanal?) är helt täta, utan oskärpa', () => {
-    expect(sportStackedStyle.background).toBe('#141519')
+    // Samma ton som matchlådan (--sport-drawer-solid ur kortvalet), som hel färg; utan bild panelfärgen.
+    expect(sportStackedStyle.background).toBe('var(--sport-drawer-solid, #141519)')
     expect(sportStackedStyle.backdropFilter).toBe('none')
   })
 })
