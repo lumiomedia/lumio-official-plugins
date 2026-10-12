@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
+import { __resetForTests, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import {
-  SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, cardOpacity, withCardOpacity, getFollows, getOverrides, getSportSettings, isFollowing, setOverride,
+  SPORT_FOLLOWS_KEY, SPORT_KEYS_KEY, SPORT_SETTINGS_KEY, cardOpacity, migrateSportKeys, useSportSettings, withCardOpacity, getFollows, getOverrides, getSportSettings, isFollowing, setOverride,
   hasAnyKey, removeProviderKey, setFollowAlert, setProviderKey, setSportOrder, setSportSettings, sportsCompatible, teamKeysMatch, toggleFollow, useFollows,
 } from './sport-store'
 import { backfillFollowCrests, useBackfillFollowCrests } from './follow-crest'
@@ -207,6 +207,91 @@ describe('nycklar per källa (flera källor samtidigt, EN nyckel per källa)', (
   it('källordning per sport: bara kända källor, inga dubbletter', () => {
     setSportOrder('football', ['api-sports', 'sportapi', 'api-sports', 'bogus' as never])
     expect(getSportSettings().order).toEqual({ football: ['api-sports', 'sportapi'] })
+  })
+})
+
+/**
+ * Så som en sportbyggnad från enkelnyckeltiden (live-tv 0.15.0 före
+ * flerkällsbytet, 2026-10-11 11–13) skrev om posten: okända fält släpps,
+ * okänd källa blir API-Sports. Den skrivningen kom via WebDAV-synken och
+ * lade sportapi.ai-nyckeln under API-Sports (Jerry 2026-10-12).
+ */
+function rewriteAsSingleKeyRuntime(): void {
+  const r = readPluginJson<Record<string, unknown>>(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, {})
+  writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, {
+    view: r.view, alert: r.alert, apiKey: typeof r.apiKey === 'string' && r.apiKey ? r.apiKey : null, goalAlerts: true,
+    provider: r.provider === 'thesportsdb' ? 'thesportsdb' : 'api-sports', keyPlan: typeof r.keyPlan === 'string' ? r.keyPlan : null,
+    keyCardDismissed: false, goalAlertMatches: {}, backdrop: 'auto', backdropCustom: null,
+  })
+}
+
+describe('nyckelintegritet (äldre byggen som skriver samma synkade post)', () => {
+  it('en äldre byggnads omskrivning flyttar aldrig sportapi.ai-nyckeln till API-Sports', () => {
+    setProviderKey('sportapi', 'sk_live_d4da', null)
+    rewriteAsSingleKeyRuntime()
+    expect(getSportSettings().keys).toEqual({ sportapi: { key: 'sk_live_d4da', plan: null } })
+  })
+  it('en äldre byggnads omskrivning tappar inte nyckelkartan', () => {
+    setProviderKey('sportapi', 'sk_live_d4da', null)
+    setProviderKey('api-sports', 'apis_d191', 'Free')
+    rewriteAsSingleKeyRuntime()
+    expect(getSportSettings().keys).toEqual({ sportapi: { key: 'sk_live_d4da', plan: null }, 'api-sports': { key: 'apis_d191', plan: 'Free' } })
+    expect(getSportSettings()).toMatchObject({ apiKey: 'sk_live_d4da', provider: 'sportapi' })
+  })
+  it('nycklarna bor i en egen post som äldre byggen aldrig rör', () => {
+    setProviderKey('sportapi', 'sk_live_d4da', null)
+    expect(readPluginJson<{ keys: unknown }>(LIVE_TV_PLUGIN_ID, SPORT_KEYS_KEY, null as never)).toEqual({ keys: { sportapi: { key: 'sk_live_d4da', plan: null } } })
+  })
+  it('den sparade spegeln (apiKey/provider) nämner bara källor som äldre byggen förstår', () => {
+    setProviderKey('sportapi', 'sk_live_d4da', null)
+    let raw = readPluginJson<Record<string, unknown>>(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, {})
+    expect(raw).toMatchObject({ apiKey: null, provider: 'api-sports', keyPlan: null })
+    setProviderKey('api-sports', 'apis_d191', 'Free')
+    raw = readPluginJson<Record<string, unknown>>(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, {})
+    expect(raw).toMatchObject({ apiKey: 'apis_d191', provider: 'api-sports', keyPlan: 'Free' })
+    // Nuvarande 0.15.0-byggen läser kartan i posten; den skrivs fortfarande med.
+    expect(raw.keys).toEqual({ sportapi: { key: 'sk_live_d4da', plan: null }, 'api-sports': { key: 'apis_d191', plan: 'Free' } })
+  })
+  it('när nyckelposten finns vinner den över allt i inställningsposten', () => {
+    setProviderKey('api-sports', 'apis_d191', 'Free')
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { apiKey: 'stale1234', provider: 'api-sports' })
+    expect(getSportSettings().keys).toEqual({ 'api-sports': { key: 'apis_d191', plan: 'Free' } })
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { keys: { 'api-sports': { key: 'sk_live_d4da', plan: null } } })
+    expect(getSportSettings().keys).toEqual({ 'api-sports': { key: 'apis_d191', plan: 'Free' } })
+  })
+  it('alla nycklar borttagna stannar borttagna, även om en äldre post bär en nyckel', () => {
+    setProviderKey('api-sports', 'apis_d191', 'Free')
+    removeProviderKey('api-sports')
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { apiKey: 'apis_d191', provider: 'api-sports' })
+    expect(getSportSettings().keys).toEqual({})
+  })
+  it('flytt utan nyckelpost: en spegel med en känd källa hamnar hos den källan, inte hos API-Sports', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { apiKey: 'sk_live_d4da', provider: 'sportapi', keyPlan: null })
+    expect(getSportSettings().keys).toEqual({ sportapi: { key: 'sk_live_d4da', plan: null } })
+  })
+  it('flytt: nyckelkartan i en nuvarande post sparas i nyckelposten när Sport öppnas', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { keys: { sportapi: { key: 'sk_live_d4da', plan: null } }, apiKey: 'sk_live_d4da', provider: 'sportapi' })
+    renderHook(() => useSportSettings())
+    rewriteAsSingleKeyRuntime()
+    expect(getSportSettings().keys).toEqual({ sportapi: { key: 'sk_live_d4da', plan: null } })
+  })
+  it('flytten skriver ingenting när det inte finns något att flytta, och bara en gång', () => {
+    expect(migrateSportKeys()).toBe(false)
+    expect(readPluginJson(LIVE_TV_PLUGIN_ID, SPORT_KEYS_KEY, null)).toBeNull()
+    writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, { apiKey: 'apis_d191', provider: 'api-sports' })
+    expect(migrateSportKeys()).toBe(true)
+    expect(migrateSportKeys()).toBe(false)
+  })
+  it('en äldre skrivning ({ apiKey }) utan källa gäller API-Sports, aldrig den primära källan', () => {
+    setProviderKey('sportapi', 'sk_live_d4da', null)
+    setSportSettings({ apiKey: 'apis_d191' })
+    expect(getSportSettings().keys).toEqual({ sportapi: { key: 'sk_live_d4da', plan: null }, 'api-sports': { key: 'apis_d191', plan: null } })
+  })
+  it('useSportSettings följer nyckelposten (t.ex. när synken ändrar den)', () => {
+    const { result } = renderHook(() => useSportSettings())
+    expect(result.current.keys).toEqual({})
+    act(() => { writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_KEYS_KEY, { keys: { thesportsdb: { key: '123456', plan: 'Premium' } } }) })
+    expect(result.current.keys).toEqual({ thesportsdb: { key: '123456', plan: 'Premium' } })
   })
 })
 

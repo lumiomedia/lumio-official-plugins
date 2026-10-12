@@ -15,6 +15,15 @@ import { SPORT_KINDS, type SportKind } from './sport-model'
 export const SPORT_SETTINGS_KEY = 'sport_settings_v1'
 export const SPORT_FOLLOWS_KEY = 'sport_follows_v1'
 export const SPORT_OVERRIDES_KEY = 'sport_overrides_v1'
+/**
+ * NYCKLARNA BOR I EN EGEN POST, `{ keys }`. Inställningsposten synkas till
+ * enheter som kan köra ett äldre sportbygge, och ett sådant skriver om HELA
+ * posten med sina egna fält: nyckelkartan försvann och sportapi.ai-nyckeln
+ * (spegeln `apiKey` med `provider: 'sportapi'`, en källa det bygget inte
+ * kände) hamnade under API-Sports, som underkände den (Jerry 2026-10-12).
+ * Den här posten rör inget äldre bygge. Finns den är den ensam sanningen.
+ */
+export const SPORT_KEYS_KEY = 'sport_keys_v1'
 
 export type SportViewMode = 'matchday' | 'feed'
 export type KickoffAlert = 'off' | '15' | 'kickoff'
@@ -171,11 +180,35 @@ function sanitizeKeys(raw: unknown): ProviderKeys {
   return out
 }
 
-/** Flytt från fas 2:s enkla nyckel: `{apiKey, provider, keyPlan}` → en post i kartan. */
+/**
+ * Flytt från fas 2:s enkla nyckel: `{apiKey, provider, keyPlan}` → en post i
+ * kartan. Nyckeln hamnar hos den källa posten själv anger; bara en post UTAN
+ * källa var API-Sports. (Att göra varje okänd källa till API-Sports var just
+ * felet som gav API-Sports sportapi.ai-nyckeln.)
+ */
 function legacyKeys(r: Record<string, unknown>): ProviderKeys {
   if (typeof r.apiKey !== 'string' || !KEY_RE.test(r.apiKey)) return {}
-  const id: ProviderId = r.provider === 'thesportsdb' ? 'thesportsdb' : 'api-sports'
+  const id: ProviderId = isProvider(r.provider) ? r.provider : 'api-sports'
   return { [id]: { key: r.apiKey, plan: typeof r.keyPlan === 'string' ? r.keyPlan : null } }
+}
+
+/** Källorna som sportbyggen från enkelnyckeltiden känner; spegeln i inställningsposten nämner bara dem. */
+const LEGACY_PROVIDERS: readonly ProviderId[] = ['api-sports', 'thesportsdb']
+
+/** Nyckelposten, eller `null` när den aldrig skrivits (då gäller inställningsposten, se `keysFromSettings`). */
+function readKeysStore(): ProviderKeys | null {
+  const raw = readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, SPORT_KEYS_KEY, null)
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  return sanitizeKeys((raw as Record<string, unknown>).keys)
+}
+
+function writeKeysStore(keys: ProviderKeys): void {
+  writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_KEYS_KEY, { keys })
+}
+
+/** Nycklarna så som inställningsposten bär dem (före nyckelposten): kartan, annars den enkla nyckeln. */
+function keysFromSettings(r: Record<string, unknown>): ProviderKeys {
+  return r.keys && typeof r.keys === 'object' ? sanitizeKeys(r.keys) : legacyKeys(r)
 }
 
 function sanitizeOrder(raw: unknown): SportOrder {
@@ -197,11 +230,11 @@ export function hasAnyKey(s: Pick<SportSettings, 'keys'>): boolean {
   return ALL_PROVIDERS.some((id) => !!s.keys[id])
 }
 
-function sanitizeSettings(raw: unknown): SportSettings {
+function sanitizeSettings(raw: unknown, stored: ProviderKeys | null): SportSettings {
   // `backdrop`/`backdropCustom` är fas 2:s första form (länk eller startsidans bild); bara Av följer med.
   const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof SportSettings | 'backdrop', unknown>>
-  // En post med nyckelkarta flyttas aldrig igen: kartan är sanningen, de härledda fälten bara en spegel.
-  const keys = r.keys && typeof r.keys === 'object' ? sanitizeKeys(r.keys) : legacyKeys(r as Record<string, unknown>)
+  // Nyckelposten vinner över allt i inställningsposten; utan den gäller postens karta, annars den enkla nyckeln.
+  const keys = stored ?? keysFromSettings(r as Record<string, unknown>)
   const provider = primaryProvider(keys)
   return {
     view: r.view === 'feed' || r.view === 'matchday' ? r.view : DEFAULT_SETTINGS.view,
@@ -225,22 +258,54 @@ function sanitizeSettings(raw: unknown): SportSettings {
 }
 
 export function getSportSettings(): SportSettings {
-  return sanitizeSettings(readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, DEFAULT_SETTINGS))
+  return sanitizeSettings(readPluginJson<unknown>(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, DEFAULT_SETTINGS), readKeysStore())
 }
 
+/**
+ * Inställningsposten så som den sparas. Kartan skrivs med för nuvarande
+ * 0.15.0-byggen (de läser den), men spegeln `apiKey`/`provider`/`keyPlan`
+ * nämner bara en källa enkelnyckelbyggena känner — de gör varje annan källa
+ * till API-Sports. Utan en sådan nyckel är spegeln tom.
+ */
+function storedSettings(s: SportSettings): SportSettings {
+  const id = LEGACY_PROVIDERS.find((p) => s.keys[p]) ?? null
+  return { ...s, apiKey: id ? s.keys[id]!.key : null, provider: id ?? 'api-sports', keyPlan: id ? s.keys[id]!.plan : null }
+}
+
+/**
+ * Sparar inställningsposten och nyckelposten. Nyckelposten skrivs bara när
+ * nycklarna ändras eller när den saknas — en ändrad vy ska inte skriva om
+ * nycklarna (och ge en annan enhets nyckelbyte en krock i synken).
+ */
 export function setSportSettings(patch: Partial<SportSettings>): SportSettings {
   const current = getSportSettings()
   let keys = patch.keys ?? current.keys
   if ('apiKey' in patch) {
-    // Äldre skrivform (en nyckel): gäller den angivna eller den primära källan, och lämnar andra källor.
-    const id = patch.provider ?? current.provider
+    // Äldre skrivform (en nyckel): gäller den ANGIVNA källan, utan källa API-Sports
+    // (som i enkelnyckeltiden) — aldrig "den primära", som kan vara en annan källa.
+    const id = patch.provider ?? 'api-sports'
     keys = { ...keys }
     if (patch.apiKey) keys[id] = { key: patch.apiKey, plan: patch.keyPlan ?? null }
     else delete keys[id]
   }
-  const next = sanitizeSettings({ ...current, ...patch, keys })
-  writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, next)
+  const stored = readKeysStore()
+  const next = sanitizeSettings({ ...current, ...patch, keys }, sanitizeKeys(keys))
+  if (!stored || JSON.stringify(stored) !== JSON.stringify(next.keys)) writeKeysStore(next.keys)
+  writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, storedSettings(next))
   return next
+}
+
+/**
+ * Flyttar nycklarna ur inställningsposten till nyckelposten, en gång. Körs när
+ * Sport läser inställningarna (en effekt, aldrig under rendering). Skriver
+ * ingenting när nyckelposten redan finns eller det inte finns några nycklar.
+ */
+export function migrateSportKeys(): boolean {
+  if (readKeysStore()) return false
+  const keys = getSportSettings().keys
+  if (!hasAnyKey({ keys })) return false
+  writeKeysStore(keys)
+  return true
 }
 
 /** Sparar (eller ERSÄTTER) källans enda nyckel. */
@@ -270,7 +335,16 @@ function useStored<T>(key: string, read: () => T): T {
 }
 
 export function useSportSettings(): SportSettings {
-  return useStored(SPORT_SETTINGS_KEY, getSportSettings)
+  const [value, setValue] = useState(getSportSettings)
+  useEffect(() => {
+    migrateSportKeys()
+    const refresh = () => setValue(getSportSettings())
+    refresh()
+    const offSettings = onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, refresh)
+    const offKeys = onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_KEYS_KEY, refresh)
+    return () => { offSettings(); offKeys() }
+  }, [])
+  return value
 }
 
 /** Samma regel som `keys_match` i `live_tv_sport.rs`: lika, genitiv-s, eller kortformen är början/slutet av den långa. */
