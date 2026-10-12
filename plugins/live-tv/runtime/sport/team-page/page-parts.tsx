@@ -48,17 +48,22 @@ export function FormLetter({ u, kind, letter, size = 28 }: { u: U; kind: 'W' | '
  */
 export const FORM_SIZE = 22
 const FORM_GAP = 4
+/** Luft mellan poängen och formbrickorna. */
+const FORM_LEAD = 24
 export function StandingsRows({ u, rows, mark, ctx, onOpen, testId, form, highlight, rowAttrs }: {
   u: U; rows: StandingRow[]; mark: number; ctx: Pick<SportCtx, 'tt'>; onOpen?: (row: StandingRow) => void; testId: string
   form?: boolean; highlight?: (row: StandingRow) => boolean; rowAttrs?: (i: number, n: number) => Record<string, string> | undefined
 }) {
+  // Med form (resultattabellen, full bredd): sifferkolumnerna lite luftigare och formen en bit från poängen.
   const formW = 5 * u(FORM_SIZE) + 4 * u(FORM_GAP)
-  const cols = `${u(34)}px minmax(0,1fr) ${u(40)}px ${u(48)}px ${u(48)}px${form ? ` ${formW}px` : ''}`
+  const cols = form
+    ? `${u(34)}px minmax(0,1fr) ${u(52)}px ${u(60)}px ${u(60)}px ${formW + u(FORM_LEAD)}px`
+    : `${u(34)}px minmax(0,1fr) ${u(40)}px ${u(48)}px ${u(48)}px`
   return (
     <div data-testid={testId} style={{ ...rowCard(u), padding: `${u(6)}px ${u(10)}px`, display: 'flex', flexDirection: 'column' }}>
       <div data-testid={`${testId}-head`} style={{ display: 'grid', gridTemplateColumns: cols, gap: u(8), padding: `${u(6)}px ${u(8)}px`, fontSize: u(14), fontWeight: 700, color: u.dim }}>
         <span>#</span><span>{ctx.tt('sportColTeam')}</span><span style={{ textAlign: 'right' }}>{ctx.tt('sportColPlayed')}</span><span style={{ textAlign: 'right' }}>+/-</span><span style={{ textAlign: 'right' }}>{ctx.tt('sportColPoints')}</span>
-        {form ? <span style={{ paddingLeft: u(FORM_GAP) }}>{ctx.tt('sportColForm')}</span> : null}
+        {form ? <span style={{ paddingLeft: u(FORM_LEAD) }}>{ctx.tt('sportColForm')}</span> : null}
       </div>
       {rows.map((r, i) => {
         const on = i === mark || !!highlight?.(r)
@@ -75,7 +80,7 @@ export function StandingsRows({ u, rows, mark, ctx, onOpen, testId, form, highli
             <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: TV.muted }}>{r.goalDiff == null ? '' : r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</span>
             <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 800 }}>{r.points}</span>
             {form ? (
-              <span data-testid="standings-form" style={{ display: 'flex', gap: u(FORM_GAP), paddingLeft: u(FORM_GAP) }}>
+              <span data-testid="standings-form" style={{ display: 'flex', gap: u(FORM_GAP), paddingLeft: u(FORM_LEAD) }}>
                 {formLetters(r.form, ctx.tt).slice(-5).map((f, k) => <FormLetter key={k} u={u} kind={f.kind} letter={f.letter} size={FORM_SIZE} />)}
               </span>
             ) : null}

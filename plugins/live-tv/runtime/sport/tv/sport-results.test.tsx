@@ -225,7 +225,9 @@ describe('Tabeller & resultat på TV (Jerry 2026-10-12)', () => {
     fireEvent.click(screen.getByTestId('results-table-football|113'))
     await waitFor(() => expect(screen.getAllByTestId('page-standings-row')).toHaveLength(2))
     const wrap = screen.getByTestId('results-standings-football|113')
-    expect(wrap.style.maxWidth).toBe('1200px')
+    // Full bredd som matchraderna (Jerry 2026-10-12: "denna måste gå hela vägen"): inget tak.
+    expect(wrap.style.maxWidth).toBe('')
+    expect(wrap.style.width).toBe('100%')
     const [r1, r2] = screen.getAllByTestId('page-standings-row')
     // TV-minimum: text ≥ 24, rad ≥ 56, rubrik ≥ 20, formbricka ≥ 30.
     expect(parseFloat(r1.style.fontSize)).toBeGreaterThanOrEqual(24)
@@ -237,6 +239,8 @@ describe('Tabeller & resultat på TV (Jerry 2026-10-12)', () => {
     // Fasta kolumner: bara lagnamnet töjer sig.
     expect(r1.style.gridTemplateColumns.match(/minmax/g)).toHaveLength(1)
     expect(r1.style.gridTemplateColumns).not.toContain('fr ')
+    // Formen står en bit från poängen.
+    expect(parseFloat(r1.querySelector<HTMLElement>('[data-testid="standings-form"]')!.style.paddingLeft)).toBeGreaterThanOrEqual(30)
     expect(r1).toHaveAttribute('data-mark', '1')
     expect(r2).toHaveAttribute('data-mark', '0')
     expect(r1).toHaveAttribute('data-f')

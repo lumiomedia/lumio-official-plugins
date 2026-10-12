@@ -57,13 +57,11 @@ export function followedRow(follows: SportFollow[], sport: string, name: string)
   return follows.some((f) => f.kind === 'team' && f.sport === sport && (teamKeysMatch(f.key, key) || teamKeysMatch(foldTeamKey(f.name), key)))
 }
 
-// Tabellen på TV: lag- och ligasidans tabell i TV-skala, smal nog att läsas (Jerry 2026-10-12).
-export const TV_TABLE_MAX_W = 1200
 const TV_U = scaleFor(false, true)
 
 /**
  * Tabellen under en grupp på TV (Jerry 2026-10-12: den gamla var skrivbordsstor
- * och spred kolumnerna över hela bredden). Samma rader som lag- och ligasidan:
+ * och spred kolumnerna över hela bredden). Samma rader som lag- och ligasidan, i gruppens fulla bredd som matchraderna (Jerry 2026-10-12):
  * fokusbara, öppnar lagets sida, följda lag markerade, formen som brickor.
  */
 function TvStandings({ g, rows, tt, follows, onOpen, rowAttrs, u = TV_U }: {
@@ -71,7 +69,7 @@ function TvStandings({ g, rows, tt, follows, onOpen, rowAttrs, u = TV_U }: {
   rowAttrs: (i: number, n: number) => Record<string, string>; u?: U
 }) {
   return (
-    <div data-testid={`results-standings-${g.key}`} style={{ width: '100%', maxWidth: dp(TV_TABLE_MAX_W) }}>
+    <div data-testid={`results-standings-${g.key}`} style={{ width: '100%' }}>
       {rows === 'loading' || rows.length === 0
         ? <div data-testid={rows === 'loading' ? 'sport-standings-loading' : 'sport-standings-empty'} {...station(NOOP, undefined, rowAttrs(0, 1))}
             style={{ ...sportCardStyle, padding: `${u(14)}px ${u(18)}px`, fontSize: u(17), color: TV.muted }}>{rows === 'loading' ? tt('sportLoading') : tt('sportTableEmpty')}</div>
