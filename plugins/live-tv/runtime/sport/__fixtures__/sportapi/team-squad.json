@@ -1,0 +1,46 @@
+{
+ "_shape": "from docs (GET /teams/{id}/squad) — verify with real key",
+ "success": true,
+ "squad": [
+  {
+   "id": 4904,
+   "full_name": "David Raya",
+   "position": "Goalkeeper",
+   "jersey_number": 1,
+   "nationality": "ES",
+   "date_of_birth": "1995-09-15",
+   "height": null,
+   "weight": null
+  },
+  {
+   "id": 4905,
+   "full_name": "William Saliba",
+   "position": "Defender",
+   "jersey_number": 2,
+   "nationality": "FR",
+   "date_of_birth": "2001-03-24",
+   "height": null,
+   "weight": null
+  },
+  {
+   "id": 4906,
+   "full_name": "Declan Rice",
+   "position": "Midfielder",
+   "jersey_number": 41,
+   "nationality": "GB",
+   "date_of_birth": "1999-01-14",
+   "height": null,
+   "weight": null
+  },
+  {
+   "id": 4907,
+   "full_name": "Bukayo Saka",
+   "position": "Forward",
+   "jersey_number": 7,
+   "nationality": "GB",
+   "date_of_birth": "2001-09-05",
+   "height": null,
+   "weight": null
+  }
+ ]
+}

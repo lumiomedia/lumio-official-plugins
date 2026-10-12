@@ -236,6 +236,23 @@ export class Budget {
     if (bodies.every((b) => b == null)) return null
     try { return call.parse(bodies) } catch { return null }
   }
+
+  /**
+   * Som `peek`, med när posten hämtades (den äldsta av förfrågningarnas). Lagsidan
+   * räknar sin TTL ur det: matcherna gäller fram till lagets nästa match.
+   */
+  async peekAged<T>(sport: SportKind, call: ProviderCall<T>): Promise<{ data: T; fetchedAt: number | null } | null> {
+    if (!this.key || this.provider.coverage(sport) !== 'full' || call.requests.length === 0) return null
+    const bodies: unknown[] = []
+    let fetchedAt: number | null = null
+    for (const req of call.requests) {
+      const res = await this.fetchImpl({ provider: this.provider.id, key: this.key, req, mode: 'cache-only' })
+      bodies.push(res.data)
+      if (res.fetchedAt != null) fetchedAt = fetchedAt == null ? res.fetchedAt : Math.min(fetchedAt, res.fetchedAt)
+    }
+    if (bodies.every((b) => b == null)) return null
+    try { return { data: call.parse(bodies), fetchedAt } } catch { return null }
+  }
 }
 
 /** Kvar för äldre tester; routern (router.ts) äger nu singeltonen. */

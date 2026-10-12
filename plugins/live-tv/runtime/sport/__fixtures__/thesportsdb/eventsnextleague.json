@@ -1,0 +1,28 @@
+{
+ "_shape": "from docs (v1 eventsnextleague.php) — verify with real key",
+ "events": [
+  {
+   "idEvent": "9002",
+   "strEvent": "Hammarby vs IF Elfsborg",
+   "idLeague": "4347",
+   "strLeague": "Swedish Allsvenskan",
+   "strSeason": "2026",
+   "intRound": "24",
+   "strHomeTeam": "Hammarby",
+   "strAwayTeam": "IF Elfsborg",
+   "idHomeTeam": "134004",
+   "idAwayTeam": "134901",
+   "intHomeScore": null,
+   "intAwayScore": null,
+   "strTimestamp": "2026-10-18T13:00:00",
+   "dateEvent": "2026-10-18",
+   "strTime": "13:00:00",
+   "strStatus": "Not Started",
+   "strPostponed": "no",
+   "strHomeTeamBadge": null,
+   "strAwayTeamBadge": null,
+   "strVenue": "Tele2 Arena",
+   "strCountry": "Sweden"
+  }
+ ]
+}

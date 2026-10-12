@@ -1,0 +1,24 @@
+{
+ "_shape": "from docs (GET /leagues/{id}/topscorers) — verify with real key",
+ "success": true,
+ "season_from": "2026-08-21",
+ "data": [
+  {
+   "rank": 1,
+   "player_name": "E. Haaland",
+   "player_urn": "urn:bbc:sportsdata:football:player:s-atzboo800gv7gic2rgvgo0kq1",
+   "team_id": 324,
+   "team_name": "Manchester City",
+   "goals": 5,
+   "penalties": 0
+  },
+  {
+   "rank": 2,
+   "player_name": "B. Saka",
+   "team_id": 311,
+   "team_name": "Arsenal",
+   "goals": 4,
+   "penalties": 1
+  }
+ ]
+}

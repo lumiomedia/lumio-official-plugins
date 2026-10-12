@@ -1,0 +1,80 @@
+{
+ "_shape": "from docs (players/squads)",
+ "get": "players/squads",
+ "parameters": {
+  "team": "363"
+ },
+ "errors": [],
+ "results": 1,
+ "paging": {
+  "current": 1,
+  "total": 1
+ },
+ "response": [
+  {
+   "team": {
+    "id": 363,
+    "name": "Hammarby FF",
+    "logo": "https://media.api-sports.io/football/teams/363.png"
+   },
+   "players": [
+    {
+     "id": 20001,
+     "name": "O. Dovin",
+     "age": 25,
+     "number": 1,
+     "position": "Goalkeeper",
+     "photo": "https://media.api-sports.io/football/players/20001.png"
+    },
+    {
+     "id": 20002,
+     "name": "W. Eriksson",
+     "age": 25,
+     "number": 35,
+     "position": "Goalkeeper",
+     "photo": "https://media.api-sports.io/football/players/20002.png"
+    },
+    {
+     "id": 20003,
+     "name": "S. Gustafson",
+     "age": 25,
+     "number": 4,
+     "position": "Defender",
+     "photo": "https://media.api-sports.io/football/players/20003.png"
+    },
+    {
+     "id": 20004,
+     "name": "M. Fenger",
+     "age": 25,
+     "number": 2,
+     "position": "Defender",
+     "photo": "https://media.api-sports.io/football/players/20004.png"
+    },
+    {
+     "id": 20005,
+     "name": "N. Rosenberg",
+     "age": 25,
+     "number": 8,
+     "position": "Midfielder",
+     "photo": "https://media.api-sports.io/football/players/20005.png"
+    },
+    {
+     "id": 20006,
+     "name": "J. Ingelsten",
+     "age": 25,
+     "number": null,
+     "position": "Midfielder",
+     "photo": "https://media.api-sports.io/football/players/20006.png"
+    },
+    {
+     "id": 20007,
+     "name": "N. Karlsson",
+     "age": 25,
+     "number": 9,
+     "position": "Attacker",
+     "photo": "https://media.api-sports.io/football/players/20007.png"
+    }
+   ]
+  }
+ ]
+}

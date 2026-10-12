@@ -88,6 +88,8 @@ export function fakeCtx(over: Partial<SportCtx> = {}): SportCtx {
     reminders: over.reminders ?? [],
     openMatch: vi.fn(),
     openFollowPicker: vi.fn(),
+    openTeam: vi.fn(),
+    openLeague: vi.fn(),
   })
   return { ...base, watch: vi.fn(), toggleRemind: vi.fn(), ...over }
 }

@@ -1,0 +1,35 @@
+{
+ "_shape": "from docs (GET /leagues/{id}) — verify with real key",
+ "success": true,
+ "id": 24,
+ "name": "Premier League",
+ "geo": "GB-ENG",
+ "country": "England",
+ "domestic": 1,
+ "teams": [
+  {
+   "id": 370,
+   "name": "AFC Bournemouth",
+   "logo_file": "espn-349.png"
+  }
+ ],
+ "upcoming_fixtures": [
+  {
+   "id": 13596518,
+   "date": "2026-10-17",
+   "datetime": "2026-10-17 15:00:00",
+   "home_team": "Crystal Palace",
+   "away_team": "Nottingham Forest"
+  }
+ ],
+ "recent_results": [
+  {
+   "id": 13596181,
+   "date": "2026-10-10",
+   "home_team": "Manchester United",
+   "away_team": "Tottenham Hotspur",
+   "home_score": 1,
+   "away_score": 1
+  }
+ ]
+}

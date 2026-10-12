@@ -1,0 +1,82 @@
+{
+ "_shape": "from docs (GET /teams/{id}) — verify with real key",
+ "success": true,
+ "team": {
+  "id": 311,
+  "name": "Arsenal",
+  "short_name": "Arsenal",
+  "league_id": 24,
+  "geo": "GB-ENG",
+  "country": "England",
+  "city": "London",
+  "coach_name": "Mikel Arteta",
+  "stadium_name": "Emirates Stadium",
+  "founded_year": 1886,
+  "logo_file": "espn-359.png"
+ },
+ "matches": [
+  {
+   "id": 16096701,
+   "home_id": 311,
+   "away_id": 324,
+   "date": "2026-10-04",
+   "home_score": 2,
+   "away_score": 2,
+   "result": "D",
+   "status": "FT",
+   "league_id": 24,
+   "league_name": "Premier League",
+   "home_team": "Arsenal",
+   "away_team": "Manchester City"
+  },
+  {
+   "id": 16096702,
+   "home_id": 370,
+   "away_id": 311,
+   "date": "2026-10-10",
+   "home_score": 0,
+   "away_score": 1,
+   "result": "A",
+   "status": "FT",
+   "league_id": 24,
+   "league_name": "Premier League",
+   "home_team": "AFC Bournemouth",
+   "away_team": "Arsenal"
+  },
+  {
+   "id": 16096707,
+   "home_id": 311,
+   "away_id": 10165,
+   "date": "2026-11-07",
+   "home_score": null,
+   "away_score": null,
+   "result": null,
+   "status": "Scheduled",
+   "league_id": 24,
+   "league_name": "Premier League",
+   "home_team": "Arsenal",
+   "away_team": "Hull City"
+  },
+  {
+   "id": 16096706,
+   "home_id": 311,
+   "away_id": 328,
+   "date": "2026-10-18",
+   "datetime": "2026-10-18 16:30:00",
+   "home_score": null,
+   "away_score": null,
+   "result": null,
+   "status": "Scheduled",
+   "league_id": 24,
+   "league_name": "Premier League",
+   "home_team": "Arsenal",
+   "away_team": "Nottingham Forest"
+  }
+ ],
+ "leagues": [
+  {
+   "id": 24,
+   "name": "Premier League"
+  }
+ ]
+}

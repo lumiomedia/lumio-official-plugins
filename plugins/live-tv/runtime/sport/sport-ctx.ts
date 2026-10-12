@@ -10,6 +10,7 @@ import { localDayKey } from './sport-epg'
 import { matchTitle, sourceChannel, type MatchSource, type SportKind, type SportMatch } from './sport-model'
 import { rankedSources, statusAt } from './sport-day-model'
 import { setAlertSkip, teamKeysMatch, useFollows, useOverrides, useSportSettings, type SportFollow, type SportOverrides, type SportSettings } from './sport-store'
+import type { LeagueTarget, TeamTarget } from './team-model'
 
 /*
   ALLT EN SPORTVY BEHÖVER, I ETT OBJEKT.
@@ -44,11 +45,17 @@ export interface SportCtx {
   playlistName(sourceId: string): string
   openMatch(match: SportMatch): void
   openFollowPicker(): void
+  /** Lagsidan (Dina lag, Mina lag, ett lagnamn i matchinfon). Läggs ovanpå det som är öppet; Bakåt går tillbaka dit. */
+  openTeam(target: TeamTarget): void
+  /** Ligasidan (en följd liga, ligan i matchinfon eller på lagsidan). */
+  openLeague(target: LeagueTarget): void
   /** Spela matchen: angiven källa, annars bästa (åsidosättningen först). */
   watch(match: SportMatch, source?: MatchSource): void
   toggleRemind(match: SportMatch): void
   isReminded(match: SportMatch): boolean
 }
+
+const NOOP = () => {}
 
 export function buildSportCtx(input: {
   model: LiveTvModel
@@ -61,6 +68,8 @@ export function buildSportCtx(input: {
   reminders: Reminder[]
   openMatch(match: SportMatch): void
   openFollowPicker(): void
+  openTeam?(target: TeamTarget): void
+  openLeague?(target: LeagueTarget): void
 }): SportCtx {
   const { model, nav, tt, overrides, reminders } = input
   const best = (m: SportMatch): MatchSource | null => rankedSources(m, overrides)[0] ?? null
@@ -78,6 +87,8 @@ export function buildSportCtx(input: {
     playlistName: (sourceId) => model.lists.find((list) => list.source === sourceId)?.name ?? tt('sportPlaylistUnknown'),
     openMatch: input.openMatch,
     openFollowPicker: input.openFollowPicker,
+    openTeam: input.openTeam ?? NOOP,
+    openLeague: input.openLeague ?? NOOP,
     watch: (m, source) => {
       const chosen = source ?? best(m)
       if (chosen) nav.play({ channel: sourceChannel(chosen) })
@@ -101,16 +112,16 @@ export function buildSportCtx(input: {
   }
 }
 
-export function useSportCtx(args: { model: LiveTvModel; nav: TvNav; openMatch(match: SportMatch): void; openFollowPicker(): void }): SportCtx {
+export function useSportCtx(args: { model: LiveTvModel; nav: TvNav; openMatch(match: SportMatch): void; openFollowPicker(): void; openTeam?(target: TeamTarget): void; openLeague?(target: LeagueTarget): void }): SportCtx {
   const { tt, locale } = useTvText()
   const follows = useFollows()
   const overrides = useOverrides()
   const settings = useSportSettings()
   const reminders = useReminders()
-  const { model, nav, openMatch, openFollowPicker } = args
+  const { model, nav, openMatch, openFollowPicker, openTeam, openLeague } = args
   return useMemo(
-    () => buildSportCtx({ model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker }),
-    [model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker],
+    () => buildSportCtx({ model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker, openTeam, openLeague }),
+    [model, nav, tt, locale, follows, overrides, settings, reminders, openMatch, openFollowPicker, openTeam, openLeague],
   )
 }
 

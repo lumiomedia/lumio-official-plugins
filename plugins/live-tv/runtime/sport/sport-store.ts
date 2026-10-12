@@ -427,6 +427,22 @@ export function setFollowAlert(f: Pick<SportFollow, 'sport' | 'kind' | 'key'>, a
   return next
 }
 
+/**
+ * Källans id för ett följt lag, uppslaget av lagsidan (lagsök en gång). Bara
+ * en post som redan följs och saknar id för källan skrivs; annars ingenting.
+ */
+export function setFollowProviderId(f: Pick<SportFollow, 'sport' | 'kind' | 'key'>, provider: ProviderId, id: string): boolean {
+  const current = getFollows()
+  let changed = false
+  const next = current.map((x) => {
+    if (!isFollowing([x], f) || x.providerIds?.[provider]) return x
+    changed = true
+    return { ...x, providerIds: { ...(x.providerIds ?? {}), [provider]: id } }
+  })
+  if (changed) writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, next)
+  return changed
+}
+
 export function useFollows(): SportFollow[] {
   return useStored(SPORT_FOLLOWS_KEY, getFollows)
 }

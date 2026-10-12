@@ -1,0 +1,58 @@
+{
+ "_shape": "from docs (players/topscorers)",
+ "get": "players/topscorers",
+ "parameters": {
+  "league": "113",
+  "season": "2026"
+ },
+ "errors": [],
+ "results": 2,
+ "response": [
+  {
+   "player": {
+    "id": 30001,
+    "name": "I. Guidetti",
+    "photo": "https://media.api-sports.io/football/players/30001.png"
+   },
+   "statistics": [
+    {
+     "team": {
+      "id": 377,
+      "name": "AIK Stockholm",
+      "logo": "https://media.api-sports.io/football/teams/377.png"
+     },
+     "league": {
+      "id": 113
+     },
+     "goals": {
+      "total": 17,
+      "assists": 4
+     }
+    }
+   ]
+  },
+  {
+   "player": {
+    "id": 20007,
+    "name": "N. Karlsson",
+    "photo": "https://media.api-sports.io/football/players/20007.png"
+   },
+   "statistics": [
+    {
+     "team": {
+      "id": 363,
+      "name": "Hammarby FF",
+      "logo": "https://media.api-sports.io/football/teams/363.png"
+     },
+     "league": {
+      "id": 113
+     },
+     "goals": {
+      "total": 12,
+      "assists": null
+     }
+    }
+   ]
+  }
+ ]
+}

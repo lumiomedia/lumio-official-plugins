@@ -4,7 +4,7 @@ import { __resetForTests, readPluginJson, writePluginJson } from '@/lib/plugin-s
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import {
   SPORT_FOLLOWS_KEY, SPORT_KEYS_KEY, SPORT_SETTINGS_KEY, cardOpacity, migrateSportKeys, useSportSettings, withCardOpacity, getFollows, getOverrides, getSportSettings, isFollowing, setOverride,
-  hasAnyKey, removeProviderKey, setFollowAlert, setProviderKey, setSportOrder, setSportSettings, sportsCompatible, teamKeysMatch, toggleFollow, useFollows,
+  hasAnyKey, removeProviderKey, setFollowAlert, setFollowProviderId, setProviderKey, setSportOrder, setSportSettings, sportsCompatible, teamKeysMatch, toggleFollow, useFollows,
 } from './sport-store'
 import { backfillFollowCrests, useBackfillFollowCrests } from './follow-crest'
 
@@ -56,6 +56,18 @@ describe('klockan per lag', () => {
     expect(getFollows()).toEqual([{ ...aik, alert: 'off' }])
     writePluginJson(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, [{ ...aik, alert: 'snart' }])
     expect(getFollows()).toEqual([aik])
+  })
+})
+
+describe('källans id på den följda posten (lagsidans uppslag)', () => {
+  it('skrivs bara på en följd post som saknar källans id; befintligt id och oföljda lag rörs inte', () => {
+    const ham = { sport: 'football' as const, kind: 'team' as const, key: 'hammarby', name: 'Hammarby', providerIds: { sportapi: '5' } }
+    toggleFollow(ham)
+    expect(setFollowProviderId({ ...ham, key: 'hammarby ff' }, 'api-sports', '363')).toBe(true)
+    expect(getFollows()[0]!.providerIds).toEqual({ sportapi: '5', 'api-sports': '363' })
+    expect(setFollowProviderId(ham, 'api-sports', '999')).toBe(false)
+    expect(setFollowProviderId({ ...ham, key: 'aik' }, 'api-sports', '377')).toBe(false)
+    expect(getFollows()).toHaveLength(1)
   })
 })
 

@@ -1,0 +1,224 @@
+{
+ "_shape": "from docs (same row shape as football-standings.json)",
+ "get": "standings",
+ "parameters": {
+  "league": "113",
+  "season": "2026"
+ },
+ "errors": [],
+ "results": 1,
+ "response": [
+  {
+   "league": {
+    "id": 113,
+    "name": "Allsvenskan",
+    "country": "Sweden",
+    "season": 2026,
+    "standings": [
+     [
+      {
+       "rank": 1,
+       "team": {
+        "id": 377,
+        "name": "AIK Stockholm",
+        "logo": "https://media.api-sports.io/football/teams/377.png"
+       },
+       "points": 58,
+       "goalsDiff": 20,
+       "group": "Allsvenskan",
+       "form": "WDWLW",
+       "status": "same",
+       "description": null,
+       "all": {
+        "played": 23,
+        "win": 0,
+        "draw": 0,
+        "lose": 0,
+        "goals": {
+         "for": 0,
+         "against": 0
+        }
+       },
+       "update": "2026-10-12T00:00:00+00:00"
+      },
+      {
+       "rank": 2,
+       "team": {
+        "id": 375,
+        "name": "Malmo FF",
+        "logo": "https://media.api-sports.io/football/teams/375.png"
+       },
+       "points": 55,
+       "goalsDiff": 16,
+       "group": "Allsvenskan",
+       "form": "WDWLW",
+       "status": "same",
+       "description": null,
+       "all": {
+        "played": 23,
+        "win": 0,
+        "draw": 0,
+        "lose": 0,
+        "goals": {
+         "for": 0,
+         "against": 0
+        }
+       },
+       "update": "2026-10-12T00:00:00+00:00"
+      },
+      {
+       "rank": 3,
+       "team": {
+        "id": 363,
+        "name": "Hammarby FF",
+        "logo": "https://media.api-sports.io/football/teams/363.png"
+       },
+       "points": 41,
+       "goalsDiff": 12,
+       "group": "Allsvenskan",
+       "form": "WDWLW",
+       "status": "same",
+       "description": null,
+       "all": {
+        "played": 23,
+        "win": 0,
+        "draw": 0,
+        "lose": 0,
+        "goals": {
+         "for": 0,
+         "against": 0
+        }
+       },
+       "update": "2026-10-12T00:00:00+00:00"
+      },
+      {
+       "rank": 4,
+       "team": {
+        "id": 364,
+        "name": "Djurgardens IF",
+        "logo": "https://media.api-sports.io/football/teams/364.png"
+       },
+       "points": 40,
+       "goalsDiff": 8,
+       "group": "Allsvenskan",
+       "form": "WDWLW",
+       "status": "same",
+       "description": null,
+       "all": {
+        "played": 23,
+        "win": 0,
+        "draw": 0,
+        "lose": 0,
+        "goals": {
+         "for": 0,
+         "against": 0
+        }
+       },
+       "update": "2026-10-12T00:00:00+00:00"
+      },
+      {
+       "rank": 5,
+       "team": {
+        "id": 367,
+        "name": "BK Hacken",
+        "logo": "https://media.api-sports.io/football/teams/367.png"
+       },
+       "points": 37,
+       "goalsDiff": 4,
+       "group": "Allsvenskan",
+       "form": "WDWLW",
+       "status": "same",
+       "description": null,
+       "all": {
+        "played": 23,
+        "win": 0,
+        "draw": 0,
+        "lose": 0,
+        "goals": {
+         "for": 0,
+         "against": 0
+        }
+       },
+       "update": "2026-10-12T00:00:00+00:00"
+      },
+      {
+       "rank": 6,
+       "team": {
+        "id": 2170,
+        "name": "Gais",
+        "logo": "https://media.api-sports.io/football/teams/2170.png"
+       },
+       "points": 33,
+       "goalsDiff": 0,
+       "group": "Allsvenskan",
+       "form": "WDWLW",
+       "status": "same",
+       "description": null,
+       "all": {
+        "played": 23,
+        "win": 0,
+        "draw": 0,
+        "lose": 0,
+        "goals": {
+         "for": 0,
+         "against": 0
+        }
+       },
+       "update": "2026-10-12T00:00:00+00:00"
+      },
+      {
+       "rank": 7,
+       "team": {
+        "id": 372,
+        "name": "IF Elfsborg",
+        "logo": "https://media.api-sports.io/football/teams/372.png"
+       },
+       "points": 30,
+       "goalsDiff": -4,
+       "group": "Allsvenskan",
+       "form": "WDWLW",
+       "status": "same",
+       "description": null,
+       "all": {
+        "played": 23,
+        "win": 0,
+        "draw": 0,
+        "lose": 0,
+        "goals": {
+         "for": 0,
+         "against": 0
+        }
+       },
+       "update": "2026-10-12T00:00:00+00:00"
+      },
+      {
+       "rank": 8,
+       "team": {
+        "id": 374,
+        "name": "Kalmar FF",
+        "logo": "https://media.api-sports.io/football/teams/374.png"
+       },
+       "points": 22,
+       "goalsDiff": -8,
+       "group": "Allsvenskan",
+       "form": "WDWLW",
+       "status": "same",
+       "description": null,
+       "all": {
+        "played": 23,
+        "win": 0,
+        "draw": 0,
+        "lose": 0,
+        "goals": {
+         "for": 0,
+         "against": 0
+        }
+       },
+       "update": "2026-10-12T00:00:00+00:00"
+      }
+     ]
+    ]
+   }
+  }
+ ]
+}

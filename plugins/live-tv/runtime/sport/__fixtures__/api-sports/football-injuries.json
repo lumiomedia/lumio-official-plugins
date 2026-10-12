@@ -1,0 +1,112 @@
+{
+ "_shape": "from docs (injuries)",
+ "get": "injuries",
+ "parameters": {
+  "team": "363",
+  "season": "2026"
+ },
+ "errors": [],
+ "results": 3,
+ "paging": {
+  "current": 1,
+  "total": 1
+ },
+ "response": [
+  {
+   "player": {
+    "id": 20004,
+    "name": "M. Fenger",
+    "photo": "https://media.api-sports.io/football/players/20004.png",
+    "type": "Missing Fixture",
+    "reason": "Knee Injury"
+   },
+   "team": {
+    "id": 363,
+    "name": "Hammarby FF"
+   },
+   "fixture": {
+    "id": 1,
+    "timezone": "UTC",
+    "date": "2026-09-20T13:00:00+00:00",
+    "timestamp": 1790000000
+   },
+   "league": {
+    "id": 113,
+    "season": 2026,
+    "name": "Allsvenskan"
+   }
+  },
+  {
+   "player": {
+    "id": 20004,
+    "name": "M. Fenger",
+    "photo": "https://media.api-sports.io/football/players/20004.png",
+    "type": "Missing Fixture",
+    "reason": "Knee Injury"
+   },
+   "team": {
+    "id": 363,
+    "name": "Hammarby FF"
+   },
+   "fixture": {
+    "id": 1494294,
+    "timezone": "UTC",
+    "date": "2026-10-11T12:00:00+00:00",
+    "timestamp": 1791720000
+   },
+   "league": {
+    "id": 113,
+    "season": 2026,
+    "name": "Allsvenskan"
+   }
+  },
+  {
+   "player": {
+    "id": 20005,
+    "name": "N. Rosenberg",
+    "photo": "https://media.api-sports.io/football/players/20005.png",
+    "type": "Questionable",
+    "reason": "Muscle Injury"
+   },
+   "team": {
+    "id": 363,
+    "name": "Hammarby FF"
+   },
+   "fixture": {
+    "id": 1494294,
+    "timezone": "UTC",
+    "date": "2026-10-11T12:00:00+00:00",
+    "timestamp": 1791720000
+   },
+   "league": {
+    "id": 113,
+    "season": 2026,
+    "name": "Allsvenskan"
+   }
+  },
+  {
+   "player": {
+    "id": 20003,
+    "name": "S. Gustafson",
+    "photo": "https://media.api-sports.io/football/players/20003.png",
+    "type": "Missing Fixture",
+    "reason": "Suspended"
+   },
+   "team": {
+    "id": 363,
+    "name": "Hammarby FF"
+   },
+   "fixture": {
+    "id": 2,
+    "timezone": "UTC",
+    "date": "2026-08-01T13:00:00+00:00",
+    "timestamp": 1785589200
+   },
+   "league": {
+    "id": 113,
+    "season": 2026,
+    "name": "Allsvenskan"
+   }
+  }
+ ]
+}

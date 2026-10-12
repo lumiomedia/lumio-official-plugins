@@ -1,0 +1,41 @@
+{
+ "_shape": "from docs (v1 lookup_all_players.php) — verify with real key",
+ "player": [
+  {
+   "idPlayer": "1",
+   "strPlayer": "Oliver Dovin",
+   "strNumber": "1",
+   "strPosition": "Goalkeeper",
+   "strCutout": "https://r2.thesportsdb.com/images/media/player/cutout/dovin.png",
+   "strThumb": null,
+   "strStatus": "Active"
+  },
+  {
+   "idPlayer": "2",
+   "strPlayer": "Shaquille Pinas",
+   "strNumber": "5",
+   "strPosition": "Centre-Back",
+   "strCutout": null,
+   "strThumb": null,
+   "strStatus": "Active"
+  },
+  {
+   "idPlayer": "3",
+   "strPlayer": "Nahir Besara",
+   "strNumber": "",
+   "strPosition": "Attacking Midfield",
+   "strCutout": null,
+   "strThumb": null,
+   "strStatus": "Active"
+  },
+  {
+   "idPlayer": "4",
+   "strPlayer": "Kalle Coach",
+   "strNumber": null,
+   "strPosition": "Manager",
+   "strCutout": null,
+   "strThumb": null,
+   "strStatus": "Active"
+  }
+ ]
+}

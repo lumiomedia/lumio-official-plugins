@@ -1,0 +1,51 @@
+{
+ "_shape": "from docs (v1 eventslast.php) — verify with real key",
+ "results": [
+  {
+   "idEvent": "9001",
+   "strEvent": "Hammarby vs Djurgarden",
+   "idLeague": "4347",
+   "strLeague": "Swedish Allsvenskan",
+   "strSeason": "2026",
+   "intRound": "23",
+   "strHomeTeam": "Hammarby",
+   "strAwayTeam": "Djurgarden",
+   "idHomeTeam": "134004",
+   "idAwayTeam": "134901",
+   "intHomeScore": "0",
+   "intAwayScore": "1",
+   "strTimestamp": "2026-10-11T13:00:00",
+   "dateEvent": "2026-10-11",
+   "strTime": "13:00:00",
+   "strStatus": "Match Finished",
+   "strPostponed": "no",
+   "strHomeTeamBadge": null,
+   "strAwayTeamBadge": null,
+   "strVenue": "Tele2 Arena",
+   "strCountry": "Sweden"
+  },
+  {
+   "idEvent": "9000",
+   "strEvent": "BK Hacken vs Hammarby",
+   "idLeague": "4347",
+   "strLeague": "Swedish Allsvenskan",
+   "strSeason": "2026",
+   "intRound": "22",
+   "strHomeTeam": "BK Hacken",
+   "strAwayTeam": "Hammarby",
+   "idHomeTeam": "134900",
+   "idAwayTeam": "134004",
+   "intHomeScore": "0",
+   "intAwayScore": "2",
+   "strTimestamp": "2026-10-04T13:00:00",
+   "dateEvent": "2026-10-04",
+   "strTime": "13:00:00",
+   "strStatus": "Match Finished",
+   "strPostponed": "no",
+   "strHomeTeamBadge": null,
+   "strAwayTeamBadge": null,
+   "strVenue": "Tele2 Arena",
+   "strCountry": "Sweden"
+  }
+ ]
+}

@@ -1,0 +1,589 @@
+{
+ "_shape": "real API-Sports fixture entries (user cache 2026-10-11), re-teamed around Hammarby (363) for the team page",
+ "get": "fixtures",
+ "parameters": {
+  "team": "363",
+  "season": "2026",
+  "timezone": "Europe/Stockholm"
+ },
+ "errors": [],
+ "results": 8,
+ "paging": {
+  "current": 1,
+  "total": 1
+ },
+ "response": [
+  {
+   "fixture": {
+    "date": "see timestamp",
+    "id": 1494266,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "referee": "Granit Maqedonci",
+    "status": {
+     "elapsed": 90,
+     "extra": null,
+     "long": "Match Finished",
+     "short": "FT"
+    },
+    "timestamp": 1789300800,
+    "timezone": "Europe/Stockholm",
+    "venue": {
+     "city": "Stockholm",
+     "id": 1506,
+     "name": "3Arena"
+    }
+   },
+   "goals": {
+    "home": 2,
+    "away": 2
+   },
+   "league": {
+    "country": "Sweden",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 113,
+    "logo": "https://media.api-sports.io/football/leagues/113.png",
+    "name": "Allsvenskan",
+    "round": "Regular Season - 19",
+    "season": 2026,
+    "standings": true
+   },
+   "score": {
+    "extratime": {
+     "away": null,
+     "home": null
+    },
+    "fulltime": {
+     "away": 1,
+     "home": 0
+    },
+    "halftime": {
+     "away": 1,
+     "home": 0
+    },
+    "penalty": {
+     "away": null,
+     "home": null
+    }
+   },
+   "teams": {
+    "home": {
+     "id": 363,
+     "logo": "https://media.api-sports.io/football/teams/363.png",
+     "name": "Hammarby FF",
+     "winner": false
+    },
+    "away": {
+     "id": 377,
+     "logo": "https://media.api-sports.io/football/teams/377.png",
+     "name": "AIK Stockholm",
+     "winner": null
+    }
+   }
+  },
+  {
+   "fixture": {
+    "date": "see timestamp",
+    "id": 1494273,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "referee": "Granit Maqedonci",
+    "status": {
+     "elapsed": 90,
+     "extra": null,
+     "long": "Match Finished",
+     "short": "FT"
+    },
+    "timestamp": 1789905600,
+    "timezone": "Europe/Stockholm",
+    "venue": {
+     "city": "Stockholm",
+     "id": 1506,
+     "name": "3Arena"
+    }
+   },
+   "goals": {
+    "home": 1,
+    "away": 0
+   },
+   "league": {
+    "country": "Sweden",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 113,
+    "logo": "https://media.api-sports.io/football/leagues/113.png",
+    "name": "Allsvenskan",
+    "round": "Regular Season - 20",
+    "season": 2026,
+    "standings": true
+   },
+   "score": {
+    "extratime": {
+     "away": null,
+     "home": null
+    },
+    "fulltime": {
+     "away": 1,
+     "home": 0
+    },
+    "halftime": {
+     "away": 1,
+     "home": 0
+    },
+    "penalty": {
+     "away": null,
+     "home": null
+    }
+   },
+   "teams": {
+    "home": {
+     "id": 375,
+     "logo": "https://media.api-sports.io/football/teams/375.png",
+     "name": "Malmo FF",
+     "winner": null
+    },
+    "away": {
+     "id": 363,
+     "logo": "https://media.api-sports.io/football/teams/363.png",
+     "name": "Hammarby FF",
+     "winner": false
+    }
+   }
+  },
+  {
+   "fixture": {
+    "date": "see timestamp",
+    "id": 1494280,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "referee": "Granit Maqedonci",
+    "status": {
+     "elapsed": 90,
+     "extra": null,
+     "long": "Match Finished",
+     "short": "FT"
+    },
+    "timestamp": 1790510400,
+    "timezone": "Europe/Stockholm",
+    "venue": {
+     "city": "Stockholm",
+     "id": 1506,
+     "name": "3Arena"
+    }
+   },
+   "goals": {
+    "home": 3,
+    "away": 1
+   },
+   "league": {
+    "country": "Sweden",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 113,
+    "logo": "https://media.api-sports.io/football/leagues/113.png",
+    "name": "Allsvenskan",
+    "round": "Regular Season - 21",
+    "season": 2026,
+    "standings": true
+   },
+   "score": {
+    "extratime": {
+     "away": null,
+     "home": null
+    },
+    "fulltime": {
+     "away": 1,
+     "home": 0
+    },
+    "halftime": {
+     "away": 1,
+     "home": 0
+    },
+    "penalty": {
+     "away": null,
+     "home": null
+    }
+   },
+   "teams": {
+    "home": {
+     "id": 363,
+     "logo": "https://media.api-sports.io/football/teams/363.png",
+     "name": "Hammarby FF",
+     "winner": false
+    },
+    "away": {
+     "id": 2170,
+     "logo": "https://media.api-sports.io/football/teams/2170.png",
+     "name": "Gais",
+     "winner": null
+    }
+   }
+  },
+  {
+   "fixture": {
+    "date": "see timestamp",
+    "id": 1494287,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "referee": "Granit Maqedonci",
+    "status": {
+     "elapsed": 90,
+     "extra": null,
+     "long": "Match Finished",
+     "short": "FT"
+    },
+    "timestamp": 1791115200,
+    "timezone": "Europe/Stockholm",
+    "venue": {
+     "city": "Stockholm",
+     "id": 1506,
+     "name": "3Arena"
+    }
+   },
+   "goals": {
+    "home": 0,
+    "away": 2
+   },
+   "league": {
+    "country": "Sweden",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 113,
+    "logo": "https://media.api-sports.io/football/leagues/113.png",
+    "name": "Allsvenskan",
+    "round": "Regular Season - 22",
+    "season": 2026,
+    "standings": true
+   },
+   "score": {
+    "extratime": {
+     "away": null,
+     "home": null
+    },
+    "fulltime": {
+     "away": 1,
+     "home": 0
+    },
+    "halftime": {
+     "away": 1,
+     "home": 0
+    },
+    "penalty": {
+     "away": null,
+     "home": null
+    }
+   },
+   "teams": {
+    "home": {
+     "id": 367,
+     "logo": "https://media.api-sports.io/football/teams/367.png",
+     "name": "BK Hacken",
+     "winner": null
+    },
+    "away": {
+     "id": 363,
+     "logo": "https://media.api-sports.io/football/teams/363.png",
+     "name": "Hammarby FF",
+     "winner": false
+    }
+   }
+  },
+  {
+   "fixture": {
+    "date": "2026-10-11T14:00:00+02:00",
+    "id": 1494294,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "referee": "Granit Maqedonci",
+    "status": {
+     "elapsed": 90,
+     "extra": null,
+     "long": "Match Finished",
+     "short": "FT"
+    },
+    "timestamp": 1791720000,
+    "timezone": "Europe/Stockholm",
+    "venue": {
+     "city": "Stockholm",
+     "id": 1506,
+     "name": "3Arena"
+    }
+   },
+   "goals": {
+    "away": 1,
+    "home": 0
+   },
+   "league": {
+    "country": "Sweden",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 113,
+    "logo": "https://media.api-sports.io/football/leagues/113.png",
+    "name": "Allsvenskan",
+    "round": "Regular Season - 23",
+    "season": 2026,
+    "standings": true
+   },
+   "score": {
+    "extratime": {
+     "away": null,
+     "home": null
+    },
+    "fulltime": {
+     "away": 1,
+     "home": 0
+    },
+    "halftime": {
+     "away": 1,
+     "home": 0
+    },
+    "penalty": {
+     "away": null,
+     "home": null
+    }
+   },
+   "teams": {
+    "away": {
+     "id": 364,
+     "logo": "https://media.api-sports.io/football/teams/364.png",
+     "name": "Djurgardens IF",
+     "winner": true
+    },
+    "home": {
+     "id": 363,
+     "logo": "https://media.api-sports.io/football/teams/363.png",
+     "name": "Hammarby FF",
+     "winner": false
+    }
+   }
+  },
+  {
+   "events": [],
+   "fixture": {
+    "date": "see timestamp",
+    "id": 1495297,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "referee": "Oscar Johnson",
+    "status": {
+     "elapsed": null,
+     "extra": null,
+     "long": "Not Started",
+     "short": "NS"
+    },
+    "timestamp": 1791979200,
+    "timezone": "UTC",
+    "venue": {
+     "city": "Malmö",
+     "id": 1518,
+     "name": "Eleda Stadion"
+    }
+   },
+   "goals": {
+    "home": null,
+    "away": null
+   },
+   "league": {
+    "country": "Sweden",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 115,
+    "logo": "https://media.api-sports.io/football/leagues/113.png",
+    "name": "Svenska Cupen",
+    "round": "2nd Round",
+    "season": 2026,
+    "standings": false
+   },
+   "lineups": [],
+   "players": [],
+   "score": {
+    "extratime": {
+     "away": null,
+     "home": null
+    },
+    "fulltime": {
+     "away": null,
+     "home": null
+    },
+    "halftime": {
+     "away": null,
+     "home": null
+    },
+    "penalty": {
+     "away": null,
+     "home": null
+    }
+   },
+   "statistics": [],
+   "teams": {
+    "home": {
+     "id": 2166,
+     "logo": "https://media.api-sports.io/football/teams/2166.png",
+     "name": "Orgryte IS",
+     "winner": null
+    },
+    "away": {
+     "id": 363,
+     "logo": "https://media.api-sports.io/football/teams/363.png",
+     "name": "Hammarby FF",
+     "winner": false
+    }
+   }
+  },
+  {
+   "events": [],
+   "fixture": {
+    "date": "see timestamp",
+    "id": 1495300,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "referee": "Oscar Johnson",
+    "status": {
+     "elapsed": null,
+     "extra": null,
+     "long": "Not Started",
+     "short": "NS"
+    },
+    "timestamp": 1792238400,
+    "timezone": "UTC",
+    "venue": {
+     "city": "Malmö",
+     "id": 1518,
+     "name": "Eleda Stadion"
+    }
+   },
+   "goals": {
+    "home": null,
+    "away": null
+   },
+   "league": {
+    "country": "Sweden",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 113,
+    "logo": "https://media.api-sports.io/football/leagues/113.png",
+    "name": "Allsvenskan",
+    "round": "Regular Season - 24",
+    "season": 2026,
+    "standings": true
+   },
+   "lineups": [],
+   "players": [],
+   "score": {
+    "extratime": {
+     "away": null,
+     "home": null
+    },
+    "fulltime": {
+     "away": null,
+     "home": null
+    },
+    "halftime": {
+     "away": null,
+     "home": null
+    },
+    "penalty": {
+     "away": null,
+     "home": null
+    }
+   },
+   "statistics": [],
+   "teams": {
+    "home": {
+     "id": 363,
+     "logo": "https://media.api-sports.io/football/teams/363.png",
+     "name": "Hammarby FF",
+     "winner": false
+    },
+    "away": {
+     "id": 372,
+     "logo": "https://media.api-sports.io/football/teams/372.png",
+     "name": "IF Elfsborg",
+     "winner": null
+    }
+   }
+  },
+  {
+   "events": [],
+   "fixture": {
+    "date": "see timestamp",
+    "id": 1495307,
+    "periods": {
+     "first": null,
+     "second": null
+    },
+    "referee": "Oscar Johnson",
+    "status": {
+     "elapsed": null,
+     "extra": null,
+     "long": "Not Started",
+     "short": "NS"
+    },
+    "timestamp": 1792843200,
+    "timezone": "UTC",
+    "venue": {
+     "city": "Malmö",
+     "id": 1518,
+     "name": "Eleda Stadion"
+    }
+   },
+   "goals": {
+    "home": null,
+    "away": null
+   },
+   "league": {
+    "country": "Sweden",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 113,
+    "logo": "https://media.api-sports.io/football/leagues/113.png",
+    "name": "Allsvenskan",
+    "round": "Regular Season - 25",
+    "season": 2026,
+    "standings": true
+   },
+   "lineups": [],
+   "players": [],
+   "score": {
+    "extratime": {
+     "away": null,
+     "home": null
+    },
+    "fulltime": {
+     "away": null,
+     "home": null
+    },
+    "halftime": {
+     "away": null,
+     "home": null
+    },
+    "penalty": {
+     "away": null,
+     "home": null
+    }
+   },
+   "statistics": [],
+   "teams": {
+    "home": {
+     "id": 374,
+     "logo": "https://media.api-sports.io/football/teams/374.png",
+     "name": "Kalmar FF",
+     "winner": null
+    },
+    "away": {
+     "id": 363,
+     "logo": "https://media.api-sports.io/football/teams/363.png",
+     "name": "Hammarby FF",
+     "winner": false
+    }
+   }
+  }
+ ]
+}

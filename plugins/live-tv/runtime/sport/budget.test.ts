@@ -161,3 +161,18 @@ describe('liveIntervalMs', () => {
     expect(budget.liveIntervalMs('football', NOW + 3_600_000)).toBe(15_000)
   })
 })
+
+describe('Budget.peekAged', () => {
+  it('läser bara diskcachen och ger postens ålder (lagsidans TTL räknas ur den)', async () => {
+    const { budget, calls } = harness([{ data: { response: [7] }, fetchedAt: NOW - 3_600_000, cached: true }])
+    expect(await budget.peekAged('football', call())).toEqual({ data: [7], fetchedAt: NOW - 3_600_000 })
+    expect(calls.map((c) => c.mode)).toEqual(['cache-only'])
+  })
+  it('ingen post: null, och inget anrop utan nyckel', async () => {
+    const { budget } = harness([{ data: null, fetchedAt: null }])
+    expect(await budget.peekAged('football', call())).toBeNull()
+    const fetch = vi.fn()
+    expect(await new Budget(fake, null, { fetch: fetch as never }).peekAged('football', call())).toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+})
