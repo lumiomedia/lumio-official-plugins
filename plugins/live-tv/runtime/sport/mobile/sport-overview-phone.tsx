@@ -10,6 +10,7 @@ import { crestText, matchTitle, type MatchSource, type SportDay, type SportMatch
 import { featuredMatch, followState, leagueColor, nextMatchFor, nextOnYourChannels, rankedSources, splitSections, statusAt, teamRing } from '../sport-day-model'
 import { heroStatusLine, matchStatusLabel, playedOnText, replayScoreText, scoreText, showsScore } from '../score-model'
 import { useBackfillFollowCrests } from '../follow-crest'
+import { openFollowPage } from '../team-model'
 import { crestForFollow } from '../score-model'
 import { sourceLine, timeLine, type SportCtx } from '../sport-ctx'
 import type { SportFollow } from '../sport-store'
@@ -342,9 +343,8 @@ function TeamAvatar({ ctx, follow, dayMatches, allMatches, days }: { ctx: SportC
       ? localDayKey(next.start) === localDayKey(ctx.now) ? formatClock(next.start, ctx.locale) : ctx.tt('sportTomorrow')
       : '–'
   const ringColor = ring === 'live' ? P.ring : ring === 'today' ? P.text : 'rgba(255,255,255,0.18)'
-  const open = liveMatch ?? next
   return (
-    <div data-testid="sport-phone-team" data-ring={ring} {...station(() => { if (open) ctx.openMatch(open) })} style={{ flex: '0 0 70px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', textAlign: 'center' }}>
+    <div data-testid="sport-phone-team" data-ring={ring} {...station(() => openFollowPage(ctx, follow, allMatches))} aria-label={ctx.tt('sportTeamOpen', { name: follow.name })} style={{ flex: '0 0 70px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', textAlign: 'center' }}>
       <div style={{ width: 56, height: 56, borderRadius: 999, padding: 3, boxSizing: 'border-box', border: `3px solid ${ringColor}`, position: 'relative', display: 'grid', placeItems: 'center' }}>
         <PhoneTeamCrest name={follow.name} colorKey={follow.key} src={crestForFollow(follow, allMatches)} size={44} />
         {ring === 'live' ? <span style={{ position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)', height: 15, padding: '0 5px', borderRadius: 4, background: P.ring, color: '#fff', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center' }}>{ctx.tt('sportLiveShort')}</span> : null}

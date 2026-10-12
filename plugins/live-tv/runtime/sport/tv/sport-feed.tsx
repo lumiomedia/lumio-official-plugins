@@ -10,6 +10,7 @@ import { alertLabel, sourceChip, type SportCtx } from '../sport-ctx'
 import type { SportFollow } from '../sport-store'
 import { useBackfillFollowCrests } from '../follow-crest'
 import { crestForFollow, matchStatusLabel, scoreText } from '../score-model'
+import { openFollowPage } from '../team-model'
 import { Crest, ellipsis, overline, sectionTitle } from './sport-parts'
 import { MatchScore } from './sport-score'
 import { SportIcons } from './sport-icons'
@@ -145,7 +146,7 @@ function TeamAvatar({ ctx, follow, dayMatches, allMatches, days }: { ctx: SportC
       : ''
   const ringShadow = ring === 'live' ? `0 0 0 ${dp(4)}px #ef4444` : ring === 'today' ? `0 0 0 ${dp(3)}px ${TV.text}` : `0 0 0 ${dp(2)}px ${TV.s14}`
   return (
-    <div data-testid="feed-team" data-ring={ring} {...station(() => { if (next) ctx.openMatch(next) })} style={avatarCol}>
+    <div data-testid="feed-team" data-ring={ring} {...station(() => openFollowPage(ctx, follow, allMatches))} aria-label={ctx.tt('sportTeamOpen', { name: follow.name })} style={avatarCol}>
       <span style={{ position: 'relative', borderRadius: 999, boxShadow: ringShadow, display: 'inline-flex' }}>
         <Crest name={follow.name} colorKey={follow.key} size={dp(108)} src={crestForFollow(follow, allMatches)} />
         {ring === 'live' ? <span style={{ position: 'absolute', left: '50%', bottom: -dp(10), transform: 'translateX(-50%)', padding: `${dp(2)}px ${dp(8)}px`, borderRadius: dp(6), background: '#ef4444', color: '#fff', fontSize: dp(12), fontWeight: 700, letterSpacing: '0.1em' }}>{ctx.tt('live')}</span> : null}

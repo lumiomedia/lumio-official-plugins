@@ -43,7 +43,6 @@ export interface TeamCalls {
 
 export const SQUAD_TTL_S = 86_400
 export const INJURY_TTL_S = 43_200
-export const STANDINGS_TTL_S = 3 * 3_600
 export const LEAGUE_ROUND_TTL_S = 3_600
 export const TOPSCORERS_TTL_S = 43_200
 

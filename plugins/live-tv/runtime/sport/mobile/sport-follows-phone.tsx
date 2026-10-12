@@ -10,6 +10,7 @@ import { followAlert, isFollowing, setFollowAlert, toggleFollow, type KickoffAle
 import { followNextLine, type SportCtx } from '../sport-ctx'
 import { useBackfillFollowCrests } from '../follow-crest'
 import { crestForFollow } from '../score-model'
+import { openFollowPage } from '../team-model'
 import { SportIcon } from '../sport-icons'
 import { nextAlert } from './phone-sport-model'
 import { P, PIcons, PhoneTeamCrest, cardStyle } from './phone-sport-parts'
@@ -73,8 +74,8 @@ function FollowRow({ ctx, follow, days }: { ctx: SportCtx; follow: SportFollow; 
     ctx.nav.toast(ctx.tt('sportAlertFor', { name: follow.name, rule: ruleText(n).toLocaleLowerCase(ctx.locale) }))
   }
   return (
-    <div data-testid="sport-phone-follow" data-following={on ? '1' : '0'} {...station(() => { if (next) ctx.openMatch(next) })}
-      style={{ ...cardStyle, minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px 8px 12px', opacity: on ? 1 : 0.55, cursor: next ? 'pointer' : 'default', flexShrink: 0 }}>
+    <div data-testid="sport-phone-follow" data-following={on ? '1' : '0'} {...station(() => openFollowPage(ctx, follow, days.flatMap((d) => d?.matches ?? [])))} aria-label={ctx.tt('sportTeamOpen', { name: follow.name })}
+      style={{ ...cardStyle, minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px 8px 12px', opacity: on ? 1 : 0.55, cursor: 'pointer', flexShrink: 0 }}>
       <PhoneTeamCrest name={follow.name} colorKey={follow.key} src={crest} size={40} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 600, ...ellipsis }}>{follow.name}</div>

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { teamCallsFor } from './team-providers'
 import { apiSports } from './api-sports'
-import { epgMatchFor, fixturesTtlS, formOf, leagueTargetFromFollow, leagueTargetFromMatch, liveFixture, mainLeagueOf, ordinal, roundFixtures, seasonGuesses, squadGroups, standingsSlice, teamRowIndex, teamTargetFromFollow, teamTargetFromMatch, upcomingFixtures } from './team-model'
+import { teamTargetFromRow, epgMatchFor, fixturesTtlS, formOf, leagueTargetFromFollow, leagueTargetFromMatch, liveFixture, mainLeagueOf, ordinal, roundFixtures, seasonGuesses, squadGroups, standingsSlice, teamRowIndex, teamTargetFromFollow, teamTargetFromMatch, upcomingFixtures } from './team-model'
 import { fxMatch } from './__sport-fixture'
 import teamFixtures from './__fixtures__/api-sports/football-fixtures-team.json'
 import allsvenskan from './__fixtures__/api-sports/football-standings-allsvenskan.json'
@@ -77,6 +77,10 @@ describe('tabellen runt laget', () => {
   it('utan id hittas raden på namnet; okänt lag ger ingen rad', () => {
     expect(teamRowIndex(rows, { key: 'djurgardens' }, null)).toBe(3)
     expect(standingsSlice(rows, teamRowIndex(rows, { key: 'ifk goteborg' }, null)).rows).toEqual([])
+  })
+  it('en tabellrad blir en lagsida med tabellens källas id', () => {
+    const league = { provider: 'api-sports' as const, id: '113', season: '2026', name: 'Allsvenskan' }
+    expect(teamTargetFromRow('football', rows[1], league)).toEqual({ sport: 'football', name: 'Malmo FF', key: 'malmo ff', crest: 'https://media.api-sports.io/football/teams/375.png', ids: { 'api-sports': '375' }, league })
   })
   it('placeringen som ordningstal', () => {
     expect([1, 2, 3, 11, 12, 21, 22].map((n) => ordinal(n, 'sv'))).toEqual(['1:a', '2:a', '3:e', '11:e', '12:e', '21:a', '22:a'])

@@ -23,6 +23,7 @@ import { SportFeed } from './sport-feed'
 import { FollowPicker, SportFollows } from './sport-follows'
 import { SportMatchCenter } from './sport-match-center'
 import { SportPhone } from '../mobile/sport-phone'
+import { SportPages, useSportPages } from '../team-page/sport-pages'
 import { SPORT_FOCUS_CSS, sportCardStyle } from '../surface'
 
 const NO_MATCHES: SportMatch[] = []
@@ -94,7 +95,8 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const openMatch = useCallback((m: SportMatch) => setOpenId(m.id), [])
   const openFollowPicker = useCallback(() => setPickerOpen(true), [])
-  const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker })
+  const pages = useSportPages()
+  const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker, openTeam: pages.openTeam, openLeague: pages.openLeague })
   const { tt, locale } = ctx
   const clock = useTvClockNode(locale)
 
@@ -102,7 +104,8 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
   const day = shiftDay(today, offset)
   const selected = useSportDay(day, model.nowMs)
   // Fler dagar bara när en vy faktiskt behöver dem — alla är lokala och cachade.
-  const wantsToday = tab === 'follows' || pickerOpen
+  // Lag- och ligasidan läser nu/nästa och kanalerna ur idag och imorgon.
+  const wantsToday = tab === 'follows' || pickerOpen || pages.pages.length > 0
   const todayDay = useSportDay(wantsToday ? today : null, model.nowMs)
   const tomorrowDay = useSportDay(wantsToday || ctx.settings.view === 'feed' ? shiftDay(today, 1) : null, model.nowMs)
   const yesterdayDay = useSportDay(pickerOpen ? shiftDay(today, -1) : null, model.nowMs)
@@ -123,6 +126,10 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
   const hero = useMemo(() => featuredMatch(matches, ctx.follows, ctx.now), [matches, ctx.follows, ctx.now])
   const backdrop = useSportBackdrop(hero, filter, model.nowMs)
   const summary = dayHeaderCounts(matches, ctx.now)
+  const pageMatches = useMemo(() => {
+    const merged = mergedDay?.matches ?? []
+    return [...merged, ...[todayDay.data, tomorrowDay.data].flatMap((d) => d?.matches ?? []).filter((m) => !merged.some((x) => x.id === m.id))]
+  }, [mergedDay, todayDay.data, tomorrowDay.data])
   const open = useMemo(() => {
     if (!openId) return null
     return [mergedDay, todayDay.data, tomorrowDay.data].flatMap((d) => d?.matches ?? []).find((m) => m.id === openId) ?? null
@@ -223,6 +230,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
       <div data-sport-body="" style={{ display: 'contents' }}>{body()}</div>
 
       {open ? <SportMatchCenter ctx={ctx} match={open} onClose={() => setOpenId(null)} /> : null}
+      {pages.pages.length > 0 ? <SportPages ctx={ctx} pages={pages.pages} matches={pageMatches} phone={false} onPop={pages.pop} /> : null}
       {pickerOpen ? <FollowPicker ctx={ctx} days={[yesterdayDay.data, todayDay.data, tomorrowDay.data]} onClose={() => setPickerOpen(false)} /> : null}
     </div>
     </div>

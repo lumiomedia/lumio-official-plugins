@@ -206,6 +206,11 @@ export function standingsSlice(rows: StandingRow[], index: number, around = 2): 
   return { rows: group.slice(from, to), group, teamIndex: at - from }
 }
 
+/** Ett lag i en tabell (lag- eller ligasidan) som mål för en egen lagsida; id:t är tabellens källas. */
+export function teamTargetFromRow(sport: SportKind, row: StandingRow, league: LeagueRef): TeamTarget {
+  return { sport, name: row.team.name, key: foldTeamKey(row.team.name), crest: row.team.crest, ids: row.team.id ? { [league.provider]: row.team.id } : {}, league }
+}
+
 /** "3:a" / "3rd" — svensk ordning: 1:a och 2:a (utom 11, 12), annars :e. */
 export function ordinal(n: number, lang: string): string {
   const last = n % 10
@@ -254,4 +259,10 @@ export function roundFixtures(fixtures: TeamFixture[], now: number): { round: nu
   }
   const window = 7 * 86_400_000
   return { round: null, fixtures: sorted.filter((f) => Math.abs(f.kickoff - now) <= window) }
+}
+
+/** En följd post öppnar sin sida: ett lag lagsidan, en liga ligasidan. */
+export function openFollowPage(ctx: { openTeam(t: TeamTarget): void; openLeague(t: LeagueTarget): void }, f: SportFollow, matches: SportMatch[]): void {
+  if (f.kind === 'team') ctx.openTeam(teamTargetFromFollow(f, matches))
+  else ctx.openLeague(leagueTargetFromFollow(f, matches))
 }

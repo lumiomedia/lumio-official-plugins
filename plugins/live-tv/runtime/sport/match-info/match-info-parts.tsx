@@ -74,7 +74,8 @@ export function FollowPill({ u, testId, on, name, ctx, onToggle }: { u: U; testI
 }
 
 /** Märkena, ställningen "2 : 1" och "31' · pågår", och följ-pillen under varje lag. */
-export function TeamsHeader({ u, match, ctx, compact = false }: { u: U; match: SportMatch; ctx: SportCtx; compact?: boolean }) {
+/** `onOpenTeam`: lagnamnet öppnar lagets sida (bara lådans huvudnivå). */
+export function TeamsHeader({ u, match, ctx, compact = false, onOpenTeam }: { u: U; match: SportMatch; ctx: SportCtx; compact?: boolean; onOpenTeam?: (side: 'home' | 'away') => void }) {
   const st = statusAt(match, ctx.now)
   const fs = followState(match, ctx.follows)
   const crest = compact ? u(64) : u(84)
@@ -96,7 +97,13 @@ export function TeamsHeader({ u, match, ctx, compact = false }: { u: U; match: S
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: u(8), minWidth: 0 }}>
         <Crest name={name} colorKey={key ?? name} size={crest} src={src} />
-        <div style={{ fontSize: u(21), fontWeight: 700, textAlign: 'center', maxWidth: '100%', ...ellipsis }}>{name}</div>
+        {onOpenTeam ? (
+          <div data-testid={`mc-team-${side}`} {...station(() => onOpenTeam(side))} aria-label={ctx.tt('sportTeamOpen', { name })} title={ctx.tt('sportTeamOpen', { name })}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: u(4), maxWidth: '100%', fontSize: u(21), fontWeight: 700, cursor: 'pointer', borderRadius: u(8), padding: `0 ${u(4)}px` }}>
+            <span style={ellipsis}>{name}</span>
+            <span style={{ color: TV.muted, display: 'inline-flex', flexShrink: 0 }}><SportIcons.Chevron size={u(16)} /></span>
+          </div>
+        ) : <div style={{ fontSize: u(21), fontWeight: 700, textAlign: 'center', maxWidth: '100%', ...ellipsis }}>{name}</div>}
         {key ? <FollowPill u={u} testId={`mc-follow-${side}`} on={fs[side]} name={name} ctx={ctx} onToggle={() => toggleFollow({ sport: match.kind, kind: 'team', key, name, ...(src ? { crest: src } : {}) })} /> : null}
       </div>
     )

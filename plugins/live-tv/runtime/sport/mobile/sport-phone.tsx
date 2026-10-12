@@ -10,6 +10,7 @@ import { dayStartMs, localDayKey, shiftDay, useSportDay } from '../sport-epg'
 import { featuredMatch, followCandidates, replayMatches, sportCounts, visibleMatches } from '../sport-day-model'
 import { isFollowing, setSportSettings, toggleFollow } from '../sport-store'
 import { MatchInfoDrawer } from '../match-info/match-info-drawer'
+import { SportPages, useSportPages } from '../team-page/sport-pages'
 import { useSportBackdrop } from '../backdrop'
 import { SportBackdropLayer } from '../sport-backdrop'
 import { useSportResults } from '../results-controller'
@@ -56,7 +57,8 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const openMatch = useCallback((m: SportMatch) => setSheet(m), [])
   const openFollowPicker = useCallback(() => setAdding('football'), [])
-  const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker })
+  const pages = useSportPages()
+  const ctx = useSportCtx({ model, nav, openMatch, openFollowPicker, openTeam: pages.openTeam, openLeague: pages.openLeague })
   const { tt } = ctx
   const today = localDayKey(model.nowMs)
   const day = shiftDay(today, offset)
@@ -67,7 +69,7 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
   const view = ctx.settings.phoneView ?? 'matchday'
   // Ny flik, vy eller dag börjar överst (rullytan delas mellan dem).
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0 }, [tab, view, offset])
-  const wantsFollow = tab === 'follows' || adding !== null
+  const wantsFollow = tab === 'follows' || adding !== null || pages.pages.length > 0
   const todayDay = useSportDay(wantsFollow ? today : null, model.nowMs)
   const tomorrowDay = useSportDay(wantsFollow || (tab === 'foryou' && view === 'feed') ? shiftDay(today, 1) : null, model.nowMs)
   const counts = sportCounts(mergedDay)
@@ -181,6 +183,7 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
       </div>
 
       {sheet ? <MatchInfoDrawer ctx={ctx} match={liveSheet ?? sheet} onClose={() => setSheet(null)} phone /> : null}
+      {pages.pages.length > 0 ? <SportPages ctx={ctx} pages={pages.pages} matches={[...mergedMatches, ...[todayDay.data, tomorrowDay.data].flatMap((d) => d?.matches ?? []).filter((m) => !mergedMatches.some((x) => x.id === m.id))]} phone onPop={pages.pop} /> : null}
       {sections && !standalone ? (
         <PhoneSportSheet testId="sport-phone-sections" label={tt('sportSwitchSection')} onClose={() => setSections(false)} pushLayer={nav.pushLayer}>
           <span style={overline}>{tt('liveTv')}</span>

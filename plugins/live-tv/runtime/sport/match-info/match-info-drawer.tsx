@@ -13,6 +13,7 @@ import { SportIcons } from '../sport-icons'
 import { sportDrawerStyle, sportStackedStyle } from '../surface'
 import { SHEET_BG, usePhonePlatform } from '../mobile/phone-sport-sheet'
 import { toggleGoalAlert } from './match-info-text'
+import { leagueTargetFromMatch, teamTargetFromMatch } from '../team-model'
 import { useFixtureDetail } from './use-fixture-detail'
 import { BackBar, DrillRow, IconBtn, Overline, StatusPill, TeamsHeader, ellipsis, rowCard, scaleFor } from './match-info-parts'
 import { EventsPage, LineupsPage, PlayerPage, VenuePage, type PickedPlayer } from './match-info-pages'
@@ -85,6 +86,7 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
   const venueName = match.venue ?? detail?.fixture.venue ?? null
   const goalAlertOn = !!ctx.settings.goalAlertMatches?.[match.id]
   const summary = detail ? eventSummary(detail.events) : null
+  const leagueTarget = leagueTargetFromMatch(match)
 
   const bell = covered && st === 'live'
     ? <IconBtn u={u} testId="mc-goal-alert" on={goalAlertOn} label={ctx.tt('sportGoalAlert')} onPress={() => toggleGoalAlert(match)}><SportIcons.Bell size={u(20)} /></IconBtn>
@@ -96,7 +98,10 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
     <>
       <div data-testid="mc-top" style={{ display: 'flex', alignItems: 'center', gap: u(12) }}>
         <StatusPill u={u} match={match} ctx={ctx} />
-        <span data-testid="mc-context" style={{ flex: 1, minWidth: 0, fontSize: u(17), color: TV.muted, ...ellipsis }}>{context}</span>
+        {/* Ligan öppnar ligasidan när källan känner den (annars finns inget att visa där). */}
+        {leagueTarget.ref ? (
+          <span data-testid="mc-context" {...station(() => ctx.openLeague(leagueTarget))} aria-label={ctx.tt('sportLeagueOpen', { name: match.league })} style={{ flex: 1, minWidth: 0, fontSize: u(17), color: TV.muted, cursor: 'pointer', borderRadius: u(8), ...ellipsis }}>{context}</span>
+        ) : <span data-testid="mc-context" style={{ flex: 1, minWidth: 0, fontSize: u(17), color: TV.muted, ...ellipsis }}>{context}</span>}
         {match.leagueKey ? (
           <IconBtn u={u} testId="mc-follow-league" on={fs.league} label={fs.league ? ctx.tt('sportFollowingName', { name: match.league }) : ctx.tt('sportFollowName', { name: match.league })} onPress={() => toggleFollow({ sport: match.kind, kind: 'league', key: match.leagueKey, name: match.league })}>
             <SportIcons.Heart size={u(20)} filled={fs.league} />
@@ -106,7 +111,7 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
         {/* Telefonens ark stängs med handtaget, scrimmen eller Bakåt (handoffen har inget kryss). */}
         {phone ? null : <IconBtn u={u} testId="mc-close" label={ctx.tt('sportClose')} onPress={onClose}><SportIcons.Close size={u(20)} /></IconBtn>}
       </div>
-      <TeamsHeader u={u} match={match} ctx={ctx} />
+      <TeamsHeader u={u} match={match} ctx={ctx} onOpenTeam={(side) => { const t = teamTargetFromMatch(match, side); if (t) ctx.openTeam(t) }} />
 
       <Overline u={u}>{ctx.tt('sportWatchMatch')}</Overline>
       <div style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>

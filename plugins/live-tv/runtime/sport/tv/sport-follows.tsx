@@ -14,6 +14,7 @@ import { getFollows as getStoredFollows, isFollowing, setSportSettings, toggleFo
 import { alertLabel, followNext, type SportCtx } from '../sport-ctx'
 import { useBackfillFollowCrests } from '../follow-crest'
 import { crestForFollow } from '../score-model'
+import { openFollowPage } from '../team-model'
 import { Crest, ellipsis, primaryBtn, sectionTitle } from './sport-parts'
 import { SportIcon, SportIcons } from './sport-icons'
 import { sportCardStyle, sportDrawerStyle } from '../surface'
@@ -108,7 +109,8 @@ function FollowRow({ ctx, follow, days }: { ctx: SportCtx; follow: SportFollow; 
   const crest = crestForFollow(follow, days.flatMap((d) => d?.matches ?? []))
   return (
     <div data-testid="follow-row" data-following={following ? '1' : '0'} style={{ ...sportCardStyle, minHeight: dp(88), display: 'flex', alignItems: 'center', gap: dp(16), padding: `${dp(10)}px ${dp(12)}px ${dp(10)}px ${dp(16)}px`, opacity: following ? 1 : 0.55, boxSizing: 'border-box' }}>
-      <div {...(next ? station(() => ctx.openMatch(next)) : {})} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: dp(16), cursor: next ? 'pointer' : 'default', borderRadius: dp(10) }}>
+      {/* Raden öppnar lagets (ligans) sida; nästa match och Titta finns där (Jerry 2026-10-12). */}
+      <div data-testid="follow-open" {...station(() => openFollowPage(ctx, follow, days.flatMap((d) => d?.matches ?? [])))} aria-label={ctx.tt('sportTeamOpen', { name: follow.name })} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: dp(16), cursor: 'pointer', borderRadius: dp(10) }}>
         <Crest name={follow.name} colorKey={follow.key} size={dp(56)} src={crest} />
         <div style={{ width: dp(210), flexShrink: 0, minWidth: 0 }}>
           <div style={{ fontSize: dp(21), fontWeight: 600, ...ellipsis }}>{follow.name}</div>

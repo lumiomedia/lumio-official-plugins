@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useResultsController } from '../results-controller'
 import { fetchSportDay, localDayKey } from '../sport-epg'
 import { setFollowProviderId } from '../sport-store'
-import { EMPTY_LEAGUE, EMPTY_TEAM, loadLeaguePage, loadTeamPage, type LeaguePageData, type TeamPageData } from '../team-data'
+import { EMPTY_LEAGUE, EMPTY_TEAM, loadLeaguePage, loadTeamPage, standingsVia, type LeaguePageData, type TeamPageData } from '../team-data'
 import type { LeagueTarget, TeamTarget } from '../team-model'
 import type { TeamFixture } from '../team-providers'
 import type { SportMatch } from '../sport-model'
@@ -23,11 +23,13 @@ export function useTeamPageData(target: TeamTarget): TeamPageData {
   const [data, setData] = useState<TeamPageData>(EMPTY_TEAM)
   const ids = JSON.stringify(target.ids)
   useEffect(() => {
-    if (!router) { setData({ ...EMPTY_TEAM, state: 'no-key', crest: target.crest }); return }
+    if (!router || !controller) { setData({ ...EMPTY_TEAM, state: 'no-key', crest: target.crest }); return }
     let live = true
     setData({ ...EMPTY_TEAM, crest: target.crest })
+    const now = Date.now()
     void loadTeamPage(router, target, {
-      now: Date.now(),
+      now,
+      standings: standingsVia(controller, now),
       tz: tz(),
       onUpdate: (d) => { if (live) setData(d) },
       // Uppslaget görs en gång: id:t sparas på den följda posten (oföljda lag minns det bara i sessionen).
@@ -46,10 +48,11 @@ export function useLeaguePageData(target: LeagueTarget): LeaguePageData {
   const [data, setData] = useState<LeaguePageData>(EMPTY_LEAGUE)
   const ref = target.ref ? `${target.ref.provider}|${target.ref.id}|${target.ref.season ?? ''}` : ''
   useEffect(() => {
-    if (!router || !target.ref) { setData({ ...EMPTY_LEAGUE, state: 'no-key' }); return }
+    if (!router || !controller || !target.ref) { setData({ ...EMPTY_LEAGUE, state: 'no-key' }); return }
     let live = true
     setData(EMPTY_LEAGUE)
-    void loadLeaguePage(router, target, { now: Date.now(), tz: tz(), onUpdate: (d) => { if (live) setData(d) } })
+    const now = Date.now()
+    void loadLeaguePage(router, target, { now, tz: tz(), standings: standingsVia(controller, now), onUpdate: (d) => { if (live) setData(d) } })
     return () => { live = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, target.sport, ref])

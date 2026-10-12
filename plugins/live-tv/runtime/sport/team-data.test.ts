@@ -1,7 +1,8 @@
 // runtime/sport/team-data.test.ts
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SportRouter } from './router'
-import { __resetTeamDataForTests, loadLeaguePage, loadTeamPage, type TeamPageData } from './team-data'
+import { ResultsController } from './results-controller'
+import { __resetTeamDataForTests, loadLeaguePage, loadTeamPage, standingsVia, type TeamPageData } from './team-data'
 import type { TeamTarget } from './team-model'
 import type { ProviderId } from './provider'
 import type { FetchMode, SportFetchResponse } from './sport-fetch'
@@ -35,7 +36,9 @@ function harness(keys: ProviderKeys, reply: Reply) {
     return { data: null, cached: false, fresh: true, fetchedAt: NOW, quota: null, error: null, ...(reply(c) ?? {}) } as SportFetchResponse
   })
   const router = new SportRouter(keys, {}, { fetch: fetch as never, now: () => NOW, sleep: async () => {} })
-  return { router, calls }
+  // Tabellen går resultatlagrets väg (samma som Tabeller & resultat).
+  const standings = standingsVia(new ResultsController(router, { now: () => NOW, tz: TZ, startPoller: false }), NOW)
+  return { router, calls, standings }
 }
 
 const net = (calls: Call[]) => calls.filter((c) => c.mode === 'cache-first').map((c) => `${c.provider} ${c.path}`)
@@ -56,17 +59,16 @@ const apiReply: Reply = (c) => {
 beforeEach(() => __resetTeamDataForTests())
 
 describe('lagsidan: anropen', () => {
-  it('matcherna (en säsong), tabellen (3 h) och truppen med skador — inget annat', async () => {
-    const { router, calls } = harness(API, apiReply)
+  it('matcherna (en säsong), tabellen och truppen med skador — inget annat', async () => {
+    const { router, calls, standings } = harness(API, apiReply)
     const updates: TeamPageData[] = []
-    const data = await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, onUpdate: (d) => updates.push(d) })
+    const data = await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, standings, onUpdate: (d) => updates.push(d) })
     expect(net(calls)).toEqual([
       'api-sports /fixtures?team=363&season=2026&timezone=Europe%2FStockholm',
       'api-sports /standings?league=113&season=2026',
       'api-sports /players/squads?team=363',
       'api-sports /injuries?team=363&season=2026',
     ])
-    expect(calls.find((c) => c.path.startsWith('/standings'))?.ttl).toBe(3 * 3600)
     expect(data).toMatchObject({ state: 'ready', provider: 'api-sports', teamId: '363', league: { id: '113', season: '2026' } })
     expect(data.fixtures).toHaveLength(8)
     expect(data.standings).toHaveLength(8)
@@ -78,8 +80,8 @@ describe('lagsidan: anropen', () => {
 
   it('matcherna ur cachen gäller till nästa match: TTL:n räknas ur postens ålder', async () => {
     const fetchedAt = NOW - 3_600_000
-    const { router, calls } = harness(API, (c) => (c.path.startsWith('/fixtures?team=') ? { data: teamFixtures, fetchedAt, cached: true } : apiReply(c)))
-    await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, onUpdate: () => {} })
+    const { router, calls, standings } = harness(API, (c) => (c.path.startsWith('/fixtures?team=') ? { data: teamFixtures, fetchedAt, cached: true } : apiReply(c)))
+    await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
     const peek = calls.find((c) => c.path.startsWith('/fixtures?team=') && c.mode === 'cache-only')
     const real = calls.find((c) => c.path.startsWith('/fixtures?team=') && c.mode === 'cache-first')
     expect(peek).toBeTruthy()
@@ -88,32 +90,32 @@ describe('lagsidan: anropen', () => {
   })
 
   it('samma sida igen inom några minuter: inga nya anrop', async () => {
-    const { router, calls } = harness(API, apiReply)
-    await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, onUpdate: () => {} })
+    const { router, calls, standings } = harness(API, apiReply)
+    await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
     const n = net(calls).length
-    await loadTeamPage(router, HAMMARBY, { now: NOW + 60_000, tz: TZ, onUpdate: () => {} })
+    await loadTeamPage(router, HAMMARBY, { now: NOW + 60_000, tz: TZ, standings, onUpdate: () => {} })
     expect(net(calls)).toHaveLength(n)
   })
 
   it('id saknas: ETT lagsök, och id:t lämnas tillbaka för att sparas på posten', async () => {
-    const { router, calls } = harness(API, (c) => (c.path.startsWith('/fixtures?team=375&') ? { data: teamFixtures } : apiReply(c)))
+    const { router, calls, standings } = harness(API, (c) => (c.path.startsWith('/fixtures?team=375&') ? { data: teamFixtures } : apiReply(c)))
     const onResolved = vi.fn()
-    await loadTeamPage(router, { ...HAMMARBY, name: 'Malmö', key: 'malmo', ids: {}, league: null }, { now: NOW, tz: TZ, onUpdate: () => {}, onResolved })
+    await loadTeamPage(router, { ...HAMMARBY, name: 'Malmö', key: 'malmo', ids: {}, league: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {}, onResolved })
     expect(net(calls).filter((c) => c.includes('/teams?search='))).toEqual(['api-sports /teams?search=Malm%C3%B6'])
     expect(onResolved).toHaveBeenCalledWith('api-sports', '375')
   })
 
   it('en ensam orelaterad sökträff tas inte: inget id, inga fler anrop för laget', async () => {
-    const { router, calls } = harness(API, apiReply)
+    const { router, calls, standings } = harness(API, apiReply)
     const onResolved = vi.fn()
-    const data = await loadTeamPage(router, { ...HAMMARBY, name: 'Manchester United', key: 'manchester united', ids: {}, league: null }, { now: NOW, tz: TZ, onUpdate: () => {}, onResolved })
+    const data = await loadTeamPage(router, { ...HAMMARBY, name: 'Manchester United', key: 'manchester united', ids: {}, league: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {}, onResolved })
     expect(onResolved).not.toHaveBeenCalled()
     expect(net(calls)).toEqual(['api-sports /teams?search=Manchester%20United'])
     expect(data).toMatchObject({ state: 'ready', fixtures: [], squad: null })
   })
 
   it('sportapi.ai först för fotboll: lagets sida, serien ur svaret, truppen; API-Sports rörs inte', async () => {
-    const { router, calls } = harness(BOTH, (c) => {
+    const { router, calls, standings } = harness(BOTH, (c) => {
       if (c.mode === 'cache-only') return {}
       if (c.provider !== 'sportapi') return { data: null }
       if (c.path === '/teams/311') return { data: saTeam }
@@ -121,25 +123,25 @@ describe('lagsidan: anropen', () => {
       if (c.path === '/teams/311/squad') return { data: saSquad }
       return {}
     })
-    const data = await loadTeamPage(router, { sport: 'football', name: 'Arsenal', key: 'arsenal', crest: null, ids: { sportapi: '311' }, league: null }, { now: NOW, tz: TZ, onUpdate: () => {} })
+    const data = await loadTeamPage(router, { sport: 'football', name: 'Arsenal', key: 'arsenal', crest: null, ids: { sportapi: '311' }, league: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
     expect(net(calls)).toEqual(['sportapi /teams/311', 'sportapi /standings/24', 'sportapi /teams/311/squad'])
     expect(data).toMatchObject({ provider: 'sportapi', league: { provider: 'sportapi', id: '24' }, crest: 'https://a.espncdn.com/i/teamlogos/soccer/500/359.png' })
     expect(data.squad).toHaveLength(4)
   })
 
   it('sportapi.ai utan id och utan liga: nästa källa (API-Sports med känt id)', async () => {
-    const { router, calls } = harness(BOTH, apiReply)
-    const data = await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, onUpdate: () => {} })
+    const { router, calls, standings } = harness(BOTH, apiReply)
+    const data = await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
     expect(data.provider).toBe('api-sports')
     expect(net(calls).some((c) => c.startsWith('sportapi'))).toBe(false)
   })
 
   it('källans kvot slut: nästa källa tar över (som routern)', async () => {
-    const { router, calls } = harness(BOTH, (c) => {
+    const { router, calls, standings } = harness(BOTH, (c) => {
       if (c.provider === 'sportapi' && c.mode === 'cache-first') return { error: 'exhausted', quota: { bucket: 'football', limit: 2000, remaining: 0, minuteLimit: null, minuteRemaining: null, blockedUntil: NOW + 3_600_000, reason: 'exhausted', plan: null } }
       return apiReply(c)
     })
-    const data = await loadTeamPage(router, { ...HAMMARBY, ids: { sportapi: '999', 'api-sports': '363' } }, { now: NOW, tz: TZ, onUpdate: () => {} })
+    const data = await loadTeamPage(router, { ...HAMMARBY, ids: { sportapi: '999', 'api-sports': '363' } }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
     expect(data.provider).toBe('api-sports')
     expect(net(calls)[0]).toBe('sportapi /teams/999')
     expect(net(calls)).toContain('api-sports /fixtures?team=363&season=2026&timezone=Europe%2FStockholm')
@@ -148,21 +150,22 @@ describe('lagsidan: anropen', () => {
   it('ingen nyckel: inget anrop alls', async () => {
     const fetch = vi.fn()
     const router = new SportRouter({}, {}, { fetch: fetch as never })
-    expect((await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, onUpdate: () => {} })).state).toBe('no-key')
+    const standings = vi.fn(async () => null)
+    expect((await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, standings, onUpdate: () => {} })).state).toBe('no-key')
     expect(fetch).not.toHaveBeenCalled()
   })
 
   it('tomma svar: sektionerna saknas, inga fel', async () => {
-    const { router } = harness(API, () => ({ data: { errors: [], response: [] } }))
-    const data = await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, onUpdate: () => {} })
+    const { router, standings } = harness(API, () => ({ data: { errors: [], response: [] } }))
+    const data = await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
     expect(data).toMatchObject({ state: 'ready', fixtures: [], standings: null, squad: null })
   })
 })
 
 describe('ligasidan', () => {
   it('API-Sports: tabellen, omgången runt idag och skytteligan', async () => {
-    const { router, calls } = harness(API, (c) => (c.path.startsWith('/fixtures?league=113') ? { data: teamFixtures } : apiReply(c)))
-    const data = await loadLeaguePage(router, { sport: 'football', name: 'Allsvenskan', key: 'allsvenskan', ref: { provider: 'api-sports', id: '113', season: '2026', name: 'Allsvenskan' } }, { now: NOW, tz: TZ, onUpdate: () => {} })
+    const { router, calls, standings } = harness(API, (c) => (c.path.startsWith('/fixtures?league=113') ? { data: teamFixtures } : apiReply(c)))
+    const data = await loadLeaguePage(router, { sport: 'football', name: 'Allsvenskan', key: 'allsvenskan', ref: { provider: 'api-sports', id: '113', season: '2026', name: 'Allsvenskan' } }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
     expect(net(calls)).toEqual([
       'api-sports /standings?league=113&season=2026',
       'api-sports /fixtures?league=113&season=2026&from=2026-10-08&to=2026-10-16&timezone=Europe%2FStockholm',
@@ -173,16 +176,42 @@ describe('ligasidan', () => {
     expect(data.scorers?.[0]).toEqual({ rank: 1, name: 'I. Guidetti', team: 'AIK Stockholm', goals: 17 })
   })
   it('sportapi.ai: /leagues/{id} och skytteligan', async () => {
-    const { router, calls } = harness(BOTH, (c) => (c.path === '/standings/24' ? { data: saStandings } : c.path === '/leagues/24' ? { data: saLeague } : c.path === '/leagues/24/topscorers' ? { data: saScorers } : {}))
-    const data = await loadLeaguePage(router, { sport: 'football', name: 'Premier League', key: 'fx:sportapi:24', ref: { provider: 'sportapi', id: '24', season: null, name: 'Premier League' } }, { now: NOW, tz: TZ, onUpdate: () => {} })
+    const { router, calls, standings } = harness(BOTH, (c) => (c.path === '/standings/24' ? { data: saStandings } : c.path === '/leagues/24' ? { data: saLeague } : c.path === '/leagues/24/topscorers' ? { data: saScorers } : {}))
+    const data = await loadLeaguePage(router, { sport: 'football', name: 'Premier League', key: 'fx:sportapi:24', ref: { provider: 'sportapi', id: '24', season: null, name: 'Premier League' } }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
     expect(net(calls)).toEqual(['sportapi /standings/24', 'sportapi /leagues/24', 'sportapi /leagues/24/topscorers'])
     expect(data.round?.fixtures).toHaveLength(2)
     expect(data.scorers).toHaveLength(2)
   })
   it('ligan finns bara i tablån, eller källan saknar nyckel: inget anrop', async () => {
-    const { router, calls } = harness(API, apiReply)
-    expect((await loadLeaguePage(router, { sport: 'football', name: 'X', key: 'x', ref: null }, { now: NOW, tz: TZ, onUpdate: () => {} })).state).toBe('no-key')
-    expect((await loadLeaguePage(router, { sport: 'football', name: 'X', key: 'x', ref: { provider: 'sportapi', id: '1', season: null, name: 'X' } }, { now: NOW, tz: TZ, onUpdate: () => {} })).state).toBe('no-key')
+    const { router, calls, standings } = harness(API, apiReply)
+    expect((await loadLeaguePage(router, { sport: 'football', name: 'X', key: 'x', ref: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })).state).toBe('no-key')
+    expect((await loadLeaguePage(router, { sport: 'football', name: 'X', key: 'x', ref: { provider: 'sportapi', id: '1', season: null, name: 'X' } }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })).state).toBe('no-key')
     expect(calls).toEqual([])
+  })
+})
+
+describe('säsongen', () => {
+  it('API-Sports planens säsongsgräns (fel för 2026): nästa källa, aldrig förra säsongens matcher som form', async () => {
+    const lastSeason = { ...teamFixtures, response: teamFixtures.response.map((r) => ({ ...r, fixture: { ...r.fixture, timestamp: r.fixture.timestamp - 365 * 86_400 } })) }
+    const { router, calls, standings } = harness(API, (c) => {
+      if (c.mode === 'cache-only') return {}
+      if (c.path.includes('season=2026')) return { error: 'upstream' }
+      if (c.path.includes('season=2025')) return { data: lastSeason }
+      return apiReply(c)
+    })
+    // Säsongen gissas (ingen liga känd): 2026 fel → källan släpps, 2025 prövas inte som form.
+    const data = await loadTeamPage(router, { ...HAMMARBY, league: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
+    expect(data.fixtures).toEqual([])
+    expect(net(calls).filter((c) => c.includes('/fixtures?team='))).toEqual(['api-sports /fixtures?team=363&season=2026&timezone=Europe%2FStockholm'])
+  })
+  it('ett tomt svar för den gissade säsongen prövar nästa, men bara matcher nära idag godtas', async () => {
+    const lastSeason = { ...teamFixtures, response: teamFixtures.response.map((r) => ({ ...r, fixture: { ...r.fixture, timestamp: r.fixture.timestamp - 365 * 86_400 } })) }
+    const { router, standings } = harness(API, (c) => {
+      if (c.mode === 'cache-only') return {}
+      if (c.path.includes('season=2026')) return { data: { errors: [], response: [] } }
+      if (c.path.includes('season=2025')) return { data: lastSeason }
+      return apiReply(c)
+    })
+    expect((await loadTeamPage(router, { ...HAMMARBY, league: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })).fixtures).toEqual([])
   })
 })

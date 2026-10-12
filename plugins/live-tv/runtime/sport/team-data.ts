@@ -1,13 +1,13 @@
 // runtime/sport/team-data.ts
 'use client'
 
-import type { Budget, BudgetFailure, BudgetResult } from './budget'
+import type { Budget, BudgetResult } from './budget'
 import type { SportRouter } from './router'
 import { localDates, shiftDate } from './day-plan'
 import { foldTeamKey } from './merge'
 import { teamKeysMatch } from './sport-store'
 import { fixturesTtlS, mainLeagueOf, roundFixtures, seasonGuesses, teamRowIndex, type LeagueRef, type LeagueTarget, type TeamTarget } from './team-model'
-import { STANDINGS_TTL_S, teamCallsFor, type SquadPlayer, type TeamFeed, type TeamFixture, type TopScorer } from './team-providers'
+import { teamCallsFor, type SquadPlayer, type TeamFeed, type TeamFixture, type TopScorer } from './team-providers'
 import type { ProviderCall, ProviderId, StandingRow } from './provider'
 import type { SportKind } from './sport-model'
 
@@ -19,12 +19,17 @@ import type { SportKind } from './sport-model'
   lagets matcher fram till lagets nästa match är spelad. Samma fråga två
   gånger inom några minuter (sidan öppnas igen) delar ett och samma löfte.
 
+  Tabellen går genom resultatlagrets tabellväg (`ResultsController.loadStandings`):
+  ligans egen källa, sedan samma liga hos andra källor, och en saknad tabell
+  frågas inte om på sex timmar — samma väg som Tabeller & resultat.
+
   Källorna prövas i sportens ordning. En källa utan id för laget får först
   slå upp det (lagsök, en gång; sparas på den följda posten), och en källa
   som är spärrad eller saknar kvot lämnar över till nästa — som routern.
 */
 
-const FALL_THROUGH: ReadonlySet<BudgetFailure> = new Set(['paused', 'over-budget', 'invalid-key'])
+/** En gissad säsongs matcher måste ligga inom fyra månader från idag. */
+const NEAR_MS = 120 * 86_400_000
 const MEMO_MS = 5 * 60_000
 const memo = new Map<string, { at: number; promise: Promise<unknown> }>()
 
@@ -61,9 +66,18 @@ export interface TeamPageData {
 
 export const EMPTY_TEAM: TeamPageData = { state: 'loading', provider: null, teamId: null, fixtures: [], league: null, standings: null, squad: null, crest: null }
 
+/** Tabellvägen. `[]`/`null` = ingen tabell för ligan just nu. */
+export type StandingsLoader = (sport: SportKind, league: LeagueRef) => Promise<StandingRow[] | null>
+
+/** Resultatlagrets tabellväg som laddare (säsongen "current" när källan inte gett någon: sportapi.ai bryr sig inte). */
+export function standingsVia(controller: { loadStandings(sport: SportKind, leagueId: string, season: string, provider?: ProviderId): Promise<StandingRow[] | null> }, now: number): StandingsLoader {
+  return (sport, league) => controller.loadStandings(sport, league.id, league.season ?? (league.provider === 'sportapi' ? 'current' : seasonGuesses(sport, now)[0]), league.provider)
+}
+
 export interface LoadOpts {
   now: number
   tz: string
+  standings: StandingsLoader
   onUpdate(data: TeamPageData): void
   /** Ett id som slogs upp (lagsök): sparas på den följda posten så att uppslaget görs en gång. */
   onResolved?(provider: ProviderId, id: string): void
@@ -79,12 +93,6 @@ function pickHit(hits: Array<{ id: string; name: string }>, target: Pick<TeamTar
   return (exact ?? loose ?? contains)?.id ?? null
 }
 
-async function standingsFor(b: Budget, sport: SportKind, league: LeagueRef, now: number): Promise<StandingRow[] | null> {
-  const season = league.season ?? (b.provider.id === 'sportapi' ? 'current' : seasonGuesses(sport, now)[0])
-  const res = await run(b, sport, withTtl(b.provider.standings(sport, league.id, season), STANDINGS_TTL_S), now)
-  return res.data && res.data.length > 0 ? res.data : null
-}
-
 /**
  * Källans id för laget. Känt (följt ur sökning, dagens matcher) → direkt.
  * sportapi.ai har inget lagsök: id:t läses ur ligans tabell när ligan är känd
@@ -98,7 +106,7 @@ async function resolveId(b: Budget, target: TeamTarget, opts: LoadOpts, standing
   if (pid === 'sportapi') {
     if (target.league?.provider !== 'sportapi') return null
     const k = `${target.league.provider}|${target.league.id}`
-    if (!standings.has(k)) standings.set(k, await standingsFor(b, target.sport, target.league, opts.now))
+    if (!standings.has(k)) standings.set(k, await opts.standings(target.sport, target.league))
     const rows = standings.get(k) ?? []
     const i = teamRowIndex(rows, target, null)
     id = i >= 0 ? rows[i].team.id || null : null
@@ -139,8 +147,11 @@ export async function loadTeamPage(router: SportRouter, target: TeamTarget, opts
       const base = calls.fixtures(sport, id, { season, tz: opts.tz, ttlS: 86_400 })!
       const aged = await b.peekAged(sport, base)
       const res = await run(b, sport, withTtl(base, aged ? fixturesTtlS(aged.data.fixtures, aged.fetchedAt, opts.now) : 86_400), opts.now)
-      if (res.data && res.data.fixtures.length > 0) { got = { b, id, season, feed: res.data }; break }
-      if (!res.ok && FALL_THROUGH.has(res.reason)) break
+      // En gissad säsong godtas bara med matcher nära idag: förra säsongens resultat är ingen form.
+      const near = res.data?.fixtures.some((f) => Math.abs(f.kickoff - opts.now) < NEAR_MS)
+      if (res.data && res.data.fixtures.length > 0 && (known || !calls.needsSeason || near)) { got = { b, id, season, feed: res.data }; break }
+      // Fel (spärr, kvot, planens säsongsgräns): nästa källa. Tomt svar: nästa gissade säsong.
+      if (!res.ok && res.data == null) break
     }
     if (got) break
   }
@@ -153,10 +164,10 @@ export async function loadTeamPage(router: SportRouter, target: TeamTarget, opts
   const main = got ? (got.feed.leagueId ? { id: got.feed.leagueId, season: got.season || 'current', name: target.league?.name ?? '' } : mainLeagueOf(got.feed.fixtures)) : null
   const league: LeagueRef | null = got && main ? { provider: got.b.provider.id, id: main.id, season: main.season || null, name: main.name || target.league?.name || '' } : target.league
   if (league) {
-    const b = router.budget(league.provider)
     const k = `${league.provider}|${league.id}`
-    if (b && !standings.has(k)) standings.set(k, await standingsFor(b, sport, league, opts.now))
-    update({ league, standings: standings.get(k) ?? null })
+    if (!standings.has(k)) standings.set(k, await opts.standings(sport, league))
+    const rows = standings.get(k)
+    update({ league, standings: rows && rows.length > 0 ? rows : null })
   }
 
   // 3. Truppen: källan som svarade först, sedan övriga som har en trupp för sporten.
@@ -193,7 +204,8 @@ export async function loadLeaguePage(router: SportRouter, target: LeagueTarget, 
   const sport = target.sport
   const calls = teamCallsFor(ref.provider)
   const season = ref.season ?? (calls.needsSeason ? seasonGuesses(sport, opts.now)[0] : '')
-  update({ standings: await standingsFor(b, sport, { ...ref, season: ref.season ?? (season || null) }, opts.now) })
+  const rows = await opts.standings(sport, { ...ref, season: ref.season ?? (season || null) })
+  update({ standings: rows && rows.length > 0 ? rows : null })
   const d = localDates(opts.now, opts.tz)
   const roundCall = calls.leagueFixtures(sport, ref.id, { season, tz: opts.tz, from: shiftDate(d.today, -4), to: shiftDate(d.today, 4) })
   if (roundCall) {

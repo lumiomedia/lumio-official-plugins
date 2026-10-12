@@ -32,7 +32,11 @@ export function SportPageDrawer({ nav, depth, phone, testId, label, onClose, chi
       window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0)
     }
     const off = navRef.current.pushLayer(close)
-    const t = window.setTimeout(() => rootRef.current?.querySelector<HTMLElement>('[data-init]')?.focus({ preventScroll: true }), 0)
+    // Sidans första fokus: det sidan märkt (Titta, Påminn mig), annars första stoppet.
+    const t = window.setTimeout(() => {
+      const root = rootRef.current
+      ;(root?.querySelector<HTMLElement>('[data-init]') ?? root?.querySelector<HTMLElement>('[data-f]:not([aria-hidden="true"])'))?.focus({ preventScroll: true })
+    }, 0)
     return () => { window.clearTimeout(t); off() }
   }, [])
 
