@@ -275,8 +275,18 @@ describe('TvFocusStyle', () => {
 
   it('ringen är villkorad på data-focus-source', () => {
     const text = css()
-    expect(text).toContain(':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f]:focus')
-    expect(text).toContain(':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root] [data-f][data-fcur="1"]')
+    expect(text).toContain(':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-f]:focus')
+    expect(text).toContain(':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-f][data-fcur="1"]')
+  })
+
+  it('telefonen får aldrig någon ring: varje regel som ritar en fokusring undantar telefonen (Jerry 2026-10-12)', () => {
+    const text = css()
+    const rules = [...text.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1].trim(), decl: m[2] }))
+    const rings = rules.filter((r) => /:focus|data-fcur/.test(r.sel) && /outline: \d+px solid rgb\(var\(--accent-500\)\)|box-shadow: 0 0 28px/.test(r.decl))
+    expect(rings.length).toBeGreaterThanOrEqual(2)
+    for (const r of rings) for (const part of r.sel.split(',')) expect(part).toContain(':not([data-lt-phone="1"])')
+    // Och telefonens egen avstängning finns kvar (även :focus-visible).
+    expect(text).toContain('[data-live-tv-tv-root][data-lt-phone="1"] [data-f]:focus-visible')
   })
 
   it('stationer är markeringsfria men beskrivningstext går att markera', () => {
