@@ -19,6 +19,7 @@ import { Crest } from '../crest'
 import { SportIcons } from '../sport-icons'
 import { FixtureRow, FormLetter, NOOP, PageNote, StandingsRows, fixtureWhen } from './page-parts'
 import { SportPageDrawer } from './sport-page-drawer'
+import { focusAttr } from '../surface'
 import { PlayerDrawer, hasPlayerDetails } from './player-drawer'
 import type { SquadPlayer } from '../team-providers'
 import { PageTabs, TabBody, usePageTab, type TeamTab } from './page-tabs'
@@ -364,7 +365,7 @@ function NowCard({ u, ctx, match, fixture, title, onWatch }: { u: U; ctx: SportC
         {score ? <span data-testid="tp-now-score" style={{ fontSize: u(30), fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{score}</span> : null}
       </div>
       {onWatch && match ? (
-        <div data-testid="tp-watch" {...station(onWatch, undefined, { 'data-init': '' })} style={{ height: u(60), borderRadius: u(14), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: u(10), fontSize: u(19), fontWeight: 700, cursor: 'pointer' }}>
+        <div data-testid="tp-watch" {...station(onWatch, undefined, { 'data-init': '', ...focusAttr('on-accent') })} style={{ height: u(60), borderRadius: u(14), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: u(10), fontSize: u(19), fontWeight: 700, cursor: 'pointer' }}>
           <SportIcons.Play size={u(20)} />
           {`${ctx.tt('sportWatch')} · ${sourceLine(match, ctx)}`}
         </div>

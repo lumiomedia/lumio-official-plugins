@@ -62,10 +62,12 @@ export const sportStackedStyle: CSSProperties = {
  *    accentfärgad, Jerry 2026-10-12); flikens understrykning betyder vald
  *  - `table-row`: bara ton; egen markerad rad (`data-mark="1"`) behåller
  *    sin ton och får kanten
+ *  - `on-accent`: accentfyllda knappar (Titta): accent på accent syns inte —
+ *    3 px nästan vit kant innanför och en lätt ljusning (Jerry 2026-10-12)
  *  - `none`: ingen egen markering (raden runt omkring, `data-focus-row`,
  *    markeras i stället — "Just nu"-raderna)
  */
-export type FocusKind = 'card' | 'circle' | 'tab' | 'table-row' | 'none'
+export type FocusKind = 'card' | 'circle' | 'tab' | 'table-row' | 'none' | 'on-accent'
 export const focusAttr = (kind: FocusKind): Record<string, string> => ({ 'data-focus': kind })
 
 const ACC = 'rgb(var(--accent-500))'
@@ -80,6 +82,7 @@ export const SPORT_FOCUS_CSS = `
 ${ON} [data-f], ${ON} [data-focus-row], ${ON} [data-focus-circle] { transition: background-color 120ms ease-out, box-shadow 120ms ease-out, transform 120ms ease-out, color 120ms ease-out; }
 ${F()} { outline: none !important; border-color: transparent !important; box-shadow: inset 0 0 0 2px ${ACC} !important; background-image: linear-gradient(${TINT}, ${TINT}) !important; }
 ${F('[data-focus="card"]')} { transform: scale(1.02); }
+${F('[data-focus="on-accent"]')} { box-shadow: inset 0 0 0 3px rgba(255,255,255,0.92) !important; background-image: linear-gradient(rgba(255,255,255,0.14), rgba(255,255,255,0.14)) !important; }
 ${F('[data-focus="circle"]')}, ${F('[data-focus="none"]')} { outline: none !important; box-shadow: none !important; background-image: none !important; background-color: transparent !important; transform: none !important; }
 ${F('[data-focus="circle"]')} { color: #fff !important; }
 /* Ringen utanför cirkelns kant (skuggan målas utanför, så märket inuti täcker den aldrig); ersätter live-/idag-ringen medan fokus står där. */

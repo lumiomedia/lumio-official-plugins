@@ -93,6 +93,21 @@ export function MatchCard({ match, ctx }: { match: SportMatch; ctx: SportCtx }) 
   Avslutade): det som startat, nu-markören, det som kommer. Raden rullas
   fram till första pågående match (annars första kommande) när den visas.
 */
+/**
+ * Matcherna som rutnät (TV:ns Matcher-flik i Matchdag, Jerry 2026-10-12): korten
+ * radbryts i tidsordning i stället för en lång vågrät remsa, så fjärrens
+ * ▴▾◂▸ rör sig i rutnätet.
+ */
+export function MatchGrid({ matches, ctx, testId = 'sport-grid' }: { matches: SportMatch[]; ctx: SportCtx; testId?: string }) {
+  const items = matchdayStrip(matches, ctx.now).items
+  if (items.length === 0) return null
+  return (
+    <section data-testid={testId} style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, ${dp(450)}px)`, gap: dp(16), justifyContent: 'start' }}>
+      {items.map((m) => <MatchCard key={m.id} match={m} ctx={ctx} />)}
+    </section>
+  )
+}
+
 export function MatchStrip({ title, matches, ctx, testId = 'sport-strip' }: { title: string; matches: SportMatch[]; ctx: SportCtx; testId?: string }) {
   const rowRef = useRef<HTMLDivElement | null>(null)
   const strip = matchdayStrip(matches, ctx.now)

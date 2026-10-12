@@ -59,6 +59,8 @@ describe('Repriser i sportskalet', () => {
     const lv = fxMatch({ id: 'lv', home: 'GAIS', away: 'Sirius', start: t - 30 * MIN, stop: t + 90 * MIN })
     const rp = fxMatch({ id: 'rp', home: 'Mjällby AIF', away: 'Degerfors IF', start: t - 30 * MIN, stop: t + HOUR, rerun: true })
     mountSport({}, { days: { [today]: [lv, rp] } })
+    // TV: repriserna är en egen underflik i Matchdag.
+    fireEvent.click(await screen.findByTestId('page-tab-replays'))
     expect(await screen.findByTestId('sport-replays')).toHaveTextContent('Mjällby AIF - Degerfors IF')
     expect(screen.getByTestId('sport-summary')).toHaveTextContent('Today · 1 matches · 1 live')
   })

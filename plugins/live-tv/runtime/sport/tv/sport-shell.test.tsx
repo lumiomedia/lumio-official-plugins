@@ -149,7 +149,9 @@ describe('Sportskalet', () => {
   it('kortet öppnar matchcentret; Fel kanal? sparar åsidosättningen; Bakåt stänger lager för lager', async () => {
     const { onNavigate } = mountSport({}, { days: { [today]: [live, later] } })
     await screen.findByTestId('sport-hero')
-    fireEvent.click(within(screen.getByTestId('sport-strip')).getAllByTestId('sport-card').find((c) => c.getAttribute('data-match-id') === 'later')!)
+    // TV: korten står under underfliken Matcher (rutnät).
+    fireEvent.click(screen.getByTestId('page-tab-matches'))
+    fireEvent.click(within(screen.getByTestId('sport-grid')).getAllByTestId('sport-card').find((c) => c.getAttribute('data-match-id') === 'later')!)
     expect(await screen.findByTestId('match-center')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('mc-pick-channel'))
     fireEvent.click(await screen.findByTestId('picker-row-A'))

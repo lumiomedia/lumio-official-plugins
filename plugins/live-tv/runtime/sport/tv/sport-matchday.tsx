@@ -1,5 +1,6 @@
 'use client'
 
+import { useLayoutEffect, useRef } from 'react'
 import { formatClock, progressOf } from '../../live-tv-ui'
 import { Progress, Tag, TV, dp, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, type SportMatch } from '../sport-model'
@@ -7,14 +8,19 @@ import { blockShowsLabel, mergeLane, featuredMatch, followState, leagueColor, ne
 import { timeLine, type SportCtx } from '../sport-ctx'
 import { heroStatusLine, matchStatusLabel, scoreText, showsScore } from '../score-model'
 import { MatchScore, ResultOnlyTag, useGoalBlink } from './sport-score'
-import { Crest, MatchStrip, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
+import { Crest, MatchGrid, MatchStrip, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
 import { SportIcons } from './sport-icons'
-import { SPORT_CARD_BG, sportCardStyle } from '../surface'
+import { SPORT_CARD_BG, focusAttr, sportCardStyle } from '../surface'
 import { SportReplays } from './sport-replays'
+import { useTvMode } from '@/lib/plugin-sdk'
+import { PageTabs, TabBody, usePageTab, type MatchdayTab } from '../team-page/page-tabs'
+import type { U } from '../match-info/match-info-parts'
 
 export function SportMatchday({ ctx, matches, dayFrom, replays = [] }: { ctx: SportCtx; matches: SportMatch[]; dayFrom: number; replays?: SportMatch[] }) {
+  const tv = useTvMode()
   const hero = featuredMatch(matches, ctx.follows, ctx.now)
   const next = nextOnYourChannels(matches, ctx.now, hero?.id ?? null)
+  if (tv) return <MatchdayTv ctx={ctx} matches={matches} dayFrom={dayFrom} replays={replays} hero={hero} next={next} />
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: dp(28) }}>
       {matches.length > 0 ? (
@@ -29,6 +35,57 @@ export function SportMatchday({ ctx, matches, dayFrom, replays = [] }: { ctx: Sp
       <MatchStrip title={ctx.tt('sportMatches')} matches={matches} ctx={ctx} />
       {/* Repriser sist, utanför tidslinjen, heron och remsan (Jerry 2026-10-12). */}
       <SportReplays ctx={ctx} matches={replays} />
+    </div>
+  )
+}
+
+const SUBTAB_SCOPE = '[data-matchday-tabs]'
+
+/** De stationer som inte har någon annan station under sig (samma lodräta spår) får ▾ till `target`. */
+export function markDownToActiveTab(root: HTMLElement, target: string): void {
+  const st = Array.from(root.querySelectorAll<HTMLElement>('[data-f]'))
+  const rects = st.map((el) => el.getBoundingClientRect())
+  st.forEach((el, i) => {
+    const r = rects[i]
+    const below = rects.some((o, j) => j !== i && o.top >= r.bottom - 4 && o.left < r.right && o.right > r.left)
+    const own = el.getAttribute('data-f-down-auto') === '1'
+    if (!below && (!el.hasAttribute('data-f-down') || own)) { el.setAttribute('data-f-down', target); el.setAttribute('data-f-down-auto', '1') }
+    else if (below && own) { el.removeAttribute('data-f-down'); el.removeAttribute('data-f-down-auto') }
+  })
+}
+/** Underflikarna i TV-skala (1,1): något mindre än Sports egen flikrad (24). */
+const subU: U = Object.assign((n: number) => Math.round(dp(n) * 1.1), { tv: true, dim: TV.muted })
+
+/**
+ * MATCHDAG PÅ TV (Jerry 2026-10-12: för mycket fjärrresande när hero,
+ * tidslinje, remsan och repriser stod under varandra). Heron och "Nästa på
+ * dina kanaler" står kvar överst; under dem underflikarna Matchdag (tidslinjen),
+ * Matcher (rutnät) och Repriser (bara när det finns några), med lag-
+ * sidans flikrad och fjärrbeteende: ◂/▸ byter, ▾ in i fliken, ▴ tillbaka.
+ * Senaste fliken minns under sessionen. Skrivbord och telefon som förut.
+ */
+function MatchdayTv({ ctx, matches, dayFrom, replays, hero, next }: { ctx: SportCtx; matches: SportMatch[]; dayFrom: number; replays: SportMatch[]; hero: SportMatch | null; next: SportMatch[] }) {
+  const available: MatchdayTab[] = [...(matches.length > 0 ? ['timeline' as const, 'matches' as const] : []), ...(replays.length > 0 ? ['replays' as const] : [])]
+  const [tab, setTab] = usePageTab<MatchdayTab>('matchday', available.length ? available : ['timeline'])
+  const label: Record<MatchdayTab, string> = { timeline: ctx.tt('sportMatchday'), matches: ctx.tt('sportMatches'), replays: ctx.tt('sportReplays') }
+  const topRef = useRef<HTMLDivElement | null>(null)
+  // ▾ från heron och Nästa-listans sista rad går till den VALDA fliken — geometrin
+  // tog annars närmaste flik och bytte flik i förbifarten.
+  useLayoutEffect(() => { if (topRef.current) markDownToActiveTab(topRef.current, `${SUBTAB_SCOPE} [data-tab-active]`) })
+  return (
+    <div data-matchday-tabs="" style={{ display: 'flex', flexDirection: 'column', gap: dp(24) }}>
+      {matches.length > 0 ? (
+        <div ref={topRef} style={{ display: 'flex', gap: dp(20), alignItems: 'stretch' }}>
+          {hero ? <SportHero ctx={ctx} match={hero} /> : null}
+          <NextOnChannels ctx={ctx} matches={next} />
+        </div>
+      ) : null}
+      <PageTabs u={subU} scope={SUBTAB_SCOPE} tabs={available.map((k) => ({ key: k, label: label[k] }))} value={tab} onChange={setTab} />
+      <TabBody scope={SUBTAB_SCOPE} gap={dp(20)}>
+        {tab === 'timeline' && matches.length > 0 ? <MatchdayTimeline ctx={ctx} matches={matches} dayFrom={dayFrom} /> : null}
+        {tab === 'matches' ? <MatchGrid matches={matches} ctx={ctx} /> : null}
+        {tab === 'replays' ? <SportReplays ctx={ctx} matches={replays} /> : null}
+      </TabBody>
     </div>
   )
 }
@@ -68,7 +125,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
       {st === 'live' ? <Progress value={match.minute != null && match.kind === 'football' ? Math.min(match.minute / 90, 1) : progressOf(match.start, match.stop, ctx.now)} height={dp(5)} style={{ width: '40%' }} /> : null}
       <div style={{ display: 'flex', alignItems: 'center', gap: dp(14), flexWrap: 'wrap', justifyContent: 'center' }}>
         {best ? (
-          <div data-testid="sport-hero-watch" {...station(() => ctx.watch(match))} style={primaryBtn}>
+          <div data-testid="sport-hero-watch" {...station(() => ctx.watch(match), undefined, focusAttr('on-accent'))} style={primaryBtn}>
             <SportIcons.Play size={dp(20)} />
             {ctx.tt('sportWatchOn', { channel: best.name })}
           </div>

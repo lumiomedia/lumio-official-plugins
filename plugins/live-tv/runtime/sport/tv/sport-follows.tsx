@@ -68,7 +68,7 @@ export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | n
         {/* Påminnelsen står längst till höger; geometrin tog dagstegaren snett
             ovanför i stället (Jerry 2026-10-11: "gå över saker och kolla så
             allt syns bra på TV-mode"). Grannarna är uttalade åt båda hållen. */}
-        <div data-testid="follows-add" {...station(ctx.openFollowPicker, undefined, { 'data-f-right': '[data-testid="follows-alert"] [data-f]', 'data-f-down': FIRST_FOLLOW })} style={primaryBtn}>
+        <div data-testid="follows-add" {...station(ctx.openFollowPicker, undefined, { ...focusAttr('on-accent'), 'data-f-right': '[data-testid="follows-alert"] [data-f]', 'data-f-down': FIRST_FOLLOW })} style={primaryBtn}>
           <SportIcons.Plus size={dp(20)} />
           {ctx.tt('sportFollowAdd')}
         </div>

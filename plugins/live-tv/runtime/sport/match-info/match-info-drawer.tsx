@@ -11,7 +11,7 @@ import { setOverride, toggleFollow } from '../sport-store'
 import type { SportCtx } from '../sport-ctx'
 import { eventSummary } from '../match-info-model'
 import { SportIcons } from '../sport-icons'
-import { sportDrawerStyle, sportStackedStyle } from '../surface'
+import { focusAttr, sportDrawerStyle, sportStackedStyle } from '../surface'
 import { SHEET_BG, usePhonePlatform } from '../mobile/phone-sport-sheet'
 import { toggleGoalAlert } from './match-info-text'
 import { leagueTargetFromMatch, teamTargetFromMatch } from '../team-model'
@@ -141,7 +141,7 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
         ) : null}
       </div>
       {chosen ? (
-        <div data-testid="mc-watch" {...station(() => { ctx.watch(match, chosen); onClose() })} style={{ height: u(64), borderRadius: u(14), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: u(10), fontSize: u(20), fontWeight: 700, cursor: 'pointer' }}>
+        <div data-testid="mc-watch" {...station(() => { ctx.watch(match, chosen); onClose() }, undefined, focusAttr('on-accent'))} style={{ height: u(64), borderRadius: u(14), background: TV.acc, color: TV.onAcc, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: u(10), fontSize: u(20), fontWeight: 700, cursor: 'pointer' }}>
           <SportIcons.Play size={u(20)} />
           {chosen.quality ? ctx.tt('sportWatchQuality', { quality: chosen.quality }) : ctx.tt('sportWatch')}
         </div>

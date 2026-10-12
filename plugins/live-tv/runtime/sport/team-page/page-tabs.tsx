@@ -16,13 +16,15 @@ import { focusAttr } from '../surface'
 
 export type TeamTab = 'overview' | 'matches' | 'squad' | 'trophies'
 export type LeagueTab = 'table' | 'round' | 'scorers'
+/** Översiktens underflikar i Matchdag-vyn på TV. */
+export type MatchdayTab = 'timeline' | 'matches' | 'replays'
 
 /** Senast valda flik per sidtyp under sessionen (nästa lagsida öppnar där man var). */
-const lastTab: { team: TeamTab | null; league: LeagueTab | null } = { team: null, league: null }
-export function __resetPageTabsForTests(): void { lastTab.team = null; lastTab.league = null }
+const lastTab: { team: TeamTab | null; league: LeagueTab | null; matchday: MatchdayTab | null } = { team: null, league: null, matchday: null }
+export function __resetPageTabsForTests(): void { lastTab.team = null; lastTab.league = null; lastTab.matchday = null }
 
 /** Vald flik: den sparade om den finns bland de tillgängliga, annars den första. */
-export function usePageTab<K extends TeamTab | LeagueTab>(kind: 'team' | 'league', available: K[]): [K, (k: K) => void] {
+export function usePageTab<K extends TeamTab | LeagueTab | MatchdayTab>(kind: 'team' | 'league' | 'matchday', available: K[]): [K, (k: K) => void] {
   const [chosen, setChosen] = useState<K | null>(() => (lastTab[kind] as K | null) ?? null)
   const tab = chosen && available.includes(chosen) ? chosen : available[0]
   const set = (k: K) => { setChosen(k); (lastTab as Record<string, string | null>)[kind] = k }

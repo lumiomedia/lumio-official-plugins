@@ -12,6 +12,7 @@ import type { LiveTvModel } from '../live-tv-model'
 import type { TvNav } from '../tv/tv-shell'
 import { tvText } from '../tv/tv-strings'
 import { buildSportCtx, type SportCtx } from './sport-ctx'
+import { __resetPageTabsForTests } from './team-page/page-tabs'
 
 /*
   Testhjälp för sportvyerna. Importeras BARA av *.test.ts(x) — aldrig av
@@ -111,6 +112,7 @@ afterEach(() => {
  */
 export function mountSport(params: Record<string, string> = {}, opts: { days?: Record<string, SportMatch[]> | 'missing'; phone?: boolean; follows?: SportFollow[]; page?: boolean; tv?: boolean } = {}) {
   __resetForTests()
+  __resetPageTabsForTests()
   // `tv: false` utan `phone` = skrivbordet (scenlådan utanför TV-läge).
   __setTvModeForTests(opts.tv ?? !opts.phone)
   writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [fxList])
