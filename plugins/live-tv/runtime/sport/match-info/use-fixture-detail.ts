@@ -17,13 +17,20 @@ export function useFixtureDetail(match: SportMatch): { detail: FixtureDetail | n
   const controller = useResultsController()
   const [detail, setDetail] = useState<FixtureDetail | null>(null)
   const [done, setDone] = useState(false)
-  const covered = match.coverage === 'full' && !!match.fixture
-  usePollDemand('match-center', covered && match.status === 'live')
+  // En repris visar originalmatchen, och BARA ur cachen (inga nya anrop för en repris).
+  const replay = match.rerun ? match.replayOf?.fixture ?? null : null
+  const covered = match.coverage === 'full' && (match.rerun ? !!replay : !!match.fixture)
+  usePollDemand('match-center', covered && !match.rerun && match.status === 'live')
 
   useEffect(() => {
-    if (!covered || !controller || !match.fixture) return
+    if (!covered || !controller) return
     let cancelled = false
-    void controller.loadFixture(match.kind, { provider: match.fixture.provider as ProviderId, id: match.fixture.id }, match.status === 'finished').then((d) => {
+    const ref = replay ?? match.fixture
+    if (!ref) return
+    const load = replay
+      ? controller.cachedFixture(match.kind, { provider: replay.provider as ProviderId, id: replay.id })
+      : controller.loadFixture(match.kind, { provider: ref.provider as ProviderId, id: ref.id }, match.status === 'finished')
+    void load.then((d) => {
       if (cancelled) return
       setDetail(d)
       setDone(true)
@@ -32,7 +39,7 @@ export function useFixtureDetail(match: SportMatch): { detail: FixtureDetail | n
     // Pågående match: hämta om BARA när ställning eller status ändras. Minuten
     // ändras vid varje livepollning, och en omhämtning per pollning dubblade
     // förbrukningen. Omhämtningen räknas som live i kvothanteraren.
-  }, [covered, controller, match.kind, match.fixture?.id, match.status, match.score?.home, match.score?.away])
+  }, [covered, controller, match.kind, match.fixture?.id, replay?.id, match.status, match.score?.home, match.score?.away])
 
   if (!covered || !controller) return { detail: null, state: 'none' }
   return { detail, state: detail || done ? 'ready' : 'loading' }

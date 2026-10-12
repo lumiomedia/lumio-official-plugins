@@ -250,6 +250,22 @@ export class ResultsController {
     return hit?.detail ?? null
   }
 
+  /**
+   * Reprisens matchinfo: originalmatchen BARA ur minnet eller diskcachen. Ingen
+   * nätväg och ingen kvot — en repris är inte värd ett anrop.
+   */
+  async cachedFixture(sport: SportKind, ref: FixtureRef): Promise<FixtureDetail | null> {
+    const key = `${sport}|${this.events.keyOf(ref.provider, ref.id) ?? `${ref.provider}:${ref.id}`}`
+    const hit = this.details.get(key)
+    if (hit) return hit.detail
+    const peeked = await this.router.peekFixture(sport, this.events.refsOf(ref.provider, ref.id))
+    if (peeked) {
+      this.details.set(key, { at: this.now(), detail: peeked })
+      this.emit()
+    }
+    return peeked
+  }
+
   standings(sport: SportKind, leagueId: string, season: string): StandingRow[] | null {
     return this.tables.get(planKey({ kind: 'standings', sport, leagueId, season })) ?? null
   }
@@ -275,7 +291,8 @@ export class ResultsController {
     // Händelsenycklar: en match kopplad med den ena källans id är het även när en annan källa levererar den.
     const relevant = new Set<string>()
     for (const m of this.mergedById.values()) {
-      if (!m.fixture) continue
+      // En repris pollas aldrig live, inte ens om tablån kopplat den till en fixtur.
+      if (!m.fixture || m.rerun) continue
       const k = this.events.keyOf(m.fixture.provider as ProviderId, m.fixture.id)
       if (k) relevant.add(k)
     }
@@ -430,5 +447,5 @@ export function useChannelSportLive(channelKey: string | null): SportMatch | nul
   const [, bump] = useReducer((n: number) => n + 1, 0)
   useEffect(() => (controller ? controller.onMerged(bump) : undefined), [controller])
   if (!controller || !channelKey) return null
-  return controller.merged().find((m) => m.coverage === 'full' && !!m.fixture && m.status === 'live' && m.sources.some((s) => s.channelKey === channelKey)) ?? null
+  return controller.merged().find((m) => m.coverage === 'full' && !!m.fixture && !m.rerun && m.status === 'live' && m.sources.some((s) => s.channelKey === channelKey)) ?? null
 }

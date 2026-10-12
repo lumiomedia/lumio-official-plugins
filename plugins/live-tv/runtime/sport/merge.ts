@@ -105,6 +105,16 @@ function sameTeams(m: SportMatch, f: Fixture): boolean {
   return (teamKeysMatch(m.homeKey, h) && teamKeysMatch(m.awayKey, a)) || (teamKeysMatch(m.homeKey, a) && teamKeysMatch(m.awayKey, h))
 }
 
+const fitsTeams = (m: SportMatch) => (f: Fixture) => sportsCompatible(f.sport, m.kind) && sameTeams(m, f)
+
+/** Den spelade match sändningen kan vara en repris av: samma lag, avspark minst två timmar före, inom en vecka. Den senaste vinner. */
+function originalOf(m: SportMatch, fixtures: Fixture[]): Fixture | null {
+  if (m.coverage !== 'full' || !m.homeKey || !m.awayKey) return null
+  const fits = fitsTeams(m)
+  const hits = fixtures.filter((f) => fits(f) && f.status !== 'postponed' && f.kickoff + REPLAY_GAP <= m.start && m.start - f.kickoff <= REPLAY_LOOKBACK)
+  return hits.sort((a, b) => b.kickoff - a.kickoff)[0] ?? null
+}
+
 /**
  * Tablån märker en repris bara med datum i beskrivningen eller en tidigare live-flaggad
  * sändning samma dag. TV4 Fotboll och ESPN sänder om gårdagens matcher utan något av det,
@@ -113,9 +123,26 @@ function sameTeams(m: SportMatch, f: Fixture): boolean {
  */
 function isProviderRerun(m: SportMatch, today: Fixture[], history: Fixture[]): boolean {
   if (m.rerun || m.coverage !== 'full' || !m.homeKey || !m.awayKey) return false
-  const fits = (f: Fixture) => sportsCompatible(f.sport, m.kind) && sameTeams(m, f)
+  const fits = fitsTeams(m)
   if (today.some((f) => fits(f) && f.status !== 'finished' && f.status !== 'postponed')) return false
-  return [...today, ...history].some((f) => fits(f) && f.status !== 'postponed' && f.kickoff + REPLAY_GAP <= m.start && m.start - f.kickoff <= REPLAY_LOOKBACK)
+  return originalOf(m, [...today, ...history]) != null
+}
+
+/**
+ * En repris visas som repris (Jerry 2026-10-12): aldrig LIVE eller minut, men med
+ * originalets slutresultat och datum när källan har matchen (minnet/diskcachen).
+ * Ställningen vänds efter tablåns hemma/borta. En kopplad fixtur som spelats färdigt
+ * före sändningen är själva originalet; en kopplad pågående match är det inte.
+ */
+function asReplay(m: SportMatch, linked: Fixture | null, fixtures: Fixture[]): SportMatch {
+  const original = linked?.status === 'finished' && linked.kickoff + REPLAY_GAP <= m.start ? linked : originalOf(m, fixtures)
+  const out: SportMatch = { ...m, rerun: true, status: m.status === 'live' ? 'finished' : m.status }
+  if (!original) return out
+  const flipped = !teamKeysMatch(m.homeKey, foldTeamKey(original.home.name)) && teamKeysMatch(m.homeKey, foldTeamKey(original.away.name))
+  const score = original.status === 'finished' && original.score
+    ? (flipped ? { home: original.score.away, away: original.score.home } : { ...original.score })
+    : null
+  return { ...out, replayOf: { kickoff: original.kickoff, score, fixture: { provider: original.provider, id: original.id } } }
 }
 
 /**
@@ -128,6 +155,7 @@ export function mergeLinked(a: MergeArgs): SportMatch[] {
   const out: SportMatch[] = a.epg.map((m) => ({ ...m, coverage: a.coverage(m.kind) }))
   const index = new Map(out.map((m, i) => [m.id, i]))
   const used = new Set<string>()
+  const linkedFixture = new Map<string, Fixture>()
   for (const f of a.fixtures) {
     if (a.coverage(f.sport) !== 'full') continue
     // Kopplingen är nycklad på källa + id (flera källors id kan krocka); äldre kartor på bara id.
@@ -135,13 +163,17 @@ export function mergeLinked(a: MergeArgs): SportMatch[] {
     const i = link ? index.get(link.matchId) : undefined
     if (link && i !== undefined && !used.has(link.matchId) && out[i].coverage === 'full') {
       used.add(link.matchId)
-      out[i] = applyFixture(out[i], f, link.swapped)
-      continue
+      linkedFixture.set(link.matchId, f)
+      // En tablåmärkt repris tar aldrig över fixturens ställning eller status: fixturen
+      // står som egen resultatrad och är bara reprisens original om den är spelad.
+      if (!out[i].rerun) { out[i] = applyFixture(out[i], f, link.swapped); continue }
     }
     out.push(fixtureOnly(f, a.overrides, a.canonical?.(f)))
   }
+  const history = a.history ?? []
   for (let i = 0; i < a.epg.length; i += 1) {
-    if (!used.has(out[i].id) && isProviderRerun(out[i], a.fixtures, a.history ?? [])) out[i] = { ...out[i], rerun: true }
+    const m = out[i]
+    if (m.rerun || (!used.has(m.id) && isProviderRerun(m, a.fixtures, history))) out[i] = asReplay(m, linkedFixture.get(m.id) ?? null, [...a.fixtures, ...history])
   }
   return out
 }

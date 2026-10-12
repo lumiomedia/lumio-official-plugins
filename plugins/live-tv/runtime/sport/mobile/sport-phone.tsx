@@ -7,7 +7,7 @@ import { MT, ellipsis } from '../../tv/mobile/mobile-tokens'
 import { MIcons } from '../../tv/mobile/mobile-icons'
 import { SPORT_CHIPS, type SportFilter, type SportKind, type SportMatch } from '../sport-model'
 import { dayStartMs, localDayKey, shiftDay, useSportDay } from '../sport-epg'
-import { featuredMatch, followCandidates, sportCounts, visibleMatches } from '../sport-day-model'
+import { featuredMatch, followCandidates, replayMatches, sportCounts, visibleMatches } from '../sport-day-model'
 import { isFollowing, setSportSettings, toggleFollow } from '../sport-store'
 import { MatchInfoDrawer } from '../match-info/match-info-drawer'
 import { useSportBackdrop } from '../backdrop'
@@ -18,7 +18,7 @@ import { useSportCtx } from '../sport-ctx'
 import { SportIcons } from '../sport-icons'
 import { SportResultsPhone } from './sport-results-phone'
 import { PhoneFollowSearch } from './sport-follow-search-phone'
-import { PhoneFeed, PhoneMatchday } from './sport-overview-phone'
+import { PhoneFeed, PhoneMatchday, PhoneReplays } from './sport-overview-phone'
 import { PhoneFollows } from './sport-follows-phone'
 import { PHONE_SECTIONS, sectionTarget, type PhoneSection } from './phone-sport-model'
 import { PhoneSportSheet, SheetRow, overline, usePhonePlatform } from './phone-sport-sheet'
@@ -72,6 +72,7 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
   const tomorrowDay = useSportDay(wantsFollow || (tab === 'foryou' && view === 'feed') ? shiftDay(today, 1) : null, model.nowMs)
   const counts = sportCounts(mergedDay)
   const dayMatches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter])
+  const replays = useMemo(() => replayMatches(mergedDay, filter, ctx.now), [mergedDay, filter, ctx.now])
   // Bakgrunden följer toppmatchen (den med kanal först), annars vald sport.
   const phoneHero = useMemo(() => featuredMatch(dayMatches.filter((m) => m.sources.length > 0), ctx.follows, ctx.now) ?? featuredMatch(dayMatches, ctx.follows, ctx.now), [dayMatches, ctx.follows, ctx.now])
   const backdrop = useSportBackdrop(phoneHero, filter, model.nowMs)
@@ -79,7 +80,7 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
   const liveSheet = sheet ? [mergedMatches, todayDay.data?.matches ?? [], tomorrowDay.data?.matches ?? []].flat().find((m) => m.id === sheet.id) ?? null : null
   const dayLabel = offset === -1 ? tt('sportYesterday') : offset === 0 ? tt('sportToday') : tt('sportTomorrow')
 
-  const notice = selected.state === 'missing' ? tt('sportNeedsUpdate') : selected.state === 'error' ? tt('sportError') : selected.state === 'loading' ? tt('sportLoading') : dayMatches.length === 0 ? tt('sportEmptyDay') : null
+  const notice = selected.state === 'missing' ? tt('sportNeedsUpdate') : selected.state === 'error' ? tt('sportError') : selected.state === 'loading' ? tt('sportLoading') : dayMatches.length === 0 && replays.length === 0 ? tt('sportEmptyDay') : null
   const goSection = (key: PhoneSection) => {
     setSections(false)
     const target = sectionTarget(key)
@@ -168,6 +169,8 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
                   ? <PhoneFeed ctx={ctx} matches={dayMatches} days={[mergedDay, tomorrowDay.data]} onAddTeam={() => setTab('follows')} />
                   : <PhoneMatchday ctx={ctx} matches={dayMatches} dayFrom={dayStartMs(day)} offset={offset} />
                 : null}
+              {/* Repriser sist i båda vyerna, utanför Live nu (Jerry 2026-10-12). */}
+              {selected.state === 'ready' ? <PhoneReplays ctx={ctx} matches={replays} /> : null}
             </>
           ) : tab === 'results' ? (
             <SportResultsPhone matches={allMatches} controller={controller} onOpenMatch={openMatch} onWatch={(m) => ctx.watch(m)} pushLayer={nav.pushLayer} sport={filter} kindLabel={ctx.kindLabel} />

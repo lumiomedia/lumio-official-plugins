@@ -14,10 +14,11 @@ import { Crest, ellipsis, overline, sectionTitle } from './sport-parts'
 import { MatchScore } from './sport-score'
 import { SportIcons } from './sport-icons'
 import { sportCardStyle } from '../surface'
+import { SportReplays } from './sport-replays'
 
 const avatarCol: CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(8), width: dp(150), flexShrink: 0, cursor: 'pointer' }
 
-export function SportFeed({ ctx, matches, days }: { ctx: SportCtx; matches: SportMatch[]; days: (SportDay | null)[] }) {
+export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx; matches: SportMatch[]; days: (SportDay | null)[]; replays?: SportMatch[] }) {
   const { live, later, finished } = splitSections(matches, ctx.now)
   const planned = later.filter((m) => ctx.isReminded(m))
   const clash = clashes(planned)
@@ -126,6 +127,9 @@ export function SportFeed({ ctx, matches, days }: { ctx: SportCtx; matches: Spor
           </div>
         </section>
       ) : null}
+
+      {/* Repriser sist, utanför Just nu och kvällsplanen (Jerry 2026-10-12). */}
+      <SportReplays ctx={ctx} matches={replays} />
     </div>
   )
 }

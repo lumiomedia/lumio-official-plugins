@@ -178,3 +178,45 @@ describe('Matchinfon: MATCHEN och undersidorna (ett anrop)', () => {
     expect(screen.getByTestId('mc-venue')).toHaveTextContent('The source has no more about the venue.')
   })
 })
+
+describe('Matchinfon: repris', () => {
+  const replay = (over: Partial<SportMatch> = {}) => covered({
+    rerun: true, status: 'finished', minute: null, fixture: undefined, score: undefined,
+    replayOf: { kickoff: new Date(2026, 9, 10, 17, 30).getTime(), score: { home: 2, away: 0 }, fixture: { provider: 'api-sports', id: '1180001' } }, ...over,
+  })
+  function replayController(detail: unknown) {
+    const c = { loadFixture: vi.fn(async () => null), cachedFixture: vi.fn(async () => detail), status: () => ({ provider: 'api-sports', state: 'ok', intervalMs: null, remainingToday: 41, pausedUntil: null, paid: false }), subscribe: () => () => {} }
+    h.controller = c
+    return c
+  }
+
+  it('neutral REPRIS-pill, originalets slutresultat och datum — aldrig LIVE eller minut', () => {
+    replayController(null)
+    render(<MatchInfoDrawer ctx={fakeCtx({ now })} match={replay()} onClose={() => {}} />)
+    const pill = screen.getByTestId('mc-status')
+    expect(pill).toHaveTextContent('Replay')
+    expect(pill).toHaveAttribute('data-live', '0')
+    expect(screen.getByTestId('mc-score')).toHaveTextContent('2 : 0')
+    expect(screen.getByTestId('mc-status-line')).toHaveTextContent(/^Played Sat 10 Oct$/)
+    expect(screen.queryByText(/LIVE/)).toBeNull()
+    expect(screen.queryByTestId('mc-goal-alert')).toBeNull()
+  })
+
+  it('händelser och statistik ur originalmatchen, bara ur cachen (aldrig loadFixture)', async () => {
+    const c = replayController(detail())
+    render(<MatchInfoDrawer ctx={fakeCtx({ now })} match={replay()} onClose={() => {}} />)
+    await waitFor(() => expect(screen.getByTestId('mc-row-events')).not.toHaveTextContent('…'))
+    expect(c.cachedFixture).toHaveBeenCalledWith('football', { provider: 'api-sports', id: '1180001' })
+    expect(c.loadFixture).not.toHaveBeenCalled()
+  })
+
+  it('repris utan originalmatch i cachen: pill och "Replay", ingen ställning, inga anrop', () => {
+    const c = replayController(null)
+    render(<MatchInfoDrawer ctx={fakeCtx({ now })} match={replay({ replayOf: undefined })} onClose={() => {}} />)
+    expect(screen.getByTestId('mc-status')).toHaveTextContent('Replay')
+    expect(screen.queryByTestId('mc-score')).toBeNull()
+    expect(screen.queryByTestId('mc-row-events')).toBeNull()
+    expect(c.cachedFixture).not.toHaveBeenCalled()
+    expect(c.loadFixture).not.toHaveBeenCalled()
+  })
+})

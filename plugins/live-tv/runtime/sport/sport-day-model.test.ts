@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   clashes, crestColor, featuredMatch, followCandidates, followState, headerSummary, leagueColor, nextMatchFor,
   nextOnYourChannels, pickMultiviewKeys, rankedSources, splitSections, sportCounts, statusAt, teamRing,
-  timelineAxis, timelineRows, mergeLane, blockShowsLabel, visibleMatches, playerMatchGroups, matchdayStrip,
+  timelineAxis, timelineRows, mergeLane, blockShowsLabel, visibleMatches, playerMatchGroups, matchdayStrip, replayMatches,
 } from './sport-day-model'
+import { heroStatusLine, matchStatusLabel, playedOnText, replayScoreText, scoreText, showsScore } from './score-model'
 import { HOUR, MIN, fxDay, fxMatch, fxSource } from './__sport-fixture'
 
 const now = new Date(2026, 9, 10, 19, 0).getTime()
@@ -179,5 +180,36 @@ describe('tidslinjens block', () => {
     const span = 12 * HOUR
     expect(blockShowsLabel(10 * MIN, span)).toBe(false)
     expect(blockShowsLabel(2 * HOUR, span)).toBe(true)
+  })
+})
+
+describe('repriser: egen grupp sist, aldrig live', () => {
+  const tt = (k: string, v?: Record<string, string | number>) => (k === 'sportReplay' ? 'Repris' : k === 'sportPlayedOn' ? `Spelades ${v?.date}` : k)
+  const airing = fxMatch({ id: 'r-now', home: 'Mjällby', away: 'Degerfors', start: now - 30 * MIN, stop: now + 90 * MIN, rerun: true, status: 'finished', coverage: 'full',
+    fixture: { provider: 'api-sports', id: '7' }, score: { home: 9, away: 9 }, replayOf: { kickoff: new Date(2026, 9, 10, 17, 30).getTime(), score: { home: 2, away: 0 }, fixture: { provider: 'api-sports', id: '7' } } })
+  const aired = fxMatch({ id: 'r-old', start: now - 4 * HOUR, stop: now - 2 * HOUR, rerun: true })
+  const nhl = fxMatch({ id: 'r-nhl', kind: 'hockey', home: 'Capitals', away: 'Kraken', start: now + 2 * HOUR, rerun: true })
+
+  it('en pågående repris är aldrig live och räknas inte i rubrikens "N live"', () => {
+    expect(statusAt(airing, now)).not.toBe('live')
+    expect(statusAt(nhl, now)).toBe('upcoming')
+    expect(headerSummary(visibleMatches(fxDay('d', [live, airing]), 'all'), now)).toEqual({ total: 1, live: 1 })
+    expect(splitSections([airing], now).live).toEqual([])
+  })
+  it('replayMatches: bara repriser som inte sänts färdigt, i tidsordning, filtret gäller', () => {
+    const day = fxDay('2026-10-10', [nhl, live, airing, aired, rerun])
+    expect(replayMatches(day, 'all', now).map((m) => m.id)).toEqual(['r-now', 'r-nhl', 'rerun'])
+    expect(replayMatches(day, 'hockey', now).map((m) => m.id)).toEqual(['r-nhl'])
+    expect(replayMatches(null, 'all', now)).toEqual([])
+  })
+  it('status: "Repris", aldrig minut; ställningen är originalets och visas bara som reprisens slutresultat', () => {
+    expect(matchStatusLabel(airing, tt as never)).toBe('Repris')
+    expect(heroStatusLine(airing, tt as never)).toBe('Repris')
+    expect(showsScore(airing)).toBe(false)
+    expect(scoreText(airing)).toBeNull()
+    expect(replayScoreText(airing)).toBe('2–0')
+    expect(replayScoreText(nhl)).toBeNull()
+    expect(playedOnText(airing, tt as never, 'sv-SE')).toBe('Spelades lör 10 okt')
+    expect(playedOnText(nhl, tt as never, 'sv-SE')).toBeNull()
   })
 })

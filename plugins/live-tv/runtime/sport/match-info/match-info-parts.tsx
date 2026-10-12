@@ -5,7 +5,7 @@ import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
 import { TV, dp, station } from '../../tv/tv-ui'
 import { matchTitle, type SportMatch } from '../sport-model'
 import { crestColor, followState, statusAt } from '../sport-day-model'
-import { heroStatusLine, showsScore } from '../score-model'
+import { heroStatusLine, playedOnText, showsScore } from '../score-model'
 import { timeLine, type SportCtx } from '../sport-ctx'
 import { toggleFollow } from '../sport-store'
 import { playerInitials } from '../match-info-model'
@@ -40,6 +40,7 @@ export function IconBtn({ u, testId, on, label, onPress, children }: { u: U; tes
 
 /** "● LIVE" som röd pill; annars tid eller SLUT som neutral pill. */
 export function StatusPill({ u, match, ctx }: { u: U; match: SportMatch; ctx: SportCtx }) {
+  if (match.rerun) return <ReplayPill u={u} ctx={ctx} testId="mc-status" />
   const st = statusAt(match, ctx.now)
   const live = st === 'live'
   const text = live ? ctx.tt('sportLiveShort') : timeLine(match, ctx)
@@ -47,6 +48,15 @@ export function StatusPill({ u, match, ctx }: { u: U; match: SportMatch; ctx: Sp
     <span data-testid="mc-status" data-live={live ? '1' : '0'} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: u(6), height: u(30), padding: `0 ${u(12)}px`, borderRadius: u(8), fontSize: u(15), fontWeight: 700, letterSpacing: '0.06em', background: live ? TV.live : TV.s12, color: TV.text }}>
       {live ? <span aria-hidden="true" style={{ width: u(7), height: u(7), borderRadius: 999, background: TV.text }} /> : null}
       {text}
+    </span>
+  )
+}
+
+/** "REPRIS" som neutral pill (aldrig röd): en redan spelad match som sänds igen. */
+export function ReplayPill({ u, ctx, testId = 'replay-pill' }: { u: U; ctx: SportCtx; testId?: string }) {
+  return (
+    <span data-testid={testId} data-live="0" data-replay="1" style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', height: u(30), padding: `0 ${u(12)}px`, borderRadius: u(8), fontSize: u(15), fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', background: TV.s12, border: `1px solid ${TV.lineCard}`, color: TV.text, boxSizing: 'border-box' }}>
+      {ctx.tt('sportReplay')}
     </span>
   )
 }
@@ -68,7 +78,9 @@ export function TeamsHeader({ u, match, ctx, compact = false }: { u: U; match: S
   const st = statusAt(match, ctx.now)
   const fs = followState(match, ctx.follows)
   const crest = compact ? u(64) : u(84)
-  const status = heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)
+  // Repris: originalets slutresultat och datum ("Spelades lör 10 okt"), aldrig minut eller LIVE.
+  const status = match.rerun ? playedOnText(match, ctx.tt, ctx.locale) ?? ctx.tt('sportReplay') : heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)
+  const score = match.rerun ? match.replayOf?.score ?? null : showsScore(match) ? match.score ?? null : null
   if (!match.home || !match.away) {
     return (
       <div data-testid="mc-head" style={{ display: 'flex', flexDirection: 'column', gap: u(6) }}>
@@ -93,10 +105,10 @@ export function TeamsHeader({ u, match, ctx, compact = false }: { u: U; match: S
     <div data-testid="mc-head" aria-label={matchTitle(match)} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)', alignItems: 'start', gap: u(12) }}>
       {team('home')}
       <div data-testid="mc-scoreline" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: u(6), paddingTop: u(compact ? 6 : 14) }}>
-        {showsScore(match) && match.score ? (
-          <span data-testid="mc-score" style={{ fontSize: compact ? u(52) : u(64), fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{`${match.score.home} : ${match.score.away}`}</span>
+        {score ? (
+          <span data-testid="mc-score" style={{ fontSize: compact ? u(52) : u(64), fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{`${score.home} : ${score.away}`}</span>
         ) : null}
-        <span style={{ fontSize: u(17), fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: st === 'live' ? TV.live : TV.muted, whiteSpace: 'nowrap' }}>{status}</span>
+        <span data-testid="mc-status-line" style={{ fontSize: u(17), fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: st === 'live' ? TV.live : TV.muted, whiteSpace: 'nowrap' }}>{status}</span>
       </div>
       {team('away')}
     </div>

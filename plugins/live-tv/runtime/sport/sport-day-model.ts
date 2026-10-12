@@ -11,6 +11,8 @@ const HOUR = 3_600_000
 const MIN = 60_000
 
 export function statusAt(m: SportMatch, now: number): MatchStatus {
+  // En repris är aldrig live (Jerry 2026-10-12): kommande före sändningen, annars spelad.
+  if (m.rerun) return now < m.start ? 'upcoming' : 'finished'
   // Fas 2: en match med källfixtur litar på källans status (live efter EPG-slut, avslutad före).
   if (m.phase === 'postponed') return 'upcoming'
   if (m.fixture && m.status !== 'upcoming') return m.status
@@ -23,6 +25,17 @@ export function visibleMatches(day: SportDay | null, filter: SportFilter): Sport
   if (!day) return []
   return day.matches
     .filter((m) => !m.rerun && (filter === 'all' || m.kind === filter))
+    .sort((a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)))
+}
+
+/**
+ * Repriserna (tablåmärkta och de källan känt igen) i en egen grupp sist i dagens
+ * lista: utanför live, räknare och hero, men tittbara. Bara de som inte sänts färdigt.
+ */
+export function replayMatches(day: SportDay | null, filter: SportFilter, now: number): SportMatch[] {
+  if (!day) return []
+  return day.matches
+    .filter((m) => m.rerun && m.stop > now && (filter === 'all' || m.kind === filter))
     .sort((a, b) => a.start - b.start || matchTitle(a).localeCompare(matchTitle(b)))
 }
 

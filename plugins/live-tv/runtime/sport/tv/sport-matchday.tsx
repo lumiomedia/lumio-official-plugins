@@ -10,18 +10,25 @@ import { MatchScore, ResultOnlyTag, useGoalBlink } from './sport-score'
 import { Crest, MatchStrip, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
 import { SportIcons } from './sport-icons'
 import { SPORT_CARD_BG, sportCardStyle } from '../surface'
+import { SportReplays } from './sport-replays'
 
-export function SportMatchday({ ctx, matches, dayFrom }: { ctx: SportCtx; matches: SportMatch[]; dayFrom: number }) {
+export function SportMatchday({ ctx, matches, dayFrom, replays = [] }: { ctx: SportCtx; matches: SportMatch[]; dayFrom: number; replays?: SportMatch[] }) {
   const hero = featuredMatch(matches, ctx.follows, ctx.now)
   const next = nextOnYourChannels(matches, ctx.now, hero?.id ?? null)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: dp(28) }}>
-      <div style={{ display: 'flex', gap: dp(20), alignItems: 'stretch' }}>
-        {hero ? <SportHero ctx={ctx} match={hero} /> : null}
-        <NextOnChannels ctx={ctx} matches={next} />
-      </div>
-      <MatchdayTimeline ctx={ctx} matches={matches} dayFrom={dayFrom} />
+      {matches.length > 0 ? (
+        <>
+          <div style={{ display: 'flex', gap: dp(20), alignItems: 'stretch' }}>
+            {hero ? <SportHero ctx={ctx} match={hero} /> : null}
+            <NextOnChannels ctx={ctx} matches={next} />
+          </div>
+          <MatchdayTimeline ctx={ctx} matches={matches} dayFrom={dayFrom} />
+        </>
+      ) : null}
       <MatchStrip title={ctx.tt('sportMatches')} matches={matches} ctx={ctx} />
+      {/* Repriser sist, utanför tidslinjen, heron och remsan (Jerry 2026-10-12). */}
+      <SportReplays ctx={ctx} matches={replays} />
     </div>
   )
 }

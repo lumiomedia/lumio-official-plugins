@@ -213,6 +213,17 @@ export class SportRouter {
     return { ...(await b.standings(sport, leagueId, season)), provider }
   }
 
+  /** Matchinfon ur diskcachen (ägarens id först, sedan alias). Kostar aldrig kvot. */
+  async peekFixture(sport: SportKind, refs: FixtureRef[]): Promise<FixtureDetail | null> {
+    for (const r of refs) {
+      const b = this.budgets.get(r.provider)
+      if (!b) continue
+      const data = await b.peek(sport, b.provider.fixture(sport, r.id, { finished: true }))
+      if (data) return data
+    }
+    return null
+  }
+
   /** Startvärdet ur diskcachen: första källan i ordningen som har något sparat. Kostar aldrig kvot. */
   async peek<T>(sport: SportKind, build: (p: SportsProvider) => ProviderCall<T>): Promise<{ data: T; provider: ProviderId } | null> {
     for (const b of this.candidates(sport)) {

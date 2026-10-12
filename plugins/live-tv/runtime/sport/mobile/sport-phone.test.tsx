@@ -154,3 +154,22 @@ describe('Mina lag', () => {
     expect(onNavigate).toHaveBeenCalledWith({ pageId: 'live-tv-browse', params: { view: 'favs' } })
   })
 })
+
+describe('Sport på telefon: repriser', () => {
+  const replay = fxMatch({ id: 'rp', home: 'Mjällby AIF', away: 'Degerfors IF', start: now - 30 * MIN, stop: now + HOUR, rerun: true })
+  it('egen grupp sist med neutral REPRIS-tagg, inte i Live nu; en dag med bara repriser är inte tom', async () => {
+    mountSport({}, { phone: true, days: { [today]: [live, replay] } })
+    const group = await screen.findByTestId('sport-phone-replays')
+    expect(within(group).getByTestId('sport-phone-replay-tag')).toHaveTextContent('Replay')
+    expect(within(group).getByTestId('sport-phone-replay-row')).toHaveTextContent('Mjällby AIF - Degerfors IF')
+    expect(within(group).getByTestId('sport-phone-replay-row')).not.toHaveTextContent(/LIVE/)
+    expect(within(screen.getByTestId('sport-phone-section-live')).queryByText(/Mjällby/)).toBeNull()
+    const body = screen.getByTestId('sport-phone-body')
+    expect(body.lastElementChild).toBe(group)
+  })
+  it('bara repriser: ingen tom-text, gruppen syns', async () => {
+    mountSport({}, { phone: true, days: { [today]: [replay] } })
+    expect(await screen.findByTestId('sport-phone-replays')).toBeInTheDocument()
+    expect(screen.queryByTestId('sport-phone-notice')).toBeNull()
+  })
+})

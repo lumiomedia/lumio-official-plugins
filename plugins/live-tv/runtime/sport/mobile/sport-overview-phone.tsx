@@ -8,7 +8,7 @@ import { MIcons } from '../../tv/mobile/mobile-icons'
 import { localDayKey } from '../sport-epg'
 import { crestText, matchTitle, type MatchSource, type SportDay, type SportMatch } from '../sport-model'
 import { featuredMatch, followState, leagueColor, nextMatchFor, nextOnYourChannels, rankedSources, splitSections, statusAt, teamRing } from '../sport-day-model'
-import { heroStatusLine, matchStatusLabel, scoreText, showsScore } from '../score-model'
+import { heroStatusLine, matchStatusLabel, playedOnText, replayScoreText, scoreText, showsScore } from '../score-model'
 import { useBackfillFollowCrests } from '../follow-crest'
 import { crestForFollow } from '../score-model'
 import { sourceLine, timeLine, type SportCtx } from '../sport-ctx'
@@ -291,6 +291,44 @@ export function PhoneFeed({ ctx, matches, days, onAddTeam }: { ctx: SportCtx; ma
         </section>
       ) : null}
     </>
+  )
+}
+
+/**
+ * Repriser (Jerry 2026-10-12): egen liten grupp sist i både Matchdag och Flöde,
+ * som på TV:n. Neutral REPRIS-tagg, sändningens tid, "Spelades lör 10 okt" och
+ * originalets slutresultat; tryck = matchinfo, ▶ = titta som vanligt.
+ */
+export function PhoneReplays({ ctx, matches }: { ctx: SportCtx; matches: SportMatch[] }) {
+  if (matches.length === 0) return null
+  return (
+    <section data-testid="sport-phone-replays" style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+      <SectionHead dot="rgba(243,244,248,0.4)" title={ctx.tt('sportReplays')} sub={ctx.tt('sportJustNowSub', { n: matches.length })} />
+      {matches.map((m) => {
+        const has = m.sources.length > 0
+        const score = replayScoreText(m)
+        return (
+          <div key={m.id} data-testid="sport-phone-replay-row" {...station(() => ctx.openMatch(m))} style={{ ...cardStyle, minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, padding: '0 10px 0 0', overflow: 'hidden', cursor: 'pointer', flexShrink: 0 }}>
+            <div style={{ width: 4, alignSelf: 'stretch', background: leagueColor(m.leagueKey || m.kind) }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, flexShrink: 0 }}>
+              <span data-testid="sport-phone-replay-tag" style={{ height: 18, padding: '0 6px', borderRadius: 5, background: 'rgba(252,252,255,0.16)', color: P.text, fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center' }}>{ctx.tt('sportReplay')}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: P.muted70, fontVariantNumeric: 'tabular-nums' }}>{formatClock(m.start, ctx.locale)}</span>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
+              <div data-testid="sport-phone-replay-meta" style={{ fontSize: 12, color: P.muted65, ...ellipsis }}>{[playedOnText(m, ctx.tt, ctx.locale), m.league || ctx.kindLabel(m.kind), has ? sourceLine(m, ctx) : null].filter(Boolean).join(' · ')}</div>
+            </div>
+            {score ? <span data-testid="sport-phone-replay-score" style={{ fontSize: 15, fontWeight: 700, color: P.muted80, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{score}</span> : null}
+            {has ? (
+              <div data-testid="sport-phone-replay-play" {...station(() => ctx.watch(m))} onClick={(e) => { e.stopPropagation(); ctx.watch(m) }} aria-label={ctx.tt('sportWatch')}
+                style={{ width: 40, height: 40, borderRadius: 999, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'rgba(252,252,255,0.16)', color: '#fff', cursor: 'pointer' }}>
+                <MIcons.Play size={16} />
+              </div>
+            ) : null}
+          </div>
+        )
+      })}
+    </section>
   )
 }
 

@@ -6,6 +6,7 @@ import { onGoal } from './goal-events'
 import { apiSports } from './api-sports'
 import { fxMatch } from './__sport-fixture'
 import footballDate from './__fixtures__/api-sports/football-fixtures-date.json'
+import fixtureId from './__fixtures__/api-sports/football-fixture-id.json'
 import type { SportFetchResponse, SportQuota } from './sport-fetch'
 import type { BudgetDeps } from './budget'
 import type { Fixture } from './provider'
@@ -153,6 +154,18 @@ describe('ResultsController', () => {
     expect(d?.fixture.id).toBe('1180001')
     await c.loadFixture('football', { provider: 'api-sports', id: '1180001' }, true)
     expect(paths.filter((p) => p.startsWith('/fixtures?id=')).length).toBe(1)
+  })
+
+  it('reprisens matchinfo läses bara ur diskcachen: inget anrop uppströms, och en repris gör ingen sport het', async () => {
+    const { c, paths } = controller((path) => (path.startsWith('/fixtures?id=') ? { data: fixtureId, cached: true } : {}))
+    const d = await c.cachedFixture('football', { provider: 'api-sports', id: '1180001' })
+    expect(d?.fixture.id).toBe('1180001')
+    expect(d?.events.length).toBeGreaterThan(0)
+    expect(paths).toEqual([])
+    const f = { ...apiSports.day('football', '2026-10-10', { today: '2026-10-10', tz: 'Europe/Stockholm', dayEndMs: NOW + 1 }).parse([footballDate])[0], status: 'live' as const }
+    c.applyFixtures('football', '2026-10-10', [f], 'live', NOW)
+    c.setMerged([fxMatch({ id: 'r', kind: 'football', rerun: true, start: f.kickoff, stop: f.kickoff + 7_200_000, fixture: { provider: f.provider, id: f.id } })])
+    expect(c.liveTargets()).toEqual([])
   })
 
   describe('flera källor samma dag', () => {

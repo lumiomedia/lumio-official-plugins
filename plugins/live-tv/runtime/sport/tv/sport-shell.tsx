@@ -7,7 +7,7 @@ import { Segment, TV, dp, station, useTvClockNode } from '../../tv/tv-ui'
 import { SPORT_CHIPS, type SportFilter, type SportMatch } from '../sport-model'
 import { dayStartMs, localDayKey, shiftDay, useSportDay } from '../sport-epg'
 import { setSportSettings } from '../sport-store'
-import { featuredMatch, sportCounts, visibleMatches } from '../sport-day-model'
+import { featuredMatch, replayMatches, sportCounts, visibleMatches } from '../sport-day-model'
 import { dayHeaderCounts } from '../match-info-model'
 import { useSportBackdrop } from '../backdrop'
 import { SportBackdropLayer } from '../sport-backdrop'
@@ -119,6 +119,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
 
   const counts = sportCounts(mergedDay)
   const matches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter])
+  const replays = useMemo(() => replayMatches(mergedDay, filter, ctx.now), [mergedDay, filter, ctx.now])
   const hero = useMemo(() => featuredMatch(matches, ctx.follows, ctx.now), [matches, ctx.follows, ctx.now])
   const backdrop = useSportBackdrop(hero, filter, model.nowMs)
   const summary = dayHeaderCounts(matches, ctx.now)
@@ -134,10 +135,10 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
     if (tab === 'results') return <SportResults matches={allMatches} controller={controller} onOpenMatch={ctx.openMatch} tv={tvMode} sport={filter} nav={nav} />
     if (tab === 'follows') return <SportFollows ctx={ctx} days={[todayDay.data, tomorrowDay.data]} />
     if (selected.state === 'loading') return <Notice testId="sport-loading" text={tt('sportLoading')} />
-    if (matches.length === 0) return <Notice testId="sport-empty" text={tt('sportEmptyDay')} />
+    if (matches.length === 0 && replays.length === 0) return <Notice testId="sport-empty" text={tt('sportEmptyDay')} />
     return ctx.settings.view === 'feed'
-      ? <SportFeed ctx={ctx} matches={matches} days={[mergedDay, tomorrowDay.data]} />
-      : <SportMatchday ctx={ctx} matches={matches} dayFrom={dayStartMs(day)} />
+      ? <SportFeed ctx={ctx} matches={matches} days={[mergedDay, tomorrowDay.data]} replays={replays} />
+      : <SportMatchday ctx={ctx} matches={matches} dayFrom={dayStartMs(day)} replays={replays} />
   }
 
   return (

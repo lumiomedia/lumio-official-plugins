@@ -169,3 +169,55 @@ describe('repriser som EPG:n inte märker (källans historik)', () => {
     expect(run(played({ sport: 'hockey' }))).toBe(false)
   })
 })
+
+describe('reprisens originalmatch (visas med ställning och datum i stället för att döljas)', () => {
+  const H = 3_600_000
+  const REPLAY = Date.UTC(2026, 9, 12, 10)
+  const mjallby = (over: Partial<SportMatch> = {}) => epgMatch({
+    id: 'mjd', home: 'Mjällby AIF', away: 'Degerfors IF', homeKey: 'mjallby', awayKey: 'degerfors', start: REPLAY, stop: REPLAY + 3 * H, status: 'live', ...over,
+  })
+  const played = (over: Partial<Fixture> = {}) => fixture({
+    id: '1494296', kickoff: Date.UTC(2026, 9, 10, 15, 30), status: 'finished', statusShort: 'FT', minute: null, score: { home: 2, away: 0 },
+    home: { id: '2188', name: 'Mjallby AIF', crest: null }, away: { id: '2172', name: 'Degerfors IF', crest: null }, ...over,
+  })
+
+  it('upptäckt repris bär originalets avspark, slutresultat och fixtur', () => {
+    const [m] = mergeLinked({ ...base, epg: [mjallby()], fixtures: [], links: {}, history: [played()] })
+    expect(m.replayOf).toEqual({ kickoff: Date.UTC(2026, 9, 10, 15, 30), score: { home: 2, away: 0 }, fixture: { provider: 'api-sports', id: '1494296' } })
+  })
+
+  it('ställningen vänds efter tablåns hemma/borta när källan har lagen omvända', () => {
+    const [m] = mergeLinked({ ...base, epg: [mjallby()], fixtures: [], links: {}, history: [played({ home: { id: '2172', name: 'Degerfors IF', crest: null }, away: { id: '2188', name: 'Mjallby AIF', crest: null }, score: { home: 3, away: 1 } })] })
+    expect(m.replayOf?.score).toEqual({ home: 1, away: 3 })
+  })
+
+  it('tablåmärkt repris får också originalet; den senaste spelade matchen vinner', () => {
+    const older = played({ id: '1', kickoff: Date.UTC(2026, 9, 6, 15), score: { home: 0, away: 0 } })
+    const [m] = mergeLinked({ ...base, epg: [mjallby({ rerun: true })], fixtures: [], links: {}, history: [older, played()] })
+    expect(m.rerun).toBe(true)
+    expect(m.replayOf?.fixture.id).toBe('1494296')
+  })
+
+  it('tablåmärkt repris utan spelad match i cachen: repris utan ställning', () => {
+    const [m] = mergeLinked({ ...base, epg: [mjallby({ rerun: true })], fixtures: [], links: {}, history: [] })
+    expect(m.rerun).toBe(true)
+    expect(m.replayOf).toBeUndefined()
+  })
+
+  it('en repris som kopplats till en fixtur tar aldrig över den: fixturen blir egen resultatrad, originalet om den är spelad', () => {
+    const today = played({ id: '7', kickoff: REPLAY - 5 * H })
+    const [m, row] = mergeLinked({ ...base, epg: [mjallby({ rerun: true })], fixtures: [today], links: { [fixtureMatchKey(today)]: { matchId: 'mjd', swapped: false } } })
+    expect(m.rerun).toBe(true)
+    expect(m.fixture).toBeUndefined()
+    expect(m.replayOf?.fixture.id).toBe('7')
+    expect(row).toMatchObject({ resultOnly: true, status: 'finished', score: { home: 2, away: 0 } })
+    const live = fixture({ id: '8', kickoff: REPLAY - 30 * 60_000, home: { id: '1', name: 'Mjallby', crest: null }, away: { id: '2', name: 'Degerfors', crest: null } })
+    const [n, liveRow] = mergeLinked({ ...base, epg: [mjallby({ rerun: true })], fixtures: [live], links: { [fixtureMatchKey(live)]: { matchId: 'mjd', swapped: false } } })
+    expect(n.rerun).toBe(true)
+    expect(n.minute).toBeUndefined()
+    expect(n.score).toBeUndefined()
+    expect(n.status).not.toBe('live')
+    expect(n.replayOf).toBeUndefined()
+    expect(liveRow).toMatchObject({ resultOnly: true, status: 'live', minute: 67 })
+  })
+})

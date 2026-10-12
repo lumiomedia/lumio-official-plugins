@@ -60,6 +60,11 @@ export interface SportMatch {
   /** Senaste målet om källan skickar händelser (målskytt i MÅL!). */
   venueImage?: string | null
   lastGoal?: { side: 'home' | 'away' | null; player: string | null; minute: number | null } | null
+  /**
+   * Repris (`rerun`): den spelade matchen hos källan, när den finns i minnet eller diskcachen.
+   * `score` i tablåns hemma/borta-ordning; null = matchen hittades men saknar slutresultat.
+   */
+  replayOf?: { kickoff: number; score: { home: number; away: number } | null; fixture: { provider: string; id: string } }
 }
 
 export interface SportDay {
