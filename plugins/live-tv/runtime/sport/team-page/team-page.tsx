@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { TV, station } from '../../tv/tv-ui'
-import { useTvText } from '../../tv/tv-strings'
 import { matchTitle, type SportMatch } from '../sport-model'
 import { foldTeamKey } from '../merge'
 import { rankedSources, statusAt } from '../sport-day-model'
@@ -31,7 +30,8 @@ import { useEpgMatches, useTeamPageData } from './use-team-page'
 
 export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx: SportCtx; target: TeamTarget; matches: SportMatch[]; depth: number; phone: boolean; onClose: () => void }) {
   const u = scaleFor(phone)
-  const { lang } = useTvText()
+  // Ordningstalet följer sidans språk (samma som texterna).
+  const lang = ctx.locale.startsWith('sv') ? 'sv' : 'en'
   const data = useTeamPageData(target)
   const [fullTable, setFullTable] = useState(false)
   const me = { sport: target.sport, kind: 'team' as const, key: target.key }
@@ -77,9 +77,10 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
   const openLeague = league ? () => ctx.openLeague({ sport: target.sport, name: leagueName || league.name, key: leagueKey, ref: { ...league, name: leagueName || league.name } }) : null
 
   const watch = (m: SportMatch) => { ctx.watch(m); onClose() }
+  // "mot AIK", som Mina lag skriver nästa match.
   const vs = (f: TeamFixture) => {
     const home = (data.teamId && f.home.id === data.teamId) || teamKeysMatch(target.key, foldTeamKey(f.home.name))
-    return home ? ctx.tt('sportVs', { opponent: f.away.name }) : `@ ${f.home.name}`
+    return ctx.tt('sportVs', { opponent: home ? f.away.name : f.home.name })
   }
 
   const headerIds = { heart: 'tp-heart', bell: 'tp-bell', close: 'tp-close', league: 'tp-league' }
@@ -96,7 +97,8 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             {openLeague ? (
               <div data-testid={headerIds.league} {...station(openLeague, undefined, { 'data-f-right': sel(headerIds.heart) })} aria-label={ctx.tt('sportLeagueOpen', { name: leagueName })}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: u(6), maxWidth: '100%', fontSize: u(17), color: TV.muted, cursor: 'pointer', borderRadius: u(8), padding: `${u(2)}px ${u(4)}px`, margin: `0 -${u(4)}px` }}>
-                <span data-testid="tp-position" style={ellipsis}>{position}</span>
+                {/* Telefonen bryter raden hellre än att klippa poängen. */}
+                <span data-testid="tp-position" style={phone ? undefined : ellipsis}>{position}</span>
                 <SportIcons.Chevron size={u(16)} />
               </div>
             ) : <div data-testid="tp-position" style={{ fontSize: u(17), color: TV.muted, ...ellipsis }}>{position}</div>}

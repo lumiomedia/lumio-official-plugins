@@ -77,7 +77,7 @@ export function FixtureRow({ u, f, ctx, title, sub, reminded, onPress, testId }:
   const live = f.status === 'live' || f.status === 'ht'
   return (
     <div data-testid={testId} {...station(onPress ?? NOOP)} style={{ ...rowCard(u), minHeight: u(68), display: 'flex', alignItems: 'center', gap: u(14), padding: `${u(10)}px ${u(16)}px`, cursor: onPress ? 'pointer' : 'default' }}>
-      <span style={{ width: u(118), flexShrink: 0, fontSize: u(15), fontWeight: 700, color: live ? TV.live : TV.muted, fontVariantNumeric: 'tabular-nums' }}>{live ? ctx.tt('sportLiveShort') : fixtureWhen(f, ctx)}</span>
+      <span style={{ width: u(156), flexShrink: 0, whiteSpace: 'nowrap', fontSize: u(15), fontWeight: 700, color: live ? TV.live : TV.muted, fontVariantNumeric: 'tabular-nums' }}>{live ? ctx.tt('sportLiveShort') : fixtureWhen(f, ctx)}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: u(18), fontWeight: 700, ...ellipsis }}>{title}</div>
         {sub ? <div style={{ fontSize: u(15), color: TV.muted, ...ellipsis }}>{sub}</div> : null}
