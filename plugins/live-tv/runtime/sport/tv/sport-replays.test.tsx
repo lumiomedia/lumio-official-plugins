@@ -4,6 +4,8 @@ import { SportMatchday } from './sport-matchday'
 import { SportFeed } from './sport-feed'
 import { localDayKey } from '../sport-epg'
 import { HOUR, MIN, fakeCtx, fxMatch, mountSport } from '../__sport-fixture'
+import { __setTvModeForTests } from '@/lib/plugin-sdk'
+import { SportReplays } from './sport-replays'
 
 vi.mock('../../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 
@@ -63,5 +65,23 @@ describe('Repriser i sportskalet', () => {
     fireEvent.click(await screen.findByTestId('page-tab-replays'))
     expect(await screen.findByTestId('sport-replays')).toHaveTextContent('Mjällby AIF - Degerfors IF')
     expect(screen.getByTestId('sport-summary')).toHaveTextContent('Today · 1 matches · 1 live')
+  })
+})
+
+describe('Sportens listor i TV-skala (Jerry 2026-10-12)', () => {
+  afterEach(() => __setTvModeForTests(false))
+  it('reprisraden: text ≥ 24 och rad ≥ 56 på TV; skrivbordet oförändrat', () => {
+    const ctx = fakeCtx({ now })
+    __setTvModeForTests(true)
+    const { unmount } = render(<SportReplays ctx={ctx} matches={[replay]} />)
+    const row = screen.getByTestId('sport-replay-row')
+    const title = row.querySelector<HTMLElement>('[data-f] > div')!
+    expect(parseFloat(title.style.fontSize)).toBeGreaterThanOrEqual(24)
+    expect(parseFloat(row.style.minHeight)).toBeGreaterThanOrEqual(56)
+    expect(parseFloat(screen.getByTestId('sport-replay-meta').style.fontSize)).toBeGreaterThanOrEqual(20)
+    unmount()
+    __setTvModeForTests(false)
+    render(<SportReplays ctx={ctx} matches={[replay]} />)
+    expect(screen.getByTestId('sport-replay-meta').style.fontSize).toBe('15px')
   })
 })

@@ -16,6 +16,7 @@ import { MatchScore } from './sport-score'
 import { SportIcons } from './sport-icons'
 import { focusAttr, sportCardStyle } from '../surface'
 import { SportReplays } from './sport-replays'
+import { useListScale } from '../match-info/match-info-parts'
 
 const avatarCol: CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(8), width: dp(150), flexShrink: 0, cursor: 'pointer' }
 
@@ -26,6 +27,8 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
   const dayMatches = days[0]?.matches ?? []
   const allMatches = useMemo(() => days.flatMap((d) => d?.matches ?? []), [days])
   useBackfillFollowCrests(allMatches)
+  // Kvällsplanen och Slutspelat är listor: TV-skala på TV (Jerry 2026-10-12).
+  const u = useListScale()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: dp(32) }}>
       {/* Egen ruta, som övriga sektioner med kortbakgrund (Jerry 2026-10-11). */}
@@ -79,33 +82,33 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
       ) : null}
 
       {later.length > 0 ? (
-        <section data-testid="feed-plan" style={{ display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+        <section data-testid="feed-plan" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
           {/* Rubriken står ovanför båda kolumnerna, så Din kväll börjar i höjd med första raden (handoffen). */}
           <span style={sectionTitle}>{ctx.tt('sportEveningPlan')}</span>
-          <div data-testid="feed-plan-body" style={{ display: 'flex', gap: dp(20), alignItems: 'flex-start' }}>
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+          <div data-testid="feed-plan-body" style={{ display: 'flex', gap: u(20), alignItems: 'flex-start' }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: u(10) }}>
               {later.map((m) => {
                 const reminded = ctx.isReminded(m)
                 const best = m.sources[0]
                 return (
-                  <div key={m.id} data-testid="feed-plan-row" data-focus-row="" style={{ ...sportCardStyle, display: 'flex', alignItems: 'center', gap: dp(16), padding: `${dp(12)}px ${dp(16)}px` }}>
-                    <div data-testid="feed-plan-check" {...station(() => ctx.toggleRemind(m))} role="checkbox" aria-checked={reminded ? 'true' : 'false'} aria-label={ctx.tt('sportRemindMe')} style={{ width: dp(34), height: dp(34), minHeight: dp(34), borderRadius: dp(8), border: `2px solid ${reminded ? TV.acc : TV.lineStrong}`, background: reminded ? TV.acc : 'transparent', color: TV.onAcc, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: dp(20), cursor: 'pointer', flexShrink: 0 }}>{reminded ? '✓' : ''}</div>
-                    <span style={{ fontSize: dp(22), fontWeight: 700, width: dp(84), flexShrink: 0 }}>{formatClock(m.start, ctx.locale)}</span>
+                  <div key={m.id} data-testid="feed-plan-row" data-focus-row="" style={{ ...sportCardStyle, display: 'flex', alignItems: 'center', gap: u(16), padding: `${u(12)}px ${u(16)}px` }}>
+                    <div data-testid="feed-plan-check" {...station(() => ctx.toggleRemind(m))} role="checkbox" aria-checked={reminded ? 'true' : 'false'} aria-label={ctx.tt('sportRemindMe')} style={{ width: u(34), height: u(34), minHeight: u(34), borderRadius: u(8), border: `2px solid ${reminded ? TV.acc : TV.lineStrong}`, background: reminded ? TV.acc : 'transparent', color: TV.onAcc, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: u(20), cursor: 'pointer', flexShrink: 0 }}>{reminded ? '✓' : ''}</div>
+                    <span style={{ fontSize: u(22), fontWeight: 700, width: u(84), flexShrink: 0 }}>{formatClock(m.start, ctx.locale)}</span>
                     <div {...station(() => ctx.openMatch(m), undefined, focusAttr('none'))} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
-                      <div style={{ fontSize: dp(20), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
-                      <div style={{ fontSize: dp(15), color: TV.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(' · ')}</div>
+                      <div style={{ fontSize: u(20), fontWeight: 600, ...ellipsis }}>{matchTitle(m)}</div>
+                      <div style={{ fontSize: u(15), color: TV.muted, ...ellipsis }}>{[m.league || ctx.kindLabel(m.kind), best?.name].filter(Boolean).join(' · ')}</div>
                     </div>
-                    {followState(m, ctx.follows).any ? <span data-testid="feed-plan-fav" style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={dp(22)} filled /></span> : null}
+                    {followState(m, ctx.follows).any ? <span data-testid="feed-plan-fav" style={{ color: TV.acc, display: 'inline-flex' }}><SportIcons.Heart size={u(22)} filled /></span> : null}
                   </div>
                 )
               })}
             </div>
-            <div data-testid="sport-evening" style={{ ...sportCardStyle, width: dp(420), flexShrink: 0, padding: dp(20), display: 'flex', flexDirection: 'column', gap: dp(10) }}>
+            <div data-testid="sport-evening" style={{ ...sportCardStyle, width: u(420), flexShrink: 0, padding: u(20), display: 'flex', flexDirection: 'column', gap: u(10) }}>
               <span style={overline}>{ctx.tt('sportYourEvening')}</span>
-              <span style={{ fontSize: dp(20), fontWeight: 600 }}>{ctx.tt('sportEveningCount', { n: planned.length })}</span>
-              <span style={{ fontSize: dp(15), color: TV.muted }}>{`${ctx.tt('sportKickoffAlert')}: ${alertLabel(ctx)}`}</span>
+              <span style={{ fontSize: u(20), fontWeight: 600 }}>{ctx.tt('sportEveningCount', { n: planned.length })}</span>
+              <span style={{ fontSize: u(15), color: TV.muted }}>{`${ctx.tt('sportKickoffAlert')}: ${alertLabel(ctx)}`}</span>
               {planned.map((m) => (
-                <div key={m.id} data-testid="evening-row" style={{ display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(16) }}>
+                <div key={m.id} data-testid="evening-row" style={{ display: 'flex', alignItems: 'center', gap: u(10), fontSize: u(16) }}>
                   <span style={{ fontWeight: 700 }}>{formatClock(m.start, ctx.locale)}</span>
                   <span style={{ ...ellipsis, flex: 1 }}>{matchTitle(m)}</span>
                   {clash.has(m.id) ? <span data-testid="evening-clash" title={ctx.tt('sportClash')} style={{ color: '#fbbf24' }}>⚠ {ctx.tt('sportClash')}</span> : null}
@@ -117,13 +120,13 @@ export function SportFeed({ ctx, matches, days, replays = [] }: { ctx: SportCtx;
       ) : null}
 
       {finished.length > 0 ? (
-        <section data-testid="feed-finished" style={{ display: 'flex', flexDirection: 'column', gap: dp(12) }}>
+        <section data-testid="feed-finished" style={{ display: 'flex', flexDirection: 'column', gap: u(12) }}>
           <span style={sectionTitle}>{ctx.tt('sportFinished')}</span>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: dp(12) }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: u(12) }}>
             {finished.map((m) => (
-              <div key={m.id} {...station(() => ctx.openMatch(m), undefined, focusAttr('card'))} style={{ ...sportCardStyle, padding: `${dp(12)}px ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(10), fontSize: dp(17), cursor: 'pointer' }}>
+              <div key={m.id} {...station(() => ctx.openMatch(m), undefined, focusAttr('card'))} style={{ ...sportCardStyle, padding: `${u(12)}px ${u(16)}px`, display: 'flex', alignItems: 'center', gap: u(10), fontSize: u(17), cursor: 'pointer' }}>
                 <span style={{ ...ellipsis, flex: 1 }}>{matchTitle(m)}</span>
-                <span style={{ fontSize: dp(14), color: TV.dim }}>{scoreText(m) ?? ctx.tt('sportEnded')}</span>
+                <span style={{ fontSize: u(14), color: TV.dim }}>{scoreText(m) ?? ctx.tt('sportEnded')}</span>
               </div>
             ))}
           </div>

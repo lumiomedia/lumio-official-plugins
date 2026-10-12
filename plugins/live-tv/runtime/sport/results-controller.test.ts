@@ -276,6 +276,8 @@ describe('ResultsController', () => {
         expect(rows?.map((r) => r.team.name)).toEqual(['Djurgården', 'Hammarby'])
         expect(rows?.[0]).toMatchObject({ rank: 1, played: 14, points: 31, form: 'WL' })
         expect(c.standings('football', '113', '2026')).toHaveLength(2)
+        // Radernas lag-id är sportapi.ai:s: en rad som öppnar lagets sida måste veta det.
+        expect(c.standingsSource('football', '113', '2026')).toEqual({ provider: 'sportapi', leagueId: '21', season: 'current' })
         expect(paths).toEqual(['api-sports/standings?league=113&season=2026', 'sportapi/standings/21'])
         paths.length = 0
         expect(await c.loadStandings('football', '113', '2026')).toHaveLength(2)

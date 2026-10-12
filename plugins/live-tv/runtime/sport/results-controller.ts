@@ -65,6 +65,8 @@ export class ResultsController {
   private leagueAliases = new Map<string, Map<ProviderId, { leagueId: string; season: string }>>()
   /** källa|sport|liga|säsong → när tabellen saknades (fel eller tom). */
   private standingsMiss = new Map<string, number>()
+  /** Källan som faktiskt gav tabellen (ligans egen eller ett alias): radernas lag-id är den källans. */
+  private tableSource = new Map<string, { provider: ProviderId; leagueId: string; season: string }>()
   private done = new Set<string>()
   /** sport|datum som repriskollen redan läst ur diskcachen (träff eller ej). */
   private historyPeeked = new Set<string>()
@@ -273,6 +275,7 @@ export class ResultsController {
       const res = await this.router.standings(call.sport, t.provider, t.leagueId, t.season)
       if (res.ok && res.data && res.data.length > 0) {
         this.tables.set(planKey(call), res.data)
+        this.tableSource.set(planKey(call), t)
         this.done.add(planKey(call))
         this.emit()
         return
@@ -289,6 +292,7 @@ export class ResultsController {
         const res = await this.router.standings(call.sport, other.provider, other.leagueId, other.season)
         if (res.ok && res.data && res.data.length > 0) {
           this.tables.set(planKey(call), res.data)
+          this.tableSource.set(planKey(call), other)
           this.done.add(planKey(call))
           this.emit()
           return
@@ -363,6 +367,11 @@ export class ResultsController {
 
   standings(sport: SportKind, leagueId: string, season: string): StandingRow[] | null {
     return this.tables.get(planKey({ kind: 'standings', sport, leagueId, season })) ?? null
+  }
+
+  /** Källan bakom en laddad tabell, så att en rad kan öppna rätt lags sida. */
+  standingsSource(sport: SportKind, leagueId: string, season: string): { provider: ProviderId; leagueId: string; season: string } | null {
+    return this.tableSource.get(planKey({ kind: 'standings', sport, leagueId, season })) ?? null
   }
 
   /** `provider` saknas = ligans källa ur dagens fixturer (vyerna har bara ligans id). */

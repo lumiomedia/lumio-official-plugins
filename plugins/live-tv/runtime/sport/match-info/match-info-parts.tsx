@@ -1,7 +1,7 @@
 'use client'
 
-import type { CSSProperties, ReactNode } from 'react'
-import { getPluginHttpAssetUrl } from '@/lib/plugin-sdk'
+import { useMemo, type CSSProperties, type ReactNode } from 'react'
+import { getPluginHttpAssetUrl, useTvMode } from '@/lib/plugin-sdk'
 import { TV, dp, station } from '../../tv/tv-ui'
 import { matchTitle, type SportMatch } from '../sport-model'
 import { crestColor, followState, statusAt } from '../sport-day-model'
@@ -30,6 +30,17 @@ export const TV_TEXT_SCALE = 1.4
 export function scaleFor(phone: boolean, tv = false): U {
   const k = tv && !phone ? TV_TEXT_SCALE : phone ? 0.8 : 1
   return Object.assign((n: number) => Math.round(dp(n) * k), { tv: tv && !phone, dim: tv && !phone ? TV.muted : TV.dim })
+}
+
+/**
+ * Sportens listor och tabeller (resultat, repriser, Mina lag, kvällsplanen):
+ * TV-skala på TV, annars designpixlarna oförändrade (Jerry 2026-10-12: text
+ * ≥ 24, rader ≥ 56 på TV; skrivbord och telefon som förut).
+ */
+export function useListScale(tv?: boolean): U {
+  const tvMode = useTvMode()
+  const on = tv ?? tvMode
+  return useMemo(() => scaleFor(false, on), [on])
 }
 
 export const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }

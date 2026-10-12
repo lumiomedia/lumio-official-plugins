@@ -209,4 +209,57 @@ describe('Tabeller & resultat på TV (Jerry 2026-10-12)', () => {
     expect(q(r2.getAttribute('data-f-down'))).toBe(tableB)
     expect(q(tableB.getAttribute('data-f-up'))).toBe(r2)
   })
+
+  it('öppen tabell på TV: lag- och ligasidans rader i TV-skala, kompakt bredd, formbrickor, följda lag markerade, raderna öppnar lagets sida', async () => {
+    setSportSettings({ apiKey: 'k123' })
+    toggleFollow({ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' })
+    const rows = [
+      { rank: 1, team: { id: '363', name: 'AIK Stockholm', crest: null }, played: 26, points: 58, goalDiff: 25, form: 'WWDWL', group: null },
+      { rank: 2, team: { id: '375', name: 'Malmo FF', crest: null }, played: 26, points: 52, goalDiff: 18, form: 'LWW', group: null },
+    ]
+    const c = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => rows), standingsSource: vi.fn(() => ({ provider: 'sportapi', leagueId: 'sa-113', season: 'current' })), subscribe: () => () => {} }
+    const onOpenTeam = vi.fn()
+    const a1 = m(); const b1 = lazio()
+    render(<SportResults matches={[a1, b1]} controller={c as never} onOpenMatch={vi.fn()} onOpenTeam={onOpenTeam} tv />)
+    fireEvent.click(screen.getByTestId('results-filter-all'))
+    fireEvent.click(screen.getByTestId('results-table-football|113'))
+    await waitFor(() => expect(screen.getAllByTestId('page-standings-row')).toHaveLength(2))
+    const wrap = screen.getByTestId('results-standings-football|113')
+    expect(wrap.style.maxWidth).toBe('1200px')
+    const [r1, r2] = screen.getAllByTestId('page-standings-row')
+    // TV-minimum: text ≥ 24, rad ≥ 56, rubrik ≥ 20, formbricka ≥ 30.
+    expect(parseFloat(r1.style.fontSize)).toBeGreaterThanOrEqual(24)
+    expect(parseFloat(r1.style.minHeight)).toBeGreaterThanOrEqual(56)
+    expect(parseFloat(screen.getByTestId('sport-standings-head').style.fontSize)).toBeGreaterThanOrEqual(20)
+    const badges = r1.querySelectorAll<HTMLElement>('[data-testid="form-letter"]')
+    expect(badges).toHaveLength(5)
+    expect(parseFloat(badges[0].style.width)).toBeGreaterThanOrEqual(30)
+    // Fasta kolumner: bara lagnamnet töjer sig.
+    expect(r1.style.gridTemplateColumns.match(/minmax/g)).toHaveLength(1)
+    expect(r1.style.gridTemplateColumns).not.toContain('fr ')
+    expect(r1).toHaveAttribute('data-mark', '1')
+    expect(r2).toHaveAttribute('data-mark', '0')
+    expect(r1).toHaveAttribute('data-f')
+    // Grannar: sista matchraden → tabellens första rad → … → nästa grupps Tabell.
+    const q = (sel: string | null) => (sel ? document.querySelector(sel) : null)
+    const row = screen.getByTestId(`results-row-${a1.id}`)
+    const tableB = screen.getByTestId('results-table-football|135')
+    expect(q(row.getAttribute('data-f-down'))).toBe(r1)
+    expect(q(r1.getAttribute('data-f-up'))).toBe(row)
+    expect(q(r2.getAttribute('data-f-down'))).toBe(tableB)
+    expect(q(tableB.getAttribute('data-f-up'))).toBe(r2)
+    fireEvent.click(r2)
+    expect(onOpenTeam).toHaveBeenCalledWith(expect.objectContaining({ sport: 'football', name: 'Malmo FF', ids: { sportapi: '375' }, league: expect.objectContaining({ provider: 'sportapi', id: 'sa-113' }) }))
+  })
+
+  it('skrivbordet behåller den vanliga tabellen', async () => {
+    setSportSettings({ apiKey: 'k123' })
+    const rows = [{ rank: 1, team: { id: '363', name: 'AIK Stockholm', crest: null }, played: 26, points: 58, goalDiff: 25, form: 'WWDWW', group: null }]
+    const c = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => rows), subscribe: () => () => {} }
+    render(<SportResults matches={[m()]} controller={c as never} onOpenMatch={vi.fn()} tv={false} />)
+    fireEvent.click(screen.getByTestId('results-table-football|113'))
+    await waitFor(() => expect(screen.getByText('AIK Stockholm')).toBeTruthy())
+    expect(screen.getByTestId('sport-standings').querySelector('table')).toBeTruthy()
+    expect(screen.queryByTestId('page-standings-row')).toBeNull()
+  })
 })

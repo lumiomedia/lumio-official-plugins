@@ -16,6 +16,12 @@ import { LeagueDrawer, SportChip, YourLeaguesRow } from './sport-league-drawer'
 import { FORM_COLOR, defaultResultsFilter, formLetters, groupResults, onlyLeague, type ResultGroup, type ResultsFilter } from '../results-model'
 import { sportCardStyle } from '../surface'
 import { SportIcons } from './sport-icons'
+import { scaleFor, useListScale, type U } from '../match-info/match-info-parts'
+import { NOOP, StandingsRows } from '../team-page/page-parts'
+import { teamTargetFromRow, type TeamTarget } from '../team-model'
+import { teamKeysMatch, type SportFollow } from '../sport-store'
+import { foldTeamKey } from '../merge'
+import type { ProviderId } from '../provider'
 export { formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
@@ -45,6 +51,36 @@ function StandingsTable({ rows, tt }: { rows: StandingRow[] | 'loading'; tt: TT 
   )
 }
 
+/** Följt lag i tabellen: samma nyckelregel som följ-markeringen i övrigt (AIK = AIK Stockholm). */
+export function followedRow(follows: SportFollow[], sport: string, name: string): boolean {
+  const key = foldTeamKey(name)
+  return follows.some((f) => f.kind === 'team' && f.sport === sport && (teamKeysMatch(f.key, key) || teamKeysMatch(foldTeamKey(f.name), key)))
+}
+
+// Tabellen på TV: lag- och ligasidans tabell i TV-skala, smal nog att läsas (Jerry 2026-10-12).
+export const TV_TABLE_MAX_W = 1200
+const TV_U = scaleFor(false, true)
+
+/**
+ * Tabellen under en grupp på TV (Jerry 2026-10-12: den gamla var skrivbordsstor
+ * och spred kolumnerna över hela bredden). Samma rader som lag- och ligasidan:
+ * fokusbara, öppnar lagets sida, följda lag markerade, formen som brickor.
+ */
+function TvStandings({ g, rows, tt, follows, onOpen, rowAttrs, u = TV_U }: {
+  g: ResultGroup; rows: StandingRow[] | 'loading'; tt: TT; follows: SportFollow[]; onOpen?: (row: StandingRow) => void
+  rowAttrs: (i: number, n: number) => Record<string, string>; u?: U
+}) {
+  return (
+    <div data-testid={`results-standings-${g.key}`} style={{ width: '100%', maxWidth: dp(TV_TABLE_MAX_W) }}>
+      {rows === 'loading' || rows.length === 0
+        ? <div data-testid={rows === 'loading' ? 'sport-standings-loading' : 'sport-standings-empty'} {...station(NOOP, undefined, rowAttrs(0, 1))}
+            style={{ ...sportCardStyle, padding: `${u(14)}px ${u(18)}px`, fontSize: u(17), color: TV.muted }}>{rows === 'loading' ? tt('sportLoading') : tt('sportTableEmpty')}</div>
+        : <StandingsRows u={u} ctx={{ tt }} testId="sport-standings" rows={rows} mark={-1} form onOpen={onOpen} rowAttrs={rowAttrs}
+            highlight={(r) => followedRow(follows, g.sport, r.team.name)} />}
+    </div>
+  )
+}
+
 /** Tydlig Tabell-knapp (Jerry 2026-10-12: den gamla var för diskret): ikon, text och TV-storlek, fokusbar. */
 function TableButton({ open, onPress, testId, tt, attrs }: { open: boolean; onPress: () => void; testId: string; tt: TT; attrs?: Record<string, string> }) {
   return (
@@ -62,33 +98,47 @@ const sel = (testId: string) => `[data-testid="${testId.replace(/["\\]/g, '\\$&'
 /**
  * Grannarna i resultatlistan (Jerry 2026-10-12: Tabell-knappen gick bara att
  * nå via Tennis-chipet). Läsordning: gruppens Tabell → dess matchrader →
- * nästa grupps Tabell. ▸ från en matchrad går till gruppens Tabell och ◂
- * tillbaka till gruppens första rad.
+ * (öppen tabell på TV: dess rader →) nästa grupps Tabell. ▸ från en matchrad
+ * går till gruppens Tabell och ◂ tillbaka till gruppens första rad.
+ * `open` = gruppens tabell står öppen med fokusbara rader (bara TV).
  */
-export function groupNav(groups: ResultGroup[], gi: number): { table: Record<string, string>; row: (mi: number) => Record<string, string> } {
+export function groupNav(groups: ResultGroup[], gi: number, open: (key: string) => boolean = () => false): {
+  table: Record<string, string>; row: (mi: number) => Record<string, string>; standings: (i: number, n: number) => Record<string, string>
+} {
   const g = groups[gi]
   const table = sel(`results-table-${g.key}`)
   const row = (m: SportMatch) => sel(`results-row-${m.id}`)
+  const stFirst = (key: string) => `${sel(`results-standings-${key}`)} [data-st-first]`
+  const stLast = (key: string) => `${sel(`results-standings-${key}`)} [data-st-last]`
   const prev = groups[gi - 1]
   const next = groups[gi + 1]
   const first = g.matches[0]
   const last = g.matches[g.matches.length - 1]
+  const isOpen = open(g.key)
+  // Det som ligger sist i en grupp: tabellens sista rad, annars sista matchraden.
+  const tail = (x: ResultGroup | undefined) => (!x ? null : open(x.key) ? stLast(x.key) : x.matches.length ? row(x.matches[x.matches.length - 1]) : null)
+  const after = next ? sel(`results-table-${next.key}`) : null
+  const prevTail = tail(prev)
   return {
     table: {
-      ...(first ? { 'data-f-down': row(first), 'data-f-left': row(first) } : next ? { 'data-f-down': sel(`results-table-${next.key}`) } : {}),
-      ...(prev?.matches.length ? { 'data-f-up': row(prev.matches[prev.matches.length - 1]) } : {}),
+      ...(first ? { 'data-f-down': row(first), 'data-f-left': row(first) } : isOpen ? { 'data-f-down': stFirst(g.key) } : after ? { 'data-f-down': after } : {}),
+      ...(prevTail ? { 'data-f-up': prevTail } : {}),
     },
     row: (mi) => ({
       'data-f-right': table,
       ...(mi === 0 ? { 'data-f-up': table } : {}),
-      ...(g.matches[mi] === last && next ? { 'data-f-down': sel(`results-table-${next.key}`) } : {}),
+      ...(g.matches[mi] === last ? (isOpen ? { 'data-f-down': stFirst(g.key) } : after ? { 'data-f-down': after } : {}) : {}),
+    }),
+    standings: (i, n) => ({
+      ...(i === 0 ? { 'data-st-first': '', 'data-f-up': last ? row(last) : table } : {}),
+      ...(i === n - 1 ? { 'data-st-last': '', ...(after ? { 'data-f-down': after } : {}) } : {}),
     }),
   }
 }
 
 const NO_LAYER = { pushLayer: () => () => {} } as unknown as TvNav
 
-export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'all', nav = NO_LAYER }: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; tv: boolean; sport?: SportFilter; nav?: TvNav }) {
+export function SportResults({ matches, controller, onOpenMatch, onOpenTeam, tv, sport = 'all', nav = NO_LAYER }: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; onOpenTeam?(target: TeamTarget): void; tv: boolean; sport?: SportFilter; nav?: TvNav }) {
   const { tt } = useTvText()
   const settings = useSportSettings()
   const follows = useFollows()
@@ -97,6 +147,8 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
   const [league, setLeague] = useState<string | null>(null)
   const [tables, setTables] = useState<Record<string, StandingRow[] | 'loading'>>({})
   const [drawer, setDrawer] = useState(false)
+  // Grupprubriker och matchrader i TV-skala på TV (Jerry 2026-10-12); skrivbordet oförändrat.
+  const u = useListScale(tv)
   const forSport = useMemo(() => (sport === 'all' ? matches : matches.filter((m) => m.kind === sport)), [matches, sport])
   const { groups, liveCount, mineCount, followedCount } = useMemo(() => groupResults(forSport, filter, follows), [forSport, filter, follows])
   const shown = useMemo(() => onlyLeague(groups, league), [groups, league])
@@ -136,6 +188,14 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
   // Ett ligaval FILTRERAR till den ligan (Jerry 2026-10-11) i stället för att rulla dit; "Alla ligor ×" återställer.
   const pickLeague = (key: string) => setLeague((cur) => (cur === key ? null : key))
   const labels = new Map(allEntries.map((e) => [e.key, e.label]))
+  // En tabellrad öppnar lagets sida hos källan som faktiskt gav tabellen (ligans egen eller ett alias).
+  const openTeam = onOpenTeam ? (g: ResultGroup) => (r: StandingRow) => {
+    const src = controller.standingsSource?.(g.sport, g.leagueId, g.season)
+    const provider = (src?.provider ?? g.matches[0]?.fixture?.provider) as ProviderId | undefined
+    if (!provider) return
+    onOpenTeam(teamTargetFromRow(g.sport, r, { provider, id: src?.leagueId ?? g.leagueId, season: (src?.season ?? g.season) || null, name: labels.get(g.key) ?? g.league }))
+  } : null
+  const tvOpen = (key: string) => tv && !!tables[key]
 
   return (
     <div data-testid="sport-results" style={{ display: 'flex', flexDirection: 'column', gap: dp(20) }}>
@@ -148,22 +208,26 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
       {groups.length > 0 || league ? <YourLeaguesRow entries={mine.entries} fallback={mine.fallback} active={league} activeLabel={league ? labels.get(league) ?? null : null} onJump={pickLeague} onReset={() => setLeague(null)} onMore={() => setDrawer(true)} tv={tv} /> : null}
       {shown.length === 0 ? <div style={{ color: TV.dim, fontSize: dp(16) }}>{tt('sportResultsEmpty')}</div> : null}
       {shown.map((g, gi) => {
-        const gnav = groupNav(shown, gi)
+        const gnav = groupNav(shown, gi, tvOpen)
         return (
         <section key={g.key} data-testid={`results-group-${g.key}`} style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: dp(20), fontWeight: 600 }}>{g.round != null ? `${labels.get(g.key) ?? g.league} · ${tt('sportRound', { n: g.round })}` : labels.get(g.key) ?? g.league}</div>
+            <div style={{ fontSize: u(20), fontWeight: 600 }}>{g.round != null ? `${labels.get(g.key) ?? g.league} · ${tt('sportRound', { n: g.round })}` : labels.get(g.key) ?? g.league}</div>
             <TableButton testId={`results-table-${g.key}`} open={!!tables[g.key]} onPress={() => toggleTable(g)} tt={tt} attrs={gnav.table} />
           </div>
           {g.matches.map((m, mi) => (
-            <div key={m.id} data-testid={`results-row-${m.id}`} {...station(() => onOpenMatch(m), undefined, gnav.row(mi))} style={{ display: 'grid', gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: 'center', gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, ...sportCardStyle, borderRadius: dp(10), cursor: 'pointer' }}>
-              <span style={{ fontSize: dp(14), color: m.status === 'live' ? TV.live : TV.dim }}>{matchStatusLabel(m, tt) ?? ''}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: dp(8), justifyContent: 'flex-end' }}>{m.home}<Crest name={m.home ?? ''} colorKey={m.homeKey ?? ''} src={m.homeCrest} size={dp(22)} /></span>
-              <MatchScore match={m} size="row" />
-              <span style={{ display: 'flex', alignItems: 'center', gap: dp(8) }}><Crest name={m.away ?? ''} colorKey={m.awayKey ?? ''} src={m.awayCrest} size={dp(22)} />{m.away}</span>
+            <div key={m.id} data-testid={`results-row-${m.id}`} {...station(() => onOpenMatch(m), undefined, gnav.row(mi))} style={{ display: 'grid', gridTemplateColumns: `${u(64)}px 1fr auto 1fr`, alignItems: 'center', gap: u(10), minHeight: u(48), boxSizing: 'border-box', fontSize: u(17), padding: `${u(10)}px ${u(12)}px`, ...sportCardStyle, borderRadius: u(10), cursor: 'pointer' }}>
+              <span style={{ fontSize: u(14), color: m.status === 'live' ? TV.live : TV.dim }}>{matchStatusLabel(m, tt) ?? ''}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: u(8), justifyContent: 'flex-end' }}>{m.home}<Crest name={m.home ?? ''} colorKey={m.homeKey ?? ''} src={m.homeCrest} size={u(22)} /></span>
+              <MatchScore match={m} size="row" px={u(20)} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: u(8) }}><Crest name={m.away ?? ''} colorKey={m.awayKey ?? ''} src={m.awayCrest} size={u(22)} />{m.away}</span>
             </div>
           ))}
-          {tables[g.key] ? <StandingsTable rows={tables[g.key]!} tt={tt} /> : null}
+          {tables[g.key]
+            ? tv
+              ? <TvStandings g={g} rows={tables[g.key]!} tt={tt} follows={follows} onOpen={openTeam?.(g)} rowAttrs={gnav.standings} />
+              : <StandingsTable rows={tables[g.key]!} tt={tt} />
+            : null}
         </section>
         )
       })}

@@ -14,11 +14,12 @@ export { showsScore, scoreText, matchStatusLabel, heroStatusLine } from '../scor
 
 const SCORE_SIZE = { hero: dp(64), card: dp(28), row: dp(20) } as const
 
-export function MatchScore({ match, size = 'card' }: { match: SportMatch; size?: 'hero' | 'card' | 'row' }) {
+/** `px` ersätter storleksstegets teckenstorlek (TV-skalade listor). */
+export function MatchScore({ match, size = 'card', px }: { match: SportMatch; size?: 'hero' | 'card' | 'row'; px?: number }) {
   const blink = useGoalBlink(match)
   if (!showsScore(match) || !match.score) return null
   return (
-    <span data-testid="match-score" style={{ fontSize: SCORE_SIZE[size], fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: blink ? TV.live : TV.text, transition: 'color 300ms' }}>
+    <span data-testid="match-score" style={{ fontSize: px ?? SCORE_SIZE[size], fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: blink ? TV.live : TV.text, transition: 'color 300ms' }}>
       {match.score.home}–{match.score.away}
     </span>
   )

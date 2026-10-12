@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
+import { useListScale } from '../match-info/match-info-parts'
 import { Chip, Segment, TV, dp, station } from '../../tv/tv-ui'
 import { PickerPanel } from '../../tv/tv-list-picker'
 import { useTextPrompt } from '../../tv/tv-text-entry'
@@ -104,29 +105,30 @@ export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | n
  */
 function FollowRow({ ctx, follow, days }: { ctx: SportCtx; follow: SportFollow; days: (SportDay | null)[] }) {
   const following = isFollowing(ctx.follows, follow)
+  const u = useListScale()
   const next = nextMatchFor(follow, days, ctx.now)
   const info = followNext(ctx, follow, next)
   const crest = crestForFollow(follow, days.flatMap((d) => d?.matches ?? []))
   return (
-    <div data-testid="follow-row" data-focus-row="" data-following={following ? '1' : '0'} style={{ ...sportCardStyle, minHeight: dp(88), display: 'flex', alignItems: 'center', gap: dp(16), padding: `${dp(10)}px ${dp(12)}px ${dp(10)}px ${dp(16)}px`, opacity: following ? 1 : 0.55, boxSizing: 'border-box' }}>
+    <div data-testid="follow-row" data-focus-row="" data-following={following ? '1' : '0'} style={{ ...sportCardStyle, minHeight: u(88), display: 'flex', alignItems: 'center', gap: u(16), padding: `${u(10)}px ${u(12)}px ${u(10)}px ${u(16)}px`, opacity: following ? 1 : 0.55, boxSizing: 'border-box' }}>
       {/* Raden öppnar lagets (ligans) sida; nästa match och Titta finns där (Jerry 2026-10-12). */}
-      <div data-testid="follow-open" {...station(() => openFollowPage(ctx, follow, days.flatMap((d) => d?.matches ?? [])), undefined, focusAttr('none'))} aria-label={ctx.tt('sportTeamOpen', { name: follow.name })} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: dp(16), cursor: 'pointer', borderRadius: dp(10) }}>
-        <Crest name={follow.name} colorKey={follow.key} size={dp(56)} src={crest} />
-        <div style={{ width: dp(210), flexShrink: 0, minWidth: 0 }}>
-          <div style={{ fontSize: dp(21), fontWeight: 600, ...ellipsis }}>{follow.name}</div>
-          <div style={{ fontSize: dp(14), color: TV.dim, ...ellipsis }}>{ctx.kindLabel(follow.sport)}</div>
+      <div data-testid="follow-open" {...station(() => openFollowPage(ctx, follow, days.flatMap((d) => d?.matches ?? [])), undefined, focusAttr('none'))} aria-label={ctx.tt('sportTeamOpen', { name: follow.name })} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: u(16), cursor: 'pointer', borderRadius: u(10) }}>
+        <Crest name={follow.name} colorKey={follow.key} size={u(56)} src={crest} />
+        <div style={{ width: u(210), flexShrink: 0, minWidth: 0 }}>
+          <div style={{ fontSize: u(21), fontWeight: 600, ...ellipsis }}>{follow.name}</div>
+          <div style={{ fontSize: u(14), color: TV.dim, ...ellipsis }}>{ctx.kindLabel(follow.sport)}</div>
         </div>
         <div data-testid="follow-next" data-live={info?.live ? '1' : '0'} style={{ flex: 1, minWidth: 0 }}>
           {info ? (
             <>
-              <div style={{ fontSize: dp(20), fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: info.live ? TV.liveText : TV.text, ...ellipsis }}>{info.when}</div>
-              <div style={{ fontSize: dp(16), color: TV.muted, ...ellipsis }}>{info.what}</div>
+              <div style={{ fontSize: u(20), fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: info.live ? TV.liveText : TV.text, ...ellipsis }}>{info.when}</div>
+              <div style={{ fontSize: u(16), color: TV.muted, ...ellipsis }}>{info.what}</div>
             </>
-          ) : <div style={{ fontSize: dp(16), color: TV.dim, ...ellipsis }}>{ctx.tt('sportNoUpcoming')}</div>}
+          ) : <div style={{ fontSize: u(16), color: TV.dim, ...ellipsis }}>{ctx.tt('sportNoUpcoming')}</div>}
         </div>
       </div>
-      <div data-testid="follow-heart" {...station(() => toggleFollow(follow))} aria-pressed={following ? 'true' : 'false'} aria-label={following ? ctx.tt('sportFollowingName', { name: follow.name }) : ctx.tt('sportFollowName', { name: follow.name })} style={{ width: dp(56), height: dp(56), minHeight: dp(56), borderRadius: 999, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: following ? TV.accMix(22) : TV.s12, color: following ? TV.acc : TV.text, cursor: 'pointer' }}>
-        <SportIcons.Heart size={dp(24)} filled={following} />
+      <div data-testid="follow-heart" {...station(() => toggleFollow(follow))} aria-pressed={following ? 'true' : 'false'} aria-label={following ? ctx.tt('sportFollowingName', { name: follow.name }) : ctx.tt('sportFollowName', { name: follow.name })} style={{ width: u(56), height: u(56), minHeight: u(56), borderRadius: 999, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: following ? TV.accMix(22) : TV.s12, color: following ? TV.acc : TV.text, cursor: 'pointer' }}>
+        <SportIcons.Heart size={u(24)} filled={following} />
       </div>
     </div>
   )
