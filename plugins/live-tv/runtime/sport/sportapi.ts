@@ -65,7 +65,9 @@ function kickoffOf(raw: any): number {
 function fixtureOf(raw: any): Fixture | null {
   if (raw?.id == null) return null
   const short = String(raw.status ?? 'Scheduled')
-  const status = STATUS[short.trim().toLowerCase()] ?? 'scheduled'
+  const parsed = STATUS[short.trim().toLowerCase()] ?? 'scheduled'
+  // Dokumentationen: i halvtid står status kvar på LIVE och `minute` är "HT".
+  const status: FixtureStatus = parsed === 'live' && /^\s*ht\s*$/i.test(String(raw.minute ?? '')) ? 'ht' : parsed
   const h = num(raw.home_score)
   const a = num(raw.away_score)
   return {

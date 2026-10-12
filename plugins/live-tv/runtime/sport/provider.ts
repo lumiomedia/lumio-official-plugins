@@ -45,6 +45,8 @@ export interface SportsProvider {
   bucket(sport: SportKind): string
   day(sport: SportKind, date: string, opts: DayOpts): ProviderCall<Fixture[]>
   live(sport: SportKind, opts: LiveOpts): ProviderCall<Fixture[]>
+  /** Livesvaret tar bara med pågående matcher (API-Sports `live=all`): en match som faller ur det är slut. */
+  liveListOnlyLive?(sport: SportKind): boolean
   fixture(sport: SportKind, id: string, opts: { finished: boolean }): ProviderCall<FixtureDetail | null>
   standings(sport: SportKind, leagueId: string, season: string): ProviderCall<StandingRow[]>
   searchTeams(sport: SportKind, q: string): ProviderCall<TeamHit[]>

@@ -180,6 +180,7 @@ export const apiSports: SportsProvider = {
     const path = sport === 'football' ? `/fixtures?live=all&timezone=${enc(opts.tz)}` : `/games?date=${opts.today}&timezone=${enc(opts.tz)}`
     return { requests: [{ sport, path, ttlS: 10 }], parse: fixtures(sport) }
   },
+  liveListOnlyLive: (sport) => sport === 'football',
   fixture(sport, id, opts): ProviderCall<FixtureDetail | null> {
     const ttlS = opts.finished ? -1 : 60
     if (sport === 'football') {

@@ -201,6 +201,35 @@ describe('ResultsController', () => {
       expect(c.canonicalOf(fromApiSports(1, 0))).toEqual({ provider: 'sportapi', id: '13596201' })
     })
 
+    it('ett svar utan ställning och minut skriver inte över en annan källas livedata (sportapi.ai LIVE/null mot API-Sports HT 0–2)', () => {
+      const c = two()
+      c.applyFixtures('football', '2026-10-10', [{ ...fromApiSports(0, 2), status: 'ht', minute: null }], 'live', NOW)
+      const empty = { ...fromSportApi(0, 0), score: null, minute: null }
+      c.applyFixtures('football', '2026-10-10', [empty], 'day', NOW + 60_000)
+      expect(c.fixtures('football', '2026-10-10')[0]).toMatchObject({ provider: 'api-sports', status: 'ht', score: { home: 0, away: 2 } })
+      // Slutresultatet från samma källa går igenom.
+      c.applyFixtures('football', '2026-10-10', [{ ...fromSportApi(0, 2), status: 'finished', minute: null }], 'day', NOW + 120_000)
+      expect(c.fixtures('football', '2026-10-10')[0]).toMatchObject({ provider: 'sportapi', status: 'finished', score: { home: 0, away: 2 } })
+    })
+
+    it('API-Sports live=all tar bara med pågående: en match som föll ur listan är slut, med sista ställningen, och gör inte sporten het', () => {
+      const c = two()
+      const live = fromApiSports(1, 0)
+      c.applyFixtures('football', '2026-10-10', [live], 'live', NOW, 'api-sports')
+      c.setMerged([fxMatch({ id: 'm1', kind: 'football', start: live.kickoff, stop: live.kickoff + 7_200_000, fixture: { provider: 'api-sports', id: live.id } })])
+      expect(c.liveTargets()[0]).toMatchObject({ hot: true })
+      c.applyFixtures('football', '2026-10-10', [], 'live', NOW + 15_000, 'api-sports')
+      expect(c.fixtures('football', '2026-10-10')[0]).toMatchObject({ status: 'finished', score: { home: 1, away: 0 }, minute: null })
+      expect(c.liveTargets()).toEqual([])
+    })
+
+    it('sportapi.ai:s live är hela dagen: en match som saknas i svaret rörs inte', () => {
+      const c = two()
+      c.applyFixtures('football', '2026-10-10', [fromSportApi(1, 0)], 'live', NOW, 'sportapi')
+      c.applyFixtures('football', '2026-10-10', [], 'live', NOW + 60_000, 'sportapi')
+      expect(c.fixtures('football', '2026-10-10')[0]).toMatchObject({ status: 'live' })
+    })
+
     it('takraden säger vilken källa sporten faktiskt använder', () => {
       const c = two()
       c.router.budget('sportapi')!.noteQuota({ ...quota, limit: 2000, remaining: 1500 })

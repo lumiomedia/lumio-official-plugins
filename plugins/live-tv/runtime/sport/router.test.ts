@@ -5,6 +5,8 @@ import { effectiveOrder, orderFor } from './providers'
 import type { ProviderId } from './provider'
 import type { FetchMode, SportFetchResponse, SportQuota } from './sport-fetch'
 import type { ProviderKeys } from './sport-store'
+import liveNoScore from './__fixtures__/sportapi/fixtures-date-live-no-score.json'
+import apiSportsLive from './__fixtures__/api-sports/football-fixtures-live.json'
 
 const NOW = Date.UTC(2026, 9, 10, 18, 0)
 const MIDNIGHT = Date.UTC(2026, 9, 11)
@@ -137,6 +139,85 @@ describe('SportRouter: första källan med kvot, sedan nästa tills kvoten nolls
     expect(router.budget('sportapi')!.plannedFor('football')).toBe(3)
     expect(router.budget('api-sports')!.plannedFor('football')).toBe(0)
     expect(router.budget('api-sports')!.plannedFor('hockey')).toBe(2)
+  })
+})
+
+describe('SportRouter: livedata utan ställning och minut', () => {
+  // Användarens cache 2026-10-12 13:40: sportapi.ai sa LIVE med minute och ställning null, API-Sports hade HT 0–2.
+  const AT = Date.UTC(2026, 9, 12, 11, 40)
+  const DAY12 = { today: '2026-10-12', tz: 'Europe/Stockholm', dayEndMs: Date.UTC(2026, 9, 12, 22) }
+  const BOTH: ProviderKeys = { sportapi: ALL.sportapi, 'api-sports': ALL['api-sports'] }
+  const reply: Reply = ({ provider }) => ({ data: provider === 'sportapi' ? liveNoScore : apiSportsLive })
+  const upstream = (calls: Array<{ provider: ProviderId; path: string; mode: FetchMode }>) => calls.filter((c) => c.path !== '/status' && c.mode !== 'cache-only').map((c) => c.provider)
+
+  it('LIVE utan ställning och minut: nästa livepoll går till API-Sports, ett anrop per poll (ersätter, lägger inte till)', async () => {
+    const { router, calls, setNow } = harness(BOTH, reply)
+    setNow(AT)
+    router.budget('sportapi')!.noteQuota(quota('football', { remaining: 1500 }))
+    router.budget('api-sports')!.noteQuota(quota('football', { limit: 100, remaining: 80 }))
+    expect(router.liveIntervalMs('football', AT + 3_600_000)).toBe(60_000)
+    const first = await router.live('football', DAY12)
+    expect(first).toMatchObject({ ok: true, provider: 'sportapi' })
+    expect(upstream(calls)).toEqual(['sportapi'])
+    expect(router.activeProvider('football')).toBe('api-sports')
+    expect(router.liveIntervalMs('football', AT + 3_600_000)).not.toBe(60_000) // API-Sports takt (kvoten räknar)
+    calls.length = 0
+    expect(await router.live('football', DAY12)).toMatchObject({ ok: true, provider: 'api-sports' })
+    expect(await router.live('football', DAY12)).toMatchObject({ ok: true, provider: 'api-sports' })
+    expect(upstream(calls)).toEqual(['api-sports', 'api-sports'])
+  })
+
+  it('dagsprogram, matchcenter och tabeller stannar hos sportapi.ai', async () => {
+    const { router, calls, setNow } = harness(BOTH, reply)
+    setNow(AT)
+    await router.live('football', DAY12)
+    calls.length = 0
+    expect(await router.day('football', '2026-10-12', DAY12)).toMatchObject({ provider: 'sportapi' })
+    expect(await router.fixture('football', [{ provider: 'sportapi', id: '13601802' }], { finished: true })).toMatchObject({ provider: 'sportapi' })
+    expect(new Set(upstream(calls))).toEqual(new Set(['sportapi']))
+  })
+
+  it('samma tecken i dagens dagsprogram räcker också', async () => {
+    const { router, setNow } = harness(BOTH, reply)
+    setNow(AT)
+    await router.day('football', '2026-10-12', DAY12)
+    expect(router.activeProvider('football')).toBe('api-sports')
+    expect(router.activeProvider('football', 'day')).toBe('sportapi')
+  })
+
+  it('precis efter avspark (under tio minuter) är tomma fält inget tecken', async () => {
+    const { router, setNow } = harness(BOTH, reply)
+    setNow(Date.UTC(2026, 9, 12, 11, 5))
+    await router.live('football', DAY12)
+    expect(router.activeProvider('football')).toBe('sportapi')
+  })
+
+  it('märket gäller resten av dagen; nästa dag är sportapi.ai först igen', async () => {
+    const { router, setNow, calls } = harness(BOTH, ({ provider, path }) => (provider === 'sportapi' && path.endsWith('2026-10-13') ? { data: { success: true, data: [] } } : reply({ provider, path, mode: 'cache-first' })))
+    setNow(AT)
+    await router.live('football', DAY12)
+    setNow(Date.UTC(2026, 9, 13, 11))
+    calls.length = 0
+    expect(await router.live('football', { ...DAY12, today: '2026-10-13' })).toMatchObject({ provider: 'sportapi' })
+    expect(upstream(calls)).toEqual(['sportapi'])
+  })
+
+  it('API-Sports utan kvot: livepollen går tillbaka till sportapi.ai i stället för att stanna', async () => {
+    const { router, calls, setNow } = harness(BOTH, reply)
+    setNow(AT)
+    await router.live('football', DAY12)
+    router.budget('api-sports')!.noteQuota(quota('football', { limit: 100, remaining: 0, blockedUntil: Date.UTC(2026, 9, 13), reason: 'exhausted' }))
+    expect(router.activeProvider('football')).toBe('sportapi')
+    calls.length = 0
+    expect(await router.live('football', DAY12)).toMatchObject({ ok: true, provider: 'sportapi' })
+    expect(upstream(calls)).toEqual(['sportapi'])
+  })
+
+  it('en källa med riktiga livedata märks aldrig', async () => {
+    const { router, setNow } = harness(BOTH, ({ provider }) => ({ data: provider === 'sportapi' ? { success: true, data: [{ id: 1, home_team: 'Malmö FF', away_team: 'AIK', kickoff_utc: '2026-10-12T11:00:00Z', status: 'LIVE', minute: "40'", home_score: 0, away_score: 2 }] } : apiSportsLive }))
+    setNow(AT)
+    await router.live('football', DAY12)
+    expect(router.activeProvider('football')).toBe('sportapi')
   })
 })
 

@@ -14,6 +14,17 @@ export interface FixtureRef { provider: ProviderId; id: string }
 
 /** Kvotfel: då har nästa källa i ordningen chansen. Nätfel och okänd täckning har det inte. */
 const FALL_THROUGH: ReadonlySet<BudgetFailure> = new Set(['paused', 'over-budget', 'invalid-key'])
+/** Tomma fält precis efter avspark kan vara källan som inte hunnit fylla i dem; först efter tio minuter är det ett tecken. */
+const NO_LIVE_GRACE_MS = 10 * 60_000
+
+/**
+ * En pågående match där källan varken har ställning eller minut. sportapi.ai
+ * lämnade så (LIVE, `minute: null`, ställning null) mitt i en match som
+ * API-Sports hade i halvtid 0–2 (användarens cache 2026-10-12).
+ */
+export function lacksLiveData(f: Fixture, now: number): boolean {
+  return (f.status === 'live' || f.status === 'ht') && f.score == null && f.minute == null && now - f.kickoff >= NO_LIVE_GRACE_MS
+}
 
 /**
  * FLERA KÄLLOR SAMTIDIGT, EN NYCKEL PER KÄLLA. En kvothanterare (`Budget`)
@@ -29,9 +40,19 @@ const FALL_THROUGH: ReadonlySet<BudgetFailure> = new Set(['paused', 'over-budget
  */
 export class SportRouter {
   private readonly budgets = new Map<ProviderId, Budget>()
+  /**
+   * Källa|sport → dagen då källan lämnade en pågående match utan livedata.
+   * Resten av den dagen går sportens livepoll till nästa källa i ordningen
+   * (som ERSÄTTER pollen, aldrig lägger till ett anrop); dagsprogram,
+   * matchcenter och tabeller stannar kvar. Har ingen annan källa kvot går
+   * livepollen tillbaka till den märkta hellre än att stanna.
+   */
+  private readonly noLive = new Map<string, string>()
+  private readonly now: () => number
 
   /** `make`: återanvänd en källas kvothanterare (samma nyckel) när bara ordningen eller en annan källas nyckel ändras. */
   constructor(readonly keys: ProviderKeys, readonly order: SportOrder, deps: BudgetDeps = {}, make?: (id: ProviderId, key: string) => Budget) {
+    this.now = deps.now ?? Date.now
     for (const [id, k] of Object.entries(keys) as Array<[ProviderId, ProviderKeys[ProviderId]]>) {
       if (k?.key) this.budgets.set(id, make ? make(id, k.key) : new Budget(providerFor(id), k.key, deps))
     }
@@ -53,15 +74,34 @@ export class SportRouter {
     return this.candidates(sport).length > 0 ? 'full' : 'epg'
   }
 
+  /** Livecallens ordning: källor utan livedata i dag sist (de är reserv, inte borta). */
+  private ordered(sport: SportKind, kind: CallKind): Budget[] {
+    const all = this.candidates(sport)
+    if (kind !== 'live' || this.noLive.size === 0) return all
+    const marked = (b: Budget) => this.noLive.has(`${b.provider.id}|${sport}`)
+    return [...all.filter((b) => !marked(b)), ...all.filter(marked)]
+  }
+
+  /** Märkena gäller bara dagen de sattes; ett anrop för en ny dag släpper dem innan källan väljs. */
+  private rollNoLive(today: string): void {
+    for (const [k, day] of this.noLive) if (day !== today) this.noLive.delete(k)
+  }
+
+  /** Läser ett svar för dagen: en pågående match utan ställning och minut märker källan för sporten resten av dagen. */
+  private noteLiveData(provider: ProviderId, sport: SportKind, today: string, list: Fixture[] | null): void {
+    const now = this.now()
+    if (list?.some((f) => f.sport === sport && lacksLiveData(f, now))) this.noLive.set(`${provider}|${sport}`, today)
+  }
+
   private usable(b: Budget, kind: CallKind, sport: SportKind, n = 1): boolean {
     return !b.isInvalid() && b.allows(kind, b.provider.bucket(sport), n)
   }
 
   /** Källan sporten använder just nu (för livetakten och takraden). `null` = ingen har kvot. */
   active(sport: SportKind, kind: CallKind = 'live'): Budget | null {
-    return this.candidates(sport).find((b) => this.usable(b, kind, sport)) ?? null
+    return this.ordered(sport, kind).find((b) => this.usable(b, kind, sport)) ?? null
   }
-  activeProvider(sport: SportKind): ProviderId | null { return this.active(sport)?.provider.id ?? null }
+  activeProvider(sport: SportKind, kind: CallKind = 'live'): ProviderId | null { return this.active(sport, kind)?.provider.id ?? null }
 
   /** Kvoten hos källan sporten använder (eller den första, när ingen har kvot kvar). */
   quotaFor(sport: SportKind): { provider: ProviderId; quota: SportQuota } | null {
@@ -111,7 +151,7 @@ export class SportRouter {
    * Ingen källa med kvot: den första svarar ur cachen (Budget går då `cache-only`).
    */
   async route<T>(kind: CallKind, sport: SportKind, build: (p: SportsProvider) => ProviderCall<T> | null): Promise<RoutedResult<T>> {
-    const all = this.candidates(sport)
+    const all = this.ordered(sport, kind)
     if (all.length === 0) {
       return { ok: false, reason: this.hasKey() ? 'no-coverage' : 'no-key', data: null, fetchedAt: null, until: null, provider: null }
     }
@@ -133,8 +173,18 @@ export class SportRouter {
     return { ...(await b.run(kind, sport, call)), provider: b.provider.id }
   }
 
-  day(sport: SportKind, date: string, opts: DayOpts) { return this.route<Fixture[]>('day', sport, (p) => p.day(sport, date, opts)) }
-  live(sport: SportKind, opts: LiveOpts) { return this.route<Fixture[]>('live', sport, (p) => p.live(sport, opts)) }
+  async day(sport: SportKind, date: string, opts: DayOpts): Promise<RoutedResult<Fixture[]>> {
+    this.rollNoLive(opts.today)
+    const res = await this.route<Fixture[]>('day', sport, (p) => p.day(sport, date, opts))
+    if (date === opts.today && res.ok && res.provider) this.noteLiveData(res.provider, sport, opts.today, res.data)
+    return res
+  }
+  async live(sport: SportKind, opts: LiveOpts): Promise<RoutedResult<Fixture[]>> {
+    this.rollNoLive(opts.today)
+    const res = await this.route<Fixture[]>('live', sport, (p) => p.live(sport, opts))
+    if (res.ok && res.provider) this.noteLiveData(res.provider, sport, opts.today, res.data)
+    return res
+  }
   searchTeams(sport: SportKind, q: string) { return this.route<TeamHit[]>('search', sport, (p) => p.searchTeams(sport, q)) }
   searchLeagues(sport: SportKind, q: string) { return this.route<TeamHit[]>('search', sport, (p) => p.searchLeagues?.(sport, q) ?? null) }
 

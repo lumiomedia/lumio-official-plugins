@@ -11,7 +11,7 @@ import { diffGoals, emitGoals, type Score } from './goal-events'
 import { isPaidPlan } from './key-flow'
 import { linkFixtures, type LinkMap } from './sport-link'
 import { fixtureMatchKey, mergeLinked, relevantMatches } from './merge'
-import { coverageFor } from './providers'
+import { coverageFor, providerFor } from './providers'
 import { followState } from './sport-day-model'
 import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, useFollows, useOverrides } from './sport-store'
 import type { Fixture, FixtureDetail, ProviderId, StandingRow } from './provider'
@@ -76,7 +76,7 @@ export class ResultsController {
       this.poller = createLivePoller({
         budget: router,
         targets: () => this.liveTargets(),
-        onFixtures: (sport, list, fetchedAt) => this.applyFixtures(sport, this.dates().today, list, 'live', fetchedAt ?? this.now()),
+        onFixtures: (sport, list, fetchedAt, provider) => this.applyFixtures(sport, this.dates().today, list, 'live', fetchedAt ?? this.now(), provider),
         liveOpts: () => ({ today: this.dates().today, tz: this.tz }),
         now: this.now,
       })
@@ -127,11 +127,21 @@ export class ResultsController {
    * livesvar gett ett falskt MÅL! för ett gammalt mål. Mål räknas bara på
    * data som är STRIKT nyare än förra observationen.
    */
-  applyFixtures(sport: SportKind, date: string, list: Fixture[], source: 'cache' | 'day' | 'live', observedAt: number = this.now()): void {
+  applyFixtures(sport: SportKind, date: string, input: Fixture[], source: 'cache' | 'day' | 'live', observedAt: number = this.now(), liveProvider?: ProviderId | null): void {
+    const dk = this.dayKey(sport, date)
+    const byKey = this.days.get(dk) ?? new Map<string, Fixture>()
+    const list = source === 'live' && liveProvider ? [...input, ...this.droppedFromLiveList(byKey, input, sport, liveProvider)] : input
     const keyOf = new Map<Fixture, string>(list.map((f) => [f, this.events.resolve(f)]))
     const key = (f: Fixture) => keyOf.get(f) ?? this.events.resolve(f)
     const seen = (f: Fixture) => this.observed.get(key(f)) ?? -Infinity
-    const accepted = list.filter((f) => observedAt >= seen(f))
+    // En pågående match utan ställning och minut (sportapi.ai LIVE/null) skriver inte över en annan
+    // källas livedata; källans slutresultat, eller en ställning, går igenom som vanligt.
+    const blank = (f: Fixture) => {
+      const kept = byKey.get(key(f))
+      return (f.status === 'live' || f.status === 'ht') && f.score == null && f.minute == null
+        && !!kept && kept.provider !== f.provider && (kept.status === 'live' || kept.status === 'ht') && !!kept.score
+    }
+    const accepted = list.filter((f) => observedAt >= seen(f) && !blank(f))
     const newer = accepted.filter((f) => observedAt > seen(f))
     const goals = (source === 'live' ? diffGoals(this.scores, newer, this.now(), key) : [])
       .map((g) => ({ ...g, aliases: this.events.refsOf(g.provider, g.fixtureId).map(fixtureMatchKey) }))
@@ -147,13 +157,25 @@ export class ResultsController {
         ? { home: Math.max(prev.home, f.score.home), away: Math.max(prev.away, f.score.away), provider: f.provider }
         : { ...f.score, provider: f.provider })
     }
-    const dk = this.dayKey(sport, date)
-    const byKey = this.days.get(dk) ?? new Map<string, Fixture>()
     for (const f of accepted) byKey.set(key(f), f)
     this.days.set(dk, byKey)
     if (goals.length) emitGoals(goals)
     this.poller?.reschedule()
     this.emit()
+  }
+
+  /**
+   * API-Sports `live=all` tar bara med pågående matcher: en match som källan
+   * själv hade som pågående och som fallit ur listan är slut. Den får sista
+   * ställningen och status slut, så att den slutar vara het (annars pollades
+   * sporten resten av dagen). Dyker den upp igen är det nyare data och den
+   * blir pågående igen. Källor vars live är hela dagens lista rörs inte.
+   */
+  private droppedFromLiveList(byKey: Map<string, Fixture>, list: Fixture[], sport: SportKind, provider: ProviderId): Fixture[] {
+    if (!providerFor(provider).liveListOnlyLive?.(sport)) return []
+    const present = new Set(list.map((f) => this.events.resolve(f)))
+    return [...byKey].filter(([k, f]) => !present.has(k) && f.provider === provider && (f.status === 'live' || f.status === 'ht'))
+      .map(([, f]) => ({ ...f, status: 'finished' as const, statusShort: 'FT', minute: null }))
   }
 
   private rollDone(): void {

@@ -7,6 +7,7 @@ import stats from './__fixtures__/sportapi/fixture-stats.json'
 import lineups from './__fixtures__/sportapi/fixture-lineups.json'
 import standings from './__fixtures__/sportapi/standings.json'
 import leagues from './__fixtures__/sportapi/leagues.json'
+import liveNoScore from './__fixtures__/sportapi/fixtures-date-live-no-score.json'
 
 // Svarsformerna kommer ur sportapi.ai/docs (2026-10-11) och är INTE verifierade med en riktig nyckel.
 const DAY = { today: '2026-10-10', tz: 'Europe/Stockholm', dayEndMs: Date.UTC(2026, 9, 10, 22) }
@@ -120,5 +121,17 @@ describe('sportapi.ai: tolkning', () => {
     const hits = sportApi.searchLeagues!('football', 'allsven').parse([leagues])
     expect(hits).toEqual([{ id: '61', name: 'Allsvenskan', crest: null, country: 'Sweden' }])
     expect(sportApi.searchLeagues!('football', 'england').parse([leagues]).map((h) => h.id)).toEqual(['24'])
+  })
+})
+
+describe('sportapi.ai: paus och tomma livefält', () => {
+  const row = (over: Record<string, unknown>) => sportApi.live('football', DAY).parse([{ success: true, data: [{ id: 9, home_team: 'Malmö FF', away_team: 'AIK', kickoff_utc: '2026-10-10T17:00:00Z', home_score: 0, away_score: 2, ...over }] }])[0]
+  it('dokumentationen: i halvtid står status kvar på LIVE och minute är "HT" — det är paus, inte en minut', () => {
+    expect(row({ status: 'LIVE', minute: 'HT' })).toMatchObject({ status: 'ht', minute: null, score: { home: 0, away: 2 } })
+    expect(row({ status: 'HT', minute: null })).toMatchObject({ status: 'ht' })
+  })
+  it('LIVE med minute och ställning null (användarens cache) blir live utan ställning och minut — aldrig 0–0', () => {
+    const [f] = sportApi.day('football', '2026-10-12', { ...DAY, today: '2026-10-12' }).parse([liveNoScore])
+    expect(f).toMatchObject({ status: 'live', minute: null, score: null, home: { name: 'Örebro SK' } })
   })
 })

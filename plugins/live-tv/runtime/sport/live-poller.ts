@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react'
 import type { BudgetResult } from './budget'
-import type { Fixture, LiveOpts } from './provider'
+import type { Fixture, LiveOpts, ProviderId } from './provider'
 import type { SportKind } from './sport-model'
 
 /**
@@ -52,7 +52,8 @@ export interface LiveTarget { sport: SportKind; hot: boolean; windowEndsAt: numb
 
 /** Det pollern behöver av routern: takt och spärr PER SPORT (källan sporten använder just nu) och anropet. */
 export interface LiveSource {
-  live(sport: SportKind, opts: LiveOpts): Promise<BudgetResult<Fixture[]>>
+  /** `provider`: källan som svarade (routern sätter den); styr hur ett livesvar läses. */
+  live(sport: SportKind, opts: LiveOpts): Promise<BudgetResult<Fixture[]> & { provider?: ProviderId | null }>
   liveIntervalMs(sport: SportKind, windowEndsAt: number): number | null
   pausedUntil?(sport: SportKind): number | null
 }
@@ -60,7 +61,7 @@ export interface LiveSource {
 export interface LivePollerDeps {
   budget: LiveSource
   targets(): LiveTarget[]
-  onFixtures(sport: SportKind, fixtures: Fixture[], fetchedAt: number | null): void
+  onFixtures(sport: SportKind, fixtures: Fixture[], fetchedAt: number | null, provider?: ProviderId | null): void
   liveOpts(): LiveOpts
   now?: () => number
   setTimer?: (fn: () => void, ms: number) => unknown
@@ -145,7 +146,7 @@ export function createLivePoller(deps: LivePollerDeps): LivePoller {
       for (const item of dueNow) due.delete(item.sport)
       for (const item of dueNow) {
         const res = await deps.budget.live(item.sport, deps.liveOpts())
-        if (res.data) deps.onFixtures(item.sport, res.data, res.fetchedAt)
+        if (res.data) deps.onFixtures(item.sport, res.data, res.fetchedAt, res.provider ?? null)
       }
     } finally {
       ticking = false

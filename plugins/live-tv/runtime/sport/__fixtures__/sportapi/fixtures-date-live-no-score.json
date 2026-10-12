@@ -1,0 +1,31 @@
+{
+  "_shape": "fixtures-date.json:s form; status LIVE med minute och ställning null, som i användarens cache 2026-10-12 13:40 (API-Sports hade HT 0–2 för samma match)",
+  "success": true,
+  "date": "2026-10-12",
+  "data": [
+    {
+      "id": 13601877, "home_id": 433, "away_id": 418, "date": "2026-10-12", "datetime": "2026-10-12 13:00:00",
+      "kickoff_utc": "2026-10-12T11:00:00Z", "updated_at": "2026-10-12T11:41:02Z", "home_score": null, "away_score": null, "result": null,
+      "status": "LIVE", "minute": null, "stage": "", "league_id": 62, "league_name": "Superettan", "league_geo": "SE", "league_zone": "Sweden",
+      "home_team": "Örebro SK", "home_short": "Örebro", "home_logo": "espn-2733.png", "home_geo": "",
+      "away_team": "Helsingborgs IF", "away_short": "Helsingborg", "away_logo": "espn-2712.png", "away_geo": "",
+      "penalty_home": null, "penalty_away": null, "winner": null
+    },
+    {
+      "id": 13601802, "home_id": 311, "away_id": 352, "date": "2026-10-12", "datetime": "2026-10-12 10:00:00",
+      "kickoff_utc": "2026-10-12T08:00:00Z", "updated_at": "2026-10-12T09:52:40Z", "home_score": 1, "away_score": 1, "result": 0,
+      "status": "FT", "minute": null, "stage": "", "league_id": 24, "league_name": "Premier League", "league_geo": "GB-ENG", "league_zone": "England",
+      "home_team": "Arsenal", "home_short": "Arsenal", "home_logo": "espn-359.png", "home_geo": "",
+      "away_team": "Leeds United", "away_short": "Leeds", "away_logo": "espn-357.png", "away_geo": "",
+      "penalty_home": null, "penalty_away": null, "winner": null
+    },
+    {
+      "id": 13601910, "home_id": 410, "away_id": 412, "date": "2026-10-12", "datetime": "2026-10-12 17:00:00",
+      "kickoff_utc": "2026-10-12T15:00:00Z", "updated_at": "2026-10-12T09:00:00Z", "home_score": null, "away_score": null, "result": null,
+      "status": "Scheduled", "minute": null, "stage": "", "league_id": 61, "league_name": "Allsvenskan", "league_geo": "SE", "league_zone": "Sweden",
+      "home_team": "Malmö FF", "home_short": "Malmö", "home_logo": "espn-2720.png", "home_geo": "",
+      "away_team": "AIK", "away_short": "AIK", "away_logo": "espn-993.png", "away_geo": "",
+      "penalty_home": null, "penalty_away": null, "winner": null
+    }
+  ]
+}
