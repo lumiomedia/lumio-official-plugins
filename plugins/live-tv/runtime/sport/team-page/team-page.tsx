@@ -1,5 +1,6 @@
 'use client'
 
+import { useTvMode } from '@/lib/plugin-sdk'
 import { useMemo, useState } from 'react'
 import { Chip, TV, station } from '../../tv/tv-ui'
 import { matchTitle, type SportMatch } from '../sport-model'
@@ -29,7 +30,7 @@ import { useEpgMatches, useTeamPageData } from './use-team-page'
 */
 
 export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx: SportCtx; target: TeamTarget; matches: SportMatch[]; depth: number; phone: boolean; onClose: () => void }) {
-  const u = scaleFor(phone)
+  const u = scaleFor(phone, useTvMode())
   // Ordningstalet följer sidans språk (samma som texterna).
   const lang = ctx.locale.startsWith('sv') ? 'sv' : 'en'
   const data = useTeamPageData(target)
@@ -92,9 +93,8 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
   const sel = (id: string) => `${scope} [data-testid="${id}"]`
   const nothing = data.state === 'ready' && data.fixtures.length === 0 && !data.standings && !data.squad
 
-  return (
-    <SportPageDrawer nav={ctx.nav} depth={depth} phone={phone} testId="team-page" label={target.name} onClose={onClose}>
-      <div data-page-depth={depth} style={{ display: 'contents' }}>
+  const headPart = (
+    <>
         <div data-testid="tp-head" style={{ display: 'flex', alignItems: 'center', gap: u(16) }}>
           <Crest name={target.name} colorKey={target.key} src={target.crest ?? data.crest} size={u(76)} />
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -118,11 +118,14 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
           ) : null}
           {phone ? null : <IconBtn u={u} testId={headerIds.close} label={ctx.tt('sportClose')} onPress={onClose}><SportIcons.Close size={u(20)} /></IconBtn>}
         </div>
-        {follow && alert !== 'off' ? <div data-testid="tp-alert-rule" style={{ fontSize: u(15), color: TV.dim, marginTop: -u(8) }}>{`${ctx.tt('sportKickoffAlert')}: ${alertText(alert)}`}</div> : null}
-
+        {follow && alert !== 'off' ? <div data-testid="tp-alert-rule" style={{ fontSize: u(15), color: u.dim, marginTop: -u(8) }}>{`${ctx.tt('sportKickoffAlert')}: ${alertText(alert)}`}</div> : null}
+    </>
+  )
+  const infoPart = (
+    <>
         {/* Klubbens fakta när källan har dem (land med flagga, stad, tränare, arena, grundad). */}
         {data.info && (data.info.country || data.info.city || data.info.coach || data.info.stadium || data.info.founded) ? (
-          <div data-testid="tp-info" {...station(NOOP)} style={{ ...rowCard(u), display: 'grid', gridTemplateColumns: phone ? 'minmax(0,1fr) minmax(0,1fr)' : 'repeat(auto-fit, minmax(150px, 1fr))', gap: `${u(10)}px ${u(16)}px`, padding: `${u(12)}px ${u(16)}px` }}>
+          <div data-testid="tp-info" {...station(NOOP)} style={{ ...rowCard(u), display: 'grid', gridTemplateColumns: phone ? 'minmax(0,1fr) minmax(0,1fr)' : `repeat(auto-fit, minmax(${u(150)}px, 1fr))`, gap: `${u(10)}px ${u(16)}px`, padding: `${u(12)}px ${u(16)}px` }}>
             {([
               data.info.country ? [null, `${flagEmoji(data.info.geo)} ${data.info.country}`.trim()] : null,
               data.info.city ? [ctx.tt('sportTeamCity'), data.info.city] : null,
@@ -131,13 +134,16 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
               data.info.founded ? [ctx.tt('sportTeamFounded'), String(data.info.founded)] : null,
             ].filter(Boolean) as Array<[string | null, string]>).map(([label, value]) => (
               <div key={`${label}-${value}`} data-testid="tp-fact" style={{ minWidth: 0 }}>
-                {label ? <div style={{ fontSize: u(13), fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: TV.dim }}>{label}</div> : null}
+                {label ? <div style={{ fontSize: u(13), fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: u.dim }}>{label}</div> : null}
                 <div style={{ fontSize: u(17), fontWeight: 600, ...ellipsis }}>{value}</div>
               </div>
             ))}
           </div>
         ) : null}
-
+    </>
+  )
+  const nowNextPart = (
+    <>
         {/* 2. Nu / nästa */}
         {liveEpg || liveFx ? (
           <section data-testid="tp-now" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
@@ -150,7 +156,10 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             <NextCard u={u} ctx={ctx} fixture={next} match={nextEpg} title={next ? vs(next) : matchTitle(nextEpg!)} competition={next?.league.name ?? nextEpg?.league ?? ''} />
           </section>
         ) : null}
-
+    </>
+  )
+  const formPart = (
+    <>
         {/* 3. Formen */}
         {form.length > 0 ? (
           <section data-testid="tp-form" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
@@ -164,14 +173,17 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
                 <Crest name={f.opponent} colorKey={f.opponent} src={f.opponentCrest} size={u(30)} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: u(18), fontWeight: 700, ...ellipsis }}>{f.opponent}</div>
-                  <div style={{ fontSize: u(14), color: TV.dim, ...ellipsis }}>{[f.home ? ctx.tt('sportTeamHome') : ctx.tt('sportTeamAway'), f.fixture.league.name, fixtureWhen({ kickoff: f.fixture.kickoff, dateOnly: true }, ctx)].filter(Boolean).join(' · ')}</div>
+                  <div style={{ fontSize: u(14), color: u.dim, ...ellipsis }}>{[f.home ? ctx.tt('sportTeamHome') : ctx.tt('sportTeamAway'), f.fixture.league.name, fixtureWhen({ kickoff: f.fixture.kickoff, dateOnly: true }, ctx)].filter(Boolean).join(' · ')}</div>
                 </div>
                 <span style={{ fontSize: u(20), fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{f.score}</span>
               </div>
             ))}
           </section>
         ) : null}
-
+    </>
+  )
+  const tablePart = (
+    <>
         {/* 4. Tabellen runt laget */}
         {slice.rows.length > 0 && league ? (
           <section data-testid="tp-table" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
@@ -185,7 +197,10 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             ) : null}
           </section>
         ) : null}
-
+    </>
+  )
+  const matchesPart = (
+    <>
         {/* 5. Matcher: kommande och spelade i alla turneringar, filtrerbara per turnering. */}
         {(() => {
           const inComp = (f: TeamFixture) => !competition || f.league.name === competition
@@ -224,7 +239,10 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             </section>
           )
         })()}
-
+    </>
+  )
+  const squadPart = (
+    <>
         {/* 6. Truppen */}
         {data.squad && data.squad.length > 0 ? (
           <section data-testid="tp-squad" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
@@ -232,7 +250,7 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             {squadGroups(data.squad).map((g) => (
               <div key={g.group} data-testid={`tp-squad-${g.group}`} style={{ display: 'flex', flexDirection: 'column', gap: u(8) }}>
                 <span style={{ fontSize: u(15), fontWeight: 600, color: TV.muted }}>{positionLabel(g.group, ctx.tt)}</span>
-                <div style={{ display: 'grid', gridTemplateColumns: phone ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1fr)', gap: u(8) }}>
+                <div style={{ display: 'grid', gridTemplateColumns: phone ? 'minmax(0,1fr)' : u.tv ? 'repeat(3, minmax(0,1fr))' : 'minmax(0,1fr) minmax(0,1fr)', gap: u(8) }}>
                   {g.players.map((p) => (
                     <div key={`${p.number ?? ''}-${p.name}`} data-testid="tp-player" data-injured={p.injury ? '1' : '0'} {...station(NOOP)} style={{ ...rowCard(u), display: 'flex', alignItems: 'center', gap: u(12), padding: `${u(8)}px ${u(12)}px`, minWidth: 0 }}>
                       <PlayerAvatar u={u} name={p.name} photo={p.photo} />
@@ -248,7 +266,10 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             ))}
           </section>
         ) : null}
-
+    </>
+  )
+  const trophiesPart = (
+    <>
         {/* 7. Titlar */}
         {data.trophies && data.trophies.length > 0 ? (
           <section data-testid="tp-trophies" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
@@ -258,16 +279,43 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
                 <span style={{ fontSize: u(20), fontWeight: 800, color: TV.accText, minWidth: u(44), fontVariantNumeric: 'tabular-nums' }}>{`×${g.count}`}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: u(17), fontWeight: 700, ...ellipsis }}>{g.name}</div>
-                  {g.years.length > 0 ? <div style={{ fontSize: u(14), color: TV.dim, ...ellipsis }}>{g.years.join(', ')}</div> : null}
+                  {g.years.length > 0 ? <div style={{ fontSize: u(14), color: u.dim, ...ellipsis }}>{g.years.join(', ')}</div> : null}
                 </div>
               </div>
             ))}
           </section>
         ) : null}
-
+    </>
+  )
+  const notesPart = (
+    <>
         {data.state === 'loading' && data.fixtures.length === 0 ? <PageNote u={u} testId="tp-loading" text={ctx.tt('sportTeamLoading')} /> : null}
         {data.state === 'no-key' ? <PageNote u={u} testId="tp-no-key" text={ctx.tt('sportTeamNoKey')} /> : null}
         {nothing ? <PageNote u={u} testId="tp-no-data" text={ctx.tt('sportTeamNoData')} /> : null}
+    </>
+  )
+
+  // TV-läget: helsida i två kolumner (rubrik, fakta, nästa match, form | tabell, matcher), trupp och titlar under.
+  if (u.tv) {
+    return (
+      <SportPageDrawer nav={ctx.nav} depth={depth} phone={false} full testId="team-page" label={target.name} onClose={onClose}>
+        <div data-page-depth={depth} style={{ display: 'contents' }}>
+          <div data-testid="tp-columns" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.1fr)', gap: u(32), alignItems: 'start' }}>
+            <div data-col="left" style={{ display: 'flex', flexDirection: 'column', gap: u(20), minWidth: 0 }}>
+              <div data-page-head="" style={{ display: 'flex', flexDirection: 'column', gap: u(12) }}>{headPart}</div>
+              {infoPart}{nowNextPart}{formPart}
+            </div>
+            <div data-col="right" style={{ display: 'flex', flexDirection: 'column', gap: u(20), minWidth: 0 }}>{tablePart}{matchesPart}</div>
+          </div>
+          {squadPart}{trophiesPart}{notesPart}
+        </div>
+      </SportPageDrawer>
+    )
+  }
+  return (
+    <SportPageDrawer nav={ctx.nav} depth={depth} phone={phone} testId="team-page" label={target.name} onClose={onClose}>
+      <div data-page-depth={depth} style={{ display: 'contents' }}>
+        {headPart}{infoPart}{nowNextPart}{formPart}{tablePart}{matchesPart}{squadPart}{trophiesPart}{notesPart}
       </div>
     </SportPageDrawer>
   )

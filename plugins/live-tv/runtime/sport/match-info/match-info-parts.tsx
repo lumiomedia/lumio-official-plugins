@@ -18,11 +18,22 @@ import { sportBg } from '../surface'
   telefon: telefonen ritar samma lådträd med en mindre skala (`u`).
 */
 
-export type U = (n: number) => number
-export const scaleFor = (phone: boolean): U => (n) => Math.round(dp(n) * (phone ? 0.8 : 1))
+/**
+ * Skalan för matchinfon och lag-/ligasidan, i designpixlar. `tv` = TV-läget
+ * (tio fots avstånd): allt 1,4 gånger större, så att sekundärrader hamnar på
+ * minst 20 och tabellrader på 24 i 1080-scenen (Jerry 2026-10-12), och
+ * sekundärtext i `muted` i stället för `dim` (kontrast). `dim` = färgen för
+ * sekundärtext på plattformen.
+ */
+export type U = ((n: number) => number) & { tv: boolean; dim: string }
+export const TV_TEXT_SCALE = 1.4
+export function scaleFor(phone: boolean, tv = false): U {
+  const k = tv && !phone ? TV_TEXT_SCALE : phone ? 0.8 : 1
+  return Object.assign((n: number) => Math.round(dp(n) * k), { tv: tv && !phone, dim: tv && !phone ? TV.muted : TV.dim })
+}
 
 export const ellipsis: CSSProperties = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
-export const overlineStyle = (u: U): CSSProperties => ({ fontSize: u(15), fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: TV.dim })
+export const overlineStyle = (u: U): CSSProperties => ({ fontSize: u(15), fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: u.dim })
 export const rowCard = (u: U): CSSProperties => ({ background: sportBg(TV.s07), border: `1px solid ${TV.lineCard}`, borderRadius: u(14), boxSizing: 'border-box' })
 
 export function Overline({ u, children, center }: { u: U; children: ReactNode; center?: boolean }) {

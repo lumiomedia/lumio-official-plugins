@@ -52,7 +52,7 @@ export function EventsPage({ u, match, ctx, detail }: { u: U; match: SportMatch;
   return (
     <>
       <Overline u={u}>{ctx.tt('sportEvents')}</Overline>
-      {rows.length === 0 ? <div data-testid="mc-no-events" style={{ fontSize: u(17), color: TV.dim }}>{detail ? ctx.tt('sportNoEvents') : ctx.tt('sportDetailLoading')}</div> : null}
+      {rows.length === 0 ? <div data-testid="mc-no-events" style={{ fontSize: u(17), color: u.dim }}>{detail ? ctx.tt('sportNoEvents') : ctx.tt('sportDetailLoading')}</div> : null}
       <div style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
         {rows.map((r) => <EventCard key={r.index} u={u} row={r} match={match} ctx={ctx} />)}
       </div>
@@ -76,7 +76,7 @@ export function EventsPage({ u, match, ctx, detail }: { u: U; match: SportMatch;
           </div>
         </>
       ) : null}
-      {rate ? <div data-testid="sport-rate-line" style={{ fontSize: u(14), color: TV.faint }}>{rate.text}</div> : null}
+      {rate ? <div data-testid="sport-rate-line" style={{ fontSize: u(14), color: u.dim }}>{rate.text}</div> : null}
     </>
   )
 }
@@ -181,7 +181,7 @@ export function VenuePage({ u, ctx, name, city, image }: { u: U; ctx: SportCtx; 
         <span style={{ fontSize: u(26), fontWeight: 700 }}>{name}</span>
       </div>
       {city ? <FactRow u={u} label={ctx.tt('sportVenueCity')} value={city} /> : null}
-      {!city && !url ? <div {...station(NOOP)} style={{ fontSize: u(16), color: TV.dim }}>{ctx.tt('sportVenueOnly')}</div> : null}
+      {!city && !url ? <div {...station(NOOP)} style={{ fontSize: u(16), color: u.dim }}>{ctx.tt('sportVenueOnly')}</div> : null}
     </div>
   )
 }

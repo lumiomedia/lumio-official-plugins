@@ -1,5 +1,6 @@
 'use client'
 
+import { useTvMode } from '@/lib/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 import { channelKey } from '../../live-tv-data'
 import { ChannelArt, TV, station } from '../../tv/tv-ui'
@@ -32,7 +33,7 @@ const parentOf = (p: Page): Page | null => (p.kind === 'player' ? { kind: 'lineu
 const SLIDE_CSS = '@keyframes lumio-sport-mi-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }'
 
 export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: SportCtx; match: SportMatch; onClose: () => void; phone?: boolean }) {
-  const u = scaleFor(phone)
+  const u = scaleFor(phone, useTvMode())
   const platform = usePhonePlatform()
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)

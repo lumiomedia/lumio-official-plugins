@@ -34,7 +34,7 @@ export function fixtureWhen(f: Pick<TeamFixture, 'kickoff' | 'dateOnly'>, ctx: P
 /** V/O/F-brickan (sv) eller W/D/L (en) i formens färger. */
 export function FormLetter({ u, kind, letter, size = 28 }: { u: U; kind: 'W' | 'D' | 'L'; letter: string; size?: number }) {
   return (
-    <span data-testid="form-letter" data-result={kind} style={{ width: u(size), height: u(size), flexShrink: 0, borderRadius: u(7), background: FORM_COLOR[kind], color: '#0e0f13', fontSize: u(Math.round(size * 0.55)), fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{letter}</span>
+    <span data-testid="form-letter" data-result={kind} style={{ width: u(size), height: u(size), flexShrink: 0, borderRadius: u(7), background: FORM_COLOR[kind], color: '#0e0f13', fontSize: u(Math.round(size * 0.6)), fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{letter}</span>
   )
 }
 
@@ -47,7 +47,7 @@ export function StandingsRows({ u, rows, mark, ctx, onOpen, testId }: { u: U; ro
   const cols = `${u(34)}px minmax(0,1fr) ${u(40)}px ${u(48)}px ${u(48)}px`
   return (
     <div data-testid={testId} style={{ ...rowCard(u), padding: `${u(6)}px ${u(10)}px`, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: cols, gap: u(8), padding: `${u(6)}px ${u(8)}px`, fontSize: u(14), fontWeight: 700, color: TV.dim }}>
+      <div style={{ display: 'grid', gridTemplateColumns: cols, gap: u(8), padding: `${u(6)}px ${u(8)}px`, fontSize: u(14), fontWeight: 700, color: u.dim }}>
         <span>#</span><span>{ctx.tt('sportColTeam')}</span><span style={{ textAlign: 'right' }}>{ctx.tt('sportColPlayed')}</span><span style={{ textAlign: 'right' }}>+/-</span><span style={{ textAlign: 'right' }}>{ctx.tt('sportColPoints')}</span>
       </div>
       {rows.map((r, i) => {
@@ -83,11 +83,11 @@ export function FixtureRow({ u, f, ctx, title, sub, reminded, onPress, testId }:
         {sub ? <div style={{ fontSize: u(15), color: TV.muted, ...ellipsis }}>{sub}</div> : null}
       </div>
       {score ? <span style={{ fontSize: u(20), fontWeight: 800, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{score}</span> : null}
-      {reminded != null ? <span data-testid="page-fixture-bell" data-on={reminded ? '1' : '0'} style={{ display: 'inline-flex', flexShrink: 0, color: reminded ? TV.acc : TV.dim }}><SportIcons.Bell size={u(20)} /></span> : null}
+      {reminded != null ? <span data-testid="page-fixture-bell" data-on={reminded ? '1' : '0'} style={{ display: 'inline-flex', flexShrink: 0, color: reminded ? TV.acc : u.dim }}><SportIcons.Bell size={u(20)} /></span> : null}
     </div>
   )
 }
 
 export function PageNote({ u, text, testId }: { u: U; text: string; testId: string }) {
-  return <div data-testid={testId} {...station(NOOP)} style={{ fontSize: u(17), color: TV.dim, padding: `${u(4)}px 0` }}>{text}</div>
+  return <div data-testid={testId} {...station(NOOP)} style={{ fontSize: u(17), color: u.dim, padding: `${u(4)}px 0` }}>{text}</div>
 }
