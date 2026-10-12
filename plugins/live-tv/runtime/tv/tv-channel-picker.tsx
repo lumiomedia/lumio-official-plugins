@@ -10,7 +10,15 @@ import { MORE_GROUPS, filterByGroup, useGuideGroups } from './tv-guide-shared'
 import { groupCounts } from './group-chips'
 import { TvGroupPanel } from './tv-group-picker'
 
-export function TvChannelPicker({ model, nav, title, onPick, onClose, surface }: { model: LiveTvModel; nav: TvNav; title: string; onPick: (channel: M3uChannel) => void; onClose: () => void; surface?: CSSProperties }) {
+/** Sports radkort (samma som matchinfons rader), ritat utan att importera ur sport/. */
+const SPORT_ROW: CSSProperties = { background: 'var(--sport-card-bg, rgba(252,252,255,0.07))', border: `1px solid ${TV.lineCard}`, boxSizing: 'border-box' }
+
+/**
+ * `sport`: Sports utseende (Jerry 2026-10-12) — raderna som Sports radkort,
+ * rubriken som matchlådans, sekundärtexten i muted, och lagret alltid
+ * ovanför matchlådan. Ytan (`surface`) skickar Sport som sin täta lådyta.
+ */
+export function TvChannelPicker({ model, nav, title, onPick, onClose, surface, sport = false }: { model: LiveTvModel; nav: TvNav; title: string; onPick: (channel: M3uChannel) => void; onClose: () => void; surface?: CSSProperties; sport?: boolean }) {
   const { tt } = useTvText()
   const [group, setGroup] = useState<string | null>(null)
   const groups = useGuideGroups(model, tt, group)
@@ -39,21 +47,21 @@ export function TvChannelPicker({ model, nav, title, onPick, onClose, surface }:
   }, [])
 
   return (
-    <div ref={rootRef} data-testid="channel-picker" data-panel-root="" data-live-tv-layer="" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18), boxSizing: 'border-box', ...surface }}>
-      <div style={{ fontSize: dp(28), fontWeight: 600 }}>{title}</div>
+    <div ref={rootRef} data-testid="channel-picker" data-variant={sport ? 'sport' : undefined} data-panel-root="" data-live-tv-layer="" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(640)}px, 100%)`, zIndex: sport ? 61 : 60, background: TV.panel, borderLeft: `1px solid ${TV.line}`, padding: `${belowTitleBar(dp(34))} ${dp(32)}px ${dp(34)}px`, display: 'flex', flexDirection: 'column', gap: dp(18), boxSizing: 'border-box', ...surface }}>
+      <div style={{ fontSize: dp(sport ? 30 : 28), fontWeight: sport ? 700 : 600 }}>{title}</div>
       <div data-row="" style={{ display: 'flex', gap: dp(8), overflowX: 'auto' }}>
         {groups.map((chip) => <Chip key={chip.id} active={group === chip.key} {...station(() => (chip.key === MORE_GROUPS ? setGroupsOpen(true) : setGroup(chip.key)))} style={{ height: dp(40), minHeight: dp(40), fontSize: dp(16), padding: `0 ${dp(18)}px` }}>{chip.label}</Chip>)}
       </div>
-      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+      <div data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', ...(sport ? { display: 'flex', flexDirection: 'column', gap: dp(10), padding: dp(4) } : null) }}>
         {rows.map((channel, index) => {
           const info = model.nowFor(channel)
           return (
-            <div key={channelKey(channel)} data-testid={`picker-row-${channel.name}`} {...station(() => { onPick(channel); onCloseRef.current(); window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0) }, undefined, index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(74), minHeight: dp(74), borderRadius: dp(12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer' }}>
+            <div key={channelKey(channel)} data-testid={`picker-row-${channel.name}`} {...station(() => { onPick(channel); onCloseRef.current(); window.setTimeout(() => openerRef.current?.focus({ preventScroll: true }), 0) }, undefined, index === 0 ? { 'data-init': '' } : undefined)} style={{ height: dp(74), minHeight: dp(74), borderRadius: dp(sport ? 14 : 12), display: 'flex', alignItems: 'center', gap: dp(14), padding: `0 ${dp(12)}px`, cursor: 'pointer', flexShrink: 0, ...(sport ? SPORT_ROW : null) }}>
               <span style={{ width: dp(40), fontSize: dp(16), color: 'rgba(243,244,248,0.5)', textAlign: 'right' }}>{model.channelNumber(channel) ?? ''}</span>
               <ChannelArt channel={channel} style={{ width: dp(70), height: dp(46), flexShrink: 0 }} radius={dp(8)} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: dp(19), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{channel.name}</div>
-                <div style={{ fontSize: dp(15), color: 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? channel.group}</div>
+                <div style={{ fontSize: dp(15), color: sport ? TV.muted : 'rgba(243,244,248,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{info.now?.title ?? channel.group}</div>
               </div>
             </div>
           )

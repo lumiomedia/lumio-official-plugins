@@ -50,7 +50,8 @@ export function statusText(match: SportMatch, ctx: SportCtx): { text: string; li
   titeln och ställningen, en metarad (status · liga · kanal) och förloppet
   som kortets underkant. OK = matchinfo, håll = titta direkt.
 */
-export function MatchCard({ match, ctx }: { match: SportMatch; ctx: SportCtx }) {
+/** `fluid`: kortet fyller sin cell (rutnätet) i stället för remsans fasta bredd. */
+export function MatchCard({ match, ctx, fluid = false }: { match: SportMatch; ctx: SportCtx; fluid?: boolean }) {
   const st = statusAt(match, ctx.now)
   const followed = followState(match, ctx.follows).any
   const reminded = ctx.isReminded(match)
@@ -58,7 +59,7 @@ export function MatchCard({ match, ctx }: { match: SportMatch; ctx: SportCtx }) 
   const status = statusText(match, ctx)
   const progress = st === 'live' ? progressOf(match.start, match.stop, ctx.now) : st === 'finished' ? 1 : 0
   return (
-    <div data-testid="sport-card" data-match-id={match.id} data-status={st} {...station(() => ctx.openMatch(match), () => ctx.watch(match), focusAttr('card'))} style={{ ...sportCardStyle, position: 'relative', width: dp(450), flexShrink: 0, padding: `${dp(14)}px ${dp(16)}px ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(14), cursor: 'pointer', boxSizing: 'border-box' }}>
+    <div data-testid="sport-card" data-match-id={match.id} data-status={st} {...station(() => ctx.openMatch(match), () => ctx.watch(match), focusAttr('card'))} style={{ ...sportCardStyle, position: 'relative', width: fluid ? '100%' : dp(450), minWidth: 0, flexShrink: 0, padding: `${dp(14)}px ${dp(16)}px ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(14), cursor: 'pointer', boxSizing: 'border-box' }}>
       <div data-testid="card-anchor" style={{ width: dp(84), height: dp(84), flexShrink: 0, borderRadius: dp(12), overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: TV.s06, color: TV.muted }}>
         {best ? <ChannelArt channel={sourceChannel(best)} style={{ width: '100%', height: '100%' }} radius={dp(12)} /> : <SportIcon kind={match.kind} size={dp(40)} />}
       </div>
@@ -98,12 +99,15 @@ export function MatchCard({ match, ctx }: { match: SportMatch; ctx: SportCtx }) 
  * radbryts i tidsordning i stället för en lång vågrät remsa, så fjärrens
  * ▴▾◂▸ rör sig i rutnätet.
  */
+export const GRID_MIN_CARD = 420
+
 export function MatchGrid({ matches, ctx, testId = 'sport-grid' }: { matches: SportMatch[]; ctx: SportCtx; testId?: string }) {
   const items = matchdayStrip(matches, ctx.now).items
   if (items.length === 0) return null
   return (
-    <section data-testid={testId} style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, ${dp(450)}px)`, gap: dp(16), justifyContent: 'start' }}>
-      {items.map((m) => <MatchCard key={m.id} match={m} ctx={ctx} />)}
+    // Så många kolumner som får plats (minst 420 designpx per kort) och korten sträcks ut: 4 i 1920-scenen, fler på bredare.
+    <section data-testid={testId} style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${dp(GRID_MIN_CARD)}px, 1fr))`, gap: dp(16) }}>
+      {items.map((m) => <MatchCard key={m.id} match={m} ctx={ctx} fluid />)}
     </section>
   )
 }

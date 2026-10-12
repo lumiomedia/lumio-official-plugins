@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useMemo, useState, type CSSProperties, type FocusEvent } from 'react'
-import { useTvMode } from '@/lib/plugin-sdk'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent } from 'react'
+import { onTvFocusEdge, useTvMode } from '@/lib/plugin-sdk'
 import type { TvViewProps } from '../../tv/tv-shell'
 import { Segment, TV, dp, station, useTvClockNode } from '../../tv/tv-ui'
 import { SPORT_CHIPS, type SportFilter, type SportMatch } from '../sport-model'
@@ -82,6 +82,28 @@ export function sportViewTop(tv: boolean): CSSProperties {
     : { paddingTop: sportViewPaddingTop() }
 }
 
+/**
+ * KANTERNA I SPORTS LAGER (Jerry 2026-10-12: ◂ i "Välj en annan kanal"
+ * öppnade appens sidomeny). Står fokus i ett lager ur Sport (matchinfon,
+ * kanalväljaren, lag-/liga-/spelarsidan, väljarlådorna) tar Sport varje
+ * kanttryck, så att värdens reservlyssnare (sidomenyn, snabbmenyn) aldrig
+ * öppnas ovanpå. ◂ vid vänsterkanten stänger det översta lagret, som Bakåt —
+ * fokus går tillbaka till det som öppnade det.
+ */
+export function sportLayerAt(el: Element | null): HTMLElement | null {
+  return el?.closest<HTMLElement>('[data-sport-stage] [data-live-tv-layer][data-panel-root]') ?? null
+}
+
+function useSportLayerEdges(nav: TvViewProps['nav']) {
+  const navRef = useRef(nav)
+  useEffect(() => { navRef.current = nav })
+  useEffect(() => onTvFocusEdge((dir, meta) => {
+    if (!sportLayerAt(document.activeElement)) return
+    meta?.claim?.()
+    if (dir === 'left') navRef.current.back()
+  }), [])
+}
+
 /** Sportvyn. Skrivbordet ritar samma träd i scenlådan (Live TV:s "everywhere"-modell). */
 export function TvSport(props: TvViewProps) {
   return props.phone ? <SportPhone {...props} /> : <SportTv {...props} />
@@ -119,6 +141,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
      TV-läget sedan värden ritar sin klocka där (app: sportsidan i TV-läget). */
   const ownClock = !standalone
   usePollDemand('sport-view', true)
+  useSportLayerEdges(nav)
 
   const counts = sportCounts(mergedDay)
   const matches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter])

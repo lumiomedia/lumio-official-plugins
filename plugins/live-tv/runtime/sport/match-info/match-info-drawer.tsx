@@ -210,6 +210,7 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
           model={ctx.model}
           nav={ctx.nav}
           surface={sportStackedStyle}
+          sport
           title={ctx.tt('sportOtherChannel')}
           onPick={(channel) => {
             setOverride(match.id, { key: channelKey(channel), name: channel.name, url: channel.url, logo: channel.logo ?? null, group: channel.group, tvgId: channel.tvgId })

@@ -302,8 +302,17 @@ export function __setHostClockForTests(component: ComponentType<{ variant?: 'tv'
 export function getTvClock(): ComponentType<{ variant?: 'tv' | 'desktop' }> | null {
   return hostClockForTests
 }
-export function onTvFocusEdge(_handler: (dir: string, meta?: { claimed: boolean; claim(): void }) => void): () => void {
-  return () => {}
+type EdgeHandler = (dir: string, meta?: { claimed: boolean; claim(): void }) => void
+const edgeHandlers = new Set<EdgeHandler>()
+export function onTvFocusEdge(handler: EdgeHandler): () => void {
+  edgeHandlers.add(handler)
+  return () => { edgeHandlers.delete(handler) }
+}
+/** Testerna: värdens kanttryck (alla lyssnare hör det; den som agerar tar anspråket). */
+export function __emitTvFocusEdgeForTests(dir: string): { claimed: boolean; claim(): void } {
+  const meta = { claimed: false, claim() { meta.claimed = true } }
+  for (const fn of [...edgeHandlers]) fn(dir, meta)
+  return meta
 }
 
 // ---- Scenlådan (app 0.1.597, A5) ----
