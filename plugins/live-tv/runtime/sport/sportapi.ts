@@ -192,7 +192,10 @@ export const sportApi: SportsProvider = {
     if (needle.length < 3) return { requests: [], parse: () => [] }
     return {
       requests: [{ sport, path: '/leagues', ttlS: 604_800 }],
+      // Riktiga svaret (användarens cache 2026-10-12) grupperar per land: data: [{ country, leagues: [...] }].
+      // Dokumentationens platta lista med `zone` läses också.
       parse: (bodies) => arr((bodies[0] as any)?.data)
+        .flatMap((g) => (Array.isArray(g?.leagues) ? g.leagues.map((l: any) => ({ ...l, zone: l?.zone ?? g?.country })) : [g]))
         .filter((l) => foldTeamKey(String(l?.name ?? '')).includes(needle) || foldTeamKey(String(l?.zone ?? '')).includes(needle))
         .map((l) => ({ id: String(l?.id ?? ''), name: String(l?.name ?? ''), crest: null, country: str(l?.zone) })),
     }

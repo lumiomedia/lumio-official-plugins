@@ -135,3 +135,14 @@ describe('sportapi.ai: paus och tomma livefält', () => {
     expect(f).toMatchObject({ status: 'live', minute: null, score: null, home: { name: 'Örebro SK' } })
   })
 })
+
+describe('sportapi.ai: ligalistan i det riktiga svarets form', () => {
+  it('grupperad per land (användarens cache): ligorna plattas ut och landet blir ligans land', () => {
+    const body = { success: true, data: [
+      { country: 'Sweden', geo: 'SE', leagues: [{ id: 21, name: 'Swedish Allsvenskan', has_standings: true, has_fixtures: true }] },
+      { country: 'England', geo: 'GB-ENG', leagues: [{ id: 24, name: 'Premier League', has_standings: true }] },
+    ] }
+    expect(sportApi.searchLeagues!('football', 'allsven').parse([body])).toEqual([{ id: '21', name: 'Swedish Allsvenskan', crest: null, country: 'Sweden' }])
+    expect(sportApi.searchLeagues!('football', 'sweden').parse([body]).map((h) => h.id)).toEqual(['21'])
+  })
+})

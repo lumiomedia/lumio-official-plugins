@@ -40,6 +40,7 @@ const svg = (size: number, children: ReactNode, filled = false) =>
 
 export const PIcons = {
   Tv: ({ size = 14 }: IconProps) => svg(size, <><rect x="3" y="6" width="18" height="12" rx="2" /><path d="m9 3 3 3 3-3" /></>),
+  Table: ({ size = 14 }: IconProps) => svg(size, <><rect x="3.5" y="4.5" width="17" height="15" rx="2" /><path d="M3.5 9.5h17M3.5 14.5h17M9 9.5v10" /></>),
   ListNumbers: ({ size = 14 }: IconProps) => svg(size, <><path d="M10 6h10M10 12h10M10 18h10" /><path d="M4 5h1v4M4 15.5c.5-.7 2-.7 2 .3 0 .9-2 1.6-2 3.2h2" /></>),
   Calendar: ({ size = 18 }: IconProps) => svg(size, <><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></>),
   Rows: ({ size = 18 }: IconProps) => svg(size, <><rect x="4" y="5" width="16" height="6" rx="1.5" /><rect x="4" y="13" width="16" height="6" rx="1.5" /></>),

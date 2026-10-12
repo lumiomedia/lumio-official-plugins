@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { TV, dp, station, Chip } from '../../tv/tv-ui'
 import { useTvText, type TvStringKey } from '../../tv/tv-strings'
 import { Crest } from './sport-parts'
@@ -15,11 +15,16 @@ import { leagueEntries, yourLeagues } from '../league-jump'
 import { LeagueDrawer, YourLeaguesRow } from './sport-league-drawer'
 import { FORM_COLOR, defaultResultsFilter, formLetters, groupResults, onlyLeague, type ResultGroup, type ResultsFilter } from '../results-model'
 import { sportCardStyle } from '../surface'
+import { SportIcons } from './sport-icons'
 export { formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
-function StandingsTable({ rows, tt }: { rows: StandingRow[]; tt: TT }) {
+function StandingsTable({ rows, tt }: { rows: StandingRow[] | 'loading'; tt: TT }) {
   const cell = { padding: `${dp(6)}px ${dp(8)}px`, fontSize: dp(15) } as const
+  // Bara rubrikraden såg ut som ett fel (Jerry 2026-10-12): säg i stället att tabellen laddar eller saknas.
+  if (rows === 'loading' || rows.length === 0) {
+    return <div data-testid={rows === 'loading' ? 'sport-standings-loading' : 'sport-standings-empty'} style={{ ...sportCardStyle, padding: `${dp(14)}px ${dp(16)}px`, fontSize: dp(16), color: TV.muted }}>{rows === 'loading' ? tt('sportLoading') : tt('sportTableEmpty')}</div>
+  }
   return (
     <div data-testid="sport-standings" style={{ ...sportCardStyle, padding: `${dp(4)}px ${dp(8)}px` }}>
     <table style={{ width: '100%', borderCollapse: 'collapse', color: TV.text }}>
@@ -40,6 +45,18 @@ function StandingsTable({ rows, tt }: { rows: StandingRow[]; tt: TT }) {
   )
 }
 
+/** Tydlig Tabell-knapp (Jerry 2026-10-12: den gamla var för diskret): ikon, text och TV-storlek, fokusbar. */
+function TableButton({ open, onPress, testId, tt }: { open: boolean; onPress: () => void; testId: string; tt: TT }) {
+  return (
+    <div data-testid={testId} {...station(onPress)} aria-expanded={open ? 'true' : 'false'}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: dp(10), height: dp(52), minHeight: dp(52), padding: `0 ${dp(18)}px`, borderRadius: dp(12), boxSizing: 'border-box', cursor: 'pointer', flexShrink: 0,
+        fontSize: dp(18), fontWeight: 700, background: open ? TV.text : TV.s12, color: open ? '#12152a' : TV.text, border: `1px solid ${open ? TV.text : TV.lineStrong}` }}>
+      <SportIcons.Table size={dp(22)} />
+      <span>{open ? tt('sportTableHide') : tt('sportTable')}</span>
+    </div>
+  )
+}
+
 const NO_LAYER = { pushLayer: () => () => {} } as unknown as TvNav
 
 export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'all', nav = NO_LAYER }: { matches: SportMatch[]; controller: ResultsController | null; onOpenMatch(m: SportMatch): void; tv: boolean; sport?: SportFilter; nav?: TvNav }) {
@@ -56,16 +73,33 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
   const shown = useMemo(() => onlyLeague(groups, league), [groups, league])
   const entries = useMemo(() => leagueEntries(groups, follows), [groups, follows])
   const mine = useMemo(() => yourLeagues(entries), [entries])
+  // En vald liga visar sin tabell direkt (Jerry 2026-10-12); med Alla ligor står tabellerna stängda.
+  const picked = league ? shown.find((g) => g.key === league) ?? null : null
+  const pickedKey = picked?.key ?? null
+  useEffect(() => {
+    if (!picked || !controller || !settings.apiKey) return
+    let cancelled = false
+    setTables((t) => (t[picked.key] ? t : { ...t, [picked.key]: 'loading' }))
+    const cached = controller.standings(picked.sport, picked.leagueId, picked.season)
+    const load = cached ? Promise.resolve(cached) : controller.loadStandings(picked.sport, picked.leagueId, picked.season)
+    void load.then((rows) => { if (!cancelled) setTables((t) => (t[picked.key] === 'loading' ? { ...t, [picked.key]: rows ?? [] } : t)) })
+    // Tillbaka till Alla ligor: den automatiskt öppnade tabellen stängs igen.
+    return () => { cancelled = true; setTables((t) => { const { [picked.key]: _drop, ...rest } = t; return rest }) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickedKey, controller, settings.apiKey])
 
   if (!settings.apiKey || !controller) {
     return <KeyCard variant="tab" />
   }
 
-  const toggleTable = async (g: ResultGroup) => {
-    if (tables[g.key]) { setTables((t) => { const { [g.key]: _drop, ...rest } = t; return rest }); return }
+  const openTable = async (g: ResultGroup) => {
     setTables((t) => ({ ...t, [g.key]: 'loading' }))
     const rows = controller.standings(g.sport, g.leagueId, g.season) ?? (await controller.loadStandings(g.sport, g.leagueId, g.season))
     setTables((t) => ({ ...t, [g.key]: rows ?? [] }))
+  }
+  const toggleTable = (g: ResultGroup) => {
+    if (tables[g.key]) { setTables((t) => { const { [g.key]: _drop, ...rest } = t; return rest }); return }
+    void openTable(g)
   }
 
   // Ett ligaval FILTRERAR till den ligan (Jerry 2026-10-11) i stället för att rulla dit; "Alla ligor ×" återställer.
@@ -86,7 +120,7 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
         <section key={g.key} data-testid={`results-group-${g.key}`} style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: dp(20), fontWeight: 600 }}>{g.round != null ? `${labels.get(g.key) ?? g.league} · ${tt('sportRound', { n: g.round })}` : labels.get(g.key) ?? g.league}</div>
-            <div {...station(() => void toggleTable(g))} style={{ fontSize: dp(15), color: TV.muted, cursor: 'pointer', padding: `${dp(6)}px ${dp(12)}px`, borderRadius: dp(8), background: TV.s08 }}>{tt('sportTable')}</div>
+            <TableButton testId={`results-table-${g.key}`} open={!!tables[g.key]} onPress={() => toggleTable(g)} tt={tt} />
           </div>
           {g.matches.map((m) => (
             <div key={m.id} {...station(() => onOpenMatch(m))} style={{ display: 'grid', gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: 'center', gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, ...sportCardStyle, borderRadius: dp(10), cursor: 'pointer' }}>
@@ -96,7 +130,7 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
               <span style={{ display: 'flex', alignItems: 'center', gap: dp(8) }}><Crest name={m.away ?? ''} colorKey={m.awayKey ?? ''} src={m.awayCrest} size={dp(22)} />{m.away}</span>
             </div>
           ))}
-          {tables[g.key] && tables[g.key] !== 'loading' ? <StandingsTable rows={tables[g.key] as StandingRow[]} tt={tt} /> : null}
+          {tables[g.key] ? <StandingsTable rows={tables[g.key]!} tt={tt} /> : null}
         </section>
       ))}
       {drawer ? <LeagueDrawer nav={nav} entries={entries} showSport={sport === 'all'} onPick={(key) => setLeague(key)} onClose={() => setDrawer(false)} /> : null}

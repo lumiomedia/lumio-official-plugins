@@ -32,6 +32,8 @@ export interface RateStatus {
 const TEN_MIN = 10 * 60_000
 const TWO_HOURS = 2 * 3_600_000
 const LIVE_DETAIL_MS = 60_000
+/** En tabell som saknades (fel eller tom) frågas inte om hos samma källa på sex timmar. */
+const STANDINGS_MISS_MS = 6 * 3_600_000
 /** Dagarna före gårdagen som repriskollen läser ur diskcachen (aldrig nätet). */
 const HISTORY_DAYS = [2, 3]
 
@@ -55,6 +57,14 @@ export class ResultsController {
   private observed = new Map<string, number>()
   /** Ligans källa (sport|ligans id), för tabellanrop från vyer som bara har ligans id. */
   private leagueProvider = new Map<string, ProviderId>()
+  /**
+   * Samma liga hos andra källor (sport|källa|ligans id → källa → id och säsong), lärt av
+   * händelseindexet: samma match hos två källor = deras ligor är samma. Tabellen hämtas
+   * då hos nästa källa när ligans egen saknar den (API-Sports gratisplan har inte 2026).
+   */
+  private leagueAliases = new Map<string, Map<ProviderId, { leagueId: string; season: string }>>()
+  /** källa|sport|liga|säsong → när tabellen saknades (fel eller tom). */
+  private standingsMiss = new Map<string, number>()
   private done = new Set<string>()
   /** sport|datum som repriskollen redan läst ur diskcachen (träff eller ej). */
   private historyPeeked = new Set<string>()
@@ -149,6 +159,8 @@ export class ResultsController {
       const k = key(f)
       this.observed.set(k, observedAt)
       if (f.league.id) this.leagueProvider.set(`${f.sport}|${f.league.id}`, f.provider)
+      const stored = byKey.get(k)
+      if (stored && stored.provider !== f.provider && stored.league.id && f.league.id) this.noteLeagueAlias(f.sport, stored, f)
       if (!f.score) continue
       const prev = this.scores.get(k)
       // Källbyte: den nya källan kan släpa efter. Ställningen sänks bara av SAMMA källa (VAR),
@@ -176,6 +188,17 @@ export class ResultsController {
     const present = new Set(list.map((f) => this.events.resolve(f)))
     return [...byKey].filter(([k, f]) => !present.has(k) && f.provider === provider && (f.status === 'live' || f.status === 'ht'))
       .map(([, f]) => ({ ...f, status: 'finished' as const, statusShort: 'FT', minute: null }))
+  }
+
+  private noteLeagueAlias(sport: SportKind, a: Fixture, b: Fixture): void {
+    const link = (x: Fixture, y: Fixture) => {
+      const k = `${sport}|${x.provider}|${x.league.id}`
+      const m = this.leagueAliases.get(k) ?? new Map()
+      m.set(y.provider, { leagueId: y.league.id, season: y.league.season })
+      this.leagueAliases.set(k, m)
+    }
+    link(a, b)
+    link(b, a)
   }
 
   private rollDone(): void {
@@ -227,9 +250,25 @@ export class ResultsController {
     }
     const provider = call.provider ?? this.leagueProvider.get(`${call.sport}|${call.leagueId}`) ?? this.router.candidates(call.sport)[0]?.provider.id
     if (!provider) return
-    const res = await this.router.standings(call.sport, provider, call.leagueId, call.season)
-    if (res.data) { this.tables.set(planKey(call), res.data); this.emit() }
-    if (res.ok) this.done.add(planKey(call))
+    // Ligans egen källa först, sedan samma liga hos andra källor. En källa som nyss saknade
+    // tabellen (fel eller tom) hoppas över i sex timmar: varje tryck på Tabell ska inte kosta ett anrop.
+    const aliases = this.leagueAliases.get(`${call.sport}|${provider}|${call.leagueId}`)
+    const tries = [{ provider, leagueId: call.leagueId, season: call.season }, ...[...(aliases ?? [])].filter(([p]) => p !== provider).map(([p, a]) => ({ provider: p, ...a }))]
+    for (const t of tries) {
+      const miss = `${t.provider}|${call.sport}|${t.leagueId}|${t.season}`
+      const at = this.standingsMiss.get(miss)
+      if (at != null && this.now() - at < STANDINGS_MISS_MS) continue
+      const res = await this.router.standings(call.sport, t.provider, t.leagueId, t.season)
+      if (res.ok && res.data && res.data.length > 0) {
+        this.tables.set(planKey(call), res.data)
+        this.done.add(planKey(call))
+        this.emit()
+        return
+      }
+      this.standingsMiss.set(miss, this.now())
+    }
+    this.tables.set(planKey(call), [])
+    this.emit()
   }
 
   /**

@@ -125,3 +125,39 @@ describe('SportResults', () => {
     expect(screen.queryByText('Allsvenskan · Omgång 27')).toBeNull()
   })
 })
+
+describe('SportResults: tabellen (Jerry 2026-10-12)', () => {
+  const rows = [{ rank: 1, team: { id: '262', name: 'Djurgården', crest: null }, played: 14, points: 31, goalDiff: 21, form: 'WL', group: null }]
+  const world = () => [m(), m({ home: 'Lazio', away: 'Roma', homeKey: 'lazio', awayKey: 'roma', league: 'Serie A', fixture: { provider: 'api-sports', id: 'x', leagueId: '135', season: '2026' } })]
+
+  it('tydlig Tabell-knapp med ikon som visar och döljer; en saknad tabell säger det i stället för en tom rubrikrad', async () => {
+    setSportSettings({ apiKey: 'k123' })
+    const controller = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => []), subscribe: () => () => {} }
+    render(<SportResults matches={world()} controller={controller as never} onOpenMatch={vi.fn()} tv />)
+    const btn = screen.getByTestId('results-table-football|113')
+    expect(btn).toHaveAttribute('data-f')
+    expect(btn.querySelector('svg')).not.toBeNull()
+    expect(btn).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(btn)
+    expect(await screen.findByTestId('sport-standings-empty')).toHaveTextContent('Ingen tabell för ligan just nu.')
+    expect(btn).toHaveAttribute('aria-expanded', 'true')
+    expect(btn).toHaveTextContent('Dölj tabell')
+    fireEvent.click(btn)
+    expect(screen.queryByTestId('sport-standings-empty')).toBeNull()
+  })
+
+  it('Alla ligor: stängda; en vald liga visar sin tabell direkt utan tryck', async () => {
+    setSportSettings({ apiKey: 'k123' })
+    const controller = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => rows), subscribe: () => () => {} }
+    render(<SportResults matches={world()} controller={controller as never} onOpenMatch={vi.fn()} tv={false} />)
+    expect(screen.queryByTestId('sport-standings')).toBeNull()
+    expect(controller.loadStandings).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('league-chip-football|113'))
+    await waitFor(() => expect(screen.getByTestId('sport-standings')).toHaveTextContent('Djurgården'))
+    expect(controller.loadStandings).toHaveBeenCalledWith('football', '113', '2026')
+    expect(screen.getByTestId('results-table-football|113')).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(screen.getByTestId('league-chip-football|113'))
+    expect(screen.getAllByTestId(/^results-group-/)).toHaveLength(2)
+    expect(screen.queryByTestId('sport-standings')).toBeNull()
+  })
+})

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { station } from '../../tv/tv-ui'
 import { useTvText, type TvStringKey } from '../../tv/tv-strings'
 import { MT, ellipsis } from '../../tv/mobile/mobile-tokens'
@@ -53,6 +53,13 @@ function PhoneStandings({ rows, tt, follows }: { rows: StandingRow[]; tt: TT; fo
   )
 }
 
+/** Laddar, saknas (i stället för en ensam rubrikrad) eller tabellen. */
+function StandingsBody({ rows, tt, follows }: { rows: StandingRow[] | null; tt: TT; follows: SportFollow[] }) {
+  if (rows === null) return <div style={{ padding: 8, color: MT.muted }}>{tt('sportLoading')}</div>
+  if (rows.length === 0) return <div data-testid="phone-standings-empty" style={{ padding: 8, color: MT.muted }}>{tt('sportTableEmpty')}</div>
+  return <PhoneStandings rows={rows} tt={tt} follows={follows} />
+}
+
 /**
   Tabeller & resultat på telefon (handoffen): växeln "Bara det jag kan se" och
   ligaväljaren överst, sedan en grupp per liga med Tabell ›, raderna 58 px med
@@ -69,6 +76,19 @@ export function SportResultsPhone({ matches, controller, onOpenMatch, onWatch, p
   const [leagueSheet, setLeagueSheet] = useState(false)
   const forSport = useMemo(() => (sport === 'all' ? matches : matches.filter((m) => m.kind === sport)), [matches, sport])
   const { groups, entries, followedCount } = useMemo(() => phoneResults(forSport, { watchable, scope }, follows), [forSport, watchable, scope, follows])
+  // En vald liga visar sin tabell direkt under matcherna (Jerry 2026-10-12); Alla ligor och Mina lag står stängda.
+  const picked = scope !== 'all' && scope !== 'followed' ? groups.find((g) => g.key === scope) ?? null : null
+  const pickedKey = picked?.key ?? null
+  const [inline, setInline] = useState<{ key: string; rows: StandingRow[] | null } | null>(null)
+  useEffect(() => {
+    if (!picked || !controller || !settings.apiKey) { setInline(null); return }
+    let cancelled = false
+    const cached = controller.standings(picked.sport, picked.leagueId, picked.season)
+    setInline({ key: picked.key, rows: cached })
+    if (!cached) void controller.loadStandings(picked.sport, picked.leagueId, picked.season).then((rows) => { if (!cancelled) setInline({ key: picked.key, rows: rows ?? [] }) })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickedKey, controller, settings.apiKey])
 
   if (!settings.apiKey || !controller) {
     return <KeyCard variant="tab" pushLayer={pushLayer} />
@@ -104,18 +124,27 @@ export function SportResultsPhone({ matches, controller, onOpenMatch, onWatch, p
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 10, height: 10, borderRadius: 3, background: leagueColor(g.matches[0]?.leagueKey || g.sport), flexShrink: 0 }} />
             <span style={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 600, ...ellipsis }}>{g.round != null ? `${labels.get(g.key) ?? g.league} · ${tt('sportRound', { n: g.round })}` : labels.get(g.key) ?? g.league}</span>
-            <div data-testid={`phone-table-${g.key}`} {...station(() => void openTable(g))} style={{ height: 28, padding: '0 10px', borderRadius: 8, background: 'rgba(252,252,255,0.12)', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
-              {tt('sportTable')}<MIcons.CaretRight size={12} />
-            </div>
+            {/* Tydlig knapp (Jerry 2026-10-12): ikon, text och kant. Med en vald liga står tabellen redan nedanför. */}
+            {inline?.key === g.key ? null : (
+              <div data-testid={`phone-table-${g.key}`} {...station(() => void openTable(g))} style={{ height: 34, padding: '0 12px', borderRadius: 10, background: 'rgba(252,252,255,0.14)', border: '1px solid rgba(255,255,255,0.28)', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                <PIcons.Table size={15} />{tt('sportTable')}<MIcons.CaretRight size={12} />
+              </div>
+            )}
           </div>
           {g.matches.map((m) => <ResultRow key={m.id} m={m} tt={tt} locale={locale} follows={follows} onOpen={() => onOpenMatch(m)} onWatch={onWatch} />)}
+          {inline?.key === g.key ? (
+            <div data-testid="phone-standings-inline" style={{ ...cardStyle, borderRadius: 12, padding: '10px 10px 6px', display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: P.muted60, paddingBottom: 4 }}>{tt('sportTable')}</span>
+              <StandingsBody rows={inline.rows} tt={tt} follows={follows} />
+            </div>
+          ) : null}
         </section>
       ))}
       {leagueSheet ? <PhoneLeagueSheet entries={entries} scope={scope} followedCount={followedCount} kindLabel={sport === 'all' ? kindLabel ?? null : null} onPick={setScope} onClose={() => setLeagueSheet(false)} pushLayer={pushLayer} /> : null}
       {table ? (
         <PhoneSportSheet testId="phone-standings-sheet" label={tt('sportTable')} onClose={() => setTable(null)} pushLayer={pushLayer}>
           <span style={sheetTitle}>{`${labels.get(table.group.key) ?? table.group.league} · ${tt('sportTable')}`}</span>
-          {table.rows === null ? <div style={{ padding: 8, color: MT.muted }}>{tt('sportLoading')}</div> : <PhoneStandings rows={table.rows} tt={tt} follows={follows} />}
+          <StandingsBody rows={table.rows} tt={tt} follows={follows} />
         </PhoneSportSheet>
       ) : null}
     </div>

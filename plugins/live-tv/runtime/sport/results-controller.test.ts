@@ -243,6 +243,62 @@ describe('ResultsController', () => {
       expect(c.fixtures('football', '2026-10-10')[0]).toMatchObject({ status: 'live' })
     })
 
+    describe('tabellen (Allsvenskan · Omgång 23 visade bara rubrikraden)', () => {
+      // API-Sports gratisplan ger inte säsong 2026 ({"errors":{"plan":…}} → upstream); sportapi.ai har ligan som 21.
+      const sportApiTable = { success: true, data: [
+        { position: 1, team: { id: 262, name: 'Djurgården', logo: 'swedish-allsvenskan--djurgarden.svg' }, played: 14, points: 31, goal_difference: 21, form: [{ result: 'W' }, { result: 'L' }] },
+        { position: 2, team: { id: 251, name: 'Hammarby', logo: 'espn-2495.png' }, played: 12, points: 26, goal_difference: 17, form: [{ result: 'W' }] },
+      ] }
+      function both(apiStandings: Partial<SportFetchResponse>) {
+        const paths: string[] = []
+        const fetch = vi.fn(async ({ provider, req, mode }: { provider: string; req: { path: string }; mode: string }) => {
+          if (mode !== 'cache-only') paths.push(`${provider}${req.path}`)
+          const base = { data: null, cached: false, fresh: true, fetchedAt: NOW, quota: null, error: null }
+          if (req.path.startsWith('/standings?')) return { ...base, ...apiStandings } as SportFetchResponse
+          if (req.path === '/standings/21') return { ...base, data: sportApiTable } as SportFetchResponse
+          return base as SportFetchResponse
+        })
+        const router = routerFor({ fetch: fetch as never, now: () => NOW, sleep: async () => {} }, BOTH)
+        router.budget('sportapi')!.noteQuota({ ...quota, limit: 2000, remaining: 1500 })
+        router.budget('api-sports')!.noteQuota(quota)
+        const c = new ResultsController(router, { tz: 'Europe/Stockholm', now: () => NOW, startPoller: false })
+        // Samma match hos båda källorna: sportapi.ai:s liga 21, API-Sports liga 113 säsong 2026.
+        c.applyFixtures('football', '2026-10-10', [{ ...fromSportApi(1, 0), league: { id: '21', name: 'Swedish Allsvenskan', season: 'current', round: null, country: 'Sweden' } }], 'day', NOW)
+        c.applyFixtures('football', '2026-10-10', [{ ...fromApiSports(1, 0), league: { id: '113', name: 'Allsvenskan', season: '2026', round: 23, country: 'Sweden' } }], 'live', NOW + 1_000)
+        return { c, paths }
+      }
+
+      it('API-Sports svarar med fel: tabellen hämtas hos sportapi.ai för samma liga, och en andra öppning kostar inget', async () => {
+        const { c, paths } = both({ error: 'upstream' })
+        const rows = await c.loadStandings('football', '113', '2026')
+        expect(rows?.map((r) => r.team.name)).toEqual(['Djurgården', 'Hammarby'])
+        expect(rows?.[0]).toMatchObject({ rank: 1, played: 14, points: 31, form: 'WL' })
+        expect(c.standings('football', '113', '2026')).toHaveLength(2)
+        expect(paths).toEqual(['api-sports/standings?league=113&season=2026', 'sportapi/standings/21'])
+        paths.length = 0
+        expect(await c.loadStandings('football', '113', '2026')).toHaveLength(2)
+        expect(paths).toEqual([])
+      })
+
+      it('en tom tabell räknas som saknad: nästa källa, och den tomma källan frågas inte om igen på ett tag', async () => {
+        const { c, paths } = both({ data: { errors: [], response: [] } })
+        expect(await c.loadStandings('football', '113', '2026')).toHaveLength(2)
+        expect(paths).toEqual(['api-sports/standings?league=113&season=2026', 'sportapi/standings/21'])
+        expect(c.standings('football', '113', '2026')).toHaveLength(2)
+      })
+
+      it('ingen källa har tabellen: tomt (vyn säger det), och felet hämtas inte om vid nästa tryck', async () => {
+        const { c, paths } = both({ error: 'upstream' })
+        const fetchless = c as unknown as { leagueAliases: Map<string, unknown> }
+        fetchless.leagueAliases.clear()
+        expect(await c.loadStandings('football', '113', '2026')).toEqual([])
+        expect(paths).toEqual(['api-sports/standings?league=113&season=2026'])
+        paths.length = 0
+        expect(await c.loadStandings('football', '113', '2026')).toEqual([])
+        expect(paths).toEqual([])
+      })
+    })
+
     it('takraden säger vilken källa sporten faktiskt använder', () => {
       const c = two()
       c.router.budget('sportapi')!.noteQuota({ ...quota, limit: 2000, remaining: 1500 })

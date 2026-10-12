@@ -143,3 +143,31 @@ describe('Sök i källan på telefon', () => {
     expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: foldTeamKey('Malmo FF'), name: 'Malmo FF', providerIds: { 'api-sports': '375' }, crest: 'https://m/375.png' }])
   })
 })
+
+describe('Resultat på telefon: tabellen (Jerry 2026-10-12)', () => {
+  const world = () => [m(), m({ home: 'Lazio', away: 'Roma', homeKey: 'lazio', awayKey: 'roma', league: 'Serie A', fixture: { provider: 'api-sports', id: 'x', leagueId: '135', season: '2026' } })]
+  it('Tabell-knappen har ikon; en saknad tabell säger det i arket', async () => {
+    setSportSettings({ apiKey: 'k123' })
+    const c = { ...fakeController(), loadStandings: vi.fn(async () => []) }
+    render(<SportResultsPhone matches={world()} controller={c as never} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
+    const btn = screen.getByTestId('phone-table-football|113')
+    expect(btn.querySelector('svg')).not.toBeNull()
+    fireEvent.click(btn)
+    expect(await screen.findByTestId('phone-standings-empty')).toHaveTextContent('Ingen tabell för ligan just nu.')
+  })
+  it('vald liga: tabellen står direkt under matcherna utan tryck; Alla ligor stänger den', async () => {
+    setSportSettings({ apiKey: 'k123' })
+    const c = fakeController()
+    render(<SportResultsPhone matches={world()} controller={c as never} onOpenMatch={vi.fn()} pushLayer={pushLayer} />)
+    expect(screen.queryByTestId('phone-standings-inline')).toBeNull()
+    fireEvent.click(screen.getByTestId('phone-results-league'))
+    fireEvent.click(await screen.findByTestId('phone-league-row-football|113'))
+    const inline = await screen.findByTestId('phone-standings-inline')
+    await waitFor(() => expect(inline).toHaveTextContent('AIK Stockholm'))
+    expect(c.loadStandings).toHaveBeenCalledWith('football', '113', '2026')
+    expect(screen.queryByTestId('phone-table-football|113')).toBeNull()
+    fireEvent.click(screen.getByTestId('phone-results-league'))
+    fireEvent.click(await screen.findByTestId('phone-league-all'))
+    await waitFor(() => expect(screen.queryByTestId('phone-standings-inline')).toBeNull())
+  })
+})
