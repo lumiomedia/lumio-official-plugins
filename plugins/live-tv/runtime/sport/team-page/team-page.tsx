@@ -276,7 +276,7 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             {squadGroups(data.squad).map((g) => (
               <div key={g.group} data-testid={`tp-squad-${g.group}`} style={{ display: 'flex', flexDirection: 'column', gap: u(8) }}>
                 <span style={{ fontSize: u(15), fontWeight: 600, color: TV.muted }}>{positionLabel(g.group, ctx.tt)}</span>
-                <div style={{ display: 'grid', gridTemplateColumns: phone ? 'minmax(0,1fr)' : u.tv ? 'repeat(3, minmax(0,1fr))' : 'minmax(0,1fr) minmax(0,1fr)', gap: u(8) }}>
+                <div data-grid="" style={{ display: 'grid', gridTemplateColumns: phone ? 'minmax(0,1fr)' : u.tv ? 'repeat(3, minmax(0,1fr))' : 'minmax(0,1fr) minmax(0,1fr)', gap: u(8) }}>
                   {g.players.map((p) => (
                     <div key={`${p.number ?? ''}-${p.name}`} data-testid="tp-player" data-injured={p.injury ? '1' : '0'} data-details={hasPlayerDetails(p) ? '1' : '0'}
                       // Bara spelare med något mer att visa öppnar ett kort; de andra är inga fokusstopp (inga återvändsgränder på TV).

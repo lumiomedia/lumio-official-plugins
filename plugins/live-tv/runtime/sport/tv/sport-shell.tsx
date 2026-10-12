@@ -12,6 +12,7 @@ import { dayHeaderCounts } from '../match-info-model'
 import { useSportBackdrop } from '../backdrop'
 import { SportBackdropLayer } from '../sport-backdrop'
 import { useSportCtx } from '../sport-ctx'
+import { useRowNeighbours } from '../row-nav'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import { RateLineView } from './sport-score'
@@ -142,6 +143,9 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
   const ownClock = !standalone
   usePollDemand('sport-view', true)
   useSportLayerEdges(nav)
+  // ▾/▴ i radordning (nästa rad, första stoppet) på TV — row-nav.ts.
+  const stageRef = useRef<HTMLDivElement | null>(null)
+  useRowNeighbours(stageRef, tvMode)
 
   const counts = sportCounts(mergedDay)
   const matches = useMemo(() => visibleMatches(mergedDay, filter), [mergedDay, filter])
@@ -172,7 +176,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
   }
 
   return (
-    <div data-testid="sport-stage" data-sport-stage="" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', ...backdrop.surface }}>
+    <div ref={stageRef} data-testid="sport-stage" data-sport-stage="" style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', ...backdrop.surface }}>
     <style>{SPORT_FOCUS_CSS}</style>
     <SportBackdropLayer choice={backdrop.choice} phone={false} onBroken={backdrop.onBroken} />
     <div data-testid="sport-view" data-scroll="" onFocusCapture={revealHeaderFully} style={{ position: 'relative', flex: 1, overflowY: 'auto', padding: `0 ${dp(48)}px ${dp(48)}px`, ...sportViewTop(tvMode), display: 'flex', flexDirection: 'column', gap: dp(22) }}>

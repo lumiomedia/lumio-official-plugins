@@ -88,7 +88,7 @@ export function SportFollows({ ctx, days }: { ctx: SportCtx; days: (SportDay | n
             <span style={sectionTitle}>{ctx.kindLabel(kind)}</span>
             <span style={{ fontSize: dp(17), color: TV.dim }}>{list.length}</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${dp(620)}px, 1fr))`, gap: dp(10) }}>
+          <div data-grid="" style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${dp(620)}px, 1fr))`, gap: dp(10) }}>
             {list.map((f) => <FollowRow key={`${f.kind}:${f.key}`} ctx={ctx} follow={f} days={days} />)}
           </div>
         </section>

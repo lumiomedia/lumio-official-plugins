@@ -12,7 +12,7 @@ import type { StandingRow } from '../provider'
 import type { SportFilter, SportMatch } from '../sport-model'
 import type { TvNav } from '../../tv/tv-shell'
 import { leagueEntries, yourLeagues } from '../league-jump'
-import { LeagueDrawer, YourLeaguesRow } from './sport-league-drawer'
+import { LeagueDrawer, SportChip, YourLeaguesRow } from './sport-league-drawer'
 import { FORM_COLOR, defaultResultsFilter, formLetters, groupResults, onlyLeague, type ResultGroup, type ResultsFilter } from '../results-model'
 import { sportCardStyle } from '../surface'
 import { SportIcons } from './sport-icons'
@@ -46,15 +46,44 @@ function StandingsTable({ rows, tt }: { rows: StandingRow[] | 'loading'; tt: TT 
 }
 
 /** Tydlig Tabell-knapp (Jerry 2026-10-12: den gamla var för diskret): ikon, text och TV-storlek, fokusbar. */
-function TableButton({ open, onPress, testId, tt }: { open: boolean; onPress: () => void; testId: string; tt: TT }) {
+function TableButton({ open, onPress, testId, tt, attrs }: { open: boolean; onPress: () => void; testId: string; tt: TT; attrs?: Record<string, string> }) {
   return (
-    <div data-testid={testId} {...station(onPress)} aria-expanded={open ? 'true' : 'false'}
+    <div data-testid={testId} {...station(onPress, undefined, attrs)} aria-expanded={open ? 'true' : 'false'}
       style={{ display: 'inline-flex', alignItems: 'center', gap: dp(10), height: dp(52), minHeight: dp(52), padding: `0 ${dp(18)}px`, borderRadius: dp(12), boxSizing: 'border-box', cursor: 'pointer', flexShrink: 0,
         fontSize: dp(18), fontWeight: 700, background: open ? TV.text : TV.s12, color: open ? '#12152a' : TV.text, border: `1px solid ${open ? TV.text : TV.lineStrong}` }}>
       <SportIcons.Table size={dp(22)} />
       <span>{open ? tt('sportTableHide') : tt('sportTable')}</span>
     </div>
   )
+}
+
+const sel = (testId: string) => `[data-testid="${testId.replace(/["\\]/g, '\\$&')}"]`
+
+/**
+ * Grannarna i resultatlistan (Jerry 2026-10-12: Tabell-knappen gick bara att
+ * nå via Tennis-chipet). Läsordning: gruppens Tabell → dess matchrader →
+ * nästa grupps Tabell. ▸ från en matchrad går till gruppens Tabell och ◂
+ * tillbaka till gruppens första rad.
+ */
+export function groupNav(groups: ResultGroup[], gi: number): { table: Record<string, string>; row: (mi: number) => Record<string, string> } {
+  const g = groups[gi]
+  const table = sel(`results-table-${g.key}`)
+  const row = (m: SportMatch) => sel(`results-row-${m.id}`)
+  const prev = groups[gi - 1]
+  const next = groups[gi + 1]
+  const first = g.matches[0]
+  const last = g.matches[g.matches.length - 1]
+  return {
+    table: {
+      ...(first ? { 'data-f-down': row(first), 'data-f-left': row(first) } : next ? { 'data-f-down': sel(`results-table-${next.key}`) } : {}),
+      ...(prev?.matches.length ? { 'data-f-up': row(prev.matches[prev.matches.length - 1]) } : {}),
+    },
+    row: (mi) => ({
+      'data-f-right': table,
+      ...(mi === 0 ? { 'data-f-up': table } : {}),
+      ...(g.matches[mi] === last && next ? { 'data-f-down': sel(`results-table-${next.key}`) } : {}),
+    }),
+  }
 }
 
 const NO_LAYER = { pushLayer: () => () => {} } as unknown as TvNav
@@ -72,6 +101,8 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
   const { groups, liveCount, mineCount, followedCount } = useMemo(() => groupResults(forSport, filter, follows), [forSport, filter, follows])
   const shown = useMemo(() => onlyLeague(groups, league), [groups, league])
   const entries = useMemo(() => leagueEntries(groups, follows), [groups, follows])
+  // Alla ligor-lådan: varje liga med matcher i dagens data (alla källor), oavsett Mina lag/Live-filtret.
+  const allEntries = useMemo(() => leagueEntries(groupResults(forSport, 'all', follows).groups, follows), [forSport, follows])
   const mine = useMemo(() => yourLeagues(entries), [entries])
   // En vald liga visar sin tabell direkt (Jerry 2026-10-12); med Alla ligor står tabellerna stängda.
   const picked = league ? shown.find((g) => g.key === league) ?? null : null
@@ -104,26 +135,28 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
 
   // Ett ligaval FILTRERAR till den ligan (Jerry 2026-10-11) i stället för att rulla dit; "Alla ligor ×" återställer.
   const pickLeague = (key: string) => setLeague((cur) => (cur === key ? null : key))
-  const labels = new Map(entries.map((e) => [e.key, e.label]))
+  const labels = new Map(allEntries.map((e) => [e.key, e.label]))
 
   return (
     <div data-testid="sport-results" style={{ display: 'flex', flexDirection: 'column', gap: dp(20) }}>
       <div style={{ display: 'flex', gap: dp(10), flexWrap: 'wrap' }}>
-        <Chip data-testid="results-filter-all" active={filter === 'all'} {...station(() => setFilter('all'), undefined, tv ? { 'data-init': '' } : undefined)}>{tt('sportResultsAll')}</Chip>
-        <Chip data-testid="results-filter-followed" active={filter === 'followed'} {...station(() => setFilter('followed'))}>{tt('sportResultsFollowed', { n: followedCount })}</Chip>
-        <Chip active={filter === 'live'} {...station(() => setFilter('live'))}>{`${tt('sportResultsLive')} (${liveCount})`}</Chip>
-        <Chip active={filter === 'mine'} {...station(() => setFilter('mine'))}>{tt('sportResultsMine', { n: mineCount })}</Chip>
+        <SportChip data-testid="results-filter-all" active={filter === 'all'} {...station(() => setFilter('all'), undefined, tv ? { 'data-init': '' } : undefined)}>{tt('sportResultsAll')}</SportChip>
+        <SportChip data-testid="results-filter-followed" active={filter === 'followed'} {...station(() => setFilter('followed'))}>{tt('sportResultsFollowed', { n: followedCount })}</SportChip>
+        <SportChip data-testid="results-filter-live" active={filter === 'live'} {...station(() => setFilter('live'))}>{`${tt('sportResultsLive')} (${liveCount})`}</SportChip>
+        <SportChip data-testid="results-filter-mine" active={filter === 'mine'} {...station(() => setFilter('mine'))}>{tt('sportResultsMine', { n: mineCount })}</SportChip>
       </div>
       {groups.length > 0 || league ? <YourLeaguesRow entries={mine.entries} fallback={mine.fallback} active={league} activeLabel={league ? labels.get(league) ?? null : null} onJump={pickLeague} onReset={() => setLeague(null)} onMore={() => setDrawer(true)} tv={tv} /> : null}
       {shown.length === 0 ? <div style={{ color: TV.dim, fontSize: dp(16) }}>{tt('sportResultsEmpty')}</div> : null}
-      {shown.map((g) => (
+      {shown.map((g, gi) => {
+        const gnav = groupNav(shown, gi)
+        return (
         <section key={g.key} data-testid={`results-group-${g.key}`} style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: dp(20), fontWeight: 600 }}>{g.round != null ? `${labels.get(g.key) ?? g.league} · ${tt('sportRound', { n: g.round })}` : labels.get(g.key) ?? g.league}</div>
-            <TableButton testId={`results-table-${g.key}`} open={!!tables[g.key]} onPress={() => toggleTable(g)} tt={tt} />
+            <TableButton testId={`results-table-${g.key}`} open={!!tables[g.key]} onPress={() => toggleTable(g)} tt={tt} attrs={gnav.table} />
           </div>
-          {g.matches.map((m) => (
-            <div key={m.id} {...station(() => onOpenMatch(m))} style={{ display: 'grid', gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: 'center', gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, ...sportCardStyle, borderRadius: dp(10), cursor: 'pointer' }}>
+          {g.matches.map((m, mi) => (
+            <div key={m.id} data-testid={`results-row-${m.id}`} {...station(() => onOpenMatch(m), undefined, gnav.row(mi))} style={{ display: 'grid', gridTemplateColumns: `${dp(64)}px 1fr auto 1fr`, alignItems: 'center', gap: dp(10), padding: `${dp(10)}px ${dp(12)}px`, ...sportCardStyle, borderRadius: dp(10), cursor: 'pointer' }}>
               <span style={{ fontSize: dp(14), color: m.status === 'live' ? TV.live : TV.dim }}>{matchStatusLabel(m, tt) ?? ''}</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: dp(8), justifyContent: 'flex-end' }}>{m.home}<Crest name={m.home ?? ''} colorKey={m.homeKey ?? ''} src={m.homeCrest} size={dp(22)} /></span>
               <MatchScore match={m} size="row" />
@@ -132,8 +165,9 @@ export function SportResults({ matches, controller, onOpenMatch, tv, sport = 'al
           ))}
           {tables[g.key] ? <StandingsTable rows={tables[g.key]!} tt={tt} /> : null}
         </section>
-      ))}
-      {drawer ? <LeagueDrawer nav={nav} entries={entries} showSport={sport === 'all'} onPick={(key) => setLeague(key)} onClose={() => setDrawer(false)} /> : null}
+        )
+      })}
+      {drawer ? <LeagueDrawer nav={nav} entries={allEntries} showSport={sport === 'all'} onPick={(key) => setLeague(key)} onClose={() => setDrawer(false)} /> : null}
     </div>
   )
 }

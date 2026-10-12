@@ -88,6 +88,7 @@ ${F('[data-focus="circle"]')} { color: #fff !important; }
 /* Ringen utanför cirkelns kant (skuggan målas utanför, så märket inuti täcker den aldrig); ersätter live-/idag-ringen medan fokus står där. */
 ${F('[data-focus="circle"]', ' [data-focus-circle]')} { box-shadow: 0 0 0 3px ${ACC} !important; background-image: linear-gradient(${TINT}, ${TINT}) !important; border-radius: 999px; }
 ${F('[data-focus="tab"]')}, ${F('[data-live-tv-chip]')} { color: #f3f4f8 !important; }
+${F('[data-live-tv-chip][data-chip-on="1"]')} { color: #12152a !important; }
 ${F('[data-focus="table-row"]')} { box-shadow: none !important; }
 ${F('[data-focus="table-row"][data-mark="1"]')} { box-shadow: inset 0 0 0 2px ${ACC} !important; }
 ${ON} [data-focus-row]:focus-within ${ROW_DECL}

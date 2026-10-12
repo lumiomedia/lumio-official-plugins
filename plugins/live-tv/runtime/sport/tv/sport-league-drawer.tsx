@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import { Chip, TV, dp, station } from '../../tv/tv-ui'
 import { useTvText } from '../../tv/tv-strings'
@@ -8,7 +8,7 @@ import { PickerPanel } from '../../tv/tv-list-picker'
 import { useTextPrompt } from '../../tv/tv-text-entry'
 import type { TvNav } from '../../tv/tv-shell'
 import { countryGroups, foldText, searchLeagues, type LeagueEntry } from '../league-jump'
-import { sportDrawerStyle } from '../surface'
+import { sportBg, sportStackedStyle, sportSurface } from '../surface'
 import { SportIcon } from './sport-icons'
 import { ellipsis } from './sport-parts'
 
@@ -23,7 +23,7 @@ export function LeagueChipBody({ entry }: { entry: LeagueEntry }) {
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: dp(8) }}>
       {entry.live > 0 ? <LiveDot /> : null}
       <span>{entry.label}</span>
-      <span style={{ color: TV.faint, fontVariantNumeric: 'tabular-nums' }}>{entry.count}</span>
+      <span style={{ opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>{entry.count}</span>
     </span>
   )
 }
@@ -76,7 +76,8 @@ export function LeagueDrawer({ nav, entries, showSport, onPick, onClose }: { nav
       title={tt('sportAllLeagues')}
       onClose={onClose}
       testId="league-drawer"
-      surface={sportDrawerStyle}
+      // Tät (som kanalväljaren): resultaten bakom ska aldrig lysa igenom.
+      surface={sportStackedStyle}
       chips={<>{searchField}{prompt.node}</>}
       rows={(close) => {
         const pick = (key: string) => { close(); onPick(key) }
@@ -109,6 +110,24 @@ export function LeagueDrawer({ nav, entries, showSport, onPick, onClose }: { nav
 }
 
 /**
+ * Sports chip (Jerry 2026-10-12: valda och ovalda gick knappt att skilja,
+ * ovalda såg ut som svag text på bakgrunden). Ovald = tät pill i kortytan
+ * med vit text; vald = fylld ljus pill med mörk text, som sportchipsen
+ * (Alla / Fotboll …). Fokus = Sports fokusmarkering; en vald chip behåller
+ * sin mörka text under tonen (`data-chip-on`).
+ */
+export function SportChip({ active, children, style, ...rest }: { active: boolean; children: ReactNode; style?: CSSProperties } & Record<string, unknown>) {
+  return (
+    <Chip active={active} data-chip-on={active ? '1' : '0'} {...rest}
+      style={{ height: dp(52), minHeight: dp(52), padding: `0 ${dp(20)}px`, gap: dp(8), fontSize: dp(19), fontWeight: active ? 700 : 600, boxSizing: 'border-box',
+        ...(active ? { background: TV.text, color: '#12152a', border: `1px solid ${TV.text}` } : { ...sportSurface(sportBg('rgba(252,252,255,0.12)')), color: TV.text, border: `1px solid ${TV.lineCard}` }),
+        ...style }}>
+      {children}
+    </Chip>
+  )
+}
+
+/**
  * Raden ovanför resultaten: "Dina ligor" (eller de största) + "Fler ligor…".
  * Ett val filtrerar till ligan; då står "Alla ligor ×" först (återställer) och
  * den valda ligan markerad — även när den kom ur lådan och inte finns i raden.
@@ -118,17 +137,17 @@ export function YourLeaguesRow({ entries, fallback, active = null, activeLabel =
   const inRow = active ? entries.some((e) => e.key === active) : true
   return (
     <div data-testid="your-leagues" data-row="" style={{ display: 'flex', gap: dp(10), alignItems: 'center', flexWrap: tv ? 'nowrap' : 'wrap', overflowX: tv ? 'auto' : undefined }}>
-      <span style={{ fontSize: dp(13), letterSpacing: '0.12em', color: TV.dim, flexShrink: 0 }}>{fallback ? tt('sportTopLeagues') : tt('sportYourLeagues')}</span>
+      <span style={{ fontSize: dp(15), fontWeight: 700, letterSpacing: '0.12em', color: TV.muted, flexShrink: 0 }}>{fallback ? tt('sportTopLeagues') : tt('sportYourLeagues')}</span>
       {active && onReset ? (
-        <Chip data-testid="league-reset" active={false} {...station(onReset)} style={{ border: `1px solid ${TV.lineStrong}`, color: TV.text, gap: dp(8) }}>{tt('sportAllLeaguesReset')}<span aria-hidden="true">✕</span></Chip>
+        <SportChip data-testid="league-reset" active={false} {...station(onReset)}>{tt('sportAllLeaguesReset')}<span aria-hidden="true">✕</span></SportChip>
       ) : null}
       {active && !inRow ? (
-        <Chip data-testid={`league-chip-${active}`} active aria-pressed="true" {...station(() => onJump(active))}>{activeLabel ?? active}</Chip>
+        <SportChip data-testid={`league-chip-${active}`} active aria-pressed="true" {...station(() => onJump(active))}>{activeLabel ?? active}</SportChip>
       ) : null}
       {entries.map((e) => (
-        <Chip key={e.key} data-testid={`league-chip-${e.key}`} active={e.key === active} aria-pressed={e.key === active ? 'true' : 'false'} {...station(() => onJump(e.key))}><LeagueChipBody entry={e} /></Chip>
+        <SportChip key={e.key} data-testid={`league-chip-${e.key}`} active={e.key === active} aria-pressed={e.key === active ? 'true' : 'false'} {...station(() => onJump(e.key))}><LeagueChipBody entry={e} /></SportChip>
       ))}
-      <Chip data-testid="league-more" active={false} {...station(onMore)} style={{ border: `1px solid ${TV.lineStrong}`, color: TV.text }}>{tt('sportMoreLeagues')}</Chip>
+      <SportChip data-testid="league-more" active={false} {...station(onMore)}>{tt('sportMoreLeagues')}</SportChip>
     </div>
   )
 }

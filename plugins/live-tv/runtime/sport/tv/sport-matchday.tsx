@@ -49,7 +49,7 @@ export function markDownToActiveTab(root: HTMLElement, target: string): void {
     const r = rects[i]
     const below = rects.some((o, j) => j !== i && o.top >= r.bottom - 4 && o.left < r.right && o.right > r.left)
     const own = el.getAttribute('data-f-down-auto') === '1'
-    if (!below && (!el.hasAttribute('data-f-down') || own)) { el.setAttribute('data-f-down', target); el.setAttribute('data-f-down-auto', '1') }
+    if (!below && (!el.hasAttribute('data-f-down') || el.hasAttribute('data-f-down-auto'))) { el.setAttribute('data-f-down', target); el.setAttribute('data-f-down-auto', '1') }
     else if (below && own) { el.removeAttribute('data-f-down'); el.removeAttribute('data-f-down-auto') }
   })
 }

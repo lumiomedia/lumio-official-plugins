@@ -104,7 +104,7 @@ export function SportPageDrawer({ nav, depth, phone, full = false, testId, label
     if (full) markColumnNeighbours(root, scope)
     const tabs = root.querySelector('[data-tab-active]')
     for (const el of Array.from(root.querySelectorAll<HTMLElement>('[data-testid$="-head"] [data-f]'))) {
-      if (tabs && !el.hasAttribute('data-f-down')) { el.setAttribute('data-f-down', `${scope} [data-tab-active]`); el.setAttribute('data-f-down-auto', '1') }
+      if (tabs && (!el.hasAttribute('data-f-down') || el.hasAttribute('data-f-down-auto'))) { el.setAttribute('data-f-down', `${scope} [data-tab-active]`); el.setAttribute('data-f-down-auto', '1') }
       else if (!tabs && el.getAttribute('data-f-down-auto') === '1') { el.removeAttribute('data-f-down'); el.removeAttribute('data-f-down-auto') }
     }
   })

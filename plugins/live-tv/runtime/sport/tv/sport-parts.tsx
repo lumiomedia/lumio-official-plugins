@@ -106,7 +106,7 @@ export function MatchGrid({ matches, ctx, testId = 'sport-grid' }: { matches: Sp
   if (items.length === 0) return null
   return (
     // Så många kolumner som får plats (minst 420 designpx per kort) och korten sträcks ut: 4 i 1920-scenen, fler på bredare.
-    <section data-testid={testId} style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${dp(GRID_MIN_CARD)}px, 1fr))`, gap: dp(16) }}>
+    <section data-testid={testId} data-grid="" style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${dp(GRID_MIN_CARD)}px, 1fr))`, gap: dp(16) }}>
       {items.map((m) => <MatchCard key={m.id} match={m} ctx={ctx} fluid />)}
     </section>
   )

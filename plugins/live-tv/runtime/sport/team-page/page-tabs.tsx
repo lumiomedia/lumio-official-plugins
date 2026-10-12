@@ -65,7 +65,8 @@ export function TabBody({ scope, children, gap }: { scope: string; children: Rea
     const top = Math.min(...stations.map((el) => el.getBoundingClientRect().top))
     for (const el of stations) {
       const first = Math.abs(el.getBoundingClientRect().top - top) < 8
-      if (first && !el.hasAttribute('data-f-up')) { el.setAttribute('data-f-up', `${scope} [data-tab-active]`); el.setAttribute('data-f-up-auto', '1') }
+      // Radordningens egna grannar (row-nav, märkta "row") ersätts; andras står kvar.
+      if (first && (!el.hasAttribute('data-f-up') || el.hasAttribute('data-f-up-auto'))) { el.setAttribute('data-f-up', `${scope} [data-tab-active]`); el.setAttribute('data-f-up-auto', '1') }
       else if (!first && el.getAttribute('data-f-up-auto') === '1') { el.removeAttribute('data-f-up'); el.removeAttribute('data-f-up-auto') }
     }
   })
