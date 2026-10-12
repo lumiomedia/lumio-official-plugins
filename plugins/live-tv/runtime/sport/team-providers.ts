@@ -25,7 +25,16 @@ export interface TeamFeed {
   /** Lagets serie hos källan, när svaret säger det (sportapi.ai `team.league_id`). Annars räknas den ur fixturerna. */
   leagueId: string | null
   crest: string | null
+  /** Klubbens fakta, när källan har dem (sportapi.ai `/teams/{id}`). */
+  info?: TeamInfo | null
 }
+
+/** `geo` = landskoden ("ES", "GB-ENG"); flaggan ritas ur den. */
+export interface TeamInfo { country: string | null; geo: string | null; city: string | null; coach: string | null; stadium: string | null; founded: number | null }
+/** En vunnen titel (sportapi.ai `/teams/{id}/trophies`, placering 1). */
+export interface Trophy { name: string; year: number | null }
+/** Ett lag-id hittat på namn (sportapi.ai `/teams/slug/{slug}`); `name` kontrolleras mot laget innan id:t används. */
+export interface TeamLookup { id: string; name: string }
 
 export interface SquadPlayer { name: string; number: number | null; pos: string | null; photo: string | null; injury: string | null }
 export interface TopScorer { rank: number; name: string; team: string; goals: number }
@@ -37,6 +46,9 @@ export interface TeamCalls {
   /** Omgångens matcher och resultat runt `today` (`from`/`to` = lokala datum). */
   leagueFixtures(sport: SportKind, leagueId: string, opts: { season: string; tz: string; from: string; to: string }): ProviderCall<TeamFixture[]> | null
   topScorers(sport: SportKind, leagueId: string, season: string): ProviderCall<TopScorer[]> | null
+  /** Lagets id på namn hos källor utan lagsök (sportapi.ai: slug). `null` = inget sådant uppslag. */
+  lookup?(sport: SportKind, slug: string): ProviderCall<TeamLookup | null> | null
+  trophies?(sport: SportKind, teamId: string): ProviderCall<Trophy[]> | null
   /** Källan behöver säsongen i anropen (annars bara ett tomt värde). */
   needsSeason: boolean
 }
@@ -45,6 +57,8 @@ export const SQUAD_TTL_S = 86_400
 export const INJURY_TTL_S = 43_200
 export const LEAGUE_ROUND_TTL_S = 3_600
 export const TOPSCORERS_TTL_S = 43_200
+export const LOOKUP_TTL_S = 30 * 86_400
+export const TROPHIES_TTL_S = 7 * 86_400
 
 const arr = (v: any): any[] => (Array.isArray(v) ? v : [])
 const num = (v: any): number | null =>
@@ -85,7 +99,18 @@ function apiSportsSquad(squadBody: unknown, injuryBody: unknown): SquadPlayer[] 
     const reason = str(x?.player?.reason) ?? str(x?.player?.type)
     if (id && reason) hurt.set(id, reason)
   }
-  return players.map((p) => ({ name: String(p?.name ?? ''), number: num(p?.number), pos: str(p?.position), photo: str(p?.photo), injury: hurt.get(String(p?.id ?? '')) ?? null })).filter((p) => p.name)
+  return uniqueByName(players.map((p) => ({ name: String(p?.name ?? ''), number: num(p?.number), pos: str(p?.position), photo: str(p?.photo), injury: hurt.get(String(p?.id ?? '')) ?? null })))
+}
+
+/** Skyddsnät: samma namn två gånger blir en rad (källans lista, inte vår sammanslagning). */
+function uniqueByName(list: SquadPlayer[]): SquadPlayer[] {
+  const seen = new Set<string>()
+  return list.filter((p) => {
+    const k = p.name.trim().toLowerCase()
+    if (!k || seen.has(k)) return false
+    seen.add(k)
+    return true
+  })
 }
 
 const apiSportsCalls: TeamCalls = {
@@ -154,6 +179,7 @@ const sportApiCalls: TeamCalls = {
           fixtures: [...sportApiList(all.filter(done), true), ...sportApiList(all.filter((m) => !done(m)), false)],
           leagueId: body?.team?.league_id != null ? String(body.team.league_id) : null,
           crest: sportApiCrest(body?.team?.logo_file),
+          info: body?.team ? { country: str(body.team.country), geo: str(body.team.geo), city: str(body.team.city), coach: str(body.team.coach_name), stadium: str(body.team.stadium_name), founded: num(body.team.founded_year) } : null,
         }
       },
     }
@@ -162,7 +188,27 @@ const sportApiCalls: TeamCalls = {
     if (sport !== 'football') return null
     return {
       requests: [{ sport, path: `/teams/${enc(teamId)}/squad`, ttlS: SQUAD_TTL_S }],
-      parse: (bodies) => arr((bodies[0] as any)?.squad).map((p) => ({ name: String(p?.full_name ?? p?.name ?? ''), number: num(p?.jersey_number), pos: str(p?.position), photo: null, injury: null })).filter((p) => p.name),
+      parse: (bodies) => uniqueByName(arr((bodies[0] as any)?.squad).map((p) => ({ name: String(p?.full_name ?? p?.name ?? ''), number: num(p?.jersey_number), pos: str(p?.position), photo: null, injury: null }))),
+    }
+  },
+  lookup(sport, slug) {
+    if (sport !== 'football' || !/^[a-z0-9-]{2,80}$/.test(slug)) return null
+    return {
+      requests: [{ sport, path: `/teams/slug/${slug}`, ttlS: LOOKUP_TTL_S }],
+      parse: (bodies) => {
+        const t = (bodies[0] as any)?.team
+        return t?.id != null && str(t?.name) ? { id: String(t.id), name: String(t.name) } : null
+      },
+    }
+  },
+  trophies(sport, teamId) {
+    if (sport !== 'football') return null
+    return {
+      requests: [{ sport, path: `/teams/${enc(teamId)}/trophies`, ttlS: TROPHIES_TTL_S }],
+      // Bara vunna (placering 1); finaler heter "1994 UEFA Cup Winners' Cup Final" — året står i namnet också.
+      parse: (bodies) => arr((bodies[0] as any)?.trophies)
+        .filter((t) => num(t?.position) === 1 && str(t?.name))
+        .map((t) => ({ name: String(t.short_name ?? t.name), year: num(t?.year) })),
     }
   },
   leagueFixtures(sport, leagueId) {

@@ -16,6 +16,11 @@ import allsvenskan from '../__fixtures__/api-sports/football-standings-allsvensk
 import squads from '../__fixtures__/api-sports/football-players-squads.json'
 import injuries from '../__fixtures__/api-sports/football-injuries.json'
 import topscorers from '../__fixtures__/api-sports/football-topscorers.json'
+import saSlug from '../__fixtures__/sportapi/team-slug.json'
+import saTeam86 from '../__fixtures__/sportapi/team-86.json'
+import saSquad86 from '../__fixtures__/sportapi/team-86-squad.json'
+import saTrophies86 from '../__fixtures__/sportapi/team-86-trophies.json'
+import saLaLiga from '../__fixtures__/sportapi/standings-laliga.json'
 
 // Dagen efter Hammarby–Djurgården; nästa match cupen 2026-10-14 14:00 (lokal tid i fixturen).
 const NOW = Date.UTC(2026, 9, 12, 10)
@@ -27,13 +32,13 @@ vi.mock('../results-controller', async (importOriginal) => ({
 }))
 
 /** Riktig router och resultatlager mot en falsk genomkoppling (källans svar ur fixturerna). */
-function withProvider(reply: (path: string) => unknown = defaultReply) {
+function withProvider(reply: (path: string, provider: ProviderId) => unknown = defaultReply, keys: Record<string, { key: string; plan: string | null }> = { 'api-sports': { key: 'aaaa1111', plan: 'Free' } }) {
   const paths: string[] = []
-  const fetch = vi.fn(async ({ req, mode }: { provider: ProviderId; req: { path: string }; mode: string }) => {
+  const fetch = vi.fn(async ({ provider, req, mode }: { provider: ProviderId; req: { path: string }; mode: string }) => {
     if (mode === 'cache-first' && req.path !== '/status') paths.push(req.path)
-    return { data: mode === 'cache-only' ? null : reply(req.path), cached: false, fresh: true, fetchedAt: NOW, quota: null, error: null } as SportFetchResponse
+    return { data: mode === 'cache-only' ? null : reply(req.path, provider), cached: false, fresh: true, fetchedAt: NOW, quota: null, error: null } as SportFetchResponse
   })
-  const router = new SportRouter({ 'api-sports': { key: 'aaaa1111', plan: 'Free' } }, {}, { fetch: fetch as never, now: () => NOW, sleep: async () => {} })
+  const router = new SportRouter(keys, {}, { fetch: fetch as never, now: () => NOW, sleep: async () => {} })
   h.controller = new ResultsController(router, { now: () => NOW, tz: 'Europe/Stockholm', startPoller: false })
   return { paths }
 }
@@ -190,6 +195,29 @@ describe('Lagsidan', () => {
   })
 })
 
+describe('Lagsidan med sportapi.ai (Real Madrid)', () => {
+  const reply = (path: string, provider: ProviderId): unknown => {
+    if (provider !== 'sportapi') return null
+    return ({ '/teams/slug/real-madrid': saSlug, '/teams/86': saTeam86, '/standings/23': saLaLiga, '/teams/86/squad': saSquad86, '/teams/86/trophies': saTrophies86 } as Record<string, unknown>)[path] ?? null
+  }
+  const RM: TeamTarget = { sport: 'football', name: 'Real Madrid', key: 'real madrid', crest: null, ids: {}, league: null }
+  it('serie och placering i rubriken, klubbens fakta, matcher med turneringschips, titlar', async () => {
+    withProvider(reply, { sportapi: { key: 'sk_live_1', plan: null } })
+    await mountTeam({ target: RM })
+    await waitFor(() => expect(screen.getByTestId('tp-position')).toHaveTextContent('2nd in La Liga · 19 pts'))
+    const facts = screen.getAllByTestId('tp-fact').map((f) => f.textContent)
+    expect(facts).toEqual(['🇪🇸 Spain', 'CityMadrid', 'CoachXabi Alonso', 'StadiumSantiago Bernabéu', 'Founded1902'])
+    expect(screen.getAllByTestId('tp-played-row')).toHaveLength(3)
+    fireEvent.click(screen.getByTestId('tp-comp-Champions League'))
+    expect(screen.getAllByTestId('tp-played-row').map((r) => r.textContent)).toEqual([expect.stringContaining('Juventus – Real Madrid')])
+    expect(screen.getAllByTestId('tp-upcoming-row').map((r) => r.textContent)).toEqual([expect.stringContaining('Bayern Munich')])
+    fireEvent.click(screen.getByTestId('tp-comp-all'))
+    expect(screen.getAllByTestId('tp-trophy').map((t) => t.textContent)).toEqual([expect.stringContaining('La Liga'), expect.stringContaining('UEFA Champions League')])
+    expect(screen.getAllByTestId('tp-trophy')[0]).toHaveTextContent('×2')
+    expect(within(screen.getByTestId('tp-squad')).getAllByTestId('tp-player')).toHaveLength(4)
+  })
+})
+
 describe('Ligasidan', () => {
   it('hela tabellen (ett lag öppnar sin sida), omgången och skytteligan; följ ligan', async () => {
     withProvider()
@@ -210,7 +238,7 @@ describe('Ligasidan', () => {
   it('ligan finns bara i tablån: inget att hämta, inga fel', async () => {
     withProvider()
     render(<LeaguePage ctx={fakeCtx({ now: NOW })} target={{ sport: 'football', name: 'Division 1', key: 'division 1', ref: null }} depth={0} phone={false} onClose={() => {}} />)
-    expect(screen.getByTestId('lp-no-key')).toHaveTextContent('The source has nothing more about the league.')
+    expect(await screen.findByTestId('lp-no-data')).toHaveTextContent('The source has nothing more about the league.')
   })
 })
 

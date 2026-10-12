@@ -1,0 +1,101 @@
+{
+ "_shape": "from docs (GET /standings/{id}), same row shape as the real cached Allsvenskan body",
+ "success": true,
+ "data": [
+  {
+   "position": 1,
+   "team": {
+    "id": 83,
+    "name": "Barcelona",
+    "short_name": "Barcelona",
+    "slug": "barcelona",
+    "logo": "espn-83.png"
+   },
+   "played": 8,
+   "won": 0,
+   "draw": 0,
+   "lost": 0,
+   "goals_for": 0,
+   "goals_against": 0,
+   "goal_difference": 10,
+   "points": 21,
+   "form": []
+  },
+  {
+   "position": 2,
+   "team": {
+    "id": 86,
+    "name": "Real Madrid",
+    "short_name": "Real Madrid",
+    "slug": "real-madrid",
+    "logo": "espn-86.png"
+   },
+   "played": 8,
+   "won": 0,
+   "draw": 0,
+   "lost": 0,
+   "goals_for": 0,
+   "goals_against": 0,
+   "goal_difference": 7,
+   "points": 19,
+   "form": []
+  },
+  {
+   "position": 3,
+   "team": {
+    "id": 84,
+    "name": "Atlético Madrid",
+    "short_name": "Atlético Madrid",
+    "slug": "atlético-madrid",
+    "logo": "espn-84.png"
+   },
+   "played": 8,
+   "won": 0,
+   "draw": 0,
+   "lost": 0,
+   "goals_for": 0,
+   "goals_against": 0,
+   "goal_difference": 4,
+   "points": 17,
+   "form": []
+  },
+  {
+   "position": 4,
+   "team": {
+    "id": 95,
+    "name": "Sevilla",
+    "short_name": "Sevilla",
+    "slug": "sevilla",
+    "logo": "espn-95.png"
+   },
+   "played": 8,
+   "won": 0,
+   "draw": 0,
+   "lost": 0,
+   "goals_for": 0,
+   "goals_against": 0,
+   "goal_difference": 1,
+   "points": 14,
+   "form": []
+  },
+  {
+   "position": 5,
+   "team": {
+    "id": 90,
+    "name": "Villarreal",
+    "short_name": "Villarreal",
+    "slug": "villarreal",
+    "logo": "espn-90.png"
+   },
+   "played": 8,
+   "won": 0,
+   "draw": 0,
+   "lost": 0,
+   "goals_for": 0,
+   "goals_against": 0,
+   "goal_difference": -2,
+   "points": 12,
+   "form": []
+  }
+ ]
+}

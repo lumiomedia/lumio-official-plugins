@@ -18,6 +18,15 @@ import saSquad from './__fixtures__/sportapi/team-squad.json'
 import saStandings from './__fixtures__/sportapi/standings.json'
 import saLeague from './__fixtures__/sportapi/league.json'
 import saScorers from './__fixtures__/sportapi/league-topscorers.json'
+import squad541 from './__fixtures__/api-sports/football-players-squads-541.json'
+import hockeyAllsv from './__fixtures__/api-sports/hockey-games-allsvenskan.json'
+import saSlug from './__fixtures__/sportapi/team-slug.json'
+import saTeam86 from './__fixtures__/sportapi/team-86.json'
+import saSquad86 from './__fixtures__/sportapi/team-86-squad.json'
+import saTrophies86 from './__fixtures__/sportapi/team-86-trophies.json'
+import saLaLiga from './__fixtures__/sportapi/standings-laliga.json'
+import { apiSports } from './api-sports'
+import { teamCallsFor } from './team-providers'
 
 const NOW = Date.UTC(2026, 9, 12, 10)
 const TZ = 'Europe/Stockholm'
@@ -124,16 +133,17 @@ describe('lagsidan: anropen', () => {
       return {}
     })
     const data = await loadTeamPage(router, { sport: 'football', name: 'Arsenal', key: 'arsenal', crest: null, ids: { sportapi: '311' }, league: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
-    expect(net(calls)).toEqual(['sportapi /teams/311', 'sportapi /standings/24', 'sportapi /teams/311/squad'])
+    expect(net(calls)).toEqual(['sportapi /teams/311', 'sportapi /standings/24', 'sportapi /teams/311/squad', 'sportapi /teams/311/trophies'])
     expect(data).toMatchObject({ provider: 'sportapi', league: { provider: 'sportapi', id: '24' }, crest: 'https://a.espncdn.com/i/teamlogos/soccer/500/359.png' })
     expect(data.squad).toHaveLength(4)
   })
 
-  it('sportapi.ai utan id och utan liga: nästa källa (API-Sports med känt id)', async () => {
+  it('sportapi.ai utan id och utan liga: slug-uppslaget hittar inget → nästa källa (API-Sports med känt id); id:n blandas aldrig', async () => {
     const { router, calls, standings } = harness(BOTH, apiReply)
     const data = await loadTeamPage(router, HAMMARBY, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
     expect(data.provider).toBe('api-sports')
-    expect(net(calls).some((c) => c.startsWith('sportapi'))).toBe(false)
+    expect(net(calls).filter((c) => c.startsWith('sportapi'))).toEqual(['sportapi /teams/slug/hammarby'])
+    expect(calls.some((c) => c.provider === 'sportapi' && c.path.includes('363'))).toBe(false)
   })
 
   it('källans kvot slut: nästa källa tar över (som routern)', async () => {
@@ -182,10 +192,14 @@ describe('ligasidan', () => {
     expect(data.round?.fixtures).toHaveLength(2)
     expect(data.scorers).toHaveLength(2)
   })
-  it('ligan finns bara i tablån, eller källan saknar nyckel: inget anrop', async () => {
+  it('ligan finns bara i tablån och ingen källa känner namnet: ett ligasök, sedan inget mer', async () => {
     const { router, calls, standings } = harness(API, apiReply)
-    expect((await loadLeaguePage(router, { sport: 'football', name: 'X', key: 'x', ref: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })).state).toBe('no-key')
-    expect((await loadLeaguePage(router, { sport: 'football', name: 'X', key: 'x', ref: { provider: 'sportapi', id: '1', season: null, name: 'X' } }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })).state).toBe('no-key')
+    const res = await loadLeaguePage(router, { sport: 'football', name: 'Xyzliga', key: 'x', ref: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
+    expect(res).toMatchObject({ state: 'ready', ref: null, standings: null })
+    expect(net(calls)).toEqual(['api-sports /leagues?search=Xyzliga'])
+    calls.length = 0
+    // Ligan hos en källa utan nyckel: inget anrop.
+    expect((await loadLeaguePage(router, { sport: 'football', name: 'X', key: 'x', ref: { provider: 'sportapi', id: '1', season: null, name: 'X' } }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })).ref).toBeNull()
     expect(calls).toEqual([])
   })
 })
@@ -213,5 +227,73 @@ describe('säsongen', () => {
       return apiReply(c)
     })
     expect((await loadTeamPage(router, { ...HAMMARBY, league: null }, { now: NOW, tz: TZ, standings, onUpdate: () => {} })).fixtures).toEqual([])
+  })
+})
+
+/*
+  Jerrys rapporter 2026-10-12 ~15:45, ur de riktiga svaren i hans cache:
+  Real Madrid (följt ur API-Sports sök, id 541) visade bara rubrik och en
+  trupp; Hockey Allsvenskan (följd ur tablån) visade "källan har inget mer".
+*/
+
+const PLAN_ERROR = { error: 'upstream' as const }
+
+describe('Real Madrid (API-Sports gratisplan, sportapi.ai utan lagsök)', () => {
+  const RM: TeamTarget = { sport: 'football', name: 'Real Madrid', key: 'real madrid', crest: null, ids: { 'api-sports': '541' }, league: null }
+  const reply: Reply = (c) => {
+    if (c.mode === 'cache-only') return {}
+    if (c.provider === 'api-sports') return c.path.startsWith('/players/squads?team=541') ? { data: squad541 } : PLAN_ERROR
+    if (c.path === '/teams/slug/real-madrid') return { data: saSlug }
+    if (c.path === '/teams/86') return { data: saTeam86 }
+    if (c.path === '/standings/23') return { data: saLaLiga }
+    if (c.path === '/teams/86/squad') return { data: saSquad86 }
+    if (c.path === '/teams/86/trophies') return { data: saTrophies86 }
+    return {}
+  }
+  it('sportapi.ai:s id slås upp på slug (en gång, sparas), och sidan får matcher, serie, placering, fakta, trupp och titlar därifrån', async () => {
+    const { router, calls, standings } = harness(BOTH, reply)
+    const onResolved = vi.fn()
+    const data = await loadTeamPage(router, RM, { now: NOW, tz: TZ, standings, onUpdate: () => {}, onResolved })
+    expect(onResolved).toHaveBeenCalledWith('sportapi', '86')
+    expect(net(calls)).toEqual(['sportapi /teams/slug/real-madrid', 'sportapi /teams/86', 'sportapi /standings/23', 'sportapi /teams/86/squad', 'sportapi /teams/86/trophies'])
+    expect(data).toMatchObject({ provider: 'sportapi', teamId: '86', league: { provider: 'sportapi', id: '23', name: 'La Liga' }, info: { country: 'Spain', geo: 'ES', city: 'Madrid', coach: 'Xabi Alonso', stadium: 'Santiago Bernabéu', founded: 1902 } })
+    expect(data.fixtures.map((f) => f.league.name)).toEqual(['La Liga', 'Champions League', 'La Liga', 'La Liga', 'Champions League'])
+    expect(data.standings?.[1].team.name).toBe('Real Madrid')
+    // Truppen är sportapi.ai:s, inte API-Sports blandlista (38 namn med Cucurella, Konaté m.fl.).
+    expect(data.squad?.map((p) => p.name)).toEqual(['Thibaut Courtois', 'Antonio Rüdiger', 'Jude Bellingham', 'Kylian Mbappé'])
+    expect(data.trophies).toHaveLength(3)
+  })
+  it('API-Sports id 541 används aldrig hos sportapi.ai, och slug-svaret måste vara laget', async () => {
+    const { router, calls, standings } = harness(BOTH, (c) => (c.path.startsWith('/teams/slug/') ? { data: { ...saSlug, team: { ...saSlug.team, id: 999, name: 'Real Sociedad' } } } : reply(c)))
+    const data = await loadTeamPage(router, RM, { now: NOW, tz: TZ, standings, onUpdate: () => {} })
+    expect(calls.some((c) => c.provider === 'sportapi' && c.path.includes('541'))).toBe(false)
+    expect(calls.some((c) => c.path === '/teams/999')).toBe(false)
+    expect(data.provider).toBeNull()
+  })
+  it('skyddsnät: samma spelare två gånger i källans lista blir en rad', () => {
+    const doubled = { ...squad541, response: [{ ...squad541.response[0], players: [...squad541.response[0].players, squad541.response[0].players[0]] }] }
+    const list = teamCallsFor('api-sports').squad('football', '541', { season: '2026' })!.parse([doubled, null])
+    expect(list).toHaveLength(38)
+  })
+})
+
+describe('Hockey Allsvenskan (API-Sports gratisplan saknar säsong 2026)', () => {
+  const known = apiSports.day('hockey', '2026-10-12', { today: '2026-10-12', tz: TZ, dayEndMs: 0 }).parse([hockeyAllsv])
+  const reply: Reply = (c) => (c.mode === 'cache-only' ? {} : PLAN_ERROR)
+  it('ligasidan: ligan hittas i minnets matcher (inget sök), säsongen 2026 därifrån, omgången ur minnet när ligaanropet nekas', async () => {
+    const { router, calls, standings } = harness(API, reply)
+    const data = await loadLeaguePage(router, { sport: 'hockey', name: 'Hockey Allsvenskan', key: 'hockey allsvenskan', ref: null }, { now: NOW, tz: TZ, standings, known, onUpdate: () => {} })
+    expect(data.ref).toEqual({ provider: 'api-sports', id: '49', season: '2026', name: 'Hockey Allsvenskan' })
+    expect(net(calls).some((c) => c.includes('/leagues?search'))).toBe(false)
+    expect(net(calls)).toContain('api-sports /standings?league=49&season=2026')
+    expect(net(calls)).toContain('api-sports /games?league=49&season=2026&timezone=Europe%2FStockholm')
+    expect(data.standings).toBeNull()
+    expect(data.round?.fixtures.length).toBeGreaterThan(0)
+  })
+  it('lagsidan: AIK:s matcher ur minnet när /games?team nekas; ligan och säsongen ur dem', async () => {
+    const { router, standings } = harness(API, reply)
+    const data = await loadTeamPage(router, { sport: 'hockey', name: 'AIK', key: 'aik', crest: null, ids: {}, league: null }, { now: NOW, tz: TZ, standings, known, onUpdate: () => {} })
+    expect(data).toMatchObject({ provider: 'api-sports', teamId: '517', league: { provider: 'api-sports', id: '49', season: '2026' } })
+    expect(data.fixtures.map((f) => `${f.home.name}-${f.away.name}`)).toEqual(['AIK-Ostersund'])
   })
 })

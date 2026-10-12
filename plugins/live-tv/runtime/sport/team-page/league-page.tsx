@@ -20,7 +20,8 @@ export function LeaguePage({ ctx, target, depth, phone, onClose }: { ctx: SportC
   const data = useLeaguePageData(target)
   const me = { sport: target.sport, kind: 'league' as const, key: target.key }
   const following = isFollowing(ctx.follows, me)
-  const ref = target.ref
+  // Ligan sidan till slut hittade (uppslagen när den bara fanns i tablån).
+  const ref = data.ref ?? target.ref
   const round = data.round
   const nothing = data.state === 'ready' && !data.standings && !round && !data.scorers
 
@@ -70,8 +71,10 @@ export function LeaguePage({ ctx, target, depth, phone, onClose }: { ctx: SportC
         ) : null}
 
         {data.state === 'loading' && !data.standings ? <PageNote u={u} testId="lp-loading" text={ctx.tt('sportLeagueLoading')} /> : null}
-        {data.state === 'no-key' ? <PageNote u={u} testId="lp-no-key" text={ref ? ctx.tt('sportTeamNoKey') : ctx.tt('sportLeagueNoData')} /> : null}
-        {nothing ? <PageNote u={u} testId="lp-no-data" text={ctx.tt('sportLeagueNoData')} /> : null}
+        {data.state === 'no-key' ? <PageNote u={u} testId="lp-no-key" text={ctx.tt('sportTeamNoKey')} /> : null}
+        {/* Ligan finns hos källan men tabellen saknas (t.ex. planens säsongsgräns): säg det, som Tabeller & resultat. */}
+        {data.state === 'ready' && ref && !data.standings && !nothing ? <PageNote u={u} testId="lp-no-table" text={ctx.tt('sportTableEmpty')} /> : null}
+        {nothing ? <PageNote u={u} testId="lp-no-data" text={ref ? ctx.tt('sportTableEmpty') : ctx.tt('sportLeagueNoData')} /> : null}
       </div>
     </SportPageDrawer>
   )

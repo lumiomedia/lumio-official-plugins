@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { TV, station } from '../../tv/tv-ui'
+import { Chip, TV, station } from '../../tv/tv-ui'
 import { matchTitle, type SportMatch } from '../sport-model'
 import { foldTeamKey } from '../merge'
 import { rankedSources, statusAt } from '../sport-day-model'
@@ -9,7 +9,7 @@ import { followAlert, isFollowing, setFollowAlert, teamKeysMatch, toggleFollow, 
 import { showsScore } from '../score-model'
 import { formLetters } from '../results-model'
 import { sourceLine, type SportCtx } from '../sport-ctx'
-import { epgMatchFor, formOf, liveFixture, ordinal, squadGroups, standingsSlice, teamRowIndex, teamTargetFromRow, upcomingFixtures, type TeamTarget } from '../team-model'
+import { competitionsOf, epgMatchFor, flagEmoji, formOf, liveFixture, ordinal, playedFixtures, squadGroups, standingsSlice, teamRowIndex, teamTargetFromRow, trophyGroups, upcomingFixtures, type TeamTarget } from '../team-model'
 import type { TeamFixture } from '../team-providers'
 import { nextAlert } from '../mobile/phone-sport-model'
 import { positionLabel } from '../match-info/match-info-text'
@@ -34,6 +34,8 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
   const lang = ctx.locale.startsWith('sv') ? 'sv' : 'en'
   const data = useTeamPageData(target)
   const [fullTable, setFullTable] = useState(false)
+  const [competition, setCompetition] = useState<string | null>(null)
+  const [allMatches, setAllMatches] = useState(false)
   const me = { sport: target.sport, kind: 'team' as const, key: target.key }
   const following = isFollowing(ctx.follows, me)
   const follow = ctx.follows.find((f) => isFollowing([f], me)) ?? null
@@ -52,7 +54,10 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
     : leagueName || ctx.kindLabel(target.sport)
 
   const upcoming = useMemo(() => upcomingFixtures(data.fixtures, ctx.now), [data.fixtures, ctx.now])
-  const epg = useEpgMatches(upcoming, matches, ctx.now)
+  const comps = useMemo(() => competitionsOf(data.fixtures), [data.fixtures])
+  const played = useMemo(() => playedFixtures(data.fixtures), [data.fixtures])
+  const allUpcoming = useMemo(() => upcomingFixtures(data.fixtures, ctx.now, 60), [data.fixtures, ctx.now])
+  const epg = useEpgMatches(allUpcoming, matches, ctx.now)
   const form = useMemo(() => formOf(data.fixtures, target, data.teamId), [data.fixtures, target, data.teamId])
   const letters = new Map(formLetters('WDL', ctx.tt).map((l) => [l.kind, l.letter]))
 
@@ -115,6 +120,24 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
         </div>
         {follow && alert !== 'off' ? <div data-testid="tp-alert-rule" style={{ fontSize: u(15), color: TV.dim, marginTop: -u(8) }}>{`${ctx.tt('sportKickoffAlert')}: ${alertText(alert)}`}</div> : null}
 
+        {/* Klubbens fakta när källan har dem (land med flagga, stad, tränare, arena, grundad). */}
+        {data.info && (data.info.country || data.info.city || data.info.coach || data.info.stadium || data.info.founded) ? (
+          <div data-testid="tp-info" {...station(NOOP)} style={{ ...rowCard(u), display: 'grid', gridTemplateColumns: phone ? 'minmax(0,1fr) minmax(0,1fr)' : 'repeat(auto-fit, minmax(150px, 1fr))', gap: `${u(10)}px ${u(16)}px`, padding: `${u(12)}px ${u(16)}px` }}>
+            {([
+              data.info.country ? [null, `${flagEmoji(data.info.geo)} ${data.info.country}`.trim()] : null,
+              data.info.city ? [ctx.tt('sportTeamCity'), data.info.city] : null,
+              data.info.coach ? [ctx.tt('sportTeamCoach'), data.info.coach] : null,
+              data.info.stadium ? [ctx.tt('sportTeamStadium'), data.info.stadium] : null,
+              data.info.founded ? [ctx.tt('sportTeamFounded'), String(data.info.founded)] : null,
+            ].filter(Boolean) as Array<[string | null, string]>).map(([label, value]) => (
+              <div key={`${label}-${value}`} data-testid="tp-fact" style={{ minWidth: 0 }}>
+                {label ? <div style={{ fontSize: u(13), fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: TV.dim }}>{label}</div> : null}
+                <div style={{ fontSize: u(17), fontWeight: 600, ...ellipsis }}>{value}</div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
         {/* 2. Nu / nästa */}
         {liveEpg || liveFx ? (
           <section data-testid="tp-now" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
@@ -163,18 +186,44 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
           </section>
         ) : null}
 
-        {/* 5. Kommande */}
-        {upcoming.length > (liveEpg || liveFx ? 0 : 1) ? (
-          <section data-testid="tp-upcoming" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
-            <Overline u={u}>{ctx.tt('sportTeamUpcoming')}</Overline>
-            {upcoming.slice(liveEpg || liveFx ? 0 : 1).map((f) => {
-              const m = epgMatchFor(f, epg)
-              const has = !!m && rankedSources(m, ctx.overrides).length > 0
-              const channel = has ? sourceLine(m!, ctx) : ctx.tt('sportTeamNotOnChannels')
-              return <FixtureRow key={f.id} u={u} f={f} ctx={ctx} testId="tp-upcoming-row" title={vs(f)} sub={[f.league.name, channel].filter(Boolean).join(' · ')} reminded={has ? ctx.isReminded(m!) : null} onPress={has ? () => ctx.toggleRemind(m!) : undefined} />
-            })}
-          </section>
-        ) : null}
+        {/* 5. Matcher: kommande och spelade i alla turneringar, filtrerbara per turnering. */}
+        {(() => {
+          const inComp = (f: TeamFixture) => !competition || f.league.name === competition
+          const skipNext = !(liveEpg || liveFx) && next ? next.id : null
+          const coming = allUpcoming.filter((f) => f.id !== skipNext && inComp(f))
+          const done = played.filter(inComp)
+          if (coming.length + done.length === 0 && !competition) return null
+          const LIMIT = 6
+          const shownComing = allMatches ? coming : coming.slice(0, LIMIT)
+          const shownDone = allMatches ? done : done.slice(0, LIMIT)
+          const hidden = coming.length + done.length - shownComing.length - shownDone.length
+          return (
+            <section data-testid="tp-matches" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
+              <Overline u={u}>{ctx.tt('sportTeamMatches')}</Overline>
+              {comps.length > 1 ? (
+                <div data-testid="tp-comp-chips" data-row="" style={{ display: 'flex', gap: u(8), flexWrap: phone ? 'nowrap' : 'wrap', overflowX: phone ? 'auto' : undefined }}>
+                  {[null, ...comps].map((c) => (
+                    <Chip key={c ?? '__all'} data-testid={`tp-comp-${c ?? 'all'}`} active={competition === c} aria-pressed={competition === c ? 'true' : 'false'} {...station(() => setCompetition(c))} style={{ height: u(44), minHeight: u(44), fontSize: u(16), padding: `0 ${u(16)}px`, flexShrink: 0 }}>{c ?? ctx.tt('sportAllShort')}</Chip>
+                  ))}
+                </div>
+              ) : null}
+              {shownComing.length > 0 ? <span style={{ fontSize: u(15), fontWeight: 600, color: TV.muted }}>{ctx.tt('sportTeamUpcoming')}</span> : null}
+              {shownComing.map((f) => {
+                const m = epgMatchFor(f, epg)
+                const has = !!m && rankedSources(m, ctx.overrides).length > 0
+                const channel = has ? sourceLine(m!, ctx) : ctx.tt('sportTeamNotOnChannels')
+                // Bara datum från källan: tablåns avspark ger klockslaget när matchen finns där.
+                const shown = f.dateOnly && m ? { ...f, kickoff: m.start, dateOnly: false } : f
+                return <FixtureRow key={f.id} u={u} f={shown} ctx={ctx} testId="tp-upcoming-row" title={vs(f)} sub={[f.league.name, channel].filter(Boolean).join(' · ')} reminded={has ? ctx.isReminded(m!) : null} onPress={has ? () => ctx.toggleRemind(m!) : undefined} />
+              })}
+              {shownDone.length > 0 ? <span style={{ fontSize: u(15), fontWeight: 600, color: TV.muted }}>{ctx.tt('sportTeamPlayed')}</span> : null}
+              {shownDone.map((f) => <FixtureRow key={f.id} u={u} f={{ ...f, dateOnly: true }} ctx={ctx} testId="tp-played-row" title={`${f.home.name} – ${f.away.name}`} sub={f.league.name} />)}
+              {hidden > 0 ? (
+                <div data-testid="tp-matches-all" {...station(() => setAllMatches(true))} style={{ alignSelf: 'flex-start', fontSize: u(16), fontWeight: 600, color: TV.accText, cursor: 'pointer', padding: `${u(6)}px ${u(4)}px` }}>{ctx.tt('sportTeamShowAll', { n: coming.length + done.length })}</div>
+              ) : null}
+            </section>
+          )
+        })()}
 
         {/* 6. Truppen */}
         {data.squad && data.squad.length > 0 ? (
@@ -194,6 +243,22 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        ) : null}
+
+        {/* 7. Titlar */}
+        {data.trophies && data.trophies.length > 0 ? (
+          <section data-testid="tp-trophies" style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
+            <Overline u={u}>{ctx.tt('sportTeamTrophies')}</Overline>
+            {trophyGroups(data.trophies).map((g) => (
+              <div key={g.name} data-testid="tp-trophy" {...station(NOOP)} style={{ ...rowCard(u), minHeight: u(56), display: 'flex', alignItems: 'center', gap: u(14), padding: `${u(8)}px ${u(16)}px` }}>
+                <span style={{ fontSize: u(20), fontWeight: 800, color: TV.accText, minWidth: u(44), fontVariantNumeric: 'tabular-nums' }}>{`×${g.count}`}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: u(17), fontWeight: 700, ...ellipsis }}>{g.name}</div>
+                  {g.years.length > 0 ? <div style={{ fontSize: u(14), color: TV.dim, ...ellipsis }}>{g.years.join(', ')}</div> : null}
                 </div>
               </div>
             ))}

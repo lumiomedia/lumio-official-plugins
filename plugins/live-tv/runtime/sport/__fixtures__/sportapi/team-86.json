@@ -1,0 +1,99 @@
+{
+ "_shape": "from docs (GET /teams/{id}) — verify with real key",
+ "success": true,
+ "team": {
+  "id": 86,
+  "name": "Real Madrid",
+  "short_name": "Real Madrid",
+  "league_id": 23,
+  "geo": "ES",
+  "country": "Spain",
+  "city": "Madrid",
+  "coach_name": "Xabi Alonso",
+  "stadium_name": "Santiago Bernabéu",
+  "founded_year": 1902,
+  "logo_file": "espn-86.png"
+ },
+ "matches": [
+  {
+   "id": 1,
+   "home_id": 86,
+   "away_id": 83,
+   "date": "2026-10-04",
+   "home_score": 2,
+   "away_score": 1,
+   "result": "H",
+   "status": "FT",
+   "league_id": 23,
+   "league_name": "La Liga",
+   "home_team": "Real Madrid",
+   "away_team": "Barcelona"
+  },
+  {
+   "id": 2,
+   "home_id": 91,
+   "away_id": 86,
+   "date": "2026-10-07",
+   "home_score": 0,
+   "away_score": 3,
+   "result": "A",
+   "status": "FT",
+   "league_id": 2,
+   "league_name": "Champions League",
+   "home_team": "Juventus",
+   "away_team": "Real Madrid"
+  },
+  {
+   "id": 3,
+   "home_id": 86,
+   "away_id": 95,
+   "date": "2026-10-10",
+   "home_score": 1,
+   "away_score": 1,
+   "result": "D",
+   "status": "FT",
+   "league_id": 23,
+   "league_name": "La Liga",
+   "home_team": "Real Madrid",
+   "away_team": "Sevilla"
+  },
+  {
+   "id": 4,
+   "home_id": 86,
+   "away_id": 84,
+   "date": "2026-10-18",
+   "home_score": null,
+   "away_score": null,
+   "result": null,
+   "status": "Scheduled",
+   "league_id": 23,
+   "league_name": "La Liga",
+   "home_team": "Real Madrid",
+   "away_team": "Atlético Madrid"
+  },
+  {
+   "id": 5,
+   "home_id": 92,
+   "away_id": 86,
+   "date": "2026-10-22",
+   "home_score": null,
+   "away_score": null,
+   "result": null,
+   "status": "Scheduled",
+   "league_id": 2,
+   "league_name": "Champions League",
+   "home_team": "Bayern Munich",
+   "away_team": "Real Madrid"
+  }
+ ],
+ "leagues": [
+  {
+   "id": 23,
+   "name": "La Liga"
+  },
+  {
+   "id": 2,
+   "name": "Champions League"
+  }
+ ]
+}

@@ -1,0 +1,258 @@
+{
+ "_shape": "real API-Sports hockey /games?date bodies (user cache 2026-10-11..13), only Hockey Allsvenskan (league 49), merged",
+ "get": "games",
+ "errors": [],
+ "results": 5,
+ "response": [
+  {
+   "country": {
+    "code": "SE",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 26,
+    "name": "Sweden"
+   },
+   "date": "2026-10-11T14:00:00+02:00",
+   "events": true,
+   "id": 427435,
+   "league": {
+    "id": 49,
+    "logo": "https://media.api-sports.io/hockey/leagues/49.png",
+    "name": "Hockey Allsvenskan",
+    "season": 2026,
+    "type": "League"
+   },
+   "periods": {
+    "first": "2-0",
+    "overtime": null,
+    "penalties": null,
+    "second": "1-1",
+    "third": "1-1"
+   },
+   "scores": {
+    "away": 2,
+    "home": 4
+   },
+   "status": {
+    "long": "Finished",
+    "short": "FT"
+   },
+   "teams": {
+    "away": {
+     "id": 1191,
+     "logo": "https://media.api-sports.io/hockey/teams/1191.png",
+     "name": "Nybro"
+    },
+    "home": {
+     "id": 518,
+     "logo": "https://media.api-sports.io/hockey/teams/518.png",
+     "name": "Almtuna"
+    }
+   },
+   "time": "14:00",
+   "timer": null,
+   "timestamp": 1791720000,
+   "timezone": "Europe/Stockholm",
+   "week": null
+  },
+  {
+   "country": {
+    "code": "SE",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 26,
+    "name": "Sweden"
+   },
+   "date": "2026-10-11T16:30:00+02:00",
+   "events": true,
+   "id": 427436,
+   "league": {
+    "id": 49,
+    "logo": "https://media.api-sports.io/hockey/leagues/49.png",
+    "name": "Hockey Allsvenskan",
+    "season": 2026,
+    "type": "League"
+   },
+   "periods": {
+    "first": "2-0",
+    "overtime": null,
+    "penalties": null,
+    "second": "0-0",
+    "third": "2-2"
+   },
+   "scores": {
+    "away": 2,
+    "home": 4
+   },
+   "status": {
+    "long": "Finished",
+    "short": "FT"
+   },
+   "teams": {
+    "away": {
+     "id": 519,
+     "logo": "https://media.api-sports.io/hockey/teams/519.png",
+     "name": "BIK Karlskoga"
+    },
+    "home": {
+     "id": 522,
+     "logo": "https://media.api-sports.io/hockey/teams/522.png",
+     "name": "MODO"
+    }
+   },
+   "time": "16:30",
+   "timer": null,
+   "timestamp": 1791729000,
+   "timezone": "Europe/Stockholm",
+   "week": null
+  },
+  {
+   "country": {
+    "code": "SE",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 26,
+    "name": "Sweden"
+   },
+   "date": "2026-10-11T16:30:00+02:00",
+   "events": true,
+   "id": 427437,
+   "league": {
+    "id": 49,
+    "logo": "https://media.api-sports.io/hockey/leagues/49.png",
+    "name": "Hockey Allsvenskan",
+    "season": 2026,
+    "type": "League"
+   },
+   "periods": {
+    "first": "0-1",
+    "overtime": null,
+    "penalties": null,
+    "second": "2-0",
+    "third": "1-0"
+   },
+   "scores": {
+    "away": 1,
+    "home": 3
+   },
+   "status": {
+    "long": "Finished",
+    "short": "FT"
+   },
+   "teams": {
+    "away": {
+     "id": 523,
+     "logo": "https://media.api-sports.io/hockey/teams/523.png",
+     "name": "Mora"
+    },
+    "home": {
+     "id": 524,
+     "logo": "https://media.api-sports.io/hockey/teams/524.png",
+     "name": "Södertälje"
+    }
+   },
+   "time": "16:30",
+   "timer": null,
+   "timestamp": 1791729000,
+   "timezone": "Europe/Stockholm",
+   "week": null
+  },
+  {
+   "country": {
+    "code": "SE",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 26,
+    "name": "Sweden"
+   },
+   "date": "2026-10-11T17:00:00+02:00",
+   "events": true,
+   "id": 427438,
+   "league": {
+    "id": 49,
+    "logo": "https://media.api-sports.io/hockey/leagues/49.png",
+    "name": "Hockey Allsvenskan",
+    "season": 2026,
+    "type": "League"
+   },
+   "periods": {
+    "first": "1-0",
+    "overtime": null,
+    "penalties": null,
+    "second": "1-0",
+    "third": "2-1"
+   },
+   "scores": {
+    "away": 1,
+    "home": 4
+   },
+   "status": {
+    "long": "Finished",
+    "short": "FT"
+   },
+   "teams": {
+    "away": {
+     "id": 528,
+     "logo": "https://media.api-sports.io/hockey/teams/528.png",
+     "name": "Vasteras"
+    },
+    "home": {
+     "id": 900,
+     "logo": "https://media.api-sports.io/hockey/teams/900.png",
+     "name": "Visby/Roma"
+    }
+   },
+   "time": "17:00",
+   "timer": null,
+   "timestamp": 1791730800,
+   "timezone": "Europe/Stockholm",
+   "week": null
+  },
+  {
+   "country": {
+    "code": "SE",
+    "flag": "https://media.api-sports.io/flags/se.svg",
+    "id": 26,
+    "name": "Sweden"
+   },
+   "date": "2026-10-12T19:00:00+02:00",
+   "events": false,
+   "id": 427439,
+   "league": {
+    "id": 49,
+    "logo": "https://media.api-sports.io/hockey/leagues/49.png",
+    "name": "Hockey Allsvenskan",
+    "season": 2026,
+    "type": "League"
+   },
+   "periods": {
+    "first": null,
+    "overtime": null,
+    "penalties": null,
+    "second": null,
+    "third": null
+   },
+   "scores": {
+    "away": null,
+    "home": null
+   },
+   "status": {
+    "long": "Not Started",
+    "short": "NS"
+   },
+   "teams": {
+    "away": {
+     "id": 1175,
+     "logo": "https://media.api-sports.io/hockey/teams/1175.png",
+     "name": "Ostersund"
+    },
+    "home": {
+     "id": 517,
+     "logo": "https://media.api-sports.io/hockey/teams/517.png",
+     "name": "AIK"
+    }
+   },
+   "time": "19:00",
+   "timer": null,
+   "timestamp": 1791824400,
+   "timezone": "Europe/Stockholm",
+   "week": null
+  }
+ ]
+}

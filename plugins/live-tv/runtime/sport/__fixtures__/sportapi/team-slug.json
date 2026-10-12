@@ -1,0 +1,25 @@
+{
+ "_shape": "from docs (GET /teams/slug/{slug}) — verify with real key",
+ "success": true,
+ "team": {
+  "id": 86,
+  "name": "Real Madrid",
+  "short_name": "Real Madrid",
+  "slug": "real-madrid",
+  "country": "Spain",
+  "city": "Madrid",
+  "geo": "ES",
+  "founded_year": 1902,
+  "coach_name": "Xabi Alonso",
+  "stadium_name": "Santiago Bernabéu",
+  "logo_file": "espn-86.png",
+  "league": {
+   "id": 23,
+   "name": "La Liga",
+   "slug": "la-liga"
+  }
+ },
+ "results": [],
+ "upcoming": [],
+ "squad": []
+}

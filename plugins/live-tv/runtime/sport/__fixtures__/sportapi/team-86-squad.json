@@ -1,0 +1,30 @@
+{
+ "_shape": "from docs (GET /teams/{id}/squad) — verify with real key",
+ "success": true,
+ "squad": [
+  {
+   "id": 1,
+   "full_name": "Thibaut Courtois",
+   "position": "Goalkeeper",
+   "jersey_number": 1
+  },
+  {
+   "id": 2,
+   "full_name": "Antonio Rüdiger",
+   "position": "Defender",
+   "jersey_number": 22
+  },
+  {
+   "id": 3,
+   "full_name": "Jude Bellingham",
+   "position": "Midfielder",
+   "jersey_number": 5
+  },
+  {
+   "id": 4,
+   "full_name": "Kylian Mbappé",
+   "position": "Forward",
+   "jersey_number": 10
+  }
+ ]
+}

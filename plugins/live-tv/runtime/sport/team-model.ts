@@ -266,3 +266,45 @@ export function openFollowPage(ctx: { openTeam(t: TeamTarget): void; openLeague(
   if (f.kind === 'team') ctx.openTeam(teamTargetFromFollow(f, matches))
   else ctx.openLeague(leagueTargetFromFollow(f, matches))
 }
+
+/** Turneringarna bland lagets matcher, flest matcher först (filterchipsen på lagsidan). */
+export function competitionsOf(fixtures: TeamFixture[]): string[] {
+  const n = new Map<string, number>()
+  for (const f of fixtures) if (f.league.name) n.set(f.league.name, (n.get(f.league.name) ?? 0) + 1)
+  return [...n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name]) => name)
+}
+
+/** Spelade matcher, senaste först. */
+export function playedFixtures(fixtures: TeamFixture[]): TeamFixture[] {
+  return fixtures.filter((f) => f.status === 'finished' && f.score).sort((a, b) => b.kickoff - a.kickoff)
+}
+
+/**
+ * Titlarna per turnering: "La Liga" ×36 med åren, senaste först. Källan kan
+ * skriva året och "Final" i namnet ("1994 UEFA Cup Winners' Cup Final") —
+ * det skalas bort så att samma titel blir en rad.
+ */
+export function trophyGroups(list: Array<{ name: string; year: number | null }>): Array<{ name: string; years: number[]; count: number }> {
+  const groups = new Map<string, { name: string; years: number[]; count: number }>()
+  for (const t of list) {
+    const name = t.name.replace(/^\s*\d{4}(?:[/-]\d{2,4})?\s+/, '').replace(/\s+final\s*$/i, '').trim() || t.name
+    const k = foldTeamKey(name)
+    const g = groups.get(k) ?? { name, years: [], count: 0 }
+    g.count += 1
+    if (t.year != null) g.years.push(t.year)
+    groups.set(k, g)
+  }
+  return [...groups.values()].map((g) => ({ ...g, years: [...new Set(g.years)].sort((a, b) => b - a) })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+}
+
+/** Flaggan ur landskoden: "ES" → 🇪🇸, "GB-ENG" → Englands flagga (subdivisionstaggar). Okänt → tomt. */
+export function flagEmoji(geo: string | null | undefined): string {
+  const g = (geo ?? '').trim().toUpperCase()
+  const sub = /^GB-(ENG|SCT|WLS)$/.exec(g)
+  if (sub) {
+    const tag = (c: string) => String.fromCodePoint(0xe0000 + c.toLowerCase().charCodeAt(0))
+    return `\u{1F3F4}${[...`gb${sub[1].toLowerCase()}`].map(tag).join('')}\u{E007F}`
+  }
+  if (!/^[A-Z]{2}$/.test(g)) return ''
+  return [...g].map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65)).join('')
+}

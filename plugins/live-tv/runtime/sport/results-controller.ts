@@ -124,6 +124,18 @@ export class ResultsController {
     return out
   }
 
+  /**
+   * Alla fixturer för sporten som redan ligger i minnet (dygnsplanens dagar och
+   * repriskollens dagar ur diskcachen), alla källor. Lag- och ligasidan läser
+   * dem när källans egna lag-/liganrop inte ger något (t.ex. API-Sports
+   * gratisplan utan innevarande säsong) — de kostar inget anrop.
+   */
+  knownFixtures(sport: SportKind): Fixture[] {
+    const out: Fixture[] = []
+    for (const [k, byKey] of this.days) if (k.startsWith(`${sport}|`)) out.push(...byKey.values())
+    return out
+  }
+
   /** Matchens första källa och id för dagen: "Bara resultat"-radens stabila id över ett källbyte. */
   canonicalOf(f: Pick<Fixture, 'provider' | 'id'>): Pick<Fixture, 'provider' | 'id'> { return this.events.canonicalOf(f) }
 

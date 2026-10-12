@@ -30,6 +30,7 @@ export function useTeamPageData(target: TeamTarget): TeamPageData {
     void loadTeamPage(router, target, {
       now,
       standings: standingsVia(controller, now),
+      known: controller.knownFixtures(target.sport),
       tz: tz(),
       onUpdate: (d) => { if (live) setData(d) },
       // Uppslaget görs en gång: id:t sparas på den följda posten (oföljda lag minns det bara i sessionen).
@@ -48,14 +49,14 @@ export function useLeaguePageData(target: LeagueTarget): LeaguePageData {
   const [data, setData] = useState<LeaguePageData>(EMPTY_LEAGUE)
   const ref = target.ref ? `${target.ref.provider}|${target.ref.id}|${target.ref.season ?? ''}` : ''
   useEffect(() => {
-    if (!router || !controller || !target.ref) { setData({ ...EMPTY_LEAGUE, state: 'no-key' }); return }
+    if (!router || !controller) { setData({ ...EMPTY_LEAGUE, state: 'no-key' }); return }
     let live = true
     setData(EMPTY_LEAGUE)
     const now = Date.now()
-    void loadLeaguePage(router, target, { now, tz: tz(), standings: standingsVia(controller, now), onUpdate: (d) => { if (live) setData(d) } })
+    void loadLeaguePage(router, target, { now, tz: tz(), standings: standingsVia(controller, now), known: controller.knownFixtures(target.sport), onUpdate: (d) => { if (live) setData(d) } })
     return () => { live = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, target.sport, ref])
+  }, [router, target.sport, target.key, ref])
   return data
 }
 

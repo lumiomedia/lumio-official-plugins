@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { teamCallsFor } from './team-providers'
 import { apiSports } from './api-sports'
-import { teamTargetFromRow, epgMatchFor, fixturesTtlS, formOf, leagueTargetFromFollow, leagueTargetFromMatch, liveFixture, mainLeagueOf, ordinal, roundFixtures, seasonGuesses, squadGroups, standingsSlice, teamRowIndex, teamTargetFromFollow, teamTargetFromMatch, upcomingFixtures } from './team-model'
+import { competitionsOf, flagEmoji, playedFixtures, trophyGroups, teamTargetFromRow, epgMatchFor, fixturesTtlS, formOf, leagueTargetFromFollow, leagueTargetFromMatch, liveFixture, mainLeagueOf, ordinal, roundFixtures, seasonGuesses, squadGroups, standingsSlice, teamRowIndex, teamTargetFromFollow, teamTargetFromMatch, upcomingFixtures } from './team-model'
 import { fxMatch } from './__sport-fixture'
 import teamFixtures from './__fixtures__/api-sports/football-fixtures-team.json'
 import allsvenskan from './__fixtures__/api-sports/football-standings-allsvenskan.json'
@@ -144,5 +144,24 @@ describe('ligans omgång', () => {
     const r = roundFixtures(feed.fixtures, NOW)
     expect(r.round).toBe(23)
     expect(r.fixtures).toHaveLength(1)
+  })
+})
+
+describe('lagets matcher, titlar och flagga', () => {
+  it('turneringarna med flest matcher först; spelade senaste först', () => {
+    expect(competitionsOf(feed.fixtures)).toEqual(['Allsvenskan', 'Svenska Cupen'])
+    expect(playedFixtures(feed.fixtures).map((f) => f.away.name)[0]).toBe('Djurgardens IF')
+  })
+  it('titlar per turnering utan år och "Final" i namnet, åren senaste först', () => {
+    expect(trophyGroups([{ name: 'La Liga', year: 2022 }, { name: '1994 UEFA Cup Winners\' Cup Final', year: 1994 }, { name: 'La Liga', year: 2024 }])).toEqual([
+      { name: 'La Liga', years: [2024, 2022], count: 2 },
+      { name: "UEFA Cup Winners' Cup", years: [1994], count: 1 },
+    ])
+  })
+  it('flaggan ur landskoden; England som egen flagga; okänt blir tomt', () => {
+    expect(flagEmoji('ES')).toBe('🇪🇸')
+    expect(flagEmoji('GB-ENG')).toBe('🏴󠁧󠁢󠁥󠁮󠁧󠁿')
+    expect(flagEmoji('')).toBe('')
+    expect(flagEmoji('XYZ')).toBe('')
   })
 })

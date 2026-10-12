@@ -7,8 +7,8 @@ import { localDates, shiftDate } from './day-plan'
 import { foldTeamKey } from './merge'
 import { teamKeysMatch } from './sport-store'
 import { fixturesTtlS, mainLeagueOf, roundFixtures, seasonGuesses, teamRowIndex, type LeagueRef, type LeagueTarget, type TeamTarget } from './team-model'
-import { teamCallsFor, type SquadPlayer, type TeamFeed, type TeamFixture, type TopScorer } from './team-providers'
-import type { ProviderCall, ProviderId, StandingRow } from './provider'
+import { teamCallsFor, type SquadPlayer, type TeamFeed, type TeamFixture, type TeamInfo, type TopScorer, type Trophy } from './team-providers'
+import type { Fixture, ProviderCall, ProviderId, StandingRow } from './provider'
 import type { SportKind } from './sport-model'
 
 /*
@@ -24,8 +24,15 @@ import type { SportKind } from './sport-model'
   frågas inte om på sex timmar — samma väg som Tabeller & resultat.
 
   Källorna prövas i sportens ordning. En källa utan id för laget får först
-  slå upp det (lagsök, en gång; sparas på den följda posten), och en källa
+  slå upp det (dagens matcher hos samma källa, ligans tabell, lagsök eller
+  sportapi.ai:s slug — en gång; sparas på den följda posten), och en källa
   som är spärrad eller saknar kvot lämnar över till nästa — som routern.
+  ETT ID HÖR TILL EN KÄLLA: id:n slås aldrig upp hos en källa och används
+  hos en annan.
+
+  Ger ingen källa lagets matcher (API-Sports gratisplan saknar innevarande
+  säsong) läses de matcher som redan ligger i minnet (dygnsplanens dagar,
+  `known`) — en källa i taget, och utan nya anrop.
 */
 
 /** En gissad säsongs matcher måste ligga inom fyra månader från idag. */
@@ -62,9 +69,11 @@ export interface TeamPageData {
   standings: StandingRow[] | null
   squad: SquadPlayer[] | null
   crest: string | null
+  info: TeamInfo | null
+  trophies: Trophy[] | null
 }
 
-export const EMPTY_TEAM: TeamPageData = { state: 'loading', provider: null, teamId: null, fixtures: [], league: null, standings: null, squad: null, crest: null }
+export const EMPTY_TEAM: TeamPageData = { state: 'loading', provider: null, teamId: null, fixtures: [], league: null, standings: null, squad: null, crest: null, info: null, trophies: null }
 
 /** Tabellvägen. `[]`/`null` = ingen tabell för ligan just nu. */
 export type StandingsLoader = (sport: SportKind, league: LeagueRef) => Promise<StandingRow[] | null>
@@ -78,9 +87,18 @@ export interface LoadOpts {
   now: number
   tz: string
   standings: StandingsLoader
+  /** Fixturer som redan finns i minnet (resultatlagrets dagar), alla källor. Läses, kostar inget. */
+  known?: Fixture[]
   onUpdate(data: TeamPageData): void
-  /** Ett id som slogs upp (lagsök): sparas på den följda posten så att uppslaget görs en gång. */
+  /** Ett id som slogs upp: sparas på den följda posten så att uppslaget görs en gång. */
   onResolved?(provider: ProviderId, id: string): void
+}
+
+/** Samma lag: samma vikta namn, samma nyckelregel som Följer, eller det ena namnet i det andra. */
+function sameTeam(name: string, target: Pick<TeamTarget, 'key' | 'name'>): boolean {
+  const key = foldTeamKey(target.key || target.name)
+  const n = foldTeamKey(name)
+  return !!n && (n === key || teamKeysMatch(key, n) || n.includes(key) || key.includes(n))
 }
 
 /** Bästa träffen i ett lagsök: samma namn, annars samma nyckelregel som Följer, annars namnet som delsträng. Ett ensamt orelaterat svar tas aldrig. */
@@ -93,31 +111,76 @@ function pickHit(hits: Array<{ id: string; name: string }>, target: Pick<TeamTar
   return (exact ?? loose ?? contains)?.id ?? null
 }
 
+/** Lagets id hos källan ur matcher den källan själv lämnat (aldrig en annan källas id). */
+function idFromFixtures(provider: ProviderId, fixtures: Fixture[], target: TeamTarget): string | null {
+  for (const f of fixtures) {
+    if (f.provider !== provider) continue
+    if (f.home.id && sameTeam(f.home.name, target)) return f.home.id
+    if (f.away.id && sameTeam(f.away.name, target)) return f.away.id
+  }
+  return null
+}
+
+const AFFIX = new Set(['fc', 'cf', 'if', 'ik', 'ifk', 'aif', 'bk', 'sk', 'ff', 'afc', 'sc', 'ac', 'ssc', 'club', 'cd', 'ud', 'sv', 'fk'])
+
+/** sportapi.ai:s slug ur namnet: "Real Madrid" → real-madrid; utan föreningsaffix som andra försök ("FC Barcelona" → barcelona). */
+export function slugCandidates(name: string): string[] {
+  const words = foldTeamKey(name).split(' ').filter(Boolean)
+  const full = words.join('-')
+  const bare = words.filter((w) => !AFFIX.has(w)).join('-')
+  return [...new Set([full, bare].filter((x) => x.length >= 2))]
+}
+
 /**
  * Källans id för laget. Känt (följt ur sökning, dagens matcher) → direkt.
- * sportapi.ai har inget lagsök: id:t läses ur ligans tabell när ligan är känd
- * hos den källan. Övriga: ett lagsök (en gång, cachat en vecka på disk).
+ * Annars i den här ordningen, så billigt som möjligt: matcher källan redan
+ * lämnat (inget anrop), ligans tabell hos källan, och sist ett uppslag —
+ * lagsök (API-Sports, TheSportsDB) eller slug (sportapi.ai, som saknar
+ * lagsök). Ett uppslag godtas bara när svarets namn är laget.
  */
 async function resolveId(b: Budget, target: TeamTarget, opts: LoadOpts, standings: Map<string, StandingRow[] | null>): Promise<string | null> {
   const pid = b.provider.id
   const known = target.ids[pid]
   if (known) return known
-  let id: string | null = null
-  if (pid === 'sportapi') {
-    if (target.league?.provider !== 'sportapi') return null
+  let id = idFromFixtures(pid, opts.known ?? [], target)
+  if (!id && target.league?.provider === pid) {
     const k = `${target.league.provider}|${target.league.id}`
     if (!standings.has(k)) standings.set(k, await opts.standings(target.sport, target.league))
     const rows = standings.get(k) ?? []
     const i = teamRowIndex(rows, target, null)
     id = i >= 0 ? rows[i].team.id || null : null
-  } else {
-    const call = b.provider.searchTeams(target.sport, target.name)
-    if (call.requests.length === 0) return null
-    const res = await once(`search|${callKey(b, call as ProviderCall<unknown>)}`, opts.now, () => b.run('search', target.sport, call), (r) => r.data != null)
-    id = pickHit(res.data ?? [], target)
+  }
+  if (!id) {
+    const calls = teamCallsFor(pid)
+    if (calls.lookup) {
+      for (const slug of slugCandidates(target.name)) {
+        const call = calls.lookup(target.sport, slug)
+        if (!call) break
+        const res = await run(b, target.sport, call, opts.now)
+        if (res.data && sameTeam(res.data.name, target)) { id = res.data.id; break }
+        if (!res.ok && res.data == null && res.reason !== 'network') break
+      }
+    } else {
+      const call = b.provider.searchTeams(target.sport, target.name)
+      if (call.requests.length > 0) {
+        const res = await once(`search|${callKey(b, call as ProviderCall<unknown>)}`, opts.now, () => b.run('search', target.sport, call), (r) => r.data != null)
+        id = pickHit(res.data ?? [], target)
+      }
+    }
   }
   if (id) opts.onResolved?.(pid, id)
   return id
+}
+
+/** Lagets matcher ur minnet: källan med flest matcher för laget, bara dess egna (id:n blandas inte). */
+function knownFeed(fixtures: Fixture[], target: TeamTarget, providers: ProviderId[]): { provider: ProviderId; id: string | null; fixtures: TeamFixture[] } | null {
+  let best: { provider: ProviderId; id: string | null; fixtures: TeamFixture[] } | null = null
+  for (const provider of providers) {
+    const mine = fixtures.filter((f) => f.provider === provider && (sameTeam(f.home.name, target) || sameTeam(f.away.name, target) || (!!target.ids[provider] && (f.home.id === target.ids[provider] || f.away.id === target.ids[provider]))))
+    const unique = [...new Map(mine.map((f) => [f.id, f])).values()]
+    if (unique.length > (best?.fixtures.length ?? 0)) best = { provider, id: target.ids[provider] ?? idFromFixtures(provider, unique, target), fixtures: unique }
+  }
+  return best
 }
 
 export async function loadTeamPage(router: SportRouter, target: TeamTarget, opts: LoadOpts): Promise<TeamPageData> {
@@ -155,9 +218,15 @@ export async function loadTeamPage(router: SportRouter, target: TeamTarget, opts
     }
     if (got) break
   }
+  // Ingen källa gav lagets matcher: det som redan finns i minnet (inga anrop).
+  if (!got) {
+    const mem = knownFeed(opts.known ?? [], target, candidates.map((b) => b.provider.id))
+    const b = mem ? router.budget(mem.provider) : null
+    if (mem && b) got = { b, id: mem.id ?? '', season: '', feed: { fixtures: mem.fixtures, leagueId: null, crest: null } }
+  }
   if (got) {
     const fixtures = [...got.feed.fixtures].sort((a, b) => a.kickoff - b.kickoff)
-    update({ provider: got.b.provider.id, teamId: got.id, fixtures, crest: target.crest ?? got.feed.crest })
+    update({ provider: got.b.provider.id, teamId: got.id || null, fixtures, crest: target.crest ?? got.feed.crest, info: got.feed.info ?? null })
   }
 
   // 2. Tabellen: serien hos källan som svarade, annars ligan dagens matcher känner.
@@ -167,7 +236,9 @@ export async function loadTeamPage(router: SportRouter, target: TeamTarget, opts
     const k = `${league.provider}|${league.id}`
     if (!standings.has(k)) standings.set(k, await opts.standings(sport, league))
     const rows = standings.get(k)
-    update({ league, standings: rows && rows.length > 0 ? rows : null })
+    // Ligans namn ur svaret när källan bara gav id:t (sportapi.ai `/teams/{id}`).
+    const named = league.name ? league : { ...league, name: got?.feed.fixtures.find((f) => f.league.id === league.id)?.league.name ?? rows?.[0]?.group ?? '' }
+    update({ league: named, standings: rows && rows.length > 0 ? rows : null })
   }
 
   // 3. Truppen: källan som svarade först, sedan övriga som har en trupp för sporten.
@@ -181,37 +252,79 @@ export async function loadTeamPage(router: SportRouter, target: TeamTarget, opts
     const res = await run(b, sport, calls.squad(sport, id, { season })!, opts.now)
     if (res.data && res.data.length > 0) { update({ squad: res.data }); break }
   }
+
+  // 4. Titlarna, när källan har dem (sportapi.ai).
+  if (got?.id) {
+    const call = teamCallsFor(got.b.provider.id).trophies?.(sport, got.id)
+    if (call) {
+      const res = await run(got.b, sport, call, opts.now)
+      if (res.data && res.data.length > 0) update({ trophies: res.data })
+    }
+  }
   update({ state: 'ready' })
   return data
 }
 
 export interface LeaguePageData {
   state: 'loading' | 'ready' | 'no-key'
+  /** Ligan sidan till slut använde (uppslagen när den bara fanns i tablån). */
+  ref: LeagueRef | null
   standings: StandingRow[] | null
   round: { round: number | null; fixtures: TeamFixture[] } | null
   scorers: TopScorer[] | null
 }
 
-export const EMPTY_LEAGUE: LeaguePageData = { state: 'loading', standings: null, round: null, scorers: null }
+export const EMPTY_LEAGUE: LeaguePageData = { state: 'loading', ref: null, standings: null, round: null, scorers: null }
+
+/**
+ * Ligan när sidan bara har tablåns namn: först matcher i minnet (samma
+ * namn hos en källa med nyckel, inget anrop), sedan ligasöket (cachat en
+ * vecka). Namnet måste stämma; ett ensamt orelaterat svar tas inte.
+ */
+async function resolveLeague(router: SportRouter, target: LeagueTarget, known: Fixture[]): Promise<LeagueRef | null> {
+  const want = foldTeamKey(target.name)
+  if (!want) return null
+  const keyed = new Set(router.candidates(target.sport).map((b) => b.provider.id))
+  const named = (n: string) => { const f = foldTeamKey(n); return !!f && (f === want || f.includes(want) || want.includes(f)) }
+  for (const pid of router.candidates(target.sport).map((b) => b.provider.id)) {
+    const hit = known.filter((f) => f.provider === pid && f.league.id && named(f.league.name)).sort((a, b) => b.kickoff - a.kickoff)[0]
+    if (hit) return { provider: pid, id: hit.league.id, season: hit.league.season || null, name: hit.league.name }
+  }
+  const res = await router.searchLeagues(target.sport, target.name)
+  if (!res.provider || !keyed.has(res.provider)) return null
+  const hits = res.data ?? []
+  const best = hits.find((h) => foldTeamKey(h.name) === want) ?? hits.find((h) => named(h.name))
+  return best ? { provider: res.provider, id: best.id, season: null, name: best.name } : null
+}
 
 /** Ligasidan: tabellen, omgångens matcher och skytteligan — hos ligans egen källa (id:t är dess). */
 export async function loadLeaguePage(router: SportRouter, target: LeagueTarget, opts: Omit<LoadOpts, 'onUpdate' | 'onResolved'> & { onUpdate(d: LeaguePageData): void }): Promise<LeaguePageData> {
   let data: LeaguePageData = { ...EMPTY_LEAGUE }
   const update = (patch: Partial<LeaguePageData>) => { data = { ...data, ...patch }; opts.onUpdate(data) }
-  const ref = target.ref
+  const known = opts.known ?? []
+  if (router.candidates(target.sport).length === 0) { update({ state: 'no-key' }); return data }
+  const ref = target.ref ?? await resolveLeague(router, target, known)
   const b = ref ? router.budget(ref.provider) : null
-  if (!ref || !b) { update({ state: 'no-key' }); return data }
+  if (!ref || !b) { update({ state: 'ready' }); return data }
   const sport = target.sport
   const calls = teamCallsFor(ref.provider)
-  const season = ref.season ?? (calls.needsSeason ? seasonGuesses(sport, opts.now)[0] : '')
-  const rows = await opts.standings(sport, { ...ref, season: ref.season ?? (season || null) })
+  // Säsongen ur matcher källan själv lämnat för ligan, annars gissad.
+  const seen = known.find((f) => f.provider === ref.provider && f.league.id === ref.id && f.league.season)
+  const season = ref.season ?? seen?.league.season ?? (calls.needsSeason ? seasonGuesses(sport, opts.now)[0] : '')
+  const resolved = { ...ref, season: season || null }
+  update({ ref: resolved })
+  const rows = await opts.standings(sport, resolved)
   update({ standings: rows && rows.length > 0 ? rows : null })
   const d = localDates(opts.now, opts.tz)
   const roundCall = calls.leagueFixtures(sport, ref.id, { season, tz: opts.tz, from: shiftDate(d.today, -4), to: shiftDate(d.today, 4) })
+  let round: TeamFixture[] = []
   if (roundCall) {
     const res = await run(b, sport, roundCall, opts.now)
-    if (res.data && res.data.length > 0) update({ round: roundFixtures(res.data, opts.now) })
+    round = res.data ?? []
   }
+  // Källans eget ligaanrop gav inget (planens säsongsgräns): ligans matcher ur minnet.
+  if (round.length === 0) round = [...new Map(known.filter((f) => f.provider === ref.provider && f.league.id === ref.id).map((f) => [f.id, f])).values()]
+  if (round.length > 0) update({ round: roundFixtures(round, opts.now) })
   const scorers = calls.topScorers(sport, ref.id, season)
   if (scorers) {
     const res = await run(b, sport, scorers, opts.now)

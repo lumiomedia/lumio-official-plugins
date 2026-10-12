@@ -1,0 +1,42 @@
+{
+ "_shape": "from docs (GET /teams/{id}/trophies) — verify with real key",
+ "success": true,
+ "trophies": [
+  {
+   "year": 2024,
+   "position": 1,
+   "tournament_id": 1,
+   "name": "La Liga",
+   "short_name": null,
+   "type": "domestic_league",
+   "country": "Spain"
+  },
+  {
+   "year": 2022,
+   "position": 1,
+   "tournament_id": 1,
+   "name": "La Liga",
+   "short_name": null,
+   "type": "domestic_league",
+   "country": "Spain"
+  },
+  {
+   "year": 2024,
+   "position": 1,
+   "tournament_id": 2,
+   "name": "2024 UEFA Champions League Final",
+   "short_name": null,
+   "type": "international",
+   "country": null
+  },
+  {
+   "year": 2023,
+   "position": 2,
+   "tournament_id": 2,
+   "name": "2023 Copa del Rey Final",
+   "short_name": null,
+   "type": "cup",
+   "country": "Spain"
+  }
+ ]
+}
