@@ -46,6 +46,29 @@ describe('ResultsController', () => {
     expect(paths.length).toBe(4) // bara idag igen
   })
 
+  it('historiken för repriser: gårdagen ur planen, dagarna före bara ur diskcachen (inga nya anrop)', async () => {
+    const modes: string[] = []
+    const fetch = vi.fn(async ({ req, mode }: { req: { path: string }; mode: string }) => {
+      modes.push(`${mode}:${req.path}`)
+      const date = /date=([\d-]+)/.exec(req.path)?.[1]
+      const cachedOld = date === '2026-10-08' || date === '2026-10-07'
+      if (mode === 'cache-only' && !cachedOld) return { data: null, cached: false, fresh: false, fetchedAt: null, quota, error: null } as SportFetchResponse
+      const body = JSON.parse(JSON.stringify(footballDate)) as typeof footballDate
+      for (const r of body.response) r.fixture.id = Number(`${date!.replace(/-/g, '')}${r.fixture.id}`)
+      return { data: body, cached: cachedOld, fresh: true, fetchedAt: NOW, quota, error: null } as SportFetchResponse
+    })
+    const router = routerFor({ fetch: fetch as never, now: () => NOW, sleep: async () => {} })
+    router.budget('api-sports')!.noteQuota(quota)
+    const c = new ResultsController(router, { tz: 'Europe/Stockholm', now: () => NOW, startPoller: false })
+    await c.runPlan({ sports: ['football'], leagues: [] })
+    const upstream = modes.filter((m) => !m.startsWith('cache-only'))
+    expect(upstream.map((m) => /date=([\d-]+)/.exec(m)?.[1])).toEqual(['2026-10-10', '2026-10-09', '2026-10-11'])
+    expect(modes.filter((m) => m.startsWith('cache-only')).map((m) => /date=([\d-]+)/.exec(m)?.[1]).sort()).toEqual(['2026-10-07', '2026-10-08', '2026-10-10'])
+    const ids = c.history('2026-10-10').map((f) => f.id.slice(0, 8))
+    expect([...new Set(ids)].sort()).toEqual(['20261007', '20261008', '20261009'])
+    expect(c.history('2026-10-10').some((f) => f.id.startsWith('20261010') || f.id.startsWith('20261011'))).toBe(false)
+  })
+
   it('dagens fixturer lagras, och ett mål i nästa svar ger en målhändelse', async () => {
     const { c } = controller(() => ({ data: footballDate }))
     await c.runPlan({ sports: ['football'], leagues: [] })

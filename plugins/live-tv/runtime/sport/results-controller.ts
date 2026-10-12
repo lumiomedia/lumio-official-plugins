@@ -4,7 +4,7 @@ import { useEffect, useMemo, useReducer, useState } from 'react'
 import { onPluginStorageChanged } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import { currentRouter, type FixtureRef, type SportRouter } from './router'
-import { localDates, planDay, planKey, plannedPerSport, type LeagueRef, type PlannedCall } from './day-plan'
+import { localDates, planDay, shiftDate, planKey, plannedPerSport, type LeagueRef, type PlannedCall } from './day-plan'
 import { EventIndex } from './event-index'
 import { createLivePoller, type LivePoller, type LiveTarget } from './live-poller'
 import { diffGoals, emitGoals, type Score } from './goal-events'
@@ -32,6 +32,8 @@ export interface RateStatus {
 const TEN_MIN = 10 * 60_000
 const TWO_HOURS = 2 * 3_600_000
 const LIVE_DETAIL_MS = 60_000
+/** Dagarna före gårdagen som repriskollen läser ur diskcachen (aldrig nätet). */
+const HISTORY_DAYS = [2, 3]
 
 /**
  * Resultatlagret för nycklarna (en per källa). Håller fixturer per sport och
@@ -54,6 +56,8 @@ export class ResultsController {
   /** Ligans källa (sport|ligans id), för tabellanrop från vyer som bara har ligans id. */
   private leagueProvider = new Map<string, ProviderId>()
   private done = new Set<string>()
+  /** sport|datum som repriskollen redan läst ur diskcachen (träff eller ej). */
+  private historyPeeked = new Set<string>()
   private doneDay = ''
   private details = new Map<string, { at: number; detail: FixtureDetail }>()
   private tables = new Map<string, StandingRow[]>()
@@ -96,6 +100,17 @@ export class ResultsController {
   allFixtures(date: string): Fixture[] {
     const out: Fixture[] = []
     for (const [k, byKey] of this.days) if (k.endsWith(`|${date}`)) out.push(...[...byKey.values()].sort((a, b) => a.kickoff - b.kickoff))
+    return out
+  }
+
+  /**
+   * Källans fixturer från dagarna före `date` (gårdagen ur planen, dagarna innan ur diskcachen):
+   * repriskollen i `mergeLinked` jämför tablåns matcher mot dem.
+   */
+  history(date: string): Fixture[] {
+    const days = new Set([1, ...HISTORY_DAYS].map((n) => shiftDate(date, -n)))
+    const out: Fixture[] = []
+    for (const [k, byKey] of this.days) if (days.has(k.slice(k.indexOf('|') + 1))) out.push(...byKey.values())
     return out
   }
 
@@ -155,6 +170,17 @@ export class ResultsController {
       if (call.kind !== 'day' || call.date !== d.today || this.fixtures(call.sport, d.today).length > 0) continue
       const cached = await this.router.peek(call.sport, (p) => p.day(call.sport, d.today, { today: d.today, tz: this.tz, dayEndMs: d.dayEndMs(d.today) }))
       if (cached) this.applyFixtures(call.sport, d.today, cached.data, 'cache', 0) // diskcachen är per definition äldst
+    }
+    // Repriskollen: dagarna före gårdagen BARA ur diskcachen. Inget nytt anrop och ingen kvot —
+    // finns dagen inte cachad blir kollen bara gårdagens.
+    for (const sport of new Set(calls.filter((c) => c.kind === 'day').map((c) => c.sport))) {
+      for (const date of HISTORY_DAYS.map((n) => shiftDate(d.today, -n))) {
+        const key = this.dayKey(sport, date)
+        if (this.historyPeeked.has(key) || this.days.has(key)) continue
+        this.historyPeeked.add(key)
+        const cached = await this.router.peek(sport, (p) => p.day(sport, date, { today: d.today, tz: this.tz, dayEndMs: d.dayEndMs(date) }))
+        if (cached) this.applyFixtures(sport, date, cached.data, 'cache', 0)
+      }
     }
     const remaining = [...calls]
     const syncPlanned = () => {
@@ -366,8 +392,9 @@ export function useSportResults(opts: { day: string | null; epg: SportMatch[] })
 
   const allMatches = useMemo(() => {
     if (!controller) return opts.epg.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }))
-    return mergeLinked({ epg: opts.epg, fixtures, links, overrides, coverage: (s) => controller.router.coverage(s), canonical: (f) => controller.canonicalOf(f) })
-  }, [controller, opts.epg, fixtures, links, overrides])
+    const history = opts.day ? controller.history(opts.day) : []
+    return mergeLinked({ epg: opts.epg, fixtures, links, overrides, history, coverage: (s) => controller.router.coverage(s), canonical: (f) => controller.canonicalOf(f) })
+  }, [controller, opts.epg, opts.day, fixtures, links, overrides, version])
   const matches = useMemo(() => relevantMatches(allMatches, follows), [allMatches, follows])
 
   useEffect(() => { if (opts.day) controller?.setMerged(matches) }, [controller, opts.day, matches])

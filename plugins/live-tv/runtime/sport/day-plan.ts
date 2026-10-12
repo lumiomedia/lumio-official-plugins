@@ -61,6 +61,12 @@ function offsetMs(ms: number, tz: string): number {
   return Date.UTC(n('year'), n('month') - 1, n('day'), n('hour'), n('minute'), n('second')) - Math.floor(ms / 1000) * 1000
 }
 
+/** "2026-10-12" flyttat `days` dagar (kalenderdatum, ingen tidszon inblandad). */
+export function shiftDate(date: string, days: number): string {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days, 12)).toISOString().slice(0, 10)
+}
+
 export function localDates(now: number, tz: string) {
   const today = ymd(now, tz)
   const [y, m, d] = today.split('-').map(Number)

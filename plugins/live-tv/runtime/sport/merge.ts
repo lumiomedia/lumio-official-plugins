@@ -2,7 +2,7 @@ import { followState, rankedSources } from './sport-day-model'
 import type { Fixture, FixtureStatus } from './provider'
 import type { LinkMap } from './sport-link'
 import type { MatchStatus, SportKind, SportMatch } from './sport-model'
-import type { SportFollow, SportOverrides } from './sport-store'
+import { sportsCompatible, teamKeysMatch, type SportFollow, type SportOverrides } from './sport-store'
 
 export function fixtureMatchKey(f: Pick<Fixture, 'provider' | 'id'>): string {
   return `fx:${f.provider}:${f.id}`
@@ -24,9 +24,18 @@ export interface MergeArgs {
    * får sitt id därifrån, så att den behåller id (följd, "Notis vid mål", vald kanal) över ett källbyte.
    */
   canonical?(f: Fixture): Pick<Fixture, 'provider' | 'id'>
+  /**
+   * Källans fixturer från dagarna före (minnet och diskcachen, inga nya anrop). En okopplad
+   * EPG-match vars lag redan spelat färdigt där är en repris som tablån inte märkt.
+   */
+  history?: Fixture[]
 }
 
 const TWO_HOURS = 2 * 3_600_000
+/** En direktsändning börjar senast strax efter avspark; en sändning två timmar efter en spelad match är en repris. */
+const REPLAY_GAP = TWO_HOURS
+/** Hur långt bak en spelad match får ligga för att en sändning av samma lag ska räknas som repris av den. */
+const REPLAY_LOOKBACK = 7 * 24 * 3_600_000
 const STATUS: Record<FixtureStatus, MatchStatus> = { scheduled: 'upcoming', postponed: 'upcoming', live: 'live', ht: 'live', finished: 'finished' }
 const phaseOf = (s: FixtureStatus): SportMatch['phase'] => (s === 'ht' || s === 'postponed' ? s : undefined)
 
@@ -90,6 +99,25 @@ function fixtureOnly(f: Fixture, overrides: SportOverrides, canonical: Pick<Fixt
   return overrides[match.id] ? { ...match, sources: rankedSources(match, overrides), resultOnly: false } : match
 }
 
+function sameTeams(m: SportMatch, f: Fixture): boolean {
+  const h = foldTeamKey(f.home.name)
+  const a = foldTeamKey(f.away.name)
+  return (teamKeysMatch(m.homeKey, h) && teamKeysMatch(m.awayKey, a)) || (teamKeysMatch(m.homeKey, a) && teamKeysMatch(m.awayKey, h))
+}
+
+/**
+ * Tablån märker en repris bara med datum i beskrivningen eller en tidigare live-flaggad
+ * sändning samma dag. TV4 Fotboll och ESPN sänder om gårdagens matcher utan något av det,
+ * och då stod de som LIVE utan ställning. Källan vet bättre: samma lag har redan spelat
+ * (avspark minst två timmar före sändningen, inom en vecka) och inget nytt möte väntar i dag.
+ */
+function isProviderRerun(m: SportMatch, today: Fixture[], history: Fixture[]): boolean {
+  if (m.rerun || m.coverage !== 'full' || !m.homeKey || !m.awayKey) return false
+  const fits = (f: Fixture) => sportsCompatible(f.sport, m.kind) && sameTeams(m, f)
+  if (today.some((f) => fits(f) && f.status !== 'finished' && f.status !== 'postponed')) return false
+  return [...today, ...history].some((f) => fits(f) && f.status !== 'postponed' && f.kickoff + REPLAY_GAP <= m.start && m.start - f.kickoff <= REPLAY_LOOKBACK)
+}
+
 /**
  * EPG-matcherna ligger kvar i sin ordning. En kopplad fixtur lägger på
  * ställning, status, märken och kanoniska namn. Okopplade fixturer i täckta
@@ -111,6 +139,9 @@ export function mergeLinked(a: MergeArgs): SportMatch[] {
       continue
     }
     out.push(fixtureOnly(f, a.overrides, a.canonical?.(f)))
+  }
+  for (let i = 0; i < a.epg.length; i += 1) {
+    if (!used.has(out[i].id) && isProviderRerun(out[i], a.fixtures, a.history ?? [])) out[i] = { ...out[i], rerun: true }
   }
   return out
 }

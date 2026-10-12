@@ -111,3 +111,61 @@ describe('relevantMatches (Bara resultat bara för det användaren bryr sig om)'
     expect(kept.map((m) => m.id)).toEqual(['m1', 'fx:api-sports:2', 'fx:api-sports:3', 'fx:api-sports:4'])
   })
 })
+
+describe('repriser som EPG:n inte märker (källans historik)', () => {
+  const H = 3_600_000
+  // Måndag 12/10 12:00: TV4 Fotboll sänder Mjällby–Degerfors igen, utan datum i beskrivningen.
+  const REPLAY = Date.UTC(2026, 9, 12, 10)
+  const mjallby = (over: Partial<SportMatch> = {}) => epgMatch({
+    id: 'mjd', home: 'Mjällby AIF', away: 'Degerfors IF', homeKey: 'mjallby', awayKey: 'degerfors',
+    start: REPLAY, stop: REPLAY + 3 * H, status: 'live', ...over,
+  })
+  // Den riktiga matchen: lördag 10/10 17:30, slutspelad (källans namn utan diakritik).
+  const played = (over: Partial<Fixture> = {}) => fixture({
+    id: '1494296', kickoff: Date.UTC(2026, 9, 10, 15, 30), status: 'finished', statusShort: 'FT', minute: null, score: { home: 1, away: 1 },
+    home: { id: '2188', name: 'Mjallby AIF', crest: null }, away: { id: '2172', name: 'Degerfors IF', crest: null }, ...over,
+  })
+
+  it('okopplad EPG-match vars lag redan spelat färdigt i källan blir repris', () => {
+    const [m] = mergeLinked({ ...base, epg: [mjallby()], fixtures: [], links: {}, history: [played()] })
+    expect(m.rerun).toBe(true)
+    expect(m.id).toBe('mjd')
+    expect(m.score).toBeUndefined()
+  })
+
+  it('omvänd ordning och hockey (NHL-repris dagen efter)', () => {
+    const nhl = epgMatch({ id: 'nhl', kind: 'hockey', home: 'Washington Capitals', away: 'Seattle Kraken', homeKey: 'washington capitals', awayKey: 'seattle kraken', start: Date.UTC(2026, 9, 12, 11, 30), stop: Date.UTC(2026, 9, 12, 13, 20) })
+    const game = fixture({ id: '444681', sport: 'hockey', kickoff: Date.UTC(2026, 9, 11, 21), status: 'finished', home: { id: '1436', name: 'Seattle Kraken', crest: null }, away: { id: '703', name: 'Washington Capitals', crest: null } })
+    const [m] = mergeLinked({ ...base, epg: [nhl], fixtures: [], links: {}, history: [game] })
+    expect(m.rerun).toBe(true)
+  })
+
+  it('dagens egna slutspelade fixtur räknas också när sändningen börjar långt efter avspark', () => {
+    const today = played({ id: '7', kickoff: REPLAY - 5 * H })
+    const out = mergeLinked({ ...base, epg: [mjallby()], fixtures: [today], links: { [fixtureMatchKey(today)]: null } })
+    expect(out[0].rerun).toBe(true)
+  })
+
+  it('kopplad match rörs inte, inte heller en sändning nära avspark', () => {
+    const live = fixture({ id: '8', kickoff: REPLAY, home: { id: '1', name: 'Mjallby', crest: null }, away: { id: '2', name: 'Degerfors', crest: null } })
+    const [linked] = mergeLinked({ ...base, epg: [mjallby()], fixtures: [live], links: { [fixtureMatchKey(live)]: { matchId: 'mjd', swapped: false } }, history: [played()] })
+    expect(linked.rerun).toBe(false)
+    const [near] = mergeLinked({ ...base, epg: [mjallby()], fixtures: [], links: {}, history: [played({ kickoff: REPLAY - H })] })
+    expect(near.rerun).toBe(false)
+  })
+
+  it('en kommande eller pågående fixtur samma dag för samma lag (okopplad) håller matchen live', () => {
+    const later = fixture({ id: '9', kickoff: REPLAY + 30 * 60_000, status: 'scheduled', statusShort: 'NS', minute: null, score: null, home: { id: '1', name: 'Mjallby', crest: null }, away: { id: '2', name: 'Degerfors', crest: null } })
+    const [m] = mergeLinked({ ...base, epg: [mjallby()], fixtures: [later], links: { [fixtureMatchKey(later)]: null }, history: [played()] })
+    expect(m.rerun).toBe(false)
+  })
+
+  it('uppskjuten match, andra lag, för gammal historik eller EPG-sport ger ingen repris', () => {
+    const run = (h: Fixture, epg = mjallby()) => mergeLinked({ ...base, epg: [epg], fixtures: [], links: {}, history: [h] })[0].rerun
+    expect(run(played({ status: 'postponed', score: null }))).toBe(false)
+    expect(run(played({ home: { id: '1', name: 'Mjallby AIF', crest: null }, away: { id: '3', name: 'GAIS', crest: null } }))).toBe(false)
+    expect(run(played({ kickoff: REPLAY - 8 * 24 * H }))).toBe(false)
+    expect(run(played({ sport: 'tennis' }), mjallby({ kind: 'tennis' }))).toBe(false)
+    expect(run(played({ sport: 'hockey' }))).toBe(false)
+  })
+})

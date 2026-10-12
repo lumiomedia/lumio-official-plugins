@@ -104,6 +104,7 @@ function recompute(): void {
         fixtures: ready ? fixtures : [],
         links: ready ? linked.map : {},
         overrides,
+        history: c.history(day),
         coverage: (s) => c.router.coverage(s),
         canonical: (f) => c.canonicalOf(f),
       })
