@@ -17,7 +17,7 @@ import { crestForFollow } from '../score-model'
 import { openFollowPage } from '../team-model'
 import { Crest, ellipsis, primaryBtn, sectionTitle } from './sport-parts'
 import { SportIcon, SportIcons } from './sport-icons'
-import { sportCardStyle, sportDrawerStyle } from '../surface'
+import { focusAttr, sportCardStyle, sportDrawerStyle } from '../surface'
 
 const same = (a: Pick<SportFollow, 'kind' | 'key'>, b: Pick<SportFollow, 'kind' | 'key'>) => a.kind === b.kind && a.key === b.key
 
@@ -108,9 +108,9 @@ function FollowRow({ ctx, follow, days }: { ctx: SportCtx; follow: SportFollow; 
   const info = followNext(ctx, follow, next)
   const crest = crestForFollow(follow, days.flatMap((d) => d?.matches ?? []))
   return (
-    <div data-testid="follow-row" data-following={following ? '1' : '0'} style={{ ...sportCardStyle, minHeight: dp(88), display: 'flex', alignItems: 'center', gap: dp(16), padding: `${dp(10)}px ${dp(12)}px ${dp(10)}px ${dp(16)}px`, opacity: following ? 1 : 0.55, boxSizing: 'border-box' }}>
+    <div data-testid="follow-row" data-focus-row="" data-following={following ? '1' : '0'} style={{ ...sportCardStyle, minHeight: dp(88), display: 'flex', alignItems: 'center', gap: dp(16), padding: `${dp(10)}px ${dp(12)}px ${dp(10)}px ${dp(16)}px`, opacity: following ? 1 : 0.55, boxSizing: 'border-box' }}>
       {/* Raden öppnar lagets (ligans) sida; nästa match och Titta finns där (Jerry 2026-10-12). */}
-      <div data-testid="follow-open" {...station(() => openFollowPage(ctx, follow, days.flatMap((d) => d?.matches ?? [])))} aria-label={ctx.tt('sportTeamOpen', { name: follow.name })} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: dp(16), cursor: 'pointer', borderRadius: dp(10) }}>
+      <div data-testid="follow-open" {...station(() => openFollowPage(ctx, follow, days.flatMap((d) => d?.matches ?? [])), undefined, focusAttr('none'))} aria-label={ctx.tt('sportTeamOpen', { name: follow.name })} style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: dp(16), cursor: 'pointer', borderRadius: dp(10) }}>
         <Crest name={follow.name} colorKey={follow.key} size={dp(56)} src={crest} />
         <div style={{ width: dp(210), flexShrink: 0, minWidth: 0 }}>
           <div style={{ fontSize: dp(21), fontWeight: 600, ...ellipsis }}>{follow.name}</div>

@@ -19,6 +19,8 @@ import { Crest } from '../crest'
 import { SportIcons } from '../sport-icons'
 import { FixtureRow, FormLetter, NOOP, PageNote, StandingsRows, fixtureWhen } from './page-parts'
 import { SportPageDrawer } from './sport-page-drawer'
+import { PlayerDrawer, hasPlayerDetails } from './player-drawer'
+import type { SquadPlayer } from '../team-providers'
 import { PageTabs, TabBody, usePageTab, type TeamTab } from './page-tabs'
 import { useEpgMatches, useTeamPageData } from './use-team-page'
 
@@ -38,6 +40,22 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
   const [fullTable, setFullTable] = useState(false)
   const [competition, setCompetition] = useState<string | null>(null)
   const [allMatches, setAllMatches] = useState(false)
+  const [player, setPlayer] = useState<SquadPlayer | null>(null)
+  /*
+    Hela tabellen: fokus till lagets egen rad efter utfällningen, och sidan
+    rullar dit (Jerry 2026-10-12: med fjärren gick det inte att komma ner i
+    den utfällda tabellen). Raderna är fokusstopp; rullningen följer fokus.
+  */
+  const toggleTable = () => {
+    const opening = !fullTable
+    setFullTable(opening)
+    if (!opening) return
+    window.setTimeout(() => {
+      const el = document.querySelector<HTMLElement>(`${scope} [data-testid="tp-standings"] [data-mark="1"]`) ?? document.querySelector<HTMLElement>(`${scope} [data-testid="tp-standings"] [data-f]`)
+      el?.focus({ preventScroll: true })
+      el?.scrollIntoView?.({ block: 'center' })
+    }, 0)
+  }
   const me = { sport: target.sport, kind: 'team' as const, key: target.key }
   const following = isFollowing(ctx.follows, me)
   const follow = ctx.follows.find((f) => isFollowing([f], me)) ?? null
@@ -198,7 +216,7 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             <StandingsRows u={u} ctx={ctx} testId="tp-standings" rows={fullTable ? slice.group : slice.rows} mark={fullTable ? slice.group.indexOf(row!) : slice.teamIndex}
               onOpen={(r) => { if (r !== row) ctx.openTeam(teamTargetFromRow(target.sport, r, league)) }} />
             {slice.group.length > slice.rows.length ? (
-              <div data-testid="tp-table-toggle" {...station(() => setFullTable((v) => !v))} aria-expanded={fullTable ? 'true' : 'false'} style={{ alignSelf: 'flex-start', fontSize: u(16), fontWeight: 600, color: TV.accText, cursor: 'pointer', padding: `${u(6)}px ${u(4)}px` }}>
+              <div data-testid="tp-table-toggle" {...station(toggleTable)} aria-expanded={fullTable ? 'true' : 'false'} style={{ alignSelf: 'flex-start', fontSize: u(16), fontWeight: 600, color: TV.accText, cursor: 'pointer', padding: `${u(6)}px ${u(4)}px` }}>
                 {fullTable ? ctx.tt('sportTeamShortTable') : ctx.tt('sportTeamFullTable')}
               </div>
             ) : null}
@@ -259,7 +277,10 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
                 <span style={{ fontSize: u(15), fontWeight: 600, color: TV.muted }}>{positionLabel(g.group, ctx.tt)}</span>
                 <div style={{ display: 'grid', gridTemplateColumns: phone ? 'minmax(0,1fr)' : u.tv ? 'repeat(3, minmax(0,1fr))' : 'minmax(0,1fr) minmax(0,1fr)', gap: u(8) }}>
                   {g.players.map((p) => (
-                    <div key={`${p.number ?? ''}-${p.name}`} data-testid="tp-player" data-injured={p.injury ? '1' : '0'} {...station(NOOP)} style={{ ...rowCard(u), display: 'flex', alignItems: 'center', gap: u(12), padding: `${u(8)}px ${u(12)}px`, minWidth: 0 }}>
+                    <div key={`${p.number ?? ''}-${p.name}`} data-testid="tp-player" data-injured={p.injury ? '1' : '0'} data-details={hasPlayerDetails(p) ? '1' : '0'}
+                      // Bara spelare med något mer att visa öppnar ett kort; de andra är inga fokusstopp (inga återvändsgränder på TV).
+                      {...(hasPlayerDetails(p) ? { ...station(() => setPlayer(p)), 'aria-label': ctx.tt('sportPlayerOpen', { name: p.name }) } : {})}
+                      style={{ ...rowCard(u), display: 'flex', alignItems: 'center', gap: u(12), padding: `${u(8)}px ${u(12)}px`, minWidth: 0, cursor: hasPlayerDetails(p) ? 'pointer' : 'default' }}>
                       <PlayerAvatar u={u} name={p.name} photo={p.photo} />
                       <span style={{ width: u(30), flexShrink: 0, fontSize: u(17), fontWeight: 800, color: TV.muted, fontVariantNumeric: 'tabular-nums' }}>{p.number ?? ''}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -324,6 +345,7 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
   return (
     <SportPageDrawer nav={ctx.nav} depth={depth} phone={phone} full={u.tv} testId="team-page" label={target.name} onClose={onClose} head={head}>
       <div data-page-depth={depth} style={{ display: 'contents' }}>{body}</div>
+      {player ? <PlayerDrawer u={u} ctx={ctx} player={player} teamName={target.name} depth={depth + 1} phone={phone} onClose={() => setPlayer(null)} /> : null}
     </SportPageDrawer>
   )
 }

@@ -36,7 +36,15 @@ export interface Trophy { name: string; year: number | null }
 /** Ett lag-id hittat på namn (sportapi.ai `/teams/slug/{slug}`); `name` kontrolleras mot laget innan id:t används. */
 export interface TeamLookup { id: string; name: string }
 
-export interface SquadPlayer { name: string; number: number | null; pos: string | null; photo: string | null; injury: string | null }
+/**
+ * En spelare i truppen. Fakta utöver namn och nummer finns bara när truppens
+ * EGET svar har dem (inga spelaranrop): ålder (API-Sports), nationalitet och
+ * födelsedag (sportapi.ai, TheSportsDB), längd (TheSportsDB, ibland sportapi.ai).
+ */
+export interface SquadPlayer {
+  name: string; number: number | null; pos: string | null; photo: string | null; injury: string | null
+  age?: number | null; nationality?: string | null; born?: string | null; height?: string | null
+}
 export interface TopScorer { rank: number; name: string; team: string; goals: number }
 
 export interface TeamCalls {
@@ -99,7 +107,7 @@ function apiSportsSquad(squadBody: unknown, injuryBody: unknown): SquadPlayer[] 
     const reason = str(x?.player?.reason) ?? str(x?.player?.type)
     if (id && reason) hurt.set(id, reason)
   }
-  return uniqueByName(players.map((p) => ({ name: String(p?.name ?? ''), number: num(p?.number), pos: str(p?.position), photo: str(p?.photo), injury: hurt.get(String(p?.id ?? '')) ?? null })))
+  return uniqueByName(players.map((p) => ({ name: String(p?.name ?? ''), number: num(p?.number), pos: str(p?.position), photo: str(p?.photo), injury: hurt.get(String(p?.id ?? '')) ?? null, age: num(p?.age) })))
 }
 
 /** Skyddsnät: samma namn två gånger blir en rad (källans lista, inte vår sammanslagning). */
@@ -188,7 +196,7 @@ const sportApiCalls: TeamCalls = {
     if (sport !== 'football') return null
     return {
       requests: [{ sport, path: `/teams/${enc(teamId)}/squad`, ttlS: SQUAD_TTL_S }],
-      parse: (bodies) => uniqueByName(arr((bodies[0] as any)?.squad).map((p) => ({ name: String(p?.full_name ?? p?.name ?? ''), number: num(p?.jersey_number), pos: str(p?.position), photo: null, injury: null }))),
+      parse: (bodies) => uniqueByName(arr((bodies[0] as any)?.squad).map((p) => ({ name: String(p?.full_name ?? p?.name ?? ''), number: num(p?.jersey_number), pos: str(p?.position), photo: null, injury: null, nationality: str(p?.nationality), born: str(p?.date_of_birth), height: num(p?.height) != null ? `${num(p?.height)} cm` : null }))),
     }
   },
   lookup(sport, slug) {
@@ -252,7 +260,7 @@ const tsdbCalls: TeamCalls = {
       requests: [{ sport, path: `/v1/lookup_all_players.php?id=${enc(teamId)}`, ttlS: SQUAD_TTL_S }],
       parse: (bodies) => arr((bodies[0] as any)?.player)
         .filter((p) => !STAFF.test(String(p?.strPosition ?? '')))
-        .map((p) => ({ name: String(p?.strPlayer ?? ''), number: num(p?.strNumber), pos: str(p?.strPosition), photo: str(p?.strCutout) ?? str(p?.strThumb), injury: null }))
+        .map((p) => ({ name: String(p?.strPlayer ?? ''), number: num(p?.strNumber), pos: str(p?.strPosition), photo: str(p?.strCutout) ?? str(p?.strThumb), injury: null, nationality: str(p?.strNationality), born: str(p?.dateBorn), height: str(p?.strHeight) }))
         .filter((p) => p.name),
     }
   },

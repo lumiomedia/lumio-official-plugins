@@ -75,12 +75,15 @@ describe('Sportskalet', () => {
     expect(screen.getByTestId('sport-follows-meta')).toHaveTextContent('0 teams and competitions')
     expect(screen.getByTestId('sport-follows-meta')).toHaveTextContent('Use the bell to choose reminders')
   })
-  it('EN fokusmarkering: Sport-ytan tar bort kontrollernas egen kant och skuggor medan fokusringen syns', async () => {
+  it('fokus i Sport (Jerry 2026-10-12): accentton och 2 px kant INNANFÖR elementet, ingen yttre ring; bara fjärr/tangentbord, aldrig telefonen', async () => {
     mountSport({}, { days: { [today]: [live] } })
     await screen.findByTestId('sport-hero')
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n')
-    expect(css).toMatch(/\[data-sport-stage\] \[data-f\]:focus[^{]*\{ box-shadow: none !important; border-color: transparent !important; \}/)
+    expect(css).toMatch(/:root:not\(\[data-focus-source="pointer"\]\) \[data-live-tv-tv-root\]:not\(\[data-lt-phone="1"\]\) \[data-sport-stage\] \[data-f\]:focus[^{]*\{ outline: none !important; border-color: transparent !important; box-shadow: inset 0 0 0 2px rgb\(var\(--accent-500\)\) !important; background-image: linear-gradient\(color-mix\(in srgb, rgb\(var\(--accent-500\)\) 18%, transparent\)/)
+    expect(css).toMatch(/120ms/)
     expect(screen.getByTestId('sport-stage').hasAttribute('data-sport-stage')).toBe(true)
+    // Flikarna är fliksorten (ton + accenttext, understrykningen betyder vald).
+    expect(screen.getByTestId('sport-tab-foryou')).toHaveAttribute('data-focus', 'tab')
   })
   it('dagstegaren går att stega med pilarna: ‹ och › är varandras grannar, OK stegar dagen (Jerry 2026-10-11)', async () => {
     mountSport({}, { days: { [today]: [live] } })
@@ -133,12 +136,6 @@ describe('Sportskalet', () => {
     expect(parseFloat(options[0].style.fontSize)).toBeGreaterThan(parseFloat(screen.getByTestId('sport-summary').style.fontSize) - 2)
     fireEvent.keyDown(options[1], { key: 'Enter' })
     expect(getSportSettings().view).toBe('feed')
-  })
-  it('lådornas listor ritar ringen innanför raden — sidorna klipps annars av rullningen', async () => {
-    mountSport({}, { days: { [today]: [live] } })
-    await screen.findByTestId('sport-hero')
-    const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n')
-    expect(css).toMatch(/\[data-sport-stage\] \[data-panel-root\] \[data-f\]:focus[^{]*\{ outline-offset: -2px !important; \}/)
   })
   it('en äldre app utan endpointen får ett besked, inte en evig laddning', async () => {
     mountSport({}, { days: 'missing' })

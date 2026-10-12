@@ -24,7 +24,7 @@ import { FollowPicker, SportFollows } from './sport-follows'
 import { SportMatchCenter } from './sport-match-center'
 import { SportPhone } from '../mobile/sport-phone'
 import { SportPages, useSportPages } from '../team-page/sport-pages'
-import { SPORT_FOCUS_CSS, sportCardStyle } from '../surface'
+import { SPORT_FOCUS_CSS, focusAttr, sportCardStyle } from '../surface'
 
 const NO_MATCHES: SportMatch[] = []
 
@@ -166,6 +166,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
             key={key}
             data-testid={`sport-tab-${key}`}
             {...station(() => setTab(key), undefined, {
+              ...focusAttr('tab'),
               ...(key === tab ? { 'data-init': '' } : null),
               // Visa som står långt till höger; geometrin tog filterchipsen
               // under i stället, och väljaren gick inte att nå (Jerry 2026-10-11).

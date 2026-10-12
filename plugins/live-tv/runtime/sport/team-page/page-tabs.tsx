@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { TV, station } from '../../tv/tv-ui'
 import type { U } from '../match-info/match-info-parts'
+import { focusAttr } from '../surface'
 
 /*
   FLIKAR PÅ LAG- OCH LIGASIDAN (Jerry 2026-10-12: "för mycket navigerande med
@@ -36,7 +37,7 @@ export function PageTabs<K extends string>({ u, scope, tabs, value, onChange }: 
         const on = t.key === value
         return (
           <div key={t.key} data-testid={`page-tab-${t.key}`}
-            {...station(() => onChange(t.key), undefined, { 'data-f-down': `${scope} [data-tab-body] [data-f]`, ...(on ? { 'data-tab-active': '' } : null) })}
+            {...station(() => onChange(t.key), undefined, { ...focusAttr('tab'), 'data-f-down': `${scope} [data-tab-body] [data-f]`, ...(on ? { 'data-tab-active': '' } : null) })}
             role="tab" aria-selected={on ? 'true' : 'false'}
             // TV: att flytta fokus längs raden byter flik, som Sports egen flikrad upplevs.
             onFocus={u.tv && !on ? () => onChange(t.key) : undefined}

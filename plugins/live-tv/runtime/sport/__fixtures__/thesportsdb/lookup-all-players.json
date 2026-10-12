@@ -8,7 +8,10 @@
    "strPosition": "Goalkeeper",
    "strCutout": "https://r2.thesportsdb.com/images/media/player/cutout/dovin.png",
    "strThumb": null,
-   "strStatus": "Active"
+   "strStatus": "Active",
+   "strNationality": "Sweden",
+   "dateBorn": "2002-07-11",
+   "strHeight": "1.88 m"
   },
   {
    "idPlayer": "2",

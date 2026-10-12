@@ -9,7 +9,7 @@ import { sourceLine, type SportCtx } from '../sport-ctx'
 import { matchStatusLabel, showsScore } from '../score-model'
 import { MatchScore, ResultOnlyTag } from './sport-score'
 import { SportIcon, SportIcons } from './sport-icons'
-import { sportCardStyle } from '../surface'
+import { focusAttr, sportCardStyle } from '../surface'
 import { Crest } from '../crest'
 
 export { Crest }
@@ -58,7 +58,7 @@ export function MatchCard({ match, ctx }: { match: SportMatch; ctx: SportCtx }) 
   const status = statusText(match, ctx)
   const progress = st === 'live' ? progressOf(match.start, match.stop, ctx.now) : st === 'finished' ? 1 : 0
   return (
-    <div data-testid="sport-card" data-match-id={match.id} data-status={st} {...station(() => ctx.openMatch(match), () => ctx.watch(match))} style={{ ...sportCardStyle, position: 'relative', width: dp(450), flexShrink: 0, padding: `${dp(14)}px ${dp(16)}px ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(14), cursor: 'pointer', boxSizing: 'border-box' }}>
+    <div data-testid="sport-card" data-match-id={match.id} data-status={st} {...station(() => ctx.openMatch(match), () => ctx.watch(match), focusAttr('card'))} style={{ ...sportCardStyle, position: 'relative', width: dp(450), flexShrink: 0, padding: `${dp(14)}px ${dp(16)}px ${dp(16)}px`, display: 'flex', alignItems: 'center', gap: dp(14), cursor: 'pointer', boxSizing: 'border-box' }}>
       <div data-testid="card-anchor" style={{ width: dp(84), height: dp(84), flexShrink: 0, borderRadius: dp(12), overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: TV.s06, color: TV.muted }}>
         {best ? <ChannelArt channel={sourceChannel(best)} style={{ width: '100%', height: '100%' }} radius={dp(12)} /> : <SportIcon kind={match.kind} size={dp(40)} />}
       </div>

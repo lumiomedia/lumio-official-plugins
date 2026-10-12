@@ -10,6 +10,7 @@ import type { SportCtx } from '../sport-ctx'
 import { Crest } from '../crest'
 import { SportIcons } from '../sport-icons'
 import { ellipsis, rowCard, type U } from '../match-info/match-info-parts'
+import { focusAttr } from '../surface'
 
 /*
   Lag- och ligasidans byggstenar. Samma skala (`u`) som matchinfon: TV och
@@ -53,7 +54,7 @@ export function StandingsRows({ u, rows, mark, ctx, onOpen, testId }: { u: U; ro
       {rows.map((r, i) => {
         const on = i === mark
         return (
-          <div key={`${r.group ?? ''}-${r.rank}-${r.team.id || r.team.name}`} data-testid="page-standings-row" data-mark={on ? '1' : '0'} {...station(onOpen ? () => onOpen(r) : NOOP)}
+          <div key={`${r.group ?? ''}-${r.rank}-${r.team.id || r.team.name}`} data-testid="page-standings-row" data-mark={on ? '1' : '0'} {...station(onOpen ? () => onOpen(r) : NOOP, undefined, focusAttr('table-row'))}
             aria-label={onOpen ? ctx.tt('sportTeamOpen', { name: r.team.name }) : undefined}
             style={{ display: 'grid', gridTemplateColumns: cols, gap: u(8), alignItems: 'center', minHeight: u(48), padding: `0 ${u(8)}px`, borderRadius: u(10), fontSize: u(17), cursor: onOpen ? 'pointer' : 'default', background: on ? TV.accMix(20) : 'transparent', color: on ? TV.accText : TV.text, fontWeight: on ? 700 : 500 }}>
             <span style={{ fontVariantNumeric: 'tabular-nums', color: on ? TV.accText : TV.muted }}>{r.rank}</span>

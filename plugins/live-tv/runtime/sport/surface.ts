@@ -47,20 +47,43 @@ export const sportStackedStyle: CSSProperties = {
 }
 
 /**
- * EN fokusmarkering i Sport (Jerry 2026-10-11: "ram i ram" på flikarna). Den
- * vanliga ringen (TvFocusStyle: outline) får stå ensam: kontrollens egen kant
- * eller understrykning och glöd-/inset-skuggor (appens generella TV-ring)
- * tas bort medan den har fokus. Bara med fjärr/tangentbord — med pekare syns
- * ingen ring, och då står kontrollens egen kant kvar. Telefonen ritar ingen ring.
+ * SPORTS FOKUSMARKERING (Jerry 2026-10-12, samma spec som appens pass): ingen
+ * yttre ring som klipps eller hamnar snett. Fokus = accenttonad bakgrund
+ * (accent 18 % ovanpå elementets egen) och en 2 px accentkant INNANFÖR
+ * elementet (inset-skugga, följer elementets hörn), 120 ms övergång. Bara
+ * med fjärr/tangentbord — med pekare ingenting — och aldrig på telefonen.
+ *
+ * Sorter (`focusAttr(kind)` på stationen):
+ *  - standard (rader, kort, knappar): ton + kant
+ *  - `card`: ton + kant + lätt förstoring (1,02)
+ *  - `circle`: brickan själv rörs inte; cirkeln inuti (`data-focus-circle`)
+ *    får 3 px accentkant och tonen
+ *  - `tab` / chips (`data-live-tv-chip`): ton + accenttext; flikens
+ *    understrykning betyder vald, inte fokus
+ *  - `table-row`: bara ton; egen markerad rad (`data-mark="1"`) behåller
+ *    sin ton och får kanten
+ *  - `none`: ingen egen markering (raden runt omkring, `data-focus-row`,
+ *    markeras i stället — "Just nu"-raderna)
  */
-const SPORT_FOCUSED = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-sport-stage] [data-f]'
-const SPORT_PANEL_FOCUSED = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]):not([data-live-tv-desktop="1"]) [data-sport-stage] [data-panel-root] [data-f]'
-/*
-  Lådornas listor (Mina lag-väljaren, matchinfo, ligorna) rullar kant i kant
-  med sina rader, och ringen ritas 3 px UTANFÖR raden — sidorna klipptes bort
-  och bara över- och underkanten syntes (Jerry 2026-10-11: "border syns inte
-  på sidorna på TV-mode"). I lådorna ritas ringen därför innanför kanten,
-  som skrivbordets tunna ring (TvFocusStyle).
-*/
-export const SPORT_FOCUS_CSS = `${SPORT_FOCUSED}:focus, ${SPORT_FOCUSED}[data-fcur="1"] { box-shadow: none !important; border-color: transparent !important; }
-${SPORT_PANEL_FOCUSED}:focus, ${SPORT_PANEL_FOCUSED}[data-fcur="1"] { outline-offset: -2px !important; }`
+export type FocusKind = 'card' | 'circle' | 'tab' | 'table-row' | 'none'
+export const focusAttr = (kind: FocusKind): Record<string, string> => ({ 'data-focus': kind })
+
+const ACC = 'rgb(var(--accent-500))'
+const TINT = `color-mix(in srgb, ${ACC} 18%, transparent)`
+const ON = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-sport-stage]'
+const F = (extra = '') => [`${ON} [data-f]${extra}:focus`, `${ON} [data-f]${extra}[data-fcur="1"]`].join(', ')
+// Två regler, inte en lista: en WebView utan :has() slänger hela regeln annars (se lumio-has-selector-flags).
+const ROW_DECL = `{ box-shadow: inset 0 0 0 2px ${ACC} !important; background-image: linear-gradient(${TINT}, ${TINT}) !important; }`
+
+export const SPORT_FOCUS_CSS = `
+${ON} [data-f], ${ON} [data-focus-row], ${ON} [data-focus-circle] { transition: background-color 120ms ease-out, box-shadow 120ms ease-out, transform 120ms ease-out, color 120ms ease-out; }
+${F()} { outline: none !important; border-color: transparent !important; box-shadow: inset 0 0 0 2px ${ACC} !important; background-image: linear-gradient(${TINT}, ${TINT}) !important; }
+${F('[data-focus="card"]')} { transform: scale(1.02); }
+${F('[data-focus="circle"]')}, ${F('[data-focus="none"]')} { box-shadow: none !important; background-image: none !important; }
+${F('[data-focus="circle"]')} [data-focus-circle] { box-shadow: 0 0 0 3px ${ACC} !important; background-image: linear-gradient(${TINT}, ${TINT}) !important; border-radius: 999px; }
+${F('[data-focus="tab"]')}, ${F('[data-live-tv-chip]')} { box-shadow: none !important; color: ${ACC} !important; }
+${F('[data-focus="table-row"]')} { box-shadow: none !important; }
+${F('[data-focus="table-row"][data-mark="1"]')} { box-shadow: inset 0 0 0 2px ${ACC} !important; }
+${ON} [data-focus-row]:focus-within ${ROW_DECL}
+${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
+`
