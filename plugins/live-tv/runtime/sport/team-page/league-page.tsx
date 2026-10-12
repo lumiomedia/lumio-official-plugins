@@ -9,6 +9,7 @@ import { IconBtn, Overline, ellipsis, rowCard, scaleFor } from '../match-info/ma
 import { SportIcon, SportIcons } from '../sport-icons'
 import { FixtureRow, NOOP, PageNote, StandingsRows } from './page-parts'
 import { SportPageDrawer } from './sport-page-drawer'
+import { PageTabs, TabBody, usePageTab, type LeagueTab } from './page-tabs'
 import { useLeaguePageData } from './use-team-page'
 
 /*
@@ -25,6 +26,8 @@ export function LeaguePage({ ctx, target, depth, phone, onClose }: { ctx: SportC
   const ref = data.ref ?? target.ref
   const round = data.round
   const nothing = data.state === 'ready' && !data.standings && !round && !data.scorers
+  const available: LeagueTab[] = [...(data.standings ? ['table' as const] : []), ...(round && round.fixtures.length > 0 ? ['round' as const] : []), ...(data.scorers?.length ? ['scorers' as const] : [])]
+  const [tab, setTab] = usePageTab<LeagueTab>('league', available.length ? available : ['table'])
 
   const headPart = (
     <>
@@ -90,24 +93,17 @@ export function LeaguePage({ ctx, target, depth, phone, onClose }: { ctx: SportC
     </>
   )
 
-  // TV-läget: helsida, tabellen till vänster, omgången och skytteligan till höger.
-  if (u.tv) {
-    return (
-      <SportPageDrawer nav={ctx.nav} depth={depth} phone={false} full testId="league-page" label={target.name} onClose={onClose}>
-        <div data-page-depth={depth} style={{ display: 'contents' }}>
-          <div data-page-head="">{headPart}</div>
-          <div data-testid="lp-columns" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 1fr)', gap: u(32), alignItems: 'start' }}>
-            <div data-col="left" style={{ display: 'flex', flexDirection: 'column', gap: u(20), minWidth: 0 }}>{tablePart}{notesPart}</div>
-            <div data-col="right" style={{ display: 'flex', flexDirection: 'column', gap: u(20), minWidth: 0 }}>{roundPart}{scorersPart}</div>
-          </div>
-        </div>
-      </SportPageDrawer>
-    )
-  }
+  // Flikarna: tabell, omgång, skytteliga — bara de som har innehåll (Jerry 2026-10-12).
+  const tabLabel: Record<LeagueTab, string> = { table: ctx.tt('sportLeagueTable'), round: round?.round != null ? ctx.tt('sportRound', { n: round.round }) : ctx.tt('sportLeagueThisWeek'), scorers: ctx.tt('sportLeagueScorers') }
+  const scope = `[data-page-depth="${depth}"]`
+  const head = <div data-page-depth={depth} style={{ display: 'flex', flexDirection: 'column', gap: u(12) }}>{headPart}<PageTabs u={u} scope={scope} tabs={available.map((k) => ({ key: k, label: tabLabel[k] }))} value={tab} onChange={setTab} /></div>
   return (
-    <SportPageDrawer nav={ctx.nav} depth={depth} phone={phone} testId="league-page" label={target.name} onClose={onClose}>
+    <SportPageDrawer nav={ctx.nav} depth={depth} phone={phone} full={u.tv} testId="league-page" label={target.name} onClose={onClose} head={head}>
       <div data-page-depth={depth} style={{ display: 'contents' }}>
-        {headPart}{tablePart}{roundPart}{scorersPart}{notesPart}
+        <TabBody scope={scope} gap={u(20)}>
+          {tab === 'table' ? tablePart : tab === 'round' ? roundPart : scorersPart}
+          {notesPart}
+        </TabBody>
       </div>
     </SportPageDrawer>
   )

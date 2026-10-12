@@ -19,6 +19,7 @@ import { Crest } from '../crest'
 import { SportIcons } from '../sport-icons'
 import { FixtureRow, FormLetter, NOOP, PageNote, StandingsRows, fixtureWhen } from './page-parts'
 import { SportPageDrawer } from './sport-page-drawer'
+import { PageTabs, TabBody, usePageTab, type TeamTab } from './page-tabs'
 import { useEpgMatches, useTeamPageData } from './use-team-page'
 
 /*
@@ -53,11 +54,17 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
   const position = row
     ? leagueName ? ctx.tt('sportTeamPosition', { pos: ordinal(row.rank, lang), league: leagueName, pts: row.points }) : ctx.tt('sportTeamPositionShort', { pos: ordinal(row.rank, lang), pts: row.points })
     : leagueName || ctx.kindLabel(target.sport)
+  // "24 pts" hålls ihop: raden bryts före poängen, aldrig mellan talet och enheten.
+  const positionText = row ? position.replace(/(\d+) (\S+)$/, '$1\u00a0$2') : position
 
   const upcoming = useMemo(() => upcomingFixtures(data.fixtures, ctx.now), [data.fixtures, ctx.now])
   const comps = useMemo(() => competitionsOf(data.fixtures), [data.fixtures])
   const played = useMemo(() => playedFixtures(data.fixtures), [data.fixtures])
   const allUpcoming = useMemo(() => upcomingFixtures(data.fixtures, ctx.now, 60), [data.fixtures, ctx.now])
+  // Flikarna: bara de som har något att visa (Jerry 2026-10-12).
+  const hasMatches = played.length + allUpcoming.length > 0
+  const available: TeamTab[] = ['overview', ...(hasMatches ? ['matches' as const] : []), ...(data.squad?.length ? ['squad' as const] : []), ...(data.trophies?.length ? ['trophies' as const] : [])]
+  const [tab, setTab] = usePageTab<TeamTab>('team', available)
   const epg = useEpgMatches(allUpcoming, matches, ctx.now)
   const form = useMemo(() => formOf(data.fixtures, target, data.teamId), [data.fixtures, target, data.teamId])
   const letters = new Map(formLetters('WDL', ctx.tt).map((l) => [l.kind, l.letter]))
@@ -101,12 +108,12 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
             <div data-testid="tp-name" style={{ fontSize: u(30), fontWeight: 700, lineHeight: 1.15, ...ellipsis }}>{target.name}</div>
             {openLeague ? (
               <div data-testid={headerIds.league} {...station(openLeague, undefined, { 'data-f-right': sel(headerIds.heart) })} aria-label={ctx.tt('sportLeagueOpen', { name: leagueName })}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: u(6), maxWidth: '100%', fontSize: u(17), color: TV.muted, cursor: 'pointer', borderRadius: u(8), padding: `${u(2)}px ${u(4)}px`, margin: `0 -${u(4)}px` }}>
-                {/* Telefonen och TV:n bryter raden hellre än att klippa poängen. */}
-                <span data-testid="tp-position" style={phone || u.tv ? undefined : ellipsis}>{position}</span>
-                <SportIcons.Chevron size={u(16)} />
+                style={{ display: 'block', maxWidth: '100%', fontSize: u(17), color: TV.muted, cursor: 'pointer', borderRadius: u(8), padding: `${u(2)}px ${u(4)}px`, margin: `0 -${u(4)}px`, ...(phone || u.tv ? null : ellipsis) }}>
+                {/* Hela bredden åt raden; pilen står i texten. Telefonen och TV:n bryter hellre än att klippa. */}
+                <span data-testid="tp-position">{positionText}</span>
+                <span aria-hidden="true" style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: u(6) }}><SportIcons.Chevron size={u(16)} /></span>
               </div>
-            ) : <div data-testid="tp-position" style={{ fontSize: u(17), color: TV.muted, ...ellipsis }}>{position}</div>}
+            ) : <div data-testid="tp-position" style={{ fontSize: u(17), color: TV.muted, ...(phone || u.tv ? null : ellipsis) }}>{positionText}</div>}
           </div>
           <IconBtn u={u} testId={headerIds.heart} on={following} label={following ? ctx.tt('sportFollowingName', { name: target.name }) : ctx.tt('sportFollowName', { name: target.name })} onPress={toggle}>
             <SportIcons.Heart size={u(20)} filled={following} />
@@ -279,7 +286,8 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
                 <span style={{ fontSize: u(20), fontWeight: 800, color: TV.accText, minWidth: u(44), fontVariantNumeric: 'tabular-nums' }}>{`×${g.count}`}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: u(17), fontWeight: 700, ...ellipsis }}>{g.name}</div>
-                  {g.years.length > 0 ? <div style={{ fontSize: u(14), color: u.dim, ...ellipsis }}>{g.years.join(', ')}</div> : null}
+                  {/* De åtta senaste åren och "+N" för resten — aldrig en klippt lista. */}
+                  {g.years.length > 0 ? <div data-testid="tp-trophy-years" style={{ fontSize: u(14), color: u.dim }}>{g.years.length > 8 ? `${g.years.slice(0, 8).join(', ')} +${g.years.length - 8}` : g.years.join(', ')}</div> : null}
                 </div>
               </div>
             ))}
@@ -295,28 +303,27 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
     </>
   )
 
-  // TV-läget: helsida i två kolumner (rubrik, fakta, nästa match, form | tabell, matcher), trupp och titlar under.
-  if (u.tv) {
-    return (
-      <SportPageDrawer nav={ctx.nav} depth={depth} phone={false} full testId="team-page" label={target.name} onClose={onClose}>
-        <div data-page-depth={depth} style={{ display: 'contents' }}>
-          <div data-testid="tp-columns" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.1fr)', gap: u(32), alignItems: 'start' }}>
-            <div data-col="left" style={{ display: 'flex', flexDirection: 'column', gap: u(20), minWidth: 0 }}>
-              <div data-page-head="" style={{ display: 'flex', flexDirection: 'column', gap: u(12) }}>{headPart}</div>
-              {infoPart}{nowNextPart}{formPart}
-            </div>
-            <div data-col="right" style={{ display: 'flex', flexDirection: 'column', gap: u(20), minWidth: 0 }}>{tablePart}{matchesPart}</div>
-          </div>
-          {squadPart}{trophiesPart}{notesPart}
-        </div>
-      </SportPageDrawer>
-    )
-  }
-  return (
-    <SportPageDrawer nav={ctx.nav} depth={depth} phone={phone} testId="team-page" label={target.name} onClose={onClose}>
-      <div data-page-depth={depth} style={{ display: 'contents' }}>
-        {headPart}{infoPart}{nowNextPart}{formPart}{tablePart}{matchesPart}{squadPart}{trophiesPart}{notesPart}
+  const tabLabel: Record<TeamTab, string> = { overview: ctx.tt('sportTabForYou'), matches: ctx.tt('sportTeamMatches'), squad: ctx.tt('sportTeamSquad'), trophies: ctx.tt('sportTeamTrophies') }
+  const tabsNode = <PageTabs u={u} scope={scope} tabs={available.map((k) => ({ key: k, label: tabLabel[k] }))} value={tab} onChange={setTab} />
+  // TV: Översikten i två kolumner (fakta, nästa match, form | tabellen).
+  const overview = u.tv
+    ? (
+      <div data-testid="tp-columns" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.1fr)', gap: u(32), alignItems: 'start' }}>
+        <div data-col="left" style={{ display: 'flex', flexDirection: 'column', gap: u(20), minWidth: 0 }}>{infoPart}{nowNextPart}{formPart}</div>
+        <div data-col="right" style={{ display: 'flex', flexDirection: 'column', gap: u(20), minWidth: 0 }}>{tablePart}</div>
       </div>
+    )
+    : <>{infoPart}{nowNextPart}{formPart}{tablePart}</>
+  const body = (
+    <TabBody scope={scope} gap={u(20)}>
+      {tab === 'overview' ? overview : tab === 'matches' ? matchesPart : tab === 'squad' ? squadPart : trophiesPart}
+      {notesPart}
+    </TabBody>
+  )
+  const head = <div data-page-depth={depth} style={{ display: 'flex', flexDirection: 'column', gap: u(12) }}>{headPart}{tabsNode}</div>
+  return (
+    <SportPageDrawer nav={ctx.nav} depth={depth} phone={phone} full={u.tv} testId="team-page" label={target.name} onClose={onClose} head={head}>
+      <div data-page-depth={depth} style={{ display: 'contents' }}>{body}</div>
     </SportPageDrawer>
   )
 }

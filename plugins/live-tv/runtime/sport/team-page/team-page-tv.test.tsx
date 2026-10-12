@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { __resetForTests, __setTvModeForTests } from '@/lib/plugin-sdk'
 import { SportRouter } from '../router'
 import { ResultsController } from '../results-controller'
 import { __resetTeamDataForTests } from '../team-data'
+import { __resetPageTabsForTests } from './page-tabs'
 import { fakeCtx, fxMatch, stubSportDays } from '../__sport-fixture'
 import { TeamPage } from './team-page'
 import { LeaguePage } from './league-page'
@@ -43,7 +44,7 @@ function withSportApi() {
 }
 const RM: TeamTarget = { sport: 'football', name: 'Real Madrid', key: 'real madrid', crest: null, ids: {}, league: null }
 
-beforeEach(() => { __resetForTests(); __resetTeamDataForTests(); stubSportDays({}); withSportApi() })
+beforeEach(() => { __resetForTests(); __resetTeamDataForTests(); __resetPageTabsForTests(); stubSportDays({}); withSportApi() })
 afterEach(() => { cleanup(); h.controller = null })
 
 const px = (el: Element) => parseFloat((el as HTMLElement).style.fontSize || 'NaN')
@@ -58,20 +59,68 @@ function fontSizes(root: Element): number[] {
 async function mountTv() {
   __setTvModeForTests(true)
   render(<TeamPage ctx={fakeCtx({ now: NOW })} target={RM} matches={[]} depth={0} phone={false} onClose={() => {}} />)
-  await screen.findByTestId('tp-trophies')
+  await screen.findByTestId('page-tab-trophies')
   return screen.getByTestId('team-page')
 }
 
 describe('Lagsidan i TV-läget', () => {
-  it('helsida i två kolumner: rubrik, fakta, nästa match och form till vänster; tabell och matcher till höger', async () => {
+  it('helsida: rubrik och flikar står still ovanför rullytan; Översikten i två kolumner (fakta, nästa, form | tabell)', async () => {
     const page = await mountTv()
     expect(page).toHaveAttribute('data-layout', 'page')
+    const head = page.querySelector('[data-page-head]')!
+    const scroll = screen.getByTestId('page-scroll')
+    expect(head.contains(screen.getByTestId('tp-head'))).toBe(true)
+    expect(head.contains(screen.getByTestId('page-tabs'))).toBe(true)
+    expect(scroll.contains(head)).toBe(false)
+    // Rullytan är egen (klipps under rubriken); sidan själv rullar inte.
+    expect(scroll).toHaveAttribute('data-scroll')
+    expect(page).not.toHaveAttribute('data-scroll')
     const [left, right] = [page.querySelector('[data-col="left"]')!, page.querySelector('[data-col="right"]')!]
-    for (const id of ['tp-head', 'tp-info', 'tp-next', 'tp-form']) expect(within(left as HTMLElement).getByTestId(id)).toBeInTheDocument()
-    for (const id of ['tp-table', 'tp-matches']) expect(within(right as HTMLElement).getByTestId(id)).toBeInTheDocument()
-    // Trupp och titlar under kolumnerna.
-    expect(page.querySelector('[data-col] [data-testid="tp-squad"]')).toBeNull()
+    for (const id of ['tp-info', 'tp-next', 'tp-form']) expect(within(left as HTMLElement).getByTestId(id)).toBeInTheDocument()
+    expect(within(right as HTMLElement).getByTestId('tp-table')).toBeInTheDocument()
+    expect(screen.queryByTestId('tp-matches')).toBeNull()
+    expect(screen.queryByTestId('tp-squad')).toBeNull()
+  })
+
+  it('flikarna: bara de med innehåll; ▾ till flikens första stopp, ▴ från flikens översta rad till vald flik; fokus på en flik byter (TV)', async () => {
+    await mountTv()
+    const tabs = screen.getAllByRole('tab')
+    expect(tabs.map((t) => t.textContent)).toEqual(['Overview', 'Matches', 'Squad', 'Trophies'])
+    expect(tabs[0]).toHaveAttribute('data-f-down', '[data-page-depth="0"] [data-tab-body] [data-f]')
+    const firstInBody = document.querySelector('[data-tab-body] [data-f]')!
+    expect(firstInBody.getAttribute('data-f-up')).toBe('[data-page-depth="0"] [data-tab-active]')
+    // Rubrikens stopp går ▾ till den valda fliken, inte förbi flikraden.
+    expect(screen.getByTestId('tp-heart')).toHaveAttribute('data-f-down', '[data-page-depth="0"] [data-tab-active]')
+    fireEvent.focus(screen.getByTestId('page-tab-squad'))
+    expect(screen.getByTestId('page-tab-squad')).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByTestId('tp-squad')).toBeInTheDocument()
+    expect(screen.getByTestId('page-tab-squad')).toHaveAttribute('data-tab-active')
+  })
+
+  it('senaste fliken minns för nästa lagsida under sessionen', async () => {
+    await mountTv()
+    fireEvent.click(screen.getByTestId('page-tab-trophies'))
+    cleanup()
+    __resetTeamDataForTests()
+    await mountTv()
+    expect(screen.getByTestId('page-tab-trophies')).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByTestId('tp-trophies')).toBeInTheDocument()
+  })
+
+  it('"19 pts" hålls ihop och pilen står i texten', async () => {
+    await mountTv()
+    await waitFor(() => expect(screen.getByTestId('tp-position').textContent).toContain('19\u00a0pts'))
+    expect(screen.getByTestId('tp-league').querySelector('svg')).not.toBeNull()
+  })
+  it('titlarnas år: de åtta senaste och "+N", aldrig en klippt lista', async () => {
+    const many = { success: true, trophies: Array.from({ length: 11 }, (_, i) => ({ year: 2024 - i, position: 1, name: 'La Liga' })) }
+    const saved = SA['/teams/86/trophies']
+    SA['/teams/86/trophies'] = many
+    try {
+      await mountTv()
+      fireEvent.click(screen.getByTestId('page-tab-trophies'))
+      expect(screen.getByTestId('tp-trophy-years').textContent).toBe('2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017 +3')
+    } finally { SA['/teams/86/trophies'] = saved }
   })
 
   it('helsidan är tät och börjar under värdens toppkrom (menypillret), och poängen klipps aldrig', async () => {
@@ -100,6 +149,7 @@ describe('Lagsidan i TV-läget', () => {
     const row = within(screen.getByTestId('tp-standings')).getAllByTestId('page-standings-row')[0]
     expect(px(row)).toBeGreaterThanOrEqual(22)
     expect(parseFloat(row.style.minHeight)).toBeGreaterThanOrEqual(56)
+    expect(px(screen.getByTestId('page-tab-overview'))).toBeGreaterThanOrEqual(24)
     const form = screen.getAllByTestId('tp-form-row')[0]
     expect(Math.max(...fontSizes(form))).toBeGreaterThanOrEqual(24)
     const letter = within(form).getByTestId('form-letter')
@@ -125,14 +175,17 @@ describe('Lagsidan i TV-läget', () => {
 })
 
 describe('Ligasidan i TV-läget', () => {
-  it('helsida: tabellen till vänster, omgången och skytteligan till höger', async () => {
+  it('helsida med flikarna Tabell, omgången och Skytteliga', async () => {
     __setTvModeForTests(true)
     render(<LeaguePage ctx={fakeCtx({ now: NOW })} target={{ sport: 'football', name: 'Premier League', key: 'pl', ref: { provider: 'sportapi', id: '24', season: null, name: 'Premier League' } }} depth={0} phone={false} onClose={() => {}} />)
-    await screen.findByTestId('lp-scorers')
+    await screen.findByTestId('page-tab-scorers')
     const page = screen.getByTestId('league-page')
     expect(page).toHaveAttribute('data-layout', 'page')
-    expect(page.querySelector('[data-col="left"] [data-testid="lp-table"]')).not.toBeNull()
-    expect(page.querySelector('[data-col="right"] [data-testid="lp-scorers"]')).not.toBeNull()
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Table', 'This week', 'Top scorers'])
+    expect(screen.getByTestId('lp-table')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('page-tab-scorers'))
+    expect(screen.getByTestId('lp-scorers')).toBeInTheDocument()
+    expect(screen.queryByTestId('lp-table')).toBeNull()
     expect(Math.min(...fontSizes(page))).toBeGreaterThanOrEqual(18)
   })
 })

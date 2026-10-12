@@ -61,9 +61,17 @@ export function markColumnNeighbours(root: HTMLElement, scope: string): void {
  * Ingen intoning: under den lyste sidan bakom igenom.
  */
 export const FULL_PAGE_BG = TV.panel
-export const FULL_PAGE_PADDING = `calc(${dp(40)}px + var(--tv-scene-chrome-inset, 0px) + ${SCENE_TOP_INSET}) ${dp(72)}px ${dp(72)}px`
+export const FULL_PAGE_PADDING = `calc(${dp(40)}px + var(--tv-scene-chrome-inset, 0px) + ${SCENE_TOP_INSET}) ${dp(72)}px 0`
+/**
+ * Helsidans rullyta BÖRJAR under rubriken och flikarna, som Sports egen
+ * TV-rullyta: innehållet rullar aldrig in under menypillret (Jerry
+ * 2026-10-12, raden "Racing de Santander" under pillret). Luft runt om så
+ * att fokusringarna inte klipps mot rullytans kanter.
+ */
+export const FULL_PAGE_BODY_PADDING = `${dp(16)}px ${dp(12)}px ${dp(72)}px`
 
-export function SportPageDrawer({ nav, depth, phone, full = false, testId, label, onClose, children }: { nav: TvNav; depth: number; phone: boolean; full?: boolean; testId: string; label: string; onClose: () => void; children: ReactNode }) {
+/** `head`: rubrik och flikar. På helsidan står de still ovanför rullytan; i lådan och arket rullar de med. */
+export function SportPageDrawer({ nav, depth, phone, full = false, testId, label, onClose, head, children }: { nav: TvNav; depth: number; phone: boolean; full?: boolean; testId: string; label: string; onClose: () => void; head?: ReactNode; children: ReactNode }) {
   const platform = usePhonePlatform()
   const rootRef = useRef<HTMLDivElement | null>(null)
   const openerRef = useRef<HTMLElement | null>(null)
@@ -88,13 +96,24 @@ export function SportPageDrawer({ nav, depth, phone, full = false, testId, label
   }, [])
 
   // Helsidan: grannarna mellan kolumnerna mäts efter varje ritning (sektionerna kommer allt eftersom).
+  // Rubrikens stopp (serie, hjärta, klocka, stäng) går ▾ till den valda fliken, inte förbi flikraden.
   useLayoutEffect(() => {
-    if (full && rootRef.current) markColumnNeighbours(rootRef.current, `[data-page-depth="${depth}"]`)
+    const root = rootRef.current
+    if (!root) return
+    const scope = `[data-page-depth="${depth}"]`
+    if (full) markColumnNeighbours(root, scope)
+    const tabs = root.querySelector('[data-tab-active]')
+    for (const el of Array.from(root.querySelectorAll<HTMLElement>('[data-testid$="-head"] [data-f]'))) {
+      if (tabs && !el.hasAttribute('data-f-down')) { el.setAttribute('data-f-down', `${scope} [data-tab-active]`); el.setAttribute('data-f-down-auto', '1') }
+      else if (!tabs && el.getAttribute('data-f-down-auto') === '1') { el.removeAttribute('data-f-down'); el.removeAttribute('data-f-down-auto') }
+    }
   })
 
-  // Fokus i rubriken rullar helsidan hela vägen upp (som Sports egen rubrik).
+  // Fokus i rubriken eller flikarna rullar sidans innehåll hela vägen upp (som Sports egen rubrik).
   const onFocusCapture = (event: FocusEvent<HTMLDivElement>) => {
-    if (full && (event.target as HTMLElement).closest('[data-page-head]')) event.currentTarget.scrollTop = 0
+    if (!(event.target as HTMLElement).closest('[data-page-head], [data-testid="page-tabs"]')) return
+    const scroller = full ? event.currentTarget.querySelector<HTMLElement>('[data-testid="page-scroll"]') : event.currentTarget
+    if (scroller) scroller.scrollTop = 0
   }
 
   // Över matchinfon (59/60) och över sidan under.
@@ -106,19 +125,26 @@ export function SportPageDrawer({ nav, depth, phone, full = false, testId, label
         padding: '0 16px calc(max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px)) + 24px)',
       } as const
     : full
-      ? { position: 'fixed', inset: 0, zIndex: z + 1, boxSizing: 'border-box', overflowY: 'auto', background: FULL_PAGE_BG, color: TV.text, padding: FULL_PAGE_PADDING } as const
+      ? { position: 'fixed', inset: 0, zIndex: z + 1, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: FULL_PAGE_BG, color: TV.text, padding: FULL_PAGE_PADDING } as const
       : { position: 'fixed', top: 0, right: 0, bottom: 0, width: `min(${dp(760)}px, 100%)`, zIndex: z + 1, ...sportDrawerStyle, overflowY: 'auto', animation: 'lumio-sport-page-in 220ms ease-out' } as const
   return (
     <>
       <style>{SLIDE_CSS}</style>
       <div data-live-tv-layer="" aria-hidden="true" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: z, background: TV.scrim }} />
-      <div ref={rootRef} data-testid={testId} data-layout={full ? 'page' : phone ? 'sheet' : 'drawer'} data-panel-root="" data-live-tv-layer="" data-scroll="" role="dialog" aria-label={label} data-platform={phone ? platform : undefined} onFocusCapture={onFocusCapture} style={surface}>
+      <div ref={rootRef} data-testid={testId} data-layout={full ? 'page' : phone ? 'sheet' : 'drawer'} data-panel-root="" data-live-tv-layer="" {...(full ? {} : { 'data-scroll': '' })} role="dialog" aria-label={label} data-platform={phone ? platform : undefined} onFocusCapture={onFocusCapture} style={surface}>
         {phone ? (
           <div data-testid="page-grabber" {...station(onClose)} aria-hidden="true" style={{ position: 'sticky', top: 0, zIndex: 1, height: 22, margin: '0 -16px 4px', display: 'grid', placeItems: 'center', background: SHEET_BG, cursor: 'pointer' }}>
             <span style={{ width: platform === 'ios' ? 36 : 32, height: 5, borderRadius: 3, background: 'rgba(243,244,248,0.35)' }} />
           </div>
         ) : null}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: phone ? 16 : full ? dp(28) : 20 }}>{children}</div>
+        {full ? (
+          <>
+            {head ? <div data-page-head="" style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: dp(20), padding: `0 ${dp(12)}px` }}>{head}</div> : null}
+            <div data-testid="page-scroll" data-scroll="" style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: FULL_PAGE_BODY_PADDING, display: 'flex', flexDirection: 'column', gap: dp(28) }}>{children}</div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: phone ? 16 : 20 }}>{head}{children}</div>
+        )}
       </div>
     </>
   )

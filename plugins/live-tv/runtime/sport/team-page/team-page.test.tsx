@@ -4,6 +4,7 @@ import { __resetForTests } from '@/lib/plugin-sdk'
 import { SportRouter } from '../router'
 import { ResultsController } from '../results-controller'
 import { __resetTeamDataForTests } from '../team-data'
+import { __resetPageTabsForTests } from './page-tabs'
 import { getFollows } from '../sport-store'
 import { fakeCtx, fxMatch, fxSource, stubSportDays } from '../__sport-fixture'
 import { TeamPage } from './team-page'
@@ -54,7 +55,7 @@ function defaultReply(path: string): unknown {
 
 const HAMMARBY: TeamTarget = { sport: 'football', name: 'Hammarby', key: 'hammarby', crest: null, ids: { 'api-sports': '363' }, league: { provider: 'api-sports', id: '113', season: '2026', name: 'Allsvenskan' } }
 
-beforeEach(() => { __resetForTests(); __resetTeamDataForTests(); stubSportDays({}) })
+beforeEach(() => { __resetForTests(); __resetTeamDataForTests(); __resetPageTabsForTests(); stubSportDays({}) })
 afterEach(() => { cleanup(); h.controller = null })
 
 async function mountTeam(over: { matches?: Parameters<typeof TeamPage>[0]['matches']; target?: TeamTarget } = {}) {
@@ -111,6 +112,7 @@ describe('Lagsidan', () => {
     expect(next).toHaveTextContent('Svenska Cupen')
     expect(next).toHaveTextContent('Not on your channels')
     expect(screen.queryByTestId('tp-remind')).toBeNull()
+    fireEvent.click(screen.getByTestId('page-tab-matches'))
     expect(screen.getAllByTestId('tp-upcoming-row').map((r) => r.textContent)).toEqual([expect.stringContaining('IF Elfsborg'), expect.stringContaining('Kalmar FF')])
   })
 
@@ -139,7 +141,7 @@ describe('Lagsidan', () => {
   it('truppen per position med tröjnummer, och skadorna från källan', async () => {
     withProvider()
     await mountTeam()
-    await screen.findByTestId('tp-squad')
+    fireEvent.click(await screen.findByTestId('page-tab-squad'))
     expect(within(screen.getByTestId('tp-squad-gk')).getAllByTestId('tp-player')).toHaveLength(2)
     const hurt = screen.getAllByTestId('tp-player').filter((p) => p.getAttribute('data-injured') === '1')
     expect(hurt.map((p) => p.textContent)).toEqual([expect.stringContaining('Injured · Knee Injury'), expect.stringContaining('Injured · Muscle Injury')])
@@ -148,7 +150,7 @@ describe('Lagsidan', () => {
   it('anropen: matcherna, tabellen och truppen — en gång', async () => {
     const { paths } = withProvider()
     await mountTeam()
-    await screen.findByTestId('tp-squad')
+    await screen.findByTestId('page-tab-squad')
     expect(paths).toEqual([
       '/fixtures?team=363&season=2026&timezone=Europe%2FStockholm',
       '/standings?league=113&season=2026',
@@ -207,13 +209,18 @@ describe('Lagsidan med sportapi.ai (Real Madrid)', () => {
     await waitFor(() => expect(screen.getByTestId('tp-position')).toHaveTextContent('2nd in La Liga · 19 pts'))
     const facts = screen.getAllByTestId('tp-fact').map((f) => f.textContent)
     expect(facts).toEqual(['🇪🇸 Spain', 'CityMadrid', 'CoachXabi Alonso', 'StadiumSantiago Bernabéu', 'Founded1902'])
+    await screen.findByTestId('page-tab-trophies')
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Overview', 'Matches', 'Squad', 'Trophies'])
+    fireEvent.click(screen.getByTestId('page-tab-matches'))
     expect(screen.getAllByTestId('tp-played-row')).toHaveLength(3)
     fireEvent.click(screen.getByTestId('tp-comp-Champions League'))
     expect(screen.getAllByTestId('tp-played-row').map((r) => r.textContent)).toEqual([expect.stringContaining('Juventus – Real Madrid')])
     expect(screen.getAllByTestId('tp-upcoming-row').map((r) => r.textContent)).toEqual([expect.stringContaining('Bayern Munich')])
     fireEvent.click(screen.getByTestId('tp-comp-all'))
+    fireEvent.click(screen.getByTestId('page-tab-trophies'))
     expect(screen.getAllByTestId('tp-trophy').map((t) => t.textContent)).toEqual([expect.stringContaining('La Liga'), expect.stringContaining('UEFA Champions League')])
     expect(screen.getAllByTestId('tp-trophy')[0]).toHaveTextContent('×2')
+    fireEvent.click(screen.getByTestId('page-tab-squad'))
     expect(within(screen.getByTestId('tp-squad')).getAllByTestId('tp-player')).toHaveLength(4)
   })
 })
@@ -227,10 +234,12 @@ describe('Ligasidan', () => {
     expect(rows).toHaveLength(8)
     fireEvent.click(rows[2])
     expect(ctx.openTeam).toHaveBeenCalledWith(expect.objectContaining({ name: 'Hammarby FF', ids: { 'api-sports': '363' } }))
-    await screen.findByTestId('lp-scorers')
+    fireEvent.click(await screen.findByTestId('page-tab-scorers'))
     expect(screen.getAllByTestId('lp-scorer')[0]).toHaveTextContent('I. Guidetti')
     expect(screen.getAllByTestId('lp-scorer')[0]).toHaveTextContent('17 goals')
-    expect(screen.getByTestId('lp-round')).toHaveTextContent('Round 23')
+    expect(screen.getByTestId('page-tab-round')).toHaveTextContent('Round 23')
+    fireEvent.click(screen.getByTestId('page-tab-round'))
+    expect(screen.getAllByTestId('lp-fixture').length).toBeGreaterThan(0)
     fireEvent.click(screen.getByTestId('lp-heart'))
     expect(getFollows()).toEqual([{ sport: 'football', kind: 'league', key: 'allsvenskan', name: 'Allsvenskan' }])
   })
