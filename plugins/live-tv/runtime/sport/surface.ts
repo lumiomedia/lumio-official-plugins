@@ -56,10 +56,10 @@ export const sportStackedStyle: CSSProperties = {
  * Sorter (`focusAttr(kind)` på stationen):
  *  - standard (rader, kort, knappar): ton + kant
  *  - `card`: ton + kant + lätt förstoring (1,02)
- *  - `circle`: brickan själv rörs inte; cirkeln inuti (`data-focus-circle`)
- *    får 3 px accentkant och tonen
- *  - `tab` / chips (`data-live-tv-chip`): ton + accenttext; flikens
- *    understrykning betyder vald, inte fokus
+ *  - `circle`: brickan (cirkel + namn) får INGENTING — bara cirkeln inuti
+ *    (`data-focus-circle`) får 3 px accentkant och tonen; namnet blir vitt
+ *  - `tab` / chips (`data-live-tv-chip`): ton + kant, texten VIT (inte
+ *    accentfärgad, Jerry 2026-10-12); flikens understrykning betyder vald
  *  - `table-row`: bara ton; egen markerad rad (`data-mark="1"`) behåller
  *    sin ton och får kanten
  *  - `none`: ingen egen markering (raden runt omkring, `data-focus-row`,
@@ -71,7 +71,8 @@ export const focusAttr = (kind: FocusKind): Record<string, string> => ({ 'data-f
 const ACC = 'rgb(var(--accent-500))'
 const TINT = `color-mix(in srgb, ${ACC} 18%, transparent)`
 const ON = ':root:not([data-focus-source="pointer"]) [data-live-tv-tv-root]:not([data-lt-phone="1"]) [data-sport-stage]'
-const F = (extra = '') => [`${ON} [data-f]${extra}:focus`, `${ON} [data-f]${extra}[data-fcur="1"]`].join(', ')
+/** `inner`: ett barn till stationen (t.ex. cirkeln) — läggs på VARJE del av listan, inte bara den sista. */
+const F = (extra = '', inner = '') => [`${ON} [data-f]${extra}:focus${inner}`, `${ON} [data-f]${extra}[data-fcur="1"]${inner}`].join(', ')
 // Två regler, inte en lista: en WebView utan :has() slänger hela regeln annars (se lumio-has-selector-flags).
 const ROW_DECL = `{ box-shadow: inset 0 0 0 2px ${ACC} !important; background-image: linear-gradient(${TINT}, ${TINT}) !important; }`
 
@@ -79,9 +80,11 @@ export const SPORT_FOCUS_CSS = `
 ${ON} [data-f], ${ON} [data-focus-row], ${ON} [data-focus-circle] { transition: background-color 120ms ease-out, box-shadow 120ms ease-out, transform 120ms ease-out, color 120ms ease-out; }
 ${F()} { outline: none !important; border-color: transparent !important; box-shadow: inset 0 0 0 2px ${ACC} !important; background-image: linear-gradient(${TINT}, ${TINT}) !important; }
 ${F('[data-focus="card"]')} { transform: scale(1.02); }
-${F('[data-focus="circle"]')}, ${F('[data-focus="none"]')} { box-shadow: none !important; background-image: none !important; }
-${F('[data-focus="circle"]')} [data-focus-circle] { box-shadow: 0 0 0 3px ${ACC} !important; background-image: linear-gradient(${TINT}, ${TINT}) !important; border-radius: 999px; }
-${F('[data-focus="tab"]')}, ${F('[data-live-tv-chip]')} { box-shadow: none !important; color: ${ACC} !important; }
+${F('[data-focus="circle"]')}, ${F('[data-focus="none"]')} { outline: none !important; box-shadow: none !important; background-image: none !important; background-color: transparent !important; transform: none !important; }
+${F('[data-focus="circle"]')} { color: #fff !important; }
+/* Ringen utanför cirkelns kant (skuggan målas utanför, så märket inuti täcker den aldrig); ersätter live-/idag-ringen medan fokus står där. */
+${F('[data-focus="circle"]', ' [data-focus-circle]')} { box-shadow: 0 0 0 3px ${ACC} !important; background-image: linear-gradient(${TINT}, ${TINT}) !important; border-radius: 999px; }
+${F('[data-focus="tab"]')}, ${F('[data-live-tv-chip]')} { color: #f3f4f8 !important; }
 ${F('[data-focus="table-row"]')} { box-shadow: none !important; }
 ${F('[data-focus="table-row"][data-mark="1"]')} { box-shadow: inset 0 0 0 2px ${ACC} !important; }
 ${ON} [data-focus-row]:focus-within ${ROW_DECL}

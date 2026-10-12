@@ -91,9 +91,18 @@ describe('Fokussorterna', () => {
     expect(row).toHaveAttribute('data-focus-row')
     expect(row.querySelector('[data-f][data-focus="none"]')).not.toBeNull()
   })
-  it('CSS: cirkeln 3 px, flikar och chips accenttext, tabellrader bara ton (egen rad får kanten), kort 1,02; :has() i en egen regel', () => {
-    expect(SPORT_FOCUS_CSS).toMatch(/\[data-focus="circle"\]:focus[^{]*\[data-focus-circle\] \{ box-shadow: 0 0 0 3px rgb\(var\(--accent-500\)\)/)
-    expect(SPORT_FOCUS_CSS).toMatch(/\[data-focus="tab"\]:focus[^{]*\[data-live-tv-chip\][^{]*\{ box-shadow: none !important; color: rgb\(var\(--accent-500\)\)/)
+  it('CSS: bara cirkeln 3 px (brickan ingenting), flikar och chips vit text, tabellrader bara ton (egen rad får kanten), kort 1,02; :has() i en egen regel', () => {
+    // Varje del av selektorlistan pekar på cirkeln inuti — aldrig brickan själv (Jerry: dubbla ringar).
+    const circleRule = SPORT_FOCUS_CSS.split('\n').find((l) => l.includes('box-shadow: 0 0 0 3px'))!
+    const selectors = circleRule.split('{')[0].split(',').map((x) => x.trim())
+    expect(selectors).toHaveLength(2)
+    for (const sel of selectors) expect(sel.endsWith('[data-focus-circle]')).toBe(true)
+    expect(circleRule).toContain('box-shadow: 0 0 0 3px rgb(var(--accent-500))')
+    // Brickan: ingenting, namnet vitt.
+    expect(SPORT_FOCUS_CSS).toMatch(/\[data-focus="circle"\]:focus[^{]*\{ outline: none !important; box-shadow: none !important; background-image: none !important;/)
+    // Flikar och chips: vit text (inte accent), ton och kant från standardregeln.
+    expect(SPORT_FOCUS_CSS).toMatch(/\[data-focus="tab"\]:focus[^{]*\[data-live-tv-chip\][^{]*\{ color: #f3f4f8 !important; \}/)
+    expect(SPORT_FOCUS_CSS).not.toMatch(/color: rgb\(var\(--accent-500\)\)/)
     expect(SPORT_FOCUS_CSS).toMatch(/\[data-focus="table-row"\]:focus[^{]*\{ box-shadow: none !important; \}/)
     expect(SPORT_FOCUS_CSS).toMatch(/\[data-focus="table-row"\]\[data-mark="1"\]:focus[^{]*\{ box-shadow: inset 0 0 0 2px/)
     expect(SPORT_FOCUS_CSS).toMatch(/\[data-focus="card"\]:focus[^{]*\{ transform: scale\(1\.02\); \}/)
