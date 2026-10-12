@@ -267,8 +267,52 @@ export class ResultsController {
       }
       this.standingsMiss.set(miss, this.now())
     }
+    // Ingen känd motsvarighet: leta upp ligan på namn och land hos en källa med ligasök
+    // (sportapi.ai:s ligalista, cachad en vecka). Träffen minns som alias.
+    const other = aliases?.size ? null : await this.findLeagueElsewhere(call.sport, provider, call.leagueId)
+    if (other) {
+      const miss = `${other.provider}|${call.sport}|${other.leagueId}|${other.season}`
+      const at = this.standingsMiss.get(miss)
+      if (at == null || this.now() - at >= STANDINGS_MISS_MS) {
+        const res = await this.router.standings(call.sport, other.provider, other.leagueId, other.season)
+        if (res.ok && res.data && res.data.length > 0) {
+          this.tables.set(planKey(call), res.data)
+          this.done.add(planKey(call))
+          this.emit()
+          return
+        }
+        this.standingsMiss.set(miss, this.now())
+      }
+    }
     this.tables.set(planKey(call), [])
     this.emit()
+  }
+
+  /** Ligans namn och land ur dagens fixturer, och samma liga hos en annan källa via ligasöket. */
+  private async findLeagueElsewhere(sport: SportKind, provider: ProviderId, leagueId: string): Promise<{ provider: ProviderId; leagueId: string; season: string } | null> {
+    let league: Fixture['league'] | null = null
+    for (const [k, byKey] of this.days) {
+      if (!k.startsWith(`${sport}|`)) continue
+      for (const f of byKey.values()) if (f.provider === provider && f.league.id === leagueId) { league = f.league; break }
+      if (league) break
+    }
+    if (!league?.name) return null
+    const lookup = `lookup|${sport}|${provider}|${leagueId}`
+    const missed = this.standingsMiss.get(lookup)
+    if (missed != null && this.now() - missed < STANDINGS_MISS_MS) return null
+    this.standingsMiss.set(lookup, this.now())
+    const res = await this.router.searchLeagues(sport, league.name)
+    if (!res.ok || !res.provider || res.provider === provider) return null
+    const fold = (x: string | null | undefined) => (x ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
+    const name = fold(league.name)
+    const hit = res.data.find((h) => fold(h.name).includes(name) && (!league!.country || !h.country || fold(h.country) === fold(league!.country)))
+    if (!hit) return null
+    const found = { provider: res.provider, leagueId: hit.id, season: 'current' }
+    const k = `${sport}|${provider}|${leagueId}`
+    const m = this.leagueAliases.get(k) ?? new Map()
+    m.set(found.provider, { leagueId: found.leagueId, season: found.season })
+    this.leagueAliases.set(k, m)
+    return found
   }
 
   /**

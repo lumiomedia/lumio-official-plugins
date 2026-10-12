@@ -249,13 +249,15 @@ describe('ResultsController', () => {
         { position: 1, team: { id: 262, name: 'Djurgården', logo: 'swedish-allsvenskan--djurgarden.svg' }, played: 14, points: 31, goal_difference: 21, form: [{ result: 'W' }, { result: 'L' }] },
         { position: 2, team: { id: 251, name: 'Hammarby', logo: 'espn-2495.png' }, played: 12, points: 26, goal_difference: 17, form: [{ result: 'W' }] },
       ] }
-      function both(apiStandings: Partial<SportFetchResponse>) {
+      const LEAGUES = { success: true, data: [{ country: 'Sweden', leagues: [{ id: 21, name: 'Swedish Allsvenskan', has_standings: true }] }] }
+      function both(apiStandings: Partial<SportFetchResponse>, leagues: unknown = LEAGUES) {
         const paths: string[] = []
         const fetch = vi.fn(async ({ provider, req, mode }: { provider: string; req: { path: string }; mode: string }) => {
           if (mode !== 'cache-only') paths.push(`${provider}${req.path}`)
           const base = { data: null, cached: false, fresh: true, fetchedAt: NOW, quota: null, error: null }
           if (req.path.startsWith('/standings?')) return { ...base, ...apiStandings } as SportFetchResponse
           if (req.path === '/standings/21') return { ...base, data: sportApiTable } as SportFetchResponse
+          if (req.path === '/leagues') return { ...base, data: leagues } as SportFetchResponse
           return base as SportFetchResponse
         })
         const router = routerFor({ fetch: fetch as never, now: () => NOW, sleep: async () => {} }, BOTH)
@@ -287,12 +289,18 @@ describe('ResultsController', () => {
         expect(c.standings('football', '113', '2026')).toHaveLength(2)
       })
 
-      it('ingen källa har tabellen: tomt (vyn säger det), och felet hämtas inte om vid nästa tryck', async () => {
+      it('utan känd motsvarighet: ligan letas upp på namn och land i sportapi.ai:s ligalista (en gång), sedan dess tabell', async () => {
         const { c, paths } = both({ error: 'upstream' })
-        const fetchless = c as unknown as { leagueAliases: Map<string, unknown> }
-        fetchless.leagueAliases.clear()
+        ;(c as unknown as { leagueAliases: Map<string, unknown> }).leagueAliases.clear()
+        expect((await c.loadStandings('football', '113', '2026'))?.map((r) => r.team.name)).toEqual(['Djurgården', 'Hammarby'])
+        expect(paths).toEqual(['api-sports/standings?league=113&season=2026', 'sportapi/leagues', 'sportapi/standings/21'])
+      })
+
+      it('ingen källa har tabellen: tomt (vyn säger det), och felet hämtas inte om vid nästa tryck', async () => {
+        const { c, paths } = both({ error: 'upstream' }, { success: true, data: [] })
+        ;(c as unknown as { leagueAliases: Map<string, unknown> }).leagueAliases.clear()
         expect(await c.loadStandings('football', '113', '2026')).toEqual([])
-        expect(paths).toEqual(['api-sports/standings?league=113&season=2026'])
+        expect(paths).toEqual(['api-sports/standings?league=113&season=2026', 'sportapi/leagues'])
         paths.length = 0
         expect(await c.loadStandings('football', '113', '2026')).toEqual([])
         expect(paths).toEqual([])
