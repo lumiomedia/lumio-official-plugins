@@ -16,6 +16,7 @@ import type { ChannelDef } from '../model/channel'
 import { hueGradient } from '../model/channel'
 import { programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
+import { channelByNumber, createDigitBuffer, OSD_IDLE_MS } from '../play/zap-logic'
 import { nextBoundaryAction, rememberZap, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
 import { initialPlayerState, playerReducer, type Request } from '../play/player-state'
 import { readZapMemory, resolver, writeZapMemory } from '../host'
@@ -23,16 +24,17 @@ import { useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { C, FONT, RADIUS } from './tokens'
 import { useText } from './use-text'
+import { ZapOverlay } from './zap-overlay'
 
 export interface ChannelPlayerProps {
   channels: ChannelDef[]
   initialChannelId: string
   mode: PlayMode
-  /** Zappläget (Task 9) tar över härifrån; spelaren skickar bara vidare. */
+  /** Starta direkt i zappläget ("gamla TV:n"). */
   startInZap?: boolean
   onClose(): void
   onOpenGuide?(): void
-  /** ZAPP-knappen. Utan den syns ingen knapp. */
+  /** Meddelas när zappläget slås på (ZAPP-knappen); zappläget i sig ägs av spelaren. */
   onZap?(): void
   /** "Redigera" på en kanal utan innehåll. */
   onEditChannel?(id: string): void
@@ -78,19 +80,35 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     return () => { cancelled = true }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Zappläget hör till Task 9; startInZap lämnas vidare dit vid första montering.
-  const zapStarted = useRef(false)
-  useEffect(() => {
-    if (startInZap && onZap && !zapStarted.current) {
-      zapStarted.current = true
-      onZap()
-    }
-  }, [startInZap, onZap])
+  // Zappläge: på/av, kanallista, sifferval och förra kanal.
+  const [zapOn, setZapOn] = useState(!!startInZap)
+  const [listOpen, setListOpen] = useState(false)
+  const [digits, setDigits] = useState('')
+  const [prevId, setPrevId] = useState<string | null>(null)
+  const zapRef = useRef({ zapOn, listOpen })
+  zapRef.current = { zapOn, listOpen }
+  const channelsRef = useRef(channels)
+  channelsRef.current = channels
+  const digitBuf = useMemo(() => createDigitBuffer(1500), [])
+  const digitTimer = useRef<number | null>(null)
+  useEffect(() => () => { if (digitTimer.current !== null) window.clearTimeout(digitTimer.current) }, [])
+  const enterZap = useCallback(() => {
+    setZapOn(true)
+    onZap?.()
+  }, [onZap])
+  const exitZap = useCallback(() => {
+    setZapOn(false)
+    setListOpen(false)
+    setDigits('')
+  }, [])
 
   // Förra/senaste kanal vid varje kanalbyte.
   const channelId = channel?.id ?? null
   useEffect(() => {
-    if (channelId) writeZapMemory(rememberZap(readZapMemory(), channelId))
+    if (!channelId) return
+    const next = rememberZap(readZapMemory(), channelId)
+    writeZapMemory(next)
+    setPrevId(next.previousChannelId)
   }, [channelId])
 
   // ── Planering: varje begäran planeras EN gång ──────────────────────────────
@@ -199,8 +217,10 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   const poke = useCallback(() => {
     setOsdVisible(true)
     if (hideTimer.current !== null) window.clearTimeout(hideTimer.current)
-    hideTimer.current = window.setTimeout(() => setOsdVisible(false), OSD_HIDE_MS)
+    // Zappläget tonar ut snabbare än den vanliga kanal-OSD:n.
+    hideTimer.current = window.setTimeout(() => setOsdVisible(false), zapRef.current.zapOn ? OSD_IDLE_MS : OSD_HIDE_MS)
   }, [])
+  useEffect(() => { poke() }, [zapOn, poke])
   useEffect(() => {
     poke()
     return () => { if (hideTimer.current !== null) window.clearTimeout(hideTimer.current) }
@@ -212,8 +232,65 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   // ── Tangenter ──────────────────────────────────────────────────────────────
   const modalMounted = !!(onScreen && Player)
   const osdRef = useRef<HTMLDivElement | null>(null)
+  const osdShownRef = useRef(osdVisible)
+  osdShownRef.current = osdVisible
+
+  // Sifferval: bufferten levererar efter 1,5 s eller tre siffror.
+  const commitNumber = useCallback((n: number) => {
+    setDigits('')
+    const target = channelByNumber(channelsRef.current, n)
+    if (target) goToChannel(target.id)
+  }, [goToChannel])
+  const pushDigit = useCallback((digit: number) => {
+    const r = digitBuf.push(digit, Date.now())
+    if (digitTimer.current !== null) window.clearTimeout(digitTimer.current)
+    if (r.commit !== null) {
+      commitNumber(r.commit)
+      return
+    }
+    setDigits(r.pending)
+    digitTimer.current = window.setTimeout(() => {
+      const n = digitBuf.flush(Date.now())
+      if (n !== null) commitNumber(n)
+      else setDigits('')
+    }, 1520)
+  }, [digitBuf, commitNumber])
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      const zap = zapRef.current
+      if (zap.zapOn) {
+        // Bakåt i zappläget: lista öppen → stäng listan, annars lämna zappläget.
+        // Konsumeras bara här; annars går Bakåt vidare till den vanliga kedjan.
+        if (BACK_KEYS.has(event.key)) {
+          event.preventDefault()
+          event.stopPropagation()
+          if (zap.listOpen) setListOpen(false)
+          else exitZap()
+          return
+        }
+        if (/^[0-9]$/.test(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          event.preventDefault()
+          event.stopPropagation()
+          poke()
+          pushDigit(Number(event.key))
+          return
+        }
+        // OK med dold OSD visar den i stället för att trycka på en osynlig knapp.
+        if (event.key === 'Enter' && !zap.listOpen && !osdShownRef.current) {
+          event.preventDefault()
+          event.stopPropagation()
+          poke()
+          return
+        }
+        // ▲▼ zappar när listan är stängd (knapparna ligger i rad, pilarna behövs inte för fokus).
+        if (!zap.listOpen && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+          event.preventDefault()
+          event.stopPropagation()
+          step(event.key === 'ArrowUp' ? 1 : -1)
+          return
+        }
+      }
       // Utan appens spelare finns ingen som tar Bakåt: vi stänger själva.
       if (!modalMounted && BACK_KEYS.has(event.key)) {
         event.preventDefault()
@@ -238,7 +315,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     // Fångstfasen: spelarens egna lyssnare ska inte också reagera på kanalknapparna.
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [isTv, step, poke, modalMounted, onClose])
+  }, [isTv, step, poke, modalMounted, onClose, exitZap, pushDigit])
 
   // ── Rendering ──────────────────────────────────────────────────────────────
   // Det OSD:n beskriver: det som är på väg, annars det som spelas för den
@@ -263,7 +340,31 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   if (described) metaParts.push(t('playerMinsLeft', { n: Math.max(1, Math.ceil(minsLeft)) }))
   if (nextTitle) metaParts.push(t('playerThen', { title: nextTitle }))
 
-  const osd = (
+  const zapProgramme = described ? { title: described.slot.item.title, start: described.slot.start, stop: described.slot.stop } : null
+  const zapOverlay = (
+    <ZapOverlay
+      channel={channel}
+      channels={channels}
+      programme={zapProgramme}
+      nextTitle={nextTitle}
+      now={now}
+      pendingDigits={digits}
+      osdVisible={osdVisible || status !== 'playing'}
+      listOpen={listOpen}
+      notice={notice ? t('playerSkipping') : null}
+      hasPrevious={!!prevId && prevId !== channel.id && channels.some((c) => c.id === prevId)}
+      isTv={isTv}
+      t={t}
+      onSelect={(id) => { goToChannel(id); setListOpen(false) }}
+      onPrevious={() => { if (prevId) goToChannel(prevId) }}
+      onOpenList={() => setListOpen(true)}
+      onCloseList={() => setListOpen(false)}
+      onExit={exitZap}
+      onActivity={poke}
+    />
+  )
+
+  const normalOsd = (
     <ChannelOsd
       osdRef={osdRef}
       visible={osdVisible || status !== 'playing'}
@@ -280,10 +381,12 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       onChDown={() => step(-1)}
       onChUp={() => step(1)}
       onGuide={onOpenGuide}
-      onZap={onZap}
+      onZap={enterZap}
       onActivity={poke}
     />
   )
+  // En OSD åt gången: zappläget ersätter kanal-OSD:n.
+  const osd = zapOn ? zapOverlay : normalOsd
 
   const tuning = (
     <div data-channels-tuning="" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>

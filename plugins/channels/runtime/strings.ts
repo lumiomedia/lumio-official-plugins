@@ -22,4 +22,12 @@ export const S = {
   playerTuning: { en: 'Tuning in…', sv: 'Ställer in…' },
   playerChUp: { en: 'Next channel', sv: 'Nästa kanal' },
   playerChDown: { en: 'Previous channel', sv: 'Föregående kanal' },
+  // Zappläget
+  zapBrand: { en: 'LUMIO TV', sv: 'LUMIO TV' },
+  zapChannelLine: { en: 'CHANNEL {n} · {name}', sv: 'KANAL {n} · {name}' },
+  zapList: { en: 'CHANNEL LIST', sv: 'KANALLISTA' },
+  zapListTitle: { en: 'Channels', sv: 'Kanaler' },
+  zapPrev: { en: '↩ PREVIOUS', sv: '↩ FÖRRA' },
+  zapExit: { en: 'EXIT ZAP', sv: 'AVSLUTA ZAPP' },
+  zapNothingOn: { en: 'Nothing on air', sv: 'Inget sänds' },
 } as const
