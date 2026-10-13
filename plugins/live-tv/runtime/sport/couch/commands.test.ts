@@ -79,6 +79,13 @@ describe('answerSportQuery', () => {
     expect(xi.find((p) => p.name === 'Ut')?.subbedOff).toBe("58'")
     expect(d.lineups[0].subs[0].subbedOn).toBe("58'")
   })
+  it('en repris skickar aldrig händelser eller ställning, och detaljen hämtas inte', async () => {
+    let asked = false
+    const r = match({ rerun: true })
+    expect(await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'm' }, deps([r], { detail: async () => { asked = true; return detail } })))
+      .toEqual({ events: [], stats: [], lineups: [], updatedAt: null })
+    expect(asked).toBe(false)
+  })
   it('okänd match ger fel; saknad eller kastande detalj ger tomma listor', async () => {
     expect(await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'x' }, deps([match({})]))).toEqual({ error: 'unknown-match' })
     const empty = { events: [], stats: [], lineups: [], updatedAt: null }

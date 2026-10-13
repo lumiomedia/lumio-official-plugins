@@ -5,10 +5,11 @@ import { setPlayingChannel } from '../goal-alerts'
 import { __resetPresenceForTests, hasCouchPresence, markPresence, PRESENCE_TTL_MS } from './presence'
 
 // Feedern ska inte hämta tablån på riktigt i testet.
-vi.mock('../sport-epg', async (orig) => ({ ...(await orig<typeof import('../sport-epg')>()), useSportDay: () => ({ data: null, state: 'ready' }) }))
+const epg = vi.hoisted(() => ({ day: null as null | { matches: unknown[] } }))
+vi.mock('../sport-epg', async (orig) => ({ ...(await orig<typeof import('../sport-epg')>()), useSportDay: () => ({ data: epg.day, state: 'ready' }) }))
 
 type W = { __lumioPluginRuntime?: { sdk?: Record<string, unknown> } }
-afterEach(() => { delete (globalThis as W).__lumioPluginRuntime; setPlayingChannel(null); __resetPresenceForTests(); vi.useRealTimers() })
+afterEach(() => { epg.day = null; delete (globalThis as W).__lumioPluginRuntime; setPlayingChannel(null); __resetPresenceForTests(); vi.useRealTimers() })
 
 function host() {
   const off = vi.fn()
@@ -49,5 +50,17 @@ describe('SportCouchMount', () => {
     act(() => { vi.advanceTimersByTime(PRESENCE_TTL_MS + 16_000) })
     expect(hasCouchPresence()).toBe(false)
     expect(notifySurface).toHaveBeenCalled()
+  })
+  it('utan nyckel och utan telefon i sportfliken: en sportkanal startar sportläget ur EPG:t', () => {
+    const now = Date.now()
+    epg.day = { matches: [{ id: 'm', kind: 'football', league: 'L', leagueKey: 'l', home: 'A', away: 'B', homeKey: 'a', awayKey: 'b', event: null,
+      start: now - 60_000, stop: now + 3_600_000, status: 'live', rerun: false, round: null, venue: null,
+      sources: [{ channelKey: 'k1', name: 'K1', url: 'u', logo: null, group: 'g', tvgId: null, sourceId: 's', quality: null, programmeStart: 0, programmeStop: 0, liveFlag: true }] }] }
+    const { registerSurface } = host()
+    render(<SportCouchMount />)
+    act(() => { setPlayingChannel('k1') })
+    const surface = registerSurface.mock.calls[0][1] as { snapshot: () => { context: string | null; focus: { id: string } | null } }
+    expect(hasCouchPresence()).toBe(false)
+    expect(surface.snapshot()).toMatchObject({ context: 'channel', focus: { id: 'm' } })
   })
 })

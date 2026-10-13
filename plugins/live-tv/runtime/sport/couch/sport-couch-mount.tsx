@@ -21,15 +21,33 @@ const CLOCK_MS = 60_000
 /** Dagens EPG-matcher ur feedern: bildens källa när controllern saknas (ingen nyckel). */
 let epgToday: SportMatch[] = []
 
+/** TV:n visar något som kan vara sport: en kanal, Sport-sidan eller Multiview. */
+function tvShowsSportish(): boolean {
+  const marks = couchMarks()
+  return playingChannel() != null || marks.sportPage || marks.multiview
+}
+
 function audioChannel(): string | null {
   const mv = getMultiviewState()
   return mv.tiles[mv.audioIndex] ?? null
 }
 
+/**
+ * Sammanslagna matcher (med nyckel) plus dagens EPG-matcher som inte finns
+ * bland dem. Utan EPG-delen vet ytan inte vilken match en kanal visar förrän
+ * en vy har slagit ihop dagen — och då skulle sportläget aldrig starta.
+ */
+function todaysMatches(): SportMatch[] {
+  const merged = currentResults()?.merged() ?? []
+  if (!merged.length) return epgToday
+  const ids = new Set(merged.map((m) => m.id))
+  return [...merged, ...epgToday.filter((m) => !ids.has(m.id))]
+}
+
 function snapshotNow() {
   const c = currentResults()
   return buildCouchSport({
-    matches: c ? c.merged() : epgToday,
+    matches: todaysMatches(),
     playing: playingChannel(),
     marks: couchMarks(),
     audioChannel: audioChannel(),
@@ -41,18 +59,16 @@ function snapshotNow() {
   })
 }
 
-/** Matchdetaljen: samma ref som matchinfon (use-fixture-detail.ts). Repriser och avslutade bara ur cachen. */
+/** Matchdetaljen: samma ref som matchinfon (use-fixture-detail.ts). Avslutade bara ur cachen; repriser aldrig (fas 1, inga spoilers). */
 function loadDetail(m: SportMatch) {
   const c = currentResults()
-  if (!c || m.coverage !== 'full') return Promise.resolve(null)
-  const ref = m.rerun ? m.replayOf?.fixture ?? null : m.fixture
-  if (!ref) return Promise.resolve(null)
-  const fr = { provider: ref.provider as ProviderId, id: ref.id }
-  return m.rerun || m.status === 'finished' ? c.cachedFixture(m.kind, fr) : c.loadFixture(m.kind, fr, false)
+  if (!c || m.coverage !== 'full' || m.rerun || !m.fixture) return Promise.resolve(null)
+  const fr = { provider: m.fixture.provider as ProviderId, id: m.fixture.id }
+  return m.status === 'finished' ? c.cachedFixture(m.kind, fr) : c.loadFixture(m.kind, fr, false)
 }
 
 const deps: SportDeps = {
-  matches: () => currentResults()?.merged() ?? epgToday,
+  matches: todaysMatches,
   focusId: () => snapshotNow().focus?.id ?? null,
   overrides: getOverrides,
   open: (t) => requestOpenBrowsePage(t),
@@ -60,8 +76,12 @@ const deps: SportDeps = {
   now: () => Date.now(),
 }
 
-/** Håller dagens matcher sammanslagna medan en telefon visar sportfliken (spec 4). */
-function SportCouchFeeder({ onChange }: { onChange: () => void }) {
+/**
+ * Dagens EPG (lokalt anrop, ingen kvot) medan TV:n visar en kanal, Sport-sidan
+ * eller Multiview, så att ytan vet om det är sport. Sammanslagningen med
+ * källan (`merge`) körs bara medan en telefon visar sportfliken (spec 4).
+ */
+function SportCouchFeeder({ onChange, merge }: { onChange: () => void; merge: boolean }) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), CLOCK_MS)
@@ -75,7 +95,7 @@ function SportCouchFeeder({ onChange }: { onChange: () => void }) {
     onChange()
   }, [epg, onChange])
   useEffect(() => () => { epgToday = [] }, [])
-  useSportResults({ day, epg: epg ?? EMPTY })
+  useSportResults({ day: merge ? day : null, epg: epg ?? EMPTY })
   return null
 }
 const EMPTY: SportMatch[] = []
@@ -85,6 +105,7 @@ export function SportCouchMount() {
   // Äldre app: SDK:t saknar Soffläge, och då görs ingenting.
   const enabled = typeof hasCouchSdk === 'function' && hasCouchSdk()
   const [present, setPresent] = useState(hasCouchPresence)
+  const [watching, setWatching] = useState(tvShowsSportish)
   const notifyRef = useRef<() => void>(() => {})
   const [notify] = useState(() => () => notifyRef.current())
 
@@ -112,8 +133,8 @@ export function SportCouchMount() {
     }
     watchController()
     const subs = [
-      onPlayingChannelChanged(notify),
-      onCouchMarksChanged(notify),
+      onPlayingChannelChanged(() => { setWatching(tvShowsSportish()); notify() }),
+      onCouchMarksChanged(() => { setWatching(tvShowsSportish()); notify() }),
       onPresenceChanged(() => { setPresent(hasCouchPresence()); notify() }),
       onPluginStorageChanged(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, notify),
       onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => { watchController(); notify() }),
@@ -134,5 +155,5 @@ export function SportCouchMount() {
     return () => clearInterval(sweep)
   }, [enabled, present])
 
-  return enabled && present ? <SportCouchFeeder onChange={notify} /> : null
+  return enabled && (present || watching) ? <SportCouchFeeder onChange={notify} merge={present} /> : null
 }

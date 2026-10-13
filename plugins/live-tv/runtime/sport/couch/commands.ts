@@ -90,6 +90,8 @@ export function toCouchDetail(fd: FixtureDetail, at: number): CouchSportDetail {
 export async function answerSportQuery(q: SportQuery, d: SportDeps): Promise<CouchSportDetail | { error: string }> {
   const m = d.matches().find((x) => x.id === q.matchId)
   if (!m) return { error: 'unknown-match' }
+  // Fas 1 har inget spoilerskydd: en repris får aldrig skicka originalets händelser eller ställning.
+  if (m.rerun) return { events: [], stats: [], lineups: [], updatedAt: null }
   const fd = await d.detail(m).catch(() => null)
   return fd ? toCouchDetail(fd, d.now()) : { events: [], stats: [], lineups: [], updatedAt: null }
 }
