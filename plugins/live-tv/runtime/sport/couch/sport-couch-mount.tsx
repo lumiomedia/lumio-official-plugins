@@ -82,7 +82,8 @@ const EMPTY: SportMatch[] = []
 
 /** Soffläges sportyta: registrerar `sport` hos värden och meddelar telefonen vid ändringar. */
 export function SportCouchMount() {
-  const enabled = hasCouchSdk()
+  // Äldre app: SDK:t saknar Soffläge, och då görs ingenting.
+  const enabled = typeof hasCouchSdk === 'function' && hasCouchSdk()
   const [present, setPresent] = useState(hasCouchPresence)
   const notifyRef = useRef<() => void>(() => {})
   const [notify] = useState(() => () => notifyRef.current())
