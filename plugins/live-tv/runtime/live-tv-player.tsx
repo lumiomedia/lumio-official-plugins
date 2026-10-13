@@ -31,6 +31,7 @@ import {
   notifyPipPlaying,
   registerPip,
   usePipAvailable,
+  mpvSetPropertyStrings,
 } from '@/lib/plugin-sdk'
 import { recordChannelWatch } from './channel-history'
 import { channelKey } from './live-tv-data'
@@ -95,6 +96,12 @@ function proxyUrl(url: string): string {
 const MPV_STARTUP_TIMEOUT_MS = 18_000
 /** Budget för kanalens egen URL innan värdens strömproxy får försöka. */
 const MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9_000
+
+const TS_REFILL_ON_UNDERRUN = [
+  { name: 'cache-pause', value: 'yes' },
+  { name: 'cache-pause-wait', value: '3' },
+]
+export const isHlsUrl = (url: string): boolean => /\.m3u8(?:$|[?#])/i.test(url)
 
 export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv }: LiveTvPlayerProps) {
   const { t } = useLang()
@@ -804,6 +811,17 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     if (!hasNativeSurface || !mpvFileLoaded) return
     void mpv.setPlayPause(false)
   }, [mpvFileLoaded, hasNativeSurface])
+
+  // Xtream-kanaler är en löpande TS-ström. Appen spelar live med cache-pause=no
+  // (rätt för HLS, där segmenten rullar bort under en paus), men på en TS-ström
+  // betyder det att mpv spelar vidare ur en tom buffert när leverantören
+  // levererar under realtid: slowmotion, ljudavbrott och till sist frysning
+  // (CL-kvällen 2026-10-13). Pausa i stället och fyll på 3 s, som mpv gör
+  // fristående. HLS behåller appens val.
+  useEffect(() => {
+    if (engineKind !== 'mpv' || !mpvFileLoaded || isHlsUrl(channel.url)) return
+    void mpvSetPropertyStrings(TS_REFILL_ON_UNDERRUN).catch(() => {})
+  }, [engineKind, mpvFileLoaded, channel.url])
 
   // Nollställ trappan när kanalen byts: nästa kanal ska börja med sin egen
   // URL, inte ärva föregående kanals reservväg.
