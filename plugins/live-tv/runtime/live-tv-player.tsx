@@ -46,6 +46,8 @@ import { useWakeLock } from './hooks/useWakeLock'
 import { HOST_PROXY_MIME, hostProxyUrl as buildHostProxyUrl, nativeFailureAction } from './live-tv-playback-fallback'
 import { TvPlayerChrome } from './tv/tv-player-chrome'
 import { PlayerGoalOverlay } from './sport/tv/player-goal-overlay'
+import { StreamFallbackPrompt } from './stream-fallback-prompt'
+import { useStreamFallback } from './use-stream-fallback'
 import { setPlayingChannel } from './sport/goal-alerts'
 import { usePollDemand } from './sport/live-poller'
 import { useChannelSportLive } from './sport/results-controller'
@@ -822,6 +824,12 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     void mpvSetPropertyStrings(TS_REFILL_ON_UNDERRUN).catch(() => {})
   }, [engineKind, mpvFileLoaded, channel.url])
 
+  // Hackar kanalen om och om igen: föreslå (och byt efter 5 s till) nästa källa.
+  const fallback = useStreamFallback({
+    channel, pausedForCache: mpv.pausedForCache, userPaused: mpvPaused,
+    channels: tvChrome?.neighbours ?? [], onSwitch: tvChrome?.onSwitchChannel,
+  })
+
   // Nollställ trappan när kanalen byts: nästa kanal ska börja med sin egen
   // URL, inte ärva föregående kanals reservväg.
   useEffect(() => {
@@ -1196,6 +1204,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
         </div>
       )}
       <PlayerGoalOverlay channelKey={playingKey} onJump={(next) => tvChrome?.onSwitchChannel(next)} />
+      {fallback.target ? <StreamFallbackPrompt key={channelKey(fallback.target)} target={fallback.target} onSwitch={fallback.switchNow} onStay={fallback.stay} /> : null}
       {tvChrome ? (
         <TvPlayerChrome channel={channel} tv={tvChrome} controls={playerControls} paused={mpvPaused} onTogglePause={toggleMpvPause} onClose={handleClose} phoneLandscape={phoneLandscape} />
       ) : null}
