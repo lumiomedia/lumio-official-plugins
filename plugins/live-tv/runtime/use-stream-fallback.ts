@@ -7,6 +7,7 @@ import { currentResults } from './sport/results-controller'
 import { rankedSources } from './sport/sport-day-model'
 import { sourceChannel, type SportMatch } from './sport/sport-model'
 import { getOverrides } from './sport/sport-store'
+import { getTvSettings, useTvSettings } from './tv/tv-settings-store'
 import { fallbackCandidates, initialStall, stallStep, type StallEvent, type StallState } from './stream-fallback'
 
 const TICK_MS = 1_000
@@ -21,11 +22,16 @@ function sportSourcesFor(key: string, matches: SportMatch[], now: number): M3uCh
  * sedan samma kanal i en annan variant). `target` visas av StreamFallbackPrompt;
  * bytet sker via `onSwitch`. Provade källor kommer ihåg så länge bytena kom
  * härifrån, så att två dåliga källor aldrig turas om.
+ *
+ * Inställningarna (`streamFallback`, `streamFallbackAfterS`) läses i stunden:
+ * av = ingen fråga alls, och en ändring gäller nästa hack utan att spelaren
+ * öppnas om. `autoSwitchS` går till StreamFallbackPrompt (0 = Aldrig).
  */
 export function useStreamFallback(args: { channel: M3uChannel; pausedForCache: boolean; userPaused: boolean; channels: M3uChannel[]; onSwitch?: (c: M3uChannel) => void }) {
   const { channel, pausedForCache, userPaused, channels, onSwitch } = args
   const key = channelKey(channel)
   const rows = useSportRows()
+  const settings = useTvSettings()
   const [state, dispatch] = useReducer((s: { st: StallState; hit: number }, e: StallEvent) => {
     const r = stallStep(s.st, e)
     return { st: r.state, hit: r.trigger ? s.hit + 1 : s.hit }
@@ -52,7 +58,7 @@ export function useStreamFallback(args: { channel: M3uChannel; pausedForCache: b
   }, [stalled])
 
   useEffect(() => {
-    if (state.hit === 0 || !onSwitch) return
+    if (state.hit === 0 || !onSwitch || !getTvSettings().streamFallback) return
     const now = Date.now()
     const matches = [...(currentResults()?.merged() ?? []), ...rows.matches]
     const next = fallbackCandidates(channel, { sportSources: sportSourcesFor(key, matches, now), channels, tried: tried.current })[0]
@@ -69,5 +75,6 @@ export function useStreamFallback(args: { channel: M3uChannel; pausedForCache: b
     onSwitch(target)
   }, [target, onSwitch, key])
   const stay = useCallback(() => setTarget(null), [])
-  return { target, switchNow, stay }
+  // Stängs förslaget av medan det visas försvinner det.
+  return { target: settings.streamFallback ? target : null, autoSwitchS: settings.streamFallbackAfterS, switchNow, stay }
 }

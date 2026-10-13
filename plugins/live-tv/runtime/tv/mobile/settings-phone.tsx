@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import type { TvViewProps } from '../tv-shell'
 import { station } from '../tv-ui'
 import { useTvText } from '../tv-strings'
-import { setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
+import { nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
 import { ContentTab, EpgTab, ParentalTab, PhoneCaret, PlaylistsTab, Row } from '../settings-tabs'
 import { nextStartView, startViewLabelKey } from '../start-view'
 import { SportKeySettingsTv } from '../../sport/sport-key-settings'
@@ -82,6 +82,8 @@ export function TvSettingsPhone(props: TvViewProps) {
           <ToggleRow testId="setting-startOnLastChannel" label={tt('settingStartLast')} on={settings.startOnLastChannel} onOk={() => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel })} />
           <ToggleRow testId="setting-keepAwake" label={tt('settingKeepAwake')} on={settings.keepAwake} onOk={() => setTvSettings({ keepAwake: !settings.keepAwake })} />
           <ToggleRow testId="setting-fullscreenOnRotate" label={tt('settingFullscreenOnRotate')} on={settings.fullscreenOnRotate} onOk={() => setTvSettings({ fullscreenOnRotate: !settings.fullscreenOnRotate })} />
+          <ToggleRow testId="setting-streamFallback" label={tt('settingStreamFallback')} on={settings.streamFallback} onOk={() => setTvSettings({ streamFallback: !settings.streamFallback })} />
+          <Row phone testId="setting-streamFallbackAfterS" label={tt('settingStreamFallbackAfter')} right={settings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: settings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) })} />
         </Card>
       </Section>
 

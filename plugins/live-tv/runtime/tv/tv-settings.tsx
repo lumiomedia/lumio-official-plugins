@@ -5,7 +5,7 @@ import * as sdk from '@/lib/plugin-sdk'
 import type { TvViewProps } from './tv-shell'
 import { TV, Toggle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
-import { BANNER_HIDE_OPTIONS, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
+import { BANNER_HIDE_OPTIONS, nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
 import { ContentTab, EpgTab, Heading, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
 import { TvSettingsPhone } from './mobile/settings-phone'
 import { useNewGuideSurface } from './guide-surface'
@@ -111,6 +111,8 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
         <Row testId="setting-numericZap" label={tt('settingNumericZap')} right={<Toggle on={settings.numericZap} />} onOk={() => setTvSettings({ numericZap: !settings.numericZap })} />
         <Row testId="setting-railLabels" label={tt('settingRailLabels')} right={<Toggle on={settings.railLabels} />} onOk={() => setTvSettings({ railLabels: !settings.railLabels })} />
         <Row testId="setting-bannerHideMs" label={tt('settingBannerHide')} right={settings.bannerHideMs === 0 ? tt('never') : tt('seconds', { s: settings.bannerHideMs / 1000 })} onOk={() => setTvSettings({ bannerHideMs: nextBanner(settings.bannerHideMs) })} />
+        <Row testId="setting-streamFallback" label={tt('settingStreamFallback')} right={<Toggle on={settings.streamFallback} />} onOk={() => setTvSettings({ streamFallback: !settings.streamFallback })} />
+        <Row testId="setting-streamFallbackAfterS" label={tt('settingStreamFallbackAfter')} right={settings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: settings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) })} />
       </section>
     </>
   )

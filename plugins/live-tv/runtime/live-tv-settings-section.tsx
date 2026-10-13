@@ -48,7 +48,7 @@ import { VodLibraryCard } from './vod-library-card'
 import { CategoriesDialog } from './category-curation-panel'
 import { PlaylistCard, playlistHost } from './playlist-card'
 import { TvSettingsPage } from './tv-settings-views'
-import { setTvSettings, useTvSettings } from './tv/tv-settings-store'
+import { FALLBACK_AFTER_OPTIONS, setTvSettings, useTvSettings, type FallbackAfterS } from './tv/tv-settings-store'
 import { START_VIEWS, startViewLabelKey } from './tv/start-view'
 import { useTvText } from './tv/tv-strings'
 
@@ -257,6 +257,16 @@ function DesktopPage() {
           options={START_VIEWS.map((key) => ({ key, label: tt(startViewLabelKey(key)) }))}
           value={tvSettings.startView}
           onChange={(startView) => setTvSettings({ startView })}
+        />
+        {/* Strömbytet när kanalen hackar (Jerry 2026-10-14). Sparas i samma lager som TV:ns och telefonens rader. */}
+        <LtToggleRow first={false} testId="lt-stream-fallback" label={tt('settingStreamFallback')} desc={tt('settingStreamFallbackHint')} checked={tvSettings.streamFallback} onChange={(streamFallback) => setTvSettings({ streamFallback })} />
+        <LtChoiceRow
+          testId="lt-stream-fallback-after"
+          label={tt('settingStreamFallbackAfter')}
+          desc={tt('settingStreamFallbackAfterHint')}
+          options={FALLBACK_AFTER_OPTIONS.map((s) => ({ key: String(s), label: s === 0 ? tt('never') : tt('seconds', { s }) }))}
+          value={String(tvSettings.streamFallbackAfterS)}
+          onChange={(key) => setTvSettings({ streamFallbackAfterS: Number(key) as FallbackAfterS })}
         />
       </LtRows>
 

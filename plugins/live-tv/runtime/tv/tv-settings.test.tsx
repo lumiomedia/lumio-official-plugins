@@ -146,6 +146,18 @@ describe('TvSettingsView', () => {
     fireEvent.click(screen.getByTestId('setting-startView'))
     expect(getTvSettings().startView).toBe('hub')
   })
+  it('Utseende: strömbytets två rader finns under Beteende och skriver till lagret', () => {
+    mount()
+    const toggle = screen.getByTestId('setting-streamFallback')
+    expect(toggle).toHaveAttribute('data-f')
+    fireEvent.click(toggle)
+    expect(getTvSettings().streamFallback).toBe(false)
+    const after = screen.getByTestId('setting-streamFallbackAfterS')
+    expect(after).toHaveAttribute('data-f')
+    expect(after).toHaveTextContent('5 s')
+    fireEvent.click(after)
+    expect(getTvSettings().streamFallbackAfterS).toBe(10)
+  })
   it('Utseende på LAN/fjärr: de fyra gamla lägena står kvar som standardvy', () => {
     __setTvModeForTests(false)
     __setDesktopTauriEnvForTests(false)

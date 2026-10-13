@@ -14,7 +14,7 @@ import { curationSummary, formatFetchedAt, playlistHost } from './playlist-card'
 import { useEpgStatus } from './hooks/useEpgStatus'
 import { useVodLibrarySources } from './hooks/useVodLibrarySources'
 import { useTvText } from './tv/tv-strings'
-import { setTvSettings, useTvSettings } from './tv/tv-settings-store'
+import { nextFallbackAfter, setTvSettings, useTvSettings } from './tv/tv-settings-store'
 import { nextStartView, startViewLabelKey } from './tv/start-view'
 import { listGroups } from './index-client'
 import { mergeNameConflict, normalizeCuration, renameMerge } from './list-curation'
@@ -130,6 +130,9 @@ export function TvSettingsPage() {
       <TvRow label={h('useAsHome')} hint={s.homeOverrideError || h('useAsHomeDesc')} toggle={s.homeOverrideEnabled} onToggle={s.toggleHomeOverride} />
       <TvRow label={h('hideHero')} hint={h('hideHeroDesc')} toggle={s.hideHero} onToggle={s.setHideHero} />
       <TvRow testId="tv-start-view" label={tt('settingStartView')} hint={tt('settingStartViewHint')} value={tt(startViewLabelKey(tvSettings.startView))} onOk={() => setTvSettings({ startView: nextStartView(tvSettings.startView) })} />
+      {/* Strömbytet: växeln har onToggle och tiden onOk — båda blir stationer (data-f). */}
+      <TvRow testId="tv-stream-fallback" label={tt('settingStreamFallback')} hint={tt('settingStreamFallbackHint')} toggle={tvSettings.streamFallback} onToggle={(streamFallback) => setTvSettings({ streamFallback })} />
+      <TvRow testId="tv-stream-fallback-after" label={tt('settingStreamFallbackAfter')} hint={tt('settingStreamFallbackAfterHint')} value={tvSettings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: tvSettings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(tvSettings.streamFallbackAfterS) })} />
 
       <TvEyebrow>{h('playlists')}</TvEyebrow>
       {s.lists.length === 0 ? <TvNote>{h('noPlaylistsYet')}</TvNote> : null}

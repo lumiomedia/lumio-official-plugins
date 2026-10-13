@@ -827,7 +827,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     void mpvSetPropertyStrings(TS_REFILL_ON_UNDERRUN).catch(() => {})
   }, [engineKind, mpvFileLoaded, channel.url])
 
-  // Hackar kanalen om och om igen: föreslå (och byt efter 5 s till) nästa källa.
+  // Hackar kanalen om och om igen: föreslå (och byt efter vald tid till) nästa källa.
   const fallback = useStreamFallback({
     channel, pausedForCache: mpv.pausedForCache, userPaused: mpvPaused,
     channels: tvChrome?.neighbours ?? [], onSwitch: tvChrome?.onSwitchChannel,
@@ -1224,7 +1224,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
         </div>
       )}
       <PlayerGoalOverlay channelKey={playingKey} onJump={(next) => tvChrome?.onSwitchChannel(next)} />
-      {fallback.target ? <StreamFallbackPrompt key={channelKey(fallback.target)} target={fallback.target} onSwitch={fallback.switchNow} onStay={fallback.stay} /> : null}
+      {fallback.target ? <StreamFallbackPrompt key={channelKey(fallback.target)} target={fallback.target} seconds={fallback.autoSwitchS} onSwitch={fallback.switchNow} onStay={fallback.stay} /> : null}
       {tvChrome ? (
         <TvPlayerChrome channel={channel} tv={tvChrome} controls={playerControls} paused={mpvPaused} onTogglePause={toggleMpvPause} onClose={handleClose} phoneLandscape={phoneLandscape} />
       ) : null}
