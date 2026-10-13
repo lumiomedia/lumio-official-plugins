@@ -4,6 +4,8 @@ import type { FixtureDetail, FixtureEvent, LineupEntry } from '../provider'
 import { rankedSources } from '../sport-day-model'
 import { sourceChannel, type MatchSource, type SportMatch } from '../sport-model'
 import type { SportOverrides } from '../sport-store'
+import { assignTile, enlargeTile, setLayout, tileCount, type MultiviewState } from '../../tv/tv-multiview-store'
+import { dismissGoal } from './goals'
 import { markPresence } from './presence'
 import { zapTarget } from './snapshot'
 
@@ -15,6 +17,9 @@ export type SportDeps = {
   open(target: { pageId: string; params: Record<string, string> }): void
   detail(m: SportMatch): Promise<FixtureDetail | null>
   now(): number
+  /** Multiviews tillstånd, eller null när TV:n inte visar Multiview. */
+  multiview(): MultiviewState | null
+  setMultiview(s: MultiviewState): void
 }
 
 // Via Sport-sidan: spelaren går tillbaka till Sport när den stängs (som sportRowTarget).
@@ -22,8 +27,52 @@ function playSource(d: SportDeps, s: MatchSource): void {
   d.open({ pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: 'sport', autoplay: '1', ...encodeChannelParams(sourceChannel(s)) } })
 }
 
+type MvCommand = Extract<SportCommand, { type: 'mv-audio' | 'mv-enlarge' | 'mv-assign' }>
+
+/**
+ * Multiview från telefonen: samma rena funktioner som TV:ns egen Multiview,
+ * och vyn följer lagringen. Ljudet och förstoringen pekar aldrig på en tom
+ * ruta; en ruta tilldelas alltid matchens bästa kanal, aldrig en kanal ur telefonen.
+ */
+function runMultiview(cmd: MvCommand, d: SportDeps): CouchAck | void {
+  const state = d.multiview()
+  if (!state) return { id: cmd.id, ok: false, error: 'no-multiview' }
+  const inLayout = Number.isInteger(cmd.index) && cmd.index >= 0 && cmd.index < tileCount(state.layout)
+  const filled = inLayout && state.tiles[cmd.index] != null
+  switch (cmd.type) {
+    case 'mv-audio':
+      if (!filled) return { id: cmd.id, ok: false, error: 'empty-tile' }
+      d.setMultiview({ ...state, audioIndex: cmd.index })
+      return
+    case 'mv-enlarge': {
+      if (!filled) return { id: cmd.id, ok: false, error: 'empty-tile' }
+      // Den stora rutan igen: tillbaka till rutnätet (fyra rutor om fler än två är fyllda).
+      if (state.layout === 3 && cmd.index === 0) {
+        const n = state.tiles.filter((t) => t != null).length
+        d.setMultiview(setLayout(state, n > 2 ? 4 : 2))
+      } else d.setMultiview(enlargeTile(state, cmd.index))
+      return
+    }
+    case 'mv-assign': {
+      if (!inLayout) return { id: cmd.id, ok: false, error: 'bad-index' }
+      const m = d.matches().find((x) => x.id === cmd.matchId)
+      const s = m ? rankedSources(m, d.overrides())[0] : null
+      if (!s) return { id: cmd.id, ok: false, error: 'no-source' }
+      d.setMultiview(assignTile(state, cmd.index, s.channelKey))
+      return
+    }
+  }
+}
+
 export async function runSportCommand(cmd: SportCommand, d: SportDeps): Promise<CouchAck | void> {
   switch (cmd.type) {
+    case 'mv-audio':
+    case 'mv-enlarge':
+    case 'mv-assign':
+      return runMultiview(cmd, d)
+    case 'sport-goal-dismiss':
+      dismissGoal(cmd.goalId)
+      return
     case 'sport-presence':
       // phoneId stämplas av Rust; saknas det kan närvaron inte räknas per telefon.
       if (cmd.phoneId) markPresence(cmd.phoneId, cmd.on, d.now())

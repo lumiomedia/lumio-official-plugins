@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { hasCouchSdk, notifyCouchSurface, onPluginStorageChanged, registerCouchSurface, requestOpenBrowsePage } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../../live-tv-data'
-import { MULTIVIEW_KEY, getMultiviewState } from '../../tv/tv-multiview-store'
+import { MULTIVIEW_KEY, getMultiviewState, setMultiviewState } from '../../tv/tv-multiview-store'
 import { onPlayingChannelChanged, playingChannel } from '../goal-alerts'
 import type { ProviderId } from '../provider'
 import { currentResults, useSportResults, type ResultsController } from '../results-controller'
@@ -12,6 +12,7 @@ import type { SportMatch } from '../sport-model'
 import { SPORT_SETTINGS_KEY, getFollows, getOverrides } from '../sport-store'
 import { answerSportQuery, runSportCommand, type SportDeps } from './commands'
 import { couchMarks, onCouchMarksChanged } from './context'
+import { onGoalsChanged, openGoals } from './goals'
 import { hasCouchPresence, onPresenceChanged, sweepPresence } from './presence'
 import { buildCouchSport } from './snapshot'
 
@@ -46,16 +47,20 @@ function todaysMatches(): SportMatch[] {
 
 function snapshotNow() {
   const c = currentResults()
+  const now = Date.now()
+  const marks = couchMarks()
   return buildCouchSport({
     matches: todaysMatches(),
     playing: playingChannel(),
-    marks: couchMarks(),
+    marks,
     audioChannel: audioChannel(),
     follows: getFollows(),
     overrides: getOverrides(),
     hasKey: !!c,
     updatedAt: c?.lastLiveAt ?? null,
-    now: Date.now(),
+    now,
+    multiview: marks.multiview ? getMultiviewState() : null,
+    goals: openGoals(now),
   })
 }
 
@@ -74,6 +79,8 @@ const deps: SportDeps = {
   open: (t) => requestOpenBrowsePage(t),
   detail: loadDetail,
   now: () => Date.now(),
+  multiview: () => (couchMarks().multiview ? getMultiviewState() : null),
+  setMultiview: setMultiviewState,
 }
 
 /**
@@ -138,10 +145,15 @@ export function SportCouchMount() {
       onPresenceChanged(() => { setPresent(hasCouchPresence()); notify() }),
       onPluginStorageChanged(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, notify),
       onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => { watchController(); notify() }),
+      // Nytt eller stängt mål (TV:n eller en telefon): alla telefoner får samma lista.
+      onGoalsChanged(notify),
     ]
+    // Utgångna mål rensas när bilden byggs; utan annan ändring skulle telefonerna inte få veta det.
+    const goalSweep = setInterval(() => { openGoals(Date.now()) }, SWEEP_MS)
     return () => {
       off()
       subs.forEach((u) => u())
+      clearInterval(goalSweep)
       offMerged?.()
       if (timer) clearTimeout(timer)
       notifyRef.current = () => {}

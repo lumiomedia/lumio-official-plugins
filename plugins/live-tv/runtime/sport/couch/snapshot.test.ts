@@ -8,7 +8,7 @@ const match = (o: Partial<SportMatch>): SportMatch => ({
   event: null, start: 0, stop: 7_200_000, status: 'live', rerun: false, round: 24, venue: null, sources: [src('k1')],
   coverage: 'full', fixture: { provider: 'api-sports', id: '1' }, minute: 67, score: { home: 2, away: 1 }, ...o,
 })
-const base = { playing: null, marks: { sportPage: false, multiview: false }, audioChannel: null, follows: [], overrides: {}, hasKey: true, updatedAt: 5, now: 1_000 }
+const base = { playing: null, marks: { sportPage: false, multiview: false }, audioChannel: null, follows: [], overrides: {}, hasKey: true, updatedAt: 5, now: 1_000, multiview: null, goals: [] }
 
 describe('buildCouchSport', () => {
   it('ingen kontext när TV:n inte visar sport', () => {
@@ -63,6 +63,28 @@ describe('buildCouchSport', () => {
   it('focusIndex räknar live-matcher med kanal i samma liga', () => {
     const ms = [match({ id: 'a', start: 0, sources: [src('a')] }), match({ id: 'b', start: 1, sources: [src('b')] }), match({ id: 'c', leagueKey: 'x', sources: [src('c')] })]
     expect(buildCouchSport({ ...base, matches: ms, playing: 'b' }).focusIndex).toEqual({ i: 2, n: 2 })
+  })
+})
+
+describe('Multiview och mål i bilden', () => {
+  it('rutor med matcher, kanalnamn utan match och null för tomma rutor; ljudrutan oförändrad', () => {
+    const ms = [match({}), match({ id: 'n', sources: [src('k2')], status: 'finished', start: 0, stop: 500 })]
+    const s = buildCouchSport({ ...base, matches: ms, marks: { sportPage: false, multiview: true }, audioChannel: 'k1',
+      multiview: { layout: 4, tiles: ['k1', null, 'k2', 'svt1::src'], audioIndex: 0 } })
+    expect(s.multiview?.layout).toBe(4)
+    expect(s.multiview?.audioIndex).toBe(0)
+    const t = s.multiview!.tiles
+    expect(t[0]).toMatchObject({ match: { id: 'm' }, channelName: 'K1' })
+    expect(t[1]).toBeNull()
+    // Matchen på k2 är slut: rutan visar bara kanalen.
+    expect(t[2]).toEqual({ match: null, channelName: 'K2' })
+    expect(t[3]).toEqual({ match: null, channelName: 'svt1' })
+  })
+  it('utan Multiview: multiview null; goals följer med', () => {
+    const goal = { goalId: 'g', matchId: 'm', team: { name: 'A', short: 'A', crest: null }, opponent: 'B', score: [1, 0] as [number, number], minute: null, league: 'L', channel: null, at: 0 }
+    const s = buildCouchSport({ ...base, matches: [match({})], goals: [goal] })
+    expect(s.multiview).toBeNull()
+    expect(s.goals).toEqual([goal])
   })
 })
 

@@ -1,4 +1,5 @@
-import type { CouchSport, CouchSportMatch } from '@/lib/plugin-sdk'
+import type { CouchSport, CouchSportGoal, CouchSportMatch, CouchSportMultiview } from '@/lib/plugin-sdk'
+import type { MultiviewState } from '../../tv/tv-multiview-store'
 import type { SportMatch } from '../sport-model'
 import type { SportFollow, SportOverrides } from '../sport-store'
 import { followState, rankedSources, statusAt } from '../sport-day-model'
@@ -20,6 +21,10 @@ export type SnapshotInput = {
   hasKey: boolean
   updatedAt: number | null
   now: number
+  /** Multiview-rutorna, bara medan Multiview visas (`marks.multiview`). */
+  multiview: MultiviewState | null
+  /** Öppna mål ur målregistret (goals.ts). */
+  goals: CouchSportGoal[]
 }
 
 export function teamShort(name: string): string {
@@ -67,6 +72,23 @@ export function zapTarget(matches: SportMatch[], focusId: string, dir: -1 | 1, n
   return list[(at + dir + list.length) % list.length]
 }
 
+/** Kanalnyckeln är `kanal::källa`; utan matchkälla visas delen före `::`. */
+const keyName = (key: string) => key.split('::')[0] || key
+
+function toCouchMultiview(i: SnapshotInput, mv: MultiviewState, tvKey: string | null): CouchSportMultiview {
+  return {
+    layout: mv.layout,
+    audioIndex: mv.audioIndex,
+    tiles: mv.tiles.map((key) => {
+      if (!key) return null
+      const m = i.matches.find((x) => onChannel(x, key) && airing(x, i.now)) ?? null
+      // Källans namn även när matchen på kanalen inte sänds nu (dagens matcher bär kanalens namn).
+      const source = (m ? [m] : i.matches).flatMap((x) => x.sources).find((s) => s.channelKey === key)
+      return { match: m ? toCouchMatch(m, { ...i, tvKey }) : null, channelName: source?.name ?? keyName(key) }
+    }),
+  }
+}
+
 export function buildCouchSport(i: SnapshotInput): CouchSport {
   const tvKey = i.marks.multiview ? i.audioChannel : i.playing
   const focusMatch = tvKey ? i.matches.find((m) => onChannel(m, tvKey) && airing(m, i.now)) ?? null : null
@@ -88,5 +110,7 @@ export function buildCouchSport(i: SnapshotInput): CouchSport {
     focus: context && focusMatch ? conv(focusMatch) : null,
     focusIndex: context ? focusIndex : null,
     now: live.slice(0, NOW_MAX).map(conv), soon: soon.slice(0, SOON_MAX).map(conv), updatedAt: i.updatedAt,
+    multiview: i.marks.multiview && i.multiview ? toCouchMultiview(i, i.multiview, tvKey) : null,
+    goals: i.goals,
   }
 }
