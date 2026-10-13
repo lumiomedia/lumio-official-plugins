@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.0
+
+- Couch mode follows the sport: when the TV shows a match, the phone gets a Sport tab with score, events, stats and line-ups, a list of what's live now and a mini remote for the channel. Requires Lumio 0.1.625.
+
 ## 0.15.0
 
 - Home shows films and series from VOD like the rest of the app; the old Home is now called Channels; VOD is indexed automatically the first time. Requires Lumio 0.1.624.
