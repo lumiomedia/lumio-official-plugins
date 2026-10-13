@@ -6,6 +6,7 @@ import { LiveTvSettingsSection } from './live-tv-settings-section'
 import { LiveTvHomeOverride } from './live-tv-home-override'
 import { LiveTvRemindersMount } from './live-tv-reminders-mount'
 import { SportGoalMount } from './sport/sport-goal-mount'
+import { SportCouchMount } from './sport/couch/sport-couch-mount'
 import { LiveTvTvShell } from './tv/tv-shell'
 import { LiveTvSportPage, SPORT_PAGE_ID } from './sport/sport-page'
 import { registerSportHomeRows } from './sport/home-rows/register'
@@ -88,6 +89,7 @@ export const LiveTvPlugin: LumioPlugin = {
     // Påminnelser om kommande program, oavsett var i appen man står.
     ctx.registerBootstrap({ id: 'live-tv-reminders', Mount: LiveTvRemindersMount })
     ctx.registerBootstrap({ id: 'live-tv-sport-goals', Mount: SportGoalMount })
+    ctx.registerBootstrap({ id: 'live-tv-sport-couch', Mount: SportCouchMount })
     ctx.registerSettingsSection({
       id: 'm3u',
       label: { en: 'Live TV', sv: 'Live TV' },

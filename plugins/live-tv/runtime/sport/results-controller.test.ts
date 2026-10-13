@@ -86,6 +86,16 @@ describe('ResultsController', () => {
     expect(c.fixtures('football', '2026-10-10')).toHaveLength(2) // live-svaret ersätter, tappar inte de andra
   })
 
+  it('lastLiveAt: sätts bara av livesvar', async () => {
+    const { c } = controller(() => ({ data: footballDate }))
+    expect(c.lastLiveAt).toBeNull()
+    await c.runPlan({ sports: ['football'], leagues: [] })
+    expect(c.lastLiveAt).toBeNull() // dagsprogram är inget livesvar
+    const [live] = c.fixtures('football', '2026-10-10')
+    c.applyFixtures('football', '2026-10-10', [{ ...live, score: { home: 4, away: 1 } }], 'live', NOW + 1_000)
+    expect(c.lastLiveAt).toBe(NOW)
+  })
+
   it('ett äldre dagsprogram ur diskcachen skriver inte över nyare livedata och ger inget falskt MÅL!', async () => {
     let now = NOW
     const older = JSON.parse(JSON.stringify(footballDate)) as typeof footballDate

@@ -99,6 +99,8 @@ export class ResultsController {
   private dates() { return localDates(this.now(), this.tz) }
   private dayKey(sport: SportKind, date: string) { return `${sport}|${date}` }
 
+  /** När det senaste livesvaret kom (Soffläges färskhetsrad); null = inget livesvar ännu. */
+  lastLiveAt: number | null = null
   /** Räknas upp vid varje dataändring (fixturer, tabeller, matchcenter, kvot). Hookarna memoiserar på den. */
   version = 0
   private mergedListeners = new Set<() => void>()
@@ -152,6 +154,7 @@ export class ResultsController {
    * data som är STRIKT nyare än förra observationen.
    */
   applyFixtures(sport: SportKind, date: string, input: Fixture[], source: 'cache' | 'day' | 'live', observedAt: number = this.now(), liveProvider?: ProviderId | null): void {
+    if (source === 'live') this.lastLiveAt = this.now()
     const dk = this.dayKey(sport, date)
     const byKey = this.days.get(dk) ?? new Map<string, Fixture>()
     const list = source === 'live' && liveProvider ? [...input, ...this.droppedFromLiveList(byKey, input, sport, liveProvider)] : input
