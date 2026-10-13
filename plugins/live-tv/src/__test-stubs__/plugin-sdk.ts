@@ -898,7 +898,14 @@ export type CouchSportMatch = {
 export type CouchSport = {
   context: CouchSportContext | null; hasKey: boolean; focus: CouchSportMatch | null
   focusIndex: { i: number; n: number } | null; now: CouchSportMatch[]; soon: CouchSportMatch[]; updatedAt: number | null
+  multiview?: CouchSportMultiview | null; goals?: CouchSportGoal[]
 }
+export type CouchSportTile = { match: CouchSportMatch | null; channelName: string } | null
+export type CouchSportMultiview = { layout: 2 | 3 | 4; tiles: CouchSportTile[]; audioIndex: number }
+export type CouchSportGoal = { goalId: string; matchId: string; team: CouchSportTeam; opponent: string; score: [number, number]; minute: string | null; league: string; channel: string | null; at: number }
+export type CouchFollowBell = 'off' | '15' | 'kickoff'
+export type CouchFollow = { sport: string; kind: 'team' | 'league'; key: string; name: string; crest: string | null; bell: CouchFollowBell; next: { text: string; live: boolean } | null }
+export type CouchFollowHit = { sport: string; kind: 'team' | 'league'; key: string; name: string; crest: string | null; subtitle: string; following: boolean; providerIds?: Record<string, string> }
 export type CouchSportEvent = { minute: string; type: 'goal' | 'card' | 'sub' | 'var' | 'penalty' | 'other'; side: 'home' | 'away' | null; player: string | null; assist: string | null; detail: string; score?: [number, number] }
 export type CouchSportStat = { label: string; home: string; away: string }
 export type CouchSportLineupEntry = { number: number | null; name: string; pos: string | null; goals: number; subbedOff: string | null; subbedOn: string | null }
@@ -909,7 +916,15 @@ export type SportCommand =
   | { id: string; type: 'play-match'; matchId: string; channel?: string }
   | { id: string; type: 'sport-zap'; dir: -1 | 1 }
   | { id: string; type: 'sport-open-settings' }
-export type SportQuery = { id: string; type: 'sport-match'; matchId: string }
+  | { id: string; type: 'mv-audio' | 'mv-enlarge'; index: number }
+  | { id: string; type: 'mv-assign'; index: number; matchId: string }
+  | { id: string; type: 'sport-goal-dismiss'; goalId: string }
+  | { id: string; type: 'sport-follow'; sport: string; kind: 'team' | 'league'; key: string; name: string; providerIds?: Record<string, string> }
+  | { id: string; type: 'sport-follow-bell'; sport: string; kind: 'team' | 'league'; key: string; bell: CouchFollowBell }
+export type SportQuery =
+  | { id: string; type: 'sport-match'; matchId: string }
+  | { id: string; type: 'sport-follow-search'; q: string }
+  | { id: string; type: 'sport-follows' }
 export type CouchAck = { id: string; ok: boolean; error?: string; detail?: string }
 export type CouchPlayer = {
   kind: 'movie' | 'episode' | 'channel'; tmdbId: string | null; title: string

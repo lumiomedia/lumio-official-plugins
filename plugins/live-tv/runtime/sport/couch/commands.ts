@@ -88,6 +88,8 @@ export function toCouchDetail(fd: FixtureDetail, at: number): CouchSportDetail {
 }
 
 export async function answerSportQuery(q: SportQuery, d: SportDeps): Promise<CouchSportDetail | { error: string }> {
+  // Följfrågorna kopplas in i fas 2 (Task 7).
+  if (q.type !== 'sport-match') return { error: 'unsupported' }
   const m = d.matches().find((x) => x.id === q.matchId)
   if (!m) return { error: 'unknown-match' }
   // Fas 1 har inget spoilerskydd: en repris får aldrig skicka originalets händelser eller ställning.
