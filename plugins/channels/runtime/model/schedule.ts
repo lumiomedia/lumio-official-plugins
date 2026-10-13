@@ -44,13 +44,15 @@ function shuffle<T>(list: T[], random: () => number): T[] {
   return out
 }
 
+// Språkoberoende jämförelse (localeCompare beror på ICU/enhet).
+const cmpText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
 const byRef = <T extends ScheduleItem>(a: T, b: T) => (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0)
 const byEpisode = <T extends ScheduleItem>(a: T, b: T) => (a.season ?? 0) - (b.season ?? 0) || (a.episode ?? 0) - (b.episode ?? 0)
 
 export function buildRundown<T extends ScheduleItem>(items: T[], order: OrderRule, seed: number): T[] {
   const stable = [...items].sort(byRef)
   if (order === 'chrono') {
-    return stable.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999) || a.title.localeCompare(b.title) || byEpisode(a, b))
+    return stable.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999) || cmpText(a.title.toLowerCase(), b.title.toLowerCase()) || byRef(a, b) || byEpisode(a, b))
   }
   const random = mulberry32(seed)
   if (order === 'shuffle') return shuffle(stable, random)
@@ -91,51 +93,43 @@ const SPANS: Record<TimedWindow, [number, number]> = {
 // Sändningsminuter per dygn (utan hänsyn till sommartidsdygn).
 const AIR_PER_DAY: Record<TimedWindow, number> = { evenings: 8 * 60, late: 6 * 60 }
 
-function localMidnight(t: number): number {
-  const d = new Date(t)
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-}
+interface Span { start: number; end: number; day: number }
 
-/** Dygnets spann i väggklocka, för dygnen runt t (tål sommartid). */
-function spansAround(window: TimedWindow, t: number): Array<[number, number]> {
+/**
+ * Dygnets spann i väggklocka, för dygnen runt t. `day` är dygnsindex från
+ * EPOK. Spannet kapas till sin nominella längd, så ett höstdygn med extra
+ * timme inte ger mer sändningstid än AIR_PER_DAY; ett vårdygn blir kortare
+ * på riktigt. Därmed är sändningsklockan alltid konsekvent med spannen.
+ */
+function spansAround(window: TimedWindow, t: number): Span[] {
   const d = new Date(t)
   const [s, e] = SPANS[window]
-  const out: Array<[number, number]> = []
+  const out: Span[] = []
   for (let k = -2; k <= 2; k += 1) {
-    out.push([new Date(d.getFullYear(), d.getMonth(), d.getDate() + k, 0, s).getTime(), new Date(d.getFullYear(), d.getMonth(), d.getDate() + k, 0, e).getTime()])
+    const y = d.getFullYear(), m = d.getMonth(), dd = d.getDate() + k
+    const start = new Date(y, m, dd, 0, s).getTime()
+    const end = Math.min(new Date(y, m, dd, 0, e).getTime(), start + (e - s) * MIN)
+    out.push({ start, end, day: Math.round((new Date(y, m, dd).getTime() - EPOCH) / (DAY_MIN * MIN)) })
   }
   return out
 }
 
-/** Hela dagar mellan två lokala midnätter (tål sommartid). */
-function daysBetween(fromMidnight: number, toMidnight: number): number {
-  return Math.round((toMidnight - fromMidnight) / (DAY_MIN * MIN))
-}
-
-/** Sändningsminuter inom ett dygn fram till `minute` (minuter efter midnatt). */
-function airMinutesInDayUntil(window: TimedWindow, minute: number): number {
-  const [s, e] = SPANS[window]
-  let sum = Math.max(0, Math.min(minute, Math.min(e, DAY_MIN)) - s)
-  // Den del av gårdagens spann som rinner över midnatt.
-  if (e > DAY_MIN) sum += Math.min(minute, e - DAY_MIN)
-  return sum
-}
-
 export function airMinutesUntil(window: AirWindow, t: number): number {
   if (window === 'always') return (t - EPOCH) / MIN
-  const midnight = localMidnight(t)
-  const days = daysBetween(EPOCH, midnight)
-  return days * AIR_PER_DAY[window] + airMinutesInDayUntil(window, (t - midnight) / MIN)
+  // Senaste spannet som har börjat; sändningsminuter = hela dygn före + tid in i spannet.
+  const span = spansAround(window, t).filter((x) => x.start <= t).pop()!
+  const [s, e] = SPANS[window]
+  return span.day * AIR_PER_DAY[window] + Math.min(e - s, (t - span.start) / MIN)
 }
 
 export function isOnAir(window: AirWindow, t: number): boolean {
   if (window === 'always') return true
-  return spansAround(window, t).some(([s, e]) => t >= s && t < e)
+  return spansAround(window, t).some((x) => t >= x.start && t < x.end)
 }
 
 export function nextAirStart(window: AirWindow, t: number): number {
   if (window === 'always' || isOnAir(window, t)) return t
-  return spansAround(window, t).map(([s]) => s).filter((s) => s > t).sort((a, b) => a - b)[0]!
+  return spansAround(window, t).map((x) => x.start).filter((s) => s > t).sort((a, b) => a - b)[0]!
 }
 
 // ── Program vid en tidpunkt ──────────────────────────────────────────────────
@@ -166,14 +160,14 @@ function findIndex(starts: number[], position: number): number {
 
 export function programmeAt<T extends ScheduleItem>(rundown: T[], window: AirWindow, t: number): Slot<T> | { kind: 'empty' } {
   if (rundown.length === 0) return { kind: 'empty' }
-  let span: [number, number] | null = null
+  let span: Span | null = null
   if (window !== 'always') {
     const spans = spansAround(window, t)
-    span = spans.find(([s, e]) => t >= s && t < e) ?? null
+    span = spans.find((x) => t >= x.start && t < x.end) ?? null
     if (!span) {
       // Vila: från föregående spans slut till nästa spans start.
-      const start = Math.max(...spans.map(([, e]) => e).filter((e) => e <= t))
-      const nextAir = Math.min(...spans.map(([s]) => s).filter((s) => s > t))
+      const start = Math.max(...spans.map((x) => x.end).filter((e) => e <= t))
+      const nextAir = Math.min(...spans.map((x) => x.start).filter((s) => s > t))
       return { kind: 'rest', start, stop: nextAir, nextAir }
     }
   }
@@ -185,8 +179,8 @@ export function programmeAt<T extends ScheduleItem>(rundown: T[], window: AirWin
   const minsIn = position - starts[index]!
   const minsLeft = runtime - minsIn
   // Ett program som korsar fönstrets slut klipps där och fortsätter nästa sändning.
-  const start = span ? Math.max(t - minsIn * MIN, span[0]) : t - minsIn * MIN
-  const stop = span ? Math.min(t + minsLeft * MIN, span[1]) : t + minsLeft * MIN
+  const start = span ? Math.max(t - minsIn * MIN, span.start) : t - minsIn * MIN
+  const stop = span ? Math.min(t + minsLeft * MIN, span.end) : t + minsLeft * MIN
   return { kind: 'programme', item, index, start, stop, minsIn, minsLeft, pct: minsIn / runtime }
 }
 

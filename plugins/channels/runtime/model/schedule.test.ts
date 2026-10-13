@@ -30,6 +30,11 @@ describe('mulberry32 + buildRundown', () => {
     const order = buildRundown(eps, 'episodes', 3).map((i) => i.ref).filter((r) => r.startsWith('s'))
     expect(order).toEqual(['s1e1', 's1e2', 's2e1'])
   })
+
+  it('chrono bryter lika år på gemener i titeln, sedan ref, utan locale', () => {
+    const r = buildRundown([item('z', 1, { title: 'Zebra' }), item('y', 1, { title: 'apa' }), item('x', 1, { title: 'Apa' }), item('w', 1, { title: 'Ärlig' })], 'chrono', 1)
+    expect(r.map((i) => i.ref)).toEqual(['x', 'y', 'z', 'w'])
+  })
 })
 
 describe('sändningsfönster', () => {
@@ -100,4 +105,33 @@ describe('listing', () => {
     const blocks = listing([item('a', 60)], 'evenings', at(2026, 3, 10, 1, 0), at(2026, 3, 10, 19, 0))
     expect(blocks.some((b) => b.kind === 'rest')).toBe(true)
   })
+})
+
+describe('sommartidsdygn', () => {
+  // Kontrollerar att tablån är sammanhängande och utan överlapp över omställningsdygn,
+  // oavsett vilken TZ testet körs i.
+  const days: Array<[number, number, number]> = [[2026, 3, 29], [2026, 10, 25], [2026, 3, 8], [2026, 11, 1]]
+  const rundown = [item('a', 50), item('b', 70), item('c', 40), item('d', 95)]
+  for (const window of ['evenings', 'late'] as const) {
+    for (const [y, mo, d] of days) {
+      it(`${window} ${y}-${mo}-${d}: sammanhängande, stop > start, inga överlapp`, () => {
+        const blocks = listing(rundown, window, at(y, mo, d - 1, 12), at(y, mo, d + 1, 12))
+        expect(blocks.length).toBeGreaterThan(2)
+        for (let i = 0; i < blocks.length; i += 1) {
+          expect(blocks[i].stop).toBeGreaterThan(blocks[i].start)
+          if (i > 0) expect(blocks[i].start).toBe(blocks[i - 1].stop)
+        }
+        // Programindex går framåt (cykliskt): samma index två block i rad måste vara
+        // ett fönsterklippt program, aldrig ett överlappande segment.
+        const prog = blocks.filter((b) => b.kind === 'programme')
+        for (let i = 1; i < prog.length; i += 1) {
+          const prev = prog[i - 1]
+          const cur = prog[i]
+          if (prev.kind === 'programme' && cur.kind === 'programme' && prev.index === cur.index) {
+            expect(cur.minsIn).toBeGreaterThanOrEqual(prev.minsIn + (prev.stop - prev.start) / 60_000 - 1e-6)
+          }
+        }
+      })
+    }
+  }
 })
