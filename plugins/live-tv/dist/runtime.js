@@ -20330,6 +20330,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -42281,6 +42282,11 @@ ${cue.text}`).join("\n\n")}
         fallbackSwitchIn: "Switching to {name} in {n} s",
         fallbackSwitchNow: "Switch now",
         fallbackStay: "Stay",
+        fallbackSwitchAsk: "Switch to {name}?",
+        settingStreamFallback: "Suggest another source when the channel stutters",
+        settingStreamFallbackHint: "When a channel keeps buffering, Live TV offers another source for the same channel or match.",
+        settingStreamFallbackAfter: "Switch automatically after",
+        settingStreamFallbackAfterHint: "Never shows the suggestion without a countdown \u2014 you switch with Switch now.",
         sportHeaderSummary: "{day} \xB7 {count} matches \xB7 {live} live \xB7 {mine} on your channels",
         sportDayPrev: "Previous day",
         sportDayNext: "Next day",
@@ -42971,6 +42977,11 @@ ${cue.text}`).join("\n\n")}
         fallbackSwitchIn: "Byter till {name} om {n} s",
         fallbackSwitchNow: "Byt nu",
         fallbackStay: "Stanna kvar",
+        fallbackSwitchAsk: "Byt till {name}?",
+        settingStreamFallback: "F\xF6resl\xE5 annan k\xE4lla n\xE4r kanalen hackar",
+        settingStreamFallbackHint: "N\xE4r en kanal buffrar om och om igen f\xF6resl\xE5r Live TV en annan k\xE4lla f\xF6r samma kanal eller match.",
+        settingStreamFallbackAfter: "Byt automatiskt efter",
+        settingStreamFallbackAfterHint: "Aldrig visar f\xF6rslaget utan nedr\xE4kning \u2014 du byter med Byt nu.",
         sportHeaderSummary: "{day} \xB7 {count} matcher \xB7 {live} live \xB7 {mine} p\xE5 dina kanaler",
         sportDayPrev: "F\xF6reg\xE5ende dag",
         sportDayNext: "N\xE4sta dag",
@@ -43542,6 +43553,9 @@ ${cue.text}`).join("\n\n")}
   });
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/tv/tv-settings-store.ts
+  function nextFallbackAfter(current5) {
+    return FALLBACK_AFTER_OPTIONS[(FALLBACK_AFTER_OPTIONS.indexOf(current5) + 1) % FALLBACK_AFTER_OPTIONS.length];
+  }
   function sanitize4(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
     const banner = BANNER_HIDE_OPTIONS.includes(r.bannerHideMs) ? r.bannerHideMs : DEFAULTS2.bannerHideMs;
@@ -43557,7 +43571,9 @@ ${cue.text}`).join("\n\n")}
       timelineZoom,
       nowNextDetails: typeof r.nowNextDetails === "boolean" ? r.nowNextDetails : DEFAULTS2.nowNextDetails,
       railLabels: typeof r.railLabels === "boolean" ? r.railLabels : DEFAULTS2.railLabels,
-      startView: sanitizeStartView(r.startView)
+      startView: sanitizeStartView(r.startView),
+      streamFallback: typeof r.streamFallback === "boolean" ? r.streamFallback : DEFAULTS2.streamFallback,
+      streamFallbackAfterS: FALLBACK_AFTER_OPTIONS.includes(r.streamFallbackAfterS) ? r.streamFallbackAfterS : DEFAULTS2.streamFallbackAfterS
     };
   }
   function getTvSettings() {
@@ -43595,7 +43611,7 @@ ${cue.text}`).join("\n\n")}
   function onActivePlaylistChanged(listener) {
     return onPluginStorageChanged(LIVE_TV_PLUGIN_ID, ACTIVE_PLAYLIST_KEY, listener);
   }
-  var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
+  var TV_SETTINGS_KEY, GUIDE_MODE_KEY, ACTIVE_PLAYLIST_KEY, BANNER_HIDE_OPTIONS, FALLBACK_AFTER_OPTIONS, TIMELINE_ZOOMS, DEFAULTS2, GUIDE_MODES;
   var init_tv_settings_store = __esm({
     "../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/tv/tv-settings-store.ts"() {
       "use strict";
@@ -43608,6 +43624,7 @@ ${cue.text}`).join("\n\n")}
       GUIDE_MODE_KEY = "live_tv_guide_mode_v1";
       ACTIVE_PLAYLIST_KEY = "live_tv_active_playlist_v1";
       BANNER_HIDE_OPTIONS = [2e3, 4e3, 6e3, 0];
+      FALLBACK_AFTER_OPTIONS = [0, 3, 5, 10, 15];
       TIMELINE_ZOOMS = ["2h", "6h", "day"];
       DEFAULTS2 = {
         previewEnabled: true,
@@ -43620,7 +43637,9 @@ ${cue.text}`).join("\n\n")}
         timelineZoom: "day",
         nowNextDetails: true,
         railLabels: true,
-        startView: DEFAULT_START_VIEW
+        startView: DEFAULT_START_VIEW,
+        streamFallback: true,
+        streamFallbackAfterS: 5
       };
       GUIDE_MODES = ["now", "tl", "playlists", "grid", "nownext", "timeline"];
     }
@@ -50583,22 +50602,24 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   });
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/stream-fallback-prompt.tsx
-  function StreamFallbackPrompt({ target: target2, onSwitch, onStay }) {
+  function StreamFallbackPrompt({ target: target2, seconds = FALLBACK_COUNTDOWN_S, onSwitch, onStay }) {
     const { tt } = useTvText();
-    const [left, setLeft] = useState(FALLBACK_COUNTDOWN_S);
+    const auto = seconds > 0;
+    const [left, setLeft] = useState(seconds);
     useEffect(() => {
+      if (!auto) return;
       if (left <= 0) {
         onSwitch();
         return;
       }
       const t = setTimeout(() => setLeft((n) => n - 1), 1e3);
       return () => clearTimeout(t);
-    }, [left, onSwitch]);
+    }, [auto, left, onSwitch]);
     const btn = (primary) => ({ padding: `${dp(8)}px ${dp(14)}px`, borderRadius: dp(10), fontWeight: 600, cursor: "pointer", background: primary ? TV2.text : "transparent", color: primary ? "#0e0f13" : TV2.text, border: primary ? "none" : `1px solid ${TV2.lineStrong}` });
     return /* @__PURE__ */ jsxs("div", { "data-live-tv-stream-fallback": "", role: "status", style: { position: "absolute", bottom: dp(120), left: "50%", transform: "translateX(-50%)", zIndex: 31, display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(14)}px ${dp(20)}px`, borderRadius: dp(16), background: TV2.panel, border: `1px solid ${TV2.lineStrong}`, color: TV2.text }, children: [
       /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column" }, children: [
         /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 600 }, children: tt("fallbackStutter") }),
-        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("fallbackSwitchIn", { name: target2.name, n: Math.max(0, left) }) })
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.muted }, children: auto ? tt("fallbackSwitchIn", { name: target2.name, n: Math.max(0, left) }) : tt("fallbackSwitchAsk", { name: target2.name }) })
       ] }),
       /* @__PURE__ */ jsx("div", { ...station(onSwitch, void 0, { "data-init": "" }), style: btn(true), children: tt("fallbackSwitchNow") }),
       /* @__PURE__ */ jsx("div", { ...station(onStay), style: btn(false), children: tt("fallbackStay") })
@@ -50995,6 +51016,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const { channel, pausedForCache, userPaused, channels, onSwitch } = args;
     const key = channelKey(channel);
     const rows = useSportRows();
+    const settings = useTvSettings();
     const [state2, dispatch] = useReducer((s, e) => {
       const r = stallStep(s.st, e);
       return { st: r.state, hit: r.trigger ? s.hit + 1 : s.hit };
@@ -51018,7 +51040,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return () => clearInterval(t);
     }, [stalled]);
     useEffect(() => {
-      if (state2.hit === 0 || !onSwitch) return;
+      if (state2.hit === 0 || !onSwitch || !getTvSettings().streamFallback) return;
       const now2 = Date.now();
       const matches = [...currentResults()?.merged() ?? [], ...rows.matches];
       const next = fallbackCandidates(channel, { sportSources: sportSourcesFor(key, matches, now2), channels, tried: tried.current })[0];
@@ -51032,7 +51054,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       onSwitch(target2);
     }, [target2, onSwitch, key]);
     const stay = useCallback(() => setTarget(null), []);
-    return { target: target2, switchNow, stay };
+    return { target: settings.streamFallback ? target2 : null, autoSwitchS: settings.streamFallbackAfterS, switchNow, stay };
   }
   var TICK_MS2;
   var init_use_stream_fallback = __esm({
@@ -51046,6 +51068,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_sport_day_model();
       init_sport_model();
       init_sport_store();
+      init_tv_settings_store();
       init_stream_fallback();
       TICK_MS2 = 1e3;
     }
@@ -52238,7 +52261,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
           ] }),
           /* @__PURE__ */ jsx(PlayerGoalOverlay, { channelKey: playingKey, onJump: (next) => tvChrome?.onSwitchChannel(next) }),
-          fallback.target ? /* @__PURE__ */ jsx(StreamFallbackPrompt, { target: fallback.target, onSwitch: fallback.switchNow, onStay: fallback.stay }, channelKey(fallback.target)) : null,
+          fallback.target ? /* @__PURE__ */ jsx(StreamFallbackPrompt, { target: fallback.target, seconds: fallback.autoSwitchS, onSwitch: fallback.switchNow, onStay: fallback.stay }, channelKey(fallback.target)) : null,
           tvChrome ? /* @__PURE__ */ jsx(TvPlayerChrome, { channel, tv: tvChrome, controls: playerControls, paused: mpvPaused, onTogglePause: toggleMpvPause, onClose: handleClose, phoneLandscape }) : null
         ]
       }
@@ -56968,6 +56991,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       /* @__PURE__ */ jsx(TvRow, { label: h("useAsHome"), hint: s.homeOverrideError || h("useAsHomeDesc"), toggle: s.homeOverrideEnabled, onToggle: s.toggleHomeOverride }),
       /* @__PURE__ */ jsx(TvRow, { label: h("hideHero"), hint: h("hideHeroDesc"), toggle: s.hideHero, onToggle: s.setHideHero }),
       /* @__PURE__ */ jsx(TvRow, { testId: "tv-start-view", label: tt("settingStartView"), hint: tt("settingStartViewHint"), value: tt(startViewLabelKey(tvSettings.startView)), onOk: () => setTvSettings({ startView: nextStartView(tvSettings.startView) }) }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-stream-fallback", label: tt("settingStreamFallback"), hint: tt("settingStreamFallbackHint"), toggle: tvSettings.streamFallback, onToggle: (streamFallback) => setTvSettings({ streamFallback }) }),
+      /* @__PURE__ */ jsx(TvRow, { testId: "tv-stream-fallback-after", label: tt("settingStreamFallbackAfter"), hint: tt("settingStreamFallbackAfterHint"), value: tvSettings.streamFallbackAfterS === 0 ? tt("never") : tt("seconds", { s: tvSettings.streamFallbackAfterS }), onOk: () => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(tvSettings.streamFallbackAfterS) }) }),
       /* @__PURE__ */ jsx(TvEyebrow, { children: h("playlists") }),
       s.lists.length === 0 ? /* @__PURE__ */ jsx(TvNote, { children: h("noPlaylistsYet") }) : null,
       s.lists.map((list) => /* @__PURE__ */ jsx(
@@ -57486,6 +57511,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             options: START_VIEWS.map((key) => ({ key, label: tt(startViewLabelKey(key)) })),
             value: tvSettings.startView,
             onChange: (startView) => setTvSettings({ startView })
+          }
+        ),
+        /* @__PURE__ */ jsx(LtToggleRow, { first: false, testId: "lt-stream-fallback", label: tt("settingStreamFallback"), desc: tt("settingStreamFallbackHint"), checked: tvSettings.streamFallback, onChange: (streamFallback) => setTvSettings({ streamFallback }) }),
+        /* @__PURE__ */ jsx(
+          LtChoiceRow,
+          {
+            testId: "lt-stream-fallback-after",
+            label: tt("settingStreamFallbackAfter"),
+            desc: tt("settingStreamFallbackAfterHint"),
+            options: FALLBACK_AFTER_OPTIONS.map((s2) => ({ key: String(s2), label: s2 === 0 ? tt("never") : tt("seconds", { s: s2 }) })),
+            value: String(tvSettings.streamFallbackAfterS),
+            onChange: (key) => setTvSettings({ streamFallbackAfterS: Number(key) })
           }
         )
       ] }),
@@ -65744,7 +65781,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         /* @__PURE__ */ jsx(Row, { phone: true, testId: "setting-startView", label: tt("settingStartView"), right: tt(startViewLabelKey(settings.startView)), onOk: () => setTvSettings({ startView: nextStartView(settings.startView) }) }),
         /* @__PURE__ */ jsx(ToggleRow, { testId: "setting-startOnLastChannel", label: tt("settingStartLast"), on: settings.startOnLastChannel, onOk: () => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel }) }),
         /* @__PURE__ */ jsx(ToggleRow, { testId: "setting-keepAwake", label: tt("settingKeepAwake"), on: settings.keepAwake, onOk: () => setTvSettings({ keepAwake: !settings.keepAwake }) }),
-        /* @__PURE__ */ jsx(ToggleRow, { testId: "setting-fullscreenOnRotate", label: tt("settingFullscreenOnRotate"), on: settings.fullscreenOnRotate, onOk: () => setTvSettings({ fullscreenOnRotate: !settings.fullscreenOnRotate }) })
+        /* @__PURE__ */ jsx(ToggleRow, { testId: "setting-fullscreenOnRotate", label: tt("settingFullscreenOnRotate"), on: settings.fullscreenOnRotate, onOk: () => setTvSettings({ fullscreenOnRotate: !settings.fullscreenOnRotate }) }),
+        /* @__PURE__ */ jsx(ToggleRow, { testId: "setting-streamFallback", label: tt("settingStreamFallback"), on: settings.streamFallback, onOk: () => setTvSettings({ streamFallback: !settings.streamFallback }) }),
+        /* @__PURE__ */ jsx(Row, { phone: true, testId: "setting-streamFallbackAfterS", label: tt("settingStreamFallbackAfter"), right: settings.streamFallbackAfterS === 0 ? tt("never") : tt("seconds", { s: settings.streamFallbackAfterS }), onOk: () => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) }) })
       ] }) }),
       /* @__PURE__ */ jsx(Section2, { label: tt("sectionMore"), children: /* @__PURE__ */ jsxs(Card3, { children: [
         /* @__PURE__ */ jsx(NavRow, { testId: "settings-content-nav", label: tt("tabContent"), onOk: () => nav.go("settings", { tab: "content" }) }),
@@ -65858,7 +65897,9 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         /* @__PURE__ */ jsx(Row, { testId: "setting-startOnLastChannel", label: tt("settingStartLast"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.startOnLastChannel }), onOk: () => setTvSettings({ startOnLastChannel: !settings.startOnLastChannel }) }),
         /* @__PURE__ */ jsx(Row, { testId: "setting-numericZap", label: tt("settingNumericZap"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.numericZap }), onOk: () => setTvSettings({ numericZap: !settings.numericZap }) }),
         /* @__PURE__ */ jsx(Row, { testId: "setting-railLabels", label: tt("settingRailLabels"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.railLabels }), onOk: () => setTvSettings({ railLabels: !settings.railLabels }) }),
-        /* @__PURE__ */ jsx(Row, { testId: "setting-bannerHideMs", label: tt("settingBannerHide"), right: settings.bannerHideMs === 0 ? tt("never") : tt("seconds", { s: settings.bannerHideMs / 1e3 }), onOk: () => setTvSettings({ bannerHideMs: nextBanner(settings.bannerHideMs) }) })
+        /* @__PURE__ */ jsx(Row, { testId: "setting-bannerHideMs", label: tt("settingBannerHide"), right: settings.bannerHideMs === 0 ? tt("never") : tt("seconds", { s: settings.bannerHideMs / 1e3 }), onOk: () => setTvSettings({ bannerHideMs: nextBanner(settings.bannerHideMs) }) }),
+        /* @__PURE__ */ jsx(Row, { testId: "setting-streamFallback", label: tt("settingStreamFallback"), right: /* @__PURE__ */ jsx(Toggle, { on: settings.streamFallback }), onOk: () => setTvSettings({ streamFallback: !settings.streamFallback }) }),
+        /* @__PURE__ */ jsx(Row, { testId: "setting-streamFallbackAfterS", label: tt("settingStreamFallbackAfter"), right: settings.streamFallbackAfterS === 0 ? tt("never") : tt("seconds", { s: settings.streamFallbackAfterS }), onOk: () => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) }) })
       ] })
     ] });
   }
@@ -70983,7 +71024,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.15.1"
+      version: "0.15.2"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -70997,7 +71038,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.15.1",
+    version: "0.15.2",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."

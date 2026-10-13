@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.2
+
+- New settings for the stream switch suggestion: turn off "Suggest another source when the channel stutters", or choose how long to wait before switching automatically (Never, 3, 5, 10 or 15 seconds). With Never, the suggestion stays until you choose Switch now. Requires Lumio 0.1.624.
+
 ## 0.15.1
 
 - Smoother live channels when the provider is slow: playback now pauses briefly to refill instead of crawling in slow motion and freezing.
