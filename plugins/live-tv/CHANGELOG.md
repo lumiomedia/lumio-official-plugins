@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.1
+
+- Smoother live channels when the provider is slow: playback now pauses briefly to refill instead of crawling in slow motion and freezing. Requires Lumio 0.1.624.
+
 ## 0.15.0
 
 - Home shows films and series from VOD like the rest of the app; the old Home is now called Channels; VOD is indexed automatically the first time. Requires Lumio 0.1.624.
