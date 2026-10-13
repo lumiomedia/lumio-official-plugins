@@ -33,7 +33,6 @@ import {
   registerCouchChannelPlayer,
   registerPip,
   usePipAvailable,
-  mpvSetPropertyStrings,
 } from '@/lib/plugin-sdk'
 import { recordChannelWatch } from './channel-history'
 import { channelSnapshot, runChannelCommand } from './couch-channel-player'
@@ -99,12 +98,6 @@ function proxyUrl(url: string): string {
 const MPV_STARTUP_TIMEOUT_MS = 18_000
 /** Budget för kanalens egen URL innan värdens strömproxy får försöka. */
 const MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9_000
-
-const LIVE_SMOOTH_MOTION = [
-  { name: 'video-sync', value: 'display-resample' },
-  { name: 'interpolation', value: 'yes' },
-  { name: 'tscale', value: 'oversample' },
-]
 
 export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv }: LiveTvPlayerProps) {
   const { t } = useLang()
@@ -814,15 +807,6 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
     if (!hasNativeSurface || !mpvFileLoaded) return
     void mpv.setPlayPause(false)
   }, [mpvFileLoaded, hasNativeSurface])
-
-  // Sport sänds i 50 bilder/s men Macens skärm går i 60 Hz: utan omsampling
-  // dubblas var femte bild och rörelsen rycker vid panoreringar. Låt mpv
-  // anpassa takten till skärmen. Gäller bara skrivbordets mpv; spelarmodalen
-  // sätter sina egna värden när den öppnas, så filmer påverkas inte.
-  useEffect(() => {
-    if (engineKind !== 'mpv' || !mpvFileLoaded) return
-    void mpvSetPropertyStrings(LIVE_SMOOTH_MOTION).catch(() => {})
-  }, [engineKind, mpvFileLoaded])
 
   // Nollställ trappan när kanalen byts: nästa kanal ska börja med sin egen
   // URL, inte ärva föregående kanals reservväg.
