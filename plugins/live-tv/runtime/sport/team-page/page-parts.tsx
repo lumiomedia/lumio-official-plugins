@@ -50,11 +50,13 @@ export const FORM_SIZE = 22
 const FORM_GAP = 4
 /** Luft mellan poängen och formbrickorna. */
 const FORM_LEAD = 24
-export function StandingsRows({ u, rows, mark, ctx, onOpen, testId, form, highlight, rowAttrs, rowText = 17 }: {
+export function StandingsRows({ u, rows, mark, ctx, onOpen, testId, form, highlight, rowAttrs, rowText = 17, crest = 26 }: {
   u: U; rows: StandingRow[]; mark: number; ctx: Pick<SportCtx, 'tt'>; onOpen?: (row: StandingRow) => void; testId: string
   form?: boolean; highlight?: (row: StandingRow) => boolean; rowAttrs?: (i: number, n: number) => Record<string, string> | undefined
   /** Radtextens storlek i designpixlar före skalan (förval 17). */
   rowText?: number
+  /** Märkets storlek i designpixlar före skalan (förval 26). */
+  crest?: number
 }) {
   // Med form (resultattabellen, full bredd): sifferkolumnerna lite luftigare och formen en bit från poängen.
   const formW = 5 * u(FORM_SIZE) + 4 * u(FORM_GAP)
@@ -75,7 +77,7 @@ export function StandingsRows({ u, rows, mark, ctx, onOpen, testId, form, highli
             style={{ display: 'grid', gridTemplateColumns: cols, gap: u(8), alignItems: 'center', minHeight: u(48), padding: `0 ${u(8)}px`, borderRadius: u(10), fontSize: u(rowText), cursor: onOpen ? 'pointer' : 'default', background: on ? TV.accMix(20) : 'transparent', color: on ? TV.accText : TV.text, fontWeight: on ? 700 : 500 }}>
             <span style={{ fontVariantNumeric: 'tabular-nums', color: on ? TV.accText : TV.muted }}>{r.rank}</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: u(10), minWidth: 0 }}>
-              <Crest name={r.team.name} colorKey={r.team.id || r.team.name} src={r.team.crest} size={u(26)} />
+              <Crest name={r.team.name} colorKey={r.team.id || r.team.name} src={r.team.crest} size={u(crest)} />
               <span style={ellipsis}>{r.team.name}</span>
             </span>
             <span style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: TV.muted }}>{r.played}</span>

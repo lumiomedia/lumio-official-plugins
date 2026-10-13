@@ -33,24 +33,26 @@ export function followedRow(follows: SportFollow[], sport: string, name: string)
 }
 
 const TV_U = scaleFor(false, true)
-// Skrivbordet: designpixlarna rakt av (rubrik 14, rad 48, formbricka 22); radtexten lyfts till 19.
-const DESK_U = scaleFor(false, false)
+// Skrivbordet (Jerry 2026-10-13: "öka lite mer"): designpixlarna × 7/6 — rubrik 16, rad 56, formbricka 26,
+// #-kolumnen 40; radtexten 19 → 22 och märket 24 → 28.
+const DESK_K = 7 / 6
+const DESK_U: U = Object.assign((n: number) => Math.round(dp(n) * DESK_K), { tv: false, dim: TV.dim })
 
 /**
  * Tabellen under en grupp på TV (Jerry 2026-10-12: den gamla var skrivbordsstor
  * och spred kolumnerna över hela bredden). Samma rader som lag- och ligasidan, i gruppens fulla bredd som matchraderna (Jerry 2026-10-12):
  * fokusbara, öppnar lagets sida, följda lag markerade, formen som brickor.
  */
-function TvStandings({ g, rows, tt, follows, onOpen, rowAttrs, u = TV_U, rowText }: {
+function TvStandings({ g, rows, tt, follows, onOpen, rowAttrs, u = TV_U, rowText, crest }: {
   g: ResultGroup; rows: StandingRow[] | 'loading'; tt: TT; follows: SportFollow[]; onOpen?: (row: StandingRow) => void
-  rowAttrs: (i: number, n: number) => Record<string, string>; u?: U; rowText?: number
+  rowAttrs: (i: number, n: number) => Record<string, string>; u?: U; rowText?: number; crest?: number
 }) {
   return (
     <div data-testid={`results-standings-${g.key}`} style={{ width: '100%' }}>
       {rows === 'loading' || rows.length === 0
         ? <div data-testid={rows === 'loading' ? 'sport-standings-loading' : 'sport-standings-empty'} {...station(NOOP, undefined, rowAttrs(0, 1))}
             style={{ ...sportCardStyle, padding: `${u(14)}px ${u(18)}px`, fontSize: u(17), color: TV.muted }}>{rows === 'loading' ? tt('sportLoading') : tt('sportTableEmpty')}</div>
-        : <StandingsRows u={u} ctx={{ tt }} testId="sport-standings" rows={rows} mark={-1} form onOpen={onOpen} rowAttrs={rowAttrs} rowText={rowText}
+        : <StandingsRows u={u} ctx={{ tt }} testId="sport-standings" rows={rows} mark={-1} form onOpen={onOpen} rowAttrs={rowAttrs} rowText={rowText} crest={crest}
             highlight={(r) => followedRow(follows, g.sport, r.team.name)} />}
     </div>
   )
@@ -129,8 +131,8 @@ export function SportResults({ matches, controller, onOpenMatch, onOpenTeam, tv,
     lag-/ligalådans tabell och översiktens rader. TV behåller TV-skalan.
   */
   const sz = tv
-    ? { head: u(20), name: u(17), crest: u(22), status: u(14), statusW: u(64), score: u(20), rowH: u(48), rowText: undefined }
-    : { head: dp(22), name: dp(21), crest: dp(26), status: dp(14), statusW: dp(84), score: dp(22), rowH: dp(56), rowText: 19 }
+    ? { head: u(20), name: u(17), crest: u(22), status: u(14), statusW: u(64), score: u(20), rowH: u(48), rowText: undefined, tableCrest: undefined }
+    : { head: dp(26), name: dp(24), crest: dp(30), status: dp(15), statusW: dp(96), score: dp(26), rowH: dp(62), rowText: 19, tableCrest: 24 }
   const forSport = useMemo(() => (sport === 'all' ? matches : matches.filter((m) => m.kind === sport)), [matches, sport])
   const { groups, liveCount, mineCount, followedCount } = useMemo(() => groupResults(forSport, filter, follows), [forSport, filter, follows])
   const shown = useMemo(() => onlyLeague(groups, league), [groups, league])
@@ -206,7 +208,7 @@ export function SportResults({ matches, controller, onOpenMatch, onOpenTeam, tv,
             </div>
           ))}
           {tables[g.key]
-            ? <TvStandings g={g} rows={tables[g.key]!} tt={tt} follows={follows} onOpen={openTeam?.(g)} rowAttrs={gnav.standings} u={tv ? TV_U : DESK_U} rowText={sz.rowText} />
+            ? <TvStandings g={g} rows={tables[g.key]!} tt={tt} follows={follows} onOpen={openTeam?.(g)} rowAttrs={gnav.standings} u={tv ? TV_U : DESK_U} rowText={sz.rowText} crest={sz.tableCrest} />
             : null}
         </section>
         )
