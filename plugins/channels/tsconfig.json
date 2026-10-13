@@ -10,7 +10,9 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": { "@/lib/plugin-sdk": ["runtime/__test-stubs__/plugin-sdk.ts"] }
   },
   "include": ["runtime/**/*", "vitest.config.ts"]
 }
