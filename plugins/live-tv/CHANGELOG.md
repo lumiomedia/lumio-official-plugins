@@ -2,7 +2,8 @@
 
 ## 0.15.1
 
-- Smoother live channels when the provider is slow: playback now pauses briefly to refill instead of crawling in slow motion and freezing. Requires Lumio 0.1.624.
+- Smoother live channels when the provider is slow: playback now pauses briefly to refill instead of crawling in slow motion and freezing.
+- When a channel keeps stuttering, Live TV offers another source (the match's other channels, or the same channel in another quality) and switches after 5 seconds unless you choose to stay. Requires Lumio 0.1.624.
 
 ## 0.15.0
 

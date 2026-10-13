@@ -20330,7 +20330,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -42278,6 +42277,10 @@ ${cue.text}`).join("\n\n")}
         sportStatCorners: "Corners",
         sportGoal: "Goal",
         sportJumpThere: "Watch",
+        fallbackStutter: "The stream is stuttering",
+        fallbackSwitchIn: "Switching to {name} in {n} s",
+        fallbackSwitchNow: "Switch now",
+        fallbackStay: "Stay",
         sportHeaderSummary: "{day} \xB7 {count} matches \xB7 {live} live \xB7 {mine} on your channels",
         sportDayPrev: "Previous day",
         sportDayNext: "Next day",
@@ -42964,6 +42967,10 @@ ${cue.text}`).join("\n\n")}
         sportStatCorners: "H\xF6rnor",
         sportGoal: "M\xE5l",
         sportJumpThere: "Titta",
+        fallbackStutter: "Str\xF6mmen hackar",
+        fallbackSwitchIn: "Byter till {name} om {n} s",
+        fallbackSwitchNow: "Byt nu",
+        fallbackStay: "Stanna kvar",
         sportHeaderSummary: "{day} \xB7 {count} matcher \xB7 {live} live \xB7 {mine} p\xE5 dina kanaler",
         sportDayPrev: "F\xF6reg\xE5ende dag",
         sportDayNext: "N\xE4sta dag",
@@ -47950,6 +47957,25 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
+  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/live-tv-shell.tsx
+  function encodeChannelParams(channel) {
+    return {
+      url: channel.url,
+      name: channel.name,
+      logo: channel.logo ?? "",
+      group: channel.group,
+      tvgId: channel.tvgId ?? ""
+    };
+  }
+  var LIVE_TV_BROWSE_PAGE_ID, LIVE_TV_SPORT_PAGE_ID;
+  var init_live_tv_shell = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/live-tv-shell.tsx"() {
+      "use strict";
+      LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
+      LIVE_TV_SPORT_PAGE_ID = "live-tv-sport";
+    }
+  });
+
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/hooks/useSchedules.ts
   function useSchedules(channels, from, to, listId = LIVE_TV_GLOBAL_EPG_ID) {
     const keys2 = useMemo(() => [...new Set(channels.map((channel) => channelKey(channel)))], [channels]);
@@ -50556,13 +50582,482 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }
   });
 
+  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/stream-fallback-prompt.tsx
+  function StreamFallbackPrompt({ target: target2, onSwitch, onStay }) {
+    const { tt } = useTvText();
+    const [left, setLeft] = useState(FALLBACK_COUNTDOWN_S);
+    useEffect(() => {
+      if (left <= 0) {
+        onSwitch();
+        return;
+      }
+      const t = setTimeout(() => setLeft((n) => n - 1), 1e3);
+      return () => clearTimeout(t);
+    }, [left, onSwitch]);
+    const btn = (primary) => ({ padding: `${dp(8)}px ${dp(14)}px`, borderRadius: dp(10), fontWeight: 600, cursor: "pointer", background: primary ? TV2.text : "transparent", color: primary ? "#0e0f13" : TV2.text, border: primary ? "none" : `1px solid ${TV2.lineStrong}` });
+    return /* @__PURE__ */ jsxs("div", { "data-live-tv-stream-fallback": "", role: "status", style: { position: "absolute", bottom: dp(120), left: "50%", transform: "translateX(-50%)", zIndex: 31, display: "flex", alignItems: "center", gap: dp(16), padding: `${dp(14)}px ${dp(20)}px`, borderRadius: dp(16), background: TV2.panel, border: `1px solid ${TV2.lineStrong}`, color: TV2.text }, children: [
+      /* @__PURE__ */ jsxs("span", { style: { display: "flex", flexDirection: "column" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(20), fontWeight: 600 }, children: tt("fallbackStutter") }),
+        /* @__PURE__ */ jsx("span", { style: { fontSize: dp(16), color: TV2.muted }, children: tt("fallbackSwitchIn", { name: target2.name, n: Math.max(0, left) }) })
+      ] }),
+      /* @__PURE__ */ jsx("div", { ...station(onSwitch, void 0, { "data-init": "" }), style: btn(true), children: tt("fallbackSwitchNow") }),
+      /* @__PURE__ */ jsx("div", { ...station(onStay), style: btn(false), children: tt("fallbackStay") })
+    ] });
+  }
+  var FALLBACK_COUNTDOWN_S;
+  var init_stream_fallback_prompt = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/stream-fallback-prompt.tsx"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_tv_ui();
+      init_tv_strings();
+      init_jsx_runtime_shim();
+      FALLBACK_COUNTDOWN_S = 5;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/rows-model.ts
+  function unique(matches) {
+    const seen = /* @__PURE__ */ new Set();
+    return matches.filter((m) => {
+      if (m.rerun || seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }
+  function liveNowRow(matches, follows, overrides, now2, sport) {
+    return unique(matches).filter((m) => ofSport(m, sport) && statusAt(m, now2) === "live" && watchable2(m, overrides)).sort((a, b) => matchInterest(b, follows) - matchInterest(a, follows) || byStart(a, b));
+  }
+  function myTeamsRow(matches, follows, now2) {
+    if (follows.length === 0) return [];
+    const mine = unique(matches).filter((m) => followState(m, follows).any);
+    const live2 = mine.filter((m) => statusAt(m, now2) === "live").sort(byStart);
+    const upcoming = mine.filter((m) => statusAt(m, now2) === "upcoming" && m.start <= now2 + WEEK_MS).sort(byStart);
+    return [...live2, ...upcoming];
+  }
+  function tonightEnd(now2) {
+    const d = new Date(now2);
+    const threeAm = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 3, 0, 0, 0).getTime();
+    return Math.min(threeAm, now2 + 12 * HOUR2);
+  }
+  function tonightRow(matches, overrides, now2, sport) {
+    const end = tonightEnd(now2);
+    return unique(matches).filter((m) => ofSport(m, sport) && statusAt(m, now2) === "upcoming" && m.start <= end && watchable2(m, overrides)).sort(byStart);
+  }
+  function random(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = a + 1831565813 >>> 0;
+      let t = a;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function zapRow(matches, overrides, now2, sport, seed) {
+    const list = unique(matches).filter((m) => ofSport(m, sport) && statusAt(m, now2) === "live" && watchable2(m, overrides)).sort((a, b) => a.id.localeCompare(b.id));
+    const next = random(seed);
+    for (let i = list.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(next() * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    return list;
+  }
+  function leagueRow(matches, leagueKey, now2) {
+    if (!leagueKey) return [];
+    const league = unique(matches).filter((m) => m.leagueKey === leagueKey);
+    const live2 = league.filter((m) => statusAt(m, now2) === "live").sort(byStart);
+    const upcoming = league.filter((m) => statusAt(m, now2) === "upcoming").sort(byStart);
+    const finished = league.filter((m) => statusAt(m, now2) === "finished").sort((a, b) => b.start - a.start);
+    return [...live2, ...upcoming, ...finished];
+  }
+  function resolveLeague(option, follows) {
+    return option || follows.find((f) => f.kind === "league")?.key || null;
+  }
+  function leaguesOf(matches) {
+    const out = /* @__PURE__ */ new Map();
+    for (const m of matches) if (m.leagueKey && m.league && !out.has(m.leagueKey)) out.set(m.leagueKey, m.league);
+    return [...out].map(([key, name]) => ({ key, name }));
+  }
+  function leagueChoices(follows, seen) {
+    const out = /* @__PURE__ */ new Map();
+    for (const f of follows) if (f.kind === "league" && !out.has(f.key)) out.set(f.key, f.name);
+    const rest = seen.filter((l) => !out.has(l.key)).sort((a, b) => a.name.localeCompare(b.name));
+    for (const l of rest) if (!out.has(l.key)) out.set(l.key, l.name);
+    return [...out].map(([key, name]) => ({ key, name }));
+  }
+  function leagueName(leagueKey, follows, matches) {
+    return matches.find((m) => m.leagueKey === leagueKey)?.league ?? follows.find((f) => f.kind === "league" && f.key === leagueKey)?.name ?? null;
+  }
+  function resultsRow(matches, follows, now2) {
+    const teams = follows.filter((f) => f.kind === "team");
+    if (teams.length === 0) return [];
+    return unique(matches).filter((m) => statusAt(m, now2) === "finished" && showsScore(m) && teams.some((f) => teamKeysMatch(f.key, m.homeKey) || teamKeysMatch(f.key, m.awayKey))).sort((a, b) => b.start - a.start);
+  }
+  function sportRowTarget(m, overrides) {
+    const best = rankedSources(m, overrides)[0];
+    if (!best) return { pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: "sport" } };
+    return { pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: "sport", autoplay: "1", ...encodeChannelParams(sourceChannel(best)) } };
+  }
+  var HOUR2, WEEK_MS, ofSport, watchable2, byStart;
+  var init_rows_model = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/rows-model.ts"() {
+      "use strict";
+      init_live_tv_shell();
+      init_score_model();
+      init_sport_day_model();
+      init_sport_model();
+      init_sport_store();
+      HOUR2 = 36e5;
+      WEEK_MS = 7 * 24 * HOUR2;
+      ofSport = (m, sport) => sport === "all" || m.kind === sport;
+      watchable2 = (m, overrides) => rankedSources(m, overrides).length > 0;
+      byStart = (a, b) => a.start - b.start;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
+  function emit3() {
+    for (const cb of [...listeners10]) cb();
+  }
+  function bindController() {
+    const next = currentResults();
+    if (next === controller) return;
+    controller = next;
+    if (next !== cacheOwner) {
+      cacheOwner = next;
+      links.clear();
+      peeked.clear();
+    }
+    unsubs = unsubs.filter((u) => u !== unbindController);
+    unbindController = controller ? controller.subscribe(recompute) : () => {
+    };
+    unsubs.push(unbindController);
+  }
+  function recompute() {
+    const follows = getFollows();
+    const overrides = getOverrides();
+    const c = controller;
+    const out = [];
+    for (const [day, list] of epg) {
+      const fixtures2 = c ? c.allFixtures(day) : [];
+      let merged;
+      if (!c) {
+        merged = list.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }));
+      } else {
+        const ids = fixtures2.map(fixtureMatchKey).sort().join(",");
+        const linked = links.get(day);
+        if (fixtures2.length > 0 && linked?.ids !== ids) ensureLinks(day, ids, fixtures2);
+        const ready = linked?.ids === ids;
+        merged = mergeLinked({
+          epg: list,
+          fixtures: ready ? fixtures2 : [],
+          links: ready ? linked.map : {},
+          overrides,
+          history: c.history(day),
+          coverage: (s) => c.router.coverage(s),
+          canonical: (f) => c.canonicalOf(f)
+        });
+      }
+      out.push(...relevantMatches(merged, follows));
+    }
+    noteLeagues(out);
+    snapshot = { matches: out, ready: true };
+    emit3();
+  }
+  function noteLeagues(matches) {
+    let added = false;
+    for (const l of leaguesOf(matches)) {
+      if (seenLeagues.has(l.key)) continue;
+      seenLeagues.set(l.key, l.name);
+      added = true;
+    }
+    if (!added) return;
+    const notify2 = notifyPluginRegistryChanged;
+    if (typeof notify2 === "function") notify2();
+  }
+  function ensureLinks(day, ids, fixtures2) {
+    const key = `${day}|${ids}`;
+    if (linking.has(key)) return;
+    linking.add(key);
+    const gen = generation;
+    void linkFixtures({ day, fixtures: fixtures2 }).then((map) => {
+      linking.delete(key);
+      if (gen !== generation) return;
+      links.set(day, { ids, map });
+      recompute();
+    });
+  }
+  async function prime(days) {
+    const c = controller;
+    if (!c) return;
+    const tz2 = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const d = localDates(Date.now(), tz2);
+    const sports = /* @__PURE__ */ new Set([...(epg.get(days.today) ?? []).map((m) => m.kind), ...getFollows().map((f) => f.sport)]);
+    for (const sport of sports) {
+      for (const date of [days.today, days.yesterday]) {
+        const key = `${sport}|${date}`;
+        if (peeked.has(key) || c.fixtures(sport, date).length > 0) continue;
+        peeked.add(key);
+        const cached = await c.router.peek(sport, (p) => p.day(sport, date, { today: d.today, tz: tz2, dayEndMs: d.dayEndMs(date) })).catch(() => null);
+        if (cached && controller === c) c.applyFixtures(sport, date, cached.data, "cache", 0);
+      }
+    }
+  }
+  async function refresh() {
+    const gen = generation;
+    const now2 = Date.now();
+    const today = localDayKey(now2);
+    const yesterday = shiftDay(today, -1);
+    const days = [yesterday, today, shiftDay(today, 1), ...weekWanted > 0 ? WEEK_DAYS.map((n) => shiftDay(today, n)) : []];
+    const loaded = await Promise.all(days.map((day) => fetchSportDay(day, now2).then((d) => d.matches).catch(() => null)));
+    if (gen !== generation) return;
+    const next = /* @__PURE__ */ new Map();
+    days.forEach((day, i) => {
+      const list = loaded[i];
+      if (list) next.set(day, list);
+    });
+    epg = next;
+    recompute();
+    void prime({ today, yesterday });
+  }
+  function start2() {
+    generation += 1;
+    controller = null;
+    bindController();
+    unsubs.push(
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => {
+        bindController();
+        recompute();
+      }),
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, recompute),
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, recompute)
+    );
+    timer3 = setInterval(() => {
+      void refresh();
+    }, REFRESH_MS);
+    void refresh();
+  }
+  function stop() {
+    generation += 1;
+    for (const u of unsubs) u();
+    unsubs = [];
+    unbindController = () => {
+    };
+    controller = null;
+    if (timer3 != null) clearInterval(timer3);
+    timer3 = null;
+  }
+  function subscribe2(cb, week) {
+    listeners10.add(cb);
+    if (week) weekWanted += 1;
+    if (listeners10.size === 1) start2();
+    else if (week && weekWanted === 1) void refresh();
+    return () => {
+      listeners10.delete(cb);
+      if (week) weekWanted -= 1;
+      if (listeners10.size === 0) stop();
+    };
+  }
+  function useSportRows(opts = {}) {
+    return useSyncExternalStore(opts.week ? subscribeWeek : subscribeDay, getSnapshot, getSnapshot);
+  }
+  function seenSportLeagues(now2 = Date.now()) {
+    if (seenLeagues.size === 0 && now2 - leaguesPrimedAt > 5 * 6e4) {
+      leaguesPrimedAt = now2;
+      const today = localDayKey(now2);
+      void Promise.all([today, shiftDay(today, 1)].map((day) => fetchSportDay(day, now2).then((d) => d.matches).catch(() => []))).then((days) => noteLeagues(days.flat().filter((m) => !m.rerun)));
+    }
+    return [...seenLeagues].map(([key, name]) => ({ key, name }));
+  }
+  var REFRESH_MS, WEEK_DAYS, listeners10, weekWanted, snapshot, epg, links, linking, peeked, controller, cacheOwner, unsubs, timer3, generation, seenLeagues, unbindController, subscribeDay, subscribeWeek, getSnapshot, leaguesPrimedAt;
+  var init_rows_feed = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_plugin_sdk();
+      init_plugin_sdk();
+      init_live_tv_data();
+      init_day_plan();
+      init_merge();
+      init_providers();
+      init_results_controller();
+      init_sport_epg();
+      init_sport_link();
+      init_rows_model();
+      init_sport_store();
+      REFRESH_MS = 6e4;
+      WEEK_DAYS = [2, 3, 4, 5, 6];
+      listeners10 = /* @__PURE__ */ new Set();
+      weekWanted = 0;
+      snapshot = { matches: [], ready: false };
+      epg = /* @__PURE__ */ new Map();
+      links = /* @__PURE__ */ new Map();
+      linking = /* @__PURE__ */ new Set();
+      peeked = /* @__PURE__ */ new Set();
+      controller = null;
+      cacheOwner = null;
+      unsubs = [];
+      timer3 = null;
+      generation = 0;
+      seenLeagues = /* @__PURE__ */ new Map();
+      unbindController = () => {
+      };
+      subscribeDay = (cb) => subscribe2(cb, false);
+      subscribeWeek = (cb) => subscribe2(cb, true);
+      getSnapshot = () => snapshot;
+      leaguesPrimedAt = -Infinity;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/epg/name-match.ts
+  function normalizeChannelName(name) {
+    return name.toLowerCase().replace(COUNTRY_TAG_RE, " ").replace(COUNTRY_BARE_RE, " ").replace(QUALITY_RE, " ").replace(REGION_HINTS_RE, " ").replace(NON_ALNUM_RE, "").trim();
+  }
+  var COUNTRY_TAG_RE, COUNTRY_BARE_RE, QUALITY_RE, REGION_HINTS_RE, NON_ALNUM_RE;
+  var init_name_match2 = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/epg/name-match.ts"() {
+      "use strict";
+      COUNTRY_TAG_RE = /\[[a-z]{2,4}\]/g;
+      COUNTRY_BARE_RE = /\b(se|uk|us|dk|no|fi|de|fr|es|it|pl|nl|hr|gr|tr|ie|ca|au|nz)\b/g;
+      QUALITY_RE = /\b(hd|sd|fhd|uhd|4k|raw|original|backup|alt|alternative|opt|opt\d)\b/g;
+      REGION_HINTS_RE = /\b(skane|skåne|stockholm|göteborg|goteborg|malmö|malmo|öst|ost|väst|vast|nord|syd|riks|rikstv|sverige|sweden)\b/g;
+      NON_ALNUM_RE = /[^a-z0-9]/g;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/stream-fallback.ts
+  function stallStep(s, e) {
+    if (e.type === "start") return { state: { startedAt: e.at, stallSince: null, stalls: [], fired: false }, trigger: false };
+    const inGrace = (at) => at - s.startedAt < GRACE_MS;
+    if (e.type === "cache") {
+      if (e.paused) {
+        if (s.stallSince != null) return { state: s, trigger: false };
+        return { state: { ...s, stallSince: e.at }, trigger: false };
+      }
+      if (s.stallSince == null) return { state: s, trigger: false };
+      const since = s.stallSince;
+      if (inGrace(since)) return { state: { ...s, stallSince: null }, trigger: false };
+      const stalls = [...s.stalls.filter((t) => e.at - t < STALL_WINDOW_MS), since];
+      const trigger = !s.fired && stalls.length >= STALLS_TO_TRIGGER;
+      return { state: { ...s, stallSince: null, stalls, fired: s.fired || trigger }, trigger };
+    }
+    if (s.fired || s.stallSince == null) return { state: s, trigger: false };
+    if (e.at - Math.max(s.stallSince, s.startedAt + GRACE_MS) < LONG_STALL_MS) return { state: s, trigger: false };
+    return { state: { ...s, fired: true }, trigger: true };
+  }
+  function fallbackCandidates(current5, ctx) {
+    const seen = /* @__PURE__ */ new Set([channelKey(current5), ...ctx.tried]);
+    const out = [];
+    const add = (c) => {
+      const k = channelKey(c);
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push(c);
+    };
+    ctx.sportSources.forEach(add);
+    const stem = normalizeChannelName(current5.name);
+    if (stem.length >= 4) {
+      const cur = rankOf(current5);
+      const variants = ctx.channels.filter((c) => normalizeChannelName(c.name) === stem).map((c, i) => ({ c, i, r: rankOf(c) })).sort((a, b) => {
+        const band = (r) => r === cur ? 0 : r < cur ? 1 : 2;
+        return band(a.r) - band(b.r) || (band(a.r) === 1 ? b.r - a.r : a.r - b.r) || a.i - b.i;
+      });
+      variants.forEach((v) => add(v.c));
+    }
+    return out;
+  }
+  var GRACE_MS, LONG_STALL_MS, STALL_WINDOW_MS, STALLS_TO_TRIGGER, initialStall, RANK, rankOf;
+  var init_stream_fallback = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/stream-fallback.ts"() {
+      "use strict";
+      init_name_match2();
+      init_live_tv_data();
+      init_live_tv_model();
+      GRACE_MS = 1e4;
+      LONG_STALL_MS = 6e3;
+      STALL_WINDOW_MS = 6e4;
+      STALLS_TO_TRIGGER = 3;
+      initialStall = { startedAt: 0, stallSince: null, stalls: [], fired: false };
+      RANK = { "4K": 4, FHD: 3, HD: 2, SD: 1 };
+      rankOf = (c) => RANK[qualityFromName(c.name) ?? ""] ?? 2;
+    }
+  });
+
+  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/use-stream-fallback.ts
+  function sportSourcesFor(key, matches, now2) {
+    const m = matches.find((x) => x.start <= now2 && now2 < x.stop && x.sources.some((s) => s.channelKey === key));
+    return m ? rankedSources(m, getOverrides()).map(sourceChannel) : [];
+  }
+  function useStreamFallback(args) {
+    const { channel, pausedForCache, userPaused, channels, onSwitch } = args;
+    const key = channelKey(channel);
+    const rows = useSportRows();
+    const [state2, dispatch] = useReducer((s, e) => {
+      const r = stallStep(s.st, e);
+      return { st: r.state, hit: r.trigger ? s.hit + 1 : s.hit };
+    }, { st: initialStall, hit: 0 });
+    const [target2, setTarget] = useState(null);
+    const tried = useRef(/* @__PURE__ */ new Set());
+    const viaFallback = useRef(false);
+    useEffect(() => {
+      if (!viaFallback.current) tried.current = /* @__PURE__ */ new Set();
+      viaFallback.current = false;
+      setTarget(null);
+      dispatch({ type: "start", at: Date.now() });
+    }, [key]);
+    useEffect(() => {
+      if (!userPaused) dispatch({ type: "cache", paused: pausedForCache, at: Date.now() });
+    }, [pausedForCache, userPaused]);
+    const stalled = pausedForCache && !userPaused;
+    useEffect(() => {
+      if (!stalled) return;
+      const t = setInterval(() => dispatch({ type: "tick", at: Date.now() }), TICK_MS2);
+      return () => clearInterval(t);
+    }, [stalled]);
+    useEffect(() => {
+      if (state2.hit === 0 || !onSwitch) return;
+      const now2 = Date.now();
+      const matches = [...currentResults()?.merged() ?? [], ...rows.matches];
+      const next = fallbackCandidates(channel, { sportSources: sportSourcesFor(key, matches, now2), channels, tried: tried.current })[0];
+      if (next) setTarget(next);
+    }, [state2.hit]);
+    const switchNow = useCallback(() => {
+      if (!target2 || !onSwitch) return;
+      tried.current.add(key);
+      viaFallback.current = true;
+      setTarget(null);
+      onSwitch(target2);
+    }, [target2, onSwitch, key]);
+    const stay = useCallback(() => setTarget(null), []);
+    return { target: target2, switchNow, stay };
+  }
+  var TICK_MS2;
+  var init_use_stream_fallback = __esm({
+    "../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/use-stream-fallback.ts"() {
+      "use strict";
+      "use client";
+      init_react_shim();
+      init_live_tv_data();
+      init_rows_feed();
+      init_results_controller();
+      init_sport_day_model();
+      init_sport_model();
+      init_sport_store();
+      init_stream_fallback();
+      TICK_MS2 = 1e3;
+    }
+  });
+
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/tv/surface-cutouts.ts
   function same(a, b) {
     return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height && a.radius === b.radius;
   }
   function publish3() {
-    snapshot = [...cutouts.values()];
-    for (const listener of [...listeners10]) listener();
+    snapshot2 = [...cutouts.values()];
+    for (const listener of [...listeners11]) listener();
   }
   function registerSurfaceCutout(key, cutout) {
     const previous = cutouts.get(key);
@@ -50575,12 +51070,12 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     publish3();
   }
   function getSurfaceCutouts() {
-    return snapshot;
+    return snapshot2;
   }
   function subscribeSurfaceCutouts(listener) {
-    listeners10.add(listener);
+    listeners11.add(listener);
     return () => {
-      listeners10.delete(listener);
+      listeners11.delete(listener);
     };
   }
   function useSurfaceCutouts() {
@@ -50614,15 +51109,15 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   function round(value) {
     return Math.round(value * 100) / 100;
   }
-  var cutouts, listeners10, snapshot;
+  var cutouts, listeners11, snapshot2;
   var init_surface_cutouts = __esm({
     "../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/tv/surface-cutouts.ts"() {
       "use strict";
       "use client";
       init_react_shim();
       cutouts = /* @__PURE__ */ new Map();
-      listeners10 = /* @__PURE__ */ new Set();
-      snapshot = [];
+      listeners11 = /* @__PURE__ */ new Set();
+      snapshot2 = [];
     }
   });
 
@@ -51462,6 +51957,13 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       void mpvSetPropertyStrings(TS_REFILL_ON_UNDERRUN).catch(() => {
       });
     }, [engineKind, mpvFileLoaded, channel.url]);
+    const fallback = useStreamFallback({
+      channel,
+      pausedForCache: mpv.pausedForCache,
+      userPaused: mpvPaused,
+      channels: tvChrome?.neighbours ?? [],
+      onSwitch: tvChrome?.onSwitchChannel
+    });
     useEffect(() => {
       setNativeAttempt(0);
     }, [channel.url]);
@@ -51736,6 +52238,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
             /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-500", children: t("liveTvStreamErrorHelp") })
           ] }),
           /* @__PURE__ */ jsx(PlayerGoalOverlay, { channelKey: playingKey, onJump: (next) => tvChrome?.onSwitchChannel(next) }),
+          fallback.target ? /* @__PURE__ */ jsx(StreamFallbackPrompt, { target: fallback.target, onSwitch: fallback.switchNow, onStay: fallback.stay }, channelKey(fallback.target)) : null,
           tvChrome ? /* @__PURE__ */ jsx(TvPlayerChrome, { channel, tv: tvChrome, controls: playerControls, paused: mpvPaused, onTogglePause: toggleMpvPause, onClose: handleClose, phoneLandscape }) : null
         ]
       }
@@ -51758,6 +52261,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       init_live_tv_playback_fallback();
       init_tv_player_chrome();
       init_player_goal_overlay();
+      init_stream_fallback_prompt();
+      init_use_stream_fallback();
       init_goal_alerts();
       init_live_poller();
       init_results_controller();
@@ -57209,21 +57714,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/live-tv-grid.tsx
   init_live_tv_data();
   init_index_client();
-
-  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/live-tv-shell.tsx
-  var LIVE_TV_BROWSE_PAGE_ID = "live-tv-browse";
-  var LIVE_TV_SPORT_PAGE_ID = "live-tv-sport";
-  function encodeChannelParams(channel) {
-    return {
-      url: channel.url,
-      name: channel.name,
-      logo: channel.logo ?? "",
-      group: channel.group,
-      tvgId: channel.tvgId ?? ""
-    };
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/live-tv-grid.tsx
+  init_live_tv_shell();
   init_tv_settings_store();
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/tv/tv-player-props.ts
@@ -59129,6 +59620,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/live-tv-home-override.tsx
   init_live_tv_data();
   init_live_tv_model();
+  init_live_tv_shell();
   init_tv_settings_store();
   init_jsx_runtime_shim();
   var PLACEHOLDER_NAME_RE2 = /^[\s=\-_*•·]+|=+/;
@@ -59347,6 +59839,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/live-tv-reminders-mount.tsx
   init_react_shim();
   init_plugin_sdk();
+  init_live_tv_shell();
   init_reminders();
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/sport-alerts.ts
@@ -59438,30 +59931,30 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_goal_alerts();
   init_jsx_runtime_shim();
   var toasts = [];
-  var listeners11 = /* @__PURE__ */ new Set();
-  var emit3 = () => {
-    for (const l of [...listeners11]) l();
+  var listeners12 = /* @__PURE__ */ new Set();
+  var emit4 = () => {
+    for (const l of [...listeners12]) l();
   };
   var seq = 0;
   function pushToast(t) {
     const id = `t${++seq}`;
     toasts = [{ ...t, id, expiresAt: Date.now() + t.timeoutMs }, ...toasts];
-    emit3();
+    emit4();
     return id;
   }
   function dismissToast(id) {
     if (!toasts.some((t) => t.id === id)) return;
     toasts = toasts.filter((t) => t.id !== id);
-    emit3();
+    emit4();
   }
   function hasToasts() {
     return toasts.length > 0;
   }
   function useToasts() {
     return useSyncExternalStore((cb) => {
-      listeners11.add(cb);
+      listeners12.add(cb);
       return () => {
-        listeners11.delete(cb);
+        listeners12.delete(cb);
       };
     }, () => toasts, () => toasts);
   }
@@ -59640,6 +60133,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_react_shim();
   init_plugin_sdk();
   init_reminders();
+  init_live_tv_shell();
   init_tv_strings();
   init_goal_events();
   init_goal_alerts();
@@ -59671,6 +60165,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_plugin_sdk();
   init_live_tv_data();
   init_live_tv_model();
+  init_live_tv_shell();
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/tv/channel-detail.ts
   init_react_shim();
@@ -67947,7 +68442,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     return data;
   }
   var EMPTY_LEAGUE = { state: "loading", ref: null, standings: null, round: null, scorers: null };
-  async function resolveLeague(router, target2, known) {
+  async function resolveLeague2(router, target2, known) {
     const want = foldTeamKey2(target2.name);
     if (!want) return null;
     const keyed = new Set(router.candidates(target2.sport).map((b) => b.provider.id));
@@ -67976,7 +68471,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       update({ state: "no-key" });
       return data;
     }
-    const ref = target2.ref ?? await resolveLeague(router, target2, known);
+    const ref = target2.ref ?? await resolveLeague2(router, target2, known);
     const b = ref ? router.budget(ref.provider) : null;
     if (!ref || !b) {
       update({ state: "ready" });
@@ -69426,6 +69921,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/vod-home.ts
   init_plugin_sdk();
+  init_live_tv_shell();
   init_tv_settings_store();
   var LIVE_TV_FRAME_ID = "live-tv";
   function vodHomeTarget() {
@@ -69994,6 +70490,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/sport-page.tsx
   init_react_shim();
+  init_live_tv_shell();
   var SPORT_PAGE_ID = LIVE_TV_SPORT_PAGE_ID;
   function LiveTvSportPage(props) {
     return createElement(LiveTvTvShell, { ...props, sportOnly: true });
@@ -70005,288 +70502,8 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_sport_ctx();
   init_sport_model();
   init_sport_store();
-
-  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
-  init_react_shim();
-  init_plugin_sdk();
-  init_plugin_sdk();
-  init_live_tv_data();
-  init_day_plan();
-  init_merge();
-  init_providers();
-  init_results_controller();
-  init_sport_epg();
-  init_sport_link();
-
-  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/rows-model.ts
-  init_score_model();
-  init_sport_day_model();
-  init_sport_model();
-  init_sport_store();
-  var HOUR2 = 36e5;
-  var WEEK_MS = 7 * 24 * HOUR2;
-  function unique(matches) {
-    const seen = /* @__PURE__ */ new Set();
-    return matches.filter((m) => {
-      if (m.rerun || seen.has(m.id)) return false;
-      seen.add(m.id);
-      return true;
-    });
-  }
-  var ofSport = (m, sport) => sport === "all" || m.kind === sport;
-  var watchable2 = (m, overrides) => rankedSources(m, overrides).length > 0;
-  var byStart = (a, b) => a.start - b.start;
-  function liveNowRow(matches, follows, overrides, now2, sport) {
-    return unique(matches).filter((m) => ofSport(m, sport) && statusAt(m, now2) === "live" && watchable2(m, overrides)).sort((a, b) => matchInterest(b, follows) - matchInterest(a, follows) || byStart(a, b));
-  }
-  function myTeamsRow(matches, follows, now2) {
-    if (follows.length === 0) return [];
-    const mine = unique(matches).filter((m) => followState(m, follows).any);
-    const live2 = mine.filter((m) => statusAt(m, now2) === "live").sort(byStart);
-    const upcoming = mine.filter((m) => statusAt(m, now2) === "upcoming" && m.start <= now2 + WEEK_MS).sort(byStart);
-    return [...live2, ...upcoming];
-  }
-  function tonightEnd(now2) {
-    const d = new Date(now2);
-    const threeAm = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 3, 0, 0, 0).getTime();
-    return Math.min(threeAm, now2 + 12 * HOUR2);
-  }
-  function tonightRow(matches, overrides, now2, sport) {
-    const end = tonightEnd(now2);
-    return unique(matches).filter((m) => ofSport(m, sport) && statusAt(m, now2) === "upcoming" && m.start <= end && watchable2(m, overrides)).sort(byStart);
-  }
-  function random(seed) {
-    let a = seed >>> 0;
-    return () => {
-      a = a + 1831565813 >>> 0;
-      let t = a;
-      t = Math.imul(t ^ t >>> 15, t | 1);
-      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
-  function zapRow(matches, overrides, now2, sport, seed) {
-    const list = unique(matches).filter((m) => ofSport(m, sport) && statusAt(m, now2) === "live" && watchable2(m, overrides)).sort((a, b) => a.id.localeCompare(b.id));
-    const next = random(seed);
-    for (let i = list.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(next() * (i + 1));
-      [list[i], list[j]] = [list[j], list[i]];
-    }
-    return list;
-  }
-  function leagueRow(matches, leagueKey, now2) {
-    if (!leagueKey) return [];
-    const league = unique(matches).filter((m) => m.leagueKey === leagueKey);
-    const live2 = league.filter((m) => statusAt(m, now2) === "live").sort(byStart);
-    const upcoming = league.filter((m) => statusAt(m, now2) === "upcoming").sort(byStart);
-    const finished = league.filter((m) => statusAt(m, now2) === "finished").sort((a, b) => b.start - a.start);
-    return [...live2, ...upcoming, ...finished];
-  }
-  function resolveLeague2(option, follows) {
-    return option || follows.find((f) => f.kind === "league")?.key || null;
-  }
-  function leaguesOf(matches) {
-    const out = /* @__PURE__ */ new Map();
-    for (const m of matches) if (m.leagueKey && m.league && !out.has(m.leagueKey)) out.set(m.leagueKey, m.league);
-    return [...out].map(([key, name]) => ({ key, name }));
-  }
-  function leagueChoices(follows, seen) {
-    const out = /* @__PURE__ */ new Map();
-    for (const f of follows) if (f.kind === "league" && !out.has(f.key)) out.set(f.key, f.name);
-    const rest = seen.filter((l) => !out.has(l.key)).sort((a, b) => a.name.localeCompare(b.name));
-    for (const l of rest) if (!out.has(l.key)) out.set(l.key, l.name);
-    return [...out].map(([key, name]) => ({ key, name }));
-  }
-  function leagueName(leagueKey, follows, matches) {
-    return matches.find((m) => m.leagueKey === leagueKey)?.league ?? follows.find((f) => f.kind === "league" && f.key === leagueKey)?.name ?? null;
-  }
-  function resultsRow(matches, follows, now2) {
-    const teams = follows.filter((f) => f.kind === "team");
-    if (teams.length === 0) return [];
-    return unique(matches).filter((m) => statusAt(m, now2) === "finished" && showsScore(m) && teams.some((f) => teamKeysMatch(f.key, m.homeKey) || teamKeysMatch(f.key, m.awayKey))).sort((a, b) => b.start - a.start);
-  }
-  function sportRowTarget(m, overrides) {
-    const best = rankedSources(m, overrides)[0];
-    if (!best) return { pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: "sport" } };
-    return { pageId: LIVE_TV_SPORT_PAGE_ID, params: { view: "sport", autoplay: "1", ...encodeChannelParams(sourceChannel(best)) } };
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/rows-feed.ts
-  init_sport_store();
-  var REFRESH_MS = 6e4;
-  var WEEK_DAYS = [2, 3, 4, 5, 6];
-  var listeners12 = /* @__PURE__ */ new Set();
-  var weekWanted = 0;
-  var snapshot2 = { matches: [], ready: false };
-  var epg = /* @__PURE__ */ new Map();
-  var links = /* @__PURE__ */ new Map();
-  var linking = /* @__PURE__ */ new Set();
-  var peeked = /* @__PURE__ */ new Set();
-  var controller = null;
-  var cacheOwner = null;
-  var unsubs = [];
-  var timer3 = null;
-  var generation = 0;
-  var seenLeagues = /* @__PURE__ */ new Map();
-  function emit4() {
-    for (const cb of [...listeners12]) cb();
-  }
-  function bindController() {
-    const next = currentResults();
-    if (next === controller) return;
-    controller = next;
-    if (next !== cacheOwner) {
-      cacheOwner = next;
-      links.clear();
-      peeked.clear();
-    }
-    unsubs = unsubs.filter((u) => u !== unbindController);
-    unbindController = controller ? controller.subscribe(recompute) : () => {
-    };
-    unsubs.push(unbindController);
-  }
-  var unbindController = () => {
-  };
-  function recompute() {
-    const follows = getFollows();
-    const overrides = getOverrides();
-    const c = controller;
-    const out = [];
-    for (const [day, list] of epg) {
-      const fixtures2 = c ? c.allFixtures(day) : [];
-      let merged;
-      if (!c) {
-        merged = list.map((m) => ({ ...m, coverage: coverageFor(null, m.kind) }));
-      } else {
-        const ids = fixtures2.map(fixtureMatchKey).sort().join(",");
-        const linked = links.get(day);
-        if (fixtures2.length > 0 && linked?.ids !== ids) ensureLinks(day, ids, fixtures2);
-        const ready = linked?.ids === ids;
-        merged = mergeLinked({
-          epg: list,
-          fixtures: ready ? fixtures2 : [],
-          links: ready ? linked.map : {},
-          overrides,
-          history: c.history(day),
-          coverage: (s) => c.router.coverage(s),
-          canonical: (f) => c.canonicalOf(f)
-        });
-      }
-      out.push(...relevantMatches(merged, follows));
-    }
-    noteLeagues(out);
-    snapshot2 = { matches: out, ready: true };
-    emit4();
-  }
-  function noteLeagues(matches) {
-    let added = false;
-    for (const l of leaguesOf(matches)) {
-      if (seenLeagues.has(l.key)) continue;
-      seenLeagues.set(l.key, l.name);
-      added = true;
-    }
-    if (!added) return;
-    const notify2 = notifyPluginRegistryChanged;
-    if (typeof notify2 === "function") notify2();
-  }
-  function ensureLinks(day, ids, fixtures2) {
-    const key = `${day}|${ids}`;
-    if (linking.has(key)) return;
-    linking.add(key);
-    const gen = generation;
-    void linkFixtures({ day, fixtures: fixtures2 }).then((map) => {
-      linking.delete(key);
-      if (gen !== generation) return;
-      links.set(day, { ids, map });
-      recompute();
-    });
-  }
-  async function prime(days) {
-    const c = controller;
-    if (!c) return;
-    const tz2 = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const d = localDates(Date.now(), tz2);
-    const sports = /* @__PURE__ */ new Set([...(epg.get(days.today) ?? []).map((m) => m.kind), ...getFollows().map((f) => f.sport)]);
-    for (const sport of sports) {
-      for (const date of [days.today, days.yesterday]) {
-        const key = `${sport}|${date}`;
-        if (peeked.has(key) || c.fixtures(sport, date).length > 0) continue;
-        peeked.add(key);
-        const cached = await c.router.peek(sport, (p) => p.day(sport, date, { today: d.today, tz: tz2, dayEndMs: d.dayEndMs(date) })).catch(() => null);
-        if (cached && controller === c) c.applyFixtures(sport, date, cached.data, "cache", 0);
-      }
-    }
-  }
-  async function refresh() {
-    const gen = generation;
-    const now2 = Date.now();
-    const today = localDayKey(now2);
-    const yesterday = shiftDay(today, -1);
-    const days = [yesterday, today, shiftDay(today, 1), ...weekWanted > 0 ? WEEK_DAYS.map((n) => shiftDay(today, n)) : []];
-    const loaded = await Promise.all(days.map((day) => fetchSportDay(day, now2).then((d) => d.matches).catch(() => null)));
-    if (gen !== generation) return;
-    const next = /* @__PURE__ */ new Map();
-    days.forEach((day, i) => {
-      const list = loaded[i];
-      if (list) next.set(day, list);
-    });
-    epg = next;
-    recompute();
-    void prime({ today, yesterday });
-  }
-  function start2() {
-    generation += 1;
-    controller = null;
-    bindController();
-    unsubs.push(
-      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => {
-        bindController();
-        recompute();
-      }),
-      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, recompute),
-      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_OVERRIDES_KEY, recompute)
-    );
-    timer3 = setInterval(() => {
-      void refresh();
-    }, REFRESH_MS);
-    void refresh();
-  }
-  function stop() {
-    generation += 1;
-    for (const u of unsubs) u();
-    unsubs = [];
-    unbindController = () => {
-    };
-    controller = null;
-    if (timer3 != null) clearInterval(timer3);
-    timer3 = null;
-  }
-  function subscribe2(cb, week) {
-    listeners12.add(cb);
-    if (week) weekWanted += 1;
-    if (listeners12.size === 1) start2();
-    else if (week && weekWanted === 1) void refresh();
-    return () => {
-      listeners12.delete(cb);
-      if (week) weekWanted -= 1;
-      if (listeners12.size === 0) stop();
-    };
-  }
-  var subscribeDay = (cb) => subscribe2(cb, false);
-  var subscribeWeek = (cb) => subscribe2(cb, true);
-  var getSnapshot = () => snapshot2;
-  function useSportRows(opts = {}) {
-    return useSyncExternalStore(opts.week ? subscribeWeek : subscribeDay, getSnapshot, getSnapshot);
-  }
-  var leaguesPrimedAt = -Infinity;
-  function seenSportLeagues(now2 = Date.now()) {
-    if (seenLeagues.size === 0 && now2 - leaguesPrimedAt > 5 * 6e4) {
-      leaguesPrimedAt = now2;
-      const today = localDayKey(now2);
-      void Promise.all([today, shiftDay(today, 1)].map((day) => fetchSportDay(day, now2).then((d) => d.matches).catch(() => []))).then((days) => noteLeagues(days.flat().filter((m) => !m.rerun)));
-    }
-    return [...seenLeagues].map(([key, name]) => ({ key, name }));
-  }
+  init_rows_feed();
+  init_rows_model();
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
   init_react_shim();
@@ -70297,6 +70514,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_score_model();
   init_sport_model();
   init_sport_store();
+  init_rows_feed();
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/rows-mirror.ts
   init_live_tv_ui();
@@ -70349,6 +70567,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   }
 
   // ../../../lumio-official-plugins/.worktrees/live-resample/plugins/live-tv/runtime/sport/home-rows/sport-home-row.tsx
+  init_rows_model();
   init_jsx_runtime_shim();
   var TEXT2 = "#f8fafc";
   var MUTED = "#94a3c8";
@@ -70381,7 +70600,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const uploads = useBackdropUploads();
     const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31));
     const sport = sportOf(option);
-    const league = kind === "league" ? resolveLeague2(option, follows) : null;
+    const league = kind === "league" ? resolveLeague(option, follows) : null;
     const matches = useMemo(() => {
       const all = feed.matches;
       switch (kind) {
@@ -70651,6 +70870,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   init_tv_settings_store();
   init_useNarrowSurface();
   init_tv_ui();
+  init_live_tv_shell();
   init_live_tv_data();
   init_vod_client();
   init_guide_surface();
@@ -70763,7 +70983,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       useEpgNowNextLater,
       useEpgLoadStatus,
       useChannelSchedule,
-      version: "0.15.0"
+      version: "0.15.1"
     };
     try {
       window.dispatchEvent(new CustomEvent("lumio-live-tv-bridge-ready"));
@@ -70777,7 +70997,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
   var LiveTvPlugin = {
     id: "com.lumio.live-tv",
     name: { en: "Live TV", sv: "Live TV" },
-    version: "0.15.0",
+    version: "0.15.1",
     description: {
       en: "Manage M3U sources, browse live TV channels, and see EPG (now/next) inside Lumio.",
       sv: "Hantera M3U-k\xE4llor, bl\xE4ddra bland live-TV-kanaler och se EPG (nu/h\xE4rn\xE4st) i Lumio."
