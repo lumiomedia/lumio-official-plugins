@@ -12,6 +12,16 @@ export const ACTIVE_PLAYLIST_KEY = 'live_tv_active_playlist_v1'
 export const BANNER_HIDE_OPTIONS = [2000, 4000, 6000, 0] as const
 export type BannerHideMs = (typeof BANNER_HIDE_OPTIONS)[number]
 
+/**
+ * Strömbytet när kanalen hackar: sekunder innan förslaget byter av sig
+ * självt. 0 = Aldrig (förslaget står kvar tills man väljer Byt nu).
+ */
+export const FALLBACK_AFTER_OPTIONS = [0, 3, 5, 10, 15] as const
+export type FallbackAfterS = (typeof FALLBACK_AFTER_OPTIONS)[number]
+export function nextFallbackAfter(current: FallbackAfterS): FallbackAfterS {
+  return FALLBACK_AFTER_OPTIONS[(FALLBACK_AFTER_OPTIONS.indexOf(current) + 1) % FALLBACK_AFTER_OPTIONS.length]
+}
+
 /** Zoomsteg i Timeline-vyn (den städade guiden, skrivbord/TV). */
 export type TimelineZoom = '2h' | '6h' | 'day'
 const TIMELINE_ZOOMS: TimelineZoom[] = ['2h', '6h', 'day']
@@ -38,6 +48,10 @@ export interface TvSettings {
   railLabels: boolean
   /** Vyn Live TV öppnar i när den öppnas utan mål (se `start-view.ts`). Hem är standard. */
   startView: LiveTvStartView
+  /** Föreslå en annan källa när kanalen hackar (Jerry 2026-10-14). Av = ingen fråga alls. */
+  streamFallback: boolean
+  /** Sekunder innan förslaget byter självt; 0 = Aldrig. */
+  streamFallbackAfterS: FallbackAfterS
 }
 
 const DEFAULTS: TvSettings = {
@@ -52,6 +66,8 @@ const DEFAULTS: TvSettings = {
   nowNextDetails: true,
   railLabels: true,
   startView: DEFAULT_START_VIEW,
+  streamFallback: true,
+  streamFallbackAfterS: 5,
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -70,6 +86,8 @@ function sanitize(raw: unknown): TvSettings {
     nowNextDetails: typeof r.nowNextDetails === 'boolean' ? r.nowNextDetails : DEFAULTS.nowNextDetails,
     railLabels: typeof r.railLabels === 'boolean' ? r.railLabels : DEFAULTS.railLabels,
     startView: sanitizeStartView(r.startView),
+    streamFallback: typeof r.streamFallback === 'boolean' ? r.streamFallback : DEFAULTS.streamFallback,
+    streamFallbackAfterS: (FALLBACK_AFTER_OPTIONS as readonly number[]).includes(r.streamFallbackAfterS as number) ? (r.streamFallbackAfterS as FallbackAfterS) : DEFAULTS.streamFallbackAfterS,
   }
 }
 

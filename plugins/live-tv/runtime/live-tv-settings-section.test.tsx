@@ -70,6 +70,21 @@ describe('LiveTvSettingsSection', () => {
     expect(getTvSettings().startView).toBe('sport')
     expect(within(row).getByTestId('lt-start-view-sport')).toHaveAttribute('aria-pressed', 'true')
   })
+  it('Strömbyte: växel på och Byt automatiskt efter 5 s som standard, båda sparas', () => {
+    render(<LiveTvSettingsSection />)
+    const toggle = screen.getByRole('switch', { name: 'Suggest another source when the channel stutters' })
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+    const row = screen.getByTestId('lt-stream-fallback-after')
+    expect(row).toHaveTextContent('Switch automatically after')
+    expect(within(row).getByTestId('lt-stream-fallback-after-5')).toHaveAttribute('aria-pressed', 'true')
+    expect(within(row).getByTestId('lt-stream-fallback-after-0')).toHaveTextContent('Never')
+    fireEvent.click(within(row).getByTestId('lt-stream-fallback-after-0'))
+    expect(getTvSettings().streamFallbackAfterS).toBe(0)
+    fireEvent.click(within(row).getByTestId('lt-stream-fallback-after-10'))
+    expect(getTvSettings().streamFallbackAfterS).toBe(10)
+    fireEvent.click(toggle)
+    expect(getTvSettings().streamFallback).toBe(false)
+  })
   it('visar importjobbets egen räknare, inte bara "Hämtar lista 1 av 1…"', async () => {
     // En enda adress kan vara 17 000 kanaler: köräknaren står still i en
     // minut medan jobbet arbetar, och utan jobbets `received/total` ser det

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { __resetForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
-import { TV_SETTINGS_KEY, getTvSettings, setTvSettings, getGuideMode, setGuideMode, getActivePlaylistId, setActivePlaylistId } from './tv-settings-store'
+import { FALLBACK_AFTER_OPTIONS, nextFallbackAfter, TV_SETTINGS_KEY, getTvSettings, setTvSettings, getGuideMode, setGuideMode, getActivePlaylistId, setActivePlaylistId } from './tv-settings-store'
 
 beforeEach(() => __resetForTests())
 
@@ -19,6 +19,8 @@ describe('tv-settings-store', () => {
       nowNextDetails: true,
       railLabels: true,
       startView: 'home',
+      streamFallback: true,
+      streamFallbackAfterS: 5,
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()
@@ -28,6 +30,25 @@ describe('tv-settings-store', () => {
     expect(getTvSettings().startView).toBe('sport')
     writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { startView: 'multi' })
     expect(getTvSettings().startView).toBe('home')
+  })
+  it('strömbytet: på och 5 s som standard, sparas, ogiltigt faller tillbaka', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { numericZap: false })
+    expect(getTvSettings().streamFallback).toBe(true)
+    expect(getTvSettings().streamFallbackAfterS).toBe(5)
+    setTvSettings({ streamFallback: false, streamFallbackAfterS: 0 })
+    expect(getTvSettings().streamFallback).toBe(false)
+    expect(getTvSettings().streamFallbackAfterS).toBe(0)
+    setTvSettings({ streamFallbackAfterS: 15 })
+    expect(getTvSettings().streamFallbackAfterS).toBe(15)
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { streamFallback: 'nej', streamFallbackAfterS: 7 })
+    expect(getTvSettings().streamFallback).toBe(true)
+    expect(getTvSettings().streamFallbackAfterS).toBe(5)
+  })
+  it('nextFallbackAfter går runt Aldrig → 3 → 5 → 10 → 15 → Aldrig', () => {
+    expect(FALLBACK_AFTER_OPTIONS).toEqual([0, 3, 5, 10, 15])
+    expect(nextFallbackAfter(5)).toBe(10)
+    expect(nextFallbackAfter(15)).toBe(0)
+    expect(nextFallbackAfter(0)).toBe(3)
   })
   it('sparar delvisa ändringar', () => {
     setTvSettings({ previewEnabled: false })

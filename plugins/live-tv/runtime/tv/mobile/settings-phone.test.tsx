@@ -50,6 +50,15 @@ describe('Inställningar på telefon', () => {
     expect(getTvSettings().startOnLastChannel).toBe(true)
   })
 
+  it('Strömbytet finns på telefonen: växel + Byt automatiskt efter', async () => {
+    mountPhone({ view: 'settings' })
+    fireEvent.click(await screen.findByTestId('setting-streamFallback'))
+    expect(getTvSettings().streamFallback).toBe(false)
+    const after = screen.getByTestId('setting-streamFallbackAfterS')
+    expect(after).toHaveTextContent('5 s')
+    fireEvent.click(after)
+    expect(getTvSettings().streamFallbackAfterS).toBe(10)
+  })
   it('Startvy finns på telefonen och växlar vid tryck', async () => {
     mountPhone({ view: 'settings' })
     const row = await screen.findByTestId('setting-startView')
