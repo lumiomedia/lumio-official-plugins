@@ -2,14 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
 const storage = new Map<string, unknown>()
+let libraryStatus: unknown = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] }
 vi.mock('@/lib/plugin-sdk', () => ({
-  readPluginJson: (_id: string, key: string) => storage.get(key) ?? null,
+  readPluginJson: (_id: string, key: string, fallback: unknown) => storage.get(key) ?? fallback,
+  removePluginStorageItem: (_id: string, key: string) => { storage.delete(key) },
   writePluginJson: (_id: string, key: string, value: unknown) => { storage.set(key, value) },
   onPluginStorageChanged: () => () => {},
   queryLibrary: async () => ({ items: [] }),
   getMovieWatchlist: () => [],
   getWatchlist: () => [],
-  fetchLibraryStatus: async () => ({ updatedAt: 1 }),
+  fetchLibraryStatus: async () => libraryStatus,
   channelListDebridCloud: async () => [],
   channelResolveLibraryPlayback: async () => null,
   channelResolveTitleStream: async () => null,
@@ -18,10 +20,10 @@ vi.mock('@/lib/plugin-sdk', () => ({
 }))
 
 import { deleteChannel, loadPoolCached, saveChannel, useChannelClock } from './store'
-import { readChannels } from '../host'
+import { prunePoolCaches, readChannels, sourceSignatures } from '../host'
 import { createChannel, emptyDraft } from '../model/channel'
 
-beforeEach(() => storage.clear())
+beforeEach(() => { storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
 
 describe('kanallagret', () => {
   it('sparar, ersätter och tar bort kanaler', () => {
@@ -42,6 +44,35 @@ describe('kanallagret', () => {
     expect(queryLibrary).toHaveBeenCalledTimes(1)
     await loadPoolCached({ ...ch, era: '80s' }, deps as never)
     expect(queryLibrary).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('poolcache och signatur', () => {
+  const deps = { queryLibrary: async () => ({ items: [] }), getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listDebridCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
+
+  it('deleteChannel tar bort poolcachen', async () => {
+    const a = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    saveChannel(a)
+    await loadPoolCached(a, deps as never)
+    expect(storage.has(`poolCache:${a.id}`)).toBe(true)
+    deleteChannel(a.id)
+    expect(storage.has(`poolCache:${a.id}`)).toBe(false)
+  })
+
+  it('prunePoolCaches städar kanaler som försvunnit men behåller levande', async () => {
+    const a = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    const b = createChannel({ ...emptyDraft(), name: 'B', sources: ['library'] }, [a], 2, () => 0.2)
+    await loadPoolCached(a, deps as never)
+    await loadPoolCached(b, deps as never)
+    prunePoolCaches([b.id])
+    expect(storage.has(`poolCache:${a.id}`)).toBe(false)
+    expect(storage.has(`poolCache:${b.id}`)).toBe(true)
+  })
+
+  it('biblioteksignaturen ändras med lastFullSync', async () => {
+    const before = (await sourceSignatures()).library
+    libraryStatus = { total: 3, sources: [{ lastFullSync: 200, lastDeltaSync: null }] }
+    expect((await sourceSignatures()).library).not.toBe(before)
   })
 })
 

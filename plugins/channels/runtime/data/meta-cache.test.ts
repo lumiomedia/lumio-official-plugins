@@ -55,4 +55,29 @@ describe('säsongscachen', () => {
     await load(1)
     expect(fetcher).toHaveBeenCalledTimes(4)
   })
+
+  it('skriver en gång per skur och släpper utgångna poster', async () => {
+    let all: Record<string, SeasonsEntry> = { 'seasons:7': { seasons: [], at: 0 } }
+    const write = vi.fn((n: Record<string, SeasonsEntry>) => { all = n })
+    const now = 31 * 24 * 3600 * 1000
+    const load = createSeasonsCache({ read: () => all, write }, async () => [{ season: 1, episodes: [] }], () => now)
+    await Promise.all([load(1), load(2), load(3)])
+    load.flush()
+    expect(write).toHaveBeenCalledTimes(1)
+    expect(Object.keys(all).sort()).toEqual(['seasons:1', 'seasons:2', 'seasons:3'])
+  })
+})
+
+describe('metadatacachens skrivningar', () => {
+  it('ensure över många titlar skriver en gång och släpper utgångna poster', async () => {
+    let all: Record<string, TitleMeta> = { 'movie:999': { runtimeMin: 1, genres: [], year: null, at: 0 } }
+    const write = vi.fn((n: Record<string, TitleMeta>) => { all = n })
+    const now = 31 * 24 * 3600 * 1000
+    const cache = createMetaCache({ read: () => all, write }, async () => ({ runtimeMin: 90, genres: [], year: 2000 }), () => now)
+    await cache.ensure(Array.from({ length: 20 }, (_, i) => ({ kind: 'movie' as const, tmdbId: i + 1 })))
+    expect(write).toHaveBeenCalledTimes(1)
+    expect(Object.keys(all)).toHaveLength(20)
+    expect(all['movie:999']).toBeUndefined()
+    expect(cache.get('movie', 5)).not.toBeNull()
+  })
 })

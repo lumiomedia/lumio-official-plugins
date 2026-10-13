@@ -6,7 +6,7 @@ import type { ChannelDef } from '../model/channel'
 import { buildRundown, programmeAt } from '../model/schedule'
 import { poolSignature, type PoolItem } from '../data/pool'
 import { loadPool, type SourceDeps } from '../data/sources'
-import { onChannelsChanged, readChannels, readPoolCache, sourceDeps, sourceSignatures, writeChannels, writePoolCache } from '../host'
+import { onChannelsChanged, prunePoolCaches, readChannels, readPoolCache, removePoolCache, sourceDeps, sourceSignatures, writeChannels, writePoolCache } from '../host'
 
 export function saveChannel(def: ChannelDef): void {
   const all = readChannels()
@@ -15,6 +15,7 @@ export function saveChannel(def: ChannelDef): void {
 
 export function deleteChannel(id: string): void {
   writeChannels(readChannels().filter((c) => c.id !== id))
+  removePoolCache(id)
 }
 
 /** Poolen räknas om bara när reglerna eller källornas ändringsmärke ändrats. */
@@ -32,6 +33,8 @@ export function useChannels(): ChannelDef[] {
   useEffect(() => {
     const refresh = () => setChannels(readChannels())
     refresh()
+    // En gång vid start: släpp poolcache för kanaler som försvunnit (t.ex. via synk).
+    prunePoolCaches(readChannels().map((c) => c.id))
     return onChannelsChanged(refresh)
   }, [])
   return channels

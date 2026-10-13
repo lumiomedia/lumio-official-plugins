@@ -6,7 +6,7 @@
 import {
   channelListDebridCloud, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
   fetchLibraryStatus, getMovieWatchlist, getWatchlist, hasChannelHost, onPluginStorageChanged, queryLibrary,
-  readPluginJson, writePluginJson,
+  readPluginJson, removePluginStorageItem, writePluginJson,
 } from '@/lib/plugin-sdk'
 import type { ChannelDef, SourceId } from './model/channel'
 import { createMetaCache, createSeasonsCache, type MetaStore, type SeasonList, type SeasonsStore, type TitleMeta } from './data/meta-cache'
@@ -50,6 +50,26 @@ export function readPoolCache(id: string): { sig: string; items: unknown[] } | n
 
 export function writePoolCache(id: string, value: { sig: string; items: unknown[] }): void {
   writePluginJson(PLUGIN_ID, `poolCache:${id}`, value, { emitChange: false })
+  const index = readPoolIndex()
+  if (!index.includes(id)) writePoolIndex([...index, id])
+}
+
+/** Register över kanaler med poolcache, så städningen kan hitta dem utan att lista nycklar. */
+const readPoolIndex = (): string[] => {
+  const raw = readPluginJson<unknown>(PLUGIN_ID, 'poolIndex', [])
+  return Array.isArray(raw) ? (raw as string[]) : []
+}
+const writePoolIndex = (ids: string[]) => writePluginJson(PLUGIN_ID, 'poolIndex', ids, { emitChange: false })
+
+export function removePoolCache(id: string): void {
+  removePluginStorageItem(PLUGIN_ID, `poolCache:${id}`, { emitChange: false })
+  writePoolIndex(readPoolIndex().filter((x) => x !== id))
+}
+
+/** Tar bort poolcache för kanaler som inte längre finns (lagringen är trång på Android). */
+export function prunePoolCaches(keep: string[]): void {
+  const alive = new Set(keep)
+  for (const id of readPoolIndex()) if (!alive.has(id)) removePoolCache(id)
 }
 
 const metaStore: MetaStore = {
