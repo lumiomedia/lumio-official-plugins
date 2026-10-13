@@ -100,10 +100,9 @@ const MPV_STARTUP_TIMEOUT_MS = 18_000
 /** Budget för kanalens egen URL innan värdens strömproxy får försöka. */
 const MPV_FIRST_ATTEMPT_TIMEOUT_MS = 9_000
 
-const TS_REFILL_ON_UNDERRUN = [
-  { name: 'cache-pause', value: 'yes' },
-  { name: 'cache-pause-wait', value: '3' },
-]
+// Bara pausen: väntetiden styr appen (1 s vid start för snabb bild, 3 s efter
+// första omstarten). En egen 3 s här gav 3,5 s start i stället för 0,8 s.
+const TS_REFILL_ON_UNDERRUN = [{ name: 'cache-pause', value: 'yes' }]
 export const isHlsUrl = (url: string): boolean => /\.m3u8(?:$|[?#])/i.test(url)
 
 export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv }: LiveTvPlayerProps) {
@@ -819,7 +818,7 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
   // (rätt för HLS, där segmenten rullar bort under en paus), men på en TS-ström
   // betyder det att mpv spelar vidare ur en tom buffert när leverantören
   // levererar under realtid: slowmotion, ljudavbrott och till sist frysning
-  // (CL-kvällen 2026-10-13). Pausa i stället och fyll på 3 s, som mpv gör
+  // (CL-kvällen 2026-10-13). Pausa i stället och fyll på, som mpv gör
   // fristående. HLS behåller appens val.
   useEffect(() => {
     if (engineKind !== 'mpv' || !mpvFileLoaded || isHlsUrl(channel.url)) return
