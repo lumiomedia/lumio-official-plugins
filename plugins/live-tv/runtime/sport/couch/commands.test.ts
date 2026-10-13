@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { SportMatch, MatchSource } from '../sport-model'
 import type { FixtureDetail } from '../provider'
-import { answerSportQuery, runSportCommand, type SportDeps } from './commands'
+import { __resetFollowUndoForTests, answerSportQuery, runSportCommand, type SportDeps } from './commands'
 import { __resetPresenceForTests, hasCouchPresence } from './presence'
 import { __resetGoalsForTests, addGoal, openGoals } from './goals'
 import type { MultiviewState } from '../../tv/tv-multiview-store'
@@ -34,7 +34,7 @@ const deps = (ms: SportMatch[], o: Partial<SportDeps> = {}): SportDeps => ({
   searchDeps: () => ({ candidates: () => [], hasKey: false, provider: async () => [], sports: () => [], primary: 'api-sports', label: (s) => s }),
   ...o,
 })
-beforeEach(() => { opened = []; mv = null; __resetPresenceForTests(); __resetGoalsForTests(); __resetPluginStorageForTests() })
+beforeEach(() => { opened = []; mv = null; __resetPresenceForTests(); __resetGoalsForTests(); __resetPluginStorageForTests(); __resetFollowUndoForTests() })
 
 describe('runSportCommand', () => {
   it('play-match öppnar Sport med bästa kanalen och autoplay', async () => {
@@ -127,6 +127,25 @@ describe('Följ lag', () => {
     expect(getFollows()[0].alert).toBe('kickoff')
     await runSportCommand({ id: 'c', type: 'sport-follow', sport: 'football', kind: 'team', key: 'malmo ff', name: 'Malmö FF' }, deps([]))
     expect(getFollows()).toEqual([])
+  })
+  it('Ångra inom 30 s återställer hela posten: klocka och källans id', async () => {
+    const follow = { id: 'c', type: 'sport-follow' as const, sport: 'football', kind: 'team' as const, key: 'malmo ff', name: 'Malmö FF' }
+    await runSportCommand({ ...follow, providerIds: { 'api-sports': '9' } }, deps([]))
+    await runSportCommand({ id: 'c', type: 'sport-follow-bell', sport: 'football', kind: 'team', key: 'malmo ff', bell: 'kickoff' }, deps([]))
+    await runSportCommand(follow, deps([]))
+    expect(getFollows()).toEqual([])
+    await runSportCommand(follow, deps([]))
+    expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: 'malmo ff', name: 'Malmö FF', providerIds: { 'api-sports': '9' }, alert: 'kickoff' }])
+  })
+  it('efter 30 s blir det ett nytt, tomt följ', async () => {
+    const follow = { id: 'c', type: 'sport-follow' as const, sport: 'football', kind: 'team' as const, key: 'malmo ff', name: 'Malmö FF' }
+    let t = 1_000
+    const dd = deps([], { now: () => t })
+    await runSportCommand({ ...follow, providerIds: { 'api-sports': '9' } }, dd)
+    await runSportCommand(follow, dd)
+    t += 31_000
+    await runSportCommand(follow, dd)
+    expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: 'malmo ff', name: 'Malmö FF' }])
   })
   it('okänd sport vägras', async () => {
     expect(await runSportCommand({ id: 'c', type: 'sport-follow', sport: 'curling', kind: 'team', key: 'x', name: 'X' }, deps([]))).toEqual({ id: 'c', ok: false, error: 'bad-sport' })

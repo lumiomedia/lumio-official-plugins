@@ -4,7 +4,7 @@ import { encodeChannelParams, LIVE_TV_SPORT_PAGE_ID } from '../../live-tv-shell'
 import type { FixtureDetail, FixtureEvent, LineupEntry } from '../provider'
 import { rankedSources } from '../sport-day-model'
 import { SPORT_KINDS, sourceChannel, type MatchSource, type SportKind, type SportMatch } from '../sport-model'
-import { setFollowAlert, toggleFollow, type SportFollow, type SportOverrides, type SportSettings } from '../sport-store'
+import { getFollows, isFollowing, setFollowAlert, toggleFollow, type SportFollow, type SportOverrides, type SportSettings } from '../sport-store'
 import { followList, searchFollows, type SearchDeps } from './follows'
 import { assignTile, enlargeTile, setLayout, tileCount, type MultiviewState } from '../../tv/tv-multiview-store'
 import { dismissGoal } from './goals'
@@ -73,6 +73,11 @@ function runMultiview(cmd: MvCommand, d: SportDeps): CouchAck | void {
   }
 }
 
+/** Ångra efter "Ta bort" på telefonen: posten som togs bort, i 30 s. */
+const UNDO_MS = 30_000
+let lastRemoved: { follow: SportFollow; at: number } | null = null
+export function __resetFollowUndoForTests(): void { lastRemoved = null }
+
 export async function runSportCommand(cmd: SportCommand, d: SportDeps): Promise<CouchAck | void> {
   switch (cmd.type) {
     case 'mv-audio':
@@ -85,7 +90,18 @@ export async function runSportCommand(cmd: SportCommand, d: SportDeps): Promise<
     case 'sport-follow': {
       if (!isSport(cmd.sport)) return { id: cmd.id, ok: false, error: 'bad-sport' }
       // Samma post som TV:ns väljare bygger (sport-follows.tsx): växlar, så Ångra är samma kommando igen.
-      toggleFollow({ sport: cmd.sport, kind: cmd.kind, key: cmd.key, name: cmd.name, ...(cmd.providerIds && Object.keys(cmd.providerIds).length ? { providerIds: cmd.providerIds } : {}) })
+      const target: SportFollow = { sport: cmd.sport, kind: cmd.kind, key: cmd.key, name: cmd.name, ...(cmd.providerIds && Object.keys(cmd.providerIds).length ? { providerIds: cmd.providerIds } : {}) }
+      const now = d.now()
+      const existing = getFollows().find((f) => isFollowing([f], target))
+      if (existing) {
+        // Borttagning: spara hela posten (klocka, märke, källans id) så att Ångra återställer den.
+        lastRemoved = { follow: existing, at: now }
+        toggleFollow(existing)
+        return
+      }
+      const undo = lastRemoved && now - lastRemoved.at < UNDO_MS && isFollowing([lastRemoved.follow], target) ? lastRemoved.follow : null
+      lastRemoved = null
+      toggleFollow(undo ?? target)
       return
     }
     case 'sport-follow-bell':
