@@ -11,7 +11,7 @@ import type { SportKind } from './sport-model'
  * i spelaren har efterfrågan, appen syns och någon täckt match är het. Ett
  * "allt live"-anrop per sport. Intervallet räknas av kvothanteraren.
  */
-export type DemandReason = 'sport-view' | 'match-center' | 'player'
+export type DemandReason = 'sport-view' | 'match-center' | 'player' | 'couch'
 
 const demand = new Map<DemandReason, number>()
 const demandListeners = new Set<() => void>()
