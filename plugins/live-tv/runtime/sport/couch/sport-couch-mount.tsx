@@ -8,8 +8,13 @@ import { onPlayingChannelChanged, playingChannel } from '../goal-alerts'
 import type { ProviderId } from '../provider'
 import { currentResults, useSportResults, type ResultsController } from '../results-controller'
 import { localDayKey, useSportDay } from '../sport-epg'
-import type { SportMatch } from '../sport-model'
-import { SPORT_SETTINGS_KEY, getFollows, getOverrides } from '../sport-store'
+import type { SportDay, SportMatch } from '../sport-model'
+import { SPORT_FOLLOWS_KEY, SPORT_SETTINGS_KEY, getFollows, getOverrides, getSportSettings } from '../sport-store'
+import { searchFollowTargets } from '../follow-search'
+import { followCandidates } from '../sport-day-model'
+import { KIND_KEYS } from '../sport-ctx'
+import { tvText, useTvText } from '../../tv/tv-strings'
+import { searchSports } from './follows'
 import { answerSportQuery, runSportCommand, type SportDeps } from './commands'
 import { couchMarks, onCouchMarksChanged } from './context'
 import { onGoalsChanged, openGoals } from './goals'
@@ -72,6 +77,29 @@ function loadDetail(m: SportMatch) {
   return m.status === 'finished' ? c.cachedFixture(m.kind, fr) : c.loadFixture(m.kind, fr, false)
 }
 
+/** Värdens språk för Följer-listans texter (sätts av monteringen; frågorna körs utanför React). */
+let text: ReturnType<SportDeps['text']> = { tt: (k, v) => tvText('sv', k, v), locale: 'sv-SE' }
+
+/** Följ lag-sökningens kandidater: dagens lag och ligor ur EPG:n, lagen med sin liga. */
+function searchDeps(): ReturnType<SportDeps['searchDeps']> {
+  const matches = todaysMatches()
+  const leagueOf = new Map<string, string>()
+  for (const m of matches) {
+    if (m.homeKey && !leagueOf.has(m.homeKey)) leagueOf.set(m.homeKey, m.league)
+    if (m.awayKey && !leagueOf.has(m.awayKey)) leagueOf.set(m.awayKey, m.league)
+  }
+  const settings = getSportSettings()
+  return {
+    candidates: () => followCandidates([{ matches } as SportDay])
+      .map((c) => (c.kind === 'team' && leagueOf.has(c.key) ? { ...c, league: leagueOf.get(c.key) } : c)),
+    hasKey: !!currentResults(),
+    provider: searchFollowTargets,
+    sports: () => searchSports(getFollows(), matches),
+    primary: settings.provider,
+    label: (s) => text.tt(KIND_KEYS[s]),
+  }
+}
+
 const deps: SportDeps = {
   matches: todaysMatches,
   focusId: () => snapshotNow().focus?.id ?? null,
@@ -81,6 +109,10 @@ const deps: SportDeps = {
   now: () => Date.now(),
   multiview: () => (couchMarks().multiview ? getMultiviewState() : null),
   setMultiview: setMultiviewState,
+  settings: getSportSettings,
+  follows: getFollows,
+  text: () => text,
+  searchDeps,
 }
 
 /**
@@ -111,6 +143,8 @@ const EMPTY: SportMatch[] = []
 export function SportCouchMount() {
   // Äldre app: SDK:t saknar Soffläge, och då görs ingenting.
   const enabled = typeof hasCouchSdk === 'function' && hasCouchSdk()
+  const { tt, locale } = useTvText()
+  useEffect(() => { text = { tt, locale } }, [tt, locale])
   const [present, setPresent] = useState(hasCouchPresence)
   const [watching, setWatching] = useState(tvShowsSportish)
   const notifyRef = useRef<() => void>(() => {})
@@ -144,6 +178,8 @@ export function SportCouchMount() {
       onCouchMarksChanged(() => { setWatching(tvShowsSportish()); notify() }),
       onPresenceChanged(() => { setPresent(hasCouchPresence()); notify() }),
       onPluginStorageChanged(LIVE_TV_PLUGIN_ID, MULTIVIEW_KEY, notify),
+      // Följda lag ändrar "följt" i bilden (och Följer-listan på telefonen).
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_FOLLOWS_KEY, notify),
       onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => { watchController(); notify() }),
       // Nytt eller stängt mål (TV:n eller en telefon): alla telefoner får samma lista.
       onGoalsChanged(notify),

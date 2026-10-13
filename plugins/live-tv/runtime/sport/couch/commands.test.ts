@@ -5,6 +5,9 @@ import { answerSportQuery, runSportCommand, type SportDeps } from './commands'
 import { __resetPresenceForTests, hasCouchPresence } from './presence'
 import { __resetGoalsForTests, addGoal, openGoals } from './goals'
 import type { MultiviewState } from '../../tv/tv-multiview-store'
+import { __resetPluginStorageForTests } from '@/lib/plugin-sdk'
+import { getFollows, type SportSettings } from '../sport-store'
+import { tvText } from '../../tv/tv-strings'
 
 const src = (key: string): MatchSource => ({ channelKey: key, name: key, url: `http://${key}`, logo: null, group: 'g', tvgId: null, sourceId: 's', quality: null, programmeStart: 0, programmeStop: 10, liveFlag: true })
 const match = (o: Partial<SportMatch>): SportMatch => ({ id: 'm', kind: 'football', league: 'L', leagueKey: 'l', home: 'A', away: 'B', homeKey: 'a', awayKey: 'b', event: null, start: 0, stop: 7_200_000, status: 'live', rerun: false, round: null, venue: null, sources: [src('k1')], coverage: 'full', fixture: { provider: 'p', id: '1' }, ...o })
@@ -24,9 +27,14 @@ let opened: unknown[] = []
 let mv: MultiviewState | null = null
 const deps = (ms: SportMatch[], o: Partial<SportDeps> = {}): SportDeps => ({
   matches: () => ms, focusId: () => 'm', overrides: () => ({}), open: (t) => { opened.push(t) }, detail: async () => detail, now: () => 1_000,
-  multiview: () => mv, setMultiview: (s) => { mv = s }, ...o,
+  multiview: () => mv, setMultiview: (s) => { mv = s },
+  settings: () => ({ alert: '15' }) as unknown as SportSettings,
+  follows: getFollows,
+  text: () => ({ tt: (k, v) => tvText('sv', k, v), locale: 'sv-SE' }),
+  searchDeps: () => ({ candidates: () => [], hasKey: false, provider: async () => [], sports: () => [], primary: 'api-sports', label: (s) => s }),
+  ...o,
 })
-beforeEach(() => { opened = []; mv = null; __resetPresenceForTests(); __resetGoalsForTests() })
+beforeEach(() => { opened = []; mv = null; __resetPresenceForTests(); __resetGoalsForTests(); __resetPluginStorageForTests() })
 
 describe('runSportCommand', () => {
   it('play-match öppnar Sport med bästa kanalen och autoplay', async () => {
@@ -111,10 +119,34 @@ describe('Multiview-kommandon', () => {
   })
 })
 
+describe('Följ lag', () => {
+  it('sport-follow växlar följet med källans id; sport-follow-bell sätter klockan', async () => {
+    await runSportCommand({ id: 'c', type: 'sport-follow', sport: 'football', kind: 'team', key: 'malmo ff', name: 'Malmö FF', providerIds: { 'api-sports': '9' } }, deps([]))
+    expect(getFollows()).toEqual([{ sport: 'football', kind: 'team', key: 'malmo ff', name: 'Malmö FF', providerIds: { 'api-sports': '9' } }])
+    await runSportCommand({ id: 'c', type: 'sport-follow-bell', sport: 'football', kind: 'team', key: 'malmo ff', bell: 'kickoff' }, deps([]))
+    expect(getFollows()[0].alert).toBe('kickoff')
+    await runSportCommand({ id: 'c', type: 'sport-follow', sport: 'football', kind: 'team', key: 'malmo ff', name: 'Malmö FF' }, deps([]))
+    expect(getFollows()).toEqual([])
+  })
+  it('okänd sport vägras', async () => {
+    expect(await runSportCommand({ id: 'c', type: 'sport-follow', sport: 'curling', kind: 'team', key: 'x', name: 'X' }, deps([]))).toEqual({ id: 'c', ok: false, error: 'bad-sport' })
+    expect(getFollows()).toEqual([])
+  })
+  it('frågorna sport-follows och sport-follow-search', async () => {
+    await runSportCommand({ id: 'c', type: 'sport-follow', sport: 'football', kind: 'team', key: 'a', name: 'A' }, deps([]))
+    const live = match({ start: 0, stop: 7_200_000 })
+    expect(await answerSportQuery({ id: 'q', type: 'sport-follows' }, deps([live]))).toEqual({
+      follows: [{ sport: 'football', kind: 'team', key: 'a', name: 'A', crest: null, bell: '15', next: { text: 'LIVE mot B', live: true } }],
+    })
+    const r = await answerSportQuery({ id: 'q', type: 'sport-follow-search', q: 'a' }, deps([], { searchDeps: () => ({ candidates: () => [{ sport: 'football', kind: 'team', key: 'a', name: 'A', count: 1 }], hasKey: false, provider: async () => [], sports: () => [], primary: 'api-sports', label: () => 'Fotboll' }) }))
+    expect(r).toEqual({ teams: [{ sport: 'football', kind: 'team', key: 'a', name: 'A', crest: null, subtitle: 'Fotboll', following: true }], leagues: [] })
+  })
+})
+
 describe('answerSportQuery', () => {
   it('händelser senaste överst med löpande ställning; missad straff räknas inte', async () => {
     const d = await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'm' }, deps([match({})]))
-    if ('error' in d) throw new Error(d.error)
+    if (!('events' in d)) throw new Error(JSON.stringify(d))
     expect(d.events.map((e) => e.minute)).toEqual(["67'", "60'", "58'", "44'", "12'"])
     expect(d.events[0].score).toEqual([2, 1])
     expect(d.events[1].score).toBeUndefined()
@@ -122,7 +154,7 @@ describe('answerSportQuery', () => {
   })
   it('uppställningen bär mål och byten', async () => {
     const d = await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'm' }, deps([match({})]))
-    if ('error' in d) throw new Error(d.error)
+    if (!('events' in d)) throw new Error(JSON.stringify(d))
     const xi = d.lineups[0].startXI
     expect(xi.find((p) => p.name === 'Ett')?.goals).toBe(2)
     expect(xi.find((p) => p.name === 'Ut')?.subbedOff).toBe("58'")

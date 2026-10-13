@@ -1,9 +1,11 @@
-import type { CouchAck, CouchSportDetail, CouchSportEvent, CouchSportLineupEntry, SportCommand, SportQuery } from '@/lib/plugin-sdk'
+import type { CouchAck, CouchFollow, CouchFollowHit, CouchSportDetail, CouchSportEvent, CouchSportLineupEntry, SportCommand, SportQuery } from '@/lib/plugin-sdk'
+import type { TvStringKey } from '../../tv/tv-strings'
 import { encodeChannelParams, LIVE_TV_SPORT_PAGE_ID } from '../../live-tv-shell'
 import type { FixtureDetail, FixtureEvent, LineupEntry } from '../provider'
 import { rankedSources } from '../sport-day-model'
-import { sourceChannel, type MatchSource, type SportMatch } from '../sport-model'
-import type { SportOverrides } from '../sport-store'
+import { SPORT_KINDS, sourceChannel, type MatchSource, type SportKind, type SportMatch } from '../sport-model'
+import { setFollowAlert, toggleFollow, type SportFollow, type SportOverrides, type SportSettings } from '../sport-store'
+import { followList, searchFollows, type SearchDeps } from './follows'
 import { assignTile, enlargeTile, setLayout, tileCount, type MultiviewState } from '../../tv/tv-multiview-store'
 import { dismissGoal } from './goals'
 import { markPresence } from './presence'
@@ -20,7 +22,14 @@ export type SportDeps = {
   /** Multiviews tillstånd, eller null när TV:n inte visar Multiview. */
   multiview(): MultiviewState | null
   setMultiview(s: MultiviewState): void
+  settings(): SportSettings
+  follows(): SportFollow[]
+  /** Texterna för Följer-listan på värdens språk. */
+  text(): { tt: (k: TvStringKey, v?: Record<string, string | number>) => string; locale: string }
+  searchDeps(): Omit<SearchDeps, 'follows'>
 }
+
+const isSport = (s: string): s is SportKind => (SPORT_KINDS as readonly string[]).includes(s)
 
 // Via Sport-sidan: spelaren går tillbaka till Sport när den stängs (som sportRowTarget).
 function playSource(d: SportDeps, s: MatchSource): void {
@@ -72,6 +81,16 @@ export async function runSportCommand(cmd: SportCommand, d: SportDeps): Promise<
       return runMultiview(cmd, d)
     case 'sport-goal-dismiss':
       dismissGoal(cmd.goalId)
+      return
+    case 'sport-follow': {
+      if (!isSport(cmd.sport)) return { id: cmd.id, ok: false, error: 'bad-sport' }
+      // Samma post som TV:ns väljare bygger (sport-follows.tsx): växlar, så Ångra är samma kommando igen.
+      toggleFollow({ sport: cmd.sport, kind: cmd.kind, key: cmd.key, name: cmd.name, ...(cmd.providerIds && Object.keys(cmd.providerIds).length ? { providerIds: cmd.providerIds } : {}) })
+      return
+    }
+    case 'sport-follow-bell':
+      if (!isSport(cmd.sport)) return { id: cmd.id, ok: false, error: 'bad-sport' }
+      setFollowAlert({ sport: cmd.sport, kind: cmd.kind, key: cmd.key }, cmd.bell)
       return
     case 'sport-presence':
       // phoneId stämplas av Rust; saknas det kan närvaron inte räknas per telefon.
@@ -136,9 +155,19 @@ export function toCouchDetail(fd: FixtureDetail, at: number): CouchSportDetail {
   }
 }
 
-export async function answerSportQuery(q: SportQuery, d: SportDeps): Promise<CouchSportDetail | { error: string }> {
-  // Följfrågorna kopplas in i fas 2 (Task 7).
-  if (q.type !== 'sport-match') return { error: 'unsupported' }
+export type SportQueryAnswer =
+  | CouchSportDetail
+  | { follows: CouchFollow[] }
+  | { teams: CouchFollowHit[]; leagues: CouchFollowHit[] }
+  | { error: string }
+
+export async function answerSportQuery(q: SportQuery, d: SportDeps): Promise<SportQueryAnswer> {
+  if (q.type === 'sport-follows') {
+    const { tt, locale } = d.text()
+    return { follows: followList(d.follows(), d.matches(), d.settings(), d.now(), tt, locale) }
+  }
+  // Utan nyckel bara EPG:ns kandidater; källan nås aldrig från telefonen direkt.
+  if (q.type === 'sport-follow-search') return searchFollows(q.q, { ...d.searchDeps(), follows: d.follows() })
   const m = d.matches().find((x) => x.id === q.matchId)
   if (!m) return { error: 'unknown-match' }
   // Fas 1 har inget spoilerskydd: en repris får aldrig skicka originalets händelser eller ställning.
