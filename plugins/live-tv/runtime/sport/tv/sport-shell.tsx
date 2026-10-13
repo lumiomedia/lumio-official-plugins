@@ -16,6 +16,7 @@ import { useRowNeighbours } from '../row-nav'
 import { hasToasts } from '../../toast-center'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
+import { useCouchMark } from '../couch/context'
 import { RateLineView } from './sport-score'
 import { SportResults } from './sport-results'
 import { Notice } from './sport-parts'
@@ -145,6 +146,7 @@ function SportTv({ model, nav, standalone = false }: TvViewProps) {
      TV-läget sedan värden ritar sin klocka där (app: sportsidan i TV-läget). */
   const ownClock = !standalone
   usePollDemand('sport-view', true)
+  useCouchMark('sport-page', true)
   useSportLayerEdges(nav)
   // ▾/▴ i radordning (nästa rad, första stoppet) på TV — row-nav.ts.
   const stageRef = useRef<HTMLDivElement | null>(null)

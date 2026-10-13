@@ -15,6 +15,7 @@ import { useSportBackdrop } from '../backdrop'
 import { SportBackdropLayer } from '../sport-backdrop'
 import { useSportResults } from '../results-controller'
 import { usePollDemand } from '../live-poller'
+import { useCouchMark } from '../couch/context'
 import { useSportCtx } from '../sport-ctx'
 import { SportIcons } from '../sport-icons'
 import { SportResultsPhone } from './sport-results-phone'
@@ -66,6 +67,7 @@ export function SportPhone({ model, nav, standalone = false }: TvViewProps) {
   const { matches: mergedMatches, allMatches, controller } = useSportResults({ day, epg: selected.data?.matches ?? NO_MATCHES })
   const mergedDay = useMemo(() => (selected.data ? { ...selected.data, matches: mergedMatches } : null), [selected.data, mergedMatches])
   usePollDemand('sport-view', true)
+  useCouchMark('sport-page', true)
   const view = ctx.settings.phoneView ?? 'matchday'
   // Ny flik, vy eller dag börjar överst (rullytan delas mellan dem).
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0 }, [tab, view, offset])

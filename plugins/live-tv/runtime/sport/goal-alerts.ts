@@ -30,5 +30,15 @@ export function goalBody(e: GoalEvent): string {
 
 let playing: string | null = null
 /** Spelaren sätter sin kanal. Notisen hoppas över när overlayn redan visar målet. */
-export function setPlayingChannel(key: string | null): void { playing = key }
+const playingListeners = new Set<(key: string | null) => void>()
+export function setPlayingChannel(key: string | null): void {
+  if (playing === key) return
+  playing = key
+  for (const cb of [...playingListeners]) cb(key)
+}
 export function playingChannel(): string | null { return playing }
+/** Soffläge: telefonens sportläge följer kanalen som spelar. */
+export function onPlayingChannelChanged(cb: (key: string | null) => void): () => void {
+  playingListeners.add(cb)
+  return () => { playingListeners.delete(cb) }
+}

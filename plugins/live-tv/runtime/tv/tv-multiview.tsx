@@ -12,6 +12,7 @@ import { useVideoSurface, videoSurfaceCapabilities } from './video-surface'
 import { logSurfaceStack } from './surface-diagnostics'
 import { TvChannelPicker } from './tv-channel-picker'
 import { TvMultiviewPhone } from './mobile/multiview-phone'
+import { useCouchMark } from '../sport/couch/context'
 
 const GRID: Record<MultiviewLayout, { columns: string; rows: string }> = {
   2: { columns: '1fr 1fr', rows: '1fr' },
@@ -29,6 +30,8 @@ const NARROW_GRID = { columns: '1fr', rows: '1fr 1fr' }
  * — så kan ingen krok hamna före returen och ge "rendered more/fewer hooks".
  */
 export function TvMultiview(props: TvViewProps) {
+  // Soffläge: telefonen styr Multiview medan den här vyn är uppe.
+  useCouchMark('multiview', true)
   return props.phone ? <TvMultiviewPhone {...props} /> : <TvMultiviewDesktop {...props} />
 }
 
