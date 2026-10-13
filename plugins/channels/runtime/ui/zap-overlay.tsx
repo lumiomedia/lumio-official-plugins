@@ -5,11 +5,11 @@
  * kanalnummer, tonande OSD och kanallista. Rent visuellt lager; spelaren och
  * dess tangenter ägs av ChannelPlayer. Bara hsl()/rgba(), rem för TV-text.
  */
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { ChannelDef } from '../model/channel'
-import { programmeAt } from '../model/schedule'
+import { buildRundown, programmeAt } from '../model/schedule'
 import { NOISE_MS } from '../play/zap-logic'
-import { useChannelPool } from '../state/store'
+import { readCachedPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { C, FONT, RADIUS } from './tokens'
 import type { useText } from './use-text'
@@ -46,7 +46,7 @@ export interface ZapOverlayProps {
   t: T
   onSelect(id: string): void
   onPrevious(): void
-  onOpenList(): void
+  onToggleList(): void
   onCloseList(): void
   onExit(): void
   onActivity(): void
@@ -165,7 +165,7 @@ export function ZapOverlay(p: ZapOverlayProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
           <span style={{ flex: 1, minWidth: 0, fontSize: isTv ? '0.95rem' : '0.8rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{times}</span>
           {p.hasPrevious ? <ZapButton onClick={p.onPrevious} isTv={isTv}>{t('zapPrev')}</ZapButton> : null}
-          <ZapButton onClick={p.onOpenList} isTv={isTv} init={!p.listOpen}>{t('zapList')}</ZapButton>
+          <ZapButton onClick={p.onToggleList} isTv={isTv} init={!p.listOpen}>{t('zapList')}</ZapButton>
           <ZapButton onClick={p.onExit} isTv={isTv}>{t('zapExit')}</ZapButton>
         </div>
       </div>
@@ -189,34 +189,50 @@ export function ZapOverlay(p: ZapOverlayProps) {
 
 function ZapList(p: ZapOverlayProps) {
   const narrow = useNarrow()
-  const sorted = [...p.channels].sort((a, b) => a.number - b.number)
+  const sorted = useMemo(() => [...p.channels].sort((a, b) => a.number - b.number), [p.channels])
+  // Rundown ur redan sparad poolcache, en gång per öppning; kall cache ger "—".
+  const rundowns = useMemo(
+    () => new Map(sorted.map((c) => {
+      const pool = readCachedPool(c.id)
+      return [c.id, pool ? buildRundown(pool, c.order, c.seed) : null] as const
+    })),
+    [sorted],
+  )
   const panel: CSSProperties = narrow
     ? { left: 0, right: 0, bottom: 0, maxHeight: '60vh', borderRadius: `${RADIUS.osd}px ${RADIUS.osd}px 0 0` }
     : { left: 0, top: 0, bottom: 0, width: 290 }
   return (
-    <div
-      data-zap-list=""
-      role="listbox"
-      style={{
-        ...panel, position: 'absolute', pointerEvents: 'auto', overflowY: 'auto', display: 'flex', flexDirection: 'column',
-        padding: 'calc(var(--android-inset-top, 0px) + 1rem) 0.6rem 1rem', gap: '0.25rem',
-        background: 'rgba(5,8,22,0.82)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-        borderRight: narrow ? undefined : '1px solid rgba(255,255,255,0.08)',
-      }}
-    >
-      <div style={{ fontSize: '0.7rem', letterSpacing: '0.22em', fontWeight: 700, color: C.textDim, padding: '0 0.5rem 0.4rem' }}>{p.t('zapListTitle').toUpperCase()}</div>
-      {sorted.map((c) => (
-        <ZapListRow key={c.id} channel={c} active={c.id === p.channel.id} now={p.now} isTv={p.isTv} t={p.t} onSelect={p.onSelect} />
-      ))}
-    </div>
+    <>
+      {/* Tryck utanför stänger listan. */}
+      <div data-zap-list-backdrop="" aria-hidden="true" onClick={p.onCloseList} style={{ position: 'absolute', inset: 0, pointerEvents: 'auto', background: narrow ? 'rgba(5,8,22,0.4)' : 'transparent' }} />
+      <div
+        data-zap-list=""
+        role="listbox"
+        style={{
+          ...panel, position: 'absolute', pointerEvents: 'auto', overflowY: 'auto', display: 'flex', flexDirection: 'column',
+          padding: 'calc(var(--android-inset-top, 0px) + 1rem) 0.6rem 1rem', gap: '0.25rem',
+          background: 'rgba(5,8,22,0.82)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+          borderRight: narrow ? undefined : '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 0.5rem 0.4rem' }}>
+          <span style={{ flex: 1, fontSize: '0.7rem', letterSpacing: '0.22em', fontWeight: 700, color: C.textDim }}>{p.t('zapListTitle').toUpperCase()}</span>
+          <ZapButton onClick={p.onCloseList} isTv={p.isTv}>{p.t('playerClose')}</ZapButton>
+        </div>
+        {sorted.map((c) => {
+          const rundown = rundowns.get(c.id)
+          const slot = rundown && rundown.length > 0 ? programmeAt(rundown, c.airWindow, p.now) : null
+          return (
+            <ZapListRow key={c.id} channel={c} active={c.id === p.channel.id} title={slot && slot.kind === 'programme' ? slot.item.title : null} isTv={p.isTv} onSelect={p.onSelect} />
+          )
+        })}
+      </div>
+    </>
   )
 }
 
-/** En rad: nummer, namn och vad som sänds nu. Titeln ur kanalens pool, inga strömuppslag. */
-function ZapListRow({ channel, active, now, isTv, t, onSelect }: { channel: ChannelDef; active: boolean; now: number; isTv: boolean; t: T; onSelect(id: string): void }) {
-  const { rundown } = useChannelPool(channel)
-  const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now) : null
-  const title = slot && slot.kind === 'programme' ? slot.item.title : null
+/** En rad: nummer, namn och vad som sänds nu (— när poolen inte är cachad). */
+function ZapListRow({ channel, active, title, isTv, onSelect }: { channel: ChannelDef; active: boolean; title: string | null; isTv: boolean; onSelect(id: string): void }) {
   return (
     <button
       type="button"
@@ -234,7 +250,7 @@ function ZapListRow({ channel, active, now, isTv, t, onSelect }: { channel: Chan
       <span style={{ fontFamily: FONT.mono, fontSize: isTv ? '1rem' : '0.8rem', color: active ? C.accent : C.textDim, minWidth: '1.8rem' }}>{channel.number}</span>
       <span style={{ minWidth: 0, flex: 1 }}>
         <span style={{ display: 'block', fontSize: isTv ? '1.05rem' : '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</span>
-        <span style={{ display: 'block', fontSize: isTv ? '0.85rem' : '0.7rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title ?? t('zapNothingOn')}</span>
+        <span style={{ display: 'block', fontSize: isTv ? '0.85rem' : '0.7rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title ?? '—'}</span>
       </span>
     </button>
   )

@@ -100,7 +100,10 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     setZapOn(false)
     setListOpen(false)
     setDigits('')
-  }, [])
+    // Halvfärdigt sifferval ska inte dyka upp som ett byte efteråt.
+    if (digitTimer.current !== null) window.clearTimeout(digitTimer.current)
+    digitBuf.flush(Infinity)
+  }, [digitBuf])
 
   // Förra/senaste kanal vid varje kanalbyte.
   const channelId = channel?.id ?? null
@@ -232,14 +235,18 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   // ── Tangenter ──────────────────────────────────────────────────────────────
   const modalMounted = !!(onScreen && Player)
   const osdRef = useRef<HTMLDivElement | null>(null)
-  const osdShownRef = useRef(osdVisible)
-  osdShownRef.current = osdVisible
+  const pokeRef = useRef(poke)
+  pokeRef.current = poke
+  // Samma villkor som OSD:n renderas med.
+  const osdShownRef = useRef(true)
+  osdShownRef.current = osdVisible || status !== 'playing'
 
   // Sifferval: bufferten levererar efter 1,5 s eller tre siffror.
   const commitNumber = useCallback((n: number) => {
     setDigits('')
     const target = channelByNumber(channelsRef.current, n)
-    if (target) goToChannel(target.id)
+    // Det egna numret är ett icke-byte (annars brus och ny begäran för inget).
+    if (target && target.id !== stateRef.current.request.channelId) goToChannel(target.id)
   }, [goToChannel])
   const pushDigit = useCallback((digit: number) => {
     const r = digitBuf.push(digit, Date.now())
@@ -256,22 +263,21 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     }, 1520)
   }, [digitBuf, commitNumber])
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
+  const onKey = (event: KeyboardEvent) => {
       const zap = zapRef.current
       if (zap.zapOn) {
         // Bakåt i zappläget: lista öppen → stäng listan, annars lämna zappläget.
         // Konsumeras bara här; annars går Bakåt vidare till den vanliga kedjan.
         if (BACK_KEYS.has(event.key)) {
           event.preventDefault()
-          event.stopPropagation()
+          event.stopImmediatePropagation()
           if (zap.listOpen) setListOpen(false)
           else exitZap()
           return
         }
         if (/^[0-9]$/.test(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
           event.preventDefault()
-          event.stopPropagation()
+          event.stopImmediatePropagation()
           poke()
           pushDigit(Number(event.key))
           return
@@ -279,14 +285,14 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
         // OK med dold OSD visar den i stället för att trycka på en osynlig knapp.
         if (event.key === 'Enter' && !zap.listOpen && !osdShownRef.current) {
           event.preventDefault()
-          event.stopPropagation()
+          event.stopImmediatePropagation()
           poke()
           return
         }
         // ▲▼ zappar när listan är stängd (knapparna ligger i rad, pilarna behövs inte för fokus).
         if (!zap.listOpen && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
           event.preventDefault()
-          event.stopPropagation()
+          event.stopImmediatePropagation()
           step(event.key === 'ArrowUp' ? 1 : -1)
           return
         }
@@ -294,7 +300,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       // Utan appens spelare finns ingen som tar Bakåt: vi stänger själva.
       if (!modalMounted && BACK_KEYS.has(event.key)) {
         event.preventDefault()
-        event.stopPropagation()
+        event.stopImmediatePropagation()
         onClose()
         return
       }
@@ -309,13 +315,26 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
         return
       }
       event.preventDefault()
-      event.stopPropagation()
+      event.stopImmediatePropagation()
       step(delta)
     }
+  // Lyssnaren registreras EN gång vid montering och körs alltså före värdspelarens
+  // egna fångstlyssnare (modalen monteras senare, och om per program). Därför kan
+  // zappen ta pilar/OK före spelarens TV-fjärr, som annars stoppar dem.
+  const keyRef = useRef(onKey)
+  keyRef.current = onKey
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => keyRef.current(event)
     // Fångstfasen: spelarens egna lyssnare ska inte också reagera på kanalknapparna.
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [isTv, step, poke, modalMounted, onClose, exitZap, pushDigit])
+    window.addEventListener('keydown', handler, true)
+    // Beröring/mus väcker den tonade OSD:n.
+    const touch = () => pokeRef.current()
+    window.addEventListener('pointerdown', touch, true)
+    return () => {
+      window.removeEventListener('keydown', handler, true)
+      window.removeEventListener('pointerdown', touch, true)
+    }
+  }, [])
 
   // ── Rendering ──────────────────────────────────────────────────────────────
   // Det OSD:n beskriver: det som är på väg, annars det som spelas för den
@@ -357,7 +376,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       t={t}
       onSelect={(id) => { goToChannel(id); setListOpen(false) }}
       onPrevious={() => { if (prevId) goToChannel(prevId) }}
-      onOpenList={() => setListOpen(true)}
+      onToggleList={() => setListOpen((v) => !v)}
       onCloseList={() => setListOpen(false)}
       onExit={exitZap}
       onActivity={poke}

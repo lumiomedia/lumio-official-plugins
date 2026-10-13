@@ -28,6 +28,12 @@ export async function loadPoolCached(channel: ChannelDef, deps: SourceDeps = sou
   return items
 }
 
+/** Sparad pool utan uppslag: null när cachen är kall. Signaturen kontrolleras inte (visning, inte planering). */
+export function readCachedPool(channelId: string): PoolItem[] | null {
+  const cached = readPoolCache(channelId)
+  return cached ? (cached.items as PoolItem[]) : null
+}
+
 export function useChannels(): ChannelDef[] {
   const [channels, setChannels] = useState<ChannelDef[]>(readChannels)
   useEffect(() => {
