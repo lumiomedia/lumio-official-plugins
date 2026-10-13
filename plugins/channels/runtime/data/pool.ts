@@ -48,7 +48,9 @@ const RANK: Record<SourceId, number> = { library: 0, debrid: 1, watchlist: 2 }
 export function dedupePool(items: PoolItem[]): PoolItem[] {
   const best = new Map<string, PoolItem>()
   for (const item of items) {
-    const key = item.tmdbId != null ? `tmdb:${item.tmdbId}:${item.season ?? ''}:${item.episode ?? ''}` : `ref:${item.ref}`
+    // Avsnitt utan säsong/avsnittsnummer (debrid) får inte kollapsa till en post per serie.
+    const identified = item.tmdbId != null && (item.kind === 'movie' || (item.season != null && item.episode != null))
+    const key = identified ? `tmdb:${item.tmdbId}:${item.season ?? ''}:${item.episode ?? ''}` : `ref:${item.ref}`
     const current = best.get(key)
     if (!current || RANK[item.source] < RANK[current.source]) best.set(key, item)
   }

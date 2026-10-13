@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createMetaCache, type TitleMeta } from './meta-cache'
+import { createMetaCache, createSeasonsCache, type SeasonsEntry, type TitleMeta } from './meta-cache'
 
 function memoryStore() {
   let all: Record<string, TitleMeta> = {}
@@ -35,5 +35,24 @@ describe('metadatacachen', () => {
     now = 31 * 24 * 3600 * 1000
     await cache.ensure([{ kind: 'tv', tmdbId: 1 }])
     expect(fetcher).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('säsongscachen', () => {
+  it('cachar 30 dagar, delar samtida uppslag och cachar inte tomma svar', async () => {
+    let all: Record<string, SeasonsEntry> = {}
+    let now = 0
+    const fetcher = vi.fn(async (id: number) => (id === 9 ? [] : [{ season: 1, episodes: [{ episode: 1, title: 'x', runtime: 40 }] }]))
+    const load = createSeasonsCache({ read: () => all, write: (n) => { all = n } }, fetcher, () => now)
+    await Promise.all([load(1), load(1)])
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    await load(1)
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    await load(9)
+    await load(9)
+    expect(fetcher).toHaveBeenCalledTimes(3)
+    now = 31 * 24 * 3600 * 1000
+    await load(1)
+    expect(fetcher).toHaveBeenCalledTimes(4)
   })
 })

@@ -40,6 +40,14 @@ describe('dedupePool', () => {
     expect(dedupePool(items).map((i) => i.ref).sort()).toEqual(['db2', 'lib', 'solo'])
   })
 
+  it('slår inte ihop debrid-avsnitt utan säsong/avsnitt', () => {
+    const items = [
+      p({ ref: 'd1', kind: 'episode', source: 'debrid', tmdbId: 7 }),
+      p({ ref: 'd2', kind: 'episode', source: 'debrid', tmdbId: 7 }),
+    ]
+    expect(dedupePool(items)).toHaveLength(2)
+  })
+
   it('skiljer avsnitt åt', () => {
     const items = [
       p({ ref: 'e1', kind: 'episode', tmdbId: 5, season: 1, episode: 1 }),

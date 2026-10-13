@@ -59,10 +59,15 @@ export async function loadLibraryItems(deps: SourceDeps): Promise<PoolItem[]> {
     const titles: LibraryTitleLike[] = []
     // Kärnan kapar sidan vid 200, så bläddra tills allt (högst 600) är hämtat.
     for (let offset = 0; offset < MAX_TITLES; offset += PAGE) {
-      const page = await deps.queryLibrary({ kind: 'recent', full: true, limit: PAGE, offset })
+      // Fallerar en senare sida behåller vi titlarna från de tidigare.
+      const page = await deps.queryLibrary({ kind: 'recent', full: true, limit: PAGE, offset }).catch(() => null)
+      if (!page) break
       titles.push(...page.items)
       if (page.items.length < PAGE || (page.total != null && titles.length >= page.total)) break
     }
+    // Plex sätter aldrig runtimeMin: hämta längd via metadata för titlar som saknar den.
+    const lacking = titles.filter((t) => t.tmdbId != null && (t.kind === 'movie' ? !(t.runtimeMin! > 0) : !(t.runtimeMin! > 0) && (t.episodes ?? []).some((e) => !(e.runtimeMin! > 0))))
+    await deps.meta.ensure(lacking.map((t) => ({ kind: t.kind === 'movie' ? 'movie' as const : 'tv' as const, tmdbId: t.tmdbId! }))).catch(() => {})
     const items: PoolItem[] = []
     for (const t of titles) {
       const tv = t.kind !== 'movie'
@@ -123,7 +128,14 @@ export async function loadWatchlistItems(deps: SourceDeps): Promise<PoolItem[]> 
         play: { type: 'stream', imdbId, mediaType: 'movie' },
       })
     }
-    for (const s of shows) {
+    // Högst två serier åt gången mot /api/tv-info (fetchSeasons cachar själv).
+    const perShow: PoolItem[][] = shows.map(() => [])
+    let cursor = 0
+    const worker = async () => {
+      while (cursor < shows.length) {
+        const idx = cursor++
+        const s = shows[idx]!
+        const out = perShow[idx]!
       const meta = deps.meta.get('tv', s.tmdbId)
       const imdbId = s.imdbId || meta?.imdbId
       if (!imdbId) continue
@@ -132,7 +144,7 @@ export async function loadWatchlistItems(deps: SourceDeps): Promise<PoolItem[]> 
       for (const season of seasons) {
         if (season.season < 1 || season.season > WATCHLIST_SEASONS) continue
         for (const ep of season.episodes) {
-          items.push({
+          out.push({
             ref: `wl:tv:${s.tmdbId}:${season.season}:${ep.episode}`, title: ep.title || s.title, seriesTitle: s.title,
             kind: 'episode', source: 'watchlist', seriesKey: `wl:tv:${s.tmdbId}`, season: season.season, episode: ep.episode,
             genres: meta?.genres ?? [], year: meta?.year ?? null, tmdbId: s.tmdbId, imdbId,
@@ -143,7 +155,10 @@ export async function loadWatchlistItems(deps: SourceDeps): Promise<PoolItem[]> 
           })
         }
       }
+      }
     }
+    await Promise.all(Array.from({ length: Math.min(2, shows.length) }, worker))
+    items.push(...perShow.flat())
     return items
   } catch {
     return []

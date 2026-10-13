@@ -72,3 +72,32 @@ export function createMetaCache(
 
   return { get, ensure }
 }
+
+/** Säsongslistor (avsnitt + längd) per serie, för watchlist-tablån. */
+export type SeasonList = Array<{ season: number; episodes: Array<{ episode: number; title: string; runtime: number | null }> }>
+export interface SeasonsEntry { seasons: SeasonList; at: number }
+export interface SeasonsStore {
+  read(): Record<string, SeasonsEntry>
+  write(all: Record<string, SeasonsEntry>): void
+}
+
+/** Cachar fetcher-svaret 30 dagar per tmdbId; samtida anrop för samma serie delar ett uppslag. */
+export function createSeasonsCache(store: SeasonsStore, fetcher: (tmdbId: number) => Promise<SeasonList>, now: () => number = Date.now) {
+  const inflight = new Map<number, Promise<SeasonList>>()
+  return function load(tmdbId: number): Promise<SeasonList> {
+    const key = `seasons:${tmdbId}`
+    const hit = store.read()[key]
+    if (hit && now() - hit.at < TTL_MS) return Promise.resolve(hit.seasons)
+    const running = inflight.get(tmdbId)
+    if (running) return running
+    const job = fetcher(tmdbId)
+      .then((seasons) => {
+        // Tomt svar (fel eller okänd serie) cachas inte, så nästa laddning provar igen.
+        if (seasons.length > 0) store.write({ ...store.read(), [key]: { seasons, at: now() } })
+        return seasons
+      })
+      .finally(() => inflight.delete(tmdbId))
+    inflight.set(tmdbId, job)
+    return job
+  }
+}

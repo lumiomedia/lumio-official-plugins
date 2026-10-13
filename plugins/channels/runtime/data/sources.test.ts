@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { loadDebridItems, loadLibraryItems, loadPool, loadWatchlistItems, type SourceDeps } from './sources'
+import { createSeasonsCache, type SeasonsEntry } from './meta-cache'
 import { createChannel, emptyDraft } from '../model/channel'
 
 function deps(over: Partial<SourceDeps> = {}): SourceDeps {
@@ -54,5 +55,44 @@ describe('källadaptrarna', () => {
     const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'debrid'] }, [], 1, () => 0.1)
     const pool = await loadPool(ch, deps({ listDebridCloud: vi.fn(async () => { throw new Error('nät') }) }))
     expect(pool.length).toBeGreaterThan(0)
+  })
+
+  it('watchlist: andra laddningen gör inga nya säsongsanrop', async () => {
+    let all: Record<string, SeasonsEntry> = {}
+    const fetcher = vi.fn(async () => [{ season: 1, episodes: [{ episode: 1, title: 'S', runtime: 51 }] }])
+    const d = deps({ fetchSeasons: createSeasonsCache({ read: () => all, write: (n) => { all = n } }, fetcher) })
+    await loadWatchlistItems(d)
+    await loadWatchlistItems(d)
+    expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+
+  it('debrid: avsnitt utan nummer från samma serie blir egna poolposter', async () => {
+    const f = (n: number) => ({ provider: 'torbox' as const, fileRef: `${n}|1` })
+    const d = deps({ listDebridCloud: vi.fn(async () => [{ kind: 'tv' as const, title: 'Show', year: 2000, tmdbId: 11, files: [f(1), f(2)] }]) })
+    const pool = await loadPool(createChannel({ ...emptyDraft(), name: 'A', sources: ['debrid'] }, [], 1, () => 0.1), d)
+    expect(pool).toHaveLength(2)
+  })
+
+  it('bibliotek: längd ur egen runtime, annars metadata, annars standard', async () => {
+    const ensure = vi.fn(async () => {})
+    const d = deps({
+      queryLibrary: vi.fn(async () => ({ items: [
+        { key: 'a', kind: 'series' as const, tmdbId: 1, title: 'A', episodes: [{ key: 'e1', season: 1, episode: 1 }, { key: 'e2', season: 1, episode: 2, runtimeMin: 30 }] },
+        { key: 'b', kind: 'series' as const, tmdbId: 99, title: 'B', episodes: [{ key: 'e1', season: 1, episode: 1 }] },
+      ] })),
+      meta: { get: (_k: 'movie' | 'tv', id: number) => (id === 1 ? { runtimeMin: 55, genres: [], year: null, at: 0 } : null), ensure },
+    })
+    const items = await loadLibraryItems(d)
+    expect(ensure).toHaveBeenCalledWith([{ kind: 'tv', tmdbId: 1 }, { kind: 'tv', tmdbId: 99 }])
+    expect(items.map((i) => [i.ref, i.runtimeMin, i.runtimeKnown])).toEqual([
+      ['lib:a:e1', 55, true], ['lib:a:e2', 30, true], ['lib:b:e1', 45, false],
+    ])
+  })
+
+  it('bibliotek: kastar en senare sida behålls de tidigare', async () => {
+    const page = Array.from({ length: 200 }, (_, i) => ({ key: `m${i}`, kind: 'movie' as const, title: 't', runtimeMin: 90 }))
+    const q = vi.fn().mockResolvedValueOnce({ items: page, total: 400 }).mockRejectedValueOnce(new Error('nät'))
+    const items = await loadLibraryItems(deps({ queryLibrary: q }))
+    expect(items).toHaveLength(200)
   })
 })
