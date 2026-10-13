@@ -881,3 +881,63 @@ export interface LibraryFrameProps {
   /** Telefon: flikradens höjd i skärmpixlar. Valfri (app ≥ 0.1.624). */
   onInsetBottom?: (px: number) => void
 }
+
+// ── Soffläge (spegel av appens lib/couch/sport-protocol.ts + protocol.ts) ──
+export type CouchSportContext = 'sport-page' | 'channel' | 'multiview'
+export type CouchSportStatus = 'live' | 'ht' | 'finished' | 'upcoming' | 'replay'
+export type CouchSportTeam = { name: string; short: string; crest: string | null }
+export type CouchSportMatch = {
+  id: string; sport: string; league: string; round: number | null
+  home: CouchSportTeam | null; away: CouchSportTeam | null; event: string | null
+  status: CouchSportStatus; minute?: string; score?: [number, number]
+  start: number; end: number
+  channel: { key: string; name: string; best: boolean } | null
+  followed: boolean; onTv: boolean
+  hasDetail: { events: boolean; stats: boolean; lineup: boolean }
+}
+export type CouchSport = {
+  context: CouchSportContext | null; hasKey: boolean; focus: CouchSportMatch | null
+  focusIndex: { i: number; n: number } | null; now: CouchSportMatch[]; soon: CouchSportMatch[]; updatedAt: number | null
+}
+export type CouchSportEvent = { minute: string; type: 'goal' | 'card' | 'sub' | 'var' | 'penalty' | 'other'; side: 'home' | 'away' | null; player: string | null; assist: string | null; detail: string; score?: [number, number] }
+export type CouchSportStat = { label: string; home: string; away: string }
+export type CouchSportLineupEntry = { number: number | null; name: string; pos: string | null; goals: number; subbedOff: string | null; subbedOn: string | null }
+export type CouchSportLineup = { side: 'home' | 'away'; formation: string | null; startXI: CouchSportLineupEntry[]; subs: CouchSportLineupEntry[] }
+export type CouchSportDetail = { events: CouchSportEvent[]; stats: CouchSportStat[]; lineups: CouchSportLineup[]; updatedAt: number | null }
+export type SportCommand =
+  | { id: string; type: 'sport-presence'; on: boolean; phoneId?: string }
+  | { id: string; type: 'play-match'; matchId: string; channel?: string }
+  | { id: string; type: 'sport-zap'; dir: -1 | 1 }
+  | { id: string; type: 'sport-open-settings' }
+export type SportQuery = { id: string; type: 'sport-match'; matchId: string }
+export type CouchAck = { id: string; ok: boolean; error?: string; detail?: string }
+export type CouchPlayer = {
+  kind: 'movie' | 'episode' | 'channel'; tmdbId: string | null; title: string
+  channelName?: string; isLive?: boolean; canSeek?: boolean
+  pos: number; dur: number; playing: boolean; volume: number
+  audio: { id: number; label: string }[]; audioId: number | null
+  subs: { id: string; label: string }[]; subId: string | null; subDelay: number | null
+  dialogBoost: boolean | null; streams: unknown[]; streamKey: string | null
+  sleep: { mode: 'off' | '15' | '30' | '45' | '60' | '90' | 'end'; endsAt?: number }
+}
+export type CouchCommand = { id: string; type: string; [k: string]: unknown }
+export type CouchSurface = {
+  snapshot: () => CouchSport | null
+  run: (cmd: SportCommand & { profileId?: string | null }) => Promise<CouchAck | void>
+  query?: (q: SportQuery) => Promise<unknown>
+}
+export type CouchPlayerHandlers = { snapshot: () => CouchPlayer | null; run: (cmd: CouchCommand) => void | Promise<void> }
+// Samma körtidsuppslag som appens plugin-sdk: värdens register i window.__lumioPluginRuntime.sdk.couch.
+type CouchHostSdk = {
+  registerSurface: (id: 'sport', s: CouchSurface) => () => void
+  notifySurface: (id: 'sport') => void
+  registerPlayer: (h: CouchPlayerHandlers) => () => void
+  notifyState: () => void
+}
+const couchHost = (): CouchHostSdk | undefined =>
+  (globalThis as { __lumioPluginRuntime?: { sdk?: { couch?: CouchHostSdk } } }).__lumioPluginRuntime?.sdk?.couch
+export const hasCouchSdk = (): boolean => !!couchHost()
+export function registerCouchSurface(id: 'sport', s: CouchSurface): () => void { return couchHost()?.registerSurface(id, s) ?? (() => {}) }
+export function notifyCouchSurface(id: 'sport'): void { couchHost()?.notifySurface(id) }
+export function registerCouchChannelPlayer(h: CouchPlayerHandlers): () => void { return couchHost()?.registerPlayer(h) ?? (() => {}) }
+export function notifyCouchPlayer(): void { couchHost()?.notifyState() }
