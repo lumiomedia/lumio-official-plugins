@@ -28,11 +28,14 @@ import {
   useTvMode,
   capturePlayerFrame,
   enterPip,
+  notifyCouchPlayer,
   notifyPipPlaying,
+  registerCouchChannelPlayer,
   registerPip,
   usePipAvailable,
 } from '@/lib/plugin-sdk'
 import { recordChannelWatch } from './channel-history'
+import { channelSnapshot, runChannelCommand } from './couch-channel-player'
 import { channelKey } from './live-tv-data'
 
 /* Äldre appar saknar PiP i SDK:t — en stabil ersättare per modul, så att
@@ -999,6 +1002,23 @@ export function LiveTvPlayer({ channel, onClose, listId = null, epgUrls = [], tv
   useEffect(() => {
     if (pipPhone && typeof notifyPipPlaying === 'function') notifyPipPlaying(!mpvPaused)
   }, [pipPhone, mpvPaused])
+
+  // Soffläge: kanalen är telefonens spelare (minifjärren och fjärren, 1k). Bara
+  // paus och volym; mot en äldre app utan Soffläge i SDK:t blir allt no-op.
+  const couchRef = useRef({ name: channel.name, paused: mpvPaused, volume01: volumeLevel, muted })
+  couchRef.current = { name: channel.name, paused: mpvPaused, volume01: volumeLevel, muted }
+  const couchHandlers = useRef({ togglePause: toggleMpvPause, setVolume01: updateVolume })
+  couchHandlers.current = { togglePause: toggleMpvPause, setVolume01: updateVolume }
+  useEffect(() => {
+    if (typeof registerCouchChannelPlayer !== 'function') return
+    return registerCouchChannelPlayer({
+      snapshot: () => channelSnapshot(couchRef.current),
+      run: (cmd) => runChannelCommand(cmd, couchHandlers.current),
+    })
+  }, [])
+  useEffect(() => {
+    if (typeof notifyCouchPlayer === 'function') notifyCouchPlayer()
+  }, [channel.name, mpvPaused, volumeLevel, muted])
 
   const syncMpvBounds = () => {
     const rect = stageRef.current?.getBoundingClientRect()
