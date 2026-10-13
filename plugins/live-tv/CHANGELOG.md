@@ -2,7 +2,17 @@
 
 ## 0.16.0
 
-- Couch mode follows the sport: when the TV shows a match, the phone gets a Sport tab with score, events, stats and line-ups, a list of what's live now and a mini remote for the channel. Requires Lumio 0.1.625.
+- Couch mode follows the sport: when the TV shows a match, the phone gets a Sport tab with score, events, stats and line-ups, a list of what's live now and a mini remote for the channel.
+- From the phone you can also run Multiview (tap a tile for its sound, hold to enlarge, drag a match into a tile), get a goal card when a team you follow scores in another match (with a matching notice on the TV), and follow teams and leagues. Requires Lumio 0.1.625.
+
+## 0.15.2
+
+- New settings for the stream switch suggestion: turn off "Suggest another source when the channel stutters", or choose how long to wait before switching automatically (Never, 3, 5, 10 or 15 seconds). With Never, the suggestion stays until you choose Switch now. Requires Lumio 0.1.624.
+
+## 0.15.1
+
+- Smoother live channels when the provider is slow: playback now pauses briefly to refill instead of crawling in slow motion and freezing.
+- When a channel keeps stuttering, Live TV offers another source (the match's other channels, or the same channel in another quality) and switches after 5 seconds unless you choose to stay. Requires Lumio 0.1.624.
 
 ## 0.15.0
 
