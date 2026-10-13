@@ -13,7 +13,7 @@ import type { SportFilter, SportMatch } from '../sport-model'
 import type { TvNav } from '../../tv/tv-shell'
 import { leagueEntries, yourLeagues } from '../league-jump'
 import { LeagueDrawer, SportChip, YourLeaguesRow } from './sport-league-drawer'
-import { FORM_COLOR, defaultResultsFilter, formLetters, groupResults, onlyLeague, type ResultGroup, type ResultsFilter } from '../results-model'
+import { defaultResultsFilter, groupResults, onlyLeague, type ResultGroup, type ResultsFilter } from '../results-model'
 import { sportCardStyle } from '../surface'
 import { SportIcons } from './sport-icons'
 import { scaleFor, useListScale, type U } from '../match-info/match-info-parts'
@@ -25,31 +25,6 @@ import type { ProviderId } from '../provider'
 export { formLetters, groupResults, type ResultGroup, type ResultsFilter } from '../results-model'
 
 type TT = (k: TvStringKey, v?: Record<string, string | number>) => string
-function StandingsTable({ rows, tt }: { rows: StandingRow[] | 'loading'; tt: TT }) {
-  const cell = { padding: `${dp(6)}px ${dp(8)}px`, fontSize: dp(15) } as const
-  // Bara rubrikraden såg ut som ett fel (Jerry 2026-10-12): säg i stället att tabellen laddar eller saknas.
-  if (rows === 'loading' || rows.length === 0) {
-    return <div data-testid={rows === 'loading' ? 'sport-standings-loading' : 'sport-standings-empty'} style={{ ...sportCardStyle, padding: `${dp(14)}px ${dp(16)}px`, fontSize: dp(16), color: TV.muted }}>{rows === 'loading' ? tt('sportLoading') : tt('sportTableEmpty')}</div>
-  }
-  return (
-    <div data-testid="sport-standings" style={{ ...sportCardStyle, padding: `${dp(4)}px ${dp(8)}px` }}>
-    <table style={{ width: '100%', borderCollapse: 'collapse', color: TV.text }}>
-      <thead><tr style={{ color: TV.dim, textAlign: 'left' }}><th style={cell}>#</th><th style={cell}>{tt('sportColTeam')}</th><th style={cell}>{tt('sportColPlayed')}</th><th style={cell}>{tt('sportColPoints')}</th><th style={cell}>{tt('sportColForm')}</th></tr></thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={`${r.group ?? ''}-${r.rank}-${r.team.id}`} style={{ borderTop: `1px solid ${TV.line}` }}>
-            <td style={cell}>{r.rank}</td>
-            <td style={cell}><span style={{ display: 'flex', alignItems: 'center', gap: dp(8) }}><Crest name={r.team.name} colorKey={r.team.id} src={r.team.crest} size={dp(20)} />{r.team.name}</span></td>
-            <td style={cell}>{r.played}</td>
-            <td style={{ ...cell, fontWeight: 600 }}>{r.points}</td>
-            <td style={cell}><span style={{ display: 'inline-flex', gap: dp(4) }}>{formLetters(r.form, tt).map((f, i) => <span key={i} style={{ width: dp(18), height: dp(18), borderRadius: dp(4), background: FORM_COLOR[f.kind], color: '#0e0f13', fontSize: dp(11), fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{f.letter}</span>)}</span></td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-    </div>
-  )
-}
 
 /** Följt lag i tabellen: samma nyckelregel som följ-markeringen i övrigt (AIK = AIK Stockholm). */
 export function followedRow(follows: SportFollow[], sport: string, name: string): boolean {
@@ -58,22 +33,24 @@ export function followedRow(follows: SportFollow[], sport: string, name: string)
 }
 
 const TV_U = scaleFor(false, true)
+// Skrivbordet: designpixlarna rakt av (rubrik 14, rad 48, formbricka 22); radtexten lyfts till 19.
+const DESK_U = scaleFor(false, false)
 
 /**
  * Tabellen under en grupp på TV (Jerry 2026-10-12: den gamla var skrivbordsstor
  * och spred kolumnerna över hela bredden). Samma rader som lag- och ligasidan, i gruppens fulla bredd som matchraderna (Jerry 2026-10-12):
  * fokusbara, öppnar lagets sida, följda lag markerade, formen som brickor.
  */
-function TvStandings({ g, rows, tt, follows, onOpen, rowAttrs, u = TV_U }: {
+function TvStandings({ g, rows, tt, follows, onOpen, rowAttrs, u = TV_U, rowText }: {
   g: ResultGroup; rows: StandingRow[] | 'loading'; tt: TT; follows: SportFollow[]; onOpen?: (row: StandingRow) => void
-  rowAttrs: (i: number, n: number) => Record<string, string>; u?: U
+  rowAttrs: (i: number, n: number) => Record<string, string>; u?: U; rowText?: number
 }) {
   return (
     <div data-testid={`results-standings-${g.key}`} style={{ width: '100%' }}>
       {rows === 'loading' || rows.length === 0
         ? <div data-testid={rows === 'loading' ? 'sport-standings-loading' : 'sport-standings-empty'} {...station(NOOP, undefined, rowAttrs(0, 1))}
             style={{ ...sportCardStyle, padding: `${u(14)}px ${u(18)}px`, fontSize: u(17), color: TV.muted }}>{rows === 'loading' ? tt('sportLoading') : tt('sportTableEmpty')}</div>
-        : <StandingsRows u={u} ctx={{ tt }} testId="sport-standings" rows={rows} mark={-1} form onOpen={onOpen} rowAttrs={rowAttrs}
+        : <StandingsRows u={u} ctx={{ tt }} testId="sport-standings" rows={rows} mark={-1} form onOpen={onOpen} rowAttrs={rowAttrs} rowText={rowText}
             highlight={(r) => followedRow(follows, g.sport, r.team.name)} />}
     </div>
   )
@@ -147,6 +124,13 @@ export function SportResults({ matches, controller, onOpenMatch, onOpenTeam, tv,
   const [drawer, setDrawer] = useState(false)
   // Grupprubriker och matchrader i TV-skala på TV (Jerry 2026-10-12); skrivbordet oförändrat.
   const u = useListScale(tv)
+  /*
+    Skrivbordet (Jerry 2026-10-13: allt var för litet): egna mått i nivå med
+    lag-/ligalådans tabell och översiktens rader. TV behåller TV-skalan.
+  */
+  const sz = tv
+    ? { head: u(20), name: u(17), crest: u(22), status: u(14), statusW: u(64), score: u(20), rowH: u(48), rowText: undefined }
+    : { head: dp(22), name: dp(21), crest: dp(26), status: dp(14), statusW: dp(84), score: dp(22), rowH: dp(56), rowText: 19 }
   const forSport = useMemo(() => (sport === 'all' ? matches : matches.filter((m) => m.kind === sport)), [matches, sport])
   const { groups, liveCount, mineCount, followedCount } = useMemo(() => groupResults(forSport, filter, follows), [forSport, filter, follows])
   const shown = useMemo(() => onlyLeague(groups, league), [groups, league])
@@ -193,7 +177,7 @@ export function SportResults({ matches, controller, onOpenMatch, onOpenTeam, tv,
     if (!provider) return
     onOpenTeam(teamTargetFromRow(g.sport, r, { provider, id: src?.leagueId ?? g.leagueId, season: (src?.season ?? g.season) || null, name: labels.get(g.key) ?? g.league }))
   } : null
-  const tvOpen = (key: string) => tv && !!tables[key]
+  const tableOpen = (key: string) => !!tables[key]
 
   return (
     <div data-testid="sport-results" style={{ display: 'flex', flexDirection: 'column', gap: dp(20) }}>
@@ -206,25 +190,23 @@ export function SportResults({ matches, controller, onOpenMatch, onOpenTeam, tv,
       {groups.length > 0 || league ? <YourLeaguesRow entries={mine.entries} fallback={mine.fallback} active={league} activeLabel={league ? labels.get(league) ?? null : null} onJump={pickLeague} onReset={() => setLeague(null)} onMore={() => setDrawer(true)} tv={tv} /> : null}
       {shown.length === 0 ? <div style={{ color: TV.dim, fontSize: dp(16) }}>{tt('sportResultsEmpty')}</div> : null}
       {shown.map((g, gi) => {
-        const gnav = groupNav(shown, gi, tvOpen)
+        const gnav = groupNav(shown, gi, tableOpen)
         return (
         <section key={g.key} data-testid={`results-group-${g.key}`} style={{ display: 'flex', flexDirection: 'column', gap: dp(8) }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: u(20), fontWeight: 600 }}>{g.round != null ? `${labels.get(g.key) ?? g.league} · ${tt('sportRound', { n: g.round })}` : labels.get(g.key) ?? g.league}</div>
+            <div data-testid={`results-head-${g.key}`} style={{ fontSize: sz.head, fontWeight: 600 }}>{g.round != null ? `${labels.get(g.key) ?? g.league} · ${tt('sportRound', { n: g.round })}` : labels.get(g.key) ?? g.league}</div>
             <TableButton testId={`results-table-${g.key}`} open={!!tables[g.key]} onPress={() => toggleTable(g)} tt={tt} attrs={gnav.table} />
           </div>
           {g.matches.map((m, mi) => (
-            <div key={m.id} data-testid={`results-row-${m.id}`} {...station(() => onOpenMatch(m), undefined, gnav.row(mi))} style={{ display: 'grid', gridTemplateColumns: `${u(64)}px 1fr auto 1fr`, alignItems: 'center', gap: u(10), minHeight: u(48), boxSizing: 'border-box', fontSize: u(17), padding: `${u(10)}px ${u(12)}px`, ...sportCardStyle, borderRadius: u(10), cursor: 'pointer' }}>
-              <span style={{ fontSize: u(14), color: m.status === 'live' ? TV.live : TV.dim }}>{matchStatusLabel(m, tt) ?? ''}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: u(8), justifyContent: 'flex-end' }}>{m.home}<Crest name={m.home ?? ''} colorKey={m.homeKey ?? ''} src={m.homeCrest} size={u(22)} /></span>
-              <MatchScore match={m} size="row" px={u(20)} />
-              <span style={{ display: 'flex', alignItems: 'center', gap: u(8) }}><Crest name={m.away ?? ''} colorKey={m.awayKey ?? ''} src={m.awayCrest} size={u(22)} />{m.away}</span>
+            <div key={m.id} data-testid={`results-row-${m.id}`} {...station(() => onOpenMatch(m), undefined, gnav.row(mi))} style={{ display: 'grid', gridTemplateColumns: `${sz.statusW}px 1fr auto 1fr`, alignItems: 'center', gap: u(10), minHeight: sz.rowH, boxSizing: 'border-box', fontSize: sz.name, padding: `${u(10)}px ${u(12)}px`, ...sportCardStyle, borderRadius: u(10), cursor: 'pointer' }}>
+              <span data-testid="results-status" style={{ fontSize: sz.status, color: m.status === 'live' ? TV.live : TV.dim }}>{matchStatusLabel(m, tt) ?? ''}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: u(8), justifyContent: 'flex-end' }}>{m.home}<Crest name={m.home ?? ''} colorKey={m.homeKey ?? ''} src={m.homeCrest} size={sz.crest} /></span>
+              <MatchScore match={m} size="row" px={sz.score} />
+              <span style={{ display: 'flex', alignItems: 'center', gap: u(8) }}><Crest name={m.away ?? ''} colorKey={m.awayKey ?? ''} src={m.awayCrest} size={sz.crest} />{m.away}</span>
             </div>
           ))}
           {tables[g.key]
-            ? tv
-              ? <TvStandings g={g} rows={tables[g.key]!} tt={tt} follows={follows} onOpen={openTeam?.(g)} rowAttrs={gnav.standings} />
-              : <StandingsTable rows={tables[g.key]!} tt={tt} />
+            ? <TvStandings g={g} rows={tables[g.key]!} tt={tt} follows={follows} onOpen={openTeam?.(g)} rowAttrs={gnav.standings} u={tv ? TV_U : DESK_U} rowText={sz.rowText} />
             : null}
         </section>
         )

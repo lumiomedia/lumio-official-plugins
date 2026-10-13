@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { __resetPluginStorageForTests, __setLangForTests } from '@/lib/plugin-sdk'
 import { SportResults, formLetters, groupResults } from './sport-results'
 import { tvText } from '../../tv/tv-strings'
@@ -256,14 +256,31 @@ describe('Tabeller & resultat på TV (Jerry 2026-10-12)', () => {
     expect(onOpenTeam).toHaveBeenCalledWith(expect.objectContaining({ sport: 'football', name: 'Malmo FF', ids: { sportapi: '375' }, league: expect.objectContaining({ provider: 'sportapi', id: 'sa-113' }) }))
   })
 
-  it('skrivbordet behåller den vanliga tabellen', async () => {
+  it('skrivbordet: läsbara mått (Jerry 2026-10-13) — rader, rubrik, märken, status och samma kompakta tabell som TV, skalad för skrivbordet', async () => {
     setSportSettings({ apiKey: 'k123' })
     const rows = [{ rank: 1, team: { id: '363', name: 'AIK Stockholm', crest: null }, played: 26, points: 58, goalDiff: 25, form: 'WWDWW', group: null }]
     const c = { standings: vi.fn(() => null), loadStandings: vi.fn(async () => rows), subscribe: () => () => {} }
-    render(<SportResults matches={[m()]} controller={c as never} onOpenMatch={vi.fn()} tv={false} />)
+    const a1 = m()
+    render(<SportResults matches={[a1]} controller={c as never} onOpenMatch={vi.fn()} tv={false} />)
+    const row = screen.getByTestId(`results-row-${a1.id}`)
+    expect(parseFloat(row.style.fontSize)).toBeGreaterThanOrEqual(20)
+    expect(parseFloat(row.style.minHeight)).toBeGreaterThanOrEqual(48)
+    const status = within(row).getByTestId('results-status')
+    expect(parseFloat(status.style.fontSize)).toBeGreaterThanOrEqual(13)
+    expect(parseFloat(status.style.fontSize)).toBeLessThanOrEqual(14)
+    expect(parseFloat(within(row).getByTestId('match-score').style.fontSize)).toBeGreaterThanOrEqual(22)
+    expect(parseFloat(screen.getByTestId('results-head-football|113').style.fontSize)).toBeGreaterThanOrEqual(22)
     fireEvent.click(screen.getByTestId('results-table-football|113'))
-    await waitFor(() => expect(screen.getByText('AIK Stockholm')).toBeTruthy())
-    expect(screen.getByTestId('sport-standings').querySelector('table')).toBeTruthy()
-    expect(screen.queryByTestId('page-standings-row')).toBeNull()
+    await waitFor(() => expect(screen.getAllByTestId('page-standings-row')).toHaveLength(1))
+    expect(screen.getByTestId('sport-standings').querySelector('table')).toBeNull()
+    const r1 = screen.getByTestId('page-standings-row')
+    expect(parseFloat(r1.style.fontSize)).toBeGreaterThanOrEqual(18)
+    expect(parseFloat(r1.style.fontSize)).toBeLessThanOrEqual(20)
+    expect(parseFloat(r1.style.minHeight)).toBeGreaterThanOrEqual(48)
+    expect(parseFloat(r1.style.minHeight)).toBeLessThan(56)
+    expect(parseFloat(screen.getByTestId('sport-standings-head').style.fontSize)).toBe(14)
+    expect(parseFloat(r1.querySelector<HTMLElement>('[data-testid="form-letter"]')!.style.width)).toBe(22)
+    expect(r1.style.gridTemplateColumns.match(/minmax/g)).toHaveLength(1)
   })
+
 })
