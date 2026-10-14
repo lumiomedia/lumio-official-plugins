@@ -24,7 +24,7 @@ import { readZapMemory, rememberPlayedStream, resolver, writeZapMemory } from '.
 import { readCachedPool, useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { GuideOverlay } from './guide-overlay'
-import { HIDE_HOST_CHROME_CSS, useHostControls } from './host-controls'
+import { HIDE_HOST_ACTIONS_CSS, HIDE_HOST_CHROME_CSS, useHostControls } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
 import { TuningCard } from './tuning-card'
 import { useText } from './use-text'
@@ -48,6 +48,8 @@ const PRELOAD_LEAD_MS = 30_000
 const RAPID_ZAP_MS = 700
 /** Bekräftar positionen aldrig bilden visas den ändå efter så här lång tid. */
 const REVEAL_FALLBACK_MS = 12_000
+/** Ett laddfel räknas inte medan strömmen visat framsteg så här nyligen. */
+const PROGRESS_GRACE_MS = 30_000
 const OSD_HIDE_MS = 5_000
 /** Bakåt: samma tangenter som värdens fokusmotor (Escape/Backspace) plus webbens namn. */
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
@@ -335,6 +337,9 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     shownAt.current = { seq: shownSeq, at: clockNow() }
     mark(shownSeq, 'mount')
   }, [shownSeq, mark])
+  // Senaste tecknet på att visningen faktiskt spelar (tiden går, bild, position).
+  const progressAt = useRef<{ seq: number; at: number } | null>(null)
+  const noteProgress = useCallback((seq: number) => { progressAt.current = { seq, at: clockNow() } }, [])
   // Reserv om positionen aldrig bekräftar en sen onFirstPlay.
   useEffect(() => {
     const seq = state.firstPlaySeq
@@ -557,6 +562,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       mode={described?.mode ?? request.mode}
       notice={null}
       closeIsInit={!modalMounted}
+      hostBar={modalMounted && !isTv}
       isTv={isTv}
       t={t}
       onClose={onClose}
@@ -610,7 +616,10 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           onClose={onClose}
           onPlaybackEnded={() => dispatch({ type: 'advance', seq, now: Date.now() })}
           // mpv säger aldrig onPlaybackEnded: den står pausad på sista bilden.
+          // Värdens startvakt: tiden går (ljud) eller bild renderad — strömmen lever.
+          onStartProgress={() => noteProgress(seq)}
           onTimeUpdate={(position: number, duration: number) => {
+            noteProgress(seq)
             const cur = stateRef.current
             if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: 'progress', seq, position })
             if (endHandledFor.current === seq) return
@@ -638,6 +647,15 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           }}
           // Sant = vi byter själva (nästa version eller felvyn); spelaren stänger inte.
           onLoadFailed={() => {
+            // Värdens bildrutevakt ger load-failed efter ~30 s utan räknade bildrutor
+            // även när mpv spelar (playback-restart i loggen, tiden går). Ett fel
+            // räknas bara utan framsteg — annars är det ingen Ingen signal.
+            const p = progressAt.current
+            if (p && p.seq === seq && clockNow() - p.at < PROGRESS_GRACE_MS) {
+              console.info(`[channels] värdens laddfel ignoreras: strömmen ${channel.number} spelar`)
+              dispatch({ type: 'reveal', seq })
+              return true
+            }
             resolver.forget(slot.item.ref)
             dispatch({ type: 'failed', seq, now: Date.now(), url: playable.url })
             return true
@@ -645,6 +663,8 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           overlayContent={(
             <>
               {tuningNow ? <style>{HIDE_HOST_CHROME_CSS}</style> : null}
+              {/* Kanalläget: värdens Kopiera länk/Stäng i toppraden bort — vår × är stängningen. */}
+              <style>{HIDE_HOST_ACTIONS_CSS}</style>
               {tuningCard}
               {osd}
               {guide}
@@ -778,6 +798,8 @@ interface OsdProps {
   notice: string | null
   /** Utan appens spelare landar TV-fokus på Stäng, annars på CH ▲. */
   closeIsInit: boolean
+  /** Värdens topprad (skrivbord) finns: pillen under dess titelrad, × i dess knapplats. */
+  hostBar: boolean
   isTv: boolean
   t: ReturnType<typeof useText>
   onClose(): void
@@ -805,7 +827,7 @@ function ChannelOsd(props: OsdProps) {
         data-channels-osd-top=""
         style={{
           ...fade, ...glass(isTv, { fill: C.osdBg, blur: 12 }),
-          position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 1rem)', left: '1rem',
+          position: 'absolute', top: props.hostBar ? '3.75rem' : 'calc(var(--android-inset-top, 0px) + 1rem)', left: '1rem',
           maxWidth: 'min(26rem, calc(100vw - 6rem))',
           display: 'flex', alignItems: 'center', gap: '0.6rem',
           padding: '0.35rem 0.9rem 0.35rem 0.35rem', borderRadius: RADIUS.pill,
@@ -826,7 +848,7 @@ function ChannelOsd(props: OsdProps) {
         onClick={props.onClose}
         style={{
           ...fade, ...glass(isTv, { fill: C.osdBg, blur: 12 }),
-          position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 1rem)', right: '1rem',
+          position: 'absolute', top: props.hostBar ? '0.5rem' : 'calc(var(--android-inset-top, 0px) + 1rem)', right: '1rem', zIndex: 1,
           width: isTv ? '2.75rem' : '2.25rem', height: isTv ? '2.75rem' : '2.25rem', padding: 0, borderRadius: RADIUS.pill,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           color: C.text, fontFamily: FONT.ui, fontSize: isTv ? '1.25rem' : '1.05rem', lineHeight: 1, cursor: 'pointer',

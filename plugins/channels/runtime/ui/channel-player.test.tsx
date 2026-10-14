@@ -323,3 +323,38 @@ describe('kanalspelaren: svart ruta mellan kort och bild', () => {
     info.mockRestore()
   })
 })
+
+describe('kanalspelaren: Ingen signal bara vid verkligt fel', () => {
+  it('värdens laddfel medan strömmen visat framsteg (bildrutevaktens timeout) ger ingen Ingen signal', async () => {
+    state.rundowns = { k1: [library('l1')] }
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    await act(async () => { state.props?.onStartProgress('audio') })
+    let handled = false
+    await act(async () => { handled = state.props?.onLoadFailed() })
+    expect(handled).toBe(true)
+    expect(state.forget).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-channels-nosignal]')).toBeNull()
+    expect(screen.getByTestId('first-play').getAttribute('data-url')).toBe('http://l1')
+    // Spelar: kortet släpps.
+    expect((document.querySelector('[data-channels-tuning]') as HTMLElement).getAttribute('data-visible')).toBe('0')
+    info.mockRestore()
+  })
+
+  it('laddfel utan något framsteg är ett verkligt fel', async () => {
+    state.rundowns = { k1: [library('l1')] }
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    await act(async () => { state.props?.onLoadFailed() })
+    expect(state.forget).toHaveBeenCalledWith('l1')
+  })
+
+  it('kanalläget döljer värdens toppradsknappar (Kopiera länk, Stäng); vår × finns', async () => {
+    state.rundowns = { k1: [library('l1')] }
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    fireEvent.click(await screen.findByTestId('first-play'))
+    expect(Array.from(document.querySelectorAll('style')).some((el) => (el.textContent ?? '').includes('.vp-topbar > div:last-child'))).toBe(true)
+    expect(document.querySelector('[data-channels-close]')).toBeTruthy()
+  })
+})

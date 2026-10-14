@@ -19,6 +19,12 @@ export const HOST_CONTROLS_SELECTOR = '.vp-controls'
  * det ska gälla (zappläget, inställningskortet), så regeln aldrig blir kvar.
  * Spelarroten bär data-lumio-player-open; inga :has()/:where() (WebView 83).
  */
+/**
+ * Kanalläget: värdens toppradsknappar (Kopiera länk — en rå ströms adress —
+ * och Stäng, som dubblerade vår ×) döljs; titelraden får stå kvar.
+ */
+export const HIDE_HOST_ACTIONS_CSS = '[data-lumio-player-open] .vp-topbar > div:last-child { display: none !important; }'
+
 export const HIDE_HOST_CHROME_CSS = '[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }'
 
 export interface HostControls {
