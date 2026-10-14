@@ -20330,7 +20330,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -41701,6 +41700,31 @@ ${cue.text}`).join("\n\n")}
     }
     return out;
   }
+  function createWheelSwipe(opts = {}) {
+    const threshold = opts.thresholdPx ?? 60;
+    const idle2 = opts.idleMs ?? 220;
+    let acc = 0;
+    let last2 = -Infinity;
+    let spent = false;
+    return {
+      /** Riktning att bläddra (1 = nästa) eller 0. `horizontal`: händelsen var ett sidsvep (ska inte rulla sidan). */
+      feed(dx, dy, now2) {
+        if (now2 - last2 >= idle2) {
+          acc = 0;
+          spent = false;
+        }
+        last2 = now2;
+        if (Math.abs(dx) <= Math.abs(dy)) return { step: 0, horizontal: false };
+        if (spent) return { step: 0, horizontal: true };
+        acc += dx;
+        if (Math.abs(acc) < threshold) return { step: 0, horizontal: true };
+        const step = acc > 0 ? 1 : -1;
+        acc = 0;
+        spent = true;
+        return { step, horizontal: true };
+      }
+    };
+  }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-guide.tsx
   init_react_shim();
@@ -41942,16 +41966,22 @@ ${cue.text}`).join("\n\n")}
     let slot = programmeAt(rundown, channel.airWindow, now2);
     if (slot.kind === "rest") slot = programmeAt(rundown, channel.airWindow, slot.nextAir);
     if (slot.kind !== "programme") return null;
-    if (slot.item.backdropUrl) return { url: slot.item.backdropUrl, blur: false };
-    if (slot.item.posterUrl) return { url: slot.item.posterUrl, blur: true };
+    if (slot.item.backdropUrl) return { url: slot.item.backdropUrl, kind: "backdrop" };
+    if (slot.item.posterUrl) return { url: slot.item.posterUrl, kind: "poster" };
     const n = rundown.length;
-    for (let d = 1; d < n; d += 1) {
-      for (const i of [slot.index + d, slot.index - d]) {
-        const url = rundown[(i % n + n) % n].backdropUrl;
-        if (url) return { url, blur: false };
+    const nearest = (field) => {
+      for (let d = 1; d < n; d += 1) {
+        for (const i of [slot.index + d, slot.index - d]) {
+          const url = rundown[(i % n + n) % n][field];
+          if (url) return url;
+        }
       }
-    }
-    return null;
+      return null;
+    };
+    const backdrop = nearest("backdropUrl");
+    if (backdrop) return { url: backdrop, kind: "backdrop" };
+    const poster = nearest("posterUrl");
+    return poster ? { url: poster, kind: "poster" } : null;
   }
   function nextProgramme(rundown, channel, t) {
     let slot = programmeAt(rundown, channel.airWindow, t);
@@ -42009,6 +42039,34 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("resize", onResize);
       };
     }, [extra, hostPlayer]);
+    const stepRef = useRef(onStep);
+    stepRef.current = many ? onStep : void 0;
+    useEffect(() => {
+      const hero = heroRef.current;
+      if (!hero || isTv) return;
+      const swipe = createWheelSwipe();
+      const onWheel = (e) => {
+        if (!stepRef.current) return;
+        const { step, horizontal } = swipe.feed(e.deltaX, e.deltaY, e.timeStamp || Date.now());
+        if (horizontal) e.preventDefault();
+        if (step !== 0) stepRef.current(step);
+      };
+      hero.addEventListener("wheel", onWheel, { passive: false });
+      return () => hero.removeEventListener("wheel", onWheel);
+    }, [isTv]);
+    const dotsRef = useRef(null);
+    const dotsFocused = useRef(false);
+    useEffect(() => {
+      if (!dotsFocused.current) return;
+      dotsRef.current?.querySelector(`[aria-current="true"]`)?.focus();
+    }, [channel.id]);
+    const onDotsKey = (e) => {
+      if (isTv || !many || e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      e.stopPropagation();
+      dotsFocused.current = true;
+      onStep?.(e.key === "ArrowLeft" ? -1 : 1);
+    };
     const touch = useRef(null);
     const onTouchStart = (e) => {
       const p = e.touches[0];
@@ -42098,22 +42156,28 @@ ${cue.text}`).join("\n\n")}
                   const image = heroImage(r, c, now2);
                   if (!image) return null;
                   const url = image.url;
+                  const full = geom ? geom.full : null;
+                  const poster = image.kind === "poster";
                   return /* @__PURE__ */ jsx(
                     "span",
                     {
                       "data-hero-image": c.id,
+                      "data-hero-image-kind": image.kind,
                       style: {
                         // Full höjd, förankrad i lagrets nederkant: bilden följer herons
                         // nederkant när sidan rullar i stället för att skalas om.
                         position: "absolute",
-                        left: 0,
                         right: 0,
                         bottom: 0,
-                        height: geom ? geom.full : "100%",
-                        background: `url("${url}") center ${image.blur ? "center" : "top"} / cover no-repeat`,
-                        // Affisch som reserv: uppförstorad och suddig, så den fyller bredden utan att se pixlig ut.
-                        ...image.blur ? { filter: "blur(28px)", transform: "scale(1.15)" } : {},
-                        opacity: c.id === channel.id ? 0.7 : 0,
+                        height: full ?? "100%",
+                        ...poster ? {
+                          width: full != null ? Math.round(full * (2 / 3)) : "40%",
+                          maxWidth: "60%",
+                          background: `url("${url}") right top / cover no-repeat`,
+                          WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 45%)",
+                          maskImage: "linear-gradient(to right, transparent 0%, black 45%)"
+                        } : { left: 0, background: `url("${url}") center top / cover no-repeat` },
+                        opacity: c.id === channel.id ? poster ? 0.85 : 0.7 : 0,
                         transition: "opacity 300ms ease"
                       }
                     },
@@ -42215,31 +42279,49 @@ ${cue.text}`).join("\n\n")}
               /* @__PURE__ */ jsx(HeroButton, { isTv, onClick: onEdit, children: t("heroEdit") })
             ] }),
             after ? /* @__PURE__ */ jsx("p", { style: { margin: "14px 0 0", fontSize: fs(13), color: C.textDim }, children: t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) }) : null,
-            many ? /* @__PURE__ */ jsx("div", { "data-hero-dots": "", style: { display: "flex", alignItems: "center", gap: 6, marginTop: 16 }, children: slideList.map(({ channel: c }) => {
-              const active3 = c.id === channel.id;
-              return /* @__PURE__ */ jsx(
-                "button",
-                {
-                  type: "button",
-                  "aria-label": t("zapChannelLine", { n: c.number, name: c.name }),
-                  "aria-current": active3 ? "true" : void 0,
-                  "data-hero-dot": c.id,
-                  tabIndex: isTv ? -1 : 0,
-                  onClick: () => onSlide?.(c.id),
-                  style: {
-                    width: active3 ? 16 : 4,
-                    height: 4,
-                    padding: 0,
-                    border: "none",
-                    borderRadius: 999,
-                    cursor: "pointer",
-                    background: active3 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)",
-                    transition: "width 200ms ease, background 200ms ease"
-                  }
+            many ? /* @__PURE__ */ jsx(
+              "div",
+              {
+                ref: dotsRef,
+                "data-hero-dots": "",
+                onKeyDown: onDotsKey,
+                onBlur: (e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget)) dotsFocused.current = false;
                 },
-                c.id
-              );
-            }) }) : null
+                style: { display: "flex", alignItems: "center", gap: 6, marginTop: 16 },
+                children: slideList.map(({ channel: c }) => {
+                  const active3 = c.id === channel.id;
+                  return /* @__PURE__ */ jsx(
+                    "button",
+                    {
+                      type: "button",
+                      "aria-label": t("zapChannelLine", { n: c.number, name: c.name }),
+                      "aria-current": active3 ? "true" : void 0,
+                      "data-hero-dot": c.id,
+                      tabIndex: isTv ? -1 : 0,
+                      onClick: () => onSlide?.(c.id),
+                      style: {
+                        // Träffytan större än prickens 4 px: klick och fokusring utan att ändra utseendet.
+                        width: active3 ? 16 : 4,
+                        height: 4,
+                        padding: 0,
+                        borderLeft: 0,
+                        borderRight: 0,
+                        borderRadius: 999,
+                        cursor: "pointer",
+                        boxSizing: "content-box",
+                        backgroundClip: "content-box",
+                        borderTop: "6px solid transparent",
+                        borderBottom: "6px solid transparent",
+                        background: active3 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)",
+                        transition: "width 200ms ease, background 200ms ease"
+                      }
+                    },
+                    c.id
+                  );
+                })
+              }
+            ) : null
           ] })
         ]
       }
@@ -42379,6 +42461,8 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-state.ts
+  var POSITION_SLACK_S = 20;
+  var TRUSTED_FIRST_PLAY_MS = 4800;
   var MAX_VERSIONS = 3;
   var slotKey = (slot) => `${slot.item.ref}@${slot.start}`;
   function initialPlayerState(channelId, mode) {
@@ -42391,7 +42475,8 @@ ${cue.text}`).join("\n\n")}
       tried: null,
       noSignal: null,
       between: null,
-      framedSeq: null
+      framedSeq: null,
+      firstPlaySeq: null
     };
   }
   function awaitingPicture(s) {
@@ -42450,6 +42535,13 @@ ${cue.text}`).join("\n\n")}
         return { ...s, pending: null, status: "resolving", tried: null, request: next(s, { mode: "live" }) };
       }
       case "firstPlay":
+        if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq) return s;
+        if (a.trusted === false) return s.firstPlaySeq === a.seq ? s : { ...s, firstPlaySeq: a.seq };
+        return { ...s, framedSeq: a.seq };
+      case "progress":
+        if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq || s.firstPlaySeq !== a.seq) return s;
+        return Math.abs(a.position - s.onScreen.initialTime) <= POSITION_SLACK_S ? { ...s, framedSeq: a.seq } : s;
+      case "reveal":
         if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq) return s;
         return { ...s, framedSeq: a.seq };
     }
@@ -42573,6 +42665,7 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/host-controls.ts
   init_react_shim();
   var HOST_CONTROLS_SELECTOR = ".vp-controls";
+  var HIDE_HOST_CHROME_CSS = "[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }";
   function findHostControls(from) {
     for (let node = from?.parentElement ?? null; node; node = node.parentElement) {
       const hit = node.querySelector(HOST_CONTROLS_SELECTOR);
@@ -42716,7 +42809,6 @@ ${cue.text}`).join("\n\n")}
   var KEYFRAMES2 = `
 @keyframes chz-noise { 0% { background-position: 0 0 } 25% { background-position: -37px 23px } 50% { background-position: 41px -29px } 75% { background-position: -19px -43px } 100% { background-position: 29px 31px } }
 @media (prefers-reduced-motion: reduce) { [data-zap-noise] { animation: none !important } }
-[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }
 `;
   var clock = (ms2) => {
     const d = new Date(ms2);
@@ -42776,75 +42868,78 @@ ${cue.text}`).join("\n\n")}
         style: { position: "absolute", inset: 0, zIndex: 56, pointerEvents: "none", fontFamily: FONT3.ui, color: C.text },
         children: [
           /* @__PURE__ */ jsx("style", { children: KEYFRAMES2 }),
-          /* @__PURE__ */ jsx("div", { "data-zap-brand": "", style: { position: "absolute", top: "calc(var(--android-inset-top, 0px) + 1.4rem)", left: "1.75rem", fontSize: "0.625rem", letterSpacing: "0.22em", fontWeight: 700, color: C.textSoft, textShadow: "0 1px 6px rgba(0,0,0,0.7)" }, children: t("zapBrand") }),
-          /* @__PURE__ */ jsx(
-            "div",
-            {
-              "data-zap-number": "",
-              style: {
-                position: "absolute",
-                top: "calc(var(--android-inset-top, 0px) + 0.75rem)",
-                right: "1.5rem",
-                fontFamily: FONT3.title,
-                fontSize: "2.875rem",
-                lineHeight: 1,
-                color: C.text,
-                textShadow: "0 2px 12px rgba(0,0,0,0.8)"
-              },
-              children: bigNumber
-            }
-          ),
-          p.notice ? /* @__PURE__ */ jsx("div", { role: "status", style: { position: "absolute", top: "5.5rem", left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100vw - 2rem)", padding: "0.6rem 1.1rem", borderRadius: RADIUS.osd, ...glass(isTv, { fill: C.osdBg, blur: 14 }), fontSize: isTv ? "1rem" : "0.85rem", textAlign: "center" }, children: p.notice }) : null,
-          /* @__PURE__ */ jsxs(
-            "div",
-            {
-              "data-zap-osd": "",
-              style: {
-                ...fade,
-                position: "absolute",
-                left: "1.5rem",
-                right: "1.5rem",
-                bottom: "calc(var(--android-inset-bottom, 0px) + 1.25rem)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.9rem"
-              },
-              children: [
-                /* @__PURE__ */ jsxs(
-                  "div",
-                  {
-                    style: {
-                      padding: "0.95rem 1.15rem",
-                      borderRadius: RADIUS.osd,
-                      ...glass(isTv, { fill: "rgba(5,8,22,0.72)", blur: 14 }),
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "1rem"
-                    },
-                    children: [
-                      /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 58 }),
-                      /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: "0.3rem" }, children: [
-                        /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.8rem" : "0.65rem", letterSpacing: "0.18em", fontWeight: 700, color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: t("zapChannelLine", { n: channel.number, name: channel.name.toUpperCase() }) }),
-                        /* @__PURE__ */ jsx("div", { style: { fontFamily: FONT3.title, fontSize: "1.5rem", lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: programme?.title ?? t("zapNothingOn") }),
-                        /* @__PURE__ */ jsx("div", { style: { height: 3, borderRadius: 2, background: "rgba(255,255,255,0.14)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2}%`, height: "100%", background: C.accent } }) }),
-                        /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.9rem" : "0.8rem", color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: times })
-                      ] })
-                    ]
-                  }
-                ),
-                /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }, children: [
-                  /* @__PURE__ */ jsx(ZapButton, { onClick: p.onChDown, isTv, label: t("playerChDown"), children: "CH \u25BC" }),
-                  /* @__PURE__ */ jsx(ZapButton, { onClick: p.onChUp, isTv, label: t("playerChUp"), children: "CH \u25B2" }),
-                  /* @__PURE__ */ jsx(ZapButton, { onClick: p.onToggleList, isTv, init: !p.listOpen, children: t("zapList") }),
-                  p.hasPrevious ? /* @__PURE__ */ jsx(ZapButton, { onClick: p.onPrevious, isTv, children: t("zapPrev") }) : null,
-                  /* @__PURE__ */ jsx("div", { style: { flex: 1 } }),
-                  !narrow ? /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: isTv ? "0.8rem" : "0.7rem", color: C.textDim, whiteSpace: "nowrap" }, children: t("zapHint") }) : null,
-                  /* @__PURE__ */ jsx(ZapButton, { onClick: p.onExit, isTv, children: t("zapExit") })
-                ] })
-              ]
-            }
-          ),
-          p.listOpen ? /* @__PURE__ */ jsx(ZapList, { ...p }) : null,
+          /* @__PURE__ */ jsx("style", { children: HIDE_HOST_CHROME_CSS }),
+          p.chromeHidden ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("div", { "data-zap-brand": "", style: { position: "absolute", top: "calc(var(--android-inset-top, 0px) + 1.4rem)", left: "1.75rem", fontSize: "0.625rem", letterSpacing: "0.22em", fontWeight: 700, color: C.textSoft, textShadow: "0 1px 6px rgba(0,0,0,0.7)" }, children: t("zapBrand") }),
+            /* @__PURE__ */ jsx(
+              "div",
+              {
+                "data-zap-number": "",
+                style: {
+                  position: "absolute",
+                  top: "calc(var(--android-inset-top, 0px) + 0.75rem)",
+                  right: "1.5rem",
+                  fontFamily: FONT3.title,
+                  fontSize: "2.875rem",
+                  lineHeight: 1,
+                  color: C.text,
+                  textShadow: "0 2px 12px rgba(0,0,0,0.8)"
+                },
+                children: bigNumber
+              }
+            ),
+            p.notice ? /* @__PURE__ */ jsx("div", { role: "status", style: { position: "absolute", top: "5.5rem", left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100vw - 2rem)", padding: "0.6rem 1.1rem", borderRadius: RADIUS.osd, ...glass(isTv, { fill: C.osdBg, blur: 14 }), fontSize: isTv ? "1rem" : "0.85rem", textAlign: "center" }, children: p.notice }) : null,
+            /* @__PURE__ */ jsxs(
+              "div",
+              {
+                "data-zap-osd": "",
+                style: {
+                  ...fade,
+                  position: "absolute",
+                  left: "1.5rem",
+                  right: "1.5rem",
+                  bottom: "calc(var(--android-inset-bottom, 0px) + 1.25rem)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.9rem"
+                },
+                children: [
+                  /* @__PURE__ */ jsxs(
+                    "div",
+                    {
+                      style: {
+                        padding: "0.95rem 1.15rem",
+                        borderRadius: RADIUS.osd,
+                        ...glass(isTv, { fill: "rgba(5,8,22,0.72)", blur: 14 }),
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "1rem"
+                      },
+                      children: [
+                        /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 58 }),
+                        /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: "0.3rem" }, children: [
+                          /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.8rem" : "0.65rem", letterSpacing: "0.18em", fontWeight: 700, color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: t("zapChannelLine", { n: channel.number, name: channel.name.toUpperCase() }) }),
+                          /* @__PURE__ */ jsx("div", { style: { fontFamily: FONT3.title, fontSize: "1.5rem", lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: programme?.title ?? t("zapNothingOn") }),
+                          /* @__PURE__ */ jsx("div", { style: { height: 3, borderRadius: 2, background: "rgba(255,255,255,0.14)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2}%`, height: "100%", background: C.accent } }) }),
+                          /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.9rem" : "0.8rem", color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: times })
+                        ] })
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }, children: [
+                    /* @__PURE__ */ jsx(ZapButton, { onClick: p.onChDown, isTv, label: t("playerChDown"), children: "CH \u25BC" }),
+                    /* @__PURE__ */ jsx(ZapButton, { onClick: p.onChUp, isTv, label: t("playerChUp"), children: "CH \u25B2" }),
+                    /* @__PURE__ */ jsx(ZapButton, { onClick: p.onToggleList, isTv, init: !p.listOpen, children: t("zapList") }),
+                    p.hasPrevious ? /* @__PURE__ */ jsx(ZapButton, { onClick: p.onPrevious, isTv, children: t("zapPrev") }) : null,
+                    /* @__PURE__ */ jsx("div", { style: { flex: 1 } }),
+                    !narrow ? /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: isTv ? "0.8rem" : "0.7rem", color: C.textDim, whiteSpace: "nowrap" }, children: t("zapHint") }) : null,
+                    /* @__PURE__ */ jsx(ZapButton, { onClick: p.onExit, isTv, children: t("zapExit") })
+                  ] })
+                ]
+              }
+            ),
+            p.listOpen ? /* @__PURE__ */ jsx(ZapList, { ...p }) : null
+          ] }),
           noise ? /* @__PURE__ */ jsxs("div", { "data-zap-noise-layer": "", style: { position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)" }, children: [
             /* @__PURE__ */ jsx(
               "div",
@@ -42938,6 +43033,8 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-player.tsx
   init_jsx_runtime_shim();
   var PRELOAD_LEAD_MS = 3e4;
+  var RAPID_ZAP_MS = 700;
+  var REVEAL_FALLBACK_MS = 12e3;
   var OSD_HIDE_MS = 5e3;
   var BACK_KEYS2 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   function cachedRundown(c) {
@@ -43021,9 +43118,17 @@ ${cue.text}`).join("\n\n")}
       return () => window.clearTimeout(id);
     }, [channelId]);
     const timing = useRef(null);
+    const lastGotoAt = useRef(null);
     useEffect(() => {
-      timing.current = { seq: request.seq, ch: channel?.number ?? 0, t0: clockNow(), resolveMs: null };
+      const t0 = clockNow();
+      const rapid = lastGotoAt.current != null && t0 - lastGotoAt.current < RAPID_ZAP_MS;
+      lastGotoAt.current = t0;
+      timing.current = { seq: request.seq, ch: channel?.number ?? 0, t0, rapid, marks: {} };
     }, [request.seq]);
+    const mark = useCallback((seq, name) => {
+      const tm = timing.current;
+      if (tm && tm.seq === seq && tm.marks[name] == null) tm.marks[name] = Math.round(clockNow() - tm.t0);
+    }, []);
     const plannedSeq = useRef(null);
     const plannedChannel = useRef(null);
     useEffect(() => () => {
@@ -43042,6 +43147,7 @@ ${cue.text}`).join("\n\n")}
         dispatch({ type: "rest", seq: req.seq, rest: slot });
         return;
       }
+      mark(req.seq, "pool");
       const initialTime = startSeconds(slot, req.mode);
       const deadline = req.mode === "start" ? nowMs + Math.max(1, slot.item.runtimeMin) * 6e4 : slot.stop;
       dispatch({ type: "planned", plan: { seq: req.seq, slot, initialTime, deadline, mode: req.mode } });
@@ -43050,11 +43156,13 @@ ${cue.text}`).join("\n\n")}
       plannedChannel.current = ch.id;
       const run = () => {
         if (!gate.isCurrent(token)) return;
+        mark(req.seq, "resolveStart");
+        const tm0 = timing.current;
+        if (tm0 && tm0.seq === req.seq) tm0.type = slot.item.play.type;
         void resolver.resolve(slot.item, triedFor(stateRef.current, slot)).then((playable) => {
           if (!gate.isCurrent(token)) return;
           if (playable) {
-            const tm = timing.current;
-            if (tm && tm.seq === req.seq) tm.resolveMs = Math.round(clockNow() - tm.t0);
+            mark(req.seq, "resolved");
             dispatch({ type: "resolved", seq: req.seq, playable });
           } else {
             resolver.forget(slot.item.ref);
@@ -43062,10 +43170,11 @@ ${cue.text}`).join("\n\n")}
           }
         });
       };
-      const delay = resolver.peek(slot.item.ref) ? 0 : resolveDelayMs(slot.item.play.type, channelChanged);
+      const rapid = timing.current?.seq === req.seq && timing.current.rapid;
+      const delay = resolver.peek(slot.item.ref) ? 0 : resolveDelayMs(slot.item.play.type, channelChanged && rapid);
       if (delay > 0) window.setTimeout(run, delay);
       else run();
-    }, [rundown, gate]);
+    }, [rundown, gate, mark]);
     useEffect(() => {
       const s = stateRef.current;
       if (!channel) {
@@ -43155,6 +43264,28 @@ ${cue.text}`).join("\n\n")}
       }, NEIGHBOUR_PREFETCH_DELAY_MS);
       return () => window.clearTimeout(id);
     }, [framedNow, request.seq]);
+    const shownAt = useRef(null);
+    const shownSeq = onScreen?.seq ?? null;
+    useEffect(() => {
+      if (shownSeq == null) return;
+      shownAt.current = { seq: shownSeq, at: clockNow() };
+      mark(shownSeq, "mount");
+    }, [shownSeq, mark]);
+    useEffect(() => {
+      const seq = state2.firstPlaySeq;
+      if (seq == null || state2.framedSeq === seq) return;
+      const id = window.setTimeout(() => dispatch({ type: "reveal", seq }), REVEAL_FALLBACK_MS);
+      return () => window.clearTimeout(id);
+    }, [state2.firstPlaySeq, state2.framedSeq]);
+    useEffect(() => {
+      const seq = state2.framedSeq;
+      const tm = timing.current;
+      if (seq == null || !tm || tm.seq !== seq) return;
+      timing.current = null;
+      const m = tm.marks;
+      const ms2 = (v) => v == null ? "?" : `${v}`;
+      console.info(`[channels] switch ${tm.ch} resolve=${ms2(m.resolved)}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms (pool=${ms2(m.pool)} resolveStart=${ms2(m.resolveStart)} type=${tm.type ?? "?"} mount=${ms2(m.mount)} hostFirstPlay=${ms2(m.hostFirstPlay)}${tm.rapid ? " rapid" : ""})`);
+    }, [state2.framedSeq]);
     const listRundowns = useMemo(
       () => listOpen ? new Map(channels.map((c) => [c.id, cachedRundown(c)])) : null,
       [listOpen, channels]
@@ -43164,7 +43295,7 @@ ${cue.text}`).join("\n\n")}
     const pokeRef = useRef(poke);
     pokeRef.current = poke;
     const playerKey = onScreen && Player ? `${onScreen.seq}|${onScreen.playable.url}` : null;
-    const hostControls = useHostControls(osdRef, zapOn ? null : playerKey);
+    const hostControls = useHostControls(osdRef, zapOn || guideOpen || awaitingPicture(state2) ? null : playerKey);
     const osdIdleVisible = hostControls ? hostControls.visible : osdVisible;
     const osdShownRef = useRef(true);
     osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== "playing";
@@ -43297,6 +43428,7 @@ ${cue.text}`).join("\n\n")}
         notice: null,
         hasPrevious: !!prevId && prevId !== channel.id && channels.some((c) => c.id === prevId),
         noise,
+        chromeHidden: awaitingPicture(state2),
         listRundowns,
         isTv,
         t,
@@ -43338,7 +43470,8 @@ ${cue.text}`).join("\n\n")}
         onActivity: poke
       }
     );
-    const osd = guideOpen ? null : zapOn ? zapOverlay : normalOsd;
+    const tuningNow = awaitingPicture(state2);
+    const osd = guideOpen ? null : zapOn ? zapOverlay : tuningNow ? null : normalOsd;
     const guide = guideOpen ? /* @__PURE__ */ jsx(GuideOverlay, { channels, currentId: channel.id, now: now2, isTv, t, onPlay: playFromGuide, onClose: () => setGuideOpen(false) }) : null;
     const tuningItem = described?.slot.item ?? null;
     const tuningCard = /* @__PURE__ */ jsx(
@@ -43347,7 +43480,7 @@ ${cue.text}`).join("\n\n")}
         channel,
         title: tuningItem ? tuningItem.kind === "episode" && tuningItem.seriesTitle ? `${tuningItem.seriesTitle} \xB7 ${tuningItem.title}` : tuningItem.title : null,
         imageUrl: tuningItem?.backdropUrl ?? tuningItem?.posterUrl ?? null,
-        visible: awaitingPicture(state2),
+        visible: tuningNow,
         isTv,
         t
       }
@@ -43368,6 +43501,8 @@ ${cue.text}`).join("\n\n")}
           onClose,
           onPlaybackEnded: () => dispatch({ type: "advance", seq, now: Date.now() }),
           onTimeUpdate: (position, duration2) => {
+            const cur = stateRef.current;
+            if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: "progress", seq, position });
             if (endHandledFor.current === seq) return;
             const action = endOfSourceAction({ position, duration: duration2, startedAt: onScreen.initialTime });
             if (!action) return;
@@ -43381,12 +43516,10 @@ ${cue.text}`).join("\n\n")}
           },
           onFirstPlay: () => {
             if (slot.item.play.type === "stream") rememberPlayedStream(playable.rememberToken);
-            const tm = timing.current;
-            if (tm && tm.seq === seq) {
-              timing.current = null;
-              console.info(`[channels] switch ${tm.ch} resolve=${tm.resolveMs ?? "?"}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms`);
-            }
-            dispatch({ type: "firstPlay", seq });
+            mark(seq, "hostFirstPlay");
+            const mounted = shownAt.current?.seq === seq ? shownAt.current.at : null;
+            const trusted = mounted == null || clockNow() - mounted < TRUSTED_FIRST_PLAY_MS;
+            dispatch({ type: "firstPlay", seq, trusted });
           },
           onLoadFailed: () => {
             resolver.forget(slot.item.ref);
@@ -43394,6 +43527,7 @@ ${cue.text}`).join("\n\n")}
             return true;
           },
           overlayContent: /* @__PURE__ */ jsxs(Fragment2, { children: [
+            tuningNow ? /* @__PURE__ */ jsx("style", { children: HIDE_HOST_CHROME_CSS }) : null,
             tuningCard,
             osd,
             guide
@@ -43502,27 +43636,58 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsxs(
             "div",
             {
+              "data-channels-osd-top": "",
               style: {
                 ...fade,
                 ...glass(isTv, { fill: C.osdBg, blur: 12 }),
                 position: "absolute",
-                top: "calc(var(--android-inset-top, 0px) + 1.25rem)",
-                left: "1.5rem",
-                right: "1.5rem",
+                top: "calc(var(--android-inset-top, 0px) + 1rem)",
+                left: "1rem",
+                maxWidth: "min(26rem, calc(100vw - 6rem))",
                 display: "flex",
                 alignItems: "center",
-                gap: "0.85rem",
-                padding: "0.75rem 1rem",
-                borderRadius: RADIUS.osd
+                gap: "0.6rem",
+                padding: "0.35rem 0.9rem 0.35rem 0.35rem",
+                borderRadius: RADIUS.pill
               },
               children: [
-                /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 44 }),
-                /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1 }, children: [
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "1.35rem" : "1.05rem", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: channel.name }),
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.95rem" : "0.8rem", color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: meta })
-                ] }),
-                /* @__PURE__ */ jsx(OsdButton, { onClick: props.onClose, isTv, init: props.closeIsInit, children: t("playerClose") })
+                /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 30, style: { borderRadius: RADIUS.pill } }),
+                /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.95rem" : "0.8rem", fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: channel.name }),
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.75rem" : "0.66rem", lineHeight: 1.25, color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: meta })
+                ] })
               ]
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              "data-f": "",
+              "data-init": props.closeIsInit ? "" : void 0,
+              "data-channels-close": "",
+              "aria-label": t("playerClose"),
+              onClick: props.onClose,
+              style: {
+                ...fade,
+                ...glass(isTv, { fill: C.osdBg, blur: 12 }),
+                position: "absolute",
+                top: "calc(var(--android-inset-top, 0px) + 1rem)",
+                right: "1rem",
+                width: isTv ? "2.75rem" : "2.25rem",
+                height: isTv ? "2.75rem" : "2.25rem",
+                padding: 0,
+                borderRadius: RADIUS.pill,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: C.text,
+                fontFamily: FONT3.ui,
+                fontSize: isTv ? "1.25rem" : "1.05rem",
+                lineHeight: 1,
+                cursor: "pointer"
+              },
+              children: "\xD7"
             }
           ),
           notice ? /* @__PURE__ */ jsx(
@@ -44697,7 +44862,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.1",
+    version: "0.1.2",
     description: S.description,
     preinstalled: false,
     register(ctx) {

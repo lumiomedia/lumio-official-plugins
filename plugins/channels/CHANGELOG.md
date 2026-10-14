@@ -1,3 +1,11 @@
+## 0.1.2
+
+- Heron bläddras med styrplattans tvåfingersvep och med ◀▶ på prickarna; inga pilknappar.
+- Saknar programmet bakgrundsbild visas affischen skarp till höger i stället för suddig.
+- Kanalbyten: inställningskortet ligger kvar ända tills bilden visas på livepositionen (ingen svart ruta emellan), och ingen spelarkrom syns under kortet.
+- Kompakt topprad i spelaren: kanalen uppe till vänster, rund Stäng-knapp uppe till höger.
+- Ett ensamt kanalbyte slås upp direkt; väntan bara vid snabbzappning. Bytestiden loggas per fas.
+
 ## 0.1.1
 
 - TABLÅ i spelaren öppnar tablån som lager ovanpå videon; en kanal i tablån spelas live direkt.
