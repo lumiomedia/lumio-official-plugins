@@ -54,13 +54,24 @@ function pickRuntime(known: number | null | undefined, metaMin: number | null | 
   return { runtimeMin: fallback, runtimeKnown: false }
 }
 
-export async function loadLibraryItems(deps: SourceDeps): Promise<PoolItem[]> {
+/**
+ * `strict`: ett misslyckat hämtförsök kastar i stället för att bli en tom
+ * lista, så studion kan skilja "källan är tom" från "källan svarade inte".
+ * Kanalens egen pool (loadPool) kör utan och tål källfel som förut.
+ */
+export interface LoadOptions { strict?: boolean }
+
+export async function loadLibraryItems(deps: SourceDeps, opts: LoadOptions = {}): Promise<PoolItem[]> {
   try {
     const titles: LibraryTitleLike[] = []
     // Kärnan kapar sidan vid 200, så bläddra tills allt (högst 600) är hämtat.
     for (let offset = 0; offset < MAX_TITLES; offset += PAGE) {
       // Fallerar en senare sida behåller vi titlarna från de tidigare.
-      const page = await deps.queryLibrary({ kind: 'recent', full: true, limit: PAGE, offset }).catch(() => null)
+      const page = await deps.queryLibrary({ kind: 'recent', full: true, limit: PAGE, offset }).catch((err: unknown) => {
+        // Bara första sidan räknas som källfel; en senare sida som faller behåller det hämtade.
+        if (opts.strict && offset === 0) throw err
+        return null
+      })
       if (!page) break
       titles.push(...page.items)
       if (page.items.length < PAGE || (page.total != null && titles.length >= page.total)) break
@@ -100,12 +111,13 @@ export async function loadLibraryItems(deps: SourceDeps): Promise<PoolItem[]> {
       }
     }
     return items
-  } catch {
+  } catch (err) {
+    if (opts.strict) throw err
     return []
   }
 }
 
-export async function loadWatchlistItems(deps: SourceDeps): Promise<PoolItem[]> {
+export async function loadWatchlistItems(deps: SourceDeps, opts: LoadOptions = {}): Promise<PoolItem[]> {
   try {
     const movies = deps.getMovieWatchlist()
     const shows = deps.getWatchlist()
@@ -160,12 +172,13 @@ export async function loadWatchlistItems(deps: SourceDeps): Promise<PoolItem[]> 
     await Promise.all(Array.from({ length: Math.min(2, shows.length) }, worker))
     items.push(...perShow.flat())
     return items
-  } catch {
+  } catch (err) {
+    if (opts.strict) throw err
     return []
   }
 }
 
-export async function loadDebridItems(deps: SourceDeps): Promise<PoolItem[]> {
+export async function loadDebridItems(deps: SourceDeps, opts: LoadOptions = {}): Promise<PoolItem[]> {
   try {
     const titles = await deps.listDebridCloud()
     await deps.meta.ensure(titles.filter((t) => t.tmdbId != null).map((t) => ({ kind: t.kind, tmdbId: t.tmdbId! })))
@@ -189,7 +202,8 @@ export async function loadDebridItems(deps: SourceDeps): Promise<PoolItem[]> {
       }
     }
     return items
-  } catch {
+  } catch (err) {
+    if (opts.strict) throw err
     return []
   }
 }

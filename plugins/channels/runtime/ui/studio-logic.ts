@@ -6,6 +6,7 @@
 import type { AirWindow, ChannelDraft, SourceId } from '../model/channel'
 import { buildRundown, listing } from '../model/schedule'
 import { dedupePool, filterPool, type PoolItem } from '../data/pool'
+import { canonGenre } from '../data/genres'
 import { GENRE_TEXT, type S } from '../strings'
 
 export interface SourcePools { library: PoolItem[]; watchlist: PoolItem[]; debrid: PoolItem[] }
@@ -82,16 +83,31 @@ export function previewFor(draft: ChannelDraft, pools: SourcePools, seed: number
   return { count: pool.length, totalHours, windowLabel: WINDOW_LABEL[draft.airWindow], tonight }
 }
 
-/** Poolernas genrer plus TMDb:s standardgenrer som saknas, sorterade, utan skiftlägesdubbletter. */
+/** Visningsnamn per kanonisk token: TMDb:s stavning när den finns. */
+const STANDARD_BY_TOKEN = new Map(Object.keys(GENRE_TEXT).map((name) => [canonGenre(name)[0]!, name]))
+
+const titleCase = (token: string) => token.replace(/(^|[\s-])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase())
+
+/** Genrevalets namn för en kanonisk token. */
+export function genreName(token: string, seen?: string): string {
+  return STANDARD_BY_TOKEN.get(token) ?? seen ?? titleCase(token)
+}
+
+/**
+ * Poolernas genrer plus TMDb:s standardgenrer som saknas, en per kanonisk
+ * token ("Sci-Fi" och "Science Fiction" blir ett val, "Action & Adventure"
+ * blir Action + Adventure), med TMDb-stavning där den finns. Sorterad.
+ */
 export function genreOptions(pools: SourcePools): string[] {
   const seen = new Map<string, string>()
   for (const item of [...pools.library, ...pools.watchlist, ...pools.debrid]) {
     for (const genre of item.genres) {
-      const name = genre.trim()
-      if (name && !seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name)
+      const tokens = canonGenre(genre)
+      // En ensam token behåller källans stavning om TMDb inte har en egen.
+      for (const token of tokens) if (!seen.has(token)) seen.set(token, genreName(token, tokens.length === 1 ? genre.trim() : undefined))
     }
   }
-  for (const name of Object.keys(GENRE_TEXT)) if (!seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name)
+  for (const [token, name] of STANDARD_BY_TOKEN) if (!seen.has(token)) seen.set(token, name)
   const cmp = (a: string, b: string) => (a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0)
   return [...seen.values()].sort(cmp)
 }

@@ -95,4 +95,15 @@ describe('källadaptrarna', () => {
     const items = await loadLibraryItems(deps({ queryLibrary: q }))
     expect(items).toHaveLength(200)
   })
+
+  it('strict: källfel kastar i stället för tom lista; utan strict som förut', async () => {
+    const down = deps({ queryLibrary: vi.fn().mockRejectedValue(new Error('nät')), listDebridCloud: vi.fn().mockRejectedValue(new Error('nät')) })
+    await expect(loadLibraryItems(down, { strict: true })).rejects.toThrow('nät')
+    await expect(loadDebridItems(down, { strict: true })).rejects.toThrow('nät')
+    expect(await loadLibraryItems(down)).toEqual([])
+    // En senare sida som faller är inget källfel.
+    const page = Array.from({ length: 200 }, (_, i) => ({ key: `m${i}`, kind: 'movie' as const, title: 't', runtimeMin: 90 }))
+    const q = vi.fn().mockResolvedValueOnce({ items: page, total: 400 }).mockRejectedValueOnce(new Error('nät'))
+    expect(await loadLibraryItems(deps({ queryLibrary: q }), { strict: true })).toHaveLength(200)
+  })
 })

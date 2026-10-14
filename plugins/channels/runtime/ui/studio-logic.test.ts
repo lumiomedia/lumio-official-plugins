@@ -54,4 +54,11 @@ describe('studion', () => {
     expect(list).toEqual(expect.arrayContaining(['Egen', 'Comedy', 'Science Fiction']))
     expect([...list].sort((a, b) => (a.toLowerCase() < b.toLowerCase() ? -1 : 1))).toEqual(list)
   })
+
+  it('genrelistan slår ihop stavningar och delar TV:s sammansatta genrer', () => {
+    const list = genreOptions({ library: [item('a', { genres: ['Sci-Fi', 'Action & Adventure'] })], watchlist: [], debrid: [] })
+    expect(list.filter((g) => /sci/i.test(g))).toEqual(['Science Fiction'])
+    expect(list).toEqual(expect.arrayContaining(['Action', 'Adventure']))
+    expect(list).not.toContain('Action & Adventure')
+  })
 })

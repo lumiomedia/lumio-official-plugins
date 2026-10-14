@@ -10,6 +10,9 @@ const state = vi.hoisted(() => ({
   saved: [] as unknown[],
   deleted: [] as string[],
   debridItems: [] as unknown[],
+  libraryFails: false,
+  debridQueue: [] as Array<{ resolve(v: unknown[]): void }>,
+  debridDeferred: false,
 }))
 
 const item = (ref: string, over: Partial<PoolItem> = {}): PoolItem => ({
@@ -29,9 +32,16 @@ vi.mock('@/lib/plugin-sdk', () => ({
 }))
 vi.mock('../host', () => ({ sourceDeps: {} }))
 vi.mock('../data/sources', () => ({
-  loadLibraryItems: () => { state.calls.library! += 1; return Promise.resolve([item('a'), item('b', { genres: ['Action'] })]) },
+  loadLibraryItems: () => {
+    state.calls.library! += 1
+    return state.libraryFails ? Promise.reject(new Error('nät')) : Promise.resolve([item('a'), item('b', { genres: ['Action'] })])
+  },
   loadWatchlistItems: () => { state.calls.watchlist! += 1; return Promise.resolve([item('c', { source: 'watchlist', tmdbId: 9 })]) },
-  loadDebridItems: () => { state.calls.debrid! += 1; return Promise.resolve(state.debridItems) },
+  loadDebridItems: () => {
+    state.calls.debrid! += 1
+    if (!state.debridDeferred) return Promise.resolve(state.debridItems)
+    return new Promise((resolve) => { state.debridQueue.push({ resolve }) })
+  },
 }))
 vi.mock('../state/store', () => ({
   saveChannel: (def: unknown) => { state.saved.push(def) },
@@ -55,6 +65,9 @@ beforeEach(() => {
   state.saved = []
   state.deleted = []
   state.debridItems = []
+  state.libraryFails = false
+  state.debridQueue = []
+  state.debridDeferred = false
 })
 afterEach(cleanup)
 
@@ -136,5 +149,37 @@ describe('Kanalstudion', () => {
     expect(state.forced).toBe(1)
     expect(state.calls.debrid).toBe(1)
     expect(container.querySelector('[data-source="debrid"]')!.textContent).toBe('Debrid1')
+  })
+
+  it('en källa som inte svarar visar "—" och ingen få-titlar-varning', async () => {
+    state.libraryFails = true
+    const { container } = render(<Harness studio="new" channels={[]} onDone={() => {}} />)
+    await flush()
+    expect(container.querySelector('[data-source="library"]')!.textContent).toBe('Bibliotek—')
+    expect(container.querySelector('[data-studio-warning]')).toBeNull()
+  })
+
+  it('en långsam första debridladdning skriver inte över Uppdatera', async () => {
+    state.debridDeferred = true
+    const existing: ChannelDef = { ...createChannel({ ...emptyDraft(), name: 'D', sources: ['debrid'] }, []), id: 'kd' }
+    const { container } = render(<Harness studio="kd" channels={[existing]} onDone={() => {}} />)
+    await flush()
+    fireEvent.click(container.querySelector('[data-studio-refresh]')!)
+    await flush()
+    expect(state.debridQueue).toHaveLength(2)
+    await act(async () => { state.debridQueue[1]!.resolve([item('ny1', { source: 'debrid' }), item('ny2', { source: 'debrid' })]) })
+    await act(async () => { state.debridQueue[0]!.resolve([item('gammal', { source: 'debrid' })]) })
+    expect(container.querySelector('[data-source="debrid"]')!.textContent).toBe('Debrid2')
+  })
+
+  it('genrechip väljer över stavningar: sparad "Sci-Fi" visas vald som Science Fiction', async () => {
+    const existing: ChannelDef = { ...createChannel({ ...emptyDraft(), name: 'S', genres: ['Sci-Fi'] }, []), id: 'ks' }
+    render(<Harness studio="ks" channels={[existing]} onDone={() => {}} />)
+    await flush()
+    const chip = screen.getByText('Sci-fi').closest('button')!
+    expect(chip.getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(chip)
+    fireEvent.click(screen.getByText('Spara'))
+    expect((state.saved[0] as ChannelDef).genres).toEqual([])
   })
 })

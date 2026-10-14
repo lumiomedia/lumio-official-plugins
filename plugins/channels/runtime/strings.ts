@@ -144,7 +144,7 @@ export const S = {
 
 /**
  * TMDb:s standardgenrer (en-US, så som värdens /api/item levererar dem) med
- * svensk visningstext. Värdet som sparas i kanalen är alltid det engelska
+ * svensk visningstext, en per kanonisk token. Värdet som sparas i kanalen är alltid det engelska
  * namnet — det är det poolen matchar mot.
  */
 export const GENRE_TEXT: Record<string, { en: string; sv: string }> = {
@@ -167,8 +167,7 @@ export const GENRE_TEXT: Record<string, { en: string; sv: string }> = {
   Thriller: { en: 'Thriller', sv: 'Thriller' },
   War: { en: 'War', sv: 'Krig' },
   Western: { en: 'Western', sv: 'Western' },
-  'Action & Adventure': { en: 'Action & Adventure', sv: 'Action & äventyr' },
+  // TV-genrernas delar ("Action & Adventure" → Action + Adventure, se data/genres.ts).
   Kids: { en: 'Kids', sv: 'Barn' },
-  'Sci-Fi & Fantasy': { en: 'Sci-Fi & Fantasy', sv: 'Sci-fi & fantasy' },
-  'War & Politics': { en: 'War & Politics', sv: 'Krig & politik' },
+  Politics: { en: 'Politics', sv: 'Politik' },
 }

@@ -4,6 +4,7 @@
  */
 import { ERA_RANGES, type ChannelDef, type SourceId } from '../model/channel'
 import type { ScheduleItem } from '../model/schedule'
+import { canonGenres } from './genres'
 
 export type PlayRef =
   | { type: 'library'; key: string; mediaType: 'movie' | 'tv'; season?: number; episode?: number }
@@ -32,12 +33,12 @@ const LENGTH_TEST = {
 } as const
 
 export function filterPool(items: PoolItem[], channel: Pick<ChannelDef, 'kind' | 'era' | 'length'> & { genres: readonly string[] }): PoolItem[] {
-  const wanted = channel.genres.map((g) => g.toLowerCase())
+  const wanted = new Set(canonGenres(channel.genres))
   const range = channel.era === 'any' ? null : ERA_RANGES[channel.era]
   return items.filter((item) => {
     if (channel.kind === 'movie' && item.kind !== 'movie') return false
     if (channel.kind === 'tv' && item.kind !== 'episode') return false
-    if (wanted.length > 0 && !item.genres.some((g) => wanted.includes(g.toLowerCase()))) return false
+    if (wanted.size > 0 && !canonGenres(item.genres).some((g) => wanted.has(g))) return false
     if (range && (item.year == null || item.year < range[0] || item.year > range[1])) return false
     return LENGTH_TEST[channel.length](item.runtimeMin)
   })
@@ -61,7 +62,7 @@ export function poolSignature(channel: ChannelDef, sourceSigs: Partial<Record<So
   return JSON.stringify({
     rules: {
       sources: [...channel.sources].sort(),
-      genres: [...channel.genres].map((g) => g.toLowerCase()).sort(),
+      genres: canonGenres(channel.genres).sort(),
       era: channel.era, length: channel.length, kind: channel.kind,
     },
     sigs: Object.fromEntries(Object.entries(sourceSigs).sort(([a], [b]) => a.localeCompare(b))),

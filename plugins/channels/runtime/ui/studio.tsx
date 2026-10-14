@@ -19,14 +19,15 @@ import type { PoolItem } from '../data/pool'
 import { loadDebridItems, loadLibraryItems, loadWatchlistItems } from '../data/sources'
 import { sourceDeps } from '../host'
 import { deleteChannel, saveChannel } from '../state/store'
-import { genreLabel, genreOptions, previewFor, sourceCounts, type SourcePools } from './studio-logic'
+import { genreLabel, genreName, genreOptions, previewFor, sourceCounts, type SourcePools } from './studio-logic'
+import { canonGenre, canonGenres } from '../data/genres'
 import { formatClock } from './guide-layout'
 import { FONT, fontSize } from './tokens'
 import type { TextKey, useText } from './use-text'
 
 type T = ReturnType<typeof useText>
 
-const LOADERS: Record<SourceId, (deps: typeof sourceDeps) => Promise<PoolItem[]>> = {
+const LOADERS: Record<SourceId, (deps: typeof sourceDeps, opts: { strict?: boolean }) => Promise<PoolItem[]>> = {
   library: loadLibraryItems,
   watchlist: loadWatchlistItems,
   debrid: loadDebridItems,
@@ -86,6 +87,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   const [refreshing, setRefreshing] = useState(false)
   const [now, setNow] = useState(Date.now)
   const [pools, setPools] = useState<Partial<Record<SourceId, PoolItem[]>>>({})
+  const [failedSources, setFailedSources] = useState<Partial<Record<SourceId, boolean>>>({})
 
   const patch = useCallback((next: Partial<ChannelDraft>) => setDraft((d) => ({ ...d, ...next })), [])
 
@@ -96,28 +98,39 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
     return () => { alive.current = false }
   }, [])
   const started = useRef(new Set<SourceId>())
+  // Generation per källa: bara den senaste hämtningen får skriva (en långsam
+  // första debridladdning får inte skriva över en färskare Uppdatera).
+  const generation = useRef<Record<SourceId, number>>({ library: 0, watchlist: 0, debrid: 0 })
+  const load = useCallback((source: SourceId, run: () => Promise<PoolItem[]>) => {
+    started.current.add(source)
+    const gen = ++generation.current[source]
+    return run().then(
+      (items) => ({ items, failed: false }),
+      () => ({ items: [] as PoolItem[], failed: true }),
+    ).then(({ items, failed }) => {
+      if (!alive.current || generation.current[source] !== gen) return
+      setPools((p) => ({ ...p, [source]: items }))
+      setFailedSources((f) => ({ ...f, [source]: failed }))
+    })
+  }, [])
   useEffect(() => {
     for (const source of draft.sources) {
-      if (started.current.has(source)) continue
-      started.current.add(source)
-      void LOADERS[source](sourceDeps)
-        .catch(() => [] as PoolItem[])
-        .then((items) => { if (alive.current) setPools((p) => ({ ...p, [source]: items })) })
+      if (!started.current.has(source)) void load(source, () => LOADERS[source](sourceDeps, { strict: true }))
     }
-  }, [draft.sources])
+  }, [draft.sources, load])
 
   const refreshDebrid = useCallback(async () => {
     if (refreshing) return
     setRefreshing(true)
-    started.current.add('debrid')
     try {
-      await channelListDebridCloud({ force: true }).catch(() => [])
-      const items = await loadDebridItems(sourceDeps).catch(() => [] as PoolItem[])
-      if (alive.current) setPools((p) => ({ ...p, debrid: items }))
+      await load('debrid', async () => {
+        await channelListDebridCloud({ force: true }).catch(() => [])
+        return loadDebridItems(sourceDeps, { strict: true })
+      })
     } finally {
       if (alive.current) setRefreshing(false)
     }
-  }, [refreshing])
+  }, [refreshing, load])
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), CLOCK_MS)
@@ -133,11 +146,22 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   const counts = useMemo(() => sourceCounts(full), [full])
   const genres = useMemo(() => {
     const list = genreOptions(full)
-    const known = new Set(list.map((g) => g.toLowerCase()))
+    const known = new Set(list.map((g) => canonGenre(g)[0]))
     // En sparad genre som inte finns i de hämtade källorna ska fortfarande gå att välja bort.
-    return [...list, ...draft.genres.filter((g) => !known.has(g.toLowerCase()))]
+    const extra = canonGenres(draft.genres).filter((token) => !known.has(token)).map((token) => genreName(token))
+    return [...list, ...extra]
   }, [full, draft.genres])
-  const validation = validateDraft(draft, loading ? null : preview.count)
+  const chosenGenres = useMemo(() => new Set(canonGenres(draft.genres)), [draft.genres])
+  const toggleGenre = (name: string) => {
+    const token = canonGenre(name)[0]
+    if (!token) return
+    patch({
+      genres: chosenGenres.has(token) ? draft.genres.filter((g) => !canonGenre(g).includes(token)) : [...draft.genres, name],
+    })
+  }
+  // En källa som inte svarade ger inget antal att varna för: räkningen vore bara källfelet.
+  const anyFailed = draft.sources.some((s) => failedSources[s])
+  const validation = validateDraft(draft, loading || anyFailed ? null : preview.count)
   const showError = (field: 'name' | 'sources') => attempted && validation.errors.includes(field)
 
   // ── Spara / ta bort ───────────────────────────────────────────────────────
@@ -255,7 +279,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
             key={s.id}
             isTv={isTv}
             selected={draft.sources.includes(s.id)}
-            count={pools[s.id] ? counts[s.id] : undefined}
+            count={failedSources[s.id] ? '—' : pools[s.id] ? counts[s.id] : undefined}
             data-source={s.id}
             onClick={() => patch({ sources: toggleIn(draft.sources, s.id) })}
           >
@@ -284,8 +308,8 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
           <Chip
             key={g}
             isTv={isTv}
-            selected={draft.genres.some((x) => x.toLowerCase() === g.toLowerCase())}
-            onClick={() => patch({ genres: draft.genres.some((x) => x.toLowerCase() === g.toLowerCase()) ? draft.genres.filter((x) => x.toLowerCase() !== g.toLowerCase()) : [...draft.genres, g] })}
+            selected={chosenGenres.has(canonGenre(g)[0] ?? '')}
+            onClick={() => toggleGenre(g)}
           >
             {genreLabel(g, genreLang)}
           </Chip>
@@ -408,9 +432,11 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
         }}
       >
         {form}
+        {/* TV: knapparna före förhandsvisningen, så Spara inte ligger en lång rullning bort. */}
+        {isTv ? footer : null}
         {previewPanel}
       </div>
-      {footer}
+      {isTv ? null : footer}
       {kbOpen && KeyboardPanel ? (
         <div style={{ position: 'fixed', inset: 0, zIndex: 80 }}>
           <KeyboardPanel
@@ -431,7 +457,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
 /** Chip enligt handoffen: radie 8, 6×12, 13px/500; vald = accentton + accentkant. */
 function Chip({ selected, count, isTv, onClick, children, ...rest }: {
   selected: boolean
-  count?: number
+  count?: number | string
   isTv: boolean
   onClick(): void
   children: ReactNode
