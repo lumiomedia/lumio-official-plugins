@@ -17,6 +17,7 @@ import { useTvText } from './tv/tv-strings'
 import { nextFallbackAfter, setTvSettings, useTvSettings } from './tv/tv-settings-store'
 import { nextStartView, startViewLabelKey } from './tv/start-view'
 import { listGroups } from './index-client'
+import { groupOrderLabelKey, nextGroupOrder, rawGroupOrderFor, sortGroups, withRawOrder } from './group-order'
 import { mergeNameConflict, normalizeCuration, renameMerge } from './list-curation'
 import {
   getXtreamLogins,
@@ -133,6 +134,7 @@ export function TvSettingsPage() {
       {/* Strömbytet: växeln har onToggle och tiden onOk — båda blir stationer (data-f). */}
       <TvRow testId="tv-stream-fallback" label={tt('settingStreamFallback')} hint={tt('settingStreamFallbackHint')} toggle={tvSettings.streamFallback} onToggle={(streamFallback) => setTvSettings({ streamFallback })} />
       <TvRow testId="tv-stream-fallback-after" label={tt('settingStreamFallbackAfter')} hint={tt('settingStreamFallbackAfterHint')} value={tvSettings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: tvSettings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(tvSettings.streamFallbackAfterS) })} />
+      <TvRow testId="tv-group-order" label={tt('settingGroupOrder')} hint={tt('settingGroupOrderHint')} value={tt(groupOrderLabelKey(tvSettings.groupOrder))} onOk={() => setTvSettings({ groupOrder: nextGroupOrder(tvSettings.groupOrder) })} />
 
       <TvEyebrow>{h('playlists')}</TvEyebrow>
       {s.lists.length === 0 ? <TvNote>{h('noPlaylistsYet')}</TvNote> : null}
@@ -439,13 +441,16 @@ export function TvCategoriesPanel({ target, crumb, onClose }: { target: NonNulla
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list.id, list.source])
 
+  // Gruppordningen följer inställningen; spellistans ordning läses ur källans
+  // laddade kanaler (kvittot är i bokstavsordning, se group-order.ts).
+  const groupOrder = useTvSettings().groupOrder
   const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups])
   const countOf = useMemo(() => new Map((groups ?? []).map((g) => [g.name, g.count])), [groups])
   const claimed = useMemo(() => new Set(draft.merges.flatMap((m) => m.groups)), [draft.merges])
   const merges = draft.merges
     .map((m, index) => ({ index, name: m.name, members: m.groups.filter((g) => known.has(g)), count: m.groups.reduce((sum, g) => sum + (countOf.get(g) ?? 0), 0) }))
     .filter((m) => m.members.length > 0)
-  const plain = (groups ?? []).filter((g) => !claimed.has(g.name)).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  const plain = sortGroups(withRawOrder((groups ?? []).filter((g) => !claimed.has(g.name)), rawGroupOrderFor(list.source)), groupOrder)
   const summary = h('curationSummary', {
     groups: known.size,
     hidden: draft.hidden.filter((g) => known.has(g)).length,

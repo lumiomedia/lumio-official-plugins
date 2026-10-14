@@ -59,6 +59,13 @@ describe('Inställningar på telefon', () => {
     fireEvent.click(after)
     expect(getTvSettings().streamFallbackAfterS).toBe(10)
   })
+  it('Gruppordning finns på telefonen och växlar vid tryck', async () => {
+    mountPhone({ view: 'settings' })
+    const order = await screen.findByTestId('setting-groupOrder')
+    expect(order).toHaveTextContent('Playlist order')
+    fireEvent.click(order)
+    expect(getTvSettings().groupOrder).toBe('name')
+  })
   it('Startvy finns på telefonen och växlar vid tryck', async () => {
     mountPhone({ view: 'settings' })
     const row = await screen.findByTestId('setting-startView')

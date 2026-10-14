@@ -7,6 +7,7 @@ import { useTvText } from '../tv-strings'
 import { nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode } from '../tv-settings-store'
 import { ContentTab, EpgTab, ParentalTab, PhoneCaret, PlaylistsTab, Row } from '../settings-tabs'
 import { nextStartView, startViewLabelKey } from '../start-view'
+import { groupOrderLabelKey, nextGroupOrder } from '../../group-order'
 import { SportKeySettingsTv } from '../../sport/sport-key-settings'
 import { SportBackdropSettingsTv } from '../../sport/sport-backdrop-settings'
 import { MT, ellipsis, sectionLabel } from './mobile-tokens'
@@ -84,6 +85,7 @@ export function TvSettingsPhone(props: TvViewProps) {
           <ToggleRow testId="setting-fullscreenOnRotate" label={tt('settingFullscreenOnRotate')} on={settings.fullscreenOnRotate} onOk={() => setTvSettings({ fullscreenOnRotate: !settings.fullscreenOnRotate })} />
           <ToggleRow testId="setting-streamFallback" label={tt('settingStreamFallback')} on={settings.streamFallback} onOk={() => setTvSettings({ streamFallback: !settings.streamFallback })} />
           <Row phone testId="setting-streamFallbackAfterS" label={tt('settingStreamFallbackAfter')} right={settings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: settings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) })} />
+          <Row phone testId="setting-groupOrder" label={tt('settingGroupOrder')} right={tt(groupOrderLabelKey(settings.groupOrder))} onOk={() => setTvSettings({ groupOrder: nextGroupOrder(settings.groupOrder) })} />
         </Card>
       </Section>
 

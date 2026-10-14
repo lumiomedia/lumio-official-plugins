@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { LtBtn, LtCheckMark, LtDialog, LtEyebrow, LtInput, LtNote, ToastHost, UI, fmtInt, useToast } from './settings-ui'
 import { useHubText } from './hub-strings'
 import { listGroups } from './index-client'
+import { rawGroupOrderFor, sortGroups, withRawOrder } from './group-order'
+import { useTvSettings } from './tv/tv-settings-store'
 import { mergeNameConflict, normalizeCuration, renameMerge } from './list-curation'
 import { markListCurationSeen, updateLiveTvListCuration, type ListCuration, type LiveTvList } from './live-tv-data'
 import { playlistHost } from './playlist-card'
@@ -64,6 +66,9 @@ function DialogBody({ list, mode, onClose }: { list: LiveTvList; mode: 'settings
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list.id, list.source])
 
+  // Gruppordningen följer inställningen; spellistans ordning läses ur källans
+  // laddade kanaler (kvittot är i bokstavsordning, se group-order.ts).
+  const groupOrder = useTvSettings().groupOrder
   const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups])
   const countOf = useMemo(() => new Map((groups ?? []).map((g) => [g.name, g.count])), [groups])
   const claimed = useMemo(() => new Set(draft.merges.flatMap((m) => m.groups)), [draft.merges])
@@ -74,10 +79,12 @@ function DialogBody({ list, mode, onClose }: { list: LiveTvList; mode: 'settings
     .map((m, index) => ({ index, name: m.name, members: m.groups.filter((g) => known.has(g)), count: m.groups.reduce((sum, g) => sum + (countOf.get(g) ?? 0), 0) }))
     .filter((m) => m.members.length > 0)
   const needle = query.trim().toLowerCase()
-  const rows = (groups ?? [])
-    .filter((g) => !claimed.has(g.name))
-    .filter((g) => !needle || g.name.toLowerCase().includes(needle))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  const rows = sortGroups(withRawOrder(
+    (groups ?? [])
+      .filter((g) => !claimed.has(g.name))
+      .filter((g) => !needle || g.name.toLowerCase().includes(needle)),
+    rawGroupOrderFor(list.source),
+  ), groupOrder)
   const summary = h('curationSummary', {
     groups: known.size,
     hidden: draft.hidden.filter((g) => known.has(g)).length,

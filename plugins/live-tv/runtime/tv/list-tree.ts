@@ -6,6 +6,8 @@ import { isPlayableChannel, type LiveTvModel } from '../live-tv-model'
 import { useListChannels } from '../view-helpers'
 import { curatedGroupCounts } from '../list-curation'
 import { FAVS_GROUP } from './tv-guide-shared'
+import { rawGroupOrderFor, sortGroups, type GroupOrder } from '../group-order'
+import { useTvSettings } from './tv-settings-store'
 
 /**
  * Egen modul av samma skäl som `hub-data.ts` och `grid-rows.ts`: hade
@@ -46,13 +48,30 @@ export interface ListSelection { listId: string | null; group: string | null }
  * `maxGroups` kapar grupperna per lista (skrivbordets vänsterkolumn visar
  * 12); utan tak får anroparen alla — telefonen visar 6 och expanderar.
  */
+/** Manuella listors grupper (samma regel som `computeGroups`) i vald ordning. */
+function customListGroups(channels: readonly M3uChannel[], mode: GroupOrder): ListTreeGroup[] {
+  const first = new Map<string, number>()
+  channels.forEach((channel, index) => {
+    const group = channel.group?.trim() || 'Other'
+    if (!first.has(group)) first.set(group, index)
+  })
+  return sortGroups(computeGroups([...channels]).map((g) => ({ ...g, firstIndex: first.get(g.name) })), mode)
+    .map(({ name, count }) => ({ name, count }))
+}
+
 export function useListTree(model: LiveTvModel, maxGroups?: number): ListTreeEntry[] {
+  const groupOrder = useTvSettings().groupOrder
+  // `model.channels` är med som beroende: spellistans gruppordning registreras
+  // när en källas kanaler laddas (group-order.ts), och trädet ska ritas om då.
+  const channelsRef = model.channels
   return useMemo(() => model.lists.map((list) => {
     const embedded = list.channels ?? []
     const custom = list.kind === 'custom'
     // Kvittot är okuraterat — dolda grupper bort, ihopslagna som en post, så
     // Spellistor-läget följer samma regler som rutnätet (spec beslut 2).
-    const groups = custom ? computeGroups(embedded) : curatedGroupCounts(list.groups ?? [], list.curation)
+    const groups = custom
+      ? customListGroups(embedded, groupOrder)
+      : curatedGroupCounts(list.groups ?? [], list.curation, groupOrder, rawGroupOrderFor(list.source))
     return {
       id: list.id,
       name: list.name,
@@ -60,7 +79,8 @@ export function useListTree(model: LiveTvModel, maxGroups?: number): ListTreeEnt
       groups: maxGroups === undefined ? groups : groups.slice(0, maxGroups),
       channelsLoaded: custom || embedded.length > 0,
     }
-  }), [model.lists, maxGroups])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [model.lists, maxGroups, groupOrder, channelsRef])
 }
 
 export interface ListRows {

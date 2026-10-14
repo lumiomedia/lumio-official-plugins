@@ -32,6 +32,7 @@ import { getVodMode } from '../vod-data'
 import { maybeAutoScanVod } from '../vod-autoscan'
 import { hasVodIndex, markVodHomeRedirect, shouldRedirectToVodHome, vodHiddenForActivePlaylist, vodHomeTarget } from '../vod-home'
 import { MobileSheet } from './mobile/mobile-sheet'
+import { shellToastStyle } from './shell-toast'
 
 /**
  * TV-SKALETS BAKGRUND MED HÅL.
@@ -827,7 +828,7 @@ export function LiveTvTvShell({ params, onNavigate, sportOnly = false }: LiveTvT
         <div data-testid="zap-digits" style={{ position: 'fixed', top: dp(36), right: dp(48), zIndex: 80, padding: `${dp(10)}px ${dp(22)}px`, borderRadius: dp(12), background: TV.glass, fontSize: dp(34), fontWeight: 600, letterSpacing: '0.1em' }}>{zapDigits}</div>
       ) : null}
       {toastText ? (
-        <div role="status" data-live-tv-layer="" style={{ position: 'fixed', bottom: dp(40), left: '50%', transform: 'translateX(-50%)', zIndex: 80, padding: `${dp(12)}px ${dp(24)}px`, borderRadius: 999, background: TV.glass, fontSize: dp(19) }}>{toastText}</div>
+        <div role="status" data-live-tv-layer="" data-testid="shell-toast" style={shellToastStyle({ phone, tabBar: phone && !sportOnly && active === null })}>{toastText}</div>
       ) : null}
     </div>
   )

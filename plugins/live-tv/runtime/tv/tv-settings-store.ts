@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { onPluginStorageChanged, readPluginJson, writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../live-tv-data'
 import { DEFAULT_START_VIEW, sanitizeStartView, type LiveTvStartView } from './start-view'
+import { DEFAULT_GROUP_ORDER, sanitizeGroupOrder, type GroupOrder } from '../group-order'
 
 export const TV_SETTINGS_KEY = 'live_tv_tv_settings_v1'
 export const GUIDE_MODE_KEY = 'live_tv_guide_mode_v1'
@@ -52,6 +53,12 @@ export interface TvSettings {
   streamFallback: boolean
   /** Sekunder innan förslaget byter självt; 0 = Aldrig. */
   streamFallbackAfterS: FallbackAfterS
+  /**
+   * Ordningen grupperna listas i (chipraden, grupplistorna, rutnätet,
+   * guidens filter, kurateringen). Spellistans ordning är standard — förut
+   * var det alltid flest kanaler först (se `group-order.ts`).
+   */
+  groupOrder: GroupOrder
 }
 
 const DEFAULTS: TvSettings = {
@@ -68,6 +75,7 @@ const DEFAULTS: TvSettings = {
   startView: DEFAULT_START_VIEW,
   streamFallback: true,
   streamFallbackAfterS: 5,
+  groupOrder: DEFAULT_GROUP_ORDER,
 }
 
 function sanitize(raw: unknown): TvSettings {
@@ -88,6 +96,7 @@ function sanitize(raw: unknown): TvSettings {
     startView: sanitizeStartView(r.startView),
     streamFallback: typeof r.streamFallback === 'boolean' ? r.streamFallback : DEFAULTS.streamFallback,
     streamFallbackAfterS: (FALLBACK_AFTER_OPTIONS as readonly number[]).includes(r.streamFallbackAfterS as number) ? (r.streamFallbackAfterS as FallbackAfterS) : DEFAULTS.streamFallbackAfterS,
+    groupOrder: sanitizeGroupOrder(r.groupOrder),
   }
 }
 

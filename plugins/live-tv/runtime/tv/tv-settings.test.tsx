@@ -158,6 +158,14 @@ describe('TvSettingsView', () => {
     fireEvent.click(after)
     expect(getTvSettings().streamFallbackAfterS).toBe(10)
   })
+  it('Utseende: Gruppordning står under Beteende och växlar läge', () => {
+    mount()
+    const order = screen.getByTestId('setting-groupOrder')
+    expect(order).toHaveAttribute('data-f')
+    expect(order).toHaveTextContent('Playlist order')
+    fireEvent.click(order)
+    expect(getTvSettings().groupOrder).toBe('name')
+  })
   it('Utseende på LAN/fjärr: de fyra gamla lägena står kvar som standardvy', () => {
     __setTvModeForTests(false)
     __setDesktopTauriEnvForTests(false)

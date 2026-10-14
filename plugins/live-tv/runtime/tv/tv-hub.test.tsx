@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { TV_SCENE_BOX_ATTR, TV_SCENE_NARROW_ATTR, TV_SCENE_PHONE_ATTR, __resetForTests, __setTvModeForTests, writePluginJson } from '@/lib/plugin-sdk'
 import { seedLiveTvIndex } from '../../src/__test-stubs__/live-tv-index'
 import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
@@ -7,6 +7,7 @@ import { LIVE_TV_PLUGIN_ID, channelKey, type LiveTvList } from '../live-tv-data'
 vi.mock('../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 
 import { LiveTvTvShell } from './tv-shell'
+import { setTvSettings } from './tv-settings-store'
 
 const ch = (name: string, group: string) => ({ name, logo: null, group, url: `http://x/${name}`, tvgId: null })
 const list: LiveTvList = { id: 'l1', name: 'Xtream', channels: [ch('A', 'Sport'), ch('B', 'Sport'), ch('C', 'News')], createdAt: '', urlTvg: null, epgUrls: [], autoEpgDisabled: false, fetchedAt: null }
@@ -171,5 +172,26 @@ describe('TvHub utan VOD-rad (spec 2026-10-10)', () => {
     await new Promise((resolve) => setTimeout(resolve, 50))
     expect(screen.queryByTestId('hub-vod-row')).not.toBeInTheDocument()
     expect(screen.queryByText('Film & series')).not.toBeInTheDocument()
+  })
+})
+
+describe('TvHub gruppordning (inställningen Gruppordning)', () => {
+  const chipOrder = () => [...document.querySelectorAll('[data-testid^="chip-"]')]
+    .map((el) => el.getAttribute('data-testid'))
+    .filter((id) => id !== 'chip-all' && id !== 'chip-favs')
+  const ordered: LiveTvList = {
+    ...list,
+    channels: [ch('N1', 'News'), ch('S1', 'Sport'), ch('S2', 'Sport'), ch('K1', 'Kids')],
+  }
+
+  it('chipraden följer spellistans ordning som standard och byter när inställningen ändras', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [ordered])
+    seedLiveTvIndex()
+    render(<LiveTvTvShell pageId="live-tv-browse" params={{}} onNavigate={() => {}} onOpenDetails={() => {}} />)
+    expect(chipOrder()).toEqual(['chip-News', 'chip-Sport', 'chip-Kids'])
+    act(() => { setTvSettings({ groupOrder: 'count' }) })
+    expect(chipOrder()).toEqual(['chip-Sport', 'chip-Kids', 'chip-News'])
+    act(() => { setTvSettings({ groupOrder: 'name' }) })
+    expect(chipOrder()).toEqual(['chip-Kids', 'chip-News', 'chip-Sport'])
   })
 })

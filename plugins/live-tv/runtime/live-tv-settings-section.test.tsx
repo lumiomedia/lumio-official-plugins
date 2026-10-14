@@ -85,6 +85,19 @@ describe('LiveTvSettingsSection', () => {
     fireEvent.click(toggle)
     expect(getTvSettings().streamFallback).toBe(false)
   })
+  it('Gruppordning: tre val på skrivbordskortet, Spellistans ordning förvald, skriver till lagret', () => {
+    render(<LiveTvSettingsSection />)
+    const row = screen.getByTestId('lt-group-order')
+    expect(row).toHaveTextContent('Group order')
+    expect(within(row).getByTestId('lt-group-order-playlist')).toHaveAttribute('aria-pressed', 'true')
+    expect(within(row).getByTestId('lt-group-order-playlist')).toHaveTextContent('Playlist order')
+    expect(within(row).getByTestId('lt-group-order-name')).toHaveTextContent('A–Z')
+    expect(within(row).getByTestId('lt-group-order-count')).toHaveTextContent('Most channels')
+    fireEvent.click(within(row).getByTestId('lt-group-order-count'))
+    expect(getTvSettings().groupOrder).toBe('count')
+    fireEvent.click(within(row).getByTestId('lt-group-order-name'))
+    expect(getTvSettings().groupOrder).toBe('name')
+  })
   it('visar importjobbets egen räknare, inte bara "Hämtar lista 1 av 1…"', async () => {
     // En enda adress kan vara 17 000 kanaler: köräknaren står still i en
     // minut medan jobbet arbetar, och utan jobbets `received/total` ser det

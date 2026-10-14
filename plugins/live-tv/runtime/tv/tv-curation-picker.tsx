@@ -5,6 +5,8 @@ import { useTvText } from './tv-strings'
 import { Check, PickerPanel } from './tv-list-picker'
 import type { useTextPrompt } from './tv-text-entry'
 import { listGroups } from '../index-client'
+import { rawGroupOrderFor, sortGroups, withRawOrder } from '../group-order'
+import { useTvSettings } from './tv-settings-store'
 import { curatedGroupCounts, mergeNameConflict, normalizeCuration } from '../list-curation'
 import { markListCurationSeen, updateLiveTvListCuration, type ListCuration, type LiveTvList } from '../live-tv-data'
 
@@ -53,6 +55,9 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list.id, list.source])
 
+  // Gruppordningen följer inställningen; spellistans ordning läses ur källans
+  // laddade kanaler (kvittot är i bokstavsordning, se group-order.ts).
+  const groupOrder = useTvSettings().groupOrder
   const known = useMemo(() => new Set((groups ?? []).map((g) => g.name)), [groups])
   const claimed = useMemo(() => new Set(draft.merges.flatMap((m) => m.groups)), [draft.merges])
   const merges = draft.merges
@@ -62,9 +67,7 @@ export function TvCurationPicker({ nav, list, mode, keyboard, onClose }: {
       count: (groups ?? []).filter((g) => m.groups.includes(g.name)).reduce((sum, g) => sum + g.count, 0),
     }))
     .filter((m) => m.groups.length > 0)
-  const plain = (groups ?? [])
-    .filter((g) => !claimed.has(g.name))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  const plain = sortGroups(withRawOrder((groups ?? []).filter((g) => !claimed.has(g.name)), rawGroupOrderFor(list.source)), groupOrder)
   const summary = groups
     ? tt('curationSummary', {
         groups: curatedGroupCounts(groups, draft).length,

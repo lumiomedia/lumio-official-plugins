@@ -47,7 +47,8 @@ import {
   type M3uChannel,
   type ListCuration,
 } from './live-tv-data'
-import { getActivePlaylistId, onActivePlaylistChanged, setActivePlaylistId } from './tv/tv-settings-store'
+import { getActivePlaylistId, onActivePlaylistChanged, setActivePlaylistId, useTvSettings } from './tv/tv-settings-store'
+import { orderedGroups, recordRawGroupOrder } from './group-order'
 
 /**
  * Delad datamodell för Live TV-sidorna (lagring v2, spec 4.2).
@@ -116,7 +117,7 @@ export interface LiveTvModel {
   channels: M3uChannel[]
   byKey: Map<string, M3uChannel>
   byUrl: Map<string, M3uChannel>
-  /** Alla kuraterade gruppnamn, sorterade efter antal fallande (chipraden tar de första åtta). */
+  /** Alla kuraterade gruppnamn i inställningens gruppordning (chipraden tar de första). */
   groups: string[]
   /** Samma lista med antal kanaler per grupp — kategorimenyns och panelens underlag. */
   groupCounts: { name: string; count: number }[]
@@ -476,6 +477,9 @@ export function loadChannelsShared(source: string | null): Promise<IndexChannel[
       ? await loadEveryChannel(controller?.signal)
       : await loadAllChannels(source, undefined, controller?.signal)
     if (source !== null) applyLogoFallbackSwitch(source, items)
+    // Spellistans gruppordning FÖRE kurateringen: panelerna och
+    // Spellistor-trädet ritas ur kvitton i bokstavsordning (group-order.ts).
+    if (source !== null) recordRawGroupOrder(source, items)
     // Kurateringen (dolda grupper, ihopslagningar) tillämpas HÄR, innan
     // cachen: alla vyer läser samma kuraterade uppsättning. "Alla" byggs av
     // per-källa-laddningarna i loadEveryChannel och blir kuraterad på köpet.
@@ -678,21 +682,13 @@ export function useLiveTvModel(tickMs = 60_000): LiveTvModel {
     for (const channel of byKey.values()) if (!map.has(channel.url)) map.set(channel.url, channel)
     return map
   }, [byKey])
-  // Hela den kuraterade grupplistan med antal, störst först — inte topp åtta.
+  // Hela den kuraterade grupplistan med antal — inte topp åtta — i den
+  // valda gruppordningen (standard spellistans, se `group-order.ts`).
   // Kanalerna är redan kuraterade (loadChannelsShared), så dolda grupper
-  // saknas och ihopslagna bär sitt nya namn. Chipraden tar de första åtta
-  // själv (hub-data.ts).
-  const groupCounts = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const channel of channels) {
-      for (const part of String(channel.group ?? '').split(';').map((s) => s.trim()).filter(Boolean)) {
-        counts.set(part, (counts.get(part) ?? 0) + 1)
-      }
-    }
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
-  }, [channels])
+  // saknas och ihopslagna bär sitt nya namn på sin första förekomst.
+  // Chipraden tar de första själv (group-chips.ts).
+  const groupOrder = useTvSettings().groupOrder
+  const groupCounts = useMemo(() => orderedGroups(channels, groupOrder), [channels, groupOrder])
   const groups = useMemo(() => groupCounts.map((g) => g.name), [groupCounts])
   const playlists = useMemo(
     () => lists.map((list) => ({ id: list.id, name: list.name, count: list.channelCount ?? list.channels?.length ?? 0 })),

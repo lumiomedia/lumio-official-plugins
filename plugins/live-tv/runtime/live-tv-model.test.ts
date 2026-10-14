@@ -42,7 +42,7 @@ import { __resetLiveTvModelForTests, loadChannelsShared, useLiveTvModel } from '
 import { __resetScheduleCacheForTests } from './epg/schedule-cache'
 import { __resetNowSnapshotForTests } from './epg/now-snapshot'
 import { __resetChannelResolverForTests } from './channel-resolver'
-import { ACTIVE_PLAYLIST_KEY } from './tv/tv-settings-store'
+import { ACTIVE_PLAYLIST_KEY, setTvSettings } from './tv/tv-settings-store'
 
 const ch = (name: string, group: string, number: number): IndexChannel => ({
   name,
@@ -326,5 +326,29 @@ describe('useLiveTvModel: EPG ur appen', () => {
     const { result } = renderHook(() => useLiveTvModel())
     await waitFor(() => expect(result.current.epgLoading).toBe(false))
     expect(refreshEpg).not.toHaveBeenCalled()
+  })
+})
+
+describe('useLiveTvModel: gruppordningen', () => {
+  it('Alla spellistor i spellistans ordning som standard, och följer inställningen när den ändras', async () => {
+    // s1: Sport, Kids, Kids — s2: News ×3. Antalet ger News först, spellistan Sport.
+    vi.mocked(loadAllChannels).mockImplementation(async (source) =>
+      source === 's1'
+        ? [ch('A', 'Sport', 1), ch('B', 'Kids', 2), ch('D', 'Kids', 3)]
+        : source === 's2' ? [ch('E', 'News', 1), ch('F', 'News', 2), ch('G', 'News;Sport', 3)] : [],
+    )
+    __setTvModeForTests(false)
+    const { result } = renderHook(() => useLiveTvModel())
+    await waitFor(() => expect(result.current.channelsLoading).toBe(false))
+    expect(result.current.groups).toEqual(['Sport', 'Kids', 'News'])
+    expect(result.current.groupCounts).toEqual([
+      { name: 'Sport', count: 2 },
+      { name: 'Kids', count: 2 },
+      { name: 'News', count: 3 },
+    ])
+    act(() => { setTvSettings({ groupOrder: 'count' }) })
+    await waitFor(() => expect(result.current.groups).toEqual(['News', 'Kids', 'Sport']))
+    act(() => { setTvSettings({ groupOrder: 'name' }) })
+    await waitFor(() => expect(result.current.groups).toEqual(['Kids', 'News', 'Sport']))
   })
 })

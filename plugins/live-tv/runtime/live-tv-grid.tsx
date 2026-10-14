@@ -46,6 +46,7 @@ import {
 import { completeLogos } from './index-client'
 import { LIVE_TV_BROWSE_PAGE_ID, encodeChannelParams } from './live-tv-shell'
 import { useTvSettings } from './tv/tv-settings-store'
+import { orderedGroups } from './group-order'
 import { buildTvPlayerProps } from './tv/tv-player-props'
 import type { LiveTvPlayerTvProps } from './tv/tv-player-types'
 import { addToFirstFree, getMultiviewState, setMultiviewState } from './tv/tv-multiview-store'
@@ -731,20 +732,11 @@ export function LiveTvGrid({ initialChannel = null, tvCompactTop = false, onNavi
   }, [loading, activeListId, pinnedChannels.length])
 
   // HELA den kuraterade grupplistan för det som visas (fliken eller alla), med
-  // antal och störst först — inte bara det som råkar vara på skärmen. Kanalerna
-  // är redan kuraterade i den delade laddaren, så dolda grupper saknas här och
-  // ihopslagna bär sitt nya namn.
-  const categories = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const c of visibleChannels) {
-      for (const part of String(c.group ?? '').split(';').map((s) => s.trim()).filter(Boolean)) {
-        counts.set(part, (counts.get(part) ?? 0) + 1)
-      }
-    }
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
-  }, [visibleChannels])
+  // antal i den valda gruppordningen — inte bara det som råkar vara på
+  // skärmen. Kanalerna är redan kuraterade i den delade laddaren, så dolda
+  // grupper saknas här och ihopslagna bär sitt nya namn.
+  const groupOrder = tvSettings.groupOrder
+  const categories = useMemo(() => orderedGroups(visibleChannels, groupOrder), [visibleChannels, groupOrder])
   /**
    * Allt dolt: den valda listan (eller någon lista i "alla") har dolda
    * kategorier och ingenting blev kvar att visa. Då är svaret en väg till
