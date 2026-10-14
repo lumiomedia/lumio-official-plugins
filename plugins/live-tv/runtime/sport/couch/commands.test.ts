@@ -6,7 +6,9 @@ import { __resetPresenceForTests, hasCouchPresence } from './presence'
 import { __resetGoalsForTests, addGoal, openGoals } from './goals'
 import type { MultiviewState } from '../../tv/tv-multiview-store'
 import { __resetPluginStorageForTests } from '@/lib/plugin-sdk'
-import { getFollows, type SportSettings } from '../sport-store'
+import { getFollows, getSportSettings, type SportSettings } from '../sport-store'
+import type { CouchSportDetail } from '@/lib/plugin-sdk'
+import { __resetSpoilerForTests, hiddenOnTv, noteReplays } from './spoiler'
 import { tvText } from '../../tv/tv-strings'
 
 const src = (key: string): MatchSource => ({ channelKey: key, name: key, url: `http://${key}`, logo: null, group: 'g', tvgId: null, sourceId: 's', quality: null, programmeStart: 0, programmeStop: 10, liveFlag: true })
@@ -191,5 +193,45 @@ describe('answerSportQuery', () => {
     const empty = { events: [], stats: [], lineups: [], updatedAt: null }
     expect(await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'm' }, deps([match({})], { detail: async () => null }))).toEqual(empty)
     expect(await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'm' }, deps([match({})], { detail: async () => { throw new Error('x') } }))).toEqual(empty)
+  })
+})
+
+describe('spoiler: sport-reveal och sport-match', () => {
+  const r = match({ id: 'r', rerun: true, fixture: undefined, replayOf: { kickoff: 0, score: { home: 3, away: 0 }, fixture: { provider: 'p', id: '77' } } })
+  const on = { settings: () => ({ ...getSportSettings(), spoilerReplays: true }) }
+  beforeEach(() => { __resetPluginStorageForTests(); __resetSpoilerForTests(); noteReplays([r], 1_000) })
+
+  it('en telefon som inte visat resultatet får inget och källan frågas inte', async () => {
+    let asked = 0
+    const a = await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'r', phoneId: 'p2' }, deps([r], { ...on, detail: async () => { asked++; return detail } }))
+    expect(a).toEqual({ events: [], stats: [], lineups: [], updatedAt: null, hidden: true })
+    expect(asked).toBe(0)
+  })
+  it('Visa resultat gäller bara den telefonen', async () => {
+    expect(await runSportCommand({ id: 'c', type: 'sport-reveal', matchId: 'r', tv: false, phoneId: 'p1' }, deps([r], on))).toBeUndefined()
+    const mine = await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'r', phoneId: 'p1' }, deps([r], on))
+    expect(mine).toMatchObject({ score: [3, 0], revealed: true })
+    expect((mine as CouchSportDetail).events.length).toBeGreaterThan(0)
+    expect(await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'r', phoneId: 'p2' }, deps([r], on))).toMatchObject({ hidden: true })
+    expect(hiddenOnTv(r, 1_000, { spoilerReplays: true })).toBe(true)
+  })
+  it('Visa på TV:n också visar för alla', async () => {
+    await runSportCommand({ id: 'c', type: 'sport-reveal', matchId: 'r', tv: true, phoneId: 'p1' }, deps([r], on))
+    expect(hiddenOnTv(r, 1_000, { spoilerReplays: true })).toBe(false)
+    expect(await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'r', phoneId: 'p2' }, deps([r], on))).toMatchObject({ score: [3, 0] })
+  })
+  it('utan telefon-id eller med okänd match: fel', async () => {
+    expect(await runSportCommand({ id: 'c', type: 'sport-reveal', matchId: 'r', tv: false }, deps([r], on))).toEqual({ id: 'c', ok: false, error: 'no-phone' })
+    expect(await runSportCommand({ id: 'c', type: 'sport-reveal', matchId: 'x', tv: false, phoneId: 'p1' }, deps([r], on))).toEqual({ id: 'c', ok: false, error: 'unknown-match' })
+  })
+  it('skyddet av: reprisen bär resultatet men är inte "revealed"', async () => {
+    const a = await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'r', phoneId: 'p2' }, deps([r], { settings: () => ({ ...getSportSettings(), spoilerReplays: false }) }))
+    expect(a).toMatchObject({ score: [3, 0] })
+    expect((a as CouchSportDetail).revealed).toBeUndefined()
+    expect((a as CouchSportDetail).hidden).toBeUndefined()
+  })
+  it('originalet (inte reprisen) är också dolt för telefonen', async () => {
+    const orig = match({ id: 'o', status: 'finished', fixture: { provider: 'p', id: '77' }, score: { home: 3, away: 0 } })
+    expect(await answerSportQuery({ id: 'q', type: 'sport-match', matchId: 'o', phoneId: 'p2' }, deps([r, orig], on))).toMatchObject({ hidden: true })
   })
 })

@@ -3,6 +3,8 @@ import type { CouchSportGoal } from '@/lib/plugin-sdk'
 import type { GoalEvent } from '../goal-events'
 import type { MatchSource, SportMatch } from '../sport-model'
 import type { SportSettings } from '../sport-store'
+import { __resetPluginStorageForTests } from '@/lib/plugin-sdk'
+import { __resetSpoilerForTests, noteReplays } from './spoiler'
 import { __resetGoalsForTests, addGoal, dismissGoal, goalFromEvent, GOAL_TTL_MS, GOALS_MAX, onGoalsChanged, openGoals, shouldCard } from './goals'
 
 const src = (key: string): MatchSource => ({ channelKey: key, name: key.toUpperCase(), url: `http://${key}`, logo: null, group: 'g', tvgId: null, sourceId: 's', quality: null, programmeStart: 0, programmeStop: 10, liveFlag: true })
@@ -17,7 +19,7 @@ const ctx = { playing: null, audioChannel: null, settings, follows }
 const goal = (goalId: string, at = 0): CouchSportGoal => ({ goalId, matchId: 'm', team: { name: 'Malmö FF', short: 'MAL', crest: null }, opponent: 'Djurgården', score: [2, 1], minute: "67'", league: 'Allsvenskan', channel: 'K1', at })
 const event: GoalEvent = { fixtureId: '1', provider: 'api-sports', sport: 'football', side: 'away', score: { home: 1, away: 2 }, scorer: 'Berg', minute: 67, at: 500, home: 'Djurgården', away: 'Malmö FF' }
 
-beforeEach(() => { __resetGoalsForTests() })
+beforeEach(() => { __resetGoalsForTests(); __resetSpoilerForTests(); __resetPluginStorageForTests() })
 
 describe('shouldCard', () => {
   it('följt lag i en match som inte visas ger kort', () => {
@@ -31,6 +33,11 @@ describe('shouldCard', () => {
   })
   it('en repris ger inget kort', () => {
     expect(shouldCard(match({ rerun: true }), ctx)).toBe(false)
+  })
+  it('en match vars resultat är spoilerdolt ger inget kort', () => {
+    noteReplays([match({ id: 'r', rerun: true, fixture: undefined, replayOf: { kickoff: 0, score: null, fixture: { provider: 'api-sports', id: '1' } } })], 0)
+    expect(shouldCard(match(), ctx, 0)).toBe(false)
+    expect(shouldCard(match(), { ...ctx, settings: { ...settings, spoilerReplays: false } }, 0)).toBe(true)
   })
   it('ett ej följt lag utan notis för matchen ger inget kort', () => {
     expect(shouldCard(match(), { ...ctx, follows: [] })).toBe(false)

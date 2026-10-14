@@ -20,6 +20,7 @@ import { couchMarks, onCouchMarksChanged } from './context'
 import { onGoalsChanged, openGoals } from './goals'
 import { hasCouchPresence, onPresenceChanged, sweepPresence } from './presence'
 import { buildCouchSport } from './snapshot'
+import { hiddenOnTv, noteReplays, onSpoilerChanged, SPOILER_TV_KEY } from './spoiler'
 
 const NOTIFY_MS = 250
 const SWEEP_MS = 15_000
@@ -54,6 +55,7 @@ function snapshotNow() {
   const c = currentResults()
   const now = Date.now()
   const marks = couchMarks()
+  const settings = getSportSettings()
   return buildCouchSport({
     matches: todaysMatches(),
     playing: playingChannel(),
@@ -66,13 +68,23 @@ function snapshotNow() {
     now,
     multiview: marks.multiview ? getMultiviewState() : null,
     goals: openGoals(now),
+    spoilerHidden: (m) => hiddenOnTv(m, now, settings),
   })
 }
 
-/** Matchdetaljen: samma ref som matchinfon (use-fixture-detail.ts). Avslutade bara ur cachen; repriser aldrig (fas 1, inga spoilers). */
+/**
+ * Matchdetaljen: samma ref som matchinfon (use-fixture-detail.ts). Avslutade
+ * bara ur cachen. En repris läses ur cachen via originalets fixtur (ingen
+ * kvot); spoilerskyddet avgörs innan, i answerSportQuery.
+ */
 function loadDetail(m: SportMatch) {
   const c = currentResults()
-  if (!c || m.coverage !== 'full' || m.rerun || !m.fixture) return Promise.resolve(null)
+  if (!c || m.coverage !== 'full') return Promise.resolve(null)
+  if (m.rerun) {
+    const of = m.replayOf?.fixture
+    return of ? c.cachedFixture(m.kind, { provider: of.provider as ProviderId, id: of.id }) : Promise.resolve(null)
+  }
+  if (!m.fixture) return Promise.resolve(null)
   const fr = { provider: m.fixture.provider as ProviderId, id: m.fixture.id }
   return m.status === 'finished' ? c.cachedFixture(m.kind, fr) : c.loadFixture(m.kind, fr, false)
 }
@@ -131,6 +143,8 @@ function SportCouchFeeder({ onChange, merge }: { onChange: () => void; merge: bo
   const epg = today.data?.matches
   useEffect(() => {
     epgToday = epg ?? []
+    // Repriser utan nyckel: skyddet gäller även dem (telefonen visar låset).
+    noteReplays(epgToday, Date.now())
     onChange()
   }, [epg, onChange])
   useEffect(() => () => { epgToday = [] }, [])
@@ -183,6 +197,9 @@ export function SportCouchMount() {
       onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPORT_SETTINGS_KEY, () => { watchController(); notify() }),
       // Nytt eller stängt mål (TV:n eller en telefon): alla telefoner får samma lista.
       onGoalsChanged(notify),
+      // Spoilerskyddet: ny repris, Visa resultat (telefon eller TV) eller utgånget visat på TV:n.
+      onSpoilerChanged(notify),
+      onPluginStorageChanged(LIVE_TV_PLUGIN_ID, SPOILER_TV_KEY, notify),
     ]
     // Utgångna mål rensas när bilden byggs; utan annan ändring skulle telefonerna inte få veta det.
     const goalSweep = setInterval(() => { openGoals(Date.now()) }, SWEEP_MS)

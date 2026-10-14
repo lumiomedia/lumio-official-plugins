@@ -72,11 +72,17 @@ export function revealPhone(key: string, phoneId: string): void {
   emit()
 }
 
-export function hiddenOnTv(m: SportMatch, now: number, s: Pick<SportSettings, 'spoilerReplays'>): boolean {
-  if (s.spoilerReplays === false) return false
+/** Skyddet gäller nyckeln just nu, oavsett inställning och om någon har visat resultatet. */
+export function spoilerProtected(m: SportMatch, now: number): boolean {
   const key = spoilerKey(m)
   const until = key ? protectedUntil.get(key) : undefined
-  if (!key || until == null || now >= until) return false
+  return until != null && now < until
+}
+
+export function hiddenOnTv(m: SportMatch, now: number, s: Pick<SportSettings, 'spoilerReplays'>): boolean {
+  if (s.spoilerReplays === false) return false
+  if (!spoilerProtected(m, now)) return false
+  const key = spoilerKey(m)!
   // Lagringen läses bara för en skyddad nyckel: de flesta matcher går aldrig hit.
   const shownUntil = readTvReveals()[key]
   return !(shownUntil != null && now < shownUntil)

@@ -25,6 +25,8 @@ export type SnapshotInput = {
   multiview: MultiviewState | null
   /** Öppna mål ur målregistret (goals.ts). */
   goals: CouchSportGoal[]
+  /** Spoilerskyddet (spoiler.ts): matchens resultat är dolt på TV:n och skickas därför inte. */
+  spoilerHidden(m: SportMatch): boolean
 }
 
 export function teamShort(name: string): string {
@@ -39,17 +41,23 @@ const airing = (m: SportMatch, now: number) => (m.rerun ? m.start <= now && now 
 const liveWithChannel = (m: SportMatch, now: number) => !m.rerun && statusAt(m, now) === 'live' && m.sources.length > 0
 const byStart = (a: SportMatch, b: SportMatch) => a.start - b.start || (a.home ?? a.event ?? '').localeCompare(b.home ?? b.event ?? '')
 
-export function toCouchMatch(m: SportMatch, i: Pick<SnapshotInput, 'follows' | 'overrides' | 'hasKey' | 'now'> & { tvKey: string | null }): CouchSportMatch {
+export function toCouchMatch(m: SportMatch, i: Pick<SnapshotInput, 'follows' | 'overrides' | 'hasKey' | 'now' | 'spoilerHidden'> & { tvKey: string | null }): CouchSportMatch {
   const best = rankedSources(m, i.overrides)[0] ?? null
-  // showsScore är redan falskt för repriser: fas 1 skickar aldrig ett reprisresultat.
-  const scored = i.hasKey && showsScore(m)
-  const detail = i.hasKey && m.coverage === 'full' && !!m.fixture && !m.rerun
+  // Bilden går likadan till alla telefoner: en dold match bär aldrig ställning eller minut.
+  const hidden = i.spoilerHidden(m)
+  // En repris visar originalets slutresultat (aldrig en minut); showsScore är falskt för repriser.
+  const replayScore = m.rerun && i.hasKey && !hidden ? m.replayOf?.score ?? null : null
+  const scored = i.hasKey && !hidden && showsScore(m)
+  // Flaggan avslöjar inget resultat: en repris har segment när originalets fixtur är känd.
+  const detail = i.hasKey && m.coverage === 'full' && (m.rerun ? !!m.replayOf?.fixture : !!m.fixture)
   return {
     id: m.id, sport: m.kind, league: m.league, round: m.round,
     home: team(m.home, m.homeCrest), away: team(m.away, m.awayCrest), event: m.event,
     status: m.rerun ? 'replay' : m.phase === 'ht' ? 'ht' : statusAt(m, i.now),
     ...(scored && m.score ? { score: [m.score.home, m.score.away] as [number, number] } : {}),
     ...(scored && m.minute != null ? { minute: `${m.minute}'` } : {}),
+    ...(replayScore ? { score: [replayScore.home, replayScore.away] as [number, number] } : {}),
+    ...(m.rerun && m.replayOf ? { playedAt: m.replayOf.kickoff } : {}),
     start: m.start, end: m.stop,
     channel: best ? { key: best.channelKey, name: best.name, best: m.sources.length > 1 } : null,
     followed: followState(m, i.follows).any,
@@ -105,12 +113,25 @@ export function buildCouchSport(i: SnapshotInput): CouchSport {
     const at = list.findIndex((m) => m.id === focusMatch.id)
     if (at >= 0) focusIndex = { i: at + 1, n: list.length }
   }
+  const focus = context && focusMatch ? focusMatch : null
+  const nowList = live.slice(0, NOW_MAX)
+  const soonList = soon.slice(0, SOON_MAX)
+  const multiview = i.marks.multiview && i.multiview ? toCouchMultiview(i, i.multiview, tvKey) : null
+  // Alla dolda matcher i bilden, så att telefonen kan visa låset (och fråga efter resultatet).
+  const shown = [...(focus ? [focus] : []), ...nowList, ...soonList]
+  const hidden = new Set(shown.filter((m) => i.spoilerHidden(m)).map((m) => m.id))
+  for (const t of multiview?.tiles ?? []) {
+    const m = t?.match ? i.matches.find((x) => x.id === t.match!.id) : null
+    if (m && i.spoilerHidden(m)) hidden.add(m.id)
+  }
   return {
     context, hasKey: i.hasKey,
-    focus: context && focusMatch ? conv(focusMatch) : null,
+    focus: focus ? conv(focus) : null,
     focusIndex: context ? focusIndex : null,
-    now: live.slice(0, NOW_MAX).map(conv), soon: soon.slice(0, SOON_MAX).map(conv), updatedAt: i.updatedAt,
-    multiview: i.marks.multiview && i.multiview ? toCouchMultiview(i, i.multiview, tvKey) : null,
-    goals: i.goals,
+    now: nowList.map(conv), soon: soonList.map(conv), updatedAt: i.updatedAt,
+    multiview,
+    // Ett mål som öppnades innan skyddet kom till får inte heller läcka ställningen.
+    goals: i.goals.filter((g) => { const m = i.matches.find((x) => x.id === g.matchId); return !m || !i.spoilerHidden(m) }),
+    spoiler: { hidden: [...hidden] },
   }
 }
