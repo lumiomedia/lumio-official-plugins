@@ -39218,6 +39218,7 @@ ${cue.text}`).join("\n\n")}
     cancelLibraryScan: () => cancelLibraryScan2,
     capturePlayerFrame: () => capturePlayerFrame,
     channelListDebridCloud: () => channelListDebridCloud,
+    channelRememberStream: () => channelRememberStream,
     channelResolveLibraryPlayback: () => channelResolveLibraryPlayback,
     channelResolveTitleStream: () => channelResolveTitleStream,
     channelUnrestrictDebridFile: () => channelUnrestrictDebridFile,
@@ -39490,6 +39491,9 @@ ${cue.text}`).join("\n\n")}
   }
   function channelUnrestrictDebridFile(input) {
     return channelHost()?.unrestrictDebridFile(input) ?? Promise.resolve(null);
+  }
+  function channelRememberStream(token) {
+    channelHost()?.rememberChannelStream?.(token);
   }
   function resolvePluginText(text, lang) {
     if (typeof text === "string") return text;
@@ -40276,15 +40280,130 @@ ${cue.text}`).join("\n\n")}
     return [...best.values()];
   }
   function poolSignature(channel, sourceSigs) {
+    const sources = [...channel.sources].sort();
     return JSON.stringify({
       rules: {
-        sources: [...channel.sources].sort(),
+        sources,
         genres: canonGenres(channel.genres).sort(),
         era: channel.era,
         length: channel.length,
         kind: channel.kind
       },
-      sigs: Object.fromEntries(Object.entries(sourceSigs).sort(([a], [b]) => a.localeCompare(b)))
+      sigs: Object.fromEntries(sources.map((id) => [id, sourceSigs[id] ?? null]))
+    });
+  }
+  var MAX_POOL_ITEMS = 2e3;
+  function hash(text, seed) {
+    let h = (2166136261 ^ seed) >>> 0;
+    for (let i = 0; i < text.length; i += 1) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h;
+  }
+  function capPool(items2, max, seed) {
+    if (items2.length <= max) return items2;
+    const groups = /* @__PURE__ */ new Map();
+    for (const item of items2) {
+      const key = item.seriesKey ?? item.ref;
+      const list = groups.get(key);
+      if (list) list.push(item);
+      else groups.set(key, [item]);
+    }
+    const order = [...groups.keys()].sort((a, b) => hash(a, seed) - hash(b, seed) || (a < b ? -1 : a > b ? 1 : 0));
+    const kept = /* @__PURE__ */ new Set();
+    let count = 0;
+    for (const key of order) {
+      const size = groups.get(key).length;
+      if (count + size > max) {
+        if (count === 0) {
+          return groups.get(key).slice().sort((a, b) => (a.season ?? 0) - (b.season ?? 0) || (a.episode ?? 0) - (b.episode ?? 0)).slice(0, max);
+        }
+        continue;
+      }
+      kept.add(key);
+      count += size;
+      if (count === max) break;
+    }
+    return items2.filter((item) => kept.has(item.seriesKey ?? item.ref));
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/pool-pack.ts
+  var POOL_PACK_VERSION = 2;
+  function packPlay(play) {
+    if (play.type === "library") return play.mediaType === "tv" ? { l: play.key, tv: 1 } : { l: play.key };
+    if (play.type === "stream") return play.mediaType === "series" ? { i: play.imdbId, tv: 1 } : { i: play.imdbId };
+    return { d: play.provider, f: play.fileRef };
+  }
+  function unpackPlay(p, season, episode) {
+    const se = { ...season != null ? { season } : {}, ...episode != null ? { episode } : {} };
+    if ("l" in p) return { type: "library", key: p.l, mediaType: p.tv ? "tv" : "movie", ...p.tv ? se : {} };
+    if ("i" in p) return { type: "stream", imdbId: p.i, mediaType: p.tv ? "series" : "movie", ...p.tv ? se : {} };
+    return { type: "debrid", provider: p.d, fileRef: p.f };
+  }
+  var SOURCE_OF = { l: "library", i: "watchlist", d: "debrid" };
+  function packPool(items2) {
+    const groups = [];
+    const groupIndex = /* @__PURE__ */ new Map();
+    const out = [];
+    for (const item of items2) {
+      const group = {
+        ...item.seriesKey ? { sk: item.seriesKey } : {},
+        ...item.seriesTitle ? { st: item.seriesTitle } : {},
+        ...item.posterUrl ? { p: item.posterUrl } : {},
+        ...item.backdropUrl ? { b: item.backdropUrl } : {}
+      };
+      let g;
+      if (Object.keys(group).length > 0) {
+        const key = JSON.stringify(group);
+        g = groupIndex.get(key);
+        if (g === void 0) {
+          g = groups.length;
+          groups.push(group);
+          groupIndex.set(key, g);
+        }
+      }
+      out.push({
+        r: item.ref,
+        t: item.title,
+        m: item.runtimeMin,
+        y: item.year,
+        ...item.kind === "episode" ? { e: 1 } : {},
+        ...g !== void 0 ? { g } : {},
+        ...item.season != null ? { s: item.season } : {},
+        ...item.episode != null ? { n: item.episode } : {},
+        ...item.runtimeKnown ? {} : { u: 1 },
+        p: packPlay(item.play)
+      });
+    }
+    return { v: POOL_PACK_VERSION, g: groups, i: out };
+  }
+  function unpackPool(value) {
+    const packed = value;
+    if (!packed || packed.v !== POOL_PACK_VERSION || !Array.isArray(packed.i) || !Array.isArray(packed.g)) return null;
+    const groups = packed.g;
+    return packed.i.map((it) => {
+      const group = it.g != null ? groups[it.g] ?? {} : {};
+      const play = unpackPlay(it.p, it.s, it.n);
+      const source = SOURCE_OF["l" in it.p ? "l" : "i" in it.p ? "i" : "d"];
+      return {
+        ref: it.r,
+        title: it.t,
+        runtimeMin: it.m,
+        year: it.y,
+        kind: it.e ? "episode" : "movie",
+        ...group.sk ? { seriesKey: group.sk } : {},
+        ...it.s != null ? { season: it.s } : {},
+        ...it.n != null ? { episode: it.n } : {},
+        source,
+        genres: [],
+        runtimeKnown: !it.u,
+        ...group.st ? { seriesTitle: group.st } : {},
+        ...group.p ? { posterUrl: group.p } : {},
+        ...group.b ? { backdropUrl: group.b } : {},
+        ...play.type === "stream" ? { imdbId: play.imdbId } : {},
+        play
+      };
     });
   }
 
@@ -40488,9 +40607,11 @@ ${cue.text}`).join("\n\n")}
     const inflight8 = /* @__PURE__ */ new Map();
     const pending5 = {};
     const fresh = (entry) => entry != null && now2() - entry.at < TTL_MS;
+    let snapshot = null;
+    const stored = () => snapshot ?? (snapshot = store2.read());
     function get(kind, tmdbId) {
       const key = metaKey(kind, tmdbId);
-      const entry = pending5[key] ?? store2.read()[key];
+      const entry = pending5[key] ?? stored()[key];
       return fresh(entry) ? entry : null;
     }
     let active3 = 0;
@@ -40531,14 +40652,17 @@ ${cue.text}`).join("\n\n")}
       for (const [k, v] of Object.entries({ ...store2.read(), ...pending5 })) if (fresh(v)) merged[k] = v;
       for (const k of keys2) delete pending5[k];
       store2.write(merged);
+      snapshot = merged;
     }
     async function ensure(list) {
+      snapshot = store2.read();
+      const current2 = snapshot;
       const seen = /* @__PURE__ */ new Set();
       const missing = list.filter(({ kind, tmdbId }) => {
         const key = metaKey(kind, tmdbId);
         if (seen.has(key)) return false;
         seen.add(key);
-        return !fresh(pending5[key] ?? store2.read()[key]);
+        return !fresh(pending5[key] ?? current2[key]);
       });
       try {
         await Promise.all(missing.map(({ kind, tmdbId }) => fetchOne(kind, tmdbId)));
@@ -40553,6 +40677,7 @@ ${cue.text}`).join("\n\n")}
     const pending5 = {};
     let timer3;
     const fresh = (e) => e != null && now2() - e.at < TTL_MS;
+    let snapshot = null;
     function flush2() {
       if (timer3) {
         clearTimeout(timer3);
@@ -40564,10 +40689,11 @@ ${cue.text}`).join("\n\n")}
       for (const [k, v] of Object.entries({ ...store2.read(), ...pending5 })) if (fresh(v)) merged[k] = v;
       for (const k of keys2) delete pending5[k];
       store2.write(merged);
+      snapshot = merged;
     }
     function load(tmdbId) {
       const key = `seasons:${tmdbId}`;
-      const hit = pending5[key] ?? store2.read()[key];
+      const hit = pending5[key] ?? (snapshot ?? (snapshot = store2.read()))[key];
       if (fresh(hit)) return Promise.resolve(hit.seasons);
       const running2 = inflight8.get(tmdbId);
       if (running2) return running2;
@@ -40642,7 +40768,7 @@ ${cue.text}`).join("\n\n")}
   }
   function readPoolCache(id) {
     const raw = readPluginJson(PLUGIN_ID, `poolCache:${id}`, null);
-    return raw && typeof raw.sig === "string" && Array.isArray(raw.items) ? { sig: raw.sig, items: raw.items } : null;
+    return raw && typeof raw.sig === "string" && raw.pool != null ? { sig: raw.sig, pool: raw.pool } : null;
   }
   function writePoolCache(id, value) {
     writePluginJson(PLUGIN_ID, `poolCache:${id}`, value, { emitChange: false });
@@ -40729,9 +40855,11 @@ ${cue.text}`).join("\n\n")}
     const movies = getMovieWatchlist();
     const shows = getWatchlist();
     const status = await fetchLibraryStatus().catch(() => null);
-    const synced = (status?.sources ?? []).reduce((max, s) => Math.max(max, s.lastFullSync ?? 0, s.lastDeltaSync ?? 0), 0);
+    const sources = status?.sources ?? [];
+    const fullSync = sources.reduce((max, s) => Math.max(max, s.lastFullSync ?? 0), 0);
+    const changed = sources.reduce((max, s) => Math.max(max, s.lastChange ?? 0), 0);
     return {
-      library: `${status?.total ?? 0}:${synced}`,
+      library: `${status?.total ?? 0}:${fullSync}:${changed}`,
       watchlist: `${movies.length}:${maxAdded(movies)}|${shows.length}:${maxAdded(shows)}`,
       // Debridlistan cachas av värden i 6 h; samma fönster här.
       debrid: String(Math.floor(Date.now() / (6 * 36e5)))
@@ -40742,6 +40870,9 @@ ${cue.text}`).join("\n\n")}
     stream: (r) => channelResolveTitleStream(r),
     debrid: (r) => channelUnrestrictDebridFile(r)
   });
+  function rememberPlayedStream(token) {
+    if (token) channelRememberStream(token);
+  }
   function hostReady() {
     return hasChannelHost();
   }
@@ -40758,13 +40889,17 @@ ${cue.text}`).join("\n\n")}
   async function loadPoolCached(channel, deps = sourceDeps) {
     const sig = poolSignature(channel, await sourceSignatures());
     const cached = readPoolCache(channel.id);
-    if (cached && cached.sig === sig) return cached.items;
+    if (cached && cached.sig === sig) {
+      const items2 = unpackPool(cached.pool);
+      if (items2) return items2;
+    }
     const key = `${channel.id}|${sig}`;
     const running2 = inflightPools.get(key);
     if (running2) return running2;
     const job = loadPool(channel, deps).then((items2) => {
-      writePoolCache(channel.id, { sig, items: items2 });
-      return items2;
+      const pool = packPool(capPool(items2, MAX_POOL_ITEMS, channel.seed));
+      writePoolCache(channel.id, { sig, pool });
+      return unpackPool(pool);
     }).finally(() => inflightPools.delete(key));
     inflightPools.set(key, job);
     return job;
@@ -40772,7 +40907,7 @@ ${cue.text}`).join("\n\n")}
   var inflightPools = /* @__PURE__ */ new Map();
   function readCachedPool(channelId) {
     const cached = readPoolCache(channelId);
-    return cached ? cached.items : null;
+    return cached ? unpackPool(cached.pool) : null;
   }
   function useChannels() {
     const [channels, setChannels] = useState(readChannels);
@@ -40847,12 +40982,21 @@ ${cue.text}`).join("\n\n")}
     return channels.filter((c) => c.showOnHome).sort((a, b) => a.number - b.number).slice(0, Math.max(0, count));
   }
   var titleOf = (item) => item.kind === "episode" && item.seriesTitle ? item.seriesTitle : item.title;
+  function nextAiring(rundown, channel, stop) {
+    const after = programmeAt(rundown, channel.airWindow, stop + 1e3);
+    if (after.kind === "programme") return after.item;
+    if (after.kind === "rest") {
+      const woken = programmeAt(rundown, channel.airWindow, after.nextAir + 1e3);
+      return woken.kind === "programme" ? woken.item : null;
+    }
+    return null;
+  }
   function homeCardModel(channel, rundown, now2) {
     const base = { channelId: channel.id, number: channel.number, name: channel.name, hue: channel.hue };
     const slot = programmeAt(rundown, channel.airWindow, now2);
     if (slot.kind === "empty") return { ...base, title: null, minsLeft: null, resting: false, pct: 0, nextTitle: null };
     if (slot.kind === "rest") return { ...base, title: null, minsLeft: null, resting: true, pct: 0, nextTitle: null, restUntil: slot.nextAir };
-    const next2 = rundown.length > 1 ? rundown[(slot.index + 1) % rundown.length] : void 0;
+    const next2 = rundown.length > 1 ? nextAiring(rundown, channel, slot.stop) : null;
     return {
       ...base,
       title: titleOf(slot.item),
@@ -41540,6 +41684,10 @@ ${cue.text}`).join("\n\n")}
     if (memory.lastChannelId === nextId) return { lastChannelId: nextId, previousChannelId: memory.previousChannelId };
     return { lastChannelId: nextId, previousChannelId: memory.lastChannelId };
   }
+  var ZAP_RESOLVE_DELAY_MS = 300;
+  function resolveDelayMs(playType, channelChanged) {
+    return channelChanged && playType !== "library" ? ZAP_RESOLVE_DELAY_MS : 0;
+  }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-state.ts
   function initialPlayerState(channelId, mode) {
@@ -41899,6 +42047,10 @@ ${cue.text}`).join("\n\n")}
       setPrevId(next2.previousChannelId);
     }, [channelId]);
     const plannedSeq = useRef(null);
+    const plannedChannel = useRef(null);
+    useEffect(() => () => {
+      gate.begin();
+    }, [gate]);
     const plan = useCallback((req, ch) => {
       const nowMs = Date.now();
       const future = req.at != null && req.at > nowMs;
@@ -41917,15 +42069,23 @@ ${cue.text}`).join("\n\n")}
       const deadline = req.mode === "start" ? nowMs + Math.max(1, slot.item.runtimeMin) * 6e4 : slot.stop;
       dispatch({ type: "planned", plan: { seq: req.seq, slot, initialTime, deadline, mode: req.mode } });
       const token = gate.begin();
-      void resolver.resolve(slot.item).then((playable) => {
+      const channelChanged = plannedChannel.current != null && plannedChannel.current !== ch.id;
+      plannedChannel.current = ch.id;
+      const run = () => {
         if (!gate.isCurrent(token)) return;
-        if (playable) {
-          dispatch({ type: "resolved", seq: req.seq, playable });
-        } else {
-          resolver.forget(slot.item.ref);
-          dispatch({ type: "failed", seq: req.seq, now: Date.now() });
-        }
-      });
+        void resolver.resolve(slot.item).then((playable) => {
+          if (!gate.isCurrent(token)) return;
+          if (playable) {
+            dispatch({ type: "resolved", seq: req.seq, playable });
+          } else {
+            resolver.forget(slot.item.ref);
+            dispatch({ type: "failed", seq: req.seq, now: Date.now() });
+          }
+        });
+      };
+      const delay = resolveDelayMs(slot.item.play.type, channelChanged);
+      if (delay > 0) window.setTimeout(run, delay);
+      else run();
     }, [rundown, gate]);
     useEffect(() => {
       const s = stateRef.current;
@@ -42174,7 +42334,10 @@ ${cue.text}`).join("\n\n")}
           hideStartSplash: true,
           onClose,
           onPlaybackEnded: () => dispatch({ type: "advance", seq, now: Date.now() }),
-          onFirstPlay: () => dispatch({ type: "firstPlay", seq }),
+          onFirstPlay: () => {
+            if (slot.item.play.type === "stream") rememberPlayedStream(playable.rememberToken);
+            dispatch({ type: "firstPlay", seq });
+          },
           onLoadFailed: () => {
             resolver.forget(slot.item.ref);
             dispatch({ type: "failed", seq, now: Date.now() });

@@ -206,7 +206,7 @@ orientation when your page closes.
 
 ### Channels (app 0.1.625 or newer)
 
-Five helpers let a plugin build personal TV channels from the user's own
+Six helpers let a plugin build personal TV channels from the user's own
 sources. They are background lookups: they run at background pace, never take
 stream focus (they do not interrupt a stream the user is starting) and are
 safe to call for a whole schedule. On a host older than 0.1.625 they resolve to
@@ -218,7 +218,8 @@ safe to call for a whole schedule. On a host older than 0.1.625 they resolve to
   `mediaType` is `'movie' | 'tv'`). `null` when it has no playable version.
 - `channelResolveTitleStream({ imdbId, mediaType, season?, episode? }): Promise<ChannelPlayable | null>`:
   the best stream for a title via the core stream list (`mediaType` is
-  `'movie' | 'series'`). `null` when nothing is found.
+  `'movie' | 'series'`). `null` when nothing is found. The lookup does not
+  remember the chosen stream; see `channelRememberStream`.
 - `channelListDebridCloud(options?: { force?: boolean }): Promise<DebridCloudTitle[]>`:
   the titles in the user's debrid cloud (Real-Debrid, TorBox, AllDebrid),
   with their files. Cached; `force` bypasses the cache. `[]` without a
@@ -226,8 +227,16 @@ safe to call for a whole schedule. On a host older than 0.1.625 they resolve to
 - `channelUnrestrictDebridFile({ provider, fileRef }): Promise<{ url: string } | null>`:
   turns a `DebridCloudFile` into a direct URL just before playback. `null` on
   failure.
+- `channelRememberStream(token: string): void`: makes the stream behind
+  `ChannelPlayable.rememberToken` the remembered choice for that title (the
+  one the details page prefers next time). Call it when the picture is
+  actually on screen (the player's `onFirstPlay`), never right after the
+  lookup: a preload or a channel zapped past must not become remembered. A
+  token is used once; unknown tokens are ignored. A no-op on hosts without
+  the helper.
 
-`ChannelPlayable` is `{ url, requestHeaders?, forceProxy? }`. Pass the result
+`ChannelPlayable` is `{ url, requestHeaders?, forceProxy?, rememberToken? }`
+(`rememberToken` only on stream lookups). Pass the result
 to the player as a plain URL; do not pass `mediaId`, `tmdbId` or `imdbId`, so
 a channel never writes watched state or resume positions.
 
