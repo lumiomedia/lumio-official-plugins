@@ -112,4 +112,24 @@ describe('spelarens tillstånd', () => {
     expect(replanOnNewRundown(playerReducer(s, { type: 'failed', seq: 0, now: 1 }))).toBe(false)
     expect(replanOnNewRundown(playerReducer(initialPlayerState('c1', 'live'), { type: 'empty', seq: 0 }))).toBe(true)
   })
+
+  it('sen onFirstPlay (värdens 5 s-reserv) släpper inte kortet förrän positionen är framme', () => {
+    let s = initialPlayerState('c1', 'live')
+    s = playerReducer(s, { type: 'planned', plan: { ...plan(0), initialTime: 600 } })
+    s = playerReducer(s, { type: 'resolved', seq: 0, playable: { url: 'u1' } })
+    s = playerReducer(s, { type: 'firstPlay', seq: 0, trusted: false })
+    expect(awaitingPicture(s)).toBe(true)
+    // mpv söker fortfarande: positionen står på 0.
+    s = playerReducer(s, { type: 'progress', seq: 0, position: 0 })
+    expect(awaitingPicture(s)).toBe(true)
+    s = playerReducer(s, { type: 'progress', seq: 0, position: 601 })
+    expect(awaitingPicture(s)).toBe(false)
+    // Reserven: visa ändå.
+    let r = initialPlayerState('c1', 'live')
+    r = playerReducer(r, { type: 'planned', plan: plan(0) })
+    r = playerReducer(r, { type: 'resolved', seq: 0, playable: { url: 'u1' } })
+    r = playerReducer(r, { type: 'firstPlay', seq: 0, trusted: false })
+    r = playerReducer(r, { type: 'reveal', seq: 0 })
+    expect(awaitingPicture(r)).toBe(false)
+  })
 })

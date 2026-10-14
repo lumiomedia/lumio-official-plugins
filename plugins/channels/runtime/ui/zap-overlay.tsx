@@ -15,6 +15,7 @@ import type { PoolItem } from '../data/pool'
 import { programmeAt } from '../model/schedule'
 import { NOISE_MS } from '../play/zap-logic'
 import { ChannelBadge } from './badge'
+import { HIDE_HOST_CHROME_CSS } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
 import type { useText } from './use-text'
 
@@ -23,15 +24,9 @@ type T = ReturnType<typeof useText>
 /** Liten gråskalebrus-SVG som data-URI; CSS flyttar bakgrunden för rörelsen. */
 const NOISE_SVG = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>\")"
 
-/*
-  Värdens kontroller i zappläget: det här <style>-elementet finns bara medan
-  zappläget är monterat, så regeln gäller bara då. Spelarroten bär
-  data-lumio-player-open; inga :has()/:where() (WebView 83).
-*/
 const KEYFRAMES = `
 @keyframes chz-noise { 0% { background-position: 0 0 } 25% { background-position: -37px 23px } 50% { background-position: 41px -29px } 75% { background-position: -19px -43px } 100% { background-position: 29px 31px } }
 @media (prefers-reduced-motion: reduce) { [data-zap-noise] { animation: none !important } }
-[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }
 `
 
 export interface ZapShownProgramme {
@@ -54,6 +49,8 @@ export interface ZapOverlayProps {
   hasPrevious: boolean
   /** Brus just nu (ägs av spelaren, så det överlever att värdspelaren monteras om vid bytet). */
   noise: boolean
+  /** Inställningskortet visas: bara bruset, ingen krom (märke, nummer, OSD, lista). */
+  chromeHidden?: boolean
   /** Kanallistans tablåer ur sparad poolcache (null = kall cache), räknade en gång per öppning. */
   listRundowns: Map<string, PoolItem[] | null> | null
   isTv: boolean
@@ -120,7 +117,10 @@ export function ZapOverlay(p: ZapOverlayProps) {
       style={{ position: 'absolute', inset: 0, zIndex: 56, pointerEvents: 'none', fontFamily: FONT.ui, color: C.text }}
     >
       <style>{KEYFRAMES}</style>
+      {/* Värdens kontroller döljs så länge zappläget är på (regeln följer elementet). */}
+      <style>{HIDE_HOST_CHROME_CSS}</style>
 
+      {p.chromeHidden ? null : (<>
       {/* Topp: märke uppe vänster, kanalnummer uppe höger */}
       <div data-zap-brand="" style={{ position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 1.4rem)', left: '1.75rem', fontSize: '0.625rem', letterSpacing: '0.22em', fontWeight: 700, color: C.textSoft, textShadow: '0 1px 6px rgba(0,0,0,0.7)' }}>
         {t('zapBrand')}
@@ -183,6 +183,7 @@ export function ZapOverlay(p: ZapOverlayProps) {
       </div>
 
       {p.listOpen ? <ZapList {...p} /> : null}
+      </>)}
 
       {/* Brus: ligger sist så det täcker allt, men tar aldrig emot input. */}
       {noise ? (

@@ -19,12 +19,12 @@ import { buildRundown, programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, NOISE_MS, OSD_IDLE_MS } from '../play/zap-logic'
 import { endOfSourceAction, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
-import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, triedFor, type Request } from '../play/player-state'
+import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, triedFor, TRUSTED_FIRST_PLAY_MS, type Request } from '../play/player-state'
 import { readZapMemory, rememberPlayedStream, resolver, writeZapMemory } from '../host'
 import { readCachedPool, useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { GuideOverlay } from './guide-overlay'
-import { useHostControls } from './host-controls'
+import { HIDE_HOST_CHROME_CSS, useHostControls } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
 import { TuningCard } from './tuning-card'
 import { useText } from './use-text'
@@ -44,6 +44,10 @@ export interface ChannelPlayerProps {
 }
 
 const PRELOAD_LEAD_MS = 30_000
+/** Två byten tätare än så = snabbzappning: först då väntar uppslaget (resolveDelayMs). */
+const RAPID_ZAP_MS = 700
+/** Bekräftar positionen aldrig bilden visas den ändå efter så här lång tid. */
+const REVEAL_FALLBACK_MS = 12_000
 const OSD_HIDE_MS = 5_000
 /** Bakåt: samma tangenter som värdens fokusmotor (Escape/Backspace) plus webbens namn. */
 const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
@@ -54,6 +58,16 @@ type PlayerComponent = ComponentType<Record<string, unknown>>
 function cachedRundown(c: ChannelDef): PoolItem[] | null {
   const pool = readCachedPool(c.id)
   return pool ? buildRundown(pool, c.order, c.seed) : null
+}
+
+interface SwitchTiming {
+  seq: number
+  ch: number
+  t0: number
+  /** Kom tätt efter förra bytet (snabbzappning). */
+  rapid: boolean
+  type?: string
+  marks: Partial<Record<'pool' | 'resolveStart' | 'resolved' | 'mount' | 'hostFirstPlay', number>>
 }
 
 const clockNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
@@ -140,11 +154,20 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     return () => window.clearTimeout(id)
   }, [channelId])
 
-  // Bytestid: begäran → uppslag klart → första bild, till konsolen.
-  const timing = useRef<{ seq: number; ch: number; t0: number; resolveMs: number | null } | null>(null)
+  // Bytestid per fas, till konsolen när bilden släpps: tablå klar, uppslag
+  // start/slut (och typ), värdspelaren monterad, värdens onFirstPlay, bild.
+  const timing = useRef<SwitchTiming | null>(null)
+  const lastGotoAt = useRef<number | null>(null)
   useEffect(() => {
-    timing.current = { seq: request.seq, ch: channel?.number ?? 0, t0: clockNow(), resolveMs: null }
+    const t0 = clockNow()
+    const rapid = lastGotoAt.current != null && t0 - lastGotoAt.current < RAPID_ZAP_MS
+    lastGotoAt.current = t0
+    timing.current = { seq: request.seq, ch: channel?.number ?? 0, t0, rapid, marks: {} }
   }, [request.seq]) // eslint-disable-line react-hooks/exhaustive-deps
+  const mark = useCallback((seq: number, name: keyof SwitchTiming['marks']) => {
+    const tm = timing.current
+    if (tm && tm.seq === seq && tm.marks[name] == null) tm.marks[name] = Math.round(clockNow() - tm.t0)
+  }, [])
 
   // ── Planering: varje begäran planeras EN gång ──────────────────────────────
   const plannedSeq = useRef<number | null>(null)
@@ -166,6 +189,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       dispatch({ type: 'rest', seq: req.seq, rest: slot })
       return
     }
+    mark(req.seq, 'pool')
     const initialTime = startSeconds(slot, req.mode)
     const deadline = req.mode === 'start' ? nowMs + Math.max(1, slot.item.runtimeMin) * 60_000 : slot.stop
     dispatch({ type: 'planned', plan: { seq: req.seq, slot, initialTime, deadline, mode: req.mode } })
@@ -175,12 +199,14 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     const run = () => {
       // Zappat vidare under väntan: den här kanalen slås aldrig upp.
       if (!gate.isCurrent(token)) return
+      mark(req.seq, 'resolveStart')
+      const tm0 = timing.current
+      if (tm0 && tm0.seq === req.seq) tm0.type = slot.item.play.type
       // Efter en fallerad version: nästa version förbi de redan provade adresserna.
       void resolver.resolve(slot.item, triedFor(stateRef.current, slot)).then((playable) => {
         if (!gate.isCurrent(token)) return
         if (playable) {
-          const tm = timing.current
-          if (tm && tm.seq === req.seq) tm.resolveMs = Math.round(clockNow() - tm.t0)
+          mark(req.seq, 'resolved')
           dispatch({ type: 'resolved', seq: req.seq, playable })
         } else {
           // Ingen (fler) version: Ingen signal till nästa programgräns.
@@ -190,10 +216,12 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       })
     }
     // Redan uppslagen (förladdad granne, nästa program): ingen anledning att vänta.
-    const delay = resolver.peek(slot.item.ref) ? 0 : resolveDelayMs(slot.item.play.type, channelChanged)
+    // Väntan bara vid snabbzappning (två byten tätt): ett ensamt byte slås upp direkt.
+    const rapid = timing.current?.seq === req.seq && timing.current.rapid
+    const delay = resolver.peek(slot.item.ref) ? 0 : resolveDelayMs(slot.item.play.type, channelChanged && rapid)
     if (delay > 0) window.setTimeout(run, delay)
     else run()
-  }, [rundown, gate])
+  }, [rundown, gate, mark])
 
   useEffect(() => {
     const s = stateRef.current
@@ -299,6 +327,33 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     return () => window.clearTimeout(id)
   }, [framedNow, request.seq])
 
+  // Värdspelaren monterad för en visning: klockan för onFirstPlay-tilliten.
+  const shownAt = useRef<{ seq: number; at: number } | null>(null)
+  const shownSeq = onScreen?.seq ?? null
+  useEffect(() => {
+    if (shownSeq == null) return
+    shownAt.current = { seq: shownSeq, at: clockNow() }
+    mark(shownSeq, 'mount')
+  }, [shownSeq, mark])
+  // Reserv om positionen aldrig bekräftar en sen onFirstPlay.
+  useEffect(() => {
+    const seq = state.firstPlaySeq
+    if (seq == null || state.framedSeq === seq) return
+    const id = window.setTimeout(() => dispatch({ type: 'reveal', seq }), REVEAL_FALLBACK_MS)
+    return () => window.clearTimeout(id)
+  }, [state.firstPlaySeq, state.framedSeq])
+  // Bilden släpps: hela bytet till konsolen.
+  useEffect(() => {
+    const seq = state.framedSeq
+    const tm = timing.current
+    if (seq == null || !tm || tm.seq !== seq) return
+    timing.current = null
+    const m = tm.marks
+    const ms = (v: number | undefined) => (v == null ? '?' : `${v}`)
+    console.info(`[channels] switch ${tm.ch} resolve=${ms(m.resolved)}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms`
+      + ` (pool=${ms(m.pool)} resolveStart=${ms(m.resolveStart)} type=${tm.type ?? '?'} mount=${ms(m.mount)} hostFirstPlay=${ms(m.hostFirstPlay)}${tm.rapid ? ' rapid' : ''})`)
+  }, [state.framedSeq])
+
   // Kanallistans tablåer: en gång per öppning, och kvar när värdspelaren monteras om.
   const listRundowns = useMemo(
     () => (listOpen ? new Map(channels.map((c) => [c.id, cachedRundown(c)] as const)) : null),
@@ -313,7 +368,8 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   // Kanal-OSD:n tonar med värdspelarens kontrollrad (samma vilotid, framme
   // under paus). Utan läsbar rad: vår egen timer. Zappläget har egen takt.
   const playerKey = onScreen && Player ? `${onScreen.seq}|${onScreen.playable.url}` : null
-  const hostControls = useHostControls(osdRef, zapOn ? null : playerKey)
+  // Bara medan kanal-OSD:n faktiskt är monterad (inte i zappläget, tablålagret eller under kortet).
+  const hostControls = useHostControls(osdRef, zapOn || guideOpen || awaitingPicture(state) ? null : playerKey)
   const osdIdleVisible = hostControls ? hostControls.visible : osdVisible
   // Samma villkor som OSD:n renderas med.
   const osdShownRef = useRef(true)
@@ -475,6 +531,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       notice={null}
       hasPrevious={!!prevId && prevId !== channel.id && channels.some((c) => c.id === prevId)}
       noise={noise}
+      chromeHidden={awaitingPicture(state)}
       listRundowns={listRundowns}
       isTv={isTv}
       t={t}
@@ -512,7 +569,9 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     />
   )
   // En OSD åt gången: zappläget ersätter kanal-OSD:n; tablålagret ersätter båda.
-  const osd = guideOpen ? null : zapOn ? zapOverlay : normalOsd
+  // Medan inställningskortet visas syns ingen krom alls (bara zappens brus).
+  const tuningNow = awaitingPicture(state)
+  const osd = guideOpen ? null : zapOn ? zapOverlay : tuningNow ? null : normalOsd
   const guide = guideOpen ? (
     <GuideOverlay channels={channels} currentId={channel.id} now={now} isTv={isTv} t={t} onPlay={playFromGuide} onClose={() => setGuideOpen(false)} />
   ) : null
@@ -524,7 +583,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       channel={channel}
       title={tuningItem ? (tuningItem.kind === 'episode' && tuningItem.seriesTitle ? `${tuningItem.seriesTitle} · ${tuningItem.title}` : tuningItem.title) : null}
       imageUrl={tuningItem?.backdropUrl ?? tuningItem?.posterUrl ?? null}
-      visible={awaitingPicture(state)}
+      visible={tuningNow}
       isTv={isTv}
       t={t}
     />
@@ -552,6 +611,8 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           onPlaybackEnded={() => dispatch({ type: 'advance', seq, now: Date.now() })}
           // mpv säger aldrig onPlaybackEnded: den står pausad på sista bilden.
           onTimeUpdate={(position: number, duration: number) => {
+            const cur = stateRef.current
+            if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: 'progress', seq, position })
             if (endHandledFor.current === seq) return
             const action = endOfSourceAction({ position, duration, startedAt: onScreen.initialTime })
             if (!action) return
@@ -567,12 +628,13 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           onFirstPlay={() => {
             // Först nu, när bilden syns, blir strömvalet ihågkommet (bara strömsök).
             if (slot.item.play.type === 'stream') rememberPlayedStream(playable.rememberToken)
-            const tm = timing.current
-            if (tm && tm.seq === seq) {
-              timing.current = null
-              console.info(`[channels] switch ${tm.ch} resolve=${tm.resolveMs ?? '?'}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms`)
-            }
-            dispatch({ type: 'firstPlay', seq })
+            mark(seq, 'hostFirstPlay')
+            // Värdens startvakt släpper efter 5 s även om mpv fortfarande söker
+            // fram till livepositionen (mittfilsstart tar 10–13 s): då väntar
+            // kortet på att positionen bekräftar, annars blev det svart emellan.
+            const mounted = shownAt.current?.seq === seq ? shownAt.current.at : null
+            const trusted = mounted == null || clockNow() - mounted < TRUSTED_FIRST_PLAY_MS
+            dispatch({ type: 'firstPlay', seq, trusted })
           }}
           // Sant = vi byter själva (nästa version eller felvyn); spelaren stänger inte.
           onLoadFailed={() => {
@@ -582,6 +644,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           }}
           overlayContent={(
             <>
+              {tuningNow ? <style>{HIDE_HOST_CHROME_CSS}</style> : null}
               {tuningCard}
               {osd}
               {guide}
@@ -737,21 +800,40 @@ function ChannelOsd(props: OsdProps) {
       onFocus={props.onActivity}
       style={{ position: 'absolute', inset: 0, zIndex: 55, pointerEvents: 'none', fontFamily: FONT.ui, color: C.text }}
     >
+      {/* Toppen: en kompakt pill uppe till vänster (badge, namn, en metarad) och Stäng som rund knapp uppe till höger. */}
       <div
+        data-channels-osd-top=""
         style={{
           ...fade, ...glass(isTv, { fill: C.osdBg, blur: 12 }),
-          position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 1.25rem)', left: '1.5rem', right: '1.5rem',
-          display: 'flex', alignItems: 'center', gap: '0.85rem',
-          padding: '0.75rem 1rem', borderRadius: RADIUS.osd,
+          position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 1rem)', left: '1rem',
+          maxWidth: 'min(26rem, calc(100vw - 6rem))',
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+          padding: '0.35rem 0.9rem 0.35rem 0.35rem', borderRadius: RADIUS.pill,
         }}
       >
-        <ChannelBadge channel={channel} size={44} />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontSize: isTv ? '1.35rem' : '1.05rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</div>
-          <div style={{ fontSize: isTv ? '0.95rem' : '0.8rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</div>
+        <ChannelBadge channel={channel} size={30} style={{ borderRadius: RADIUS.pill }} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: isTv ? '0.95rem' : '0.8rem', fontWeight: 700, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</div>
+          <div style={{ fontSize: isTv ? '0.75rem' : '0.66rem', lineHeight: 1.25, color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</div>
         </div>
-        <OsdButton onClick={props.onClose} isTv={isTv} init={props.closeIsInit}>{t('playerClose')}</OsdButton>
       </div>
+      <button
+        type="button"
+        data-f=""
+        data-init={props.closeIsInit ? '' : undefined}
+        data-channels-close=""
+        aria-label={t('playerClose')}
+        onClick={props.onClose}
+        style={{
+          ...fade, ...glass(isTv, { fill: C.osdBg, blur: 12 }),
+          position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 1rem)', right: '1rem',
+          width: isTv ? '2.75rem' : '2.25rem', height: isTv ? '2.75rem' : '2.25rem', padding: 0, borderRadius: RADIUS.pill,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          color: C.text, fontFamily: FONT.ui, fontSize: isTv ? '1.25rem' : '1.05rem', lineHeight: 1, cursor: 'pointer',
+        }}
+      >
+        ×
+      </button>
 
       {notice ? (
         <div

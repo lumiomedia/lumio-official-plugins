@@ -27,6 +27,11 @@ export interface Plan {
 
 export interface Shown extends Plan { playable: Playable }
 
+/** Så nära startpositionen räknas värdens position som "framme" (sekunder). */
+export const POSITION_SLACK_S = 20
+/** onFirstPlay senare än så efter monteringen kan vara värdens 5 s-reserv utan bild. */
+export const TRUSTED_FIRST_PLAY_MS = 4800
+
 /** Högst så många versioner av samma program provas innan "Ingen signal". */
 export const MAX_VERSIONS = 3
 
@@ -52,6 +57,11 @@ export interface PlayerState {
   between: { slot: ProgrammeSlot<PoolItem>; until: number } | null
   /** Den visning (seq) vars första bild syns. Inställningskortet ligger kvar tills dess. */
   framedSeq: number | null
+  /**
+   * onFirstPlay kom men kan vara värdens 5 s-reserv (mpv söker fortfarande
+   * fram till livepositionen): bilden räknas först när positionen bekräftar.
+   */
+  firstPlaySeq: number | null
 }
 
 export type Action =
@@ -67,12 +77,17 @@ export type Action =
   | { type: 'rest'; seq: number; rest: RestSlot }
   | { type: 'empty'; seq: number }
   | { type: 'advance'; seq: number; now: number }
-  | { type: 'firstPlay'; seq: number }
+  /** `trusted`: kom så tidigt att värdens startvakt verkligen såg bild på rätt ställe. */
+  | { type: 'firstPlay'; seq: number; trusted?: boolean }
+  /** Värdens position för visningen (onTimeUpdate). */
+  | { type: 'progress'; seq: number; position: number }
+  /** Reserv: visa ändå (positionen bekräftade aldrig). */
+  | { type: 'reveal'; seq: number }
 
 export function initialPlayerState(channelId: string, mode: PlayMode): PlayerState {
   return {
     request: { channelId, mode, seq: 0 },
-    status: 'resolving', onScreen: null, pending: null, rest: null, tried: null, noSignal: null, between: null, framedSeq: null,
+    status: 'resolving', onScreen: null, pending: null, rest: null, tried: null, noSignal: null, between: null, framedSeq: null, firstPlaySeq: null,
   }
 }
 
@@ -160,6 +175,13 @@ export function playerReducer(s: PlayerState, a: Action): PlayerState {
       return { ...s, pending: null, status: 'resolving', tried: null, request: next(s, { mode: 'live' }) }
     }
     case 'firstPlay':
+      if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq) return s
+      if (a.trusted === false) return s.firstPlaySeq === a.seq ? s : { ...s, firstPlaySeq: a.seq }
+      return { ...s, framedSeq: a.seq }
+    case 'progress':
+      if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq || s.firstPlaySeq !== a.seq) return s
+      return Math.abs(a.position - s.onScreen.initialTime) <= POSITION_SLACK_S ? { ...s, framedSeq: a.seq } : s
+    case 'reveal':
       if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq) return s
       return { ...s, framedSeq: a.seq }
   }

@@ -134,6 +134,7 @@ describe('kanalspelaren: värdspelaren', () => {
     state.rundowns = { k1: [stream('s1')] }
     render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
     const host = await screen.findByTestId('host-controls')
+    fireEvent.click(screen.getByTestId('first-play'))
     await flush()
     const bar = () => document.querySelector('[data-channels-osd-bar]') as HTMLElement
     await act(async () => { await new Promise((r) => setTimeout(r, 0)) })
@@ -159,7 +160,7 @@ describe('kanalspelaren: tablån i spelaren', () => {
     state.rundowns = { k1: [stream('s1')], k2: [library('l2')], k3: [stream('s3')], k4: [stream('s4')] }
     const onClose = vi.fn()
     render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={onClose} />)
-    await screen.findByTestId('first-play')
+    fireEvent.click(await screen.findByTestId('first-play'))
     fireEvent.click(button(/TABLÅ/))
     // Spelaren ligger kvar under lagret.
     expect(screen.getByTestId('host-player')).toBeTruthy()
@@ -180,7 +181,7 @@ describe('kanalspelaren: tablån i spelaren', () => {
     state.rundowns = { k1: [stream('s1')] }
     const onClose = vi.fn()
     render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={onClose} />)
-    await screen.findByTestId('first-play')
+    fireEvent.click(await screen.findByTestId('first-play'))
     fireEvent.click(button(/TABLÅ/))
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(document.querySelector('[data-channels-guide-overlay]')).toBeNull()
@@ -205,6 +206,9 @@ describe('kanalspelaren: zappläget', () => {
     // Ny ström = ny värdspelare; bruset ägs av spelaren och syns ändå.
     expect(screen.getByTestId('first-play').getAttribute('data-url')).toBe('http://l2')
     expect(document.querySelector('[data-zap-noise-layer]')).toBeTruthy()
+    // Under inställningskortet: ingen krom, bara bruset.
+    expect(document.querySelector('[data-zap-osd]')).toBeNull()
+    fireEvent.click(screen.getByTestId('first-play'))
     fireEvent.click(button(/AVSLUTA ZAPP/))
     expect(document.querySelector('[data-channels-zap]')).toBeNull()
     expect(Array.from(document.querySelectorAll('style')).some((el) => (el.textContent ?? '').includes('.vp-controls'))).toBe(false)
@@ -221,10 +225,13 @@ describe('kanalspelaren: inställningskortet', () => {
     expect(card().getAttribute('data-visible')).toBe('1')
     fireEvent.click(screen.getByTestId('first-play'))
     expect(card().getAttribute('data-visible')).toBe('0')
-    expect(info.mock.calls.some(([m]) => /^\[channels\] switch 1 resolve=\d+ms firstFrame=\d+ms$/.test(String(m)))).toBe(true)
+    expect(info.mock.calls.some(([m]) => /^\[channels\] switch 1 resolve=\d+ms firstFrame=\d+ms \(pool=\d+ resolveStart=\d+ type=library mount=\d+ hostFirstPlay=\d+\)$/.test(String(m)))).toBe(true)
+    expect(document.querySelector('[data-channels-osd]')).toBeTruthy()
     fireEvent.keyDown(window, { key: 'PageUp' })
-    // Samma bildruta som trycket.
+    // Samma bildruta som trycket, och ingen krom (kanal-OSD, värdens kontroller) under kortet.
     expect(card().getAttribute('data-visible')).toBe('1')
+    expect(document.querySelector('[data-channels-osd]')).toBeNull()
+    expect(Array.from(document.querySelectorAll('style')).some((el) => (el.textContent ?? '').includes('.vp-controls'))).toBe(true)
     await flush()
     expect(screen.getByTestId('first-play').getAttribute('data-url')).toBe('http://l2')
     // Ny värdspelare utan bild än: kortet täcker den tomma rutan.
@@ -289,5 +296,30 @@ describe('kanalspelaren: grannförladdning', () => {
     expect(resolvedRefs()).toEqual(['l1'])
     await act(async () => { vi.advanceTimersByTime(3100) })
     expect(resolvedRefs()).toEqual(['l1', 'n2'])
+  })
+})
+
+describe('kanalspelaren: svart ruta mellan kort och bild', () => {
+  it('värdens sena onFirstPlay (5 s-reserven) släpper inte kortet förrän positionen är vid liveläget', async () => {
+    state.rundowns = { k1: [library('l1')] }
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const realNow = performance.now.bind(performance)
+    let offset = 0
+    const spy = vi.spyOn(performance, 'now').mockImplementation(() => realNow() + offset)
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    const card = () => document.querySelector('[data-channels-tuning]') as HTMLElement
+    const start = Number(state.props?.initialTime ?? 0)
+    expect(start).toBeGreaterThan(60)
+    offset = 5200
+    fireEvent.click(screen.getByTestId('first-play'))
+    expect(card().getAttribute('data-visible')).toBe('1')
+    // mpv söker fortfarande: positionen 0.
+    await act(async () => { state.props?.onTimeUpdate(0, 3600) })
+    expect(card().getAttribute('data-visible')).toBe('1')
+    await act(async () => { state.props?.onTimeUpdate(start + 0.5, start + 3600) })
+    expect(card().getAttribute('data-visible')).toBe('0')
+    spy.mockRestore()
+    info.mockRestore()
   })
 })

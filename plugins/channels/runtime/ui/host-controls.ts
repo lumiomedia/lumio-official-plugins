@@ -14,6 +14,13 @@ import { useEffect, useState, type RefObject } from 'react'
 
 export const HOST_CONTROLS_SELECTOR = '.vp-controls'
 
+/**
+ * Döljer värdspelarens topprad och kontrollrad. Läggs som <style> bara medan
+ * det ska gälla (zappläget, inställningskortet), så regeln aldrig blir kvar.
+ * Spelarroten bär data-lumio-player-open; inga :has()/:where() (WebView 83).
+ */
+export const HIDE_HOST_CHROME_CSS = '[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }'
+
 export interface HostControls {
   visible: boolean
   /** Px från spelarens nederkant till ovankanten av radens innehåll; null när den inte gått att mäta. */
