@@ -101,3 +101,32 @@ describe('metadatacachens skrivningar', () => {
     expect(cache.get('movie', 5)).not.toBeNull()
   })
 })
+
+describe('läsningar av lagret', () => {
+  it('N get() efter en ensure() ger en enda läsning av kartan', async () => {
+    const all: Record<string, TitleMeta> = {}
+    for (let i = 1; i <= 50; i += 1) all[`movie:${i}`] = { runtimeMin: 90, genres: [], year: 2000, at: 1000 }
+    const store = { read: vi.fn(() => all), write: vi.fn() }
+    const cache = createMetaCache(store, async () => null, () => 1000)
+    await cache.ensure(Array.from({ length: 50 }, (_, i) => ({ kind: 'movie' as const, tmdbId: i + 1 })))
+    for (let i = 1; i <= 50; i += 1) expect(cache.get('movie', i)).not.toBeNull()
+    expect(store.read).toHaveBeenCalledTimes(1)
+    expect(store.write).not.toHaveBeenCalled()
+  })
+
+  it('get() utan föregående ensure() läser kartan en gång', () => {
+    const store = { read: vi.fn(() => ({ 'tv:7': { runtimeMin: 45, genres: [], year: null, at: 1000 } })), write: vi.fn() }
+    const cache = createMetaCache(store, async () => null, () => 1000)
+    for (let i = 0; i < 20; i += 1) cache.get('tv', 7)
+    expect(store.read).toHaveBeenCalledTimes(1)
+  })
+
+  it('säsongscachen läser kartan en gång för många serier', async () => {
+    const all: Record<string, SeasonsEntry> = {}
+    for (let i = 1; i <= 30; i += 1) all[`seasons:${i}`] = { seasons: [{ season: 1, episodes: [] }], at: 1000 }
+    const store = { read: vi.fn(() => all), write: vi.fn() }
+    const load = createSeasonsCache(store, async () => [], () => 1000)
+    for (let i = 1; i <= 30; i += 1) await load(i)
+    expect(store.read).toHaveBeenCalledTimes(1)
+  })
+})

@@ -36,10 +36,14 @@ export function createMetaCache(
   // (annars läses och skrivs hela kartan per titel: O(n²) på första fyllningen).
   const pending: Record<string, TitleMeta> = {}
   const fresh = (entry: TitleMeta | undefined): entry is TitleMeta => entry != null && now() - entry.at < TTL_MS
+  // store.read() är en hel JSON.parse av kartan: läs den en gång per ensure()
+  // (och lat vid första get()), inte en gång per titel.
+  let snapshot: Record<string, TitleMeta> | null = null
+  const stored = (): Record<string, TitleMeta> => (snapshot ??= store.read())
 
   function get(kind: 'movie' | 'tv', tmdbId: number): TitleMeta | null {
     const key = metaKey(kind, tmdbId)
-    const entry = pending[key] ?? store.read()[key]
+    const entry = pending[key] ?? stored()[key]
     return fresh(entry) ? entry : null
   }
 
@@ -82,15 +86,19 @@ export function createMetaCache(
     for (const [k, v] of Object.entries({ ...store.read(), ...pending })) if (fresh(v)) merged[k] = v
     for (const k of keys) delete pending[k]
     store.write(merged)
+    snapshot = merged
   }
 
   async function ensure(list: Array<{ kind: 'movie' | 'tv'; tmdbId: number }>): Promise<void> {
+    // En färsk läsning per ensure(): fångar det en annan skrivare (t.ex. profilbyte) ändrat.
+    snapshot = store.read()
+    const current = snapshot
     const seen = new Set<string>()
     const missing = list.filter(({ kind, tmdbId }) => {
       const key = metaKey(kind, tmdbId)
       if (seen.has(key)) return false
       seen.add(key)
-      return !fresh(pending[key] ?? store.read()[key])
+      return !fresh(pending[key] ?? current[key])
     })
     try {
       await Promise.all(missing.map(({ kind, tmdbId }) => fetchOne(kind, tmdbId)))
@@ -119,6 +127,8 @@ export function createSeasonsCache(store: SeasonsStore, fetcher: (tmdbId: number
   const pending: Record<string, SeasonsEntry> = {}
   let timer: ReturnType<typeof setTimeout> | undefined
   const fresh = (e: SeasonsEntry | undefined): e is SeasonsEntry => e != null && now() - e.at < TTL_MS
+  // En läsning (JSON.parse) av kartan, inte en per serie; flush håller den aktuell.
+  let snapshot: Record<string, SeasonsEntry> | null = null
 
   function flush(): void {
     if (timer) { clearTimeout(timer); timer = undefined }
@@ -128,11 +138,12 @@ export function createSeasonsCache(store: SeasonsStore, fetcher: (tmdbId: number
     for (const [k, v] of Object.entries({ ...store.read(), ...pending })) if (fresh(v)) merged[k] = v
     for (const k of keys) delete pending[k]
     store.write(merged)
+    snapshot = merged
   }
 
   function load(tmdbId: number): Promise<SeasonList> {
     const key = `seasons:${tmdbId}`
-    const hit = pending[key] ?? store.read()[key]
+    const hit = pending[key] ?? (snapshot ??= store.read())[key]
     if (fresh(hit)) return Promise.resolve(hit.seasons)
     const running = inflight.get(tmdbId)
     if (running) return running
