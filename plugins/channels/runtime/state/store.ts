@@ -4,7 +4,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChannelDef } from '../model/channel'
 import { buildRundown, programmeAt } from '../model/schedule'
-import { poolSignature, type PoolItem } from '../data/pool'
+import { capPool, MAX_POOL_ITEMS, poolSignature, type PoolItem } from '../data/pool'
+import { packPool, unpackPool } from '../data/pool-pack'
 import { loadPool, type SourceDeps } from '../data/sources'
 import { onChannelsChanged, prunePoolCaches, readChannels, readPoolCache, removePoolCache, sourceDeps, sourceSignatures, writeChannels, writePoolCache } from '../host'
 
@@ -22,15 +23,20 @@ export function deleteChannel(id: string): void {
 export async function loadPoolCached(channel: ChannelDef, deps: SourceDeps = sourceDeps): Promise<PoolItem[]> {
   const sig = poolSignature(channel, await sourceSignatures())
   const cached = readPoolCache(channel.id)
-  if (cached && cached.sig === sig) return cached.items as PoolItem[]
+  if (cached && cached.sig === sig) {
+    const items = unpackPool(cached.pool)
+    if (items) return items
+  }
   // Hemrad och tablårad för samma kanal laddar samtidigt: dela ett pågående uppslag.
   const key = `${channel.id}|${sig}`
   const running = inflightPools.get(key)
   if (running) return running
   const job = loadPool(channel, deps)
     .then((items) => {
-      writePoolCache(channel.id, { sig, items })
-      return items
+      const pool = packPool(capPool(items, MAX_POOL_ITEMS, channel.seed))
+      writePoolCache(channel.id, { sig, pool })
+      // Samma form som en cacheträff, så tablån blir identisk före och efter omstart.
+      return unpackPool(pool)!
     })
     .finally(() => inflightPools.delete(key))
   inflightPools.set(key, job)
@@ -42,7 +48,7 @@ const inflightPools = new Map<string, Promise<PoolItem[]>>()
 /** Sparad pool utan uppslag: null när cachen är kall. Signaturen kontrolleras inte (visning, inte planering). */
 export function readCachedPool(channelId: string): PoolItem[] | null {
   const cached = readPoolCache(channelId)
-  return cached ? (cached.items as PoolItem[]) : null
+  return cached ? unpackPool(cached.pool) : null
 }
 
 export function useChannels(): ChannelDef[] {

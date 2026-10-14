@@ -70,6 +70,37 @@ describe('poolcache och signatur', () => {
     expect(storage.has(`poolCache:${b.id}`)).toBe(true)
   })
 
+  it('biblioteksignaturen påverkas inte av en tom delta (lastDeltaSync) men av lastChange', async () => {
+    const before = (await sourceSignatures()).library
+    libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: 5000 }] }
+    resetSourceSignatures()
+    expect((await sourceSignatures()).library).toBe(before)
+    libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: 5000, lastChange: 4900 }] }
+    resetSourceSignatures()
+    expect((await sourceSignatures()).library).not.toBe(before)
+  })
+
+  it('en debridkanal byggs inte om när biblioteket synkat', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'D', sources: ['debrid'] }, [], 1, () => 0.1)
+    const listDebridCloud = vi.fn(async () => [])
+    await loadPoolCached(ch, { ...deps, listDebridCloud } as never)
+    libraryStatus = { total: 4, sources: [{ lastFullSync: 300, lastDeltaSync: null, lastChange: 300 }] }
+    resetSourceSignatures()
+    await loadPoolCached(ch, { ...deps, listDebridCloud } as never)
+    expect(listDebridCloud).toHaveBeenCalledTimes(1)
+  })
+
+  it('poolcachen sparas packad och läses tillbaka lika', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    const queryLibrary = async () => ({ items: [{ key: 'm', kind: 'movie', tmdbId: 1, title: 'X', year: 2000, genres: ['Drama'], runtimeMin: 90, posterUrl: 'p', backdropUrl: 'b' }] })
+    const fresh = await loadPoolCached(ch, { ...deps, queryLibrary } as never)
+    const stored = storage.get(`poolCache:${ch.id}`) as { pool: { v: number } }
+    expect(stored.pool.v).toBe(2)
+    const again = await loadPoolCached(ch, { ...deps, queryLibrary } as never)
+    expect(again).toEqual(fresh)
+    expect(fresh[0]).toMatchObject({ ref: 'lib:m', title: 'X', posterUrl: 'p', backdropUrl: 'b', play: { type: 'library', key: 'm', mediaType: 'movie' } })
+  })
+
   it('biblioteksignaturen ändras med lastFullSync', async () => {
     const before = (await sourceSignatures()).library
     libraryStatus = { total: 3, sources: [{ lastFullSync: 200, lastDeltaSync: null }] }

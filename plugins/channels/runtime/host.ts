@@ -42,13 +42,13 @@ export function writeZapMemory(next: ZapMemory): void {
   writePluginJson(PLUGIN_ID, 'zap', next)
 }
 
-/** Poolcache och metadata skrivs utan ändringsevent: ingen ska reagera på dem. */
-export function readPoolCache(id: string): { sig: string; items: unknown[] } | null {
-  const raw = readPluginJson<{ sig?: unknown; items?: unknown } | null>(PLUGIN_ID, `poolCache:${id}`, null)
-  return raw && typeof raw.sig === 'string' && Array.isArray(raw.items) ? { sig: raw.sig, items: raw.items } : null
+/** Poolcache och metadata skrivs utan ändringsevent: ingen ska reagera på dem. Värdet är packat (data/pool-pack.ts). */
+export function readPoolCache(id: string): { sig: string; pool: unknown } | null {
+  const raw = readPluginJson<{ sig?: unknown; pool?: unknown } | null>(PLUGIN_ID, `poolCache:${id}`, null)
+  return raw && typeof raw.sig === 'string' && raw.pool != null ? { sig: raw.sig, pool: raw.pool } : null
 }
 
-export function writePoolCache(id: string, value: { sig: string; items: unknown[] }): void {
+export function writePoolCache(id: string, value: { sig: string; pool: unknown }): void {
   writePluginJson(PLUGIN_ID, `poolCache:${id}`, value, { emitChange: false })
   const index = readPoolIndex()
   if (!index.includes(id)) writePoolIndex([...index, id])
@@ -165,9 +165,14 @@ async function computeSourceSignatures(): Promise<Signatures> {
   const movies = getMovieWatchlist() as Array<{ addedAt?: string }>
   const shows = getWatchlist() as Array<{ addedAt?: string }>
   const status = await fetchLibraryStatus().catch(() => null)
-  const synced = (status?.sources ?? []).reduce((max, s) => Math.max(max, s.lastFullSync ?? 0, s.lastDeltaSync ?? 0), 0)
+  // lastDeltaSync stämplas var 15:e minut även när inget ändrats och får inte
+  // styra; lastChange sätts av värden bara när en batch faktiskt ändrat titlar
+  // (saknas på äldre värdar — då fångar total och den dagliga fulla synken det).
+  const sources = (status?.sources ?? []) as Array<{ lastFullSync?: number | null; lastChange?: number | null }>
+  const fullSync = sources.reduce((max, s) => Math.max(max, s.lastFullSync ?? 0), 0)
+  const changed = sources.reduce((max, s) => Math.max(max, s.lastChange ?? 0), 0)
   return {
-    library: `${status?.total ?? 0}:${synced}`,
+    library: `${status?.total ?? 0}:${fullSync}:${changed}`,
     watchlist: `${movies.length}:${maxAdded(movies)}|${shows.length}:${maxAdded(shows)}`,
     // Debridlistan cachas av värden i 6 h; samma fönster här.
     debrid: String(Math.floor(Date.now() / (6 * 3600e3))),

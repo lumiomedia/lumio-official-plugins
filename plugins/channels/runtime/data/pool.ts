@@ -58,13 +58,64 @@ export function dedupePool(items: PoolItem[]): PoolItem[] {
   return [...best.values()]
 }
 
+/**
+ * Bara kanalens egna källor räknas: en debridkanal ska inte byggas om för att
+ * biblioteket synkat, och tvärtom.
+ */
 export function poolSignature(channel: ChannelDef, sourceSigs: Partial<Record<SourceId, string>>): string {
+  const sources = [...channel.sources].sort()
   return JSON.stringify({
     rules: {
-      sources: [...channel.sources].sort(),
+      sources,
       genres: canonGenres(channel.genres).sort(),
       era: channel.era, length: channel.length, kind: channel.kind,
     },
-    sigs: Object.fromEntries(Object.entries(sourceSigs).sort(([a], [b]) => a.localeCompare(b))),
+    sigs: Object.fromEntries(sources.map((id) => [id, sourceSigs[id] ?? null])),
   })
+}
+
+/** Högst så många poster per kanal (lagringen är trång på Android). */
+export const MAX_POOL_ITEMS = 2000
+
+/** FNV-1a: stabil spridning av grupper, samma på alla enheter. */
+function hash(text: string, seed: number): number {
+  let h = (0x811c9dc5 ^ seed) >>> 0
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i)
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h
+}
+
+/**
+ * Kapar poolen till `max` poster utan att slita sönder serier: hela grupper
+ * (en serie eller en film) väljs i seedad, deterministisk ordning tills taket
+ * nås. Samma pool och seed ger samma urval på varje enhet.
+ */
+export function capPool(items: PoolItem[], max: number, seed: number): PoolItem[] {
+  if (items.length <= max) return items
+  const groups = new Map<string, PoolItem[]>()
+  for (const item of items) {
+    const key = item.seriesKey ?? item.ref
+    const list = groups.get(key)
+    if (list) list.push(item)
+    else groups.set(key, [item])
+  }
+  const order = [...groups.keys()].sort((a, b) => hash(a, seed) - hash(b, seed) || (a < b ? -1 : a > b ? 1 : 0))
+  const kept = new Set<string>()
+  let count = 0
+  for (const key of order) {
+    const size = groups.get(key)!.length
+    if (count + size > max) {
+      // En jätteserie som ensam spränger taket får sina första avsnitt hellre än inget.
+      if (count === 0) {
+        return groups.get(key)!.slice().sort((a, b) => (a.season ?? 0) - (b.season ?? 0) || (a.episode ?? 0) - (b.episode ?? 0)).slice(0, max)
+      }
+      continue
+    }
+    kept.add(key)
+    count += size
+    if (count === max) break
+  }
+  return items.filter((item) => kept.has(item.seriesKey ?? item.ref))
 }

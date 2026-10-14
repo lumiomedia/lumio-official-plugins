@@ -67,3 +67,11 @@ describe('poolSignature', () => {
     expect(poolSignature({ ...ch, order: 'chrono' }, { library: '1' })).toBe(poolSignature(ch, { library: '1' }))
   })
 })
+
+describe('poolSignature: bara kanalens egna källor', () => {
+  it('påverkas inte av källor kanalen inte använder', () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['debrid'] }, [], 1, () => 0.1)
+    expect(poolSignature(ch, { library: '1', debrid: 'x' })).toBe(poolSignature(ch, { library: '2', debrid: 'x' }))
+    expect(poolSignature(ch, { library: '1', debrid: 'x' })).not.toBe(poolSignature(ch, { library: '1', debrid: 'y' }))
+  })
+})
