@@ -211,6 +211,29 @@
       },
       "repoPath": "plugins/twitch",
       "minAppVersion": "0.1.603"
+    },
+    {
+      "id": "com.lumio.channels",
+      "slug": "channels",
+      "repoUrl": "https://github.com/lumiomedia/lumio-official-plugins",
+      "name": {
+        "en": "Channels",
+        "sv": "Kanaler"
+      },
+      "version": "0.1.0",
+      "description": {
+        "en": "Personal linear TV channels built from your library, watchlist and debrid cloud.",
+        "sv": "Personliga linjära TV-kanaler av ditt bibliotek, din watchlist och ditt debrid-moln."
+      },
+      "path": "plugins/channels",
+      "runtimeBundlePath": "dist/runtime.js",
+      "readmePath": "plugins/channels/README.md",
+      "changelogPath": "plugins/channels/CHANGELOG.md",
+      "official": true,
+      "bundled": false,
+      "removable": true,
+      "repoPath": "plugins/channels",
+      "minAppVersion": "0.1.625"
     }
   ]
 }

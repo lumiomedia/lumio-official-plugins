@@ -204,6 +204,33 @@ orientation when your page closes.
   `ResultsPagination`, `ResultsLoadingIndicator`, `NextEpisodeCard`,
   `TraktDeviceCodePanel` / `useTraktDeviceLogin` for device-code logins.
 
+### Channels (app 0.1.625 or newer)
+
+Five helpers let a plugin build personal TV channels from the user's own
+sources. They are background lookups: they run at background pace, never take
+stream focus (they do not interrupt a stream the user is starting) and are
+safe to call for a whole schedule. On a host older than 0.1.625 they resolve to
+`null` or `[]`, so check `hasChannelHost()` first and fall back gracefully.
+
+- `hasChannelHost(): boolean`: true when the host provides the channel helpers.
+- `channelResolveLibraryPlayback({ key, mediaType, season?, episode? }): Promise<ChannelPlayable | null>`:
+  a playable URL for a library title (`key` is the library title key,
+  `mediaType` is `'movie' | 'tv'`). `null` when it has no playable version.
+- `channelResolveTitleStream({ imdbId, mediaType, season?, episode? }): Promise<ChannelPlayable | null>`:
+  the best stream for a title via the core stream list (`mediaType` is
+  `'movie' | 'series'`). `null` when nothing is found.
+- `channelListDebridCloud(options?: { force?: boolean }): Promise<DebridCloudTitle[]>`:
+  the titles in the user's debrid cloud (Real-Debrid, TorBox, AllDebrid),
+  with their files. Cached; `force` bypasses the cache. `[]` without a
+  connected provider.
+- `channelUnrestrictDebridFile({ provider, fileRef }): Promise<{ url: string } | null>`:
+  turns a `DebridCloudFile` into a direct URL just before playback. `null` on
+  failure.
+
+`ChannelPlayable` is `{ url, requestHeaders?, forceProxy? }`. Pass the result
+to the player as a plain URL; do not pass `mediaId`, `tmdbId` or `imdbId`, so
+a channel never writes watched state or resume positions.
+
 Every host-side helper added after some app version must be called guarded
 (`ctx.registerX?.()`, `getTvGlassMenu()` may return `null`), or the plugin
 raises `minAppVersion`.
