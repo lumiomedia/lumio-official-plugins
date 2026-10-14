@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useMemo, useRef, type CSSProperties, type ReactNode } from 'react'
 import { getPluginHttpAssetUrl, useTvMode } from '@/lib/plugin-sdk'
 import { TV, dp, station } from '../../tv/tv-ui'
 import { matchTitle, type SportMatch } from '../sport-model'
@@ -150,15 +150,34 @@ export function TeamsHeader({ u, match, ctx, compact = false, onOpenTeam }: { u:
   )
 }
 
+/**
+ * Stationen efter `el` i samma panel (annars den med `data-init`). Visa resultat
+ * försvinner när den används: fokus flyttas hit först, så att fjärren aldrig
+ * står utan fokuserat element.
+ */
+export function nextStationAfter(el: HTMLElement): HTMLElement | null {
+  const scope: ParentNode = el.closest('[data-panel-root]') ?? el.ownerDocument
+  const all = [...scope.querySelectorAll<HTMLElement>('[data-f]')]
+  const after = all.find((x) => x !== el && !el.contains(x) && (el.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0)
+  return after ?? all.find((x) => x !== el && x.hasAttribute('data-init')) ?? all.find((x) => x !== el) ?? null
+}
+
 /** Låset, "Resultat dolt" och stationen Visa resultat (TV:n och alla telefoner i 24 h). */
 function HiddenResult({ u, match, ctx, align }: { u: U; match: SportMatch; ctx: SportCtx; align: 'center' | 'flex-start' }) {
-  const reveal = () => { const key = spoilerKey(match); if (key) revealTv(key, Date.now()) }
+  const ref = useRef<HTMLDivElement>(null)
+  const reveal = () => {
+    const key = spoilerKey(match)
+    if (!key) return
+    const el = ref.current
+    if (el && el.ownerDocument.activeElement === el) nextStationAfter(el)?.focus()
+    revealTv(key, Date.now())
+  }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: align, gap: u(10) }}>
       <span data-testid="mc-score-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: u(8), fontSize: u(20), fontWeight: 700, color: TV.muted, whiteSpace: 'nowrap' }}>
         <SportIcons.Lock size={u(18)} />{ctx.tt('sportResultHidden')}
       </span>
-      <div data-testid="mc-reveal" {...station(reveal)} aria-label={ctx.tt('sportShowResult')}
+      <div ref={ref} data-testid="mc-reveal" {...station(reveal)} aria-label={ctx.tt('sportShowResult')}
         style={{ display: 'inline-flex', alignItems: 'center', height: u(44), padding: `0 ${u(18)}px`, borderRadius: 999, cursor: 'pointer', fontSize: u(16), fontWeight: 700, background: TV.s12, border: `1px solid ${TV.lineCard}`, color: TV.text, boxSizing: 'border-box', whiteSpace: 'nowrap' }}>
         {ctx.tt('sportShowResult')}
       </div>

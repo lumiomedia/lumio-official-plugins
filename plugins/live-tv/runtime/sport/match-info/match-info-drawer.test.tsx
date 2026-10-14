@@ -261,6 +261,22 @@ describe('Matchinfon: spoilerskydd', () => {
     await waitFor(() => expect(c.cachedFixture).toHaveBeenCalled())
   })
 
+  it('efter Visa resultat står fjärrens fokus kvar på en station', async () => {
+    replayController(detail())
+    const r = replay()
+    noteReplays([r], Date.now())
+    render(<MatchInfoDrawer ctx={fakeCtx({ now })} match={r} onClose={() => {}} />)
+    const reveal = screen.getByTestId('mc-reveal')
+    reveal.focus()
+    expect(document.activeElement).toBe(reveal)
+    fireEvent.click(reveal)
+    expect(screen.queryByTestId('mc-reveal')).toBeNull()
+    const active = document.activeElement as HTMLElement | null
+    expect(active).not.toBe(document.body)
+    expect(active?.isConnected).toBe(true)
+    expect(active?.hasAttribute('data-f')).toBe(true)
+  })
+
   it('skyddet av: inget Visa resultat', () => {
     replayController(null)
     setSportSettings({ spoilerReplays: false })
