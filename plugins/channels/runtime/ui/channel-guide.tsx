@@ -39,14 +39,17 @@ export interface ChannelGuideProps {
   onRundown(id: string, rundown: PoolItem[], loading: boolean, partial: boolean): void
   /** TV: ◀▶ på en rad. Returnerar falskt om fönstret inte kan flyttas åt det hållet. */
   onShift(dir: -1 | 1): boolean
+  /** Tablån i spelaren: lägre rader, smalare namnkolumn, och klick spelar kanalen direkt. */
+  compact?: boolean
 }
 
-export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }: ChannelGuideProps) {
-  const labelW = isMobile ? 96 : 220
+export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, compact }: ChannelGuideProps) {
+  const labelW = isMobile ? 96 : compact ? 180 : 220
+  const rowH = compact ? 44 : ROW_H
   const columns = `${labelW}px minmax(${isMobile ? 544 : 0}px, 1fr)`
   const nowPct = now >= win.from && now <= win.to ? nowLinePct(now, win) : null
   return (
-    <section data-channels-guide="" style={{ position: 'relative', color: C.text, fontFamily: FONT.ui, padding: isMobile ? '0 0 24px' : isTv ? '0 2.5rem 2rem' : '0 32px 32px' }}>
+    <section data-channels-guide="" style={{ position: 'relative', color: C.text, fontFamily: FONT.ui, padding: compact ? 0 : isMobile ? '0 0 24px' : isTv ? '0 2.5rem 2rem' : '0 32px 32px' }}>
       <div data-row={isMobile ? '' : undefined} style={{ overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch' }}>
         <div style={{ minWidth: isMobile ? 640 : undefined }}>
           <div style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: 34, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -76,6 +79,8 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
               now={now}
               nowPct={nowPct}
               columns={columns}
+              rowH={rowH}
+              clickPlays={!!compact}
               isTv={isTv}
               isMobile={isMobile}
               t={t}
@@ -102,6 +107,9 @@ interface RowProps {
   now: number
   nowPct: number | null
   columns: string
+  rowH: number
+  /** Klick/OK spelar kanalen (tablån i spelaren); annars väljer klick på skrivbordet. */
+  clickPlays: boolean
   isTv: boolean
   isMobile: boolean
   t: T
@@ -111,7 +119,8 @@ interface RowProps {
   onShift(dir: -1 | 1): boolean
 }
 
-const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }: RowProps) {
+const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, rowH, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }: RowProps) {
+  const plays = isTv || clickPlays
   const { rundown, loading, partial } = useChannelPool(channel)
   useEffect(() => { onRundown(channel.id, rundown, loading, partial) }, [channel.id, rundown, loading, partial, onRundown])
   const slots = rundown.length > 0 ? listing(rundown, channel.airWindow, win.from, win.to) : []
@@ -119,7 +128,7 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      if (isTv) onPlay(channel.id)
+      if (plays) onPlay(channel.id)
       else onSelect(channel.id)
       return
     }
@@ -141,12 +150,12 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
       data-init={isTv && selected ? '' : undefined}
       data-channel-row={channel.id}
       aria-pressed={selected}
-      onClick={() => (isTv ? onPlay(channel.id) : onSelect(channel.id))}
+      onClick={() => (plays ? onPlay(channel.id) : onSelect(channel.id))}
       // TV: fokus följer ▲▼, och vald kanal följer fokus.
       onFocus={isTv ? () => { if (!selected) onSelect(channel.id) } : undefined}
       onKeyDown={onKeyDown}
       style={{
-        display: 'grid', gridTemplateColumns: columns, height: ROW_H, cursor: 'pointer', outline: 'none',
+        display: 'grid', gridTemplateColumns: columns, height: rowH, cursor: 'pointer', outline: 'none',
         borderBottom: `1px solid ${selected ? 'transparent' : 'rgba(255,255,255,0.05)'}`,
         borderRadius: selected ? RADIUS.card : 0,
         background: selected ? C.glassDenseSoft : 'transparent',
