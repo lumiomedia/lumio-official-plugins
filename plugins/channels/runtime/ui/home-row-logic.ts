@@ -36,12 +36,26 @@ export interface HomeCardModel {
 
 const titleOf = (item: PoolItem): string => (item.kind === 'episode' && item.seriesTitle ? item.seriesTitle : item.title)
 
+/**
+ * Det som faktiskt sänds efter programmet, enligt tablån: en fönsterkanal kan
+ * gå i vila vid slot.stop, och då är "sedan" det som sänds när den vaknar.
+ */
+function nextAiring(rundown: PoolItem[], channel: ChannelDef, stop: number): PoolItem | null {
+  const after = programmeAt(rundown, channel.airWindow, stop + 1000)
+  if (after.kind === 'programme') return after.item
+  if (after.kind === 'rest') {
+    const woken = programmeAt(rundown, channel.airWindow, after.nextAir + 1000)
+    return woken.kind === 'programme' ? woken.item : null
+  }
+  return null
+}
+
 export function homeCardModel(channel: ChannelDef, rundown: PoolItem[], now: number): HomeCardModel {
   const base = { channelId: channel.id, number: channel.number, name: channel.name, hue: channel.hue }
   const slot = programmeAt(rundown, channel.airWindow, now)
   if (slot.kind === 'empty') return { ...base, title: null, minsLeft: null, resting: false, pct: 0, nextTitle: null }
   if (slot.kind === 'rest') return { ...base, title: null, minsLeft: null, resting: true, pct: 0, nextTitle: null, restUntil: slot.nextAir }
-  const next = rundown.length > 1 ? rundown[(slot.index + 1) % rundown.length] : undefined
+  const next = rundown.length > 1 ? nextAiring(rundown, channel, slot.stop) : null
   return {
     ...base,
     title: titleOf(slot.item),

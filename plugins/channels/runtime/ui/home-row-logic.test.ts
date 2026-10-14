@@ -29,4 +29,20 @@ describe('hemraden', () => {
     const ep: PoolItem = { ...it1('e', 45), kind: 'episode', title: 'Pilot', seriesTitle: 'Serien', backdropUrl: 'http://x/b.jpg' }
     expect(homeCardModel(make(1), [ep], EPOCH)).toMatchObject({ title: 'Serien', backdropUrl: 'http://x/b.jpg', nextTitle: null })
   })
+
+  it('"Sedan" följer tablån: ett program som klipps vid fönstrets slut fortsätter nästa sändning', () => {
+    const late = { ...make(6), airWindow: 'late' as const }
+    // a är mycket längre än fönstret (00–06): det klipps vid 06 och fortsätter nästa natt.
+    // rundownens nästa index (b) är alltså fel svar på "sedan".
+    const rundown = [it1('a', 10_000), it1('b', 10)]
+    const t = new Date(2026, 2, 10, 3, 0).getTime()
+    const m = homeCardModel(late, rundown, t)
+    expect(m.title).toBe('a')
+    expect(m.nextTitle).toBe('a')
+  })
+
+  it('"Sedan" för ett program som slutar inom fönstret är nästa i tablån', () => {
+    const rundown = [it1('a', 60), it1('b', 30), it1('c', 30)]
+    expect(homeCardModel(make(7), rundown, EPOCH + 70 * 60_000)).toMatchObject({ title: 'b', nextTitle: 'c' })
+  })
 })
