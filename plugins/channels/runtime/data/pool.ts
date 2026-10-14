@@ -75,9 +75,14 @@ export function dedupePool(items: PoolItem[]): PoolItem[] {
  * Bara kanalens egna källor räknas: en debridkanal ska inte byggas om för att
  * biblioteket synkat, och tvärtom.
  */
+/** Poolbyggets version i signaturen. 2 = namnmatchning av omatchade poster. */
+export const POOL_LOGIC_VERSION = 2
+
 export function poolSignature(channel: ChannelDef, sourceSigs: Partial<Record<SourceId, string>>): string {
   const rules = poolRules(channel)
   return JSON.stringify({
+    // Höjs när poolbygget ändras (t.ex. namnmatchning), så sparade pooler byggs om.
+    logic: POOL_LOGIC_VERSION,
     rules,
     sigs: Object.fromEntries(rules.sources.map((id) => [id, sourceSigs[id] ?? null])),
   })

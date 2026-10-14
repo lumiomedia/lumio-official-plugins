@@ -40335,9 +40335,12 @@ ${cue.text}`).join("\n\n")}
     }
     return [...best.values()];
   }
+  var POOL_LOGIC_VERSION = 2;
   function poolSignature(channel, sourceSigs) {
     const rules = poolRules(channel);
     return JSON.stringify({
+      // Höjs när poolbygget ändras (t.ex. namnmatchning), så sparade pooler byggs om.
+      logic: POOL_LOGIC_VERSION,
       rules,
       sigs: Object.fromEntries(rules.sources.map((id) => [id, sourceSigs[id] ?? null]))
     });
