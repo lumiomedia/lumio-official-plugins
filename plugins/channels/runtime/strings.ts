@@ -3,6 +3,9 @@ export const S = {
   description: { en: 'Personal linear TV channels', sv: 'Personliga linjära TV-kanaler' },
   menuLabel: { en: 'Channels', sv: 'Kanaler' },
   homeRowTitle: { en: 'On now on your channels', sv: 'Sänds nu på dina kanaler' },
+  homeRowSubtitle: { en: 'It is {time} — jump in where the channel is', sv: 'Klockan {time} — hoppa in där kanalen är' },
+  homeRowShowGuide: { en: 'SHOW GUIDE ›', sv: 'VISA TABLÅ ›' },
+  homeCardNext: { en: 'Next: {title}', sv: 'Sedan: {title}' },
   settingsLabel: { en: 'Channels', sv: 'Kanaler' },
   // Spelaren
   playerClose: { en: 'Close', sv: 'Stäng' },

@@ -62,12 +62,15 @@ describe('Kanaler-sidan', () => {
   it('registrerar sida och menyval med samma id', () => {
     const pages: Array<Record<string, unknown>> = []
     const items: Array<Record<string, unknown>> = []
+    const rows: Array<Record<string, unknown>> = []
     ChannelsPlugin.register({
+      registerHomeRow: (r: Record<string, unknown>) => { rows.push(r) },
       registerBrowsePage: (p: Record<string, unknown>) => { pages.push(p) },
       registerMainMenuItem: (i: Record<string, unknown>) => { items.push(i) },
     } as never)
     expect(pages).toMatchObject([{ id: 'channels', hideHero: true }])
     expect(items).toMatchObject([{ id: 'channels', target: { pageId: 'channels' }, defaultEnabled: true }])
+    expect(rows).toMatchObject([{ id: 'channels-now', showOnHome: true }])
   })
 
   it('väljer första kanalen efter nummer, och klick på rad byter heron', () => {
