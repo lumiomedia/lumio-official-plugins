@@ -16,11 +16,12 @@ import type { ChannelDef } from '../model/channel'
 import { programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, OSD_IDLE_MS } from '../play/zap-logic'
-import { nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
+import { endOfSourceAction, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
 import { initialPlayerState, playerReducer, type Request } from '../play/player-state'
 import { readZapMemory, rememberPlayedStream, resolver, writeZapMemory } from '../host'
 import { useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
+import { useHostControls } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
 import { useText } from './use-text'
 import { ZapOverlay } from './zap-overlay'
@@ -248,9 +249,16 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   const osdRef = useRef<HTMLDivElement | null>(null)
   const pokeRef = useRef(poke)
   pokeRef.current = poke
+  // Kanal-OSD:n tonar med värdspelarens kontrollrad (samma vilotid, framme
+  // under paus). Utan läsbar rad: vår egen timer. Zappläget har egen takt.
+  const playerKey = onScreen && Player ? `${onScreen.seq}|${onScreen.playable.url}` : null
+  const hostControls = useHostControls(osdRef, zapOn ? null : playerKey)
+  const osdIdleVisible = hostControls ? hostControls.visible : osdVisible
   // Samma villkor som OSD:n renderas med.
   const osdShownRef = useRef(true)
-  osdShownRef.current = osdVisible || status !== 'playing'
+  osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== 'playing'
+  // En källa avgörs en gång per visning (onTimeUpdate tickar vidare i slutet).
+  const endHandledFor = useRef<number | null>(null)
 
   // Sifferval: bufferten levererar efter 1,5 s eller tre siffror.
   const commitNumber = useCallback((n: number) => {
@@ -397,7 +405,8 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   const normalOsd = (
     <ChannelOsd
       osdRef={osdRef}
-      visible={osdVisible || status !== 'playing'}
+      visible={osdIdleVisible || status !== 'playing'}
+      lift={hostControls?.lift ?? null}
       channel={channel}
       meta={metaParts.join(' · ')}
       title={described?.slot.item.title ?? null}
@@ -441,10 +450,24 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           title={slot.item.title}
           posterUrl={slot.item.posterUrl ?? undefined}
           backdropUrl={slot.item.backdropUrl ?? undefined}
-          autoFullscreen
+          // Ingen autoFullscreen: helskärm väljer användaren med spelarens knapp,
+          // och bytet (ny nyckel) rör inte fönstrets helskärmsläge.
           hideStartSplash
           onClose={onClose}
           onPlaybackEnded={() => dispatch({ type: 'advance', seq, now: Date.now() })}
+          // mpv säger aldrig onPlaybackEnded: den står pausad på sista bilden.
+          onTimeUpdate={(position: number, duration: number) => {
+            if (endHandledFor.current === seq) return
+            const action = endOfSourceAction({ position, duration, startedAt: onScreen.initialTime })
+            if (!action) return
+            endHandledFor.current = seq
+            if (action === 'ended') {
+              dispatch({ type: 'advance', seq, now: Date.now() })
+              return
+            }
+            resolver.forget(slot.item.ref)
+            dispatch({ type: 'failed', seq, now: Date.now() })
+          }}
           onFirstPlay={() => {
             // Först nu, när bilden syns, blir strömvalet ihågkommet (bara strömsök).
             if (slot.item.play.type === 'stream') rememberPlayedStream(playable.rememberToken)
@@ -571,6 +594,8 @@ function OsdButton({ children, onClick, isTv, label, accent, init }: {
 interface OsdProps {
   osdRef: MutableRefObject<HTMLDivElement | null>
   visible: boolean
+  /** Värdens kontrollrads innehållshöjd i px: knappraden läggs precis ovanför seekraden. */
+  lift: number | null
   channel: ChannelDef
   meta: string
   title: string | null
@@ -634,11 +659,16 @@ function ChannelOsd(props: OsdProps) {
         data-channels-osd-bar=""
         style={{
           ...fade, position: 'absolute', left: '1.5rem', right: '1.5rem',
-          // Över appens egna kontroller längst ner.
-          bottom: 'calc(var(--android-inset-bottom, 0px) + 6.5rem)',
           display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap',
-          padding: '0.75rem 1rem', borderRadius: RADIUS.osd,
-          ...glass(isTv, { fill: C.osdBg, blur: 12 }),
+          ...(props.lift != null
+            // I värdens egen gradient, direkt ovanför seekraden: en kontrollyta, inte två paneler.
+            ? { bottom: props.lift + 10, padding: 0 }
+            // Okänd rad: egen panel över appens kontroller.
+            : {
+                bottom: 'calc(var(--android-inset-bottom, 0px) + 6.5rem)',
+                padding: '0.75rem 1rem', borderRadius: RADIUS.osd,
+                ...glass(isTv, { fill: C.osdBg, blur: 12 }),
+              }),
         }}
       >
         {props.onFromStart ? <OsdButton onClick={props.onFromStart} isTv={isTv}>⟲ {t('playerFromStart')}</OsdButton> : null}

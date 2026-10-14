@@ -50,3 +50,23 @@ export const ZAP_RESOLVE_DELAY_MS = 300
 export function resolveDelayMs(playType: 'library' | 'stream' | 'debrid', channelChanged: boolean): number {
   return channelChanged && playType !== 'library' ? ZAP_RESOLVE_DELAY_MS : 0
 }
+
+/** Så nära slutet räknas som slut (mpv stannar på sista bilden med keep-open). */
+const END_SLACK_S = 2
+/** Mindre spelat än så här innan slutet = källan bar inte, inte ett färdigt program. */
+const MIN_PLAYED_S = 60
+
+/**
+ * Appens spelare säger aldrig onPlaybackEnded på mpv: den stannar pausad på
+ * sista bilden (position = längd). Det ser ut som att kanalen inte startar —
+ * särskilt när filen är kortare än livepositionen (en trasig 33-minutersfil av
+ * en 143-minutersfilm: hoppet landar i filslutet). Avgörs ur onTimeUpdate:
+ * slut strax efter start = 'failed' (felhoppet), slut efter en stunds
+ * uppspelning = 'ended' (nästa program).
+ */
+export function endOfSourceAction(input: { position: number; duration: number; startedAt: number }): 'failed' | 'ended' | null {
+  const { position, duration, startedAt } = input
+  if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(position)) return null
+  if (position < duration - END_SLACK_S) return null
+  return position - startedAt < MIN_PLAYED_S ? 'failed' : 'ended'
+}

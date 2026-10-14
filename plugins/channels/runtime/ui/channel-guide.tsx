@@ -193,8 +193,8 @@ function Block({ slot, win, now, isTv, t }: { slot: Slot<PoolItem>; win: GuideWi
     ? t('guideRest', { time: formatClock(slot.nextAir) })
     : slot.item.kind === 'episode' && slot.item.seriesTitle ? slot.item.seriesTitle : slot.item.title
   return (
+    // Ingen title-attribut: webbvyns tooltip hamnade förskjuten över kanalkolumnen.
     <div
-      title={title}
       style={{
         position: 'absolute', top: 6, bottom: 6, left: `calc(${box.leftPct}% + 2px)`, width: `calc(${box.widthPct}% - 4px)`,
         boxSizing: 'border-box', padding: '5px 9px', borderRadius: 8, overflow: 'hidden',

@@ -7,6 +7,8 @@ const state = vi.hoisted(() => ({
   rundowns: {} as Record<string, unknown[]>,
   resolve: null as unknown as ReturnType<typeof vi.fn>,
   remember: null as unknown as ReturnType<typeof vi.fn>,
+  forget: null as unknown as ReturnType<typeof vi.fn>,
+  props: null as null | Record<string, any>, // eslint-disable-line @typescript-eslint/no-explicit-any
 }))
 
 vi.mock('@/lib/plugin-sdk', () => ({
@@ -14,14 +16,21 @@ vi.mock('@/lib/plugin-sdk', () => ({
   useTvMode: () => false,
   useLang: () => ({ lang: 'sv' }),
   resolvePluginText: (text: { sv: string }) => text.sv,
-  VideoPlayerModal: ({ url, onFirstPlay }: { url: string; onFirstPlay(): void }) => (
-    <button type="button" data-testid="first-play" data-url={url} onClick={onFirstPlay}>spela</button>
-  ),
+  VideoPlayerModal: (props: { url: string; onFirstPlay(): void; overlayContent?: unknown }) => {
+    state.props = props
+    return (
+      <div data-testid="host-player">
+        <button type="button" data-testid="first-play" data-url={props.url} onClick={props.onFirstPlay}>spela</button>
+        <div className="vp-controls" data-testid="host-controls" style={{ opacity: 1 }} />
+        {props.overlayContent as never}
+      </div>
+    )
+  },
 }))
 vi.mock('../host', () => ({
   readZapMemory: () => ({ lastChannelId: null, previousChannelId: null }),
   writeZapMemory: () => {},
-  resolver: { resolve: (item: PoolItem) => state.resolve(item), forget: () => {} },
+  resolver: { resolve: (item: PoolItem) => state.resolve(item), forget: (ref: string) => state.forget(ref) },
   rememberPlayedStream: (token: string | undefined) => state.remember(token),
 }))
 vi.mock('../state/store', () => ({
@@ -46,6 +55,8 @@ const channels = [channel(1), channel(2), channel(3), channel(4)]
 beforeEach(() => {
   state.resolve = vi.fn(async (item: PoolItem) => ({ url: `http://${item.ref}`, rememberToken: `tok-${item.ref}` }))
   state.remember = vi.fn()
+  state.forget = vi.fn()
+  state.props = null
 })
 afterEach(() => {
   cleanup()
@@ -88,5 +99,52 @@ describe('kanalspelaren: zappfördröjning', () => {
     await act(async () => { vi.advanceTimersByTime(400) })
     await flush()
     expect(state.resolve.mock.calls.map(([i]) => (i as PoolItem).ref)).toEqual(['s1', 's4'])
+  })
+})
+
+describe('kanalspelaren: värdspelaren', () => {
+  it('går aldrig i helskärm av sig själv', async () => {
+    state.rundowns = { k1: [stream('s1')] }
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    expect(state.props?.autoFullscreen).toBeUndefined()
+  })
+
+  it('källan tar slut direkt efter start (fil kortare än liveläget) → felhoppet, inte pausad i slutet', async () => {
+    state.rundowns = { k1: [stream('s1')] }
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    const start = Number(state.props?.initialTime ?? 0)
+    await act(async () => { state.props?.onTimeUpdate(start + 1, start + 1) })
+    expect(state.forget).toHaveBeenCalledWith('s1')
+  })
+
+  it('mitt i filen händer ingenting', async () => {
+    state.rundowns = { k1: [stream('s1')] }
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    const start = Number(state.props?.initialTime ?? 0)
+    await act(async () => { state.props?.onTimeUpdate(start + 5, start + 3600) })
+    expect(state.forget).not.toHaveBeenCalled()
+  })
+
+  it('OSD:n tonar med värdens kontrollrad', async () => {
+    state.rundowns = { k1: [stream('s1')] }
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    const host = await screen.findByTestId('host-controls')
+    await flush()
+    const bar = () => document.querySelector('[data-channels-osd-bar]') as HTMLElement
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)) })
+    expect(bar().style.opacity).toBe('1')
+    await act(async () => {
+      host.style.opacity = '0'
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(bar().style.opacity).toBe('0')
+    await act(async () => {
+      host.style.opacity = '1'
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(bar().style.opacity).toBe('1')
   })
 })

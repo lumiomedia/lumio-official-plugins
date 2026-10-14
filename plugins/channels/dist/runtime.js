@@ -1022,8 +1022,8 @@
         setStats((prev2) => {
           const next2 = s.stats ?? null;
           if (!next2 || !prev2) return next2;
-          const same = Object.keys(next2).every((key) => prev2[key] === next2[key]);
-          return same ? prev2 : next2;
+          const same2 = Object.keys(next2).every((key) => prev2[key] === next2[key]);
+          return same2 ? prev2 : next2;
         });
         setCoreIdle(!s.fileLoaded || s.paused);
         setSid(s.selectedSub > 0 ? s.selectedSub : null);
@@ -20330,6 +20330,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -24915,9 +24916,9 @@
   function buildCandidates(selected, all, max = 4) {
     const lang = subtitleLangGroup(selected.lang3);
     const sameLang = (c) => subtitleLangGroup(c.lang3) === lang;
-    const same = all.filter((c) => c.id !== selected.id && sameLang(c));
+    const same2 = all.filter((c) => c.id !== selected.id && sameLang(c));
     const rank = (c) => c.hashMatch ? 0 : 1;
-    const targets = same.map((c, i) => ({ c, i })).sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i).map(({ c }) => c).slice(0, max);
+    const targets = same2.map((c, i) => ({ c, i })).sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i).map(({ c }) => c).slice(0, max);
     const references = all.filter((c) => c.id !== selected.id && !sameLang(c) && c.hashMatch);
     return [...targets, ...references];
   }
@@ -41704,34 +41705,36 @@ ${cue.text}`).join("\n\n")}
     const isRest = slot.kind === "rest";
     const current2 = !isRest && slot.start <= now2 && now2 < slot.stop;
     const title = isRest ? t("guideRest", { time: formatClock2(slot.nextAir) }) : slot.item.kind === "episode" && slot.item.seriesTitle ? slot.item.seriesTitle : slot.item.title;
-    return /* @__PURE__ */ jsxs(
-      "div",
-      {
-        title,
-        style: {
-          position: "absolute",
-          top: 6,
-          bottom: 6,
-          left: `calc(${box.leftPct}% + 2px)`,
-          width: `calc(${box.widthPct}% - 4px)`,
-          boxSizing: "border-box",
-          padding: "5px 9px",
-          borderRadius: 8,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: 1,
-          // Glas på svart grund (ingen blur: inget syns bakom). Vila = streckad kontur.
-          background: isRest ? "transparent" : current2 ? "rgba(244,132,95,0.16)" : C.glass,
-          border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current2 ? "rgba(244,132,95,0.45)" : C.glassBorder}`,
-          color: isRest ? C.textMute : C.text
-        },
-        children: [
-          /* @__PURE__ */ jsx("span", { style: { fontSize: fontSize(12, isTv), fontWeight: current2 ? 600 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: title }),
-          showTime ? /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: fontSize(10, isTv), color: isRest ? C.textMute : C.textDim, whiteSpace: "nowrap" }, children: formatClock2(slot.start) }) : null
-        ]
-      }
+    return (
+      // Ingen title-attribut: webbvyns tooltip hamnade förskjuten över kanalkolumnen.
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          style: {
+            position: "absolute",
+            top: 6,
+            bottom: 6,
+            left: `calc(${box.leftPct}% + 2px)`,
+            width: `calc(${box.widthPct}% - 4px)`,
+            boxSizing: "border-box",
+            padding: "5px 9px",
+            borderRadius: 8,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 1,
+            // Glas på svart grund (ingen blur: inget syns bakom). Vila = streckad kontur.
+            background: isRest ? "transparent" : current2 ? "rgba(244,132,95,0.16)" : C.glass,
+            border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current2 ? "rgba(244,132,95,0.45)" : C.glassBorder}`,
+            color: isRest ? C.textMute : C.text
+          },
+          children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: fontSize(12, isTv), fontWeight: current2 ? 600 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: title }),
+            showTime ? /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: fontSize(10, isTv), color: isRest ? C.textMute : C.textDim, whiteSpace: "nowrap" }, children: formatClock2(slot.start) }) : null
+          ]
+        }
+      )
     );
   }
 
@@ -42179,6 +42182,14 @@ ${cue.text}`).join("\n\n")}
   function resolveDelayMs(playType, channelChanged) {
     return channelChanged && playType !== "library" ? ZAP_RESOLVE_DELAY_MS : 0;
   }
+  var END_SLACK_S = 2;
+  var MIN_PLAYED_S2 = 60;
+  function endOfSourceAction(input) {
+    const { position, duration: duration2, startedAt } = input;
+    if (!Number.isFinite(duration2) || duration2 <= 0 || !Number.isFinite(position)) return null;
+    if (position < duration2 - END_SLACK_S) return null;
+    return position - startedAt < MIN_PLAYED_S2 ? "failed" : "ended";
+  }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-state.ts
   function initialPlayerState(channelId, mode) {
@@ -42231,6 +42242,76 @@ ${cue.text}`).join("\n\n")}
         if (a.seq !== s.onScreen?.seq) return s;
         return { ...s, failedOnce: false, notice: null };
     }
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/host-controls.ts
+  init_react_shim();
+  var HOST_CONTROLS_SELECTOR = ".vp-controls";
+  function findHostControls(from) {
+    for (let node = from?.parentElement ?? null; node; node = node.parentElement) {
+      const hit = node.querySelector(HOST_CONTROLS_SELECTOR);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  function readHostControls(el) {
+    const visible = el.style.opacity !== "0";
+    const height = el.offsetHeight;
+    let lift = null;
+    if (height > 0) {
+      const padTop = Number.parseFloat(window.getComputedStyle(el).paddingTop || "0");
+      lift = Math.max(0, height - (Number.isFinite(padTop) ? padTop : 0));
+    }
+    return { visible, lift };
+  }
+  var same = (a, b) => a === b || !!a && !!b && a.visible === b.visible && a.lift === b.lift;
+  function useHostControls(anchorRef, session2) {
+    const [state2, setState] = useState(null);
+    useEffect(() => {
+      if (!session2) {
+        setState(null);
+        return;
+      }
+      let el = null;
+      let observer = null;
+      let resize = null;
+      const read10 = () => {
+        if (!el) return;
+        const next2 = readHostControls(el);
+        setState((prev) => same(prev, next2) ? prev : next2);
+      };
+      const detach = () => {
+        observer?.disconnect();
+        resize?.disconnect();
+        observer = null;
+        resize = null;
+        el = null;
+      };
+      const attach = () => {
+        if (el?.isConnected) return;
+        detach();
+        el = findHostControls(anchorRef.current);
+        if (!el) {
+          setState(null);
+          return;
+        }
+        read10();
+        observer = new MutationObserver(read10);
+        observer.observe(el, { attributes: true, attributeFilter: ["style", "class"] });
+        if (typeof ResizeObserver !== "undefined") {
+          resize = new ResizeObserver(read10);
+          resize.observe(el);
+        }
+      };
+      attach();
+      const timer3 = window.setInterval(attach, 500);
+      return () => {
+        window.clearInterval(timer3);
+        detach();
+        setState(null);
+      };
+    }, [anchorRef, session2]);
+    return state2;
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/zap-overlay.tsx
@@ -42651,8 +42732,12 @@ ${cue.text}`).join("\n\n")}
     const osdRef = useRef(null);
     const pokeRef = useRef(poke);
     pokeRef.current = poke;
+    const playerKey = onScreen && Player ? `${onScreen.seq}|${onScreen.playable.url}` : null;
+    const hostControls = useHostControls(osdRef, zapOn ? null : playerKey);
+    const osdIdleVisible = hostControls ? hostControls.visible : osdVisible;
     const osdShownRef = useRef(true);
-    osdShownRef.current = osdVisible || status !== "playing";
+    osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== "playing";
+    const endHandledFor = useRef(null);
     const commitNumber = useCallback((n) => {
       setDigits("");
       const target2 = channelByNumber(channelsRef.current, n);
@@ -42780,7 +42865,8 @@ ${cue.text}`).join("\n\n")}
       ChannelOsd,
       {
         osdRef,
-        visible: osdVisible || status !== "playing",
+        visible: osdIdleVisible || status !== "playing",
+        lift: hostControls?.lift ?? null,
         channel,
         meta: metaParts.join(" \xB7 "),
         title: described?.slot.item.title ?? null,
@@ -42816,10 +42902,21 @@ ${cue.text}`).join("\n\n")}
           title: slot.item.title,
           posterUrl: slot.item.posterUrl ?? void 0,
           backdropUrl: slot.item.backdropUrl ?? void 0,
-          autoFullscreen: true,
           hideStartSplash: true,
           onClose,
           onPlaybackEnded: () => dispatch({ type: "advance", seq, now: Date.now() }),
+          onTimeUpdate: (position, duration2) => {
+            if (endHandledFor.current === seq) return;
+            const action = endOfSourceAction({ position, duration: duration2, startedAt: onScreen.initialTime });
+            if (!action) return;
+            endHandledFor.current = seq;
+            if (action === "ended") {
+              dispatch({ type: "advance", seq, now: Date.now() });
+              return;
+            }
+            resolver.forget(slot.item.ref);
+            dispatch({ type: "failed", seq, now: Date.now() });
+          },
           onFirstPlay: () => {
             if (slot.item.play.type === "stream") rememberPlayedStream(playable.rememberToken);
             dispatch({ type: "firstPlay", seq });
@@ -42980,15 +43077,16 @@ ${cue.text}`).join("\n\n")}
                 position: "absolute",
                 left: "1.5rem",
                 right: "1.5rem",
-                // Över appens egna kontroller längst ner.
-                bottom: "calc(var(--android-inset-bottom, 0px) + 6.5rem)",
                 display: "flex",
                 alignItems: "center",
                 gap: "0.6rem",
                 flexWrap: "wrap",
-                padding: "0.75rem 1rem",
-                borderRadius: RADIUS.osd,
-                ...glass(isTv, { fill: C.osdBg, blur: 12 })
+                ...props.lift != null ? { bottom: props.lift + 10, padding: 0 } : {
+                  bottom: "calc(var(--android-inset-bottom, 0px) + 6.5rem)",
+                  padding: "0.75rem 1rem",
+                  borderRadius: RADIUS.osd,
+                  ...glass(isTv, { fill: C.osdBg, blur: 12 })
+                }
               },
               children: [
                 props.onFromStart ? /* @__PURE__ */ jsxs(OsdButton, { onClick: props.onFromStart, isTv, children: [

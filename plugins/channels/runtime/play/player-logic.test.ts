@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, ZAP_RESOLVE_DELAY_MS } from './player-logic'
+import { endOfSourceAction, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, ZAP_RESOLVE_DELAY_MS } from './player-logic'
 import { createChannel, emptyDraft, type ChannelDef } from '../model/channel'
 
 const ch = (number: number, id = `c${number}`): ChannelDef => ({ ...createChannel({ ...emptyDraft(), name: id }, [], 1, () => 0.1), id, number })
@@ -39,5 +39,20 @@ describe('spelarlogiken', () => {
     expect(resolveDelayMs('library', true)).toBe(0)
     // Programbyte, Från början och felhopp på samma kanal väntar aldrig.
     expect(resolveDelayMs('stream', false)).toBe(0)
+  })
+})
+
+describe('källans slut (mpv ger inget onPlaybackEnded)', () => {
+  it('fil kortare än liveläget: slut direkt efter start = fel, inte "pausad i slutet"', () => {
+    // Come And See: 549 MB-filen har bara 33:05, live ville 33:05 eller senare.
+    expect(endOfSourceAction({ position: 1985, duration: 1985, startedAt: 1985 })).toBe('failed')
+    expect(endOfSourceAction({ position: 1985, duration: 1985, startedAt: 4229.7 })).toBe('failed')
+  })
+  it('spelat en stund och nått slutet = programmet är slut', () => {
+    expect(endOfSourceAction({ position: 5399.5, duration: 5400, startedAt: 600 })).toBe('ended')
+  })
+  it('mitt i filen eller okänd längd = inget', () => {
+    expect(endOfSourceAction({ position: 1200, duration: 5400, startedAt: 600 })).toBeNull()
+    expect(endOfSourceAction({ position: 30, duration: 0, startedAt: 0 })).toBeNull()
   })
 })
