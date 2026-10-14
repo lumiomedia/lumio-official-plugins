@@ -15,14 +15,14 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type Com
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
-import { buildRundown, programmeAt } from '../model/schedule'
+import { programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, NOISE_MS, OSD_IDLE_MS } from '../play/zap-logic'
 import { allowsCatalog, endOfSourceAction, NEAR_BOUNDARY_MS, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
 import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, triedFor, TRUSTED_FIRST_PLAY_MS, type Request } from '../play/player-state'
 import { readRuntimeFixes, readZapMemory, rememberPlayedStream, resolver, writeRuntimeFixes, writeZapMemory } from '../host'
 import { noteDuration } from '../data/runtime-fix'
-import { readCachedPool, useChannelClock, useChannelPool } from '../state/store'
+import { readCachedRundown, useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { GuideOverlay } from './guide-overlay'
 import { HIDE_HOST_CHROME_CSS, useHostControls } from './host-controls'
@@ -60,8 +60,8 @@ type PlayerComponent = ComponentType<Record<string, unknown>>
 
 /** Sparad tablå utan uppslag (null vid kall cache): kanallistan och grannförladdningen. */
 function cachedRundown(c: ChannelDef): PoolItem[] | null {
-  const pool = readCachedPool(c.id)
-  return pool ? buildRundown(pool, c.order, c.seed) : null
+  // Med tablålåset: samma tablå som tablån och heron visar.
+  return readCachedRundown(c)
 }
 
 interface SwitchTiming {

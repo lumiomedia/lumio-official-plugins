@@ -37,11 +37,19 @@ vi.mock('../host', () => ({
   readRuntimeFixes: () => state.fixes,
   writeRuntimeFixes: (next: Record<string, number>) => { state.fixes = next },
 }))
-vi.mock('../state/store', () => ({
+vi.mock('../state/store', async () => {
+  const { buildRundown } = await import('../model/schedule')
+  return {
+  // Sparad pool → rundown (låset testas i store/lock-testerna).
+  readCachedRundown: (c: { id: string; order: 'shuffle' | 'chrono' | 'episodes'; seed: number }) => {
+    const pool = state.cached[c.id] as never[] | undefined
+    return pool ? buildRundown(pool, c.order, c.seed) : null
+  },
   useChannelPool: (channel: { id: string } | null) => ({ pool: [], rundown: (channel && state.rundowns[channel.id]) ?? [], loading: false }),
   useChannelClock: () => Date.now(),
   readCachedPool: (id: string) => state.cached[id] ?? null,
-}))
+  }
+})
 
 import { ChannelPlayer } from './channel-player'
 import { programmeAt } from '../model/schedule'

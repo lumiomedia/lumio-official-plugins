@@ -21,8 +21,7 @@ import type { ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 import type { PlayMode } from '../play/player-logic'
 import { hostReady, readZapMemory } from '../host'
-import { readCachedPool, restoreDefaultChannels, seedDefaultChannels, useChannelClock, useChannels } from '../state/store'
-import { buildRundown } from '../model/schedule'
+import { readCachedRundown, restoreDefaultChannels, seedDefaultChannels, useChannelClock, useChannels } from '../state/store'
 import { onAirNow, pickStartChannel } from './start-channel'
 import { ChannelGuide } from './channel-guide'
 import { ChannelHero } from './channel-hero'
@@ -43,8 +42,8 @@ const MAX_SHIFT = 46
 
 /** Sparad tablå (synkront, utan uppslag) — null när cachen är kall. */
 function cachedRundown(channel: ChannelDef): PoolItem[] | null {
-  const pool = readCachedPool(channel.id)
-  return pool ? buildRundown(pool, channel.order, channel.seed) : null
+  // Med tablålåset: samma tablå som tablån och heron visar.
+  return readCachedRundown(channel)
 }
 
 /**

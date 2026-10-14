@@ -8,6 +8,7 @@
  * för att rulla förbi halva filmer i det tysta.
  */
 import type { AirWindow, OrderRule } from './channel'
+import { lockedSlotAt, lockHorizon, type ScheduleLock } from './lock'
 
 export const EPOCH = new Date(2026, 0, 1, 0, 0, 0).getTime()
 const MIN = 60_000
@@ -158,7 +159,54 @@ function findIndex(starts: number[], position: number): number {
   return lo
 }
 
+// ── Tablålås (model/lock.ts) ────────────────────────────────────────────────
+// Låset följer med rundownen som en dold egenskap, så alla läsare (tablå,
+// hero, hemrad, spelare) får samma låsta tablå utan att varje anrop ändras.
+const LOCK = Symbol.for('lumio.channels.lock')
+interface AttachedLock { lock: ScheduleLock; index: Map<string, number> }
+
+/** Rundownen med låset fäst (en kopia; originalet lämnas olåst). */
+export function withLock<T extends ScheduleItem>(rundown: T[], lock: ScheduleLock | null): T[] {
+  if (!lock || rundown.length === 0) return rundown
+  const out = [...rundown]
+  const index = new Map<string, number>()
+  rundown.forEach((item, i) => { if (!index.has(item.ref)) index.set(item.ref, i) })
+  Object.defineProperty(out, LOCK, { value: { lock, index } satisfies AttachedLock, enumerable: false })
+  return out
+}
+
+/** Låset som är fäst vid en rundown (null = olåst). */
+export function attachedLock(rundown: ScheduleItem[]): ScheduleLock | null {
+  return (rundown as unknown as Record<symbol, AttachedLock | undefined>)[LOCK]?.lock ?? null
+}
+
 export function programmeAt<T extends ScheduleItem>(rundown: T[], window: AirWindow, t: number): Slot<T> | { kind: 'empty' } {
+  if (rundown.length === 0) return { kind: 'empty' }
+  const attached = (rundown as unknown as Record<symbol, AttachedLock | undefined>)[LOCK]
+  if (attached) {
+    const hit = lockedSlotAt(attached.lock, t)
+    if (hit) {
+      if (hit.r === '') return { kind: 'rest', start: hit.s, stop: hit.e, nextAir: hit.e }
+      const index = attached.index.get(hit.r)
+      // Titeln finns kvar i poolen: det låsta programmet. Annars (källan borta) den räknade tablån.
+      if (index != null) {
+        const item = rundown[index]!
+        const runtime = Math.max(1, item.runtimeMin)
+        const minsIn = hit.o + (t - hit.s) / MIN
+        return { kind: 'programme', item, index, start: hit.s, stop: hit.e, minsIn, minsLeft: runtime - minsIn, pct: minsIn / runtime }
+      }
+    }
+    // Efter horisonten: ett program som började före den klipps vid horisonten.
+    const horizon = lockHorizon(attached.lock)
+    const free = computedAt(rundown, window, t)
+    if (horizon != null && t >= horizon && free.kind !== 'empty' && free.start < horizon) return { ...free, start: horizon }
+    return free
+  }
+  return computedAt(rundown, window, t)
+}
+
+/** Den räknade (olåsta) tablån vid t. */
+function computedAt<T extends ScheduleItem>(rundown: T[], window: AirWindow, t: number): Slot<T> | { kind: 'empty' } {
   if (rundown.length === 0) return { kind: 'empty' }
   let span: Span | null = null
   if (window !== 'always') {

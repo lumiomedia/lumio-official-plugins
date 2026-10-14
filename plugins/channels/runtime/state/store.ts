@@ -3,15 +3,19 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildDefaultChannels, type ChannelDef } from '../model/channel'
-import { buildRundown, programmeAt } from '../model/schedule'
+import { attachedLock, buildRundown, programmeAt, withLock } from '../model/schedule'
+import { extendLock, lockHorizon, lockSignature, LOCK_RENEW_MS, parseLock, type ScheduleLock } from '../model/lock'
 import { capPool, MAX_POOL_ITEMS, poolRules, poolSignature, type PoolItem } from '../data/pool'
 import { packPool, unpackPool } from '../data/pool-pack'
 import { loadPoolProgressive, type SourceDeps } from '../data/sources'
 import { applyRuntimeFixes } from '../data/runtime-fix'
-import { onChannelsChanged, prunePoolCaches, readChannels, readDefaultsSeeded, readPoolCache, readRuntimeFixes, removePoolCache, sourceDeps, sourceSignatures, writeChannels, writeDefaultsSeeded, writePoolCache } from '../host'
+import { onChannelsChanged, prunePoolCaches, readChannels, readDefaultsSeeded, readPoolCache, readRuntimeFixes, readScheduleLock, removePoolCache, removeScheduleLock, sourceDeps, sourceSignatures, writeChannels, writeDefaultsSeeded, writePoolCache, writeScheduleLock } from '../host'
 
 export function saveChannel(def: ChannelDef): void {
   const all = readChannels()
+  // Ändrade regler: den låsta tablån gäller inte längre (namn och nummer rör den inte).
+  const before = all.find((c) => c.id === def.id)
+  if (before && lockSignature(before) !== lockSignature(def)) removeScheduleLock(def.id)
   writeChannels(all.some((c) => c.id === def.id) ? all.map((c) => (c.id === def.id ? def : c)) : [...all, def])
 }
 
@@ -40,6 +44,37 @@ export function deleteChannel(id: string): void {
   writeChannels(readChannels().filter((c) => c.id !== id))
   removePoolCache(id)
 }
+
+/**
+ * Rundownen med kanalens tablålås fäst (model/lock.ts): läser låset, lägger
+ * eller förlänger det mot den olåsta tablån och sparar det när det ändrats.
+ * Alla läsare (tablå, hero, hemrad, spelare) går hit, så det som visas är det
+ * som spelas.
+ */
+export function lockRundown<T extends PoolItem>(channel: ChannelDef, rundown: T[], now: number = Date.now()): T[] {
+  if (rundown.length === 0) return rundown
+  const stored = parseLock(readScheduleLock(channel.id))
+  const free = attachedLock(rundown) ? rundown.slice() : rundown
+  const next = extendLock(stored, lockSignature(channel), (t) => programmeAt(free, channel.airWindow, t), now)
+  if (next && next !== stored) {
+    try { writeScheduleLock(channel.id, next) } catch { /* fullt lager: låset gäller ändå i minnet */ }
+  }
+  return withLock(rundown, next)
+}
+
+/** Sparad pool som låst rundown (utan uppslag): null när cachen är kall. */
+export function readCachedRundown(channel: ChannelDef): PoolItem[] | null {
+  const pool = readCachedPool(channel.id)
+  return pool ? lockRundown(channel, buildRundown(pool, channel.order, channel.seed)) : null
+}
+
+/** När låset behöver förlängas (horisonten minus förnyelsemarginalen), eller null. */
+function renewAt(rundown: PoolItem[]): number | null {
+  const horizon = lockHorizon(attachedLock(rundown))
+  return horizon == null ? null : horizon - LOCK_RENEW_MS
+}
+
+export type { ScheduleLock }
 
 /**
  * Poolens läge för en kanal. `pool` är null tills första källan svarat;
@@ -191,10 +226,19 @@ export function useChannelPool(channel: ChannelDef | null): ChannelPoolState {
   }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
   const view: PoolView | null = channel ? (state?.key === key ? state.view : stale ? { pool: stale, complete: false, stale: true } : null) : null
   const pool = view?.pool ?? EMPTY
+  // Rullande förlängning av låset: räknas om när det behöver fyllas på.
+  const [renew, setRenew] = useState(0)
+  const lockSig = channel ? lockSignature(channel) : ''
   const rundown = useMemo(
-    () => (channel ? buildRundown(pool, channel.order, channel.seed) : EMPTY),
-    [pool, channel?.order, channel?.seed], // eslint-disable-line react-hooks/exhaustive-deps
+    () => (channel ? lockRundown(channel, buildRundown(pool, channel.order, channel.seed)) : EMPTY),
+    [pool, lockSig, renew], // eslint-disable-line react-hooks/exhaustive-deps
   )
+  const due = renewAt(rundown)
+  useEffect(() => {
+    if (due == null) return
+    const id = setTimeout(() => setRenew((n) => n + 1), Math.max(1000, Math.min(due - Date.now(), 2 ** 31 - 1)))
+    return () => clearTimeout(id)
+  }, [due])
   return {
     pool, rundown,
     loading: channel != null && view?.pool == null,

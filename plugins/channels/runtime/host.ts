@@ -75,6 +75,22 @@ export function writePoolCache(id: string, value: { sig: string; pool: unknown }
   if (!index.includes(id)) writePoolIndex([...index, id])
 }
 
+/**
+ * Tablålåset per kanal (model/lock.ts). Utan ändringsevent; nyckeln är
+ * klassad som cache i appen (`lock:` i storage-cache-keys) — det byggs om.
+ */
+export function readScheduleLock(id: string): unknown {
+  return readPluginJson<unknown>(PLUGIN_ID, `lock:${id}`, null)
+}
+
+export function writeScheduleLock(id: string, lock: unknown): void {
+  writePluginJson(PLUGIN_ID, `lock:${id}`, lock, { emitChange: false })
+}
+
+export function removeScheduleLock(id: string): void {
+  removePluginStorageItem(PLUGIN_ID, `lock:${id}`, { emitChange: false })
+}
+
 /** Register över kanaler med poolcache, så städningen kan hitta dem utan att lista nycklar. */
 const readPoolIndex = (): string[] => {
   const raw = readPluginJson<unknown>(PLUGIN_ID, 'poolIndex', [])
@@ -84,6 +100,7 @@ const writePoolIndex = (ids: string[]) => writePluginJson(PLUGIN_ID, 'poolIndex'
 
 export function removePoolCache(id: string): void {
   removePluginStorageItem(PLUGIN_ID, `poolCache:${id}`, { emitChange: false })
+  removeScheduleLock(id)
   writePoolIndex(readPoolIndex().filter((x) => x !== id))
 }
 

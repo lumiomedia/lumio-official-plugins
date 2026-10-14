@@ -50,6 +50,7 @@ vi.mock('../state/store', () => ({
   restoreDefaultChannels: (lang: string) => { state.restored.push(lang); return 10 },
   deleteChannel: (id: string) => { state.deleted.push(id) },
   readCachedPool: () => null,
+  readCachedRundown: () => null,
 }))
 vi.mock('./channel-player', () => ({
   ChannelPlayer: ({ initialChannelId, mode, startInZap, onClose }: { initialChannelId: string; mode: string; startInZap?: boolean; onClose(): void }) => (

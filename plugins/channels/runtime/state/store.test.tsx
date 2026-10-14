@@ -305,3 +305,31 @@ describe('useChannelClock', () => {
     }
   })
 })
+
+describe('tablålåset i lagringen', () => {
+  const pool = ['a', 'b', 'c'].map((ref, i) => ({ ref, title: ref, runtimeMin: 40 + i * 13, runtimeKnown: true, year: 2000, kind: 'movie' as const, source: 'library' as const, genres: [], play: { type: 'library' as const, key: ref, mediaType: 'movie' as const } }))
+
+  it('läggs och sparas när tablån visas; samma lås används nästa gång; regeländring och borttagning släpper det', async () => {
+    const { lockRundown, saveChannel, deleteChannel } = await import('./store')
+    const { buildRundown, programmeAt } = await import('../model/schedule')
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    saveChannel(ch)
+    const now = Date.now()
+    const first = lockRundown(ch, buildRundown(pool, ch.order, ch.seed), now)
+    const saved = storage.get(`lock:${ch.id}`) as { slots: unknown[] }
+    expect(saved.slots.length).toBeGreaterThan(0)
+    // Ny pool (en titel till): samma program inom låset.
+    const again = lockRundown(ch, buildRundown([...pool, { ...pool[0]!, ref: 'z', title: 'z' }], ch.order, ch.seed), now)
+    const at = (r: typeof first, t: number) => { const s = programmeAt(r, ch.airWindow, t); return s.kind === 'programme' ? s.item.ref : s.kind }
+    for (let t = now; t < now + 5 * 3600_000; t += 15 * 60_000) expect(at(again, t)).toBe(at(first, t))
+    // Namnbyte rör inte låset; ändrade regler släpper det.
+    saveChannel({ ...ch, name: 'B' })
+    expect(storage.has(`lock:${ch.id}`)).toBe(true)
+    saveChannel({ ...ch, era: '80s' })
+    expect(storage.has(`lock:${ch.id}`)).toBe(false)
+    lockRundown({ ...ch, era: '80s' }, buildRundown(pool, ch.order, ch.seed), now)
+    expect(storage.has(`lock:${ch.id}`)).toBe(true)
+    deleteChannel(ch.id)
+    expect(storage.has(`lock:${ch.id}`)).toBe(false)
+  })
+})

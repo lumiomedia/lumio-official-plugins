@@ -20335,7 +20335,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -40209,9 +40208,69 @@ ${cue.text}`).join("\n\n")}
     return words.slice(0, 2).map((w) => w[0].toUpperCase()).join("");
   }
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/model/lock.ts
+  var MIN = 6e4;
+  var LOCK_SPAN_MS = 6 * 36e5;
+  var LOCK_RENEW_MS = 3 * 36e5;
+  var LOCK_KEEP_PAST_MS = 36e5;
+  function lockSignature(channel) {
+    const { sources, genres, era, length, kind, order, airWindow, seed } = channel;
+    return JSON.stringify([sources, genres, era, length, kind, order, airWindow, seed]);
+  }
+  function lockHorizon(lock) {
+    const last2 = lock?.slots[lock.slots.length - 1];
+    return last2 ? last2.e : null;
+  }
+  function extendLock(lock, sig, slotAt, now2) {
+    const valid = lock && lock.sig === sig ? lock : null;
+    const kept = valid ? valid.slots.filter((x) => x.e > now2 - LOCK_KEEP_PAST_MS) : [];
+    const horizon = kept.length > 0 ? kept[kept.length - 1].e : null;
+    const live2 = horizon != null && horizon > now2;
+    if (valid && live2 && horizon - now2 >= LOCK_RENEW_MS) {
+      return kept.length === valid.slots.length ? valid : { sig, slots: kept };
+    }
+    const extending = live2 && kept.length > 0;
+    const slots = extending ? [...kept] : [];
+    let t = extending ? horizon : now2;
+    const until = now2 + LOCK_SPAN_MS;
+    let guard = 0;
+    while (t < until && guard < 400) {
+      guard += 1;
+      const slot = slotAt(t);
+      if (slot.kind === "empty") break;
+      const stop = slot.stop > t ? slot.stop : t + MIN;
+      const start2 = extending && slot.start < t ? t : slot.start;
+      if (slot.kind === "rest") slots.push({ r: "", s: start2, e: stop, o: 0 });
+      else slots.push({ r: slot.item.ref, s: start2, e: stop, o: Math.max(0, slot.minsIn - (t - start2) / MIN) });
+      t = stop;
+    }
+    if (slots.length === 0) return valid && kept.length === valid.slots.length ? valid : kept.length > 0 ? { sig, slots: kept } : null;
+    return { sig, slots };
+  }
+  function lockedSlotAt(lock, t) {
+    const slots = lock.slots;
+    if (slots.length === 0 || t < slots[0].s || t >= slots[slots.length - 1].e) return null;
+    let lo = 0;
+    let hi = slots.length - 1;
+    while (lo < hi) {
+      const mid = lo + hi + 1 >> 1;
+      if (slots[mid].s <= t) lo = mid;
+      else hi = mid - 1;
+    }
+    const hit = slots[lo];
+    return t < hit.e ? hit : null;
+  }
+  function parseLock(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const { sig, slots } = raw;
+    if (typeof sig !== "string" || !Array.isArray(slots)) return null;
+    const ok = slots.every((x) => x && typeof x === "object" && typeof x.r === "string" && Number.isFinite(x.s) && Number.isFinite(x.e) && Number.isFinite(x.o));
+    return ok ? { sig, slots } : null;
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/model/schedule.ts
   var EPOCH = new Date(2026, 0, 1, 0, 0, 0).getTime();
-  var MIN = 6e4;
+  var MIN2 = 6e4;
   var DAY_MIN = 24 * 60;
   function mulberry32(seed) {
     let a = seed >>> 0;
@@ -40276,16 +40335,16 @@ ${cue.text}`).join("\n\n")}
     for (let k = -2; k <= 2; k += 1) {
       const y = d.getFullYear(), m = d.getMonth(), dd = d.getDate() + k;
       const start2 = new Date(y, m, dd, 0, s).getTime();
-      const end = Math.min(new Date(y, m, dd, 0, e).getTime(), start2 + (e - s) * MIN);
-      out.push({ start: start2, end, day: Math.round((new Date(y, m, dd).getTime() - EPOCH) / (DAY_MIN * MIN)) });
+      const end = Math.min(new Date(y, m, dd, 0, e).getTime(), start2 + (e - s) * MIN2);
+      out.push({ start: start2, end, day: Math.round((new Date(y, m, dd).getTime() - EPOCH) / (DAY_MIN * MIN2)) });
     }
     return out;
   }
   function airMinutesUntil(window2, t) {
-    if (window2 === "always") return (t - EPOCH) / MIN;
+    if (window2 === "always") return (t - EPOCH) / MIN2;
     const span = spansAround(window2, t).filter((x) => x.start <= t).pop();
     const [s, e] = SPANS[window2];
-    return span.day * AIR_PER_DAY[window2] + Math.min(e - s, (t - span.start) / MIN);
+    return span.day * AIR_PER_DAY[window2] + Math.min(e - s, (t - span.start) / MIN2);
   }
   function isOnAir(window2, t) {
     if (window2 === "always") return true;
@@ -40310,7 +40369,43 @@ ${cue.text}`).join("\n\n")}
     }
     return lo;
   }
+  var LOCK = /* @__PURE__ */ Symbol.for("lumio.channels.lock");
+  function withLock(rundown, lock) {
+    if (!lock || rundown.length === 0) return rundown;
+    const out = [...rundown];
+    const index = /* @__PURE__ */ new Map();
+    rundown.forEach((item, i) => {
+      if (!index.has(item.ref)) index.set(item.ref, i);
+    });
+    Object.defineProperty(out, LOCK, { value: { lock, index }, enumerable: false });
+    return out;
+  }
+  function attachedLock(rundown) {
+    return rundown[LOCK]?.lock ?? null;
+  }
   function programmeAt(rundown, window2, t) {
+    if (rundown.length === 0) return { kind: "empty" };
+    const attached = rundown[LOCK];
+    if (attached) {
+      const hit = lockedSlotAt(attached.lock, t);
+      if (hit) {
+        if (hit.r === "") return { kind: "rest", start: hit.s, stop: hit.e, nextAir: hit.e };
+        const index = attached.index.get(hit.r);
+        if (index != null) {
+          const item = rundown[index];
+          const runtime2 = Math.max(1, item.runtimeMin);
+          const minsIn = hit.o + (t - hit.s) / MIN2;
+          return { kind: "programme", item, index, start: hit.s, stop: hit.e, minsIn, minsLeft: runtime2 - minsIn, pct: minsIn / runtime2 };
+        }
+      }
+      const horizon = lockHorizon(attached.lock);
+      const free = computedAt(rundown, window2, t);
+      if (horizon != null && t >= horizon && free.kind !== "empty" && free.start < horizon) return { ...free, start: horizon };
+      return free;
+    }
+    return computedAt(rundown, window2, t);
+  }
+  function computedAt(rundown, window2, t) {
     if (rundown.length === 0) return { kind: "empty" };
     let span = null;
     if (window2 !== "always") {
@@ -40329,8 +40424,8 @@ ${cue.text}`).join("\n\n")}
     const runtime2 = Math.max(1, item.runtimeMin);
     const minsIn = position - starts[index];
     const minsLeft = runtime2 - minsIn;
-    const start2 = span ? Math.max(t - minsIn * MIN, span.start) : t - minsIn * MIN;
-    const stop = span ? Math.min(t + minsLeft * MIN, span.end) : t + minsLeft * MIN;
+    const start2 = span ? Math.max(t - minsIn * MIN2, span.start) : t - minsIn * MIN2;
+    const stop = span ? Math.min(t + minsLeft * MIN2, span.end) : t + minsLeft * MIN2;
     return { kind: "programme", item, index, start: start2, stop, minsIn, minsLeft, pct: minsIn / runtime2 };
   }
   function listing(rundown, window2, from, to) {
@@ -40342,7 +40437,7 @@ ${cue.text}`).join("\n\n")}
       const slot = programmeAt(rundown, window2, t);
       if (slot.kind === "empty") break;
       out.push(slot);
-      t = slot.stop > t ? slot.stop : t + MIN;
+      t = slot.stop > t ? slot.stop : t + MIN2;
     }
     return out;
   }
@@ -41147,6 +41242,15 @@ ${cue.text}`).join("\n\n")}
     const index = readPoolIndex();
     if (!index.includes(id)) writePoolIndex([...index, id]);
   }
+  function readScheduleLock(id) {
+    return readPluginJson(PLUGIN_ID, `lock:${id}`, null);
+  }
+  function writeScheduleLock(id, lock) {
+    writePluginJson(PLUGIN_ID, `lock:${id}`, lock, { emitChange: false });
+  }
+  function removeScheduleLock(id) {
+    removePluginStorageItem(PLUGIN_ID, `lock:${id}`, { emitChange: false });
+  }
   var readPoolIndex = () => {
     const raw = readPluginJson(PLUGIN_ID, "poolIndex", []);
     return Array.isArray(raw) ? raw : [];
@@ -41154,6 +41258,7 @@ ${cue.text}`).join("\n\n")}
   var writePoolIndex = (ids) => writePluginJson(PLUGIN_ID, "poolIndex", ids, { emitChange: false });
   function removePoolCache(id) {
     removePluginStorageItem(PLUGIN_ID, `poolCache:${id}`, { emitChange: false });
+    removeScheduleLock(id);
     writePoolIndex(readPoolIndex().filter((x) => x !== id));
   }
   function prunePoolCaches(keep) {
@@ -41277,6 +41382,8 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/state/store.ts
   function saveChannel(def) {
     const all = readChannels();
+    const before = all.find((c) => c.id === def.id);
+    if (before && lockSignature(before) !== lockSignature(def)) removeScheduleLock(def.id);
     writeChannels(all.some((c) => c.id === def.id) ? all.map((c) => c.id === def.id ? def : c) : [...all, def]);
   }
   function seedDefaultChannels(lang) {
@@ -41294,6 +41401,27 @@ ${cue.text}`).join("\n\n")}
   function deleteChannel(id) {
     writeChannels(readChannels().filter((c) => c.id !== id));
     removePoolCache(id);
+  }
+  function lockRundown(channel, rundown, now2 = Date.now()) {
+    if (rundown.length === 0) return rundown;
+    const stored = parseLock(readScheduleLock(channel.id));
+    const free = attachedLock(rundown) ? rundown.slice() : rundown;
+    const next2 = extendLock(stored, lockSignature(channel), (t) => programmeAt(free, channel.airWindow, t), now2);
+    if (next2 && next2 !== stored) {
+      try {
+        writeScheduleLock(channel.id, next2);
+      } catch {
+      }
+    }
+    return withLock(rundown, next2);
+  }
+  function readCachedRundown(channel) {
+    const pool = readCachedPool(channel.id);
+    return pool ? lockRundown(channel, buildRundown(pool, channel.order, channel.seed)) : null;
+  }
+  function renewAt(rundown) {
+    const horizon = lockHorizon(attachedLock(rundown));
+    return horizon == null ? null : horizon - LOCK_RENEW_MS;
   }
   var inflightPools = /* @__PURE__ */ new Map();
   function settledJob(pool) {
@@ -41406,11 +41534,19 @@ ${cue.text}`).join("\n\n")}
     }, [key]);
     const view = channel ? state2?.key === key ? state2.view : stale ? { pool: stale, complete: false, stale: true } : null : null;
     const pool = view?.pool ?? EMPTY4;
+    const [renew, setRenew] = useState(0);
+    const lockSig = channel ? lockSignature(channel) : "";
     const rundown = useMemo(
-      () => channel ? buildRundown(pool, channel.order, channel.seed) : EMPTY4,
-      [pool, channel?.order, channel?.seed]
+      () => channel ? lockRundown(channel, buildRundown(pool, channel.order, channel.seed)) : EMPTY4,
+      [pool, lockSig, renew]
       // eslint-disable-line react-hooks/exhaustive-deps
     );
+    const due = renewAt(rundown);
+    useEffect(() => {
+      if (due == null) return;
+      const id = setTimeout(() => setRenew((n) => n + 1), Math.max(1e3, Math.min(due - Date.now(), 2 ** 31 - 1)));
+      return () => clearTimeout(id);
+    }, [due]);
     return {
       pool,
       rundown,
@@ -41501,15 +41637,15 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/guide-layout.ts
-  var MIN2 = 6e4;
-  var HALF_HOUR = 30 * MIN2;
+  var MIN3 = 6e4;
+  var HALF_HOUR = 30 * MIN3;
   var GUIDE_SPAN_MIN = 210;
   var CHANNELS_PAGE_ID = "channels";
   function guideWindow(now2) {
     const d = new Date(now2);
     d.setMinutes(d.getMinutes() < 30 ? 0 : 30, 0, 0);
     const from = d.getTime();
-    const to = from + GUIDE_SPAN_MIN * MIN2;
+    const to = from + GUIDE_SPAN_MIN * MIN3;
     const ticks = [];
     for (let t = from; t < to; t += HALF_HOUR) ticks.push(t);
     return { from, to, ticks };
@@ -41920,7 +42056,7 @@ ${cue.text}`).join("\n\n")}
   var ROW_H = 54;
   var TV_ROW_H = 72;
   var TV_ROW_H_COMPACT = 70;
-  var MIN3 = 6e4;
+  var MIN4 = 6e4;
   var GUIDE_FADE = { desktop: 28, tv: 40 };
   function guideFadeMask(isTv) {
     const fade = isTv ? tvu(GUIDE_FADE.tv) : `${GUIDE_FADE.desktop}px`;
@@ -42137,7 +42273,7 @@ ${cue.text}`).join("\n\n")}
   function Block({ slot, win, now: now2, lit, isTv, t }) {
     const box = blockBox(slot, win);
     if (!box) return null;
-    const visibleMin = (Math.min(slot.stop, win.to) - Math.max(slot.start, win.from)) / MIN3;
+    const visibleMin = (Math.min(slot.stop, win.to) - Math.max(slot.start, win.from)) / MIN4;
     const showTime = visibleMin >= 30;
     const isRest = slot.kind === "rest";
     const current2 = !isRest && slot.start <= now2 && now2 < slot.stop;
@@ -43175,8 +43311,7 @@ ${cue.text}`).join("\n\n")}
   var OSD_HIDE_MS = 5e3;
   var BACK_KEYS2 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   function cachedRundown(c) {
-    const pool = readCachedPool(c.id);
-    return pool ? buildRundown(pool, c.order, c.seed) : null;
+    return readCachedRundown(c);
   }
   var clockNow = () => typeof performance !== "undefined" ? performance.now() : Date.now();
   function ChannelPlayer({ channels, initialChannelId, mode: initialMode, startInZap, onClose, onZap, onEditChannel }) {
@@ -43983,7 +44118,7 @@ ${cue.text}`).join("\n\n")}
     evenings: "windowEvenings",
     late: "windowLate"
   };
-  var MIN4 = 6e4;
+  var MIN5 = 6e4;
   var MAX_ROWS = 8;
   function sourceCounts(pools) {
     return { library: pools.library.length, watchlist: pools.watchlist.length, debrid: pools.debrid.length, vod: pools.vod.length };
@@ -43995,7 +44130,7 @@ ${cue.text}`).join("\n\n")}
   function tonightEnd(now2) {
     const d = new Date(now2);
     let end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 3, 0, 0).getTime();
-    while (end - now2 < 60 * MIN4) {
+    while (end - now2 < 60 * MIN5) {
       const e = new Date(end);
       end = new Date(e.getFullYear(), e.getMonth(), e.getDate() + 1, 3, 0, 0).getTime();
     }
@@ -44594,8 +44729,7 @@ ${cue.text}`).join("\n\n")}
   var HALF_HOUR3 = 30 * 6e4;
   var MAX_SHIFT2 = 46;
   function cachedRundown2(channel) {
-    const pool = readCachedPool(channel.id);
-    return pool ? buildRundown(pool, channel.order, channel.seed) : null;
+    return readCachedRundown(channel);
   }
   function startChannel(sorted, params, rundownOf = cachedRundown2) {
     const explicit = params.channelId ? sorted.find((c) => c.id === params.channelId) : void 0;
@@ -44998,7 +45132,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.9",
+    version: "0.1.10",
     description: S.description,
     preinstalled: false,
     register(ctx) {
