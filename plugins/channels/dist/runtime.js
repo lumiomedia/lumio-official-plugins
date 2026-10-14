@@ -20335,6 +20335,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -32288,12 +32289,12 @@ ${cue.text}`).join("\n\n")}
           }));
           if (controller.signal.aborted) return;
           const hydratedItems = hydrated.filter((entry) => entry !== null);
-          const usable = creditsLibraryIdSets ? hydratedItems.filter((entry) => itemInLibrary(entry, creditsLibraryIdSets)).slice(0, 5) : hydratedItems;
-          if (usable.length === 0) {
+          const usable2 = creditsLibraryIdSets ? hydratedItems.filter((entry) => itemInLibrary(entry, creditsLibraryIdSets)).slice(0, 5) : hydratedItems;
+          if (usable2.length === 0) {
             leaveCreditsModeRef.current();
             return;
           }
-          setCreditsItems(usable);
+          setCreditsItems(usable2);
         } catch {
         }
       })();
@@ -36933,7 +36934,7 @@ ${cue.text}`).join("\n\n")}
     options,
     onChange,
     width,
-    dim,
+    dim: dim2,
     compact,
     placeholder,
     maxMenuHeight = 260,
@@ -37088,7 +37089,7 @@ ${cue.text}`).join("\n\n")}
             background: TOKENS.surface2,
             border: `1px solid ${open2 ? TOKENS.accent : TOKENS.borderStrong}`,
             borderRadius: 8,
-            color: dim ? TOKENS.textDim : TOKENS.text,
+            color: dim2 ? TOKENS.textDim : TOKENS.text,
             fontSize: compact ? 13 : 14,
             fontWeight: 500,
             display: "flex",
@@ -41528,6 +41529,82 @@ ${cue.text}`).join("\n\n")}
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   }
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tv.ts
+  init_react_shim();
+  init_tv_focus_shim();
+  var tvu = (n) => `calc(${n} * var(--tv-u, 1px))`;
+  var dim = (px, tv, tvPx = px) => tv ? tvu(tvPx) : px;
+  var dimS = (px, tv, tvPx = px) => tv ? tvu(tvPx) : `${px}px`;
+  var TV_TYPE_U = { micro: 12, label: 13, small: 15.5, body: 16, h3: 20, h2: 23, h1: 32 };
+  function typeRole(px) {
+    if (px <= 10) return "micro";
+    if (px <= 11.5) return "label";
+    if (px <= 13) return "small";
+    if (px <= 15) return "body";
+    if (px <= 17) return "h3";
+    if (px <= 22) return "h2";
+    return "h1";
+  }
+  function typeSize(px, tv, role) {
+    if (!tv) return `${px}px`;
+    const r = role ?? typeRole(px);
+    return `var(--st-${r}, ${tvu(TV_TYPE_U[r])})`;
+  }
+  var TV_HERO_TITLE = "2.25rem";
+  var TV_CONTENT_LEFT = 100;
+  var TV_CONTENT_RIGHT = 60;
+  function tvHeroButton() {
+    const k = "var(--tv-button-scale, 1)";
+    return {
+      height: `calc(2.5rem * ${k})`,
+      minHeight: `calc(2.5rem * ${k})`,
+      padding: `0 calc(1.5rem * ${k})`,
+      fontSize: `calc(0.875rem * ${k})`
+    };
+  }
+  var usable = (el) => !el.disabled && !el.closest('[aria-hidden="true"], [data-visible="0"]');
+  function pickInitTarget(root) {
+    const init = Array.from(root.querySelectorAll("[data-init]")).find(usable);
+    if (init) return init;
+    return Array.from(root.querySelectorAll("[data-f]")).find(usable) ?? null;
+  }
+  var ASSERT_MS = 900;
+  function useTvViewFocus(rootRef, isTv, key = null) {
+    const api = useTvFocus();
+    useEffect(() => {
+      if (!isTv) return;
+      const root = rootRef.current;
+      if (!root) return;
+      let frame = 0;
+      let stopped = false;
+      const stop = () => {
+        stopped = true;
+      };
+      window.addEventListener("keydown", stop, true);
+      const deadline = Date.now() + ASSERT_MS;
+      const place = () => {
+        const target2 = pickInitTarget(root);
+        if (target2 && document.activeElement !== target2 && !root.contains(document.activeElement)) target2.focus({ preventScroll: false });
+      };
+      if (api?.focusInit && root.querySelector("[data-init]")) api.focusInit(root);
+      place();
+      const tick2 = () => {
+        if (stopped || !root.isConnected) return;
+        place();
+        if (Date.now() < deadline) frame = window.requestAnimationFrame(tick2);
+      };
+      frame = window.requestAnimationFrame(tick2);
+      return () => {
+        window.cancelAnimationFrame(frame);
+        window.removeEventListener("keydown", stop, true);
+      };
+    }, [isTv, key]);
+  }
+  function refocusLater(find) {
+    window.setTimeout(() => find()?.focus({ preventScroll: true }), 0);
+  }
+  var tvType = (role) => typeSize(0, true, role);
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tokens.ts
   var C = {
     /** Appens grund (--base-950, följer temat; svart som standard). */
@@ -41586,7 +41663,7 @@ ${cue.text}`).join("\n\n")}
     };
   }
   function belowMenuPill(isTv, isMobile) {
-    if (isTv) return "calc(5.25rem + var(--tv-scene-top-inset, 0px))";
+    if (isTv) return "calc(var(--tv-scene-chrome-inset, calc(3.125rem + var(--tv-scene-top-inset, 0px))) + 2.125rem)";
     return `calc(var(--page-top-line, 1rem) + ${isMobile ? 66 : 58}px)`;
   }
   var FONT3 = {
@@ -41595,7 +41672,7 @@ ${cue.text}`).join("\n\n")}
     mono: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
   };
   var RADIUS = { chip: 8, card: 10, osd: 18, pill: 999 };
-  var fontSize = (px, tv) => tv ? `${px / 16}rem` : `${px}px`;
+  var fontSize = (px, tv) => typeSize(px, tv);
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/use-text.ts
   init_react_shim();
@@ -41627,10 +41704,10 @@ ${cue.text}`).join("\n\n")}
     const slider = layout === "slider";
     const open2 = (channelId) => onNavigate({ pageId: CHANNELS_PAGE_ID, params: { channelId, play: "live" } });
     return /* @__PURE__ */ jsxs("section", { "data-channels-home-row": "", style: { color: C.text, fontFamily: FONT3.ui }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 14 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: dim(12, isTv), marginBottom: dim(14, isTv) }, children: [
         /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
           /* @__PURE__ */ jsx("h2", { "data-home-row-title": "", style: { margin: 0, fontSize: fontSize(21, isTv), fontWeight: 600, letterSpacing: "-0.2px" }, children: t("homeRowTitle") }),
-          /* @__PURE__ */ jsx("p", { style: { margin: "4px 0 0", fontSize: fontSize(14, isTv), color: C.textDim }, children: t("homeRowSubtitle", { time: formatClock2(now2) }) })
+          /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(4, isTv)} 0 0`, fontSize: fontSize(14, isTv), color: C.textDim }, children: t("homeRowSubtitle", { time: formatClock2(now2) }) })
         ] }),
         /* @__PURE__ */ jsx(
           "button",
@@ -41642,7 +41719,7 @@ ${cue.text}`).join("\n\n")}
             style: {
               flexShrink: 0,
               cursor: "pointer",
-              padding: "6px 12px",
+              padding: `${dimS(6, isTv)} ${dimS(12, isTv, 16)}`,
               borderRadius: RADIUS.pill,
               ...glass(isTv, { fill: C.pillBg, blur: 20 }),
               color: C.textSoft,
@@ -41704,7 +41781,7 @@ ${cue.text}`).join("\n\n")}
             cursor: "pointer",
             textAlign: "left",
             color: C.text,
-            borderRadius: RADIUS.card,
+            borderRadius: dim(RADIUS.card, isTv),
             border: `1px solid ${C.glassBorder}`,
             // Bild under en platt mörkning; utan bild glas med kanalens ton (ingen gradient).
             background: m.backdropUrl ? `center / cover no-repeat url("${m.backdropUrl}"), ${C.solid}` : C.glass
@@ -41716,10 +41793,11 @@ ${cue.text}`).join("\n\n")}
               {
                 style: {
                   position: "absolute",
-                  top: 8,
-                  left: 8,
-                  padding: "2px 7px",
-                  borderRadius: 6,
+                  top: dim(8, isTv),
+                  left: dim(8, isTv),
+                  padding: `${dimS(2, isTv)} ${dimS(7, isTv)}`,
+                  borderRadius: dim(6, isTv),
+                  lineHeight: 1.3,
                   background: "rgba(0,0,0,0.6)",
                   fontFamily: FONT3.mono,
                   fontSize: fontSize(10, isTv),
@@ -41734,11 +41812,12 @@ ${cue.text}`).join("\n\n")}
                 "data-card-badge": "",
                 style: {
                   position: "absolute",
-                  top: 8,
-                  right: 8,
-                  padding: "2px 7px",
+                  top: dim(8, isTv),
+                  right: dim(8, isTv),
+                  padding: `${dimS(2, isTv)} ${dimS(7, isTv)}`,
                   borderRadius: RADIUS.pill,
                   fontFamily: FONT3.mono,
+                  lineHeight: 1.3,
                   fontSize: fontSize(9.5, isTv),
                   fontWeight: 600,
                   letterSpacing: "0.06em",
@@ -41748,7 +41827,7 @@ ${cue.text}`).join("\n\n")}
                 children: badge.toUpperCase()
               }
             ) : null,
-            /* @__PURE__ */ jsxs("span", { style: { position: "absolute", left: 10, right: 10, bottom: 10, display: "block" }, children: [
+            /* @__PURE__ */ jsxs("span", { style: { position: "absolute", left: dim(10, isTv), right: dim(10, isTv), bottom: dim(10, isTv), display: "block" }, children: [
               /* @__PURE__ */ jsx(
                 "span",
                 {
@@ -41766,14 +41845,14 @@ ${cue.text}`).join("\n\n")}
                   children: title
                 }
               ),
-              hasTitle ? /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { display: "block", height: 3, marginTop: 7, borderRadius: 2, background: "rgba(255,255,255,0.18)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("span", { style: { display: "block", height: "100%", width: `${Math.round(m.pct * 100)}%`, background: C.accent } }) }) : null
+              hasTitle ? /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { display: "block", height: dim(3, isTv), marginTop: dim(7, isTv), borderRadius: 2, background: "rgba(255,255,255,0.18)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("span", { style: { display: "block", height: "100%", width: `${Math.round(m.pct * 100)}%`, background: C.accent } }) }) : null
             ] })
           ]
         }
       ),
-      /* @__PURE__ */ jsxs("div", { style: { padding: "8px 2px 0", minWidth: 0 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { padding: `${dimS(8, isTv)} ${dimS(2, isTv)} 0`, minWidth: 0, lineHeight: 1.3 }, children: [
         /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: fontSize(9, isTv), letterSpacing: "0.22em", color: "rgba(203,213,225,0.6)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: t("zapChannelLine", { n: m.number, name: m.name.toUpperCase() }) }),
-        m.nextTitle ? /* @__PURE__ */ jsx("span", { style: { display: "block", marginTop: 3, fontSize: fontSize(12.8, isTv), fontWeight: 600, color: C.textSoft, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: t("homeCardNext", { title: m.nextTitle }) }) : null
+        m.nextTitle ? /* @__PURE__ */ jsx("span", { style: { display: "block", marginTop: dim(3, isTv), fontSize: fontSize(12.8, isTv), fontWeight: 600, color: C.textSoft, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: t("homeCardNext", { title: m.nextTitle }) }) : null
       ] })
     ] });
   });
@@ -41853,7 +41932,7 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/badge.tsx
   init_jsx_runtime_shim();
-  function ChannelBadge({ channel, size = 44, style }) {
+  function ChannelBadge({ channel, size = 44, isTv = false, style }) {
     return /* @__PURE__ */ jsx(
       "span",
       {
@@ -41864,16 +41943,17 @@ ${cue.text}`).join("\n\n")}
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
-          width: size,
-          height: size,
-          borderRadius: Math.round(size * 0.18),
+          width: isTv ? tvu(size) : size,
+          height: isTv ? tvu(size) : size,
+          borderRadius: isTv ? tvu(Math.round(size * 0.18)) : Math.round(size * 0.18),
           background: hueTint(channel.hue, 0.26),
           border: `1px solid ${hueTint(channel.hue, 0.45)}`,
           color: C.text,
           fontFamily: FONT3.mono,
           fontWeight: 700,
           // Relativt badgen, inte en fast px-storlek för text.
-          fontSize: `${size * 0.34 / 16}rem`,
+          fontSize: isTv ? tvu(size * 0.34) : `${size * 0.34 / 16}rem`,
+          lineHeight: 1,
           letterSpacing: "0.02em",
           ...style
         },
@@ -41885,24 +41965,27 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-guide.tsx
   init_jsx_runtime_shim();
   var ROW_H = 54;
+  var TV_ROW_H = 72;
+  var TV_ROW_H_COMPACT = 70;
   var MIN3 = 6e4;
-  function ChannelGuide({ channels, selectedId, window: win, now: now2, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, compact }) {
+  function ChannelGuide({ channels, selectedId, window: win, now: now2, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, compact, initId }) {
     const labelW = isMobile ? 96 : compact ? 180 : 220;
-    const rowH = compact ? 44 : ROW_H;
-    const columns = `${labelW}px minmax(${isMobile ? 544 : 0}px, 1fr)`;
+    const rowH = isTv ? tvu(compact ? TV_ROW_H_COMPACT : TV_ROW_H) : compact ? 44 : ROW_H;
+    const columns = `${dimS(labelW, isTv, compact ? 230 : 260)} minmax(${isMobile ? 544 : 0}px, 1fr)`;
     const nowPct = now2 >= win.from && now2 <= win.to ? nowLinePct(now2, win) : null;
-    return /* @__PURE__ */ jsx("section", { "data-channels-guide": "", style: { position: "relative", color: C.text, fontFamily: FONT3.ui, padding: compact ? 0 : isMobile ? "0 0 24px" : isTv ? "0 2.5rem 2rem" : "0 32px 32px" }, children: /* @__PURE__ */ jsx("div", { "data-row": isMobile ? "" : void 0, style: { overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: isMobile ? 640 : void 0 }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: 34, borderBottom: "1px solid rgba(255,255,255,0.06)" }, children: [
-        /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : 8, paddingBottom: 8, fontSize: fontSize(10.5, isTv), letterSpacing: "0.18em", color: C.textDim }, children: t("guideHeader") }),
+    return /* @__PURE__ */ jsx("section", { "data-channels-guide": "", style: { position: "relative", color: C.text, fontFamily: FONT3.ui, padding: compact ? 0 : isMobile ? "0 0 24px" : isTv ? `0 ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT - 8)}` : "0 32px 32px" }, children: /* @__PURE__ */ jsx("div", { "data-row": isMobile ? "" : void 0, style: { overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: isMobile ? 640 : void 0 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textDim }, children: t("guideHeader") }),
         /* @__PURE__ */ jsx("div", { style: { position: "relative", height: "100%" }, children: win.ticks.map((tick2) => /* @__PURE__ */ jsx(
           "span",
           {
             style: {
               position: "absolute",
-              bottom: 8,
+              bottom: dim(8, isTv),
               left: `${(tick2 - win.from) / (win.to - win.from) * 100}%`,
               fontFamily: FONT3.mono,
               fontSize: fontSize(11, isTv),
+              lineHeight: 1.2,
               color: C.textDim,
               whiteSpace: "nowrap"
             },
@@ -41911,7 +41994,7 @@ ${cue.text}`).join("\n\n")}
           tick2
         )) })
       ] }),
-      channels.map((channel) => /* @__PURE__ */ jsx(
+      channels.map((channel, i) => /* @__PURE__ */ jsx(
         GuideRow,
         {
           channel,
@@ -41922,6 +42005,8 @@ ${cue.text}`).join("\n\n")}
           columns,
           rowH,
           clickPlays: !!compact,
+          init: isTv && initId === channel.id,
+          fUp: isTv && i === 0 && !compact ? "[data-hero-dot][data-current]" : void 0,
           isTv,
           isMobile,
           t,
@@ -41935,7 +42020,7 @@ ${cue.text}`).join("\n\n")}
     ] }) }) });
   }
   var stickyLabel = (isMobile) => isMobile ? { position: "sticky", left: 0, zIndex: 2, background: C.solid } : {};
-  var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, rowH, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }) {
+  var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, rowH, init, fUp, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }) {
     const plays = isTv || clickPlays;
     const [hover, setHover] = useState(false);
     const [focus, setFocus] = useState(false);
@@ -41966,7 +42051,8 @@ ${cue.text}`).join("\n\n")}
         role: "button",
         tabIndex: 0,
         "data-f": "",
-        "data-init": isTv && selected ? "" : void 0,
+        "data-init": init ? "" : void 0,
+        "data-f-up": fUp,
         "data-channel-row": channel.id,
         "aria-pressed": selected,
         onClick: () => plays ? onPlay(channel.id) : onSelect(channel.id),
@@ -41984,19 +42070,22 @@ ${cue.text}`).join("\n\n")}
           height: rowH,
           cursor: "pointer",
           outline: "none",
+          boxSizing: "border-box",
           borderBottom: `1px solid ${selected ? "transparent" : "rgba(255,255,255,0.05)"}`,
-          borderRadius: selected ? RADIUS.card : 0,
+          borderRadius: selected ? dim(RADIUS.card, isTv) : 0,
+          // TV: fokusmotorn rullar in raden; luft så den inte hamnar under kanten.
+          ...isTv ? { scrollMarginBlock: tvu(120) } : {},
           background: selected ? C.glassDenseSoft : "transparent",
           boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : "none"
         },
         children: [
-          /* @__PURE__ */ jsxs("div", { style: { ...stickyLabel(isMobile), display: "flex", alignItems: "center", gap: isMobile ? 6 : 12, padding: isMobile ? "0 6px 0 16px" : "0 12px 0 8px", minWidth: 0, background: isMobile ? selected ? C.solidSelected : C.solid : void 0 }, children: [
-            !isMobile ? /* @__PURE__ */ jsx("span", { style: { width: 18, textAlign: "right", fontFamily: FONT3.mono, fontSize: fontSize(11, isTv), color: C.textMute, flexShrink: 0 }, children: channel.number }) : null,
-            /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 22, style: { width: 30, borderRadius: 5 } }),
-            /* @__PURE__ */ jsx("span", { style: { fontSize: fontSize(isMobile ? 12 : 13.5, isTv), fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }, children: isMobile ? channel.number : channel.name })
+          /* @__PURE__ */ jsxs("div", { style: { ...stickyLabel(isMobile), display: "flex", alignItems: "center", gap: isMobile ? 6 : dim(12, isTv), padding: isMobile ? "0 6px 0 16px" : `0 ${dimS(12, isTv)} 0 ${dimS(8, isTv)}`, minWidth: 0, background: isMobile ? selected ? C.solidSelected : C.solid : void 0 }, children: [
+            !isMobile ? /* @__PURE__ */ jsx("span", { style: { width: dim(18, isTv, 24), textAlign: "right", fontFamily: FONT3.mono, fontSize: fontSize(11, isTv), lineHeight: 1.2, color: C.textMute, flexShrink: 0 }, children: channel.number }) : null,
+            /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 22, isTv, style: { width: dim(30, isTv), borderRadius: dim(5, isTv) } }),
+            /* @__PURE__ */ jsx("span", { style: { fontSize: fontSize(isMobile ? 12 : 13.5, isTv), lineHeight: 1.25, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }, children: isMobile ? channel.number : channel.name })
           ] }),
           /* @__PURE__ */ jsxs("div", { style: { position: "relative", overflow: "hidden" }, children: [
-            slots.length === 0 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: 10, top: 0, bottom: 0, display: "flex", alignItems: "center", fontSize: fontSize(12, isTv), color: C.textMute }, children: loading2 ? t("guideLoading") : t("guideEmpty") }) : slots.map((slot) => /* @__PURE__ */ jsx(Block, { slot, win, now: now2, lit, isTv, t }, `${slot.kind}:${slot.start}`)),
+            slots.length === 0 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: dim(10, isTv), top: 0, bottom: 0, display: "flex", alignItems: "center", fontSize: fontSize(12, isTv), lineHeight: 1.2, color: C.textMute }, children: loading2 ? t("guideLoading") : t("guideEmpty") }) : slots.map((slot) => /* @__PURE__ */ jsx(Block, { slot, win, now: now2, lit, isTv, t }, `${slot.kind}:${slot.start}`)),
             nowPct != null ? /* @__PURE__ */ jsx(
               "span",
               {
@@ -42036,18 +42125,20 @@ ${cue.text}`).join("\n\n")}
           "data-guide-block": isRest ? "rest" : current2 ? "current" : "idle",
           style: {
             position: "absolute",
-            top: 6,
-            bottom: 6,
+            top: dim(6, isTv),
+            bottom: dim(6, isTv),
             left: `calc(${box.leftPct}% + 2px)`,
             width: `calc(${box.widthPct}% - 4px)`,
             boxSizing: "border-box",
-            padding: "5px 9px",
-            borderRadius: 8,
+            padding: `${dimS(5, isTv)} ${dimS(9, isTv, 12)}`,
+            borderRadius: dim(8, isTv),
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            gap: 1,
+            gap: dim(1, isTv, 2),
+            // Eget radavstånd: TV-lägets <main> ärver 1,4, som sprängde blocket och klippte titeln.
+            lineHeight: 1.2,
             // Ljusgrå tät yta (läsbar även över herobilden), ett steg ljusare på raden
             // under pekaren/fokus. Pågående program tydligt orange. Vila = dämpad, streckad.
             background: isRest ? C.glassDenseSoft : current2 ? lit ? C.guideCurrentLit : C.guideCurrent : lit ? C.guideBlockLit : C.guideBlock,
@@ -42056,8 +42147,8 @@ ${cue.text}`).join("\n\n")}
             color: isRest ? C.textMute : C.text
           },
           children: [
-            /* @__PURE__ */ jsx("span", { style: { fontSize: fontSize(12, isTv), fontWeight: current2 ? 600 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: title }),
-            showTime ? /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: fontSize(10, isTv), color: isRest ? C.textMute : C.textDim, whiteSpace: "nowrap" }, children: formatClock2(slot.start) }) : null
+            /* @__PURE__ */ jsx("span", { "data-guide-block-title": "", style: { fontSize: fontSize(12, isTv), lineHeight: 1.2, fontWeight: current2 ? 600 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }, children: title }),
+            showTime ? /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: fontSize(10, isTv), lineHeight: 1.2, color: isRest ? C.textMute : C.textDim, whiteSpace: "nowrap", flexShrink: 0 }, children: formatClock2(slot.start) }) : null
           ]
         }
       )
@@ -42068,7 +42159,7 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
-  var FADE_EXTRA = { desktop: 170, mobile: 110 };
+  var FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 };
   var SWIPE_PX = 50;
   var HERO_CSS = "@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }";
   function useHostPlayerActive() {
@@ -42138,7 +42229,7 @@ ${cue.text}`).join("\n\n")}
     const heroRef = useRef(null);
     const hostPlayer = useHostPlayerActive();
     const layerRef = useRef(null);
-    const extra = isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop;
+    const extra = isMobile ? FADE_EXTRA.mobile : isTv ? FADE_EXTRA.tv : FADE_EXTRA.desktop;
     const [geom, setGeom] = useState(null);
     const geomRef = useRef(null);
     useLayoutEffect(() => {
@@ -42212,17 +42303,6 @@ ${cue.text}`).join("\n\n")}
       const dx = p.clientX - start2.x;
       if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(p.clientY - start2.y)) onStep?.(dx < 0 ? 1 : -1);
     };
-    const onActionsKey = (e) => {
-      if (!isTv || !many || e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      const buttons = [...e.currentTarget.querySelectorAll("button:not([disabled])")];
-      const at = buttons.indexOf(document.activeElement);
-      if (at < 0) return;
-      if (e.key === "ArrowLeft" && at === 0 || e.key === "ArrowRight" && at === buttons.length - 1) {
-        e.preventDefault();
-        e.stopPropagation();
-        onStep?.(e.key === "ArrowLeft" ? -1 : 1);
-      }
-    };
     let title;
     let meta;
     if (programme) {
@@ -42253,8 +42333,9 @@ ${cue.text}`).join("\n\n")}
         onTouchEnd,
         style: {
           position: "relative",
-          minHeight: 330,
-          padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 24px" : isTv ? "2.5rem 2rem" : "32px 28px"}`,
+          minHeight: dim(330, isTv),
+          // TV: appens innehållslinje (100 enheter) för pillren, texten och knapparna.
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(28)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 24px" : "32px 28px"}`,
           color: C.text,
           fontFamily: FONT3.ui,
           display: "flex",
@@ -42331,14 +42412,14 @@ ${cue.text}`).join("\n\n")}
               ]
             }
           ),
-          /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { position: "relative", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { position: "relative", display: "flex", alignItems: "center", gap: dim(8, isTv), flexWrap: "wrap" }, children: [
             /* @__PURE__ */ jsx(Pill, { isTv, onClick: () => requestBrowseBack(), children: t("pageHome") }),
             /* @__PURE__ */ jsx(Pill, { isTv, active: true, onClick: onManage, children: t("pageChannels") }),
             /* @__PURE__ */ jsx(Pill, { isTv, onClick: onNewChannel, children: t("pageNewChannel") })
           ] }),
-          /* @__PURE__ */ jsxs("div", { style: { position: "relative", marginTop: "auto", paddingTop: isMobile ? 32 : 48 }, children: [
-            /* @__PURE__ */ jsxs("div", { "data-hero-copy": "", style: { animation: "chh-fade 300ms ease both" }, children: [
-              /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { position: "relative", marginTop: "auto", paddingTop: isMobile ? 32 : dim(48, isTv) }, children: [
+            /* @__PURE__ */ jsxs("div", { "data-channels-hero-copy": "", style: { animation: "chh-fade 300ms ease both" }, children: [
+              /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dim(10, isTv), flexWrap: "wrap" }, children: [
                 programme ? /* @__PURE__ */ jsxs(
                   "span",
                   {
@@ -42346,17 +42427,18 @@ ${cue.text}`).join("\n\n")}
                     style: {
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 6,
-                      padding: "3px 9px",
+                      gap: dim(6, isTv),
+                      padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`,
                       borderRadius: RADIUS.pill,
                       background: C.accent,
                       color: C.onAccent,
                       fontSize: fs(10.5),
                       fontWeight: 700,
-                      letterSpacing: "0.16em"
+                      letterSpacing: "0.16em",
+                      lineHeight: 1.3
                     },
                     children: [
-                      /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: C.onAccent } }),
+                      /* @__PURE__ */ jsx("span", { style: { width: dim(6, isTv), height: dim(6, isTv), borderRadius: 999, background: C.onAccent } }),
                       t("heroLive")
                     ]
                   }
@@ -42369,13 +42451,14 @@ ${cue.text}`).join("\n\n")}
                       style: {
                         display: "inline-flex",
                         alignItems: "center",
-                        padding: "3px 9px",
+                        padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`,
                         borderRadius: RADIUS.pill,
                         ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }),
                         color: C.textSoft,
                         fontSize: fs(10.5),
                         fontWeight: 700,
-                        letterSpacing: "0.16em"
+                        letterSpacing: "0.16em",
+                        lineHeight: 1.3
                       },
                       children: t("heroOffAir")
                     }
@@ -42387,11 +42470,12 @@ ${cue.text}`).join("\n\n")}
                 "h1",
                 {
                   style: {
-                    margin: "10px 0 0",
+                    margin: `${dimS(10, isTv)} 0 0`,
                     fontFamily: FONT3.title,
                     fontWeight: 400,
-                    fontSize: fs(isMobile ? 30 : 44),
-                    lineHeight: 1.05,
+                    fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 30 : 44),
+                    lineHeight: 1.1,
+                    maxWidth: isTv ? tvu(1100) : void 0,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     display: "-webkit-box",
@@ -42401,28 +42485,31 @@ ${cue.text}`).join("\n\n")}
                   children: title
                 }
               ),
-              /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: fs(14), color: C.textSoft }, children: meta }),
-              partial ? /* @__PURE__ */ jsx("p", { "data-channels-partial": "", role: "status", style: { margin: "6px 0 0", fontSize: fs(12), color: C.textDim }, children: t("heroPartial") }) : null,
-              rest ? /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: fs(13), color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { marginTop: 12, height: 3, maxWidth: 360, borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) })
+              /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }, children: meta }),
+              partial ? /* @__PURE__ */ jsx("p", { "data-channels-partial": "", role: "status", style: { margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(12), color: C.textDim }, children: t("heroPartial") }) : null,
+              rest ? /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(13), color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { marginTop: dim(12, isTv), height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) })
             ] }, channel.id),
-            /* @__PURE__ */ jsxs("div", { "data-hero-actions": "", onKeyDown: onActionsKey, style: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }, children: [
-              /* @__PURE__ */ jsx(HeroButton, { isTv, primary: true, disabled: !canPlay, onClick: () => onPlay("live"), children: t("heroWatchLive") }),
+            /* @__PURE__ */ jsxs("div", { "data-hero-actions": "", style: { display: "flex", flexWrap: "wrap", gap: dim(10, isTv), marginTop: dim(20, isTv) }, children: [
+              /* @__PURE__ */ jsx(HeroButton, { isTv, primary: true, init: canPlay, disabled: !canPlay, onClick: () => onPlay("live"), children: t("heroWatchLive") }),
               /* @__PURE__ */ jsx(HeroButton, { isTv, disabled: !canPlay || !programme, onClick: () => onPlay("start"), children: t("heroFromStart") }),
-              /* @__PURE__ */ jsx(HeroButton, { isTv, onClick: onEdit, children: t("heroEdit") })
+              /* @__PURE__ */ jsx(HeroButton, { isTv, init: !canPlay, onClick: onEdit, children: t("heroEdit") })
             ] }),
-            after ? /* @__PURE__ */ jsx("p", { style: { margin: "14px 0 0", fontSize: fs(13), color: C.textDim }, children: t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) }) : null,
+            after ? /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(14, isTv)} 0 0`, fontSize: fs(13), color: C.textDim }, children: t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) }) : null,
             many ? /* @__PURE__ */ jsx(
               "div",
               {
                 ref: dotsRef,
                 "data-hero-dots": "",
+                className: isTv ? "tv-hero-pager" : void 0,
                 onKeyDown: onDotsKey,
                 onBlur: (e) => {
                   if (!e.currentTarget.contains(e.relatedTarget)) dotsFocused.current = false;
                 },
-                style: { display: "flex", alignItems: "center", gap: 6, marginTop: 16 },
-                children: slideList.map(({ channel: c }) => {
+                style: isTv ? { display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: tvu(7), height: tvu(22), padding: `0 ${tvu(10)}`, marginTop: tvu(16), borderRadius: 999 } : { display: "flex", alignItems: "center", gap: 6, marginTop: 16 },
+                children: slideList.map(({ channel: c }, i) => {
                   const active3 = c.id === channel.id;
+                  const first = slideList[0].channel.id;
+                  const last2 = slideList[slideList.length - 1].channel.id;
                   return /* @__PURE__ */ jsx(
                     "button",
                     {
@@ -42430,9 +42517,41 @@ ${cue.text}`).join("\n\n")}
                       "aria-label": t("zapChannelLine", { n: c.number, name: c.name }),
                       "aria-current": active3 ? "true" : void 0,
                       "data-hero-dot": c.id,
-                      tabIndex: isTv ? -1 : 0,
-                      onClick: () => onSlide?.(c.id),
-                      style: {
+                      tabIndex: 0,
+                      ...isTv ? {
+                        "data-f": "",
+                        // Zonhopp landar på vald prick, inte på den första.
+                        "data-current": active3 ? "" : void 0,
+                        // Fokus stannar i bläddraren: ändarna går runt (som appens hero).
+                        "data-f-left": i === 0 ? `[data-hero-dot="${last2}"]` : void 0,
+                        "data-f-right": i === slideList.length - 1 ? `[data-hero-dot="${first}"]` : void 0,
+                        "data-f-up": "[data-hero-actions] button:not([disabled])",
+                        "data-f-down": '[data-channel-row][aria-pressed="true"]',
+                        // Indikator, inte en knapp: appens minsta knapphöjd gäller inte.
+                        "data-tv-nosize": ""
+                      } : {},
+                      onFocus: isTv ? () => {
+                        if (!active3) onSlide?.(c.id);
+                      } : void 0,
+                      onClick: () => {
+                        if (isTv && canPlay) {
+                          onSlide?.(c.id);
+                          onPlay("live");
+                          return;
+                        }
+                        onSlide?.(c.id);
+                      },
+                      style: isTv ? {
+                        width: tvu(active3 ? 20 : 6),
+                        height: tvu(4),
+                        minHeight: 0,
+                        padding: 0,
+                        border: 0,
+                        borderRadius: 999,
+                        cursor: "pointer",
+                        background: active3 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)",
+                        transition: "width 300ms ease, background 200ms ease"
+                      } : {
                         // Träffytan större än prickens 4 px: klick och fokusring utan att ändra utseendet.
                         width: active3 ? 16 : 4,
                         height: 4,
@@ -42463,8 +42582,9 @@ ${cue.text}`).join("\n\n")}
     const style = {
       display: "inline-flex",
       alignItems: "center",
-      minHeight: isTv ? "2.25rem" : 30,
-      padding: isTv ? "0 1rem" : "0 14px",
+      minHeight: dim(30, isTv, 40),
+      padding: isTv ? `0 ${tvu(18)}` : "0 14px",
+      boxSizing: "border-box",
       ...glass(isTv, { fill: C.glassDenseSoft, blur: 20 }),
       borderRadius: RADIUS.pill,
       border: `1px solid ${active3 ? "rgba(244,132,95,0.55)" : C.pillBorder}`,
@@ -42480,20 +42600,23 @@ ${cue.text}`).join("\n\n")}
     if (!onClick) return /* @__PURE__ */ jsx("span", { style, children });
     return /* @__PURE__ */ jsx("button", { type: "button", "data-f": "", onClick, style, children });
   }
-  function HeroButton({ children, onClick, primary, disabled, isTv }) {
+  function HeroButton({ children, onClick, primary, disabled, init, isTv }) {
     return /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
         "data-f": "",
+        "data-init": isTv && init && !disabled ? "" : void 0,
+        "data-f-down": isTv ? "[data-hero-dot][data-current]" : void 0,
         disabled,
         onClick,
         style: {
           display: "inline-flex",
           alignItems: "center",
-          gap: 6,
-          padding: isTv ? "0.625rem 1.375rem" : "10px 22px",
+          gap: dim(6, isTv),
+          padding: "10px 22px",
           borderRadius: RADIUS.pill,
+          boxSizing: "border-box",
           ...primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(isTv, { fill: C.glassDenseSoft, blur: 20 }),
           color: primary ? C.onAccent : C.text,
           fontFamily: FONT3.ui,
@@ -42501,7 +42624,9 @@ ${cue.text}`).join("\n\n")}
           fontWeight: 600,
           whiteSpace: "nowrap",
           cursor: disabled ? "default" : "pointer",
-          opacity: disabled ? 0.45 : 1
+          opacity: disabled ? 0.45 : 1,
+          // TV: appens heroknappars mått och knappstorlek.
+          ...isTv ? tvHeroButton() : {}
         },
         children
       }
@@ -42745,7 +42870,8 @@ ${cue.text}`).join("\n\n")}
                 left: narrow ? 0 : "1.5rem",
                 right: narrow ? 0 : "1.5rem",
                 bottom: narrow ? 0 : "calc(var(--android-inset-bottom, 0px) + 1.5rem)",
-                maxHeight: narrow ? "70vh" : "62vh",
+                // TV: scenens höjd, inte fönstrets (vh i TV-scenen är den riktiga viewporten).
+                maxHeight: narrow ? "70vh" : isTv ? "calc(var(--tv-vp-h, 100vh) * 0.62)" : "62vh",
                 display: "flex",
                 flexDirection: "column",
                 borderRadius: narrow ? `${RADIUS.osd}px ${RADIUS.osd}px 0 0` : RADIUS.osd,
@@ -42770,7 +42896,7 @@ ${cue.text}`).join("\n\n")}
                         ...glass(isTv, { fill: C.pillBg, blur: 0 }),
                         color: C.text,
                         fontFamily: FONT3.ui,
-                        fontSize: isTv ? "0.9rem" : "0.75rem",
+                        fontSize: isTv ? tvType("body") : "0.75rem",
                         fontWeight: 600,
                         letterSpacing: "0.12em",
                         cursor: "pointer"
@@ -42790,6 +42916,7 @@ ${cue.text}`).join("\n\n")}
                     isMobile: narrow,
                     t,
                     compact: true,
+                    initId: currentId,
                     onSelect: setSelectedId,
                     onPlay,
                     onRundown: noop,
@@ -42932,7 +43059,7 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsxs("div", { style: { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.9rem", padding: "0 1.5rem", maxWidth: "40rem", textAlign: "center" }, children: [
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: "1rem" }, children: [
               /* @__PURE__ */ jsx("span", { "data-tuning-number": "", style: { fontFamily: FONT3.title, fontSize: "4rem", lineHeight: 1, textShadow: "0 4px 24px rgba(0,0,0,0.7)" }, children: channel.number }),
-              /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 56 })
+              /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 56, isTv })
             ] }),
             /* @__PURE__ */ jsx("div", { style: { fontSize: "0.8rem", letterSpacing: "0.22em", fontWeight: 700, color: C.accentLight, textTransform: "uppercase" }, children: channel.name }),
             title ? /* @__PURE__ */ jsx("div", { style: { fontFamily: FONT3.title, fontSize: "1.9rem", lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: title }) : null,
@@ -42956,14 +43083,14 @@ ${cue.text}`).join("\n\n")}
     const d = new Date(ms2);
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   };
-  function useNarrow2() {
+  function useNarrow2(isTv) {
     const [narrow, setNarrow] = useState(() => typeof window !== "undefined" && window.innerWidth < 640);
     useEffect(() => {
       const on = () => setNarrow(window.innerWidth < 640);
       window.addEventListener("resize", on);
       return () => window.removeEventListener("resize", on);
     }, []);
-    return narrow;
+    return narrow && !isTv;
   }
   function ZapButton({ children, onClick, isTv, init, label }) {
     return /* @__PURE__ */ jsx(
@@ -42984,7 +43111,7 @@ ${cue.text}`).join("\n\n")}
           ...glass(isTv, { fill: C.pillBg, blur: 20 }),
           color: C.text,
           fontFamily: FONT3.ui,
-          fontSize: isTv ? "1rem" : "0.75rem",
+          fontSize: isTv ? tvType("body") : "0.75rem",
           fontWeight: 600,
           letterSpacing: "0.12em",
           cursor: "pointer",
@@ -42997,7 +43124,7 @@ ${cue.text}`).join("\n\n")}
   function ZapOverlay(p) {
     const { channel, programme, now: now2, isTv, t } = p;
     const noise = p.noise;
-    const narrow = useNarrow2();
+    const narrow = useNarrow2(isTv);
     const fade = { opacity: p.osdVisible ? 1 : 0, transition: "opacity 240ms ease", pointerEvents: p.osdVisible ? "auto" : "none" };
     const pct2 = programme ? Math.min(100, Math.max(0, (now2 - programme.start) / Math.max(1, programme.stop - programme.start) * 100)) : 0;
     const bigNumber = p.pendingDigits || String(channel.number);
@@ -43030,7 +43157,7 @@ ${cue.text}`).join("\n\n")}
                 children: bigNumber
               }
             ),
-            p.notice ? /* @__PURE__ */ jsx("div", { role: "status", style: { position: "absolute", top: "5.5rem", left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100vw - 2rem)", padding: "0.6rem 1.1rem", borderRadius: RADIUS.osd, ...glass(isTv, { fill: C.osdBg, blur: 14 }), fontSize: isTv ? "1rem" : "0.85rem", textAlign: "center" }, children: p.notice }) : null,
+            p.notice ? /* @__PURE__ */ jsx("div", { role: "status", style: { position: "absolute", top: "5.5rem", left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100vw - 2rem)", padding: "0.6rem 1.1rem", borderRadius: RADIUS.osd, ...glass(isTv, { fill: C.osdBg, blur: 14 }), fontSize: isTv ? tvType("body") : "0.85rem", textAlign: "center" }, children: p.notice }) : null,
             /* @__PURE__ */ jsxs(
               "div",
               {
@@ -43058,12 +43185,12 @@ ${cue.text}`).join("\n\n")}
                         gap: "1rem"
                       },
                       children: [
-                        /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 58 }),
+                        /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 58, isTv }),
                         /* @__PURE__ */ jsxs("div", { style: { minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: "0.3rem" }, children: [
-                          /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.8rem" : "0.65rem", letterSpacing: "0.18em", fontWeight: 700, color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: t("zapChannelLine", { n: channel.number, name: channel.name.toUpperCase() }) }),
+                          /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? tvType("small") : "0.65rem", letterSpacing: "0.18em", fontWeight: 700, color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: t("zapChannelLine", { n: channel.number, name: channel.name.toUpperCase() }) }),
                           /* @__PURE__ */ jsx("div", { style: { fontFamily: FONT3.title, fontSize: "1.5rem", lineHeight: 1.15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: programme?.title ?? t("zapNothingOn") }),
                           /* @__PURE__ */ jsx("div", { style: { height: 3, borderRadius: 2, background: "rgba(255,255,255,0.14)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2}%`, height: "100%", background: C.accent } }) }),
-                          /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.9rem" : "0.8rem", color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: times })
+                          /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? tvType("body") : "0.8rem", color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: times })
                         ] })
                       ]
                     }
@@ -43074,7 +43201,7 @@ ${cue.text}`).join("\n\n")}
                     /* @__PURE__ */ jsx(ZapButton, { onClick: p.onToggleList, isTv, init: !p.listOpen, children: t("zapList") }),
                     p.hasPrevious ? /* @__PURE__ */ jsx(ZapButton, { onClick: p.onPrevious, isTv, children: t("zapPrev") }) : null,
                     /* @__PURE__ */ jsx("div", { style: { flex: 1 } }),
-                    !narrow ? /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: isTv ? "0.8rem" : "0.7rem", color: C.textDim, whiteSpace: "nowrap" }, children: t("zapHint") }) : null,
+                    !narrow ? /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: isTv ? tvType("small") : "0.7rem", color: C.textDim, whiteSpace: "nowrap" }, children: t("zapHint") }) : null,
                     /* @__PURE__ */ jsx(ZapButton, { onClick: p.onExit, isTv, children: t("zapExit") })
                   ] })
                 ]
@@ -43098,16 +43225,18 @@ ${cue.text}`).join("\n\n")}
     );
   }
   function ZapList(p) {
-    const narrow = useNarrow2();
+    const narrow = useNarrow2(p.isTv);
     const sorted = useMemo(() => [...p.channels].sort((a, b) => a.number - b.number), [p.channels]);
     const rundowns = p.listRundowns;
-    const panel = narrow ? { left: 0, right: 0, bottom: 0, maxHeight: "60vh", borderRadius: `${RADIUS.osd}px ${RADIUS.osd}px 0 0` } : { left: 0, top: 0, bottom: 0, width: 290 };
+    const panel = narrow ? { left: 0, right: 0, bottom: 0, maxHeight: "60vh", borderRadius: `${RADIUS.osd}px ${RADIUS.osd}px 0 0` } : { left: 0, top: 0, bottom: 0, width: p.isTv ? tvu(440) : 290 };
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
       /* @__PURE__ */ jsx("div", { "data-zap-list-backdrop": "", "aria-hidden": "true", onClick: p.onCloseList, style: { position: "absolute", inset: 0, pointerEvents: "auto", background: narrow ? "rgba(0,0,0,0.4)" : "transparent" } }),
       /* @__PURE__ */ jsxs(
         "div",
         {
           "data-zap-list": "",
+          "data-panel-root": p.isTv ? "" : void 0,
+          "data-scroll": p.isTv ? "" : void 0,
           role: "listbox",
           style: {
             ...panel,
@@ -43162,10 +43291,10 @@ ${cue.text}`).join("\n\n")}
           fontFamily: FONT3.ui
         },
         children: [
-          /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: isTv ? "1rem" : "0.8rem", color: active3 ? C.accent : C.textDim, minWidth: "1.8rem" }, children: channel.number }),
+          /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: isTv ? tvType("body") : "0.8rem", color: active3 ? C.accent : C.textDim, minWidth: "1.8rem" }, children: channel.number }),
           /* @__PURE__ */ jsxs("span", { style: { minWidth: 0, flex: 1 }, children: [
-            /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: isTv ? "1.05rem" : "0.85rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: channel.name }),
-            /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: isTv ? "0.85rem" : "0.7rem", color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: title ?? "\u2014" })
+            /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: isTv ? tvType("h3") : "0.85rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: channel.name }),
+            /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: isTv ? tvType("small") : "0.7rem", color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: title ?? "\u2014" })
           ] })
         ]
       }
@@ -43333,6 +43462,10 @@ ${cue.text}`).join("\n\n")}
       if (replanOnNewRundown(s)) dispatch({ type: "goto", channelId: channel.id, mode: "live" });
     }, [request.seq, channel?.id, channel?.airWindow, loading2, rundown, plan]);
     const goToChannel = useCallback((id) => dispatch({ type: "goto", channelId: id, mode: "live" }), []);
+    const closeGuide = useCallback(() => {
+      setGuideOpen(false);
+      window.setTimeout(() => document.querySelector("[data-osd-guide]")?.focus({ preventScroll: true }), 0);
+    }, []);
     const playFromGuide = useCallback((id) => {
       setGuideOpen(false);
       if (id !== stateRef.current.request.channelId) goToChannel(id);
@@ -43473,7 +43606,7 @@ ${cue.text}`).join("\n\n")}
         if (BACK_KEYS2.has(event.key) || event.key === "Guide") {
           event.preventDefault();
           event.stopImmediatePropagation();
-          setGuideOpen(false);
+          closeGuide();
           return;
         }
         if (!isTv && (event.key.startsWith("Arrow") || /^[0-9]$/.test(event.key))) {
@@ -43495,13 +43628,6 @@ ${cue.text}`).join("\n\n")}
           else exitZap();
           return;
         }
-        if (/^[0-9]$/.test(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          poke();
-          pushDigit(Number(event.key));
-          return;
-        }
         if (event.key === "Enter" && !zap.listOpen && !osdShownRef.current) {
           event.preventDefault();
           event.stopImmediatePropagation();
@@ -43514,6 +43640,13 @@ ${cue.text}`).join("\n\n")}
           step(event.key === "ArrowUp" ? 1 : -1);
           return;
         }
+      }
+      if (!zap.guideOpen && /^[0-9]$/.test(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        poke();
+        pushDigit(Number(event.key));
+        return;
       }
       if (!modalMounted && BACK_KEYS2.has(event.key)) {
         event.preventDefault();
@@ -43547,6 +43680,22 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("pointerdown", touch, true);
       };
     }, []);
+    const tuningShown = awaitingPicture(state2);
+    const layer = guideOpen ? "guide" : zapOn ? listOpen ? "zaplist" : "zap" : "osd";
+    const lastLayer = useRef(null);
+    useEffect(() => {
+      if (!isTv || layer === "guide" || tuningShown) return;
+      const changed = lastLayer.current !== layer;
+      lastLayer.current = layer;
+      const id = window.setTimeout(() => {
+        const scope = document.querySelector(layer === "zaplist" ? "[data-zap-list]" : layer === "zap" ? "[data-zap-osd]" : "[data-channels-osd]");
+        if (!scope) return;
+        const active3 = document.activeElement;
+        const lost = !active3 || active3 === document.body || !active3.isConnected;
+        if (changed && layer !== "osd" || lost) pickInitTarget(scope)?.focus({ preventScroll: true });
+      }, 0);
+      return () => window.clearTimeout(id);
+    }, [isTv, layer, tuningShown, modalMounted]);
     const described = pending5 ?? (onScreen && onScreen.seq === request.seq ? onScreen : null);
     const nextTitle = useMemo(() => {
       const after = described?.slot.stop ?? between?.until;
@@ -43606,6 +43755,7 @@ ${cue.text}`).join("\n\n")}
         title: described?.slot.item.title ?? null,
         mode: described?.mode ?? request.mode,
         notice: null,
+        digits,
         closeIsInit: !modalMounted,
         hostBar: modalMounted && !isTv,
         isTv,
@@ -43621,7 +43771,7 @@ ${cue.text}`).join("\n\n")}
     );
     const tuningNow = awaitingPicture(state2);
     const osd = guideOpen ? null : zapOn ? zapOverlay : tuningNow ? null : normalOsd;
-    const guide = guideOpen ? /* @__PURE__ */ jsx(GuideOverlay, { channels, currentId: channel.id, now: now2, isTv, t, onPlay: playFromGuide, onClose: () => setGuideOpen(false) }) : null;
+    const guide = guideOpen ? /* @__PURE__ */ jsx(GuideOverlay, { channels, currentId: channel.id, now: now2, isTv, t, onPlay: playFromGuide, onClose: closeGuide }) : null;
     const tuningItem = described?.slot.item ?? null;
     const tuningCard = /* @__PURE__ */ jsx(
       TuningCard,
@@ -43708,12 +43858,12 @@ ${cue.text}`).join("\n\n")}
         /* @__PURE__ */ jsx("p", { style: msgStyle, children: t("playerEmpty") }),
         onEditChannel ? /* @__PURE__ */ jsx(OsdButton, { onClick: () => onEditChannel(channel.id), isTv, children: t("playerEdit") }) : null
       ] }) : status === "nosignal" && noSignal ? /* @__PURE__ */ jsxs("div", { "data-channels-nosignal": "", style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }, children: [
-        /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 72 }),
+        /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 72, isTv }),
         /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontSize: "1.6rem", fontWeight: 700, letterSpacing: "0.04em" }, children: t("playerNoSignal") }),
         /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontFamily: FONT3.title }, children: noSignal.slot.item.kind === "episode" && noSignal.slot.item.seriesTitle ? noSignal.slot.item.seriesTitle : noSignal.slot.item.title }),
         /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontSize: "0.9rem", color: C.textDim }, children: t("playerNoSignalRetry", { time: clock2(noSignal.retryAt) }) })
       ] }) : status === "between" && between ? /* @__PURE__ */ jsxs("div", { "data-channels-between": "", style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }, children: [
-        /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 72 }),
+        /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 72, isTv }),
         /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontSize: "1.4rem", fontWeight: 700 }, children: t("playerBetween") }),
         /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontFamily: FONT3.title }, children: nextTitle ? t("playerBetweenNext", { time: clock2(between.until), title: nextTitle }) : t("playerBetweenNextUntitled", { time: clock2(between.until) }) })
       ] }) : null,
@@ -43757,13 +43907,14 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function OsdButton({ children, onClick, isTv, label, accent, init }) {
+  function OsdButton({ children, onClick, isTv, label, accent, init, data }) {
     return /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
         "data-f": "",
         "data-init": init ? "" : void 0,
+        ...data ? { [`data-${data}`]: "" } : {},
         "aria-label": label,
         onClick,
         style: {
@@ -43778,7 +43929,7 @@ ${cue.text}`).join("\n\n")}
           border: `1px solid ${accent ? C.accent : C.pillBorder}`,
           color: accent ? C.onAccent : C.text,
           fontFamily: FONT3.ui,
-          fontSize: isTv ? "1rem" : "0.8rem",
+          fontSize: isTv ? tvType("body") : "0.8rem",
           fontWeight: 600,
           letterSpacing: "0.12em",
           cursor: "pointer",
@@ -43819,10 +43970,10 @@ ${cue.text}`).join("\n\n")}
                 borderRadius: RADIUS.pill
               },
               children: [
-                /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 30, style: { borderRadius: RADIUS.pill } }),
+                /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 30, isTv, style: { borderRadius: RADIUS.pill } }),
                 /* @__PURE__ */ jsxs("div", { style: { minWidth: 0 }, children: [
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.95rem" : "0.8rem", fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: channel.name }),
-                  /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? "0.75rem" : "0.66rem", lineHeight: 1.25, color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: meta })
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? tvType("body") : "0.8rem", fontWeight: 700, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: channel.name }),
+                  /* @__PURE__ */ jsx("div", { style: { fontSize: isTv ? tvType("small") : "0.66rem", lineHeight: 1.25, color: C.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: meta })
                 ] })
               ]
             }
@@ -43852,11 +44003,29 @@ ${cue.text}`).join("\n\n")}
                 justifyContent: "center",
                 color: C.text,
                 fontFamily: FONT3.ui,
-                fontSize: isTv ? "1.25rem" : "1.05rem",
+                fontSize: isTv ? tvType("h2") : "1.05rem",
                 lineHeight: 1,
                 cursor: "pointer"
               },
               children: "\xD7"
+            }
+          ) : null,
+          props.digits ? /* @__PURE__ */ jsx(
+            "div",
+            {
+              "data-channels-digits": "",
+              "aria-live": "polite",
+              style: {
+                position: "absolute",
+                top: "calc(var(--page-top-line, 1rem) + 3.75rem)",
+                right: "1.5rem",
+                fontFamily: FONT3.title,
+                fontSize: "2.875rem",
+                lineHeight: 1,
+                color: C.text,
+                textShadow: "0 2px 12px rgba(0,0,0,0.8)"
+              },
+              children: props.digits
             }
           ) : null,
           notice ? /* @__PURE__ */ jsx(
@@ -43872,7 +44041,7 @@ ${cue.text}`).join("\n\n")}
                 padding: "0.7rem 1.2rem",
                 borderRadius: RADIUS.osd,
                 ...glass(isTv, { fill: C.osdBg, blur: 12 }),
-                fontSize: isTv ? "1rem" : "0.85rem",
+                fontSize: isTv ? tvType("body") : "0.85rem",
                 textAlign: "center"
               },
               children: notice
@@ -43905,7 +44074,7 @@ ${cue.text}`).join("\n\n")}
                 ] }) : null,
                 /* @__PURE__ */ jsx(OsdButton, { onClick: props.onChDown, isTv, label: t("playerChDown"), children: "CH \u25BC" }),
                 /* @__PURE__ */ jsx(OsdButton, { onClick: props.onChUp, isTv, label: t("playerChUp"), init: !props.closeIsInit, children: "CH \u25B2" }),
-                props.onGuide ? /* @__PURE__ */ jsx(OsdButton, { onClick: props.onGuide, isTv, children: t("playerGuide") }) : null,
+                props.onGuide ? /* @__PURE__ */ jsx(OsdButton, { onClick: props.onGuide, isTv, data: "osd-guide", children: t("playerGuide") }) : null,
                 props.onZap ? /* @__PURE__ */ jsx(OsdButton, { onClick: props.onZap, isTv, children: t("playerZap") }) : null,
                 /* @__PURE__ */ jsx("div", { style: { flex: 1 } }),
                 /* @__PURE__ */ jsx(
@@ -43919,14 +44088,14 @@ ${cue.text}`).join("\n\n")}
                       background: mode === "live" ? C.accent : C.pillBg,
                       color: mode === "live" ? C.onAccent : C.text,
                       border: mode === "live" ? "none" : `1px solid ${C.pillBorder}`,
-                      fontSize: isTv ? "0.85rem" : "0.7rem",
+                      fontSize: isTv ? tvType("small") : "0.7rem",
                       fontWeight: 700,
                       letterSpacing: "0.18em"
                     },
                     children: mode === "live" ? `\u25CF ${t("playerLive")}` : t("playerFromStartBadge")
                   }
                 ),
-                title ? /* @__PURE__ */ jsxs("span", { style: { fontFamily: FONT3.title, fontSize: isTv ? "1.1rem" : "0.9rem", maxWidth: "40%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                title ? /* @__PURE__ */ jsxs("span", { style: { fontFamily: FONT3.title, fontSize: isTv ? tvType("h3") : "0.9rem", maxWidth: "40%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
                   channel.number,
                   " \xB7 ",
                   title
@@ -44202,16 +44371,17 @@ ${cue.text}`).join("\n\n")}
       letterSpacing: "0.14em",
       textTransform: "uppercase",
       color: TOKENS.textMute,
-      margin: "0 0 8px"
+      margin: `0 0 ${dimS(8, isTv)}`,
+      lineHeight: 1.3
     };
-    const errorStyle = { margin: "6px 0 0", fontSize: fs(12.5), color: TOKENS.red };
+    const errorStyle = { margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(12.5), color: TOKENS.red };
     const twoCols = !isMobile;
-    const field = (label, children, extra, error) => /* @__PURE__ */ jsxs("div", { "data-studio-field": label, style: { marginBottom: isTv ? "1.25rem" : 18 }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 10 }, children: [
+    const field = (label, children, extra, error) => /* @__PURE__ */ jsxs("div", { "data-studio-field": label, style: { marginBottom: dim(18, isTv, 22) }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: dim(10, isTv) }, children: [
         /* @__PURE__ */ jsx("p", { style: labelStyle, children: t(label) }),
         extra
       ] }),
-      /* @__PURE__ */ jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 }, children }),
+      /* @__PURE__ */ jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: dim(8, isTv) }, children }),
       error
     ] });
     const single = (options, value, set) => options.map((o) => /* @__PURE__ */ jsx(Chip, { isTv, selected: value === o.id, onClick: () => set(o.id), children: t(o.label) }, o.id));
@@ -44224,7 +44394,7 @@ ${cue.text}`).join("\n\n")}
         "data-init": "",
         "data-studio-name": "",
         onClick: () => setKbOpen(true),
-        style: { ...inputStyle, fontSize: fs(14), textAlign: "left", cursor: "pointer", color: draft.name ? TOKENS.text : TOKENS.textMute },
+        style: { ...inputStyle, fontSize: fs(14), textAlign: "left", cursor: "pointer", color: draft.name ? TOKENS.text : TOKENS.textMute, ...isTv ? { minHeight: tvu(48), padding: `0 ${tvu(16)}`, maxWidth: tvu(640), boxSizing: "border-box" } : {} },
         children: draft.name || t("fieldNamePlaceholder")
       }
     ) : /* @__PURE__ */ jsx(
@@ -44241,7 +44411,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
     const form = /* @__PURE__ */ jsxs("div", { "data-studio-form": "", style: { minWidth: 0 }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { marginBottom: isTv ? "1.25rem" : 18 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { marginBottom: dim(18, isTv, 22) }, children: [
         /* @__PURE__ */ jsx("p", { style: labelStyle, children: t("fieldName") }),
         nameField,
         showError("name") ? /* @__PURE__ */ jsx("p", { style: errorStyle, children: t("errorName") }) : null
@@ -44298,16 +44468,16 @@ ${cue.text}`).join("\n\n")}
           g
         ))
       ),
-      /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: twoCols ? "minmax(0, 1fr) minmax(0, 1fr)" : "minmax(0, 1fr)", columnGap: 24 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: twoCols ? "minmax(0, 1fr) minmax(0, 1fr)" : "minmax(0, 1fr)", columnGap: dim(24, isTv) }, children: [
         field("fieldEra", single(ERAS, draft.era, (era) => patch({ era }))),
         field("fieldLength", single(LENGTHS, draft.length, (length) => patch({ length }))),
         field("fieldOrder", single(ORDERS, draft.order, (order) => patch({ order }))),
         field("fieldWindow", single(WINDOWS, draft.airWindow, (airWindow) => patch({ airWindow })))
       ] }),
-      /* @__PURE__ */ jsxs(Card, { style: { display: "flex", alignItems: "center", gap: 16, marginBottom: 0 }, children: [
+      /* @__PURE__ */ jsxs(Card, { style: { display: "flex", alignItems: "center", gap: dim(16, isTv), marginBottom: 0, ...isTv ? { padding: `${tvu(14)} ${tvu(18)}`, maxWidth: tvu(900) } : {} }, children: [
         /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
           /* @__PURE__ */ jsx("div", { style: { fontSize: fs(14), fontWeight: 600, color: TOKENS.text }, children: t("showOnHome") }),
-          /* @__PURE__ */ jsx("div", { style: { fontSize: fs(12.5), color: TOKENS.textDim, marginTop: 2 }, children: t("showOnHomeHint") })
+          /* @__PURE__ */ jsx("div", { style: { fontSize: fs(12.5), color: TOKENS.textDim, marginTop: dim(2, isTv) }, children: t("showOnHomeHint") })
         ] }),
         /* @__PURE__ */ jsx(
           "button",
@@ -44380,7 +44550,7 @@ ${cue.text}`).join("\n\n")}
       )) }),
       /* @__PURE__ */ jsx("p", { style: { margin: "12px 0 0", fontSize: fs(11.5), lineHeight: 1.5, color: TOKENS.textMute }, children: t("previewNote") })
     ] });
-    const footer = /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: isTv ? "1.5rem" : 24 }, children: [
+    const footer = /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: dim(10, isTv), marginTop: dim(24, isTv) }, children: [
       editing ? /* @__PURE__ */ jsx(FocusPill, { isTv, variant: "danger", data: "studio-delete", onClick: onDelete, children: t(confirmDelete ? "studioDeleteConfirm" : "studioDelete") }) : null,
       /* @__PURE__ */ jsx("div", { style: { flex: 1 } }),
       /* @__PURE__ */ jsx(FocusPill, { isTv, variant: "ghost", data: "studio-cancel", onClick: cancel, children: t("studioCancel") }),
@@ -44396,18 +44566,18 @@ ${cue.text}`).join("\n\n")}
           color: TOKENS.text,
           fontFamily: FONT3.ui,
           // Under appens menypill; högra hörnet lämnas åt appens klocka.
-          padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : isTv ? "2.5rem 2.5rem" : "32px 40px"}`
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : "32px 40px"}`
         },
         children: [
           /* @__PURE__ */ jsx("p", { style: { ...labelStyle, margin: 0 }, children: t("studioEyebrow") }),
-          /* @__PURE__ */ jsx("h1", { style: { margin: "4px 0 0", fontSize: fs(24), fontWeight: 700, color: TOKENS.text }, children: t(editing ? "studioEdit" : "studioNew") }),
-          /* @__PURE__ */ jsx("div", { style: { height: 1, background: TOKENS.border, margin: isTv ? "1.25rem 0" : "20px 0" } }),
+          /* @__PURE__ */ jsx("h1", { style: { margin: `${dimS(4, isTv)} 0 0`, fontSize: fs(24), lineHeight: 1.2, fontWeight: 700, color: TOKENS.text }, children: t(editing ? "studioEdit" : "studioNew") }),
+          /* @__PURE__ */ jsx("div", { style: { height: 1, background: TOKENS.border, margin: `${dimS(20, isTv)} 0` } }),
           /* @__PURE__ */ jsxs(
             "div",
             {
               style: {
                 display: "grid",
-                gap: isMobile ? 28 : 32,
+                gap: isMobile ? 28 : dim(32, isTv),
                 alignItems: "start",
                 gridTemplateColumns: isMobile || isTv ? "minmax(0, 1fr)" : "minmax(0, 1fr) 360px"
               },
@@ -44430,8 +44600,12 @@ ${cue.text}`).join("\n\n")}
               onDone: (value) => {
                 setKbOpen(false);
                 patch({ name: value });
+                refocusLater(() => document.querySelector("[data-studio-name]"));
               },
-              onClose: () => setKbOpen(false)
+              onClose: () => {
+                setKbOpen(false);
+                refocusLater(() => document.querySelector("[data-studio-name]"));
+              }
             }
           ) }) : null
         ]
@@ -44454,10 +44628,13 @@ ${cue.text}`).join("\n\n")}
           gap: 6,
           borderRadius: 8,
           cursor: "pointer",
-          padding: isTv ? "0.375rem 0.75rem" : "6px 12px",
+          padding: isTv ? `${tvu(8)} ${tvu(14)}` : "6px 12px",
           fontSize: fontSize(13, isTv),
+          lineHeight: 1.25,
           fontWeight: 500,
           fontFamily: "inherit",
+          // TV: en jämn chiphöjd (appens minsta knapphöjd gäller annars bara vissa).
+          ...isTv ? { minHeight: tvu(40), boxSizing: "border-box" } : {},
           border: `1px solid ${selected ? TOKENS.accent : TOKENS.borderStrong}`,
           background: selected ? TOKENS.accentSoft : TOKENS.surface1,
           color: selected ? TOKENS.text : TOKENS.textDim
@@ -44484,13 +44661,15 @@ ${cue.text}`).join("\n\n")}
         onClick,
         style: {
           ...look[variant],
-          padding: isTv ? "0.6875rem 1.125rem" : "11px 18px",
-          borderRadius: 8,
+          padding: "11px 18px",
+          borderRadius: isTv ? tvu(8) : 8,
           cursor: "pointer",
           fontSize: fontSize(14, isTv),
           fontFamily: "inherit",
           letterSpacing: 0.2,
-          whiteSpace: "nowrap"
+          whiteSpace: "nowrap",
+          boxSizing: "border-box",
+          ...isTv ? tvHeroButton() : {}
         },
         children
       }
@@ -44635,27 +44814,27 @@ ${cue.text}`).join("\n\n")}
           background: C.base,
           color: C.text,
           fontFamily: FONT3.ui,
-          padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : isTv ? "2.5rem 2.5rem" : "32px 40px"}`
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : "32px 40px"}`
         },
         children: [
-          /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { display: "flex", alignItems: "center", gap: dim(8, isTv), flexWrap: "wrap" }, children: [
             /* @__PURE__ */ jsx(Btn, { isTv, pill: true, onClick: onBack, children: t("manageBack") }),
             /* @__PURE__ */ jsx(Btn, { isTv, pill: true, onClick: onCreate, children: t("pageNewChannel") })
           ] }),
-          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "28px 0 16px" : "40px 0 20px", fontFamily: FONT3.title, fontWeight: 400, fontSize: fs(isMobile ? 28 : 36) }, children: t("manageTitle") }),
-          sorted.length === 0 ? /* @__PURE__ */ jsx("p", { style: { margin: 0, color: C.textDim, fontSize: fs(14) }, children: t("settingsEmpty") }) : /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 8, maxWidth: 760 }, children: sorted.map((channel, i) => {
+          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "28px 0 16px" : `${dimS(40, isTv)} 0 ${dimS(20, isTv)}`, fontFamily: FONT3.title, fontWeight: 400, lineHeight: 1.15, fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 28 : 36) }, children: t("manageTitle") }),
+          sorted.length === 0 ? /* @__PURE__ */ jsx("p", { style: { margin: 0, color: C.textDim, fontSize: fs(14) }, children: t("settingsEmpty") }) : /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: dim(8, isTv), maxWidth: dim(760, isTv, 900) }, children: sorted.map((channel, i) => {
             const count = counts[channel.id];
             return /* @__PURE__ */ jsxs(
               "div",
               {
                 "data-manage-row": channel.id,
-                style: { ...glass(isTv, { blur: 0 }), borderRadius: RADIUS.card, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: isTv ? "0.75rem 1rem" : "12px 14px" },
+                style: { ...glass(isTv, { blur: 0 }), borderRadius: dim(RADIUS.card, isTv), display: "flex", alignItems: "center", gap: dim(14, isTv), flexWrap: "wrap", padding: `${dimS(12, isTv)} ${dimS(14, isTv, 18)}` },
                 children: [
-                  /* @__PURE__ */ jsx("span", { style: { width: 28, textAlign: "right", fontFamily: FONT3.mono, fontSize: fs(13), color: C.textDim }, children: channel.number }),
-                  /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 30 }),
-                  /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 140 }, children: [
+                  /* @__PURE__ */ jsx("span", { style: { width: dim(28, isTv), textAlign: "right", fontFamily: FONT3.mono, fontSize: fs(13), color: C.textDim }, children: channel.number }),
+                  /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 30, isTv }),
+                  /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: dim(140, isTv), lineHeight: 1.3 }, children: [
                     /* @__PURE__ */ jsx("div", { "data-channel-name": "", style: { fontSize: fs(15), fontWeight: 600 }, children: channel.name }),
-                    count != null ? /* @__PURE__ */ jsx("div", { style: { marginTop: 2, fontSize: fs(12.5), color: C.textDim }, children: t("settingsTitles", { n: count }) }) : null
+                    count != null ? /* @__PURE__ */ jsx("div", { style: { marginTop: dim(2, isTv), fontSize: fs(12.5), color: C.textDim }, children: t("settingsTitles", { n: count }) }) : null
                   ] }),
                   /* @__PURE__ */ jsx(Btn, { isTv, init: i === 0, onClick: () => onEdit(channel.id), children: t("settingsEdit") }),
                   /* @__PURE__ */ jsx(Btn, { isTv, danger: true, onClick: () => requestDelete(channel.id), children: t(confirmId === channel.id ? "settingsDeleteConfirm" : "settingsDelete") })
@@ -44679,8 +44858,9 @@ ${cue.text}`).join("\n\n")}
         style: {
           display: "inline-flex",
           alignItems: "center",
-          minHeight: isTv ? "2.25rem" : 30,
-          padding: isTv ? "0 1rem" : "0 14px",
+          minHeight: dim(30, isTv, 40),
+          padding: isTv ? `0 ${tvu(18)}` : "0 14px",
+          boxSizing: "border-box",
           ...glass(isTv, { fill: C.pillBg, blur: 0 }),
           borderRadius: RADIUS.pill,
           cursor: "pointer",
@@ -44702,21 +44882,23 @@ ${cue.text}`).join("\n\n")}
   function EmptyState({ isTv, isMobile, t, onRestore, onCustom }) {
     const fs = (px) => fontSize(px, isTv);
     const button = (primary) => ({
-      padding: isTv ? "0.625rem 1.375rem" : "10px 22px",
+      padding: "10px 22px",
       borderRadius: RADIUS.pill,
       cursor: "pointer",
+      boxSizing: "border-box",
       ...primary ? { background: C.accent, border: `1px solid ${C.accent}`, color: C.onAccent } : { ...glass(isTv, { fill: C.pillBg, blur: 20 }), color: C.text },
       fontFamily: FONT3.ui,
       fontSize: fs(14),
-      fontWeight: 600
+      fontWeight: 600,
+      ...isTv ? tvHeroButton() : {}
     });
     return /* @__PURE__ */ jsxs(
       "section",
       {
         "data-channels-empty": "",
         style: {
-          minHeight: 420,
-          padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : isTv ? "2.5rem 2.5rem" : "32px 40px"}`,
+          minHeight: dim(420, isTv),
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : "32px 40px"}`,
           color: C.text,
           fontFamily: FONT3.ui,
           background: C.base
@@ -44731,8 +44913,9 @@ ${cue.text}`).join("\n\n")}
               style: {
                 display: "inline-flex",
                 alignItems: "center",
-                minHeight: isTv ? "2.25rem" : 30,
-                padding: isTv ? "0 1rem" : "0 14px",
+                minHeight: dim(30, isTv, 40),
+                padding: isTv ? `0 ${tvu(18)}` : "0 14px",
+                boxSizing: "border-box",
                 ...glass(isTv, { fill: C.pillBg, blur: 20 }),
                 borderRadius: RADIUS.pill,
                 color: C.text,
@@ -44745,9 +44928,9 @@ ${cue.text}`).join("\n\n")}
               children: t("pageHome")
             }
           ),
-          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "32px 0 0" : "48px 0 0", fontFamily: FONT3.title, fontWeight: 400, fontSize: fs(isMobile ? 30 : 44), lineHeight: 1.05 }, children: t("emptyTitle") }),
-          /* @__PURE__ */ jsx("p", { style: { margin: "12px 0 0", maxWidth: 560, fontSize: fs(14), lineHeight: 1.5, color: C.textSoft }, children: t("emptyLead") }),
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: 24 }, children: [
+          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "32px 0 0" : `${dimS(48, isTv)} 0 0`, fontFamily: FONT3.title, fontWeight: 400, fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 30 : 44), lineHeight: 1.1 }, children: t("emptyTitle") }),
+          /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(12, isTv)} 0 0`, maxWidth: dim(560, isTv), fontSize: fs(14), lineHeight: 1.5, color: C.textSoft }, children: t("emptyLead") }),
+          /* @__PURE__ */ jsxs("div", { "data-hero-actions": "", style: { display: "flex", flexWrap: "wrap", gap: dim(10, isTv), marginTop: dim(24, isTv) }, children: [
             /* @__PURE__ */ jsx("button", { type: "button", "data-f": "", "data-init": "", "data-empty-restore": "", onClick: onRestore, style: button(true), children: t("emptyRestore") }),
             /* @__PURE__ */ jsx("button", { type: "button", "data-f": "", onClick: onCustom, style: button(false), children: t("emptyCustom") })
           ] })
@@ -44885,6 +45068,9 @@ ${cue.text}`).join("\n\n")}
     const onPlayRow = useCallback((id) => play(id, "live"), [play]);
     const playerRef = useRef(player);
     playerRef.current = player;
+    const viewRef = useRef(null);
+    const view = player && sorted.length > 0 ? "player" : manage && !studio ? "manage" : studio ? `studio:${studio}` : selected ? "main" : "empty";
+    useTvViewFocus(viewRef, isTv && view !== "player", view);
     const closePlayer = useCallback(() => {
       const current2 = playerRef.current;
       if (current2) {
@@ -44912,7 +45098,7 @@ ${cue.text}`).join("\n\n")}
       );
     }
     if (manage && !studio) {
-      return /* @__PURE__ */ jsx("div", { "data-channels-page": "", style: { background: C.base, minHeight: "100%" }, children: /* @__PURE__ */ jsx(
+      return /* @__PURE__ */ jsx("div", { ref: viewRef, "data-channels-page": "", style: { background: C.base, minHeight: "100%" }, children: /* @__PURE__ */ jsx(
         ChannelManager,
         {
           isTv,
@@ -44932,7 +45118,7 @@ ${cue.text}`).join("\n\n")}
       ) });
     }
     if (studio) {
-      return /* @__PURE__ */ jsx(
+      return /* @__PURE__ */ jsx("div", { ref: viewRef, "data-channels-page": "", style: { minHeight: "100%" }, children: /* @__PURE__ */ jsx(
         ChannelStudioSlot,
         {
           studio,
@@ -44945,14 +45131,14 @@ ${cue.text}`).join("\n\n")}
             if (id) setSelectedId(id);
           }
         }
-      );
+      ) });
     }
     const banner = canPlay ? null : /* @__PURE__ */ jsx(
       "div",
       {
         role: "status",
         style: {
-          padding: isTv ? "0.625rem 2.5rem" : "10px 16px",
+          padding: isTv ? `${tvu(10)} ${tvu(100)}` : "10px 16px",
           background: "rgba(244,132,95,0.14)",
           borderBottom: "1px solid rgba(244,132,95,0.35)",
           color: C.accentLight,
@@ -44963,7 +45149,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
     if (!selected) {
-      return /* @__PURE__ */ jsxs("div", { "data-channels-page": "", style: { background: C.base, minHeight: "100%" }, children: [
+      return /* @__PURE__ */ jsxs("div", { ref: viewRef, "data-channels-page": "", style: { background: C.base, minHeight: "100%" }, children: [
         banner,
         /* @__PURE__ */ jsx(
           EmptyState,
@@ -44984,7 +45170,7 @@ ${cue.text}`).join("\n\n")}
     return (
       // Ingen egen bakgrund här: herobilden ligger under sidan (z −1) och ska
       // synas kant i kant; appens grund under är redan svart.
-      /* @__PURE__ */ jsxs("div", { "data-channels-page": "", style: { minHeight: "100%" }, children: [
+      /* @__PURE__ */ jsxs("div", { ref: viewRef, "data-channels-page": "", style: { minHeight: "100%" }, children: [
         banner,
         /* @__PURE__ */ jsx(
           ChannelHero,
@@ -45034,7 +45220,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.6",
+    version: "0.1.7",
     description: S.description,
     preinstalled: false,
     register(ctx) {

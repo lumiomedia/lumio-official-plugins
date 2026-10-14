@@ -1,3 +1,10 @@
+## 0.1.7
+
+- TV-läget följer appens TV-skala: mått och text växer som appens egna ytor (hero, rader, knappar) i stället för fasta, små storlekar.
+- Tablåns programblock klipper inte längre titeln på TV.
+- Herons bläddringsprickar är en egen fokusrad som på appens startsida; ◀▶ byter kanal, OK spelar.
+- Fjärrkontrollen når allt: startfokus på Titta live, ▲▼ mellan rader, Bakåt stänger lager i rätt ordning, sifferknapparna byter kanal i spelaren.
+
 ## 0.1.6
 
 - En stängning i kanalspelaren: spelarens egen Stäng (kanalens runda × bara när spelaren inte visas).
