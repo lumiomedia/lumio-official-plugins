@@ -7,6 +7,9 @@ let libraryStatus: unknown = { total: 3, sources: [{ lastFullSync: 100, lastDelt
 const sdk = {
   queryLibrary: async (_q: unknown): Promise<{ items: unknown[] }> => ({ items: [] }),
   listDebrid: async (): Promise<unknown[]> => [],
+  idle: (): Promise<void> => Promise.resolve(),
+  lang: 'sv',
+  profileListeners: [] as Array<() => void>,
 }
 vi.mock('@/lib/plugin-sdk', () => ({
   readPluginJson: (_id: string, key: string, fallback: unknown) => storage.get(key) ?? fallback,
@@ -18,6 +21,9 @@ vi.mock('@/lib/plugin-sdk', () => ({
   getWatchlist: () => [],
   fetchLibraryStatus: async () => libraryStatus,
   channelListDebridCloud: () => sdk.listDebrid(),
+  waitForStartIdle: () => sdk.idle(),
+  readStoredLang: () => sdk.lang,
+  onProfileChanged: (fn: () => void) => { sdk.profileListeners.push(fn); return () => {} },
   channelResolveLibraryPlayback: async () => null,
   channelResolveTitleStream: async () => null,
   channelUnrestrictDebridFile: async () => null,
@@ -25,10 +31,12 @@ vi.mock('@/lib/plugin-sdk', () => ({
 }))
 
 import { deleteChannel, loadPoolCached, restoreDefaultChannels, saveChannel, seedDefaultChannels, useChannelClock, useChannelPool } from './store'
+import { ChannelsBootstrap } from '../ui/bootstrap'
+import { render } from '@testing-library/react'
 import { prunePoolCaches, readChannels, resetSourceSignatures, sourceSignatures } from '../host'
 import { createChannel, emptyDraft } from '../model/channel'
 
-beforeEach(() => { sdk.queryLibrary = async () => ({ items: [] }); sdk.listDebrid = async () => []; failWrites = 0; resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
+beforeEach(() => { sdk.idle = () => Promise.resolve(); sdk.lang = 'sv'; sdk.profileListeners = []; sdk.queryLibrary = async () => ({ items: [] }); sdk.listDebrid = async () => []; failWrites = 0; resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
 
 describe('kanallagret', () => {
   it('sparar, ersätter och tar bort kanaler', () => {
@@ -234,6 +242,47 @@ describe('standardkanalerna', () => {
     expect(readChannels()).toEqual([])
     expect(restoreDefaultChannels('en')).toBe(10)
     expect(readChannels()[0]!.name).toBe('Movies around the clock')
+  })
+})
+
+describe('uppstart och startgrinden', () => {
+  it('bootstrap sår standardkanalerna utan nätverk, och en ny profil vid profilbyte', () => {
+    const query = vi.fn(async () => ({ items: [] }))
+    const debrid = vi.fn(async () => [])
+    sdk.queryLibrary = query
+    sdk.listDebrid = debrid
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    render(<ChannelsBootstrap />)
+    expect(readChannels()).toHaveLength(10)
+    expect(readChannels()[0]!.name).toBe('Bio dygnet runt')
+    // "Byt profil": tom lagring, engelska.
+    storage.clear()
+    sdk.lang = 'en'
+    for (const fn of sdk.profileListeners) fn()
+    expect(readChannels()[0]!.name).toBe('Movies around the clock')
+    expect(query).not.toHaveBeenCalled()
+    expect(debrid).not.toHaveBeenCalled()
+    expect(fetchSpy).not.toHaveBeenCalled()
+    fetchSpy.mockRestore()
+  })
+
+  it('biblioteket publiceras före grinden; watchlist och debrid väntar på waitForStartIdle', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'debrid'] }, [], 1, () => 0.1)
+    let open: () => void = () => {}
+    const gate = new Promise<void>((r) => { open = r })
+    sdk.idle = () => gate
+    sdk.queryLibrary = async () => ({ items: [{ key: 'm1', kind: 'movie', tmdbId: 1, title: 'm1', year: 2000, genres: [], runtimeMin: 95 }] })
+    const debrid = vi.fn(async () => [{ kind: 'movie', title: 'D', year: 2001, files: [{ provider: 'torbox', fileRef: '1|1' }] }])
+    sdk.listDebrid = debrid
+    const { result } = renderHook(() => useChannelPool(ch))
+    await waitFor(() => expect(result.current.pool.map((i) => i.ref)).toEqual(['lib:m1']))
+    await new Promise((r) => setTimeout(r, 10))
+    expect(debrid).not.toHaveBeenCalled()
+    expect(result.current.partial).toBe(true)
+    await act(async () => { open() })
+    await waitFor(() => expect(result.current.partial).toBe(false))
+    expect(debrid).toHaveBeenCalledTimes(1)
+    expect(result.current.pool.map((i) => i.ref).sort()).toEqual(['db:torbox:1|1', 'lib:m1'])
   })
 })
 

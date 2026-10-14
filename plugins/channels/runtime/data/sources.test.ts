@@ -175,4 +175,28 @@ describe('progressiv laddning', () => {
     await loadPoolProgressive(b, d)
     expect(d.queryLibrary).toHaveBeenCalledTimes(2)
   })
+
+  it('watchlist och metadataberikning väntar på startgrinden; biblioteket gör det inte', async () => {
+    let open: () => void = () => {}
+    const gate = new Promise<void>((r) => { open = r })
+    const ensure = vi.fn(async () => {})
+    const watch = vi.fn(() => [{ tmdbId: 3, imdbId: 'tt3', title: 'Heat' }])
+    const d = deps({
+      waitForIdle: () => gate,
+      getMovieWatchlist: watch,
+      queryLibrary: vi.fn(async () => ({ items: [{ key: 'x', kind: 'movie' as const, tmdbId: 77, title: 'X' }] })),
+      meta: { get: () => null, ensure },
+    })
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'watchlist'] }, [], 1, () => 0.1)
+    const updates: string[][] = []
+    const done = loadPoolProgressive(ch, d, (pool) => updates.push(pool.map((i) => i.ref)))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(updates.at(-1)).toEqual(['lib:x'])
+    expect(watch).not.toHaveBeenCalled()
+    expect(ensure).not.toHaveBeenCalled()
+    open()
+    await done
+    expect(watch).toHaveBeenCalled()
+    expect(ensure).toHaveBeenCalled()
+  })
 })

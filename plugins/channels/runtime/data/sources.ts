@@ -41,6 +41,12 @@ export interface SourceDeps {
   fetchSeasons(tmdbId: number): Promise<Array<{ season: number; episodes: Array<{ episode: number; title: string; runtime: number | null }> }>>
   listDebridCloud(): Promise<DebridTitleLike[]>
   meta: ReturnType<typeof createMetaCache>
+  /**
+   * Värdens startgrind (waitForStartIdle): nätverkstungt poolbygge —
+   * watchlist, debrid och metadataberikning — väntar här så det aldrig
+   * konkurrerar med en filmstart. Biblioteket (lokalt index) väntar inte.
+   */
+  waitForIdle?(): Promise<void>
 }
 
 const PAGE = 200 // kärnans MAX_LIMIT per fråga
@@ -74,9 +80,12 @@ const uncached = (deps: SourceDeps, refs: MetaRef[]): MetaRef[] => refs.filter((
  * som redan finns i cachen (annars standardlängd, runtimeKnown:false), sedan
  * hämtas det som saknas i bakgrunden och listan byggs om EN gång.
  */
+const idle = (deps: SourceDeps): Promise<void> => (deps.waitForIdle ? deps.waitForIdle().catch(() => {}) : Promise.resolve())
+
 async function enrich(deps: SourceDeps, refs: MetaRef[], rebuild: () => void): Promise<void> {
   const missing = uncached(deps, refs)
   if (missing.length === 0) return
+  await idle(deps)
   await deps.meta.ensure(missing).catch(() => {})
   rebuild()
 }
@@ -165,6 +174,7 @@ function buildWatchlistMovies(movies: WatchlistEntry[], deps: SourceDeps): PoolI
  * tv-info-anrop per serie) och läggs till när alla är hämtade.
  */
 export const streamWatchlistItems: SourceStream = async (deps, emit) => {
+  await idle(deps)
   const movies = deps.getMovieWatchlist()
   const shows = deps.getWatchlist()
   const perShow: PoolItem[][] = shows.map(() => [])
@@ -175,6 +185,7 @@ export const streamWatchlistItems: SourceStream = async (deps, emit) => {
     ...shows.map((s) => ({ kind: 'tv' as const, tmdbId: s.tmdbId })),
   ], () => emit(build()))
   if (shows.length === 0) return
+  await idle(deps)
   // Högst två serier åt gången mot /api/tv-info (fetchSeasons cachar själv).
   let cursor = 0
   const worker = async () => {
@@ -231,6 +242,9 @@ function buildDebridItems(titles: DebridTitleLike[], deps: SourceDeps): PoolItem
 }
 
 export const streamDebridItems: SourceStream = async (deps, emit) => {
+  // Listningen (RD pausar per torrent) körs först när ingen start pågår, bara
+  // för kanaler som använder debrid; värdens 6 h-cache och delade hämtning gäller.
+  await idle(deps)
   const titles = await deps.listDebridCloud()
   emit(buildDebridItems(titles, deps))
   await enrich(deps, titles.filter((t) => t.tmdbId != null).map((t) => ({ kind: t.kind, tmdbId: t.tmdbId! })), () => emit(buildDebridItems(titles, deps)))

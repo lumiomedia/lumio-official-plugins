@@ -1,5 +1,6 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
 import { S } from './strings'
+import { ChannelsBootstrap } from './ui/bootstrap'
 import { ChannelsHomeRow } from './ui/home-row'
 import { ChannelsPage } from './ui/channels-page'
 import { channelsSettingsSection } from './ui/settings-section'
@@ -19,6 +20,8 @@ export const ChannelsPlugin: LumioPlugin = {
     // Äldre värdar saknar registerHomeSource: raden fungerar då bara som standardrad.
     ctx.registerHomeSource?.({ id: 'channels-now', label: S.homeRowTitle, rowId: 'channels-now' })
     ctx.registerSettingsSection(channelsSettingsSection)
+    // Standardkanalerna vid uppstart (äldre värdar utan bootstrap: när sidan öppnas).
+    ctx.registerBootstrap?.({ id: 'channels-defaults', Mount: ChannelsBootstrap })
   },
 }
 

@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 
 const storage = new Map<string, unknown>()
 vi.mock('@/lib/plugin-sdk', () => ({
+  waitForStartIdle: () => Promise.resolve(),
   readPluginJson: (_id: string, key: string, fallback: unknown) => storage.get(key) ?? fallback,
   removePluginStorageItem: (_id: string, key: string) => { storage.delete(key) },
   writePluginJson: (_id: string, key: string, value: unknown) => { storage.set(key, value) },

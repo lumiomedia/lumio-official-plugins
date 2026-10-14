@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/plugin-sdk', () => ({
+  waitForStartIdle: () => Promise.resolve(),
   Card: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Section: ({ title, action, children }: { title: ReactNode; action?: ReactNode; children: ReactNode }) => <section><h3>{title}</h3>{action}{children}</section>,
   PillBtn: ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => <button type="button" onClick={onClick}>{children}</button>,

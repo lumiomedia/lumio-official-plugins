@@ -6,7 +6,7 @@
 import {
   channelListDebridCloud, channelRememberStream, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
   fetchLibraryStatus, getMovieWatchlist, getWatchlist, hasChannelHost, onPluginStorageChanged, queryLibrary,
-  readPluginJson, removePluginStorageItem, writePluginJson,
+  readPluginJson, removePluginStorageItem, waitForStartIdle, writePluginJson,
 } from '@/lib/plugin-sdk'
 import type { ChannelDef, SourceId } from './model/channel'
 import { createMetaCache, createSeasonsCache, type MetaStore, type SeasonList, type SeasonsStore, type TitleMeta } from './data/meta-cache'
@@ -140,6 +140,7 @@ export const sourceDeps: SourceDeps = {
   fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
   listDebridCloud: () => channelListDebridCloud() as never,
   meta: createMetaCache(metaStore, fetchMeta),
+  waitForIdle: () => waitForStartIdle(),
 }
 
 const maxAdded = (list: Array<{ addedAt?: string }>): number =>

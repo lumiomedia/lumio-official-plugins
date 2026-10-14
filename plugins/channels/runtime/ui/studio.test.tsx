@@ -21,6 +21,7 @@ const item = (ref: string, over: Partial<PoolItem> = {}): PoolItem => ({
 })
 
 vi.mock('@/lib/plugin-sdk', () => ({
+  waitForStartIdle: () => Promise.resolve(),
   Card: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Switch: ({ checked }: { checked: boolean }) => <span data-checked={String(checked)} />,
   TOKENS: {},

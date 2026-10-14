@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/plugin-sdk', () => ({
+  waitForStartIdle: () => Promise.resolve(),
   useTvMode: () => state.tv,
   useLang: () => ({ lang: 'sv' }),
   resolvePluginText: (text: { sv: string }) => text.sv,

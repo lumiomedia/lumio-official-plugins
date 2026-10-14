@@ -20330,6 +20330,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -40017,9 +40018,12 @@ ${cue.text}`).join("\n\n")}
     Politics: { en: "Politics", sv: "Politik" }
   };
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/home-row.tsx
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/bootstrap.tsx
   init_react_shim();
   init_plugin_sdk();
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/state/store.ts
+  init_react_shim();
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/genres.ts
   var ALIAS = {
@@ -40155,9 +40159,6 @@ ${cue.text}`).join("\n\n")}
     const words = name.trim().split(/\s+/).filter(Boolean);
     return words.slice(0, 2).map((w) => w[0].toUpperCase()).join("");
   }
-
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/state/store.ts
-  init_react_shim();
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/model/schedule.ts
   var EPOCH = new Date(2026, 0, 1, 0, 0, 0).getTime();
@@ -40464,9 +40465,12 @@ ${cue.text}`).join("\n\n")}
     return { runtimeMin: fallback, runtimeKnown: false };
   }
   var uncached = (deps, refs) => refs.filter((r) => deps.meta.get(r.kind, r.tmdbId) == null);
+  var idle = (deps) => deps.waitForIdle ? deps.waitForIdle().catch(() => {
+  }) : Promise.resolve();
   async function enrich(deps, refs, rebuild) {
     const missing = uncached(deps, refs);
     if (missing.length === 0) return;
+    await idle(deps);
     await deps.meta.ensure(missing).catch(() => {
     });
     rebuild();
@@ -40558,6 +40562,7 @@ ${cue.text}`).join("\n\n")}
     return items2;
   }
   var streamWatchlistItems = async (deps, emit3) => {
+    await idle(deps);
     const movies = deps.getMovieWatchlist();
     const shows = deps.getWatchlist();
     const perShow = shows.map(() => []);
@@ -40568,6 +40573,7 @@ ${cue.text}`).join("\n\n")}
       ...shows.map((s) => ({ kind: "tv", tmdbId: s.tmdbId }))
     ], () => emit3(build()));
     if (shows.length === 0) return;
+    await idle(deps);
     let cursor = 0;
     const worker = async () => {
       while (cursor < shows.length) {
@@ -40634,6 +40640,7 @@ ${cue.text}`).join("\n\n")}
     return items2;
   }
   var streamDebridItems = async (deps, emit3) => {
+    await idle(deps);
     const titles = await deps.listDebridCloud();
     emit3(buildDebridItems(titles, deps));
     await enrich(deps, titles.filter((t) => t.tmdbId != null).map((t) => ({ kind: t.kind, tmdbId: t.tmdbId })), () => emit3(buildDebridItems(titles, deps)));
@@ -40944,7 +40951,8 @@ ${cue.text}`).join("\n\n")}
     getWatchlist: () => getWatchlist().map((e) => ({ ...e, tmdbId: Number(e.tmdbId) })),
     fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
     listDebridCloud: () => channelListDebridCloud(),
-    meta: createMetaCache(metaStore, fetchMeta)
+    meta: createMetaCache(metaStore, fetchMeta),
+    waitForIdle: () => waitForStartIdle2()
   };
   var maxAdded = (list) => list.reduce((max, e) => Math.max(max, Date.parse(e.addedAt ?? "") || 0), 0);
   var SIGNATURE_TTL_MS = 2e3;
@@ -41159,6 +41167,25 @@ ${cue.text}`).join("\n\n")}
     }, [active3, key]);
     return now2;
   }
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/bootstrap.tsx
+  function seedForActiveProfile() {
+    try {
+      seedDefaultChannels(readStoredLang() === "sv" ? "sv" : "en");
+    } catch {
+    }
+  }
+  function ChannelsBootstrap() {
+    useEffect(() => {
+      seedForActiveProfile();
+      return onProfileChanged(seedForActiveProfile);
+    }, []);
+    return null;
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/home-row.tsx
+  init_react_shim();
+  init_plugin_sdk();
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/home-row-logic.ts
   var HOME_DEFAULT_COUNT = 20;
@@ -43820,6 +43847,7 @@ ${cue.text}`).join("\n\n")}
       ctx.registerHomeRow({ id: "channels-now", title: S.homeRowTitle, showOnHome: true, Row: ChannelsHomeRow });
       ctx.registerHomeSource?.({ id: "channels-now", label: S.homeRowTitle, rowId: "channels-now" });
       ctx.registerSettingsSection(channelsSettingsSection);
+      ctx.registerBootstrap?.({ id: "channels-defaults", Mount: ChannelsBootstrap });
     }
   };
   var runtime_default = ChannelsPlugin;
