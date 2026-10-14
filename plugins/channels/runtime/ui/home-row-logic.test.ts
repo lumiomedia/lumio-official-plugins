@@ -15,13 +15,13 @@ describe('hemraden', () => {
 
   it('kortmodell för sändande kanal', () => {
     const m = homeCardModel(make(1), [it1('a', 60), it1('b', 30)], EPOCH + 20 * 60_000)
-    expect(m).toMatchObject({ title: 'a', badge: '40 MIN KVAR', resting: false, nextTitle: 'b' })
+    expect(m).toMatchObject({ title: 'a', minsLeft: 40, resting: false, nextTitle: 'b' })
     expect(m.pct).toBeCloseTo(1 / 3)
   })
 
   it('vilande kanal och tom pool', () => {
     const resting = { ...make(2), airWindow: 'late' as const }
-    expect(homeCardModel(resting, [it1('a', 60)], new Date(2026, 2, 10, 12, 0).getTime())).toMatchObject({ badge: 'VILA', resting: true })
+    expect(homeCardModel(resting, [it1('a', 60)], new Date(2026, 2, 10, 12, 0).getTime())).toMatchObject({ minsLeft: null, resting: true })
     expect(homeCardModel(make(4), [], EPOCH).title).toBeNull()
   })
 

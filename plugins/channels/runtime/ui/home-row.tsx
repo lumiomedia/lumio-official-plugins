@@ -17,8 +17,6 @@ import { CHANNELS_PAGE_ID, formatClock } from './guide-layout'
 import { C, FONT, RADIUS, fontSize } from './tokens'
 import { useText } from './use-text'
 
-type T = ReturnType<typeof useText>
-
 export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCardWidth = '16rem' }: HomeRowProps) {
   const t = useText()
   const isTv = useTvMode()
@@ -64,7 +62,6 @@ export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCa
             channel={channel}
             now={now}
             isTv={isTv}
-            t={t}
             width={slider ? sliderCardWidth : undefined}
             onRundown={onRundown}
             onOpen={open}
@@ -75,15 +72,15 @@ export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCa
   )
 }
 
-const HomeCard = memo(function HomeCard({ channel, now, isTv, t, width, onRundown, onOpen }: {
+const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, onOpen }: {
   channel: ChannelDef
   now: number
   isTv: boolean
-  t: T
   width: string | undefined
   onRundown(id: string, rundown: PoolItem[]): void
   onOpen(channelId: string): void
 }) {
+  const t = useText()
   const { rundown, loading } = useChannelPool(channel)
   // Rapporterar uppåt i en effekt så render förblir ren.
   useReport(channel.id, rundown, onRundown)
@@ -92,6 +89,7 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, t, width, onRundow
     ? t('playerRest', { time: formatClock(m.restUntil ?? now) })
     : m.title ?? (loading ? t('guideLoading') : t('playerEmpty'))
   const hasTitle = m.title != null
+  const badge = m.resting ? t('homeCardRest') : m.minsLeft != null ? t('playerMinsLeft', { n: m.minsLeft }) : ''
 
   return (
     <div style={{ width, flex: width ? 'none' : undefined, minWidth: 0, opacity: m.resting ? 0.6 : 1 }}>
@@ -118,7 +116,7 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, t, width, onRundow
         >
           {m.number}
         </span>
-        {m.badge ? (
+        {badge ? (
           <span
             data-card-badge=""
             style={{
@@ -127,7 +125,7 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, t, width, onRundow
               background: m.resting ? 'rgba(5,8,22,0.8)' : C.accent, color: m.resting ? C.textDim : C.base,
             }}
           >
-            {m.badge}
+            {badge.toUpperCase()}
           </span>
         ) : null}
         <span style={{ position: 'absolute', left: 10, right: 10, bottom: 10, display: 'block' }}>

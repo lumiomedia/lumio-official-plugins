@@ -5,6 +5,7 @@ export const S = {
   homeRowTitle: { en: 'On now on your channels', sv: 'Sänds nu på dina kanaler' },
   homeRowSubtitle: { en: 'It is {time} — jump in where the channel is', sv: 'Klockan {time} — hoppa in där kanalen är' },
   homeRowShowGuide: { en: 'SHOW GUIDE ›', sv: 'VISA TABLÅ ›' },
+  homeCardRest: { en: 'Off air', sv: 'Vila' },
   homeCardNext: { en: 'Next: {title}', sv: 'Sedan: {title}' },
   settingsLabel: { en: 'Channels', sv: 'Kanaler' },
   // Spelaren

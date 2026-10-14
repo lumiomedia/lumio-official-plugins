@@ -22,8 +22,8 @@ export interface HomeCardModel {
   name: string
   /** null vid tom pool (kortet visar "Inget att sända"); vid vila behålls null och restUntil sätts. */
   title: string | null
-  /** "NN MIN KVAR" eller "VILA". */
-  badge: string
+  /** Minuter kvar (uppåt avrundat, minst 1); null vid vila och tom pool. Texten byggs i UI:t. */
+  minsLeft: number | null
   resting: boolean
   /** 0–1, andel av programmet som gått. */
   pct: number
@@ -39,13 +39,13 @@ const titleOf = (item: PoolItem): string => (item.kind === 'episode' && item.ser
 export function homeCardModel(channel: ChannelDef, rundown: PoolItem[], now: number): HomeCardModel {
   const base = { channelId: channel.id, number: channel.number, name: channel.name, hue: channel.hue }
   const slot = programmeAt(rundown, channel.airWindow, now)
-  if (slot.kind === 'empty') return { ...base, title: null, badge: '', resting: false, pct: 0, nextTitle: null }
-  if (slot.kind === 'rest') return { ...base, title: null, badge: 'VILA', resting: true, pct: 0, nextTitle: null, restUntil: slot.nextAir }
+  if (slot.kind === 'empty') return { ...base, title: null, minsLeft: null, resting: false, pct: 0, nextTitle: null }
+  if (slot.kind === 'rest') return { ...base, title: null, minsLeft: null, resting: true, pct: 0, nextTitle: null, restUntil: slot.nextAir }
   const next = rundown.length > 1 ? rundown[(slot.index + 1) % rundown.length] : undefined
   return {
     ...base,
     title: titleOf(slot.item),
-    badge: `${Math.max(1, Math.ceil(slot.minsLeft))} MIN KVAR`,
+    minsLeft: Math.max(1, Math.ceil(slot.minsLeft)),
     resting: false,
     pct: slot.pct,
     nextTitle: next ? titleOf(next) : null,

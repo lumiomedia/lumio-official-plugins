@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
 const storage = new Map<string, unknown>()
+let failWrites = 0
 let libraryStatus: unknown = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] }
 vi.mock('@/lib/plugin-sdk', () => ({
   readPluginJson: (_id: string, key: string, fallback: unknown) => storage.get(key) ?? fallback,
   removePluginStorageItem: (_id: string, key: string) => { storage.delete(key) },
-  writePluginJson: (_id: string, key: string, value: unknown) => { storage.set(key, value) },
+  writePluginJson: (_id: string, key: string, value: unknown) => { if (failWrites > 0) { failWrites -= 1; throw new Error('lagring full') } storage.set(key, value) },
   onPluginStorageChanged: () => () => {},
   queryLibrary: async () => ({ items: [] }),
   getMovieWatchlist: () => [],
@@ -23,7 +24,7 @@ import { deleteChannel, loadPoolCached, saveChannel, useChannelClock } from './s
 import { prunePoolCaches, readChannels, resetSourceSignatures, sourceSignatures } from '../host'
 import { createChannel, emptyDraft } from '../model/channel'
 
-beforeEach(() => { resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
+beforeEach(() => { failWrites = 0; resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
 
 describe('kanallagret', () => {
   it('sparar, ersätter och tar bort kanaler', () => {
@@ -102,6 +103,37 @@ describe('delade laddningar', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('laddningsfel och signaturbyte', () => {
+  const baseDeps = { getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listDebridCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
+
+  it('en misslyckad laddning cachas inte: nästa anrop försöker igen', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    // Källorna sväljer egna fel; ett jobb kan ändå falla, t.ex. när cachen inte går att skriva.
+    const queryLibrary = vi.fn(async () => ({ items: [] }))
+    failWrites = 1
+    await expect(loadPoolCached(ch, { ...baseDeps, queryLibrary } as never)).rejects.toThrow('lagring full')
+    await expect(loadPoolCached(ch, { ...baseDeps, queryLibrary } as never)).resolves.toEqual([])
+    expect(queryLibrary).toHaveBeenCalledTimes(2)
+  })
+
+  it('signaturbyte under pågående laddning startar ett nytt jobb', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => { release = r })
+    const queryLibrary = vi.fn(async () => { await gate; return { items: [] } })
+    const first = loadPoolCached(ch, { ...baseDeps, queryLibrary } as never)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(queryLibrary).toHaveBeenCalledTimes(1)
+    libraryStatus = { total: 3, sources: [{ lastFullSync: 999, lastDeltaSync: null }] }
+    resetSourceSignatures()
+    const second = loadPoolCached(ch, { ...baseDeps, queryLibrary } as never)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(queryLibrary).toHaveBeenCalledTimes(2)
+    release()
+    await Promise.all([first, second])
   })
 })
 
