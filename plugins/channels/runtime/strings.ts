@@ -49,6 +49,7 @@ export const S = {
   heroRestTitle: { en: 'The channel is resting', sv: 'Kanalen vilar' },
   heroRestMeta: { en: 'Off air · in {dur}', sv: 'Utanför sändningstid · om {dur}' },
   heroLoading: { en: 'Loading the schedule…', sv: 'Hämtar tablån…' },
+  heroPartial: { en: 'More titles loading…', sv: 'Fler titler laddas…' },
   durHm: { en: '{h} h {m} min', sv: '{h} h {m} min' },
   durM: { en: '{m} min', sv: '{m} min' },
   guideHeader: { en: 'GUIDE', sv: 'TABLÅ' },

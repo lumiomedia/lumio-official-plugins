@@ -63,15 +63,20 @@ export function dedupePool(items: PoolItem[]): PoolItem[] {
  * biblioteket synkat, och tvärtom.
  */
 export function poolSignature(channel: ChannelDef, sourceSigs: Partial<Record<SourceId, string>>): string {
-  const sources = [...channel.sources].sort()
+  const rules = poolRules(channel)
   return JSON.stringify({
-    rules: {
-      sources,
-      genres: canonGenres(channel.genres).sort(),
-      era: channel.era, length: channel.length, kind: channel.kind,
-    },
-    sigs: Object.fromEntries(sources.map((id) => [id, sourceSigs[id] ?? null])),
+    rules,
+    sigs: Object.fromEntries(rules.sources.map((id) => [id, sourceSigs[id] ?? null])),
   })
+}
+
+/** Reglerna som avgör poolens innehåll (signaturens regeldel). */
+export function poolRules(channel: Pick<ChannelDef, 'sources' | 'genres' | 'era' | 'length' | 'kind'>) {
+  return {
+    sources: [...channel.sources].sort(),
+    genres: canonGenres(channel.genres).sort(),
+    era: channel.era, length: channel.length, kind: channel.kind,
+  }
 }
 
 /** Högst så många poster per kanal (lagringen är trång på Android). */

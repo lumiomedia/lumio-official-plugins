@@ -1,30 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 
 const storage = new Map<string, unknown>()
 let failWrites = 0
 let libraryStatus: unknown = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] }
+const sdk = {
+  queryLibrary: async (_q: unknown): Promise<{ items: unknown[] }> => ({ items: [] }),
+  listDebrid: async (): Promise<unknown[]> => [],
+}
 vi.mock('@/lib/plugin-sdk', () => ({
   readPluginJson: (_id: string, key: string, fallback: unknown) => storage.get(key) ?? fallback,
   removePluginStorageItem: (_id: string, key: string) => { storage.delete(key) },
   writePluginJson: (_id: string, key: string, value: unknown) => { if (failWrites > 0) { failWrites -= 1; throw new Error('lagring full') } storage.set(key, value) },
   onPluginStorageChanged: () => () => {},
-  queryLibrary: async () => ({ items: [] }),
+  queryLibrary: (q: unknown) => sdk.queryLibrary(q),
   getMovieWatchlist: () => [],
   getWatchlist: () => [],
   fetchLibraryStatus: async () => libraryStatus,
-  channelListDebridCloud: async () => [],
+  channelListDebridCloud: () => sdk.listDebrid(),
   channelResolveLibraryPlayback: async () => null,
   channelResolveTitleStream: async () => null,
   channelUnrestrictDebridFile: async () => null,
   hasChannelHost: () => true,
 }))
 
-import { deleteChannel, loadPoolCached, saveChannel, useChannelClock } from './store'
+import { deleteChannel, loadPoolCached, saveChannel, useChannelClock, useChannelPool } from './store'
 import { prunePoolCaches, readChannels, resetSourceSignatures, sourceSignatures } from '../host'
 import { createChannel, emptyDraft } from '../model/channel'
 
-beforeEach(() => { failWrites = 0; resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
+beforeEach(() => { sdk.queryLibrary = async () => ({ items: [] }); sdk.listDebrid = async () => []; failWrites = 0; resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
 
 describe('kanallagret', () => {
   it('sparar, ersätter och tar bort kanaler', () => {
@@ -165,6 +169,59 @@ describe('laddningsfel och signaturbyte', () => {
     expect(queryLibrary).toHaveBeenCalledTimes(2)
     release()
     await Promise.all([first, second])
+  })
+})
+
+describe('progressiv pool', () => {
+  const movie = (key: string, tmdbId: number) => ({ key, kind: 'movie', tmdbId, title: key, year: 2000, genres: [], runtimeMin: 95 })
+
+  it('första källan visas innan en långsam andra svarat; cachen skrivs först när allt är klart', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'debrid'] }, [], 1, () => 0.1)
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => { release = r })
+    sdk.queryLibrary = async () => ({ items: [movie('m1', 1)] })
+    sdk.listDebrid = async () => { await gate; return [{ kind: 'movie', title: 'D', year: 2001, files: [{ provider: 'torbox', fileRef: '1|1' }] }] }
+    const { result } = renderHook(() => useChannelPool(ch))
+    await waitFor(() => expect(result.current.pool.map((i) => i.ref)).toEqual(['lib:m1']))
+    expect(result.current.loading).toBe(false)
+    expect(result.current.partial).toBe(true)
+    expect(storage.has(`poolCache:${ch.id}`)).toBe(false)
+    await act(async () => { release() })
+    await waitFor(() => expect(result.current.partial).toBe(false))
+    expect(result.current.pool.map((i) => i.ref).sort()).toEqual(['db:torbox:1|1', 'lib:m1'])
+    expect(storage.has(`poolCache:${ch.id}`)).toBe(true)
+  })
+
+  it('två prenumeranter på samma kanal delar en laddning', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    const query = vi.fn(async () => { await new Promise((r) => setTimeout(r, 5)); return { items: [movie('m1', 1)] } })
+    sdk.queryLibrary = query
+    const a = renderHook(() => useChannelPool(ch))
+    const b = renderHook(() => useChannelPool(ch))
+    await waitFor(() => expect(a.result.current.pool).toHaveLength(1))
+    await waitFor(() => expect(b.result.current.pool).toHaveLength(1))
+    expect(query).toHaveBeenCalledTimes(1)
+  })
+
+  it('en sparad pool med samma regler visas direkt och byts först mot en komplett', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'debrid'] }, [], 1, () => 0.1)
+    sdk.queryLibrary = async () => ({ items: [movie('m1', 1)] })
+    await loadPoolCached(ch)
+    // Källan har ändrats: signaturen stämmer inte längre, men reglerna gör det.
+    libraryStatus = { total: 4, sources: [{ lastFullSync: 999, lastDeltaSync: null }] }
+    resetSourceSignatures()
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => { release = r })
+    sdk.queryLibrary = async () => ({ items: [movie('m1', 1), movie('m2', 3)] })
+    sdk.listDebrid = async () => { await gate; return [] }
+    const { result } = renderHook(() => useChannelPool(ch))
+    expect(result.current.loading).toBe(false)
+    expect(result.current.pool.map((i) => i.ref)).toEqual(['lib:m1'])
+    await new Promise((r) => setTimeout(r, 10))
+    expect(result.current.pool.map((i) => i.ref)).toEqual(['lib:m1'])
+    expect(result.current.partial).toBe(false)
+    await act(async () => { release() })
+    await waitFor(() => expect(result.current.pool.map((i) => i.ref).sort()).toEqual(['lib:m1', 'lib:m2']))
   })
 })
 

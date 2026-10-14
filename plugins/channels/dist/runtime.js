@@ -39901,6 +39901,7 @@ ${cue.text}`).join("\n\n")}
     heroRestTitle: { en: "The channel is resting", sv: "Kanalen vilar" },
     heroRestMeta: { en: "Off air \xB7 in {dur}", sv: "Utanf\xF6r s\xE4ndningstid \xB7 om {dur}" },
     heroLoading: { en: "Loading the schedule\u2026", sv: "H\xE4mtar tabl\xE5n\u2026" },
+    heroPartial: { en: "More titles loading\u2026", sv: "Fler titler laddas\u2026" },
     durHm: { en: "{h} h {m} min", sv: "{h} h {m} min" },
     durM: { en: "{m} min", sv: "{m} min" },
     guideHeader: { en: "GUIDE", sv: "TABL\xC5" },
@@ -40280,17 +40281,20 @@ ${cue.text}`).join("\n\n")}
     return [...best.values()];
   }
   function poolSignature(channel, sourceSigs) {
-    const sources = [...channel.sources].sort();
+    const rules = poolRules(channel);
     return JSON.stringify({
-      rules: {
-        sources,
-        genres: canonGenres(channel.genres).sort(),
-        era: channel.era,
-        length: channel.length,
-        kind: channel.kind
-      },
-      sigs: Object.fromEntries(sources.map((id) => [id, sourceSigs[id] ?? null]))
+      rules,
+      sigs: Object.fromEntries(rules.sources.map((id) => [id, sourceSigs[id] ?? null]))
     });
+  }
+  function poolRules(channel) {
+    return {
+      sources: [...channel.sources].sort(),
+      genres: canonGenres(channel.genres).sort(),
+      era: channel.era,
+      length: channel.length,
+      kind: channel.kind
+    };
   }
   var MAX_POOL_ITEMS = 2e3;
   function hash(text, seed) {
@@ -40416,182 +40420,211 @@ ${cue.text}`).join("\n\n")}
     if (metaMin != null && metaMin > 0) return { runtimeMin: metaMin, runtimeKnown: true };
     return { runtimeMin: fallback, runtimeKnown: false };
   }
-  async function loadLibraryItems(deps, opts = {}) {
-    try {
-      const titles = [];
-      for (let offset = 0; offset < MAX_TITLES2; offset += PAGE) {
-        const page = await deps.queryLibrary({ kind: "recent", full: true, limit: PAGE, offset }).catch((err) => {
-          if (opts.strict && offset === 0) throw err;
-          return null;
-        });
-        if (!page) break;
-        titles.push(...page.items);
-        if (page.items.length < PAGE || page.total != null && titles.length >= page.total) break;
-      }
-      const lacking = titles.filter((t) => t.tmdbId != null && (t.kind === "movie" ? !(t.runtimeMin > 0) : !(t.runtimeMin > 0) && (t.episodes ?? []).some((e) => !(e.runtimeMin > 0))));
-      await deps.meta.ensure(lacking.map((t) => ({ kind: t.kind === "movie" ? "movie" : "tv", tmdbId: t.tmdbId }))).catch(() => {
-      });
-      const items2 = [];
-      for (const t of titles) {
-        const tv = t.kind !== "movie";
-        const tmdbId = t.tmdbId ?? void 0;
-        const meta = tmdbId != null ? deps.meta.get(tv ? "tv" : "movie", tmdbId) : null;
-        const common = {
-          source: "library",
-          genres: t.genres?.length ? t.genres : meta?.genres ?? [],
-          year: t.year ?? meta?.year ?? null,
-          ...tmdbId != null ? { tmdbId } : {},
-          ...t.imdbId ? { imdbId: t.imdbId } : meta?.imdbId ? { imdbId: meta.imdbId } : {},
-          ...t.posterUrl ?? meta?.posterUrl ? { posterUrl: t.posterUrl ?? meta?.posterUrl } : {},
-          ...t.backdropUrl ?? meta?.backdropUrl ? { backdropUrl: t.backdropUrl ?? meta?.backdropUrl } : {}
-        };
-        if (!tv) {
-          items2.push({
-            ...common,
-            ref: `lib:${t.key}`,
-            title: t.title,
-            kind: "movie",
-            ...pickRuntime(t.runtimeMin, meta?.runtimeMin, DEFAULT_RUNTIME.movie),
-            play: { type: "library", key: t.key, mediaType: "movie" }
-          });
-          continue;
-        }
-        for (const ep of t.episodes ?? []) {
-          items2.push({
-            ...common,
-            ref: `lib:${t.key}:${ep.key}`,
-            title: ep.title || t.title,
-            seriesTitle: t.title,
-            kind: "episode",
-            seriesKey: `lib:${t.key}`,
-            season: ep.season,
-            episode: ep.episode,
-            ...pickRuntime(ep.runtimeMin ?? t.runtimeMin, meta?.runtimeMin, DEFAULT_RUNTIME.episode),
-            play: { type: "library", key: t.key, mediaType: "tv", season: ep.season, episode: ep.episode }
-          });
-        }
-      }
-      return items2;
-    } catch (err) {
-      if (opts.strict) throw err;
-      return [];
-    }
+  var uncached = (deps, refs) => refs.filter((r) => deps.meta.get(r.kind, r.tmdbId) == null);
+  async function enrich(deps, refs, rebuild) {
+    const missing = uncached(deps, refs);
+    if (missing.length === 0) return;
+    await deps.meta.ensure(missing).catch(() => {
+    });
+    rebuild();
   }
-  async function loadWatchlistItems(deps, opts = {}) {
-    try {
-      const movies = deps.getMovieWatchlist();
-      const shows = deps.getWatchlist();
-      await deps.meta.ensure([
-        ...movies.map((m) => ({ kind: "movie", tmdbId: m.tmdbId })),
-        ...shows.map((s) => ({ kind: "tv", tmdbId: s.tmdbId }))
-      ]);
-      const items2 = [];
-      for (const m of movies) {
-        const meta = deps.meta.get("movie", m.tmdbId);
-        const imdbId = m.imdbId || meta?.imdbId;
-        if (!imdbId) continue;
-        const poster = m.posterUrl ?? meta?.posterUrl;
+  async function fetchLibraryTitles(deps, opts) {
+    const titles = [];
+    for (let offset = 0; offset < MAX_TITLES2; offset += PAGE) {
+      const page = await deps.queryLibrary({ kind: "recent", full: true, limit: PAGE, offset }).catch((err) => {
+        if (opts.strict && offset === 0) throw err;
+        return null;
+      });
+      if (!page) break;
+      titles.push(...page.items);
+      if (page.items.length < PAGE || page.total != null && titles.length >= page.total) break;
+    }
+    return titles;
+  }
+  function buildLibraryItems(titles, deps) {
+    const items2 = [];
+    for (const t of titles) {
+      const tv = t.kind !== "movie";
+      const tmdbId = t.tmdbId ?? void 0;
+      const meta = tmdbId != null ? deps.meta.get(tv ? "tv" : "movie", tmdbId) : null;
+      const common = {
+        source: "library",
+        genres: t.genres?.length ? t.genres : meta?.genres ?? [],
+        year: t.year ?? meta?.year ?? null,
+        ...tmdbId != null ? { tmdbId } : {},
+        ...t.imdbId ? { imdbId: t.imdbId } : meta?.imdbId ? { imdbId: meta.imdbId } : {},
+        ...t.posterUrl ?? meta?.posterUrl ? { posterUrl: t.posterUrl ?? meta?.posterUrl } : {},
+        ...t.backdropUrl ?? meta?.backdropUrl ? { backdropUrl: t.backdropUrl ?? meta?.backdropUrl } : {}
+      };
+      if (!tv) {
         items2.push({
-          ref: `wl:movie:${m.tmdbId}`,
-          title: m.title,
+          ...common,
+          ref: `lib:${t.key}`,
+          title: t.title,
           kind: "movie",
-          source: "watchlist",
-          genres: meta?.genres ?? [],
-          year: meta?.year ?? null,
-          tmdbId: m.tmdbId,
-          imdbId,
-          ...poster ? { posterUrl: poster } : {},
-          ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
-          ...pickRuntime(null, meta?.runtimeMin, DEFAULT_RUNTIME.movie),
-          play: { type: "stream", imdbId, mediaType: "movie" }
+          ...pickRuntime(t.runtimeMin, meta?.runtimeMin, DEFAULT_RUNTIME.movie),
+          play: { type: "library", key: t.key, mediaType: "movie" }
+        });
+        continue;
+      }
+      for (const ep of t.episodes ?? []) {
+        items2.push({
+          ...common,
+          ref: `lib:${t.key}:${ep.key}`,
+          title: ep.title || t.title,
+          seriesTitle: t.title,
+          kind: "episode",
+          seriesKey: `lib:${t.key}`,
+          season: ep.season,
+          episode: ep.episode,
+          ...pickRuntime(ep.runtimeMin ?? t.runtimeMin, meta?.runtimeMin, DEFAULT_RUNTIME.episode),
+          play: { type: "library", key: t.key, mediaType: "tv", season: ep.season, episode: ep.episode }
         });
       }
-      const perShow = shows.map(() => []);
-      let cursor = 0;
-      const worker = async () => {
-        while (cursor < shows.length) {
-          const idx = cursor++;
-          const s = shows[idx];
-          const out = perShow[idx];
-          const meta = deps.meta.get("tv", s.tmdbId);
-          const imdbId = s.imdbId || meta?.imdbId;
-          if (!imdbId) continue;
-          const seasons = await deps.fetchSeasons(s.tmdbId).catch(() => []);
-          const poster = s.posterUrl ?? meta?.posterUrl;
-          for (const season of seasons) {
-            if (season.season < 1 || season.season > WATCHLIST_SEASONS) continue;
-            for (const ep of season.episodes) {
-              out.push({
-                ref: `wl:tv:${s.tmdbId}:${season.season}:${ep.episode}`,
-                title: ep.title || s.title,
-                seriesTitle: s.title,
-                kind: "episode",
-                source: "watchlist",
-                seriesKey: `wl:tv:${s.tmdbId}`,
-                season: season.season,
-                episode: ep.episode,
-                genres: meta?.genres ?? [],
-                year: meta?.year ?? null,
-                tmdbId: s.tmdbId,
-                imdbId,
-                ...poster ? { posterUrl: poster } : {},
-                ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
-                ...pickRuntime(ep.runtime, meta?.runtimeMin, DEFAULT_RUNTIME.episode),
-                play: { type: "stream", imdbId, mediaType: "series", season: season.season, episode: ep.episode }
-              });
-            }
+    }
+    return items2;
+  }
+  var streamLibraryItems = async (deps, emit3, opts = {}) => {
+    const titles = await fetchLibraryTitles(deps, opts);
+    emit3(buildLibraryItems(titles, deps));
+    const lacking = titles.filter((t) => t.tmdbId != null && (t.kind === "movie" ? !(t.runtimeMin > 0) : !(t.runtimeMin > 0) && (t.episodes ?? []).some((e) => !(e.runtimeMin > 0))));
+    await enrich(deps, lacking.map((t) => ({ kind: t.kind === "movie" ? "movie" : "tv", tmdbId: t.tmdbId })), () => emit3(buildLibraryItems(titles, deps)));
+  };
+  function buildWatchlistMovies(movies, deps) {
+    const items2 = [];
+    for (const m of movies) {
+      const meta = deps.meta.get("movie", m.tmdbId);
+      const imdbId = m.imdbId || meta?.imdbId;
+      if (!imdbId) continue;
+      const poster = m.posterUrl ?? meta?.posterUrl;
+      items2.push({
+        ref: `wl:movie:${m.tmdbId}`,
+        title: m.title,
+        kind: "movie",
+        source: "watchlist",
+        genres: meta?.genres ?? [],
+        year: meta?.year ?? null,
+        tmdbId: m.tmdbId,
+        imdbId,
+        ...poster ? { posterUrl: poster } : {},
+        ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
+        ...pickRuntime(null, meta?.runtimeMin, DEFAULT_RUNTIME.movie),
+        play: { type: "stream", imdbId, mediaType: "movie" }
+      });
+    }
+    return items2;
+  }
+  var streamWatchlistItems = async (deps, emit3) => {
+    const movies = deps.getMovieWatchlist();
+    const shows = deps.getWatchlist();
+    const perShow = shows.map(() => []);
+    const build = () => [...buildWatchlistMovies(movies, deps), ...perShow.flat()];
+    emit3(build());
+    await enrich(deps, [
+      ...movies.map((m) => ({ kind: "movie", tmdbId: m.tmdbId })),
+      ...shows.map((s) => ({ kind: "tv", tmdbId: s.tmdbId }))
+    ], () => emit3(build()));
+    if (shows.length === 0) return;
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < shows.length) {
+        const idx = cursor++;
+        const s = shows[idx];
+        const out = perShow[idx];
+        const meta = deps.meta.get("tv", s.tmdbId);
+        const imdbId = s.imdbId || meta?.imdbId;
+        if (!imdbId) continue;
+        const seasons = await deps.fetchSeasons(s.tmdbId).catch(() => []);
+        const poster = s.posterUrl ?? meta?.posterUrl;
+        for (const season of seasons) {
+          if (season.season < 1 || season.season > WATCHLIST_SEASONS) continue;
+          for (const ep of season.episodes) {
+            out.push({
+              ref: `wl:tv:${s.tmdbId}:${season.season}:${ep.episode}`,
+              title: ep.title || s.title,
+              seriesTitle: s.title,
+              kind: "episode",
+              source: "watchlist",
+              seriesKey: `wl:tv:${s.tmdbId}`,
+              season: season.season,
+              episode: ep.episode,
+              genres: meta?.genres ?? [],
+              year: meta?.year ?? null,
+              tmdbId: s.tmdbId,
+              imdbId,
+              ...poster ? { posterUrl: poster } : {},
+              ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
+              ...pickRuntime(ep.runtime, meta?.runtimeMin, DEFAULT_RUNTIME.episode),
+              play: { type: "stream", imdbId, mediaType: "series", season: season.season, episode: ep.episode }
+            });
           }
         }
-      };
-      await Promise.all(Array.from({ length: Math.min(2, shows.length) }, worker));
-      items2.push(...perShow.flat());
-      return items2;
-    } catch (err) {
-      if (opts.strict) throw err;
-      return [];
-    }
-  }
-  async function loadDebridItems(deps, opts = {}) {
-    try {
-      const titles = await deps.listDebridCloud();
-      await deps.meta.ensure(titles.filter((t) => t.tmdbId != null).map((t) => ({ kind: t.kind, tmdbId: t.tmdbId })));
-      const items2 = [];
-      for (const t of titles) {
-        const tv = t.kind === "tv";
-        const meta = t.tmdbId != null ? deps.meta.get(t.kind, t.tmdbId) : null;
-        const imdbId = t.imdbId ?? meta?.imdbId;
-        for (const f of t.files) {
-          items2.push({
-            ref: `db:${f.provider}:${f.fileRef}`,
-            title: t.title,
-            kind: tv ? "episode" : "movie",
-            source: "debrid",
-            genres: meta?.genres ?? [],
-            year: t.year ?? meta?.year ?? null,
-            ...t.tmdbId != null ? { tmdbId: t.tmdbId } : {},
-            ...imdbId ? { imdbId } : {},
-            ...meta?.posterUrl ? { posterUrl: meta.posterUrl } : {},
-            ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
-            ...tv ? { seriesTitle: t.title, seriesKey: `db:tv:${t.tmdbId ?? t.title}`, ...f.season != null ? { season: f.season } : {}, ...f.episode != null ? { episode: f.episode } : {} } : {},
-            ...pickRuntime(null, meta?.runtimeMin, tv ? DEFAULT_RUNTIME.episode : DEFAULT_RUNTIME.movie),
-            play: { type: "debrid", provider: f.provider, fileRef: f.fileRef }
-          });
-        }
       }
-      return items2;
+    };
+    await Promise.all(Array.from({ length: Math.min(2, shows.length) }, worker));
+    emit3(build());
+  };
+  function buildDebridItems(titles, deps) {
+    const items2 = [];
+    for (const t of titles) {
+      const tv = t.kind === "tv";
+      const meta = t.tmdbId != null ? deps.meta.get(t.kind, t.tmdbId) : null;
+      const imdbId = t.imdbId ?? meta?.imdbId;
+      for (const f of t.files) {
+        items2.push({
+          ref: `db:${f.provider}:${f.fileRef}`,
+          title: t.title,
+          kind: tv ? "episode" : "movie",
+          source: "debrid",
+          genres: meta?.genres ?? [],
+          year: t.year ?? meta?.year ?? null,
+          ...t.tmdbId != null ? { tmdbId: t.tmdbId } : {},
+          ...imdbId ? { imdbId } : {},
+          ...meta?.posterUrl ? { posterUrl: meta.posterUrl } : {},
+          ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
+          ...tv ? { seriesTitle: t.title, seriesKey: `db:tv:${t.tmdbId ?? t.title}`, ...f.season != null ? { season: f.season } : {}, ...f.episode != null ? { episode: f.episode } : {} } : {},
+          ...pickRuntime(null, meta?.runtimeMin, tv ? DEFAULT_RUNTIME.episode : DEFAULT_RUNTIME.movie),
+          play: { type: "debrid", provider: f.provider, fileRef: f.fileRef }
+        });
+      }
+    }
+    return items2;
+  }
+  var streamDebridItems = async (deps, emit3) => {
+    const titles = await deps.listDebridCloud();
+    emit3(buildDebridItems(titles, deps));
+    await enrich(deps, titles.filter((t) => t.tmdbId != null).map((t) => ({ kind: t.kind, tmdbId: t.tmdbId })), () => emit3(buildDebridItems(titles, deps)));
+  };
+  async function collect(stream, deps, opts) {
+    let last2 = [];
+    try {
+      await stream(deps, (items2) => {
+        last2 = items2;
+      }, opts);
     } catch (err) {
       if (opts.strict) throw err;
-      return [];
     }
+    return last2;
   }
-  async function loadPool(channel, deps) {
-    const loaders = {
-      library: loadLibraryItems,
-      watchlist: loadWatchlistItems,
-      debrid: loadDebridItems
-    };
-    const lists = await Promise.all(channel.sources.map((s) => loaders[s](deps).catch(() => [])));
-    return filterPool(dedupePool(lists.flat()), channel);
+  var loadLibraryItems = (deps, opts = {}) => collect(streamLibraryItems, deps, opts);
+  var loadWatchlistItems = (deps, opts = {}) => collect(streamWatchlistItems, deps, opts);
+  var loadDebridItems = (deps, opts = {}) => collect(streamDebridItems, deps, opts);
+  var STREAMS = {
+    library: streamLibraryItems,
+    watchlist: streamWatchlistItems,
+    debrid: streamDebridItems
+  };
+  async function loadPoolProgressive(channel, deps, onUpdate) {
+    const bySource = /* @__PURE__ */ new Map();
+    const merged = () => filterPool(dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? [])), channel);
+    await Promise.all(channel.sources.map(
+      (s) => STREAMS[s](deps, (items2) => {
+        bySource.set(s, items2);
+        onUpdate?.(merged());
+      }).catch(() => {
+      })
+    ));
+    return merged();
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/host.ts
@@ -40886,28 +40919,74 @@ ${cue.text}`).join("\n\n")}
     writeChannels(readChannels().filter((c) => c.id !== id));
     removePoolCache(id);
   }
-  async function loadPoolCached(channel, deps = sourceDeps) {
+  var inflightPools = /* @__PURE__ */ new Map();
+  function settledJob(pool) {
+    return { view: { pool, complete: true }, subscribe: () => () => {
+    }, done: Promise.resolve(pool) };
+  }
+  function startJob(channel, sig, deps, key) {
+    const listeners7 = /* @__PURE__ */ new Set();
+    const job = {
+      view: { pool: null, complete: false },
+      subscribe(fn) {
+        listeners7.add(fn);
+        return () => {
+          listeners7.delete(fn);
+        };
+      },
+      done: Promise.resolve(EMPTY4)
+    };
+    const publish = (view) => {
+      job.view = view;
+      for (const fn of [...listeners7]) fn(view);
+    };
+    job.done = loadPoolProgressive(channel, deps, (partial) => publish({ pool: capPool(partial, MAX_POOL_ITEMS, channel.seed), complete: false })).then((items2) => {
+      const pool = packPool(capPool(items2, MAX_POOL_ITEMS, channel.seed));
+      const final = unpackPool(pool);
+      try {
+        writePoolCache(channel.id, { sig, pool });
+      } finally {
+        publish({ pool: final, complete: true });
+      }
+      return final;
+    });
+    const release = () => {
+      if (inflightPools.get(key) === job) inflightPools.delete(key);
+    };
+    job.done.then(release, () => {
+      release();
+      if (!job.view.complete) publish({ pool: job.view.pool ?? EMPTY4, complete: true });
+    });
+    return job;
+  }
+  async function openPoolJob(channel, deps) {
     const sig = poolSignature(channel, await sourceSignatures());
     const cached = readPoolCache(channel.id);
     if (cached && cached.sig === sig) {
       const items2 = unpackPool(cached.pool);
-      if (items2) return items2;
+      if (items2) return settledJob(items2);
     }
     const key = `${channel.id}|${sig}`;
     const running2 = inflightPools.get(key);
     if (running2) return running2;
-    const job = loadPool(channel, deps).then((items2) => {
-      const pool = packPool(capPool(items2, MAX_POOL_ITEMS, channel.seed));
-      writePoolCache(channel.id, { sig, pool });
-      return unpackPool(pool);
-    }).finally(() => inflightPools.delete(key));
+    const job = startJob(channel, sig, deps, key);
     inflightPools.set(key, job);
     return job;
   }
-  var inflightPools = /* @__PURE__ */ new Map();
   function readCachedPool(channelId) {
     const cached = readPoolCache(channelId);
     return cached ? unpackPool(cached.pool) : null;
+  }
+  function readStalePool(channel) {
+    const cached = readPoolCache(channel.id);
+    if (!cached) return null;
+    try {
+      const parsed = JSON.parse(cached.sig);
+      if (JSON.stringify(parsed.rules) !== JSON.stringify(poolRules(channel))) return null;
+    } catch {
+      return null;
+    }
+    return unpackPool(cached.pool);
   }
   function useChannels() {
     const [channels, setChannels] = useState(readChannels);
@@ -40925,25 +41004,42 @@ ${cue.text}`).join("\n\n")}
     const key = channel ? JSON.stringify([channel.id, channel.sources, channel.genres, channel.era, channel.length, channel.kind]) : "";
     const latest2 = useRef(channel);
     latest2.current = channel;
+    const stale = useMemo(() => channel ? readStalePool(channel) : null, [key]);
     useEffect(() => {
       if (!channel) return;
       let alive = true;
-      void loadPoolCached(latest2.current).then((pool2) => {
-        if (alive) setState({ key, pool: pool2 });
-      }).catch(() => {
-        if (alive) setState({ key, pool: EMPTY4 });
-      });
+      let unsubscribe = () => {
+      };
+      const set = (view2) => {
+        if (alive) setState({ key, view: view2 });
+      };
+      if (stale) set({ pool: stale, complete: false, stale: true });
+      const apply = (view2) => {
+        if (view2.complete || !stale) set(view2);
+      };
+      void openPoolJob(latest2.current, sourceDeps).then((job) => {
+        if (!alive) return;
+        if (job.view.pool) apply(job.view);
+        unsubscribe = job.subscribe(apply);
+      }).catch(() => set({ pool: stale ?? EMPTY4, complete: true }));
       return () => {
         alive = false;
+        unsubscribe();
       };
     }, [key]);
-    const pool = channel && state2?.key === key ? state2.pool : EMPTY4;
+    const view = channel ? state2?.key === key ? state2.view : stale ? { pool: stale, complete: false, stale: true } : null : null;
+    const pool = view?.pool ?? EMPTY4;
     const rundown = useMemo(
       () => channel ? buildRundown(pool, channel.order, channel.seed) : EMPTY4,
       [pool, channel?.order, channel?.seed]
       // eslint-disable-line react-hooks/exhaustive-deps
     );
-    return { pool, rundown, loading: channel != null && state2?.key !== key };
+    return {
+      pool,
+      rundown,
+      loading: channel != null && view?.pool == null,
+      partial: view != null && view.pool != null && !view.complete && !view.stale
+    };
   }
   var MAX_TICK_MS = 3e4;
   function useChannelClock(rundowns) {
@@ -41347,10 +41443,10 @@ ${cue.text}`).join("\n\n")}
   }
   var stickyLabel = (isMobile) => isMobile ? { position: "sticky", left: 0, zIndex: 2, background: C.base } : {};
   var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }) {
-    const { rundown, loading: loading2 } = useChannelPool(channel);
+    const { rundown, loading: loading2, partial } = useChannelPool(channel);
     useEffect(() => {
-      onRundown(channel.id, rundown, loading2);
-    }, [channel.id, rundown, loading2, onRundown]);
+      onRundown(channel.id, rundown, loading2, partial);
+    }, [channel.id, rundown, loading2, partial, onRundown]);
     const slots = rundown.length > 0 ? listing(rundown, channel.airWindow, win.from, win.to) : [];
     const onKeyDown = (event) => {
       if (event.key === "Enter" || event.key === " ") {
@@ -41475,7 +41571,7 @@ ${cue.text}`).join("\n\n")}
     const m = total % 60;
     return h > 0 ? t("durHm", { h, m }) : t("durM", { m });
   }
-  function ChannelHero({ channel, rundown, loading: loading2, now: now2, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel }) {
+  function ChannelHero({ channel, rundown, loading: loading2, partial, now: now2, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel }) {
     const fs = (px) => fontSize(px, isTv);
     const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now2) : null;
     const programme = slot?.kind === "programme" ? slot : null;
@@ -41568,6 +41664,7 @@ ${cue.text}`).join("\n\n")}
               }
             ),
             /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: fs(14), color: C.textSoft }, children: meta }),
+            partial ? /* @__PURE__ */ jsx("p", { "data-channels-partial": "", role: "status", style: { margin: "6px 0 0", fontSize: fs(12), color: C.textDim }, children: t("heroPartial") }) : null,
             rest ? /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: fs(13), color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { marginTop: 12, height: 3, maxWidth: 360, borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) }),
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }, children: [
               /* @__PURE__ */ jsx(HeroButton, { isTv, primary: true, disabled: !canPlay, onClick: () => onPlay("live"), children: t("heroWatchLive") }),
@@ -43266,8 +43363,11 @@ ${cue.text}`).join("\n\n")}
       setStudio(next2.studio ?? null);
     }, [paramsKey]);
     const selected = pickChannel(sorted, selectedId);
-    const onRundown = useCallback((id, rundown, loading2) => {
-      setRundowns((prev) => prev[id]?.rundown === rundown && prev[id]?.loading === loading2 ? prev : { ...prev, [id]: { rundown, loading: loading2 } });
+    const onRundown = useCallback((id, rundown, loading2, partial) => {
+      setRundowns((prev) => {
+        const cur = prev[id];
+        return cur?.rundown === rundown && cur.loading === loading2 && cur.partial === partial ? prev : { ...prev, [id]: { rundown, loading: loading2, partial } };
+      });
     }, []);
     const clockInput = sorted.map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] }));
     const now2 = useChannelClock(clockInput);
@@ -43373,6 +43473,7 @@ ${cue.text}`).join("\n\n")}
           channel: selected,
           rundown: selectedData?.rundown ?? [],
           loading: selectedData?.loading ?? true,
+          partial: selectedData?.partial ?? false,
           now: now2,
           isTv,
           isMobile,

@@ -36,7 +36,7 @@ export interface ChannelGuideProps {
   t: T
   onSelect(id: string): void
   onPlay(id: string): void
-  onRundown(id: string, rundown: PoolItem[], loading: boolean): void
+  onRundown(id: string, rundown: PoolItem[], loading: boolean, partial: boolean): void
   /** TV: ◀▶ på en rad. Returnerar falskt om fönstret inte kan flyttas åt det hållet. */
   onShift(dir: -1 | 1): boolean
 }
@@ -107,13 +107,13 @@ interface RowProps {
   t: T
   onSelect(id: string): void
   onPlay(id: string): void
-  onRundown(id: string, rundown: PoolItem[], loading: boolean): void
+  onRundown(id: string, rundown: PoolItem[], loading: boolean, partial: boolean): void
   onShift(dir: -1 | 1): boolean
 }
 
 const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }: RowProps) {
-  const { rundown, loading } = useChannelPool(channel)
-  useEffect(() => { onRundown(channel.id, rundown, loading) }, [channel.id, rundown, loading, onRundown])
+  const { rundown, loading, partial } = useChannelPool(channel)
+  useEffect(() => { onRundown(channel.id, rundown, loading, partial) }, [channel.id, rundown, loading, partial, onRundown])
   const slots = rundown.length > 0 ? listing(rundown, channel.airWindow, win.from, win.to) : []
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {

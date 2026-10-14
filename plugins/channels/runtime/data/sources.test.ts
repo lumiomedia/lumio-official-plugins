@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { loadDebridItems, loadLibraryItems, loadPool, loadWatchlistItems, type SourceDeps } from './sources'
+import { loadDebridItems, loadLibraryItems, loadPool, loadPoolProgressive, loadWatchlistItems, type SourceDeps } from './sources'
 import { createSeasonsCache, type SeasonsEntry } from './meta-cache'
 import { createChannel, emptyDraft } from '../model/channel'
 
@@ -83,7 +83,7 @@ describe('källadaptrarna', () => {
       meta: { get: (_k: 'movie' | 'tv', id: number) => (id === 1 ? { runtimeMin: 55, genres: [], year: null, at: 0 } : null), ensure },
     })
     const items = await loadLibraryItems(d)
-    expect(ensure).toHaveBeenCalledWith([{ kind: 'tv', tmdbId: 1 }, { kind: 'tv', tmdbId: 99 }])
+    expect(ensure).toHaveBeenCalledWith([{ kind: 'tv', tmdbId: 99 }])
     expect(items.map((i) => [i.ref, i.runtimeMin, i.runtimeKnown])).toEqual([
       ['lib:a:e1', 55, true], ['lib:a:e2', 30, true], ['lib:b:e1', 45, false],
     ])
@@ -105,5 +105,56 @@ describe('källadaptrarna', () => {
     const page = Array.from({ length: 200 }, (_, i) => ({ key: `m${i}`, kind: 'movie' as const, title: 't', runtimeMin: 90 }))
     const q = vi.fn().mockResolvedValueOnce({ items: page, total: 400 }).mockRejectedValueOnce(new Error('nät'))
     expect(await loadLibraryItems(deps({ queryLibrary: q }), { strict: true })).toHaveLength(200)
+  })
+})
+
+describe('progressiv laddning', () => {
+  it('första källan publiceras innan en långsam andra källa svarat', async () => {
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => { release = r })
+    const d = deps({ listDebridCloud: vi.fn(async () => { await gate; return [] }) })
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'debrid'] }, [], 1, () => 0.1)
+    const updates: string[][] = []
+    const done = loadPoolProgressive(ch, d, (pool) => updates.push(pool.map((i) => i.ref)))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(updates.length).toBeGreaterThan(0)
+    expect(updates.at(-1)).toEqual(['lib:m1', 'lib:s1:e1'])
+    release()
+    expect((await done).map((i) => i.ref)).toEqual(['lib:m1', 'lib:s1:e1'])
+  })
+
+  it('metadata ligger inte på den kritiska vägen: berikningen publicerar om en gång', async () => {
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => { release = r })
+    const known: Record<number, number> = {}
+    const ensure = vi.fn(async () => { await gate; known[5] = 130; known[6] = 22 })
+    const d = deps({
+      queryLibrary: vi.fn(async () => ({ items: [
+        { key: 'a', kind: 'movie' as const, tmdbId: 5, title: 'A' },
+        { key: 'b', kind: 'movie' as const, tmdbId: 6, title: 'B' },
+      ] })),
+      meta: { get: (_k: 'movie' | 'tv', id: number) => (known[id] ? { runtimeMin: known[id]!, genres: [], year: null, at: 0 } : null), ensure },
+    })
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    const updates: Array<Array<[string, number, boolean]>> = []
+    const done = loadPoolProgressive(ch, d, (pool) => updates.push(pool.map((i) => [i.ref, i.runtimeMin, i.runtimeKnown])))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(updates).toEqual([[['lib:a', 100, false], ['lib:b', 100, false]]])
+    release()
+    await done
+    expect(ensure).toHaveBeenCalledTimes(1)
+    expect(updates).toHaveLength(2)
+    expect(updates[1]).toEqual([['lib:a', 130, true], ['lib:b', 22, true]])
+  })
+
+  it('slutpoolen är densamma oavsett vilken källa som svarar först', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'watchlist', 'debrid'] }, [], 1, () => 0.1)
+    const slow = <T,>(ms: number, v: T) => new Promise<T>((r) => setTimeout(() => r(v), ms))
+    const base = deps()
+    const lib = await base.queryLibrary({})
+    const deb = await base.listDebridCloud()
+    const a = await loadPoolProgressive(ch, deps({ queryLibrary: () => slow(1, lib), listDebridCloud: () => slow(15, deb) }))
+    const b = await loadPoolProgressive(ch, deps({ queryLibrary: () => slow(15, lib), listDebridCloud: () => slow(1, deb) }))
+    expect(b).toEqual(a)
   })
 })

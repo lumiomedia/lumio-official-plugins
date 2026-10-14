@@ -81,7 +81,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
   const [player, setPlayer] = useState<PlayerState | null>(() => initialPlayer(sorted, p))
   const [studio, setStudio] = useState<string | null>(() => p.studio ?? null)
   const [shift, setShift] = useState(0)
-  const [rundowns, setRundowns] = useState<Record<string, { rundown: PoolItem[]; loading: boolean }>>({})
+  const [rundowns, setRundowns] = useState<Record<string, { rundown: PoolItem[]; loading: boolean; partial: boolean }>>({})
 
   // Nya parametrar medan sidan redan är öppen (hemkort, inställningarnas
   // Redigera): läs om vald kanal, spelare och studio.
@@ -98,8 +98,11 @@ export function ChannelsPage({ params }: BrowsePageProps) {
 
   const selected = pickChannel(sorted, selectedId)
 
-  const onRundown = useCallback((id: string, rundown: PoolItem[], loading: boolean) => {
-    setRundowns((prev) => (prev[id]?.rundown === rundown && prev[id]?.loading === loading ? prev : { ...prev, [id]: { rundown, loading } }))
+  const onRundown = useCallback((id: string, rundown: PoolItem[], loading: boolean, partial: boolean) => {
+    setRundowns((prev) => {
+      const cur = prev[id]
+      return cur?.rundown === rundown && cur.loading === loading && cur.partial === partial ? prev : { ...prev, [id]: { rundown, loading, partial } }
+    })
   }, [])
   const clockInput = sorted.map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] }))
   const now = useChannelClock(clockInput)
@@ -207,6 +210,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
         channel={selected}
         rundown={selectedData?.rundown ?? []}
         loading={selectedData?.loading ?? true}
+        partial={selectedData?.partial ?? false}
         now={now}
         isTv={isTv}
         isMobile={isMobile}

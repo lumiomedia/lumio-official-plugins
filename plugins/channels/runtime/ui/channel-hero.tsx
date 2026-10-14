@@ -21,6 +21,8 @@ export interface ChannelHeroProps {
   channel: ChannelDef
   rundown: PoolItem[]
   loading: boolean
+  /** Tablån visas men fler källor/metadata är på väg. */
+  partial?: boolean
   now: number
   isTv: boolean
   isMobile: boolean
@@ -46,7 +48,7 @@ function duration(ms: number, t: T): string {
   return h > 0 ? t('durHm', { h, m }) : t('durM', { m })
 }
 
-export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel }: ChannelHeroProps) {
+export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel }: ChannelHeroProps) {
   const fs = (px: number) => fontSize(px, isTv)
   const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now) : null
   const programme = slot?.kind === 'programme' ? slot : null
@@ -118,6 +120,9 @@ export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, ca
           {title}
         </h1>
         <p style={{ margin: '10px 0 0', fontSize: fs(14), color: C.textSoft }}>{meta}</p>
+        {partial ? (
+          <p data-channels-partial="" role="status" style={{ margin: '6px 0 0', fontSize: fs(12), color: C.textDim }}>{t('heroPartial')}</p>
+        ) : null}
         {rest ? (
           <p style={{ margin: '10px 0 0', fontSize: fs(13), color: C.accentLight }}>{t('playerRest', { time: formatClock(rest.nextAir) })}</p>
         ) : (
