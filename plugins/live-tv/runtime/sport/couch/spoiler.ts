@@ -73,19 +73,25 @@ export function revealPhone(key: string, phoneId: string): void {
 }
 
 /** Skyddet gäller nyckeln just nu, oavsett inställning och om någon har visat resultatet. */
-export function spoilerProtected(m: SportMatch, now: number): boolean {
-  const key = spoilerKey(m)
+export function keyProtected(key: string | null, now: number): boolean {
   const until = key ? protectedUntil.get(key) : undefined
   return until != null && now < until
 }
 
-export function hiddenOnTv(m: SportMatch, now: number, s: Pick<SportSettings, 'spoilerReplays'>): boolean {
-  if (s.spoilerReplays === false) return false
-  if (!spoilerProtected(m, now)) return false
-  const key = spoilerKey(m)!
+export function spoilerProtected(m: SportMatch, now: number): boolean {
+  return keyProtected(spoilerKey(m), now)
+}
+
+/** Nyckeln (en fixtur, "provider:id") är dold på TV:n. Lag- och ligasidornas fixturer går den här vägen. */
+export function keyHiddenOnTv(key: string | null, now: number, s: Pick<SportSettings, 'spoilerReplays'>): boolean {
+  if (s.spoilerReplays === false || !key || !keyProtected(key, now)) return false
   // Lagringen läses bara för en skyddad nyckel: de flesta matcher går aldrig hit.
   const shownUntil = readTvReveals()[key]
   return !(shownUntil != null && now < shownUntil)
+}
+
+export function hiddenOnTv(m: SportMatch, now: number, s: Pick<SportSettings, 'spoilerReplays'>): boolean {
+  return keyHiddenOnTv(spoilerKey(m), now, s)
 }
 
 export function hiddenForPhone(m: SportMatch, phoneId: string | null, now: number, s: Pick<SportSettings, 'spoilerReplays'>): boolean {

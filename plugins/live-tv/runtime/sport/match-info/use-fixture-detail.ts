@@ -5,8 +5,11 @@ import { useResultsController } from '../results-controller'
 import { usePollDemand } from '../live-poller'
 import type { FixtureDetail, ProviderId } from '../provider'
 import type { SportMatch } from '../sport-model'
+import { scoreHidden } from '../score-model'
+import { useSpoilerVersion } from '../couch/spoiler'
 
-export type DetailState = 'none' | 'loading' | 'ready'
+/** `hidden`: spoilerskyddet döljer matchens resultat, och därmed händelserna (ingenting hämtas). */
+export type DetailState = 'none' | 'loading' | 'ready' | 'hidden'
 
 /**
  * Matchinfons ENDA källanrop: fixturen (fotboll: händelser, statistik och
@@ -20,10 +23,13 @@ export function useFixtureDetail(match: SportMatch): { detail: FixtureDetail | n
   // En repris visar originalmatchen, och BARA ur cachen (inga nya anrop för en repris).
   const replay = match.rerun ? match.replayOf?.fixture ?? null : null
   const covered = match.coverage === 'full' && (match.rerun ? !!replay : !!match.fixture)
-  usePollDemand('match-center', covered && !match.rerun && match.status === 'live')
+  // Spoilerskyddet: händelserna avslöjar resultatet, så de hämtas inte förrän det visas.
+  useSpoilerVersion()
+  const hidden = covered && scoreHidden(match)
+  usePollDemand('match-center', covered && !hidden && !match.rerun && match.status === 'live')
 
   useEffect(() => {
-    if (!covered || !controller) return
+    if (!covered || hidden || !controller) return
     let cancelled = false
     const ref = replay ?? match.fixture
     if (!ref) return
@@ -39,8 +45,9 @@ export function useFixtureDetail(match: SportMatch): { detail: FixtureDetail | n
     // Pågående match: hämta om BARA när ställning eller status ändras. Minuten
     // ändras vid varje livepollning, och en omhämtning per pollning dubblade
     // förbrukningen. Omhämtningen räknas som live i kvothanteraren.
-  }, [covered, controller, match.kind, match.fixture?.id, replay?.id, match.status, match.score?.home, match.score?.away])
+  }, [covered, hidden, controller, match.kind, match.fixture?.id, replay?.id, match.status, match.score?.home, match.score?.away])
 
   if (!covered || !controller) return { detail: null, state: 'none' }
+  if (hidden) return { detail: null, state: 'hidden' }
   return { detail, state: detail || done ? 'ready' : 'loading' }
 }

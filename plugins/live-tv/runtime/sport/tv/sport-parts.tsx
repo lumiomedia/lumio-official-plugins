@@ -6,7 +6,7 @@ import { ChannelArt, Tag, TV, dp, station } from '../../tv/tv-ui'
 import { matchTitle, sourceChannel, type SportMatch } from '../sport-model'
 import { followState, leagueColor, matchdayStrip, rankedSources, statusAt } from '../sport-day-model'
 import { sourceLine, type SportCtx } from '../sport-ctx'
-import { matchStatusLabel, showsScore } from '../score-model'
+import { matchStatusLabel } from '../score-model'
 import { MatchScore, ResultOnlyTag } from './sport-score'
 import { SportIcon, SportIcons } from './sport-icons'
 import { focusAttr, sportCardStyle } from '../surface'
@@ -72,7 +72,7 @@ export function MatchCard({ match, ctx, fluid = false }: { match: SportMatch; ct
             </span>
           ) : null}
           <span style={{ flex: 1, minWidth: 0, fontSize: dp(19), fontWeight: 600, ...ellipsis }}>{matchTitle(match)}</span>
-          {showsScore(match) ? <MatchScore match={match} size="row" /> : null}
+          <MatchScore match={match} size="row" />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: dp(8), fontSize: dp(15), color: TV.muted, minWidth: 0 }}>
           <span data-testid="card-status" data-live={status.live ? '1' : '0'} style={{ flexShrink: 0, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: status.live ? TV.acc : TV.text }}>{status.text}</span>

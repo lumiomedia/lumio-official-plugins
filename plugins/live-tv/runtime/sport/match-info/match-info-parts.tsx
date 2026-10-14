@@ -5,7 +5,8 @@ import { getPluginHttpAssetUrl, useTvMode } from '@/lib/plugin-sdk'
 import { TV, dp, station } from '../../tv/tv-ui'
 import { matchTitle, type SportMatch } from '../sport-model'
 import { crestColor, followState, statusAt } from '../sport-day-model'
-import { heroStatusLine, playedOnText, showsScore } from '../score-model'
+import { heroStatusLine, playedOnText, revealedReplayScore, scoreHidden, showsScore } from '../score-model'
+import { revealTv, spoilerKey, useSpoilerVersion } from '../couch/spoiler'
 import { timeLine, type SportCtx } from '../sport-ctx'
 import { toggleFollow } from '../sport-store'
 import { playerInitials } from '../match-info-model'
@@ -103,12 +104,16 @@ export function TeamsHeader({ u, match, ctx, compact = false, onOpenTeam }: { u:
   const crest = compact ? u(64) : u(84)
   // Repris: originalets slutresultat och datum ("Spelades lör 10 okt"), aldrig minut eller LIVE.
   const status = match.rerun ? playedOnText(match, ctx.tt, ctx.locale) ?? ctx.tt('sportReplay') : heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)
-  const score = match.rerun ? match.replayOf?.score ?? null : showsScore(match) ? match.score ?? null : null
+  useSpoilerVersion()
+  // Spoilerskyddet: låset, "Resultat dolt" och Visa resultat (för alla, i 24 h) i stället för ställningen.
+  const hidden = scoreHidden(match) && (!match.rerun || !!match.replayOf)
+  const score = match.rerun ? revealedReplayScore(match) : showsScore(match) ? match.score ?? null : null
   if (!match.home || !match.away) {
     return (
       <div data-testid="mc-head" style={{ display: 'flex', flexDirection: 'column', gap: u(6) }}>
         <div data-testid="mc-title" style={{ fontSize: u(30), fontWeight: 700, lineHeight: 1.15 }}>{matchTitle(match)}</div>
         <div style={{ fontSize: u(17), fontWeight: 600, color: st === 'live' ? TV.live : TV.muted }}>{status}</div>
+        {hidden ? <HiddenResult u={u} match={match} ctx={ctx} align="flex-start" /> : null}
       </div>
     )
   }
@@ -134,12 +139,29 @@ export function TeamsHeader({ u, match, ctx, compact = false, onOpenTeam }: { u:
     <div data-testid="mc-head" aria-label={matchTitle(match)} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)', alignItems: 'start', gap: u(12) }}>
       {team('home')}
       <div data-testid="mc-scoreline" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: u(6), paddingTop: u(compact ? 6 : 14) }}>
+        {hidden ? <HiddenResult u={u} match={match} ctx={ctx} align="center" /> : null}
         {score ? (
           <span data-testid="mc-score" style={{ fontSize: compact ? u(52) : u(64), fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{`${score.home} : ${score.away}`}</span>
         ) : null}
         <span data-testid="mc-status-line" style={{ fontSize: u(17), fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: st === 'live' ? TV.live : TV.muted, whiteSpace: 'nowrap' }}>{status}</span>
       </div>
       {team('away')}
+    </div>
+  )
+}
+
+/** Låset, "Resultat dolt" och stationen Visa resultat (TV:n och alla telefoner i 24 h). */
+function HiddenResult({ u, match, ctx, align }: { u: U; match: SportMatch; ctx: SportCtx; align: 'center' | 'flex-start' }) {
+  const reveal = () => { const key = spoilerKey(match); if (key) revealTv(key, Date.now()) }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: align, gap: u(10) }}>
+      <span data-testid="mc-score-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: u(8), fontSize: u(20), fontWeight: 700, color: TV.muted, whiteSpace: 'nowrap' }}>
+        <SportIcons.Lock size={u(18)} />{ctx.tt('sportResultHidden')}
+      </span>
+      <div data-testid="mc-reveal" {...station(reveal)} aria-label={ctx.tt('sportShowResult')}
+        style={{ display: 'inline-flex', alignItems: 'center', height: u(44), padding: `0 ${u(18)}px`, borderRadius: 999, cursor: 'pointer', fontSize: u(16), fontWeight: 700, background: TV.s12, border: `1px solid ${TV.lineCard}`, color: TV.text, boxSizing: 'border-box', whiteSpace: 'nowrap' }}>
+        {ctx.tt('sportShowResult')}
+      </div>
     </div>
   )
 }

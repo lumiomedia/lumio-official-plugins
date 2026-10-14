@@ -11,6 +11,8 @@ import { Crest } from '../crest'
 import { SportIcons } from '../sport-icons'
 import { ellipsis, rowCard, type U } from '../match-info/match-info-parts'
 import { focusAttr } from '../surface'
+import { fixtureScoreHidden } from '../score-model'
+import { useSpoilerVersion } from '../couch/spoiler'
 
 /*
   Lag- och ligasidans byggstenar. Samma skala (`u`) som matchinfon: TV och
@@ -97,7 +99,10 @@ export function StandingsRows({ u, rows, mark, ctx, onOpen, testId, form, highli
 
 /** En match i en lista (kommande, omgången): när, lagen och ställningen eller tiden; kanal och klocka när tablån har den. */
 export function FixtureRow({ u, f, ctx, title, sub, reminded, onPress, testId }: { u: U; f: TeamFixture; ctx: SportCtx; title: string; sub: string; reminded?: boolean | null; onPress?: () => void; testId: string }) {
-  const score = f.score && f.status !== 'scheduled' ? `${f.score.home}–${f.score.away}` : null
+  useSpoilerVersion()
+  // Spoilerskyddet: "–" och ett lås i stället för en dold matchs resultat.
+  const hidden = !!f.score && f.status !== 'scheduled' && fixtureScoreHidden(f)
+  const score = f.score && f.status !== 'scheduled' && !hidden ? `${f.score.home}–${f.score.away}` : null
   const live = f.status === 'live' || f.status === 'ht'
   return (
     <div data-testid={testId} {...station(onPress ?? NOOP)} style={{ ...rowCard(u), minHeight: u(68), display: 'flex', alignItems: 'center', gap: u(14), padding: `${u(10)}px ${u(16)}px`, cursor: onPress ? 'pointer' : 'default' }}>
@@ -106,6 +111,7 @@ export function FixtureRow({ u, f, ctx, title, sub, reminded, onPress, testId }:
         <div style={{ fontSize: u(18), fontWeight: 700, ...ellipsis }}>{title}</div>
         {sub ? <div style={{ fontSize: u(15), color: TV.muted, ...ellipsis }}>{sub}</div> : null}
       </div>
+      {hidden ? <span data-testid="page-fixture-score-hidden" aria-label={ctx.tt('sportResultHidden')} style={{ display: 'inline-flex', alignItems: 'center', gap: u(6), fontSize: u(20), fontWeight: 800, color: TV.muted, flexShrink: 0 }}><SportIcons.Lock size={u(16)} />–</span> : null}
       {score ? <span style={{ fontSize: u(20), fontWeight: 800, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{score}</span> : null}
       {reminded != null ? <span data-testid="page-fixture-bell" data-on={reminded ? '1' : '0'} style={{ display: 'inline-flex', flexShrink: 0, color: reminded ? TV.acc : u.dim }}><SportIcons.Bell size={u(20)} /></span> : null}
     </div>

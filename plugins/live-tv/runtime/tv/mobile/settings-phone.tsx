@@ -9,6 +9,7 @@ import { ContentTab, EpgTab, ParentalTab, PhoneCaret, PlaylistsTab, Row } from '
 import { nextStartView, startViewLabelKey } from '../start-view'
 import { SportKeySettingsTv } from '../../sport/sport-key-settings'
 import { SportBackdropSettingsTv } from '../../sport/sport-backdrop-settings'
+import { SportSpoilerSettingsTv } from '../../sport/sport-spoiler-settings'
 import { MT, ellipsis, sectionLabel } from './mobile-tokens'
 import { MobileHeader } from './mobile-header'
 import { MobileSegment } from './mobile-segment'
@@ -51,7 +52,7 @@ export function TvSettingsPhone(props: TvViewProps) {
             : params.tab === 'parental'
               ? <ParentalTab model={model} tt={tt} phone />
               : params.tab === 'sport'
-                ? <><SportKeySettingsTv phone pushLayer={nav.pushLayer} /><SportBackdropSettingsTv phone pushLayer={nav.pushLayer} /></>
+                ? <><SportKeySettingsTv phone pushLayer={nav.pushLayer} /><SportBackdropSettingsTv phone pushLayer={nav.pushLayer} /><SportSpoilerSettingsTv phone /></>
                 : <ContentTab model={model} tt={tt} phone />}
         </Card>
       </PhonePage>

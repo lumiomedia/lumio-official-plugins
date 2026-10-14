@@ -31,6 +31,8 @@ export const SportIcons = {
   Chevron: ({ size = dp(20) }: IconProps) => svg(size, <path d="m9 6 6 6-6 6" />),
   Back: ({ size = dp(22) }: IconProps) => svg(size, <path d="m15 6-6 6 6 6" />),
   Close: ({ size = dp(20) }: IconProps) => svg(size, <path d="M6 6l12 12M18 6 6 18" />),
+  /** Spoilerskyddet (handoffens ph-fill ph-lock-simple): fylld kropp, öppen bygel. */
+  Lock: ({ size = dp(16) }: IconProps) => svg(size, <><rect x="5" y="10.5" width="14" height="10" rx="2" fill="currentColor" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" /></>),
   /** Gult/rött kort i händelselistan. */
   Card: ({ size = dp(20), filled = true }: IconProps) => svg(size, <rect x="7" y="4" width="10" height="15" rx="1.5" />, filled),
 }

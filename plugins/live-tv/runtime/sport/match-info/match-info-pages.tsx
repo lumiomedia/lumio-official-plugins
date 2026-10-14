@@ -42,7 +42,7 @@ function EventCard({ u, row, match, ctx }: { u: U; row: EventRow; match: SportMa
   )
 }
 
-export function EventsPage({ u, match, ctx, detail }: { u: U; match: SportMatch; ctx: SportCtx; detail: FixtureDetail | null }) {
+export function EventsPage({ u, match, ctx, detail, hidden = false }: { u: U; match: SportMatch; ctx: SportCtx; detail: FixtureDetail | null; hidden?: boolean }) {
   const { lang, locale } = useTvText()
   const controller = useResultsController()
   const rows = detail ? eventRows(detail.events) : []
@@ -52,7 +52,7 @@ export function EventsPage({ u, match, ctx, detail }: { u: U; match: SportMatch;
   return (
     <>
       <Overline u={u}>{ctx.tt('sportEvents')}</Overline>
-      {rows.length === 0 ? <div data-testid="mc-no-events" style={{ fontSize: u(17), color: u.dim }}>{detail ? ctx.tt('sportNoEvents') : ctx.tt('sportDetailLoading')}</div> : null}
+      {rows.length === 0 ? <div data-testid={hidden ? 'mc-events-hidden' : 'mc-no-events'} style={{ fontSize: u(17), color: u.dim }}>{hidden ? ctx.tt('sportEventsHidden') : detail ? ctx.tt('sportNoEvents') : ctx.tt('sportDetailLoading')}</div> : null}
       <div style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
         {rows.map((r) => <EventCard key={r.index} u={u} row={r} match={match} ctx={ctx} />)}
       </div>

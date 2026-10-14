@@ -150,7 +150,7 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
       {state !== 'none' || venueName ? <Overline u={u}>{ctx.tt('sportTheMatch')}</Overline> : null}
       <div style={{ display: 'flex', flexDirection: 'column', gap: u(10) }}>
         {state !== 'none' ? (
-          <DrillRow u={u} testId="mc-row-events" icon={<SportIcons.Stats size={u(22)} />} label={ctx.tt('sportEventsStats')} value={summary ? ctx.tt('sportEventsSummary', summary) : '…'} onOpen={() => setPage({ kind: 'events' })} />
+          <DrillRow u={u} testId="mc-row-events" icon={<SportIcons.Stats size={u(22)} />} label={ctx.tt('sportEventsStats')} value={state === 'hidden' ? ctx.tt('sportResultHidden') : summary ? ctx.tt('sportEventsSummary', summary) : '…'} onOpen={() => setPage({ kind: 'events' })} />
         ) : null}
         {detail && detail.lineups.length > 0 ? (
           <DrillRow u={u} testId="mc-row-lineups" icon={<SportIcons.People size={u(22)} />} label={ctx.tt('sportLineups')} value={ctx.tt('sportStartingXI')} onOpen={() => setPage({ kind: 'lineups' })} />
@@ -169,7 +169,7 @@ export function MatchInfoDrawer({ ctx, match, onClose, phone = false }: { ctx: S
       <>
         <BackBar u={u} title={title} onBack={back} label={ctx.tt('sportBack')} />
         {p.kind === 'events' || p.kind === 'lineups' ? <TeamsHeader u={u} match={match} ctx={ctx} compact /> : null}
-        {p.kind === 'events' ? <EventsPage u={u} match={match} ctx={ctx} detail={detail} /> : null}
+        {p.kind === 'events' ? <EventsPage u={u} match={match} ctx={ctx} detail={detail} hidden={state === 'hidden'} /> : null}
         {p.kind === 'lineups' ? <LineupsPage u={u} ctx={ctx} detail={detail} onPick={(picked) => setPage({ kind: 'player', picked })} /> : null}
         {p.kind === 'player' ? <PlayerPage u={u} match={match} ctx={ctx} detail={detail} picked={p.picked} /> : null}
         {p.kind === 'venue' ? <VenuePage u={u} ctx={ctx} name={venueName ?? ''} city={detail?.fixture.venueCity ?? null} image={match.venueImage ?? detail?.fixture.venueImage ?? null} /> : null}

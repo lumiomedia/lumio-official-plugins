@@ -11,6 +11,7 @@ import { tvText } from '../../tv/tv-strings'
 import { emitGoals } from '../goal-events'
 import { fxMatch } from '../__sport-fixture'
 import type { SportMatch } from '../sport-model'
+import { __resetSpoilerForTests, noteReplays } from '../couch/spoiler'
 
 const tt = (k: Parameters<typeof tvText>[1], v?: Record<string, string | number>) => tvText('sv', k, v)
 const m = (over: Partial<SportMatch> = {}): SportMatch => fxMatch({
@@ -92,5 +93,19 @@ describe('målblink', () => {
     expect(result.current).toBe(true)
     act(() => { vi.advanceTimersByTime(10_001) })
     expect(result.current).toBe(false)
+  })
+})
+
+describe('spoilerskydd', () => {
+  beforeEach(() => { __resetSpoilerForTests() })
+  it('en dold avslutad match: lås och "–", ingen siffra i DOM:en', () => {
+    const T = Date.now()
+    const done = m({ status: 'finished', minute: null, score: { home: 3, away: 0 }, fixture: { provider: 'api-sports', id: '77' }, start: T - 3_600_000, stop: T })
+    noteReplays([m({ id: 'r', rerun: true, fixture: undefined, start: T, stop: T + 3_600_000, replayOf: { kickoff: T - 3_600_000, score: { home: 3, away: 0 }, fixture: { provider: 'api-sports', id: '77' } } })], T)
+    render(<MatchScore match={done} />)
+    expect(screen.getByTestId('match-score-hidden')).toHaveTextContent('–')
+    expect(screen.queryByTestId('match-score')).toBeNull()
+    expect(document.body).not.toHaveTextContent('3–0')
+    expect(document.body.textContent).not.toMatch(/[0-9]/)
   })
 })

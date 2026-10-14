@@ -8,6 +8,8 @@ import { apiSports } from '../api-sports'
 import footballId from '../__fixtures__/api-sports/football-fixture-id.json'
 import { MIN, fakeCtx, fxMatch, fxSource } from '../__sport-fixture'
 import type { SportMatch } from '../sport-model'
+import { __resetSpoilerForTests, noteReplays } from '../couch/spoiler'
+import { setSportSettings } from '../sport-store'
 
 const h = vi.hoisted(() => ({ controller: null as unknown }))
 vi.mock('../results-controller', async (importOriginal) => ({
@@ -219,5 +221,53 @@ describe('Matchinfon: repris', () => {
     expect(screen.queryByTestId('mc-row-events')).toBeNull()
     expect(c.cachedFixture).not.toHaveBeenCalled()
     expect(c.loadFixture).not.toHaveBeenCalled()
+  })
+})
+
+describe('Matchinfon: spoilerskydd', () => {
+  const replay = (over: Partial<SportMatch> = {}) => covered({
+    rerun: true, status: 'finished', minute: null, fixture: undefined, score: undefined, start: now - 30 * MIN, stop: now + 90 * MIN,
+    replayOf: { kickoff: now - 86_400_000, score: { home: 3, away: 0 }, fixture: { provider: 'api-sports', id: '1180001' } }, ...over,
+  })
+  function replayController(d: unknown) {
+    const c = { loadFixture: vi.fn(async () => null), cachedFixture: vi.fn(async () => d), status: () => ({ provider: 'api-sports', state: 'ok', intervalMs: null, remainingToday: 41, pausedUntil: null, paid: false }), subscribe: () => () => {} }
+    h.controller = c
+    return c
+  }
+  beforeEach(() => { __resetSpoilerForTests() })
+
+  it('dold repris: lås och "Resultat dolt", inga händelser hämtas; Visa resultat visar "3 : 0"', async () => {
+    const c = replayController(detail())
+    const r = replay()
+    noteReplays([r], Date.now())
+    render(<MatchInfoDrawer ctx={fakeCtx({ now })} match={r} onClose={() => {}} />)
+    expect(screen.getByTestId('mc-score-hidden')).toHaveTextContent('Result hidden')
+    expect(screen.queryByTestId('mc-score')).toBeNull()
+    expect(screen.getByTestId('mc-head')).not.toHaveTextContent(/3 ?[:–] ?0/)
+    expect(screen.getByTestId('mc-row-events')).toHaveTextContent('Result hidden')
+    expect(c.cachedFixture).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('mc-row-events'))
+    expect(screen.getByTestId('mc-events-hidden')).toHaveTextContent('Hidden until you show the result')
+  })
+
+  it('OK på Visa resultat tar bort låset och hämtar händelserna', async () => {
+    const c = replayController(detail())
+    const r = replay()
+    noteReplays([r], Date.now())
+    render(<MatchInfoDrawer ctx={fakeCtx({ now })} match={r} onClose={() => {}} />)
+    fireEvent.click(screen.getByTestId('mc-reveal'))
+    expect(screen.queryByTestId('mc-score-hidden')).toBeNull()
+    expect(screen.getByTestId('mc-score')).toHaveTextContent('3 : 0')
+    await waitFor(() => expect(c.cachedFixture).toHaveBeenCalled())
+  })
+
+  it('skyddet av: inget Visa resultat', () => {
+    replayController(null)
+    setSportSettings({ spoilerReplays: false })
+    const r = replay()
+    noteReplays([r], Date.now())
+    render(<MatchInfoDrawer ctx={fakeCtx({ now })} match={r} onClose={() => {}} />)
+    expect(screen.queryByTestId('mc-reveal')).toBeNull()
+    expect(screen.getByTestId('mc-score')).toHaveTextContent('3 : 0')
   })
 })

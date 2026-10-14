@@ -6,7 +6,9 @@ import { useTvText } from '../../tv/tv-strings'
 import { onGoal } from '../goal-events'
 import { rateLine } from '../rate-line'
 import { API_SPORTS_REGISTER_URL } from '../api-sports'
-import { showsScore } from '../score-model'
+import { scoreHidden, showsScore } from '../score-model'
+import { useSpoilerVersion } from '../couch/spoiler'
+import { SportIcons } from '../sport-icons'
 import type { RateStatus } from '../results-controller'
 import type { SportMatch } from '../sport-model'
 
@@ -17,6 +19,17 @@ const SCORE_SIZE = { hero: dp(64), card: dp(28), row: dp(20) } as const
 /** `px` ersätter storleksstegets teckenstorlek (TV-skalade listor). */
 export function MatchScore({ match, size = 'card', px }: { match: SportMatch; size?: 'hero' | 'card' | 'row'; px?: number }) {
   const blink = useGoalBlink(match)
+  useSpoilerVersion()
+  const fs = px ?? SCORE_SIZE[size]
+  // Spoilerskyddet: "–" och ett lås där ställningen hade stått. Siffrorna finns aldrig i DOM:en.
+  const hadScore = match.rerun ? !!match.replayOf?.score : match.coverage === 'full' && !!match.fixture && !!match.score && match.status !== 'upcoming'
+  if (hadScore && scoreHidden(match)) {
+    return (
+      <span data-testid="match-score-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: Math.round(fs * 0.25), fontSize: fs, fontWeight: 700, color: TV.muted }}>
+        <SportIcons.Lock size={Math.round(fs * 0.6)} />–
+      </span>
+    )
+  }
   if (!showsScore(match) || !match.score) return null
   return (
     <span data-testid="match-score" style={{ fontSize: px ?? SCORE_SIZE[size], fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: blink ? TV.live : TV.text, transition: 'color 300ms' }}>
