@@ -46,7 +46,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
   const columns = `${labelW}px minmax(${isMobile ? 544 : 0}px, 1fr)`
   const nowPct = now >= win.from && now <= win.to ? nowLinePct(now, win) : null
   return (
-    <section data-channels-guide="" style={{ color: C.text, fontFamily: FONT.ui, padding: isMobile ? '0 0 24px' : isTv ? '0 2.5rem 2rem' : '0 32px 32px' }}>
+    <section data-channels-guide="" style={{ position: 'relative', color: C.text, fontFamily: FONT.ui, padding: isMobile ? '0 0 24px' : isTv ? '0 2.5rem 2rem' : '0 32px 32px' }}>
       <div data-row={isMobile ? '' : undefined} style={{ overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch' }}>
         <div style={{ minWidth: isMobile ? 640 : undefined }}>
           <div style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: 34, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>

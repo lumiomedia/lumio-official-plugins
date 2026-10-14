@@ -39893,6 +39893,8 @@ ${cue.text}`).join("\n\n")}
     pageHostTooOld: { en: "Channels requires Lumio 0.1.625 or later for playback", sv: "Kanaler kr\xE4ver Lumio 0.1.625 eller senare f\xF6r uppspelning" },
     heroLive: { en: "LIVE", sv: "LIVE" },
     heroOffAir: { en: "OFF AIR", sv: "VILA" },
+    heroPrev: { en: "Previous channel", sv: "F\xF6reg\xE5ende kanal" },
+    heroNext2: { en: "Next channel", sv: "N\xE4sta kanal" },
     heroWatchLive: { en: "\u25B6 Watch live", sv: "\u25B6 Titta live" },
     heroFromStart: { en: "\u27F2 From start", sv: "\u27F2 Fr\xE5n b\xF6rjan" },
     heroEdit: { en: "Edit channel", sv: "Redigera kanal" },
@@ -41510,6 +41512,30 @@ ${cue.text}`).join("\n\n")}
     return sorted.find(live2) ?? sorted[0] ?? null;
   }
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/hero-carousel-logic.ts
+  function heroSlides(sorted, rundownOf, now2, selectedId) {
+    return sorted.filter((c) => {
+      if (c.id === selectedId) return true;
+      const rundown = rundownOf(c.id);
+      return !!rundown && rundown.length > 0 && programmeAt(rundown, c.airWindow, now2).kind === "programme";
+    });
+  }
+  function stepSlide(slides, activeId, dir) {
+    if (slides.length === 0) return null;
+    const i = slides.findIndex((c) => c.id === activeId);
+    if (i < 0) return slides[0].id;
+    return slides[(i + dir + slides.length) % slides.length].id;
+  }
+  function renderedSlideIds(slides, activeId) {
+    const i = Math.max(0, slides.findIndex((c) => c.id === activeId));
+    const out = /* @__PURE__ */ new Set();
+    for (const d of [-1, 0, 1]) {
+      const s = slides[(i + d + slides.length) % slides.length];
+      if (s) out.add(s.id);
+    }
+    return out;
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-guide.tsx
   init_react_shim();
 
@@ -41552,7 +41578,7 @@ ${cue.text}`).join("\n\n")}
     const labelW = isMobile ? 96 : 220;
     const columns = `${labelW}px minmax(${isMobile ? 544 : 0}px, 1fr)`;
     const nowPct = now2 >= win.from && now2 <= win.to ? nowLinePct(now2, win) : null;
-    return /* @__PURE__ */ jsx("section", { "data-channels-guide": "", style: { color: C.text, fontFamily: FONT3.ui, padding: isMobile ? "0 0 24px" : isTv ? "0 2.5rem 2rem" : "0 32px 32px" }, children: /* @__PURE__ */ jsx("div", { "data-row": isMobile ? "" : void 0, style: { overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: isMobile ? 640 : void 0 }, children: [
+    return /* @__PURE__ */ jsx("section", { "data-channels-guide": "", style: { position: "relative", color: C.text, fontFamily: FONT3.ui, padding: isMobile ? "0 0 24px" : isTv ? "0 2.5rem 2rem" : "0 32px 32px" }, children: /* @__PURE__ */ jsx("div", { "data-row": isMobile ? "" : void 0, style: { overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: isMobile ? 640 : void 0 }, children: [
       /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: 34, borderBottom: "1px solid rgba(255,255,255,0.06)" }, children: [
         /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : 8, paddingBottom: 8, fontSize: fontSize(10.5, isTv), letterSpacing: "0.18em", color: C.textDim }, children: t("guideHeader") }),
         /* @__PURE__ */ jsx("div", { style: { position: "relative", height: "100%" }, children: win.ticks.map((tick2) => /* @__PURE__ */ jsx(
@@ -41711,8 +41737,17 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-hero.tsx
+  init_react_shim();
   init_plugin_sdk();
   init_jsx_runtime_shim();
+  var FADE_EXTRA = { desktop: 170, mobile: 110 };
+  var SWIPE_PX = 50;
+  var HERO_CSS = "@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }";
+  function backdropAt(rundown, channel, now2) {
+    if (rundown.length === 0) return void 0;
+    const slot = programmeAt(rundown, channel.airWindow, now2);
+    return slot.kind === "programme" ? slot.item.backdropUrl : void 0;
+  }
   function nextProgramme(rundown, channel, t) {
     let slot = programmeAt(rundown, channel.airWindow, t);
     if (slot.kind === "rest") slot = programmeAt(rundown, channel.airWindow, slot.nextAir);
@@ -41724,13 +41759,40 @@ ${cue.text}`).join("\n\n")}
     const m = total % 60;
     return h > 0 ? t("durHm", { h, m }) : t("durM", { m });
   }
-  function ChannelHero({ channel, rundown, loading: loading2, partial, now: now2, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel, onManage }) {
+  function ChannelHero({ channel, rundown, loading: loading2, partial, now: now2, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel, onManage, slides, onSlide, onStep }) {
     const fs = (px) => fontSize(px, isTv);
     const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now2) : null;
     const programme = slot?.kind === "programme" ? slot : null;
     const rest = slot?.kind === "rest" ? slot : null;
     const after = programme ? nextProgramme(rundown, channel, programme.stop) : rest ? nextProgramme(rundown, channel, rest.nextAir) : null;
-    const backdropUrl = programme?.item.backdropUrl;
+    const slideList = slides && slides.length > 0 ? slides : [{ channel, rundown }];
+    const rendered = renderedSlideIds(slideList.map((s) => s.channel), channel.id);
+    const many = slideList.length > 1 && onSlide != null;
+    const [hover, setHover] = useState(false);
+    const touch = useRef(null);
+    const onTouchStart = (e) => {
+      const p = e.touches[0];
+      touch.current = p ? { x: p.clientX, y: p.clientY } : null;
+    };
+    const onTouchEnd = (e) => {
+      const start2 = touch.current;
+      const p = e.changedTouches[0];
+      touch.current = null;
+      if (!start2 || !p || !many) return;
+      const dx = p.clientX - start2.x;
+      if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(p.clientY - start2.y)) onStep?.(dx < 0 ? 1 : -1);
+    };
+    const onActionsKey = (e) => {
+      if (!isTv || !many || e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const buttons = [...e.currentTarget.querySelectorAll("button:not([disabled])")];
+      const at = buttons.indexOf(document.activeElement);
+      if (at < 0) return;
+      if (e.key === "ArrowLeft" && at === 0 || e.key === "ArrowRight" && at === buttons.length - 1) {
+        e.preventDefault();
+        e.stopPropagation();
+        onStep?.(e.key === "ArrowLeft" ? -1 : 1);
+      }
+    };
     let title;
     let meta;
     if (programme) {
@@ -41755,21 +41817,73 @@ ${cue.text}`).join("\n\n")}
       "section",
       {
         "data-channels-hero": "",
+        "data-hero-slides": slideList.length,
+        onMouseEnter: () => setHover(true),
+        onMouseLeave: () => setHover(false),
+        onTouchStart,
+        onTouchEnd,
         style: {
           position: "relative",
-          overflow: "hidden",
           minHeight: 330,
           padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 24px" : isTv ? "2.5rem 2rem" : "32px 28px"}`,
-          background: C.base,
           color: C.text,
           fontFamily: FONT3.ui,
           display: "flex",
           flexDirection: "column"
         },
         children: [
-          backdropUrl ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", "data-hero-backdrop": "", style: { position: "absolute", inset: 0, background: `url("${backdropUrl}") center / cover no-repeat` } }),
-            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { position: "absolute", inset: 0, background: C.scrim } })
+          /* @__PURE__ */ jsx("style", { children: HERO_CSS }),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              "aria-hidden": "true",
+              "data-hero-backdrop": "",
+              style: {
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                pointerEvents: "none",
+                height: `calc(100% + ${isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop}px)`,
+                WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
+                maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)"
+              },
+              children: [
+                slideList.map(({ channel: c, rundown: r }) => {
+                  if (!rendered.has(c.id)) return null;
+                  const url = backdropAt(r, c, now2);
+                  if (!url) return null;
+                  return /* @__PURE__ */ jsx(
+                    "span",
+                    {
+                      "data-hero-image": c.id,
+                      style: {
+                        position: "absolute",
+                        inset: 0,
+                        background: `url("${url}") center top / cover no-repeat`,
+                        opacity: c.id === channel.id ? 0.7 : 0,
+                        transition: "opacity 300ms ease"
+                      }
+                    },
+                    c.id
+                  );
+                }),
+                /* @__PURE__ */ jsx(
+                  "span",
+                  {
+                    style: {
+                      position: "absolute",
+                      inset: 0,
+                      background: "linear-gradient(to right, rgb(var(--base-950, 5 5 7) / 0.62) 0%, rgb(var(--base-950, 5 5 7) / 0) 45%), linear-gradient(to bottom, rgb(var(--base-950, 5 5 7) / 0.55) 0%, rgb(var(--base-950, 5 5 7) / 0) 26%)"
+                    }
+                  }
+                )
+              ]
+            }
+          ),
+          many && !isMobile && !isTv ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx(Arrow, { side: "left", visible: hover, label: t("heroPrev"), onClick: () => onStep?.(-1) }),
+            /* @__PURE__ */ jsx(Arrow, { side: "right", visible: hover, label: t("heroNext2"), onClick: () => onStep?.(1) })
           ] }) : null,
           /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { position: "relative", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
             /* @__PURE__ */ jsx(Pill, { isTv, onClick: () => requestBrowseBack(), children: t("pageHome") }),
@@ -41777,80 +41891,140 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx(Pill, { isTv, onClick: onNewChannel, children: t("pageNewChannel") })
           ] }),
           /* @__PURE__ */ jsxs("div", { style: { position: "relative", marginTop: "auto", paddingTop: isMobile ? 32 : 48 }, children: [
-            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }, children: [
-              programme ? /* @__PURE__ */ jsxs(
-                "span",
-                {
-                  "data-hero-badge": "live",
-                  style: {
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "3px 9px",
-                    borderRadius: RADIUS.pill,
-                    background: C.accent,
-                    color: C.onAccent,
-                    fontSize: fs(10.5),
-                    fontWeight: 700,
-                    letterSpacing: "0.16em"
-                  },
-                  children: [
-                    /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: C.onAccent } }),
-                    t("heroLive")
-                  ]
-                }
-              ) : rest ? (
-                // Vila: neutral bricka, inte LIVE (kanalen sänder inte nu).
-                /* @__PURE__ */ jsx(
+            /* @__PURE__ */ jsxs("div", { "data-hero-copy": "", style: { animation: "chh-fade 300ms ease both" }, children: [
+              /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }, children: [
+                programme ? /* @__PURE__ */ jsxs(
                   "span",
                   {
-                    "data-hero-badge": "rest",
+                    "data-hero-badge": "live",
                     style: {
                       display: "inline-flex",
                       alignItems: "center",
+                      gap: 6,
                       padding: "3px 9px",
                       borderRadius: RADIUS.pill,
-                      ...glass(isTv, { fill: C.pillBg, blur: 0 }),
-                      color: C.textSoft,
+                      background: C.accent,
+                      color: C.onAccent,
                       fontSize: fs(10.5),
                       fontWeight: 700,
                       letterSpacing: "0.16em"
                     },
-                    children: t("heroOffAir")
+                    children: [
+                      /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: C.onAccent } }),
+                      t("heroLive")
+                    ]
                   }
-                )
-              ) : null,
-              /* @__PURE__ */ jsx("span", { style: { fontSize: fs(11), letterSpacing: "0.22em", textTransform: "uppercase", color: C.textSoft }, children: t("zapChannelLine", { n: channel.number, name: channel.name }) })
-            ] }),
-            /* @__PURE__ */ jsx(
-              "h1",
-              {
-                style: {
-                  margin: "10px 0 0",
-                  fontFamily: FONT3.title,
-                  fontWeight: 400,
-                  fontSize: fs(isMobile ? 30 : 44),
-                  lineHeight: 1.05,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical"
-                },
-                children: title
-              }
-            ),
-            /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: fs(14), color: C.textSoft }, children: meta }),
-            partial ? /* @__PURE__ */ jsx("p", { "data-channels-partial": "", role: "status", style: { margin: "6px 0 0", fontSize: fs(12), color: C.textDim }, children: t("heroPartial") }) : null,
-            rest ? /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: fs(13), color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { marginTop: 12, height: 3, maxWidth: 360, borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) }),
-            /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }, children: [
+                ) : rest ? (
+                  // Vila: neutral bricka, inte LIVE (kanalen sänder inte nu).
+                  /* @__PURE__ */ jsx(
+                    "span",
+                    {
+                      "data-hero-badge": "rest",
+                      style: {
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "3px 9px",
+                        borderRadius: RADIUS.pill,
+                        ...glass(isTv, { fill: C.pillBg, blur: 0 }),
+                        color: C.textSoft,
+                        fontSize: fs(10.5),
+                        fontWeight: 700,
+                        letterSpacing: "0.16em"
+                      },
+                      children: t("heroOffAir")
+                    }
+                  )
+                ) : null,
+                /* @__PURE__ */ jsx("span", { style: { fontSize: fs(11), letterSpacing: "0.22em", textTransform: "uppercase", color: C.textSoft }, children: t("zapChannelLine", { n: channel.number, name: channel.name }) })
+              ] }),
+              /* @__PURE__ */ jsx(
+                "h1",
+                {
+                  style: {
+                    margin: "10px 0 0",
+                    fontFamily: FONT3.title,
+                    fontWeight: 400,
+                    fontSize: fs(isMobile ? 30 : 44),
+                    lineHeight: 1.05,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical"
+                  },
+                  children: title
+                }
+              ),
+              /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: fs(14), color: C.textSoft }, children: meta }),
+              partial ? /* @__PURE__ */ jsx("p", { "data-channels-partial": "", role: "status", style: { margin: "6px 0 0", fontSize: fs(12), color: C.textDim }, children: t("heroPartial") }) : null,
+              rest ? /* @__PURE__ */ jsx("p", { style: { margin: "10px 0 0", fontSize: fs(13), color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { marginTop: 12, height: 3, maxWidth: 360, borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) })
+            ] }, channel.id),
+            /* @__PURE__ */ jsxs("div", { "data-hero-actions": "", onKeyDown: onActionsKey, style: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }, children: [
               /* @__PURE__ */ jsx(HeroButton, { isTv, primary: true, disabled: !canPlay, onClick: () => onPlay("live"), children: t("heroWatchLive") }),
               /* @__PURE__ */ jsx(HeroButton, { isTv, disabled: !canPlay || !programme, onClick: () => onPlay("start"), children: t("heroFromStart") }),
               /* @__PURE__ */ jsx(HeroButton, { isTv, onClick: onEdit, children: t("heroEdit") })
             ] }),
-            after ? /* @__PURE__ */ jsx("p", { style: { margin: "14px 0 0", fontSize: fs(13), color: C.textDim }, children: t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) }) : null
+            after ? /* @__PURE__ */ jsx("p", { style: { margin: "14px 0 0", fontSize: fs(13), color: C.textDim }, children: t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) }) : null,
+            many ? /* @__PURE__ */ jsx("div", { "data-hero-dots": "", style: { display: "flex", alignItems: "center", gap: 6, marginTop: 16 }, children: slideList.map(({ channel: c }) => {
+              const active3 = c.id === channel.id;
+              return /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  "aria-label": t("zapChannelLine", { n: c.number, name: c.name }),
+                  "aria-current": active3 ? "true" : void 0,
+                  "data-hero-dot": c.id,
+                  tabIndex: isTv ? -1 : 0,
+                  onClick: () => onSlide?.(c.id),
+                  style: {
+                    width: active3 ? 16 : 4,
+                    height: 4,
+                    padding: 0,
+                    border: "none",
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    background: active3 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)",
+                    transition: "width 200ms ease, background 200ms ease"
+                  }
+                },
+                c.id
+              );
+            }) }) : null
           ] })
         ]
+      }
+    );
+  }
+  function Arrow({ side, visible, label, onClick }) {
+    return /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        "aria-label": label,
+        "data-hero-arrow": side,
+        onClick,
+        style: {
+          position: "absolute",
+          top: "50%",
+          [side]: 8,
+          zIndex: 2,
+          transform: "translateY(-50%)",
+          width: 36,
+          height: 36,
+          borderRadius: 999,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          ...glass(false, { fill: C.pillBg, blur: 20 }),
+          color: C.text,
+          fontSize: 20,
+          lineHeight: 1,
+          cursor: "pointer",
+          opacity: visible ? 1 : 0,
+          transition: "opacity 200ms ease",
+          pointerEvents: visible ? "auto" : "none"
+        },
+        children: side === "left" ? "\u2039" : "\u203A"
       }
     );
   }
@@ -43695,10 +43869,12 @@ ${cue.text}`).join("\n\n")}
       setPlayer(initialPlayer(sorted, next2));
       setStudio(next2.studio ?? null);
     }, [paramsKey]);
+    const selectedRef = useRef(null);
     const selected = useMemo(
       () => (selectedId ? sorted.find((c) => c.id === selectedId) : void 0) ?? startChannel(sorted, {}),
       [sorted, selectedId]
     );
+    selectedRef.current = selected?.id ?? null;
     const onRundown = useCallback((id, rundown, loading2, partial) => {
       setRundowns((prev) => {
         const cur = prev[id];
@@ -43718,6 +43894,20 @@ ${cue.text}`).join("\n\n")}
       const next2 = pickStartChannel(sorted, readZapMemory().lastChannelId, now2, loaded);
       if (next2 && next2.id !== selected.id) setSelectedId(next2.id);
     }, [rundowns, selected, sorted, now2]);
+    const slides = useMemo(
+      () => heroSlides(sorted, (id) => rundowns[id]?.rundown, now2, selected?.id ?? null).map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] })),
+      [sorted, rundowns, now2, selected]
+    );
+    const slidesRef = useRef(slides);
+    slidesRef.current = slides;
+    const onSlide = useCallback((id) => {
+      autoPick.current = false;
+      setSelectedId(id);
+    }, []);
+    const onStep = useCallback((dir) => {
+      const id = stepSlide(slidesRef.current.map((s) => s.channel), selectedRef.current, dir);
+      if (id) onSlide(id);
+    }, [onSlide]);
     const win = useMemo(() => guideWindow(now2 + shift * HALF_HOUR2), [now2, shift]);
     const shiftRef = useRef(0);
     const onShift = useCallback((dir) => {
@@ -43854,7 +44044,10 @@ ${cue.text}`).join("\n\n")}
           onPlay: (mode) => play(selected.id, mode),
           onEdit: () => setStudio(selected.id),
           onNewChannel: () => setStudio("new"),
-          onManage: () => setManage(true)
+          onManage: () => setManage(true),
+          slides,
+          onSlide,
+          onStep
         }
       ),
       /* @__PURE__ */ jsx(

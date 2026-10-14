@@ -19,6 +19,7 @@ import { hostReady, readZapMemory } from '../host'
 import { readCachedPool, restoreDefaultChannels, seedDefaultChannels, useChannelClock, useChannels } from '../state/store'
 import { buildRundown } from '../model/schedule'
 import { onAirNow, pickStartChannel } from './start-channel'
+import { heroSlides, stepSlide } from './hero-carousel-logic'
 import { ChannelGuide } from './channel-guide'
 import { ChannelHero } from './channel-hero'
 import { ChannelPlayer } from './channel-player'
@@ -120,10 +121,12 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     setStudio(next.studio ?? null)
   }, [paramsKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const selectedRef = useRef<string | null>(null)
   const selected = useMemo(
     () => (selectedId ? sorted.find((c) => c.id === selectedId) : undefined) ?? startChannel(sorted, {}),
     [sorted, selectedId],
   )
+  selectedRef.current = selected?.id ?? null
 
   const onRundown = useCallback((id: string, rundown: PoolItem[], loading: boolean, partial: boolean) => {
     setRundowns((prev) => {
@@ -146,6 +149,20 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     const next = pickStartChannel(sorted, readZapMemory().lastChannelId, now, loaded)
     if (next && next.id !== selected.id) setSelectedId(next.id)
   }, [rundowns, selected, sorted, now])
+
+  // Heroskarusellen: sändande kanaler + vald, i nummerordning.
+  const slides = useMemo(
+    () => heroSlides(sorted, (id) => rundowns[id]?.rundown, now, selected?.id ?? null)
+      .map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] })),
+    [sorted, rundowns, now, selected],
+  )
+  const slidesRef = useRef(slides)
+  slidesRef.current = slides
+  const onSlide = useCallback((id: string) => { autoPick.current = false; setSelectedId(id) }, [])
+  const onStep = useCallback((dir: -1 | 1) => {
+    const id = stepSlide(slidesRef.current.map((s) => s.channel), selectedRef.current, dir)
+    if (id) onSlide(id)
+  }, [onSlide])
 
   const win = useMemo(() => guideWindow(now + shift * HALF_HOUR), [now, shift])
 
@@ -275,6 +292,9 @@ export function ChannelsPage({ params }: BrowsePageProps) {
         onEdit={() => setStudio(selected.id)}
         onNewChannel={() => setStudio('new')}
         onManage={() => setManage(true)}
+        slides={slides}
+        onSlide={onSlide}
+        onStep={onStep}
       />
       <ChannelGuide
         channels={sorted}

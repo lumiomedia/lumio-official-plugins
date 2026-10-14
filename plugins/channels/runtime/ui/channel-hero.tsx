@@ -5,13 +5,14 @@
  * tablån (ren uträkning) — inga strömuppslag; spelaren gör dem först när
  * man trycker Titta live.
  */
-import type { CSSProperties, ReactNode } from 'react'
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type TouchEvent } from 'react'
 import { requestBrowseBack } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
 import { programmeAt, type ProgrammeSlot } from '../model/schedule'
 import type { PoolItem } from '../data/pool'
 import type { PlayMode } from '../play/player-logic'
 import { formatClock } from './guide-layout'
+import { renderedSlideIds } from './hero-carousel-logic'
 import { belowMenuPill, C, FONT, glass, RADIUS, fontSize } from './tokens'
 import type { useText } from './use-text'
 
@@ -34,6 +35,23 @@ export interface ChannelHeroProps {
   onNewChannel(): void
   /** KANALER-pillret: öppnar Hantera kanaler. */
   onManage(): void
+  /** Karusellens bilder (sändande kanaler + vald), i nummerordning; vald = `channel`. */
+  slides?: Array<{ channel: ChannelDef; rundown: PoolItem[] }>
+  /** Byt bild: väljer den kanalen (tablåns markering följer). */
+  onSlide?(id: string): void
+  onStep?(dir: -1 | 1): void
+}
+
+/** Bakgrundsbilden sticker ut under heron så tablån ligger på den uttonade bilden. */
+const FADE_EXTRA = { desktop: 170, mobile: 110 } as const
+const SWIPE_PX = 50
+const HERO_CSS = '@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }'
+
+/** Programmets bild just nu på en kanal (för karusellens bakgrundslager). */
+function backdropAt(rundown: PoolItem[], channel: ChannelDef, now: number): string | undefined {
+  if (rundown.length === 0) return undefined
+  const slot = programmeAt(rundown, channel.airWindow, now)
+  return slot.kind === 'programme' ? slot.item.backdropUrl : undefined
 }
 
 /** Nästa program efter `t`, förbi en eventuell vila. */
@@ -50,14 +68,39 @@ function duration(ms: number, t: T): string {
   return h > 0 ? t('durHm', { h, m }) : t('durM', { m })
 }
 
-export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel, onManage }: ChannelHeroProps) {
+export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel, onManage, slides, onSlide, onStep }: ChannelHeroProps) {
   const fs = (px: number) => fontSize(px, isTv)
   const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now) : null
   const programme = slot?.kind === 'programme' ? slot : null
   const rest = slot?.kind === 'rest' ? slot : null
   const after = programme ? nextProgramme(rundown, channel, programme.stop) : rest ? nextProgramme(rundown, channel, rest.nextAir) : null
 
-  const backdropUrl = programme?.item.backdropUrl
+  const slideList = slides && slides.length > 0 ? slides : [{ channel, rundown }]
+  const rendered = renderedSlideIds(slideList.map((s) => s.channel), channel.id)
+  const many = slideList.length > 1 && onSlide != null
+  const [hover, setHover] = useState(false)
+  const touch = useRef<{ x: number; y: number } | null>(null)
+  const onTouchStart = (e: TouchEvent) => { const p = e.touches[0]; touch.current = p ? { x: p.clientX, y: p.clientY } : null }
+  const onTouchEnd = (e: TouchEvent) => {
+    const start = touch.current
+    const p = e.changedTouches[0]
+    touch.current = null
+    if (!start || !p || !many) return
+    const dx = p.clientX - start.x
+    if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(p.clientY - start.y)) onStep?.(dx < 0 ? 1 : -1)
+  }
+  // TV: ◀ på första knappen / ▶ på sista bläddrar; däremellan flyttar fokus som vanligt.
+  const onActionsKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!isTv || !many || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
+    const buttons = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])')]
+    const at = buttons.indexOf(document.activeElement as HTMLButtonElement)
+    if (at < 0) return
+    if ((e.key === 'ArrowLeft' && at === 0) || (e.key === 'ArrowRight' && at === buttons.length - 1)) {
+      e.preventDefault()
+      e.stopPropagation()
+      onStep?.(e.key === 'ArrowLeft' ? -1 : 1)
+    }
+  }
 
   let title: string
   let meta: string
@@ -83,16 +126,62 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
   return (
     <section
       data-channels-hero=""
+      data-hero-slides={slideList.length}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
       style={{
-        position: 'relative', overflow: 'hidden', minHeight: 330,
+        position: 'relative', minHeight: 330,
         padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 24px' : isTv ? '2.5rem 2rem' : '32px 28px'}`,
-        background: C.base, color: C.text, fontFamily: FONT.ui, display: 'flex', flexDirection: 'column',
+        color: C.text, fontFamily: FONT.ui, display: 'flex', flexDirection: 'column',
       }}
     >
-      {backdropUrl ? (
+      <style>{HERO_CSS}</style>
+      {/*
+        Bakgrunden: programmets bild från sidans överkant, uttonad mot sidans
+        svarta under nedersta ~40 % — och förbi herons kant, så tablån ligger
+        på den uttonade bilden. Värdena är appens herokarusells: bilden på 70 %
+        opacitet, sido- och toppvinjett för läsbarheten, mask mot transparent
+        (den enda gradienten utöver zappens brus). Aktiv bild och grannarna
+        ritas (grannarna osynliga = förladdade); byte tonar över 300 ms.
+      */}
+      <div
+        aria-hidden="true"
+        data-hero-backdrop=""
+        style={{
+          position: 'absolute', top: 0, left: 0, right: 0, pointerEvents: 'none',
+          height: `calc(100% + ${isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop}px)`,
+          WebkitMaskImage: 'linear-gradient(to bottom, black 55%, transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, black 55%, transparent 100%)',
+        }}
+      >
+        {slideList.map(({ channel: c, rundown: r }) => {
+          if (!rendered.has(c.id)) return null
+          const url = backdropAt(r, c, now)
+          if (!url) return null
+          return (
+            <span
+              key={c.id}
+              data-hero-image={c.id}
+              style={{
+                position: 'absolute', inset: 0, background: `url("${url}") center top / cover no-repeat`,
+                opacity: c.id === channel.id ? 0.7 : 0, transition: 'opacity 300ms ease',
+              }}
+            />
+          )
+        })}
+        <span style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to right, rgb(var(--base-950, 5 5 7) / 0.62) 0%, rgb(var(--base-950, 5 5 7) / 0) 45%), linear-gradient(to bottom, rgb(var(--base-950, 5 5 7) / 0.55) 0%, rgb(var(--base-950, 5 5 7) / 0) 26%)',
+        }}
+        />
+      </div>
+
+      {many && !isMobile && !isTv ? (
         <>
-          <span aria-hidden="true" data-hero-backdrop="" style={{ position: 'absolute', inset: 0, background: `url("${backdropUrl}") center / cover no-repeat` }} />
-          <span aria-hidden="true" style={{ position: 'absolute', inset: 0, background: C.scrim }} />
+          <Arrow side="left" visible={hover} label={t('heroPrev')} onClick={() => onStep?.(-1)} />
+          <Arrow side="right" visible={hover} label={t('heroNext2')} onClick={() => onStep?.(1)} />
         </>
       ) : null}
 
@@ -104,6 +193,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       </div>
 
       <div style={{ position: 'relative', marginTop: 'auto', paddingTop: isMobile ? 32 : 48 }}>
+        <div key={channel.id} data-hero-copy="" style={{ animation: 'chh-fade 300ms ease both' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           {programme ? (
             <span data-hero-badge="live" style={{
@@ -146,7 +236,8 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
             <div style={{ width: `${pct * 100}%`, height: '100%', background: C.accent }} />
           </div>
         )}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 20 }}>
+        </div>
+        <div data-hero-actions="" onKeyDown={onActionsKey} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 20 }}>
           <HeroButton isTv={isTv} primary disabled={!canPlay} onClick={() => onPlay('live')}>{t('heroWatchLive')}</HeroButton>
           <HeroButton isTv={isTv} disabled={!canPlay || !programme} onClick={() => onPlay('start')}>{t('heroFromStart')}</HeroButton>
           <HeroButton isTv={isTv} onClick={onEdit}>{t('heroEdit')}</HeroButton>
@@ -156,8 +247,50 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
             {t('heroNext', { time: formatClock(after.start), title: after.item.kind === 'episode' && after.item.seriesTitle ? after.item.seriesTitle : after.item.title })}
           </p>
         ) : null}
+        {many ? (
+          <div data-hero-dots="" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 16 }}>
+            {slideList.map(({ channel: c }) => {
+              const active = c.id === channel.id
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-label={t('zapChannelLine', { n: c.number, name: c.name })}
+                  aria-current={active ? 'true' : undefined}
+                  data-hero-dot={c.id}
+                  tabIndex={isTv ? -1 : 0}
+                  onClick={() => onSlide?.(c.id)}
+                  style={{
+                    width: active ? 16 : 4, height: 4, padding: 0, border: 'none', borderRadius: 999, cursor: 'pointer',
+                    background: active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', transition: 'width 200ms ease, background 200ms ease',
+                  }}
+                />
+              )
+            })}
+          </div>
+        ) : null}
       </div>
     </section>
+  )
+}
+
+/** Skrivbordets ‹ › vid herons kanter; syns när musen är över heron. */
+function Arrow({ side, visible, label, onClick }: { side: 'left' | 'right'; visible: boolean; label: string; onClick(): void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      data-hero-arrow={side}
+      onClick={onClick}
+      style={{
+        position: 'absolute', top: '50%', [side]: 8, zIndex: 2, transform: 'translateY(-50%)',
+        width: 36, height: 36, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        ...glass(false, { fill: C.pillBg, blur: 20 }), color: C.text, fontSize: 20, lineHeight: 1, cursor: 'pointer',
+        opacity: visible ? 1 : 0, transition: 'opacity 200ms ease', pointerEvents: visible ? 'auto' : 'none',
+      }}
+    >
+      {side === 'left' ? '‹' : '›'}
+    </button>
   )
 }
 

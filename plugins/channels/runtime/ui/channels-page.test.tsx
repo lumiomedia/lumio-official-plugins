@@ -186,12 +186,13 @@ describe('Kanaler-sidan', () => {
 })
 
 describe('Kanaler-sidans utseende', () => {
-  it('inga gradienter; bakgrundsbilden under en platt mörkning', () => {
+  it('inga gradienter utanför herobildens uttoning', () => {
     state.rundowns = { k1: [{ ...item('Terminator', 100_000), backdropUrl: 'https://img/b.jpg' }], k2: [item('Aliens', 100_000)] }
     const { container } = page()
-    const html = container.innerHTML
-    expect(html).toContain('img/b.jpg')
-    expect(html).not.toMatch(/gradient/i)
+    expect(container.querySelector('[data-hero-image="k1"]')?.getAttribute('style')).toContain('img/b.jpg')
+    // Herobildens uttoning är den enda tillåtna gradienten (utöver zappens brus).
+    container.querySelector('[data-hero-backdrop]')!.remove()
+    expect(container.innerHTML).not.toMatch(/gradient/i)
   })
 
   it('toppknapparna står tillsammans och vänsterställda (inget i högra hörnet)', () => {
@@ -251,5 +252,42 @@ describe('Kanaler-sidans utseende', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('heron är en karusell över sändande kanaler: prickar, pilar och svep byter vald kanal', () => {
+    state.channels = [channel(1, 'Första'), { ...channel(2, 'Natt'), airWindow: 'late' }, channel(3, 'Tredje')]
+    state.rundowns = { k1: [item('Terminator', 100_000)], k2: [item('Aliens', 100_000)], k3: [item('Heat', 100_000)] }
+    const { container } = page({ channelId: 'k1' })
+    const hero = () => container.querySelector('[data-channels-hero]')!
+    expect(hero().getAttribute('data-hero-slides')).toBe('2')
+    expect([...container.querySelectorAll('[data-hero-dot]')].map((d) => d.getAttribute('data-hero-dot'))).toEqual(['k1', 'k3'])
+    fireEvent.click(container.querySelector('[data-hero-dot="k3"]')!)
+    expect(hero().textContent).toContain('Tredje')
+    expect(container.querySelector('[data-channel-row="k3"]')?.getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(container.querySelector('[data-hero-arrow="right"]')!)
+    expect(hero().textContent).toContain('Första')
+    fireEvent.touchStart(hero(), { touches: [{ clientX: 300, clientY: 100 }] })
+    fireEvent.touchEnd(hero(), { changedTouches: [{ clientX: 100, clientY: 110 }] })
+    expect(hero().textContent).toContain('Tredje')
+  })
+
+  it('en vilande vald kanal är en egen bild bland de sändande', () => {
+    state.channels = [channel(1, 'Första'), { ...channel(2, 'Natt'), airWindow: 'late' }]
+    const { container } = page({ channelId: 'k2' })
+    expect([...container.querySelectorAll('[data-hero-dot]')].map((d) => d.getAttribute('data-hero-dot'))).toEqual(['k1', 'k2'])
+    expect(document.querySelector('[data-hero-badge]')?.textContent).toBe('VILA')
+  })
+
+  it('TV: ◀ på första knappen bläddrar, ▶ mellan knapparna gör det inte', () => {
+    state.tv = true
+    state.channels = [channel(1, 'Första'), channel(3, 'Tredje')]
+    state.rundowns = { k1: [item('Terminator', 100_000)], k3: [item('Heat', 100_000)] }
+    const { container } = page({ channelId: 'k1' })
+    const buttons = [...container.querySelectorAll<HTMLButtonElement>('[data-hero-actions] button:not([disabled])')]
+    buttons[0]!.focus()
+    fireEvent.keyDown(buttons[0]!, { key: 'ArrowRight' })
+    expect(container.querySelector('[data-channels-hero]')!.textContent).toContain('Första')
+    fireEvent.keyDown(buttons[0]!, { key: 'ArrowLeft' })
+    expect(container.querySelector('[data-channels-hero]')!.textContent).toContain('Tredje')
   })
 })

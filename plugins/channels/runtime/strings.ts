@@ -41,6 +41,8 @@ export const S = {
   pageHostTooOld: { en: 'Channels requires Lumio 0.1.625 or later for playback', sv: 'Kanaler kräver Lumio 0.1.625 eller senare för uppspelning' },
   heroLive: { en: 'LIVE', sv: 'LIVE' },
   heroOffAir: { en: 'OFF AIR', sv: 'VILA' },
+  heroPrev: { en: 'Previous channel', sv: 'Föregående kanal' },
+  heroNext2: { en: 'Next channel', sv: 'Nästa kanal' },
   heroWatchLive: { en: '▶ Watch live', sv: '▶ Titta live' },
   heroFromStart: { en: '⟲ From start', sv: '⟲ Från början' },
   heroEdit: { en: 'Edit channel', sv: 'Redigera kanal' },
