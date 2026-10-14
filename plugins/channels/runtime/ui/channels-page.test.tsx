@@ -290,4 +290,29 @@ describe('Kanaler-sidans utseende', () => {
     fireEvent.keyDown(buttons[0]!, { key: 'ArrowLeft' })
     expect(container.querySelector('[data-channels-hero]')!.textContent).toContain('Tredje')
   })
+
+  it('herobilden bryter ut ur appkolumnens indrag till fönstrets kanter och överkant', () => {
+    const original = Element.prototype.getBoundingClientRect
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      if (this.hasAttribute('data-channels-hero')) return { left: 65, top: 40, width: 900, height: 400, right: 965, bottom: 440, x: 65, y: 40, toJSON: () => ({}) } as DOMRect
+      return original.call(this)
+    }
+    const widthDesc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth')
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get() { return this.hasAttribute('data-channels-hero') ? 900 : 0 } })
+    try {
+      state.rundowns = { k1: [{ ...item('Terminator', 100_000), backdropUrl: 'https://img/b.jpg' }], k2: [item('Aliens', 100_000)] }
+      const { container } = page({ channelId: 'k1' })
+      const layer = container.querySelector<HTMLElement>('[data-hero-backdrop]')!
+      expect(layer.getAttribute('data-hero-bleed')).toBe(`65,40,${document.documentElement.clientWidth}`)
+      expect(layer.style.left).toBe('-65px')
+      expect(layer.style.top).toBe('-40px')
+      expect(layer.style.zIndex).toBe('-1')
+      // Sidan målar ingen egen bakgrund ovanpå bilden.
+      expect(container.querySelector<HTMLElement>('[data-channels-page]')!.style.background).toBe('')
+    } finally {
+      Element.prototype.getBoundingClientRect = original
+      if (widthDesc) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', widthDesc)
+      else delete (HTMLElement.prototype as { offsetWidth?: number }).offsetWidth
+    }
+  })
 })

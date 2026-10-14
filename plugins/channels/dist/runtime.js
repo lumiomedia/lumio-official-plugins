@@ -20330,7 +20330,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -41743,6 +41742,31 @@ ${cue.text}`).join("\n\n")}
   var FADE_EXTRA = { desktop: 170, mobile: 110 };
   var SWIPE_PX = 50;
   var HERO_CSS = "@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }";
+  function findBleedBox(el) {
+    for (let node = el.parentElement; node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (style.overflowX !== "visible" || style.overflowY !== "visible") return node;
+    }
+    return null;
+  }
+  function measureBleed(hero) {
+    const h = hero.getBoundingClientRect();
+    const scale = h.width > 0 && hero.offsetWidth > 0 ? hero.offsetWidth / h.width : 1;
+    const box = findBleedBox(hero);
+    if (box) {
+      const b = box.getBoundingClientRect();
+      return {
+        left: Math.round((h.left - b.left) * scale - box.clientLeft),
+        top: Math.round((h.top - b.top) * scale - box.clientTop + box.scrollTop),
+        width: box.clientWidth
+      };
+    }
+    return {
+      left: Math.round(h.left * scale),
+      top: Math.round((h.top + window.scrollY) * scale),
+      width: document.documentElement.clientWidth
+    };
+  }
   function backdropAt(rundown, channel, now2) {
     if (rundown.length === 0) return void 0;
     const slot = programmeAt(rundown, channel.airWindow, now2);
@@ -41769,6 +41793,25 @@ ${cue.text}`).join("\n\n")}
     const rendered = renderedSlideIds(slideList.map((s) => s.channel), channel.id);
     const many = slideList.length > 1 && onSlide != null;
     const [hover, setHover] = useState(false);
+    const heroRef = useRef(null);
+    const [bleed, setBleed] = useState(null);
+    useLayoutEffect(() => {
+      const hero = heroRef.current;
+      if (!hero) return;
+      const measure = () => {
+        const next2 = measureBleed(hero);
+        setBleed((prev) => prev && prev.left === next2.left && prev.top === next2.top && prev.width === next2.width ? prev : next2);
+      };
+      measure();
+      const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+      ro?.observe(hero);
+      ro?.observe(document.documentElement);
+      window.addEventListener("resize", measure);
+      return () => {
+        ro?.disconnect();
+        window.removeEventListener("resize", measure);
+      };
+    }, []);
     const touch = useRef(null);
     const onTouchStart = (e) => {
       const p = e.touches[0];
@@ -41816,6 +41859,7 @@ ${cue.text}`).join("\n\n")}
     return /* @__PURE__ */ jsxs(
       "section",
       {
+        ref: heroRef,
         "data-channels-hero": "",
         "data-hero-slides": slideList.length,
         onMouseEnter: () => setHover(true),
@@ -41838,13 +41882,13 @@ ${cue.text}`).join("\n\n")}
             {
               "aria-hidden": "true",
               "data-hero-backdrop": "",
+              "data-hero-bleed": bleed ? `${bleed.left},${bleed.top},${bleed.width}` : void 0,
               style: {
                 position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
+                zIndex: -1,
                 pointerEvents: "none",
-                height: `calc(100% + ${isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop}px)`,
+                ...bleed ? { top: -bleed.top, left: -bleed.left, width: bleed.width } : { top: 0, left: 0, right: 0 },
+                height: `calc(100% + ${(bleed?.top ?? 0) + (isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop)}px)`,
                 WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
                 maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)"
               },
@@ -44027,46 +44071,50 @@ ${cue.text}`).join("\n\n")}
       ] });
     }
     const selectedData = rundowns[selected.id];
-    return /* @__PURE__ */ jsxs("div", { "data-channels-page": "", style: { background: C.base, minHeight: "100%" }, children: [
-      banner,
-      /* @__PURE__ */ jsx(
-        ChannelHero,
-        {
-          channel: selected,
-          rundown: selectedData?.rundown ?? [],
-          loading: selectedData?.loading ?? true,
-          partial: selectedData?.partial ?? false,
-          now: now2,
-          isTv,
-          isMobile,
-          canPlay,
-          t,
-          onPlay: (mode) => play(selected.id, mode),
-          onEdit: () => setStudio(selected.id),
-          onNewChannel: () => setStudio("new"),
-          onManage: () => setManage(true),
-          slides,
-          onSlide,
-          onStep
-        }
-      ),
-      /* @__PURE__ */ jsx(
-        ChannelGuide,
-        {
-          channels: sorted,
-          selectedId: selected.id,
-          window: win,
-          now: now2,
-          isTv,
-          isMobile,
-          t,
-          onSelect,
-          onPlay: onPlayRow,
-          onRundown,
-          onShift
-        }
-      )
-    ] });
+    return (
+      // Ingen egen bakgrund här: herobilden ligger under sidan (z −1) och ska
+      // synas kant i kant; appens grund under är redan svart.
+      /* @__PURE__ */ jsxs("div", { "data-channels-page": "", style: { minHeight: "100%" }, children: [
+        banner,
+        /* @__PURE__ */ jsx(
+          ChannelHero,
+          {
+            channel: selected,
+            rundown: selectedData?.rundown ?? [],
+            loading: selectedData?.loading ?? true,
+            partial: selectedData?.partial ?? false,
+            now: now2,
+            isTv,
+            isMobile,
+            canPlay,
+            t,
+            onPlay: (mode) => play(selected.id, mode),
+            onEdit: () => setStudio(selected.id),
+            onNewChannel: () => setStudio("new"),
+            onManage: () => setManage(true),
+            slides,
+            onSlide,
+            onStep
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          ChannelGuide,
+          {
+            channels: sorted,
+            selectedId: selected.id,
+            window: win,
+            now: now2,
+            isTv,
+            isMobile,
+            t,
+            onSelect,
+            onPlay: onPlayRow,
+            onRundown,
+            onShift
+          }
+        )
+      ] })
+    );
   }
   function ChannelStudioSlot({ studio, channels, isTv, isMobile, t, onDone }) {
     return /* @__PURE__ */ jsx(ChannelStudio, { studio, channels, isTv, isMobile, t, onDone }, studio);

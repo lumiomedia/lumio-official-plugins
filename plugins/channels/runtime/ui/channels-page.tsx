@@ -276,7 +276,9 @@ export function ChannelsPage({ params }: BrowsePageProps) {
 
   const selectedData = rundowns[selected.id]
   return (
-    <div data-channels-page="" style={{ background: C.base, minHeight: '100%' }}>
+    // Ingen egen bakgrund här: herobilden ligger under sidan (z −1) och ska
+    // synas kant i kant; appens grund under är redan svart.
+    <div data-channels-page="" style={{ minHeight: '100%' }}>
       {banner}
       <ChannelHero
         channel={selected}

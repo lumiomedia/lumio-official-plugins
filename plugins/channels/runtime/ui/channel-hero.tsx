@@ -5,7 +5,7 @@
  * tablån (ren uträkning) — inga strömuppslag; spelaren gör dem först när
  * man trycker Titta live.
  */
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type TouchEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type TouchEvent } from 'react'
 import { requestBrowseBack } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
 import { programmeAt, type ProgrammeSlot } from '../model/schedule'
@@ -47,6 +47,46 @@ const FADE_EXTRA = { desktop: 170, mobile: 110 } as const
 const SWIPE_PX = 50
 const HERO_CSS = '@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }'
 
+/**
+ * Närmaste förfader som klipper (overflow ≠ visible) — TV-lägets egen
+ * rullbehållare — annars null = fönstret. Bilden kan inte gå förbi en
+ * klippande låda utan att skapa sidledsrullning, så den fyller lådan.
+ */
+function findBleedBox(el: HTMLElement): HTMLElement | null {
+  for (let node = el.parentElement; node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
+    const style = getComputedStyle(node)
+    if (style.overflowX !== 'visible' || style.overflowY !== 'visible') return node
+  }
+  return null
+}
+
+export interface Bleed { left: number; top: number; width: number }
+
+/**
+ * Hur långt bakgrunden ska sträcka sig förbi heron för att nå fönstrets (eller
+ * den klippande lådans) vänster-, höger- och överkant: appkolumnens sidindrag
+ * och toppluft mäts, inga fasta px. TV-scenen är skalad (transform), så
+ * skärmmåtten räknas om till CSS-px med herons egen skala.
+ */
+export function measureBleed(hero: HTMLElement): Bleed {
+  const h = hero.getBoundingClientRect()
+  const scale = h.width > 0 && hero.offsetWidth > 0 ? hero.offsetWidth / h.width : 1
+  const box = findBleedBox(hero)
+  if (box) {
+    const b = box.getBoundingClientRect()
+    return {
+      left: Math.round((h.left - b.left) * scale - box.clientLeft),
+      top: Math.round((h.top - b.top) * scale - box.clientTop + box.scrollTop),
+      width: box.clientWidth,
+    }
+  }
+  return {
+    left: Math.round(h.left * scale),
+    top: Math.round((h.top + window.scrollY) * scale),
+    width: document.documentElement.clientWidth,
+  }
+}
+
 /** Programmets bild just nu på en kanal (för karusellens bakgrundslager). */
 function backdropAt(rundown: PoolItem[], channel: ChannelDef, now: number): string | undefined {
   if (rundown.length === 0) return undefined
@@ -79,6 +119,22 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
   const rendered = renderedSlideIds(slideList.map((s) => s.channel), channel.id)
   const many = slideList.length > 1 && onSlide != null
   const [hover, setHover] = useState(false)
+  const heroRef = useRef<HTMLElement | null>(null)
+  const [bleed, setBleed] = useState<Bleed | null>(null)
+  useLayoutEffect(() => {
+    const hero = heroRef.current
+    if (!hero) return
+    const measure = () => {
+      const next = measureBleed(hero)
+      setBleed((prev) => (prev && prev.left === next.left && prev.top === next.top && prev.width === next.width ? prev : next))
+    }
+    measure()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+    ro?.observe(hero)
+    ro?.observe(document.documentElement)
+    window.addEventListener('resize', measure)
+    return () => { ro?.disconnect(); window.removeEventListener('resize', measure) }
+  }, [])
   const touch = useRef<{ x: number; y: number } | null>(null)
   const onTouchStart = (e: TouchEvent) => { const p = e.touches[0]; touch.current = p ? { x: p.clientX, y: p.clientY } : null }
   const onTouchEnd = (e: TouchEvent) => {
@@ -125,6 +181,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
 
   return (
     <section
+      ref={heroRef}
       data-channels-hero=""
       data-hero-slides={slideList.length}
       onMouseEnter={() => setHover(true)}
@@ -145,13 +202,20 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
         opacitet, sido- och toppvinjett för läsbarheten, mask mot transparent
         (den enda gradienten utöver zappens brus). Aktiv bild och grannarna
         ritas (grannarna osynliga = förladdade); byte tonar över 300 ms.
+
+        Kant i kant som appens egen hero: lagret bryter ut ur appkolumnens
+        indrag till fönstrets (TV: rullbehållarens) kanter och överkant, mätt
+        i measureBleed. z −1 i kolumnens staplingskontext: under appens krom
+        (menyknapp, klocka) och under sidans innehåll, över appens grund.
       */}
       <div
         aria-hidden="true"
         data-hero-backdrop=""
+        data-hero-bleed={bleed ? `${bleed.left},${bleed.top},${bleed.width}` : undefined}
         style={{
-          position: 'absolute', top: 0, left: 0, right: 0, pointerEvents: 'none',
-          height: `calc(100% + ${isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop}px)`,
+          position: 'absolute', zIndex: -1, pointerEvents: 'none',
+          ...(bleed ? { top: -bleed.top, left: -bleed.left, width: bleed.width } : { top: 0, left: 0, right: 0 }),
+          height: `calc(100% + ${(bleed?.top ?? 0) + (isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop)}px)`,
           WebkitMaskImage: 'linear-gradient(to bottom, black 55%, transparent 100%)',
           maskImage: 'linear-gradient(to bottom, black 55%, transparent 100%)',
         }}
