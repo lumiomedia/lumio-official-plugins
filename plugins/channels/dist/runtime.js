@@ -1884,8 +1884,7 @@
     if (!/^https?:\/\//i.test(originalUrl)) return null;
     if (isLiveStreamUrl(originalUrl)) return null;
     try {
-      const parsed = new URL(originalUrl);
-      if (isLocalAppHost(parsed.hostname) && parsed.pathname !== "/api/webdav-library/stream") return null;
+      if (isLocalAppHost(new URL(originalUrl).hostname)) return null;
     } catch {
       return null;
     }
@@ -20336,7 +20335,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -40828,6 +40826,29 @@ ${cue.text}`).join("\n\n")}
     return merged();
   }
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/runtime-fix.ts
+  var MAX_FIXES = 600;
+  function noteDuration(fixes, ref, seconds) {
+    if (!Number.isFinite(seconds) || seconds < 60 || seconds > 12 * 3600) return null;
+    const prev = fixes[ref];
+    if (prev != null && Math.abs(prev - seconds) < 30) return null;
+    const next2 = { ...fixes };
+    delete next2[ref];
+    next2[ref] = Math.round(seconds);
+    const keys2 = Object.keys(next2);
+    for (let i = 0; i < keys2.length - MAX_FIXES; i += 1) delete next2[keys2[i]];
+    return next2;
+  }
+  function applyRuntimeFixes(items2, fixes) {
+    if (Object.keys(fixes).length === 0) return items2;
+    return items2.map((item) => {
+      const s = fixes[item.ref];
+      if (s == null) return item;
+      const runtimeMin = Math.max(1, Math.ceil(s / 60));
+      return runtimeMin === item.runtimeMin && item.runtimeKnown ? item : { ...item, runtimeMin, runtimeKnown: true };
+    });
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/host.ts
   init_plugin_sdk();
 
@@ -41071,6 +41092,17 @@ ${cue.text}`).join("\n\n")}
   function writeZapMemory(next2) {
     writePluginJson(PLUGIN_ID, "zap", next2);
   }
+  function readRuntimeFixes() {
+    const raw = readPluginJson(PLUGIN_ID, "runtimeFixes", {});
+    const out = {};
+    if (raw && typeof raw === "object") {
+      for (const [k, v] of Object.entries(raw)) if (typeof v === "number") out[k] = v;
+    }
+    return out;
+  }
+  function writeRuntimeFixes(next2) {
+    writePluginJson(PLUGIN_ID, "runtimeFixes", next2, { emitChange: false });
+  }
   function readPoolCache(id) {
     const raw = readPluginJson(PLUGIN_ID, `poolCache:${id}`, null);
     return raw && typeof raw.sig === "string" && raw.pool != null ? { sig: raw.sig, pool: raw.pool } : null;
@@ -41246,8 +41278,9 @@ ${cue.text}`).join("\n\n")}
       job.view = view;
       for (const fn of [...listeners7]) fn(view);
     };
-    job.done = loadPoolProgressive(channel, deps, (partial) => publish({ pool: capPool(partial, MAX_POOL_ITEMS, channel.seed), complete: false })).then((items2) => {
-      const pool = packPool(capPool(items2, MAX_POOL_ITEMS, channel.seed));
+    const fixes = readRuntimeFixes();
+    job.done = loadPoolProgressive(channel, deps, (partial) => publish({ pool: capPool(applyRuntimeFixes(partial, fixes), MAX_POOL_ITEMS, channel.seed), complete: false })).then((items2) => {
+      const pool = packPool(capPool(applyRuntimeFixes(items2, fixes), MAX_POOL_ITEMS, channel.seed));
       const final = unpackPool(pool);
       try {
         writePoolCache(channel.id, { sig, pool });
@@ -42503,8 +42536,17 @@ ${cue.text}`).join("\n\n")}
     const { position, duration: duration2, startedAt } = input;
     if (!Number.isFinite(duration2) || duration2 <= 0 || !Number.isFinite(position)) return null;
     if (position < duration2 - END_SLACK_S) return null;
-    return position - startedAt < MIN_PLAYED_S2 ? "failed" : "ended";
+    if (position - startedAt >= MIN_PLAYED_S2) return "ended";
+    return startedPastShortFile(startedAt, duration2, input.runtimeS) ? "ended" : "failed";
   }
+  var PAST_END_SLACK_S = 15;
+  var SHORT_FILE_RATIO = 0.8;
+  function startedPastShortFile(startedAt, duration2, runtimeS) {
+    if (!Number.isFinite(duration2) || duration2 <= 0) return false;
+    if (startedAt < duration2 - PAST_END_SLACK_S) return false;
+    return runtimeS == null || !(runtimeS > 0) || duration2 >= runtimeS * SHORT_FILE_RATIO;
+  }
+  var NEAR_BOUNDARY_MS = 18e4;
   var NEIGHBOUR_PREFETCH_DELAY_MS = 3e3;
   function neighbourPrefetch(channels, currentId, rundownOf, now2) {
     if (channels.length < 2) return [];
@@ -43369,6 +43411,7 @@ ${cue.text}`).join("\n\n")}
     const osdShownRef = useRef(true);
     osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== "playing";
     const endHandledFor = useRef(null);
+    const durationNotedFor = useRef(null);
     const commitNumber = useCallback((n) => {
       setDigits("");
       const target2 = channelByNumber(channelsRef.current, n);
@@ -43573,10 +43616,15 @@ ${cue.text}`).join("\n\n")}
           onStartProgress: () => noteProgress(seq),
           onTimeUpdate: (position, duration2) => {
             noteProgress(seq);
+            if (durationNotedFor.current !== seq && Number.isFinite(duration2) && duration2 > 0) {
+              durationNotedFor.current = seq;
+              const next2 = noteDuration(readRuntimeFixes(), slot.item.ref, duration2);
+              if (next2) writeRuntimeFixes(next2);
+            }
             const cur = stateRef.current;
             if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: "progress", seq, position });
             if (endHandledFor.current === seq) return;
-            const action = endOfSourceAction({ position, duration: duration2, startedAt: onScreen.initialTime });
+            const action = endOfSourceAction({ position, duration: duration2, startedAt: onScreen.initialTime, runtimeS: slot.item.runtimeMin * 60 });
             if (!action) return;
             endHandledFor.current = seq;
             if (action === "ended") {
@@ -43598,6 +43646,10 @@ ${cue.text}`).join("\n\n")}
             if (p && p.seq === seq && clockNow() - p.at < PROGRESS_GRACE_MS) {
               console.info(`[channels] v\xE4rdens laddfel ignoreras: str\xF6mmen ${channel.number} spelar`);
               dispatch({ type: "reveal", seq });
+              return true;
+            }
+            if (onScreen.mode === "live" && slot.stop - Date.now() <= NEAR_BOUNDARY_MS) {
+              dispatch({ type: "advance", seq, now: Date.now() });
               return true;
             }
             resolver.forget(slot.item.ref);
@@ -44942,7 +44994,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.3",
+    version: "0.1.4",
     description: S.description,
     preinstalled: false,
     register(ctx) {

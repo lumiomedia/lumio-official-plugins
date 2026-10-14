@@ -1,3 +1,8 @@
+## 0.1.4
+
+- Är tablåns längd längre än filen och liveläget hamnar efter filens slut visas "Programmet är slut" och kanalen fortsätter vid gränsen — ingen Ingen signal.
+- Filernas verkliga längd minns och används när kanalens titelpool byggs om nästa gång.
+
 ## 0.1.3
 
 - Ingen "Ingen signal" medan kanalen faktiskt spelar: bara ett laddfel utan framsteg räknas.
