@@ -157,4 +157,22 @@ describe('progressiv laddning', () => {
     const b = await loadPoolProgressive(ch, deps({ queryLibrary: () => slow(15, lib), listDebridCloud: () => slow(1, deb) }))
     expect(b).toEqual(a)
   })
+
+  it('kanaler som laddar samtidigt delar en hämtning per källa', async () => {
+    const d = deps()
+    const a = createChannel({ ...emptyDraft(), name: 'A', sources: ['library', 'watchlist', 'debrid'] }, [], 1, () => 0.1)
+    const b = createChannel({ ...emptyDraft(), name: 'B', sources: ['library', 'debrid'], kind: 'movie' }, [], 2, () => 0.2)
+    const c = createChannel({ ...emptyDraft(), name: 'C', sources: ['watchlist'] }, [], 3, () => 0.3)
+    const watch = vi.spyOn(d, 'getWatchlist')
+    const [pa, pb, pc] = await Promise.all([loadPoolProgressive(a, d), loadPoolProgressive(b, d), loadPoolProgressive(c, d)])
+    expect(d.queryLibrary).toHaveBeenCalledTimes(1)
+    expect(d.listDebridCloud).toHaveBeenCalledTimes(1)
+    expect(watch).toHaveBeenCalledTimes(1)
+    expect(pa.length).toBeGreaterThan(0)
+    expect(pb.every((i) => i.kind === 'movie')).toBe(true)
+    expect(pc.map((i) => i.ref)).toContain('wl:tv:4:1:1')
+    // Klar hämtning delas inte: nästa laddning hämtar igen.
+    await loadPoolProgressive(b, d)
+    expect(d.queryLibrary).toHaveBeenCalledTimes(2)
+  })
 })

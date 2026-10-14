@@ -32,6 +32,8 @@ export interface ChannelHeroProps {
   onPlay(mode: PlayMode): void
   onEdit(): void
   onNewChannel(): void
+  /** KANALER-pillret: öppnar Hantera kanaler. */
+  onManage(): void
 }
 
 /** Nästa program efter `t`, förbi en eventuell vila. */
@@ -48,7 +50,7 @@ function duration(ms: number, t: T): string {
   return h > 0 ? t('durHm', { h, m }) : t('durM', { m })
 }
 
-export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel }: ChannelHeroProps) {
+export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel, onManage }: ChannelHeroProps) {
   const fs = (px: number) => fontSize(px, isTv)
   const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now) : null
   const programme = slot?.kind === 'programme' ? slot : null
@@ -97,20 +99,29 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       {/* Under appens menypill, vänsterställt; högra hörnet är appens (klocka, hälsning). */}
       <div data-channels-topbar="" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <Pill isTv={isTv} onClick={() => requestBrowseBack()}>{t('pageHome')}</Pill>
-        <Pill isTv={isTv} active>{t('pageChannels')}</Pill>
+        <Pill isTv={isTv} active onClick={onManage}>{t('pageChannels')}</Pill>
         <Pill isTv={isTv} onClick={onNewChannel}>{t('pageNewChannel')}</Pill>
       </div>
 
       <div style={{ position: 'relative', marginTop: 'auto', paddingTop: isMobile ? 32 : 48 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          {programme || rest ? (
-            <span style={{
+          {programme ? (
+            <span data-hero-badge="live" style={{
               display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 9px', borderRadius: RADIUS.pill,
               background: C.accent, color: C.onAccent, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em',
             }}
             >
               <span style={{ width: 6, height: 6, borderRadius: 999, background: C.onAccent }} />
               {t('heroLive')}
+            </span>
+          ) : rest ? (
+            // Vila: neutral bricka, inte LIVE (kanalen sänder inte nu).
+            <span data-hero-badge="rest" style={{
+              display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: RADIUS.pill,
+              ...glass(isTv, { fill: C.pillBg, blur: 0 }), color: C.textSoft, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em',
+            }}
+            >
+              {t('heroOffAir')}
             </span>
           ) : null}
           <span style={{ fontSize: fs(11), letterSpacing: '0.22em', textTransform: 'uppercase', color: C.textSoft }}>

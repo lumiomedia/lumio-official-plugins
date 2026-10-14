@@ -2,16 +2,37 @@
  * Kanaler och titelpool i pluginets lagring, plus React-hooks för vyerna.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChannelDef } from '../model/channel'
+import { buildDefaultChannels, type ChannelDef } from '../model/channel'
 import { buildRundown, programmeAt } from '../model/schedule'
 import { capPool, MAX_POOL_ITEMS, poolRules, poolSignature, type PoolItem } from '../data/pool'
 import { packPool, unpackPool } from '../data/pool-pack'
 import { loadPoolProgressive, type SourceDeps } from '../data/sources'
-import { onChannelsChanged, prunePoolCaches, readChannels, readPoolCache, removePoolCache, sourceDeps, sourceSignatures, writeChannels, writePoolCache } from '../host'
+import { onChannelsChanged, prunePoolCaches, readChannels, readDefaultsSeeded, readPoolCache, removePoolCache, sourceDeps, sourceSignatures, writeChannels, writeDefaultsSeeded, writePoolCache } from '../host'
 
 export function saveChannel(def: ChannelDef): void {
   const all = readChannels()
   writeChannels(all.some((c) => c.id === def.id) ? all.map((c) => (c.id === def.id ? def : c)) : [...all, def])
+}
+
+/**
+ * Första gången Kanaler öppnas i en profil: lägg till standardkanalerna
+ * (efter befintliga, utan regeldubbletter). Flaggan gör att det sker en gång;
+ * tar man bort dem kommer de bara tillbaka via "Återställ standardkanaler".
+ * Returnerar antalet tillagda.
+ */
+export function seedDefaultChannels(lang: 'en' | 'sv'): number {
+  if (readDefaultsSeeded()) return 0
+  const added = restoreDefaultChannels(lang)
+  writeDefaultsSeeded()
+  return added
+}
+
+/** Lägger till de standardkanaler som saknas (oavsett flaggan). */
+export function restoreDefaultChannels(lang: 'en' | 'sv'): number {
+  const all = readChannels()
+  const added = buildDefaultChannels(all, lang)
+  if (added.length > 0) writeChannels([...all, ...added])
+  return added.length
 }
 
 export function deleteChannel(id: string): void {

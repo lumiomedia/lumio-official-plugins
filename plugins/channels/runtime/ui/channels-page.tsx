@@ -11,17 +11,18 @@
  * samma sida med samma parametrar igen skulle stänga den.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useTvMode, type BrowsePageProps } from '@/lib/plugin-sdk'
-import { createChannel, type ChannelDef, PRESETS } from '../model/channel'
+import { useLang, useTvMode, type BrowsePageProps } from '@/lib/plugin-sdk'
+import type { ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 import type { PlayMode } from '../play/player-logic'
 import { hostReady, readZapMemory } from '../host'
-import { saveChannel, useChannelClock, useChannels } from '../state/store'
+import { restoreDefaultChannels, seedDefaultChannels, useChannelClock, useChannels } from '../state/store'
 import { ChannelGuide } from './channel-guide'
 import { ChannelHero } from './channel-hero'
 import { ChannelPlayer } from './channel-player'
 import { ChannelStudio } from './studio'
-import { EmptyState, PRESET_TEXT } from './empty-state'
+import { ChannelManager } from './channel-manager'
+import { EmptyState } from './empty-state'
 import { guideWindow } from './guide-layout'
 import { C, FONT, fontSize } from './tokens'
 import { useText } from './use-text'
@@ -70,6 +71,11 @@ function useIsMobile(): boolean {
 
 export function ChannelsPage({ params }: BrowsePageProps) {
   const t = useText()
+  const { lang } = useLang()
+  const uiLang = lang === 'sv' ? 'sv' : 'en'
+  // Första öppningen i profilen: standardkanalerna skapas FÖRE första läsningen,
+  // så sidan aldrig blinkar tomvyn. En gång per profil (flagga i lagringen).
+  useState(() => seedDefaultChannels(uiLang))
   const isTv = useTvMode()
   const isMobile = useIsMobile() && !isTv
   const channels = useChannels()
@@ -81,6 +87,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
   const [player, setPlayer] = useState<PlayerState | null>(() => initialPlayer(sorted, p))
   const [studio, setStudio] = useState<string | null>(() => p.studio ?? null)
   const [shift, setShift] = useState(0)
+  const [manage, setManage] = useState(false)
   const [rundowns, setRundowns] = useState<Record<string, { rundown: PoolItem[]; loading: boolean; partial: boolean }>>({})
 
   // Nya parametrar medan sidan redan är öppen (hemkort, inställningarnas
@@ -153,6 +160,21 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     )
   }
 
+  if (manage && !studio) {
+    return (
+      <div data-channels-page="" style={{ background: C.base, minHeight: '100%' }}>
+        <ChannelManager
+          isTv={isTv}
+          isMobile={isMobile}
+          t={t}
+          onBack={() => setManage(false)}
+          onEdit={(id) => { setManage(false); setSelectedId(id); setStudio(id) }}
+          onCreate={() => { setManage(false); setStudio('new') }}
+        />
+      </div>
+    )
+  }
+
   if (studio) {
     return (
       <ChannelStudioSlot
@@ -189,12 +211,9 @@ export function ChannelsPage({ params }: BrowsePageProps) {
           isTv={isTv}
           isMobile={isMobile}
           t={t}
-          onPreset={(id) => {
-            const preset = PRESETS.find((x) => x.id === id)
-            if (!preset) return
-            const def = createChannel({ ...preset.draft, name: t(PRESET_TEXT[id].name) }, channels)
-            saveChannel(def)
-            setSelectedId(def.id)
+          onRestore={() => {
+            restoreDefaultChannels(uiLang)
+            setSelectedId(null)
           }}
           onCustom={() => setStudio('new')}
         />
@@ -219,6 +238,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
         onPlay={(mode) => play(selected.id, mode)}
         onEdit={() => setStudio(selected.id)}
         onNewChannel={() => setStudio('new')}
+        onManage={() => setManage(true)}
       />
       <ChannelGuide
         channels={sorted}

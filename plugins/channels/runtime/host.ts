@@ -29,6 +29,15 @@ export function writeChannels(next: ChannelDef[]): void {
   writePluginJson(PLUGIN_ID, 'channels', next)
 }
 
+/** Standardkanalerna skapas en gång per profil; borttagna kommer aldrig tillbaka av sig själva. */
+export function readDefaultsSeeded(): boolean {
+  return readPluginJson<unknown>(PLUGIN_ID, 'defaultsSeeded', false) === true
+}
+
+export function writeDefaultsSeeded(): void {
+  writePluginJson(PLUGIN_ID, 'defaultsSeeded', true, { emitChange: false })
+}
+
 export function onChannelsChanged(cb: () => void): () => void {
   return onPluginStorageChanged(PLUGIN_ID, 'channels', cb)
 }

@@ -20330,7 +20330,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -21787,14 +21786,14 @@
             /* @__PURE__ */ jsx("p", { className: "text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400", children: t("vtTitle") }),
             /* @__PURE__ */ jsx("button", { type: "button", ref: closeRef, ...isTv ? { "data-f": "", "data-init": "" } : {}, onClick: onClose, className: "text-slate-400 transition hover:text-white", "aria-label": t("close"), children: /* @__PURE__ */ jsx("svg", { className: "h-4 w-4", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.2", strokeLinecap: "round", children: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }) }) })
           ] }),
-          /* @__PURE__ */ jsx("div", { className: "mb-3 flex flex-wrap gap-1.5", children: Object.entries(TUNING_PRESETS).map(([id, preset]) => /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("div", { className: "mb-3 flex flex-wrap gap-1.5", children: Object.entries(TUNING_PRESETS).map(([id, preset2]) => /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
               ...isTv ? { "data-f": "" } : {},
-              onClick: () => apply({ ...DEFAULT_TUNING, ...preset.patch }),
-              className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${matchesPreset(preset.patch) ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
-              children: t(preset.labelKey)
+              onClick: () => apply({ ...DEFAULT_TUNING, ...preset2.patch }),
+              className: `rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${matchesPreset(preset2.patch) ? "border-accent-400/60 bg-accent-500/15 text-accent-200" : "border-white/10 text-slate-300 hover:border-white/25"}`,
+              children: t(preset2.labelKey)
             },
             id
           )) }),
@@ -22048,8 +22047,8 @@
 
   // lib/download-target.ts
   async function resolveDownloadFolder() {
-    const preset = getDownloadDir();
-    if (preset) return preset;
+    const preset2 = getDownloadDir();
+    if (preset2) return preset2;
     if (isAndroidTauriEnv) {
       return await (0, import_core3.invoke)("default_download_dir");
     }
@@ -39892,6 +39891,7 @@ ${cue.text}`).join("\n\n")}
     pageNewChannel: { en: "+ NEW CHANNEL", sv: "+ NY KANAL" },
     pageHostTooOld: { en: "Channels requires Lumio 0.1.625 or later for playback", sv: "Kanaler kr\xE4ver Lumio 0.1.625 eller senare f\xF6r uppspelning" },
     heroLive: { en: "LIVE", sv: "LIVE" },
+    heroOffAir: { en: "OFF AIR", sv: "VILA" },
     heroWatchLive: { en: "\u25B6 Watch live", sv: "\u25B6 Titta live" },
     heroFromStart: { en: "\u27F2 From start", sv: "\u27F2 Fr\xE5n b\xF6rjan" },
     heroEdit: { en: "Edit channel", sv: "Redigera kanal" },
@@ -39908,17 +39908,12 @@ ${cue.text}`).join("\n\n")}
     guideRest: { en: "Off air \u2014 back at {time}", sv: "Vilobild \u2014 s\xE4nder fr\xE5n {time}" },
     guideLoading: { en: "Loading\u2026", sv: "H\xE4mtar\u2026" },
     guideEmpty: { en: "Nothing to broadcast", sv: "Inget att s\xE4nda" },
-    emptyTitle: { en: "Create your first channel", sv: "Skapa din f\xF6rsta kanal" },
+    emptyTitle: { en: "No channels", sv: "Inga kanaler" },
     emptyLead: {
-      en: "A channel is a few rules. Lumio builds a never-ending schedule from your library, watchlist and debrid.",
-      sv: "En kanal \xE4r n\xE5gra regler. Lumio bygger en tabl\xE5 som aldrig tar slut av ditt bibliotek, din watchlist och debrid."
+      en: "A channel is a few rules. Lumio builds a never-ending schedule from your library, watchlist and debrid. Bring back the ten default channels or create your own.",
+      sv: "En kanal \xE4r n\xE5gra regler. Lumio bygger en tabl\xE5 som aldrig tar slut av ditt bibliotek, din watchlist och debrid. Ta tillbaka de tio standardkanalerna eller skapa en egen."
     },
-    presetEveningFilm: { en: "Evening film", sv: "Kv\xE4llsfilm" },
-    presetEveningFilmDesc: { en: "Feature films, evenings 18\u201302", sv: "L\xE5ngfilmer, kv\xE4llar 18\u201302" },
-    presetComfortSeries: { en: "Comfort series", sv: "Komfortserier" },
-    presetComfortSeriesDesc: { en: "Series episode by episode, around the clock", sv: "Serier avsnitt f\xF6r avsnitt, dygnet runt" },
-    presetLateShorts: { en: "Shorts after midnight", sv: "Kortfilmer efter midnatt" },
-    presetLateShortsDesc: { en: "Short films under 40 min, 00\u201306", sv: "Kortfilmer under 40 min, 00\u201306" },
+    emptyRestore: { en: "Restore default channels", sv: "\xC5terst\xE4ll standardkanaler" },
     emptyCustom: { en: "Create your own", sv: "Skapa egen" },
     // Kanalstudion
     studioEyebrow: { en: "MY CHANNELS", sv: "MINA KANALER" },
@@ -39944,6 +39939,7 @@ ${cue.text}`).join("\n\n")}
     era70s: { en: "70s", sv: "70-tal" },
     era80s: { en: "80s", sv: "80-tal" },
     era90s: { en: "90s", sv: "90-tal" },
+    era80s90s: { en: "80s\u201390s", sv: "80\u201390-tal" },
     era00s: { en: "00s", sv: "00-tal" },
     era10s: { en: "10s", sv: "10-tal" },
     era20s: { en: "20s", sv: "20-tal" },
@@ -39989,6 +39985,8 @@ ${cue.text}`).join("\n\n")}
     settingsDelete: { en: "Delete", sv: "Ta bort" },
     settingsDeleteConfirm: { en: "Confirm", sv: "Bekr\xE4fta" },
     settingsNew: { en: "+ New channel", sv: "+ Ny kanal" },
+    manageTitle: { en: "Manage channels", sv: "Hantera kanaler" },
+    manageBack: { en: "\u2039 GUIDE", sv: "\u2039 TABL\xC5" },
     settingsNewRow: { en: "New channel", sv: "Ny kanal" },
     settingsChannelLine: { en: "{n} \xB7 {name}", sv: "{n} \xB7 {name}" },
     settingsDeleteTitle: { en: "Delete {name}?", sv: "Ta bort {name}?" },
@@ -40023,11 +40021,42 @@ ${cue.text}`).join("\n\n")}
   init_react_shim();
   init_plugin_sdk();
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/genres.ts
+  var ALIAS = {
+    "sci-fi": "science fiction",
+    "sci fi": "science fiction",
+    scifi: "science fiction",
+    "science-fiction": "science fiction",
+    sf: "science fiction",
+    animated: "animation",
+    "tv-movie": "tv movie",
+    doc: "documentary",
+    documentaries: "documentary",
+    kid: "kids",
+    children: "kids"
+  };
+  function canonGenre(name) {
+    const out = [];
+    for (const part of name.toLowerCase().split(/[&/]/)) {
+      const token = part.trim().replace(/\s+/g, " ");
+      if (!token) continue;
+      const canon = ALIAS[token] ?? token;
+      if (!out.includes(canon)) out.push(canon);
+    }
+    return out;
+  }
+  function canonGenres(names) {
+    const set = /* @__PURE__ */ new Set();
+    for (const name of names) for (const token of canonGenre(name)) set.add(token);
+    return [...set];
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/model/channel.ts
   var ERA_RANGES = {
     "70s": [1970, 1979],
     "80s": [1980, 1989],
     "90s": [1990, 1999],
+    "80s90s": [1980, 1999],
     "00s": [2e3, 2009],
     "10s": [2010, 2019],
     "20s": [2020, 2029]
@@ -40069,11 +40098,55 @@ ${cue.text}`).join("\n\n")}
     const warnings = matchingTitles != null && matchingTitles < 5 ? ["few-titles"] : [];
     return { errors, warnings };
   }
-  var PRESETS = [
-    { id: "evening-film", draft: { ...emptyDraft(), name: "Kv\xE4llsfilm", kind: "movie", length: "feature", airWindow: "evenings", sources: ["library", "watchlist", "debrid"] } },
-    { id: "comfort-series", draft: { ...emptyDraft(), name: "Komfortserier", kind: "tv", order: "episodes", sources: ["library", "watchlist", "debrid"] } },
-    { id: "late-shorts", draft: { ...emptyDraft(), name: "Kortfilmer efter midnatt", length: "short", airWindow: "late", sources: ["library", "watchlist", "debrid"] } }
+  var ALL_SOURCES = ["library", "watchlist", "debrid"];
+  var preset = (over) => {
+    const { name: _name, ...base } = emptyDraft();
+    return { ...base, sources: [...ALL_SOURCES], showOnHome: true, ...over };
+  };
+  var DEFAULT_CHANNELS = [
+    { id: "movies-247", name: { en: "Movies around the clock", sv: "Bio dygnet runt" }, hue: 15, draft: preset({ kind: "movie", length: "feature", order: "shuffle" }) },
+    { id: "series-in-order", name: { en: "Series in order", sv: "Serier i f\xF6ljd" }, hue: 200, draft: preset({ kind: "tv", order: "episodes" }) },
+    { id: "action-thrills", name: { en: "Action & thrills", sv: "Action & sp\xE4nning" }, hue: 0, draft: preset({ genres: ["Action", "Thriller", "Crime"] }) },
+    { id: "comedy", name: { en: "Comedy", sv: "Komedi" }, hue: 48, draft: preset({ genres: ["Comedy"] }) },
+    { id: "eighties-nineties", name: { en: "80s & 90s", sv: "80- & 90-tal" }, hue: 300, draft: preset({ kind: "movie", era: "80s90s" }) },
+    { id: "evening-film", name: { en: "Evening film", sv: "Kv\xE4llsfilm" }, hue: 25, draft: preset({ kind: "movie", length: "feature", airWindow: "evenings" }) },
+    { id: "after-midnight", name: { en: "After midnight", sv: "Efter midnatt" }, hue: 250, draft: preset({ length: "short", airWindow: "late" }) },
+    { id: "scifi-fantasy", name: { en: "Sci-fi & fantasy", sv: "Sci-fi & fantasy" }, hue: 180, draft: preset({ genres: ["Science Fiction", "Fantasy"] }) },
+    { id: "family-animation", name: { en: "Family & animation", sv: "Familj & animerat" }, hue: 120, draft: preset({ genres: ["Family", "Animation"] }) },
+    { id: "drama", name: { en: "Drama", sv: "Drama" }, hue: 220, draft: preset({ genres: ["Drama"] }) }
   ];
+  function presetSeed(id) {
+    let h = 2166136261;
+    for (let i = 0; i < id.length; i += 1) {
+      h ^= id.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h % 2 ** 31;
+  }
+  function sameRules(a, b) {
+    const norm = (c) => JSON.stringify([
+      [...c.sources].sort(),
+      canonGenres(c.genres).sort(),
+      c.era,
+      c.length,
+      c.kind,
+      c.airWindow
+    ]);
+    return norm(a) === norm(b);
+  }
+  function buildDefaultChannels(existing, lang, now2 = Date.now()) {
+    const all = [...existing];
+    const added = [];
+    for (const d of DEFAULT_CHANNELS) {
+      const id = `ch-default-${d.id}`;
+      const draft = { ...d.draft, name: d.name[lang] };
+      if (all.some((c) => c.id === id || sameRules(c, draft))) continue;
+      const def = { ...draft, id, number: nextChannelNumber(all), hue: d.hue, seed: presetSeed(d.id), createdAt: now2 };
+      all.push(def);
+      added.push(def);
+    }
+    return added;
+  }
   function hueTint(hue, alpha = 0.22) {
     const h = (hue % 360 + 360) % 360;
     return `hsl(${h} 60% 55% / ${alpha})`;
@@ -40218,36 +40291,6 @@ ${cue.text}`).join("\n\n")}
       t = slot.stop > t ? slot.stop : t + MIN;
     }
     return out;
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/genres.ts
-  var ALIAS = {
-    "sci-fi": "science fiction",
-    "sci fi": "science fiction",
-    scifi: "science fiction",
-    "science-fiction": "science fiction",
-    sf: "science fiction",
-    animated: "animation",
-    "tv-movie": "tv movie",
-    doc: "documentary",
-    documentaries: "documentary",
-    kid: "kids",
-    children: "kids"
-  };
-  function canonGenre(name) {
-    const out = [];
-    for (const part of name.toLowerCase().split(/[&/]/)) {
-      const token = part.trim().replace(/\s+/g, " ");
-      if (!token) continue;
-      const canon = ALIAS[token] ?? token;
-      if (!out.includes(canon)) out.push(canon);
-    }
-    return out;
-  }
-  function canonGenres(names) {
-    const set = /* @__PURE__ */ new Set();
-    for (const name of names) for (const token of canonGenre(name)) set.add(token);
-    return [...set];
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/pool.ts
@@ -40614,11 +40657,38 @@ ${cue.text}`).join("\n\n")}
     watchlist: streamWatchlistItems,
     debrid: streamDebridItems
   };
+  var sharedRuns = /* @__PURE__ */ new WeakMap();
+  function runShared(source, deps, emit3) {
+    let runs = sharedRuns.get(deps);
+    if (!runs) {
+      runs = /* @__PURE__ */ new Map();
+      sharedRuns.set(deps, runs);
+    }
+    const existing = runs.get(source);
+    if (existing) {
+      existing.listeners.add(emit3);
+      if (existing.latest) emit3(existing.latest);
+      return existing.done.finally(() => {
+        existing.listeners.delete(emit3);
+      });
+    }
+    const map = runs;
+    const run = { latest: null, listeners: /* @__PURE__ */ new Set([emit3]), done: Promise.resolve() };
+    map.set(source, run);
+    run.done = STREAMS[source](deps, (items2) => {
+      run.latest = items2;
+      for (const fn of [...run.listeners]) fn(items2);
+    }).finally(() => {
+      if (map.get(source) === run) map.delete(source);
+      run.listeners.delete(emit3);
+    });
+    return run.done;
+  }
   async function loadPoolProgressive(channel, deps, onUpdate) {
     const bySource = /* @__PURE__ */ new Map();
     const merged = () => filterPool(dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? [])), channel);
     await Promise.all(channel.sources.map(
-      (s) => STREAMS[s](deps, (items2) => {
+      (s) => runShared(s, deps, (items2) => {
         bySource.set(s, items2);
         onUpdate?.(merged());
       }).catch(() => {
@@ -40789,6 +40859,12 @@ ${cue.text}`).join("\n\n")}
   function writeChannels(next2) {
     writePluginJson(PLUGIN_ID, "channels", next2);
   }
+  function readDefaultsSeeded() {
+    return readPluginJson(PLUGIN_ID, "defaultsSeeded", false) === true;
+  }
+  function writeDefaultsSeeded() {
+    writePluginJson(PLUGIN_ID, "defaultsSeeded", true, { emitChange: false });
+  }
   function onChannelsChanged(cb) {
     return onPluginStorageChanged(PLUGIN_ID, "channels", cb);
   }
@@ -40914,6 +40990,18 @@ ${cue.text}`).join("\n\n")}
   function saveChannel(def) {
     const all = readChannels();
     writeChannels(all.some((c) => c.id === def.id) ? all.map((c) => c.id === def.id ? def : c) : [...all, def]);
+  }
+  function seedDefaultChannels(lang) {
+    if (readDefaultsSeeded()) return 0;
+    const added = restoreDefaultChannels(lang);
+    writeDefaultsSeeded();
+    return added;
+  }
+  function restoreDefaultChannels(lang) {
+    const all = readChannels();
+    const added = buildDefaultChannels(all, lang);
+    if (added.length > 0) writeChannels([...all, ...added]);
+    return added.length;
   }
   function deleteChannel(id) {
     writeChannels(readChannels().filter((c) => c.id !== id));
@@ -41593,7 +41681,7 @@ ${cue.text}`).join("\n\n")}
     const m = total % 60;
     return h > 0 ? t("durHm", { h, m }) : t("durM", { m });
   }
-  function ChannelHero({ channel, rundown, loading: loading2, partial, now: now2, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel }) {
+  function ChannelHero({ channel, rundown, loading: loading2, partial, now: now2, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel, onManage }) {
     const fs = (px) => fontSize(px, isTv);
     const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now2) : null;
     const programme = slot?.kind === "programme" ? slot : null;
@@ -41642,14 +41730,15 @@ ${cue.text}`).join("\n\n")}
           ] }) : null,
           /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { position: "relative", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
             /* @__PURE__ */ jsx(Pill, { isTv, onClick: () => requestBrowseBack(), children: t("pageHome") }),
-            /* @__PURE__ */ jsx(Pill, { isTv, active: true, children: t("pageChannels") }),
+            /* @__PURE__ */ jsx(Pill, { isTv, active: true, onClick: onManage, children: t("pageChannels") }),
             /* @__PURE__ */ jsx(Pill, { isTv, onClick: onNewChannel, children: t("pageNewChannel") })
           ] }),
           /* @__PURE__ */ jsxs("div", { style: { position: "relative", marginTop: "auto", paddingTop: isMobile ? 32 : 48 }, children: [
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }, children: [
-              programme || rest ? /* @__PURE__ */ jsxs(
+              programme ? /* @__PURE__ */ jsxs(
                 "span",
                 {
+                  "data-hero-badge": "live",
                   style: {
                     display: "inline-flex",
                     alignItems: "center",
@@ -41667,6 +41756,26 @@ ${cue.text}`).join("\n\n")}
                     t("heroLive")
                   ]
                 }
+              ) : rest ? (
+                // Vila: neutral bricka, inte LIVE (kanalen sänder inte nu).
+                /* @__PURE__ */ jsx(
+                  "span",
+                  {
+                    "data-hero-badge": "rest",
+                    style: {
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "3px 9px",
+                      borderRadius: RADIUS.pill,
+                      ...glass(isTv, { fill: C.pillBg, blur: 0 }),
+                      color: C.textSoft,
+                      fontSize: fs(10.5),
+                      fontWeight: 700,
+                      letterSpacing: "0.16em"
+                    },
+                    children: t("heroOffAir")
+                  }
+                )
               ) : null,
               /* @__PURE__ */ jsx("span", { style: { fontSize: fs(11), letterSpacing: "0.22em", textTransform: "uppercase", color: C.textSoft }, children: t("zapChannelLine", { n: channel.number, name: channel.name }) })
             ] }),
@@ -42758,6 +42867,7 @@ ${cue.text}`).join("\n\n")}
     { id: "70s", label: "era70s" },
     { id: "80s", label: "era80s" },
     { id: "90s", label: "era90s" },
+    { id: "80s90s", label: "era80s90s" },
     { id: "00s", label: "era00s" },
     { id: "10s", label: "era10s" },
     { id: "20s", label: "era20s" }
@@ -43215,16 +43325,219 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-manager.tsx
+  init_react_shim();
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/settings-section.tsx
+  init_react_shim();
+  init_plugin_sdk();
+  init_jsx_runtime_shim();
+  var CONFIRM_MS2 = 3e3;
+  var fill2 = (text, vars) => {
+    const one = (s) => Object.entries(vars).reduce((out, [k, v]) => out.split(`{${k}}`).join(String(v)), s);
+    return { en: one(text.en), sv: one(text.sv) };
+  };
+  function openStudio(target2) {
+    requestOpenBrowsePage({ pageId: CHANNELS_PAGE_ID, params: { studio: target2 } });
+  }
+  function buildChannelRows(channels, actions) {
+    const sorted = [...channels].sort((a, b) => a.number - b.number);
+    const rows = [{ t: "eyebrow", label: S.settingsTitle }];
+    if (sorted.length === 0) rows.push({ t: "note", text: S.settingsEmpty });
+    for (const channel of sorted) {
+      rows.push({
+        t: "action",
+        label: fill2(S.settingsChannelLine, { n: channel.number, name: channel.name }),
+        rows: [
+          { t: "action", label: S.settingsEdit, run: () => actions.edit(channel.id) },
+          {
+            t: "action",
+            label: S.settingsDelete,
+            danger: true,
+            confirm: { title: fill2(S.settingsDeleteTitle, { name: channel.name }), body: S.settingsDeleteBody, confirmLabel: S.settingsDelete },
+            run: () => actions.remove(channel.id)
+          }
+        ]
+      });
+    }
+    rows.push({ t: "action", label: S.settingsNewRow, run: actions.create });
+    return rows;
+  }
+  var channelsSettingsSection = {
+    id: "channels",
+    label: S.settingsLabel,
+    Section: ChannelsSettingsSection,
+    rows: () => buildChannelRows(readChannels(), { edit: openStudio, remove: deleteChannel, create: () => openStudio("new") }),
+    subscribe: (listener) => onChannelsChanged(listener)
+  };
+  function useChannelList() {
+    const channels = useChannels();
+    const sorted = useMemo(() => [...channels].sort((a, b) => a.number - b.number), [channels]);
+    const counts = useMemo(() => Object.fromEntries(sorted.map((c) => [c.id, readCachedPool(c.id)?.length ?? null])), [sorted]);
+    const [confirmId, setConfirmId] = useState(null);
+    const timer3 = useRef(null);
+    useEffect(() => () => {
+      if (timer3.current) clearTimeout(timer3.current);
+    }, []);
+    const onDelete = (id) => {
+      if (timer3.current) clearTimeout(timer3.current);
+      if (confirmId !== id) {
+        setConfirmId(id);
+        timer3.current = setTimeout(() => setConfirmId(null), CONFIRM_MS2);
+        return;
+      }
+      setConfirmId(null);
+      deleteChannel(id);
+    };
+    return { sorted, counts, confirmId, requestDelete: onDelete };
+  }
+  function ChannelsSettingsSection() {
+    const t = useText();
+    const { sorted, counts, confirmId, requestDelete: onDelete } = useChannelList();
+    return /* @__PURE__ */ jsx(
+      Section,
+      {
+        title: t("settingsTitle"),
+        hint: t("settingsHint"),
+        action: /* @__PURE__ */ jsx(PillBtn, { variant: "primary", onClick: () => openStudio("new"), children: t("settingsNew") }),
+        children: sorted.length === 0 ? /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsx("p", { style: { margin: 0, color: TOKENS.textDim }, children: t("settingsEmpty") }) }) : sorted.map((channel) => {
+          const count = counts[channel.id];
+          return /* @__PURE__ */ jsxs(Card, { style: { display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }, children: [
+            /* @__PURE__ */ jsx(
+              "span",
+              {
+                style: {
+                  minWidth: 36,
+                  height: 28,
+                  padding: "0 6px",
+                  borderRadius: 6,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: `1px solid ${TOKENS.borderStrong}`,
+                  background: TOKENS.surface2,
+                  color: TOKENS.text,
+                  fontWeight: 600,
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+                },
+                children: channel.number
+              }
+            ),
+            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 140 }, children: [
+              /* @__PURE__ */ jsx("div", { "data-channel-name": "", style: { color: TOKENS.text, fontWeight: 600 }, children: channel.name }),
+              count != null ? /* @__PURE__ */ jsx("div", { style: { color: TOKENS.textDim, marginTop: 2 }, children: t("settingsTitles", { n: count }) }) : null
+            ] }),
+            /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => openStudio(channel.id), children: t("settingsEdit") }),
+            /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "danger", onClick: () => onDelete(channel.id), children: t(confirmId === channel.id ? "settingsDeleteConfirm" : "settingsDelete") })
+          ] }, channel.id);
+        })
+      }
+    );
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-manager.tsx
+  init_jsx_runtime_shim();
+  var BACK_KEYS4 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
+  function ChannelManager({ isTv, isMobile, t, onBack, onEdit, onCreate }) {
+    const { sorted, counts, confirmId, requestDelete } = useChannelList();
+    const fs = (px) => fontSize(px, isTv);
+    const backRef = useRef(onBack);
+    backRef.current = onBack;
+    useEffect(() => {
+      if (!isTv) return;
+      const handler = (event) => {
+        if (!BACK_KEYS4.has(event.key)) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        backRef.current();
+      };
+      window.addEventListener("keydown", handler, true);
+      return () => window.removeEventListener("keydown", handler, true);
+    }, [isTv]);
+    return /* @__PURE__ */ jsxs(
+      "section",
+      {
+        "data-channels-manage": "",
+        style: {
+          minHeight: "100%",
+          background: C.base,
+          color: C.text,
+          fontFamily: FONT3.ui,
+          padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : isTv ? "2.5rem 2.5rem" : "32px 40px"}`
+        },
+        children: [
+          /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
+            /* @__PURE__ */ jsx(Btn, { isTv, pill: true, onClick: onBack, children: t("manageBack") }),
+            /* @__PURE__ */ jsx(Btn, { isTv, pill: true, onClick: onCreate, children: t("pageNewChannel") })
+          ] }),
+          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "28px 0 16px" : "40px 0 20px", fontFamily: FONT3.title, fontWeight: 400, fontSize: fs(isMobile ? 28 : 36) }, children: t("manageTitle") }),
+          sorted.length === 0 ? /* @__PURE__ */ jsx("p", { style: { margin: 0, color: C.textDim, fontSize: fs(14) }, children: t("settingsEmpty") }) : /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: 8, maxWidth: 760 }, children: sorted.map((channel, i) => {
+            const count = counts[channel.id];
+            return /* @__PURE__ */ jsxs(
+              "div",
+              {
+                "data-manage-row": channel.id,
+                style: { ...glass(isTv, { blur: 0 }), borderRadius: RADIUS.card, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: isTv ? "0.75rem 1rem" : "12px 14px" },
+                children: [
+                  /* @__PURE__ */ jsx("span", { style: { width: 28, textAlign: "right", fontFamily: FONT3.mono, fontSize: fs(13), color: C.textDim }, children: channel.number }),
+                  /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 30 }),
+                  /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 140 }, children: [
+                    /* @__PURE__ */ jsx("div", { "data-channel-name": "", style: { fontSize: fs(15), fontWeight: 600 }, children: channel.name }),
+                    count != null ? /* @__PURE__ */ jsx("div", { style: { marginTop: 2, fontSize: fs(12.5), color: C.textDim }, children: t("settingsTitles", { n: count }) }) : null
+                  ] }),
+                  /* @__PURE__ */ jsx(Btn, { isTv, init: i === 0, onClick: () => onEdit(channel.id), children: t("settingsEdit") }),
+                  /* @__PURE__ */ jsx(Btn, { isTv, danger: true, onClick: () => requestDelete(channel.id), children: t(confirmId === channel.id ? "settingsDeleteConfirm" : "settingsDelete") })
+                ]
+              },
+              channel.id
+            );
+          }) })
+        ]
+      }
+    );
+  }
+  function Btn({ children, onClick, isTv, pill, danger, init }) {
+    return /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        "data-f": "",
+        "data-init": init ? "" : void 0,
+        onClick,
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          minHeight: isTv ? "2.25rem" : 30,
+          padding: isTv ? "0 1rem" : "0 14px",
+          ...glass(isTv, { fill: C.pillBg, blur: 0 }),
+          borderRadius: RADIUS.pill,
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+          ...danger ? { border: "1px solid rgba(255,90,106,0.45)", color: "hsl(354 100% 72%)" } : { color: C.text },
+          fontFamily: FONT3.ui,
+          fontSize: fontSize(pill ? 10.5 : 13, isTv),
+          fontWeight: 600,
+          letterSpacing: pill ? "0.18em" : void 0
+        },
+        children
+      }
+    );
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/empty-state.tsx
   init_plugin_sdk();
   init_jsx_runtime_shim();
-  var PRESET_TEXT = {
-    "evening-film": { name: "presetEveningFilm", desc: "presetEveningFilmDesc", hue: 15 },
-    "comfort-series": { name: "presetComfortSeries", desc: "presetComfortSeriesDesc", hue: 200 },
-    "late-shorts": { name: "presetLateShorts", desc: "presetLateShortsDesc", hue: 270 }
-  };
-  function EmptyState({ isTv, isMobile, t, onPreset, onCustom }) {
+  function EmptyState({ isTv, isMobile, t, onRestore, onCustom }) {
     const fs = (px) => fontSize(px, isTv);
+    const button = (primary) => ({
+      padding: isTv ? "0.625rem 1.375rem" : "10px 22px",
+      borderRadius: RADIUS.pill,
+      cursor: "pointer",
+      ...primary ? { background: C.accent, border: `1px solid ${C.accent}`, color: C.onAccent } : { ...glass(isTv, { fill: C.pillBg, blur: 20 }), color: C.text },
+      fontFamily: FONT3.ui,
+      fontSize: fs(14),
+      fontWeight: 600
+    });
     return /* @__PURE__ */ jsxs(
       "section",
       {
@@ -43262,60 +43575,10 @@ ${cue.text}`).join("\n\n")}
           ),
           /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "32px 0 0" : "48px 0 0", fontFamily: FONT3.title, fontWeight: 400, fontSize: fs(isMobile ? 30 : 44), lineHeight: 1.05 }, children: t("emptyTitle") }),
           /* @__PURE__ */ jsx("p", { style: { margin: "12px 0 0", maxWidth: 560, fontSize: fs(14), lineHeight: 1.5, color: C.textSoft }, children: t("emptyLead") }),
-          /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 12, marginTop: 28, maxWidth: 900 }, children: PRESETS.map((preset, i) => {
-            const text = PRESET_TEXT[preset.id];
-            return /* @__PURE__ */ jsxs(
-              "button",
-              {
-                type: "button",
-                "data-f": "",
-                "data-init": i === 0 ? "" : void 0,
-                "data-preset": preset.id,
-                onClick: () => onPreset(preset.id),
-                style: {
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  justifyContent: "flex-end",
-                  gap: 6,
-                  minHeight: isMobile ? 96 : 150,
-                  padding: isTv ? "1rem 1.125rem" : "16px 18px",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  ...glass(isTv, { fill: hueTint(text.hue, 0.1), blur: 0 }),
-                  borderRadius: RADIUS.card,
-                  color: C.text,
-                  fontFamily: FONT3.ui
-                },
-                children: [
-                  /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 28, height: 4, borderRadius: 2, marginBottom: "auto", background: hueTint(text.hue, 0.9) } }),
-                  /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.title, fontSize: fs(20) }, children: t(text.name) }),
-                  /* @__PURE__ */ jsx("span", { style: { fontSize: fs(12.5), color: C.textSoft }, children: t(text.desc) })
-                ]
-              },
-              preset.id
-            );
-          }) }),
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              "data-f": "",
-              onClick: onCustom,
-              style: {
-                marginTop: 20,
-                padding: isTv ? "0.625rem 1.375rem" : "10px 22px",
-                borderRadius: RADIUS.pill,
-                cursor: "pointer",
-                ...glass(isTv, { fill: C.pillBg, blur: 20 }),
-                color: C.text,
-                fontFamily: FONT3.ui,
-                fontSize: fs(14),
-                fontWeight: 600
-              },
-              children: t("emptyCustom")
-            }
-          )
+          /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: 24 }, children: [
+            /* @__PURE__ */ jsx("button", { type: "button", "data-f": "", "data-init": "", "data-empty-restore": "", onClick: onRestore, style: button(true), children: t("emptyRestore") }),
+            /* @__PURE__ */ jsx("button", { type: "button", "data-f": "", onClick: onCustom, style: button(false), children: t("emptyCustom") })
+          ] })
         ]
       }
     );
@@ -43357,6 +43620,9 @@ ${cue.text}`).join("\n\n")}
   }
   function ChannelsPage({ params }) {
     const t = useText();
+    const { lang } = useLang();
+    const uiLang = lang === "sv" ? "sv" : "en";
+    useState(() => seedDefaultChannels(uiLang));
     const isTv = useTvMode();
     const isMobile = useIsMobile() && !isTv;
     const channels = useChannels();
@@ -43367,6 +43633,7 @@ ${cue.text}`).join("\n\n")}
     const [player, setPlayer] = useState(() => initialPlayer(sorted, p));
     const [studio, setStudio] = useState(() => p.studio ?? null);
     const [shift, setShift] = useState(0);
+    const [manage, setManage] = useState(false);
     const [rundowns, setRundowns] = useState({});
     const paramsKey = JSON.stringify(p);
     const seenKey = useRef(paramsKey);
@@ -43428,6 +43695,26 @@ ${cue.text}`).join("\n\n")}
         }
       );
     }
+    if (manage && !studio) {
+      return /* @__PURE__ */ jsx("div", { "data-channels-page": "", style: { background: C.base, minHeight: "100%" }, children: /* @__PURE__ */ jsx(
+        ChannelManager,
+        {
+          isTv,
+          isMobile,
+          t,
+          onBack: () => setManage(false),
+          onEdit: (id) => {
+            setManage(false);
+            setSelectedId(id);
+            setStudio(id);
+          },
+          onCreate: () => {
+            setManage(false);
+            setStudio("new");
+          }
+        }
+      ) });
+    }
     if (studio) {
       return /* @__PURE__ */ jsx(
         ChannelStudioSlot,
@@ -43468,12 +43755,9 @@ ${cue.text}`).join("\n\n")}
             isTv,
             isMobile,
             t,
-            onPreset: (id) => {
-              const preset = PRESETS.find((x) => x.id === id);
-              if (!preset) return;
-              const def = createChannel({ ...preset.draft, name: t(PRESET_TEXT[id].name) }, channels);
-              saveChannel(def);
-              setSelectedId(def.id);
+            onRestore: () => {
+              restoreDefaultChannels(uiLang);
+              setSelectedId(null);
             },
             onCustom: () => setStudio("new")
           }
@@ -43497,7 +43781,8 @@ ${cue.text}`).join("\n\n")}
           t,
           onPlay: (mode) => play(selected.id, mode),
           onEdit: () => setStudio(selected.id),
-          onNewChannel: () => setStudio("new")
+          onNewChannel: () => setStudio("new"),
+          onManage: () => setManage(true)
         }
       ),
       /* @__PURE__ */ jsx(
@@ -43520,109 +43805,6 @@ ${cue.text}`).join("\n\n")}
   }
   function ChannelStudioSlot({ studio, channels, isTv, isMobile, t, onDone }) {
     return /* @__PURE__ */ jsx(ChannelStudio, { studio, channels, isTv, isMobile, t, onDone }, studio);
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/settings-section.tsx
-  init_react_shim();
-  init_plugin_sdk();
-  init_jsx_runtime_shim();
-  var CONFIRM_MS2 = 3e3;
-  var fill2 = (text, vars) => {
-    const one = (s) => Object.entries(vars).reduce((out, [k, v]) => out.split(`{${k}}`).join(String(v)), s);
-    return { en: one(text.en), sv: one(text.sv) };
-  };
-  function openStudio(target2) {
-    requestOpenBrowsePage({ pageId: CHANNELS_PAGE_ID, params: { studio: target2 } });
-  }
-  function buildChannelRows(channels, actions) {
-    const sorted = [...channels].sort((a, b) => a.number - b.number);
-    const rows = [{ t: "eyebrow", label: S.settingsTitle }];
-    if (sorted.length === 0) rows.push({ t: "note", text: S.settingsEmpty });
-    for (const channel of sorted) {
-      rows.push({
-        t: "action",
-        label: fill2(S.settingsChannelLine, { n: channel.number, name: channel.name }),
-        rows: [
-          { t: "action", label: S.settingsEdit, run: () => actions.edit(channel.id) },
-          {
-            t: "action",
-            label: S.settingsDelete,
-            danger: true,
-            confirm: { title: fill2(S.settingsDeleteTitle, { name: channel.name }), body: S.settingsDeleteBody, confirmLabel: S.settingsDelete },
-            run: () => actions.remove(channel.id)
-          }
-        ]
-      });
-    }
-    rows.push({ t: "action", label: S.settingsNewRow, run: actions.create });
-    return rows;
-  }
-  var channelsSettingsSection = {
-    id: "channels",
-    label: S.settingsLabel,
-    Section: ChannelsSettingsSection,
-    rows: () => buildChannelRows(readChannels(), { edit: openStudio, remove: deleteChannel, create: () => openStudio("new") }),
-    subscribe: (listener) => onChannelsChanged(listener)
-  };
-  function ChannelsSettingsSection() {
-    const t = useText();
-    const channels = useChannels();
-    const sorted = useMemo(() => [...channels].sort((a, b) => a.number - b.number), [channels]);
-    const counts = useMemo(() => Object.fromEntries(sorted.map((c) => [c.id, readCachedPool(c.id)?.length ?? null])), [sorted]);
-    const [confirmId, setConfirmId] = useState(null);
-    const timer3 = useRef(null);
-    useEffect(() => () => {
-      if (timer3.current) clearTimeout(timer3.current);
-    }, []);
-    const onDelete = (id) => {
-      if (timer3.current) clearTimeout(timer3.current);
-      if (confirmId !== id) {
-        setConfirmId(id);
-        timer3.current = setTimeout(() => setConfirmId(null), CONFIRM_MS2);
-        return;
-      }
-      setConfirmId(null);
-      deleteChannel(id);
-    };
-    return /* @__PURE__ */ jsx(
-      Section,
-      {
-        title: t("settingsTitle"),
-        hint: t("settingsHint"),
-        action: /* @__PURE__ */ jsx(PillBtn, { variant: "primary", onClick: () => openStudio("new"), children: t("settingsNew") }),
-        children: sorted.length === 0 ? /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsx("p", { style: { margin: 0, color: TOKENS.textDim }, children: t("settingsEmpty") }) }) : sorted.map((channel) => {
-          const count = counts[channel.id];
-          return /* @__PURE__ */ jsxs(Card, { style: { display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }, children: [
-            /* @__PURE__ */ jsx(
-              "span",
-              {
-                style: {
-                  minWidth: 36,
-                  height: 28,
-                  padding: "0 6px",
-                  borderRadius: 6,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: `1px solid ${TOKENS.borderStrong}`,
-                  background: TOKENS.surface2,
-                  color: TOKENS.text,
-                  fontWeight: 600,
-                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
-                },
-                children: channel.number
-              }
-            ),
-            /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 140 }, children: [
-              /* @__PURE__ */ jsx("div", { "data-channel-name": "", style: { color: TOKENS.text, fontWeight: 600 }, children: channel.name }),
-              count != null ? /* @__PURE__ */ jsx("div", { style: { color: TOKENS.textDim, marginTop: 2 }, children: t("settingsTitles", { n: count }) }) : null
-            ] }),
-            /* @__PURE__ */ jsx(PillBtn, { size: "sm", onClick: () => openStudio(channel.id), children: t("settingsEdit") }),
-            /* @__PURE__ */ jsx(PillBtn, { size: "sm", variant: "danger", onClick: () => onDelete(channel.id), children: t(confirmId === channel.id ? "settingsDeleteConfirm" : "settingsDelete") })
-          ] }, channel.id);
-        })
-      }
-    );
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/index.ts

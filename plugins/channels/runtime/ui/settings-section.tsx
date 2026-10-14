@@ -66,8 +66,17 @@ export const channelsSettingsSection: SettingsSection = {
   subscribe: (listener) => onChannelsChanged(listener),
 }
 
-export function ChannelsSettingsSection() {
-  const t = useText()
+/**
+ * Kanallistans logik, delad av inställningssektionen och Kanaler-sidans
+ * Hantera kanaler: sorterad lista, titelantal ur poolcachen (inga uppslag)
+ * och tvåstegs Ta bort (andra trycket inom 3 s tar bort).
+ */
+export function useChannelList(): {
+  sorted: ChannelDef[]
+  counts: Record<string, number | null>
+  confirmId: string | null
+  requestDelete(id: string): void
+} {
   const channels = useChannels()
   const sorted = useMemo(() => [...channels].sort((a, b) => a.number - b.number), [channels])
   // Antal titlar bara ur poolcachen — sektionen gör inga uppslag.
@@ -86,6 +95,12 @@ export function ChannelsSettingsSection() {
     setConfirmId(null)
     deleteChannel(id)
   }
+  return { sorted, counts, confirmId, requestDelete: onDelete }
+}
+
+export function ChannelsSettingsSection() {
+  const t = useText()
+  const { sorted, counts, confirmId, requestDelete: onDelete } = useChannelList()
 
   return (
     <Section

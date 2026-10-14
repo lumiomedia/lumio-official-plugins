@@ -42,7 +42,7 @@ const KINDS: Array<{ id: ChannelDraft['kind']; label: TextKey }> = [
   { id: 'any', label: 'kindAny' }, { id: 'movie', label: 'kindMovie' }, { id: 'tv', label: 'kindTv' },
 ]
 const ERAS: Array<{ id: ChannelDraft['era']; label: TextKey }> = [
-  { id: 'any', label: 'eraAny' }, { id: '70s', label: 'era70s' }, { id: '80s', label: 'era80s' }, { id: '90s', label: 'era90s' },
+  { id: 'any', label: 'eraAny' }, { id: '70s', label: 'era70s' }, { id: '80s', label: 'era80s' }, { id: '90s', label: 'era90s' }, { id: '80s90s', label: 'era80s90s' },
   { id: '00s', label: 'era00s' }, { id: '10s', label: 'era10s' }, { id: '20s', label: 'era20s' },
 ]
 const LENGTHS: Array<{ id: ChannelDraft['length']; label: TextKey }> = [

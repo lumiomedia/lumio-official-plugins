@@ -256,6 +256,38 @@ const STREAMS: Record<SourceId, SourceStream> = {
 }
 
 /**
+ * En pågående källhämtning, delad av alla kanaler som laddar samtidigt: tio
+ * kanaler som öppnas på en gång ger ett bibliotekssvep, en watchlistgenomgång
+ * och en debridlistning — inte tio av varje. Bara pågående hämtningar delas;
+ * en kanal som laddar senare (ny källsignatur) får en ny hämtning.
+ */
+interface SharedRun { latest: PoolItem[] | null; listeners: Set<Emit>; done: Promise<void> }
+const sharedRuns = new WeakMap<SourceDeps, Map<SourceId, SharedRun>>()
+
+function runShared(source: SourceId, deps: SourceDeps, emit: Emit): Promise<void> {
+  let runs = sharedRuns.get(deps)
+  if (!runs) { runs = new Map(); sharedRuns.set(deps, runs) }
+  const existing = runs.get(source)
+  if (existing) {
+    existing.listeners.add(emit)
+    if (existing.latest) emit(existing.latest)
+    return existing.done.finally(() => { existing.listeners.delete(emit) })
+  }
+  const map = runs
+  // Lyssnaren först: watchlist levererar synkront innan första await.
+  const run: SharedRun = { latest: null, listeners: new Set([emit]), done: Promise.resolve() }
+  map.set(source, run)
+  run.done = STREAMS[source](deps, (items) => {
+    run.latest = items
+    for (const fn of [...run.listeners]) fn(items)
+  }).finally(() => {
+    if (map.get(source) === run) map.delete(source)
+    run.listeners.delete(emit)
+  })
+  return run.done
+}
+
+/**
  * Laddar kanalens källor oberoende av varandra. `onUpdate` får den
  * sammanslagna poolen (dubblettrensad + filtrerad) varje gång en källa
  * levererar eller berikas; löftet ger den slutliga poolen när alla källor och
@@ -272,7 +304,7 @@ export async function loadPoolProgressive(channel: ChannelDef, deps: SourceDeps,
   const bySource = new Map<SourceId, PoolItem[]>()
   const merged = () => filterPool(dedupePool(channel.sources.flatMap((s) => bySource.get(s) ?? [])), channel)
   await Promise.all(channel.sources.map((s) =>
-    STREAMS[s](deps, (items) => {
+    runShared(s, deps, (items) => {
       bySource.set(s, items)
       onUpdate?.(merged())
     }).catch(() => {}),

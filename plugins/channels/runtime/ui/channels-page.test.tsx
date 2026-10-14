@@ -12,6 +12,9 @@ const state = vi.hoisted(() => ({
   saved: [] as unknown[],
   back: 0,
   partial: false,
+  seeded: [] as string[],
+  restored: [] as string[],
+  deleted: [] as string[],
 }))
 
 vi.mock('@/lib/plugin-sdk', () => ({
@@ -29,6 +32,10 @@ vi.mock('../state/store', () => ({
   useChannelPool: (channel: { id: string } | null) => ({ pool: [], rundown: (channel && state.rundowns[channel.id]) ?? [], loading: false, partial: state.partial }),
   useChannelClock: () => state.now,
   saveChannel: (def: unknown) => { state.saved.push(def) },
+  seedDefaultChannels: (lang: string) => { state.seeded.push(lang); return 0 },
+  restoreDefaultChannels: (lang: string) => { state.restored.push(lang); return 10 },
+  deleteChannel: (id: string) => { state.deleted.push(id) },
+  readCachedPool: () => null,
 }))
 vi.mock('./channel-player', () => ({
   ChannelPlayer: ({ initialChannelId, mode, startInZap, onClose }: { initialChannelId: string; mode: string; startInZap?: boolean; onClose(): void }) => (
@@ -63,6 +70,9 @@ beforeEach(() => {
   state.saved = []
   state.back = 0
   state.partial = false
+  state.seeded = []
+  state.restored = []
+  state.deleted = []
 })
 afterEach(cleanup)
 
@@ -124,12 +134,17 @@ describe('Kanaler-sidan', () => {
     expect((screen.getByText('▶ Titta live') as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('tomvyn sparar ett förslag och "Skapa egen" öppnar studion', () => {
+  it('första öppningen sår standardkanalerna på användarens språk', () => {
+    page()
+    expect(state.seeded).toEqual(['sv'])
+  })
+
+  it('tomvyn återställer standardkanalerna och "Skapa egen" öppnar studion', () => {
     state.channels = []
     page()
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Skapa din första kanal')
-    fireEvent.click(screen.getByText('Kvällsfilm'))
-    expect(state.saved).toMatchObject([{ name: 'Kvällsfilm', kind: 'movie', airWindow: 'evenings', number: 1 }])
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Inga kanaler')
+    fireEvent.click(screen.getByText('Återställ standardkanaler'))
+    expect(state.restored).toEqual(['sv'])
     fireEvent.click(screen.getByText('Skapa egen'))
     expect(screen.getByTestId('studio').textContent).toBe('studio:new')
   })
@@ -187,5 +202,33 @@ describe('Kanaler-sidans utseende', () => {
     state.partial = true
     page()
     expect(screen.getByText('Fler titler laddas…')).toBeTruthy()
+  })
+
+  it('KANALER öppnar Hantera kanaler; Ta bort i två steg; Tillbaka till tablån', () => {
+    page()
+    fireEvent.click(screen.getByText('KANALER'))
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Hantera kanaler')
+    expect([...document.querySelectorAll('[data-channel-name]')].map((el) => el.textContent)).toEqual(['Första', 'Andra'])
+    const del = () => screen.getAllByText(/Ta bort|Bekräfta/)[0]!
+    fireEvent.click(del())
+    expect(state.deleted).toEqual([])
+    fireEvent.click(del())
+    expect(state.deleted).toEqual(['k1'])
+    fireEvent.click(screen.getByText('‹ TABLÅ'))
+    expect(document.querySelector('[data-channels-hero]')).toBeTruthy()
+  })
+
+  it('Redigera i Hantera kanaler öppnar studion för kanalen', () => {
+    page()
+    fireEvent.click(screen.getByText('KANALER'))
+    fireEvent.click(screen.getAllByText('Redigera')[1]!)
+    expect(screen.getByTestId('studio').textContent).toBe('studio:k2')
+  })
+
+  it('vilande kanal visar VILA, inte LIVE', () => {
+    state.channels = [{ ...channel(1, 'Natt'), airWindow: 'late' }]
+    page()
+    expect(document.querySelector('[data-hero-badge]')?.textContent).toBe('VILA')
+    expect(screen.queryByText('LIVE')).toBeNull()
   })
 })

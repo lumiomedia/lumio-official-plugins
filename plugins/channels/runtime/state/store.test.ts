@@ -24,7 +24,7 @@ vi.mock('@/lib/plugin-sdk', () => ({
   hasChannelHost: () => true,
 }))
 
-import { deleteChannel, loadPoolCached, saveChannel, useChannelClock, useChannelPool } from './store'
+import { deleteChannel, loadPoolCached, restoreDefaultChannels, saveChannel, seedDefaultChannels, useChannelClock, useChannelPool } from './store'
 import { prunePoolCaches, readChannels, resetSourceSignatures, sourceSignatures } from '../host'
 import { createChannel, emptyDraft } from '../model/channel'
 
@@ -222,6 +222,18 @@ describe('progressiv pool', () => {
     expect(result.current.partial).toBe(false)
     await act(async () => { release() })
     await waitFor(() => expect(result.current.pool.map((i) => i.ref).sort()).toEqual(['lib:m1', 'lib:m2']))
+  })
+})
+
+describe('standardkanalerna', () => {
+  it('sås en gång per profil; borttagna kommer bara tillbaka via återställ', () => {
+    expect(seedDefaultChannels('sv')).toBe(10)
+    expect(readChannels()).toHaveLength(10)
+    for (const c of readChannels()) deleteChannel(c.id)
+    expect(seedDefaultChannels('sv')).toBe(0)
+    expect(readChannels()).toEqual([])
+    expect(restoreDefaultChannels('en')).toBe(10)
+    expect(readChannels()[0]!.name).toBe('Movies around the clock')
   })
 })
 
