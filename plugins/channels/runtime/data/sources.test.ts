@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { loadDebridItems, loadLibraryItems, loadPool, loadPoolProgressive, loadWatchlistItems, type SourceDeps } from './sources'
+import { librarySides, loadDebridItems, loadLibraryItems, loadPool, loadPoolProgressive, loadVodItems, loadWatchlistItems, type SourceDeps } from './sources'
 import { createSeasonsCache, type SeasonsEntry } from './meta-cache'
 import { createChannel, emptyDraft } from '../model/channel'
 
@@ -19,6 +19,39 @@ function deps(over: Partial<SourceDeps> = {}): SourceDeps {
     ...over,
   }
 }
+
+describe('IPTV-VOD som egen källa', () => {
+  const vodDeps = () => deps({
+    queryLibrary: vi.fn(async () => ({ items: [
+      { key: 'plex:1', kind: 'movie' as const, tmdbId: 10, title: 'Bara Plex', year: 2000, runtimeMin: 100, sourceId: 'plex-a', sources: ['plex-a'] },
+      { key: 'xt:2', kind: 'movie' as const, tmdbId: 11, title: 'Bara VOD', year: 2001, runtimeMin: 100, sourceId: 'xtream-vod:xtream://h/u', sources: ['xtream-vod:xtream://h/u'] },
+      { key: 'plex:3', kind: 'movie' as const, tmdbId: 12, title: 'Båda', year: 2002, runtimeMin: 100, sourceId: 'plex-a', sources: ['plex-a', 'xtream-vod:xtream://h/u'] },
+    ] })),
+  })
+
+  it('titelns sidor: bibliotek om någon version är utanför VOD, VOD om någon är VOD', () => {
+    expect(librarySides({ sources: ['plex-a'] })).toEqual({ library: true, vod: false })
+    expect(librarySides({ sourceId: 'xtream-vod:x' })).toEqual({ library: false, vod: true })
+    expect(librarySides({ sources: ['plex-a', 'xtream-vod:x'] })).toEqual({ library: true, vod: true })
+    expect(librarySides({})).toEqual({ library: true, vod: false })
+  })
+
+  it('biblioteket utan VOD-katalogen, VOD-källan bara VOD-titlar; en hämtning delas', async () => {
+    const d = vodDeps()
+    const [lib, vod] = await Promise.all([loadLibraryItems(d), loadVodItems(d)])
+    expect(lib.map((i) => [i.ref, i.source])).toEqual([['lib:plex:1', 'library'], ['lib:plex:3', 'library']])
+    expect(vod.map((i) => [i.ref, i.source])).toEqual([['lib:xt:2', 'vod'], ['lib:plex:3', 'vod']])
+    expect(d.queryLibrary).toHaveBeenCalledTimes(1)
+  })
+
+  it('kanal utan VOD får inga VOD-titlar; med VOD dubblettrensas den sammanslagna till biblioteket', async () => {
+    const base = createChannel({ ...emptyDraft(), name: 'K', sources: ['library'] }, [], 1, () => 0.1)
+    expect((await loadPool(base, vodDeps())).map((i) => i.ref).sort()).toEqual(['lib:plex:1', 'lib:plex:3'])
+    const both = { ...base, sources: ['library', 'vod'] as const }
+    const pool = await loadPool({ ...both, sources: [...both.sources] }, vodDeps())
+    expect(pool.map((i) => [i.ref, i.source]).sort()).toEqual([['lib:plex:1', 'library'], ['lib:plex:3', 'library'], ['lib:xt:2', 'vod']])
+  })
+})
 
 describe('källadaptrarna', () => {
   it('bibliotek: film + avsnitt, runtime från metadata, annars standard', async () => {

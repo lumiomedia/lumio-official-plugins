@@ -43,6 +43,7 @@ vi.mock('../data/sources', () => ({
     if (!state.debridDeferred) return Promise.resolve(state.debridItems)
     return new Promise((resolve) => { state.debridQueue.push({ resolve }) })
   },
+  loadVodItems: () => Promise.resolve([item('vod1', { source: 'vod' })]),
 }))
 vi.mock('../state/store', () => ({
   saveChannel: (def: unknown) => { state.saved.push(def) },
@@ -77,7 +78,12 @@ describe('Kanalstudion', () => {
     const { container } = render(<Harness studio="new" channels={[]} onDone={() => {}} />)
     expect(summary(container)).toBe('Hämtar titlar…')
     await flush()
-    expect(state.calls).toEqual({ library: 1, watchlist: 0, debrid: 0 })
+    // Ny kanal: bibliotek, watchlist och debrid förvalda; IPTV-VOD av men räknad.
+    expect(state.calls).toEqual({ library: 1, watchlist: 1, debrid: 1 })
+    expect(container.querySelector('[data-source="vod"]')!.textContent).toBe('IPTV-VOD1')
+    expect(container.querySelector('[data-source="vod"]')!.getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(container.querySelector('[data-source="watchlist"]')!)
+    fireEvent.click(container.querySelector('[data-source="debrid"]')!)
     expect(summary(container)).toContain('≈ 2 titlar')
     fireEvent.click(screen.getByText('Drama'))
     expect(summary(container)).toContain('≈ 1 titlar')
@@ -87,7 +93,7 @@ describe('Kanalstudion', () => {
     fireEvent.click(container.querySelector('[data-source="watchlist"]')!)
     await flush()
     // Av och på igen hämtar inte på nytt.
-    expect(state.calls).toEqual({ library: 1, watchlist: 1, debrid: 0 })
+    expect(state.calls).toEqual({ library: 1, watchlist: 1, debrid: 1 })
     expect(summary(container)).toContain('≈ 2 titlar')
     expect(container.querySelector('[data-studio-warning]')!.textContent).toContain('Färre än 5 titlar')
   })
@@ -104,7 +110,7 @@ describe('Kanalstudion', () => {
     fireEvent.click(screen.getByText('Skapa kanal'))
     expect(state.saved).toHaveLength(1)
     const saved = state.saved[0] as ChannelDef
-    expect(saved).toMatchObject({ name: 'Natt', number: 1, sources: ['library'] })
+    expect(saved).toMatchObject({ name: 'Natt', number: 1, sources: ['library', 'watchlist', 'debrid'] })
     expect(onDone).toHaveBeenCalledWith(saved.id)
   })
 
@@ -148,7 +154,8 @@ describe('Kanalstudion', () => {
     fireEvent.click(container.querySelector('[data-studio-refresh]')!)
     await flush()
     expect(state.forced).toBe(1)
-    expect(state.calls.debrid).toBe(1)
+    // Förvald debrid laddades en gång vid öppning, Uppdatera laddar om.
+    expect(state.calls.debrid).toBe(2)
     expect(container.querySelector('[data-source="debrid"]')!.textContent).toBe('Debrid1')
   })
 

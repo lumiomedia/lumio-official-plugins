@@ -77,3 +77,11 @@ describe('capPool', () => {
     expect(out[0]).toMatchObject({ season: 1, episode: 1 })
   })
 })
+
+describe('poolpackningen: IPTV-VOD', () => {
+  it('en VOD-post behåller sin källa genom packning', () => {
+    const vod: PoolItem = { ref: 'lib:xt:2', title: 'V', runtimeMin: 90, runtimeKnown: true, year: 2001, kind: 'movie', source: 'vod', genres: [], play: { type: 'library', key: 'xt:2', mediaType: 'movie' } }
+    const lib: PoolItem = { ...vod, ref: 'lib:p:1', source: 'library', play: { type: 'library', key: 'p:1', mediaType: 'movie' } }
+    expect(unpackPool(packPool([vod, lib]))!.map((i) => i.source)).toEqual(['vod', 'library'])
+  })
+})

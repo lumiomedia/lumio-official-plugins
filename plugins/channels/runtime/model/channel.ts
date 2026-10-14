@@ -5,7 +5,13 @@ import { canonGenres } from '../data/genres'
  * fram ur reglerna och källorna (pool.ts + schedule.ts), så samma definition
  * ger samma tablå på alla enheter med samma innehåll.
  */
-export type SourceId = 'library' | 'watchlist' | 'debrid'
+/**
+ * Var titlarna kommer ifrån. 'vod' = IPTV/Xtream-VOD-katalogen i biblioteket
+ * (källor med id xtream-vod:…), en egen källa som är AV som standard: de flesta
+ * kör debrid, och VOD-katalogen är stor. Kanaler skapade före 0.1.5 med
+ * 'library' räknas därför utan VOD — vill man ha den kryssar man i IPTV-VOD.
+ */
+export type SourceId = 'library' | 'watchlist' | 'debrid' | 'vod'
 export type Era = 'any' | '70s' | '80s' | '90s' | '80s90s' | '00s' | '10s' | '20s'
 export type LengthRule = 'any' | 'short' | 'episode' | 'feature'
 export type KindRule = 'any' | 'movie' | 'tv'
@@ -38,7 +44,7 @@ export const ERA_RANGES: Record<Exclude<Era, 'any'>, [number, number]> = {
 
 export function emptyDraft(): ChannelDraft {
   return {
-    name: '', sources: ['library'], genres: [], era: 'any', length: 'any', kind: 'any',
+    name: '', sources: ['library', 'watchlist', 'debrid'], genres: [], era: 'any', length: 'any', kind: 'any',
     order: 'shuffle', airWindow: 'always', showOnHome: true,
   }
 }

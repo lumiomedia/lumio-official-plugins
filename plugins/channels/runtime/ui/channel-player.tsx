@@ -18,7 +18,7 @@ import type { PoolItem } from '../data/pool'
 import { buildRundown, programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, NOISE_MS, OSD_IDLE_MS } from '../play/zap-logic'
-import { endOfSourceAction, NEAR_BOUNDARY_MS, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
+import { allowsCatalog, endOfSourceAction, NEAR_BOUNDARY_MS, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
 import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, triedFor, TRUSTED_FIRST_PLAY_MS, type Request } from '../play/player-state'
 import { readRuntimeFixes, readZapMemory, rememberPlayedStream, resolver, writeRuntimeFixes, writeZapMemory } from '../host'
 import { noteDuration } from '../data/runtime-fix'
@@ -206,7 +206,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       const tm0 = timing.current
       if (tm0 && tm0.seq === req.seq) tm0.type = slot.item.play.type
       // Efter en fallerad version: nästa version förbi de redan provade adresserna.
-      void resolver.resolve(slot.item, triedFor(stateRef.current, slot)).then((playable) => {
+      void resolver.resolve(slot.item, triedFor(stateRef.current, slot), { allowCatalog: allowsCatalog(ch) }).then((playable) => {
         if (!gate.isCurrent(token)) return
         if (playable) {
           mark(req.seq, 'resolved')
@@ -221,7 +221,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     // Redan uppslagen (förladdad granne, nästa program): ingen anledning att vänta.
     // Väntan bara vid snabbzappning (två byten tätt): ett ensamt byte slås upp direkt.
     const rapid = timing.current?.seq === req.seq && timing.current.rapid
-    const delay = resolver.peek(slot.item.ref) ? 0 : resolveDelayMs(slot.item.play.type, channelChanged && rapid)
+    const delay = resolver.peek(slot.item.ref, allowsCatalog(ch)) ? 0 : resolveDelayMs(slot.item.play.type, channelChanged && rapid)
     if (delay > 0) window.setTimeout(run, delay)
     else run()
   }, [rundown, gate, mark])
@@ -291,7 +291,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       // kommer är strömmen redan uppslagen.
       const after = Math.max(shown.deadline, shown.slot.stop) + 1000
       const next = programmeAt(rundown, channel.airWindow, after)
-      if (next.kind === 'programme') void resolver.resolve(next.item)
+      if (next.kind === 'programme') void resolver.resolve(next.item, [], { allowCatalog: allowsCatalog(channel) })
     }
   }, [now, localTick]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -325,7 +325,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     if (!framedNow) return
     const id = window.setTimeout(() => {
       const current = stateRef.current.request.channelId
-      for (const item of neighbourPrefetch(channelsRef.current, current, cachedRundown, Date.now())) void resolver.resolve(item)
+      for (const { item, allowCatalog } of neighbourPrefetch(channelsRef.current, current, cachedRundown, Date.now())) void resolver.resolve(item, [], { allowCatalog })
     }, NEIGHBOUR_PREFETCH_DELAY_MS)
     return () => window.clearTimeout(id)
   }, [framedNow, request.seq])

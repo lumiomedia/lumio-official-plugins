@@ -4,11 +4,11 @@ import { emptyDraft } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 
 const item = (ref: string, over: Partial<PoolItem> = {}): PoolItem => ({ ref, title: ref, runtimeMin: 60, runtimeKnown: true, year: 1985, kind: 'movie', source: 'library', genres: ['Drama'], play: { type: 'library', key: ref, mediaType: 'movie' }, ...over })
-const pools = { library: [item('a'), item('b', { genres: ['Action'] })], watchlist: [item('c', { source: 'watchlist', tmdbId: 9 })], debrid: [] }
+const pools = { library: [item('a'), item('b', { genres: ['Action'] })], watchlist: [item('c', { source: 'watchlist', tmdbId: 9 })], debrid: [], vod: [item('v', { source: 'vod' })] }
 
 describe('studion', () => {
   it('räknar per källa', () => {
-    expect(sourceCounts(pools)).toEqual({ library: 2, watchlist: 1, debrid: 0 })
+    expect(sourceCounts(pools)).toEqual({ library: 2, watchlist: 1, debrid: 0, vod: 1 })
   })
 
   it('förhandsvisningen följer reglerna direkt', () => {

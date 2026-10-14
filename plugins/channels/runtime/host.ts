@@ -221,6 +221,8 @@ async function computeSourceSignatures(): Promise<Signatures> {
   const changed = sources.reduce((max, s) => Math.max(max, s.lastChange ?? 0), 0)
   return {
     library: `${status?.total ?? 0}:${fullSync}:${changed}`,
+    // VOD läser samma index som biblioteket.
+    vod: `${status?.total ?? 0}:${fullSync}:${changed}`,
     watchlist: `${movies.length}:${maxAdded(movies)}|${shows.length}:${maxAdded(shows)}`,
     // Debridlistan cachas av värden i 6 h; samma fönster här.
     debrid: String(Math.floor(Date.now() / (6 * 3600e3))),
@@ -229,7 +231,8 @@ async function computeSourceSignatures(): Promise<Signatures> {
 
 export const resolver = createResolver({
   // exclude: äldre värdar ignorerar fältet och ger samma adress igen (resolvern tolkar det som "inga fler").
-  library: (r, exclude) => channelResolveLibraryPlayback(exclude?.length ? { ...r, exclude } : r),
+  // allowCatalog skickas bara när det är falskt (kanal utan IPTV-VOD); äldre värdar ignorerar fältet.
+  library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...(exclude?.length ? { exclude } : {}), ...(allowCatalog === false ? { allowCatalog: false } : {}) }),
   stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
   debrid: (r) => channelUnrestrictDebridFile(r),
 })

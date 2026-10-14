@@ -92,6 +92,9 @@ export function startedPastShortFile(startedAt: number, duration: number, runtim
 /** Utan rapporterad längd: ett laddfel så nära programgränsen räknas som slut (aldrig Ingen signal). */
 export const NEAR_BOUNDARY_MS = 180_000
 
+/** Får kanalen spela titlarnas IPTV-VOD-versioner? Bara med VOD som källa. */
+export const allowsCatalog = (channel: Pick<ChannelDef, 'sources'>): boolean => channel.sources.includes('vod')
+
 /** Så länge efter första bilden innan grannkanalerna förladdas (uppspelningen först). */
 export const NEIGHBOUR_PREFETCH_DELAY_MS = 3000
 
@@ -106,10 +109,10 @@ export function neighbourPrefetch(
   currentId: string,
   rundownOf: (c: ChannelDef) => PoolItem[] | null,
   now: number,
-): PoolItem[] {
+): Array<{ item: PoolItem; allowCatalog: boolean }> {
   if (channels.length < 2) return []
   const ids = new Set<string>()
-  const out: PoolItem[] = []
+  const out: Array<{ item: PoolItem; allowCatalog: boolean }> = []
   for (const delta of [1, -1] as const) {
     const c = stepChannel(channels, currentId, delta)
     if (c.id === currentId || ids.has(c.id)) continue
@@ -118,7 +121,7 @@ export function neighbourPrefetch(
     if (!rundown || rundown.length === 0) continue
     const slot = programmeAt(rundown, c.airWindow, now)
     if (slot.kind !== 'programme') continue
-    if (slot.item.play.type === 'library' || slot.item.play.type === 'debrid') out.push(slot.item)
+    if (slot.item.play.type === 'library' || slot.item.play.type === 'debrid') out.push({ item: slot.item, allowCatalog: allowsCatalog(c) })
   }
   return out
 }

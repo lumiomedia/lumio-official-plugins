@@ -67,11 +67,12 @@ describe('källans slut (mpv ger inget onPlaybackEnded)', () => {
       c4: null,
     }
     const of = (c: ChannelDef) => rundowns[c.id] ?? null
-    expect(neighbourPrefetch(list, 'c2', of, Date.now()).map((i) => i.ref)).toEqual(['lib'])
+    expect(neighbourPrefetch(list, 'c2', of, Date.now()).map((i) => i.item.ref)).toEqual(['lib'])
+    expect(neighbourPrefetch(list, 'c2', of, Date.now())[0]!.allowCatalog).toBe(false)
     rundowns.c3 = [it_('deb', { type: 'debrid', provider: 'torbox', fileRef: '1|2' })]
-    expect(neighbourPrefetch(list, 'c2', of, Date.now()).map((i) => i.ref)).toEqual(['deb', 'lib'])
+    expect(neighbourPrefetch(list, 'c2', of, Date.now()).map((i) => i.item.ref)).toEqual(['deb', 'lib'])
     // Kall cache (c4) och ensam kanal: inget.
-    expect(neighbourPrefetch(list, 'c1', of, Date.now()).map((i) => i.ref)).toEqual([])
+    expect(neighbourPrefetch(list, 'c1', of, Date.now()).map((i) => i.item.ref)).toEqual([])
     expect(neighbourPrefetch([ch(1)], 'c1', of, Date.now())).toEqual([])
   })
 

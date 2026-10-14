@@ -9,7 +9,7 @@ import { dedupePool, filterPool, type PoolItem } from '../data/pool'
 import { canonGenre } from '../data/genres'
 import { GENRE_TEXT, type S } from '../strings'
 
-export interface SourcePools { library: PoolItem[]; watchlist: PoolItem[]; debrid: PoolItem[] }
+export interface SourcePools { library: PoolItem[]; watchlist: PoolItem[]; debrid: PoolItem[]; vod: PoolItem[] }
 
 export interface PreviewRow { start: number; title: string; meta: string; isNow: boolean }
 
@@ -34,7 +34,7 @@ const MIN = 60_000
 const MAX_ROWS = 8
 
 export function sourceCounts(pools: SourcePools): Record<SourceId, number> {
-  return { library: pools.library.length, watchlist: pools.watchlist.length, debrid: pools.debrid.length }
+  return { library: pools.library.length, watchlist: pools.watchlist.length, debrid: pools.debrid.length, vod: pools.vod.length }
 }
 
 /** Valda källor ihop, utan dubbletter, efter reglerna — samma väg som kanalens riktiga pool. */

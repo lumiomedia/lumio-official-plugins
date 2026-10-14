@@ -32,7 +32,7 @@ vi.mock('@/lib/plugin-sdk', () => ({
 vi.mock('../host', () => ({
   readZapMemory: () => ({ lastChannelId: null, previousChannelId: null }),
   writeZapMemory: () => {},
-  resolver: { resolve: (item: PoolItem) => state.resolve(item), forget: (ref: string) => state.forget(ref), peek: () => false },
+  resolver: { resolve: (item: PoolItem, exclude?: string[], opts?: unknown) => state.resolve(item, exclude, opts), forget: (ref: string) => state.forget(ref), peek: () => false },
   rememberPlayedStream: (token: string | undefined) => state.remember(token),
   readRuntimeFixes: () => state.fixes,
   writeRuntimeFixes: (next: Record<string, number>) => { state.fixes = next },
@@ -44,6 +44,7 @@ vi.mock('../state/store', () => ({
 }))
 
 import { ChannelPlayer } from './channel-player'
+import { programmeAt } from '../model/schedule'
 
 const stream = (ref: string): PoolItem => ({
   ref, title: ref, runtimeMin: 600, runtimeKnown: true, year: 1984, kind: 'movie', source: 'watchlist', genres: [],
@@ -367,6 +368,15 @@ describe('kanalspelaren: tablån längre än filen', () => {
   it('liveläget efter filens slut: Programmet är slut, inga andra versioner, ingen Ingen signal; längden minns', async () => {
     const ep = { ...library('s11e14'), runtimeMin: 25 }
     state.rundowns = { k1: [ep] }
+    // Klockan i programmets sista femtedel, så filen (start − 5 s) är ≥ 80 % av tablåns längd.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    let t = Date.now()
+    while (true) {
+      const slot = programmeAt([ep], channels[0]!.airWindow, t)
+      if (slot.kind === 'programme' && slot.minsIn >= 22 && slot.minsIn < 24) break
+      t += 30_000
+    }
+    vi.setSystemTime(t)
     render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
     fireEvent.click(await screen.findByTestId('first-play'))
     const start = Number(state.props?.initialTime ?? 0)
@@ -379,5 +389,18 @@ describe('kanalspelaren: tablån längre än filen', () => {
     expect(document.querySelector('[data-channels-nosignal]')).toBeNull()
     expect(document.querySelector('[data-channels-between]')).toBeTruthy()
     expect(state.fixes.s11e14).toBe(Math.round(duration))
+  })
+})
+
+describe('kanalspelaren: IPTV-VOD', () => {
+  it('kanal utan VOD som källa slår upp biblioteket med allowCatalog: false; med VOD sant', async () => {
+    state.rundowns = { k1: [library('l1')], k2: [library('l2')] }
+    const withVod = channels.map((c) => (c.id === 'k2' ? { ...c, sources: [...c.sources, 'vod' as const] } : c))
+    render(<ChannelPlayer channels={withVod} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    expect(state.resolve.mock.calls[0]![2]).toEqual({ allowCatalog: false })
+    fireEvent.keyDown(window, { key: 'PageUp' })
+    await flush()
+    expect(state.resolve.mock.calls.at(-1)![2]).toEqual({ allowCatalog: true })
   })
 })

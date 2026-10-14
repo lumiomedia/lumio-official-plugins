@@ -74,4 +74,9 @@ describe('poolSignature: bara kanalens egna källor', () => {
     expect(poolSignature(ch, { library: '1', debrid: 'x' })).toBe(poolSignature(ch, { library: '2', debrid: 'x' }))
     expect(poolSignature(ch, { library: '1', debrid: 'x' })).not.toBe(poolSignature(ch, { library: '1', debrid: 'y' }))
   })
+
+  it('signaturen: IPTV-VOD på/av bygger om poolen', () => {
+    const c = createChannel({ ...emptyDraft(), name: 'K', sources: ['library'] }, [], 1, () => 0.1)
+    expect(poolSignature(c, { library: 'x', vod: 'x' })).not.toBe(poolSignature({ ...c, sources: ['library', 'vod'] }, { library: 'x', vod: 'x' }))
+  })
 })

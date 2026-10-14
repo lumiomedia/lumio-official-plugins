@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { Card, Switch, TOKENS, channelListDebridCloud, getTvKeyboardPanel, inputStyle, useLang } from '@/lib/plugin-sdk'
 import { emptyDraft, nextChannelNumber, createChannel, validateDraft, type ChannelDef, type ChannelDraft, type SourceId } from '../model/channel'
 import type { PoolItem } from '../data/pool'
-import { loadDebridItems, loadLibraryItems, loadWatchlistItems } from '../data/sources'
+import { loadDebridItems, loadLibraryItems, loadVodItems, loadWatchlistItems } from '../data/sources'
 import { sourceDeps } from '../host'
 import { deleteChannel, saveChannel } from '../state/store'
 import { genreLabel, genreName, genreOptions, previewFor, sourceCounts, type SourcePools } from './studio-logic'
@@ -31,12 +31,15 @@ const LOADERS: Record<SourceId, (deps: typeof sourceDeps, opts: { strict?: boole
   library: loadLibraryItems,
   watchlist: loadWatchlistItems,
   debrid: loadDebridItems,
+  vod: loadVodItems,
 }
 
 const SOURCES: Array<{ id: SourceId; label: TextKey }> = [
   { id: 'library', label: 'sourceLibrary' },
   { id: 'watchlist', label: 'sourceWatchlist' },
   { id: 'debrid', label: 'sourceDebrid' },
+  // Av som standard; räknas ändå (lokalt index, billigt) så man ser vad som finns.
+  { id: 'vod', label: 'sourceVod' },
 ]
 const KINDS: Array<{ id: ChannelDraft['kind']; label: TextKey }> = [
   { id: 'any', label: 'kindAny' }, { id: 'movie', label: 'kindMovie' }, { id: 'tv', label: 'kindTv' },
@@ -100,7 +103,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   const started = useRef(new Set<SourceId>())
   // Generation per källa: bara den senaste hämtningen får skriva (en långsam
   // första debridladdning får inte skriva över en färskare Uppdatera).
-  const generation = useRef<Record<SourceId, number>>({ library: 0, watchlist: 0, debrid: 0 })
+  const generation = useRef<Record<SourceId, number>>({ library: 0, watchlist: 0, debrid: 0, vod: 0 })
   const load = useCallback((source: SourceId, run: () => Promise<PoolItem[]>) => {
     started.current.add(source)
     const gen = ++generation.current[source]
@@ -114,7 +117,8 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
     })
   }, [])
   useEffect(() => {
-    for (const source of draft.sources) {
+    // Valda källor, plus VOD-katalogens antal (lokalt index) även när den är av.
+    for (const source of new Set<SourceId>([...draft.sources, 'vod'])) {
       if (!started.current.has(source)) void load(source, () => LOADERS[source](sourceDeps, { strict: true }))
     }
   }, [draft.sources, load])
@@ -138,7 +142,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   }, [])
 
   const full: SourcePools = useMemo(
-    () => ({ library: pools.library ?? [], watchlist: pools.watchlist ?? [], debrid: pools.debrid ?? [] }),
+    () => ({ library: pools.library ?? [], watchlist: pools.watchlist ?? [], debrid: pools.debrid ?? [], vod: pools.vod ?? [] }),
     [pools],
   )
   const loading = draft.sources.some((s) => pools[s] === undefined)

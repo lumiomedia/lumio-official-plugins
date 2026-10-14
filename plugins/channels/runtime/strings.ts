@@ -85,6 +85,7 @@ export const S = {
   sourceLibrary: { en: 'Library', sv: 'Bibliotek' },
   sourceWatchlist: { en: 'Watchlist', sv: 'Watchlist' },
   sourceDebrid: { en: 'Debrid', sv: 'Debrid' },
+  sourceVod: { en: 'IPTV VOD', sv: 'IPTV-VOD' },
   sourceRefresh: { en: 'Refresh', sv: 'Uppdatera' },
   kindAny: { en: 'All', sv: 'Allt' },
   kindMovie: { en: 'Films', sv: 'Filmer' },

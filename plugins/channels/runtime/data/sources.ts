@@ -20,6 +20,24 @@ export interface LibraryTitleLike {
   posterUrl?: string | null
   backdropUrl?: string | null
   episodes?: Array<{ key: string; season: number; episode: number; title?: string | null; runtimeMin?: number | null }>
+  /** Biblioteksindexets källa(or); en sammanslagen titel listar alla. */
+  sourceId?: string
+  sources?: string[]
+}
+
+/** IPTV/Xtream-VOD-katalogen i biblioteket (källid xtream-vod:…). */
+export const isVodSourceId = (id: string): boolean => id.startsWith('xtream-vod:')
+
+/**
+ * Vilka av kanalens bibliotekskällor titeln hör till: 'library' om den har
+ * någon version utanför VOD-katalogen, 'vod' om den har någon VOD-version.
+ * En sammanslagen titel hör till båda (dubblettrensningen tar en); uppslaget
+ * släpper ändå VOD-versionen när kanalen inte har VOD (allowCatalog).
+ */
+export function librarySides(t: Pick<LibraryTitleLike, 'sourceId' | 'sources'>): { library: boolean; vod: boolean } {
+  const ids = t.sources && t.sources.length > 0 ? t.sources : t.sourceId ? [t.sourceId] : []
+  if (ids.length === 0) return { library: true, vod: false }
+  return { library: ids.some((id) => !isVodSourceId(id)), vod: ids.some(isVodSourceId) }
 }
 
 export interface DebridTitleLike {
@@ -139,16 +157,34 @@ async function fetchLibraryTitles(deps: SourceDeps, opts: LoadOptions): Promise<
   return titles
 }
 
-function buildLibraryItems(titles: LibraryTitleLike[], deps: SourceDeps): PoolItem[] {
+/**
+ * Biblioteks- och VOD-källan läser samma index: en PÅGÅENDE hämtning delas
+ * av båda (och av samtidiga kanaler); en senare laddning hämtar på nytt.
+ */
+const titleFetches = new WeakMap<SourceDeps, { strict: boolean; promise: Promise<LibraryTitleLike[]> }>()
+
+function sharedLibraryTitles(deps: SourceDeps, opts: LoadOptions): Promise<LibraryTitleLike[]> {
+  const hit = titleFetches.get(deps)
+  if (hit && (hit.strict || !opts.strict)) return hit.promise
+  const promise = fetchLibraryTitles(deps, opts)
+  const entry = { strict: !!opts.strict, promise }
+  titleFetches.set(deps, entry)
+  const release = () => { if (titleFetches.get(deps) === entry) titleFetches.delete(deps) }
+  promise.then(release, release)
+  return promise
+}
+
+function buildLibraryItems(titles: LibraryTitleLike[], deps: SourceDeps, side: 'library' | 'vod' = 'library'): PoolItem[] {
   const items: PoolItem[] = []
   for (const t of titles) {
+    if (!librarySides(t)[side]) continue
     const tv = t.kind !== 'movie'
     const tmdbId = resolvedId(deps, tv ? 'tv' : 'movie', t.tmdbId, t.title, t.year)
     const meta = tmdbId != null ? deps.meta.get(tv ? 'tv' : 'movie', tmdbId) : null
     // Omatchad post: filnamnet tvättat, eller TMDb:s titel när namnmatchningen träffat.
     const name = t.tmdbId != null ? t.title : meta?.title ?? cleanTitle(t.title)
     const common = {
-      source: 'library' as const,
+      source: side,
       genres: t.genres?.length ? t.genres : meta?.genres ?? [],
       year: t.year ?? meta?.year ?? null,
       ...(tmdbId != null ? { tmdbId } : {}),
@@ -176,9 +212,10 @@ function buildLibraryItems(titles: LibraryTitleLike[], deps: SourceDeps): PoolIt
   return items
 }
 
-export const streamLibraryItems: SourceStream = async (deps, emit, opts = {}) => {
-  const titles = await fetchLibraryTitles(deps, opts)
-  const rebuild = () => emit(buildLibraryItems(titles, deps))
+const libraryStream = (side: 'library' | 'vod'): SourceStream => async (deps, emit, opts = {}) => {
+  const all = await sharedLibraryTitles(deps, opts)
+  const titles = all.filter((t) => librarySides(t)[side])
+  const rebuild = () => emit(buildLibraryItems(titles, deps, side))
   rebuild()
   const kindOf = (t: LibraryTitleLike) => (t.kind === 'movie' ? 'movie' as const : 'tv' as const)
   // Omatchade poster (filnamn som titel): namnmatcha, så de får bild och metadata.
@@ -195,6 +232,9 @@ export const streamLibraryItems: SourceStream = async (deps, emit, opts = {}) =>
   const rebuilt = await enrich(deps, refs, rebuild)
   if (matched && !rebuilt) rebuild()
 }
+
+export const streamLibraryItems = libraryStream('library')
+export const streamVodItems = libraryStream('vod')
 
 function buildWatchlistMovies(movies: WatchlistEntry[], deps: SourceDeps): PoolItem[] {
   const items: PoolItem[] = []
@@ -320,9 +360,10 @@ async function collect(stream: SourceStream, deps: SourceDeps, opts: LoadOptions
 export const loadLibraryItems = (deps: SourceDeps, opts: LoadOptions = {}) => collect(streamLibraryItems, deps, opts)
 export const loadWatchlistItems = (deps: SourceDeps, opts: LoadOptions = {}) => collect(streamWatchlistItems, deps, opts)
 export const loadDebridItems = (deps: SourceDeps, opts: LoadOptions = {}) => collect(streamDebridItems, deps, opts)
+export const loadVodItems = (deps: SourceDeps, opts: LoadOptions = {}) => collect(streamVodItems, deps, opts)
 
 const STREAMS: Record<SourceId, SourceStream> = {
-  library: streamLibraryItems, watchlist: streamWatchlistItems, debrid: streamDebridItems,
+  library: streamLibraryItems, watchlist: streamWatchlistItems, debrid: streamDebridItems, vod: streamVodItems,
 }
 
 /**

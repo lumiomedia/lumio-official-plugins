@@ -44,7 +44,7 @@ export function filterPool(items: PoolItem[], channel: Pick<ChannelDef, 'kind' |
   })
 }
 
-const RANK: Record<SourceId, number> = { library: 0, debrid: 1, watchlist: 2 }
+const RANK: Record<SourceId, number> = { library: 0, debrid: 1, vod: 2, watchlist: 3 }
 
 /**
  * Bästa posten för samma titel: källrang först (bibliotek > debrid >
@@ -75,8 +75,8 @@ export function dedupePool(items: PoolItem[]): PoolItem[] {
  * Bara kanalens egna källor räknas: en debridkanal ska inte byggas om för att
  * biblioteket synkat, och tvärtom.
  */
-/** Poolbyggets version i signaturen. 2 = namnmatchning av omatchade poster. */
-export const POOL_LOGIC_VERSION = 2
+/** Poolbyggets version i signaturen. 2 = namnmatchning av omatchade poster, 3 = IPTV-VOD utbrutet ur biblioteket. */
+export const POOL_LOGIC_VERSION = 3
 
 export function poolSignature(channel: ChannelDef, sourceSigs: Partial<Record<SourceId, string>>): string {
   const rules = poolRules(channel)

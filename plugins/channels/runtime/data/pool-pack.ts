@@ -33,14 +33,18 @@ interface PackedItem {
 }
 
 type PackedPlay =
-  | { l: string; tv?: 1 }
+  | { l: string; tv?: 1; v?: 1 }
   | { i: string; tv?: 1 }
   | { d: 'realdebrid' | 'torbox' | 'alldebrid'; f: string }
 
 export interface PackedPool { v: typeof POOL_PACK_VERSION; g: PackedGroup[]; i: PackedItem[] }
 
-function packPlay(play: PlayRef): PackedPlay {
-  if (play.type === 'library') return play.mediaType === 'tv' ? { l: play.key, tv: 1 } : { l: play.key }
+function packPlay(play: PlayRef, source: SourceId): PackedPlay {
+  if (play.type === 'library') {
+    // v: posten kom från IPTV-VOD-källan (samma spelreferens, annan källa).
+    const vod = source === 'vod' ? { v: 1 as const } : {}
+    return play.mediaType === 'tv' ? { l: play.key, tv: 1, ...vod } : { l: play.key, ...vod }
+  }
   if (play.type === 'stream') return play.mediaType === 'series' ? { i: play.imdbId, tv: 1 } : { i: play.imdbId }
   return { d: play.provider, f: play.fileRef }
 }
@@ -82,7 +86,7 @@ export function packPool(items: PoolItem[]): PackedPool {
       ...(item.season != null ? { s: item.season } : {}),
       ...(item.episode != null ? { n: item.episode } : {}),
       ...(item.runtimeKnown ? {} : { u: 1 as const }),
-      p: packPlay(item.play),
+      p: packPlay(item.play, item.source),
     })
   }
   return { v: POOL_PACK_VERSION, g: groups, i: out }
@@ -96,7 +100,7 @@ export function unpackPool(value: unknown): PoolItem[] | null {
   return packed.i.map((it): PoolItem => {
     const group = it.g != null ? groups[it.g] ?? {} : {}
     const play = unpackPlay(it.p, it.s, it.n)
-    const source = SOURCE_OF['l' in it.p ? 'l' : 'i' in it.p ? 'i' : 'd']
+    const source: SourceId = 'l' in it.p && it.p.v ? 'vod' : SOURCE_OF['l' in it.p ? 'l' : 'i' in it.p ? 'i' : 'd']
     return {
       ref: it.r, title: it.t, runtimeMin: it.m, year: it.y, kind: it.e ? 'episode' : 'movie',
       ...(group.sk ? { seriesKey: group.sk } : {}),

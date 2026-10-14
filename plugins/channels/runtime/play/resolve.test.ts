@@ -50,6 +50,17 @@ describe('createResolver', () => {
     expect(await failing.resolve(a)).toBeNull()
   })
 
+  it('allowCatalog: falskt skickas till värden och cachas för sig', async () => {
+    const library = vi.fn(async (_r: unknown, _e?: string[], allow?: boolean) => ({ url: allow === false ? 'utan-vod' : 'med-vod' }))
+    const r = createResolver({ library, stream: vi.fn(), debrid: vi.fn() })
+    const a = item('a', { type: 'library', key: 'k', mediaType: 'movie' })
+    expect((await r.resolve(a, [], { allowCatalog: false }))?.url).toBe('utan-vod')
+    expect((await r.resolve(a, [], { allowCatalog: true }))?.url).toBe('med-vod')
+    expect((await r.resolve(a, [], { allowCatalog: false }))?.url).toBe('utan-vod')
+    expect(library).toHaveBeenCalledTimes(2)
+    expect(r.peek('a', false)).toBe(true)
+  })
+
   it('peek: sant bara för en färsk cachad adress', async () => {
     let now = 0
     const r = createResolver({ library: vi.fn(async () => ({ url: 'L' })), stream: vi.fn(), debrid: vi.fn() }, () => now)
