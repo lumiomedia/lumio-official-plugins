@@ -138,6 +138,15 @@ carries three attributes for CSS and `closest()`:
 The design width never drops below 1280, so "am I small?" is read from the
 attributes, never from the scene's own width.
 
+**Keeping the app's top menu on TV.** In TV mode the top navigation menu
+(HOME, SEARCH, MOVIES, ...), the quick menu and the clock only render on the
+home scene. Set `keepsTvTopChrome: true` (or a function returning a boolean,
+re-read on every registry revision like `hideHero`) on a browse page to keep
+them. The host then measures the chrome's height and publishes it on the page
+as `--tv-scene-chrome-inset` (design px); start your first row below it, e.g.
+`padding-top: calc(var(--tv-scene-chrome-inset, 3.125rem) + 2rem)`. Older hosts
+ignore the field and do not set the variable, so keep the fallback.
+
 **Pointer and mouse on a TV tree.** The focus engine also runs inside the scene
 box on desktop and phone. `tvPointerHoldHandlers(onShort, onHold)` is the
 pointer twin of `tvHoldHandlers` (long-press and right-click open the hold

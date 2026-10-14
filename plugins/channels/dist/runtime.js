@@ -45220,11 +45220,11 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.7",
+    version: "0.1.8",
     description: S.description,
     preinstalled: false,
     register(ctx) {
-      ctx.registerBrowsePage({ id: CHANNELS_PAGE_ID, label: S.menuLabel, Page: ChannelsPage, hideHero: true });
+      ctx.registerBrowsePage({ id: CHANNELS_PAGE_ID, label: S.menuLabel, Page: ChannelsPage, hideHero: true, keepsTvTopChrome: true });
       ctx.registerMainMenuItem({ id: CHANNELS_PAGE_ID, label: S.menuLabel, target: { pageId: CHANNELS_PAGE_ID }, defaultEnabled: true });
       ctx.registerHomeRow({ id: "channels-now", title: S.homeRowTitle, showOnHome: true, Row: ChannelsHomeRow });
       ctx.registerHomeSource?.({ id: "channels-now", label: S.homeRowTitle, rowId: "channels-now" });

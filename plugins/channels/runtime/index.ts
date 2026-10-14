@@ -9,11 +9,11 @@ import { CHANNELS_PAGE_ID } from './ui/guide-layout'
 export const ChannelsPlugin: LumioPlugin = {
   id: 'com.lumio.channels',
   name: S.pluginName,
-  version: '0.1.7',
+  version: '0.1.8',
   description: S.description,
   preinstalled: false,
   register(ctx) {
-    ctx.registerBrowsePage({ id: CHANNELS_PAGE_ID, label: S.menuLabel, Page: ChannelsPage, hideHero: true })
+    ctx.registerBrowsePage({ id: CHANNELS_PAGE_ID, label: S.menuLabel, Page: ChannelsPage, hideHero: true, keepsTvTopChrome: true })
     // Menyvalet och sidan delar id: värdens menyer gör nyckeln till sidans id.
     ctx.registerMainMenuItem({ id: CHANNELS_PAGE_ID, label: S.menuLabel, target: { pageId: CHANNELS_PAGE_ID }, defaultEnabled: true })
     ctx.registerHomeRow({ id: 'channels-now', title: S.homeRowTitle, showOnHome: true, Row: ChannelsHomeRow })

@@ -1,3 +1,7 @@
+## 0.1.8
+
+- TV-läget behåller appens toppmeny (HOME, SÖK, FILMER ... LIVE TV, SPORT) ovanför kanalsidan; sidans översta rad ligger under den.
+
 ## 0.1.7
 
 - TV-läget följer appens TV-skala: mått och text växer som appens egna ytor (hero, rader, knappar) i stället för fasta, små storlekar.
