@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.1
+
+- Kick-off reminders no longer show twice when your settings sync between devices.
+- Couch mode's "Coming up" lists the rest of today's matches, so you can start Tippa (score predictions) for tonight's games earlier. Requires Lumio 0.1.625.
+
 ## 0.16.0
 
 - Couch mode follows the sport: when the TV shows a match, the phone gets a Sport tab with score, events, stats and line-ups, a list of what's live now and a mini remote for the channel.
