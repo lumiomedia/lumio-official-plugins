@@ -41492,6 +41492,15 @@ ${cue.text}`).join("\n\n")}
     glassDenseSoft: "rgba(18,18,22,0.6)",
     /** Pågående program: accentton på tät grund, så den sticker ut även över bild. */
     glassCurrent: "hsl(15 45% 17% / 0.94)",
+    /** Tablåns programblock i vila: ljusare grå (förr bara hovringsläget), läsbar över bilden. */
+    guideBlock: "rgba(49,51,58,0.9)",
+    /** Programblock på raden under muspekaren/fokus: ett steg ljusare. */
+    guideBlockLit: "rgba(63,66,75,0.92)",
+    guideBlockBorder: "rgba(255,255,255,0.13)",
+    /** Pågående program mot de ljusare grannarna: mättare accent och tydlig kant. */
+    guideCurrent: "rgba(109,52,29,0.96)",
+    guideCurrentLit: "rgba(132,58,31,0.97)",
+    guideCurrentBorder: "rgba(244,132,95,0.75)",
     /** OSD och paneler över bild/video. */
     osdBg: "rgba(18,18,22,0.72)",
     /** Platt mörkning över en bakgrundsbild (ingen gradient). */
@@ -41859,6 +41868,9 @@ ${cue.text}`).join("\n\n")}
   var stickyLabel = (isMobile) => isMobile ? { position: "sticky", left: 0, zIndex: 2, background: C.solid } : {};
   var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, rowH, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }) {
     const plays = isTv || clickPlays;
+    const [hover, setHover] = useState(false);
+    const [focus, setFocus] = useState(false);
+    const lit = hover || focus;
     const { rundown, loading: loading2, partial } = useChannelPool(channel);
     useEffect(() => {
       onRundown(channel.id, rundown, loading2, partial);
@@ -41889,9 +41901,13 @@ ${cue.text}`).join("\n\n")}
         "data-channel-row": channel.id,
         "aria-pressed": selected,
         onClick: () => plays ? onPlay(channel.id) : onSelect(channel.id),
-        onFocus: isTv ? () => {
-          if (!selected) onSelect(channel.id);
-        } : void 0,
+        onFocus: () => {
+          setFocus(true);
+          if (isTv && !selected) onSelect(channel.id);
+        },
+        onBlur: () => setFocus(false),
+        onMouseEnter: () => setHover(true),
+        onMouseLeave: () => setHover(false),
         onKeyDown,
         style: {
           display: "grid",
@@ -41911,7 +41927,7 @@ ${cue.text}`).join("\n\n")}
             /* @__PURE__ */ jsx("span", { style: { fontSize: fontSize(isMobile ? 12 : 13.5, isTv), fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }, children: isMobile ? channel.number : channel.name })
           ] }),
           /* @__PURE__ */ jsxs("div", { style: { position: "relative", overflow: "hidden" }, children: [
-            slots.length === 0 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: 10, top: 0, bottom: 0, display: "flex", alignItems: "center", fontSize: fontSize(12, isTv), color: C.textMute }, children: loading2 ? t("guideLoading") : t("guideEmpty") }) : slots.map((slot) => /* @__PURE__ */ jsx(Block, { slot, win, now: now2, isTv, t }, `${slot.kind}:${slot.start}`)),
+            slots.length === 0 ? /* @__PURE__ */ jsx("span", { style: { position: "absolute", left: 10, top: 0, bottom: 0, display: "flex", alignItems: "center", fontSize: fontSize(12, isTv), color: C.textMute }, children: loading2 ? t("guideLoading") : t("guideEmpty") }) : slots.map((slot) => /* @__PURE__ */ jsx(Block, { slot, win, now: now2, lit, isTv, t }, `${slot.kind}:${slot.start}`)),
             nowPct != null ? /* @__PURE__ */ jsx(
               "span",
               {
@@ -41935,7 +41951,7 @@ ${cue.text}`).join("\n\n")}
       }
     );
   });
-  function Block({ slot, win, now: now2, isTv, t }) {
+  function Block({ slot, win, now: now2, lit, isTv, t }) {
     const box = blockBox(slot, win);
     if (!box) return null;
     const visibleMin = (Math.min(slot.stop, win.to) - Math.max(slot.start, win.from)) / MIN3;
@@ -41948,6 +41964,7 @@ ${cue.text}`).join("\n\n")}
       /* @__PURE__ */ jsxs(
         "div",
         {
+          "data-guide-block": isRest ? "rest" : current2 ? "current" : "idle",
           style: {
             position: "absolute",
             top: 6,
@@ -41962,9 +41979,11 @@ ${cue.text}`).join("\n\n")}
             flexDirection: "column",
             justifyContent: "center",
             gap: 1,
-            // Tät mörk glasyta (läsbar även över herobilden). Vila = streckad kontur.
-            background: isRest ? C.glassDenseSoft : current2 ? C.glassCurrent : C.glassDense,
-            border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current2 ? "rgba(244,132,95,0.45)" : C.glassBorder}`,
+            // Ljusgrå tät yta (läsbar även över herobilden), ett steg ljusare på raden
+            // under pekaren/fokus. Pågående program tydligt orange. Vila = dämpad, streckad.
+            background: isRest ? C.glassDenseSoft : current2 ? lit ? C.guideCurrentLit : C.guideCurrent : lit ? C.guideBlockLit : C.guideBlock,
+            border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current2 ? C.guideCurrentBorder : C.guideBlockBorder}`,
+            transition: "background 150ms ease",
             color: isRest ? C.textMute : C.text
           },
           children: [

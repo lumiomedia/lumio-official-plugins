@@ -2,6 +2,7 @@
 
 - Ingen "Ingen signal" medan kanalen faktiskt spelar: bara ett laddfel utan framsteg räknas.
 - Spelarens egna Kopiera länk och Stäng visas inte i kanalläget; kanalens × stänger.
+- Ljusare programblock i tablån, ett steg ljusare på raden under pekaren eller i fokus; pågående program tydligt orange.
 
 ## 0.1.2
 
