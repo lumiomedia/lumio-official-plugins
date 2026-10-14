@@ -1,3 +1,11 @@
+## 0.1.1
+
+- TABLÅ i spelaren öppnar tablån som lager ovanpå videon; en kanal i tablån spelas live direkt.
+- Zappläget ser ut som gamla TV:n: inga spelarkontroller, LUMIO TV, stort kanalnummer, brus vid varje byte och knappraden CH ▼ CH ▲ KANALLISTA ↩ FÖRRA.
+- Kanalbyten visar ett inställningskort (kanal, program, bild) tills den nya bilden syns — aldrig svart skärm. Grannkanaler ur bibliotek och debrid förladdas.
+- Kanallistan fladdrar inte längre och byter aldrig film mitt i ett program när tablån räknas om.
+- En källa som tar slut före programgränsen startar inte nästa program i förväg; kanalen fortsätter live vid gränsen.
+
 ## 0.1.0 — första versionen
 
 - Personliga kanaler med regler för genre, årtionde, längd, typ och ordning.
