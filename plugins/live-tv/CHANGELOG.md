@@ -3,7 +3,9 @@
 ## 0.16.0
 
 - Couch mode follows the sport: when the TV shows a match, the phone gets a Sport tab with score, events, stats and line-ups, a list of what's live now and a mini remote for the channel.
-- From the phone you can also run Multiview (tap a tile for its sound, hold to enlarge, drag a match into a tile), get a goal card when a team you follow scores in another match (with a matching notice on the TV), and follow teams and leagues. Requires Lumio 0.1.625.
+- From the phone you can also run Multiview (tap a tile for its sound, hold to enlarge, drag a match into a tile), get a goal card when a team you follow scores in another match (with a matching notice on the TV), and follow teams and leagues.
+- New setting Group order: groups follow the playlist's own order by default, or sort them A–Z or by most channels. Applies to the chip row, the guide, the grid, the phone's group picker and the curation panels.
+- On the phone, notices from Live TV (such as "Films and series are being prepared") now show as a small box above the tab bar instead of a tall bubble. Requires Lumio 0.1.625.
 
 ## 0.15.2
 
