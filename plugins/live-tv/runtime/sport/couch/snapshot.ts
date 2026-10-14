@@ -8,7 +8,11 @@ import { showsScore } from '../score-model'
 /** Soffläge Sport: telefonens bild ur resultatcachen. Lätt; detaljer hämtas med frågan sport-match. */
 export const NOW_MAX = 40
 export const SOON_MAX = 10
-export const SOON_WINDOW_MS = 3 * 3_600_000
+/** Kommer snart: resten av dagen (lokal tid). 3 h gömde Tippa-ingången på förmiddagen (Jerry 2026-10-14). */
+export function endOfLocalDay(now: number): number {
+  const d = new Date(now)
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime()
+}
 
 export type SnapshotInput = {
   matches: SportMatch[]
@@ -105,7 +109,7 @@ export function buildCouchSport(i: SnapshotInput): CouchSport {
   const followed = (m: SportMatch) => Number(followState(m, i.follows).any)
   const live = i.matches.filter((m) => liveWithChannel(m, i.now)).sort((a, b) => followed(b) - followed(a) || byStart(a, b))
   const soon = i.matches
-    .filter((m) => !m.rerun && statusAt(m, i.now) === 'upcoming' && m.sources.length > 0 && m.start - i.now <= SOON_WINDOW_MS)
+    .filter((m) => !m.rerun && statusAt(m, i.now) === 'upcoming' && m.sources.length > 0 && m.start < endOfLocalDay(i.now))
     .sort(byStart)
   let focusIndex: CouchSport['focusIndex'] = null
   if (focusMatch) {

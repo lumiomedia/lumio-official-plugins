@@ -55,14 +55,16 @@ describe('buildCouchSport', () => {
     const s = buildCouchSport({ ...base, matches: ms, marks: { sportPage: false, multiview: true }, audioChannel: 'k2' })
     expect(s.context).toBe('multiview'); expect(s.focus?.id).toBe('n')
   })
-  it('Pågår nu: följda först, max 40; Kommer snart inom 3 h', () => {
+  it('Pågår nu: följda först, max 40; Kommer snart resten av dagen', () => {
     const live = Array.from({ length: 45 }, (_, i) => match({ id: `l${i}`, start: i, sources: [src(`c${i}`)] }))
     const followed = match({ id: 'f', homeKey: 'aik', start: 99 })
     const soon = match({ id: 's', status: 'upcoming', start: 1_000 + 3_600_000, stop: 1_000 + 7_200_000 })
-    const far = match({ id: 'x', status: 'upcoming', start: 1_000 + 4 * 3_600_000, stop: 1_000 + 5 * 3_600_000 })
-    const s = buildCouchSport({ ...base, matches: [...live, followed, soon, far], follows: [{ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' }], marks: { sportPage: true, multiview: false } })
+    // Kommer snart = resten av dagen (lokal tid), så att kvällens matcher går att tippa på förmiddagen.
+    const later = match({ id: 'l', status: 'upcoming', start: 1_000 + 4 * 3_600_000, stop: 1_000 + 5 * 3_600_000 })
+    const far = match({ id: 'x', status: 'upcoming', start: 1_000 + 30 * 3_600_000, stop: 1_000 + 31 * 3_600_000 })
+    const s = buildCouchSport({ ...base, now: new Date(2026, 9, 14, 9).getTime() - 1_000 + 1_000, matches: [...live, followed, soon, later, far].map((m) => (m.status === 'upcoming' ? { ...m, start: m.start - 1_000 + new Date(2026, 9, 14, 9).getTime(), stop: m.stop - 1_000 + new Date(2026, 9, 14, 9).getTime() } : m)), follows: [{ sport: 'football', kind: 'team', key: 'aik', name: 'AIK' }], marks: { sportPage: true, multiview: false } })
     expect(s.now).toHaveLength(40); expect(s.now[0].id).toBe('f'); expect(s.now[0].followed).toBe(true)
-    expect(s.soon.map((x) => x.id)).toEqual(['s'])
+    expect(s.soon.map((x) => x.id)).toEqual(['s', 'l'])
   })
   it('focusIndex räknar live-matcher med kanal i samma liga', () => {
     const ms = [match({ id: 'a', start: 0, sources: [src('a')] }), match({ id: 'b', start: 1, sources: [src('b')] }), match({ id: 'c', leagueKey: 'x', sources: [src('c')] })]
