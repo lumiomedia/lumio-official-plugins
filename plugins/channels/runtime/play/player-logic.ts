@@ -64,12 +64,33 @@ const MIN_PLAYED_S = 60
  * slut strax efter start = 'failed' (felhoppet), slut efter en stunds
  * uppspelning = 'ended' (nästa program).
  */
-export function endOfSourceAction(input: { position: number; duration: number; startedAt: number }): 'failed' | 'ended' | null {
+export function endOfSourceAction(input: { position: number; duration: number; startedAt: number; runtimeS?: number }): 'failed' | 'ended' | null {
   const { position, duration, startedAt } = input
   if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(position)) return null
   if (position < duration - END_SLACK_S) return null
-  return position - startedAt < MIN_PLAYED_S ? 'failed' : 'ended'
+  if (position - startedAt >= MIN_PLAYED_S) return 'ended'
+  return startedPastShortFile(startedAt, duration, input.runtimeS) ? 'ended' : 'failed'
 }
+
+/** Så nära (eller förbi) filens slut räknas en livestart som "programmet är slut". */
+const PAST_END_SLACK_S = 15
+/** Filen minst så stor del av tablåns längd: samma program, bara kortare — inte en trasig version. */
+const SHORT_FILE_RATIO = 0.8
+
+/**
+ * Tablåns längd (TMDb) kan vara längre än filen: liveläget hamnar då efter
+ * filens slut (Simpsons S11E14: filen 1354 s, start 1359 s). Det är inget
+ * fel — programmet är helt enkelt slut. En fil som är mycket kortare än
+ * tablåns längd (33 min av en 143-minutersfilm) är däremot en trasig version.
+ */
+export function startedPastShortFile(startedAt: number, duration: number, runtimeS?: number): boolean {
+  if (!Number.isFinite(duration) || duration <= 0) return false
+  if (startedAt < duration - PAST_END_SLACK_S) return false
+  return runtimeS == null || !(runtimeS > 0) || duration >= runtimeS * SHORT_FILE_RATIO
+}
+
+/** Utan rapporterad längd: ett laddfel så nära programgränsen räknas som slut (aldrig Ingen signal). */
+export const NEAR_BOUNDARY_MS = 180_000
 
 /** Så länge efter första bilden innan grannkanalerna förladdas (uppspelningen först). */
 export const NEIGHBOUR_PREFETCH_DELAY_MS = 3000

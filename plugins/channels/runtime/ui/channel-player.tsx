@@ -18,9 +18,10 @@ import type { PoolItem } from '../data/pool'
 import { buildRundown, programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, NOISE_MS, OSD_IDLE_MS } from '../play/zap-logic'
-import { endOfSourceAction, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
+import { endOfSourceAction, NEAR_BOUNDARY_MS, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
 import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, triedFor, TRUSTED_FIRST_PLAY_MS, type Request } from '../play/player-state'
-import { readZapMemory, rememberPlayedStream, resolver, writeZapMemory } from '../host'
+import { readRuntimeFixes, readZapMemory, rememberPlayedStream, resolver, writeRuntimeFixes, writeZapMemory } from '../host'
+import { noteDuration } from '../data/runtime-fix'
 import { readCachedPool, useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { GuideOverlay } from './guide-overlay'
@@ -381,6 +382,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== 'playing'
   // En källa avgörs en gång per visning (onTimeUpdate tickar vidare i slutet).
   const endHandledFor = useRef<number | null>(null)
+  const durationNotedFor = useRef<number | null>(null)
 
   // Sifferval: bufferten levererar efter 1,5 s eller tre siffror.
   const commitNumber = useCallback((n: number) => {
@@ -620,10 +622,16 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           onStartProgress={() => noteProgress(seq)}
           onTimeUpdate={(position: number, duration: number) => {
             noteProgress(seq)
+            // Filens verkliga längd: gäller posten från nästa poolbygge (en gång per visning).
+            if (durationNotedFor.current !== seq && Number.isFinite(duration) && duration > 0) {
+              durationNotedFor.current = seq
+              const next = noteDuration(readRuntimeFixes(), slot.item.ref, duration)
+              if (next) writeRuntimeFixes(next)
+            }
             const cur = stateRef.current
             if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: 'progress', seq, position })
             if (endHandledFor.current === seq) return
-            const action = endOfSourceAction({ position, duration, startedAt: onScreen.initialTime })
+            const action = endOfSourceAction({ position, duration, startedAt: onScreen.initialTime, runtimeS: slot.item.runtimeMin * 60 })
             if (!action) return
             endHandledFor.current = seq
             if (action === 'ended') {
@@ -654,6 +662,12 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
             if (p && p.seq === seq && clockNow() - p.at < PROGRESS_GRACE_MS) {
               console.info(`[channels] värdens laddfel ignoreras: strömmen ${channel.number} spelar`)
               dispatch({ type: 'reveal', seq })
+              return true
+            }
+            // Utan längd från värden (filen tog slut innan bild): ett laddfel nära
+            // programgränsen är programmets slut — liveläget låg efter filens slut.
+            if (onScreen.mode === 'live' && slot.stop - Date.now() <= NEAR_BOUNDARY_MS) {
+              dispatch({ type: 'advance', seq, now: Date.now() })
               return true
             }
             resolver.forget(slot.item.ref)

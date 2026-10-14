@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { endOfSourceAction, neighbourPrefetch, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, ZAP_RESOLVE_DELAY_MS } from './player-logic'
+import { endOfSourceAction, neighbourPrefetch, startedPastShortFile, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, ZAP_RESOLVE_DELAY_MS } from './player-logic'
 import type { PoolItem } from '../data/pool'
 import { createChannel, emptyDraft, type ChannelDef } from '../model/channel'
 
@@ -46,8 +46,8 @@ describe('spelarlogiken', () => {
 describe('källans slut (mpv ger inget onPlaybackEnded)', () => {
   it('fil kortare än liveläget: slut direkt efter start = fel, inte "pausad i slutet"', () => {
     // Come And See: 549 MB-filen har bara 33:05, live ville 33:05 eller senare.
-    expect(endOfSourceAction({ position: 1985, duration: 1985, startedAt: 1985 })).toBe('failed')
-    expect(endOfSourceAction({ position: 1985, duration: 1985, startedAt: 4229.7 })).toBe('failed')
+    expect(endOfSourceAction({ position: 1985, duration: 1985, startedAt: 1985, runtimeS: 143 * 60 })).toBe('failed')
+    expect(endOfSourceAction({ position: 1985, duration: 1985, startedAt: 4229.7, runtimeS: 143 * 60 })).toBe('failed')
   })
   it('spelat en stund och nått slutet = programmet är slut', () => {
     expect(endOfSourceAction({ position: 5399.5, duration: 5400, startedAt: 600 })).toBe('ended')
@@ -73,5 +73,16 @@ describe('källans slut (mpv ger inget onPlaybackEnded)', () => {
     // Kall cache (c4) och ensam kanal: inget.
     expect(neighbourPrefetch(list, 'c1', of, Date.now()).map((i) => i.ref)).toEqual([])
     expect(neighbourPrefetch([ch(1)], 'c1', of, Date.now())).toEqual([])
+  })
+
+  it('liveläget efter filens slut (tablån längre än filen) är slut, inte fel; trasig kort version är fel', () => {
+    // Simpsons S11E14: filen 1354,2 s, start 1359,2 s, tablån 25 min.
+    expect(endOfSourceAction({ position: 1354.2, duration: 1354.2, startedAt: 1359.2, runtimeS: 1500 })).toBe('ended')
+    expect(endOfSourceAction({ position: 1354.2, duration: 1354.2, startedAt: 1345, runtimeS: 1500 })).toBe('ended')
+    // 33 min av en 143-minutersfilm: trasig version.
+    expect(endOfSourceAction({ position: 1980, duration: 1980, startedAt: 6000, runtimeS: 143 * 60 })).toBe('failed')
+    // Start en bit före slutet men filen tog slut direkt: trasig.
+    expect(endOfSourceAction({ position: 1354, duration: 1354, startedAt: 1320, runtimeS: 1500 })).toBe('failed')
+    expect(startedPastShortFile(1359, 1354, 1500)).toBe(true)
   })
 })

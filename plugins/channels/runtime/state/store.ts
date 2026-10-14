@@ -7,7 +7,8 @@ import { buildRundown, programmeAt } from '../model/schedule'
 import { capPool, MAX_POOL_ITEMS, poolRules, poolSignature, type PoolItem } from '../data/pool'
 import { packPool, unpackPool } from '../data/pool-pack'
 import { loadPoolProgressive, type SourceDeps } from '../data/sources'
-import { onChannelsChanged, prunePoolCaches, readChannels, readDefaultsSeeded, readPoolCache, removePoolCache, sourceDeps, sourceSignatures, writeChannels, writeDefaultsSeeded, writePoolCache } from '../host'
+import { applyRuntimeFixes } from '../data/runtime-fix'
+import { onChannelsChanged, prunePoolCaches, readChannels, readDefaultsSeeded, readPoolCache, readRuntimeFixes, removePoolCache, sourceDeps, sourceSignatures, writeChannels, writeDefaultsSeeded, writePoolCache } from '../host'
 
 export function saveChannel(def: ChannelDef): void {
   const all = readChannels()
@@ -72,9 +73,11 @@ function startJob(channel: ChannelDef, sig: string, deps: SourceDeps, key: strin
     job.view = view
     for (const fn of [...listeners]) fn(view)
   }
-  job.done = loadPoolProgressive(channel, deps, (partial) => publish({ pool: capPool(partial, MAX_POOL_ITEMS, channel.seed), complete: false }))
+  // Verkliga fillängder som spelaren sett (bara i ett nytt bygge; sparad pool rörs inte).
+  const fixes = readRuntimeFixes()
+  job.done = loadPoolProgressive(channel, deps, (partial) => publish({ pool: capPool(applyRuntimeFixes(partial, fixes), MAX_POOL_ITEMS, channel.seed), complete: false }))
     .then((items) => {
-      const pool = packPool(capPool(items, MAX_POOL_ITEMS, channel.seed))
+      const pool = packPool(capPool(applyRuntimeFixes(items, fixes), MAX_POOL_ITEMS, channel.seed))
       // Samma form som en cacheträff, så tablån blir identisk före och efter omstart.
       const final = unpackPool(pool)!
       // Cachen skrivs bara för en komplett pool; visningen får den även om skrivningen faller.

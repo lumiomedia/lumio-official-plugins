@@ -6,6 +6,7 @@ import type { PoolItem } from '../data/pool'
 const state = vi.hoisted(() => ({
   rundowns: {} as Record<string, unknown[]>,
   cached: {} as Record<string, unknown[]>,
+  fixes: {} as Record<string, number>,
   resolve: null as unknown as ReturnType<typeof vi.fn>,
   remember: null as unknown as ReturnType<typeof vi.fn>,
   forget: null as unknown as ReturnType<typeof vi.fn>,
@@ -33,6 +34,8 @@ vi.mock('../host', () => ({
   writeZapMemory: () => {},
   resolver: { resolve: (item: PoolItem) => state.resolve(item), forget: (ref: string) => state.forget(ref), peek: () => false },
   rememberPlayedStream: (token: string | undefined) => state.remember(token),
+  readRuntimeFixes: () => state.fixes,
+  writeRuntimeFixes: (next: Record<string, number>) => { state.fixes = next },
 }))
 vi.mock('../state/store', () => ({
   useChannelPool: (channel: { id: string } | null) => ({ pool: [], rundown: (channel && state.rundowns[channel.id]) ?? [], loading: false }),
@@ -59,6 +62,7 @@ beforeEach(() => {
   state.forget = vi.fn()
   state.props = null
   state.cached = {}
+  state.fixes = {}
 })
 afterEach(() => {
   cleanup()
@@ -116,8 +120,8 @@ describe('kanalspelaren: värdspelaren', () => {
     state.rundowns = { k1: [stream('s1')] }
     render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
     await screen.findByTestId('first-play')
-    const start = Number(state.props?.initialTime ?? 0)
-    await act(async () => { state.props?.onTimeUpdate(start + 1, start + 1) })
+    // Trasig, mycket kort version (2 min av ett 600-minutersprogram): nästa version.
+    await act(async () => { state.props?.onTimeUpdate(120, 120) })
     expect(state.forget).toHaveBeenCalledWith('s1')
   })
 
@@ -356,5 +360,24 @@ describe('kanalspelaren: Ingen signal bara vid verkligt fel', () => {
     fireEvent.click(await screen.findByTestId('first-play'))
     expect(Array.from(document.querySelectorAll('style')).some((el) => (el.textContent ?? '').includes('.vp-topbar > div:last-child'))).toBe(true)
     expect(document.querySelector('[data-channels-close]')).toBeTruthy()
+  })
+})
+
+describe('kanalspelaren: tablån längre än filen', () => {
+  it('liveläget efter filens slut: Programmet är slut, inga andra versioner, ingen Ingen signal; längden minns', async () => {
+    const ep = { ...library('s11e14'), runtimeMin: 25 }
+    state.rundowns = { k1: [ep] }
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    fireEvent.click(await screen.findByTestId('first-play'))
+    const start = Number(state.props?.initialTime ?? 0)
+    // Filen är kortare än starten (som S11E14: 1354 s mot start 1359 s).
+    const duration = Math.max(61, start - 5)
+    await act(async () => { state.props?.onTimeUpdate(duration, duration) })
+    await flush()
+    expect(state.forget).not.toHaveBeenCalled()
+    expect(state.resolve).toHaveBeenCalledTimes(1)
+    expect(document.querySelector('[data-channels-nosignal]')).toBeNull()
+    expect(document.querySelector('[data-channels-between]')).toBeTruthy()
+    expect(state.fixes.s11e14).toBe(Math.round(duration))
   })
 })

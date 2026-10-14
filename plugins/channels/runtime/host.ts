@@ -51,6 +51,18 @@ export function writeZapMemory(next: ZapMemory): void {
   writePluginJson(PLUGIN_ID, 'zap', next)
 }
 
+/** Verkliga fillängder per post (data/runtime-fix.ts); utan ändringsevent, de gäller först vid nästa poolbygge. */
+export function readRuntimeFixes(): Record<string, number> {
+  const raw = readPluginJson<unknown>(PLUGIN_ID, 'runtimeFixes', {})
+  const out: Record<string, number> = {}
+  if (raw && typeof raw === 'object') for (const [k, v] of Object.entries(raw as Record<string, unknown>)) if (typeof v === 'number') out[k] = v
+  return out
+}
+
+export function writeRuntimeFixes(next: Record<string, number>): void {
+  writePluginJson(PLUGIN_ID, 'runtimeFixes', next, { emitChange: false })
+}
+
 /** Poolcache och metadata skrivs utan ändringsevent: ingen ska reagera på dem. Värdet är packat (data/pool-pack.ts). */
 export function readPoolCache(id: string): { sig: string; pool: unknown } | null {
   const raw = readPluginJson<{ sig?: unknown; pool?: unknown } | null>(PLUGIN_ID, `poolCache:${id}`, null)
