@@ -13,9 +13,10 @@ export interface Playable {
   rememberToken?: string
 }
 
+/** `exclude`: adresser som redan fallerat för programmet — värden ger nästa version. */
 export interface ResolveDeps {
-  library(ref: Extract<PlayRef, { type: 'library' }>): Promise<Playable | null>
-  stream(ref: Extract<PlayRef, { type: 'stream' }>): Promise<Playable | null>
+  library(ref: Extract<PlayRef, { type: 'library' }>, exclude?: string[]): Promise<Playable | null>
+  stream(ref: Extract<PlayRef, { type: 'stream' }>, exclude?: string[]): Promise<Playable | null>
   debrid(ref: Extract<PlayRef, { type: 'debrid' }>): Promise<Playable | null>
 }
 
@@ -25,13 +26,26 @@ export function createResolver(deps: ResolveDeps, now: () => number = Date.now) 
   const cache = new Map<string, { at: number; value: Playable }>()
   const pending = new Map<string, Promise<Playable | null>>()
 
-  function call(play: PlayRef): Promise<Playable | null> {
-    if (play.type === 'library') return deps.library(play)
-    if (play.type === 'stream') return deps.stream(play)
-    return deps.debrid(play)
+  function call(play: PlayRef, exclude?: string[]): Promise<Playable | null> {
+    if (play.type === 'library') return deps.library(play, exclude)
+    if (play.type === 'stream') return deps.stream(play, exclude)
+    // En debridpost är en fil: ingen annan version att be om.
+    return exclude && exclude.length > 0 ? Promise.resolve(null) : deps.debrid(play)
   }
 
-  async function resolve(item: PoolItem): Promise<Playable | null> {
+  /**
+   * Nästa version förbi `exclude`: aldrig ur cachen och aldrig cachad. Svarar
+   * värden med en redan provad adress (äldre värd utan exclude) blir svaret
+   * null — inga fler versioner.
+   */
+  async function resolveNext(item: PoolItem, exclude: string[]): Promise<Playable | null> {
+    cache.delete(item.ref)
+    const value = await Promise.resolve().then(() => call(item.play, exclude)).catch(() => null)
+    return value && !exclude.includes(value.url) ? value : null
+  }
+
+  async function resolve(item: PoolItem, exclude: string[] = []): Promise<Playable | null> {
+    if (exclude.length > 0) return resolveNext(item, exclude)
     const hit = cache.get(item.ref)
     if (hit && now() - hit.at < TTL_MS) return hit.value
     const running = pending.get(item.ref)

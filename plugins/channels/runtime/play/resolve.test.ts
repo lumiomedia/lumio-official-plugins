@@ -59,4 +59,20 @@ describe('createLatestGate', () => {
     expect(gate.isCurrent(first)).toBe(false)
     expect(gate.isCurrent(second)).toBe(true)
   })
+
+  it('nästa version: förbi provade adresser, aldrig ur eller in i cachen; äldre värd utan exclude ger null', async () => {
+    const library = vi.fn(async (_r: unknown, exclude?: string[]) => (exclude?.includes('L1') ? { url: 'L2' } : { url: 'L1' }))
+    const r = createResolver({ library, stream: vi.fn(), debrid: vi.fn(async () => ({ url: 'D' })) })
+    const a = item('a', { type: 'library', key: 'k', mediaType: 'movie' })
+    expect(await r.resolve(a)).toEqual({ url: 'L1' })
+    expect(await r.resolve(a, ['L1'])).toEqual({ url: 'L2' })
+    expect(library).toHaveBeenLastCalledWith(expect.anything(), ['L1'])
+    // Nästa vanliga uppslag hämtar på nytt (den fallerade adressen ligger inte kvar i cachen).
+    await r.resolve(a)
+    expect(library).toHaveBeenCalledTimes(3)
+    const old = createResolver({ library: vi.fn(async () => ({ url: 'L1' })), stream: vi.fn(), debrid: vi.fn() })
+    expect(await old.resolve(a, ['L1'])).toBeNull()
+    // Debrid: en fil, ingen annan version.
+    expect(await r.resolve(item('d', { type: 'debrid', provider: 'torbox', fileRef: '1|2' }), ['D'])).toBeNull()
+  })
 })

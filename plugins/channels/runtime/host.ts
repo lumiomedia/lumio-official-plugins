@@ -216,8 +216,9 @@ async function computeSourceSignatures(): Promise<Signatures> {
 }
 
 export const resolver = createResolver({
-  library: (r) => channelResolveLibraryPlayback(r),
-  stream: (r) => channelResolveTitleStream(r),
+  // exclude: äldre värdar ignorerar fältet och ger samma adress igen (resolvern tolkar det som "inga fler").
+  library: (r, exclude) => channelResolveLibraryPlayback(exclude?.length ? { ...r, exclude } : r),
+  stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
   debrid: (r) => channelUnrestrictDebridFile(r),
 })
 

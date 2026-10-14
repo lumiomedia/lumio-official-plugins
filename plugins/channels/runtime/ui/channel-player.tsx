@@ -17,7 +17,7 @@ import { programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, OSD_IDLE_MS } from '../play/zap-logic'
 import { endOfSourceAction, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
-import { initialPlayerState, playerReducer, type Request } from '../play/player-state'
+import { initialPlayerState, playerReducer, triedFor, type Request } from '../play/player-state'
 import { readZapMemory, rememberPlayedStream, resolver, writeZapMemory } from '../host'
 import { useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
@@ -51,7 +51,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   const t = useText()
   const isTv = useTvMode()
   const [state, dispatch] = useReducer(playerReducer, undefined, () => initialPlayerState(initialChannelId, initialMode))
-  const { request, status, onScreen, pending, rest, notice } = state
+  const { request, status, onScreen, pending, rest, noSignal } = state
   const stateRef = useRef(state)
   stateRef.current = state
   const channel = useMemo(
@@ -144,11 +144,13 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     const run = () => {
       // Zappat vidare under väntan: den här kanalen slås aldrig upp.
       if (!gate.isCurrent(token)) return
-      void resolver.resolve(slot.item).then((playable) => {
+      // Efter en fallerad version: nästa version förbi de redan provade adresserna.
+      void resolver.resolve(slot.item, triedFor(stateRef.current, slot)).then((playable) => {
         if (!gate.isCurrent(token)) return
         if (playable) {
           dispatch({ type: 'resolved', seq: req.seq, playable })
         } else {
+          // Ingen (fler) version: Ingen signal till nästa programgräns.
           resolver.forget(slot.item.ref)
           dispatch({ type: 'failed', seq: req.seq, now: Date.now() })
         }
@@ -174,7 +176,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     }
     // Samma begäran men ny rundown (poolen räknades om). Spelar vi något som
     // finns kvar i kanalen rör vi det inte; annars börja om live.
-    if (s.status === 'error') return
+    if (s.status === 'nosignal') return
     const shownRef = (s.pending ?? s.onScreen)?.slot.item.ref
     if ((s.status === 'playing' || s.status === 'resolving') && shownRef && rundown.some((i) => i.ref === shownRef)) return
     dispatch({ type: 'goto', channelId: channel.id, mode: 'live' })
@@ -240,9 +242,14 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     poke()
     return () => { if (hideTimer.current !== null) window.clearTimeout(hideTimer.current) }
   }, [request.seq, poke])
+  // Ingen signal: försök igen live vid nästa programgräns, inte tidigare.
   useEffect(() => {
-    if (notice) poke()
-  }, [notice, poke])
+    if (status !== 'nosignal' || !noSignal) return
+    const id = window.setTimeout(() => {
+      dispatch({ type: 'goto', channelId: stateRef.current.request.channelId, mode: 'live' })
+    }, Math.max(0, noSignal.retryAt - Date.now()) + 1000)
+    return () => window.clearTimeout(id)
+  }, [status, noSignal])
 
   // ── Tangenter ──────────────────────────────────────────────────────────────
   const modalMounted = !!(onScreen && Player)
@@ -389,7 +396,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       pendingDigits={digits}
       osdVisible={osdVisible || status !== 'playing'}
       listOpen={listOpen}
-      notice={notice ? t('playerSkipping') : null}
+      notice={null}
       hasPrevious={!!prevId && prevId !== channel.id && channels.some((c) => c.id === prevId)}
       isTv={isTv}
       t={t}
@@ -411,7 +418,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       meta={metaParts.join(' · ')}
       title={described?.slot.item.title ?? null}
       mode={described?.mode ?? request.mode}
-      notice={notice ? t('playerSkipping') : null}
+      notice={null}
       closeIsInit={!modalMounted}
       isTv={isTv}
       t={t}
@@ -465,8 +472,9 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
               dispatch({ type: 'advance', seq, now: Date.now() })
               return
             }
+            // Filen tog slut strax efter start: den här versionen bar inte — nästa version.
             resolver.forget(slot.item.ref)
-            dispatch({ type: 'failed', seq, now: Date.now() })
+            dispatch({ type: 'failed', seq, now: Date.now(), url: playable.url })
           }}
           onFirstPlay={() => {
             // Först nu, när bilden syns, blir strömvalet ihågkommet (bara strömsök).
@@ -476,7 +484,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           // Sant = vi byter själva (nästa program eller felvyn); spelaren stänger inte.
           onLoadFailed={() => {
             resolver.forget(slot.item.ref)
-            dispatch({ type: 'failed', seq, now: Date.now() })
+            dispatch({ type: 'failed', seq, now: Date.now(), url: playable.url })
             return true
           }}
           overlayContent={(
@@ -506,8 +514,13 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           <p style={msgStyle}>{t('playerEmpty')}</p>
           {onEditChannel ? <OsdButton onClick={() => onEditChannel(channel.id)} isTv={isTv}>{t('playerEdit')}</OsdButton> : null}
         </div>
-      ) : status === 'error' ? (
-        <p style={msgStyle}>{t('playerError')}</p>
+      ) : status === 'nosignal' && noSignal ? (
+        <div data-channels-nosignal="" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+          <ChannelBadge channel={channel} size={72} />
+          <p style={{ ...msgStyle, fontSize: '1.6rem', fontWeight: 700, letterSpacing: '0.04em' }}>{t('playerNoSignal')}</p>
+          <p style={{ ...msgStyle, fontFamily: FONT.title }}>{noSignal.slot.item.kind === 'episode' && noSignal.slot.item.seriesTitle ? noSignal.slot.item.seriesTitle : noSignal.slot.item.title}</p>
+          <p style={{ ...msgStyle, fontSize: '0.9rem', color: C.textDim }}>{t('playerNoSignalRetry', { time: clock(noSignal.retryAt) })}</p>
+        </div>
       ) : tuning}
       {osd}
     </Screen>

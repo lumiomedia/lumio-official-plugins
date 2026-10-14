@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { initialPlayerState, playerReducer, type Plan, type PlayerState } from './player-state'
+import { initialPlayerState, playerReducer, triedFor, type Plan, type PlayerState } from './player-state'
 
-const slot = (ref: string, stop: number) => ({ kind: 'programme', item: { ref }, stop } as never)
+const slot = (ref: string, stop: number) => ({ kind: 'programme', item: { ref }, start: 0, stop } as never)
 const plan = (seq: number, ref = 'a', stop = 100_000): Plan => ({ seq, slot: slot(ref, stop), initialTime: 0, deadline: stop, mode: 'live' })
 const playing = (): PlayerState => {
   let s = initialPlayerState('c1', 'live')
@@ -31,32 +31,47 @@ describe('spelarens tillstånd', () => {
     expect(playerReducer(playing(), { type: 'advance', seq: 0, now: 100_000 }).request.at).toBeNull()
   })
 
-  it('ett felhopp, sedan felvy utan notis', () => {
-    let s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000 })
-    expect(s.notice).toBe('skipping')
-    expect(s.request.seq).toBe(1)
-    s = playerReducer(s, { type: 'planned', plan: plan(1, 'b') })
-    s = playerReducer(s, { type: 'failed', seq: 1, now: 60_000 })
-    expect(s.status).toBe('error')
-    expect(s.notice).toBeNull()
-    expect(s.onScreen).toBeNull()
+  it('en fallerad version: nästa version av SAMMA program live, inget hopp till nästa program', () => {
+    const s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000, url: 'u1' })
+    expect(s.status).toBe('resolving')
+    expect(s.request).toMatchObject({ seq: 1, at: null, mode: 'live' })
+    expect(s.tried?.urls).toEqual(['u1'])
+    expect(triedFor(s, plan(1).slot)).toEqual(['u1'])
+    // Ett annat program har inga provade adresser.
+    expect(triedFor(s, plan(1, 'b').slot)).toEqual([])
   })
 
-  it('lyckad start nollar felhoppet; gamla svar ignoreras', () => {
-    let s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000 })
+  it('högst tre versioner, sedan Ingen signal till programgränsen', () => {
+    let s = playing()
+    s = playerReducer(s, { type: 'failed', seq: 0, now: 50_000, url: 'u1' })
+    s = playerReducer(s, { type: 'planned', plan: plan(1) })
+    s = playerReducer(s, { type: 'resolved', seq: 1, playable: { url: 'u2' } })
+    s = playerReducer(s, { type: 'failed', seq: 1, now: 51_000, url: 'u2' })
+    s = playerReducer(s, { type: 'planned', plan: plan(2) })
+    s = playerReducer(s, { type: 'resolved', seq: 2, playable: { url: 'u3' } })
+    s = playerReducer(s, { type: 'failed', seq: 2, now: 52_000, url: 'u3' })
+    expect(s.status).toBe('nosignal')
+    expect(s.onScreen).toBeNull()
+    expect(s.noSignal?.retryAt).toBe(100_000)
+    expect(s.request.seq).toBe(2)
+  })
+
+  it('ingen (fler) version att hitta: Ingen signal direkt', () => {
+    let s = initialPlayerState('c1', 'live')
+    s = playerReducer(s, { type: 'planned', plan: plan(0) })
+    s = playerReducer(s, { type: 'failed', seq: 0, now: 10_000 })
+    expect(s.status).toBe('nosignal')
+    expect(s.noSignal?.slot.item.ref).toBe('a')
+  })
+
+  it('gamla svar ignoreras; kanalbyte och programbyte nollar försöken', () => {
+    let s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000, url: 'u1' })
     s = playerReducer(s, { type: 'resolved', seq: 0, playable: { url: 'gammal' } })
     expect(s.onScreen?.playable.url).toBe('u1')
-    s = playerReducer(s, { type: 'planned', plan: plan(1, 'b') })
-    s = playerReducer(s, { type: 'resolved', seq: 1, playable: { url: 'u2' } })
-    s = playerReducer(s, { type: 'firstPlay', seq: 1 })
-    expect(s.failedOnce).toBe(false)
-    expect(s.notice).toBeNull()
-  })
-
-  it('kanalbyte nollar felhoppet', () => {
-    let s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000 })
-    s = playerReducer(s, { type: 'goto', channelId: 'c2', mode: 'live' })
-    expect(s.failedOnce).toBe(false)
-    expect(s.request).toMatchObject({ channelId: 'c2', at: null, seq: 2 })
+    const switched = playerReducer(s, { type: 'goto', channelId: 'c2', mode: 'live' })
+    expect(switched.tried).toBeNull()
+    expect(switched.request).toMatchObject({ channelId: 'c2', at: null, seq: 2 })
+    const advanced = playerReducer(playing(), { type: 'advance', seq: 0, now: 100_500 })
+    expect(advanced.tried).toBeNull()
   })
 })

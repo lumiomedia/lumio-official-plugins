@@ -39870,8 +39870,6 @@ ${cue.text}`).join("\n\n")}
     playerChannelN: { en: "Channel {n}", sv: "Kanal {n}" },
     playerMinsLeft: { en: "{n} min left", sv: "{n} min kvar" },
     playerThen: { en: "then {title}", sv: "sedan {title}" },
-    playerSkipping: { en: "The programme could not be played \u2014 skipping to the next", sv: "Programmet kunde inte spelas \u2014 hoppar till n\xE4sta" },
-    playerError: { en: "This channel cannot be played right now", sv: "Kanalen kan inte spelas just nu" },
     playerRest: { en: "Back on air at {time}", sv: "S\xE4nder igen {time}" },
     playerEmpty: { en: "Nothing to broadcast", sv: "Inget att s\xE4nda" },
     playerEdit: { en: "Edit", sv: "Redigera" },
@@ -39892,6 +39890,8 @@ ${cue.text}`).join("\n\n")}
     pageNewChannel: { en: "+ NEW CHANNEL", sv: "+ NY KANAL" },
     pageHostTooOld: { en: "Channels requires Lumio 0.1.625 or later for playback", sv: "Kanaler kr\xE4ver Lumio 0.1.625 eller senare f\xF6r uppspelning" },
     heroLive: { en: "LIVE", sv: "LIVE" },
+    playerNoSignal: { en: "No signal", sv: "Ingen signal" },
+    playerNoSignalRetry: { en: "Trying again when the next programme starts at {time}", sv: "F\xF6rs\xF6ker igen n\xE4r n\xE4sta program b\xF6rjar {time}" },
     heroOffAir: { en: "OFF AIR", sv: "VILA" },
     heroWatchLive: { en: "\u25B6 Watch live", sv: "\u25B6 Titta live" },
     heroFromStart: { en: "\u27F2 From start", sv: "\u27F2 Fr\xE5n b\xF6rjan" },
@@ -40956,12 +40956,18 @@ ${cue.text}`).join("\n\n")}
   function createResolver(deps, now2 = Date.now) {
     const cache7 = /* @__PURE__ */ new Map();
     const pending5 = /* @__PURE__ */ new Map();
-    function call(play) {
-      if (play.type === "library") return deps.library(play);
-      if (play.type === "stream") return deps.stream(play);
-      return deps.debrid(play);
+    function call(play, exclude) {
+      if (play.type === "library") return deps.library(play, exclude);
+      if (play.type === "stream") return deps.stream(play, exclude);
+      return exclude && exclude.length > 0 ? Promise.resolve(null) : deps.debrid(play);
     }
-    async function resolve(item) {
+    async function resolveNext(item, exclude) {
+      cache7.delete(item.ref);
+      const value = await Promise.resolve().then(() => call(item.play, exclude)).catch(() => null);
+      return value && !exclude.includes(value.url) ? value : null;
+    }
+    async function resolve(item, exclude = []) {
+      if (exclude.length > 0) return resolveNext(item, exclude);
       const hit = cache7.get(item.ref);
       if (hit && now2() - hit.at < TTL_MS2) return hit.value;
       const running2 = pending5.get(item.ref);
@@ -41134,8 +41140,9 @@ ${cue.text}`).join("\n\n")}
     };
   }
   var resolver = createResolver({
-    library: (r) => channelResolveLibraryPlayback(r),
-    stream: (r) => channelResolveTitleStream(r),
+    // exclude: äldre värdar ignorerar fältet och ger samma adress igen (resolvern tolkar det som "inga fler").
+    library: (r, exclude) => channelResolveLibraryPlayback(exclude?.length ? { ...r, exclude } : r),
+    stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
     debrid: (r) => channelUnrestrictDebridFile(r)
   });
   function rememberPlayedStream(token) {
@@ -42342,6 +42349,8 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-state.ts
+  var MAX_VERSIONS = 3;
+  var slotKey = (slot) => `${slot.item.ref}@${slot.start}`;
   function initialPlayerState(channelId, mode) {
     return {
       request: { channelId, mode, at: null, seq: 0 },
@@ -42349,22 +42358,25 @@ ${cue.text}`).join("\n\n")}
       onScreen: null,
       pending: null,
       rest: null,
-      notice: null,
-      failedOnce: false
+      tried: null,
+      noSignal: null
     };
   }
   function afterSlot(slot, now2) {
     return now2 >= slot.stop ? null : slot.stop + 1e3;
+  }
+  function triedFor(s, slot) {
+    return s.tried && s.tried.key === slotKey(slot) ? s.tried.urls : [];
   }
   var planFor = (s, seq) => s.pending?.seq === seq ? s.pending : s.onScreen?.seq === seq ? s.onScreen : null;
   var next = (s, patch) => ({ ...s.request, ...patch, seq: s.request.seq + 1 });
   function playerReducer(s, a) {
     switch (a.type) {
       case "goto":
-        return { ...s, request: next(s, { channelId: a.channelId, mode: a.mode, at: null }), pending: null, status: "resolving", failedOnce: false, notice: null };
+        return { ...s, request: next(s, { channelId: a.channelId, mode: a.mode, at: null }), pending: null, status: "resolving", tried: null, noSignal: null };
       case "planned":
         if (a.plan.seq !== s.request.seq) return s;
-        return { ...s, pending: a.plan, status: "resolving", rest: null };
+        return { ...s, pending: a.plan, status: "resolving", rest: null, noSignal: null };
       case "resolved": {
         if (a.seq !== s.request.seq || !s.pending || s.pending.seq !== a.seq) return s;
         return { ...s, onScreen: { ...s.pending, playable: a.playable }, pending: null, status: "playing" };
@@ -42373,24 +42385,32 @@ ${cue.text}`).join("\n\n")}
         if (a.seq !== s.request.seq) return s;
         const plan = planFor(s, a.seq);
         if (!plan) return s;
-        if (!s.failedOnce) {
-          return { ...s, failedOnce: true, notice: "skipping", pending: null, status: "resolving", request: next(s, { mode: "live", at: afterSlot(plan.slot, a.now) }) };
+        const key = slotKey(plan.slot);
+        const urls = a.url ? [...triedFor(s, plan.slot), a.url] : triedFor(s, plan.slot);
+        if (a.url && urls.length < MAX_VERSIONS) {
+          return { ...s, tried: { key, urls }, pending: null, status: "resolving", request: next(s, { mode: plan.mode, at: null }) };
         }
-        return { ...s, status: "error", onScreen: null, pending: null, notice: null };
+        return {
+          ...s,
+          status: "nosignal",
+          onScreen: null,
+          pending: null,
+          tried: { key, urls },
+          noSignal: { slot: plan.slot, retryAt: plan.slot.stop }
+        };
       }
       case "rest":
         if (a.seq !== s.request.seq) return s;
-        return { ...s, status: "rest", rest: a.rest, onScreen: null, pending: null };
+        return { ...s, status: "rest", rest: a.rest, onScreen: null, pending: null, noSignal: null };
       case "empty":
         if (a.seq !== s.request.seq) return s;
-        return { ...s, status: "empty", rest: null, onScreen: null, pending: null };
+        return { ...s, status: "empty", rest: null, onScreen: null, pending: null, noSignal: null };
       case "advance": {
         if (a.seq !== s.request.seq || !s.onScreen || s.onScreen.seq !== a.seq) return s;
-        return { ...s, pending: null, status: "resolving", request: next(s, { mode: "live", at: afterSlot(s.onScreen.slot, a.now) }) };
+        return { ...s, pending: null, status: "resolving", tried: null, request: next(s, { mode: "live", at: afterSlot(s.onScreen.slot, a.now) }) };
       }
       case "firstPlay":
-        if (a.seq !== s.onScreen?.seq) return s;
-        return { ...s, failedOnce: false, notice: null };
+        return s;
     }
   }
 
@@ -42705,7 +42725,7 @@ ${cue.text}`).join("\n\n")}
     const t = useText();
     const isTv = useTvMode();
     const [state2, dispatch] = useReducer(playerReducer, void 0, () => initialPlayerState(initialChannelId, initialMode));
-    const { request, status, onScreen, pending: pending5, rest, notice } = state2;
+    const { request, status, onScreen, pending: pending5, rest, noSignal } = state2;
     const stateRef = useRef(state2);
     stateRef.current = state2;
     const channel = useMemo(
@@ -42790,7 +42810,7 @@ ${cue.text}`).join("\n\n")}
       plannedChannel.current = ch.id;
       const run = () => {
         if (!gate.isCurrent(token)) return;
-        void resolver.resolve(slot.item).then((playable) => {
+        void resolver.resolve(slot.item, triedFor(stateRef.current, slot)).then((playable) => {
           if (!gate.isCurrent(token)) return;
           if (playable) {
             dispatch({ type: "resolved", seq: req.seq, playable });
@@ -42816,7 +42836,7 @@ ${cue.text}`).join("\n\n")}
         plan(s.request, channel);
         return;
       }
-      if (s.status === "error") return;
+      if (s.status === "nosignal") return;
       const shownRef = (s.pending ?? s.onScreen)?.slot.item.ref;
       if ((s.status === "playing" || s.status === "resolving") && shownRef && rundown.some((i) => i.ref === shownRef)) return;
       dispatch({ type: "goto", channelId: channel.id, mode: "live" });
@@ -42876,8 +42896,12 @@ ${cue.text}`).join("\n\n")}
       };
     }, [request.seq, poke]);
     useEffect(() => {
-      if (notice) poke();
-    }, [notice, poke]);
+      if (status !== "nosignal" || !noSignal) return;
+      const id = window.setTimeout(() => {
+        dispatch({ type: "goto", channelId: stateRef.current.request.channelId, mode: "live" });
+      }, Math.max(0, noSignal.retryAt - Date.now()) + 1e3);
+      return () => window.clearTimeout(id);
+    }, [status, noSignal]);
     const modalMounted = !!(onScreen && Player);
     const osdRef = useRef(null);
     const pokeRef = useRef(poke);
@@ -42994,7 +43018,7 @@ ${cue.text}`).join("\n\n")}
         pendingDigits: digits,
         osdVisible: osdVisible || status !== "playing",
         listOpen,
-        notice: notice ? t("playerSkipping") : null,
+        notice: null,
         hasPrevious: !!prevId && prevId !== channel.id && channels.some((c) => c.id === prevId),
         isTv,
         t,
@@ -43021,7 +43045,7 @@ ${cue.text}`).join("\n\n")}
         meta: metaParts.join(" \xB7 "),
         title: described?.slot.item.title ?? null,
         mode: described?.mode ?? request.mode,
-        notice: notice ? t("playerSkipping") : null,
+        notice: null,
         closeIsInit: !modalMounted,
         isTv,
         t,
@@ -43065,7 +43089,7 @@ ${cue.text}`).join("\n\n")}
               return;
             }
             resolver.forget(slot.item.ref);
-            dispatch({ type: "failed", seq, now: Date.now() });
+            dispatch({ type: "failed", seq, now: Date.now(), url: playable.url });
           },
           onFirstPlay: () => {
             if (slot.item.play.type === "stream") rememberPlayedStream(playable.rememberToken);
@@ -43073,7 +43097,7 @@ ${cue.text}`).join("\n\n")}
           },
           onLoadFailed: () => {
             resolver.forget(slot.item.ref);
-            dispatch({ type: "failed", seq, now: Date.now() });
+            dispatch({ type: "failed", seq, now: Date.now(), url: playable.url });
             return true;
           },
           overlayContent: /* @__PURE__ */ jsxs(Fragment2, { children: [
@@ -43092,7 +43116,12 @@ ${cue.text}`).join("\n\n")}
       status === "rest" && rest ? /* @__PURE__ */ jsx("p", { style: msgStyle, children: t("playerRest", { time: clock2(rest.nextAir) }) }) : status === "empty" ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }, children: [
         /* @__PURE__ */ jsx("p", { style: msgStyle, children: t("playerEmpty") }),
         onEditChannel ? /* @__PURE__ */ jsx(OsdButton, { onClick: () => onEditChannel(channel.id), isTv, children: t("playerEdit") }) : null
-      ] }) : status === "error" ? /* @__PURE__ */ jsx("p", { style: msgStyle, children: t("playerError") }) : tuning,
+      ] }) : status === "nosignal" && noSignal ? /* @__PURE__ */ jsxs("div", { "data-channels-nosignal": "", style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }, children: [
+        /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 72 }),
+        /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontSize: "1.6rem", fontWeight: 700, letterSpacing: "0.04em" }, children: t("playerNoSignal") }),
+        /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontFamily: FONT3.title }, children: noSignal.slot.item.kind === "episode" && noSignal.slot.item.seriesTitle ? noSignal.slot.item.seriesTitle : noSignal.slot.item.title }),
+        /* @__PURE__ */ jsx("p", { style: { ...msgStyle, fontSize: "0.9rem", color: C.textDim }, children: t("playerNoSignalRetry", { time: clock2(noSignal.retryAt) }) })
+      ] }) : tuning,
       osd
     ] });
   }
