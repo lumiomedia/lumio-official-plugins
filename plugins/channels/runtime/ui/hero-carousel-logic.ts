@@ -38,3 +38,34 @@ export function renderedSlideIds(slides: ChannelDef[], activeId: string | null):
   }
   return out
 }
+
+/**
+ * Styrplattans tvåfingersvep (wheel-händelser med deltaX) → ett steg per
+ * gest. Appens egen hero har ingen sådan hantering att återanvända, så
+ * trösklarna är egna: lodrätt dominerande rörelse är sidrullning och lämnas
+ * orörd; vågrätt summeras tills `thresholdPx`, sedan är gesten förbrukad
+ * tills händelserna tystnat i `idleMs` (styrplattans tröghet fortsätter
+ * skicka deltaX långt efter att fingrarna släppt). Ren logik.
+ */
+export function createWheelSwipe(opts: { thresholdPx?: number; idleMs?: number } = {}) {
+  const threshold = opts.thresholdPx ?? 60
+  const idle = opts.idleMs ?? 220
+  let acc = 0
+  let last = -Infinity
+  let spent = false
+  return {
+    /** Riktning att bläddra (1 = nästa) eller 0. `horizontal`: händelsen var ett sidsvep (ska inte rulla sidan). */
+    feed(dx: number, dy: number, now: number): { step: -1 | 0 | 1; horizontal: boolean } {
+      if (now - last >= idle) { acc = 0; spent = false }
+      last = now
+      if (Math.abs(dx) <= Math.abs(dy)) return { step: 0, horizontal: false }
+      if (spent) return { step: 0, horizontal: true }
+      acc += dx
+      if (Math.abs(acc) < threshold) return { step: 0, horizontal: true }
+      const step = acc > 0 ? 1 : -1
+      acc = 0
+      spent = true
+      return { step, horizontal: true }
+    },
+  }
+}

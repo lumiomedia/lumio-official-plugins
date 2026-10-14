@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createChannel, emptyDraft, type AirWindow, type ChannelDef } from '../model/channel'
-import { heroSlides, renderedSlideIds, stepSlide } from './hero-carousel-logic'
+import { createWheelSwipe, heroSlides, renderedSlideIds, stepSlide } from './hero-carousel-logic'
 
 const ch = (n: number, airWindow: AirWindow = 'always'): ChannelDef => ({ ...createChannel({ ...emptyDraft(), name: `K${n}`, airWindow }, [], 1, () => 0.1), id: `k${n}`, number: n })
 const item = { ref: 'a', title: 'a', runtimeMin: 100_000, year: null, kind: 'movie' as const }
@@ -31,5 +31,22 @@ describe('heroskarusellen', () => {
   it('ritar aktiv bild och grannarna', () => {
     const slides = [ch(1), ch(2), ch(3), ch(4), ch(5)]
     expect([...renderedSlideIds(slides, 'k1')].sort()).toEqual(['k1', 'k2', 'k5'])
+  })
+
+  it('styrplattans svep: ett steg per gest, trögheten ignoreras, lodrätt rullar sidan', () => {
+    const w = createWheelSwipe({ thresholdPx: 60, idleMs: 220 })
+    let t = 0
+    const feed = (dx: number, dy = 0) => { t += 16; return w.feed(dx, dy, t) }
+    expect(feed(20).step).toBe(0)
+    expect(feed(25).step).toBe(0)
+    expect(feed(30).step).toBe(1)
+    // Trögheten efter gesten: inga fler steg.
+    for (let i = 0; i < 30; i += 1) expect(feed(15).step).toBe(0)
+    // Lodrätt dominerande: inget steg och inte vågrätt (sidan rullar).
+    expect(feed(2, 40)).toEqual({ step: 0, horizontal: false })
+    // Ny gest efter tystnad: åt andra hållet.
+    t += 400
+    expect(feed(-40).step).toBe(0)
+    expect(feed(-40).step).toBe(-1)
   })
 })

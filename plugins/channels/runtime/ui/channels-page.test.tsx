@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createChannel, emptyDraft, type ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 
@@ -270,6 +270,45 @@ describe('Kanaler-sidans utseende', () => {
     fireEvent.touchStart(hero(), { touches: [{ clientX: 300, clientY: 100 }] })
     fireEvent.touchEnd(hero(), { changedTouches: [{ clientX: 100, clientY: 110 }] })
     expect(hero().textContent).toContain('Tredje')
+  })
+
+  it('styrplattans sidsvep och ◀▶ på prickarna bläddrar; lodrätt rullar sidan; inga pilar ens under laddning', () => {
+    state.channels = [channel(1, 'Första'), channel(3, 'Tredje')]
+    state.rundowns = { k1: [item('Terminator', 100_000)], k3: [item('Heat', 100_000)] }
+    const { container } = page({ channelId: 'k1' })
+    const hero = () => container.querySelector('[data-channels-hero]')!
+    const wheel = (deltaX: number, deltaY: number, timeStamp: number) => {
+      const e = new WheelEvent('wheel', { deltaX, deltaY, bubbles: true, cancelable: true })
+      Object.defineProperty(e, 'timeStamp', { value: timeStamp })
+      act(() => { hero().dispatchEvent(e) })
+      return e
+    }
+    // Lodrätt: sidan rullar (ingen preventDefault), inget byte.
+    expect(wheel(0, 80, 10).defaultPrevented).toBe(false)
+    expect(hero().textContent).toContain('Första')
+    // Vågrätt svep: ett steg, och händelsen rullar inte sidan.
+    expect(wheel(40, 2, 1000).defaultPrevented).toBe(true)
+    wheel(40, 2, 1016)
+    expect(hero().textContent).toContain('Tredje')
+    // Trögheten byter inte igen.
+    for (let i = 0; i < 10; i += 1) wheel(30, 0, 1032 + i * 16)
+    expect(hero().textContent).toContain('Tredje')
+    // Tangentbord: prickarna är tabbara, ◀▶ bläddrar.
+    const dot = container.querySelector<HTMLButtonElement>('[data-hero-dot="k3"]')!
+    expect(dot.tabIndex).toBe(0)
+    dot.focus()
+    fireEvent.keyDown(dot, { key: 'ArrowRight' })
+    expect(hero().textContent).toContain('Första')
+    expect(container.querySelector('[data-hero-arrow]')).toBeNull()
+    expect([...container.querySelectorAll('[data-channels-hero] button')].some((b) => /^[‹›]$/.test((b.textContent ?? '').trim()))).toBe(false)
+  })
+
+  it('under laddning (tom tablå) finns inga pilar eller andra hovringselement i heron', () => {
+    state.channels = [channel(1, 'Första'), channel(3, 'Tredje')]
+    state.rundowns = {}
+    const { container } = page({ channelId: 'k1' })
+    expect(container.querySelector('[data-hero-arrow]')).toBeNull()
+    expect([...container.querySelectorAll('[data-channels-hero] button')].some((b) => /^[‹›]$/.test((b.textContent ?? '').trim()))).toBe(false)
   })
 
   it('en vilande vald kanal är en egen bild bland de sändande', () => {

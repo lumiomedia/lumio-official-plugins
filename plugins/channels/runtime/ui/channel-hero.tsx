@@ -12,7 +12,7 @@ import { programmeAt, type ProgrammeSlot } from '../model/schedule'
 import type { PoolItem } from '../data/pool'
 import type { PlayMode } from '../play/player-logic'
 import { formatClock } from './guide-layout'
-import { renderedSlideIds } from './hero-carousel-logic'
+import { createWheelSwipe, renderedSlideIds } from './hero-carousel-logic'
 import { belowMenuPill, C, FONT, glass, RADIUS, fontSize } from './tokens'
 import type { useText } from './use-text'
 
@@ -92,25 +92,31 @@ export function measureHeroLayer(hero: HTMLElement, layer: HTMLElement, prev: He
 /** Programmets bild just nu på en kanal (för karusellens bakgrundslager). */
 /**
  * Herons bild för en kanal just nu — aldrig svart om kanalen har någon bild:
- * programmets bakgrundsbild; annars dess affisch (uppförstorad och suddig);
- * annars närmaste program i tablån som har en bakgrundsbild. Vilar kanalen
- * räknas programmet som börjar härnäst.
+ * programmets bakgrundsbild; annars dess affisch (skarp, till höger, som en
+ * affischhero); annars närmaste program i tablån med bakgrundsbild, sist
+ * närmaste med affisch. Vilar kanalen räknas programmet som börjar härnäst.
  */
-export function heroImage(rundown: PoolItem[], channel: ChannelDef, now: number): { url: string; blur: boolean } | null {
+export function heroImage(rundown: PoolItem[], channel: ChannelDef, now: number): { url: string; kind: 'backdrop' | 'poster' } | null {
   if (rundown.length === 0) return null
   let slot = programmeAt(rundown, channel.airWindow, now)
   if (slot.kind === 'rest') slot = programmeAt(rundown, channel.airWindow, slot.nextAir)
   if (slot.kind !== 'programme') return null
-  if (slot.item.backdropUrl) return { url: slot.item.backdropUrl, blur: false }
-  if (slot.item.posterUrl) return { url: slot.item.posterUrl, blur: true }
+  if (slot.item.backdropUrl) return { url: slot.item.backdropUrl, kind: 'backdrop' }
+  if (slot.item.posterUrl) return { url: slot.item.posterUrl, kind: 'poster' }
   const n = rundown.length
-  for (let d = 1; d < n; d += 1) {
-    for (const i of [slot.index + d, slot.index - d]) {
-      const url = rundown[((i % n) + n) % n]!.backdropUrl
-      if (url) return { url, blur: false }
+  const nearest = (field: 'backdropUrl' | 'posterUrl'): string | null => {
+    for (let d = 1; d < n; d += 1) {
+      for (const i of [slot.index + d, slot.index - d]) {
+        const url = rundown[((i % n) + n) % n]![field]
+        if (url) return url
+      }
     }
+    return null
   }
-  return null
+  const backdrop = nearest('backdropUrl')
+  if (backdrop) return { url: backdrop, kind: 'backdrop' }
+  const poster = nearest('posterUrl')
+  return poster ? { url: poster, kind: 'poster' } : null
 }
 
 /** Nästa program efter `t`, förbi en eventuell vila. */
@@ -172,6 +178,38 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       window.removeEventListener('resize', onResize)
     }
   }, [extra, hostPlayer])
+  // Styrplattans tvåfingersvep i sidled (skrivbord). Inbyggd lyssnare med
+  // passive:false: ett vågrätt svep får inte också rulla sidan eller trigga
+  // webbvyns bakåtgest; lodrätt rullning lämnas helt orörd.
+  const stepRef = useRef(onStep)
+  stepRef.current = many ? onStep : undefined
+  useEffect(() => {
+    const hero = heroRef.current
+    if (!hero || isTv) return
+    const swipe = createWheelSwipe()
+    const onWheel = (e: WheelEvent) => {
+      if (!stepRef.current) return
+      const { step, horizontal } = swipe.feed(e.deltaX, e.deltaY, e.timeStamp || Date.now())
+      if (horizontal) e.preventDefault()
+      if (step !== 0) stepRef.current(step)
+    }
+    hero.addEventListener('wheel', onWheel, { passive: false })
+    return () => hero.removeEventListener('wheel', onWheel)
+  }, [isTv])
+  // Tangentbord på skrivbordet: prickarna nås med Tab, ◀▶ bläddrar och fokus följer aktiv prick.
+  const dotsRef = useRef<HTMLDivElement | null>(null)
+  const dotsFocused = useRef(false)
+  useEffect(() => {
+    if (!dotsFocused.current) return
+    dotsRef.current?.querySelector<HTMLButtonElement>(`[aria-current="true"]`)?.focus()
+  }, [channel.id])
+  const onDotsKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (isTv || !many || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
+    e.preventDefault()
+    e.stopPropagation()
+    dotsFocused.current = true
+    onStep?.(e.key === 'ArrowLeft' ? -1 : 1)
+  }
   const touch = useRef<{ x: number; y: number } | null>(null)
   const onTouchStart = (e: TouchEvent) => { const p = e.touches[0]; touch.current = p ? { x: p.clientX, y: p.clientY } : null }
   const onTouchEnd = (e: TouchEvent) => {
@@ -263,18 +301,28 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
           const image = heroImage(r, c, now)
           if (!image) return null
           const url = image.url
+          const full = geom ? geom.full : null
+          const poster = image.kind === 'poster'
           return (
             <span
               key={c.id}
               data-hero-image={c.id}
+              data-hero-image-kind={image.kind}
               style={{
                 // Full höjd, förankrad i lagrets nederkant: bilden följer herons
                 // nederkant när sidan rullar i stället för att skalas om.
-                position: 'absolute', left: 0, right: 0, bottom: 0, height: geom ? geom.full : '100%',
-                background: `url("${url}") center ${image.blur ? 'center' : 'top'} / cover no-repeat`,
-                // Affisch som reserv: uppförstorad och suddig, så den fyller bredden utan att se pixlig ut.
-                ...(image.blur ? { filter: 'blur(28px)', transform: 'scale(1.15)' } : {}),
-                opacity: c.id === channel.id ? 0.7 : 0, transition: 'opacity 300ms ease',
+                position: 'absolute', right: 0, bottom: 0, height: full ?? '100%',
+                ...(poster
+                  // Affisch som reserv: skarp, i sitt eget format till höger, tonad mot vänster
+                  // in i sidans svarta (som en affischhero), aldrig uppförstorad och suddig.
+                  ? {
+                      width: full != null ? Math.round(full * (2 / 3)) : '40%', maxWidth: '60%',
+                      background: `url("${url}") right top / cover no-repeat`,
+                      WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 45%)',
+                      maskImage: 'linear-gradient(to right, transparent 0%, black 45%)',
+                    }
+                  : { left: 0, background: `url("${url}") center top / cover no-repeat` }),
+                opacity: c.id === channel.id ? (poster ? 0.85 : 0.7) : 0, transition: 'opacity 300ms ease',
               }}
             />
           )
@@ -353,7 +401,13 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
           </p>
         ) : null}
         {many ? (
-          <div data-hero-dots="" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 16 }}>
+          <div
+            ref={dotsRef}
+            data-hero-dots=""
+            onKeyDown={onDotsKey}
+            onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) dotsFocused.current = false }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 16 }}
+          >
             {slideList.map(({ channel: c }) => {
               const active = c.id === channel.id
               return (
@@ -366,7 +420,9 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
                   tabIndex={isTv ? -1 : 0}
                   onClick={() => onSlide?.(c.id)}
                   style={{
-                    width: active ? 16 : 4, height: 4, padding: 0, border: 'none', borderRadius: 999, cursor: 'pointer',
+                    // Träffytan större än prickens 4 px: klick och fokusring utan att ändra utseendet.
+                    width: active ? 16 : 4, height: 4, padding: 0, borderLeft: 0, borderRight: 0, borderRadius: 999, cursor: 'pointer',
+                    boxSizing: 'content-box', backgroundClip: 'content-box', borderTop: '6px solid transparent', borderBottom: '6px solid transparent',
                     background: active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', transition: 'width 200ms ease, background 200ms ease',
                   }}
                 />
