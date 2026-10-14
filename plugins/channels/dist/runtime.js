@@ -42807,7 +42807,6 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/host-controls.ts
   init_react_shim();
   var HOST_CONTROLS_SELECTOR = ".vp-controls";
-  var HIDE_HOST_ACTIONS_CSS = "[data-lumio-player-open] .vp-topbar > div:last-child { display: none !important; }";
   var HIDE_HOST_CHROME_CSS = "[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }";
   function findHostControls(from) {
     for (let node = from?.parentElement ?? null; node; node = node.parentElement) {
@@ -43695,7 +43694,6 @@ ${cue.text}`).join("\n\n")}
           },
           overlayContent: /* @__PURE__ */ jsxs(Fragment2, { children: [
             tuningNow ? /* @__PURE__ */ jsx("style", { children: HIDE_HOST_CHROME_CSS }) : null,
-            /* @__PURE__ */ jsx("style", { children: HIDE_HOST_ACTIONS_CSS }),
             tuningCard,
             osd,
             guide
@@ -43808,8 +43806,10 @@ ${cue.text}`).join("\n\n")}
               style: {
                 ...fade,
                 ...glass(isTv, { fill: C.osdBg, blur: 12 }),
+                // Under värdens 52 px-topprad, annars på appens sidlinje (--page-top-line:
+                // macOS-titelraden/trafikljusen, Android-inset och TV-inset ingår).
                 position: "absolute",
-                top: props.hostBar ? "3.75rem" : "calc(var(--android-inset-top, 0px) + 1rem)",
+                top: props.hostBar ? "calc(52px + 0.5rem)" : "calc(var(--page-top-line, 1rem) + 0.25rem)",
                 left: "1rem",
                 maxWidth: "min(26rem, calc(100vw - 6rem))",
                 display: "flex",
@@ -43827,12 +43827,12 @@ ${cue.text}`).join("\n\n")}
               ]
             }
           ),
-          /* @__PURE__ */ jsx(
+          props.closeIsInit ? /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
               "data-f": "",
-              "data-init": props.closeIsInit ? "" : void 0,
+              "data-init": "",
               "data-channels-close": "",
               "aria-label": t("playerClose"),
               onClick: props.onClose,
@@ -43840,7 +43840,7 @@ ${cue.text}`).join("\n\n")}
                 ...fade,
                 ...glass(isTv, { fill: C.osdBg, blur: 12 }),
                 position: "absolute",
-                top: props.hostBar ? "0.5rem" : "calc(var(--android-inset-top, 0px) + 1rem)",
+                top: "calc(var(--page-top-line, 1rem) + 0.25rem)",
                 right: "1rem",
                 zIndex: 1,
                 width: isTv ? "2.75rem" : "2.25rem",
@@ -43858,7 +43858,7 @@ ${cue.text}`).join("\n\n")}
               },
               children: "\xD7"
             }
-          ),
+          ) : null,
           notice ? /* @__PURE__ */ jsx(
             "div",
             {
@@ -45034,7 +45034,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.5",
+    version: "0.1.6",
     description: S.description,
     preinstalled: false,
     register(ctx) {

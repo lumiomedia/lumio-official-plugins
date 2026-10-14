@@ -1,3 +1,8 @@
+## 0.1.6
+
+- En stängning i kanalspelaren: spelarens egen Stäng (kanalens runda × bara när spelaren inte visas).
+- Kanalpillen uppe till vänster hålls fri från macOS-fönstrets trafikljus.
+
 ## 0.1.5
 
 - IPTV-VOD (Xtream-katalogen) är en egen källa, av som standard. Kanaler utan den spelar aldrig en titels VOD-version.
