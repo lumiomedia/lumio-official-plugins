@@ -39978,6 +39978,7 @@ ${cue.text}`).join("\n\n")}
     sourceLibrary: { en: "Library", sv: "Bibliotek" },
     sourceWatchlist: { en: "Watchlist", sv: "Watchlist" },
     sourceDebrid: { en: "Debrid", sv: "Debrid" },
+    sourceVod: { en: "IPTV VOD", sv: "IPTV-VOD" },
     sourceRefresh: { en: "Refresh", sv: "Uppdatera" },
     kindAny: { en: "All", sv: "Allt" },
     kindMovie: { en: "Films", sv: "Filmer" },
@@ -40114,7 +40115,7 @@ ${cue.text}`).join("\n\n")}
   function emptyDraft() {
     return {
       name: "",
-      sources: ["library"],
+      sources: ["library", "watchlist", "debrid"],
       genres: [],
       era: "any",
       length: "any",
@@ -40363,7 +40364,7 @@ ${cue.text}`).join("\n\n")}
       return LENGTH_TEST[channel.length](item.runtimeMin);
     });
   }
-  var RANK = { library: 0, debrid: 1, watchlist: 2 };
+  var RANK = { library: 0, debrid: 1, vod: 2, watchlist: 3 };
   function better(a, b) {
     if (RANK[a.source] !== RANK[b.source]) return RANK[a.source] < RANK[b.source];
     const ia = a.backdropUrl ? 0 : 1;
@@ -40381,7 +40382,7 @@ ${cue.text}`).join("\n\n")}
     }
     return [...best.values()];
   }
-  var POOL_LOGIC_VERSION = 2;
+  var POOL_LOGIC_VERSION = 3;
   function poolSignature(channel, sourceSigs) {
     const rules = poolRules(channel);
     return JSON.stringify({
@@ -40438,8 +40439,11 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/pool-pack.ts
   var POOL_PACK_VERSION = 2;
-  function packPlay(play) {
-    if (play.type === "library") return play.mediaType === "tv" ? { l: play.key, tv: 1 } : { l: play.key };
+  function packPlay(play, source) {
+    if (play.type === "library") {
+      const vod = source === "vod" ? { v: 1 } : {};
+      return play.mediaType === "tv" ? { l: play.key, tv: 1, ...vod } : { l: play.key, ...vod };
+    }
     if (play.type === "stream") return play.mediaType === "series" ? { i: play.imdbId, tv: 1 } : { i: play.imdbId };
     return { d: play.provider, f: play.fileRef };
   }
@@ -40481,7 +40485,7 @@ ${cue.text}`).join("\n\n")}
         ...item.season != null ? { s: item.season } : {},
         ...item.episode != null ? { n: item.episode } : {},
         ...item.runtimeKnown ? {} : { u: 1 },
-        p: packPlay(item.play)
+        p: packPlay(item.play, item.source)
       });
     }
     return { v: POOL_PACK_VERSION, g: groups, i: out };
@@ -40493,7 +40497,7 @@ ${cue.text}`).join("\n\n")}
     return packed.i.map((it) => {
       const group = it.g != null ? groups[it.g] ?? {} : {};
       const play = unpackPlay(it.p, it.s, it.n);
-      const source = SOURCE_OF["l" in it.p ? "l" : "i" in it.p ? "i" : "d"];
+      const source = "l" in it.p && it.p.v ? "vod" : SOURCE_OF["l" in it.p ? "l" : "i" in it.p ? "i" : "d"];
       return {
         ref: it.r,
         title: it.t,
@@ -40536,6 +40540,12 @@ ${cue.text}`).join("\n\n")}
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/sources.ts
+  var isVodSourceId = (id) => id.startsWith("xtream-vod:");
+  function librarySides(t) {
+    const ids = t.sources && t.sources.length > 0 ? t.sources : t.sourceId ? [t.sourceId] : [];
+    if (ids.length === 0) return { library: true, vod: false };
+    return { library: ids.some((id) => !isVodSourceId(id)), vod: ids.some(isVodSourceId) };
+  }
   function matchRef(kind, rawTitle, year) {
     if (kind === "movie" && looksLikeEpisode(rawTitle)) return null;
     return { kind, title: cleanTitle(rawTitle), year: year ?? null };
@@ -40589,15 +40599,29 @@ ${cue.text}`).join("\n\n")}
     }
     return titles;
   }
-  function buildLibraryItems(titles, deps) {
+  var titleFetches = /* @__PURE__ */ new WeakMap();
+  function sharedLibraryTitles(deps, opts) {
+    const hit = titleFetches.get(deps);
+    if (hit && (hit.strict || !opts.strict)) return hit.promise;
+    const promise = fetchLibraryTitles(deps, opts);
+    const entry = { strict: !!opts.strict, promise };
+    titleFetches.set(deps, entry);
+    const release = () => {
+      if (titleFetches.get(deps) === entry) titleFetches.delete(deps);
+    };
+    promise.then(release, release);
+    return promise;
+  }
+  function buildLibraryItems(titles, deps, side = "library") {
     const items2 = [];
     for (const t of titles) {
+      if (!librarySides(t)[side]) continue;
       const tv = t.kind !== "movie";
       const tmdbId = resolvedId(deps, tv ? "tv" : "movie", t.tmdbId, t.title, t.year);
       const meta = tmdbId != null ? deps.meta.get(tv ? "tv" : "movie", tmdbId) : null;
       const name = t.tmdbId != null ? t.title : meta?.title ?? cleanTitle(t.title);
       const common = {
-        source: "library",
+        source: side,
         genres: t.genres?.length ? t.genres : meta?.genres ?? [],
         year: t.year ?? meta?.year ?? null,
         ...tmdbId != null ? { tmdbId } : {},
@@ -40633,9 +40657,10 @@ ${cue.text}`).join("\n\n")}
     }
     return items2;
   }
-  var streamLibraryItems = async (deps, emit3, opts = {}) => {
-    const titles = await fetchLibraryTitles(deps, opts);
-    const rebuild = () => emit3(buildLibraryItems(titles, deps));
+  var libraryStream = (side) => async (deps, emit3, opts = {}) => {
+    const all = await sharedLibraryTitles(deps, opts);
+    const titles = all.filter((t) => librarySides(t)[side]);
+    const rebuild = () => emit3(buildLibraryItems(titles, deps, side));
     rebuild();
     const kindOf = (t) => t.kind === "movie" ? "movie" : "tv";
     const matched = await matchUnmatched(deps, titles.filter((t) => t.tmdbId == null).map((t) => matchRef(kindOf(t), t.title, t.year)));
@@ -40649,6 +40674,8 @@ ${cue.text}`).join("\n\n")}
     const rebuilt = await enrich(deps, refs, rebuild);
     if (matched && !rebuilt) rebuild();
   };
+  var streamLibraryItems = libraryStream("library");
+  var streamVodItems = libraryStream("vod");
   function buildWatchlistMovies(movies, deps) {
     const items2 = [];
     for (const m of movies) {
@@ -40781,10 +40808,12 @@ ${cue.text}`).join("\n\n")}
   var loadLibraryItems = (deps, opts = {}) => collect(streamLibraryItems, deps, opts);
   var loadWatchlistItems = (deps, opts = {}) => collect(streamWatchlistItems, deps, opts);
   var loadDebridItems = (deps, opts = {}) => collect(streamDebridItems, deps, opts);
+  var loadVodItems = (deps, opts = {}) => collect(streamVodItems, deps, opts);
   var STREAMS = {
     library: streamLibraryItems,
     watchlist: streamWatchlistItems,
-    debrid: streamDebridItems
+    debrid: streamDebridItems,
+    vod: streamVodItems
   };
   var sharedRuns = /* @__PURE__ */ new WeakMap();
   function runShared(source, deps, emit3) {
@@ -41025,37 +41054,41 @@ ${cue.text}`).join("\n\n")}
   function createResolver(deps, now2 = Date.now) {
     const cache7 = /* @__PURE__ */ new Map();
     const pending5 = /* @__PURE__ */ new Map();
-    function call(play, exclude) {
-      if (play.type === "library") return deps.library(play, exclude);
+    function call(play, exclude, allowCatalog) {
+      if (play.type === "library") return allowCatalog === false ? deps.library(play, exclude, false) : deps.library(play, exclude);
       if (play.type === "stream") return deps.stream(play, exclude);
       return exclude && exclude.length > 0 ? Promise.resolve(null) : deps.debrid(play);
     }
-    async function resolveNext(item, exclude) {
-      cache7.delete(item.ref);
-      const value = await Promise.resolve().then(() => call(item.play, exclude)).catch(() => null);
+    const keyOf = (ref, allowCatalog) => allowCatalog === false ? `${ref}|novod` : ref;
+    async function resolveNext(item, exclude, allowCatalog) {
+      cache7.delete(keyOf(item.ref, allowCatalog));
+      const value = await Promise.resolve().then(() => call(item.play, exclude, allowCatalog)).catch(() => null);
       return value && !exclude.includes(value.url) ? value : null;
     }
-    async function resolve(item, exclude = []) {
-      if (exclude.length > 0) return resolveNext(item, exclude);
-      const hit = cache7.get(item.ref);
+    async function resolve(item, exclude = [], opts = {}) {
+      const { allowCatalog } = opts;
+      if (exclude.length > 0) return resolveNext(item, exclude, allowCatalog);
+      const key = keyOf(item.ref, allowCatalog);
+      const hit = cache7.get(key);
       if (hit && now2() - hit.at < TTL_MS2) return hit.value;
-      const running2 = pending5.get(item.ref);
+      const running2 = pending5.get(key);
       if (running2) return running2;
-      const job = Promise.resolve().then(() => call(item.play)).catch(() => null).then((value) => {
-        if (value) cache7.set(item.ref, { at: now2(), value });
+      const job = Promise.resolve().then(() => call(item.play, void 0, allowCatalog)).catch(() => null).then((value) => {
+        if (value) cache7.set(key, { at: now2(), value });
         return value;
       }).finally(() => {
-        pending5.delete(item.ref);
+        pending5.delete(key);
       });
-      pending5.set(item.ref, job);
+      pending5.set(key, job);
       return job;
     }
-    function peek(ref) {
-      const hit = cache7.get(ref);
+    function peek(ref, allowCatalog) {
+      const hit = cache7.get(keyOf(ref, allowCatalog));
       return !!hit && now2() - hit.at < TTL_MS2;
     }
     return { resolve, peek, forget: (ref) => {
       cache7.delete(ref);
+      cache7.delete(keyOf(ref, false));
     } };
   }
   function createLatestGate() {
@@ -41218,6 +41251,8 @@ ${cue.text}`).join("\n\n")}
     const changed = sources.reduce((max, s) => Math.max(max, s.lastChange ?? 0), 0);
     return {
       library: `${status?.total ?? 0}:${fullSync}:${changed}`,
+      // VOD läser samma index som biblioteket.
+      vod: `${status?.total ?? 0}:${fullSync}:${changed}`,
       watchlist: `${movies.length}:${maxAdded(movies)}|${shows.length}:${maxAdded(shows)}`,
       // Debridlistan cachas av värden i 6 h; samma fönster här.
       debrid: String(Math.floor(Date.now() / (6 * 36e5)))
@@ -41225,7 +41260,8 @@ ${cue.text}`).join("\n\n")}
   }
   var resolver = createResolver({
     // exclude: äldre värdar ignorerar fältet och ger samma adress igen (resolvern tolkar det som "inga fler").
-    library: (r, exclude) => channelResolveLibraryPlayback(exclude?.length ? { ...r, exclude } : r),
+    // allowCatalog skickas bara när det är falskt (kanal utan IPTV-VOD); äldre värdar ignorerar fältet.
+    library: (r, exclude, allowCatalog) => channelResolveLibraryPlayback({ ...r, ...exclude?.length ? { exclude } : {}, ...allowCatalog === false ? { allowCatalog: false } : {} }),
     stream: (r, exclude) => channelResolveTitleStream(exclude?.length ? { ...r, exclude } : r),
     debrid: (r) => channelUnrestrictDebridFile(r)
   });
@@ -42547,6 +42583,7 @@ ${cue.text}`).join("\n\n")}
     return runtimeS == null || !(runtimeS > 0) || duration2 >= runtimeS * SHORT_FILE_RATIO;
   }
   var NEAR_BOUNDARY_MS = 18e4;
+  var allowsCatalog = (channel) => channel.sources.includes("vod");
   var NEIGHBOUR_PREFETCH_DELAY_MS = 3e3;
   function neighbourPrefetch(channels, currentId, rundownOf, now2) {
     if (channels.length < 2) return [];
@@ -42560,7 +42597,7 @@ ${cue.text}`).join("\n\n")}
       if (!rundown || rundown.length === 0) continue;
       const slot = programmeAt(rundown, c.airWindow, now2);
       if (slot.kind !== "programme") continue;
-      if (slot.item.play.type === "library" || slot.item.play.type === "debrid") out.push(slot.item);
+      if (slot.item.play.type === "library" || slot.item.play.type === "debrid") out.push({ item: slot.item, allowCatalog: allowsCatalog(c) });
     }
     return out;
   }
@@ -43266,7 +43303,7 @@ ${cue.text}`).join("\n\n")}
         mark(req.seq, "resolveStart");
         const tm0 = timing.current;
         if (tm0 && tm0.seq === req.seq) tm0.type = slot.item.play.type;
-        void resolver.resolve(slot.item, triedFor(stateRef.current, slot)).then((playable) => {
+        void resolver.resolve(slot.item, triedFor(stateRef.current, slot), { allowCatalog: allowsCatalog(ch) }).then((playable) => {
           if (!gate.isCurrent(token)) return;
           if (playable) {
             mark(req.seq, "resolved");
@@ -43278,7 +43315,7 @@ ${cue.text}`).join("\n\n")}
         });
       };
       const rapid = timing.current?.seq === req.seq && timing.current.rapid;
-      const delay = resolver.peek(slot.item.ref) ? 0 : resolveDelayMs(slot.item.play.type, channelChanged && rapid);
+      const delay = resolver.peek(slot.item.ref, allowsCatalog(ch)) ? 0 : resolveDelayMs(slot.item.play.type, channelChanged && rapid);
       if (delay > 0) window.setTimeout(run, delay);
       else run();
     }, [rundown, gate, mark]);
@@ -43335,7 +43372,7 @@ ${cue.text}`).join("\n\n")}
         preloadedFor.current = shown.seq;
         const after = Math.max(shown.deadline, shown.slot.stop) + 1e3;
         const next2 = programmeAt(rundown, channel.airWindow, after);
-        if (next2.kind === "programme") void resolver.resolve(next2.item);
+        if (next2.kind === "programme") void resolver.resolve(next2.item, [], { allowCatalog: allowsCatalog(channel) });
       }
     }, [now2, localTick]);
     const [osdVisible, setOsdVisible] = useState(true);
@@ -43367,7 +43404,7 @@ ${cue.text}`).join("\n\n")}
       if (!framedNow) return;
       const id = window.setTimeout(() => {
         const current2 = stateRef.current.request.channelId;
-        for (const item of neighbourPrefetch(channelsRef.current, current2, cachedRundown, Date.now())) void resolver.resolve(item);
+        for (const { item, allowCatalog } of neighbourPrefetch(channelsRef.current, current2, cachedRundown, Date.now())) void resolver.resolve(item, [], { allowCatalog });
       }, NEIGHBOUR_PREFETCH_DELAY_MS);
       return () => window.clearTimeout(id);
     }, [framedNow, request.seq]);
@@ -43915,7 +43952,7 @@ ${cue.text}`).join("\n\n")}
   var MIN4 = 6e4;
   var MAX_ROWS = 8;
   function sourceCounts(pools) {
-    return { library: pools.library.length, watchlist: pools.watchlist.length, debrid: pools.debrid.length };
+    return { library: pools.library.length, watchlist: pools.watchlist.length, debrid: pools.debrid.length, vod: pools.vod.length };
   }
   function matchingPool(draft, pools) {
     const picked = draft.sources.flatMap((s) => pools[s] ?? []);
@@ -43982,12 +44019,15 @@ ${cue.text}`).join("\n\n")}
   var LOADERS = {
     library: loadLibraryItems,
     watchlist: loadWatchlistItems,
-    debrid: loadDebridItems
+    debrid: loadDebridItems,
+    vod: loadVodItems
   };
   var SOURCES = [
     { id: "library", label: "sourceLibrary" },
     { id: "watchlist", label: "sourceWatchlist" },
-    { id: "debrid", label: "sourceDebrid" }
+    { id: "debrid", label: "sourceDebrid" },
+    // Av som standard; räknas ändå (lokalt index, billigt) så man ser vad som finns.
+    { id: "vod", label: "sourceVod" }
   ];
   var KINDS = [
     { id: "any", label: "kindAny" },
@@ -44051,7 +44091,7 @@ ${cue.text}`).join("\n\n")}
       };
     }, []);
     const started = useRef(/* @__PURE__ */ new Set());
-    const generation = useRef({ library: 0, watchlist: 0, debrid: 0 });
+    const generation = useRef({ library: 0, watchlist: 0, debrid: 0, vod: 0 });
     const load = useCallback((source, run) => {
       started.current.add(source);
       const gen = ++generation.current[source];
@@ -44065,7 +44105,7 @@ ${cue.text}`).join("\n\n")}
       });
     }, []);
     useEffect(() => {
-      for (const source of draft.sources) {
+      for (const source of /* @__PURE__ */ new Set([...draft.sources, "vod"])) {
         if (!started.current.has(source)) void load(source, () => LOADERS[source](sourceDeps, { strict: true }));
       }
     }, [draft.sources, load]);
@@ -44086,7 +44126,7 @@ ${cue.text}`).join("\n\n")}
       return () => clearInterval(timer3);
     }, []);
     const full = useMemo(
-      () => ({ library: pools.library ?? [], watchlist: pools.watchlist ?? [], debrid: pools.debrid ?? [] }),
+      () => ({ library: pools.library ?? [], watchlist: pools.watchlist ?? [], debrid: pools.debrid ?? [], vod: pools.vod ?? [] }),
       [pools]
     );
     const loading2 = draft.sources.some((s) => pools[s] === void 0);
@@ -44994,7 +45034,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.4",
+    version: "0.1.5",
     description: S.description,
     preinstalled: false,
     register(ctx) {

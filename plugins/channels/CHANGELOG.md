@@ -1,3 +1,9 @@
+## 0.1.5
+
+- IPTV-VOD (Xtream-katalogen) är en egen källa, av som standard. Kanaler utan den spelar aldrig en titels VOD-version.
+- Nya kanaler har bibliotek, watchlist och debrid förvalda. Befintliga kanaler med Bibliotek räknas utan VOD — kryssa i IPTV-VOD i studion för att ta med den.
+- Kräver Lumio med stöd för allowCatalog för att utesluta VOD-versioner av sammanslagna titlar; äldre versioner spelar som förut.
+
 ## 0.1.4
 
 - Är tablåns längd längre än filen och liveläget hamnar efter filens slut visas "Programmet är slut" och kanalen fortsätter vid gränsen — ingen Ingen signal.
