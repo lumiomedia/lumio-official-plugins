@@ -1,3 +1,8 @@
+## 0.1.3
+
+- Ingen "Ingen signal" medan kanalen faktiskt spelar: bara ett laddfel utan framsteg räknas.
+- Spelarens egna Kopiera länk och Stäng visas inte i kanalläget; kanalens × stänger.
+
 ## 0.1.2
 
 - Heron bläddras med styrplattans tvåfingersvep och med ◀▶ på prickarna; inga pilknappar.

@@ -1884,7 +1884,8 @@
     if (!/^https?:\/\//i.test(originalUrl)) return null;
     if (isLiveStreamUrl(originalUrl)) return null;
     try {
-      if (isLocalAppHost(new URL(originalUrl).hostname)) return null;
+      const parsed = new URL(originalUrl);
+      if (isLocalAppHost(parsed.hostname) && parsed.pathname !== "/api/webdav-library/stream") return null;
     } catch {
       return null;
     }
@@ -15088,6 +15089,11 @@
     if (!normalized) return null;
     return LANG3_TO_2[normalized] ?? normalized;
   }
+  function languageCodeAliases(value) {
+    const code = normalizeLanguageCode(value);
+    if (!code) return [];
+    return [code, ...Object.keys(LANG3_TO_2).filter((key) => LANG3_TO_2[key] === code)];
+  }
   function getDefaultSubtitleLanguage() {
     return normalizeLanguageCode(getStoredString(KEY_DEFAULT_SUBTITLE_LANGUAGE, "")) ?? "";
   }
@@ -20330,6 +20336,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -21377,9 +21384,12 @@
   }
   function pickAutoSubtitle(args) {
     const searchOrder = args.preferEmbedded ? [...args.options.filter(args.isEmbedded), ...args.options.filter((o) => !args.isEmbedded(o))] : args.options;
+    const current2 = args.currentId ? args.options.find((option) => option.id === args.currentId) ?? null : null;
     for (const lang of args.languages) {
       const hit = searchOrder.find((option) => !args.isBlocked(option) && args.matchesLanguage(option, lang));
-      if (hit) return hit;
+      if (!hit) continue;
+      if (current2 && current2 !== hit && args.isEmbedded(hit) && args.isEmbedded(current2) && !args.isBlocked(current2) && args.matchesLanguage(current2, lang)) return current2;
+      return hit;
     }
     if (args.addonCount > 0) return null;
     return args.embeddedOptions.find((option) => isUntagged(option.language) && !args.isBlocked(option)) ?? null;
@@ -21387,6 +21397,22 @@
   function isUntagged(language) {
     const value = (language ?? "").trim().toLowerCase();
     return value === "" || value === "und";
+  }
+  function preselectSubtitleLanguages(args) {
+    if (args.preference.mode === "off") return null;
+    if (args.subtitlesOffByDefault || args.suppressedByMatchingAudio) return null;
+    const ordered = orderAutoPickLanguages({
+      preference: args.preference,
+      settingsLanguages: args.settingsLanguages,
+      normalize: args.normalize
+    });
+    const codes = [];
+    for (const lang of ordered) {
+      for (const code of args.aliases(lang)) {
+        if (/^[a-z]{2,3}$/.test(code) && !codes.includes(code)) codes.push(code);
+      }
+    }
+    return codes.length > 0 ? codes.join(",") : null;
   }
   var init_subtitle_autopick = __esm({
     "lib/subtitle-autopick.ts"() {
@@ -29924,6 +29950,16 @@ ${cue.text}`).join("\n\n")}
           url,
           start: initialTime ?? 0,
           audioLang: getDefaultAudioLanguage() || void 0,
+          // Rätt inbäddad text vid öppningen i stället för ett spårbyte (och
+          // en extra sökning i filen) efter att uppspelningen startat.
+          subLang: isMpvEngine ? preselectSubtitleLanguages({
+            preference: subtitlePreferenceRef.current,
+            settingsLanguages: [defaultSubtitleLang, fallbackSubtitleLang, ...getExtraSubtitleLanguages()],
+            normalize: normalizeLanguageCode,
+            aliases: languageCodeAliases,
+            subtitlesOffByDefault: getSubtitlesOffByDefault(),
+            suppressedByMatchingAudio: Boolean(getDisableSubtitlesWhenAudioMatches() && getDefaultAudioLanguage())
+          }) ?? void 0 : void 0,
           requestHeaders,
           shouldAbort: () => cancelled
         }).then(() => {
@@ -31879,6 +31915,7 @@ ${cue.text}`).join("\n\n")}
         });
       }
       if (!useMpv) return [];
+      if (isMpvEngine) return [];
       return embeddedSubtitleTracks.map((track) => ({
         language: toSubtitleLangGroup(track.language),
         lang3: toSubtitleLangGroup(track.language),
@@ -31887,7 +31924,7 @@ ${cue.text}`).join("\n\n")}
         source: "embedded",
         label: track.title ?? void 0
       }));
-    }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv]);
+    }, [embeddedSubtitleTracks, mpvSubtitleTracks, useMpv, isMpvEngine]);
     const subtitleOptions = useMemo(() => {
       const merged = [
         // Egna filer först: den som öppnat en fil vill åt just den.
@@ -31978,11 +32015,14 @@ ${cue.text}`).join("\n\n")}
       });
       if (orderedPreferredLanguages.length === 0) return;
       const blockWords = getTrackBlockWords();
+      const preselectedTrack = isMpvEngine ? mpvSubtitleTracks.find((track) => track.selected && !track.external && `embedded:${track.sid}` !== secondarySubId) : void 0;
+      const preselectedId = preselectedTrack ? `embedded:${preselectedTrack.sid}` : null;
       const match = pickAutoSubtitle({
         options: subtitleOptions,
         embeddedOptions: embeddedSubtitleOptions,
         addonCount: subtitles.length,
         languages: orderedPreferredLanguages,
+        currentId: preselectedId,
         // "Prefer embedded": container tracks are always in sync, so when the
         // setting is on they get first shot at every preferred language.
         preferEmbedded: getPreferEmbeddedSubtitles(),
@@ -31990,12 +32030,16 @@ ${cue.text}`).join("\n\n")}
         isBlocked: (subtitle) => blockWords.length > 0 && blockWords.some((word) => `${subtitle.label ?? ""} ${subtitle.language ?? ""}`.toLowerCase().includes(word)),
         matchesLanguage: (subtitle, lang2) => normalizeLanguageCode(subtitle.language) === lang2 || subtitleOptionMatchesLanguage(subtitle, lang2)
       });
+      if (!match && preselectedId && activeSubId == null) {
+        void setMpvSubtitleTrack2(null);
+        return;
+      }
       if (match && match.id !== activeSubId) {
         if (activeSubId != null && !getUpgradeSubtitleWhenBetter()) return;
         if (activeSubId != null && syncedVttRef.current.get(activeSubId)?.url === url) return;
         void selectSubtitle(match);
       }
-    }, [subtitleOptions, selectedLang, fallbackSubtitleLang, subtitles.length, embeddedSubtitleOptions, useMpv, mpv.fileLoaded]);
+    }, [subtitleOptions, selectedLang, fallbackSubtitleLang, subtitles.length, embeddedSubtitleOptions, useMpv, mpv.fileLoaded, mpvSubtitleTracks]);
     const subtitleSearchSettled = subtitleClientDebugInfo?.status === "ok" || subtitleClientDebugInfo?.status === "empty" || subtitleClientDebugInfo?.status === "error";
     useEffect(() => {
       if (!learningMode || !secondarySubtitleLang) return;
@@ -42665,6 +42709,7 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/host-controls.ts
   init_react_shim();
   var HOST_CONTROLS_SELECTOR = ".vp-controls";
+  var HIDE_HOST_ACTIONS_CSS = "[data-lumio-player-open] .vp-topbar > div:last-child { display: none !important; }";
   var HIDE_HOST_CHROME_CSS = "[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }";
   function findHostControls(from) {
     for (let node = from?.parentElement ?? null; node; node = node.parentElement) {
@@ -43035,6 +43080,7 @@ ${cue.text}`).join("\n\n")}
   var PRELOAD_LEAD_MS = 3e4;
   var RAPID_ZAP_MS = 700;
   var REVEAL_FALLBACK_MS = 12e3;
+  var PROGRESS_GRACE_MS = 3e4;
   var OSD_HIDE_MS = 5e3;
   var BACK_KEYS2 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
   function cachedRundown(c) {
@@ -43271,6 +43317,10 @@ ${cue.text}`).join("\n\n")}
       shownAt.current = { seq: shownSeq, at: clockNow() };
       mark(shownSeq, "mount");
     }, [shownSeq, mark]);
+    const progressAt = useRef(null);
+    const noteProgress = useCallback((seq) => {
+      progressAt.current = { seq, at: clockNow() };
+    }, []);
     useEffect(() => {
       const seq = state2.firstPlaySeq;
       if (seq == null || state2.framedSeq === seq) return;
@@ -43459,6 +43509,7 @@ ${cue.text}`).join("\n\n")}
         mode: described?.mode ?? request.mode,
         notice: null,
         closeIsInit: !modalMounted,
+        hostBar: modalMounted && !isTv,
         isTv,
         t,
         onClose,
@@ -43500,7 +43551,9 @@ ${cue.text}`).join("\n\n")}
           hideStartSplash: true,
           onClose,
           onPlaybackEnded: () => dispatch({ type: "advance", seq, now: Date.now() }),
+          onStartProgress: () => noteProgress(seq),
           onTimeUpdate: (position, duration2) => {
+            noteProgress(seq);
             const cur = stateRef.current;
             if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: "progress", seq, position });
             if (endHandledFor.current === seq) return;
@@ -43522,12 +43575,19 @@ ${cue.text}`).join("\n\n")}
             dispatch({ type: "firstPlay", seq, trusted });
           },
           onLoadFailed: () => {
+            const p = progressAt.current;
+            if (p && p.seq === seq && clockNow() - p.at < PROGRESS_GRACE_MS) {
+              console.info(`[channels] v\xE4rdens laddfel ignoreras: str\xF6mmen ${channel.number} spelar`);
+              dispatch({ type: "reveal", seq });
+              return true;
+            }
             resolver.forget(slot.item.ref);
             dispatch({ type: "failed", seq, now: Date.now(), url: playable.url });
             return true;
           },
           overlayContent: /* @__PURE__ */ jsxs(Fragment2, { children: [
             tuningNow ? /* @__PURE__ */ jsx("style", { children: HIDE_HOST_CHROME_CSS }) : null,
+            /* @__PURE__ */ jsx("style", { children: HIDE_HOST_ACTIONS_CSS }),
             tuningCard,
             osd,
             guide
@@ -43641,7 +43701,7 @@ ${cue.text}`).join("\n\n")}
                 ...fade,
                 ...glass(isTv, { fill: C.osdBg, blur: 12 }),
                 position: "absolute",
-                top: "calc(var(--android-inset-top, 0px) + 1rem)",
+                top: props.hostBar ? "3.75rem" : "calc(var(--android-inset-top, 0px) + 1rem)",
                 left: "1rem",
                 maxWidth: "min(26rem, calc(100vw - 6rem))",
                 display: "flex",
@@ -43672,8 +43732,9 @@ ${cue.text}`).join("\n\n")}
                 ...fade,
                 ...glass(isTv, { fill: C.osdBg, blur: 12 }),
                 position: "absolute",
-                top: "calc(var(--android-inset-top, 0px) + 1rem)",
+                top: props.hostBar ? "0.5rem" : "calc(var(--android-inset-top, 0px) + 1rem)",
                 right: "1rem",
+                zIndex: 1,
                 width: isTv ? "2.75rem" : "2.25rem",
                 height: isTv ? "2.75rem" : "2.25rem",
                 padding: 0,
@@ -44862,7 +44923,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.2",
+    version: "0.1.3",
     description: S.description,
     preinstalled: false,
     register(ctx) {
