@@ -43,14 +43,32 @@ export function createMetaCache(
     return fresh(entry) ? entry : null
   }
 
+  // Gränsen gäller hela cachen: samtidiga ensure() delar samma kö och samma två platser.
+  let active = 0
+  const waiting: Array<() => void> = []
+  const acquire = (): Promise<void> => {
+    if (active < PARALLEL) { active += 1; return Promise.resolve() }
+    return new Promise((resolve) => waiting.push(resolve))
+  }
+  const release = (): void => {
+    const next = waiting.shift()
+    if (next) next() // platsen går direkt vidare till nästa i kön
+    else active -= 1
+  }
+
   function fetchOne(kind: 'movie' | 'tv', tmdbId: number): Promise<void> {
     const key = metaKey(kind, tmdbId)
     const running = inflight.get(key)
     if (running) return running
     const job = (async () => {
-      const meta = await fetcher(kind, tmdbId).catch(() => null)
-      if (!meta) return
-      pending[key] = { ...meta, at: now() }
+      await acquire()
+      try {
+        const meta = await fetcher(kind, tmdbId).catch(() => null)
+        if (!meta) return
+        pending[key] = { ...meta, at: now() }
+      } finally {
+        release()
+      }
     })().finally(() => inflight.delete(key))
     inflight.set(key, job)
     return job
@@ -74,15 +92,8 @@ export function createMetaCache(
       seen.add(key)
       return !fresh(pending[key] ?? store.read()[key])
     })
-    let cursor = 0
-    const worker = async () => {
-      while (cursor < missing.length) {
-        const next = missing[cursor++]!
-        await fetchOne(next.kind, next.tmdbId)
-      }
-    }
     try {
-      await Promise.all(Array.from({ length: Math.min(PARALLEL, missing.length) }, worker))
+      await Promise.all(missing.map(({ kind, tmdbId }) => fetchOne(kind, tmdbId)))
     } finally {
       flush()
     }

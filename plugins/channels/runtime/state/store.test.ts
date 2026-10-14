@@ -20,10 +20,10 @@ vi.mock('@/lib/plugin-sdk', () => ({
 }))
 
 import { deleteChannel, loadPoolCached, saveChannel, useChannelClock } from './store'
-import { prunePoolCaches, readChannels, sourceSignatures } from '../host'
+import { prunePoolCaches, readChannels, resetSourceSignatures, sourceSignatures } from '../host'
 import { createChannel, emptyDraft } from '../model/channel'
 
-beforeEach(() => { storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
+beforeEach(() => { resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
 
 describe('kanallagret', () => {
   it('sparar, ersätter och tar bort kanaler', () => {
@@ -72,7 +72,36 @@ describe('poolcache och signatur', () => {
   it('biblioteksignaturen ändras med lastFullSync', async () => {
     const before = (await sourceSignatures()).library
     libraryStatus = { total: 3, sources: [{ lastFullSync: 200, lastDeltaSync: null }] }
+    resetSourceSignatures()
     expect((await sourceSignatures()).library).not.toBe(before)
+  })
+})
+
+describe('delade laddningar', () => {
+  it('samtida loadPoolCached för samma kanal ger ett poolanrop', async () => {
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    const queryLibrary = vi.fn(async () => { await new Promise((r) => setTimeout(r, 5)); return { items: [] } })
+    const deps = { queryLibrary, getMovieWatchlist: () => [], getWatchlist: () => [], fetchSeasons: async () => [], listDebridCloud: async () => [], meta: { get: () => null, ensure: async () => {} } }
+    const [a, b, c] = await Promise.all([loadPoolCached(ch, deps as never), loadPoolCached(ch, deps as never), loadPoolCached(ch, deps as never)])
+    expect(queryLibrary).toHaveBeenCalledTimes(1)
+    expect(b).toBe(a)
+    expect(c).toBe(a)
+  })
+
+  it('samtida sourceSignatures ger en fetchLibraryStatus, och minnet släpps efter ~2 s', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(1_000_000)
+      const spy = vi.spyOn(await import('@/lib/plugin-sdk'), 'fetchLibraryStatus')
+      spy.mockClear()
+      await Promise.all([sourceSignatures(), sourceSignatures(), sourceSignatures()])
+      expect(spy).toHaveBeenCalledTimes(1)
+      vi.setSystemTime(1_000_000 + 2500)
+      await sourceSignatures()
+      expect(spy).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

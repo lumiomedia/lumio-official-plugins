@@ -23,10 +23,21 @@ export async function loadPoolCached(channel: ChannelDef, deps: SourceDeps = sou
   const sig = poolSignature(channel, await sourceSignatures())
   const cached = readPoolCache(channel.id)
   if (cached && cached.sig === sig) return cached.items as PoolItem[]
-  const items = await loadPool(channel, deps)
-  writePoolCache(channel.id, { sig, items })
-  return items
+  // Hemrad och tablårad för samma kanal laddar samtidigt: dela ett pågående uppslag.
+  const key = `${channel.id}|${sig}`
+  const running = inflightPools.get(key)
+  if (running) return running
+  const job = loadPool(channel, deps)
+    .then((items) => {
+      writePoolCache(channel.id, { sig, items })
+      return items
+    })
+    .finally(() => inflightPools.delete(key))
+  inflightPools.set(key, job)
+  return job
 }
+
+const inflightPools = new Map<string, Promise<PoolItem[]>>()
 
 /** Sparad pool utan uppslag: null när cachen är kall. Signaturen kontrolleras inte (visning, inte planering). */
 export function readCachedPool(channelId: string): PoolItem[] | null {

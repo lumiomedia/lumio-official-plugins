@@ -26,6 +26,26 @@ describe('metadatacachen', () => {
     expect(cache.get('movie', 1)).toMatchObject({ runtimeMin: 90, at: 1000 })
   })
 
+  it('gränsen på två gäller globalt över samtida ensure()-anrop, med en skrivning per ensure', async () => {
+    let inFlight = 0
+    let peak = 0
+    const fetcher = vi.fn(async () => {
+      inFlight += 1
+      peak = Math.max(peak, inFlight)
+      await new Promise((r) => setTimeout(r, 5))
+      inFlight -= 1
+      return { runtimeMin: 90, genres: [], year: null }
+    })
+    const store = memoryStore()
+    const write = vi.spyOn(store, 'write')
+    const cache = createMetaCache(store, fetcher, () => 1000)
+    const ids = (from: number) => [0, 1, 2, 3].map((i) => ({ kind: 'movie' as const, tmdbId: from + i }))
+    await Promise.all([cache.ensure(ids(1)), cache.ensure(ids(100))])
+    expect(fetcher).toHaveBeenCalledTimes(8)
+    expect(peak).toBeLessThanOrEqual(2)
+    expect(write).toHaveBeenCalledTimes(2)
+  })
+
   it('hämtar om efter 30 dagar och tål fel från fetchern', async () => {
     let now = 0
     const fetcher = vi.fn(async (_k: 'movie' | 'tv', id: number) => (id === 9 ? null : { runtimeMin: 50, genres: [], year: null }))

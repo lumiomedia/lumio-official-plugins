@@ -136,8 +136,32 @@ export const sourceDeps: SourceDeps = {
 const maxAdded = (list: Array<{ addedAt?: string }>): number =>
   list.reduce((max, e) => Math.max(max, Date.parse(e.addedAt ?? '') || 0), 0)
 
-/** Billiga ändringsmärken per källa; ändras märket räknas poolen om. */
-export async function sourceSignatures(): Promise<Partial<Record<SourceId, string>>> {
+type Signatures = Partial<Record<SourceId, string>>
+const SIGNATURE_TTL_MS = 2000
+let signatureMemo: { at: number; promise: Promise<Signatures> } | null = null
+
+/** Nollställer minnet (tester, och efter ändringar som måste synas direkt). */
+export function resetSourceSignatures(): void {
+  signatureMemo = null
+}
+
+/**
+ * Billiga ändringsmärken per källa; ändras märket räknas poolen om.
+ * Samtida anrop (hemrad + tablårader) delar ett svar i ~2 s, så N kanaler
+ * ger en fetchLibraryStatus i stället för N.
+ */
+export function sourceSignatures(): Promise<Signatures> {
+  const now = Date.now()
+  if (signatureMemo && now - signatureMemo.at < SIGNATURE_TTL_MS) return signatureMemo.promise
+  const promise = computeSourceSignatures()
+  const entry = { at: now, promise }
+  signatureMemo = entry
+  // Ett misslyckat svar ska inte stå kvar och förgifta nästa anrop.
+  promise.catch(() => { if (signatureMemo === entry) signatureMemo = null })
+  return promise
+}
+
+async function computeSourceSignatures(): Promise<Signatures> {
   const movies = getMovieWatchlist() as Array<{ addedAt?: string }>
   const shows = getWatchlist() as Array<{ addedAt?: string }>
   const status = await fetchLibraryStatus().catch(() => null)
