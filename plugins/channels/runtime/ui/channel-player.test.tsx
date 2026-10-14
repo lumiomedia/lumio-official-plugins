@@ -355,12 +355,27 @@ describe('kanalspelaren: Ingen signal bara vid verkligt fel', () => {
     expect(state.forget).toHaveBeenCalledWith('l1')
   })
 
-  it('kanalläget döljer värdens toppradsknappar (Kopiera länk, Stäng); vår × finns', async () => {
+  it('en stängning: med värdspelaren monterad bara värdens Stäng (onClose till sidan), utan den vår ×', async () => {
     state.rundowns = { k1: [library('l1')] }
-    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    const onClose = vi.fn()
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" startInZap={false} onClose={onClose} />)
     fireEvent.click(await screen.findByTestId('first-play'))
-    expect(Array.from(document.querySelectorAll('style')).some((el) => (el.textContent ?? '').includes('.vp-topbar > div:last-child'))).toBe(true)
-    expect(document.querySelector('[data-channels-close]')).toBeTruthy()
+    expect(document.querySelector('[data-channels-close]')).toBeNull()
+    expect(Array.from(document.querySelectorAll('style')).some((el) => (el.textContent ?? '').includes('.vp-topbar > div:last-child'))).toBe(false)
+    // Värdens Stäng anropar spelarens onClose, som går rakt till sidan.
+    state.props?.onClose()
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('utan värdspelare (tom kanal) finns vår × och den stänger', async () => {
+    state.rundowns = { k1: [] }
+    const onClose = vi.fn()
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={onClose} />)
+    await flush()
+    const close = document.querySelector<HTMLButtonElement>('[data-channels-close]')!
+    expect(close).toBeTruthy()
+    fireEvent.click(close)
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })
 

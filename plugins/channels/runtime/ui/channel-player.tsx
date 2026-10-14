@@ -25,7 +25,7 @@ import { noteDuration } from '../data/runtime-fix'
 import { readCachedPool, useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { GuideOverlay } from './guide-overlay'
-import { HIDE_HOST_ACTIONS_CSS, HIDE_HOST_CHROME_CSS, useHostControls } from './host-controls'
+import { HIDE_HOST_CHROME_CSS, useHostControls } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
 import { TuningCard } from './tuning-card'
 import { useText } from './use-text'
@@ -677,8 +677,6 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           overlayContent={(
             <>
               {tuningNow ? <style>{HIDE_HOST_CHROME_CSS}</style> : null}
-              {/* Kanalläget: värdens Kopiera länk/Stäng i toppraden bort — vår × är stängningen. */}
-              <style>{HIDE_HOST_ACTIONS_CSS}</style>
               {tuningCard}
               {osd}
               {guide}
@@ -812,7 +810,7 @@ interface OsdProps {
   notice: string | null
   /** Utan appens spelare landar TV-fokus på Stäng, annars på CH ▲. */
   closeIsInit: boolean
-  /** Värdens topprad (skrivbord) finns: pillen under dess titelrad, × i dess knapplats. */
+  /** Värdens topprad (skrivbord) finns: pillen under den; Stäng är värdens egen. */
   hostBar: boolean
   isTv: boolean
   t: ReturnType<typeof useText>
@@ -841,7 +839,9 @@ function ChannelOsd(props: OsdProps) {
         data-channels-osd-top=""
         style={{
           ...fade, ...glass(isTv, { fill: C.osdBg, blur: 12 }),
-          position: 'absolute', top: props.hostBar ? '3.75rem' : 'calc(var(--android-inset-top, 0px) + 1rem)', left: '1rem',
+          // Under värdens 52 px-topprad, annars på appens sidlinje (--page-top-line:
+          // macOS-titelraden/trafikljusen, Android-inset och TV-inset ingår).
+          position: 'absolute', top: props.hostBar ? 'calc(52px + 0.5rem)' : 'calc(var(--page-top-line, 1rem) + 0.25rem)', left: '1rem',
           maxWidth: 'min(26rem, calc(100vw - 6rem))',
           display: 'flex', alignItems: 'center', gap: '0.6rem',
           padding: '0.35rem 0.9rem 0.35rem 0.35rem', borderRadius: RADIUS.pill,
@@ -853,16 +853,18 @@ function ChannelOsd(props: OsdProps) {
           <div style={{ fontSize: isTv ? '0.75rem' : '0.66rem', lineHeight: 1.25, color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</div>
         </div>
       </div>
+      {/* En stängning: med värdspelaren monterad är det värdens Stäng (anropar onClose); utan den vår ×. */}
+      {props.closeIsInit ? (
       <button
         type="button"
         data-f=""
-        data-init={props.closeIsInit ? '' : undefined}
+        data-init=""
         data-channels-close=""
         aria-label={t('playerClose')}
         onClick={props.onClose}
         style={{
           ...fade, ...glass(isTv, { fill: C.osdBg, blur: 12 }),
-          position: 'absolute', top: props.hostBar ? '0.5rem' : 'calc(var(--android-inset-top, 0px) + 1rem)', right: '1rem', zIndex: 1,
+          position: 'absolute', top: 'calc(var(--page-top-line, 1rem) + 0.25rem)', right: '1rem', zIndex: 1,
           width: isTv ? '2.75rem' : '2.25rem', height: isTv ? '2.75rem' : '2.25rem', padding: 0, borderRadius: RADIUS.pill,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           color: C.text, fontFamily: FONT.ui, fontSize: isTv ? '1.25rem' : '1.05rem', lineHeight: 1, cursor: 'pointer',
@@ -870,6 +872,7 @@ function ChannelOsd(props: OsdProps) {
       >
         ×
       </button>
+      ) : null}
 
       {notice ? (
         <div
