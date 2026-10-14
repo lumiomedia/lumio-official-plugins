@@ -54,9 +54,29 @@ describe('Tippa från telefonen', () => {
     await runSportCommand({ id: 'c', type: 'tip-open', matchId: 'u' }, deps([up], { openTip: (_m, s) => { opened.push(s); return true } }))
     expect(opened).toEqual([null])
   })
-  it('tip-status: slutresultat vid slut, och efterfrågan hålls', async () => {
+  it('tip-status: slutresultat vid slut; med känt resultat behövs ingen mer pollning', async () => {
     const fin = match({ id: 'f', status: 'finished', score: { home: 2, away: 1 } })
     expect(await answerSportQuery({ id: 'i', type: 'tip-status', matchId: 'f' }, deps([fin]))).toEqual({ status: 'finished', score: [2, 1], spoilerTv: false })
+    expect(hasCouchPresence()).toBe(false)
+  })
+  it('tip-status håller efterfrågan bara när livedata behövs', async () => {
+    const ask = (m: SportMatch, now: number) => answerSportQuery({ id: 'i', type: 'tip-status', matchId: m.id }, deps([m], { now: () => now }))
+    // Ett rum öppnat timmar före avspark drar ingen pollning.
+    await ask(match({ id: 'u', status: 'upcoming', start: 4 * 3_600_000, stop: 6 * 3_600_000 }), 1_000)
+    expect(hasCouchPresence()).toBe(false)
+    // En repris (originalets resultat är redan känt) inte heller.
+    await ask(match({ id: 'r', rerun: true, start: 0, stop: 5_000, replayOf: { kickoff: -1, score: { home: 3, away: 0 }, fixture: { provider: 'p', id: '7' } } }), 1_000)
+    expect(hasCouchPresence()).toBe(false)
+    // Live: ja.
+    await ask(match({ id: 'l', status: 'live', start: 0 }), 1_000)
+    expect(hasCouchPresence()).toBe(true)
+    __resetPresenceForTests()
+    // Halvtid: ja.
+    await ask(match({ id: 'h', status: 'live', phase: 'ht', start: 0 }), 1_000)
+    expect(hasCouchPresence()).toBe(true)
+    __resetPresenceForTests()
+    // Slut utan källans resultat ännu: ja, tills resultatet finns.
+    await ask(match({ id: 'f', status: 'finished', score: undefined }), 8_000_000)
     expect(hasCouchPresence()).toBe(true)
   })
   it('tip-status för en repris: resultat först när sändningen är slut', async () => {

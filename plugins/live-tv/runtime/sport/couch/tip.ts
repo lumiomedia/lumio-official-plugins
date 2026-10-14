@@ -67,6 +67,17 @@ function sourceScore(m: SportMatch): [number, number] | null {
 }
 
 /**
+ * Behöver värdens `tip-status` livedata från källan just nu? Bara under matchen
+ * (live eller halvtid) och efter slut tills källan har resultatet. Ett rum som
+ * öppnas timmar före avspark, eller en repris, drar alltså ingen pollning.
+ */
+export function tipNeedsLive(m: SportMatch, now: number): boolean {
+  if (m.rerun) return false
+  const status = statusAt(m, now)
+  return status === 'live' || m.phase === 'ht' || (status === 'finished' && !sourceScore(m))
+}
+
+/**
  * Svaret på `tip-status`. En repris är live medan den sänds och `finished`
  * först när sändningen är slut, med originalets resultat. Resultatet skickas
  * även när matchen är spoilerdold: värden behöver det för poängen och

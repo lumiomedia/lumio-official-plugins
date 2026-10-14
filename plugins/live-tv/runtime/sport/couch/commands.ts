@@ -11,7 +11,7 @@ import { dismissGoal } from './goals'
 import { markPresence, TIP_PRESENCE_PREFIX } from './presence'
 import { zapTarget } from './snapshot'
 import { hiddenForPhone, revealPhone, revealTv, spoilerKey, spoilerProtected } from './spoiler'
-import { hasTeams, tipMatchInfo, tipStatus, tipTooLate } from './tip'
+import { hasTeams, tipMatchInfo, tipNeedsLive, tipStatus, tipTooLate } from './tip'
 
 /** Det Soffläges sportkommandon behöver av pluginet (injiceras, så att logiken går att testa). */
 export type SportDeps = {
@@ -213,10 +213,12 @@ export async function answerSportQuery(q: SportQuery, d: SportDeps): Promise<Spo
   if (q.type === 'sport-follow-search') return searchFollows(q.q, { ...d.searchDeps(), follows: d.follows() })
   if (q.type === 'tip-status') {
     const now = d.now()
-    // Värdens pollning håller sammanslagningen igång medan rummet lever (som en telefon på sportfliken).
-    markPresence(TIP_PRESENCE_PREFIX + q.matchId, true, now)
     const m = d.matches().find((x) => x.id === q.matchId)
-    return m ? tipStatus(m, now, d.settings()) : { error: 'unknown-match' }
+    if (!m) return { error: 'unknown-match' }
+    // Värdens pollning håller sammanslagningen igång (som en telefon på sportfliken),
+    // men bara när rummet behöver livedata: inte timmar före avspark, inte för en repris.
+    if (tipNeedsLive(m, now)) markPresence(TIP_PRESENCE_PREFIX + q.matchId, true, now)
+    return tipStatus(m, now, d.settings())
   }
   const m = d.matches().find((x) => x.id === q.matchId)
   if (!m) return { error: 'unknown-match' }
