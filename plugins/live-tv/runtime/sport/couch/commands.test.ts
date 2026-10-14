@@ -34,6 +34,8 @@ const deps = (ms: SportMatch[], o: Partial<SportDeps> = {}): SportDeps => ({
   follows: getFollows,
   text: () => ({ tt: (k, v) => tvText('sv', k, v), locale: 'sv-SE' }),
   searchDeps: () => ({ candidates: () => [], hasKey: false, provider: async () => [], sports: () => [], primary: 'api-sports', label: (s) => s }),
+  hasKey: () => false,
+  openTip: () => true,
   ...o,
 })
 beforeEach(() => { opened = []; mv = null; __resetPresenceForTests(); __resetGoalsForTests(); __resetPluginStorageForTests(); __resetFollowUndoForTests() })

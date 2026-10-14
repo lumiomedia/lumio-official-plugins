@@ -1,4 +1,4 @@
-import type { CouchAck, CouchFollow, CouchFollowHit, CouchSportDetail, CouchSportEvent, CouchSportLineupEntry, SportCommand, SportQuery } from '@/lib/plugin-sdk'
+import type { CouchAck, CouchFollow, CouchFollowHit, CouchSportDetail, CouchSportEvent, CouchSportLineupEntry, SportCommand, SportQuery, TipMatchInfo, TipStatusAnswer } from '@/lib/plugin-sdk'
 import type { TvStringKey } from '../../tv/tv-strings'
 import { encodeChannelParams, LIVE_TV_SPORT_PAGE_ID } from '../../live-tv-shell'
 import type { FixtureDetail, FixtureEvent, LineupEntry } from '../provider'
@@ -8,9 +8,10 @@ import { getFollows, isFollowing, setFollowAlert, toggleFollow, type SportFollow
 import { followList, searchFollows, type SearchDeps } from './follows'
 import { assignTile, enlargeTile, setLayout, tileCount, type MultiviewState } from '../../tv/tv-multiview-store'
 import { dismissGoal } from './goals'
-import { markPresence } from './presence'
+import { markPresence, TIP_PRESENCE_PREFIX } from './presence'
 import { zapTarget } from './snapshot'
 import { hiddenForPhone, revealPhone, revealTv, spoilerKey, spoilerProtected } from './spoiler'
+import { hasTeams, tipMatchInfo, tipStatus, tipTooLate } from './tip'
 
 /** Det Soffläges sportkommandon behöver av pluginet (injiceras, så att logiken går att testa). */
 export type SportDeps = {
@@ -28,6 +29,10 @@ export type SportDeps = {
   /** Texterna för Följer-listan på värdens språk. */
   text(): { tt: (k: TvStringKey, v?: Record<string, string | number>) => string; locale: string }
   searchDeps(): Omit<SearchDeps, 'follows'>
+  /** Källan har nyckel (resultatcontrollern finns): avgör om värden kan rapportera Tippa-resultatet själv. */
+  hasKey(): boolean
+  /** Be värden öppna ett Tippa-rum. `false` = upptaget (eller en äldre app utan Tippa). */
+  openTip(info: TipMatchInfo, starterPhoneId: string | null): boolean
 }
 
 const isSport = (s: string): s is SportKind => (SPORT_KINDS as readonly string[]).includes(s)
@@ -134,6 +139,16 @@ export async function runSportCommand(cmd: SportCommand, d: SportDeps): Promise<
       if (cmd.tv === true) revealTv(key, d.now())
       return
     }
+    case 'tip-open': {
+      const m = d.matches().find((x) => x.id === cmd.matchId)
+      if (!m) return { id: cmd.id, ok: false, error: 'unknown-match' }
+      // Tipsen låses vid avspark (en repris: när sändningen börjar).
+      if (tipTooLate(m, d.now())) return { id: cmd.id, ok: false, error: 'too-late' }
+      if (!hasTeams(m)) return { id: cmd.id, ok: false, error: 'no-teams' }
+      // phoneId stämplas av Rust (startaren); utan det öppnar TV:n utan startare.
+      if (!d.openTip(tipMatchInfo(m, { hasKey: d.hasKey() }), cmd.phoneId ?? null)) return { id: cmd.id, ok: false, error: 'busy' }
+      return
+    }
     case 'sport-zap': {
       const focus = d.focusId()
       const next = focus ? zapTarget(d.matches(), focus, cmd.dir, d.now()) : null
@@ -186,6 +201,7 @@ export type SportQueryAnswer =
   | CouchSportDetail
   | { follows: CouchFollow[] }
   | { teams: CouchFollowHit[]; leagues: CouchFollowHit[] }
+  | TipStatusAnswer
   | { error: string }
 
 export async function answerSportQuery(q: SportQuery, d: SportDeps): Promise<SportQueryAnswer> {
@@ -195,6 +211,13 @@ export async function answerSportQuery(q: SportQuery, d: SportDeps): Promise<Spo
   }
   // Utan nyckel bara EPG:ns kandidater; källan nås aldrig från telefonen direkt.
   if (q.type === 'sport-follow-search') return searchFollows(q.q, { ...d.searchDeps(), follows: d.follows() })
+  if (q.type === 'tip-status') {
+    const now = d.now()
+    // Värdens pollning håller sammanslagningen igång medan rummet lever (som en telefon på sportfliken).
+    markPresence(TIP_PRESENCE_PREFIX + q.matchId, true, now)
+    const m = d.matches().find((x) => x.id === q.matchId)
+    return m ? tipStatus(m, now, d.settings()) : { error: 'unknown-match' }
+  }
   const m = d.matches().find((x) => x.id === q.matchId)
   if (!m) return { error: 'unknown-match' }
   const empty: CouchSportDetail = { events: [], stats: [], lineups: [], updatedAt: null }

@@ -31,6 +31,12 @@ export function sweepPresence(now: number): void {
 
 export const hasCouchPresence = (): boolean => seen.size > 0
 
+/** Värdens Tippa-pollning (`tip-status`) håller efterfrågan med nyckeln `tip:{matchId}`. */
+export const TIP_PRESENCE_PREFIX = 'tip:'
+
+/** En riktig telefon (inte värdens Tippa-pollning) har sportfliken öppen. */
+export const hasPhonePresence = (): boolean => [...seen.keys()].some((k) => !k.startsWith(TIP_PRESENCE_PREFIX))
+
 export function onPresenceChanged(cb: () => void): () => void {
   listeners.add(cb)
   return () => { listeners.delete(cb) }

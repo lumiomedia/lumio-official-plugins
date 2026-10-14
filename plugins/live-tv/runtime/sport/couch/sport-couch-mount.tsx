@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { hasCouchSdk, notifyCouchSurface, onPluginStorageChanged, registerCouchSurface, requestOpenBrowsePage } from '@/lib/plugin-sdk'
+import { hasCouchSdk, notifyCouchSurface, onPluginStorageChanged, openCouchTip, registerCouchSurface, requestOpenBrowsePage } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from '../../live-tv-data'
 import { MULTIVIEW_KEY, getMultiviewState, setMultiviewState } from '../../tv/tv-multiview-store'
 import { onPlayingChannelChanged, playingChannel } from '../goal-alerts'
@@ -125,6 +125,9 @@ const deps: SportDeps = {
   follows: getFollows,
   text: () => text,
   searchDeps,
+  hasKey: () => !!currentResults(),
+  // Äldre app: SDK:t saknar Tippa, och då räknas det som upptaget.
+  openTip: (info, starter) => (typeof openCouchTip === 'function' ? openCouchTip(info, starter) : false),
 }
 
 /**

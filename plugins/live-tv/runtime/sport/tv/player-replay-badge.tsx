@@ -9,7 +9,7 @@ import { matchTitle, type SportMatch } from '../sport-model'
 import { localDayKey } from '../sport-epg'
 import { revealedReplayScore, scoreHidden } from '../score-model'
 import { useSpoilerVersion } from '../couch/spoiler'
-import { hasCouchPresence, onPresenceChanged } from '../couch/presence'
+import { hasPhonePresence, onPresenceChanged } from '../couch/presence'
 import { SportIcons } from '../sport-icons'
 
 /*
@@ -34,8 +34,9 @@ function useHidden(match: SportMatch): boolean {
 }
 
 function usePresence(): boolean {
-  const [present, setPresent] = useState(hasCouchPresence)
-  useEffect(() => onPresenceChanged(() => setPresent(hasCouchPresence())), [])
+  // Värdens Tippa-pollning räknas inte: den är ingen telefon att visa resultatet på.
+  const [present, setPresent] = useState(hasPhonePresence)
+  useEffect(() => onPresenceChanged(() => setPresent(hasPhonePresence())), [])
   return present
 }
 
