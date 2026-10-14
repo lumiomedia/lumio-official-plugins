@@ -22,6 +22,10 @@ export const S = {
   playerEmpty: { en: 'Nothing to broadcast', sv: 'Inget att sända' },
   playerEdit: { en: 'Edit', sv: 'Redigera' },
   playerTuning: { en: 'Tuning in…', sv: 'Ställer in…' },
+  playerBetween: { en: 'The programme has ended', sv: 'Programmet är slut' },
+  playerBetweenNext: { en: 'Next at {time}: {title}', sv: 'Härnäst {time}: {title}' },
+  playerBetweenNextUntitled: { en: 'The channel continues at {time}', sv: 'Kanalen fortsätter {time}' },
+  guideOverlayHint: { en: 'Pick a channel to watch it live', sv: 'Välj en kanal för att se den live' },
   playerChUp: { en: 'Next channel', sv: 'Nästa kanal' },
   playerChDown: { en: 'Previous channel', sv: 'Föregående kanal' },
   // Zappläget
@@ -32,6 +36,7 @@ export const S = {
   zapPrev: { en: '↩ PREVIOUS', sv: '↩ FÖRRA' },
   zapExit: { en: 'EXIT ZAP', sv: 'AVSLUTA ZAPP' },
   zapNothingOn: { en: 'Nothing on air', sv: 'Inget sänds' },
+  zapHint: { en: 'remote: ▲▼ · 0–9 · OK = info', sv: 'fjärr: ▲▼ · 0–9 · OK = info' },
   // Kanaler-sidan
   pageHome: { en: '‹ HOME', sv: '‹ HEM' },
   pageChannels: { en: 'CHANNELS', sv: 'KANALER' },
