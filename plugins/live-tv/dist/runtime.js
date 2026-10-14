@@ -11582,29 +11582,77 @@
     }
   });
 
+  // lib/key-hold.ts
+  function sameKey(entry, event2) {
+    if (entry.keyCode > 0 && event2.keyCode !== void 0 && event2.keyCode > 0) return entry.keyCode === event2.keyCode;
+    return entry.key === event2.key;
+  }
+  function install() {
+    if (installed || typeof window === "undefined") return;
+    installed = true;
+    window.addEventListener("keyup", (event2) => {
+      held = held.filter((entry) => !sameKey(entry, event2));
+    }, true);
+    window.addEventListener("blur", () => {
+      held = [];
+    });
+  }
+  function nativeOf(event2) {
+    const native = event2.nativeEvent;
+    return native && typeof native === "object" ? native : event2;
+  }
+  function noteKeyDown(event2, now2 = Date.now()) {
+    const identity = nativeOf(event2);
+    const cached = answered.get(identity);
+    if (cached) return cached;
+    install();
+    const keyCode = event2.keyCode ?? 0;
+    let entry = held.find((candidate) => sameKey(candidate, event2));
+    if (entry && now2 - entry.last > KEY_HOLD_STALE_MS) {
+      held = held.filter((candidate) => candidate !== entry);
+      entry = void 0;
+    }
+    let state2;
+    if (entry) {
+      entry.last = now2;
+      state2 = { repeat: true, synthetic: !event2.repeat, heldMs: now2 - entry.since };
+    } else {
+      held.push({ key: event2.key, keyCode, since: now2, last: now2 });
+      state2 = { repeat: event2.repeat, synthetic: false, heldMs: 0 };
+    }
+    answered.set(identity, state2);
+    return state2;
+  }
+  function heldLongerThan(state2, ms2) {
+    return state2.repeat && state2.heldMs > ms2;
+  }
+  function tvSeekStepSeconds(state2) {
+    return heldLongerThan(state2, 1e3) ? 60 : 10;
+  }
+  var KEY_HOLD_STALE_MS, held, installed, answered;
+  var init_key_hold = __esm({
+    "lib/key-hold.ts"() {
+      "use strict";
+      KEY_HOLD_STALE_MS = 1600;
+      held = [];
+      installed = false;
+      answered = /* @__PURE__ */ new WeakMap();
+    }
+  });
+
   // lib/tv-hold.ts
   function isTvOkKey(event2) {
     return event2.key === "Enter" || event2.key === " " || event2.key === "Select" || event2.keyCode === 13 || event2.keyCode === 23;
-  }
-  function watchRelease(hold) {
-    if (typeof window === "undefined") return;
-    const done = (event2) => {
-      if (event2.type === "keyup" && !isTvOkKey(event2)) return;
-      hold.released = true;
-      window.removeEventListener("keyup", done, true);
-      window.removeEventListener("blur", done);
-    };
-    window.addEventListener("keyup", done, true);
-    window.addEventListener("blur", done);
   }
   function tvHoldHandlers(onShort, onHold) {
     return {
       onKeyDown: (event2) => {
         if (!isTvOkKey(event2)) return;
         event2.preventDefault();
+        const { synthetic } = noteKeyDown(event2);
         if (event2.repeat || !event2.currentTarget) return;
         const previous = holds2.get(event2.currentTarget);
-        if (previous && previous.source === "key" && !previous.released) {
+        if (previous && previous.source === "key" && synthetic) {
           if (!previous.fired) {
             window.clearTimeout(previous.timer);
             previous.fired = true;
@@ -11613,8 +11661,7 @@
           return;
         }
         if (previous) window.clearTimeout(previous.timer);
-        const hold = { timer: 0, fired: false, source: "key", released: false };
-        watchRelease(hold);
+        const hold = { timer: 0, fired: false, source: "key" };
         const element = event2.currentTarget;
         hold.timer = window.setTimeout(() => {
           hold.fired = true;
@@ -11671,7 +11718,7 @@
         const previous = holds2.get(target2);
         if (previous) window.clearTimeout(previous.timer);
         releaseClickSuppression(target2);
-        const hold = { timer: 0, fired: false, source: "pointer", released: false };
+        const hold = { timer: 0, fired: false, source: "pointer" };
         const element = target2;
         hold.timer = window.setTimeout(() => {
           hold.fired = true;
@@ -11714,6 +11761,7 @@
   var init_tv_hold = __esm({
     "lib/tv-hold.ts"() {
       "use strict";
+      init_key_hold();
       TV_HOLD_MS = 650;
       holds2 = /* @__PURE__ */ new WeakMap();
       pointerHoldSuppressed = /* @__PURE__ */ new WeakMap();
@@ -21456,6 +21504,7 @@
   var init_android_media_keys = __esm({
     "lib/android-media-keys.ts"() {
       "use client";
+      init_key_hold();
       EVENT12 = "lumio-media-key";
       listeners4 = 0;
     }
@@ -21849,15 +21898,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -22616,9 +22665,9 @@
     const pending5 = inflight5.get(key);
     if (pending5) return pending5.then(replay);
     const run2 = lookupCoreStreamsUncached(target2, options).then((result) => {
-      const answered = result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
+      const answered2 = result.reports.some((report) => report.outcome.kind === "ok" || report.outcome.kind === "empty");
       const framedSkip = result.reports.some((report) => report.outcome.kind === "cooldown" && report.outcome.framed);
-      if (answered && !framedSkip) {
+      if (answered2 && !framedSkip) {
         memo2.set(key, { at: Date.now(), result });
       }
       return result;
@@ -23319,15 +23368,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -23466,15 +23515,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -23676,15 +23725,15 @@
       if (!isTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = closeRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -30751,15 +30800,15 @@ ${cue.text}`).join("\n\n")}
       if (!isTv || !splashVisibleForTv) return;
       let cancelled = false;
       let frames = 0;
-      let held = 0;
+      let held2 = 0;
       const attempt = () => {
         if (cancelled) return;
         const btn = splashCancelRef.current;
         if (btn && btn.offsetParent !== null) {
           if (document.activeElement === btn) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             btn.focus();
           }
         }
@@ -32901,7 +32950,6 @@ ${cue.text}`).join("\n\n")}
     const [clipQrOpen, setClipQrOpen] = useState(false);
     const [clipTvFocus, setClipTvFocus] = useState(null);
     const [clipTvStill, setClipTvStill] = useState(null);
-    const clipKeyHoldRef = useRef(0);
     const clipKeyRepeatAtRef = useRef(0);
     const showClipTv = showClip && Boolean(clip2) && isTv;
     useEffect(() => {
@@ -32994,16 +33042,16 @@ ${cue.text}`).join("\n\n")}
       const group = Array.from(document.querySelectorAll(`[data-clip-station="${station3}"]`));
       const idx = group.indexOf(target2);
       const now2 = Date.now();
-      if (!event2.repeat) clipKeyHoldRef.current = now2;
-      if (!tvRepeatAllowed({ repeat: event2.repeat, lastAt: clipKeyRepeatAtRef.current, now: now2 })) {
+      const hold = noteKeyDown(event2, now2);
+      if (!tvRepeatAllowed({ repeat: hold.repeat, lastAt: clipKeyRepeatAtRef.current, now: now2 })) {
         event2.preventDefault();
         event2.stopPropagation();
         return;
       }
       clipKeyRepeatAtRef.current = now2;
-      const held = event2.repeat && now2 - clipKeyHoldRef.current > 1e3;
+      const held2 = heldLongerThan(hold, 1e3);
       const lengthAvailable = document.querySelector('[data-clip-station="length"]') !== null;
-      const action = tvClipKey({ station: station3, key: event2.key, held, first: idx <= 0, lengthAvailable });
+      const action = tvClipKey({ station: station3, key: event2.key, held: held2, first: idx <= 0, lengthAvailable });
       if (action.kind === "none") {
         if (station3 === "qr" && event2.key.startsWith("Arrow")) {
           event2.preventDefault();
@@ -33747,14 +33795,11 @@ ${cue.text}`).join("\n\n")}
     const seekHeightClass = seekLook.heightClass;
     const seekFillColorClass = seekLook.fillClass;
     const seekFillStyleClass = seekLook.overlayClass;
-    const tvSeekHoldStartedAtRef = useRef(0);
     const handleTvSeekKey = (event2) => {
       if (event2.key === "ArrowLeft" || event2.key === "ArrowRight") {
         event2.preventDefault();
         event2.stopPropagation();
-        if (!event2.repeat) tvSeekHoldStartedAtRef.current = Date.now();
-        const held = event2.repeat && Date.now() - tvSeekHoldStartedAtRef.current > 1e3;
-        const step = held ? 60 : 10;
+        const step = tvSeekStepSeconds(noteKeyDown(event2));
         seek(event2.key === "ArrowLeft" ? -step : step);
         return;
       }
@@ -36743,6 +36788,7 @@ ${cue.text}`).join("\n\n")}
       init_clip_panel();
       init_clip_trimmer();
       init_clip_state();
+      init_key_hold();
       init_clip_loop();
       init_clip_phone_panels();
       init_clip_tv_panel();
@@ -38167,7 +38213,7 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!isTv) return;
       let cancelled = false;
-      let held = 0;
+      let held2 = 0;
       let userActed = false;
       const onKey = () => {
         userActed = true;
@@ -38179,9 +38225,9 @@ ${cue.text}`).join("\n\n")}
         const target2 = document.querySelector(".full-cast-root [data-init]");
         if (target2 && target2.offsetParent !== null) {
           if (document.activeElement === target2) {
-            if (++held >= 5) return;
+            if (++held2 >= 5) return;
           } else {
-            held = 0;
+            held2 = 0;
             target2.focus();
           }
         }
@@ -48669,11 +48715,11 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       return () => {
         cancelled = true;
         document.removeEventListener("visibilitychange", onVisibility);
-        const held = sentinel;
+        const held2 = sentinel;
         sentinel = null;
-        if (held) {
-          held.removeEventListener?.("release", onReleased);
-          void held.release().catch(() => {
+        if (held2) {
+          held2.removeEventListener?.("release", onReleased);
+          void held2.release().catch(() => {
           });
         }
       };
@@ -50934,18 +50980,18 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       const node = initRef.current;
       if (!node) return;
       let frame = 0;
-      let held = 0;
+      let held2 = 0;
       const deadline = Date.now() + 4e3;
       const tick2 = () => {
         if (!node.isConnected) return;
         const active4 = document.activeElement;
         const inLayer = layerRef.current.menuOpen || layerRef.current.guideOpen || layerRef.current.gateOpen;
         if (active4 === node) {
-          if (++held >= 5) return;
+          if (++held2 >= 5) return;
         } else if (inLayer) {
-          held = 0;
+          held2 = 0;
         } else {
-          held = 0;
+          held2 = 0;
           node.focus({ preventScroll: true });
         }
         if (Date.now() < deadline) frame = window.requestAnimationFrame(tick2);
