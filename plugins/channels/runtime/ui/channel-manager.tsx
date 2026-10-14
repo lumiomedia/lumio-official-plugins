@@ -10,6 +10,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { ChannelBadge } from './badge'
 import { useChannelList } from './settings-section'
 import { belowMenuPill, C, FONT, glass, RADIUS, fontSize } from './tokens'
+import { dim, dimS, TV_CONTENT_LEFT, TV_CONTENT_RIGHT, TV_HERO_TITLE, tvu } from './tv'
 import type { useText } from './use-text'
 
 type T = ReturnType<typeof useText>
@@ -47,33 +48,35 @@ export function ChannelManager({ isTv, isMobile, t, onBack, onEdit, onCreate }: 
       data-channels-manage=""
       style={{
         minHeight: '100%', background: C.base, color: C.text, fontFamily: FONT.ui,
-        padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 32px' : isTv ? '2.5rem 2.5rem' : '32px 40px'}`,
+        padding: isTv
+          ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT)}`
+          : `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 32px' : '32px 40px'}`,
       }}
     >
-      <div data-channels-topbar="" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div data-channels-topbar="" style={{ display: 'flex', alignItems: 'center', gap: dim(8, isTv), flexWrap: 'wrap' }}>
         <Btn isTv={isTv} pill onClick={onBack}>{t('manageBack')}</Btn>
         <Btn isTv={isTv} pill onClick={onCreate}>{t('pageNewChannel')}</Btn>
       </div>
-      <h1 style={{ margin: isMobile ? '28px 0 16px' : '40px 0 20px', fontFamily: FONT.title, fontWeight: 400, fontSize: fs(isMobile ? 28 : 36) }}>
+      <h1 style={{ margin: isMobile ? '28px 0 16px' : `${dimS(40, isTv)} 0 ${dimS(20, isTv)}`, fontFamily: FONT.title, fontWeight: 400, lineHeight: 1.15, fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 28 : 36) }}>
         {t('manageTitle')}
       </h1>
       {sorted.length === 0 ? (
         <p style={{ margin: 0, color: C.textDim, fontSize: fs(14) }}>{t('settingsEmpty')}</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 760 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: dim(8, isTv), maxWidth: dim(760, isTv, 900) }}>
           {sorted.map((channel, i) => {
             const count = counts[channel.id]
             return (
               <div
                 key={channel.id}
                 data-manage-row={channel.id}
-                style={{ ...glass(isTv, { blur: 0 }), borderRadius: RADIUS.card, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', padding: isTv ? '0.75rem 1rem' : '12px 14px' }}
+                style={{ ...glass(isTv, { blur: 0 }), borderRadius: dim(RADIUS.card, isTv), display: 'flex', alignItems: 'center', gap: dim(14, isTv), flexWrap: 'wrap', padding: `${dimS(12, isTv)} ${dimS(14, isTv, 18)}` }}
               >
-                <span style={{ width: 28, textAlign: 'right', fontFamily: FONT.mono, fontSize: fs(13), color: C.textDim }}>{channel.number}</span>
-                <ChannelBadge channel={channel} size={30} />
-                <div style={{ flex: 1, minWidth: 140 }}>
+                <span style={{ width: dim(28, isTv), textAlign: 'right', fontFamily: FONT.mono, fontSize: fs(13), color: C.textDim }}>{channel.number}</span>
+                <ChannelBadge channel={channel} size={30} isTv={isTv} />
+                <div style={{ flex: 1, minWidth: dim(140, isTv), lineHeight: 1.3 }}>
                   <div data-channel-name="" style={{ fontSize: fs(15), fontWeight: 600 }}>{channel.name}</div>
-                  {count != null ? <div style={{ marginTop: 2, fontSize: fs(12.5), color: C.textDim }}>{t('settingsTitles', { n: count })}</div> : null}
+                  {count != null ? <div style={{ marginTop: dim(2, isTv), fontSize: fs(12.5), color: C.textDim }}>{t('settingsTitles', { n: count })}</div> : null}
                 </div>
                 <Btn isTv={isTv} init={i === 0} onClick={() => onEdit(channel.id)}>{t('settingsEdit')}</Btn>
                 <Btn isTv={isTv} danger onClick={() => requestDelete(channel.id)}>
@@ -96,7 +99,7 @@ function Btn({ children, onClick, isTv, pill, danger, init }: { children: ReactN
       data-init={init ? '' : undefined}
       onClick={onClick}
       style={{
-        display: 'inline-flex', alignItems: 'center', minHeight: isTv ? '2.25rem' : 30, padding: isTv ? '0 1rem' : '0 14px',
+        display: 'inline-flex', alignItems: 'center', minHeight: dim(30, isTv, 40), padding: isTv ? `0 ${tvu(18)}` : '0 14px', boxSizing: 'border-box',
         ...glass(isTv, { fill: C.pillBg, blur: 0 }), borderRadius: RADIUS.pill, cursor: 'pointer', whiteSpace: 'nowrap',
         ...(danger ? { border: '1px solid rgba(255,90,106,0.45)', color: 'hsl(354 100% 72%)' } : { color: C.text }),
         fontFamily: FONT.ui, fontSize: fontSize(pill ? 10.5 : 13, isTv), fontWeight: 600,

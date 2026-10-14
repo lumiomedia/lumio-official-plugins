@@ -19,11 +19,19 @@ import { useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { blockBox, formatClock, nowLinePct, type GuideWindow } from './guide-layout'
 import { C, FONT, RADIUS, fontSize } from './tokens'
+import { dim, dimS, TV_CONTENT_LEFT, TV_CONTENT_RIGHT, tvu } from './tv'
 import type { useText } from './use-text'
 
 type T = ReturnType<typeof useText>
 
 const ROW_H = 54
+/**
+ * TV-radens höjd i TV-enheter. Blocket (raden minus 2 × 6) rymmer titel +
+ * starttid i appens typografi (--st-small + --st-micro, radavstånd 1,2) med
+ * luft för textstorleken i TV-inställningarna; 54 räckte inte och klippte texten.
+ */
+export const TV_ROW_H = 72
+export const TV_ROW_H_COMPACT = 70
 const MIN = 60_000
 
 export interface ChannelGuideProps {
@@ -41,19 +49,21 @@ export interface ChannelGuideProps {
   onShift(dir: -1 | 1): boolean
   /** Tablån i spelaren: lägre rader, smalare namnkolumn, och klick spelar kanalen direkt. */
   compact?: boolean
+  /** TV: raden som får vyns startfokus (tablån i spelaren: aktuell kanal). Sidan har sitt startfokus i heron. */
+  initId?: string | null
 }
 
-export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, compact }: ChannelGuideProps) {
+export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, compact, initId }: ChannelGuideProps) {
   const labelW = isMobile ? 96 : compact ? 180 : 220
-  const rowH = compact ? 44 : ROW_H
-  const columns = `${labelW}px minmax(${isMobile ? 544 : 0}px, 1fr)`
+  const rowH = isTv ? tvu(compact ? TV_ROW_H_COMPACT : TV_ROW_H) : compact ? 44 : ROW_H
+  const columns = `${dimS(labelW, isTv, compact ? 230 : 260)} minmax(${isMobile ? 544 : 0}px, 1fr)`
   const nowPct = now >= win.from && now <= win.to ? nowLinePct(now, win) : null
   return (
-    <section data-channels-guide="" style={{ position: 'relative', color: C.text, fontFamily: FONT.ui, padding: compact ? 0 : isMobile ? '0 0 24px' : isTv ? '0 2.5rem 2rem' : '0 32px 32px' }}>
+    <section data-channels-guide="" style={{ position: 'relative', color: C.text, fontFamily: FONT.ui, padding: compact ? 0 : isMobile ? '0 0 24px' : isTv ? `0 ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT - 8)}` : '0 32px 32px' }}>
       <div data-row={isMobile ? '' : undefined} style={{ overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch' }}>
         <div style={{ minWidth: isMobile ? 640 : undefined }}>
-          <div style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: 34, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <span style={{ ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : 8, paddingBottom: 8, fontSize: fontSize(10.5, isTv), letterSpacing: '0.18em', color: C.textDim }}>
+          <div style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: dim(34, isTv, 42), borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: '0.18em', color: C.textDim }}>
               {t('guideHeader')}
             </span>
             <div style={{ position: 'relative', height: '100%' }}>
@@ -61,8 +71,8 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
                 <span
                   key={tick}
                   style={{
-                    position: 'absolute', bottom: 8, left: `${((tick - win.from) / (win.to - win.from)) * 100}%`,
-                    fontFamily: FONT.mono, fontSize: fontSize(11, isTv), color: C.textDim, whiteSpace: 'nowrap',
+                    position: 'absolute', bottom: dim(8, isTv), left: `${((tick - win.from) / (win.to - win.from)) * 100}%`,
+                    fontFamily: FONT.mono, fontSize: fontSize(11, isTv), lineHeight: 1.2, color: C.textDim, whiteSpace: 'nowrap',
                   }}
                 >
                   {formatClock(tick)}
@@ -70,7 +80,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
               ))}
             </div>
           </div>
-          {channels.map((channel) => (
+          {channels.map((channel, i) => (
             <GuideRow
               key={channel.id}
               channel={channel}
@@ -81,6 +91,9 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
               columns={columns}
               rowH={rowH}
               clickPlays={!!compact}
+              init={isTv && initId === channel.id}
+              // ▲ från översta raden: herons valda prick (sidan), annars geometrin.
+              fUp={isTv && i === 0 && !compact ? '[data-hero-dot][data-current]' : undefined}
               isTv={isTv}
               isMobile={isMobile}
               t={t}
@@ -107,7 +120,11 @@ interface RowProps {
   now: number
   nowPct: number | null
   columns: string
-  rowH: number
+  rowH: number | string
+  /** TV: vyns startfokus. */
+  init: boolean
+  /** TV: väljare för ▲ (översta raden). */
+  fUp?: string
   /** Klick/OK spelar kanalen (tablån i spelaren); annars väljer klick på skrivbordet. */
   clickPlays: boolean
   isTv: boolean
@@ -119,7 +136,7 @@ interface RowProps {
   onShift(dir: -1 | 1): boolean
 }
 
-const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, rowH, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }: RowProps) {
+const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, rowH, init, fUp, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }: RowProps) {
   const plays = isTv || clickPlays
   // Raden under pekaren eller i fokus: blocken ett steg ljusare.
   const [hover, setHover] = useState(false)
@@ -151,7 +168,8 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
       role="button"
       tabIndex={0}
       data-f=""
-      data-init={isTv && selected ? '' : undefined}
+      data-init={init ? '' : undefined}
+      data-f-up={fUp}
       data-channel-row={channel.id}
       aria-pressed={selected}
       onClick={() => (plays ? onPlay(channel.id) : onSelect(channel.id))}
@@ -162,25 +180,27 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
       onMouseLeave={() => setHover(false)}
       onKeyDown={onKeyDown}
       style={{
-        display: 'grid', gridTemplateColumns: columns, height: rowH, cursor: 'pointer', outline: 'none',
+        display: 'grid', gridTemplateColumns: columns, height: rowH, cursor: 'pointer', outline: 'none', boxSizing: 'border-box',
         borderBottom: `1px solid ${selected ? 'transparent' : 'rgba(255,255,255,0.05)'}`,
-        borderRadius: selected ? RADIUS.card : 0,
+        borderRadius: selected ? dim(RADIUS.card, isTv) : 0,
+        // TV: fokusmotorn rullar in raden; luft så den inte hamnar under kanten.
+        ...(isTv ? { scrollMarginBlock: tvu(120) } : {}),
         background: selected ? C.glassDenseSoft : 'transparent',
         boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : 'none',
       }}
     >
-      <div style={{ ...stickyLabel(isMobile), display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12, padding: isMobile ? '0 6px 0 16px' : '0 12px 0 8px', minWidth: 0, background: isMobile ? (selected ? C.solidSelected : C.solid) : undefined }}>
+      <div style={{ ...stickyLabel(isMobile), display: 'flex', alignItems: 'center', gap: isMobile ? 6 : dim(12, isTv), padding: isMobile ? '0 6px 0 16px' : `0 ${dimS(12, isTv)} 0 ${dimS(8, isTv)}`, minWidth: 0, background: isMobile ? (selected ? C.solidSelected : C.solid) : undefined }}>
         {!isMobile ? (
-          <span style={{ width: 18, textAlign: 'right', fontFamily: FONT.mono, fontSize: fontSize(11, isTv), color: C.textMute, flexShrink: 0 }}>{channel.number}</span>
+          <span style={{ width: dim(18, isTv, 24), textAlign: 'right', fontFamily: FONT.mono, fontSize: fontSize(11, isTv), lineHeight: 1.2, color: C.textMute, flexShrink: 0 }}>{channel.number}</span>
         ) : null}
-        <ChannelBadge channel={channel} size={22} style={{ width: 30, borderRadius: 5 }} />
-        <span style={{ fontSize: fontSize(isMobile ? 12 : 13.5, isTv), fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+        <ChannelBadge channel={channel} size={22} isTv={isTv} style={{ width: dim(30, isTv), borderRadius: dim(5, isTv) }} />
+        <span style={{ fontSize: fontSize(isMobile ? 12 : 13.5, isTv), lineHeight: 1.25, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
           {isMobile ? channel.number : channel.name}
         </span>
       </div>
       <div style={{ position: 'relative', overflow: 'hidden' }}>
         {slots.length === 0 ? (
-          <span style={{ position: 'absolute', left: 10, top: 0, bottom: 0, display: 'flex', alignItems: 'center', fontSize: fontSize(12, isTv), color: C.textMute }}>
+          <span style={{ position: 'absolute', left: dim(10, isTv), top: 0, bottom: 0, display: 'flex', alignItems: 'center', fontSize: fontSize(12, isTv), lineHeight: 1.2, color: C.textMute }}>
             {loading ? t('guideLoading') : t('guideEmpty')}
           </span>
         ) : slots.map((slot) => <Block key={`${slot.kind}:${slot.start}`} slot={slot} win={win} now={now} lit={lit} isTv={isTv} t={t} />)}
@@ -213,9 +233,11 @@ function Block({ slot, win, now, lit, isTv, t }: { slot: Slot<PoolItem>; win: Gu
     <div
       data-guide-block={isRest ? 'rest' : current ? 'current' : 'idle'}
       style={{
-        position: 'absolute', top: 6, bottom: 6, left: `calc(${box.leftPct}% + 2px)`, width: `calc(${box.widthPct}% - 4px)`,
-        boxSizing: 'border-box', padding: '5px 9px', borderRadius: 8, overflow: 'hidden',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 1,
+        position: 'absolute', top: dim(6, isTv), bottom: dim(6, isTv), left: `calc(${box.leftPct}% + 2px)`, width: `calc(${box.widthPct}% - 4px)`,
+        boxSizing: 'border-box', padding: `${dimS(5, isTv)} ${dimS(9, isTv, 12)}`, borderRadius: dim(8, isTv), overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: dim(1, isTv, 2),
+        // Eget radavstånd: TV-lägets <main> ärver 1,4, som sprängde blocket och klippte titeln.
+        lineHeight: 1.2,
         // Ljusgrå tät yta (läsbar även över herobilden), ett steg ljusare på raden
         // under pekaren/fokus. Pågående program tydligt orange. Vila = dämpad, streckad.
         background: isRest ? C.glassDenseSoft : current ? (lit ? C.guideCurrentLit : C.guideCurrent) : lit ? C.guideBlockLit : C.guideBlock,
@@ -224,9 +246,9 @@ function Block({ slot, win, now, lit, isTv, t }: { slot: Slot<PoolItem>; win: Gu
         color: isRest ? C.textMute : C.text,
       }}
     >
-      <span style={{ fontSize: fontSize(12, isTv), fontWeight: current ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+      <span data-guide-block-title="" style={{ fontSize: fontSize(12, isTv), lineHeight: 1.2, fontWeight: current ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{title}</span>
       {showTime ? (
-        <span style={{ fontFamily: FONT.mono, fontSize: fontSize(10, isTv), color: isRest ? C.textMute : C.textDim, whiteSpace: 'nowrap' }}>{formatClock(slot.start)}</span>
+        <span style={{ fontFamily: FONT.mono, fontSize: fontSize(10, isTv), lineHeight: 1.2, color: isRest ? C.textMute : C.textDim, whiteSpace: 'nowrap', flexShrink: 0 }}>{formatClock(slot.start)}</span>
       ) : null}
     </div>
   )

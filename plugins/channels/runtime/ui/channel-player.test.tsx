@@ -419,3 +419,22 @@ describe('kanalspelaren: IPTV-VOD', () => {
     expect(state.resolve.mock.calls.at(-1)![2]).toEqual({ allowCatalog: true })
   })
 })
+
+describe('kanalspelaren: fjärrens sifferknappar', () => {
+  it('siffror byter kanal även utanför zappläget, och numret syns medan det matas in', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false, toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
+    state.rundowns = { k1: [library('l1')], k2: [library('l2')], k3: [library('l3')], k4: [library('l4')] }
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await flush()
+    fireEvent.click(screen.getByTestId('first-play'))
+    fireEvent.keyDown(window, { key: '3' })
+    await flush()
+    expect(document.querySelector('[data-channels-digits]')?.textContent).toBe('3')
+    await act(async () => { vi.advanceTimersByTime(1600) })
+    await flush()
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    await flush()
+    expect(state.resolve.mock.calls.map(([i]) => (i as PoolItem).ref)).toContain('l3')
+    expect(document.querySelector('[data-channels-digits]')).toBeNull()
+  })
+})

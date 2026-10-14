@@ -17,6 +17,7 @@ import { NOISE_MS } from '../play/zap-logic'
 import { ChannelBadge } from './badge'
 import { HIDE_HOST_CHROME_CSS } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
+import { tvType, tvu } from './tv'
 import type { useText } from './use-text'
 
 type T = ReturnType<typeof useText>
@@ -70,15 +71,15 @@ const clock = (ms: number): string => {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-/** Mobil (< 640 px): kanallistan blir ett bottenark. */
-function useNarrow(): boolean {
+/** Mobil (< 640 px): kanallistan blir ett bottenark. Aldrig på TV (en TV-box kan rapportera ett smalt fönster). */
+function useNarrow(isTv: boolean): boolean {
   const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640)
   useEffect(() => {
     const on = () => setNarrow(window.innerWidth < 640)
     window.addEventListener('resize', on)
     return () => window.removeEventListener('resize', on)
   }, [])
-  return narrow
+  return narrow && !isTv
 }
 
 function ZapButton({ children, onClick, isTv, init, label }: { children: ReactNode; onClick(): void; isTv: boolean; init?: boolean; label?: string }) {
@@ -92,7 +93,7 @@ function ZapButton({ children, onClick, isTv, init, label }: { children: ReactNo
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '0.35rem', minHeight: isTv ? '2.75rem' : '2.25rem',
         padding: isTv ? '0 1.1rem' : '0 0.9rem', borderRadius: RADIUS.pill,
-        ...glass(isTv, { fill: C.pillBg, blur: 20 }), color: C.text, fontFamily: FONT.ui, fontSize: isTv ? '1rem' : '0.75rem',
+        ...glass(isTv, { fill: C.pillBg, blur: 20 }), color: C.text, fontFamily: FONT.ui, fontSize: isTv ? tvType('body') : '0.75rem',
         fontWeight: 600, letterSpacing: '0.12em', cursor: 'pointer', whiteSpace: 'nowrap',
       }}
     >
@@ -104,7 +105,7 @@ function ZapButton({ children, onClick, isTv, init, label }: { children: ReactNo
 export function ZapOverlay(p: ZapOverlayProps) {
   const { channel, programme, now, isTv, t } = p
   const noise = p.noise
-  const narrow = useNarrow()
+  const narrow = useNarrow(isTv)
   const fade: CSSProperties = { opacity: p.osdVisible ? 1 : 0, transition: 'opacity 240ms ease', pointerEvents: p.osdVisible ? 'auto' : 'none' }
   const pct = programme ? Math.min(100, Math.max(0, ((now - programme.start) / Math.max(1, programme.stop - programme.start)) * 100)) : 0
   const bigNumber = p.pendingDigits || String(channel.number)
@@ -137,7 +138,7 @@ export function ZapOverlay(p: ZapOverlayProps) {
       </div>
 
       {p.notice ? (
-        <div role="status" style={{ position: 'absolute', top: '5.5rem', left: '50%', transform: 'translateX(-50%)', maxWidth: 'calc(100vw - 2rem)', padding: '0.6rem 1.1rem', borderRadius: RADIUS.osd, ...glass(isTv, { fill: C.osdBg, blur: 14 }), fontSize: isTv ? '1rem' : '0.85rem', textAlign: 'center' }}>
+        <div role="status" style={{ position: 'absolute', top: '5.5rem', left: '50%', transform: 'translateX(-50%)', maxWidth: 'calc(100vw - 2rem)', padding: '0.6rem 1.1rem', borderRadius: RADIUS.osd, ...glass(isTv, { fill: C.osdBg, blur: 14 }), fontSize: isTv ? tvType('body') : '0.85rem', textAlign: 'center' }}>
           {p.notice}
         </div>
       ) : null}
@@ -157,9 +158,9 @@ export function ZapOverlay(p: ZapOverlayProps) {
             display: 'flex', alignItems: 'center', gap: '1rem',
           }}
         >
-          <ChannelBadge channel={channel} size={58} />
+          <ChannelBadge channel={channel} size={58} isTv={isTv} />
           <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-            <div style={{ fontSize: isTv ? '0.8rem' : '0.65rem', letterSpacing: '0.18em', fontWeight: 700, color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: isTv ? tvType('small') : '0.65rem', letterSpacing: '0.18em', fontWeight: 700, color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {t('zapChannelLine', { n: channel.number, name: channel.name.toUpperCase() })}
             </div>
             <div style={{ fontFamily: FONT.title, fontSize: '1.5rem', lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -168,7 +169,7 @@ export function ZapOverlay(p: ZapOverlayProps) {
             <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.14)', overflow: 'hidden' }}>
               <div style={{ width: `${pct}%`, height: '100%', background: C.accent }} />
             </div>
-            <div style={{ fontSize: isTv ? '0.9rem' : '0.8rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{times}</div>
+            <div style={{ fontSize: isTv ? tvType('body') : '0.8rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{times}</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -177,7 +178,7 @@ export function ZapOverlay(p: ZapOverlayProps) {
           <ZapButton onClick={p.onToggleList} isTv={isTv} init={!p.listOpen}>{t('zapList')}</ZapButton>
           {p.hasPrevious ? <ZapButton onClick={p.onPrevious} isTv={isTv}>{t('zapPrev')}</ZapButton> : null}
           <div style={{ flex: 1 }} />
-          {!narrow ? <span style={{ fontFamily: FONT.mono, fontSize: isTv ? '0.8rem' : '0.7rem', color: C.textDim, whiteSpace: 'nowrap' }}>{t('zapHint')}</span> : null}
+          {!narrow ? <span style={{ fontFamily: FONT.mono, fontSize: isTv ? tvType('small') : '0.7rem', color: C.textDim, whiteSpace: 'nowrap' }}>{t('zapHint')}</span> : null}
           <ZapButton onClick={p.onExit} isTv={isTv}>{t('zapExit')}</ZapButton>
         </div>
       </div>
@@ -201,19 +202,22 @@ export function ZapOverlay(p: ZapOverlayProps) {
 }
 
 function ZapList(p: ZapOverlayProps) {
-  const narrow = useNarrow()
+  const narrow = useNarrow(p.isTv)
   const sorted = useMemo(() => [...p.channels].sort((a, b) => a.number - b.number), [p.channels])
   // Tablåerna räknas i spelaren, en gång per öppning (inte vid varje ommontering av värdspelaren).
   const rundowns = p.listRundowns
   const panel: CSSProperties = narrow
     ? { left: 0, right: 0, bottom: 0, maxHeight: '60vh', borderRadius: `${RADIUS.osd}px ${RADIUS.osd}px 0 0` }
-    : { left: 0, top: 0, bottom: 0, width: 290 }
+    : { left: 0, top: 0, bottom: 0, width: p.isTv ? tvu(440) : 290 }
   return (
     <>
       {/* Tryck utanför stänger listan. */}
       <div data-zap-list-backdrop="" aria-hidden="true" onClick={p.onCloseList} style={{ position: 'absolute', inset: 0, pointerEvents: 'auto', background: narrow ? 'rgba(0,0,0,0.4)' : 'transparent' }} />
       <div
         data-zap-list=""
+        // TV: fokusfälla medan listan är öppen; Bakåt stänger (ägs av spelaren).
+        data-panel-root={p.isTv ? '' : undefined}
+        data-scroll={p.isTv ? '' : undefined}
         role="listbox"
         style={{
           ...panel, position: 'absolute', pointerEvents: 'auto', overflowY: 'auto', display: 'flex', flexDirection: 'column',
@@ -254,10 +258,10 @@ function ZapListRow({ channel, active, title, isTv, onSelect }: { channel: Chann
         background: active ? 'rgba(244,132,95,.16)' : 'transparent', color: C.text, fontFamily: FONT.ui,
       }}
     >
-      <span style={{ fontFamily: FONT.mono, fontSize: isTv ? '1rem' : '0.8rem', color: active ? C.accent : C.textDim, minWidth: '1.8rem' }}>{channel.number}</span>
+      <span style={{ fontFamily: FONT.mono, fontSize: isTv ? tvType('body') : '0.8rem', color: active ? C.accent : C.textDim, minWidth: '1.8rem' }}>{channel.number}</span>
       <span style={{ minWidth: 0, flex: 1 }}>
-        <span style={{ display: 'block', fontSize: isTv ? '1.05rem' : '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</span>
-        <span style={{ display: 'block', fontSize: isTv ? '0.85rem' : '0.7rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title ?? '—'}</span>
+        <span style={{ display: 'block', fontSize: isTv ? tvType('h3') : '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</span>
+        <span style={{ display: 'block', fontSize: isTv ? tvType('small') : '0.7rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title ?? '—'}</span>
       </span>
     </button>
   )

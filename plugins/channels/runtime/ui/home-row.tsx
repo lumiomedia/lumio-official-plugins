@@ -15,6 +15,7 @@ import { useChannelClock, useChannelPool, useChannels } from '../state/store'
 import { homeCardModel, homeChannels } from './home-row-logic'
 import { CHANNELS_PAGE_ID, formatClock } from './guide-layout'
 import { C, FONT, glass, RADIUS, fontSize } from './tokens'
+import { dim, dimS } from './tv'
 import { useText } from './use-text'
 
 export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCardWidth = '16rem' }: HomeRowProps) {
@@ -34,10 +35,10 @@ export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCa
 
   return (
     <section data-channels-home-row="" style={{ color: C.text, fontFamily: FONT.ui }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: dim(12, isTv), marginBottom: dim(14, isTv) }}>
         <div style={{ minWidth: 0 }}>
           <h2 data-home-row-title="" style={{ margin: 0, fontSize: fontSize(21, isTv), fontWeight: 600, letterSpacing: '-0.2px' }}>{t('homeRowTitle')}</h2>
-          <p style={{ margin: '4px 0 0', fontSize: fontSize(14, isTv), color: C.textDim }}>{t('homeRowSubtitle', { time: formatClock(now) })}</p>
+          <p style={{ margin: `${dimS(4, isTv)} 0 0`, fontSize: fontSize(14, isTv), color: C.textDim }}>{t('homeRowSubtitle', { time: formatClock(now) })}</p>
         </div>
         <button
           type="button"
@@ -45,7 +46,7 @@ export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCa
           className="focus-card-ring"
           onClick={() => onNavigate({ pageId: CHANNELS_PAGE_ID })}
           style={{
-            flexShrink: 0, cursor: 'pointer', padding: '6px 12px', borderRadius: RADIUS.pill,
+            flexShrink: 0, cursor: 'pointer', padding: `${dimS(6, isTv)} ${dimS(12, isTv, 16)}`, borderRadius: RADIUS.pill,
             ...glass(isTv, { fill: C.pillBg, blur: 20 }), color: C.textSoft, fontFamily: FONT.mono, fontSize: fontSize(10.5, isTv), letterSpacing: '0.12em',
           }}
         >
@@ -103,7 +104,7 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
         aria-label={`${t('zapChannelLine', { n: m.number, name: m.name })} · ${title}`}
         style={{
           position: 'relative', display: 'block', width: '100%', aspectRatio: '16 / 9', padding: 0, overflow: 'hidden', cursor: 'pointer',
-          textAlign: 'left', color: C.text, borderRadius: RADIUS.card, border: `1px solid ${C.glassBorder}`,
+          textAlign: 'left', color: C.text, borderRadius: dim(RADIUS.card, isTv), border: `1px solid ${C.glassBorder}`,
           // Bild under en platt mörkning; utan bild glas med kanalens ton (ingen gradient).
           background: m.backdropUrl ? `center / cover no-repeat url("${m.backdropUrl}"), ${C.solid}` : C.glass,
         }}
@@ -111,7 +112,7 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
         <span aria-hidden="true" style={{ position: 'absolute', inset: 0, background: m.backdropUrl ? 'rgba(0,0,0,0.45)' : hueTint(m.hue, 0.12) }} />
         <span
           style={{
-            position: 'absolute', top: 8, left: 8, padding: '2px 7px', borderRadius: 6, background: 'rgba(0,0,0,0.6)',
+            position: 'absolute', top: dim(8, isTv), left: dim(8, isTv), padding: `${dimS(2, isTv)} ${dimS(7, isTv)}`, borderRadius: dim(6, isTv), lineHeight: 1.3, background: 'rgba(0,0,0,0.6)',
             fontFamily: FONT.mono, fontSize: fontSize(10, isTv), fontWeight: 600,
           }}
         >
@@ -121,7 +122,7 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
           <span
             data-card-badge=""
             style={{
-              position: 'absolute', top: 8, right: 8, padding: '2px 7px', borderRadius: RADIUS.pill, fontFamily: FONT.mono,
+              position: 'absolute', top: dim(8, isTv), right: dim(8, isTv), padding: `${dimS(2, isTv)} ${dimS(7, isTv)}`, borderRadius: RADIUS.pill, fontFamily: FONT.mono, lineHeight: 1.3,
               fontSize: fontSize(9.5, isTv), fontWeight: 600, letterSpacing: '0.06em',
               background: m.resting ? 'rgba(0,0,0,0.7)' : C.accent, color: m.resting ? C.textDim : C.onAccent,
             }}
@@ -129,7 +130,7 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
             {badge.toUpperCase()}
           </span>
         ) : null}
-        <span style={{ position: 'absolute', left: 10, right: 10, bottom: 10, display: 'block' }}>
+        <span style={{ position: 'absolute', left: dim(10, isTv), right: dim(10, isTv), bottom: dim(10, isTv), display: 'block' }}>
           <span
             data-card-title=""
             style={{
@@ -140,18 +141,18 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
             {title}
           </span>
           {hasTitle ? (
-            <span aria-hidden="true" style={{ display: 'block', height: 3, marginTop: 7, borderRadius: 2, background: 'rgba(255,255,255,0.18)', overflow: 'hidden' }}>
+            <span aria-hidden="true" style={{ display: 'block', height: dim(3, isTv), marginTop: dim(7, isTv), borderRadius: 2, background: 'rgba(255,255,255,0.18)', overflow: 'hidden' }}>
               <span style={{ display: 'block', height: '100%', width: `${Math.round(m.pct * 100)}%`, background: C.accent }} />
             </span>
           ) : null}
         </span>
       </button>
-      <div style={{ padding: '8px 2px 0', minWidth: 0 }}>
+      <div style={{ padding: `${dimS(8, isTv)} ${dimS(2, isTv)} 0`, minWidth: 0, lineHeight: 1.3 }}>
         <span style={{ display: 'block', fontSize: fontSize(9, isTv), letterSpacing: '0.22em', color: 'rgba(203,213,225,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {t('zapChannelLine', { n: m.number, name: m.name.toUpperCase() })}
         </span>
         {m.nextTitle ? (
-          <span style={{ display: 'block', marginTop: 3, fontSize: fontSize(12.8, isTv), fontWeight: 600, color: C.textSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={{ display: 'block', marginTop: dim(3, isTv), fontSize: fontSize(12.8, isTv), fontWeight: 600, color: C.textSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {t('homeCardNext', { title: m.nextTitle })}
           </span>
         ) : null}

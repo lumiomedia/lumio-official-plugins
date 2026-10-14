@@ -14,6 +14,7 @@ import type { PlayMode } from '../play/player-logic'
 import { formatClock } from './guide-layout'
 import { createWheelSwipe, renderedSlideIds } from './hero-carousel-logic'
 import { belowMenuPill, C, FONT, glass, RADIUS, fontSize } from './tokens'
+import { dim, dimS, TV_CONTENT_LEFT, TV_CONTENT_RIGHT, TV_HERO_TITLE, tvHeroButton, tvu } from './tv'
 import type { useText } from './use-text'
 
 type T = ReturnType<typeof useText>
@@ -42,8 +43,8 @@ export interface ChannelHeroProps {
   onStep?(dir: -1 | 1): void
 }
 
-/** Bakgrundsbilden sticker ut under heron så tablån ligger på den uttonade bilden. */
-const FADE_EXTRA = { desktop: 170, mobile: 110 } as const
+/** Bakgrundsbilden sticker ut under heron så tablån ligger på den uttonade bilden (TV: 170 × 1,54 designpx). */
+const FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 } as const
 const SWIPE_PX = 50
 const HERO_CSS = '@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }'
 
@@ -146,7 +147,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
   const heroRef = useRef<HTMLElement | null>(null)
   const hostPlayer = useHostPlayerActive()
   const layerRef = useRef<HTMLDivElement | null>(null)
-  const extra = isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop
+  const extra = isMobile ? FADE_EXTRA.mobile : isTv ? FADE_EXTRA.tv : FADE_EXTRA.desktop
   const [geom, setGeom] = useState<HeroLayerGeom | null>(null)
   const geomRef = useRef<HeroLayerGeom | null>(null)
   useLayoutEffect(() => {
@@ -220,19 +221,6 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
     const dx = p.clientX - start.x
     if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(p.clientY - start.y)) onStep?.(dx < 0 ? 1 : -1)
   }
-  // TV: ◀ på första knappen / ▶ på sista bläddrar; däremellan flyttar fokus som vanligt.
-  const onActionsKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (!isTv || !many || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
-    const buttons = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])')]
-    const at = buttons.indexOf(document.activeElement as HTMLButtonElement)
-    if (at < 0) return
-    if ((e.key === 'ArrowLeft' && at === 0) || (e.key === 'ArrowRight' && at === buttons.length - 1)) {
-      e.preventDefault()
-      e.stopPropagation()
-      onStep?.(e.key === 'ArrowLeft' ? -1 : 1)
-    }
-  }
-
   let title: string
   let meta: string
   if (programme) {
@@ -262,8 +250,11 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       style={{
-        position: 'relative', minHeight: 330,
-        padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 24px' : isTv ? '2.5rem 2rem' : '32px 28px'}`,
+        position: 'relative', minHeight: dim(330, isTv),
+        // TV: appens innehållslinje (100 enheter) för pillren, texten och knapparna.
+        padding: isTv
+          ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(28)} ${tvu(TV_CONTENT_LEFT)}`
+          : `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 24px' : '32px 28px'}`,
         color: C.text, fontFamily: FONT.ui, display: 'flex', flexDirection: 'column',
       }}
     >
@@ -339,29 +330,30 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
 
 
       {/* Under appens menypill, vänsterställt; högra hörnet är appens (klocka, hälsning). */}
-      <div data-channels-topbar="" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div data-channels-topbar="" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: dim(8, isTv), flexWrap: 'wrap' }}>
         <Pill isTv={isTv} onClick={() => requestBrowseBack()}>{t('pageHome')}</Pill>
         <Pill isTv={isTv} active onClick={onManage}>{t('pageChannels')}</Pill>
         <Pill isTv={isTv} onClick={onNewChannel}>{t('pageNewChannel')}</Pill>
       </div>
 
-      <div style={{ position: 'relative', marginTop: 'auto', paddingTop: isMobile ? 32 : 48 }}>
-        <div key={channel.id} data-hero-copy="" style={{ animation: 'chh-fade 300ms ease both' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ position: 'relative', marginTop: 'auto', paddingTop: isMobile ? 32 : dim(48, isTv) }}>
+        {/* Eget attribut: appens TV-regel för [data-hero-copy] drog in texten 100 enheter förbi pillren. */}
+        <div key={channel.id} data-channels-hero-copy="" style={{ animation: 'chh-fade 300ms ease both' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: dim(10, isTv), flexWrap: 'wrap' }}>
           {programme ? (
             <span data-hero-badge="live" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 9px', borderRadius: RADIUS.pill,
-              background: C.accent, color: C.onAccent, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em',
+              display: 'inline-flex', alignItems: 'center', gap: dim(6, isTv), padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
+              background: C.accent, color: C.onAccent, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em', lineHeight: 1.3,
             }}
             >
-              <span style={{ width: 6, height: 6, borderRadius: 999, background: C.onAccent }} />
+              <span style={{ width: dim(6, isTv), height: dim(6, isTv), borderRadius: 999, background: C.onAccent }} />
               {t('heroLive')}
             </span>
           ) : rest ? (
             // Vila: neutral bricka, inte LIVE (kanalen sänder inte nu).
             <span data-hero-badge="rest" style={{
-              display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: RADIUS.pill,
-              ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }), color: C.textSoft, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em',
+              display: 'inline-flex', alignItems: 'center', padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
+              ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }), color: C.textSoft, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em', lineHeight: 1.3,
             }}
             >
               {t('heroOffAir')}
@@ -372,31 +364,33 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
           </span>
         </div>
         <h1 style={{
-          margin: '10px 0 0', fontFamily: FONT.title, fontWeight: 400, fontSize: fs(isMobile ? 30 : 44), lineHeight: 1.05,
+          margin: `${dimS(10, isTv)} 0 0`, fontFamily: FONT.title, fontWeight: 400, fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 30 : 44), lineHeight: 1.1,
+          maxWidth: isTv ? tvu(1100) : undefined,
           overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
         }}
         >
           {title}
         </h1>
-        <p style={{ margin: '10px 0 0', fontSize: fs(14), color: C.textSoft }}>{meta}</p>
+        <p style={{ margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }}>{meta}</p>
         {partial ? (
-          <p data-channels-partial="" role="status" style={{ margin: '6px 0 0', fontSize: fs(12), color: C.textDim }}>{t('heroPartial')}</p>
+          <p data-channels-partial="" role="status" style={{ margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(12), color: C.textDim }}>{t('heroPartial')}</p>
         ) : null}
         {rest ? (
-          <p style={{ margin: '10px 0 0', fontSize: fs(13), color: C.accentLight }}>{t('playerRest', { time: formatClock(rest.nextAir) })}</p>
+          <p style={{ margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(13), color: C.accentLight }}>{t('playerRest', { time: formatClock(rest.nextAir) })}</p>
         ) : (
-          <div style={{ marginTop: 12, height: 3, maxWidth: 360, borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
+          <div style={{ marginTop: dim(12, isTv), height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
             <div style={{ width: `${pct * 100}%`, height: '100%', background: C.accent }} />
           </div>
         )}
         </div>
-        <div data-hero-actions="" onKeyDown={onActionsKey} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 20 }}>
-          <HeroButton isTv={isTv} primary disabled={!canPlay} onClick={() => onPlay('live')}>{t('heroWatchLive')}</HeroButton>
+                {/* TV: startfokus på Titta live (Redigera om värden inte kan spela). */}
+        <div data-hero-actions="" style={{ display: 'flex', flexWrap: 'wrap', gap: dim(10, isTv), marginTop: dim(20, isTv) }}>
+          <HeroButton isTv={isTv} primary init={canPlay} disabled={!canPlay} onClick={() => onPlay('live')}>{t('heroWatchLive')}</HeroButton>
           <HeroButton isTv={isTv} disabled={!canPlay || !programme} onClick={() => onPlay('start')}>{t('heroFromStart')}</HeroButton>
-          <HeroButton isTv={isTv} onClick={onEdit}>{t('heroEdit')}</HeroButton>
+          <HeroButton isTv={isTv} init={!canPlay} onClick={onEdit}>{t('heroEdit')}</HeroButton>
         </div>
         {after ? (
-          <p style={{ margin: '14px 0 0', fontSize: fs(13), color: C.textDim }}>
+          <p style={{ margin: `${dimS(14, isTv)} 0 0`, fontSize: fs(13), color: C.textDim }}>
             {t('heroNext', { time: formatClock(after.start), title: after.item.kind === 'episode' && after.item.seriesTitle ? after.item.seriesTitle : after.item.title })}
           </p>
         ) : null}
@@ -404,12 +398,19 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
           <div
             ref={dotsRef}
             data-hero-dots=""
+            // TV: appens bläddrare (tv-hero.tsx) — prickarna är stationer och pricken
+            // med fokus ÄR vald kanal; ringen ritas på pillret (index.css .tv-hero-pager).
+            className={isTv ? 'tv-hero-pager' : undefined}
             onKeyDown={onDotsKey}
             onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) dotsFocused.current = false }}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 16 }}
+            style={isTv
+              ? { display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: tvu(7), height: tvu(22), padding: `0 ${tvu(10)}`, marginTop: tvu(16), borderRadius: 999 }
+              : { display: 'flex', alignItems: 'center', gap: 6, marginTop: 16 }}
           >
-            {slideList.map(({ channel: c }) => {
+            {slideList.map(({ channel: c }, i) => {
               const active = c.id === channel.id
+              const first = slideList[0]!.channel.id
+              const last = slideList[slideList.length - 1]!.channel.id
               return (
                 <button
                   key={c.id}
@@ -417,14 +418,38 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
                   aria-label={t('zapChannelLine', { n: c.number, name: c.name })}
                   aria-current={active ? 'true' : undefined}
                   data-hero-dot={c.id}
-                  tabIndex={isTv ? -1 : 0}
-                  onClick={() => onSlide?.(c.id)}
-                  style={{
-                    // Träffytan större än prickens 4 px: klick och fokusring utan att ändra utseendet.
-                    width: active ? 16 : 4, height: 4, padding: 0, borderLeft: 0, borderRight: 0, borderRadius: 999, cursor: 'pointer',
-                    boxSizing: 'content-box', backgroundClip: 'content-box', borderTop: '6px solid transparent', borderBottom: '6px solid transparent',
-                    background: active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', transition: 'width 200ms ease, background 200ms ease',
+                  tabIndex={0}
+                  {...(isTv
+                    ? {
+                        'data-f': '',
+                        // Zonhopp landar på vald prick, inte på den första.
+                        'data-current': active ? '' : undefined,
+                        // Fokus stannar i bläddraren: ändarna går runt (som appens hero).
+                        'data-f-left': i === 0 ? `[data-hero-dot="${last}"]` : undefined,
+                        'data-f-right': i === slideList.length - 1 ? `[data-hero-dot="${first}"]` : undefined,
+                        'data-f-up': '[data-hero-actions] button:not([disabled])',
+                        'data-f-down': '[data-channel-row][aria-pressed="true"]',
+                        // Indikator, inte en knapp: appens minsta knapphöjd gäller inte.
+                        'data-tv-nosize': '',
+                      }
+                    : {})}
+                  onFocus={isTv ? () => { if (!active) onSlide?.(c.id) } : undefined}
+                  onClick={() => {
+                    // TV: fokus har redan valt kanalen; OK spelar den (som appens bläddrare).
+                    if (isTv && canPlay) { onSlide?.(c.id); onPlay('live'); return }
+                    onSlide?.(c.id)
                   }}
+                  style={isTv
+                    ? {
+                        width: tvu(active ? 20 : 6), height: tvu(4), minHeight: 0, padding: 0, border: 0, borderRadius: 999, cursor: 'pointer',
+                        background: active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', transition: 'width 300ms ease, background 200ms ease',
+                      }
+                    : {
+                        // Träffytan större än prickens 4 px: klick och fokusring utan att ändra utseendet.
+                        width: active ? 16 : 4, height: 4, padding: 0, borderLeft: 0, borderRight: 0, borderRadius: 999, cursor: 'pointer',
+                        boxSizing: 'content-box', backgroundClip: 'content-box', borderTop: '6px solid transparent', borderBottom: '6px solid transparent',
+                        background: active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', transition: 'width 200ms ease, background 200ms ease',
+                      }}
                 />
               )
             })}
@@ -438,7 +463,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
 
 function Pill({ children, onClick, active, isTv }: { children: ReactNode; onClick?: () => void; active?: boolean; isTv: boolean }) {
   const style: CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', minHeight: isTv ? '2.25rem' : 30, padding: isTv ? '0 1rem' : '0 14px',
+    display: 'inline-flex', alignItems: 'center', minHeight: dim(30, isTv, 40), padding: isTv ? `0 ${tvu(18)}` : '0 14px', boxSizing: 'border-box',
     ...glass(isTv, { fill: C.glassDenseSoft, blur: 20 }),
     borderRadius: RADIUS.pill, border: `1px solid ${active ? 'rgba(244,132,95,0.55)' : C.pillBorder}`,
     color: active ? C.accentLight : C.text,
@@ -449,19 +474,26 @@ function Pill({ children, onClick, active, isTv }: { children: ReactNode; onClic
   return <button type="button" data-f="" onClick={onClick} style={style}>{children}</button>
 }
 
-function HeroButton({ children, onClick, primary, disabled, isTv }: { children: ReactNode; onClick(): void; primary?: boolean; disabled?: boolean; isTv: boolean }) {
+function HeroButton({ children, onClick, primary, disabled, init, isTv }: { children: ReactNode; onClick(): void; primary?: boolean; disabled?: boolean; init?: boolean; isTv: boolean }) {
   return (
     <button
       type="button"
       data-f=""
+      data-init={isTv && init && !disabled ? '' : undefined}
+      // ▼ till bläddrarens valda prick: geometrin valde annars tablåraden (bred,
+      // rakt under) och prickarna gick inte att nå från knapparna. Ingen prick
+      // (en kanal) → motorns geometri som vanligt.
+      data-f-down={isTv ? '[data-hero-dot][data-current]' : undefined}
       disabled={disabled}
       onClick={onClick}
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6, padding: isTv ? '0.625rem 1.375rem' : '10px 22px', borderRadius: RADIUS.pill,
+        display: 'inline-flex', alignItems: 'center', gap: dim(6, isTv), padding: '10px 22px', borderRadius: RADIUS.pill, boxSizing: 'border-box',
         ...(primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(isTv, { fill: C.glassDenseSoft, blur: 20 })),
         color: primary ? C.onAccent : C.text,
         fontFamily: FONT.ui, fontSize: fontSize(14, isTv), fontWeight: 600, whiteSpace: 'nowrap',
         cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.45 : 1,
+        // TV: appens heroknappars mått och knappstorlek.
+        ...(isTv ? tvHeroButton() : {}),
       }}
     >
       {children}

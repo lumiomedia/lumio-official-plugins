@@ -28,6 +28,7 @@ import { ChannelManager } from './channel-manager'
 import { EmptyState } from './empty-state'
 import { guideWindow } from './guide-layout'
 import { C, FONT, fontSize } from './tokens'
+import { tvu, useTvViewFocus } from './tv'
 import { useText } from './use-text'
 
 interface PlayerState { channelId: string; mode: PlayMode; zap: boolean }
@@ -187,6 +188,12 @@ export function ChannelsPage({ params }: BrowsePageProps) {
 
   const playerRef = useRef(player)
   playerRef.current = player
+
+  // TV: varje vy får sitt startfokus när den öppnas (sidan: Titta live; Hantera:
+  // första Redigera; studion: namnfältet; tomvyn: Återställ). Spelaren äger sitt eget.
+  const viewRef = useRef<HTMLDivElement | null>(null)
+  const view = player && sorted.length > 0 ? 'player' : manage && !studio ? 'manage' : studio ? `studio:${studio}` : selected ? 'main' : 'empty'
+  useTvViewFocus(viewRef, isTv && view !== 'player', view)
   const closePlayer = useCallback(() => {
     const current = playerRef.current
     // Sidan visar kanalen man senast tittade på, inte den man öppnade med.
@@ -214,7 +221,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
 
   if (manage && !studio) {
     return (
-      <div data-channels-page="" style={{ background: C.base, minHeight: '100%' }}>
+      <div ref={viewRef} data-channels-page="" style={{ background: C.base, minHeight: '100%' }}>
         <ChannelManager
           isTv={isTv}
           isMobile={isMobile}
@@ -229,17 +236,19 @@ export function ChannelsPage({ params }: BrowsePageProps) {
 
   if (studio) {
     return (
-      <ChannelStudioSlot
-        studio={studio}
-        channels={sorted}
-        isTv={isTv}
-        isMobile={isMobile}
-        t={t}
-        onDone={(id) => {
-          setStudio(null)
-          if (id) setSelectedId(id)
-        }}
-      />
+      <div ref={viewRef} data-channels-page="" style={{ minHeight: '100%' }}>
+        <ChannelStudioSlot
+          studio={studio}
+          channels={sorted}
+          isTv={isTv}
+          isMobile={isMobile}
+          t={t}
+          onDone={(id) => {
+            setStudio(null)
+            if (id) setSelectedId(id)
+          }}
+        />
+      </div>
     )
   }
 
@@ -247,7 +256,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     <div
       role="status"
       style={{
-        padding: isTv ? '0.625rem 2.5rem' : '10px 16px', background: 'rgba(244,132,95,0.14)', borderBottom: '1px solid rgba(244,132,95,0.35)',
+        padding: isTv ? `${tvu(10)} ${tvu(100)}` : '10px 16px', background: 'rgba(244,132,95,0.14)', borderBottom: '1px solid rgba(244,132,95,0.35)',
         color: C.accentLight, fontFamily: FONT.ui, fontSize: fontSize(13, isTv),
       }}
     >
@@ -257,7 +266,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
 
   if (!selected) {
     return (
-      <div data-channels-page="" style={{ background: C.base, minHeight: '100%' }}>
+      <div ref={viewRef} data-channels-page="" style={{ background: C.base, minHeight: '100%' }}>
         {banner}
         <EmptyState
           isTv={isTv}
@@ -277,7 +286,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
   return (
     // Ingen egen bakgrund här: herobilden ligger under sidan (z −1) och ska
     // synas kant i kant; appens grund under är redan svart.
-    <div data-channels-page="" style={{ minHeight: '100%' }}>
+    <div ref={viewRef} data-channels-page="" style={{ minHeight: '100%' }}>
       {banner}
       <ChannelHero
         channel={selected}

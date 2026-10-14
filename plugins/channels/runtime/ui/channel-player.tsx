@@ -27,6 +27,7 @@ import { ChannelBadge } from './badge'
 import { GuideOverlay } from './guide-overlay'
 import { HIDE_HOST_CHROME_CSS, useHostControls } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
+import { pickInitTarget, tvType } from './tv'
 import { TuningCard } from './tuning-card'
 import { useText } from './use-text'
 import { ZapOverlay } from './zap-overlay'
@@ -245,6 +246,11 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   }, [request.seq, channel?.id, channel?.airWindow, loading, rundown, plan]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const goToChannel = useCallback((id: string) => dispatch({ type: 'goto', channelId: id, mode: 'live' }), [])
+  // Tablålagret stängt (utan byte): fokus tillbaka till TABLÅ-knappen, aldrig kvar på body.
+  const closeGuide = useCallback(() => {
+    setGuideOpen(false)
+    window.setTimeout(() => document.querySelector<HTMLElement>('[data-osd-guide]')?.focus({ preventScroll: true }), 0)
+  }, [])
   // Från tablålagret: samma kanal stänger bara lagret (ingen ny begäran för inget).
   const playFromGuide = useCallback((id: string) => {
     setGuideOpen(false)
@@ -413,7 +419,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
         if (BACK_KEYS.has(event.key) || event.key === 'Guide') {
           event.preventDefault()
           event.stopImmediatePropagation()
-          setGuideOpen(false)
+          closeGuide()
           return
         }
         // Skrivbord: pilar och siffror ska inte spola eller byta kanal bakom lagret.
@@ -439,13 +445,6 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           else exitZap()
           return
         }
-        if (/^[0-9]$/.test(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
-          event.preventDefault()
-          event.stopImmediatePropagation()
-          poke()
-          pushDigit(Number(event.key))
-          return
-        }
         // OK med dold OSD visar den i stället för att trycka på en osynlig knapp.
         if (event.key === 'Enter' && !zap.listOpen && !osdShownRef.current) {
           event.preventDefault()
@@ -460,6 +459,14 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           step(event.key === 'ArrowUp' ? 1 : -1)
           return
         }
+      }
+      // Sifferval (fjärrens sifferknappar) i båda lägena, inte bakom tablålagret.
+      if (!zap.guideOpen && /^[0-9]$/.test(event.key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        poke()
+        pushDigit(Number(event.key))
+        return
       }
       // Utan appens spelare finns ingen som tar Bakåt: vi stänger själva.
       if (!modalMounted && BACK_KEYS.has(event.key)) {
@@ -499,6 +506,29 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       window.removeEventListener('pointerdown', touch, true)
     }
   }, [])
+
+  // ── TV-fokus mellan lagren ────────────────────────────────────────────────
+  // Varje lager (kanal-OSD, zappläget, kanallistan) har en data-init-station.
+  // Byts lagret får dess startstation fokus; annars bara om fokus tappats
+  // (OSD:n avmonteras under inställningskortet vid varje byte, och fokus föll
+  // då till body där fjärren inte kan gå vidare). Tablålagret fokuserar själv.
+  const tuningShown = awaitingPicture(state)
+  const layer = guideOpen ? 'guide' : zapOn ? (listOpen ? 'zaplist' : 'zap') : 'osd'
+  const lastLayer = useRef<string | null>(null)
+  useEffect(() => {
+    if (!isTv || layer === 'guide' || tuningShown) return
+    const changed = lastLayer.current !== layer
+    lastLayer.current = layer
+    const id = window.setTimeout(() => {
+      const scope = document.querySelector<HTMLElement>(layer === 'zaplist' ? '[data-zap-list]' : layer === 'zap' ? '[data-zap-osd]' : '[data-channels-osd]')
+      if (!scope) return
+      const active = document.activeElement as HTMLElement | null
+      const lost = !active || active === document.body || !active.isConnected
+      // Första OSD:n vid öppning lämnas åt värdspelaren om den redan satt fokus.
+      if ((changed && layer !== 'osd') || lost) pickInitTarget(scope)?.focus({ preventScroll: true })
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [isTv, layer, tuningShown, modalMounted])
 
   // ── Rendering ──────────────────────────────────────────────────────────────
   // Det OSD:n beskriver: det som är på väg, annars det som spelas för den
@@ -563,6 +593,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       title={described?.slot.item.title ?? null}
       mode={described?.mode ?? request.mode}
       notice={null}
+      digits={digits}
       closeIsInit={!modalMounted}
       hostBar={modalMounted && !isTv}
       isTv={isTv}
@@ -581,7 +612,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   const tuningNow = awaitingPicture(state)
   const osd = guideOpen ? null : zapOn ? zapOverlay : tuningNow ? null : normalOsd
   const guide = guideOpen ? (
-    <GuideOverlay channels={channels} currentId={channel.id} now={now} isTv={isTv} t={t} onPlay={playFromGuide} onClose={() => setGuideOpen(false)} />
+    <GuideOverlay channels={channels} currentId={channel.id} now={now} isTv={isTv} t={t} onPlay={playFromGuide} onClose={closeGuide} />
   ) : null
 
   // Inställningskortet: målkanalen och (när det är planerat) programmet och dess bild.
@@ -700,14 +731,14 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
         </div>
       ) : status === 'nosignal' && noSignal ? (
         <div data-channels-nosignal="" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-          <ChannelBadge channel={channel} size={72} />
+          <ChannelBadge channel={channel} size={72} isTv={isTv} />
           <p style={{ ...msgStyle, fontSize: '1.6rem', fontWeight: 700, letterSpacing: '0.04em' }}>{t('playerNoSignal')}</p>
           <p style={{ ...msgStyle, fontFamily: FONT.title }}>{noSignal.slot.item.kind === 'episode' && noSignal.slot.item.seriesTitle ? noSignal.slot.item.seriesTitle : noSignal.slot.item.title}</p>
           <p style={{ ...msgStyle, fontSize: '0.9rem', color: C.textDim }}>{t('playerNoSignalRetry', { time: clock(noSignal.retryAt) })}</p>
         </div>
       ) : status === 'between' && between ? (
         <div data-channels-between="" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-          <ChannelBadge channel={channel} size={72} />
+          <ChannelBadge channel={channel} size={72} isTv={isTv} />
           <p style={{ ...msgStyle, fontSize: '1.4rem', fontWeight: 700 }}>{t('playerBetween')}</p>
           <p style={{ ...msgStyle, fontFamily: FONT.title }}>
             {nextTitle ? t('playerBetweenNext', { time: clock(between.until), title: nextTitle }) : t('playerBetweenNextUntitled', { time: clock(between.until) })}
@@ -768,19 +799,22 @@ function Screen({ backdropUrl, isTv, children, onMouseMove, onClose, t }: {
 }
 
 /** Fokusbar knapp i OSD:n. `data-f` gör den nåbar för värdens TV-fokusmotor. */
-function OsdButton({ children, onClick, isTv, label, accent, init }: {
+function OsdButton({ children, onClick, isTv, label, accent, init, data }: {
   children: ReactNode
   onClick(): void
   isTv: boolean
   label?: string
   accent?: boolean
   init?: boolean
+  /** Eget data-attribut (t.ex. "osd-guide"), för att hitta knappen igen. */
+  data?: string
 }) {
   return (
     <button
       type="button"
       data-f=""
       data-init={init ? '' : undefined}
+      {...(data ? { [`data-${data}`]: '' } : {})}
       aria-label={label}
       onClick={onClick}
       style={{
@@ -789,7 +823,7 @@ function OsdButton({ children, onClick, isTv, label, accent, init }: {
         ...glass(isTv, { fill: accent ? C.accent : C.pillBg, blur: 20 }),
         borderRadius: RADIUS.pill, border: `1px solid ${accent ? C.accent : C.pillBorder}`,
         color: accent ? C.onAccent : C.text,
-        fontFamily: FONT.ui, fontSize: isTv ? '1rem' : '0.8rem', fontWeight: 600, letterSpacing: '0.12em',
+        fontFamily: FONT.ui, fontSize: isTv ? tvType('body') : '0.8rem', fontWeight: 600, letterSpacing: '0.12em',
         cursor: 'pointer', whiteSpace: 'nowrap',
       }}
     >
@@ -808,6 +842,8 @@ interface OsdProps {
   title: string | null
   mode: PlayMode
   notice: string | null
+  /** Sifferval som matas in just nu (fjärrens sifferknappar). */
+  digits?: string
   /** Utan appens spelare landar TV-fokus på Stäng, annars på CH ▲. */
   closeIsInit: boolean
   /** Värdens topprad (skrivbord) finns: pillen under den; Stäng är värdens egen. */
@@ -847,10 +883,10 @@ function ChannelOsd(props: OsdProps) {
           padding: '0.35rem 0.9rem 0.35rem 0.35rem', borderRadius: RADIUS.pill,
         }}
       >
-        <ChannelBadge channel={channel} size={30} style={{ borderRadius: RADIUS.pill }} />
+        <ChannelBadge channel={channel} size={30} isTv={isTv} style={{ borderRadius: RADIUS.pill }} />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: isTv ? '0.95rem' : '0.8rem', fontWeight: 700, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</div>
-          <div style={{ fontSize: isTv ? '0.75rem' : '0.66rem', lineHeight: 1.25, color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</div>
+          <div style={{ fontSize: isTv ? tvType('body') : '0.8rem', fontWeight: 700, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{channel.name}</div>
+          <div style={{ fontSize: isTv ? tvType('small') : '0.66rem', lineHeight: 1.25, color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta}</div>
         </div>
       </div>
       {/* En stängning: med värdspelaren monterad är det värdens Stäng (anropar onClose); utan den vår ×. */}
@@ -867,11 +903,24 @@ function ChannelOsd(props: OsdProps) {
           position: 'absolute', top: 'calc(var(--page-top-line, 1rem) + 0.25rem)', right: '1rem', zIndex: 1,
           width: isTv ? '2.75rem' : '2.25rem', height: isTv ? '2.75rem' : '2.25rem', padding: 0, borderRadius: RADIUS.pill,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          color: C.text, fontFamily: FONT.ui, fontSize: isTv ? '1.25rem' : '1.05rem', lineHeight: 1, cursor: 'pointer',
+          color: C.text, fontFamily: FONT.ui, fontSize: isTv ? tvType('h2') : '1.05rem', lineHeight: 1, cursor: 'pointer',
         }}
       >
         ×
       </button>
+      ) : null}
+
+      {props.digits ? (
+        <div
+          data-channels-digits=""
+          aria-live="polite"
+          style={{
+            position: 'absolute', top: 'calc(var(--page-top-line, 1rem) + 3.75rem)', right: '1.5rem',
+            fontFamily: FONT.title, fontSize: '2.875rem', lineHeight: 1, color: C.text, textShadow: '0 2px 12px rgba(0,0,0,0.8)',
+          }}
+        >
+          {props.digits}
+        </div>
       ) : null}
 
       {notice ? (
@@ -881,7 +930,7 @@ function ChannelOsd(props: OsdProps) {
             position: 'absolute', top: '6.5rem', left: '50%', transform: 'translateX(-50%)',
             maxWidth: 'calc(100vw - 2rem)', padding: '0.7rem 1.2rem', borderRadius: RADIUS.osd,
             ...glass(isTv, { fill: C.osdBg, blur: 12 }),
-            fontSize: isTv ? '1rem' : '0.85rem', textAlign: 'center',
+            fontSize: isTv ? tvType('body') : '0.85rem', textAlign: 'center',
           }}
         >
           {notice}
@@ -907,7 +956,7 @@ function ChannelOsd(props: OsdProps) {
         {props.onFromStart ? <OsdButton onClick={props.onFromStart} isTv={isTv}>⟲ {t('playerFromStart')}</OsdButton> : null}
         <OsdButton onClick={props.onChDown} isTv={isTv} label={t('playerChDown')}>CH ▼</OsdButton>
         <OsdButton onClick={props.onChUp} isTv={isTv} label={t('playerChUp')} init={!props.closeIsInit}>CH ▲</OsdButton>
-        {props.onGuide ? <OsdButton onClick={props.onGuide} isTv={isTv}>{t('playerGuide')}</OsdButton> : null}
+        {props.onGuide ? <OsdButton onClick={props.onGuide} isTv={isTv} data="osd-guide">{t('playerGuide')}</OsdButton> : null}
         {props.onZap ? <OsdButton onClick={props.onZap} isTv={isTv}>{t('playerZap')}</OsdButton> : null}
         <div style={{ flex: 1 }} />
         <span
@@ -915,13 +964,13 @@ function ChannelOsd(props: OsdProps) {
             display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.6rem', borderRadius: RADIUS.pill,
             background: mode === 'live' ? C.accent : C.pillBg, color: mode === 'live' ? C.onAccent : C.text,
             border: mode === 'live' ? 'none' : `1px solid ${C.pillBorder}`,
-            fontSize: isTv ? '0.85rem' : '0.7rem', fontWeight: 700, letterSpacing: '0.18em',
+            fontSize: isTv ? tvType('small') : '0.7rem', fontWeight: 700, letterSpacing: '0.18em',
           }}
         >
           {mode === 'live' ? `● ${t('playerLive')}` : t('playerFromStartBadge')}
         </span>
         {title ? (
-          <span style={{ fontFamily: FONT.title, fontSize: isTv ? '1.1rem' : '0.9rem', maxWidth: '40%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: FONT.title, fontSize: isTv ? tvType('h3') : '0.9rem', maxWidth: '40%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {channel.number} · {title}
           </span>
         ) : null}

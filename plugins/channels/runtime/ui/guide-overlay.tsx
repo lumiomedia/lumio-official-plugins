@@ -12,6 +12,7 @@ import type { ChannelDef } from '../model/channel'
 import { ChannelGuide } from './channel-guide'
 import { formatClock, guideWindow } from './guide-layout'
 import { C, FONT, glass, RADIUS, fontSize } from './tokens'
+import { tvType } from './tv'
 import type { useText } from './use-text'
 
 const HALF_HOUR = 30 * 60_000
@@ -79,7 +80,8 @@ export function GuideOverlay({ channels, currentId, now, isTv, t, onPlay, onClos
         style={{
           position: 'absolute', left: narrow ? 0 : '1.5rem', right: narrow ? 0 : '1.5rem',
           bottom: narrow ? 0 : 'calc(var(--android-inset-bottom, 0px) + 1.5rem)',
-          maxHeight: narrow ? '70vh' : '62vh', display: 'flex', flexDirection: 'column',
+          // TV: scenens höjd, inte fönstrets (vh i TV-scenen är den riktiga viewporten).
+          maxHeight: narrow ? '70vh' : isTv ? 'calc(var(--tv-vp-h, 100vh) * 0.62)' : '62vh', display: 'flex', flexDirection: 'column',
           borderRadius: narrow ? `${RADIUS.osd}px ${RADIUS.osd}px 0 0` : RADIUS.osd,
           ...glass(isTv, { fill: 'rgba(12,12,16,0.88)', blur: 16 }),
           overflow: 'hidden',
@@ -98,7 +100,7 @@ export function GuideOverlay({ channels, currentId, now, isTv, t, onPlay, onClos
             style={{
               minHeight: isTv ? '2.5rem' : '2rem', padding: isTv ? '0 1rem' : '0 0.85rem', borderRadius: RADIUS.pill,
               ...glass(isTv, { fill: C.pillBg, blur: 0 }), color: C.text, fontFamily: FONT.ui,
-              fontSize: isTv ? '0.9rem' : '0.75rem', fontWeight: 600, letterSpacing: '0.12em', cursor: 'pointer',
+              fontSize: isTv ? tvType('body') : '0.75rem', fontWeight: 600, letterSpacing: '0.12em', cursor: 'pointer',
             }}
           >
             {t('playerClose')}
@@ -114,6 +116,7 @@ export function GuideOverlay({ channels, currentId, now, isTv, t, onPlay, onClos
             isMobile={narrow}
             t={t}
             compact
+            initId={currentId}
             onSelect={setSelectedId}
             onPlay={onPlay}
             onRundown={noop}

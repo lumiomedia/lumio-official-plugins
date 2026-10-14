@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { typeSize } from './tv'
 
 /**
  * Färger som konstanter. Bara hsl()/rgba() — aldrig oklch(), som WebView 83
@@ -68,7 +69,10 @@ export function glass(isTv: boolean, opts: { fill?: string; blur?: number } = {}
  * appen klocka och hälsning.
  */
 export function belowMenuPill(isTv: boolean, isMobile: boolean): string {
-  if (isTv) return 'calc(5.25rem + var(--tv-scene-top-inset, 0px))'
+  // TV: under appens toppkrom. Behåller värden kromet på sidan (som på
+  // sportsidan) mäter den dess höjd som `--tv-scene-chrome-inset`; annars
+  // pillrets egen linje.
+  if (isTv) return 'calc(var(--tv-scene-chrome-inset, calc(3.125rem + var(--tv-scene-top-inset, 0px))) + 2.125rem)'
   return `calc(var(--page-top-line, 1rem) + ${isMobile ? 66 : 58}px)`
 }
 
@@ -80,5 +84,8 @@ export const FONT = {
 
 export const RADIUS = { chip: 8, card: 10, osd: 18, pill: 999 } as const
 
-/** Fontstorlek: px på skrivbord/mobil, rem på TV (TV-scenen skalar rem, inte px). */
-export const fontSize = (px: number, tv: boolean): string => (tv ? `${px / 16}rem` : `${px}px`)
+/**
+ * Fontstorlek: px på skrivbord/mobil, appens typografitoken på TV
+ * (`--st-*`, se tv.ts) — samma trappa som appens egna TV-ytor.
+ */
+export const fontSize = (px: number, tv: boolean): string => typeSize(px, tv)

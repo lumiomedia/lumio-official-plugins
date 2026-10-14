@@ -64,7 +64,7 @@ export function TuningCard({ channel, title, imageUrl, visible, isTv, t }: Tunin
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.9rem', padding: '0 1.5rem', maxWidth: '40rem', textAlign: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span data-tuning-number="" style={{ fontFamily: FONT.title, fontSize: '4rem', lineHeight: 1, textShadow: '0 4px 24px rgba(0,0,0,0.7)' }}>{channel.number}</span>
-          <ChannelBadge channel={channel} size={56} />
+          <ChannelBadge channel={channel} size={56} isTv={isTv} />
         </div>
         <div style={{ fontSize: '0.8rem', letterSpacing: '0.22em', fontWeight: 700, color: C.accentLight, textTransform: 'uppercase' }}>
           {channel.name}

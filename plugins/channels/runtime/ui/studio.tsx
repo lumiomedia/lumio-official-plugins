@@ -23,6 +23,7 @@ import { genreLabel, genreName, genreOptions, previewFor, sourceCounts, type Sou
 import { canonGenre, canonGenres } from '../data/genres'
 import { formatClock } from './guide-layout'
 import { belowMenuPill, C, FONT, fontSize } from './tokens'
+import { dim, dimS, TV_CONTENT_LEFT, TV_CONTENT_RIGHT, refocusLater, tvHeroButton, tvu } from './tv'
 import type { TextKey, useText } from './use-text'
 
 type T = ReturnType<typeof useText>
@@ -222,18 +223,18 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   // ── Rendering ─────────────────────────────────────────────────────────────
   const KeyboardPanel = isTv ? getTvKeyboardPanel() : null
   const labelStyle: CSSProperties = {
-    fontSize: fs(11), fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: TOKENS.textMute, margin: '0 0 8px',
+    fontSize: fs(11), fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: TOKENS.textMute, margin: `0 0 ${dimS(8, isTv)}`, lineHeight: 1.3,
   }
-  const errorStyle: CSSProperties = { margin: '6px 0 0', fontSize: fs(12.5), color: TOKENS.red }
+  const errorStyle: CSSProperties = { margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(12.5), color: TOKENS.red }
   const twoCols = !isMobile
 
   const field = (label: TextKey, children: ReactNode, extra?: ReactNode, error?: ReactNode) => (
-    <div data-studio-field={label} style={{ marginBottom: isTv ? '1.25rem' : 18 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+    <div data-studio-field={label} style={{ marginBottom: dim(18, isTv, 22) }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: dim(10, isTv) }}>
         <p style={labelStyle}>{t(label)}</p>
         {extra}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{children}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: dim(8, isTv) }}>{children}</div>
       {error}
     </div>
   )
@@ -252,7 +253,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
       data-init=""
       data-studio-name=""
       onClick={() => setKbOpen(true)}
-      style={{ ...inputStyle, fontSize: fs(14), textAlign: 'left', cursor: 'pointer', color: draft.name ? TOKENS.text : TOKENS.textMute }}
+      style={{ ...inputStyle, fontSize: fs(14), textAlign: 'left', cursor: 'pointer', color: draft.name ? TOKENS.text : TOKENS.textMute, ...(isTv ? { minHeight: tvu(48), padding: `0 ${tvu(16)}`, maxWidth: tvu(640), boxSizing: 'border-box' } : {}) }}
     >
       {draft.name || t('fieldNamePlaceholder')}
     </button>
@@ -271,7 +272,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
 
   const form = (
     <div data-studio-form="" style={{ minWidth: 0 }}>
-      <div style={{ marginBottom: isTv ? '1.25rem' : 18 }}>
+      <div style={{ marginBottom: dim(18, isTv, 22) }}>
         <p style={labelStyle}>{t('fieldName')}</p>
         {nameField}
         {showError('name') ? <p style={errorStyle}>{t('errorName')}</p> : null}
@@ -319,16 +320,16 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
           </Chip>
         )),
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: twoCols ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', columnGap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: twoCols ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', columnGap: dim(24, isTv) }}>
         {field('fieldEra', single(ERAS, draft.era, (era) => patch({ era })))}
         {field('fieldLength', single(LENGTHS, draft.length, (length) => patch({ length })))}
         {field('fieldOrder', single(ORDERS, draft.order, (order) => patch({ order })))}
         {field('fieldWindow', single(WINDOWS, draft.airWindow, (airWindow) => patch({ airWindow })))}
       </div>
-      <Card style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 0 }}>
+      <Card style={{ display: 'flex', alignItems: 'center', gap: dim(16, isTv), marginBottom: 0, ...(isTv ? { padding: `${tvu(14)} ${tvu(18)}`, maxWidth: tvu(900) } : {}) }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: fs(14), fontWeight: 600, color: TOKENS.text }}>{t('showOnHome')}</div>
-          <div style={{ fontSize: fs(12.5), color: TOKENS.textDim, marginTop: 2 }}>{t('showOnHomeHint')}</div>
+          <div style={{ fontSize: fs(12.5), color: TOKENS.textDim, marginTop: dim(2, isTv) }}>{t('showOnHomeHint')}</div>
         </div>
         <button
           type="button"
@@ -406,7 +407,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
   )
 
   const footer = (
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: isTv ? '1.5rem' : 24 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: dim(10, isTv), marginTop: dim(24, isTv) }}>
       {editing ? (
         <FocusPill isTv={isTv} variant="danger" data="studio-delete" onClick={onDelete}>
           {t(confirmDelete ? 'studioDeleteConfirm' : 'studioDelete')}
@@ -424,15 +425,17 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
       style={{
         background: C.base, minHeight: '100%', color: TOKENS.text, fontFamily: FONT.ui,
         // Under appens menypill; högra hörnet lämnas åt appens klocka.
-        padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 32px' : isTv ? '2.5rem 2.5rem' : '32px 40px'}`,
+        padding: isTv
+          ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT)}`
+          : `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 32px' : '32px 40px'}`,
       }}
     >
       <p style={{ ...labelStyle, margin: 0 }}>{t('studioEyebrow')}</p>
-      <h1 style={{ margin: '4px 0 0', fontSize: fs(24), fontWeight: 700, color: TOKENS.text }}>{t(editing ? 'studioEdit' : 'studioNew')}</h1>
-      <div style={{ height: 1, background: TOKENS.border, margin: isTv ? '1.25rem 0' : '20px 0' }} />
+      <h1 style={{ margin: `${dimS(4, isTv)} 0 0`, fontSize: fs(24), lineHeight: 1.2, fontWeight: 700, color: TOKENS.text }}>{t(editing ? 'studioEdit' : 'studioNew')}</h1>
+      <div style={{ height: 1, background: TOKENS.border, margin: `${dimS(20, isTv)} 0` }} />
       <div
         style={{
-          display: 'grid', gap: isMobile ? 28 : 32, alignItems: 'start',
+          display: 'grid', gap: isMobile ? 28 : dim(32, isTv), alignItems: 'start',
           gridTemplateColumns: isMobile || isTv ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) 360px',
         }}
       >
@@ -450,8 +453,9 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
             placeholder={t('fieldNamePlaceholder')}
             maxLength={60}
             field="short"
-            onDone={(value: string) => { setKbOpen(false); patch({ name: value }) }}
-            onClose={() => setKbOpen(false)}
+            // Fokus tillbaka till namnfältet, aldrig kvar på body när panelen stängs.
+            onDone={(value: string) => { setKbOpen(false); patch({ name: value }); refocusLater(() => document.querySelector<HTMLElement>('[data-studio-name]')) }}
+            onClose={() => { setKbOpen(false); refocusLater(() => document.querySelector<HTMLElement>('[data-studio-name]')) }}
           />
         </div>
       ) : null}
@@ -478,7 +482,9 @@ function Chip({ selected, count, isTv, onClick, children, ...rest }: {
       {...rest}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 8, cursor: 'pointer',
-        padding: isTv ? '0.375rem 0.75rem' : '6px 12px', fontSize: fontSize(13, isTv), fontWeight: 500, fontFamily: 'inherit',
+        padding: isTv ? `${tvu(8)} ${tvu(14)}` : '6px 12px', fontSize: fontSize(13, isTv), lineHeight: 1.25, fontWeight: 500, fontFamily: 'inherit',
+        // TV: en jämn chiphöjd (appens minsta knapphöjd gäller annars bara vissa).
+        ...(isTv ? { minHeight: tvu(40), boxSizing: 'border-box' as const } : {}),
         border: `1px solid ${selected ? TOKENS.accent : TOKENS.borderStrong}`,
         background: selected ? TOKENS.accentSoft : TOKENS.surface1,
         color: selected ? TOKENS.text : TOKENS.textDim,
@@ -514,8 +520,9 @@ function FocusPill({ isTv, variant, data, onClick, children }: {
       {...{ [`data-${data}`]: '' }}
       onClick={onClick}
       style={{
-        ...look[variant], padding: isTv ? '0.6875rem 1.125rem' : '11px 18px', borderRadius: 8, cursor: 'pointer',
-        fontSize: fontSize(14, isTv), fontFamily: 'inherit', letterSpacing: 0.2, whiteSpace: 'nowrap',
+        ...look[variant], padding: '11px 18px', borderRadius: isTv ? tvu(8) : 8, cursor: 'pointer',
+        fontSize: fontSize(14, isTv), fontFamily: 'inherit', letterSpacing: 0.2, whiteSpace: 'nowrap', boxSizing: 'border-box',
+        ...(isTv ? tvHeroButton() : {}),
       }}
     >
       {children}
