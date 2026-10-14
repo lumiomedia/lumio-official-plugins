@@ -6,7 +6,7 @@ import { Progress, Tag, TV, dp, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, type SportMatch } from '../sport-model'
 import { blockShowsLabel, mergeLane, featuredMatch, followState, leagueColor, nextOnYourChannels, rankedSources, statusAt, timelineAxis, timelineRows } from '../sport-day-model'
 import { timeLine, type SportCtx } from '../sport-ctx'
-import { heroStatusLine, matchStatusLabel, scoreText, showsScore } from '../score-model'
+import { heroStatusLine, matchStatusLabel, scoreText } from '../score-model'
 import { MatchScore, ResultOnlyTag, useGoalBlink } from './sport-score'
 import { Crest, MatchGrid, MatchStrip, LeagueDot, ellipsis, overline, primaryBtn, secondaryBtn } from './sport-parts'
 import { SportIcons } from './sport-icons'
@@ -108,7 +108,7 @@ function SportHero({ ctx, match }: { ctx: SportCtx; match: SportMatch }) {
             <Crest name={match.home} colorKey={match.homeKey ?? match.home} size={dp(84)} src={match.homeCrest} />
           </div>
           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: dp(4) }}>
-            {showsScore(match) ? <MatchScore match={match} size="hero" /> : null}
+            <MatchScore match={match} size="hero" />
             <span style={{ fontSize: dp(22), fontWeight: 600, color: st === 'live' ? TV.liveText : TV.muted, whiteSpace: 'nowrap' }}>{heroStatusLine(match, ctx.tt) ?? timeLine(match, ctx)}</span>
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: dp(18), minWidth: 0 }}>

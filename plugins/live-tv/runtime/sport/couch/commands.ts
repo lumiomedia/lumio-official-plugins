@@ -1,4 +1,4 @@
-import type { CouchAck, CouchFollow, CouchFollowHit, CouchSportDetail, CouchSportEvent, CouchSportLineupEntry, SportCommand, SportQuery } from '@/lib/plugin-sdk'
+import type { CouchAck, CouchFollow, CouchFollowHit, CouchSportDetail, CouchSportEvent, CouchSportLineupEntry, SportCommand, SportQuery, TipMatchInfo, TipStatusAnswer } from '@/lib/plugin-sdk'
 import type { TvStringKey } from '../../tv/tv-strings'
 import { encodeChannelParams, LIVE_TV_SPORT_PAGE_ID } from '../../live-tv-shell'
 import type { FixtureDetail, FixtureEvent, LineupEntry } from '../provider'
@@ -8,8 +8,10 @@ import { getFollows, isFollowing, setFollowAlert, toggleFollow, type SportFollow
 import { followList, searchFollows, type SearchDeps } from './follows'
 import { assignTile, enlargeTile, setLayout, tileCount, type MultiviewState } from '../../tv/tv-multiview-store'
 import { dismissGoal } from './goals'
-import { markPresence } from './presence'
+import { markPresence, TIP_PRESENCE_PREFIX } from './presence'
 import { zapTarget } from './snapshot'
+import { hiddenForPhone, revealPhone, revealTv, spoilerKey, spoilerProtected } from './spoiler'
+import { hasTeams, tipMatchInfo, tipNeedsLive, tipStatus, tipTooLate } from './tip'
 
 /** Det Soffläges sportkommandon behöver av pluginet (injiceras, så att logiken går att testa). */
 export type SportDeps = {
@@ -27,6 +29,10 @@ export type SportDeps = {
   /** Texterna för Följer-listan på värdens språk. */
   text(): { tt: (k: TvStringKey, v?: Record<string, string | number>) => string; locale: string }
   searchDeps(): Omit<SearchDeps, 'follows'>
+  /** Källan har nyckel (resultatcontrollern finns): avgör om värden kan rapportera Tippa-resultatet själv. */
+  hasKey(): boolean
+  /** Be värden öppna ett Tippa-rum. `false` = upptaget (eller en äldre app utan Tippa). */
+  openTip(info: TipMatchInfo, starterPhoneId: string | null): boolean
 }
 
 const isSport = (s: string): s is SportKind => (SPORT_KINDS as readonly string[]).includes(s)
@@ -123,6 +129,28 @@ export async function runSportCommand(cmd: SportCommand, d: SportDeps): Promise<
       playSource(d, s)
       return
     }
+    case 'sport-reveal': {
+      // phoneId stämplas av Rust: utan det finns ingen telefon att visa resultatet för.
+      if (!cmd.phoneId) return { id: cmd.id, ok: false, error: 'no-phone' }
+      const m = d.matches().find((x) => x.id === cmd.matchId)
+      const key = m ? spoilerKey(m) : null
+      if (!m || !key) return { id: cmd.id, ok: false, error: 'unknown-match' }
+      revealPhone(key, cmd.phoneId)
+      if (cmd.tv === true) revealTv(key, d.now())
+      return
+    }
+    case 'tip-open': {
+      const m = d.matches().find((x) => x.id === cmd.matchId)
+      if (!m) return { id: cmd.id, ok: false, error: 'unknown-match' }
+      // En repris tippas inte (resultatet finns redan).
+      if (m.rerun) return { id: cmd.id, ok: false, error: 'unsupported' }
+      // Tipsen låses vid avspark (en repris: när sändningen börjar).
+      if (tipTooLate(m, d.now())) return { id: cmd.id, ok: false, error: 'too-late' }
+      if (!hasTeams(m)) return { id: cmd.id, ok: false, error: 'no-teams' }
+      // phoneId stämplas av Rust (startaren); utan det öppnar TV:n utan startare.
+      if (!d.openTip(tipMatchInfo(m, { hasKey: d.hasKey() }), cmd.phoneId ?? null)) return { id: cmd.id, ok: false, error: 'busy' }
+      return
+    }
     case 'sport-zap': {
       const focus = d.focusId()
       const next = focus ? zapTarget(d.matches(), focus, cmd.dir, d.now()) : null
@@ -175,6 +203,7 @@ export type SportQueryAnswer =
   | CouchSportDetail
   | { follows: CouchFollow[] }
   | { teams: CouchFollowHit[]; leagues: CouchFollowHit[] }
+  | TipStatusAnswer
   | { error: string }
 
 export async function answerSportQuery(q: SportQuery, d: SportDeps): Promise<SportQueryAnswer> {
@@ -184,10 +213,32 @@ export async function answerSportQuery(q: SportQuery, d: SportDeps): Promise<Spo
   }
   // Utan nyckel bara EPG:ns kandidater; källan nås aldrig från telefonen direkt.
   if (q.type === 'sport-follow-search') return searchFollows(q.q, { ...d.searchDeps(), follows: d.follows() })
+  if (q.type === 'tip-status') {
+    const now = d.now()
+    const m = d.matches().find((x) => x.id === q.matchId)
+    if (!m) return { error: 'unknown-match' }
+    // Värdens pollning håller sammanslagningen igång (som en telefon på sportfliken),
+    // men bara när rummet behöver livedata: inte timmar före avspark, inte för en repris.
+    if (tipNeedsLive(m, now)) markPresence(TIP_PRESENCE_PREFIX + q.matchId, true, now)
+    return tipStatus(m, now, d.settings())
+  }
   const m = d.matches().find((x) => x.id === q.matchId)
   if (!m) return { error: 'unknown-match' }
-  // Fas 1 har inget spoilerskydd: en repris får aldrig skicka originalets händelser eller ställning.
-  if (m.rerun) return { events: [], stats: [], lineups: [], updatedAt: null }
+  const empty: CouchSportDetail = { events: [], stats: [], lineups: [], updatedAt: null }
+  const now = d.now()
+  const settings = d.settings()
+  // Spoilerskyddet: en telefon som inte har visat resultatet får ingenting, och källan frågas inte.
+  if (hiddenForPhone(m, q.phoneId ?? null, now, settings)) return { ...empty, hidden: true }
+  // En repris utan känt original har ingen detalj att hämta.
+  if (m.rerun && !m.replayOf?.fixture) return empty
   const fd = await d.detail(m).catch(() => null)
-  return fd ? toCouchDetail(fd, d.now()) : { events: [], stats: [], lineups: [], updatedAt: null }
+  const out = fd ? toCouchDetail(fd, now) : empty
+  // Bilden saknar resultatet för en dold match: telefonen som får se det får det här i stället.
+  const revealed = settings.spoilerReplays !== false && spoilerProtected(m, now)
+  const final = m.rerun ? m.replayOf?.score ?? null : revealed && m.coverage === 'full' && m.status !== 'upcoming' ? m.score ?? null : null
+  return {
+    ...out,
+    ...(final ? { score: [final.home, final.away] as [number, number] } : {}),
+    ...(revealed ? { revealed: true } : {}),
+  }
 }

@@ -16,6 +16,7 @@ import { followState } from './sport-day-model'
 import { SPORT_SETTINGS_KEY, getFollows, getSportSettings, useFollows, useOverrides } from './sport-store'
 import type { Fixture, FixtureDetail, ProviderId, StandingRow } from './provider'
 import type { SportKind, SportMatch } from './sport-model'
+import { noteReplays } from './couch/spoiler'
 
 export interface RateStatus {
   /** Källan sporten FAKTISKT använder just nu (efter genomfall vid slut kvot). */
@@ -455,6 +456,8 @@ export class ResultsController {
     for (const x of m) this.mergedById.set(x.id, x)
     for (const [id, x] of this.mergedById) if (x.stop < cutoff) this.mergedById.delete(id)
     this.poller?.reschedule() // mängden heta fixturer kan ha ändrats
+    // Spoilerskyddet: varje känd repris skyddar originalets resultat (före lyssnarna, som läser det).
+    noteReplays(m, this.now())
     for (const cb of [...this.mergedListeners]) cb()
   }
   merged(): SportMatch[] { return [...this.mergedById.values()] }

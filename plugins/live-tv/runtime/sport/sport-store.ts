@@ -160,10 +160,12 @@ export interface SportSettings {
   cards: SportCards
   /** Kortvalens version (CARDS_REV); sätts av läsningen, skrivs aldrig för hand. */
   cardsRev?: number
+  /** Fas 3: Dölj resultat i repriser. På som standard; bara `false` stänger av. */
+  spoilerReplays: boolean
 }
 
 const DEFAULT_SETTINGS: SportSettings = {
-  view: 'matchday', alert: '15', keys: {}, order: {}, apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, backdrops: { all: 'standard', sports: ownImageDefaults() }, cards: DEFAULT_CARDS,
+  view: 'matchday', alert: '15', keys: {}, order: {}, apiKey: null, goalAlerts: true, provider: 'api-sports', keyPlan: null, goalAlertMatches: {}, backdrops: { all: 'standard', sports: ownImageDefaults() }, cards: DEFAULT_CARDS, spoilerReplays: true,
 }
 
 const isProvider = (v: unknown): v is ProviderId => typeof v === 'string' && (ALL_PROVIDERS as readonly string[]).includes(v)
@@ -254,6 +256,7 @@ function sanitizeSettings(raw: unknown, stored: ProviderKeys | null): SportSetti
     backdropsRev: BACKDROPS_REV,
     cards: sanitizeCards(r.cards, r.cardsRev),
     cardsRev: CARDS_REV,
+    spoilerReplays: r.spoilerReplays !== false,
   }
 }
 

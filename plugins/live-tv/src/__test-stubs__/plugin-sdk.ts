@@ -894,11 +894,13 @@ export type CouchSportMatch = {
   channel: { key: string; name: string; best: boolean } | null
   followed: boolean; onTv: boolean
   hasDetail: { events: boolean; stats: boolean; lineup: boolean }
+  playedAt?: number
 }
 export type CouchSport = {
   context: CouchSportContext | null; hasKey: boolean; focus: CouchSportMatch | null
   focusIndex: { i: number; n: number } | null; now: CouchSportMatch[]; soon: CouchSportMatch[]; updatedAt: number | null
   multiview?: CouchSportMultiview | null; goals?: CouchSportGoal[]
+  spoiler?: { hidden: string[] }
 }
 export type CouchSportTile = { match: CouchSportMatch | null; channelName: string } | null
 export type CouchSportMultiview = { layout: 2 | 3 | 4; tiles: CouchSportTile[]; audioIndex: number }
@@ -910,21 +912,30 @@ export type CouchSportEvent = { minute: string; type: 'goal' | 'card' | 'sub' | 
 export type CouchSportStat = { label: string; home: string; away: string }
 export type CouchSportLineupEntry = { number: number | null; name: string; pos: string | null; goals: number; subbedOff: string | null; subbedOn: string | null }
 export type CouchSportLineup = { side: 'home' | 'away'; formation: string | null; startXI: CouchSportLineupEntry[]; subs: CouchSportLineupEntry[] }
-export type CouchSportDetail = { events: CouchSportEvent[]; stats: CouchSportStat[]; lineups: CouchSportLineup[]; updatedAt: number | null }
+export type CouchSportDetail = { events: CouchSportEvent[]; stats: CouchSportStat[]; lineups: CouchSportLineup[]; updatedAt: number | null; score?: [number, number]; revealed?: boolean; hidden?: boolean }
 export type SportCommand =
   | { id: string; type: 'sport-presence'; on: boolean; phoneId?: string }
   | { id: string; type: 'play-match'; matchId: string; channel?: string }
   | { id: string; type: 'sport-zap'; dir: -1 | 1 }
   | { id: string; type: 'sport-open-settings' }
+  | { id: string; type: 'sport-reveal'; matchId: string; tv: boolean; phoneId?: string }
   | { id: string; type: 'mv-audio' | 'mv-enlarge'; index: number }
   | { id: string; type: 'mv-assign'; index: number; matchId: string }
   | { id: string; type: 'sport-goal-dismiss'; goalId: string }
   | { id: string; type: 'sport-follow'; sport: string; kind: 'team' | 'league'; key: string; name: string; providerIds?: Record<string, string> }
   | { id: string; type: 'sport-follow-bell'; sport: string; kind: 'team' | 'league'; key: string; bell: CouchFollowBell }
+  | { id: string; type: 'tip-open'; matchId: string; phoneId?: string }
 export type SportQuery =
-  | { id: string; type: 'sport-match'; matchId: string }
+  | { id: string; type: 'sport-match'; matchId: string; phoneId?: string }
   | { id: string; type: 'sport-follow-search'; q: string }
   | { id: string; type: 'sport-follows' }
+  | { id: string; type: 'tip-status'; matchId: string }
+// ── Tippa (spegel av appens lib/couch/tip-protocol.ts) ──
+export type TipGoals = [number, number]
+export type TipTeam = { name: string; short: string; crest: string | null }
+export type TipMatchInfo = { matchId: string; sport: string; league: string; home: TipTeam; away: TipTeam; kickoffMs: number; backdrop: string | null; autoResult: boolean }
+export type CouchTipSummary = { code: string; matchId: string; title: string; kickoffAt: number; status: 'open' | 'locked' | 'result'; players: number }
+export type TipStatusAnswer = { status: 'upcoming' | 'live' | 'ht' | 'finished'; score?: TipGoals; spoilerTv: boolean } | { error: string }
 export type CouchAck = { id: string; ok: boolean; error?: string; detail?: string }
 export type CouchPlayer = {
   kind: 'movie' | 'episode' | 'channel'; tmdbId: string | null; title: string
@@ -948,6 +959,7 @@ type CouchHostSdk = {
   notifySurface: (id: 'sport') => void
   registerPlayer: (h: CouchPlayerHandlers) => () => void
   notifyState: () => void
+  openTip?: (m: TipMatchInfo, starterPhoneId: string | null) => boolean
 }
 const couchHost = (): CouchHostSdk | undefined =>
   (globalThis as { __lumioPluginRuntime?: { sdk?: { couch?: CouchHostSdk } } }).__lumioPluginRuntime?.sdk?.couch
@@ -956,3 +968,7 @@ export function registerCouchSurface(id: 'sport', s: CouchSurface): () => void {
 export function notifyCouchSurface(id: 'sport'): void { couchHost()?.notifySurface(id) }
 export function registerCouchChannelPlayer(h: CouchPlayerHandlers): () => void { return couchHost()?.registerPlayer(h) ?? (() => {}) }
 export function notifyCouchPlayer(): void { couchHost()?.notifyState() }
+export function openCouchTip(m: TipMatchInfo, starterPhoneId: string | null): boolean {
+  const open = couchHost()?.openTip
+  return typeof open === 'function' ? open(m, starterPhoneId) === true : false
+}

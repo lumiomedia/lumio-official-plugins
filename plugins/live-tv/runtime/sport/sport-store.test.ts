@@ -107,6 +107,15 @@ describe('fas 2-fälten', () => {
   })
 })
 
+describe('fas 3: Dölj resultat i repriser', () => {
+  it('på som standard; bara false stänger av', () => {
+    expect(getSportSettings().spoilerReplays).toBe(true)
+    expect(setSportSettings({ spoilerReplays: false }).spoilerReplays).toBe(false)
+    expect(getSportSettings().spoilerReplays).toBe(false)
+    expect(setSportSettings({ spoilerReplays: true }).spoilerReplays).toBe(true)
+  })
+})
+
 const OWN = { football: 'standard', hockey: 'standard', basketball: 'standard', motorsport: 'standard', tennis: 'standard', other: 'standard' } as const
 
 describe('Bakgrund i Sport', () => {

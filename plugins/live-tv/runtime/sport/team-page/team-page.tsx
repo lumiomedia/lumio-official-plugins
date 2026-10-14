@@ -7,7 +7,8 @@ import { matchTitle, type SportMatch } from '../sport-model'
 import { foldTeamKey } from '../merge'
 import { rankedSources, statusAt } from '../sport-day-model'
 import { followAlert, isFollowing, setFollowAlert, teamKeysMatch, toggleFollow, type KickoffAlert } from '../sport-store'
-import { showsScore } from '../score-model'
+import { fixtureScoreHidden, showsScore } from '../score-model'
+import { useSpoilerVersion } from '../couch/spoiler'
 import { formLetters } from '../results-model'
 import { sourceLine, type SportCtx } from '../sport-ctx'
 import { competitionsOf, epgMatchFor, flagEmoji, formOf, liveFixture, ordinal, playedFixtures, squadGroups, standingsSlice, teamRowIndex, teamTargetFromRow, trophyGroups, upcomingFixtures, type TeamTarget } from '../team-model'
@@ -85,7 +86,9 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
   const available: TeamTab[] = ['overview', ...(hasMatches ? ['matches' as const] : []), ...(data.squad?.length ? ['squad' as const] : []), ...(data.trophies?.length ? ['trophies' as const] : [])]
   const [tab, setTab] = usePageTab<TeamTab>('team', available)
   const epg = useEpgMatches(allUpcoming, matches, ctx.now)
-  const form = useMemo(() => formOf(data.fixtures, target, data.teamId), [data.fixtures, target, data.teamId])
+  // Spoilerskyddet: en dold match står inte i formen (bokstaven avslöjar resultatet).
+  const spoilers = useSpoilerVersion()
+  const form = useMemo(() => formOf(data.fixtures.filter((f) => !fixtureScoreHidden(f)), target, data.teamId), [data.fixtures, target, data.teamId, spoilers])
   const letters = new Map(formLetters('WDL', ctx.tt).map((l) => [l.kind, l.letter]))
 
   // Nu: tablåns pågående match (bär ställningen från livepollen och kanalerna), annars källans.
@@ -353,7 +356,7 @@ export function TeamPage({ ctx, target, matches, depth, phone, onClose }: { ctx:
 
 /** Pågående match: ställning och minut, och Titta (bästa kanalen, som i matchinfon). Titta är sidans första fokus. */
 function NowCard({ u, ctx, match, fixture, title, onWatch }: { u: U; ctx: SportCtx; match: SportMatch | null; fixture: TeamFixture | null; title: string; onWatch: (() => void) | null }) {
-  const score = match ? (showsScore(match) && match.score ? `${match.score.home}–${match.score.away}` : null) : fixture?.score ? `${fixture.score.home}–${fixture.score.away}` : null
+  const score = match ? (showsScore(match) && match.score ? `${match.score.home}–${match.score.away}` : null) : fixture?.score && !fixtureScoreHidden(fixture) ? `${fixture.score.home}–${fixture.score.away}` : null
   const minute = match?.minute ?? fixture?.minute ?? null
   return (
     <div data-testid="tp-now-card" style={{ ...rowCard(u), display: 'flex', flexDirection: 'column', gap: u(12), padding: `${u(14)}px ${u(18)}px`, border: `1px solid ${TV.live}` }}>

@@ -5,6 +5,7 @@ import { rankedSources } from '../sport-day-model'
 import type { SportMatch } from '../sport-model'
 import type { SportFollow, SportOverrides, SportSettings } from '../sport-store'
 import { teamShort } from './snapshot'
+import { hiddenOnTv } from './spoiler'
 
 /**
  * Soffläge: öppna mål för följda lag. Ligger i sportbilden (`goals`), så att
@@ -79,10 +80,12 @@ export function goalFromEvent(e: GoalEvent, match: SportMatch, overrides: SportO
 /**
  * Kort och toast bara när målet gäller ett följt lag (eller en match med notis),
  * matchen INTE redan visas på TV:n (kanalen som spelar eller Multiviews
- * ljudruta) och det inte är en repris.
+ * ljudruta), det inte är en repris och resultatet inte är spoilerdolt.
  */
 export function shouldCard(match: SportMatch, ctx: { playing: string | null; audioChannel: string | null; settings: SportSettings; follows: SportFollow[] }, now: number = Date.now()): boolean {
   if (match.rerun) return false
+  // Spoilerskyddet: ett mål i en match vars resultat är dolt avslöjar ställningen.
+  if (hiddenOnTv(match, now, ctx.settings)) return false
   const shown = (key: string | null) => !!key && match.sources.some((s) => s.channelKey === key)
   if (shown(ctx.playing) || shown(ctx.audioChannel)) return false
   return goalAlertWanted(match, ctx.settings, ctx.follows, now)

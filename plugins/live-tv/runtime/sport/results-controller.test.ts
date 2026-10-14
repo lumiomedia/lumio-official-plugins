@@ -5,6 +5,7 @@ import { sportApi } from './sportapi'
 import { onGoal } from './goal-events'
 import { apiSports } from './api-sports'
 import { fxMatch } from './__sport-fixture'
+import { __resetSpoilerForTests, hiddenOnTv } from './couch/spoiler'
 import footballDate from './__fixtures__/api-sports/football-fixtures-date.json'
 import fixtureId from './__fixtures__/api-sports/football-fixture-id.json'
 import type { SportFetchResponse, SportQuota } from './sport-fetch'
@@ -176,6 +177,15 @@ describe('ResultsController', () => {
     c.applyFixtures('football', '2026-10-10', [f], 'live', NOW)
     c.setMerged([fxMatch({ id: 'r', kind: 'football', rerun: true, start: f.kickoff, stop: f.kickoff + 7_200_000, fixture: { provider: f.provider, id: f.id } })])
     expect(c.liveTargets()).toEqual([])
+  })
+
+  it('spoilerskyddet: en sammanslagen repris skyddar originalets resultat', () => {
+    __resetSpoilerForTests()
+    const { c } = controller(() => ({}))
+    const r = fxMatch({ id: 'r', kind: 'football', rerun: true, start: NOW, stop: NOW + 7_200_000, replayOf: { kickoff: NOW - 86_400_000, score: { home: 1, away: 0 }, fixture: { provider: 'api-sports', id: '9' } } })
+    expect(hiddenOnTv(r, NOW, { spoilerReplays: true })).toBe(false)
+    c.setMerged([r])
+    expect(hiddenOnTv(r, NOW, { spoilerReplays: true })).toBe(true)
   })
 
   describe('flera källor samma dag', () => {

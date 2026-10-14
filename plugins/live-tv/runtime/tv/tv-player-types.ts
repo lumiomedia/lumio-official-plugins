@@ -7,6 +7,8 @@ import type { SportOverrides, SportViewMode } from '../sport/sport-store'
 export interface PlayerSportProps {
   /** Dagens matcher utan repriser, sorterade på start. */
   matches: SportMatch[]
+  /** Dagens repriser som inte sänts färdigt (spoilerkromen, 2b). Saknas = inga. */
+  replays?: SportMatch[]
   overrides: SportOverrides
   /** Visa som: Matchdag = ticker, Flöde = kolumn. */
   view: SportViewMode

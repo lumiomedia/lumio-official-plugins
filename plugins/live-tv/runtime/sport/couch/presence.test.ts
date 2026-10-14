@@ -1,10 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { __resetPollDemandForTests, hasPollDemand } from '../live-poller'
-import { __resetPresenceForTests, hasCouchPresence, markPresence, PRESENCE_TTL_MS, sweepPresence } from './presence'
+import { __resetPresenceForTests, hasCouchPresence, hasPhonePresence, markPresence, PRESENCE_TTL_MS, sweepPresence } from './presence'
 
 beforeEach(() => { __resetPresenceForTests(); __resetPollDemandForTests() })
 
 describe('närvaro', () => {
+  it('värdens Tippa-pollning håller efterfrågan men är ingen telefon', () => {
+    markPresence('tip:m1', true, 0)
+    expect(hasCouchPresence()).toBe(true)
+    expect(hasPollDemand()).toBe(true)
+    expect(hasPhonePresence()).toBe(false)
+    markPresence('p1', true, 0)
+    expect(hasPhonePresence()).toBe(true)
+  })
   it('en telefon ger efterfrågan, av släpper den', () => {
     markPresence('p1', true, 0)
     expect(hasCouchPresence()).toBe(true)

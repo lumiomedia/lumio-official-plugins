@@ -6,6 +6,7 @@ import { localDayKey } from '../sport-epg'
 import { HOUR, MIN, fakeCtx, fxMatch, mountSport } from '../__sport-fixture'
 import { __setTvModeForTests } from '@/lib/plugin-sdk'
 import { SportReplays } from './sport-replays'
+import { __resetSpoilerForTests, noteReplays } from '../couch/spoiler'
 
 vi.mock('../../live-tv-player', () => ({ LiveTvPlayer: ({ channel }: { channel: { name: string } }) => <div data-testid="player">{channel.name}</div> }))
 
@@ -83,5 +84,20 @@ describe('Sportens listor i TV-skala (Jerry 2026-10-12)', () => {
     __setTvModeForTests(false)
     render(<SportReplays ctx={ctx} matches={[replay]} />)
     expect(screen.getByTestId('sport-replay-meta').style.fontSize).toBe('15px')
+  })
+})
+
+describe('Repriser: spoilerskydd', () => {
+  afterEach(() => { vi.useRealTimers(); __resetSpoilerForTests() })
+  it('den dolda raden visar lås och "–" i stället för resultatet', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(now)
+    __resetSpoilerForTests()
+    noteReplays([replay], now)
+    render(<SportReplays ctx={fakeCtx({ now })} matches={[replay]} />)
+    const row = screen.getByTestId('sport-replay-row')
+    expect(within(row).queryByTestId('sport-replay-score')).toBeNull()
+    expect(within(row).getByTestId('sport-replay-score-hidden')).toHaveTextContent('–')
+    expect(row).not.toHaveTextContent('2–0')
   })
 })

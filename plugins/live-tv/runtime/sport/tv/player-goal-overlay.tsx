@@ -9,6 +9,7 @@ import { useResultsController } from '../results-controller'
 import { rankedSources } from '../sport-day-model'
 import { getFollows, getOverrides, getSportSettings } from '../sport-store'
 import { sourceChannel, type SportMatch } from '../sport-model'
+import { scoreHidden } from '../score-model'
 import type { M3uChannel } from '../../live-tv-data'
 
 const SHOW_MS = 6_000
@@ -21,6 +22,8 @@ export function PlayerGoalOverlay({ channelKey, onJump }: { channelKey: string; 
   useEffect(() => onGoal((e) => {
     const match = controller ? matchForGoal(e, controller.merged()) : null
     if (!match) return
+    // Spoilerskyddet: inga MÅL! för en match vars resultat är dolt.
+    if (scoreHidden(match)) return
     const here = match.sources.some((s) => s.channelKey === channelKey)
     if (!here && !goalAlertWanted(match, getSportSettings(), getFollows())) return
     setShown({ e, match, here })
