@@ -142,6 +142,8 @@ export async function runSportCommand(cmd: SportCommand, d: SportDeps): Promise<
     case 'tip-open': {
       const m = d.matches().find((x) => x.id === cmd.matchId)
       if (!m) return { id: cmd.id, ok: false, error: 'unknown-match' }
+      // En repris tippas inte (resultatet finns redan).
+      if (m.rerun) return { id: cmd.id, ok: false, error: 'unsupported' }
       // Tipsen låses vid avspark (en repris: när sändningen börjar).
       if (tipTooLate(m, d.now())) return { id: cmd.id, ok: false, error: 'too-late' }
       if (!hasTeams(m)) return { id: cmd.id, ok: false, error: 'no-teams' }

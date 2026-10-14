@@ -46,7 +46,14 @@ describe('Tippa från telefonen', () => {
     const race = match({ id: 'f1', kind: 'motorsport', home: null, away: null, event: 'GP', status: 'upcoming', start: 10_000 })
     expect(await runSportCommand({ id: 'c', type: 'tip-open', matchId: 'f1' }, deps([race], o))).toEqual({ id: 'c', ok: false, error: 'no-teams' })
     const rr = match({ id: 'r', rerun: true, start: 500, stop: 5_000 })
-    expect(await runSportCommand({ id: 'c', type: 'tip-open', matchId: 'r' }, deps([rr], o))).toEqual({ id: 'c', ok: false, error: 'too-late' })
+    expect(await runSportCommand({ id: 'c', type: 'tip-open', matchId: 'r' }, deps([rr], o))).toEqual({ id: 'c', ok: false, error: 'unsupported' })
+  })
+  it('en repris kan aldrig tippas, inte ens före sändningen', async () => {
+    let opened = false
+    const rr = match({ id: 'r', rerun: true, status: 'upcoming', start: 10_000, stop: 20_000, replayOf: { kickoff: -1, score: { home: 3, away: 0 }, fixture: { provider: 'p', id: '7' } } })
+    expect(await runSportCommand({ id: 'c', type: 'tip-open', matchId: 'r', phoneId: 'p1' }, deps([rr], { hasKey: () => true, openTip: () => { opened = true; return true } })))
+      .toEqual({ id: 'c', ok: false, error: 'unsupported' })
+    expect(opened).toBe(false)
   })
   it('utan startare (TV:n) går null till värden', async () => {
     const opened: unknown[] = []
