@@ -22,6 +22,7 @@ export function LiveTvRemindersMount() {
         tryNativeNotification(reminder.title, h('startsNow', { channel: reminder.channelName }))
         const channel = reminderToChannel(reminder)
         pushToast({
+          key: `reminder:${reminder.id}`,
           kicker: h('startsNow', { channel: reminder.channelName }),
           title: reminder.title,
           watchLabel: h('hubWatchNow'),

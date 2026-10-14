@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { writePluginJson } from '@/lib/plugin-sdk'
 import { LIVE_TV_PLUGIN_ID } from './live-tv-data'
 import {
@@ -9,6 +9,8 @@ import {
   isReminded,
   markReminderNotified,
   removeReminder,
+  __resetShownRemindersForTests,
+  startReminderScheduler,
   toggleReminder,
 } from './reminders'
 
@@ -47,5 +49,25 @@ describe('reminders', () => {
     const [r] = toggleReminder(channel, prog(60), NOW)
     removeReminder(r.id)
     expect(getReminders(NOW)).toEqual([])
+  })
+})
+
+describe('dubbla påminnelser (synk mellan enheter)', () => {
+  beforeEach(() => { writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, []); __resetShownRemindersForTests() })
+  it('en påminnelse som en annan enhet skriver tillbaka utan notifiedAt visas inte igen', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    const shown: string[] = []
+    const ch = { name: 'V Sport Ultra UHD SE', url: 'http://x/30095.ts', logo: null, group: 'g', tvgId: null }
+    toggleReminder(ch, { title: 'Manchester City - PSG', start: NOW + 60_000, stop: NOW + 3_600_000 })
+    const before = getReminders(NOW)
+    const stop = startReminderScheduler((r) => shown.push(r.title))
+    expect(shown).toEqual(['Manchester City - PSG'])
+    // WebDAV-synken skriver tillbaka listan från en enhet som aldrig visade den.
+    writePluginJson(LIVE_TV_PLUGIN_ID, REMINDERS_KEY, before)
+    vi.advanceTimersByTime(30_000)
+    expect(shown).toEqual(['Manchester City - PSG'])
+    stop()
+    vi.useRealTimers()
   })
 })

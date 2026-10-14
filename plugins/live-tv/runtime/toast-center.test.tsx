@@ -159,3 +159,15 @@ describe('onDismiss (Soffläge: ett aktivt Stäng stänger målet överallt)', (
     expect(document.querySelector('[data-toast-countdown]')).not.toBeNull()
   })
 })
+
+describe('notiser med nyckel', () => {
+  it('samma nyckel ersätter den synliga notisen i stället för att lägga en till', () => {
+    __resetToastsForTests()
+    render(<ToastCenter />)
+    act(() => { pushToast({ ...toast('Manchester City - PSG'), key: 'reminder:a' }) })
+    act(() => { pushToast({ ...toast('Roma - Real Madrid'), key: 'reminder:b' }) })
+    act(() => { pushToast({ ...toast('Manchester City - PSG'), key: 'reminder:a' }) })
+    expect(screen.getAllByText('Manchester City - PSG')).toHaveLength(1)
+    expect(screen.getAllByText('Roma - Real Madrid')).toHaveLength(1)
+  })
+})

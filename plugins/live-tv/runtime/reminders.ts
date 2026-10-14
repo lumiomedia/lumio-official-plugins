@@ -150,12 +150,23 @@ export function reminderToChannel(r: Reminder): M3uChannel {
  * Schemaläggare: kollar varje halvminut och vid ändringar. `onDue` får varje
  * förfallen påminnelse exakt en gång (markeras som visad direkt).
  */
+/**
+ * Påminnelser som redan visats på den här enheten. `notifiedAt` ligger i den
+ * synkade listan, så en annan enhet (WebDAV) kan skriva tillbaka en version utan
+ * den — då visades samma notis igen (Jerry 2026-10-14: Manchester City två gånger).
+ * Minnet här avgör; `notifiedAt` finns kvar för omstarter.
+ */
+const shownHere = new Set<string>()
+export function __resetShownRemindersForTests(): void { shownHere.clear() }
+
 export function startReminderScheduler(onDue: (reminder: Reminder) => void): () => void {
   let stopped = false
   const tick = () => {
     if (stopped) return
     const now = Date.now()
     for (const r of dueReminders(now)) {
+      if (shownHere.has(r.id)) continue
+      shownHere.add(r.id)
       markReminderNotified(r.id, now)
       onDue(r)
     }

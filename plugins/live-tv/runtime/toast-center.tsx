@@ -32,6 +32,8 @@ export interface Toast {
   onWatch?: () => void
   dismissLabel: string
   timeoutMs: number
+  /** Samma händelse (t.ex. påminnelsens id): en ny notis med samma nyckel ersätter den gamla. */
+  key?: string
   /** Ett aktivt Stäng (knappen eller Bakåt), aldrig tidsgränsen eller Titta. Soffläge stänger då målet på telefonerna också. */
   onDismiss?: () => void
   /** `goal`: måltoasten (handoff 2a) — märke, korall överrad, knapparna under texten och en nedräkningslinje. Samma stapel. */
@@ -50,7 +52,9 @@ let seq = 0
 
 export function pushToast(t: Omit<Toast, 'id'>): string {
   const id = `t${++seq}`
-  toasts = [{ ...t, id, expiresAt: Date.now() + t.timeoutMs }, ...toasts]
+  // Samma nyckel ersätter en synlig notis i stället för att lägga en till (ingen dubblett i stapeln).
+  const rest = t.key ? toasts.filter((x) => x.key !== t.key) : toasts
+  toasts = [{ ...t, id, expiresAt: Date.now() + t.timeoutMs }, ...rest]
   emit()
   return id
 }
