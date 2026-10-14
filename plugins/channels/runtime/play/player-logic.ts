@@ -38,6 +38,15 @@ export function rememberZap(
   return { lastChannelId: nextId, previousChannelId: memory.lastChannelId }
 }
 
-export function minsLeftLabel(minsLeft: number): string {
-  return `${Math.max(1, Math.ceil(minsLeft))} MIN KVAR`
+/** Väntan innan ett kanalbyte slår upp strömmen. */
+export const ZAP_RESOLVE_DELAY_MS = 300
+
+/**
+ * Snabb zappning ska inte starta ett strömuppslag per kanal man passerar:
+ * vid kanalbyte väntar uppslaget ~300 ms (OSD:n och inställningsvyn byts
+ * direkt). Biblioteksposter slås upp lokalt och väntar inte; strömsök och
+ * debrid går mot leverantörer och gör det.
+ */
+export function resolveDelayMs(playType: 'library' | 'stream' | 'debrid', channelChanged: boolean): number {
+  return channelChanged && playType !== 'library' ? ZAP_RESOLVE_DELAY_MS : 0
 }

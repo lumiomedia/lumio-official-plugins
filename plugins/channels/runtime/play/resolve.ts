@@ -5,7 +5,13 @@
  */
 import type { PlayRef, PoolItem } from '../data/pool'
 
-export interface Playable { url: string; requestHeaders?: Record<string, string>; forceProxy?: boolean }
+export interface Playable {
+  url: string
+  requestHeaders?: Record<string, string>
+  forceProxy?: boolean
+  /** Strömuppslag: lämnas till värden när bilden syns, så valet blir ihågkommet först då. */
+  rememberToken?: string
+}
 
 export interface ResolveDeps {
   library(ref: Extract<PlayRef, { type: 'library' }>): Promise<Playable | null>

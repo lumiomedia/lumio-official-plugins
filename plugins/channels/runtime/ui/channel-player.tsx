@@ -17,9 +17,9 @@ import { hueGradient } from '../model/channel'
 import { programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, OSD_IDLE_MS } from '../play/zap-logic'
-import { nextBoundaryAction, rememberZap, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
+import { nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
 import { initialPlayerState, playerReducer, type Request } from '../play/player-state'
-import { readZapMemory, resolver, writeZapMemory } from '../host'
+import { readZapMemory, rememberPlayedStream, resolver, writeZapMemory } from '../host'
 import { useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { C, FONT, RADIUS } from './tokens'
@@ -116,6 +116,9 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
 
   // ── Planering: varje begäran planeras EN gång ──────────────────────────────
   const plannedSeq = useRef<number | null>(null)
+  const plannedChannel = useRef<string | null>(null)
+  // Vid unmount: ett uppslag som väntar på zappfördröjningen ska aldrig starta.
+  useEffect(() => () => { gate.begin() }, [gate])
 
   const plan = useCallback((req: Request, ch: ChannelDef) => {
     const nowMs = Date.now()
@@ -136,15 +139,24 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     const deadline = req.mode === 'start' ? nowMs + Math.max(1, slot.item.runtimeMin) * 60_000 : slot.stop
     dispatch({ type: 'planned', plan: { seq: req.seq, slot, initialTime, deadline, mode: req.mode } })
     const token = gate.begin()
-    void resolver.resolve(slot.item).then((playable) => {
+    const channelChanged = plannedChannel.current != null && plannedChannel.current !== ch.id
+    plannedChannel.current = ch.id
+    const run = () => {
+      // Zappat vidare under väntan: den här kanalen slås aldrig upp.
       if (!gate.isCurrent(token)) return
-      if (playable) {
-        dispatch({ type: 'resolved', seq: req.seq, playable })
-      } else {
-        resolver.forget(slot.item.ref)
-        dispatch({ type: 'failed', seq: req.seq, now: Date.now() })
-      }
-    })
+      void resolver.resolve(slot.item).then((playable) => {
+        if (!gate.isCurrent(token)) return
+        if (playable) {
+          dispatch({ type: 'resolved', seq: req.seq, playable })
+        } else {
+          resolver.forget(slot.item.ref)
+          dispatch({ type: 'failed', seq: req.seq, now: Date.now() })
+        }
+      })
+    }
+    const delay = resolveDelayMs(slot.item.play.type, channelChanged)
+    if (delay > 0) window.setTimeout(run, delay)
+    else run()
   }, [rundown, gate])
 
   useEffect(() => {
@@ -434,7 +446,11 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           hideStartSplash
           onClose={onClose}
           onPlaybackEnded={() => dispatch({ type: 'advance', seq, now: Date.now() })}
-          onFirstPlay={() => dispatch({ type: 'firstPlay', seq })}
+          onFirstPlay={() => {
+            // Först nu, när bilden syns, blir strömvalet ihågkommet (bara strömsök).
+            if (slot.item.play.type === 'stream') rememberPlayedStream(playable.rememberToken)
+            dispatch({ type: 'firstPlay', seq })
+          }}
           // Sant = vi byter själva (nästa program eller felvyn); spelaren stänger inte.
           onLoadFailed={() => {
             resolver.forget(slot.item.ref)

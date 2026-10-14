@@ -4,7 +4,7 @@
  * endpoints) till de rena källadaptrarna. Alla TMDb-uppslag går via cache.
  */
 import {
-  channelListDebridCloud, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
+  channelListDebridCloud, channelRememberStream, channelResolveLibraryPlayback, channelResolveTitleStream, channelUnrestrictDebridFile,
   fetchLibraryStatus, getMovieWatchlist, getWatchlist, hasChannelHost, onPluginStorageChanged, queryLibrary,
   readPluginJson, removePluginStorageItem, writePluginJson,
 } from '@/lib/plugin-sdk'
@@ -184,6 +184,14 @@ export const resolver = createResolver({
   stream: (r) => channelResolveTitleStream(r),
   debrid: (r) => channelUnrestrictDebridFile(r),
 })
+
+/**
+ * Gör strömvalet bakom ett uppslag ihågkommet. Anropas när bilden syns —
+ * aldrig vid uppslaget (förladdning och zappning förbi ska inte minnas).
+ */
+export function rememberPlayedStream(token: string | undefined): void {
+  if (token) channelRememberStream(token)
+}
 
 export function hostReady(): boolean {
   return hasChannelHost()

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { minsLeftLabel, nextBoundaryAction, rememberZap, startSeconds, stepChannel } from './player-logic'
+import { nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, ZAP_RESOLVE_DELAY_MS } from './player-logic'
 import { createChannel, emptyDraft, type ChannelDef } from '../model/channel'
 
 const ch = (number: number, id = `c${number}`): ChannelDef => ({ ...createChannel({ ...emptyDraft(), name: id }, [], 1, () => 0.1), id, number })
@@ -33,8 +33,11 @@ describe('spelarlogiken', () => {
     expect(rememberZap({ lastChannelId: 'b', previousChannelId: 'a' }, 'b')).toEqual({ lastChannelId: 'b', previousChannelId: 'a' })
   })
 
-  it('min kvar-etikett', () => {
-    expect(minsLeftLabel(59.2)).toBe('60 MIN KVAR')
-    expect(minsLeftLabel(0.2)).toBe('1 MIN KVAR')
+  it('kanalbyte väntar med strömsök och debrid men inte med biblioteket', () => {
+    expect(resolveDelayMs('stream', true)).toBe(ZAP_RESOLVE_DELAY_MS)
+    expect(resolveDelayMs('debrid', true)).toBe(ZAP_RESOLVE_DELAY_MS)
+    expect(resolveDelayMs('library', true)).toBe(0)
+    // Programbyte, Från början och felhopp på samma kanal väntar aldrig.
+    expect(resolveDelayMs('stream', false)).toBe(0)
   })
 })
