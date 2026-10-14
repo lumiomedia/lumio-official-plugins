@@ -11,7 +11,7 @@ import { useTvText } from '../../tv/tv-strings'
 import { Icons, TV, station } from '../../tv/tv-ui'
 import { crestText, matchTitle, sourceChannel, type MatchSource, type SportDay, type SportMatch } from '../sport-model'
 import { localDayKey, useSportDay } from '../sport-epg'
-import { pickMultiviewKeys, playerMatchGroups, rankedSources, statusAt, visibleMatches } from '../sport-day-model'
+import { pickMultiviewKeys, playerMatchGroups, rankedSources, replayMatches, statusAt, visibleMatches } from '../sport-day-model'
 import { useOverrides, useSportSettings } from '../sport-store'
 import { useSportResults } from '../results-controller'
 import { matchStatusLabel, scoreText } from '../score-model'
@@ -36,6 +36,11 @@ export function matchesForPlayer(matches: SportMatch[], currentKey: string, now:
     live: withSource.filter((m) => statusAt(m, now) === 'live' && !onChannel.includes(m)),
     later: withSource.filter((m) => statusAt(m, now) === 'upcoming'),
   }
+}
+
+/** Reprisen som sänds på kanalen just nu (`start ≤ now < stop`), annars null. */
+export function replayOnChannel(matches: SportMatch[], key: string, now: number): SportMatch | null {
+  return matches.find((m) => m.rerun && m.start <= now && now < m.stop && m.sources.some((s) => s.channelKey === key)) ?? null
 }
 
 /**
@@ -86,6 +91,7 @@ export function usePlayerSport(args: { playingKey: string | null; model: LiveTvM
     if (!active || !mergedData) return undefined
     return {
       matches: visibleMatches(mergedData, 'all'),
+      replays: replayMatches(mergedData, 'all', model.nowMs),
       overrides,
       view: settings.view,
       onSwitchMatch: (m) => {
@@ -97,7 +103,7 @@ export function usePlayerSport(args: { playingKey: string | null; model: LiveTvM
       isKnownChannel: (key) => model.byKey.has(key),
       playlistName: (sourceId) => model.lists.find((list) => list.source === sourceId)?.name ?? tt('sportPlaylistUnknown'),
     }
-  }, [active, mergedData, overrides, settings.view, play, openMultiview, model.byKey, model.lists, tt])
+  }, [active, mergedData, overrides, settings.view, play, openMultiview, model.byKey, model.lists, model.nowMs, tt])
 }
 
 const shortLabel = (m: SportMatch) => (m.home && m.away ? `${crestText(m.home)} – ${crestText(m.away)}` : m.event ?? m.league)

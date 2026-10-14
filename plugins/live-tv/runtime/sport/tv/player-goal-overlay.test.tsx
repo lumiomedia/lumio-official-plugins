@@ -6,6 +6,7 @@ import { emitGoals, type GoalEvent } from '../goal-events'
 import { setSportSettings } from '../sport-store'
 import { fxMatch, fxSource } from '../__sport-fixture'
 import type { SportMatch } from '../sport-model'
+import { __resetSpoilerForTests, noteReplays } from '../couch/spoiler'
 
 const src = (key: string) => fxSource(key, { channelKey: key })
 const mk = (id: string, fixtureId: string, channel: string, home = 'Malmo FF'): SportMatch => fxMatch({
@@ -31,6 +32,14 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); __setLangForTests('en'); h.controller = null })
 
 describe('PlayerGoalOverlay', () => {
+  it('spoilerskydd: inget MÅL! för en match vars resultat är dolt', () => {
+    __resetSpoilerForTests()
+    noteReplays([fxMatch({ id: 'r', rerun: true, fixture: undefined, start: Date.now(), stop: Date.now() + 3_600_000, replayOf: { kickoff: 0, score: null, fixture: { provider: 'api-sports', id: '1' } } })], Date.now())
+    render(<PlayerGoalOverlay channelKey="cmore1" onJump={vi.fn()} />)
+    act(() => emitGoals([goal('1')]))
+    expect(screen.queryByText('Mål')).toBeNull()
+    __resetSpoilerForTests()
+  })
   it('mål i matchen på kanalen: Mål med ställning och målskytt, borta efter 6 s', () => {
     render(<PlayerGoalOverlay channelKey="cmore1" onJump={vi.fn()} />)
     act(() => emitGoals([goal('1')]))
