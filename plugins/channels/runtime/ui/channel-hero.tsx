@@ -5,7 +5,7 @@
  * tablån (ren uträkning) — inga strömuppslag; spelaren gör dem först när
  * man trycker Titta live.
  */
-import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type TouchEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type TouchEvent } from 'react'
 import { requestBrowseBack } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
 import { programmeAt, type ProgrammeSlot } from '../model/schedule'
@@ -57,6 +57,25 @@ const HERO_CSS = '@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }'
  * herons nederkant uppåt. `dx/dy` kompenserar om en förfader med transform
  * gör lådan relativ till sig själv i stället för fönstret (mäts på lagret).
  */
+/**
+ * Värdens nativa spelare (mpv) ritar UNDER webbvyn och syns bara där sidan är
+ * genomskinlig; värden markerar det med `html.mpv-playing`. Medan den klassen
+ * står ritas herons bakgrundslager inte alls (avmonteras, inte bara osynligt).
+ */
+export function useHostPlayerActive(): boolean {
+  const read = () => typeof document !== 'undefined' && document.documentElement.classList.contains('mpv-playing')
+  const [active, setActive] = useState(read)
+  useEffect(() => {
+    const update = () => setActive(read())
+    update()
+    if (typeof MutationObserver === 'undefined') return
+    const mo = new MutationObserver(update)
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => mo.disconnect()
+  }, [])
+  return active
+}
+
 export interface HeroLayerGeom { dx: number; dy: number; height: number; full: number }
 
 export function measureHeroLayer(hero: HTMLElement, layer: HTMLElement, prev: HeroLayerGeom | null, extra: number): HeroLayerGeom {
@@ -103,6 +122,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
   const many = slideList.length > 1 && onSlide != null
   const [hover, setHover] = useState(false)
   const heroRef = useRef<HTMLElement | null>(null)
+  const hostPlayer = useHostPlayerActive()
   const layerRef = useRef<HTMLDivElement | null>(null)
   const extra = isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop
   const [geom, setGeom] = useState<HeroLayerGeom | null>(null)
@@ -135,7 +155,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       window.removeEventListener('scroll', onScroll, { capture: true })
       window.removeEventListener('resize', onResize)
     }
-  }, [extra])
+  }, [extra, hostPlayer])
   const touch = useRef<{ x: number; y: number } | null>(null)
   const onTouchStart = (e: TouchEvent) => { const p = e.touches[0]; touch.current = p ? { x: p.clientX, y: p.clientY } : null }
   const onTouchEnd = (e: TouchEvent) => {
@@ -209,6 +229,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
         bero på kolumnens indrag. z −1 i kolumnens staplingskontext: under
         appens krom (menyknapp, klocka) och sidans innehåll, över appens grund.
       */}
+      {hostPlayer ? null : (
       <div
         ref={layerRef}
         aria-hidden="true"
@@ -249,6 +270,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
         }}
         />
       </div>
+      )}
 
       {many && !isMobile && !isTv ? (
         <>

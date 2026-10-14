@@ -41745,6 +41745,19 @@ ${cue.text}`).join("\n\n")}
   var FADE_EXTRA = { desktop: 170, mobile: 110 };
   var SWIPE_PX = 50;
   var HERO_CSS = "@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }";
+  function useHostPlayerActive() {
+    const read10 = () => typeof document !== "undefined" && document.documentElement.classList.contains("mpv-playing");
+    const [active3, setActive3] = useState(read10);
+    useEffect(() => {
+      const update = () => setActive3(read10());
+      update();
+      if (typeof MutationObserver === "undefined") return;
+      const mo = new MutationObserver(update);
+      mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+      return () => mo.disconnect();
+    }, []);
+    return active3;
+  }
   function measureHeroLayer(hero, layer, prev, extra) {
     const h = hero.getBoundingClientRect();
     const k = h.width > 0 && hero.offsetWidth > 0 ? h.width / hero.offsetWidth : 1;
@@ -41781,6 +41794,7 @@ ${cue.text}`).join("\n\n")}
     const many = slideList.length > 1 && onSlide != null;
     const [hover, setHover] = useState(false);
     const heroRef = useRef(null);
+    const hostPlayer = useHostPlayerActive();
     const layerRef = useRef(null);
     const extra = isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop;
     const [geom, setGeom] = useState(null);
@@ -41814,7 +41828,7 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("scroll", onScroll, { capture: true });
         window.removeEventListener("resize", onResize);
       };
-    }, [extra]);
+    }, [extra, hostPlayer]);
     const touch = useRef(null);
     const onTouchStart = (e) => {
       const p = e.touches[0];
@@ -41880,7 +41894,7 @@ ${cue.text}`).join("\n\n")}
         },
         children: [
           /* @__PURE__ */ jsx("style", { children: HERO_CSS }),
-          /* @__PURE__ */ jsxs(
+          hostPlayer ? null : /* @__PURE__ */ jsxs(
             "div",
             {
               ref: layerRef,

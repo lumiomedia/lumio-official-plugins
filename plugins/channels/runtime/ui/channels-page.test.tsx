@@ -332,4 +332,17 @@ describe('Kanaler-sidans utseende', () => {
       else delete (HTMLElement.prototype as { offsetWidth?: number }).offsetWidth
     }
   })
+
+  it('herons bakgrundslager ritas inte medan värdens mpv-spelare är aktiv', async () => {
+    state.rundowns = { k1: [{ ...item('Terminator', 100_000), backdropUrl: 'https://img/b.jpg' }], k2: [item('Aliens', 100_000)] }
+    const { container } = page({ channelId: 'k1' })
+    expect(container.querySelector('[data-hero-backdrop]')).toBeTruthy()
+    document.documentElement.classList.add('mpv-playing')
+    try {
+      await waitFor(() => expect(container.querySelector('[data-hero-backdrop]')).toBeNull())
+    } finally {
+      document.documentElement.classList.remove('mpv-playing')
+    }
+    await waitFor(() => expect(container.querySelector('[data-hero-backdrop]')).toBeTruthy())
+  })
 })
