@@ -74,9 +74,10 @@ export const PRESETS: Array<{ id: 'evening-film' | 'comfort-series' | 'late-shor
   { id: 'late-shorts', draft: { ...emptyDraft(), name: 'Kortfilmer efter midnatt', length: 'short', airWindow: 'late', sources: ['library', 'watchlist', 'debrid'] } },
 ]
 
-export function hueGradient(hue: number): string {
+/** Kanalens färgton som platt, halvgenomskinlig ton (ingen gradient). */
+export function hueTint(hue: number, alpha = 0.22): string {
   const h = ((hue % 360) + 360) % 360
-  return `linear-gradient(135deg, hsl(${h} 60% 32%), hsl(${(h + 40) % 360} 55% 14%))`
+  return `hsl(${h} 60% 55% / ${alpha})`
 }
 
 export function channelInitials(name: string): string {

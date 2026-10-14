@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { channelInitials, createChannel, emptyDraft, hueGradient, nextChannelNumber, PRESETS, validateDraft, type ChannelDef } from './channel'
+import { channelInitials, createChannel, emptyDraft, hueTint, nextChannelNumber, PRESETS, validateDraft, type ChannelDef } from './channel'
 
 const ch = (number: number): ChannelDef => ({ ...createChannel({ ...emptyDraft(), name: 'X', sources: ['library'] }, [], 0, () => 0.5), number })
 
@@ -27,9 +27,10 @@ describe('kanalmodellen', () => {
     for (const preset of PRESETS) expect(validateDraft(preset.draft, null).errors).toEqual([])
   })
 
-  it('hueGradient använder hsl, aldrig oklch', () => {
-    expect(hueGradient(200)).toContain('hsl(')
-    expect(hueGradient(200)).not.toContain('oklch')
+  it('hueTint använder hsl, aldrig oklch eller gradient', () => {
+    expect(hueTint(200)).toContain('hsl(')
+    expect(hueTint(200)).not.toContain('oklch')
+    expect(hueTint(200)).not.toContain('gradient')
   })
 
   it('initialer', () => {

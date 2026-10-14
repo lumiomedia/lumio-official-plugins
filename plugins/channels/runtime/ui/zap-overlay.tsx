@@ -11,7 +11,7 @@ import { buildRundown, programmeAt } from '../model/schedule'
 import { NOISE_MS } from '../play/zap-logic'
 import { readCachedPool } from '../state/store'
 import { ChannelBadge } from './badge'
-import { C, FONT, RADIUS } from './tokens'
+import { C, FONT, glass, RADIUS } from './tokens'
 import type { useText } from './use-text'
 
 type T = ReturnType<typeof useText>
@@ -91,8 +91,8 @@ function ZapButton({ children, onClick, isTv, init, label }: { children: ReactNo
       onClick={onClick}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '0.35rem', minHeight: isTv ? '2.75rem' : '2.25rem',
-        padding: isTv ? '0 1.1rem' : '0 0.9rem', borderRadius: RADIUS.pill, border: `1px solid ${C.pillBorder}`,
-        background: C.pillBg, color: C.text, fontFamily: FONT.ui, fontSize: isTv ? '1rem' : '0.75rem',
+        padding: isTv ? '0 1.1rem' : '0 0.9rem', borderRadius: RADIUS.pill,
+        ...glass(isTv, { fill: C.pillBg, blur: 20 }), color: C.text, fontFamily: FONT.ui, fontSize: isTv ? '1rem' : '0.75rem',
         fontWeight: 600, letterSpacing: '0.12em', cursor: 'pointer', whiteSpace: 'nowrap',
       }}
     >
@@ -133,7 +133,7 @@ export function ZapOverlay(p: ZapOverlayProps) {
       </div>
 
       {p.notice ? (
-        <div role="status" style={{ position: 'absolute', top: '5.5rem', left: '50%', transform: 'translateX(-50%)', maxWidth: 'calc(100vw - 2rem)', padding: '0.6rem 1.1rem', borderRadius: RADIUS.osd, background: C.osdBg, backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', fontSize: isTv ? '1rem' : '0.85rem', textAlign: 'center' }}>
+        <div role="status" style={{ position: 'absolute', top: '5.5rem', left: '50%', transform: 'translateX(-50%)', maxWidth: 'calc(100vw - 2rem)', padding: '0.6rem 1.1rem', borderRadius: RADIUS.osd, ...glass(isTv, { fill: C.osdBg, blur: 14 }), fontSize: isTv ? '1rem' : '0.85rem', textAlign: 'center' }}>
           {p.notice}
         </div>
       ) : null}
@@ -143,8 +143,8 @@ export function ZapOverlay(p: ZapOverlayProps) {
         data-zap-osd=""
         style={{
           ...fade, position: 'absolute', left: '1.5rem', right: '1.5rem', bottom: 'calc(var(--android-inset-bottom, 0px) + 6.5rem)',
-          padding: '0.9rem 1.1rem', borderRadius: RADIUS.osd, border: '1px solid rgba(255,255,255,0.08)',
-          background: C.osdBg, backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+          padding: '0.9rem 1.1rem', borderRadius: RADIUS.osd,
+          ...glass(isTv, { fill: C.osdBg, blur: 14 }),
           display: 'flex', flexDirection: 'column', gap: '0.6rem',
         }}
       >
@@ -204,15 +204,15 @@ function ZapList(p: ZapOverlayProps) {
   return (
     <>
       {/* Tryck utanför stänger listan. */}
-      <div data-zap-list-backdrop="" aria-hidden="true" onClick={p.onCloseList} style={{ position: 'absolute', inset: 0, pointerEvents: 'auto', background: narrow ? 'rgba(5,8,22,0.4)' : 'transparent' }} />
+      <div data-zap-list-backdrop="" aria-hidden="true" onClick={p.onCloseList} style={{ position: 'absolute', inset: 0, pointerEvents: 'auto', background: narrow ? 'rgba(0,0,0,0.4)' : 'transparent' }} />
       <div
         data-zap-list=""
         role="listbox"
         style={{
           ...panel, position: 'absolute', pointerEvents: 'auto', overflowY: 'auto', display: 'flex', flexDirection: 'column',
           padding: 'calc(var(--android-inset-top, 0px) + 1rem) 0.6rem 1rem', gap: '0.25rem',
-          background: 'rgba(5,8,22,0.82)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-          borderRight: narrow ? undefined : '1px solid rgba(255,255,255,0.08)',
+          ...glass(p.isTv, { fill: 'rgba(18,18,22,0.85)', blur: 14 }),
+          border: 'none', ...(narrow ? { borderTop: `1px solid ${C.glassBorder}` } : { borderRight: `1px solid ${C.glassBorder}` }),
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', padding: '0 0.5rem 0.4rem' }}>

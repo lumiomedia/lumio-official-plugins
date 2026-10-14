@@ -22,7 +22,7 @@ import { deleteChannel, saveChannel } from '../state/store'
 import { genreLabel, genreName, genreOptions, previewFor, sourceCounts, type SourcePools } from './studio-logic'
 import { canonGenre, canonGenres } from '../data/genres'
 import { formatClock } from './guide-layout'
-import { FONT, fontSize } from './tokens'
+import { belowMenuPill, C, FONT, fontSize } from './tokens'
 import type { TextKey, useText } from './use-text'
 
 type T = ReturnType<typeof useText>
@@ -418,8 +418,9 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
     <div
       data-channels-studio=""
       style={{
-        background: TOKENS.bg, minHeight: '100%', color: TOKENS.text, fontFamily: FONT.ui,
-        padding: isMobile ? '20px 16px 32px' : isTv ? '1.75rem 2.5rem 2.5rem' : '28px 32px 40px',
+        background: C.base, minHeight: '100%', color: TOKENS.text, fontFamily: FONT.ui,
+        // Under appens menypill; högra hörnet lämnas åt appens klocka.
+        padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 32px' : isTv ? '2.5rem 2.5rem' : '32px 40px'}`,
       }}
     >
       <p style={{ ...labelStyle, margin: 0 }}>{t('studioEyebrow')}</p>

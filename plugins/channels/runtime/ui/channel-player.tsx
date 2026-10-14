@@ -13,7 +13,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ComponentType, type CSSProperties, type MutableRefObject, type ReactNode } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
-import { hueGradient } from '../model/channel'
 import { programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, OSD_IDLE_MS } from '../play/zap-logic'
@@ -22,7 +21,7 @@ import { initialPlayerState, playerReducer, type Request } from '../play/player-
 import { readZapMemory, rememberPlayedStream, resolver, writeZapMemory } from '../host'
 import { useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
-import { C, FONT, RADIUS } from './tokens'
+import { C, FONT, glass, RADIUS } from './tokens'
 import { useText } from './use-text'
 import { ZapOverlay } from './zap-overlay'
 
@@ -360,7 +359,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
 
   if (!channel) {
     return (
-      <Screen background={C.base} isTv={isTv} onClose={onClose} t={t}>
+      <Screen isTv={isTv} onClose={onClose} t={t}>
         <p style={msgStyle}>{t('playerEmpty')}</p>
       </Screen>
     )
@@ -474,12 +473,9 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   }
 
   const backdropUrl = described?.slot.item.backdropUrl
-  const background = backdropUrl
-    ? `linear-gradient(180deg, rgba(5,8,22,0.35), rgba(5,8,22,0.85)), url("${backdropUrl}") center / cover no-repeat, ${hueGradient(channel.hue)}`
-    : hueGradient(channel.hue)
 
   return (
-    <Screen background={background} isTv={isTv} onMouseMove={poke}>
+    <Screen backdropUrl={backdropUrl} isTv={isTv} onMouseMove={poke}>
       {status === 'rest' && rest ? (
         <p style={msgStyle}>{t('playerRest', { time: clock(rest.nextAir) })}</p>
       ) : status === 'empty' ? (
@@ -505,8 +501,9 @@ function clock(ms: number): string {
 }
 
 /** Helskärmsyta när appens spelare inte visas (inställning, vila, tomt, fel). */
-function Screen({ background, isTv, children, onMouseMove, onClose, t }: {
-  background: string
+function Screen({ backdropUrl, isTv, children, onMouseMove, onClose, t }: {
+  /** Programmets bild bakom en platt mörkning; utan bild appens svarta grund. */
+  backdropUrl?: string
   isTv: boolean
   children: ReactNode
   onMouseMove?: () => void
@@ -520,9 +517,16 @@ function Screen({ background, isTv, children, onMouseMove, onClose, t }: {
       onMouseMove={onMouseMove}
       style={{
         position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '0 1rem', background, color: C.text, fontFamily: FONT.ui,
+        padding: '0 1rem', background: C.base, color: C.text, fontFamily: FONT.ui,
       }}
     >
+      {/* z −1 i ytans egen staplingskontext: över grunden, under allt innehåll. */}
+      {backdropUrl ? (
+        <>
+          <span aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: -1, background: `url("${backdropUrl}") center / cover no-repeat` }} />
+          <span aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: -1, background: C.scrim }} />
+        </>
+      ) : null}
       {children}
       {onClose && t ? (
         <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem' }}>
@@ -552,8 +556,9 @@ function OsdButton({ children, onClick, isTv, label, accent, init }: {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
         minHeight: isTv ? '2.75rem' : '2.25rem', padding: isTv ? '0 1.1rem' : '0 0.9rem',
-        borderRadius: RADIUS.pill, border: `1px solid ${C.pillBorder}`,
-        background: accent ? C.accent : C.pillBg, color: accent ? C.base : C.text,
+        ...glass(isTv, { fill: accent ? C.accent : C.pillBg, blur: 20 }),
+        borderRadius: RADIUS.pill, border: `1px solid ${accent ? C.accent : C.pillBorder}`,
+        color: accent ? C.onAccent : C.text,
         fontFamily: FONT.ui, fontSize: isTv ? '1rem' : '0.8rem', fontWeight: 600, letterSpacing: '0.12em',
         cursor: 'pointer', whiteSpace: 'nowrap',
       }}
@@ -597,10 +602,10 @@ function ChannelOsd(props: OsdProps) {
     >
       <div
         style={{
-          ...fade, position: 'absolute', top: 0, left: 0, right: 0,
+          ...fade, ...glass(isTv, { fill: C.osdBg, blur: 12 }),
+          position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 1.25rem)', left: '1.5rem', right: '1.5rem',
           display: 'flex', alignItems: 'center', gap: '0.85rem',
-          padding: 'calc(var(--android-inset-top, 0px) + 1.5rem) 1.75rem 2.5rem',
-          background: 'linear-gradient(180deg, rgba(5,8,22,0.75), rgba(5,8,22,0))',
+          padding: '0.75rem 1rem', borderRadius: RADIUS.osd,
         }}
       >
         <ChannelBadge channel={channel} size={44} />
@@ -617,7 +622,7 @@ function ChannelOsd(props: OsdProps) {
           style={{
             position: 'absolute', top: '6.5rem', left: '50%', transform: 'translateX(-50%)',
             maxWidth: 'calc(100vw - 2rem)', padding: '0.7rem 1.2rem', borderRadius: RADIUS.osd,
-            background: C.osdBg, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+            ...glass(isTv, { fill: C.osdBg, blur: 12 }),
             fontSize: isTv ? '1rem' : '0.85rem', textAlign: 'center',
           }}
         >
@@ -632,8 +637,8 @@ function ChannelOsd(props: OsdProps) {
           // Över appens egna kontroller längst ner.
           bottom: 'calc(var(--android-inset-bottom, 0px) + 6.5rem)',
           display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap',
-          padding: '0.75rem 1rem', borderRadius: RADIUS.osd, border: '1px solid rgba(255,255,255,0.08)',
-          background: C.osdBg, backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          padding: '0.75rem 1rem', borderRadius: RADIUS.osd,
+          ...glass(isTv, { fill: C.osdBg, blur: 12 }),
         }}
       >
         {props.onFromStart ? <OsdButton onClick={props.onFromStart} isTv={isTv}>⟲ {t('playerFromStart')}</OsdButton> : null}
@@ -645,7 +650,7 @@ function ChannelOsd(props: OsdProps) {
         <span
           style={{
             display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.6rem', borderRadius: RADIUS.pill,
-            background: mode === 'live' ? C.accent : C.pillBg, color: mode === 'live' ? C.base : C.text,
+            background: mode === 'live' ? C.accent : C.pillBg, color: mode === 'live' ? C.onAccent : C.text,
             border: mode === 'live' ? 'none' : `1px solid ${C.pillBorder}`,
             fontSize: isTv ? '0.85rem' : '0.7rem', fontWeight: 700, letterSpacing: '0.18em',
           }}

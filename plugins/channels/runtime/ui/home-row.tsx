@@ -9,12 +9,12 @@
  */
 import { memo, useCallback, useEffect, useState } from 'react'
 import { getPluginHomeRowTrackClass, useTvMode, type HomeRowProps } from '@/lib/plugin-sdk'
-import { hueGradient, type ChannelDef } from '../model/channel'
+import { hueTint, type ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 import { useChannelClock, useChannelPool, useChannels } from '../state/store'
 import { homeCardModel, homeChannels } from './home-row-logic'
 import { CHANNELS_PAGE_ID, formatClock } from './guide-layout'
-import { C, FONT, RADIUS, fontSize } from './tokens'
+import { C, FONT, glass, RADIUS, fontSize } from './tokens'
 import { useText } from './use-text'
 
 export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCardWidth = '16rem' }: HomeRowProps) {
@@ -45,8 +45,8 @@ export function ChannelsHomeRow({ onNavigate, layout = 'slider', count, sliderCa
           className="focus-card-ring"
           onClick={() => onNavigate({ pageId: CHANNELS_PAGE_ID })}
           style={{
-            flexShrink: 0, cursor: 'pointer', padding: '6px 12px', borderRadius: RADIUS.pill, background: C.pillBg,
-            border: `1px solid ${C.pillBorder}`, color: C.textSoft, fontFamily: FONT.mono, fontSize: fontSize(10.5, isTv), letterSpacing: '0.12em',
+            flexShrink: 0, cursor: 'pointer', padding: '6px 12px', borderRadius: RADIUS.pill,
+            ...glass(isTv, { fill: C.pillBg, blur: 20 }), color: C.textSoft, fontFamily: FONT.mono, fontSize: fontSize(10.5, isTv), letterSpacing: '0.12em',
           }}
         >
           {t('homeRowShowGuide')}
@@ -103,11 +103,12 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
         aria-label={`${t('zapChannelLine', { n: m.number, name: m.name })} · ${title}`}
         style={{
           position: 'relative', display: 'block', width: '100%', aspectRatio: '16 / 9', padding: 0, overflow: 'hidden', cursor: 'pointer',
-          textAlign: 'left', color: C.text, borderRadius: RADIUS.card, border: '1px solid rgba(255,255,255,0.08)',
-          background: m.backdropUrl ? `center / cover no-repeat url("${m.backdropUrl}"), ${C.base3}` : hueGradient(m.hue),
+          textAlign: 'left', color: C.text, borderRadius: RADIUS.card, border: `1px solid ${C.glassBorder}`,
+          // Bild under en platt mörkning; utan bild glas med kanalens ton (ingen gradient).
+          background: m.backdropUrl ? `center / cover no-repeat url("${m.backdropUrl}"), ${C.solid}` : C.glass,
         }}
       >
-        <span aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(5,8,22,0) 35%, rgba(5,8,22,0.85) 100%)' }} />
+        <span aria-hidden="true" style={{ position: 'absolute', inset: 0, background: m.backdropUrl ? 'rgba(0,0,0,0.45)' : hueTint(m.hue, 0.12) }} />
         <span
           style={{
             position: 'absolute', top: 8, left: 8, padding: '2px 7px', borderRadius: 6, background: 'rgba(0,0,0,0.6)',
@@ -122,7 +123,7 @@ const HomeCard = memo(function HomeCard({ channel, now, isTv, width, onRundown, 
             style={{
               position: 'absolute', top: 8, right: 8, padding: '2px 7px', borderRadius: RADIUS.pill, fontFamily: FONT.mono,
               fontSize: fontSize(9.5, isTv), fontWeight: 600, letterSpacing: '0.06em',
-              background: m.resting ? 'rgba(5,8,22,0.8)' : C.accent, color: m.resting ? C.textDim : C.base,
+              background: m.resting ? 'rgba(0,0,0,0.7)' : C.accent, color: m.resting ? C.textDim : C.onAccent,
             }}
           >
             {badge.toUpperCase()}

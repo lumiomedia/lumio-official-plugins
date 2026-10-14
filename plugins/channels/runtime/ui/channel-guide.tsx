@@ -18,7 +18,7 @@ import type { PoolItem } from '../data/pool'
 import { useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { blockBox, formatClock, nowLinePct, type GuideWindow } from './guide-layout'
-import { C, FONT, fontSize } from './tokens'
+import { C, FONT, RADIUS, fontSize } from './tokens'
 import type { useText } from './use-text'
 
 type T = ReturnType<typeof useText>
@@ -93,7 +93,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
 
 /** Namnkolumnen står kvar när tidsdelen rullar på mobil. */
 const stickyLabel = (isMobile: boolean): CSSProperties =>
-  isMobile ? { position: 'sticky', left: 0, zIndex: 2, background: C.base } : {}
+  isMobile ? { position: 'sticky', left: 0, zIndex: 2, background: C.solid } : {}
 
 interface RowProps {
   channel: ChannelDef
@@ -147,12 +147,13 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
       onKeyDown={onKeyDown}
       style={{
         display: 'grid', gridTemplateColumns: columns, height: ROW_H, cursor: 'pointer', outline: 'none',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        background: selected ? 'rgba(255,255,255,0.05)' : 'transparent',
-        boxShadow: selected ? 'inset 0 0 0 1px rgba(244,132,95,0.35)' : 'none',
+        borderBottom: `1px solid ${selected ? 'transparent' : 'rgba(255,255,255,0.05)'}`,
+        borderRadius: selected ? RADIUS.card : 0,
+        background: selected ? C.glass : 'transparent',
+        boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : 'none',
       }}
     >
-      <div style={{ ...stickyLabel(isMobile), display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12, padding: isMobile ? '0 6px 0 16px' : '0 12px 0 8px', minWidth: 0, background: isMobile ? (selected ? 'hsl(225 45% 9%)' : C.base) : undefined }}>
+      <div style={{ ...stickyLabel(isMobile), display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 12, padding: isMobile ? '0 6px 0 16px' : '0 12px 0 8px', minWidth: 0, background: isMobile ? (selected ? C.solidSelected : C.solid) : undefined }}>
         {!isMobile ? (
           <span style={{ width: 18, textAlign: 'right', fontFamily: FONT.mono, fontSize: fontSize(11, isTv), color: C.textMute, flexShrink: 0 }}>{channel.number}</span>
         ) : null}
@@ -181,8 +182,6 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
   )
 })
 
-const REST_BG = 'repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 6px, transparent 6px 12px)'
-
 function Block({ slot, win, now, isTv, t }: { slot: Slot<PoolItem>; win: GuideWindow; now: number; isTv: boolean; t: T }) {
   const box = blockBox(slot, win)
   if (!box) return null
@@ -200,8 +199,9 @@ function Block({ slot, win, now, isTv, t }: { slot: Slot<PoolItem>; win: GuideWi
         position: 'absolute', top: 6, bottom: 6, left: `calc(${box.leftPct}% + 2px)`, width: `calc(${box.widthPct}% - 4px)`,
         boxSizing: 'border-box', padding: '5px 9px', borderRadius: 8, overflow: 'hidden',
         display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 1,
-        background: isRest ? REST_BG : current ? 'rgba(244,132,95,0.16)' : C.base3,
-        border: `1px solid ${current ? 'rgba(244,132,95,0.45)' : 'rgba(255,255,255,0.07)'}`,
+        // Glas på svart grund (ingen blur: inget syns bakom). Vila = streckad kontur.
+        background: isRest ? 'transparent' : current ? 'rgba(244,132,95,0.16)' : C.glass,
+        border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current ? 'rgba(244,132,95,0.45)' : C.glassBorder}`,
         color: isRest ? C.textMute : C.text,
       }}
     >

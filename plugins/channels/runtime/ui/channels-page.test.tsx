@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   now: 0,
   saved: [] as unknown[],
   back: 0,
+  partial: false,
 }))
 
 vi.mock('@/lib/plugin-sdk', () => ({
@@ -25,7 +26,7 @@ vi.mock('../host', () => ({
 }))
 vi.mock('../state/store', () => ({
   useChannels: () => state.channels,
-  useChannelPool: (channel: { id: string } | null) => ({ pool: [], rundown: (channel && state.rundowns[channel.id]) ?? [], loading: false }),
+  useChannelPool: (channel: { id: string } | null) => ({ pool: [], rundown: (channel && state.rundowns[channel.id]) ?? [], loading: false, partial: state.partial }),
   useChannelClock: () => state.now,
   saveChannel: (def: unknown) => { state.saved.push(def) },
 }))
@@ -61,6 +62,7 @@ beforeEach(() => {
   state.now = at(21, 47)
   state.saved = []
   state.back = 0
+  state.partial = false
 })
 afterEach(cleanup)
 
@@ -162,5 +164,28 @@ describe('Kanaler-sidan', () => {
     page()
     fireEvent.click(screen.getByText('‹ HEM'))
     expect(state.back).toBe(1)
+  })
+})
+
+describe('Kanaler-sidans utseende', () => {
+  it('inga gradienter; bakgrundsbilden under en platt mörkning', () => {
+    state.rundowns = { k1: [{ ...item('Terminator', 100_000), backdropUrl: 'https://img/b.jpg' }], k2: [item('Aliens', 100_000)] }
+    const { container } = page()
+    const html = container.innerHTML
+    expect(html).toContain('img/b.jpg')
+    expect(html).not.toMatch(/gradient/i)
+  })
+
+  it('toppknapparna står tillsammans och vänsterställda (inget i högra hörnet)', () => {
+    const { container } = page()
+    const bar = container.querySelector('[data-channels-topbar]')!
+    expect([...bar.querySelectorAll('button, span')].map((el) => el.textContent)).toEqual(['‹ HEM', 'KANALER', '+ NY KANAL'])
+    expect(bar.innerHTML).not.toContain('flex: 1')
+  })
+
+  it('visar en diskret rad medan fler källor laddas', () => {
+    state.partial = true
+    page()
+    expect(screen.getByText('Fler titler laddas…')).toBeTruthy()
   })
 })

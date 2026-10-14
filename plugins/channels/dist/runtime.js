@@ -40074,9 +40074,9 @@ ${cue.text}`).join("\n\n")}
     { id: "comfort-series", draft: { ...emptyDraft(), name: "Komfortserier", kind: "tv", order: "episodes", sources: ["library", "watchlist", "debrid"] } },
     { id: "late-shorts", draft: { ...emptyDraft(), name: "Kortfilmer efter midnatt", length: "short", airWindow: "late", sources: ["library", "watchlist", "debrid"] } }
   ];
-  function hueGradient(hue) {
+  function hueTint(hue, alpha = 0.22) {
     const h = (hue % 360 + 360) % 360;
-    return `linear-gradient(135deg, hsl(${h} 60% 32%), hsl(${(h + 40) % 360} 55% 14%))`;
+    return `hsl(${h} 60% 55% / ${alpha})`;
   }
   function channelInitials(name) {
     const words = name.trim().split(/\s+/).filter(Boolean);
@@ -41136,12 +41136,11 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tokens.ts
   var C = {
-    base: "hsl(229 63% 5%)",
-    // #050816
-    base2: "hsl(218 55% 8%)",
-    // #09111f
-    base3: "hsl(219 49% 10%)",
-    // #0d1526
+    /** Appens grund (--base-950, följer temat; svart som standard). */
+    base: "rgb(var(--base-950, 5 5 7))",
+    /** Ogenomskinlig yta för klistrade kolumner på mobil (måste täcka det som rullar under). */
+    solid: "hsl(240 6% 8%)",
+    solidSelected: "hsl(240 5% 12%)",
     text: "hsl(210 40% 98%)",
     // #f8fafc
     textSoft: "hsl(213 27% 84%)",
@@ -41154,12 +41153,34 @@ ${cue.text}`).join("\n\n")}
     // #f4845f
     accentLight: "hsl(33 89% 69%)",
     // #f7b267
-    pillBorder: "rgba(255,255,255,0.14)",
-    pillBg: "rgba(255,255,255,0.04)",
-    osdBg: "rgba(5,8,22,0.7)",
-    scrim: "rgba(5,8,22,0.55)",
-    shadow: "0 18px 70px rgba(0,0,0,0.45)"
+    /** Text på accentfärgad yta. */
+    onAccent: "hsl(15 60% 8%)",
+    /** Pillren och knapparna: menypillrets glas (--mc-surface i appen). */
+    pillBorder: "rgba(255,255,255,0.1)",
+    pillBg: "rgba(235,235,240,0.14)",
+    /** Kort, block och rader: svag vit fyllnad + hårfin kant. */
+    glass: "rgba(255,255,255,0.06)",
+    glassHover: "rgba(255,255,255,0.1)",
+    glassBorder: "rgba(255,255,255,0.1)",
+    /** OSD och paneler över bild/video. */
+    osdBg: "rgba(18,18,22,0.72)",
+    /** Platt mörkning över en bakgrundsbild (ingen gradient). */
+    scrim: "rgba(0,0,0,0.58)"
   };
+  function glass(isTv, opts = {}) {
+    const px = isTv ? 0 : opts.blur ?? 16;
+    const filter = px > 0 ? `blur(${px}px)` : "none";
+    return {
+      background: opts.fill ?? C.glass,
+      border: `1px solid ${C.glassBorder}`,
+      backdropFilter: filter,
+      WebkitBackdropFilter: filter
+    };
+  }
+  function belowMenuPill(isTv, isMobile) {
+    if (isTv) return "calc(5.25rem + var(--tv-scene-top-inset, 0px))";
+    return `calc(var(--page-top-line, 1rem) + ${isMobile ? 66 : 58}px)`;
+  }
   var FONT3 = {
     ui: '"Avenir Next", system-ui, -apple-system, "Segoe UI", sans-serif',
     title: 'Georgia, "Times New Roman", serif',
@@ -41215,8 +41236,7 @@ ${cue.text}`).join("\n\n")}
               cursor: "pointer",
               padding: "6px 12px",
               borderRadius: RADIUS.pill,
-              background: C.pillBg,
-              border: `1px solid ${C.pillBorder}`,
+              ...glass(isTv, { fill: C.pillBg, blur: 20 }),
               color: C.textSoft,
               fontFamily: FONT3.mono,
               fontSize: fontSize(10.5, isTv),
@@ -41277,11 +41297,12 @@ ${cue.text}`).join("\n\n")}
             textAlign: "left",
             color: C.text,
             borderRadius: RADIUS.card,
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: m.backdropUrl ? `center / cover no-repeat url("${m.backdropUrl}"), ${C.base3}` : hueGradient(m.hue)
+            border: `1px solid ${C.glassBorder}`,
+            // Bild under en platt mörkning; utan bild glas med kanalens ton (ingen gradient).
+            background: m.backdropUrl ? `center / cover no-repeat url("${m.backdropUrl}"), ${C.solid}` : C.glass
           },
           children: [
-            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,8,22,0) 35%, rgba(5,8,22,0.85) 100%)" } }),
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { position: "absolute", inset: 0, background: m.backdropUrl ? "rgba(0,0,0,0.45)" : hueTint(m.hue, 0.12) } }),
             /* @__PURE__ */ jsx(
               "span",
               {
@@ -41313,8 +41334,8 @@ ${cue.text}`).join("\n\n")}
                   fontSize: fontSize(9.5, isTv),
                   fontWeight: 600,
                   letterSpacing: "0.06em",
-                  background: m.resting ? "rgba(5,8,22,0.8)" : C.accent,
-                  color: m.resting ? C.textDim : C.base
+                  background: m.resting ? "rgba(0,0,0,0.7)" : C.accent,
+                  color: m.resting ? C.textDim : C.onAccent
                 },
                 children: badge.toUpperCase()
               }
@@ -41377,8 +41398,8 @@ ${cue.text}`).join("\n\n")}
           width: size,
           height: size,
           borderRadius: Math.round(size * 0.18),
-          background: hueGradient(channel.hue),
-          border: "1px solid rgba(255,255,255,0.18)",
+          background: hueTint(channel.hue, 0.26),
+          border: `1px solid ${hueTint(channel.hue, 0.45)}`,
           color: C.text,
           fontFamily: FONT3.mono,
           fontWeight: 700,
@@ -41441,7 +41462,7 @@ ${cue.text}`).join("\n\n")}
       ))
     ] }) }) });
   }
-  var stickyLabel = (isMobile) => isMobile ? { position: "sticky", left: 0, zIndex: 2, background: C.base } : {};
+  var stickyLabel = (isMobile) => isMobile ? { position: "sticky", left: 0, zIndex: 2, background: C.solid } : {};
   var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }) {
     const { rundown, loading: loading2, partial } = useChannelPool(channel);
     useEffect(() => {
@@ -41483,12 +41504,13 @@ ${cue.text}`).join("\n\n")}
           height: ROW_H,
           cursor: "pointer",
           outline: "none",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
-          background: selected ? "rgba(255,255,255,0.05)" : "transparent",
-          boxShadow: selected ? "inset 0 0 0 1px rgba(244,132,95,0.35)" : "none"
+          borderBottom: `1px solid ${selected ? "transparent" : "rgba(255,255,255,0.05)"}`,
+          borderRadius: selected ? RADIUS.card : 0,
+          background: selected ? C.glass : "transparent",
+          boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : "none"
         },
         children: [
-          /* @__PURE__ */ jsxs("div", { style: { ...stickyLabel(isMobile), display: "flex", alignItems: "center", gap: isMobile ? 6 : 12, padding: isMobile ? "0 6px 0 16px" : "0 12px 0 8px", minWidth: 0, background: isMobile ? selected ? "hsl(225 45% 9%)" : C.base : void 0 }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { ...stickyLabel(isMobile), display: "flex", alignItems: "center", gap: isMobile ? 6 : 12, padding: isMobile ? "0 6px 0 16px" : "0 12px 0 8px", minWidth: 0, background: isMobile ? selected ? C.solidSelected : C.solid : void 0 }, children: [
             !isMobile ? /* @__PURE__ */ jsx("span", { style: { width: 18, textAlign: "right", fontFamily: FONT3.mono, fontSize: fontSize(11, isTv), color: C.textMute, flexShrink: 0 }, children: channel.number }) : null,
             /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 22, style: { width: 30, borderRadius: 5 } }),
             /* @__PURE__ */ jsx("span", { style: { fontSize: fontSize(isMobile ? 12 : 13.5, isTv), fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }, children: isMobile ? channel.number : channel.name })
@@ -41518,7 +41540,6 @@ ${cue.text}`).join("\n\n")}
       }
     );
   });
-  var REST_BG = "repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 6px, transparent 6px 12px)";
   function Block({ slot, win, now: now2, isTv, t }) {
     const box = blockBox(slot, win);
     if (!box) return null;
@@ -41545,8 +41566,9 @@ ${cue.text}`).join("\n\n")}
           flexDirection: "column",
           justifyContent: "center",
           gap: 1,
-          background: isRest ? REST_BG : current2 ? "rgba(244,132,95,0.16)" : C.base3,
-          border: `1px solid ${current2 ? "rgba(244,132,95,0.45)" : "rgba(255,255,255,0.07)"}`,
+          // Glas på svart grund (ingen blur: inget syns bakom). Vila = streckad kontur.
+          background: isRest ? "transparent" : current2 ? "rgba(244,132,95,0.16)" : C.glass,
+          border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current2 ? "rgba(244,132,95,0.45)" : C.glassBorder}`,
           color: isRest ? C.textMute : C.text
         },
         children: [
@@ -41578,7 +41600,6 @@ ${cue.text}`).join("\n\n")}
     const rest = slot?.kind === "rest" ? slot : null;
     const after = programme ? nextProgramme(rundown, channel, programme.stop) : rest ? nextProgramme(rundown, channel, rest.nextAir) : null;
     const backdropUrl = programme?.item.backdropUrl;
-    const background = backdropUrl ? `linear-gradient(90deg, rgba(5,8,22,0.92) 0%, rgba(5,8,22,0.6) 55%, rgba(5,8,22,0.35) 100%), linear-gradient(180deg, rgba(5,8,22,0) 55%, ${C.base} 100%), url("${backdropUrl}") center / cover no-repeat, ${hueGradient(channel.hue)}` : `linear-gradient(180deg, rgba(5,8,22,0.35) 0%, rgba(5,8,22,0.7) 70%, ${C.base} 100%), ${hueGradient(channel.hue)}`;
     let title;
     let meta;
     if (programme) {
@@ -41605,22 +41626,26 @@ ${cue.text}`).join("\n\n")}
         "data-channels-hero": "",
         style: {
           position: "relative",
+          overflow: "hidden",
           minHeight: 330,
-          padding: isMobile ? "16px 16px 24px" : isTv ? "1.75rem 2.5rem 2rem" : "24px 32px 28px",
-          background,
+          padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 24px" : isTv ? "2.5rem 2rem" : "32px 28px"}`,
+          background: C.base,
           color: C.text,
           fontFamily: FONT3.ui,
           display: "flex",
           flexDirection: "column"
         },
         children: [
-          /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+          backdropUrl ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", "data-hero-backdrop": "", style: { position: "absolute", inset: 0, background: `url("${backdropUrl}") center / cover no-repeat` } }),
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { position: "absolute", inset: 0, background: C.scrim } })
+          ] }) : null,
+          /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { position: "relative", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
             /* @__PURE__ */ jsx(Pill, { isTv, onClick: () => requestBrowseBack(), children: t("pageHome") }),
             /* @__PURE__ */ jsx(Pill, { isTv, active: true, children: t("pageChannels") }),
-            /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
             /* @__PURE__ */ jsx(Pill, { isTv, onClick: onNewChannel, children: t("pageNewChannel") })
           ] }),
-          /* @__PURE__ */ jsxs("div", { style: { marginTop: "auto", paddingTop: isMobile ? 32 : 48 }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { position: "relative", marginTop: "auto", paddingTop: isMobile ? 32 : 48 }, children: [
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }, children: [
               programme || rest ? /* @__PURE__ */ jsxs(
                 "span",
@@ -41632,13 +41657,13 @@ ${cue.text}`).join("\n\n")}
                     padding: "3px 9px",
                     borderRadius: RADIUS.pill,
                     background: C.accent,
-                    color: C.base,
+                    color: C.onAccent,
                     fontSize: fs(10.5),
                     fontWeight: 700,
                     letterSpacing: "0.16em"
                   },
                   children: [
-                    /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: C.base } }),
+                    /* @__PURE__ */ jsx("span", { style: { width: 6, height: 6, borderRadius: 999, background: C.onAccent } }),
                     t("heroLive")
                   ]
                 }
@@ -41683,9 +41708,9 @@ ${cue.text}`).join("\n\n")}
       alignItems: "center",
       minHeight: isTv ? "2.25rem" : 30,
       padding: isTv ? "0 1rem" : "0 14px",
+      ...glass(isTv, { fill: C.pillBg, blur: 20 }),
       borderRadius: RADIUS.pill,
       border: `1px solid ${active3 ? "rgba(244,132,95,0.55)" : C.pillBorder}`,
-      background: C.pillBg,
       color: active3 ? C.accentLight : C.text,
       fontFamily: FONT3.ui,
       fontSize: fontSize(10.5, isTv),
@@ -41712,9 +41737,8 @@ ${cue.text}`).join("\n\n")}
           gap: 6,
           padding: isTv ? "0.625rem 1.375rem" : "10px 22px",
           borderRadius: RADIUS.pill,
-          border: primary ? `1px solid ${C.accent}` : "1px solid rgba(255,255,255,0.2)",
-          background: primary ? C.accent : "rgba(255,255,255,0.05)",
-          color: primary ? C.base : C.text,
+          ...primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(isTv, { fill: C.pillBg, blur: 20 }),
+          color: primary ? C.onAccent : C.text,
           fontFamily: FONT3.ui,
           fontSize: fontSize(14, isTv),
           fontWeight: 600,
@@ -41890,8 +41914,7 @@ ${cue.text}`).join("\n\n")}
           minHeight: isTv ? "2.75rem" : "2.25rem",
           padding: isTv ? "0 1.1rem" : "0 0.9rem",
           borderRadius: RADIUS.pill,
-          border: `1px solid ${C.pillBorder}`,
-          background: C.pillBg,
+          ...glass(isTv, { fill: C.pillBg, blur: 20 }),
           color: C.text,
           fontFamily: FONT3.ui,
           fontSize: isTv ? "1rem" : "0.75rem",
@@ -41939,7 +41962,7 @@ ${cue.text}`).join("\n\n")}
               children: bigNumber
             }
           ),
-          p.notice ? /* @__PURE__ */ jsx("div", { role: "status", style: { position: "absolute", top: "5.5rem", left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100vw - 2rem)", padding: "0.6rem 1.1rem", borderRadius: RADIUS.osd, background: C.osdBg, backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", fontSize: isTv ? "1rem" : "0.85rem", textAlign: "center" }, children: p.notice }) : null,
+          p.notice ? /* @__PURE__ */ jsx("div", { role: "status", style: { position: "absolute", top: "5.5rem", left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100vw - 2rem)", padding: "0.6rem 1.1rem", borderRadius: RADIUS.osd, ...glass(isTv, { fill: C.osdBg, blur: 14 }), fontSize: isTv ? "1rem" : "0.85rem", textAlign: "center" }, children: p.notice }) : null,
           /* @__PURE__ */ jsxs(
             "div",
             {
@@ -41952,10 +41975,7 @@ ${cue.text}`).join("\n\n")}
                 bottom: "calc(var(--android-inset-bottom, 0px) + 6.5rem)",
                 padding: "0.9rem 1.1rem",
                 borderRadius: RADIUS.osd,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: C.osdBg,
-                backdropFilter: "blur(14px)",
-                WebkitBackdropFilter: "blur(14px)",
+                ...glass(isTv, { fill: C.osdBg, blur: 14 }),
                 display: "flex",
                 flexDirection: "column",
                 gap: "0.6rem"
@@ -42006,7 +42026,7 @@ ${cue.text}`).join("\n\n")}
     );
     const panel = narrow ? { left: 0, right: 0, bottom: 0, maxHeight: "60vh", borderRadius: `${RADIUS.osd}px ${RADIUS.osd}px 0 0` } : { left: 0, top: 0, bottom: 0, width: 290 };
     return /* @__PURE__ */ jsxs(Fragment2, { children: [
-      /* @__PURE__ */ jsx("div", { "data-zap-list-backdrop": "", "aria-hidden": "true", onClick: p.onCloseList, style: { position: "absolute", inset: 0, pointerEvents: "auto", background: narrow ? "rgba(5,8,22,0.4)" : "transparent" } }),
+      /* @__PURE__ */ jsx("div", { "data-zap-list-backdrop": "", "aria-hidden": "true", onClick: p.onCloseList, style: { position: "absolute", inset: 0, pointerEvents: "auto", background: narrow ? "rgba(0,0,0,0.4)" : "transparent" } }),
       /* @__PURE__ */ jsxs(
         "div",
         {
@@ -42021,10 +42041,9 @@ ${cue.text}`).join("\n\n")}
             flexDirection: "column",
             padding: "calc(var(--android-inset-top, 0px) + 1rem) 0.6rem 1rem",
             gap: "0.25rem",
-            background: "rgba(5,8,22,0.82)",
-            backdropFilter: "blur(14px)",
-            WebkitBackdropFilter: "blur(14px)",
-            borderRight: narrow ? void 0 : "1px solid rgba(255,255,255,0.08)"
+            ...glass(p.isTv, { fill: "rgba(18,18,22,0.85)", blur: 14 }),
+            border: "none",
+            ...narrow ? { borderTop: `1px solid ${C.glassBorder}` } : { borderRight: `1px solid ${C.glassBorder}` }
           },
           children: [
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", padding: "0 0.5rem 0.4rem" }, children: [
@@ -42352,7 +42371,7 @@ ${cue.text}`).join("\n\n")}
       return next2.kind === "programme" ? next2.item.title : null;
     }, [described, channel, rundown]);
     if (!channel) {
-      return /* @__PURE__ */ jsx(Screen, { background: C.base, isTv, onClose, t, children: /* @__PURE__ */ jsx("p", { style: msgStyle, children: t("playerEmpty") }) });
+      return /* @__PURE__ */ jsx(Screen, { isTv, onClose, t, children: /* @__PURE__ */ jsx("p", { style: msgStyle, children: t("playerEmpty") }) });
     }
     const minsLeft = described ? Math.max(0, (described.deadline - now2) / 6e4) : 0;
     const metaParts = [t("playerChannelN", { n: channel.number })];
@@ -42452,8 +42471,7 @@ ${cue.text}`).join("\n\n")}
       ) });
     }
     const backdropUrl = described?.slot.item.backdropUrl;
-    const background = backdropUrl ? `linear-gradient(180deg, rgba(5,8,22,0.35), rgba(5,8,22,0.85)), url("${backdropUrl}") center / cover no-repeat, ${hueGradient(channel.hue)}` : hueGradient(channel.hue);
-    return /* @__PURE__ */ jsxs(Screen, { background, isTv, onMouseMove: poke, children: [
+    return /* @__PURE__ */ jsxs(Screen, { backdropUrl, isTv, onMouseMove: poke, children: [
       status === "rest" && rest ? /* @__PURE__ */ jsx("p", { style: msgStyle, children: t("playerRest", { time: clock2(rest.nextAir) }) }) : status === "empty" ? /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }, children: [
         /* @__PURE__ */ jsx("p", { style: msgStyle, children: t("playerEmpty") }),
         onEditChannel ? /* @__PURE__ */ jsx(OsdButton, { onClick: () => onEditChannel(channel.id), isTv, children: t("playerEdit") }) : null
@@ -42466,7 +42484,7 @@ ${cue.text}`).join("\n\n")}
     const d = new Date(ms2);
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   }
-  function Screen({ background, isTv, children, onMouseMove, onClose, t }) {
+  function Screen({ backdropUrl, isTv, children, onMouseMove, onClose, t }) {
     return /* @__PURE__ */ jsxs(
       "div",
       {
@@ -42481,11 +42499,15 @@ ${cue.text}`).join("\n\n")}
           alignItems: "center",
           justifyContent: "center",
           padding: "0 1rem",
-          background,
+          background: C.base,
           color: C.text,
           fontFamily: FONT3.ui
         },
         children: [
+          backdropUrl ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { position: "absolute", inset: 0, zIndex: -1, background: `url("${backdropUrl}") center / cover no-repeat` } }),
+            /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { position: "absolute", inset: 0, zIndex: -1, background: C.scrim } })
+          ] }) : null,
           children,
           onClose && t ? /* @__PURE__ */ jsx("div", { style: { position: "absolute", top: "1.5rem", right: "1.5rem" }, children: /* @__PURE__ */ jsx(OsdButton, { onClick: onClose, isTv, init: true, children: t("playerClose") }) }) : null
         ]
@@ -42508,10 +42530,10 @@ ${cue.text}`).join("\n\n")}
           gap: "0.35rem",
           minHeight: isTv ? "2.75rem" : "2.25rem",
           padding: isTv ? "0 1.1rem" : "0 0.9rem",
+          ...glass(isTv, { fill: accent ? C.accent : C.pillBg, blur: 20 }),
           borderRadius: RADIUS.pill,
-          border: `1px solid ${C.pillBorder}`,
-          background: accent ? C.accent : C.pillBg,
-          color: accent ? C.base : C.text,
+          border: `1px solid ${accent ? C.accent : C.pillBorder}`,
+          color: accent ? C.onAccent : C.text,
           fontFamily: FONT3.ui,
           fontSize: isTv ? "1rem" : "0.8rem",
           fontWeight: 600,
@@ -42539,15 +42561,16 @@ ${cue.text}`).join("\n\n")}
             {
               style: {
                 ...fade,
+                ...glass(isTv, { fill: C.osdBg, blur: 12 }),
                 position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
+                top: "calc(var(--android-inset-top, 0px) + 1.25rem)",
+                left: "1.5rem",
+                right: "1.5rem",
                 display: "flex",
                 alignItems: "center",
                 gap: "0.85rem",
-                padding: "calc(var(--android-inset-top, 0px) + 1.5rem) 1.75rem 2.5rem",
-                background: "linear-gradient(180deg, rgba(5,8,22,0.75), rgba(5,8,22,0))"
+                padding: "0.75rem 1rem",
+                borderRadius: RADIUS.osd
               },
               children: [
                 /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 44 }),
@@ -42571,9 +42594,7 @@ ${cue.text}`).join("\n\n")}
                 maxWidth: "calc(100vw - 2rem)",
                 padding: "0.7rem 1.2rem",
                 borderRadius: RADIUS.osd,
-                background: C.osdBg,
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
+                ...glass(isTv, { fill: C.osdBg, blur: 12 }),
                 fontSize: isTv ? "1rem" : "0.85rem",
                 textAlign: "center"
               },
@@ -42597,10 +42618,7 @@ ${cue.text}`).join("\n\n")}
                 flexWrap: "wrap",
                 padding: "0.75rem 1rem",
                 borderRadius: RADIUS.osd,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: C.osdBg,
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)"
+                ...glass(isTv, { fill: C.osdBg, blur: 12 })
               },
               children: [
                 props.onFromStart ? /* @__PURE__ */ jsxs(OsdButton, { onClick: props.onFromStart, isTv, children: [
@@ -42621,7 +42639,7 @@ ${cue.text}`).join("\n\n")}
                       padding: "0.2rem 0.6rem",
                       borderRadius: RADIUS.pill,
                       background: mode === "live" ? C.accent : C.pillBg,
-                      color: mode === "live" ? C.base : C.text,
+                      color: mode === "live" ? C.onAccent : C.text,
                       border: mode === "live" ? "none" : `1px solid ${C.pillBorder}`,
                       fontSize: isTv ? "0.85rem" : "0.7rem",
                       fontWeight: 700,
@@ -43091,11 +43109,12 @@ ${cue.text}`).join("\n\n")}
       {
         "data-channels-studio": "",
         style: {
-          background: TOKENS.bg,
+          background: C.base,
           minHeight: "100%",
           color: TOKENS.text,
           fontFamily: FONT3.ui,
-          padding: isMobile ? "20px 16px 32px" : isTv ? "1.75rem 2.5rem 2.5rem" : "28px 32px 40px"
+          // Under appens menypill; högra hörnet lämnas åt appens klocka.
+          padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : isTv ? "2.5rem 2.5rem" : "32px 40px"}`
         },
         children: [
           /* @__PURE__ */ jsx("p", { style: { ...labelStyle, margin: 0 }, children: t("studioEyebrow") }),
@@ -43212,10 +43231,10 @@ ${cue.text}`).join("\n\n")}
         "data-channels-empty": "",
         style: {
           minHeight: 420,
-          padding: isMobile ? "16px 16px 32px" : isTv ? "1.75rem 2.5rem 2.5rem" : "24px 32px 40px",
+          padding: `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : isTv ? "2.5rem 2.5rem" : "32px 40px"}`,
           color: C.text,
           fontFamily: FONT3.ui,
-          background: `linear-gradient(180deg, rgba(5,8,22,0.2), ${C.base} 85%), ${hueGradient(225)}`
+          background: C.base
         },
         children: [
           /* @__PURE__ */ jsx(
@@ -43229,9 +43248,8 @@ ${cue.text}`).join("\n\n")}
                 alignItems: "center",
                 minHeight: isTv ? "2.25rem" : 30,
                 padding: isTv ? "0 1rem" : "0 14px",
+                ...glass(isTv, { fill: C.pillBg, blur: 20 }),
                 borderRadius: RADIUS.pill,
-                border: `1px solid ${C.pillBorder}`,
-                background: C.pillBg,
                 color: C.text,
                 fontFamily: FONT3.ui,
                 fontSize: fs(10.5),
@@ -43242,7 +43260,7 @@ ${cue.text}`).join("\n\n")}
               children: t("pageHome")
             }
           ),
-          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "40px 0 0" : "64px 0 0", fontFamily: FONT3.title, fontWeight: 400, fontSize: fs(isMobile ? 30 : 44), lineHeight: 1.05 }, children: t("emptyTitle") }),
+          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "32px 0 0" : "48px 0 0", fontFamily: FONT3.title, fontWeight: 400, fontSize: fs(isMobile ? 30 : 44), lineHeight: 1.05 }, children: t("emptyTitle") }),
           /* @__PURE__ */ jsx("p", { style: { margin: "12px 0 0", maxWidth: 560, fontSize: fs(14), lineHeight: 1.5, color: C.textSoft }, children: t("emptyLead") }),
           /* @__PURE__ */ jsx("div", { style: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 12, marginTop: 28, maxWidth: 900 }, children: PRESETS.map((preset, i) => {
             const text = PRESET_TEXT[preset.id];
@@ -43264,14 +43282,13 @@ ${cue.text}`).join("\n\n")}
                   padding: isTv ? "1rem 1.125rem" : "16px 18px",
                   textAlign: "left",
                   cursor: "pointer",
+                  ...glass(isTv, { fill: hueTint(text.hue, 0.1), blur: 0 }),
                   borderRadius: RADIUS.card,
-                  border: "1px solid rgba(255,255,255,0.08)",
                   color: C.text,
-                  fontFamily: FONT3.ui,
-                  background: `linear-gradient(180deg, rgba(5,8,22,0) 0%, rgba(5,8,22,0.75) 100%), ${hueGradient(text.hue)}`,
-                  boxShadow: C.shadow
+                  fontFamily: FONT3.ui
                 },
                 children: [
+                  /* @__PURE__ */ jsx("span", { "aria-hidden": "true", style: { width: 28, height: 4, borderRadius: 2, marginBottom: "auto", background: hueTint(text.hue, 0.9) } }),
                   /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.title, fontSize: fs(20) }, children: t(text.name) }),
                   /* @__PURE__ */ jsx("span", { style: { fontSize: fs(12.5), color: C.textSoft }, children: t(text.desc) })
                 ]
@@ -43290,8 +43307,7 @@ ${cue.text}`).join("\n\n")}
                 padding: isTv ? "0.625rem 1.375rem" : "10px 22px",
                 borderRadius: RADIUS.pill,
                 cursor: "pointer",
-                border: "1px solid rgba(255,255,255,0.2)",
-                background: "rgba(255,255,255,0.05)",
+                ...glass(isTv, { fill: C.pillBg, blur: 20 }),
                 color: C.text,
                 fontFamily: FONT3.ui,
                 fontSize: fs(14),
