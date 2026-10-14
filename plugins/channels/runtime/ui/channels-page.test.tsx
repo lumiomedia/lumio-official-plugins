@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   saved: [] as unknown[],
   back: 0,
   partial: false,
+  lastChannelId: null as string | null,
   seeded: [] as string[],
   restored: [] as string[],
   deleted: [] as string[],
@@ -26,7 +27,7 @@ vi.mock('@/lib/plugin-sdk', () => ({
 }))
 vi.mock('../host', () => ({
   hostReady: () => state.ready,
-  readZapMemory: () => ({ lastChannelId: null, previousChannelId: null }),
+  readZapMemory: () => ({ lastChannelId: state.lastChannelId, previousChannelId: null }),
 }))
 vi.mock('../state/store', () => ({
   useChannels: () => state.channels,
@@ -71,6 +72,7 @@ beforeEach(() => {
   state.saved = []
   state.back = 0
   state.partial = false
+  state.lastChannelId = null
   state.seeded = []
   state.restored = []
   state.deleted = []
@@ -231,5 +233,23 @@ describe('Kanaler-sidans utseende', () => {
     page()
     expect(document.querySelector('[data-hero-badge]')?.textContent).toBe('VILA')
     expect(screen.queryByText('LIVE')).toBeNull()
+  })
+
+  it('utan angiven kanal börjar sidan på en kanal som sänder, inte på en vilande kanal 1', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(at(10, 0))
+      state.now = at(10, 0)
+      state.channels = [{ ...channel(1, 'Kvällsfilm'), airWindow: 'evenings' }, channel(2, 'Dygnet runt')]
+      page()
+      expect(document.querySelector('[data-hero-badge]')?.textContent).toContain('LIVE')
+      expect(document.querySelector('[data-channels-hero]')?.textContent).toContain('Dygnet runt')
+      cleanup()
+      // Angiven kanal vinner även om den vilar.
+      page({ channelId: 'k1' })
+      expect(document.querySelector('[data-hero-badge]')?.textContent).toBe('VILA')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

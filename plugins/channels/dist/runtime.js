@@ -40238,6 +40238,10 @@ ${cue.text}`).join("\n\n")}
     const [s, e] = SPANS[window2];
     return span.day * AIR_PER_DAY[window2] + Math.min(e - s, (t - span.start) / MIN);
   }
+  function isOnAir(window2, t) {
+    if (window2 === "always") return true;
+    return spansAround(window2, t).some((x) => t >= x.start && t < x.end);
+  }
   function cumulative(rundown) {
     const starts = [];
     let sum = 0;
@@ -41493,6 +41497,18 @@ ${cue.text}`).join("\n\n")}
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channels-page.tsx
   init_react_shim();
   init_plugin_sdk();
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/start-channel.ts
+  function onAirNow(channel, rundown, now2) {
+    if (rundown == null) return isOnAir(channel.airWindow, now2);
+    return rundown.length > 0 && programmeAt(rundown, channel.airWindow, now2).kind === "programme";
+  }
+  function pickStartChannel(sorted, lastId, now2, rundownOf) {
+    const live2 = (c) => onAirNow(c, rundownOf(c), now2);
+    const last2 = lastId ? sorted.find((c) => c.id === lastId) : void 0;
+    if (last2 && live2(last2)) return last2;
+    return sorted.find(live2) ?? sorted[0] ?? null;
+  }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-guide.tsx
   init_react_shim();
@@ -43615,16 +43631,21 @@ ${cue.text}`).join("\n\n")}
   init_jsx_runtime_shim();
   var HALF_HOUR2 = 30 * 6e4;
   var MAX_SHIFT = 46;
-  function pickChannel(sorted, wanted) {
-    return (wanted ? sorted.find((c) => c.id === wanted) : void 0) ?? sorted[0] ?? null;
+  function cachedRundown(channel) {
+    const pool = readCachedPool(channel.id);
+    return pool ? buildRundown(pool, channel.order, channel.seed) : null;
+  }
+  function startChannel(sorted, params, rundownOf = cachedRundown) {
+    const explicit = params.channelId ? sorted.find((c) => c.id === params.channelId) : void 0;
+    return explicit ?? pickStartChannel(sorted, readZapMemory().lastChannelId, Date.now(), rundownOf);
   }
   function initialSelection(sorted, params) {
-    return pickChannel(sorted, params.channelId ?? readZapMemory().lastChannelId)?.id ?? null;
+    return startChannel(sorted, params)?.id ?? null;
   }
   function initialPlayer(sorted, params) {
     if (!params.play && params.zap !== "1") return null;
     if (!hostReady()) return null;
-    const channel = pickChannel(sorted, params.channelId ?? readZapMemory().lastChannelId);
+    const channel = startChannel(sorted, params);
     if (!channel) return null;
     return { channelId: channel.id, mode: params.play === "start" ? "start" : "live", zap: params.zap === "1" };
   }
@@ -43657,6 +43678,7 @@ ${cue.text}`).join("\n\n")}
     const canPlay = useMemo(() => hostReady(), []);
     const p = params ?? {};
     const [selectedId, setSelectedId] = useState(() => initialSelection(sorted, p));
+    const autoPick = useRef(!p.channelId);
     const [player, setPlayer] = useState(() => initialPlayer(sorted, p));
     const [studio, setStudio] = useState(() => p.studio ?? null);
     const [shift, setShift] = useState(0);
@@ -43668,11 +43690,15 @@ ${cue.text}`).join("\n\n")}
       if (seenKey.current === paramsKey) return;
       seenKey.current = paramsKey;
       const next2 = JSON.parse(paramsKey);
+      autoPick.current = !next2.channelId;
       setSelectedId(initialSelection(sorted, next2));
       setPlayer(initialPlayer(sorted, next2));
       setStudio(next2.studio ?? null);
     }, [paramsKey]);
-    const selected = pickChannel(sorted, selectedId);
+    const selected = useMemo(
+      () => (selectedId ? sorted.find((c) => c.id === selectedId) : void 0) ?? startChannel(sorted, {}),
+      [sorted, selectedId]
+    );
     const onRundown = useCallback((id, rundown, loading2, partial) => {
       setRundowns((prev) => {
         const cur = prev[id];
@@ -43681,6 +43707,17 @@ ${cue.text}`).join("\n\n")}
     }, []);
     const clockInput = sorted.map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] }));
     const now2 = useChannelClock(clockInput);
+    useEffect(() => {
+      if (!autoPick.current || !selected) return;
+      const own = rundowns[selected.id];
+      if (!own || own.loading || onAirNow(selected, own.rundown, now2)) return;
+      const loaded = (c) => {
+        const r = rundowns[c.id];
+        return r && !r.loading ? r.rundown : cachedRundown(c);
+      };
+      const next2 = pickStartChannel(sorted, readZapMemory().lastChannelId, now2, loaded);
+      if (next2 && next2.id !== selected.id) setSelectedId(next2.id);
+    }, [rundowns, selected, sorted, now2]);
     const win = useMemo(() => guideWindow(now2 + shift * HALF_HOUR2), [now2, shift]);
     const shiftRef = useRef(0);
     const onShift = useCallback((dir) => {
@@ -43690,9 +43727,13 @@ ${cue.text}`).join("\n\n")}
       setShift(next2);
       return true;
     }, []);
-    const onSelect = useCallback((id) => setSelectedId(id), []);
+    const onSelect = useCallback((id) => {
+      autoPick.current = false;
+      setSelectedId(id);
+    }, []);
     const play = useCallback((id, mode) => {
       if (!canPlay) return;
+      autoPick.current = false;
       setSelectedId(id);
       setPlayer({ channelId: id, mode, zap: false });
     }, [canPlay]);
@@ -43701,7 +43742,10 @@ ${cue.text}`).join("\n\n")}
     playerRef.current = player;
     const closePlayer = useCallback(() => {
       const current2 = playerRef.current;
-      if (current2) setSelectedId(readZapMemory().lastChannelId ?? current2.channelId);
+      if (current2) {
+        autoPick.current = false;
+        setSelectedId(readZapMemory().lastChannelId ?? current2.channelId);
+      }
       setPlayer(null);
     }, []);
     if (player && sorted.length > 0) {
@@ -43716,6 +43760,7 @@ ${cue.text}`).join("\n\n")}
           onOpenGuide: closePlayer,
           onEditChannel: (id) => {
             setPlayer(null);
+            autoPick.current = false;
             setSelectedId(id);
             setStudio(id);
           }
