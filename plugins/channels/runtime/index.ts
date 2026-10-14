@@ -1,5 +1,7 @@
 import type { LumioPlugin } from '@/lib/plugin-sdk'
 import { S } from './strings'
+import { ChannelsPage } from './ui/channels-page'
+import { CHANNELS_PAGE_ID } from './ui/guide-layout'
 
 export const ChannelsPlugin: LumioPlugin = {
   id: 'com.lumio.channels',
@@ -7,8 +9,10 @@ export const ChannelsPlugin: LumioPlugin = {
   version: '0.1.0',
   description: S.description,
   preinstalled: false,
-  register() {
-    // Fylls på i Task 10–12.
+  register(ctx) {
+    ctx.registerBrowsePage({ id: CHANNELS_PAGE_ID, label: S.menuLabel, Page: ChannelsPage, hideHero: true })
+    // Menyvalet och sidan delar id: värdens menyer gör nyckeln till sidans id.
+    ctx.registerMainMenuItem({ id: CHANNELS_PAGE_ID, label: S.menuLabel, target: { pageId: CHANNELS_PAGE_ID }, defaultEnabled: true })
   },
 }
 

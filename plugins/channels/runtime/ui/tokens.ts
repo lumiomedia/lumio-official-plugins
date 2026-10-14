@@ -26,3 +26,6 @@ export const FONT = {
 } as const
 
 export const RADIUS = { chip: 8, card: 10, osd: 18, pill: 999 } as const
+
+/** Fontstorlek: px på skrivbord/mobil, rem på TV (TV-scenen skalar rem, inte px). */
+export const fontSize = (px: number, tv: boolean): string => (tv ? `${px / 16}rem` : `${px}px`)
