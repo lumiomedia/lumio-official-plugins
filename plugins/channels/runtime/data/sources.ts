@@ -3,7 +3,8 @@
  * logiken kan testas utan SDK; host.ts kopplar in de riktiga.
  */
 import { DEFAULT_RUNTIME, dedupePool, filterPool, type PoolItem } from './pool'
-import type { createMetaCache } from './meta-cache'
+import type { createMetaCache, createTitleMatchCache, MatchRef } from './meta-cache'
+import { cleanTitle, looksLikeEpisode } from './title-clean'
 import type { ChannelDef, SourceId } from '../model/channel'
 
 export interface LibraryTitleLike {
@@ -47,6 +48,36 @@ export interface SourceDeps {
    * konkurrerar med en filmstart. Biblioteket (lokalt index) väntar inte.
    */
   waitForIdle?(): Promise<void>
+  /** Namnmatchning för poster utan tmdbId (tvättad titel + år → tmdbId). */
+  titleMatch?: Pick<ReturnType<typeof createTitleMatchCache>, 'get' | 'ensure'>
+}
+
+/** Matchningsnyckel för en post utan tmdbId; null för avsnittsliknande namn (matchas inte som titel). */
+function matchRef(kind: 'movie' | 'tv', rawTitle: string, year: number | null | undefined): MatchRef | null {
+  if (kind === 'movie' && looksLikeEpisode(rawTitle)) return null
+  return { kind, title: cleanTitle(rawTitle), year: year ?? null }
+}
+
+/** tmdbId: källans egen, annars en sparad namnträff. */
+function resolvedId(deps: SourceDeps, kind: 'movie' | 'tv', own: number | null | undefined, rawTitle: string, year: number | null | undefined): number | undefined {
+  if (own != null) return own
+  const ref = matchRef(kind, rawTitle, year)
+  const hit = ref ? deps.titleMatch?.get(ref) : undefined
+  return typeof hit === 'number' ? hit : undefined
+}
+
+/**
+ * Namnmatchning i bakgrunden (bakom startgrinden). Sant om något nytt
+ * kan ha matchats — då ska listan byggas om.
+ */
+async function matchUnmatched(deps: SourceDeps, refs: Array<MatchRef | null>): Promise<boolean> {
+  const tm = deps.titleMatch
+  if (!tm) return false
+  const todo = refs.filter((r): r is MatchRef => r != null && tm.get(r) === undefined)
+  if (todo.length === 0) return false
+  await idle(deps)
+  await tm.ensure(todo).catch(() => {})
+  return true
 }
 
 const PAGE = 200 // kärnans MAX_LIMIT per fråga
@@ -82,12 +113,13 @@ const uncached = (deps: SourceDeps, refs: MetaRef[]): MetaRef[] => refs.filter((
  */
 const idle = (deps: SourceDeps): Promise<void> => (deps.waitForIdle ? deps.waitForIdle().catch(() => {}) : Promise.resolve())
 
-async function enrich(deps: SourceDeps, refs: MetaRef[], rebuild: () => void): Promise<void> {
+async function enrich(deps: SourceDeps, refs: MetaRef[], rebuild: () => void): Promise<boolean> {
   const missing = uncached(deps, refs)
-  if (missing.length === 0) return
+  if (missing.length === 0) return false
   await idle(deps)
   await deps.meta.ensure(missing).catch(() => {})
   rebuild()
+  return true
 }
 
 async function fetchLibraryTitles(deps: SourceDeps, opts: LoadOptions): Promise<LibraryTitleLike[]> {
@@ -111,8 +143,10 @@ function buildLibraryItems(titles: LibraryTitleLike[], deps: SourceDeps): PoolIt
   const items: PoolItem[] = []
   for (const t of titles) {
     const tv = t.kind !== 'movie'
-    const tmdbId = t.tmdbId ?? undefined
+    const tmdbId = resolvedId(deps, tv ? 'tv' : 'movie', t.tmdbId, t.title, t.year)
     const meta = tmdbId != null ? deps.meta.get(tv ? 'tv' : 'movie', tmdbId) : null
+    // Omatchad post: filnamnet tvättat, eller TMDb:s titel när namnmatchningen träffat.
+    const name = t.tmdbId != null ? t.title : meta?.title ?? cleanTitle(t.title)
     const common = {
       source: 'library' as const,
       genres: t.genres?.length ? t.genres : meta?.genres ?? [],
@@ -124,7 +158,7 @@ function buildLibraryItems(titles: LibraryTitleLike[], deps: SourceDeps): PoolIt
     }
     if (!tv) {
       items.push({
-        ...common, ref: `lib:${t.key}`, title: t.title, kind: 'movie',
+        ...common, ref: `lib:${t.key}`, title: name, kind: 'movie',
         ...pickRuntime(t.runtimeMin, meta?.runtimeMin, DEFAULT_RUNTIME.movie),
         play: { type: 'library', key: t.key, mediaType: 'movie' },
       })
@@ -132,7 +166,7 @@ function buildLibraryItems(titles: LibraryTitleLike[], deps: SourceDeps): PoolIt
     }
     for (const ep of t.episodes ?? []) {
       items.push({
-        ...common, ref: `lib:${t.key}:${ep.key}`, title: ep.title || t.title, seriesTitle: t.title, kind: 'episode',
+        ...common, ref: `lib:${t.key}:${ep.key}`, title: ep.title || name, seriesTitle: name, kind: 'episode',
         seriesKey: `lib:${t.key}`, season: ep.season, episode: ep.episode,
         ...pickRuntime(ep.runtimeMin ?? t.runtimeMin, meta?.runtimeMin, DEFAULT_RUNTIME.episode),
         play: { type: 'library', key: t.key, mediaType: 'tv', season: ep.season, episode: ep.episode },
@@ -144,10 +178,22 @@ function buildLibraryItems(titles: LibraryTitleLike[], deps: SourceDeps): PoolIt
 
 export const streamLibraryItems: SourceStream = async (deps, emit, opts = {}) => {
   const titles = await fetchLibraryTitles(deps, opts)
-  emit(buildLibraryItems(titles, deps))
-  // Plex och WebDAV sätter sällan runtimeMin: hämta längd via metadata för titlar som saknar den.
-  const lacking = titles.filter((t) => t.tmdbId != null && (t.kind === 'movie' ? !(t.runtimeMin! > 0) : !(t.runtimeMin! > 0) && (t.episodes ?? []).some((e) => !(e.runtimeMin! > 0))))
-  await enrich(deps, lacking.map((t) => ({ kind: t.kind === 'movie' ? 'movie' as const : 'tv' as const, tmdbId: t.tmdbId! })), () => emit(buildLibraryItems(titles, deps)))
+  const rebuild = () => emit(buildLibraryItems(titles, deps))
+  rebuild()
+  const kindOf = (t: LibraryTitleLike) => (t.kind === 'movie' ? 'movie' as const : 'tv' as const)
+  // Omatchade poster (filnamn som titel): namnmatcha, så de får bild och metadata.
+  const matched = await matchUnmatched(deps, titles.filter((t) => t.tmdbId == null).map((t) => matchRef(kindOf(t), t.title, t.year)))
+  // Plex och WebDAV sätter sällan runtimeMin: hämta längd via metadata för titlar
+  // som saknar den, och allt för namnmatchade poster (titel, bilder, genrer).
+  const refs: MetaRef[] = []
+  for (const t of titles) {
+    const id = resolvedId(deps, kindOf(t), t.tmdbId, t.title, t.year)
+    if (id == null) continue
+    const lacksRuntime = t.kind === 'movie' ? !(t.runtimeMin! > 0) : !(t.runtimeMin! > 0) && (t.episodes ?? []).some((e) => !(e.runtimeMin! > 0))
+    if (lacksRuntime || t.tmdbId == null) refs.push({ kind: kindOf(t), tmdbId: id })
+  }
+  const rebuilt = await enrich(deps, refs, rebuild)
+  if (matched && !rebuilt) rebuild()
 }
 
 function buildWatchlistMovies(movies: WatchlistEntry[], deps: SourceDeps): PoolItem[] {
@@ -222,17 +268,19 @@ function buildDebridItems(titles: DebridTitleLike[], deps: SourceDeps): PoolItem
   const items: PoolItem[] = []
   for (const t of titles) {
     const tv = t.kind === 'tv'
-    const meta = t.tmdbId != null ? deps.meta.get(t.kind, t.tmdbId) : null
+    const tmdbId = resolvedId(deps, t.kind, t.tmdbId, t.title, t.year)
+    const meta = tmdbId != null ? deps.meta.get(t.kind, tmdbId) : null
     const imdbId = t.imdbId ?? meta?.imdbId
+    const name = t.tmdbId != null ? t.title : meta?.title ?? cleanTitle(t.title)
     for (const f of t.files) {
       items.push({
-        ref: `db:${f.provider}:${f.fileRef}`, title: t.title, kind: tv ? 'episode' : 'movie', source: 'debrid',
+        ref: `db:${f.provider}:${f.fileRef}`, title: name, kind: tv ? 'episode' : 'movie', source: 'debrid',
         genres: meta?.genres ?? [], year: t.year ?? meta?.year ?? null,
-        ...(t.tmdbId != null ? { tmdbId: t.tmdbId } : {}),
+        ...(tmdbId != null ? { tmdbId } : {}),
         ...(imdbId ? { imdbId } : {}),
         ...(meta?.posterUrl ? { posterUrl: meta.posterUrl } : {}),
         ...(meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {}),
-        ...(tv ? { seriesTitle: t.title, seriesKey: `db:tv:${t.tmdbId ?? t.title}`, ...(f.season != null ? { season: f.season } : {}), ...(f.episode != null ? { episode: f.episode } : {}) } : {}),
+        ...(tv ? { seriesTitle: name, seriesKey: `db:tv:${tmdbId ?? t.title}`, ...(f.season != null ? { season: f.season } : {}), ...(f.episode != null ? { episode: f.episode } : {}) } : {}),
         ...pickRuntime(null, meta?.runtimeMin, tv ? DEFAULT_RUNTIME.episode : DEFAULT_RUNTIME.movie),
         play: { type: 'debrid', provider: f.provider, fileRef: f.fileRef },
       })
@@ -246,8 +294,16 @@ export const streamDebridItems: SourceStream = async (deps, emit) => {
   // för kanaler som använder debrid; värdens 6 h-cache och delade hämtning gäller.
   await idle(deps)
   const titles = await deps.listDebridCloud()
-  emit(buildDebridItems(titles, deps))
-  await enrich(deps, titles.filter((t) => t.tmdbId != null).map((t) => ({ kind: t.kind, tmdbId: t.tmdbId! })), () => emit(buildDebridItems(titles, deps)))
+  const rebuild = () => emit(buildDebridItems(titles, deps))
+  rebuild()
+  const matched = await matchUnmatched(deps, titles.filter((t) => t.tmdbId == null).map((t) => matchRef(t.kind, t.title, t.year)))
+  const refs: MetaRef[] = []
+  for (const t of titles) {
+    const id = resolvedId(deps, t.kind, t.tmdbId, t.title, t.year)
+    if (id != null) refs.push({ kind: t.kind, tmdbId: id })
+  }
+  const rebuilt = await enrich(deps, refs, rebuild)
+  if (matched && !rebuilt) rebuild()
 }
 
 /** Hela källan på en gång (studions förhandsvisning): sista listan när allt är klart. */

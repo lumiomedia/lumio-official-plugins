@@ -90,10 +90,27 @@ export function measureHeroLayer(hero: HTMLElement, layer: HTMLElement, prev: He
 }
 
 /** Programmets bild just nu på en kanal (för karusellens bakgrundslager). */
-function backdropAt(rundown: PoolItem[], channel: ChannelDef, now: number): string | undefined {
-  if (rundown.length === 0) return undefined
-  const slot = programmeAt(rundown, channel.airWindow, now)
-  return slot.kind === 'programme' ? slot.item.backdropUrl : undefined
+/**
+ * Herons bild för en kanal just nu — aldrig svart om kanalen har någon bild:
+ * programmets bakgrundsbild; annars dess affisch (uppförstorad och suddig);
+ * annars närmaste program i tablån som har en bakgrundsbild. Vilar kanalen
+ * räknas programmet som börjar härnäst.
+ */
+export function heroImage(rundown: PoolItem[], channel: ChannelDef, now: number): { url: string; blur: boolean } | null {
+  if (rundown.length === 0) return null
+  let slot = programmeAt(rundown, channel.airWindow, now)
+  if (slot.kind === 'rest') slot = programmeAt(rundown, channel.airWindow, slot.nextAir)
+  if (slot.kind !== 'programme') return null
+  if (slot.item.backdropUrl) return { url: slot.item.backdropUrl, blur: false }
+  if (slot.item.posterUrl) return { url: slot.item.posterUrl, blur: true }
+  const n = rundown.length
+  for (let d = 1; d < n; d += 1) {
+    for (const i of [slot.index + d, slot.index - d]) {
+      const url = rundown[((i % n) + n) % n]!.backdropUrl
+      if (url) return { url, blur: false }
+    }
+  }
+  return null
 }
 
 /** Nästa program efter `t`, förbi en eventuell vila. */
@@ -120,7 +137,6 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
   const slideList = slides && slides.length > 0 ? slides : [{ channel, rundown }]
   const rendered = renderedSlideIds(slideList.map((s) => s.channel), channel.id)
   const many = slideList.length > 1 && onSlide != null
-  const [hover, setHover] = useState(false)
   const heroRef = useRef<HTMLElement | null>(null)
   const hostPlayer = useHostPlayerActive()
   const layerRef = useRef<HTMLDivElement | null>(null)
@@ -205,8 +221,6 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       ref={heroRef}
       data-channels-hero=""
       data-hero-slides={slideList.length}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       style={{
@@ -246,8 +260,9 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       >
         {slideList.map(({ channel: c, rundown: r }) => {
           if (!rendered.has(c.id)) return null
-          const url = backdropAt(r, c, now)
-          if (!url) return null
+          const image = heroImage(r, c, now)
+          if (!image) return null
+          const url = image.url
           return (
             <span
               key={c.id}
@@ -256,7 +271,9 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
                 // Full höjd, förankrad i lagrets nederkant: bilden följer herons
                 // nederkant när sidan rullar i stället för att skalas om.
                 position: 'absolute', left: 0, right: 0, bottom: 0, height: geom ? geom.full : '100%',
-                background: `url("${url}") center top / cover no-repeat`,
+                background: `url("${url}") center ${image.blur ? 'center' : 'top'} / cover no-repeat`,
+                // Affisch som reserv: uppförstorad och suddig, så den fyller bredden utan att se pixlig ut.
+                ...(image.blur ? { filter: 'blur(28px)', transform: 'scale(1.15)' } : {}),
                 opacity: c.id === channel.id ? 0.7 : 0, transition: 'opacity 300ms ease',
               }}
             />
@@ -272,12 +289,6 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       </div>
       )}
 
-      {many && !isMobile && !isTv ? (
-        <>
-          <Arrow side="left" visible={hover} label={t('heroPrev')} onClick={() => onStep?.(-1)} />
-          <Arrow side="right" visible={hover} label={t('heroNext2')} onClick={() => onStep?.(1)} />
-        </>
-      ) : null}
 
       {/* Under appens menypill, vänsterställt; högra hörnet är appens (klocka, hälsning). */}
       <div data-channels-topbar="" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -302,7 +313,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
             // Vila: neutral bricka, inte LIVE (kanalen sänder inte nu).
             <span data-hero-badge="rest" style={{
               display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: RADIUS.pill,
-              ...glass(isTv, { fill: C.pillBg, blur: 0 }), color: C.textSoft, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em',
+              ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }), color: C.textSoft, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em',
             }}
             >
               {t('heroOffAir')}
@@ -368,30 +379,11 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
   )
 }
 
-/** Skrivbordets ‹ › vid herons kanter; syns när musen är över heron. */
-function Arrow({ side, visible, label, onClick }: { side: 'left' | 'right'; visible: boolean; label: string; onClick(): void }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      data-hero-arrow={side}
-      onClick={onClick}
-      style={{
-        position: 'absolute', top: '50%', [side]: 8, zIndex: 2, transform: 'translateY(-50%)',
-        width: 36, height: 36, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        ...glass(false, { fill: C.pillBg, blur: 20 }), color: C.text, fontSize: 20, lineHeight: 1, cursor: 'pointer',
-        opacity: visible ? 1 : 0, transition: 'opacity 200ms ease', pointerEvents: visible ? 'auto' : 'none',
-      }}
-    >
-      {side === 'left' ? '‹' : '›'}
-    </button>
-  )
-}
 
 function Pill({ children, onClick, active, isTv }: { children: ReactNode; onClick?: () => void; active?: boolean; isTv: boolean }) {
   const style: CSSProperties = {
     display: 'inline-flex', alignItems: 'center', minHeight: isTv ? '2.25rem' : 30, padding: isTv ? '0 1rem' : '0 14px',
-    ...glass(isTv, { fill: C.pillBg, blur: 20 }),
+    ...glass(isTv, { fill: C.glassDenseSoft, blur: 20 }),
     borderRadius: RADIUS.pill, border: `1px solid ${active ? 'rgba(244,132,95,0.55)' : C.pillBorder}`,
     color: active ? C.accentLight : C.text,
     fontFamily: FONT.ui, fontSize: fontSize(10.5, isTv), fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase',
@@ -410,7 +402,7 @@ function HeroButton({ children, onClick, primary, disabled, isTv }: { children: 
       onClick={onClick}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6, padding: isTv ? '0.625rem 1.375rem' : '10px 22px', borderRadius: RADIUS.pill,
-        ...(primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(isTv, { fill: C.pillBg, blur: 20 })),
+        ...(primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(isTv, { fill: C.glassDenseSoft, blur: 20 })),
         color: primary ? C.onAccent : C.text,
         fontFamily: FONT.ui, fontSize: fontSize(14, isTv), fontWeight: 600, whiteSpace: 'nowrap',
         cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.45 : 1,

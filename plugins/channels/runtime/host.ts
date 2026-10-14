@@ -9,7 +9,7 @@ import {
   readPluginJson, removePluginStorageItem, waitForStartIdle, writePluginJson,
 } from '@/lib/plugin-sdk'
 import type { ChannelDef, SourceId } from './model/channel'
-import { createMetaCache, createSeasonsCache, type MetaStore, type SeasonList, type SeasonsStore, type TitleMeta } from './data/meta-cache'
+import { createMetaCache, createSeasonsCache, createTitleMatchCache, type MatchRef, type MatchStore, type MetaStore, type SeasonList, type SeasonsStore, type TitleMeta } from './data/meta-cache'
 import type { SourceDeps } from './data/sources'
 import { createResolver } from './play/resolve'
 
@@ -86,6 +86,30 @@ const metaStore: MetaStore = {
   write: (all) => writePluginJson(PLUGIN_ID, 'meta', all, { emitChange: false }),
 }
 
+const matchStore: MatchStore = {
+  read: () => object(readPluginJson<unknown>(PLUGIN_ID, 'matches', {})),
+  write: (all) => writePluginJson(PLUGIN_ID, 'matches', all, { emitChange: false }),
+}
+
+/**
+ * Värdens TMDb-sökning (samma som lokala mappen och debrid använder): tvättad
+ * titel + år, och utan år om det inte gav något. undefined = anropet föll.
+ */
+async function searchTitle(ref: MatchRef): Promise<number | null | undefined> {
+  const run = async (withYear: boolean): Promise<number | null | undefined> => {
+    const params = new URLSearchParams({ query: ref.title })
+    if (withYear && ref.year) params.set('year', String(ref.year))
+    const res = await fetch(`/api/local-files/search?${params}`)
+    if (!res.ok) return undefined
+    const body = (await res.json()) as { results?: Array<{ type?: string; tmdbId?: number }> }
+    const hit = (body.results ?? []).find((r) => r.type === ref.kind && typeof r.tmdbId === 'number')
+    return hit ? hit.tmdbId! : null
+  }
+  const first = await run(true)
+  if (first === null && ref.year) return run(false)
+  return first
+}
+
 const seasonsStore: SeasonsStore = {
   read: () => object(readPluginJson<unknown>(PLUGIN_ID, 'seasons', {})),
   write: (all) => writePluginJson(PLUGIN_ID, 'seasons', all, { emitChange: false }),
@@ -105,6 +129,7 @@ async function fetchMeta(kind: 'movie' | 'tv', tmdbId: number): Promise<Omit<Tit
     ? item.genres.map((g) => (typeof g === 'string' ? g : (g as { name?: string } | null)?.name ?? '')).filter(Boolean)
     : []
   return {
+    ...(typeof item.title === 'string' && item.title ? { title: item.title } : {}),
     runtimeMin: typeof item.runtimeMinutes === 'number' && item.runtimeMinutes > 0 ? item.runtimeMinutes : null,
     genres,
     year: typeof item.year === 'number' ? item.year : null,
@@ -141,6 +166,7 @@ export const sourceDeps: SourceDeps = {
   listDebridCloud: () => channelListDebridCloud() as never,
   meta: createMetaCache(metaStore, fetchMeta),
   waitForIdle: () => waitForStartIdle(),
+  titleMatch: createTitleMatchCache(matchStore, searchTitle),
 }
 
 const maxAdded = (list: Array<{ addedAt?: string }>): number =>

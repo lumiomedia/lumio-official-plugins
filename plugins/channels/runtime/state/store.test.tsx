@@ -36,7 +36,7 @@ import { render } from '@testing-library/react'
 import { prunePoolCaches, readChannels, resetSourceSignatures, sourceSignatures } from '../host'
 import { createChannel, emptyDraft } from '../model/channel'
 
-beforeEach(() => { sdk.idle = () => Promise.resolve(); sdk.lang = 'sv'; sdk.profileListeners = []; sdk.queryLibrary = async () => ({ items: [] }); sdk.listDebrid = async () => []; failWrites = 0; resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
+beforeEach(() => { vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) }))); sdk.idle = () => Promise.resolve(); sdk.lang = 'sv'; sdk.profileListeners = []; sdk.queryLibrary = async () => ({ items: [] }); sdk.listDebrid = async () => []; failWrites = 0; resetSourceSignatures(); storage.clear(); libraryStatus = { total: 3, sources: [{ lastFullSync: 100, lastDeltaSync: null }] } })
 
 describe('kanallagret', () => {
   it('sparar, ersätter och tar bort kanaler', () => {

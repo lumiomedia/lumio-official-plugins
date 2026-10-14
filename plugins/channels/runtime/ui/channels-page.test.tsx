@@ -254,7 +254,7 @@ describe('Kanaler-sidans utseende', () => {
     }
   })
 
-  it('heron är en karusell över sändande kanaler: prickar, pilar och svep byter vald kanal', () => {
+  it('heron är en karusell över sändande kanaler: prickar och svep byter vald kanal (inga pilar)', () => {
     state.channels = [channel(1, 'Första'), { ...channel(2, 'Natt'), airWindow: 'late' }, channel(3, 'Tredje')]
     state.rundowns = { k1: [item('Terminator', 100_000)], k2: [item('Aliens', 100_000)], k3: [item('Heat', 100_000)] }
     const { container } = page({ channelId: 'k1' })
@@ -264,7 +264,8 @@ describe('Kanaler-sidans utseende', () => {
     fireEvent.click(container.querySelector('[data-hero-dot="k3"]')!)
     expect(hero().textContent).toContain('Tredje')
     expect(container.querySelector('[data-channel-row="k3"]')?.getAttribute('aria-pressed')).toBe('true')
-    fireEvent.click(container.querySelector('[data-hero-arrow="right"]')!)
+    expect(container.querySelector('[data-hero-arrow]')).toBeNull()
+    fireEvent.click(container.querySelector('[data-hero-dot="k1"]')!)
     expect(hero().textContent).toContain('Första')
     fireEvent.touchStart(hero(), { touches: [{ clientX: 300, clientY: 100 }] })
     fireEvent.touchEnd(hero(), { changedTouches: [{ clientX: 100, clientY: 110 }] })
@@ -344,5 +345,11 @@ describe('Kanaler-sidans utseende', () => {
       document.documentElement.classList.remove('mpv-playing')
     }
     await waitFor(() => expect(container.querySelector('[data-hero-backdrop]')).toBeTruthy())
+  })
+
+  it('första bilden syns vid montering; ett program utan bild lånar närmaste programmets', () => {
+    state.rundowns = { k1: [item('Rå fil', 60), { ...item('Med bild', 60), backdropUrl: 'https://img/n.jpg' }], k2: [item('Aliens', 100_000)] }
+    const { container } = page({ channelId: 'k1' })
+    expect(container.querySelector<HTMLElement>('[data-hero-image="k1"]')?.style.background).toContain('img/n.jpg')
   })
 })

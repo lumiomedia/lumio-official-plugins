@@ -149,7 +149,7 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
         display: 'grid', gridTemplateColumns: columns, height: ROW_H, cursor: 'pointer', outline: 'none',
         borderBottom: `1px solid ${selected ? 'transparent' : 'rgba(255,255,255,0.05)'}`,
         borderRadius: selected ? RADIUS.card : 0,
-        background: selected ? C.glass : 'transparent',
+        background: selected ? C.glassDenseSoft : 'transparent',
         boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : 'none',
       }}
     >
@@ -199,8 +199,8 @@ function Block({ slot, win, now, isTv, t }: { slot: Slot<PoolItem>; win: GuideWi
         position: 'absolute', top: 6, bottom: 6, left: `calc(${box.leftPct}% + 2px)`, width: `calc(${box.widthPct}% - 4px)`,
         boxSizing: 'border-box', padding: '5px 9px', borderRadius: 8, overflow: 'hidden',
         display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 1,
-        // Glas på svart grund (ingen blur: inget syns bakom). Vila = streckad kontur.
-        background: isRest ? 'transparent' : current ? 'rgba(244,132,95,0.16)' : C.glass,
+        // Tät mörk glasyta (läsbar även över herobilden). Vila = streckad kontur.
+        background: isRest ? C.glassDenseSoft : current ? C.glassCurrent : C.glassDense,
         border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current ? 'rgba(244,132,95,0.45)' : C.glassBorder}`,
         color: isRest ? C.textMute : C.text,
       }}

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createMetaCache, createSeasonsCache, type SeasonsEntry, type TitleMeta } from './meta-cache'
+import { createTitleMatchCache, type MatchEntry } from './meta-cache'
 
 function memoryStore() {
   let all: Record<string, TitleMeta> = {}
@@ -128,5 +129,21 @@ describe('läsningar av lagret', () => {
     const load = createSeasonsCache(store, async () => [], () => 1000)
     for (let i = 1; i <= 30; i += 1) await load(i)
     expect(store.read).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('namnmatchningen', () => {
+  it('sparar träffar och missar, inte misslyckade anrop, och tar högst perEnsure åt gången', async () => {
+    let all: Record<string, MatchEntry> = {}
+    const search = vi.fn(async (r: { title: string }) => (r.title === 'Fel' ? undefined : r.title === 'Avatar' ? 19995 : null))
+    const cache = createTitleMatchCache({ read: () => all, write: (n) => { all = n } }, search, () => 1000, 2)
+    const refs = [{ kind: 'movie' as const, title: 'Avatar', year: 2009 }, { kind: 'movie' as const, title: 'Okänd', year: null }, { kind: 'movie' as const, title: 'Fel', year: null }]
+    await cache.ensure(refs)
+    expect(search).toHaveBeenCalledTimes(2)
+    expect(cache.get(refs[0]!)).toBe(19995)
+    expect(cache.get(refs[1]!)).toBeNull()
+    await cache.ensure(refs)
+    expect(search).toHaveBeenCalledTimes(3)
+    expect(cache.get(refs[2]!)).toBeUndefined()
   })
 })

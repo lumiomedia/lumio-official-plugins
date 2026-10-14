@@ -199,4 +199,47 @@ describe('progressiv laddning', () => {
     expect(watch).toHaveBeenCalled()
     expect(ensure).toHaveBeenCalled()
   })
+
+  it('omatchad biblioteksfil: tvättad titel direkt, namnmatchas bakom grinden och slås ihop med den matchade', async () => {
+    const matches: Record<string, number | null> = {}
+    const titleMatch = {
+      get: (r: { title: string; year: number | null }) => matches[`${r.title}|${r.year}`],
+      ensure: vi.fn(async (list: Array<{ title: string; year: number | null }>) => { for (const r of list) matches[`${r.title}|${r.year}`] = r.title === 'Star Wars Episode VI Return of the Jedi' ? 1892 : null }),
+    }
+    const known: Record<number, { runtimeMin: number; genres: string[]; year: number; title: string; backdropUrl: string; at: number }> = {}
+    const d = deps({
+      titleMatch,
+      queryLibrary: vi.fn(async () => ({ items: [
+        { key: 'raw', kind: 'movie' as const, tmdbId: null, title: '03 Star Wars Episode VI Return of the Jedi', year: 1983 },
+        { key: 'junk', kind: 'movie' as const, tmdbId: null, title: 'Avatar 4Kreescalado2160 pctmix1 com', year: null },
+        { key: 'ep', kind: 'movie' as const, tmdbId: null, title: '[Cifer] Sousou no Frieren S1 - 01 [BD', year: null },
+      ] })),
+      meta: {
+        get: (_k: 'movie' | 'tv', id: number) => known[id] ?? null,
+        ensure: vi.fn(async () => { known[1892] = { runtimeMin: 131, genres: ['Action'], year: 1983, title: 'Return of the Jedi', backdropUrl: 'https://img/jedi.jpg', at: 0 } }),
+      },
+    })
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    const updates: Array<Array<[string, string, string | undefined]>> = []
+    const pool = await loadPoolProgressive(ch, d, (p) => updates.push(p.map((i) => [i.ref, i.title, i.backdropUrl])))
+    expect(updates[0]).toEqual([
+      ['lib:raw', 'Star Wars Episode VI Return of the Jedi', undefined],
+      ['lib:junk', 'Avatar', undefined],
+      ['lib:ep', 'Cifer Sousou no Frieren S1 - 01 BD', undefined],
+    ])
+    // Avsnittsliknande namn söks inte som film.
+    expect(titleMatch.ensure.mock.calls[0]![0].map((r: { title: string }) => r.title)).toEqual(['Star Wars Episode VI Return of the Jedi', 'Avatar'])
+    expect(pool.find((i) => i.ref === 'lib:raw')).toMatchObject({ title: 'Return of the Jedi', tmdbId: 1892, backdropUrl: 'https://img/jedi.jpg', runtimeMin: 131 })
+  })
+
+  it('samma titel två gånger: posten med bild vinner oavsett ordning', async () => {
+    const meta = { get: (_k: 'movie' | 'tv', id: number) => (id === 1892 ? { runtimeMin: 131, genres: [], year: 1983, at: 0 } : null), ensure: vi.fn(async () => {}) }
+    const raw = { key: 'raw', kind: 'movie' as const, tmdbId: 1892, title: '03 Star Wars', year: 1983 }
+    const good = { key: 'good', kind: 'movie' as const, tmdbId: 1892, title: 'Return of the Jedi', year: 1983, backdropUrl: 'https://img/jedi.jpg' }
+    const ch = createChannel({ ...emptyDraft(), name: 'A', sources: ['library'] }, [], 1, () => 0.1)
+    const a = await loadPoolProgressive(ch, deps({ meta, queryLibrary: vi.fn(async () => ({ items: [raw, good] })) }))
+    const b = await loadPoolProgressive(ch, deps({ meta, queryLibrary: vi.fn(async () => ({ items: [good, raw] })) }))
+    expect(a.map((i) => i.ref)).toEqual(['lib:good'])
+    expect(b.map((i) => i.ref)).toEqual(['lib:good'])
+  })
 })

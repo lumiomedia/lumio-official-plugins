@@ -5,6 +5,8 @@
  * ny kanal inte sveper hundratals anrop på en gång.
  */
 export interface TitleMeta {
+  /** TMDb:s titel (för poster som matchats på namn). */
+  title?: string
   runtimeMin: number | null
   genres: string[]
   year: number | null
@@ -161,4 +163,88 @@ export function createSeasonsCache(store: SeasonsStore, fetcher: (tmdbId: number
     return job
   }
   return Object.assign(load, { flush })
+}
+
+/**
+ * Namnmatchning för poster som källan inte kunnat matcha (inget tmdbId):
+ * tvättad titel + år → tmdbId via värdens TMDb-sökning. Träffar sparas länge
+ * (90 dagar), missar en vecka; ett misslyckat anrop sparas inte. Högst två
+ * sökningar åt gången och högst `perEnsure` nya per genomgång, så ett stort
+ * omatchat bibliotek fylls på över flera laddningar i stället för i en skur.
+ */
+export interface MatchEntry { id: number | null; at: number }
+export interface MatchStore {
+  read(): Record<string, MatchEntry>
+  write(all: Record<string, MatchEntry>): void
+}
+export type MatchRef = { kind: 'movie' | 'tv'; title: string; year: number | null }
+
+const HIT_TTL_MS = 90 * 24 * 3600 * 1000
+const MISS_TTL_MS = 7 * 24 * 3600 * 1000
+
+export const matchKey = (r: MatchRef): string =>
+  `${r.kind}:${r.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()}:${r.year ?? ''}`
+
+export function createTitleMatchCache(
+  store: MatchStore,
+  search: (ref: MatchRef) => Promise<number | null | undefined>,
+  now: () => number = Date.now,
+  perEnsure = 60,
+) {
+  let snapshot: Record<string, MatchEntry> | null = null
+  const pending: Record<string, MatchEntry> = {}
+  const inflight = new Map<string, Promise<void>>()
+  const fresh = (e: MatchEntry | undefined): e is MatchEntry =>
+    e != null && now() - e.at < (e.id != null ? HIT_TTL_MS : MISS_TTL_MS)
+
+  /** tmdbId, null = känd miss, undefined = okänd (inte sökt än). */
+  function get(ref: MatchRef): number | null | undefined {
+    const key = matchKey(ref)
+    const entry = pending[key] ?? (snapshot ??= store.read())[key]
+    return fresh(entry) ? entry.id : undefined
+  }
+
+  function flush(): void {
+    const keys = Object.keys(pending)
+    if (keys.length === 0) return
+    const merged: Record<string, MatchEntry> = {}
+    for (const [k, v] of Object.entries({ ...store.read(), ...pending })) if (fresh(v)) merged[k] = v
+    for (const k of keys) delete pending[k]
+    store.write(merged)
+    snapshot = merged
+  }
+
+  async function ensure(list: MatchRef[]): Promise<void> {
+    snapshot = store.read()
+    const seen = new Set<string>()
+    const todo = list.filter((r) => {
+      const key = matchKey(r)
+      if (seen.has(key)) return false
+      seen.add(key)
+      return get(r) === undefined
+    }).slice(0, perEnsure)
+    let cursor = 0
+    const worker = async () => {
+      while (cursor < todo.length) {
+        const ref = todo[cursor++]!
+        const key = matchKey(ref)
+        let job = inflight.get(key)
+        if (!job) {
+          job = search(ref)
+            .then((id) => { if (id !== undefined) pending[key] = { id, at: now() } })
+            .catch(() => {})
+            .finally(() => inflight.delete(key))
+          inflight.set(key, job)
+        }
+        await job
+      }
+    }
+    try {
+      await Promise.all(Array.from({ length: Math.min(PARALLEL, todo.length) }, worker))
+    } finally {
+      flush()
+    }
+  }
+
+  return { get, ensure }
 }

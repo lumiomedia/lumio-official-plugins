@@ -11311,8 +11311,8 @@
       if (signal?.aborted) break;
       await Promise.all(wanted.slice(index, index + 2).map(async (entry, offset) => {
         const parsed = parseLocalName(`${entry.title}.mkv`);
-        const looksLikeEpisode = parsed.season != null && parsed.episode != null;
-        if (looksLikeEpisode && entry.kind === "movie") return;
+        const looksLikeEpisode2 = parsed.season != null && parsed.episode != null;
+        if (looksLikeEpisode2 && entry.kind === "movie") return;
         out[index + offset] = await matchCached(parsed.title || entry.title, entry.year ?? parsed.year, entry.kind, cache7);
       }));
     }
@@ -39893,8 +39893,6 @@ ${cue.text}`).join("\n\n")}
     pageHostTooOld: { en: "Channels requires Lumio 0.1.625 or later for playback", sv: "Kanaler kr\xE4ver Lumio 0.1.625 eller senare f\xF6r uppspelning" },
     heroLive: { en: "LIVE", sv: "LIVE" },
     heroOffAir: { en: "OFF AIR", sv: "VILA" },
-    heroPrev: { en: "Previous channel", sv: "F\xF6reg\xE5ende kanal" },
-    heroNext2: { en: "Next channel", sv: "N\xE4sta kanal" },
     heroWatchLive: { en: "\u25B6 Watch live", sv: "\u25B6 Titta live" },
     heroFromStart: { en: "\u27F2 From start", sv: "\u27F2 Fr\xE5n b\xF6rjan" },
     heroEdit: { en: "Edit channel", sv: "Redigera kanal" },
@@ -40320,13 +40318,20 @@ ${cue.text}`).join("\n\n")}
     });
   }
   var RANK = { library: 0, debrid: 1, watchlist: 2 };
+  function better(a, b) {
+    if (RANK[a.source] !== RANK[b.source]) return RANK[a.source] < RANK[b.source];
+    const ia = a.backdropUrl ? 0 : 1;
+    const ib = b.backdropUrl ? 0 : 1;
+    if (ia !== ib) return ia < ib;
+    return a.ref < b.ref;
+  }
   function dedupePool(items2) {
     const best = /* @__PURE__ */ new Map();
     for (const item of items2) {
       const identified = item.tmdbId != null && (item.kind === "movie" || item.season != null && item.episode != null);
       const key = identified ? `tmdb:${item.tmdbId}:${item.season ?? ""}:${item.episode ?? ""}` : `ref:${item.ref}`;
       const current2 = best.get(key);
-      if (!current2 || RANK[item.source] < RANK[current2.source]) best.set(key, item);
+      if (!current2 || better(item, current2)) best.set(key, item);
     }
     return [...best.values()];
   }
@@ -40461,7 +40466,47 @@ ${cue.text}`).join("\n\n")}
     });
   }
 
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/title-clean.ts
+  var JUNK_WORDS = /* @__PURE__ */ new Set(["com", "net", "org", "www", "mkv", "mp4", "avi", "rip", "dual", "multi", "latino", "castellano", "subs", "sub"]);
+  var mixed = (w) => /[a-z]/i.test(w) && /\d/.test(w);
+  function cleanTitle(raw) {
+    let words = raw.replace(/[._]+/g, " ").replace(/[[\]{}]/g, " ").replace(/\s+/g, " ").trim().split(" ");
+    if (words.length > 1 && /^0\d{1,2}$/.test(words[0])) words = words.slice(1);
+    else if (words.length > 2 && /^\d{1,3}$/.test(words[0]) && words[1] === "-") words = words.slice(2);
+    while (words.length > 1) {
+      const last2 = words[words.length - 1];
+      const lower = last2.toLowerCase();
+      if (JUNK_WORDS.has(lower) || mixed(last2) && last2.length > 4 || last2 === "-") words = words.slice(0, -1);
+      else break;
+    }
+    const out = words.join(" ").trim();
+    return out || raw.trim();
+  }
+  function looksLikeEpisode(raw) {
+    return /\bs\d{1,2}\s*[-e]\s*\d{1,3}\b|\b\d{1,2}x\d{1,3}\b|\bs\d{1,2}e\d{1,3}/i.test(raw);
+  }
+
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/data/sources.ts
+  function matchRef(kind, rawTitle, year) {
+    if (kind === "movie" && looksLikeEpisode(rawTitle)) return null;
+    return { kind, title: cleanTitle(rawTitle), year: year ?? null };
+  }
+  function resolvedId(deps, kind, own, rawTitle, year) {
+    if (own != null) return own;
+    const ref = matchRef(kind, rawTitle, year);
+    const hit = ref ? deps.titleMatch?.get(ref) : void 0;
+    return typeof hit === "number" ? hit : void 0;
+  }
+  async function matchUnmatched(deps, refs) {
+    const tm = deps.titleMatch;
+    if (!tm) return false;
+    const todo = refs.filter((r) => r != null && tm.get(r) === void 0);
+    if (todo.length === 0) return false;
+    await idle(deps);
+    await tm.ensure(todo).catch(() => {
+    });
+    return true;
+  }
   var PAGE = 200;
   var MAX_TITLES2 = 600;
   var WATCHLIST_SEASONS = 3;
@@ -40475,11 +40520,12 @@ ${cue.text}`).join("\n\n")}
   }) : Promise.resolve();
   async function enrich(deps, refs, rebuild) {
     const missing = uncached(deps, refs);
-    if (missing.length === 0) return;
+    if (missing.length === 0) return false;
     await idle(deps);
     await deps.meta.ensure(missing).catch(() => {
     });
     rebuild();
+    return true;
   }
   async function fetchLibraryTitles(deps, opts) {
     const titles = [];
@@ -40498,8 +40544,9 @@ ${cue.text}`).join("\n\n")}
     const items2 = [];
     for (const t of titles) {
       const tv = t.kind !== "movie";
-      const tmdbId = t.tmdbId ?? void 0;
+      const tmdbId = resolvedId(deps, tv ? "tv" : "movie", t.tmdbId, t.title, t.year);
       const meta = tmdbId != null ? deps.meta.get(tv ? "tv" : "movie", tmdbId) : null;
+      const name = t.tmdbId != null ? t.title : meta?.title ?? cleanTitle(t.title);
       const common = {
         source: "library",
         genres: t.genres?.length ? t.genres : meta?.genres ?? [],
@@ -40513,7 +40560,7 @@ ${cue.text}`).join("\n\n")}
         items2.push({
           ...common,
           ref: `lib:${t.key}`,
-          title: t.title,
+          title: name,
           kind: "movie",
           ...pickRuntime(t.runtimeMin, meta?.runtimeMin, DEFAULT_RUNTIME.movie),
           play: { type: "library", key: t.key, mediaType: "movie" }
@@ -40524,8 +40571,8 @@ ${cue.text}`).join("\n\n")}
         items2.push({
           ...common,
           ref: `lib:${t.key}:${ep.key}`,
-          title: ep.title || t.title,
-          seriesTitle: t.title,
+          title: ep.title || name,
+          seriesTitle: name,
           kind: "episode",
           seriesKey: `lib:${t.key}`,
           season: ep.season,
@@ -40539,9 +40586,19 @@ ${cue.text}`).join("\n\n")}
   }
   var streamLibraryItems = async (deps, emit3, opts = {}) => {
     const titles = await fetchLibraryTitles(deps, opts);
-    emit3(buildLibraryItems(titles, deps));
-    const lacking = titles.filter((t) => t.tmdbId != null && (t.kind === "movie" ? !(t.runtimeMin > 0) : !(t.runtimeMin > 0) && (t.episodes ?? []).some((e) => !(e.runtimeMin > 0))));
-    await enrich(deps, lacking.map((t) => ({ kind: t.kind === "movie" ? "movie" : "tv", tmdbId: t.tmdbId })), () => emit3(buildLibraryItems(titles, deps)));
+    const rebuild = () => emit3(buildLibraryItems(titles, deps));
+    rebuild();
+    const kindOf = (t) => t.kind === "movie" ? "movie" : "tv";
+    const matched = await matchUnmatched(deps, titles.filter((t) => t.tmdbId == null).map((t) => matchRef(kindOf(t), t.title, t.year)));
+    const refs = [];
+    for (const t of titles) {
+      const id = resolvedId(deps, kindOf(t), t.tmdbId, t.title, t.year);
+      if (id == null) continue;
+      const lacksRuntime = t.kind === "movie" ? !(t.runtimeMin > 0) : !(t.runtimeMin > 0) && (t.episodes ?? []).some((e) => !(e.runtimeMin > 0));
+      if (lacksRuntime || t.tmdbId == null) refs.push({ kind: kindOf(t), tmdbId: id });
+    }
+    const rebuilt = await enrich(deps, refs, rebuild);
+    if (matched && !rebuilt) rebuild();
   };
   function buildWatchlistMovies(movies, deps) {
     const items2 = [];
@@ -40623,21 +40680,23 @@ ${cue.text}`).join("\n\n")}
     const items2 = [];
     for (const t of titles) {
       const tv = t.kind === "tv";
-      const meta = t.tmdbId != null ? deps.meta.get(t.kind, t.tmdbId) : null;
+      const tmdbId = resolvedId(deps, t.kind, t.tmdbId, t.title, t.year);
+      const meta = tmdbId != null ? deps.meta.get(t.kind, tmdbId) : null;
       const imdbId = t.imdbId ?? meta?.imdbId;
+      const name = t.tmdbId != null ? t.title : meta?.title ?? cleanTitle(t.title);
       for (const f of t.files) {
         items2.push({
           ref: `db:${f.provider}:${f.fileRef}`,
-          title: t.title,
+          title: name,
           kind: tv ? "episode" : "movie",
           source: "debrid",
           genres: meta?.genres ?? [],
           year: t.year ?? meta?.year ?? null,
-          ...t.tmdbId != null ? { tmdbId: t.tmdbId } : {},
+          ...tmdbId != null ? { tmdbId } : {},
           ...imdbId ? { imdbId } : {},
           ...meta?.posterUrl ? { posterUrl: meta.posterUrl } : {},
           ...meta?.backdropUrl ? { backdropUrl: meta.backdropUrl } : {},
-          ...tv ? { seriesTitle: t.title, seriesKey: `db:tv:${t.tmdbId ?? t.title}`, ...f.season != null ? { season: f.season } : {}, ...f.episode != null ? { episode: f.episode } : {} } : {},
+          ...tv ? { seriesTitle: name, seriesKey: `db:tv:${tmdbId ?? t.title}`, ...f.season != null ? { season: f.season } : {}, ...f.episode != null ? { episode: f.episode } : {} } : {},
           ...pickRuntime(null, meta?.runtimeMin, tv ? DEFAULT_RUNTIME.episode : DEFAULT_RUNTIME.movie),
           play: { type: "debrid", provider: f.provider, fileRef: f.fileRef }
         });
@@ -40648,8 +40707,16 @@ ${cue.text}`).join("\n\n")}
   var streamDebridItems = async (deps, emit3) => {
     await idle(deps);
     const titles = await deps.listDebridCloud();
-    emit3(buildDebridItems(titles, deps));
-    await enrich(deps, titles.filter((t) => t.tmdbId != null).map((t) => ({ kind: t.kind, tmdbId: t.tmdbId })), () => emit3(buildDebridItems(titles, deps)));
+    const rebuild = () => emit3(buildDebridItems(titles, deps));
+    rebuild();
+    const matched = await matchUnmatched(deps, titles.filter((t) => t.tmdbId == null).map((t) => matchRef(t.kind, t.title, t.year)));
+    const refs = [];
+    for (const t of titles) {
+      const id = resolvedId(deps, t.kind, t.tmdbId, t.title, t.year);
+      if (id != null) refs.push({ kind: t.kind, tmdbId: id });
+    }
+    const rebuilt = await enrich(deps, refs, rebuild);
+    if (matched && !rebuilt) rebuild();
   };
   async function collect(stream, deps, opts) {
     let last2 = [];
@@ -40825,6 +40892,61 @@ ${cue.text}`).join("\n\n")}
     }
     return Object.assign(load, { flush: flush2 });
   }
+  var HIT_TTL_MS = 90 * 24 * 3600 * 1e3;
+  var MISS_TTL_MS2 = 7 * 24 * 3600 * 1e3;
+  var matchKey = (r) => `${r.kind}:${r.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}:${r.year ?? ""}`;
+  function createTitleMatchCache(store2, search, now2 = Date.now, perEnsure = 60) {
+    let snapshot = null;
+    const pending5 = {};
+    const inflight8 = /* @__PURE__ */ new Map();
+    const fresh = (e) => e != null && now2() - e.at < (e.id != null ? HIT_TTL_MS : MISS_TTL_MS2);
+    function get(ref) {
+      const key = matchKey(ref);
+      const entry = pending5[key] ?? (snapshot ?? (snapshot = store2.read()))[key];
+      return fresh(entry) ? entry.id : void 0;
+    }
+    function flush2() {
+      const keys2 = Object.keys(pending5);
+      if (keys2.length === 0) return;
+      const merged = {};
+      for (const [k, v] of Object.entries({ ...store2.read(), ...pending5 })) if (fresh(v)) merged[k] = v;
+      for (const k of keys2) delete pending5[k];
+      store2.write(merged);
+      snapshot = merged;
+    }
+    async function ensure(list) {
+      snapshot = store2.read();
+      const seen = /* @__PURE__ */ new Set();
+      const todo = list.filter((r) => {
+        const key = matchKey(r);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return get(r) === void 0;
+      }).slice(0, perEnsure);
+      let cursor = 0;
+      const worker = async () => {
+        while (cursor < todo.length) {
+          const ref = todo[cursor++];
+          const key = matchKey(ref);
+          let job = inflight8.get(key);
+          if (!job) {
+            job = search(ref).then((id) => {
+              if (id !== void 0) pending5[key] = { id, at: now2() };
+            }).catch(() => {
+            }).finally(() => inflight8.delete(key));
+            inflight8.set(key, job);
+          }
+          await job;
+        }
+      };
+      try {
+        await Promise.all(Array.from({ length: Math.min(PARALLEL, todo.length) }, worker));
+      } finally {
+        flush2();
+      }
+    }
+    return { get, ensure };
+  }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/resolve.ts
   var TTL_MS2 = 10 * 6e4;
@@ -40914,6 +41036,24 @@ ${cue.text}`).join("\n\n")}
     read: () => object(readPluginJson(PLUGIN_ID, "meta", {})),
     write: (all) => writePluginJson(PLUGIN_ID, "meta", all, { emitChange: false })
   };
+  var matchStore = {
+    read: () => object(readPluginJson(PLUGIN_ID, "matches", {})),
+    write: (all) => writePluginJson(PLUGIN_ID, "matches", all, { emitChange: false })
+  };
+  async function searchTitle(ref) {
+    const run = async (withYear) => {
+      const params = new URLSearchParams({ query: ref.title });
+      if (withYear && ref.year) params.set("year", String(ref.year));
+      const res = await fetch(`/api/local-files/search?${params}`);
+      if (!res.ok) return void 0;
+      const body = await res.json();
+      const hit = (body.results ?? []).find((r) => r.type === ref.kind && typeof r.tmdbId === "number");
+      return hit ? hit.tmdbId : null;
+    };
+    const first = await run(true);
+    if (first === null && ref.year) return run(false);
+    return first;
+  }
   var seasonsStore = {
     read: () => object(readPluginJson(PLUGIN_ID, "seasons", {})),
     write: (all) => writePluginJson(PLUGIN_ID, "seasons", all, { emitChange: false })
@@ -40928,6 +41068,7 @@ ${cue.text}`).join("\n\n")}
     if (!item) return null;
     const genres = Array.isArray(item.genres) ? item.genres.map((g) => typeof g === "string" ? g : g?.name ?? "").filter(Boolean) : [];
     return {
+      ...typeof item.title === "string" && item.title ? { title: item.title } : {},
       runtimeMin: typeof item.runtimeMinutes === "number" && item.runtimeMinutes > 0 ? item.runtimeMinutes : null,
       genres,
       year: typeof item.year === "number" ? item.year : null,
@@ -40958,7 +41099,8 @@ ${cue.text}`).join("\n\n")}
     fetchSeasons: createSeasonsCache(seasonsStore, fetchSeasonsUncached),
     listDebridCloud: () => channelListDebridCloud(),
     meta: createMetaCache(metaStore, fetchMeta),
-    waitForIdle: () => waitForStartIdle2()
+    waitForIdle: () => waitForStartIdle2(),
+    titleMatch: createTitleMatchCache(matchStore, searchTitle)
   };
   var maxAdded = (list) => list.reduce((max, e) => Math.max(max, Date.parse(e.addedAt ?? "") || 0), 0);
   var SIGNATURE_TTL_MS = 2e3;
@@ -41283,6 +41425,11 @@ ${cue.text}`).join("\n\n")}
     glass: "rgba(255,255,255,0.06)",
     glassHover: "rgba(255,255,255,0.1)",
     glassBorder: "rgba(255,255,255,0.1)",
+    /** Tät mörk glasyta för text över herobilden (tablåblock, rader, herons knappar). */
+    glassDense: "rgba(18,18,22,0.82)",
+    glassDenseSoft: "rgba(18,18,22,0.6)",
+    /** Pågående program: accentton på tät grund, så den sticker ut även över bild. */
+    glassCurrent: "hsl(15 45% 17% / 0.94)",
     /** OSD och paneler över bild/video. */
     osdBg: "rgba(18,18,22,0.72)",
     /** Platt mörkning över en bakgrundsbild (ingen gradient). */
@@ -41663,7 +41810,7 @@ ${cue.text}`).join("\n\n")}
           outline: "none",
           borderBottom: `1px solid ${selected ? "transparent" : "rgba(255,255,255,0.05)"}`,
           borderRadius: selected ? RADIUS.card : 0,
-          background: selected ? C.glass : "transparent",
+          background: selected ? C.glassDenseSoft : "transparent",
           boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : "none"
         },
         children: [
@@ -41724,8 +41871,8 @@ ${cue.text}`).join("\n\n")}
             flexDirection: "column",
             justifyContent: "center",
             gap: 1,
-            // Glas på svart grund (ingen blur: inget syns bakom). Vila = streckad kontur.
-            background: isRest ? "transparent" : current2 ? "rgba(244,132,95,0.16)" : C.glass,
+            // Tät mörk glasyta (läsbar även över herobilden). Vila = streckad kontur.
+            background: isRest ? C.glassDenseSoft : current2 ? C.glassCurrent : C.glassDense,
             border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current2 ? "rgba(244,132,95,0.45)" : C.glassBorder}`,
             color: isRest ? C.textMute : C.text
           },
@@ -41767,10 +41914,21 @@ ${cue.text}`).join("\n\n")}
     const height = Math.max(0, Math.round((h.bottom - originY) / k + extra));
     return { dx: Math.round(-originX / k), dy: Math.round(-originY / k), height, full: Math.max(height, prev?.full ?? 0) };
   }
-  function backdropAt(rundown, channel, now2) {
-    if (rundown.length === 0) return void 0;
-    const slot = programmeAt(rundown, channel.airWindow, now2);
-    return slot.kind === "programme" ? slot.item.backdropUrl : void 0;
+  function heroImage(rundown, channel, now2) {
+    if (rundown.length === 0) return null;
+    let slot = programmeAt(rundown, channel.airWindow, now2);
+    if (slot.kind === "rest") slot = programmeAt(rundown, channel.airWindow, slot.nextAir);
+    if (slot.kind !== "programme") return null;
+    if (slot.item.backdropUrl) return { url: slot.item.backdropUrl, blur: false };
+    if (slot.item.posterUrl) return { url: slot.item.posterUrl, blur: true };
+    const n = rundown.length;
+    for (let d = 1; d < n; d += 1) {
+      for (const i of [slot.index + d, slot.index - d]) {
+        const url = rundown[(i % n + n) % n].backdropUrl;
+        if (url) return { url, blur: false };
+      }
+    }
+    return null;
   }
   function nextProgramme(rundown, channel, t) {
     let slot = programmeAt(rundown, channel.airWindow, t);
@@ -41792,7 +41950,6 @@ ${cue.text}`).join("\n\n")}
     const slideList = slides && slides.length > 0 ? slides : [{ channel, rundown }];
     const rendered = renderedSlideIds(slideList.map((s) => s.channel), channel.id);
     const many = slideList.length > 1 && onSlide != null;
-    const [hover, setHover] = useState(false);
     const heroRef = useRef(null);
     const hostPlayer = useHostPlayerActive();
     const layerRef = useRef(null);
@@ -41879,8 +42036,6 @@ ${cue.text}`).join("\n\n")}
         ref: heroRef,
         "data-channels-hero": "",
         "data-hero-slides": slideList.length,
-        onMouseEnter: () => setHover(true),
-        onMouseLeave: () => setHover(false),
         onTouchStart,
         onTouchEnd,
         style: {
@@ -41917,8 +42072,9 @@ ${cue.text}`).join("\n\n")}
               children: [
                 slideList.map(({ channel: c, rundown: r }) => {
                   if (!rendered.has(c.id)) return null;
-                  const url = backdropAt(r, c, now2);
-                  if (!url) return null;
+                  const image = heroImage(r, c, now2);
+                  if (!image) return null;
+                  const url = image.url;
                   return /* @__PURE__ */ jsx(
                     "span",
                     {
@@ -41931,7 +42087,9 @@ ${cue.text}`).join("\n\n")}
                         right: 0,
                         bottom: 0,
                         height: geom ? geom.full : "100%",
-                        background: `url("${url}") center top / cover no-repeat`,
+                        background: `url("${url}") center ${image.blur ? "center" : "top"} / cover no-repeat`,
+                        // Affisch som reserv: uppförstorad och suddig, så den fyller bredden utan att se pixlig ut.
+                        ...image.blur ? { filter: "blur(28px)", transform: "scale(1.15)" } : {},
                         opacity: c.id === channel.id ? 0.7 : 0,
                         transition: "opacity 300ms ease"
                       }
@@ -41954,10 +42112,6 @@ ${cue.text}`).join("\n\n")}
               ]
             }
           ),
-          many && !isMobile && !isTv ? /* @__PURE__ */ jsxs(Fragment2, { children: [
-            /* @__PURE__ */ jsx(Arrow, { side: "left", visible: hover, label: t("heroPrev"), onClick: () => onStep?.(-1) }),
-            /* @__PURE__ */ jsx(Arrow, { side: "right", visible: hover, label: t("heroNext2"), onClick: () => onStep?.(1) })
-          ] }) : null,
           /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { position: "relative", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
             /* @__PURE__ */ jsx(Pill, { isTv, onClick: () => requestBrowseBack(), children: t("pageHome") }),
             /* @__PURE__ */ jsx(Pill, { isTv, active: true, onClick: onManage, children: t("pageChannels") }),
@@ -41998,7 +42152,7 @@ ${cue.text}`).join("\n\n")}
                         alignItems: "center",
                         padding: "3px 9px",
                         borderRadius: RADIUS.pill,
-                        ...glass(isTv, { fill: C.pillBg, blur: 0 }),
+                        ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }),
                         color: C.textSoft,
                         fontSize: fs(10.5),
                         fontWeight: 700,
@@ -42068,46 +42222,13 @@ ${cue.text}`).join("\n\n")}
       }
     );
   }
-  function Arrow({ side, visible, label, onClick }) {
-    return /* @__PURE__ */ jsx(
-      "button",
-      {
-        type: "button",
-        "aria-label": label,
-        "data-hero-arrow": side,
-        onClick,
-        style: {
-          position: "absolute",
-          top: "50%",
-          [side]: 8,
-          zIndex: 2,
-          transform: "translateY(-50%)",
-          width: 36,
-          height: 36,
-          borderRadius: 999,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          ...glass(false, { fill: C.pillBg, blur: 20 }),
-          color: C.text,
-          fontSize: 20,
-          lineHeight: 1,
-          cursor: "pointer",
-          opacity: visible ? 1 : 0,
-          transition: "opacity 200ms ease",
-          pointerEvents: visible ? "auto" : "none"
-        },
-        children: side === "left" ? "\u2039" : "\u203A"
-      }
-    );
-  }
   function Pill({ children, onClick, active: active3, isTv }) {
     const style = {
       display: "inline-flex",
       alignItems: "center",
       minHeight: isTv ? "2.25rem" : 30,
       padding: isTv ? "0 1rem" : "0 14px",
-      ...glass(isTv, { fill: C.pillBg, blur: 20 }),
+      ...glass(isTv, { fill: C.glassDenseSoft, blur: 20 }),
       borderRadius: RADIUS.pill,
       border: `1px solid ${active3 ? "rgba(244,132,95,0.55)" : C.pillBorder}`,
       color: active3 ? C.accentLight : C.text,
@@ -42136,7 +42257,7 @@ ${cue.text}`).join("\n\n")}
           gap: 6,
           padding: isTv ? "0.625rem 1.375rem" : "10px 22px",
           borderRadius: RADIUS.pill,
-          ...primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(isTv, { fill: C.pillBg, blur: 20 }),
+          ...primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(isTv, { fill: C.glassDenseSoft, blur: 20 }),
           color: primary ? C.onAccent : C.text,
           fontFamily: FONT3.ui,
           fontSize: fontSize(14, isTv),

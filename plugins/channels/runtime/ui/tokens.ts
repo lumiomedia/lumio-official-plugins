@@ -26,6 +26,11 @@ export const C = {
   glass: 'rgba(255,255,255,0.06)',
   glassHover: 'rgba(255,255,255,0.1)',
   glassBorder: 'rgba(255,255,255,0.1)',
+  /** Tät mörk glasyta för text över herobilden (tablåblock, rader, herons knappar). */
+  glassDense: 'rgba(18,18,22,0.82)',
+  glassDenseSoft: 'rgba(18,18,22,0.6)',
+  /** Pågående program: accentton på tät grund, så den sticker ut även över bild. */
+  glassCurrent: 'hsl(15 45% 17% / 0.94)',
   /** OSD och paneler över bild/video. */
   osdBg: 'rgba(18,18,22,0.72)',
   /** Platt mörkning över en bakgrundsbild (ingen gradient). */

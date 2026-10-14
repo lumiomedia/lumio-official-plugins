@@ -46,6 +46,19 @@ export function filterPool(items: PoolItem[], channel: Pick<ChannelDef, 'kind' |
 
 const RANK: Record<SourceId, number> = { library: 0, debrid: 1, watchlist: 2 }
 
+/**
+ * Bästa posten för samma titel: källrang först (bibliotek > debrid >
+ * watchlist), sedan en post med bild (en namnmatchad filnamnspost ska inte
+ * slå källans egen matchade), sist ref — så valet inte beror på ordningen.
+ */
+function better(a: PoolItem, b: PoolItem): boolean {
+  if (RANK[a.source] !== RANK[b.source]) return RANK[a.source] < RANK[b.source]
+  const ia = a.backdropUrl ? 0 : 1
+  const ib = b.backdropUrl ? 0 : 1
+  if (ia !== ib) return ia < ib
+  return a.ref < b.ref
+}
+
 export function dedupePool(items: PoolItem[]): PoolItem[] {
   const best = new Map<string, PoolItem>()
   for (const item of items) {
@@ -53,7 +66,7 @@ export function dedupePool(items: PoolItem[]): PoolItem[] {
     const identified = item.tmdbId != null && (item.kind === 'movie' || (item.season != null && item.episode != null))
     const key = identified ? `tmdb:${item.tmdbId}:${item.season ?? ''}:${item.episode ?? ''}` : `ref:${item.ref}`
     const current = best.get(key)
-    if (!current || RANK[item.source] < RANK[current.source]) best.set(key, item)
+    if (!current || better(item, current)) best.set(key, item)
   }
   return [...best.values()]
 }
