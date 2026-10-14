@@ -67,8 +67,8 @@ export const channelsSettingsSection: SettingsSection = {
 }
 
 /**
- * Kanallistans logik, delad av inställningssektionen och Kanaler-sidans
- * Hantera kanaler: sorterad lista, titelantal ur poolcachen (inga uppslag)
+ * Kanallistans logik (inställningssektionen är där kanalerna hanteras):
+ * sorterad lista, titelantal ur poolcachen (inga uppslag)
  * och tvåstegs Ta bort (andra trycket inom 3 s tar bort).
  */
 export function useChannelList(): {

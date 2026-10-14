@@ -1,3 +1,10 @@
+## 0.1.9
+
+- Ny sidlayout på alla ytor: appens meny överst, en stillastående kompakt hero för kanalen tablån pekar på, och tablån under i en egen rullning där raderna tonar ut under heron.
+- Heron följer tablån: raden med fokus (TV), raden under pekaren annars vald rad (skrivbord), tryckt rad (mobil). Karusellen och prickarna är borta.
+- TV: OK på en rad tittar live; håll OK för Från början, Redigera kanal och Zappa. Skrivbord/mobil: Titta live och Från början i heron, klick på vald rad eller dubbelklick tittar live.
+- HEM, KANALER, NY KANAL och Redigera är borttagna från sidan — kanalerna hanteras under Inställningar → Kanaler.
+
 ## 0.1.8
 
 - TV-läget behåller appens toppmeny (HOME, SÖK, FILMER ... LIVE TV, SPORT) ovanför kanalsidan; sidans översta rad ligger under den.

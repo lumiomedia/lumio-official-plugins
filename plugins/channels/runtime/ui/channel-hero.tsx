@@ -1,25 +1,30 @@
 'use client'
 
 /**
- * Kanaler-sidans hero: vad som sänds nu på den valda kanalen. Läser bara
- * tablån (ren uträkning) — inga strömuppslag; spelaren gör dem först när
- * man trycker Titta live.
+ * Kanaler-sidans hero: en STILLASTÅENDE, kompakt hero direkt under appens
+ * meny som visar kanalen och programmet som tablån pekar på (TV: raden med
+ * fokus; skrivbord: raden under pekaren, annars vald rad; mobil: tryckt
+ * rad). Ingen karusell — tablån styr. Läser bara tablån (ren uträkning),
+ * inga strömuppslag; spelaren gör dem först när man tittar.
+ *
+ * TV: inga knappar i heron — OK på en rad tittar live, håll OK ger
+ * glasmenyn (Från början, Redigera kanal, Zappa). Skrivbord/mobil: Titta
+ * live och Från början för vald kanal.
  */
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type TouchEvent } from 'react'
-import { requestBrowseBack } from '@/lib/plugin-sdk'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { ChannelDef } from '../model/channel'
 import { programmeAt, type ProgrammeSlot } from '../model/schedule'
 import type { PoolItem } from '../data/pool'
 import type { PlayMode } from '../play/player-logic'
 import { formatClock } from './guide-layout'
-import { createWheelSwipe, renderedSlideIds } from './hero-carousel-logic'
 import { belowMenuPill, C, FONT, glass, RADIUS, fontSize } from './tokens'
-import { dim, dimS, TV_CONTENT_LEFT, TV_CONTENT_RIGHT, TV_HERO_TITLE, tvHeroButton, tvu } from './tv'
+import { dim, dimS, TV_CONTENT_LEFT, TV_CONTENT_RIGHT, TV_HERO_TITLE, tvu } from './tv'
 import type { useText } from './use-text'
 
 type T = ReturnType<typeof useText>
 
 export interface ChannelHeroProps {
+  /** Kanalen heron visar (fokus/pekare/val i tablån). */
   channel: ChannelDef
   rundown: PoolItem[]
   loading: boolean
@@ -31,21 +36,17 @@ export interface ChannelHeroProps {
   /** Värden kan spela kanaler (app ≥ 0.1.625). */
   canPlay: boolean
   t: T
+  /** Skrivbord/mobil: herons två knappar (TV har inga). */
   onPlay(mode: PlayMode): void
-  onEdit(): void
-  onNewChannel(): void
-  /** KANALER-pillret: öppnar Hantera kanaler. */
-  onManage(): void
-  /** Karusellens bilder (sändande kanaler + vald), i nummerordning; vald = `channel`. */
-  slides?: Array<{ channel: ChannelDef; rundown: PoolItem[] }>
-  /** Byt bild: väljer den kanalen (tablåns markering följer). */
-  onSlide?(id: string): void
-  onStep?(dir: -1 | 1): void
+  /**
+   * Bilderna som ritas i bakgrundslagret (visad kanal + grannar i tablån,
+   * förladdade och osynliga); byte tonar över 300 ms.
+   */
+  images?: Array<{ channel: ChannelDef; rundown: PoolItem[] }>
 }
 
 /** Bakgrundsbilden sticker ut under heron så tablån ligger på den uttonade bilden (TV: 170 × 1,54 designpx). */
 const FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 } as const
-const SWIPE_PX = 50
 const HERO_CSS = '@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }'
 
 /**
@@ -134,16 +135,14 @@ function duration(ms: number, t: T): string {
   return h > 0 ? t('durHm', { h, m }) : t('durM', { m })
 }
 
-export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel, onManage, slides, onSlide, onStep }: ChannelHeroProps) {
+export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isMobile, canPlay, t, onPlay, images }: ChannelHeroProps) {
   const fs = (px: number) => fontSize(px, isTv)
   const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now) : null
   const programme = slot?.kind === 'programme' ? slot : null
   const rest = slot?.kind === 'rest' ? slot : null
   const after = programme ? nextProgramme(rundown, channel, programme.stop) : rest ? nextProgramme(rundown, channel, rest.nextAir) : null
 
-  const slideList = slides && slides.length > 0 ? slides : [{ channel, rundown }]
-  const rendered = renderedSlideIds(slideList.map((s) => s.channel), channel.id)
-  const many = slideList.length > 1 && onSlide != null
+  const imageList = images && images.some((s) => s.channel.id === channel.id) ? images : [{ channel, rundown }, ...(images ?? [])]
   const heroRef = useRef<HTMLElement | null>(null)
   const hostPlayer = useHostPlayerActive()
   const layerRef = useRef<HTMLDivElement | null>(null)
@@ -179,48 +178,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       window.removeEventListener('resize', onResize)
     }
   }, [extra, hostPlayer])
-  // Styrplattans tvåfingersvep i sidled (skrivbord). Inbyggd lyssnare med
-  // passive:false: ett vågrätt svep får inte också rulla sidan eller trigga
-  // webbvyns bakåtgest; lodrätt rullning lämnas helt orörd.
-  const stepRef = useRef(onStep)
-  stepRef.current = many ? onStep : undefined
-  useEffect(() => {
-    const hero = heroRef.current
-    if (!hero || isTv) return
-    const swipe = createWheelSwipe()
-    const onWheel = (e: WheelEvent) => {
-      if (!stepRef.current) return
-      const { step, horizontal } = swipe.feed(e.deltaX, e.deltaY, e.timeStamp || Date.now())
-      if (horizontal) e.preventDefault()
-      if (step !== 0) stepRef.current(step)
-    }
-    hero.addEventListener('wheel', onWheel, { passive: false })
-    return () => hero.removeEventListener('wheel', onWheel)
-  }, [isTv])
-  // Tangentbord på skrivbordet: prickarna nås med Tab, ◀▶ bläddrar och fokus följer aktiv prick.
-  const dotsRef = useRef<HTMLDivElement | null>(null)
-  const dotsFocused = useRef(false)
-  useEffect(() => {
-    if (!dotsFocused.current) return
-    dotsRef.current?.querySelector<HTMLButtonElement>(`[aria-current="true"]`)?.focus()
-  }, [channel.id])
-  const onDotsKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (isTv || !many || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
-    e.preventDefault()
-    e.stopPropagation()
-    dotsFocused.current = true
-    onStep?.(e.key === 'ArrowLeft' ? -1 : 1)
-  }
-  const touch = useRef<{ x: number; y: number } | null>(null)
-  const onTouchStart = (e: TouchEvent) => { const p = e.touches[0]; touch.current = p ? { x: p.clientX, y: p.clientY } : null }
-  const onTouchEnd = (e: TouchEvent) => {
-    const start = touch.current
-    const p = e.changedTouches[0]
-    touch.current = null
-    if (!start || !p || !many) return
-    const dx = p.clientX - start.x
-    if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(p.clientY - start.y)) onStep?.(dx < 0 ? 1 : -1)
-  }
+
   let title: string
   let meta: string
   if (programme) {
@@ -241,36 +199,34 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
     meta = loading ? t('heroLoading') : t('playerEmpty')
   }
   const pct = programme ? Math.min(1, Math.max(0, (now - programme.start) / Math.max(1, programme.stop - programme.start))) : 0
+  // Stillastående och kompakt: ≈ en tredjedel av höjden på TV/skrivbord, mindre på mobil.
+  const minHeight = isTv ? 'calc(var(--tv-vp-h, 100vh) * 0.36)' : isMobile ? 'calc(var(--lumio-vh, 100vh) * 0.3)' : 'calc(var(--lumio-vh, 100vh) * 0.36)'
 
   return (
     <section
       ref={heroRef}
       data-channels-hero=""
-      data-hero-slides={slideList.length}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
+      data-hero-channel={channel.id}
       style={{
-        position: 'relative', minHeight: dim(330, isTv),
-        // TV: appens innehållslinje (100 enheter) för pillren, texten och knapparna.
+        position: 'relative', flexShrink: 0, minHeight, boxSizing: 'border-box',
         padding: isTv
-          ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(28)} ${tvu(TV_CONTENT_LEFT)}`
-          : `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 24px' : '32px 28px'}`,
-        color: C.text, fontFamily: FONT.ui, display: 'flex', flexDirection: 'column',
+          ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}`
+          // Samma vänsterkant som tablåns kanalnamn (sektionens 32 + etikettens 8; mobil 16).
+          : `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 12px 16px' : '32px 16px 40px'}`,
+        color: C.text, fontFamily: FONT.ui, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
       }}
     >
       <style>{HERO_CSS}</style>
       {/*
         Bakgrunden: programmets bild från sidans överkant, uttonad mot sidans
-        svarta under nedersta ~40 % — och förbi herons kant, så tablån ligger
-        på den uttonade bilden. Värdena är appens herokarusells: bilden på 70 %
-        opacitet, sido- och toppvinjett för läsbarheten, mask mot transparent
-        (den enda gradienten utöver zappens brus). Aktiv bild och grannarna
-        ritas (grannarna osynliga = förladdade); byte tonar över 300 ms.
+        svarta — och förbi herons kant, så tablån ligger på den uttonade
+        bilden. Värdena är appens herokarusells: bilden på 70 % opacitet,
+        sidovinjett för läsbarheten, mask mot transparent. Visad kanal och
+        grannarna ritas (grannarna osynliga = förladdade); byte tonar 300 ms.
 
         Kant i kant: ett fast lager över hela fönstrets bredd från överkanten
-        (se measureHeroLayer) — samma resultat som appens egen hero, utan att
-        bero på kolumnens indrag. z −1 i kolumnens staplingskontext: under
-        appens krom (menyknapp, klocka) och sidans innehåll, över appens grund.
+        (se measureHeroLayer). z −1 i kolumnens staplingskontext: under
+        appens krom och sidans innehåll, över appens grund.
       */}
       {hostPlayer ? null : (
       <div
@@ -287,8 +243,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
           maskImage: 'linear-gradient(to bottom, black 55%, transparent 100%)',
         }}
       >
-        {slideList.map(({ channel: c, rundown: r }) => {
-          if (!rendered.has(c.id)) return null
+        {imageList.map(({ channel: c, rundown: r }) => {
           const image = heroImage(r, c, now)
           if (!image) return null
           const url = image.url
@@ -300,12 +255,10 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
               data-hero-image={c.id}
               data-hero-image-kind={image.kind}
               style={{
-                // Full höjd, förankrad i lagrets nederkant: bilden följer herons
-                // nederkant när sidan rullar i stället för att skalas om.
+                // Full höjd, förankrad i lagrets nederkant.
                 position: 'absolute', right: 0, bottom: 0, height: full ?? '100%',
                 ...(poster
-                  // Affisch som reserv: skarp, i sitt eget format till höger, tonad mot vänster
-                  // in i sidans svarta (som en affischhero), aldrig uppförstorad och suddig.
+                  // Affisch som reserv: skarp, i sitt eget format till höger, tonad mot vänster.
                   ? {
                       width: full != null ? Math.round(full * (2 / 3)) : '40%', maxWidth: '60%',
                       background: `url("${url}") right top / cover no-repeat`,
@@ -319,8 +272,7 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
           )
         })}
         <span style={{
-          // Appens sidovinjett för textens läsbarhet; ingen toppvinjett — den
-          // läste som ett svart band överst.
+          // Appens sidovinjett för textens läsbarhet.
           position: 'absolute', inset: 0,
           background: 'linear-gradient(to right, rgb(var(--base-950, 5 5 7) / 0.62) 0%, rgb(var(--base-950, 5 5 7) / 0) 45%)',
         }}
@@ -328,172 +280,81 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
       </div>
       )}
 
-
-      {/* Under appens menypill, vänsterställt; högra hörnet är appens (klocka, hälsning). */}
-      <div data-channels-topbar="" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: dim(8, isTv), flexWrap: 'wrap' }}>
-        <Pill isTv={isTv} onClick={() => requestBrowseBack()}>{t('pageHome')}</Pill>
-        <Pill isTv={isTv} active onClick={onManage}>{t('pageChannels')}</Pill>
-        <Pill isTv={isTv} onClick={onNewChannel}>{t('pageNewChannel')}</Pill>
-      </div>
-
-      <div style={{ position: 'relative', marginTop: 'auto', paddingTop: isMobile ? 32 : dim(48, isTv) }}>
-        {/* Eget attribut: appens TV-regel för [data-hero-copy] drog in texten 100 enheter förbi pillren. */}
+      <div style={{ position: 'relative' }}>
+        {/* Eget attribut: appens TV-regel för [data-hero-copy] drog in texten. */}
         <div key={channel.id} data-channels-hero-copy="" style={{ animation: 'chh-fade 300ms ease both' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: dim(10, isTv), flexWrap: 'wrap' }}>
-          {programme ? (
-            <span data-hero-badge="live" style={{
-              display: 'inline-flex', alignItems: 'center', gap: dim(6, isTv), padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
-              background: C.accent, color: C.onAccent, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em', lineHeight: 1.3,
-            }}
-            >
-              <span style={{ width: dim(6, isTv), height: dim(6, isTv), borderRadius: 999, background: C.onAccent }} />
-              {t('heroLive')}
+          <div style={{ display: 'flex', alignItems: 'center', gap: dim(10, isTv), flexWrap: 'wrap' }}>
+            {programme ? (
+              <span data-hero-badge="live" style={{
+                display: 'inline-flex', alignItems: 'center', gap: dim(6, isTv), padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
+                background: C.accent, color: C.onAccent, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em', lineHeight: 1.3,
+              }}
+              >
+                <span style={{ width: dim(6, isTv), height: dim(6, isTv), borderRadius: 999, background: C.onAccent }} />
+                {t('heroLive')}
+              </span>
+            ) : rest ? (
+              // Vila: neutral bricka, inte LIVE.
+              <span data-hero-badge="rest" style={{
+                display: 'inline-flex', alignItems: 'center', padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
+                ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }), color: C.textSoft, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em', lineHeight: 1.3,
+              }}
+              >
+                {t('heroOffAir')}
+              </span>
+            ) : null}
+            <span style={{ fontSize: fs(11), letterSpacing: '0.22em', textTransform: 'uppercase', color: C.textSoft }}>
+              {t('zapChannelLine', { n: channel.number, name: channel.name })}
             </span>
-          ) : rest ? (
-            // Vila: neutral bricka, inte LIVE (kanalen sänder inte nu).
-            <span data-hero-badge="rest" style={{
-              display: 'inline-flex', alignItems: 'center', padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
-              ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }), color: C.textSoft, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em', lineHeight: 1.3,
-            }}
-            >
-              {t('heroOffAir')}
-            </span>
+          </div>
+          <h1 style={{
+            margin: `${dimS(8, isTv)} 0 0`, fontFamily: FONT.title, fontWeight: 400, fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 26 : 38), lineHeight: 1.15,
+            maxWidth: isTv ? tvu(1100) : 900, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}
+          >
+            {title}
+          </h1>
+          <p style={{ margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }}>{meta}</p>
+          {partial ? (
+            <p data-channels-partial="" role="status" style={{ margin: `${dimS(4, isTv)} 0 0`, fontSize: fs(12), color: C.textDim }}>{t('heroPartial')}</p>
           ) : null}
-          <span style={{ fontSize: fs(11), letterSpacing: '0.22em', textTransform: 'uppercase', color: C.textSoft }}>
-            {t('zapChannelLine', { n: channel.number, name: channel.name })}
-          </span>
+          {rest ? (
+            <p style={{ margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(13), color: C.accentLight }}>{t('playerRest', { time: formatClock(rest.nextAir) })}</p>
+          ) : (
+            <div style={{ marginTop: dim(10, isTv), height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
+              <div style={{ width: `${pct * 100}%`, height: '100%', background: C.accent }} />
+            </div>
+          )}
+          {after ? (
+            <p data-hero-next="" style={{ margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(13), color: C.textDim }}>
+              {t('heroNext', { time: formatClock(after.start), title: after.item.kind === 'episode' && after.item.seriesTitle ? after.item.seriesTitle : after.item.title })}
+            </p>
+          ) : null}
         </div>
-        <h1 style={{
-          margin: `${dimS(10, isTv)} 0 0`, fontFamily: FONT.title, fontWeight: 400, fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 30 : 44), lineHeight: 1.1,
-          maxWidth: isTv ? tvu(1100) : undefined,
-          overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-        }}
-        >
-          {title}
-        </h1>
-        <p style={{ margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }}>{meta}</p>
-        {partial ? (
-          <p data-channels-partial="" role="status" style={{ margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(12), color: C.textDim }}>{t('heroPartial')}</p>
-        ) : null}
-        {rest ? (
-          <p style={{ margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(13), color: C.accentLight }}>{t('playerRest', { time: formatClock(rest.nextAir) })}</p>
-        ) : (
-          <div style={{ marginTop: dim(12, isTv), height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
-            <div style={{ width: `${pct * 100}%`, height: '100%', background: C.accent }} />
+        {/* TV: inga knappar — OK på en rad tittar, håll OK ger glasmenyn. */}
+        {isTv ? null : (
+          <div data-hero-actions="" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: isMobile ? 14 : 18 }}>
+            <HeroButton primary disabled={!canPlay} onClick={() => onPlay('live')}>{t('heroWatchLive')}</HeroButton>
+            <HeroButton disabled={!canPlay || !programme} onClick={() => onPlay('start')}>{t('heroFromStart')}</HeroButton>
           </div>
         )}
-        </div>
-                {/* TV: startfokus på Titta live (Redigera om värden inte kan spela). */}
-        <div data-hero-actions="" style={{ display: 'flex', flexWrap: 'wrap', gap: dim(10, isTv), marginTop: dim(20, isTv) }}>
-          <HeroButton isTv={isTv} primary init={canPlay} disabled={!canPlay} onClick={() => onPlay('live')}>{t('heroWatchLive')}</HeroButton>
-          <HeroButton isTv={isTv} disabled={!canPlay || !programme} onClick={() => onPlay('start')}>{t('heroFromStart')}</HeroButton>
-          <HeroButton isTv={isTv} init={!canPlay} onClick={onEdit}>{t('heroEdit')}</HeroButton>
-        </div>
-        {after ? (
-          <p style={{ margin: `${dimS(14, isTv)} 0 0`, fontSize: fs(13), color: C.textDim }}>
-            {t('heroNext', { time: formatClock(after.start), title: after.item.kind === 'episode' && after.item.seriesTitle ? after.item.seriesTitle : after.item.title })}
-          </p>
-        ) : null}
-        {many ? (
-          <div
-            ref={dotsRef}
-            data-hero-dots=""
-            // TV: appens bläddrare (tv-hero.tsx) — prickarna är stationer och pricken
-            // med fokus ÄR vald kanal; ringen ritas på pillret (index.css .tv-hero-pager).
-            className={isTv ? 'tv-hero-pager' : undefined}
-            onKeyDown={onDotsKey}
-            onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) dotsFocused.current = false }}
-            style={isTv
-              ? { display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: tvu(7), height: tvu(22), padding: `0 ${tvu(10)}`, marginTop: tvu(16), borderRadius: 999 }
-              : { display: 'flex', alignItems: 'center', gap: 6, marginTop: 16 }}
-          >
-            {slideList.map(({ channel: c }, i) => {
-              const active = c.id === channel.id
-              const first = slideList[0]!.channel.id
-              const last = slideList[slideList.length - 1]!.channel.id
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  aria-label={t('zapChannelLine', { n: c.number, name: c.name })}
-                  aria-current={active ? 'true' : undefined}
-                  data-hero-dot={c.id}
-                  tabIndex={0}
-                  {...(isTv
-                    ? {
-                        'data-f': '',
-                        // Zonhopp landar på vald prick, inte på den första.
-                        'data-current': active ? '' : undefined,
-                        // Fokus stannar i bläddraren: ändarna går runt (som appens hero).
-                        'data-f-left': i === 0 ? `[data-hero-dot="${last}"]` : undefined,
-                        'data-f-right': i === slideList.length - 1 ? `[data-hero-dot="${first}"]` : undefined,
-                        'data-f-up': '[data-hero-actions] button:not([disabled])',
-                        'data-f-down': '[data-channel-row][aria-pressed="true"]',
-                        // Indikator, inte en knapp: appens minsta knapphöjd gäller inte.
-                        'data-tv-nosize': '',
-                      }
-                    : {})}
-                  onFocus={isTv ? () => { if (!active) onSlide?.(c.id) } : undefined}
-                  onClick={() => {
-                    // TV: fokus har redan valt kanalen; OK spelar den (som appens bläddrare).
-                    if (isTv && canPlay) { onSlide?.(c.id); onPlay('live'); return }
-                    onSlide?.(c.id)
-                  }}
-                  style={isTv
-                    ? {
-                        width: tvu(active ? 20 : 6), height: tvu(4), minHeight: 0, padding: 0, border: 0, borderRadius: 999, cursor: 'pointer',
-                        background: active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', transition: 'width 300ms ease, background 200ms ease',
-                      }
-                    : {
-                        // Träffytan större än prickens 4 px: klick och fokusring utan att ändra utseendet.
-                        width: active ? 16 : 4, height: 4, padding: 0, borderLeft: 0, borderRight: 0, borderRadius: 999, cursor: 'pointer',
-                        boxSizing: 'content-box', backgroundClip: 'content-box', borderTop: '6px solid transparent', borderBottom: '6px solid transparent',
-                        background: active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', transition: 'width 200ms ease, background 200ms ease',
-                      }}
-                />
-              )
-            })}
-          </div>
-        ) : null}
       </div>
     </section>
   )
 }
 
-
-function Pill({ children, onClick, active, isTv }: { children: ReactNode; onClick?: () => void; active?: boolean; isTv: boolean }) {
-  const style: CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', minHeight: dim(30, isTv, 40), padding: isTv ? `0 ${tvu(18)}` : '0 14px', boxSizing: 'border-box',
-    ...glass(isTv, { fill: C.glassDenseSoft, blur: 20 }),
-    borderRadius: RADIUS.pill, border: `1px solid ${active ? 'rgba(244,132,95,0.55)' : C.pillBorder}`,
-    color: active ? C.accentLight : C.text,
-    fontFamily: FONT.ui, fontSize: fontSize(10.5, isTv), fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase',
-    whiteSpace: 'nowrap', cursor: onClick ? 'pointer' : 'default',
-  }
-  if (!onClick) return <span style={style}>{children}</span>
-  return <button type="button" data-f="" onClick={onClick} style={style}>{children}</button>
-}
-
-function HeroButton({ children, onClick, primary, disabled, init, isTv }: { children: ReactNode; onClick(): void; primary?: boolean; disabled?: boolean; init?: boolean; isTv: boolean }) {
+function HeroButton({ children, onClick, primary, disabled }: { children: ReactNode; onClick(): void; primary?: boolean; disabled?: boolean }) {
   return (
     <button
       type="button"
-      data-f=""
-      data-init={isTv && init && !disabled ? '' : undefined}
-      // ▼ till bläddrarens valda prick: geometrin valde annars tablåraden (bred,
-      // rakt under) och prickarna gick inte att nå från knapparna. Ingen prick
-      // (en kanal) → motorns geometri som vanligt.
-      data-f-down={isTv ? '[data-hero-dot][data-current]' : undefined}
       disabled={disabled}
       onClick={onClick}
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: dim(6, isTv), padding: '10px 22px', borderRadius: RADIUS.pill, boxSizing: 'border-box',
-        ...(primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(isTv, { fill: C.glassDenseSoft, blur: 20 })),
+        display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 22px', borderRadius: RADIUS.pill, boxSizing: 'border-box',
+        ...(primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(false, { fill: C.glassDenseSoft, blur: 20 })),
         color: primary ? C.onAccent : C.text,
-        fontFamily: FONT.ui, fontSize: fontSize(14, isTv), fontWeight: 600, whiteSpace: 'nowrap',
+        fontFamily: FONT.ui, fontSize: '14px', fontWeight: 600, whiteSpace: 'nowrap',
         cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.45 : 1,
-        // TV: appens heroknappars mått och knappstorlek.
-        ...(isTv ? tvHeroButton() : {}),
       }}
     >
       {children}

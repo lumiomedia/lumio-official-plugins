@@ -39932,9 +39932,6 @@ ${cue.text}`).join("\n\n")}
     zapNothingOn: { en: "Nothing on air", sv: "Inget s\xE4nds" },
     zapHint: { en: "remote: \u25B2\u25BC \xB7 0\u20139 \xB7 OK = info", sv: "fj\xE4rr: \u25B2\u25BC \xB7 0\u20139 \xB7 OK = info" },
     // Kanaler-sidan
-    pageHome: { en: "\u2039 HOME", sv: "\u2039 HEM" },
-    pageChannels: { en: "CHANNELS", sv: "KANALER" },
-    pageNewChannel: { en: "+ NEW CHANNEL", sv: "+ NY KANAL" },
     pageHostTooOld: { en: "Channels requires Lumio 0.1.625 or later for playback", sv: "Kanaler kr\xE4ver Lumio 0.1.625 eller senare f\xF6r uppspelning" },
     heroLive: { en: "LIVE", sv: "LIVE" },
     playerNoSignal: { en: "No signal", sv: "Ingen signal" },
@@ -39942,7 +39939,10 @@ ${cue.text}`).join("\n\n")}
     heroOffAir: { en: "OFF AIR", sv: "VILA" },
     heroWatchLive: { en: "\u25B6 Watch live", sv: "\u25B6 Titta live" },
     heroFromStart: { en: "\u27F2 From start", sv: "\u27F2 Fr\xE5n b\xF6rjan" },
-    heroEdit: { en: "Edit channel", sv: "Redigera kanal" },
+    // Håll OK på en tablårad (TV): värdens glasmeny.
+    menuFromStart: { en: "From start", sv: "Fr\xE5n b\xF6rjan" },
+    menuEdit: { en: "Edit channel", sv: "Redigera kanal" },
+    menuZap: { en: "Zap", sv: "Zappa" },
     heroNext: { en: "Next {time} {title}", sv: "Sedan {time} {title}" },
     heroMovie: { en: "Film", sv: "Film" },
     heroEpisode: { en: "Episode", sv: "Avsnitt" },
@@ -39958,11 +39958,14 @@ ${cue.text}`).join("\n\n")}
     guideEmpty: { en: "Nothing to broadcast", sv: "Inget att s\xE4nda" },
     emptyTitle: { en: "No channels", sv: "Inga kanaler" },
     emptyLead: {
-      en: "A channel is a few rules. Lumio builds a never-ending schedule from your library, watchlist and debrid. Bring back the ten default channels or create your own.",
-      sv: "En kanal \xE4r n\xE5gra regler. Lumio bygger en tabl\xE5 som aldrig tar slut av ditt bibliotek, din watchlist och debrid. Ta tillbaka de tio standardkanalerna eller skapa en egen."
+      en: "A channel is a few rules. Lumio builds a never-ending schedule from your library, watchlist and debrid. Bring back the ten default channels.",
+      sv: "En kanal \xE4r n\xE5gra regler. Lumio bygger en tabl\xE5 som aldrig tar slut av ditt bibliotek, din watchlist och debrid. Ta tillbaka de tio standardkanalerna."
+    },
+    emptySettingsHint: {
+      en: "Create and edit your own channels under Settings \u2192 Channels.",
+      sv: "Skapa och redigera egna kanaler under Inst\xE4llningar \u2192 Kanaler."
     },
     emptyRestore: { en: "Restore default channels", sv: "\xC5terst\xE4ll standardkanaler" },
-    emptyCustom: { en: "Create your own", sv: "Skapa egen" },
     // Kanalstudion
     studioEyebrow: { en: "MY CHANNELS", sv: "MINA KANALER" },
     studioNew: { en: "New channel", sv: "Ny kanal" },
@@ -40025,8 +40028,8 @@ ${cue.text}`).join("\n\n")}
     // Inställningssektionen
     settingsTitle: { en: "Your channels", sv: "Dina kanaler" },
     settingsHint: {
-      en: "Channels are built from rules; edit them in the channel studio.",
-      sv: "Kanalerna byggs av regler; \xE4ndra dem i kanalstudion."
+      en: "Manage your channels here: edit their rules in the channel studio, delete them or create new ones.",
+      sv: "Hantera dina kanaler h\xE4r: \xE4ndra reglerna i kanalstudion, ta bort eller skapa nya."
     },
     settingsEmpty: { en: "No channels yet", sv: "Inga kanaler \xE4nnu" },
     settingsTitles: { en: "\u2248 {n} titles", sv: "\u2248 {n} titlar" },
@@ -40034,8 +40037,6 @@ ${cue.text}`).join("\n\n")}
     settingsDelete: { en: "Delete", sv: "Ta bort" },
     settingsDeleteConfirm: { en: "Confirm", sv: "Bekr\xE4fta" },
     settingsNew: { en: "+ New channel", sv: "+ Ny kanal" },
-    manageTitle: { en: "Manage channels", sv: "Hantera kanaler" },
-    manageBack: { en: "\u2039 GUIDE", sv: "\u2039 TABL\xC5" },
     settingsNewRow: { en: "New channel", sv: "Ny kanal" },
     settingsChannelLine: { en: "{n} \xB7 {name}", sv: "{n} \xB7 {name}" },
     settingsDeleteTitle: { en: "Delete {name}?", sv: "Ta bort {name}?" },
@@ -41878,57 +41879,9 @@ ${cue.text}`).join("\n\n")}
     return sorted.find(live2) ?? sorted[0] ?? null;
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/hero-carousel-logic.ts
-  function heroSlides(sorted, rundownOf, now2, selectedId) {
-    return sorted.filter((c) => {
-      if (c.id === selectedId) return true;
-      const rundown = rundownOf(c.id);
-      return !!rundown && rundown.length > 0 && programmeAt(rundown, c.airWindow, now2).kind === "programme";
-    });
-  }
-  function stepSlide(slides, activeId, dir) {
-    if (slides.length === 0) return null;
-    const i = slides.findIndex((c) => c.id === activeId);
-    if (i < 0) return slides[0].id;
-    return slides[(i + dir + slides.length) % slides.length].id;
-  }
-  function renderedSlideIds(slides, activeId) {
-    const i = Math.max(0, slides.findIndex((c) => c.id === activeId));
-    const out = /* @__PURE__ */ new Set();
-    for (const d of [-1, 0, 1]) {
-      const s = slides[(i + d + slides.length) % slides.length];
-      if (s) out.add(s.id);
-    }
-    return out;
-  }
-  function createWheelSwipe(opts = {}) {
-    const threshold = opts.thresholdPx ?? 60;
-    const idle2 = opts.idleMs ?? 220;
-    let acc = 0;
-    let last2 = -Infinity;
-    let spent = false;
-    return {
-      /** Riktning att bläddra (1 = nästa) eller 0. `horizontal`: händelsen var ett sidsvep (ska inte rulla sidan). */
-      feed(dx, dy, now2) {
-        if (now2 - last2 >= idle2) {
-          acc = 0;
-          spent = false;
-        }
-        last2 = now2;
-        if (Math.abs(dx) <= Math.abs(dy)) return { step: 0, horizontal: false };
-        if (spent) return { step: 0, horizontal: true };
-        acc += dx;
-        if (Math.abs(acc) < threshold) return { step: 0, horizontal: true };
-        const step = acc > 0 ? 1 : -1;
-        acc = 0;
-        spent = true;
-        return { step, horizontal: true };
-      }
-    };
-  }
-
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-guide.tsx
   init_react_shim();
+  init_plugin_sdk();
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/badge.tsx
   init_jsx_runtime_shim();
@@ -41968,60 +41921,121 @@ ${cue.text}`).join("\n\n")}
   var TV_ROW_H = 72;
   var TV_ROW_H_COMPACT = 70;
   var MIN3 = 6e4;
-  function ChannelGuide({ channels, selectedId, window: win, now: now2, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, compact, initId }) {
+  var GUIDE_FADE = { desktop: 28, tv: 40 };
+  function guideFadeMask(isTv) {
+    const fade = isTv ? tvu(GUIDE_FADE.tv) : `${GUIDE_FADE.desktop}px`;
+    return `linear-gradient(to bottom, transparent 0, black ${fade})`;
+  }
+  function ChannelGuide({ channels, selectedId, window: win, now: now2, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, compact, initId, onHover, onHold, fill: fill3 }) {
     const labelW = isMobile ? 96 : compact ? 180 : 220;
     const rowH = isTv ? tvu(compact ? TV_ROW_H_COMPACT : TV_ROW_H) : compact ? 44 : ROW_H;
     const columns = `${dimS(labelW, isTv, compact ? 230 : 260)} minmax(${isMobile ? 544 : 0}px, 1fr)`;
     const nowPct = now2 >= win.from && now2 <= win.to ? nowLinePct(now2, win) : null;
-    return /* @__PURE__ */ jsx("section", { "data-channels-guide": "", style: { position: "relative", color: C.text, fontFamily: FONT3.ui, padding: compact ? 0 : isMobile ? "0 0 24px" : isTv ? `0 ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT - 8)}` : "0 32px 32px" }, children: /* @__PURE__ */ jsx("div", { "data-row": isMobile ? "" : void 0, style: { overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch" }, children: /* @__PURE__ */ jsxs("div", { style: { minWidth: isMobile ? 640 : void 0 }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)" }, children: [
-        /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textDim }, children: t("guideHeader") }),
-        /* @__PURE__ */ jsx("div", { style: { position: "relative", height: "100%" }, children: win.ticks.map((tick2) => /* @__PURE__ */ jsx(
-          "span",
-          {
-            style: {
-              position: "absolute",
-              bottom: dim(8, isTv),
-              left: `${(tick2 - win.from) / (win.to - win.from) * 100}%`,
-              fontFamily: FONT3.mono,
-              fontSize: fontSize(11, isTv),
-              lineHeight: 1.2,
-              color: C.textDim,
-              whiteSpace: "nowrap"
-            },
-            children: formatClock2(tick2)
-          },
-          tick2
-        )) })
-      ] }),
-      channels.map((channel, i) => /* @__PURE__ */ jsx(
-        GuideRow,
+    const scrollRef = useRef(null);
+    useEffect(() => {
+      if (!fill3 || !selectedId) return;
+      scrollRef.current?.querySelector(`[data-channel-row="${selectedId}"]`)?.scrollIntoView?.({ block: "nearest" });
+    }, [fill3]);
+    const fade = isTv ? tvu(GUIDE_FADE.tv) : `${GUIDE_FADE.desktop}px`;
+    const header = /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }, children: [
+      /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textDim }, children: t("guideHeader") }),
+      /* @__PURE__ */ jsx("div", { style: { position: "relative", height: "100%" }, children: win.ticks.map((tick2) => /* @__PURE__ */ jsx(
+        "span",
         {
-          channel,
-          selected: channel.id === selectedId,
-          win,
-          now: now2,
-          nowPct,
-          columns,
-          rowH,
-          clickPlays: !!compact,
-          init: isTv && initId === channel.id,
-          fUp: isTv && i === 0 && !compact ? "[data-hero-dot][data-current]" : void 0,
-          isTv,
-          isMobile,
-          t,
-          onSelect,
-          onPlay,
-          onRundown,
-          onShift
+          style: {
+            position: "absolute",
+            bottom: dim(8, isTv),
+            left: `${(tick2 - win.from) / (win.to - win.from) * 100}%`,
+            fontFamily: FONT3.mono,
+            fontSize: fontSize(11, isTv),
+            lineHeight: 1.2,
+            color: C.textDim,
+            whiteSpace: "nowrap"
+          },
+          children: formatClock2(tick2)
         },
-        channel.id
-      ))
-    ] }) }) });
+        tick2
+      )) })
+    ] });
+    const rows = channels.map((channel) => /* @__PURE__ */ jsx(
+      GuideRow,
+      {
+        channel,
+        selected: channel.id === selectedId,
+        win,
+        now: now2,
+        nowPct,
+        columns,
+        rowH,
+        clickPlays: !!compact,
+        init: isTv && initId === channel.id,
+        scrollMargin: fill3 ? `calc(${fade} + ${dimS(8, isTv)})` : null,
+        isTv,
+        isMobile,
+        t,
+        onSelect,
+        onPlay,
+        onRundown,
+        onShift,
+        onHover,
+        onHold
+      },
+      channel.id
+    ));
+    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(TV_CONTENT_RIGHT)} 0 ${tvu(TV_CONTENT_LEFT - 8)}` : "0 32px";
+    return /* @__PURE__ */ jsx(
+      "section",
+      {
+        "data-channels-guide": "",
+        style: {
+          position: "relative",
+          color: C.text,
+          fontFamily: FONT3.ui,
+          padding,
+          ...fill3 ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : {},
+          ...!fill3 && !compact ? { paddingBottom: isMobile ? 24 : dim(32, isTv, 40) } : {}
+        },
+        children: /* @__PURE__ */ jsx(
+          "div",
+          {
+            "data-row": isMobile ? "" : void 0,
+            style: { overflowX: isMobile ? "auto" : "visible", WebkitOverflowScrolling: "touch", ...fill3 ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : {} },
+            children: /* @__PURE__ */ jsxs("div", { style: { minWidth: isMobile ? 640 : void 0, ...fill3 ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : {} }, children: [
+              header,
+              fill3 ? /* @__PURE__ */ jsx(
+                "div",
+                {
+                  ref: scrollRef,
+                  "data-channels-guide-scroll": "",
+                  "data-scroll": "",
+                  style: {
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: "auto",
+                    overflowX: "hidden",
+                    overscrollBehavior: "contain",
+                    // Raderna tonar ut upptill (herons nederkant) när de rullar upp; luft
+                    // ovanför första raden så den står helt synlig i vila.
+                    paddingTop: fade,
+                    paddingBottom: dim(24, isTv, 40),
+                    WebkitMaskImage: guideFadeMask(isTv),
+                    maskImage: guideFadeMask(isTv),
+                    scrollbarWidth: "none"
+                  },
+                  children: rows
+                }
+              ) : rows
+            ] })
+          }
+        )
+      }
+    );
   }
   var stickyLabel = (isMobile) => isMobile ? { position: "sticky", left: 0, zIndex: 2, background: C.solid } : {};
-  var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, rowH, init, fUp, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }) {
+  var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, rowH, init, scrollMargin, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, onHover, onHold }) {
     const plays = isTv || clickPlays;
+    const activate = () => plays || selected ? onPlay(channel.id) : onSelect(channel.id);
+    const hold = isTv && onHold && typeof tvHoldHandlers === "function" ? tvHoldHandlers(() => onPlay(channel.id), (el) => onHold(channel.id, el)) : null;
     const [hover, setHover] = useState(false);
     const [focus, setFocus] = useState(false);
     const lit = hover || focus;
@@ -42032,9 +42046,12 @@ ${cue.text}`).join("\n\n")}
     const slots = rundown.length > 0 ? listing(rundown, channel.airWindow, win.from, win.to) : [];
     const onKeyDown = (event) => {
       if (event.key === "Enter" || event.key === " ") {
+        if (hold) {
+          hold.onKeyDown(event);
+          return;
+        }
         event.preventDefault();
-        if (plays) onPlay(channel.id);
-        else onSelect(channel.id);
+        activate();
         return;
       }
       if (!isTv) return;
@@ -42052,18 +42069,26 @@ ${cue.text}`).join("\n\n")}
         tabIndex: 0,
         "data-f": "",
         "data-init": init ? "" : void 0,
-        "data-f-up": fUp,
         "data-channel-row": channel.id,
         "aria-pressed": selected,
-        onClick: () => plays ? onPlay(channel.id) : onSelect(channel.id),
-        onFocus: () => {
+        onClick: activate,
+        onDoubleClick: plays ? void 0 : () => onPlay(channel.id),
+        onFocus: (e) => {
           setFocus(true);
           if (isTv && !selected) onSelect(channel.id);
+          if (scrollMargin) e.currentTarget.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
         },
         onBlur: () => setFocus(false),
-        onMouseEnter: () => setHover(true),
-        onMouseLeave: () => setHover(false),
+        onMouseEnter: () => {
+          setHover(true);
+          onHover?.(channel.id);
+        },
+        onMouseLeave: () => {
+          setHover(false);
+          onHover?.(null);
+        },
         onKeyDown,
+        onKeyUp: hold ? (e) => hold.onKeyUp(e) : void 0,
         style: {
           display: "grid",
           gridTemplateColumns: columns,
@@ -42073,8 +42098,8 @@ ${cue.text}`).join("\n\n")}
           boxSizing: "border-box",
           borderBottom: `1px solid ${selected ? "transparent" : "rgba(255,255,255,0.05)"}`,
           borderRadius: selected ? dim(RADIUS.card, isTv) : 0,
-          // TV: fokusmotorn rullar in raden; luft så den inte hamnar under kanten.
-          ...isTv ? { scrollMarginBlock: tvu(120) } : {},
+          // Rullbehållaren: luft så raden inte stannar i uttoningen.
+          ...scrollMargin ? { scrollMarginTop: scrollMargin, scrollMarginBottom: dimS(16, isTv) } : {},
           background: selected ? C.glassDenseSoft : "transparent",
           boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : "none"
         },
@@ -42157,10 +42182,8 @@ ${cue.text}`).join("\n\n")}
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-hero.tsx
   init_react_shim();
-  init_plugin_sdk();
   init_jsx_runtime_shim();
   var FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 };
-  var SWIPE_PX = 50;
   var HERO_CSS = "@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }";
   function useHostPlayerActive() {
     const read10 = () => typeof document !== "undefined" && document.documentElement.classList.contains("mpv-playing");
@@ -42217,15 +42240,13 @@ ${cue.text}`).join("\n\n")}
     const m = total % 60;
     return h > 0 ? t("durHm", { h, m }) : t("durM", { m });
   }
-  function ChannelHero({ channel, rundown, loading: loading2, partial, now: now2, isTv, isMobile, canPlay, t, onPlay, onEdit, onNewChannel, onManage, slides, onSlide, onStep }) {
+  function ChannelHero({ channel, rundown, loading: loading2, partial, now: now2, isTv, isMobile, canPlay, t, onPlay, images }) {
     const fs = (px) => fontSize(px, isTv);
     const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now2) : null;
     const programme = slot?.kind === "programme" ? slot : null;
     const rest = slot?.kind === "rest" ? slot : null;
     const after = programme ? nextProgramme(rundown, channel, programme.stop) : rest ? nextProgramme(rundown, channel, rest.nextAir) : null;
-    const slideList = slides && slides.length > 0 ? slides : [{ channel, rundown }];
-    const rendered = renderedSlideIds(slideList.map((s) => s.channel), channel.id);
-    const many = slideList.length > 1 && onSlide != null;
+    const imageList = images && images.some((s) => s.channel.id === channel.id) ? images : [{ channel, rundown }, ...images ?? []];
     const heroRef = useRef(null);
     const hostPlayer = useHostPlayerActive();
     const layerRef = useRef(null);
@@ -42262,47 +42283,6 @@ ${cue.text}`).join("\n\n")}
         window.removeEventListener("resize", onResize);
       };
     }, [extra, hostPlayer]);
-    const stepRef = useRef(onStep);
-    stepRef.current = many ? onStep : void 0;
-    useEffect(() => {
-      const hero = heroRef.current;
-      if (!hero || isTv) return;
-      const swipe = createWheelSwipe();
-      const onWheel = (e) => {
-        if (!stepRef.current) return;
-        const { step, horizontal } = swipe.feed(e.deltaX, e.deltaY, e.timeStamp || Date.now());
-        if (horizontal) e.preventDefault();
-        if (step !== 0) stepRef.current(step);
-      };
-      hero.addEventListener("wheel", onWheel, { passive: false });
-      return () => hero.removeEventListener("wheel", onWheel);
-    }, [isTv]);
-    const dotsRef = useRef(null);
-    const dotsFocused = useRef(false);
-    useEffect(() => {
-      if (!dotsFocused.current) return;
-      dotsRef.current?.querySelector(`[aria-current="true"]`)?.focus();
-    }, [channel.id]);
-    const onDotsKey = (e) => {
-      if (isTv || !many || e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      e.preventDefault();
-      e.stopPropagation();
-      dotsFocused.current = true;
-      onStep?.(e.key === "ArrowLeft" ? -1 : 1);
-    };
-    const touch = useRef(null);
-    const onTouchStart = (e) => {
-      const p = e.touches[0];
-      touch.current = p ? { x: p.clientX, y: p.clientY } : null;
-    };
-    const onTouchEnd = (e) => {
-      const start2 = touch.current;
-      const p = e.changedTouches[0];
-      touch.current = null;
-      if (!start2 || !p || !many) return;
-      const dx = p.clientX - start2.x;
-      if (Math.abs(dx) > SWIPE_PX && Math.abs(dx) > Math.abs(p.clientY - start2.y)) onStep?.(dx < 0 ? 1 : -1);
-    };
     let title;
     let meta;
     if (programme) {
@@ -42323,23 +42303,24 @@ ${cue.text}`).join("\n\n")}
       meta = loading2 ? t("heroLoading") : t("playerEmpty");
     }
     const pct2 = programme ? Math.min(1, Math.max(0, (now2 - programme.start) / Math.max(1, programme.stop - programme.start))) : 0;
+    const minHeight = isTv ? "calc(var(--tv-vp-h, 100vh) * 0.36)" : isMobile ? "calc(var(--lumio-vh, 100vh) * 0.3)" : "calc(var(--lumio-vh, 100vh) * 0.36)";
     return /* @__PURE__ */ jsxs(
       "section",
       {
         ref: heroRef,
         "data-channels-hero": "",
-        "data-hero-slides": slideList.length,
-        onTouchStart,
-        onTouchEnd,
+        "data-hero-channel": channel.id,
         style: {
           position: "relative",
-          minHeight: dim(330, isTv),
-          // TV: appens innehållslinje (100 enheter) för pillren, texten och knapparna.
-          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(28)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 24px" : "32px 28px"}`,
+          flexShrink: 0,
+          minHeight,
+          boxSizing: "border-box",
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 12px 16px" : "32px 16px 40px"}`,
           color: C.text,
           fontFamily: FONT3.ui,
           display: "flex",
-          flexDirection: "column"
+          flexDirection: "column",
+          justifyContent: "flex-end"
         },
         children: [
           /* @__PURE__ */ jsx("style", { children: HERO_CSS }),
@@ -42364,8 +42345,7 @@ ${cue.text}`).join("\n\n")}
                 maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)"
               },
               children: [
-                slideList.map(({ channel: c, rundown: r }) => {
-                  if (!rendered.has(c.id)) return null;
+                imageList.map(({ channel: c, rundown: r }) => {
                   const image = heroImage(r, c, now2);
                   if (!image) return null;
                   const url = image.url;
@@ -42377,8 +42357,7 @@ ${cue.text}`).join("\n\n")}
                       "data-hero-image": c.id,
                       "data-hero-image-kind": image.kind,
                       style: {
-                        // Full höjd, förankrad i lagrets nederkant: bilden följer herons
-                        // nederkant när sidan rullar i stället för att skalas om.
+                        // Full höjd, förankrad i lagrets nederkant.
                         position: "absolute",
                         right: 0,
                         bottom: 0,
@@ -42401,8 +42380,7 @@ ${cue.text}`).join("\n\n")}
                   "span",
                   {
                     style: {
-                      // Appens sidovinjett för textens läsbarhet; ingen toppvinjett — den
-                      // läste som ett svart band överst.
+                      // Appens sidovinjett för textens läsbarhet.
                       position: "absolute",
                       inset: 0,
                       background: "linear-gradient(to right, rgb(var(--base-950, 5 5 7) / 0.62) 0%, rgb(var(--base-950, 5 5 7) / 0) 45%)"
@@ -42412,12 +42390,7 @@ ${cue.text}`).join("\n\n")}
               ]
             }
           ),
-          /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { position: "relative", display: "flex", alignItems: "center", gap: dim(8, isTv), flexWrap: "wrap" }, children: [
-            /* @__PURE__ */ jsx(Pill, { isTv, onClick: () => requestBrowseBack(), children: t("pageHome") }),
-            /* @__PURE__ */ jsx(Pill, { isTv, active: true, onClick: onManage, children: t("pageChannels") }),
-            /* @__PURE__ */ jsx(Pill, { isTv, onClick: onNewChannel, children: t("pageNewChannel") })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { style: { position: "relative", marginTop: "auto", paddingTop: isMobile ? 32 : dim(48, isTv) }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
             /* @__PURE__ */ jsxs("div", { "data-channels-hero-copy": "", style: { animation: "chh-fade 300ms ease both" }, children: [
               /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dim(10, isTv), flexWrap: "wrap" }, children: [
                 programme ? /* @__PURE__ */ jsxs(
@@ -42443,7 +42416,7 @@ ${cue.text}`).join("\n\n")}
                     ]
                   }
                 ) : rest ? (
-                  // Vila: neutral bricka, inte LIVE (kanalen sänder inte nu).
+                  // Vila: neutral bricka, inte LIVE.
                   /* @__PURE__ */ jsx(
                     "span",
                     {
@@ -42470,163 +42443,55 @@ ${cue.text}`).join("\n\n")}
                 "h1",
                 {
                   style: {
-                    margin: `${dimS(10, isTv)} 0 0`,
+                    margin: `${dimS(8, isTv)} 0 0`,
                     fontFamily: FONT3.title,
                     fontWeight: 400,
-                    fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 30 : 44),
-                    lineHeight: 1.1,
-                    maxWidth: isTv ? tvu(1100) : void 0,
+                    fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 26 : 38),
+                    lineHeight: 1.15,
+                    maxWidth: isTv ? tvu(1100) : 900,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical"
+                    whiteSpace: "nowrap"
                   },
                   children: title
                 }
               ),
-              /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }, children: meta }),
-              partial ? /* @__PURE__ */ jsx("p", { "data-channels-partial": "", role: "status", style: { margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(12), color: C.textDim }, children: t("heroPartial") }) : null,
-              rest ? /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(13), color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { marginTop: dim(12, isTv), height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) })
+              /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }, children: meta }),
+              partial ? /* @__PURE__ */ jsx("p", { "data-channels-partial": "", role: "status", style: { margin: `${dimS(4, isTv)} 0 0`, fontSize: fs(12), color: C.textDim }, children: t("heroPartial") }) : null,
+              rest ? /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(13), color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { marginTop: dim(10, isTv), height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) }),
+              after ? /* @__PURE__ */ jsx("p", { "data-hero-next": "", style: { margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(13), color: C.textDim }, children: t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) }) : null
             ] }, channel.id),
-            /* @__PURE__ */ jsxs("div", { "data-hero-actions": "", style: { display: "flex", flexWrap: "wrap", gap: dim(10, isTv), marginTop: dim(20, isTv) }, children: [
-              /* @__PURE__ */ jsx(HeroButton, { isTv, primary: true, init: canPlay, disabled: !canPlay, onClick: () => onPlay("live"), children: t("heroWatchLive") }),
-              /* @__PURE__ */ jsx(HeroButton, { isTv, disabled: !canPlay || !programme, onClick: () => onPlay("start"), children: t("heroFromStart") }),
-              /* @__PURE__ */ jsx(HeroButton, { isTv, init: !canPlay, onClick: onEdit, children: t("heroEdit") })
-            ] }),
-            after ? /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(14, isTv)} 0 0`, fontSize: fs(13), color: C.textDim }, children: t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) }) : null,
-            many ? /* @__PURE__ */ jsx(
-              "div",
-              {
-                ref: dotsRef,
-                "data-hero-dots": "",
-                className: isTv ? "tv-hero-pager" : void 0,
-                onKeyDown: onDotsKey,
-                onBlur: (e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget)) dotsFocused.current = false;
-                },
-                style: isTv ? { display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: tvu(7), height: tvu(22), padding: `0 ${tvu(10)}`, marginTop: tvu(16), borderRadius: 999 } : { display: "flex", alignItems: "center", gap: 6, marginTop: 16 },
-                children: slideList.map(({ channel: c }, i) => {
-                  const active3 = c.id === channel.id;
-                  const first = slideList[0].channel.id;
-                  const last2 = slideList[slideList.length - 1].channel.id;
-                  return /* @__PURE__ */ jsx(
-                    "button",
-                    {
-                      type: "button",
-                      "aria-label": t("zapChannelLine", { n: c.number, name: c.name }),
-                      "aria-current": active3 ? "true" : void 0,
-                      "data-hero-dot": c.id,
-                      tabIndex: 0,
-                      ...isTv ? {
-                        "data-f": "",
-                        // Zonhopp landar på vald prick, inte på den första.
-                        "data-current": active3 ? "" : void 0,
-                        // Fokus stannar i bläddraren: ändarna går runt (som appens hero).
-                        "data-f-left": i === 0 ? `[data-hero-dot="${last2}"]` : void 0,
-                        "data-f-right": i === slideList.length - 1 ? `[data-hero-dot="${first}"]` : void 0,
-                        "data-f-up": "[data-hero-actions] button:not([disabled])",
-                        "data-f-down": '[data-channel-row][aria-pressed="true"]',
-                        // Indikator, inte en knapp: appens minsta knapphöjd gäller inte.
-                        "data-tv-nosize": ""
-                      } : {},
-                      onFocus: isTv ? () => {
-                        if (!active3) onSlide?.(c.id);
-                      } : void 0,
-                      onClick: () => {
-                        if (isTv && canPlay) {
-                          onSlide?.(c.id);
-                          onPlay("live");
-                          return;
-                        }
-                        onSlide?.(c.id);
-                      },
-                      style: isTv ? {
-                        width: tvu(active3 ? 20 : 6),
-                        height: tvu(4),
-                        minHeight: 0,
-                        padding: 0,
-                        border: 0,
-                        borderRadius: 999,
-                        cursor: "pointer",
-                        background: active3 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)",
-                        transition: "width 300ms ease, background 200ms ease"
-                      } : {
-                        // Träffytan större än prickens 4 px: klick och fokusring utan att ändra utseendet.
-                        width: active3 ? 16 : 4,
-                        height: 4,
-                        padding: 0,
-                        borderLeft: 0,
-                        borderRight: 0,
-                        borderRadius: 999,
-                        cursor: "pointer",
-                        boxSizing: "content-box",
-                        backgroundClip: "content-box",
-                        borderTop: "6px solid transparent",
-                        borderBottom: "6px solid transparent",
-                        background: active3 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)",
-                        transition: "width 200ms ease, background 200ms ease"
-                      }
-                    },
-                    c.id
-                  );
-                })
-              }
-            ) : null
+            isTv ? null : /* @__PURE__ */ jsxs("div", { "data-hero-actions": "", style: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: isMobile ? 14 : 18 }, children: [
+              /* @__PURE__ */ jsx(HeroButton, { primary: true, disabled: !canPlay, onClick: () => onPlay("live"), children: t("heroWatchLive") }),
+              /* @__PURE__ */ jsx(HeroButton, { disabled: !canPlay || !programme, onClick: () => onPlay("start"), children: t("heroFromStart") })
+            ] })
           ] })
         ]
       }
     );
   }
-  function Pill({ children, onClick, active: active3, isTv }) {
-    const style = {
-      display: "inline-flex",
-      alignItems: "center",
-      minHeight: dim(30, isTv, 40),
-      padding: isTv ? `0 ${tvu(18)}` : "0 14px",
-      boxSizing: "border-box",
-      ...glass(isTv, { fill: C.glassDenseSoft, blur: 20 }),
-      borderRadius: RADIUS.pill,
-      border: `1px solid ${active3 ? "rgba(244,132,95,0.55)" : C.pillBorder}`,
-      color: active3 ? C.accentLight : C.text,
-      fontFamily: FONT3.ui,
-      fontSize: fontSize(10.5, isTv),
-      fontWeight: 600,
-      letterSpacing: "0.18em",
-      textTransform: "uppercase",
-      whiteSpace: "nowrap",
-      cursor: onClick ? "pointer" : "default"
-    };
-    if (!onClick) return /* @__PURE__ */ jsx("span", { style, children });
-    return /* @__PURE__ */ jsx("button", { type: "button", "data-f": "", onClick, style, children });
-  }
-  function HeroButton({ children, onClick, primary, disabled, init, isTv }) {
+  function HeroButton({ children, onClick, primary, disabled }) {
     return /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
-        "data-f": "",
-        "data-init": isTv && init && !disabled ? "" : void 0,
-        "data-f-down": isTv ? "[data-hero-dot][data-current]" : void 0,
         disabled,
         onClick,
         style: {
           display: "inline-flex",
           alignItems: "center",
-          gap: dim(6, isTv),
+          gap: 6,
           padding: "10px 22px",
           borderRadius: RADIUS.pill,
           boxSizing: "border-box",
-          ...primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(isTv, { fill: C.glassDenseSoft, blur: 20 }),
+          ...primary ? { background: C.accent, border: `1px solid ${C.accent}` } : glass(false, { fill: C.glassDenseSoft, blur: 20 }),
           color: primary ? C.onAccent : C.text,
           fontFamily: FONT3.ui,
-          fontSize: fontSize(14, isTv),
+          fontSize: "14px",
           fontWeight: 600,
           whiteSpace: "nowrap",
           cursor: disabled ? "default" : "pointer",
-          opacity: disabled ? 0.45 : 1,
-          // TV: appens heroknappars mått och knappstorlek.
-          ...isTv ? tvHeroButton() : {}
+          opacity: disabled ? 0.45 : 1
         },
         children
       }
@@ -44676,8 +44541,351 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-manager.tsx
-  init_react_shim();
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/empty-state.tsx
+  init_jsx_runtime_shim();
+  function EmptyState({ isTv, isMobile, t, onRestore }) {
+    const fs = (px) => fontSize(px, isTv);
+    return /* @__PURE__ */ jsxs(
+      "section",
+      {
+        "data-channels-empty": "",
+        style: {
+          minHeight: dim(420, isTv),
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : "32px 40px"}`,
+          color: C.text,
+          fontFamily: FONT3.ui,
+          background: C.base
+        },
+        children: [
+          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "24px 0 0" : `${dimS(32, isTv)} 0 0`, fontFamily: FONT3.title, fontWeight: 400, fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 30 : 44), lineHeight: 1.1 }, children: t("emptyTitle") }),
+          /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(12, isTv)} 0 0`, maxWidth: dim(560, isTv), fontSize: fs(14), lineHeight: 1.5, color: C.textSoft }, children: t("emptyLead") }),
+          /* @__PURE__ */ jsx("div", { "data-hero-actions": "", style: { display: "flex", flexWrap: "wrap", gap: dim(10, isTv), marginTop: dim(24, isTv) }, children: /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              "data-f": "",
+              "data-init": "",
+              "data-empty-restore": "",
+              onClick: onRestore,
+              style: {
+                padding: "10px 22px",
+                borderRadius: RADIUS.pill,
+                cursor: "pointer",
+                boxSizing: "border-box",
+                background: C.accent,
+                border: `1px solid ${C.accent}`,
+                color: C.onAccent,
+                fontFamily: FONT3.ui,
+                fontSize: fs(14),
+                fontWeight: 600,
+                ...isTv ? tvHeroButton() : {}
+              },
+              children: t("emptyRestore")
+            }
+          ) }),
+          /* @__PURE__ */ jsx("p", { "data-empty-hint": "", style: { margin: `${dimS(18, isTv)} 0 0`, fontSize: fs(13), color: C.textDim }, children: t("emptySettingsHint") })
+        ]
+      }
+    );
+  }
+
+  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channels-page.tsx
+  init_jsx_runtime_shim();
+  var HALF_HOUR3 = 30 * 6e4;
+  var MAX_SHIFT2 = 46;
+  function cachedRundown2(channel) {
+    const pool = readCachedPool(channel.id);
+    return pool ? buildRundown(pool, channel.order, channel.seed) : null;
+  }
+  function startChannel(sorted, params, rundownOf = cachedRundown2) {
+    const explicit = params.channelId ? sorted.find((c) => c.id === params.channelId) : void 0;
+    return explicit ?? pickStartChannel(sorted, readZapMemory().lastChannelId, Date.now(), rundownOf);
+  }
+  function initialSelection(sorted, params) {
+    return startChannel(sorted, params)?.id ?? null;
+  }
+  function initialPlayer(sorted, params) {
+    if (!params.play && params.zap !== "1") return null;
+    if (!hostReady()) return null;
+    const channel = startChannel(sorted, params);
+    if (!channel) return null;
+    return { channelId: channel.id, mode: params.play === "start" ? "start" : "live", zap: params.zap === "1" };
+  }
+  function useIsMobile() {
+    const query = "(max-width: 639px)";
+    const [mobile, setMobile] = useState(() => typeof window !== "undefined" && !!window.matchMedia?.(query).matches);
+    useEffect(() => {
+      const mq = window.matchMedia?.(query);
+      if (!mq) return;
+      const update = () => setMobile(mq.matches);
+      update();
+      if (mq.addEventListener) mq.addEventListener("change", update);
+      else mq.addListener(update);
+      return () => {
+        if (mq.removeEventListener) mq.removeEventListener("change", update);
+        else mq.removeListener(update);
+      };
+    }, []);
+    return mobile;
+  }
+  function useFillHeight(ref, key) {
+    const [height, setHeight] = useState(null);
+    useLayoutEffect(() => {
+      const el = ref.current;
+      if (!el || typeof window === "undefined") return;
+      const measure = () => {
+        const r = el.getBoundingClientRect();
+        const k = el.offsetWidth > 0 && r.width > 0 ? r.width / el.offsetWidth : 1;
+        const top2 = r.top + (window.scrollY || 0);
+        const column = el.closest("[data-app-column]");
+        const padBottom = column ? parseFloat(getComputedStyle(column).paddingBottom) || 0 : 0;
+        const next2 = Math.max(320, Math.floor((window.innerHeight - top2 - padBottom) / k));
+        setHeight((prev) => prev === next2 ? prev : next2);
+      };
+      measure();
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }, [key]);
+    return height;
+  }
+  function ChannelsPage({ params }) {
+    const t = useText();
+    const { lang } = useLang();
+    const uiLang = lang === "sv" ? "sv" : "en";
+    useState(() => seedDefaultChannels(uiLang));
+    const isTv = useTvMode();
+    const isMobile = useIsMobile() && !isTv;
+    const channels = useChannels();
+    const sorted = useMemo(() => [...channels].sort((a, b) => a.number - b.number), [channels]);
+    const canPlay = useMemo(() => hostReady(), []);
+    const p = params ?? {};
+    const [selectedId, setSelectedId] = useState(() => initialSelection(sorted, p));
+    const autoPick = useRef(!p.channelId);
+    const [player, setPlayer] = useState(() => initialPlayer(sorted, p));
+    const [studio, setStudio] = useState(() => p.studio ?? null);
+    const [shift, setShift] = useState(0);
+    const [hoverId, setHoverId] = useState(null);
+    const [menu, setMenu] = useState(null);
+    const [rundowns, setRundowns] = useState({});
+    const paramsKey = JSON.stringify(p);
+    const seenKey = useRef(paramsKey);
+    useEffect(() => {
+      if (seenKey.current === paramsKey) return;
+      seenKey.current = paramsKey;
+      const next2 = JSON.parse(paramsKey);
+      autoPick.current = !next2.channelId;
+      setSelectedId(initialSelection(sorted, next2));
+      setPlayer(initialPlayer(sorted, next2));
+      setStudio(next2.studio ?? null);
+    }, [paramsKey]);
+    const selected = useMemo(
+      () => (selectedId ? sorted.find((c) => c.id === selectedId) : void 0) ?? startChannel(sorted, {}),
+      [sorted, selectedId]
+    );
+    const onRundown = useCallback((id, rundown, loading2, partial) => {
+      setRundowns((prev) => {
+        const cur = prev[id];
+        return cur?.rundown === rundown && cur.loading === loading2 && cur.partial === partial ? prev : { ...prev, [id]: { rundown, loading: loading2, partial } };
+      });
+    }, []);
+    const clockInput = sorted.map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] }));
+    const now2 = useChannelClock(clockInput);
+    useEffect(() => {
+      if (!autoPick.current || !selected) return;
+      const own = rundowns[selected.id];
+      if (!own || own.loading || onAirNow(selected, own.rundown, now2)) return;
+      const loaded = (c) => {
+        const r = rundowns[c.id];
+        return r && !r.loading ? r.rundown : cachedRundown2(c);
+      };
+      const next2 = pickStartChannel(sorted, readZapMemory().lastChannelId, now2, loaded);
+      if (next2 && next2.id !== selected.id) setSelectedId(next2.id);
+    }, [rundowns, selected, sorted, now2]);
+    const win = useMemo(() => guideWindow(now2 + shift * HALF_HOUR3), [now2, shift]);
+    const shiftRef = useRef(0);
+    const onShift = useCallback((dir) => {
+      const next2 = Math.min(MAX_SHIFT2, Math.max(0, shiftRef.current + dir));
+      if (next2 === shiftRef.current) return dir === 1;
+      shiftRef.current = next2;
+      setShift(next2);
+      return true;
+    }, []);
+    const onSelect = useCallback((id) => {
+      autoPick.current = false;
+      setSelectedId(id);
+    }, []);
+    const play = useCallback((id, mode, zap = false) => {
+      if (!canPlay) return;
+      autoPick.current = false;
+      setSelectedId(id);
+      setPlayer({ channelId: id, mode, zap });
+    }, [canPlay]);
+    const onPlayRow = useCallback((id) => play(id, "live"), [play]);
+    const onHover = useCallback((id) => setHoverId(id), []);
+    const sortedRef = useRef(sorted);
+    sortedRef.current = sorted;
+    const onHold = useCallback((id, element) => {
+      const channel = sortedRef.current.find((c) => c.id === id);
+      if (!channel) return;
+      setMenu({
+        title: t("zapChannelLine", { n: channel.number, name: channel.name }),
+        element,
+        actions: [
+          ...canPlay ? [{ key: "start", label: t("menuFromStart"), run: () => play(id, "start") }] : [],
+          { key: "edit", label: t("menuEdit"), run: () => {
+            autoPick.current = false;
+            setSelectedId(id);
+            setStudio(id);
+          } },
+          ...canPlay ? [{ key: "zap", label: t("menuZap"), run: () => play(id, "live", true) }] : []
+        ]
+      });
+    }, [t, play, canPlay]);
+    const TvGlassMenu = isTv ? getTvGlassMenu() : null;
+    const playerRef = useRef(player);
+    playerRef.current = player;
+    const viewRef = useRef(null);
+    const view = player && sorted.length > 0 ? "player" : studio ? `studio:${studio}` : selected ? "main" : "empty";
+    useTvViewFocus(viewRef, isTv && view !== "player", view);
+    const fillHeight = useFillHeight(viewRef, view);
+    const closePlayer = useCallback(() => {
+      const current2 = playerRef.current;
+      if (current2) {
+        autoPick.current = false;
+        setSelectedId(readZapMemory().lastChannelId ?? current2.channelId);
+      }
+      setPlayer(null);
+    }, []);
+    if (player && sorted.length > 0) {
+      return /* @__PURE__ */ jsx(
+        ChannelPlayer,
+        {
+          channels: sorted,
+          initialChannelId: player.channelId,
+          mode: player.mode,
+          startInZap: player.zap,
+          onClose: closePlayer,
+          onEditChannel: (id) => {
+            setPlayer(null);
+            autoPick.current = false;
+            setSelectedId(id);
+            setStudio(id);
+          }
+        }
+      );
+    }
+    if (studio) {
+      return /* @__PURE__ */ jsx("div", { ref: viewRef, "data-channels-page": "", style: { minHeight: "100%" }, children: /* @__PURE__ */ jsx(
+        ChannelStudioSlot,
+        {
+          studio,
+          channels: sorted,
+          isTv,
+          isMobile,
+          t,
+          onDone: (id) => {
+            setStudio(null);
+            if (id) setSelectedId(id);
+          }
+        }
+      ) });
+    }
+    const banner = canPlay ? null : /* @__PURE__ */ jsx(
+      "div",
+      {
+        role: "status",
+        style: {
+          position: "relative",
+          zIndex: 1,
+          padding: isTv ? `${tvu(10)} ${tvu(100)}` : "10px 16px",
+          background: "rgba(244,132,95,0.14)",
+          borderBottom: "1px solid rgba(244,132,95,0.35)",
+          color: C.accentLight,
+          fontFamily: FONT3.ui,
+          fontSize: fontSize(13, isTv),
+          flexShrink: 0
+        },
+        children: t("pageHostTooOld")
+      }
+    );
+    if (!selected) {
+      return /* @__PURE__ */ jsxs("div", { ref: viewRef, "data-channels-page": "", style: { background: C.base, minHeight: "100%" }, children: [
+        banner,
+        /* @__PURE__ */ jsx(
+          EmptyState,
+          {
+            isTv,
+            isMobile,
+            t,
+            onRestore: () => {
+              restoreDefaultChannels(uiLang);
+              setSelectedId(null);
+            }
+          }
+        )
+      ] });
+    }
+    const hovered = !isTv && !isMobile && hoverId ? sorted.find((c) => c.id === hoverId) : void 0;
+    const heroChannel = hovered ?? selected;
+    const heroData = rundowns[heroChannel.id];
+    const at = sorted.findIndex((c) => c.id === heroChannel.id);
+    const images = [sorted[at - 1], heroChannel, sorted[at + 1]].filter((c) => !!c).filter((c, i, list) => list.findIndex((x) => x.id === c.id) === i).map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] }));
+    return (
+      // Ingen egen bakgrund: herobilden ligger under sidan (z −1) kant i kant.
+      // Fast höjd: bara tablåns behållare rullar, heron står still.
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          ref: viewRef,
+          "data-channels-page": "",
+          style: { height: fillHeight ?? "var(--lumio-vh, 100vh)", display: "flex", flexDirection: "column", overflow: "hidden" },
+          children: [
+            banner,
+            /* @__PURE__ */ jsx(
+              ChannelHero,
+              {
+                channel: heroChannel,
+                rundown: heroData?.rundown ?? [],
+                loading: heroData?.loading ?? true,
+                partial: heroData?.partial ?? false,
+                now: now2,
+                isTv,
+                isMobile,
+                canPlay,
+                t,
+                onPlay: (mode) => play(heroChannel.id, mode),
+                images
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              ChannelGuide,
+              {
+                channels: sorted,
+                selectedId: selected.id,
+                window: win,
+                now: now2,
+                isTv,
+                isMobile,
+                t,
+                fill: true,
+                initId: isTv ? selected.id : null,
+                onSelect,
+                onPlay: onPlayRow,
+                onRundown,
+                onShift,
+                onHover: isTv || isMobile ? void 0 : onHover,
+                onHold: isTv ? onHold : void 0
+              }
+            ),
+            TvGlassMenu && menu ? /* @__PURE__ */ jsx(TvGlassMenu, { target: menu, onClose: () => setMenu(null) }) : null
+          ]
+        }
+      )
+    );
+  }
+  function ChannelStudioSlot({ studio, channels, isTv, isMobile, t, onDone }) {
+    return /* @__PURE__ */ jsx(ChannelStudio, { studio, channels, isTv, isMobile, t, onDone }, studio);
+  }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/settings-section.tsx
   init_react_shim();
@@ -44786,441 +44994,11 @@ ${cue.text}`).join("\n\n")}
     );
   }
 
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channel-manager.tsx
-  init_jsx_runtime_shim();
-  var BACK_KEYS4 = /* @__PURE__ */ new Set(["Escape", "Backspace", "GoBack", "BrowserBack"]);
-  function ChannelManager({ isTv, isMobile, t, onBack, onEdit, onCreate }) {
-    const { sorted, counts, confirmId, requestDelete } = useChannelList();
-    const fs = (px) => fontSize(px, isTv);
-    const backRef = useRef(onBack);
-    backRef.current = onBack;
-    useEffect(() => {
-      if (!isTv) return;
-      const handler = (event) => {
-        if (!BACK_KEYS4.has(event.key)) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        backRef.current();
-      };
-      window.addEventListener("keydown", handler, true);
-      return () => window.removeEventListener("keydown", handler, true);
-    }, [isTv]);
-    return /* @__PURE__ */ jsxs(
-      "section",
-      {
-        "data-channels-manage": "",
-        style: {
-          minHeight: "100%",
-          background: C.base,
-          color: C.text,
-          fontFamily: FONT3.ui,
-          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : "32px 40px"}`
-        },
-        children: [
-          /* @__PURE__ */ jsxs("div", { "data-channels-topbar": "", style: { display: "flex", alignItems: "center", gap: dim(8, isTv), flexWrap: "wrap" }, children: [
-            /* @__PURE__ */ jsx(Btn, { isTv, pill: true, onClick: onBack, children: t("manageBack") }),
-            /* @__PURE__ */ jsx(Btn, { isTv, pill: true, onClick: onCreate, children: t("pageNewChannel") })
-          ] }),
-          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "28px 0 16px" : `${dimS(40, isTv)} 0 ${dimS(20, isTv)}`, fontFamily: FONT3.title, fontWeight: 400, lineHeight: 1.15, fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 28 : 36) }, children: t("manageTitle") }),
-          sorted.length === 0 ? /* @__PURE__ */ jsx("p", { style: { margin: 0, color: C.textDim, fontSize: fs(14) }, children: t("settingsEmpty") }) : /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: dim(8, isTv), maxWidth: dim(760, isTv, 900) }, children: sorted.map((channel, i) => {
-            const count = counts[channel.id];
-            return /* @__PURE__ */ jsxs(
-              "div",
-              {
-                "data-manage-row": channel.id,
-                style: { ...glass(isTv, { blur: 0 }), borderRadius: dim(RADIUS.card, isTv), display: "flex", alignItems: "center", gap: dim(14, isTv), flexWrap: "wrap", padding: `${dimS(12, isTv)} ${dimS(14, isTv, 18)}` },
-                children: [
-                  /* @__PURE__ */ jsx("span", { style: { width: dim(28, isTv), textAlign: "right", fontFamily: FONT3.mono, fontSize: fs(13), color: C.textDim }, children: channel.number }),
-                  /* @__PURE__ */ jsx(ChannelBadge, { channel, size: 30, isTv }),
-                  /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: dim(140, isTv), lineHeight: 1.3 }, children: [
-                    /* @__PURE__ */ jsx("div", { "data-channel-name": "", style: { fontSize: fs(15), fontWeight: 600 }, children: channel.name }),
-                    count != null ? /* @__PURE__ */ jsx("div", { style: { marginTop: dim(2, isTv), fontSize: fs(12.5), color: C.textDim }, children: t("settingsTitles", { n: count }) }) : null
-                  ] }),
-                  /* @__PURE__ */ jsx(Btn, { isTv, init: i === 0, onClick: () => onEdit(channel.id), children: t("settingsEdit") }),
-                  /* @__PURE__ */ jsx(Btn, { isTv, danger: true, onClick: () => requestDelete(channel.id), children: t(confirmId === channel.id ? "settingsDeleteConfirm" : "settingsDelete") })
-                ]
-              },
-              channel.id
-            );
-          }) })
-        ]
-      }
-    );
-  }
-  function Btn({ children, onClick, isTv, pill, danger, init }) {
-    return /* @__PURE__ */ jsx(
-      "button",
-      {
-        type: "button",
-        "data-f": "",
-        "data-init": init ? "" : void 0,
-        onClick,
-        style: {
-          display: "inline-flex",
-          alignItems: "center",
-          minHeight: dim(30, isTv, 40),
-          padding: isTv ? `0 ${tvu(18)}` : "0 14px",
-          boxSizing: "border-box",
-          ...glass(isTv, { fill: C.pillBg, blur: 0 }),
-          borderRadius: RADIUS.pill,
-          cursor: "pointer",
-          whiteSpace: "nowrap",
-          ...danger ? { border: "1px solid rgba(255,90,106,0.45)", color: "hsl(354 100% 72%)" } : { color: C.text },
-          fontFamily: FONT3.ui,
-          fontSize: fontSize(pill ? 10.5 : 13, isTv),
-          fontWeight: 600,
-          letterSpacing: pill ? "0.18em" : void 0
-        },
-        children
-      }
-    );
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/empty-state.tsx
-  init_plugin_sdk();
-  init_jsx_runtime_shim();
-  function EmptyState({ isTv, isMobile, t, onRestore, onCustom }) {
-    const fs = (px) => fontSize(px, isTv);
-    const button = (primary) => ({
-      padding: "10px 22px",
-      borderRadius: RADIUS.pill,
-      cursor: "pointer",
-      boxSizing: "border-box",
-      ...primary ? { background: C.accent, border: `1px solid ${C.accent}`, color: C.onAccent } : { ...glass(isTv, { fill: C.pillBg, blur: 20 }), color: C.text },
-      fontFamily: FONT3.ui,
-      fontSize: fs(14),
-      fontWeight: 600,
-      ...isTv ? tvHeroButton() : {}
-    });
-    return /* @__PURE__ */ jsxs(
-      "section",
-      {
-        "data-channels-empty": "",
-        style: {
-          minHeight: dim(420, isTv),
-          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(40)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 32px" : "32px 40px"}`,
-          color: C.text,
-          fontFamily: FONT3.ui,
-          background: C.base
-        },
-        children: [
-          /* @__PURE__ */ jsx(
-            "button",
-            {
-              type: "button",
-              "data-f": "",
-              onClick: () => requestBrowseBack(),
-              style: {
-                display: "inline-flex",
-                alignItems: "center",
-                minHeight: dim(30, isTv, 40),
-                padding: isTv ? `0 ${tvu(18)}` : "0 14px",
-                boxSizing: "border-box",
-                ...glass(isTv, { fill: C.pillBg, blur: 20 }),
-                borderRadius: RADIUS.pill,
-                color: C.text,
-                fontFamily: FONT3.ui,
-                fontSize: fs(10.5),
-                fontWeight: 600,
-                letterSpacing: "0.18em",
-                cursor: "pointer"
-              },
-              children: t("pageHome")
-            }
-          ),
-          /* @__PURE__ */ jsx("h1", { style: { margin: isMobile ? "32px 0 0" : `${dimS(48, isTv)} 0 0`, fontFamily: FONT3.title, fontWeight: 400, fontSize: isTv ? TV_HERO_TITLE : fs(isMobile ? 30 : 44), lineHeight: 1.1 }, children: t("emptyTitle") }),
-          /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(12, isTv)} 0 0`, maxWidth: dim(560, isTv), fontSize: fs(14), lineHeight: 1.5, color: C.textSoft }, children: t("emptyLead") }),
-          /* @__PURE__ */ jsxs("div", { "data-hero-actions": "", style: { display: "flex", flexWrap: "wrap", gap: dim(10, isTv), marginTop: dim(24, isTv) }, children: [
-            /* @__PURE__ */ jsx("button", { type: "button", "data-f": "", "data-init": "", "data-empty-restore": "", onClick: onRestore, style: button(true), children: t("emptyRestore") }),
-            /* @__PURE__ */ jsx("button", { type: "button", "data-f": "", onClick: onCustom, style: button(false), children: t("emptyCustom") })
-          ] })
-        ]
-      }
-    );
-  }
-
-  // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/channels-page.tsx
-  init_jsx_runtime_shim();
-  var HALF_HOUR3 = 30 * 6e4;
-  var MAX_SHIFT2 = 46;
-  function cachedRundown2(channel) {
-    const pool = readCachedPool(channel.id);
-    return pool ? buildRundown(pool, channel.order, channel.seed) : null;
-  }
-  function startChannel(sorted, params, rundownOf = cachedRundown2) {
-    const explicit = params.channelId ? sorted.find((c) => c.id === params.channelId) : void 0;
-    return explicit ?? pickStartChannel(sorted, readZapMemory().lastChannelId, Date.now(), rundownOf);
-  }
-  function initialSelection(sorted, params) {
-    return startChannel(sorted, params)?.id ?? null;
-  }
-  function initialPlayer(sorted, params) {
-    if (!params.play && params.zap !== "1") return null;
-    if (!hostReady()) return null;
-    const channel = startChannel(sorted, params);
-    if (!channel) return null;
-    return { channelId: channel.id, mode: params.play === "start" ? "start" : "live", zap: params.zap === "1" };
-  }
-  function useIsMobile() {
-    const query = "(max-width: 639px)";
-    const [mobile, setMobile] = useState(() => typeof window !== "undefined" && !!window.matchMedia?.(query).matches);
-    useEffect(() => {
-      const mq = window.matchMedia?.(query);
-      if (!mq) return;
-      const update = () => setMobile(mq.matches);
-      update();
-      if (mq.addEventListener) mq.addEventListener("change", update);
-      else mq.addListener(update);
-      return () => {
-        if (mq.removeEventListener) mq.removeEventListener("change", update);
-        else mq.removeListener(update);
-      };
-    }, []);
-    return mobile;
-  }
-  function ChannelsPage({ params }) {
-    const t = useText();
-    const { lang } = useLang();
-    const uiLang = lang === "sv" ? "sv" : "en";
-    useState(() => seedDefaultChannels(uiLang));
-    const isTv = useTvMode();
-    const isMobile = useIsMobile() && !isTv;
-    const channels = useChannels();
-    const sorted = useMemo(() => [...channels].sort((a, b) => a.number - b.number), [channels]);
-    const canPlay = useMemo(() => hostReady(), []);
-    const p = params ?? {};
-    const [selectedId, setSelectedId] = useState(() => initialSelection(sorted, p));
-    const autoPick = useRef(!p.channelId);
-    const [player, setPlayer] = useState(() => initialPlayer(sorted, p));
-    const [studio, setStudio] = useState(() => p.studio ?? null);
-    const [shift, setShift] = useState(0);
-    const [manage, setManage] = useState(false);
-    const [rundowns, setRundowns] = useState({});
-    const paramsKey = JSON.stringify(p);
-    const seenKey = useRef(paramsKey);
-    useEffect(() => {
-      if (seenKey.current === paramsKey) return;
-      seenKey.current = paramsKey;
-      const next2 = JSON.parse(paramsKey);
-      autoPick.current = !next2.channelId;
-      setSelectedId(initialSelection(sorted, next2));
-      setPlayer(initialPlayer(sorted, next2));
-      setStudio(next2.studio ?? null);
-    }, [paramsKey]);
-    const selectedRef = useRef(null);
-    const selected = useMemo(
-      () => (selectedId ? sorted.find((c) => c.id === selectedId) : void 0) ?? startChannel(sorted, {}),
-      [sorted, selectedId]
-    );
-    selectedRef.current = selected?.id ?? null;
-    const onRundown = useCallback((id, rundown, loading2, partial) => {
-      setRundowns((prev) => {
-        const cur = prev[id];
-        return cur?.rundown === rundown && cur.loading === loading2 && cur.partial === partial ? prev : { ...prev, [id]: { rundown, loading: loading2, partial } };
-      });
-    }, []);
-    const clockInput = sorted.map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] }));
-    const now2 = useChannelClock(clockInput);
-    useEffect(() => {
-      if (!autoPick.current || !selected) return;
-      const own = rundowns[selected.id];
-      if (!own || own.loading || onAirNow(selected, own.rundown, now2)) return;
-      const loaded = (c) => {
-        const r = rundowns[c.id];
-        return r && !r.loading ? r.rundown : cachedRundown2(c);
-      };
-      const next2 = pickStartChannel(sorted, readZapMemory().lastChannelId, now2, loaded);
-      if (next2 && next2.id !== selected.id) setSelectedId(next2.id);
-    }, [rundowns, selected, sorted, now2]);
-    const slides = useMemo(
-      () => heroSlides(sorted, (id) => rundowns[id]?.rundown, now2, selected?.id ?? null).map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] })),
-      [sorted, rundowns, now2, selected]
-    );
-    const slidesRef = useRef(slides);
-    slidesRef.current = slides;
-    const onSlide = useCallback((id) => {
-      autoPick.current = false;
-      setSelectedId(id);
-    }, []);
-    const onStep = useCallback((dir) => {
-      const id = stepSlide(slidesRef.current.map((s) => s.channel), selectedRef.current, dir);
-      if (id) onSlide(id);
-    }, [onSlide]);
-    const win = useMemo(() => guideWindow(now2 + shift * HALF_HOUR3), [now2, shift]);
-    const shiftRef = useRef(0);
-    const onShift = useCallback((dir) => {
-      const next2 = Math.min(MAX_SHIFT2, Math.max(0, shiftRef.current + dir));
-      if (next2 === shiftRef.current) return dir === 1;
-      shiftRef.current = next2;
-      setShift(next2);
-      return true;
-    }, []);
-    const onSelect = useCallback((id) => {
-      autoPick.current = false;
-      setSelectedId(id);
-    }, []);
-    const play = useCallback((id, mode) => {
-      if (!canPlay) return;
-      autoPick.current = false;
-      setSelectedId(id);
-      setPlayer({ channelId: id, mode, zap: false });
-    }, [canPlay]);
-    const onPlayRow = useCallback((id) => play(id, "live"), [play]);
-    const playerRef = useRef(player);
-    playerRef.current = player;
-    const viewRef = useRef(null);
-    const view = player && sorted.length > 0 ? "player" : manage && !studio ? "manage" : studio ? `studio:${studio}` : selected ? "main" : "empty";
-    useTvViewFocus(viewRef, isTv && view !== "player", view);
-    const closePlayer = useCallback(() => {
-      const current2 = playerRef.current;
-      if (current2) {
-        autoPick.current = false;
-        setSelectedId(readZapMemory().lastChannelId ?? current2.channelId);
-      }
-      setPlayer(null);
-    }, []);
-    if (player && sorted.length > 0) {
-      return /* @__PURE__ */ jsx(
-        ChannelPlayer,
-        {
-          channels: sorted,
-          initialChannelId: player.channelId,
-          mode: player.mode,
-          startInZap: player.zap,
-          onClose: closePlayer,
-          onEditChannel: (id) => {
-            setPlayer(null);
-            autoPick.current = false;
-            setSelectedId(id);
-            setStudio(id);
-          }
-        }
-      );
-    }
-    if (manage && !studio) {
-      return /* @__PURE__ */ jsx("div", { ref: viewRef, "data-channels-page": "", style: { background: C.base, minHeight: "100%" }, children: /* @__PURE__ */ jsx(
-        ChannelManager,
-        {
-          isTv,
-          isMobile,
-          t,
-          onBack: () => setManage(false),
-          onEdit: (id) => {
-            setManage(false);
-            setSelectedId(id);
-            setStudio(id);
-          },
-          onCreate: () => {
-            setManage(false);
-            setStudio("new");
-          }
-        }
-      ) });
-    }
-    if (studio) {
-      return /* @__PURE__ */ jsx("div", { ref: viewRef, "data-channels-page": "", style: { minHeight: "100%" }, children: /* @__PURE__ */ jsx(
-        ChannelStudioSlot,
-        {
-          studio,
-          channels: sorted,
-          isTv,
-          isMobile,
-          t,
-          onDone: (id) => {
-            setStudio(null);
-            if (id) setSelectedId(id);
-          }
-        }
-      ) });
-    }
-    const banner = canPlay ? null : /* @__PURE__ */ jsx(
-      "div",
-      {
-        role: "status",
-        style: {
-          padding: isTv ? `${tvu(10)} ${tvu(100)}` : "10px 16px",
-          background: "rgba(244,132,95,0.14)",
-          borderBottom: "1px solid rgba(244,132,95,0.35)",
-          color: C.accentLight,
-          fontFamily: FONT3.ui,
-          fontSize: fontSize(13, isTv)
-        },
-        children: t("pageHostTooOld")
-      }
-    );
-    if (!selected) {
-      return /* @__PURE__ */ jsxs("div", { ref: viewRef, "data-channels-page": "", style: { background: C.base, minHeight: "100%" }, children: [
-        banner,
-        /* @__PURE__ */ jsx(
-          EmptyState,
-          {
-            isTv,
-            isMobile,
-            t,
-            onRestore: () => {
-              restoreDefaultChannels(uiLang);
-              setSelectedId(null);
-            },
-            onCustom: () => setStudio("new")
-          }
-        )
-      ] });
-    }
-    const selectedData = rundowns[selected.id];
-    return (
-      // Ingen egen bakgrund här: herobilden ligger under sidan (z −1) och ska
-      // synas kant i kant; appens grund under är redan svart.
-      /* @__PURE__ */ jsxs("div", { ref: viewRef, "data-channels-page": "", style: { minHeight: "100%" }, children: [
-        banner,
-        /* @__PURE__ */ jsx(
-          ChannelHero,
-          {
-            channel: selected,
-            rundown: selectedData?.rundown ?? [],
-            loading: selectedData?.loading ?? true,
-            partial: selectedData?.partial ?? false,
-            now: now2,
-            isTv,
-            isMobile,
-            canPlay,
-            t,
-            onPlay: (mode) => play(selected.id, mode),
-            onEdit: () => setStudio(selected.id),
-            onNewChannel: () => setStudio("new"),
-            onManage: () => setManage(true),
-            slides,
-            onSlide,
-            onStep
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          ChannelGuide,
-          {
-            channels: sorted,
-            selectedId: selected.id,
-            window: win,
-            now: now2,
-            isTv,
-            isMobile,
-            t,
-            onSelect,
-            onPlay: onPlayRow,
-            onRundown,
-            onShift
-          }
-        )
-      ] })
-    );
-  }
-  function ChannelStudioSlot({ studio, channels, isTv, isMobile, t, onDone }) {
-    return /* @__PURE__ */ jsx(ChannelStudio, { studio, channels, isTv, isMobile, t, onDone }, studio);
-  }
-
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/index.ts
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.8",
+    version: "0.1.9",
     description: S.description,
     preinstalled: false,
     register(ctx) {

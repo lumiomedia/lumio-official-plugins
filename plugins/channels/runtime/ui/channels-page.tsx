@@ -1,17 +1,22 @@
 'use client'
 
 /**
- * Kanaler-sidan: hero för vald kanal + tablå, tomvy utan kanaler och
- * kanalspelaren ovanpå när sidan öppnas med `play`/`zap` (hemkorten går
- * rakt till live).
+ * Kanaler-sidan, uppifrån och ned: appens meny (TV: värdens toppkrom via
+ * keepsTvTopChrome), en stillastående kompakt hero för kanalen tablån pekar
+ * på, och tablån i en egen rullbehållare under den — raderna rullar upp under
+ * heron och tonar ut vid dess nederkant. Tomvy utan kanaler, och
+ * kanalspelaren ovanpå när sidan öppnas med `play`/`zap`.
+ *
+ * TV: OK på en rad = Titta live; håll OK = glasmenyn (Från början, Redigera
+ * kanal, Zappa). Skrivbord/mobil: klick väljer raden (heron följer; på
+ * skrivbordet följer heron också pekaren), klick på vald rad eller
+ * dubbelklick = Titta live. Kanalerna hanteras i pluginets inställningar.
  *
  * Sidparametrar: `channelId?`, `play?: 'live' | 'start'`, `zap?: '1'`,
- * `studio?: 'new' | <kanal-id>`. Spelare och studio är lokalt tillstånd som
- * sätts från parametrarna — värden har ingen historik inom en sida, och
- * samma sida med samma parametrar igen skulle stänga den.
+ * `studio?: 'new' | <kanal-id>` (inställningarnas Redigera/Ny kanal).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLang, useTvMode, type BrowsePageProps } from '@/lib/plugin-sdk'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { getTvGlassMenu, useLang, useTvMode, type BrowsePageProps, type TvGlassMenuTarget } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 import type { PlayMode } from '../play/player-logic'
@@ -19,12 +24,10 @@ import { hostReady, readZapMemory } from '../host'
 import { readCachedPool, restoreDefaultChannels, seedDefaultChannels, useChannelClock, useChannels } from '../state/store'
 import { buildRundown } from '../model/schedule'
 import { onAirNow, pickStartChannel } from './start-channel'
-import { heroSlides, stepSlide } from './hero-carousel-logic'
 import { ChannelGuide } from './channel-guide'
 import { ChannelHero } from './channel-hero'
 import { ChannelPlayer } from './channel-player'
 import { ChannelStudio } from './studio'
-import { ChannelManager } from './channel-manager'
 import { EmptyState } from './empty-state'
 import { guideWindow } from './guide-layout'
 import { C, FONT, fontSize } from './tokens'
@@ -84,6 +87,33 @@ function useIsMobile(): boolean {
   return mobile
 }
 
+/**
+ * Sidans höjd: resten av fönstret (TV: scenen) från sidans överkant, så
+ * tablån rullar i sin egen behållare och sidan själv aldrig rullar. Mäts i
+ * sidans egna px (TV-scenen är skalad: skärmpx / skala).
+ */
+function useFillHeight(ref: { current: HTMLElement | null }, key: unknown): number | null {
+  const [height, setHeight] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || typeof window === 'undefined') return
+    const measure = () => {
+      const r = el.getBoundingClientRect()
+      const k = el.offsetWidth > 0 && r.width > 0 ? r.width / el.offsetWidth : 1
+      const top = r.top + (window.scrollY || 0)
+      // Kolumnens bottenpadding (skrivbord/mobil) räknas bort, annars rullade dokumentet den biten.
+      const column = el.closest('[data-app-column]')
+      const padBottom = column ? parseFloat(getComputedStyle(column).paddingBottom) || 0 : 0
+      const next = Math.max(320, Math.floor((window.innerHeight - top - padBottom) / k))
+      setHeight((prev) => (prev === next ? prev : next))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
+  return height
+}
+
 export function ChannelsPage({ params }: BrowsePageProps) {
   const t = useText()
   const { lang } = useLang()
@@ -99,13 +129,15 @@ export function ChannelsPage({ params }: BrowsePageProps) {
   const p = params ?? {}
 
   const [selectedId, setSelectedId] = useState<string | null>(() => initialSelection(sorted, p))
-  // Självvald startkanal (ingen channelId, inget klick än): får bytas om den
+  // Självvald startkanal (ingen channelId, inget val än): får bytas om den
   // visar sig vila när tablåerna laddats.
   const autoPick = useRef(!p.channelId)
   const [player, setPlayer] = useState<PlayerState | null>(() => initialPlayer(sorted, p))
   const [studio, setStudio] = useState<string | null>(() => p.studio ?? null)
   const [shift, setShift] = useState(0)
-  const [manage, setManage] = useState(false)
+  // Skrivbord: raden under pekaren styr heron medan pekaren står där.
+  const [hoverId, setHoverId] = useState<string | null>(null)
+  const [menu, setMenu] = useState<TvGlassMenuTarget | null>(null)
   const [rundowns, setRundowns] = useState<Record<string, { rundown: PoolItem[]; loading: boolean; partial: boolean }>>({})
 
   // Nya parametrar medan sidan redan är öppen (hemkort, inställningarnas
@@ -122,12 +154,10 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     setStudio(next.studio ?? null)
   }, [paramsKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const selectedRef = useRef<string | null>(null)
   const selected = useMemo(
     () => (selectedId ? sorted.find((c) => c.id === selectedId) : undefined) ?? startChannel(sorted, {}),
     [sorted, selectedId],
   )
-  selectedRef.current = selected?.id ?? null
 
   const onRundown = useCallback((id: string, rundown: PoolItem[], loading: boolean, partial: boolean) => {
     setRundowns((prev) => {
@@ -151,20 +181,6 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     if (next && next.id !== selected.id) setSelectedId(next.id)
   }, [rundowns, selected, sorted, now])
 
-  // Heroskarusellen: sändande kanaler + vald, i nummerordning.
-  const slides = useMemo(
-    () => heroSlides(sorted, (id) => rundowns[id]?.rundown, now, selected?.id ?? null)
-      .map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] })),
-    [sorted, rundowns, now, selected],
-  )
-  const slidesRef = useRef(slides)
-  slidesRef.current = slides
-  const onSlide = useCallback((id: string) => { autoPick.current = false; setSelectedId(id) }, [])
-  const onStep = useCallback((dir: -1 | 1) => {
-    const id = stepSlide(slidesRef.current.map((s) => s.channel), selectedRef.current, dir)
-    if (id) onSlide(id)
-  }, [onSlide])
-
   const win = useMemo(() => guideWindow(now + shift * HALF_HOUR), [now, shift])
 
   // Ref vid sidan av tillståndet: svaret behövs synkront i tangenthanteraren.
@@ -178,22 +194,44 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     return true
   }, [])
   const onSelect = useCallback((id: string) => { autoPick.current = false; setSelectedId(id) }, [])
-  const play = useCallback((id: string, mode: PlayMode) => {
+  const play = useCallback((id: string, mode: PlayMode, zap = false) => {
     if (!canPlay) return
     autoPick.current = false
     setSelectedId(id)
-    setPlayer({ channelId: id, mode, zap: false })
+    setPlayer({ channelId: id, mode, zap })
   }, [canPlay])
   const onPlayRow = useCallback((id: string) => play(id, 'live'), [play])
+  // Pekaren bara på skrivbordet (mobilens tryck ger ingen hovring att lita på).
+  const onHover = useCallback((id: string | null) => setHoverId(id), [])
+
+  // TV: håll OK på en rad → värdens glasmeny.
+  const sortedRef = useRef(sorted)
+  sortedRef.current = sorted
+  const onHold = useCallback((id: string, element: HTMLElement) => {
+    const channel = sortedRef.current.find((c) => c.id === id)
+    if (!channel) return
+    setMenu({
+      title: t('zapChannelLine', { n: channel.number, name: channel.name }),
+      element,
+      actions: [
+        ...(canPlay ? [{ key: 'start', label: t('menuFromStart'), run: () => play(id, 'start') }] : []),
+        { key: 'edit', label: t('menuEdit'), run: () => { autoPick.current = false; setSelectedId(id); setStudio(id) } },
+        ...(canPlay ? [{ key: 'zap', label: t('menuZap'), run: () => play(id, 'live', true) }] : []),
+      ],
+    })
+  }, [t, play, canPlay])
+  const TvGlassMenu = isTv ? getTvGlassMenu() : null
 
   const playerRef = useRef(player)
   playerRef.current = player
 
-  // TV: varje vy får sitt startfokus när den öppnas (sidan: Titta live; Hantera:
-  // första Redigera; studion: namnfältet; tomvyn: Återställ). Spelaren äger sitt eget.
+  // TV: varje vy får sitt startfokus när den öppnas (sidan: vald kanals rad;
+  // studion: namnfältet; tomvyn: Återställ). Spelaren äger sitt eget.
   const viewRef = useRef<HTMLDivElement | null>(null)
-  const view = player && sorted.length > 0 ? 'player' : manage && !studio ? 'manage' : studio ? `studio:${studio}` : selected ? 'main' : 'empty'
+  const view = player && sorted.length > 0 ? 'player' : studio ? `studio:${studio}` : selected ? 'main' : 'empty'
   useTvViewFocus(viewRef, isTv && view !== 'player', view)
+  const fillHeight = useFillHeight(viewRef, view)
+
   const closePlayer = useCallback(() => {
     const current = playerRef.current
     // Sidan visar kanalen man senast tittade på, inte den man öppnade med.
@@ -219,21 +257,6 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     )
   }
 
-  if (manage && !studio) {
-    return (
-      <div ref={viewRef} data-channels-page="" style={{ background: C.base, minHeight: '100%' }}>
-        <ChannelManager
-          isTv={isTv}
-          isMobile={isMobile}
-          t={t}
-          onBack={() => setManage(false)}
-          onEdit={(id) => { setManage(false); setSelectedId(id); setStudio(id) }}
-          onCreate={() => { setManage(false); setStudio('new') }}
-        />
-      </div>
-    )
-  }
-
   if (studio) {
     return (
       <div ref={viewRef} data-channels-page="" style={{ minHeight: '100%' }}>
@@ -256,8 +279,9 @@ export function ChannelsPage({ params }: BrowsePageProps) {
     <div
       role="status"
       style={{
+        position: 'relative', zIndex: 1,
         padding: isTv ? `${tvu(10)} ${tvu(100)}` : '10px 16px', background: 'rgba(244,132,95,0.14)', borderBottom: '1px solid rgba(244,132,95,0.35)',
-        color: C.accentLight, fontFamily: FONT.ui, fontSize: fontSize(13, isTv),
+        color: C.accentLight, fontFamily: FONT.ui, fontSize: fontSize(13, isTv), flexShrink: 0,
       }}
     >
       {t('pageHostTooOld')}
@@ -276,35 +300,42 @@ export function ChannelsPage({ params }: BrowsePageProps) {
             restoreDefaultChannels(uiLang)
             setSelectedId(null)
           }}
-          onCustom={() => setStudio('new')}
         />
       </div>
     )
   }
 
-  const selectedData = rundowns[selected.id]
+  // Heron visar raden under pekaren (skrivbord), annars vald (= fokus på TV, tryckt på mobil).
+  const hovered = !isTv && !isMobile && hoverId ? sorted.find((c) => c.id === hoverId) : undefined
+  const heroChannel = hovered ?? selected
+  const heroData = rundowns[heroChannel.id]
+  // Bakgrundslagret: visad kanal och grannarna i tablån (förladdade, osynliga).
+  const at = sorted.findIndex((c) => c.id === heroChannel.id)
+  const images = [sorted[at - 1], heroChannel, sorted[at + 1]]
+    .filter((c): c is ChannelDef => !!c)
+    .filter((c, i, list) => list.findIndex((x) => x.id === c.id) === i)
+    .map((channel) => ({ channel, rundown: rundowns[channel.id]?.rundown ?? [] }))
   return (
-    // Ingen egen bakgrund här: herobilden ligger under sidan (z −1) och ska
-    // synas kant i kant; appens grund under är redan svart.
-    <div ref={viewRef} data-channels-page="" style={{ minHeight: '100%' }}>
+    // Ingen egen bakgrund: herobilden ligger under sidan (z −1) kant i kant.
+    // Fast höjd: bara tablåns behållare rullar, heron står still.
+    <div
+      ref={viewRef}
+      data-channels-page=""
+      style={{ height: fillHeight ?? 'var(--lumio-vh, 100vh)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+    >
       {banner}
       <ChannelHero
-        channel={selected}
-        rundown={selectedData?.rundown ?? []}
-        loading={selectedData?.loading ?? true}
-        partial={selectedData?.partial ?? false}
+        channel={heroChannel}
+        rundown={heroData?.rundown ?? []}
+        loading={heroData?.loading ?? true}
+        partial={heroData?.partial ?? false}
         now={now}
         isTv={isTv}
         isMobile={isMobile}
         canPlay={canPlay}
         t={t}
-        onPlay={(mode) => play(selected.id, mode)}
-        onEdit={() => setStudio(selected.id)}
-        onNewChannel={() => setStudio('new')}
-        onManage={() => setManage(true)}
-        slides={slides}
-        onSlide={onSlide}
-        onStep={onStep}
+        onPlay={(mode) => play(heroChannel.id, mode)}
+        images={images}
       />
       <ChannelGuide
         channels={sorted}
@@ -314,11 +345,16 @@ export function ChannelsPage({ params }: BrowsePageProps) {
         isTv={isTv}
         isMobile={isMobile}
         t={t}
+        fill
+        initId={isTv ? selected.id : null}
         onSelect={onSelect}
         onPlay={onPlayRow}
         onRundown={onRundown}
         onShift={onShift}
+        onHover={isTv || isMobile ? undefined : onHover}
+        onHold={isTv ? onHold : undefined}
       />
+      {TvGlassMenu && menu ? <TvGlassMenu target={menu} onClose={() => setMenu(null)} /> : null}
     </div>
   )
 }

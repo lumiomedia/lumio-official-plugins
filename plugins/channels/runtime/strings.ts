@@ -38,9 +38,6 @@ export const S = {
   zapNothingOn: { en: 'Nothing on air', sv: 'Inget sänds' },
   zapHint: { en: 'remote: ▲▼ · 0–9 · OK = info', sv: 'fjärr: ▲▼ · 0–9 · OK = info' },
   // Kanaler-sidan
-  pageHome: { en: '‹ HOME', sv: '‹ HEM' },
-  pageChannels: { en: 'CHANNELS', sv: 'KANALER' },
-  pageNewChannel: { en: '+ NEW CHANNEL', sv: '+ NY KANAL' },
   pageHostTooOld: { en: 'Channels requires Lumio 0.1.625 or later for playback', sv: 'Kanaler kräver Lumio 0.1.625 eller senare för uppspelning' },
   heroLive: { en: 'LIVE', sv: 'LIVE' },
   playerNoSignal: { en: 'No signal', sv: 'Ingen signal' },
@@ -48,7 +45,10 @@ export const S = {
   heroOffAir: { en: 'OFF AIR', sv: 'VILA' },
   heroWatchLive: { en: '▶ Watch live', sv: '▶ Titta live' },
   heroFromStart: { en: '⟲ From start', sv: '⟲ Från början' },
-  heroEdit: { en: 'Edit channel', sv: 'Redigera kanal' },
+  // Håll OK på en tablårad (TV): värdens glasmeny.
+  menuFromStart: { en: 'From start', sv: 'Från början' },
+  menuEdit: { en: 'Edit channel', sv: 'Redigera kanal' },
+  menuZap: { en: 'Zap', sv: 'Zappa' },
   heroNext: { en: 'Next {time} {title}', sv: 'Sedan {time} {title}' },
   heroMovie: { en: 'Film', sv: 'Film' },
   heroEpisode: { en: 'Episode', sv: 'Avsnitt' },
@@ -64,11 +64,14 @@ export const S = {
   guideEmpty: { en: 'Nothing to broadcast', sv: 'Inget att sända' },
   emptyTitle: { en: 'No channels', sv: 'Inga kanaler' },
   emptyLead: {
-    en: 'A channel is a few rules. Lumio builds a never-ending schedule from your library, watchlist and debrid. Bring back the ten default channels or create your own.',
-    sv: 'En kanal är några regler. Lumio bygger en tablå som aldrig tar slut av ditt bibliotek, din watchlist och debrid. Ta tillbaka de tio standardkanalerna eller skapa en egen.',
+    en: 'A channel is a few rules. Lumio builds a never-ending schedule from your library, watchlist and debrid. Bring back the ten default channels.',
+    sv: 'En kanal är några regler. Lumio bygger en tablå som aldrig tar slut av ditt bibliotek, din watchlist och debrid. Ta tillbaka de tio standardkanalerna.',
+  },
+  emptySettingsHint: {
+    en: 'Create and edit your own channels under Settings → Channels.',
+    sv: 'Skapa och redigera egna kanaler under Inställningar → Kanaler.',
   },
   emptyRestore: { en: 'Restore default channels', sv: 'Återställ standardkanaler' },
-  emptyCustom: { en: 'Create your own', sv: 'Skapa egen' },
   // Kanalstudion
   studioEyebrow: { en: 'MY CHANNELS', sv: 'MINA KANALER' },
   studioNew: { en: 'New channel', sv: 'Ny kanal' },
@@ -131,8 +134,8 @@ export const S = {
   // Inställningssektionen
   settingsTitle: { en: 'Your channels', sv: 'Dina kanaler' },
   settingsHint: {
-    en: 'Channels are built from rules; edit them in the channel studio.',
-    sv: 'Kanalerna byggs av regler; ändra dem i kanalstudion.',
+    en: 'Manage your channels here: edit their rules in the channel studio, delete them or create new ones.',
+    sv: 'Hantera dina kanaler här: ändra reglerna i kanalstudion, ta bort eller skapa nya.',
   },
   settingsEmpty: { en: 'No channels yet', sv: 'Inga kanaler ännu' },
   settingsTitles: { en: '≈ {n} titles', sv: '≈ {n} titlar' },
@@ -140,8 +143,6 @@ export const S = {
   settingsDelete: { en: 'Delete', sv: 'Ta bort' },
   settingsDeleteConfirm: { en: 'Confirm', sv: 'Bekräfta' },
   settingsNew: { en: '+ New channel', sv: '+ Ny kanal' },
-  manageTitle: { en: 'Manage channels', sv: 'Hantera kanaler' },
-  manageBack: { en: '‹ GUIDE', sv: '‹ TABLÅ' },
   settingsNewRow: { en: 'New channel', sv: 'Ny kanal' },
   settingsChannelLine: { en: '{n} · {name}', sv: '{n} · {name}' },
   settingsDeleteTitle: { en: 'Delete {name}?', sv: 'Ta bort {name}?' },

@@ -16,6 +16,8 @@ const state = vi.hoisted(() => ({
   seeded: [] as string[],
   restored: [] as string[],
   deleted: [] as string[],
+  holdNext: false,
+  glassMenu: null as unknown,
 }))
 
 vi.mock('@/lib/plugin-sdk', () => ({
@@ -24,6 +26,16 @@ vi.mock('@/lib/plugin-sdk', () => ({
   useLang: () => ({ lang: 'sv' }),
   resolvePluginText: (text: { sv: string }) => text.sv,
   requestBrowseBack: () => { state.back += 1 },
+  tvHoldHandlers: (onShort: () => void, onHold: (el: HTMLElement) => void) => ({
+    onKeyDown: (e: { key: string; currentTarget: EventTarget | null; preventDefault(): void }) => {
+      if (e.key !== 'Enter') return
+      e.preventDefault()
+      // Testets "håll": Shift+Enter håller, vanlig Enter är ett kort tryck.
+      state.holdNext ? onHold(e.currentTarget as HTMLElement) : onShort()
+    },
+    onKeyUp: () => {},
+  }),
+  getTvGlassMenu: () => state.glassMenu,
 }))
 vi.mock('../host', () => ({
   hostReady: () => state.ready,
@@ -52,6 +64,7 @@ vi.mock('./studio', () => ({
 }))
 
 import { ChannelsPage } from './channels-page'
+import { guideFadeMask } from './channel-guide'
 import { ChannelsPlugin } from '../index'
 
 const at = (h: number, m: number) => new Date(2026, 9, 14, h, m).getTime()
@@ -76,6 +89,8 @@ beforeEach(() => {
   state.seeded = []
   state.restored = []
   state.deleted = []
+  state.holdNext = false
+  state.glassMenu = null
 })
 afterEach(cleanup)
 
@@ -98,13 +113,56 @@ describe('Kanaler-sidan', () => {
     expect(typeof sections[0]!.rows).toBe('function')
   })
 
-  it('väljer första kanalen efter nummer, och klick på rad byter heron', () => {
+  it('väljer första kanalen efter nummer; klick väljer raden (heron följer), klick på vald rad tittar live', () => {
     const { container } = page()
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Terminator')
     expect(container.textContent).toContain('KANAL 1 · Första')
     expect(container.querySelectorAll('[data-channel-row]').length).toBe(2)
     fireEvent.click(container.querySelector('[data-channel-row="k2"]')!)
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Aliens')
+    expect(screen.queryByTestId('player')).toBeNull()
+    fireEvent.click(container.querySelector('[data-channel-row="k2"]')!)
+    expect(screen.getByTestId('player').textContent).toBe('k2|live|')
+  })
+
+  it('dubbelklick på en rad tittar live', () => {
+    const { container } = page()
+    fireEvent.doubleClick(container.querySelector('[data-channel-row="k2"]')!)
+    expect(screen.getByTestId('player').textContent).toBe('k2|live|')
+  })
+
+  it('skrivbord: heron följer raden under pekaren och går tillbaka till vald rad', () => {
+    const { container } = page()
+    const h1 = () => screen.getByRole('heading', { level: 1 }).textContent
+    fireEvent.mouseEnter(container.querySelector('[data-channel-row="k2"]')!)
+    expect(h1()).toBe('Aliens')
+    // Herons knappar gäller vald kanal: pekaren lämnar raderna på väg dit.
+    fireEvent.mouseLeave(container.querySelector('[data-channel-row="k2"]')!)
+    expect(h1()).toBe('Terminator')
+    fireEvent.click(screen.getByText('⟲ Från början'))
+    expect(screen.getByTestId('player').textContent).toBe('k1|start|')
+  })
+
+  it('sidan har bara hero + tablå: inga HEM-, KANALER-, NY KANAL- eller Redigera-knappar, ingen karusell', () => {
+    const { container } = page()
+    for (const gone of ['‹ HEM', 'KANALER', '+ NY KANAL', 'Redigera kanal']) expect(screen.queryByText(gone)).toBeNull()
+    expect(container.querySelector('[data-channels-topbar]')).toBeNull()
+    expect(container.querySelector('[data-hero-dots]')).toBeNull()
+    expect([...container.querySelectorAll('[data-hero-actions] button')].map((b) => b.textContent)).toEqual(['▶ Titta live', '⟲ Från början'])
+  })
+
+  it('tablån rullar i en egen behållare som tonar ut raderna upptill; sidan själv har fast höjd', () => {
+    const { container } = page()
+    const scroller = container.querySelector<HTMLElement>('[data-channels-guide-scroll]')!
+    expect(scroller.style.overflowY).toBe('auto')
+    expect(scroller.hasAttribute('data-scroll')).toBe(true)
+    expect(scroller.querySelectorAll('[data-channel-row]').length).toBe(2)
+    // Masken (happy-dom tappar mask-image; värdet testas direkt): raderna tonar ut upptill.
+    expect(guideFadeMask(false)).toBe('linear-gradient(to bottom, transparent 0, black 28px)')
+    expect(guideFadeMask(true)).toBe('linear-gradient(to bottom, transparent 0, black calc(40 * var(--tv-u, 1px)))')
+    // Heron ligger utanför rullbehållaren (står still).
+    expect(scroller.contains(container.querySelector('[data-channels-hero]'))).toBe(false)
+    expect(container.querySelector<HTMLElement>('[data-channels-page]')!.style.overflow).toBe('hidden')
   })
 
   it('tidsaxeln börjar på föregående halvtimme', () => {
@@ -142,14 +200,15 @@ describe('Kanaler-sidan', () => {
     expect(state.seeded).toEqual(['sv'])
   })
 
-  it('tomvyn återställer standardkanalerna och "Skapa egen" öppnar studion', () => {
+  it('tomvyn återställer standardkanalerna och visar var egna kanaler skapas', () => {
     state.channels = []
-    page()
+    const { container } = page()
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Inga kanaler')
+    expect(container.querySelector('[data-empty-hint]')!.textContent).toContain('Inställningar → Kanaler')
+    expect(screen.queryByText('Skapa egen')).toBeNull()
+    expect(screen.queryByText('‹ HEM')).toBeNull()
     fireEvent.click(screen.getByText('Återställ standardkanaler'))
     expect(state.restored).toEqual(['sv'])
-    fireEvent.click(screen.getByText('Skapa egen'))
-    expect(screen.getByTestId('studio').textContent).toBe('studio:new')
   })
 
   it('studio i parametrarna visar studions plats', () => {
@@ -178,10 +237,59 @@ describe('Kanaler-sidan', () => {
     expect(screen.getByTestId('player').textContent).toBe('k2|live|')
   })
 
-  it('‹ HEM går tillbaka', () => {
-    page()
-    fireEvent.click(screen.getByText('‹ HEM'))
-    expect(state.back).toBe(1)
+})
+
+describe('Kanaler-sidan på TV', () => {
+  it('heron följer raden med fokus; inga knappar i heron; ett startfokus på vald kanals rad', () => {
+    state.tv = true
+    const { container } = page({ channelId: 'k2' })
+    expect(container.querySelector('[data-hero-actions]')).toBeNull()
+    expect(container.querySelectorAll('[data-channels-hero] button').length).toBe(0)
+    const inits = [...container.querySelectorAll('[data-init]')]
+    expect(inits.map((el) => el.getAttribute('data-channel-row'))).toEqual(['k2'])
+    expect(document.activeElement).toBe(inits[0])
+    fireEvent.focus(container.querySelector('[data-channel-row="k1"]')!)
+    expect(container.querySelector('[data-channels-hero]')!.getAttribute('data-hero-channel')).toBe('k1')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Terminator')
+  })
+
+  it('OK på en rad tittar live; håll OK öppnar glasmenyn med Från början, Redigera kanal, Zappa', () => {
+    state.tv = true
+    const targets: Array<{ title: string; actions: Array<{ key: string; label: string; run(): void }> }> = []
+    state.glassMenu = ({ target }: { target: (typeof targets)[number] }) => { targets.push(target); return <div data-testid="glass-menu" /> }
+    const { container } = page({ channelId: 'k1' })
+    const row = container.querySelector<HTMLElement>('[data-channel-row="k2"]')!
+    state.holdNext = true
+    fireEvent.keyDown(row, { key: 'Enter' })
+    expect(screen.getByTestId('glass-menu')).toBeTruthy()
+    const menu = targets[targets.length - 1]!
+    expect(menu.title).toBe('KANAL 2 · Andra')
+    expect(menu.actions.map((a) => a.label)).toEqual(['Från början', 'Redigera kanal', 'Zappa'])
+    act(() => menu.actions.find((a) => a.key === 'zap')!.run())
+    expect(screen.getByTestId('player').textContent).toBe('k2|live|zap')
+    cleanup()
+    targets.length = 0
+    const second = page({ channelId: 'k1' })
+    fireEvent.keyDown(second.container.querySelector('[data-channel-row="k1"]')!, { key: 'Enter' })
+    act(() => targets[targets.length - 1]!.actions.find((a) => a.key === 'edit')!.run())
+    expect(screen.getByTestId('studio').textContent).toBe('studio:k1')
+    cleanup()
+    targets.length = 0
+    state.holdNext = false
+    const third = page({ channelId: 'k1' })
+    fireEvent.keyDown(third.container.querySelector('[data-channel-row="k2"]')!, { key: 'Enter' })
+    expect(screen.getByTestId('player').textContent).toBe('k2|live|')
+  })
+
+  it('utan spelbar värd: glasmenyn har bara Redigera kanal', () => {
+    state.tv = true
+    state.ready = false
+    state.holdNext = true
+    const targets: Array<{ actions: Array<{ label: string }> }> = []
+    state.glassMenu = ({ target }: { target: (typeof targets)[number] }) => { targets.push(target); return null }
+    const { container } = page()
+    fireEvent.keyDown(container.querySelector('[data-channel-row="k1"]')!, { key: 'Enter' })
+    expect(targets[0]!.actions.map((a) => a.label)).toEqual(['Redigera kanal'])
   })
 })
 
@@ -192,41 +300,15 @@ describe('Kanaler-sidans utseende', () => {
     expect(container.querySelector('[data-hero-image="k1"]')?.getAttribute('style')).toContain('img/b.jpg')
     // Herobildens uttoning är den enda tillåtna gradienten (utöver zappens brus).
     container.querySelector('[data-hero-backdrop]')!.remove()
+    // …och tablåns uttoning upptill (raderna försvinner under heron).
+    container.querySelector<HTMLElement>('[data-channels-guide-scroll]')!.removeAttribute('style')
     expect(container.innerHTML).not.toMatch(/gradient/i)
-  })
-
-  it('toppknapparna står tillsammans och vänsterställda (inget i högra hörnet)', () => {
-    const { container } = page()
-    const bar = container.querySelector('[data-channels-topbar]')!
-    expect([...bar.querySelectorAll('button, span')].map((el) => el.textContent)).toEqual(['‹ HEM', 'KANALER', '+ NY KANAL'])
-    expect(bar.innerHTML).not.toContain('flex: 1')
   })
 
   it('visar en diskret rad medan fler källor laddas', () => {
     state.partial = true
     page()
     expect(screen.getByText('Fler titler laddas…')).toBeTruthy()
-  })
-
-  it('KANALER öppnar Hantera kanaler; Ta bort i två steg; Tillbaka till tablån', () => {
-    page()
-    fireEvent.click(screen.getByText('KANALER'))
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Hantera kanaler')
-    expect([...document.querySelectorAll('[data-channel-name]')].map((el) => el.textContent)).toEqual(['Första', 'Andra'])
-    const del = () => screen.getAllByText(/Ta bort|Bekräfta/)[0]!
-    fireEvent.click(del())
-    expect(state.deleted).toEqual([])
-    fireEvent.click(del())
-    expect(state.deleted).toEqual(['k1'])
-    fireEvent.click(screen.getByText('‹ TABLÅ'))
-    expect(document.querySelector('[data-channels-hero]')).toBeTruthy()
-  })
-
-  it('Redigera i Hantera kanaler öppnar studion för kanalen', () => {
-    page()
-    fireEvent.click(screen.getByText('KANALER'))
-    fireEvent.click(screen.getAllByText('Redigera')[1]!)
-    expect(screen.getByTestId('studio').textContent).toBe('studio:k2')
   })
 
   it('vilande kanal visar VILA, inte LIVE', () => {
@@ -254,63 +336,6 @@ describe('Kanaler-sidans utseende', () => {
     }
   })
 
-  it('heron är en karusell över sändande kanaler: prickar och svep byter vald kanal (inga pilar)', () => {
-    state.channels = [channel(1, 'Första'), { ...channel(2, 'Natt'), airWindow: 'late' }, channel(3, 'Tredje')]
-    state.rundowns = { k1: [item('Terminator', 100_000)], k2: [item('Aliens', 100_000)], k3: [item('Heat', 100_000)] }
-    const { container } = page({ channelId: 'k1' })
-    const hero = () => container.querySelector('[data-channels-hero]')!
-    expect(hero().getAttribute('data-hero-slides')).toBe('2')
-    expect([...container.querySelectorAll('[data-hero-dot]')].map((d) => d.getAttribute('data-hero-dot'))).toEqual(['k1', 'k3'])
-    fireEvent.click(container.querySelector('[data-hero-dot="k3"]')!)
-    expect(hero().textContent).toContain('Tredje')
-    expect(container.querySelector('[data-channel-row="k3"]')?.getAttribute('aria-pressed')).toBe('true')
-    expect(container.querySelector('[data-hero-arrow]')).toBeNull()
-    fireEvent.click(container.querySelector('[data-hero-dot="k1"]')!)
-    expect(hero().textContent).toContain('Första')
-    fireEvent.touchStart(hero(), { touches: [{ clientX: 300, clientY: 100 }] })
-    fireEvent.touchEnd(hero(), { changedTouches: [{ clientX: 100, clientY: 110 }] })
-    expect(hero().textContent).toContain('Tredje')
-  })
-
-  it('styrplattans sidsvep och ◀▶ på prickarna bläddrar; lodrätt rullar sidan; inga pilar ens under laddning', () => {
-    state.channels = [channel(1, 'Första'), channel(3, 'Tredje')]
-    state.rundowns = { k1: [item('Terminator', 100_000)], k3: [item('Heat', 100_000)] }
-    const { container } = page({ channelId: 'k1' })
-    const hero = () => container.querySelector('[data-channels-hero]')!
-    const wheel = (deltaX: number, deltaY: number, timeStamp: number) => {
-      const e = new WheelEvent('wheel', { deltaX, deltaY, bubbles: true, cancelable: true })
-      Object.defineProperty(e, 'timeStamp', { value: timeStamp })
-      act(() => { hero().dispatchEvent(e) })
-      return e
-    }
-    // Lodrätt: sidan rullar (ingen preventDefault), inget byte.
-    expect(wheel(0, 80, 10).defaultPrevented).toBe(false)
-    expect(hero().textContent).toContain('Första')
-    // Vågrätt svep: ett steg, och händelsen rullar inte sidan.
-    expect(wheel(40, 2, 1000).defaultPrevented).toBe(true)
-    wheel(40, 2, 1016)
-    expect(hero().textContent).toContain('Tredje')
-    // Trögheten byter inte igen.
-    for (let i = 0; i < 10; i += 1) wheel(30, 0, 1032 + i * 16)
-    expect(hero().textContent).toContain('Tredje')
-    // Tangentbord: prickarna är tabbara, ◀▶ bläddrar.
-    const dot = container.querySelector<HTMLButtonElement>('[data-hero-dot="k3"]')!
-    expect(dot.tabIndex).toBe(0)
-    dot.focus()
-    fireEvent.keyDown(dot, { key: 'ArrowRight' })
-    expect(hero().textContent).toContain('Första')
-    expect(container.querySelector('[data-hero-arrow]')).toBeNull()
-    expect([...container.querySelectorAll('[data-channels-hero] button')].some((b) => /^[‹›]$/.test((b.textContent ?? '').trim()))).toBe(false)
-  })
-
-  it('under laddning (tom tablå) finns inga pilar eller andra hovringselement i heron', () => {
-    state.channels = [channel(1, 'Första'), channel(3, 'Tredje')]
-    state.rundowns = {}
-    const { container } = page({ channelId: 'k1' })
-    expect(container.querySelector('[data-hero-arrow]')).toBeNull()
-    expect([...container.querySelectorAll('[data-channels-hero] button')].some((b) => /^[‹›]$/.test((b.textContent ?? '').trim()))).toBe(false)
-  })
-
   it('tablåblocken: ljusgrå i vila, ljusare på raden under pekaren, pågående tydligt orange', () => {
     state.channels = [channel(1, 'Första')]
     state.rundowns = { k1: [item('Terminator', 30), item('Heat', 30), item('Ronin', 30)] }
@@ -324,60 +349,6 @@ describe('Kanaler-sidans utseende', () => {
     expect(bg(idle())).toContain('rgba(63,66,75,0.92)')
     fireEvent.mouseLeave(container.querySelector('[data-channel-row="k1"]')!)
     expect(bg(idle())).toContain('rgba(49,51,58,0.9)')
-  })
-
-  it('en vilande vald kanal är en egen bild bland de sändande', () => {
-    state.channels = [channel(1, 'Första'), { ...channel(2, 'Natt'), airWindow: 'late' }]
-    const { container } = page({ channelId: 'k2' })
-    expect([...container.querySelectorAll('[data-hero-dot]')].map((d) => d.getAttribute('data-hero-dot'))).toEqual(['k1', 'k2'])
-    expect(document.querySelector('[data-hero-badge]')?.textContent).toBe('VILA')
-  })
-
-  it('TV: prickarna är en fokusrad som appens bläddrare — fokus väljer kanal, ändarna går runt, OK spelar', () => {
-    state.tv = true
-    state.channels = [channel(1, 'Första'), channel(3, 'Tredje')]
-    state.rundowns = { k1: [item('Terminator', 100_000)], k3: [item('Heat', 100_000)] }
-    const { container } = page({ channelId: 'k1' })
-    const dots = container.querySelector<HTMLElement>('[data-hero-dots]')!
-    expect(dots.className).toBe('tv-hero-pager')
-    const [d1, d3] = [...container.querySelectorAll<HTMLButtonElement>('[data-hero-dot]')]
-    for (const d of [d1!, d3!]) {
-      expect(d.hasAttribute('data-f')).toBe(true)
-      // Indikator: appens minsta knapphöjd (40 enheter) gav "stora lodräta staplar".
-      expect(d.hasAttribute('data-tv-nosize')).toBe(true)
-    }
-    expect(d1!.hasAttribute('data-current')).toBe(true)
-    expect(d1!.getAttribute('data-f-left')).toBe('[data-hero-dot="k3"]')
-    expect(d3!.getAttribute('data-f-right')).toBe('[data-hero-dot="k1"]')
-    expect(d1!.getAttribute('data-f-down')).toBe('[data-channel-row][aria-pressed="true"]')
-    // ◀▶ på knappraden bläddrar inte längre (prickarna gör det).
-    const buttons = [...container.querySelectorAll<HTMLButtonElement>('[data-hero-actions] button:not([disabled])')]
-    fireEvent.keyDown(buttons[0]!, { key: 'ArrowLeft' })
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Terminator')
-    fireEvent.focus(d3!)
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Heat')
-    expect(container.querySelector('[data-hero-dot="k3"]')!.hasAttribute('data-current')).toBe(true)
-    fireEvent.click(container.querySelector('[data-hero-dot="k3"]')!)
-    expect(screen.getByTestId('player').textContent).toBe('k3|live|')
-  })
-
-  it('TV: ett startfokus — Titta live — och fokus landar där när sidan öppnas', () => {
-    state.tv = true
-    const { container } = page()
-    const inits = [...container.querySelectorAll('[data-init]')]
-    expect(inits).toHaveLength(1)
-    expect(inits[0]!.textContent).toContain('Titta live')
-    expect(container.querySelector('[data-channel-row][data-init]')).toBeNull()
-    expect(document.activeElement).toBe(inits[0])
-  })
-
-  it('TV: utan spelbar värd får Redigera startfokus (en avstängd knapp kan inte ta fokus)', () => {
-    state.tv = true
-    state.ready = false
-    const { container } = page()
-    const inits = [...container.querySelectorAll('[data-init]')]
-    expect(inits).toHaveLength(1)
-    expect(inits[0]!.textContent).toBe('Redigera kanal')
   })
 
   it('TV: appens mått — typografitoken för text, eget radavstånd i blocken, ingen krock med appens [data-hero-copy]', () => {
