@@ -202,7 +202,6 @@ export function ChannelsPage({ params }: BrowsePageProps) {
         mode={player.mode}
         startInZap={player.zap}
         onClose={closePlayer}
-        onOpenGuide={closePlayer}
         onEditChannel={(id) => {
           setPlayer(null)
           autoPick.current = false

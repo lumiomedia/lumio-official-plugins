@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { endOfSourceAction, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, ZAP_RESOLVE_DELAY_MS } from './player-logic'
+import { endOfSourceAction, neighbourPrefetch, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, ZAP_RESOLVE_DELAY_MS } from './player-logic'
+import type { PoolItem } from '../data/pool'
 import { createChannel, emptyDraft, type ChannelDef } from '../model/channel'
 
 const ch = (number: number, id = `c${number}`): ChannelDef => ({ ...createChannel({ ...emptyDraft(), name: id }, [], 1, () => 0.1), id, number })
@@ -54,5 +55,23 @@ describe('källans slut (mpv ger inget onPlaybackEnded)', () => {
   it('mitt i filen eller okänd längd = inget', () => {
     expect(endOfSourceAction({ position: 1200, duration: 5400, startedAt: 600 })).toBeNull()
     expect(endOfSourceAction({ position: 30, duration: 0, startedAt: 0 })).toBeNull()
+  })
+
+  it('grannförladdning: CH ▲▼ nu, bara bibliotek och debrid, aldrig strömsök', () => {
+    const it_ = (ref: string, play: PoolItem['play']): PoolItem =>
+      ({ ref, title: ref, runtimeMin: 600, runtimeKnown: true, year: null, kind: 'movie', source: 'library', genres: [], play })
+    const list = [ch(1), ch(2), ch(3), ch(4)]
+    const rundowns: Record<string, PoolItem[] | null> = {
+      c1: [it_('lib', { type: 'library', key: 'k', mediaType: 'movie' })],
+      c3: [it_('str', { type: 'stream', imdbId: 'tt1', mediaType: 'movie' })],
+      c4: null,
+    }
+    const of = (c: ChannelDef) => rundowns[c.id] ?? null
+    expect(neighbourPrefetch(list, 'c2', of, Date.now()).map((i) => i.ref)).toEqual(['lib'])
+    rundowns.c3 = [it_('deb', { type: 'debrid', provider: 'torbox', fileRef: '1|2' })]
+    expect(neighbourPrefetch(list, 'c2', of, Date.now()).map((i) => i.ref)).toEqual(['deb', 'lib'])
+    // Kall cache (c4) och ensam kanal: inget.
+    expect(neighbourPrefetch(list, 'c1', of, Date.now()).map((i) => i.ref)).toEqual([])
+    expect(neighbourPrefetch([ch(1)], 'c1', of, Date.now())).toEqual([])
   })
 })

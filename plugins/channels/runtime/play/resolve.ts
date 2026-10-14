@@ -63,7 +63,13 @@ export function createResolver(deps: ResolveDeps, now: () => number = Date.now) 
     return job
   }
 
-  return { resolve, forget: (ref: string) => { cache.delete(ref) } }
+  /** Finns en färsk uppslagen adress (förladdad granne, nästa program)? Då behövs ingen zappfördröjning. */
+  function peek(ref: string): boolean {
+    const hit = cache.get(ref)
+    return !!hit && now() - hit.at < TTL_MS
+  }
+
+  return { resolve, peek, forget: (ref: string) => { cache.delete(ref) } }
 }
 
 export function createLatestGate() {

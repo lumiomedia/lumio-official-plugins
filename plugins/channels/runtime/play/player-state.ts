@@ -12,9 +12,9 @@ import type { ProgrammeSlot, RestSlot } from '../model/schedule'
 import type { Playable } from './resolve'
 import type { PlayMode } from './player-logic'
 
-export type Status = 'resolving' | 'playing' | 'nosignal' | 'rest' | 'empty'
+export type Status = 'resolving' | 'playing' | 'nosignal' | 'between' | 'rest' | 'empty'
 
-export interface Request { channelId: string; mode: PlayMode; at: number | null; seq: number }
+export interface Request { channelId: string; mode: PlayMode; seq: number }
 
 export interface Plan {
   seq: number
@@ -45,6 +45,13 @@ export interface PlayerState {
   tried: { key: string; urls: string[] } | null
   /** Ingen version fungerade: programmet och när kanalen försöker igen (nästa programgräns). */
   noSignal: { slot: ProgrammeSlot<PoolItem>; retryAt: number } | null
+  /**
+   * Källan tog slut före programgränsen (filen kortare än tablåns längd):
+   * kanalen väntar på gränsen i stället för att starta nästa program i förväg.
+   */
+  between: { slot: ProgrammeSlot<PoolItem>; until: number } | null
+  /** Den visning (seq) vars första bild syns. Inställningskortet ligger kvar tills dess. */
+  framedSeq: number | null
 }
 
 export type Action =
@@ -64,14 +71,30 @@ export type Action =
 
 export function initialPlayerState(channelId: string, mode: PlayMode): PlayerState {
   return {
-    request: { channelId, mode, at: null, seq: 0 },
-    status: 'resolving', onScreen: null, pending: null, rest: null, tried: null, noSignal: null,
+    request: { channelId, mode, seq: 0 },
+    status: 'resolving', onScreen: null, pending: null, rest: null, tried: null, noSignal: null, between: null, framedSeq: null,
   }
 }
 
-/** Efter gränsen: live från nu. Före (strömmen tog slut tidigt): nästa program vid gränsen. */
-export function afterSlot(slot: { stop: number }, now: number): number | null {
-  return now >= slot.stop ? null : slot.stop + 1000
+/**
+ * Väntar spelaren på en bild för den aktuella begäran? Då täcker
+ * inställningskortet allt (uppslag, och den nya spelarens tomma ruta före
+ * första bilden).
+ */
+export function awaitingPicture(s: PlayerState): boolean {
+  if (s.status === 'resolving') return true
+  return s.status === 'playing' && !!s.onScreen && s.framedSeq !== s.onScreen.seq
+}
+
+/**
+ * Poolen räknades om (fler källor svarade, sparad pool byttes mot ny) under
+ * samma begäran. Det som spelas eller slås upp för begäran rörs aldrig — ett
+ * byte mitt i programmet var "en annan film startar" och fladdret i
+ * kanallistan. Nya tablån gäller från nästa programgräns. Bara en kanal som
+ * visar tomt eller vila planeras om direkt.
+ */
+export function replanOnNewRundown(s: PlayerState): boolean {
+  return s.status === 'empty' || s.status === 'rest'
 }
 
 /** Redan provade adresser för det här programmet (tom lista för ett annat program). */
@@ -95,10 +118,10 @@ export function playerReducer(s: PlayerState, a: Action): PlayerState {
   switch (a.type) {
     case 'goto':
       // Manuellt byte: nya försök, ingen gammal felvy.
-      return { ...s, request: next(s, { channelId: a.channelId, mode: a.mode, at: null }), pending: null, status: 'resolving', tried: null, noSignal: null }
+      return { ...s, request: next(s, { channelId: a.channelId, mode: a.mode }), pending: null, status: 'resolving', tried: null, noSignal: null, between: null }
     case 'planned':
       if (a.plan.seq !== s.request.seq) return s
-      return { ...s, pending: a.plan, status: 'resolving', rest: null, noSignal: null }
+      return { ...s, pending: a.plan, status: 'resolving', rest: null, noSignal: null, between: null }
     case 'resolved': {
       if (a.seq !== s.request.seq || !s.pending || s.pending.seq !== a.seq) return s
       return { ...s, onScreen: { ...s.pending, playable: a.playable }, pending: null, status: 'playing' }
@@ -111,7 +134,7 @@ export function playerReducer(s: PlayerState, a: Action): PlayerState {
       const urls = a.url ? [...triedFor(s, plan.slot), a.url] : triedFor(s, plan.slot)
       if (a.url && urls.length < MAX_VERSIONS) {
         // Samma program, nästa version, på liveläget (eller från början om det var valt).
-        return { ...s, tried: { key, urls }, pending: null, status: 'resolving', request: next(s, { mode: plan.mode, at: null }) }
+        return { ...s, tried: { key, urls }, pending: null, status: 'resolving', request: next(s, { mode: plan.mode }) }
       }
       return {
         ...s, status: 'nosignal', onScreen: null, pending: null, tried: { key, urls },
@@ -120,17 +143,24 @@ export function playerReducer(s: PlayerState, a: Action): PlayerState {
     }
     case 'rest':
       if (a.seq !== s.request.seq) return s
-      return { ...s, status: 'rest', rest: a.rest, onScreen: null, pending: null, noSignal: null }
+      return { ...s, status: 'rest', rest: a.rest, onScreen: null, pending: null, noSignal: null, between: null }
     case 'empty':
       if (a.seq !== s.request.seq) return s
-      return { ...s, status: 'empty', rest: null, onScreen: null, pending: null, noSignal: null }
+      return { ...s, status: 'empty', rest: null, onScreen: null, pending: null, noSignal: null, between: null }
     case 'advance': {
       // Timer och onPlaybackEnded kan komma samma tick: bara den första som
       // gäller den visade begäran räknas.
       if (a.seq !== s.request.seq || !s.onScreen || s.onScreen.seq !== a.seq) return s
-      return { ...s, pending: null, status: 'resolving', tried: null, request: next(s, { mode: 'live', at: afterSlot(s.onScreen.slot, a.now) }) }
+      const slot = s.onScreen.slot
+      // Före gränsen (källan kortare än tablån): nästa program startas INTE i
+      // förväg från början — då är kanalen inte live längre. Vänta på gränsen.
+      if (a.now < slot.stop) {
+        return { ...s, status: 'between', onScreen: null, pending: null, tried: null, between: { slot, until: slot.stop } }
+      }
+      return { ...s, pending: null, status: 'resolving', tried: null, request: next(s, { mode: 'live' }) }
     }
     case 'firstPlay':
-      return s
+      if (!s.onScreen || s.onScreen.seq !== a.seq || s.framedSeq === a.seq) return s
+      return { ...s, framedSeq: a.seq }
   }
 }

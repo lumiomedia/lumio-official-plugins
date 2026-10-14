@@ -49,6 +49,17 @@ describe('createResolver', () => {
     const failing = createResolver({ library: vi.fn(async () => { throw new Error('x') }), stream: vi.fn(), debrid: vi.fn() })
     expect(await failing.resolve(a)).toBeNull()
   })
+
+  it('peek: sant bara för en färsk cachad adress', async () => {
+    let now = 0
+    const r = createResolver({ library: vi.fn(async () => ({ url: 'L' })), stream: vi.fn(), debrid: vi.fn() }, () => now)
+    const a = item('a', { type: 'library', key: 'k', mediaType: 'movie' })
+    expect(r.peek('a')).toBe(false)
+    await r.resolve(a)
+    expect(r.peek('a')).toBe(true)
+    now = 11 * 60_000
+    expect(r.peek('a')).toBe(false)
+  })
 })
 
 describe('createLatestGate', () => {

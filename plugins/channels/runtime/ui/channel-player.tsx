@@ -5,24 +5,28 @@
  *
  * Tablån bestämmer vad som spelas och var i programmet; spelaren följer den.
  * Vid programgränsen byts strömmen (förladdad ~30 s innan), CH ▲▼ byter kanal
- * och återgår till live. Det som spelas ligger kvar under nästa uppslag och
- * byts först när nästa ström är klar, så spelaren inte rivs vid varje byte.
+ * och återgår till live. Varje byte visar direkt inställningskortet (kanal,
+ * program, bild) som ligger kvar tills den nya strömmen visat sin första bild.
+ * TABLÅ öppnar tablån som lager i spelaren; ZAPP slår på zappläget (1b).
  * Inget mediaId/tmdbId/imdbId till spelaren: kanaler ska inte hamna i
  * Fortsätt titta eller skrobblas.
  */
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ComponentType, type CSSProperties, type MutableRefObject, type ReactNode } from 'react'
 import { useTvMode } from '@/lib/plugin-sdk'
 import type { ChannelDef } from '../model/channel'
-import { programmeAt } from '../model/schedule'
+import type { PoolItem } from '../data/pool'
+import { buildRundown, programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
-import { channelByNumber, createDigitBuffer, OSD_IDLE_MS } from '../play/zap-logic'
-import { endOfSourceAction, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
-import { initialPlayerState, playerReducer, triedFor, type Request } from '../play/player-state'
+import { channelByNumber, createDigitBuffer, NOISE_MS, OSD_IDLE_MS } from '../play/zap-logic'
+import { endOfSourceAction, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
+import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, triedFor, type Request } from '../play/player-state'
 import { readZapMemory, rememberPlayedStream, resolver, writeZapMemory } from '../host'
-import { useChannelClock, useChannelPool } from '../state/store'
+import { readCachedPool, useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
+import { GuideOverlay } from './guide-overlay'
 import { useHostControls } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
+import { TuningCard } from './tuning-card'
 import { useText } from './use-text'
 import { ZapOverlay } from './zap-overlay'
 
@@ -33,7 +37,6 @@ export interface ChannelPlayerProps {
   /** Starta direkt i zappläget ("gamla TV:n"). */
   startInZap?: boolean
   onClose(): void
-  onOpenGuide?(): void
   /** Meddelas när zappläget slås på (ZAPP-knappen); zappläget i sig ägs av spelaren. */
   onZap?(): void
   /** "Redigera" på en kanal utan innehåll. */
@@ -47,11 +50,19 @@ const BACK_KEYS = new Set(['Escape', 'Backspace', 'GoBack', 'BrowserBack'])
 
 type PlayerComponent = ComponentType<Record<string, unknown>>
 
-export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, startInZap, onClose, onOpenGuide, onZap, onEditChannel }: ChannelPlayerProps) {
+/** Sparad tablå utan uppslag (null vid kall cache): kanallistan och grannförladdningen. */
+function cachedRundown(c: ChannelDef): PoolItem[] | null {
+  const pool = readCachedPool(c.id)
+  return pool ? buildRundown(pool, c.order, c.seed) : null
+}
+
+const clockNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
+
+export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, startInZap, onClose, onZap, onEditChannel }: ChannelPlayerProps) {
   const t = useText()
   const isTv = useTvMode()
   const [state, dispatch] = useReducer(playerReducer, undefined, () => initialPlayerState(initialChannelId, initialMode))
-  const { request, status, onScreen, pending, rest, noSignal } = state
+  const { request, status, onScreen, pending, rest, noSignal, between } = state
   const stateRef = useRef(state)
   stateRef.current = state
   const channel = useMemo(
@@ -85,8 +96,10 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   const [listOpen, setListOpen] = useState(false)
   const [digits, setDigits] = useState('')
   const [prevId, setPrevId] = useState<string | null>(null)
-  const zapRef = useRef({ zapOn, listOpen })
-  zapRef.current = { zapOn, listOpen }
+  // Tablån som lager i spelaren (TABLÅ-knappen).
+  const [guideOpen, setGuideOpen] = useState(false)
+  const zapRef = useRef({ zapOn, listOpen, guideOpen })
+  zapRef.current = { zapOn, listOpen, guideOpen }
   const channelsRef = useRef(channels)
   channelsRef.current = channels
   const digitBuf = useMemo(() => createDigitBuffer(1500), [])
@@ -114,6 +127,25 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     setPrevId(next.previousChannelId)
   }, [channelId])
 
+  // Brus i zappläget vid varje kanalbyte. Ägs här, inte i zapplagret: värdspelaren
+  // (och allt i dess overlayContent) monteras om vid bytet, och ett brus i lagret
+  // hann aldrig visas.
+  const [noise, setNoise] = useState(false)
+  const firstChannel = useRef(true)
+  useEffect(() => {
+    if (firstChannel.current) { firstChannel.current = false; return }
+    if (!zapRef.current.zapOn) return
+    setNoise(true)
+    const id = window.setTimeout(() => setNoise(false), NOISE_MS)
+    return () => window.clearTimeout(id)
+  }, [channelId])
+
+  // Bytestid: begäran → uppslag klart → första bild, till konsolen.
+  const timing = useRef<{ seq: number; ch: number; t0: number; resolveMs: number | null } | null>(null)
+  useEffect(() => {
+    timing.current = { seq: request.seq, ch: channel?.number ?? 0, t0: clockNow(), resolveMs: null }
+  }, [request.seq]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Planering: varje begäran planeras EN gång ──────────────────────────────
   const plannedSeq = useRef<number | null>(null)
   const plannedChannel = useRef<string | null>(null)
@@ -122,9 +154,8 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
 
   const plan = useCallback((req: Request, ch: ChannelDef) => {
     const nowMs = Date.now()
-    // `at` gäller bara om den fortfarande ligger framåt; annars live från nu.
-    const future = req.at != null && req.at > nowMs
-    const slot = programmeAt(rundown, ch.airWindow, future ? req.at! : nowMs)
+    // Alltid tablåns läge NU: ett byte landar live, aldrig på ett program i förväg.
+    const slot = programmeAt(rundown, ch.airWindow, nowMs)
     if (slot.kind === 'empty') {
       gate.begin()
       dispatch({ type: 'empty', seq: req.seq })
@@ -135,7 +166,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       dispatch({ type: 'rest', seq: req.seq, rest: slot })
       return
     }
-    const initialTime = future ? 0 : startSeconds(slot, req.mode)
+    const initialTime = startSeconds(slot, req.mode)
     const deadline = req.mode === 'start' ? nowMs + Math.max(1, slot.item.runtimeMin) * 60_000 : slot.stop
     dispatch({ type: 'planned', plan: { seq: req.seq, slot, initialTime, deadline, mode: req.mode } })
     const token = gate.begin()
@@ -148,6 +179,8 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       void resolver.resolve(slot.item, triedFor(stateRef.current, slot)).then((playable) => {
         if (!gate.isCurrent(token)) return
         if (playable) {
+          const tm = timing.current
+          if (tm && tm.seq === req.seq) tm.resolveMs = Math.round(clockNow() - tm.t0)
           dispatch({ type: 'resolved', seq: req.seq, playable })
         } else {
           // Ingen (fler) version: Ingen signal till nästa programgräns.
@@ -156,7 +189,8 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
         }
       })
     }
-    const delay = resolveDelayMs(slot.item.play.type, channelChanged)
+    // Redan uppslagen (förladdad granne, nästa program): ingen anledning att vänta.
+    const delay = resolver.peek(slot.item.ref) ? 0 : resolveDelayMs(slot.item.play.type, channelChanged)
     if (delay > 0) window.setTimeout(run, delay)
     else run()
   }, [rundown, gate])
@@ -174,15 +208,17 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       plan(s.request, channel)
       return
     }
-    // Samma begäran men ny rundown (poolen räknades om). Spelar vi något som
-    // finns kvar i kanalen rör vi det inte; annars börja om live.
-    if (s.status === 'nosignal') return
-    const shownRef = (s.pending ?? s.onScreen)?.slot.item.ref
-    if ((s.status === 'playing' || s.status === 'resolving') && shownRef && rundown.some((i) => i.ref === shownRef)) return
-    dispatch({ type: 'goto', channelId: channel.id, mode: 'live' })
+    // Samma begäran men ny rundown (fler källor svarade, sparad pool byttes):
+    // det som spelas rörs inte, nya tablån gäller från nästa gräns.
+    if (replanOnNewRundown(s)) dispatch({ type: 'goto', channelId: channel.id, mode: 'live' })
   }, [request.seq, channel?.id, channel?.airWindow, loading, rundown, plan]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const goToChannel = useCallback((id: string) => dispatch({ type: 'goto', channelId: id, mode: 'live' }), [])
+  // Från tablålagret: samma kanal stänger bara lagret (ingen ny begäran för inget).
+  const playFromGuide = useCallback((id: string) => {
+    setGuideOpen(false)
+    if (id !== stateRef.current.request.channelId) goToChannel(id)
+  }, [goToChannel])
 
   const step = useCallback((delta: 1 | -1) => {
     if (!channel || channels.length === 0) return
@@ -242,14 +278,32 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     poke()
     return () => { if (hideTimer.current !== null) window.clearTimeout(hideTimer.current) }
   }, [request.seq, poke])
-  // Ingen signal: försök igen live vid nästa programgräns, inte tidigare.
+  // Ingen signal, eller källan slut före gränsen: live igen vid nästa programgräns, inte tidigare.
+  const waitUntil = status === 'nosignal' ? noSignal?.retryAt ?? null : status === 'between' ? between?.until ?? null : null
   useEffect(() => {
-    if (status !== 'nosignal' || !noSignal) return
+    if (waitUntil == null) return
     const id = window.setTimeout(() => {
       dispatch({ type: 'goto', channelId: stateRef.current.request.channelId, mode: 'live' })
-    }, Math.max(0, noSignal.retryAt - Date.now()) + 1000)
+    }, Math.max(0, waitUntil - Date.now()) + 1000)
     return () => window.clearTimeout(id)
-  }, [status, noSignal])
+  }, [waitUntil])
+
+  // Grannkanalerna (CH ▲▼) förladdas när bilden stått en stund — bara bibliotek/debrid.
+  const framedNow = !!onScreen && state.framedSeq === onScreen.seq && onScreen.seq === request.seq
+  useEffect(() => {
+    if (!framedNow) return
+    const id = window.setTimeout(() => {
+      const current = stateRef.current.request.channelId
+      for (const item of neighbourPrefetch(channelsRef.current, current, cachedRundown, Date.now())) void resolver.resolve(item)
+    }, NEIGHBOUR_PREFETCH_DELAY_MS)
+    return () => window.clearTimeout(id)
+  }, [framedNow, request.seq])
+
+  // Kanallistans tablåer: en gång per öppning, och kvar när värdspelaren monteras om.
+  const listRundowns = useMemo(
+    () => (listOpen ? new Map(channels.map((c) => [c.id, cachedRundown(c)] as const)) : null),
+    [listOpen, channels],
+  )
 
   // ── Tangenter ──────────────────────────────────────────────────────────────
   const modalMounted = !!(onScreen && Player)
@@ -291,7 +345,28 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
 
   const onKey = (event: KeyboardEvent) => {
       const zap = zapRef.current
-      if (zap.zapOn) {
+      if (zap.guideOpen) {
+        // Tablålagret: Bakåt (och TABLÅ-tangenten) stänger lagret, inte spelaren.
+        if (BACK_KEYS.has(event.key) || event.key === 'Guide') {
+          event.preventDefault()
+          event.stopImmediatePropagation()
+          setGuideOpen(false)
+          return
+        }
+        // Skrivbord: pilar och siffror ska inte spola eller byta kanal bakom lagret.
+        // TV: pilarna tillhör fokusmotorn (rader och ◀▶ på tidsaxeln).
+        if (!isTv && (event.key.startsWith('Arrow') || /^[0-9]$/.test(event.key))) {
+          event.stopImmediatePropagation()
+          return
+        }
+      }
+      if (event.key === 'Guide') {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        setGuideOpen(true)
+        return
+      }
+      if (zap.zapOn && !zap.guideOpen) {
         // Bakåt i zappläget: lista öppen → stäng listan, annars lämna zappläget.
         // Konsumeras bara här; annars går Bakåt vidare till den vanliga kedjan.
         if (BACK_KEYS.has(event.key)) {
@@ -367,10 +442,11 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   // aktuella begäran (inte en gammal kanals bild under ett kanalbyte).
   const described = pending ?? (onScreen && onScreen.seq === request.seq ? onScreen : null)
   const nextTitle = useMemo(() => {
-    if (!described || !channel) return null
-    const next = programmeAt(rundown, channel.airWindow, described.slot.stop + 1000)
+    const after = described?.slot.stop ?? between?.until
+    if (after == null || !channel) return null
+    const next = programmeAt(rundown, channel.airWindow, after + 1000)
     return next.kind === 'programme' ? next.item.title : null
-  }, [described, channel, rundown])
+  }, [described, between, channel, rundown])
 
   if (!channel) {
     return (
@@ -398,10 +474,14 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       listOpen={listOpen}
       notice={null}
       hasPrevious={!!prevId && prevId !== channel.id && channels.some((c) => c.id === prevId)}
+      noise={noise}
+      listRundowns={listRundowns}
       isTv={isTv}
       t={t}
-      onSelect={(id) => { goToChannel(id); setListOpen(false) }}
+      onSelect={(id) => { setListOpen(false); if (id !== stateRef.current.request.channelId) goToChannel(id) }}
       onPrevious={() => { if (prevId) goToChannel(prevId) }}
+      onChUp={() => step(1)}
+      onChDown={() => step(-1)}
       onToggleList={() => setListOpen((v) => !v)}
       onCloseList={() => setListOpen(false)}
       onExit={exitZap}
@@ -426,20 +506,28 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       onFromStart={described ? fromStart : undefined}
       onChDown={() => step(-1)}
       onChUp={() => step(1)}
-      onGuide={onOpenGuide}
+      onGuide={() => setGuideOpen(true)}
       onZap={enterZap}
       onActivity={poke}
     />
   )
-  // En OSD åt gången: zappläget ersätter kanal-OSD:n.
-  const osd = zapOn ? zapOverlay : normalOsd
+  // En OSD åt gången: zappläget ersätter kanal-OSD:n; tablålagret ersätter båda.
+  const osd = guideOpen ? null : zapOn ? zapOverlay : normalOsd
+  const guide = guideOpen ? (
+    <GuideOverlay channels={channels} currentId={channel.id} now={now} isTv={isTv} t={t} onPlay={playFromGuide} onClose={() => setGuideOpen(false)} />
+  ) : null
 
-  const tuning = (
-    <div data-channels-tuning="" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-      <ChannelBadge channel={channel} size={88} />
-      <p style={{ ...msgStyle, fontFamily: FONT.title, fontSize: '1.75rem' }}>{described?.slot.item.title ?? channel.name}</p>
-      <p style={{ ...msgStyle, fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textDim }}>{t('playerTuning')}</p>
-    </div>
+  // Inställningskortet: målkanalen och (när det är planerat) programmet och dess bild.
+  const tuningItem = described?.slot.item ?? null
+  const tuningCard = (
+    <TuningCard
+      channel={channel}
+      title={tuningItem ? (tuningItem.kind === 'episode' && tuningItem.seriesTitle ? `${tuningItem.seriesTitle} · ${tuningItem.title}` : tuningItem.title) : null}
+      imageUrl={tuningItem?.backdropUrl ?? tuningItem?.posterUrl ?? null}
+      visible={awaitingPicture(state)}
+      isTv={isTv}
+      t={t}
+    />
   )
 
   if (onScreen && Player) {
@@ -479,9 +567,14 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           onFirstPlay={() => {
             // Först nu, när bilden syns, blir strömvalet ihågkommet (bara strömsök).
             if (slot.item.play.type === 'stream') rememberPlayedStream(playable.rememberToken)
+            const tm = timing.current
+            if (tm && tm.seq === seq) {
+              timing.current = null
+              console.info(`[channels] switch ${tm.ch} resolve=${tm.resolveMs ?? '?'}ms firstFrame=${Math.round(clockNow() - tm.t0)}ms`)
+            }
             dispatch({ type: 'firstPlay', seq })
           }}
-          // Sant = vi byter själva (nästa program eller felvyn); spelaren stänger inte.
+          // Sant = vi byter själva (nästa version eller felvyn); spelaren stänger inte.
           onLoadFailed={() => {
             resolver.forget(slot.item.ref)
             dispatch({ type: 'failed', seq, now: Date.now(), url: playable.url })
@@ -489,13 +582,9 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           }}
           overlayContent={(
             <>
-              {status === 'resolving' ? (
-                // Inställning ovanpå den gamla bilden tills nästa ström är klar.
-                <div style={{ position: 'absolute', inset: 0, zIndex: 54, display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.scrim, pointerEvents: 'none' }}>
-                  {tuning}
-                </div>
-              ) : null}
+              {tuningCard}
               {osd}
+              {guide}
             </>
           )}
         />
@@ -503,10 +592,10 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
     )
   }
 
-  const backdropUrl = described?.slot.item.backdropUrl
+  const backdropUrl = described?.slot.item.backdropUrl ?? between?.slot.item.backdropUrl ?? undefined
 
   return (
-    <Screen backdropUrl={backdropUrl} isTv={isTv} onMouseMove={poke}>
+    <Screen backdropUrl={status === 'resolving' ? undefined : backdropUrl} isTv={isTv} onMouseMove={poke}>
       {status === 'rest' && rest ? (
         <p style={msgStyle}>{t('playerRest', { time: clock(rest.nextAir) })}</p>
       ) : status === 'empty' ? (
@@ -521,8 +610,18 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           <p style={{ ...msgStyle, fontFamily: FONT.title }}>{noSignal.slot.item.kind === 'episode' && noSignal.slot.item.seriesTitle ? noSignal.slot.item.seriesTitle : noSignal.slot.item.title}</p>
           <p style={{ ...msgStyle, fontSize: '0.9rem', color: C.textDim }}>{t('playerNoSignalRetry', { time: clock(noSignal.retryAt) })}</p>
         </div>
-      ) : tuning}
+      ) : status === 'between' && between ? (
+        <div data-channels-between="" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+          <ChannelBadge channel={channel} size={72} />
+          <p style={{ ...msgStyle, fontSize: '1.4rem', fontWeight: 700 }}>{t('playerBetween')}</p>
+          <p style={{ ...msgStyle, fontFamily: FONT.title }}>
+            {nextTitle ? t('playerBetweenNext', { time: clock(between.until), title: nextTitle }) : t('playerBetweenNextUntitled', { time: clock(between.until) })}
+          </p>
+        </div>
+      ) : null}
+      {tuningCard}
       {osd}
+      {guide}
     </Screen>
   )
 }

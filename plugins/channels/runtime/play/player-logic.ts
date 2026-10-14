@@ -3,7 +3,7 @@
  * zappminne. Ingen React, inget SDK — testas för sig.
  */
 import type { ChannelDef } from '../model/channel'
-import type { ProgrammeSlot } from '../model/schedule'
+import { programmeAt, type ProgrammeSlot } from '../model/schedule'
 import type { PoolItem } from '../data/pool'
 
 export type PlayMode = 'live' | 'start'
@@ -69,4 +69,35 @@ export function endOfSourceAction(input: { position: number; duration: number; s
   if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(position)) return null
   if (position < duration - END_SLACK_S) return null
   return position - startedAt < MIN_PLAYED_S ? 'failed' : 'ended'
+}
+
+/** Så länge efter första bilden innan grannkanalerna förladdas (uppspelningen först). */
+export const NEIGHBOUR_PREFETCH_DELAY_MS = 3000
+
+/**
+ * Det CH ▲▼ skulle landa på just nu, för förladdning i bakgrunden. Bara
+ * biblioteks- och debridposter (lokalt uppslag resp. en fil att låsa upp) —
+ * aldrig strömsök, som går mot leverantörer och rate limits. Grannar utan
+ * sparad tablå hoppas över (ingen poolladdning för en gissning).
+ */
+export function neighbourPrefetch(
+  channels: ChannelDef[],
+  currentId: string,
+  rundownOf: (c: ChannelDef) => PoolItem[] | null,
+  now: number,
+): PoolItem[] {
+  if (channels.length < 2) return []
+  const ids = new Set<string>()
+  const out: PoolItem[] = []
+  for (const delta of [1, -1] as const) {
+    const c = stepChannel(channels, currentId, delta)
+    if (c.id === currentId || ids.has(c.id)) continue
+    ids.add(c.id)
+    const rundown = rundownOf(c)
+    if (!rundown || rundown.length === 0) continue
+    const slot = programmeAt(rundown, c.airWindow, now)
+    if (slot.kind !== 'programme') continue
+    if (slot.item.play.type === 'library' || slot.item.play.type === 'debrid') out.push(slot.item)
+  }
+  return out
 }

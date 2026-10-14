@@ -1,15 +1,19 @@
 'use client'
 
 /**
- * Zappläget ("gamla TV:n") ovanpå kanalspelaren: brus vid varje byte, stort
- * kanalnummer, tonande OSD och kanallista. Rent visuellt lager; spelaren och
- * dess tangenter ägs av ChannelPlayer. Bara hsl()/rgba(), rem för TV-text.
+ * Zappläget ("gamla TV:n", handoff 1b) ovanpå kanalspelaren: ingen meny, bara
+ * bild + kort OSD. "LUMIO TV" uppe vänster, stort kanalnummer uppe höger, brus
+ * med scanlines vid varje byte, OSD nere som tonar efter 4 s, knappraden
+ * (CH ▼ CH ▲ KANALLISTA ↩ FÖRRA) och kanallistan. Värdspelarens egna
+ * kontroller (toppraden, seekraden) döljs så länge läget är på. Rent visuellt
+ * lager; spelaren, bruset och tangenterna ägs av ChannelPlayer.
+ * Bara hsl()/rgba(), rem för TV-text.
  */
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import type { ChannelDef } from '../model/channel'
-import { buildRundown, programmeAt } from '../model/schedule'
+import type { PoolItem } from '../data/pool'
+import { programmeAt } from '../model/schedule'
 import { NOISE_MS } from '../play/zap-logic'
-import { readCachedPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { C, FONT, glass, RADIUS } from './tokens'
 import type { useText } from './use-text'
@@ -19,9 +23,15 @@ type T = ReturnType<typeof useText>
 /** Liten gråskalebrus-SVG som data-URI; CSS flyttar bakgrunden för rörelsen. */
 const NOISE_SVG = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>\")"
 
+/*
+  Värdens kontroller i zappläget: det här <style>-elementet finns bara medan
+  zappläget är monterat, så regeln gäller bara då. Spelarroten bär
+  data-lumio-player-open; inga :has()/:where() (WebView 83).
+*/
 const KEYFRAMES = `
 @keyframes chz-noise { 0% { background-position: 0 0 } 25% { background-position: -37px 23px } 50% { background-position: 41px -29px } 75% { background-position: -19px -43px } 100% { background-position: 29px 31px } }
 @media (prefers-reduced-motion: reduce) { [data-zap-noise] { animation: none !important } }
+[data-lumio-player-open] .vp-topbar, [data-lumio-player-open] .vp-controls { opacity: 0 !important; pointer-events: none !important; }
 `
 
 export interface ZapShownProgramme {
@@ -42,9 +52,15 @@ export interface ZapOverlayProps {
   listOpen: boolean
   notice: string | null
   hasPrevious: boolean
+  /** Brus just nu (ägs av spelaren, så det överlever att värdspelaren monteras om vid bytet). */
+  noise: boolean
+  /** Kanallistans tablåer ur sparad poolcache (null = kall cache), räknade en gång per öppning. */
+  listRundowns: Map<string, PoolItem[] | null> | null
   isTv: boolean
   t: T
   onSelect(id: string): void
+  onChUp(): void
+  onChDown(): void
   onPrevious(): void
   onToggleList(): void
   onCloseList(): void
@@ -66,19 +82,6 @@ function useNarrow(): boolean {
     return () => window.removeEventListener('resize', on)
   }, [])
   return narrow
-}
-
-/** Brus i NOISE_MS varje gång kanalen byts (inte vid första monteringen). */
-function useNoise(channelId: string): boolean {
-  const [on, setOn] = useState(false)
-  const first = useRef(true)
-  useEffect(() => {
-    if (first.current) { first.current = false; return }
-    setOn(true)
-    const id = window.setTimeout(() => setOn(false), NOISE_MS)
-    return () => window.clearTimeout(id)
-  }, [channelId])
-  return on
 }
 
 function ZapButton({ children, onClick, isTv, init, label }: { children: ReactNode; onClick(): void; isTv: boolean; init?: boolean; label?: string }) {
@@ -103,11 +106,12 @@ function ZapButton({ children, onClick, isTv, init, label }: { children: ReactNo
 
 export function ZapOverlay(p: ZapOverlayProps) {
   const { channel, programme, now, isTv, t } = p
-  const noise = useNoise(channel.id)
+  const noise = p.noise
+  const narrow = useNarrow()
   const fade: CSSProperties = { opacity: p.osdVisible ? 1 : 0, transition: 'opacity 240ms ease', pointerEvents: p.osdVisible ? 'auto' : 'none' }
   const pct = programme ? Math.min(100, Math.max(0, ((now - programme.start) / Math.max(1, programme.stop - programme.start)) * 100)) : 0
   const bigNumber = p.pendingDigits || String(channel.number)
-  const times = programme ? `${clock(programme.start)}–${clock(programme.stop)}${p.nextTitle ? ` · ${t('playerThen', { title: p.nextTitle })}` : ''}` : ''
+  const times = programme ? `${clock(programme.start)}–${clock(programme.stop)}${p.nextTitle ? ` · ${t('homeCardNext', { title: p.nextTitle })}` : ''}` : ''
 
   return (
     <div
@@ -118,7 +122,7 @@ export function ZapOverlay(p: ZapOverlayProps) {
       <style>{KEYFRAMES}</style>
 
       {/* Topp: märke uppe vänster, kanalnummer uppe höger */}
-      <div style={{ position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 1.25rem)', left: '1.5rem', fontSize: '0.625rem', letterSpacing: '0.22em', fontWeight: 700, color: C.textSoft, textShadow: '0 1px 6px rgba(0,0,0,0.7)' }}>
+      <div data-zap-brand="" style={{ position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 1.4rem)', left: '1.75rem', fontSize: '0.625rem', letterSpacing: '0.22em', fontWeight: 700, color: C.textSoft, textShadow: '0 1px 6px rgba(0,0,0,0.7)' }}>
         {t('zapBrand')}
       </div>
       <div
@@ -126,7 +130,7 @@ export function ZapOverlay(p: ZapOverlayProps) {
         style={{
           position: 'absolute', top: 'calc(var(--android-inset-top, 0px) + 0.75rem)', right: '1.5rem',
           fontFamily: FONT.title, fontSize: '2.875rem', lineHeight: 1, color: C.text,
-          textShadow: '0 2px 12px rgba(0,0,0,0.8)', opacity: p.pendingDigits || p.osdVisible || noise ? 1 : 0, transition: 'opacity 240ms ease',
+          textShadow: '0 2px 12px rgba(0,0,0,0.8)',
         }}
       >
         {bigNumber}
@@ -138,34 +142,42 @@ export function ZapOverlay(p: ZapOverlayProps) {
         </div>
       ) : null}
 
-      {/* Nedre OSD */}
+      {/* Nedre OSD: programkortet och knappraden under, tonar tillsammans. */}
       <div
         data-zap-osd=""
         style={{
-          ...fade, position: 'absolute', left: '1.5rem', right: '1.5rem', bottom: 'calc(var(--android-inset-bottom, 0px) + 6.5rem)',
-          padding: '0.9rem 1.1rem', borderRadius: RADIUS.osd,
-          ...glass(isTv, { fill: C.osdBg, blur: 14 }),
-          display: 'flex', flexDirection: 'column', gap: '0.6rem',
+          ...fade, position: 'absolute', left: '1.5rem', right: '1.5rem', bottom: 'calc(var(--android-inset-bottom, 0px) + 1.25rem)',
+          display: 'flex', flexDirection: 'column', gap: '0.9rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+        <div
+          style={{
+            padding: '0.95rem 1.15rem', borderRadius: RADIUS.osd,
+            ...glass(isTv, { fill: 'rgba(5,8,22,0.72)', blur: 14 }),
+            display: 'flex', alignItems: 'center', gap: '1rem',
+          }}
+        >
           <ChannelBadge channel={channel} size={58} />
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: isTv ? '0.9rem' : '0.7rem', letterSpacing: '0.18em', fontWeight: 700, color: C.accentLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+            <div style={{ fontSize: isTv ? '0.8rem' : '0.65rem', letterSpacing: '0.18em', fontWeight: 700, color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {t('zapChannelLine', { n: channel.number, name: channel.name.toUpperCase() })}
             </div>
-            <div style={{ fontFamily: FONT.title, fontSize: '1.5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontFamily: FONT.title, fontSize: '1.5rem', lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {programme?.title ?? t('zapNothingOn')}
             </div>
+            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.14)', overflow: 'hidden' }}>
+              <div style={{ width: `${pct}%`, height: '100%', background: C.accent }} />
+            </div>
+            <div style={{ fontSize: isTv ? '0.9rem' : '0.8rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{times}</div>
           </div>
         </div>
-        <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.14)', overflow: 'hidden' }}>
-          <div style={{ width: `${pct}%`, height: '100%', background: C.accent }} />
-        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          <span style={{ flex: 1, minWidth: 0, fontSize: isTv ? '0.95rem' : '0.8rem', color: C.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{times}</span>
-          {p.hasPrevious ? <ZapButton onClick={p.onPrevious} isTv={isTv}>{t('zapPrev')}</ZapButton> : null}
+          <ZapButton onClick={p.onChDown} isTv={isTv} label={t('playerChDown')}>CH ▼</ZapButton>
+          <ZapButton onClick={p.onChUp} isTv={isTv} label={t('playerChUp')}>CH ▲</ZapButton>
           <ZapButton onClick={p.onToggleList} isTv={isTv} init={!p.listOpen}>{t('zapList')}</ZapButton>
+          {p.hasPrevious ? <ZapButton onClick={p.onPrevious} isTv={isTv}>{t('zapPrev')}</ZapButton> : null}
+          <div style={{ flex: 1 }} />
+          {!narrow ? <span style={{ fontFamily: FONT.mono, fontSize: isTv ? '0.8rem' : '0.7rem', color: C.textDim, whiteSpace: 'nowrap' }}>{t('zapHint')}</span> : null}
           <ZapButton onClick={p.onExit} isTv={isTv}>{t('zapExit')}</ZapButton>
         </div>
       </div>
@@ -190,14 +202,8 @@ export function ZapOverlay(p: ZapOverlayProps) {
 function ZapList(p: ZapOverlayProps) {
   const narrow = useNarrow()
   const sorted = useMemo(() => [...p.channels].sort((a, b) => a.number - b.number), [p.channels])
-  // Rundown ur redan sparad poolcache, en gång per öppning; kall cache ger "—".
-  const rundowns = useMemo(
-    () => new Map(sorted.map((c) => {
-      const pool = readCachedPool(c.id)
-      return [c.id, pool ? buildRundown(pool, c.order, c.seed) : null] as const
-    })),
-    [sorted],
-  )
+  // Tablåerna räknas i spelaren, en gång per öppning (inte vid varje ommontering av värdspelaren).
+  const rundowns = p.listRundowns
   const panel: CSSProperties = narrow
     ? { left: 0, right: 0, bottom: 0, maxHeight: '60vh', borderRadius: `${RADIUS.osd}px ${RADIUS.osd}px 0 0` }
     : { left: 0, top: 0, bottom: 0, width: 290 }
@@ -220,7 +226,7 @@ function ZapList(p: ZapOverlayProps) {
           <ZapButton onClick={p.onCloseList} isTv={p.isTv}>{p.t('playerClose')}</ZapButton>
         </div>
         {sorted.map((c) => {
-          const rundown = rundowns.get(c.id)
+          const rundown = rundowns?.get(c.id)
           const slot = rundown && rundown.length > 0 ? programmeAt(rundown, c.airWindow, p.now) : null
           return (
             <ZapListRow key={c.id} channel={c} active={c.id === p.channel.id} title={slot && slot.kind === 'programme' ? slot.item.title : null} isTv={p.isTv} onSelect={p.onSelect} />
