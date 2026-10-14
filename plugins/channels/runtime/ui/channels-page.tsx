@@ -20,9 +20,10 @@ import { saveChannel, useChannelClock, useChannels } from '../state/store'
 import { ChannelGuide } from './channel-guide'
 import { ChannelHero } from './channel-hero'
 import { ChannelPlayer } from './channel-player'
+import { ChannelStudio } from './studio'
 import { EmptyState, PRESET_TEXT } from './empty-state'
 import { guideWindow } from './guide-layout'
-import { C, FONT, RADIUS, fontSize } from './tokens'
+import { C, FONT, fontSize } from './tokens'
 import { useText } from './use-text'
 
 interface PlayerState { channelId: string; mode: PlayMode; zap: boolean }
@@ -155,6 +156,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
         studio={studio}
         channels={sorted}
         isTv={isTv}
+        isMobile={isMobile}
         t={t}
         onDone={(id) => {
           setStudio(null)
@@ -232,34 +234,18 @@ export function ChannelsPage({ params }: BrowsePageProps) {
 }
 
 /**
- * Studions plats på sidan. Kanalstudion byggs i ett senare steg och ersätter
- * innehållet här; `studio` är 'new' eller kanalens id, `onDone` tar emot id:t
- * på en sparad kanal (eller inget vid Avbryt).
+ * Studions plats på sidan: `studio` är 'new' eller kanalens id, `onDone` tar
+ * emot id:t på en sparad kanal (Avbryt på en befintlig kanal ger dess id,
+ * borttagning inget).
  */
-function ChannelStudioSlot({ studio, channels, isTv, t, onDone }: {
+function ChannelStudioSlot({ studio, channels, isTv, isMobile, t, onDone }: {
   studio: string
   channels: ChannelDef[]
   isTv: boolean
+  isMobile: boolean
   t: ReturnType<typeof useText>
   onDone(savedId?: string): void
 }) {
-  const editing = studio === 'new' ? null : channels.find((c) => c.id === studio) ?? null
-  return (
-    <div data-channels-studio="" style={{ background: C.base, minHeight: 330, padding: isTv ? '1.75rem 2.5rem' : '24px 16px', color: C.text, fontFamily: FONT.ui }}>
-      <button
-        type="button"
-        data-f=""
-        data-init=""
-        onClick={() => onDone(editing?.id)}
-        style={{
-          minHeight: isTv ? '2.25rem' : 30, padding: isTv ? '0 1rem' : '0 14px', borderRadius: RADIUS.pill, cursor: 'pointer',
-          border: `1px solid ${C.pillBorder}`, background: C.pillBg, color: C.text, fontFamily: FONT.ui, fontSize: fontSize(12, isTv), fontWeight: 600,
-        }}
-      >
-        {t('studioBack')}
-      </button>
-      <h1 style={{ margin: '32px 0 0', fontFamily: FONT.title, fontWeight: 400, fontSize: fontSize(30, isTv) }}>{t('studioSoon')}</h1>
-      {editing ? <p style={{ margin: '8px 0 0', color: C.textDim, fontSize: fontSize(14, isTv) }}>{editing.name}</p> : null}
-    </div>
-  )
+  // Ny nyckel per kanal: studion läser kanalen en gång när den öppnas.
+  return <ChannelStudio key={studio} studio={studio} channels={channels} isTv={isTv} isMobile={isMobile} t={t} onDone={onDone} />
 }

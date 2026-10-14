@@ -2,6 +2,7 @@ import type { LumioPlugin } from '@/lib/plugin-sdk'
 import { S } from './strings'
 import { ChannelsHomeRow } from './ui/home-row'
 import { ChannelsPage } from './ui/channels-page'
+import { channelsSettingsSection } from './ui/settings-section'
 import { CHANNELS_PAGE_ID } from './ui/guide-layout'
 
 export const ChannelsPlugin: LumioPlugin = {
@@ -17,6 +18,7 @@ export const ChannelsPlugin: LumioPlugin = {
     ctx.registerHomeRow({ id: 'channels-now', title: S.homeRowTitle, showOnHome: true, Row: ChannelsHomeRow })
     // Äldre värdar saknar registerHomeSource: raden fungerar då bara som standardrad.
     ctx.registerHomeSource?.({ id: 'channels-now', label: S.homeRowTitle, rowId: 'channels-now' })
+    ctx.registerSettingsSection(channelsSettingsSection)
   },
 }
 

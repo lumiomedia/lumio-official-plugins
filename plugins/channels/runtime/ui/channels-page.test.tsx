@@ -35,6 +35,12 @@ vi.mock('./channel-player', () => ({
   ),
 }))
 
+vi.mock('./studio', () => ({
+  ChannelStudio: ({ studio, onDone }: { studio: string; onDone(id?: string): void }) => (
+    <button type="button" data-testid="studio" onClick={() => onDone(studio === 'new' ? undefined : studio)}>{`studio:${studio}`}</button>
+  ),
+}))
+
 import { ChannelsPage } from './channels-page'
 import { ChannelsPlugin } from '../index'
 
@@ -63,7 +69,9 @@ describe('Kanaler-sidan', () => {
     const pages: Array<Record<string, unknown>> = []
     const items: Array<Record<string, unknown>> = []
     const rows: Array<Record<string, unknown>> = []
+    const sections: Array<Record<string, unknown>> = []
     ChannelsPlugin.register({
+      registerSettingsSection: (x: Record<string, unknown>) => { sections.push(x) },
       registerHomeRow: (r: Record<string, unknown>) => { rows.push(r) },
       registerBrowsePage: (p: Record<string, unknown>) => { pages.push(p) },
       registerMainMenuItem: (i: Record<string, unknown>) => { items.push(i) },
@@ -71,6 +79,8 @@ describe('Kanaler-sidan', () => {
     expect(pages).toMatchObject([{ id: 'channels', hideHero: true }])
     expect(items).toMatchObject([{ id: 'channels', target: { pageId: 'channels' }, defaultEnabled: true }])
     expect(rows).toMatchObject([{ id: 'channels-now', showOnHome: true }])
+    expect(sections).toMatchObject([{ id: 'channels', label: { sv: 'Kanaler' } }])
+    expect(typeof sections[0]!.rows).toBe('function')
   })
 
   it('väljer första kanalen efter nummer, och klick på rad byter heron', () => {
@@ -119,13 +129,13 @@ describe('Kanaler-sidan', () => {
     fireEvent.click(screen.getByText('Kvällsfilm'))
     expect(state.saved).toMatchObject([{ name: 'Kvällsfilm', kind: 'movie', airWindow: 'evenings', number: 1 }])
     fireEvent.click(screen.getByText('Skapa egen'))
-    expect(screen.getByText('Kanalstudio kommer')).toBeTruthy()
+    expect(screen.getByTestId('studio').textContent).toBe('studio:new')
   })
 
   it('studio i parametrarna visar studions plats', () => {
     page({ studio: 'k1' })
-    expect(screen.getByText('Kanalstudio kommer')).toBeTruthy()
-    fireEvent.click(screen.getByText('‹ Tillbaka'))
+    expect(screen.getByTestId('studio').textContent).toBe('studio:k1')
+    fireEvent.click(screen.getByTestId('studio'))
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Terminator')
   })
 
