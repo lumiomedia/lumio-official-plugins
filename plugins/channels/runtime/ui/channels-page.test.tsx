@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createChannel, emptyDraft, type ChannelDef } from '../model/channel'
 import type { PoolItem } from '../data/pool'
 
@@ -291,10 +291,18 @@ describe('Kanaler-sidans utseende', () => {
     expect(container.querySelector('[data-channels-hero]')!.textContent).toContain('Tredje')
   })
 
-  it('herobilden bryter ut ur appkolumnens indrag till fönstrets kanter och överkant', () => {
+  it('herobilden är ett fast lager kant i kant som slutar under heron och följer rullningen', async () => {
     const original = Element.prototype.getBoundingClientRect
+    let heroTop = 40
+    let layerOrigin = { left: 0, top: 0 }
+    const rect = (left: number, top: number, width: number, height: number) => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) }) as DOMRect
     Element.prototype.getBoundingClientRect = function (this: Element) {
-      if (this.hasAttribute('data-channels-hero')) return { left: 65, top: 40, width: 900, height: 400, right: 965, bottom: 440, x: 65, y: 40, toJSON: () => ({}) } as DOMRect
+      if (this.hasAttribute('data-channels-hero')) return rect(65, heroTop, 900, 400)
+      if (this.hasAttribute('data-hero-backdrop')) {
+        const el = this as HTMLElement
+        const m = /translate\((-?\d+)px, (-?\d+)px\)/.exec(el.style.transform)
+        return rect(layerOrigin.left + (m ? Number(m[1]) : 0), layerOrigin.top + (m ? Number(m[2]) : 0), 1200, 10)
+      }
       return original.call(this)
     }
     const widthDesc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth')
@@ -303,11 +311,20 @@ describe('Kanaler-sidans utseende', () => {
       state.rundowns = { k1: [{ ...item('Terminator', 100_000), backdropUrl: 'https://img/b.jpg' }], k2: [item('Aliens', 100_000)] }
       const { container } = page({ channelId: 'k1' })
       const layer = container.querySelector<HTMLElement>('[data-hero-backdrop]')!
-      expect(layer.getAttribute('data-hero-bleed')).toBe(`65,40,${document.documentElement.clientWidth}`)
-      expect(layer.style.left).toBe('-65px')
-      expect(layer.style.top).toBe('-40px')
+      expect(layer.style.position).toBe('fixed')
+      expect([layer.style.left, layer.style.right, layer.style.top]).toEqual(['0px', '0px', '0px'])
       expect(layer.style.zIndex).toBe('-1')
-      // Sidan målar ingen egen bakgrund ovanpå bilden.
+      // Herons nederkant 440 + uttoningens 170 under heron.
+      expect(layer.getAttribute('data-hero-layer')).toBe('0,0,610')
+      // Rullat 100 px: lagret slutar 100 px högre, bilden behåller sin höjd.
+      heroTop = -60
+      fireEvent.scroll(window)
+      await waitFor(() => expect(layer.getAttribute('data-hero-layer')).toBe('0,0,510'))
+      expect(container.querySelector<HTMLElement>('[data-hero-image="k1"]')!.style.height).toBe('610px')
+      // En förfader med transform: lagret kompenserar till fönstrets hörn.
+      layerOrigin = { left: 30, top: 12 }
+      fireEvent(window, new Event('resize'))
+      await waitFor(() => expect(layer.getAttribute('data-hero-layer')).toBe('-30,-12,498'))
       expect(container.querySelector<HTMLElement>('[data-channels-page]')!.style.background).toBe('')
     } finally {
       Element.prototype.getBoundingClientRect = original

@@ -41745,30 +41745,14 @@ ${cue.text}`).join("\n\n")}
   var FADE_EXTRA = { desktop: 170, mobile: 110 };
   var SWIPE_PX = 50;
   var HERO_CSS = "@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }";
-  function findBleedBox(el) {
-    for (let node = el.parentElement; node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
-      const style = getComputedStyle(node);
-      if (style.overflowX !== "visible" || style.overflowY !== "visible") return node;
-    }
-    return null;
-  }
-  function measureBleed(hero) {
+  function measureHeroLayer(hero, layer, prev, extra) {
     const h = hero.getBoundingClientRect();
-    const scale = h.width > 0 && hero.offsetWidth > 0 ? hero.offsetWidth / h.width : 1;
-    const box = findBleedBox(hero);
-    if (box) {
-      const b = box.getBoundingClientRect();
-      return {
-        left: Math.round((h.left - b.left) * scale - box.clientLeft),
-        top: Math.round((h.top - b.top) * scale - box.clientTop + box.scrollTop),
-        width: box.clientWidth
-      };
-    }
-    return {
-      left: Math.round(h.left * scale),
-      top: Math.round((h.top + window.scrollY) * scale),
-      width: document.documentElement.clientWidth
-    };
+    const k = h.width > 0 && hero.offsetWidth > 0 ? h.width / hero.offsetWidth : 1;
+    const l = layer.getBoundingClientRect();
+    const originX = l.left - (prev?.dx ?? 0) * k;
+    const originY = l.top - (prev?.dy ?? 0) * k;
+    const height = Math.max(0, Math.round((h.bottom - originY) / k + extra));
+    return { dx: Math.round(-originX / k), dy: Math.round(-originY / k), height, full: Math.max(height, prev?.full ?? 0) };
   }
   function backdropAt(rundown, channel, now2) {
     if (rundown.length === 0) return void 0;
@@ -41797,24 +41781,40 @@ ${cue.text}`).join("\n\n")}
     const many = slideList.length > 1 && onSlide != null;
     const [hover, setHover] = useState(false);
     const heroRef = useRef(null);
-    const [bleed, setBleed] = useState(null);
+    const layerRef = useRef(null);
+    const extra = isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop;
+    const [geom, setGeom] = useState(null);
+    const geomRef = useRef(null);
     useLayoutEffect(() => {
       const hero = heroRef.current;
-      if (!hero) return;
-      const measure = () => {
-        const next2 = measureBleed(hero);
-        setBleed((prev) => prev && prev.left === next2.left && prev.top === next2.top && prev.width === next2.width ? prev : next2);
+      const layer = layerRef.current;
+      if (!hero || !layer) return;
+      let raf = 0;
+      const measure = (resetFull = false) => {
+        raf = 0;
+        const base = geomRef.current && resetFull ? { ...geomRef.current, full: 0 } : geomRef.current;
+        const next2 = measureHeroLayer(hero, layer, base, extra);
+        const prev = geomRef.current;
+        if (prev && prev.dx === next2.dx && prev.dy === next2.dy && prev.height === next2.height && prev.full === next2.full) return;
+        geomRef.current = next2;
+        setGeom(next2);
       };
-      measure();
-      const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+      const onScroll = () => {
+        if (!raf) raf = requestAnimationFrame(() => measure());
+      };
+      const onResize = () => measure(true);
+      measure(true);
+      const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(onResize) : null;
       ro?.observe(hero);
-      ro?.observe(document.documentElement);
-      window.addEventListener("resize", measure);
+      window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+      window.addEventListener("resize", onResize);
       return () => {
+        if (raf) cancelAnimationFrame(raf);
         ro?.disconnect();
-        window.removeEventListener("resize", measure);
+        window.removeEventListener("scroll", onScroll, { capture: true });
+        window.removeEventListener("resize", onResize);
       };
-    }, []);
+    }, [extra]);
     const touch = useRef(null);
     const onTouchStart = (e) => {
       const p = e.touches[0];
@@ -41883,15 +41883,20 @@ ${cue.text}`).join("\n\n")}
           /* @__PURE__ */ jsxs(
             "div",
             {
+              ref: layerRef,
               "aria-hidden": "true",
               "data-hero-backdrop": "",
-              "data-hero-bleed": bleed ? `${bleed.left},${bleed.top},${bleed.width}` : void 0,
+              "data-hero-layer": geom ? `${geom.dx},${geom.dy},${geom.height}` : void 0,
               style: {
-                position: "absolute",
+                position: "fixed",
                 zIndex: -1,
                 pointerEvents: "none",
-                ...bleed ? { top: -bleed.top, left: -bleed.left, width: bleed.width } : { top: 0, left: 0, right: 0 },
-                height: `calc(100% + ${(bleed?.top ?? 0) + (isMobile ? FADE_EXTRA.mobile : FADE_EXTRA.desktop)}px)`,
+                overflow: "hidden",
+                left: 0,
+                right: 0,
+                top: 0,
+                ...geom && (geom.dx !== 0 || geom.dy !== 0) ? { transform: `translate(${geom.dx}px, ${geom.dy}px)` } : {},
+                height: geom ? geom.height : `calc(100% + ${extra}px)`,
                 WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
                 maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)"
               },
@@ -41905,8 +41910,13 @@ ${cue.text}`).join("\n\n")}
                     {
                       "data-hero-image": c.id,
                       style: {
+                        // Full höjd, förankrad i lagrets nederkant: bilden följer herons
+                        // nederkant när sidan rullar i stället för att skalas om.
                         position: "absolute",
-                        inset: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        height: geom ? geom.full : "100%",
                         background: `url("${url}") center top / cover no-repeat`,
                         opacity: c.id === channel.id ? 0.7 : 0,
                         transition: "opacity 300ms ease"
@@ -41919,9 +41929,11 @@ ${cue.text}`).join("\n\n")}
                   "span",
                   {
                     style: {
+                      // Appens sidovinjett för textens läsbarhet; ingen toppvinjett — den
+                      // läste som ett svart band överst.
                       position: "absolute",
                       inset: 0,
-                      background: "linear-gradient(to right, rgb(var(--base-950, 5 5 7) / 0.62) 0%, rgb(var(--base-950, 5 5 7) / 0) 45%), linear-gradient(to bottom, rgb(var(--base-950, 5 5 7) / 0.55) 0%, rgb(var(--base-950, 5 5 7) / 0) 26%)"
+                      background: "linear-gradient(to right, rgb(var(--base-950, 5 5 7) / 0.62) 0%, rgb(var(--base-950, 5 5 7) / 0) 45%)"
                     }
                   }
                 )
