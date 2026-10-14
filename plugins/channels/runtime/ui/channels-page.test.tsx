@@ -311,6 +311,21 @@ describe('Kanaler-sidans utseende', () => {
     expect([...container.querySelectorAll('[data-channels-hero] button')].some((b) => /^[‹›]$/.test((b.textContent ?? '').trim()))).toBe(false)
   })
 
+  it('tablåblocken: ljusgrå i vila, ljusare på raden under pekaren, pågående tydligt orange', () => {
+    state.channels = [channel(1, 'Första')]
+    state.rundowns = { k1: [item('Terminator', 30), item('Heat', 30), item('Ronin', 30)] }
+    const { container } = page({ channelId: 'k1' })
+    const idle = () => container.querySelector<HTMLElement>('[data-guide-block="idle"]')!
+    const current = container.querySelector<HTMLElement>('[data-guide-block="current"]')!
+    const bg = (el: HTMLElement) => el.style.background.replace(/\s/g, '')
+    expect(bg(idle())).toContain('rgba(49,51,58,0.9)')
+    expect(bg(current)).toContain('rgba(109,52,29,0.96)')
+    fireEvent.mouseEnter(container.querySelector('[data-channel-row="k1"]')!)
+    expect(bg(idle())).toContain('rgba(63,66,75,0.92)')
+    fireEvent.mouseLeave(container.querySelector('[data-channel-row="k1"]')!)
+    expect(bg(idle())).toContain('rgba(49,51,58,0.9)')
+  })
+
   it('en vilande vald kanal är en egen bild bland de sändande', () => {
     state.channels = [channel(1, 'Första'), { ...channel(2, 'Natt'), airWindow: 'late' }]
     const { container } = page({ channelId: 'k2' })

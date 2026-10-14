@@ -11,7 +11,7 @@
  * sidled (min-bredd 640 px). TV: raderna är stationer — ▲▼ byter vald kanal
  * (fokus följer), OK = Titta live, ◀▶ rullar tidsaxeln en halvtimme.
  */
-import { memo, useEffect, type CSSProperties, type KeyboardEvent } from 'react'
+import { memo, useEffect, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import type { ChannelDef } from '../model/channel'
 import { listing, type Slot } from '../model/schedule'
 import type { PoolItem } from '../data/pool'
@@ -121,6 +121,10 @@ interface RowProps {
 
 const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, rowH, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift }: RowProps) {
   const plays = isTv || clickPlays
+  // Raden under pekaren eller i fokus: blocken ett steg ljusare.
+  const [hover, setHover] = useState(false)
+  const [focus, setFocus] = useState(false)
+  const lit = hover || focus
   const { rundown, loading, partial } = useChannelPool(channel)
   useEffect(() => { onRundown(channel.id, rundown, loading, partial) }, [channel.id, rundown, loading, partial, onRundown])
   const slots = rundown.length > 0 ? listing(rundown, channel.airWindow, win.from, win.to) : []
@@ -152,7 +156,10 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
       aria-pressed={selected}
       onClick={() => (plays ? onPlay(channel.id) : onSelect(channel.id))}
       // TV: fokus följer ▲▼, och vald kanal följer fokus.
-      onFocus={isTv ? () => { if (!selected) onSelect(channel.id) } : undefined}
+      onFocus={() => { setFocus(true); if (isTv && !selected) onSelect(channel.id) }}
+      onBlur={() => setFocus(false)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       onKeyDown={onKeyDown}
       style={{
         display: 'grid', gridTemplateColumns: columns, height: rowH, cursor: 'pointer', outline: 'none',
@@ -176,7 +183,7 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
           <span style={{ position: 'absolute', left: 10, top: 0, bottom: 0, display: 'flex', alignItems: 'center', fontSize: fontSize(12, isTv), color: C.textMute }}>
             {loading ? t('guideLoading') : t('guideEmpty')}
           </span>
-        ) : slots.map((slot) => <Block key={`${slot.kind}:${slot.start}`} slot={slot} win={win} now={now} isTv={isTv} t={t} />)}
+        ) : slots.map((slot) => <Block key={`${slot.kind}:${slot.start}`} slot={slot} win={win} now={now} lit={lit} isTv={isTv} t={t} />)}
         {nowPct != null ? (
           <span
             aria-hidden="true"
@@ -191,7 +198,7 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
   )
 })
 
-function Block({ slot, win, now, isTv, t }: { slot: Slot<PoolItem>; win: GuideWindow; now: number; isTv: boolean; t: T }) {
+function Block({ slot, win, now, lit, isTv, t }: { slot: Slot<PoolItem>; win: GuideWindow; now: number; lit: boolean; isTv: boolean; t: T }) {
   const box = blockBox(slot, win)
   if (!box) return null
   const visibleMin = (Math.min(slot.stop, win.to) - Math.max(slot.start, win.from)) / MIN
@@ -204,13 +211,16 @@ function Block({ slot, win, now, isTv, t }: { slot: Slot<PoolItem>; win: GuideWi
   return (
     // Ingen title-attribut: webbvyns tooltip hamnade förskjuten över kanalkolumnen.
     <div
+      data-guide-block={isRest ? 'rest' : current ? 'current' : 'idle'}
       style={{
         position: 'absolute', top: 6, bottom: 6, left: `calc(${box.leftPct}% + 2px)`, width: `calc(${box.widthPct}% - 4px)`,
         boxSizing: 'border-box', padding: '5px 9px', borderRadius: 8, overflow: 'hidden',
         display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 1,
-        // Tät mörk glasyta (läsbar även över herobilden). Vila = streckad kontur.
-        background: isRest ? C.glassDenseSoft : current ? C.glassCurrent : C.glassDense,
-        border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current ? 'rgba(244,132,95,0.45)' : C.glassBorder}`,
+        // Ljusgrå tät yta (läsbar även över herobilden), ett steg ljusare på raden
+        // under pekaren/fokus. Pågående program tydligt orange. Vila = dämpad, streckad.
+        background: isRest ? C.glassDenseSoft : current ? (lit ? C.guideCurrentLit : C.guideCurrent) : lit ? C.guideBlockLit : C.guideBlock,
+        border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current ? C.guideCurrentBorder : C.guideBlockBorder}`,
+        transition: 'background 150ms ease',
         color: isRest ? C.textMute : C.text,
       }}
     >

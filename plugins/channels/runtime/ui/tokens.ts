@@ -31,6 +31,15 @@ export const C = {
   glassDenseSoft: 'rgba(18,18,22,0.6)',
   /** Pågående program: accentton på tät grund, så den sticker ut även över bild. */
   glassCurrent: 'hsl(15 45% 17% / 0.94)',
+  /** Tablåns programblock i vila: ljusare grå (förr bara hovringsläget), läsbar över bilden. */
+  guideBlock: 'rgba(49,51,58,0.9)',
+  /** Programblock på raden under muspekaren/fokus: ett steg ljusare. */
+  guideBlockLit: 'rgba(63,66,75,0.92)',
+  guideBlockBorder: 'rgba(255,255,255,0.13)',
+  /** Pågående program mot de ljusare grannarna: mättare accent och tydlig kant. */
+  guideCurrent: 'rgba(109,52,29,0.96)',
+  guideCurrentLit: 'rgba(132,58,31,0.97)',
+  guideCurrentBorder: 'rgba(244,132,95,0.75)',
   /** OSD och paneler över bild/video. */
   osdBg: 'rgba(18,18,22,0.72)',
   /** Platt mörkning över en bakgrundsbild (ingen gradient). */
