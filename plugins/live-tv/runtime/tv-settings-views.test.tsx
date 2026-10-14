@@ -75,6 +75,18 @@ describe('TV-sidan (handoff §4.2)', () => {
     expect(getTvSettings().streamFallbackAfterS).toBe(0)
     expect(screen.getByTestId('tv-stream-fallback-after')).toHaveTextContent('Never')
   })
+  it('Gruppordning finns som TV-rad och växlar Spellistans ordning → A–Z → Flest kanaler', () => {
+    render(<LiveTvSettingsSection />)
+    const order = screen.getByTestId('tv-group-order')
+    expect(order).toHaveAttribute('data-f')
+    expect(order).toHaveTextContent('Playlist order')
+    fireEvent.click(order)
+    expect(getTvSettings().groupOrder).toBe('name')
+    expect(screen.getByTestId('tv-group-order')).toHaveTextContent('A–Z')
+    fireEvent.click(screen.getByTestId('tv-group-order'))
+    expect(getTvSettings().groupOrder).toBe('count')
+    expect(screen.getByTestId('tv-group-order')).toHaveTextContent('Most channels')
+  })
   it('sidan är rader: två växlar, PLAYLISTS-raden med meta och sammanfattning, M3U/Xtream-raderna — allt stationer', () => {
     render(<LiveTvSettingsSection />)
     expect(screen.getByRole('switch', { name: 'Use as home page' })).toHaveAttribute('data-f')

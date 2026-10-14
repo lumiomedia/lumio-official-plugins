@@ -21,6 +21,7 @@ describe('tv-settings-store', () => {
       startView: 'home',
       streamFallback: true,
       streamFallbackAfterS: 5,
+      groupOrder: 'playlist',
     })
     expect(getGuideMode()).toBe('now')
     expect(getActivePlaylistId()).toBeNull()
@@ -49,6 +50,18 @@ describe('tv-settings-store', () => {
     expect(nextFallbackAfter(5)).toBe(10)
     expect(nextFallbackAfter(15)).toBe(0)
     expect(nextFallbackAfter(0)).toBe(3)
+  })
+  it('gruppordningen: spellistans ordning som standard, sparas, ogiltigt faller tillbaka', () => {
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { numericZap: false })
+    expect(getTvSettings().groupOrder).toBe('playlist')
+    setTvSettings({ groupOrder: 'name' })
+    expect(getTvSettings().groupOrder).toBe('name')
+    setTvSettings({ previewEnabled: false })
+    expect(getTvSettings().groupOrder).toBe('name')
+    setTvSettings({ groupOrder: 'count' })
+    expect(getTvSettings().groupOrder).toBe('count')
+    writePluginJson(LIVE_TV_PLUGIN_ID, TV_SETTINGS_KEY, { groupOrder: 'size' })
+    expect(getTvSettings().groupOrder).toBe('playlist')
   })
   it('sparar delvisa ändringar', () => {
     setTvSettings({ previewEnabled: false })

@@ -1,4 +1,5 @@
 import type { ListCuration } from './live-tv-data'
+import { sortGroups, type GroupOrder } from './group-order'
 
 /**
  * Rena funktioner för kategorikuratering (spec 2026-09-24): dolda grupper
@@ -85,25 +86,34 @@ export function applyCuration<T extends { group: string }>(channels: readonly T[
 
 /**
  * Panelens och menyns underlag ur listans OKURATERADE gruppkvitto: dolda
- * borttagna, ihopslagningar summerade, sorterat efter antal fallande sedan
- * namn. En merge vars grupper alla saknas i källan faller bort.
+ * borttagna, ihopslagningar summerade, sorterat efter gruppordningen (`mode`,
+ * standard antal fallande sedan namn). En merge vars grupper alla saknas i
+ * källan faller bort. `order` är källans spellisteordning (se
+ * `rawGroupOrderFor`); en merge står på sin tidigaste medlems plats.
  */
 export function curatedGroupCounts(
   groups: readonly { name: string; count: number }[],
   curation: ListCuration | undefined,
+  mode: GroupOrder = 'count',
+  order?: ReadonlyMap<string, number>,
 ): { name: string; count: number }[] {
   const hidden = new Set(curation?.hidden ?? [])
   const renamed = curation ? mergeNameFor(curation) : new Map<string, string>()
-  const counts = new Map<string, number>()
+  const entries = new Map<string, { name: string; count: number; firstIndex?: number }>()
   for (const { name, count } of groups) {
     const merged = renamed.get(name)
     if (merged === undefined && hidden.has(name)) continue
     const target = merged ?? name
-    counts.set(target, (counts.get(target) ?? 0) + count)
+    const at = order?.get(name)
+    const entry = entries.get(target)
+    if (!entry) {
+      entries.set(target, { name: target, count, firstIndex: at })
+      continue
+    }
+    entry.count += count
+    if (at !== undefined && (entry.firstIndex === undefined || at < entry.firstIndex)) entry.firstIndex = at
   }
-  return [...counts.entries()]
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  return sortGroups([...entries.values()], mode).map(({ name, count }) => ({ name, count }))
 }
 
 /**

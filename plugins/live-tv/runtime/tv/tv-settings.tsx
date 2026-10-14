@@ -7,6 +7,7 @@ import { TV, Toggle, dp, station } from './tv-ui'
 import { useTvText } from './tv-strings'
 import { BANNER_HIDE_OPTIONS, nextFallbackAfter, setGuideMode, setTvSettings, useGuideMode, type BannerHideMs, type GuideMode, type TvSettings } from './tv-settings-store'
 import { ContentTab, EpgTab, Heading, ParentalTab, PlaylistsTab, Row } from './settings-tabs'
+import { groupOrderLabelKey, nextGroupOrder } from '../group-order'
 import { TvSettingsPhone } from './mobile/settings-phone'
 import { useNewGuideSurface } from './guide-surface'
 import { SportKeySettingsTv } from '../sport/sport-key-settings'
@@ -113,6 +114,7 @@ function AppearanceTab({ settings, tt }: { settings: TvSettings; tt: TT }) {
         <Row testId="setting-bannerHideMs" label={tt('settingBannerHide')} right={settings.bannerHideMs === 0 ? tt('never') : tt('seconds', { s: settings.bannerHideMs / 1000 })} onOk={() => setTvSettings({ bannerHideMs: nextBanner(settings.bannerHideMs) })} />
         <Row testId="setting-streamFallback" label={tt('settingStreamFallback')} right={<Toggle on={settings.streamFallback} />} onOk={() => setTvSettings({ streamFallback: !settings.streamFallback })} />
         <Row testId="setting-streamFallbackAfterS" label={tt('settingStreamFallbackAfter')} right={settings.streamFallbackAfterS === 0 ? tt('never') : tt('seconds', { s: settings.streamFallbackAfterS })} onOk={() => setTvSettings({ streamFallbackAfterS: nextFallbackAfter(settings.streamFallbackAfterS) })} />
+        <Row testId="setting-groupOrder" label={tt('settingGroupOrder')} right={tt(groupOrderLabelKey(settings.groupOrder))} onOk={() => setTvSettings({ groupOrder: nextGroupOrder(settings.groupOrder) })} />
       </section>
     </>
   )

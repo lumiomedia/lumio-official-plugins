@@ -50,6 +50,7 @@ import { PlaylistCard, playlistHost } from './playlist-card'
 import { TvSettingsPage } from './tv-settings-views'
 import { FALLBACK_AFTER_OPTIONS, setTvSettings, useTvSettings, type FallbackAfterS } from './tv/tv-settings-store'
 import { START_VIEWS, startViewLabelKey } from './tv/start-view'
+import { GROUP_ORDERS, groupOrderLabelKey, sanitizeGroupOrder } from './group-order'
 import { useTvText } from './tv/tv-strings'
 
 const HOME_OVERRIDE_PLUGIN_ID = 'com.lumio.live-tv'
@@ -267,6 +268,15 @@ function DesktopPage() {
           options={FALLBACK_AFTER_OPTIONS.map((s) => ({ key: String(s), label: s === 0 ? tt('never') : tt('seconds', { s }) }))}
           value={String(tvSettings.streamFallbackAfterS)}
           onChange={(key) => setTvSettings({ streamFallbackAfterS: Number(key) as FallbackAfterS })}
+        />
+        {/* Gruppordningen (2026-10-14). Samma lager som TV:ns och telefonens rader. */}
+        <LtChoiceRow
+          testId="lt-group-order"
+          label={tt('settingGroupOrder')}
+          desc={tt('settingGroupOrderHint')}
+          options={GROUP_ORDERS.map((mode) => ({ key: mode, label: tt(groupOrderLabelKey(mode)) }))}
+          value={tvSettings.groupOrder}
+          onChange={(key) => setTvSettings({ groupOrder: sanitizeGroupOrder(key) })}
         />
       </LtRows>
 
