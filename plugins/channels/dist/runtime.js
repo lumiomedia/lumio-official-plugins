@@ -1100,6 +1100,9 @@
     const resetTimePos = useCallback(() => {
       setTimePos(0);
     }, []);
+    const resetDuration = useCallback(() => {
+      setDuration(0);
+    }, []);
     const resetEnded = useCallback(() => {
       setEnded(false);
     }, []);
@@ -1127,6 +1130,7 @@
       secondarySubText: "",
       resetEnded,
       resetTimePos,
+      resetDuration,
       playbackRestarted,
       playbackRestartedToken,
       pausedForCache,
@@ -2138,6 +2142,9 @@
     const resetFileLoaded = useCallback(() => {
       setFileLoaded(false);
     }, []);
+    const resetDuration = useCallback(() => {
+      setDuration(0);
+    }, []);
     const resetEnded = useCallback(() => {
       setEnded(false);
     }, []);
@@ -2162,6 +2169,7 @@
       fileLoaded,
       fileLoadedToken,
       resetTimePos,
+      resetDuration,
       resetEnded,
       playbackRestarted,
       playbackRestartedToken,
@@ -24364,9 +24372,35 @@
       }
     };
   }
+  function startsPastFileEnd(start2, duration2) {
+    if (!Number.isFinite(duration2) || duration2 <= 0) return false;
+    if (start2 == null || !Number.isFinite(start2)) return false;
+    return start2 >= duration2 - PAST_END_SLACK_S;
+  }
+  function createDurationReporter() {
+    let url = null;
+    let tokenAtSwitch = 0;
+    let reported = false;
+    return {
+      observe(o) {
+        if (o.url !== url) {
+          url = o.url;
+          tokenAtSwitch = o.fileLoadedToken;
+          reported = false;
+          return null;
+        }
+        if (reported || !o.fileLoaded || o.fileLoadedToken === tokenAtSwitch) return null;
+        if (!Number.isFinite(o.duration) || o.duration <= 0) return null;
+        reported = true;
+        return o.duration;
+      }
+    };
+  }
+  var PAST_END_SLACK_S;
   var init_player_silent_start = __esm({
     "lib/player-silent-start.ts"() {
       init_start_watchdog();
+      PAST_END_SLACK_S = 15;
     }
   });
 
@@ -27998,7 +28032,7 @@ ${cue.text}`).join("\n\n")}
     } catch {
     }
   }
-  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, onStartProgress, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
+  function VideoPlayerModal({ url, filename, title, onClose, imdbId, tmdbId, mediaType, season, episode, mediaId, mediaTitle, mediaSource, posterUrl, backdropUrl, year, initialTime, expectedDurationSeconds, onFirstPlay, onStartProgress, onDurationKnown, hideStartSplash, forceProxy, requestHeaders, onTimeUpdate, onOutroStart, onCreditsOpenDetails, onCreditsFinished, episodes, streams, onLoadFailed, onPlaybackEnded, onOpenedExternally, skipHomeKitOnClose, skipHomeKitOnOpen, overlayContent, autoFullscreen, sourceInfoHash, playbackTraceId, scrubPreview }) {
     const STILL_WATCHING_CLOSE_SECONDS = 20;
     useEffect(() => {
       if (mediaType !== "tv" || season == null || episode == null || !tmdbId) return;
@@ -29928,6 +29962,7 @@ ${cue.text}`).join("\n\n")}
       const silentReload = silentReloadPendingRef.current;
       silentReloadPendingRef.current = false;
       mpv.resetTimePos();
+      mpv.resetDuration();
       mpv.resetFileLoaded();
       mpv.resetPlaybackRestarted();
       mpv.resetFirstFrameRendered();
@@ -30011,6 +30046,11 @@ ${cue.text}`).join("\n\n")}
     useEffect(() => {
       if (!useMpv) return;
       if (!audioOnlyTrackerRef.current.observe({ url, timePos: mpv.timePos, firstFrame: mpv.firstFrameRendered })) return;
+      if (mpv.fileLoaded && startsPastFileEnd(initialTime, mpv.duration)) {
+        void fetch(`/api/debug-log?msg=${encodeURIComponent(`[silent-reload] hoppas \xF6ver: start ${Math.round(initialTime ?? 0)} s efter filens slut (${Math.round(mpv.duration)} s)`)}`).catch(() => {
+        });
+        return;
+      }
       void fetch(`/api/debug-log?msg=${encodeURIComponent(`[silent-reload] ljud utan bild i 3 s \u2014 laddar om samma str\xF6m tyst (${filename ?? url.slice(-40)})`)}`).catch(() => {
       });
       silentReloadPendingRef.current = true;
@@ -30040,6 +30080,14 @@ ${cue.text}`).join("\n\n")}
       emitStreamTimeline();
       onFirstPlay?.();
     }, [hasStarted, mpv.timePos, mpvRevealPlaybackReady, mpvStartupHoldReady, onFirstPlay, useMpv]);
+    const durationReporterRef = useRef(createDurationReporter());
+    const onDurationKnownRef = useRef(onDurationKnown);
+    onDurationKnownRef.current = onDurationKnown;
+    useEffect(() => {
+      if (!useMpv) return;
+      const d = durationReporterRef.current.observe({ url, duration: mpv.duration, fileLoaded: mpv.fileLoaded, fileLoadedToken: mpv.fileLoadedToken });
+      if (d != null) onDurationKnownRef.current?.(d);
+    }, [useMpv, url, mpv.duration, mpv.fileLoaded, mpv.fileLoadedToken]);
     const startSignalRef = useRef({ url: "", audio: false, frame: false, firstPos: Number.NaN });
     useEffect(() => {
       if (!useMpv || !onStartProgress) return;
@@ -42799,11 +42847,11 @@ ${cue.text}`).join("\n\n")}
     if (position - startedAt >= MIN_PLAYED_S2) return "ended";
     return startedPastShortFile(startedAt, duration2, input.runtimeS) ? "ended" : "failed";
   }
-  var PAST_END_SLACK_S = 15;
+  var PAST_END_SLACK_S2 = 15;
   var SHORT_FILE_RATIO = 0.8;
   function startedPastShortFile(startedAt, duration2, runtimeS) {
     if (!Number.isFinite(duration2) || duration2 <= 0) return false;
-    if (startedAt < duration2 - PAST_END_SLACK_S) return false;
+    if (startedAt < duration2 - PAST_END_SLACK_S2) return false;
     return runtimeS == null || !(runtimeS > 0) || duration2 >= runtimeS * SHORT_FILE_RATIO;
   }
   var NEAR_BOUNDARY_MS = 18e4;
@@ -42824,6 +42872,12 @@ ${cue.text}`).join("\n\n")}
       if (slot.item.play.type === "library" || slot.item.play.type === "debrid") out.push({ item: slot.item, allowCatalog: allowsCatalog(c) });
     }
     return out;
+  }
+  function pastEndAction(input) {
+    const { initialTime, duration: duration2, runtimeS } = input;
+    if (!Number.isFinite(duration2) || duration2 <= 0) return null;
+    if (!(initialTime >= duration2 - PAST_END_SLACK_S2)) return null;
+    return runtimeS != null && runtimeS > 0 && duration2 < runtimeS * SHORT_FILE_RATIO ? "other-version" : "ended";
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/play/player-state.ts
@@ -42874,6 +42928,13 @@ ${cue.text}`).join("\n\n")}
         if (!plan) return s;
         const key = slotKey(plan.slot);
         const urls = a.url ? [...triedFor(s, plan.slot), a.url] : triedFor(s, plan.slot);
+        const pastEndBefore = !!s.tried && s.tried.key === key && !!s.tried.pastEnd;
+        if (pastEndBefore || a.pastEnd && !a.url) {
+          return { ...s, status: "between", onScreen: null, pending: null, tried: { key, urls, pastEnd: true }, noSignal: null, between: { slot: plan.slot, until: plan.slot.stop } };
+        }
+        if (a.pastEnd && a.url) {
+          return { ...s, tried: { key, urls, pastEnd: true }, pending: null, status: "resolving", request: next(s, { mode: plan.mode }) };
+        }
         if (a.url && urls.length < MAX_VERSIONS) {
           return { ...s, tried: { key, urls }, pending: null, status: "resolving", request: next(s, { mode: plan.mode }) };
         }
@@ -43150,6 +43211,43 @@ ${cue.text}`).join("\n\n")}
       };
     }, [anchorRef, session2]);
     return bottom;
+  }
+  var HOST_MENU_SELECTOR = ".mc-chip";
+  var MENU_CLEAR_GAP_PX = 8;
+  var MENU_TOP_BAND_PX = 160;
+  function menuClearLeft(anchor, menu, scale = 1, defaultLeftPx = 16) {
+    if (!menu || menu.width <= 0 && menu.height <= 0) return null;
+    const k = scale > 0 ? scale : 1;
+    if ((menu.left + menu.right) / 2 > anchor.left + anchor.width / 2) return null;
+    if (menu.bottom <= anchor.top || (menu.top - anchor.top) / k > MENU_TOP_BAND_PX) return null;
+    return Math.max(defaultLeftPx, Math.round((menu.right - anchor.left) / k) + MENU_CLEAR_GAP_PX);
+  }
+  function useHostMenuClearLeft(anchorRef, active3) {
+    const [left, setLeft] = useState(null);
+    useEffect(() => {
+      if (!active3) {
+        setLeft(null);
+        return;
+      }
+      const read10 = () => {
+        const anchor = anchorRef.current;
+        if (!anchor) return;
+        const menu = document.querySelector(HOST_MENU_SELECTOR);
+        const a = anchor.getBoundingClientRect();
+        const scale = anchor.offsetWidth > 0 && a.width > 0 ? a.width / anchor.offsetWidth : 1;
+        const next2 = menuClearLeft(a, menu ? menu.getBoundingClientRect() : null, scale);
+        setLeft((prev) => prev === next2 ? prev : next2);
+      };
+      read10();
+      const timer3 = window.setInterval(read10, 500);
+      window.addEventListener("resize", read10);
+      return () => {
+        window.clearInterval(timer3);
+        window.removeEventListener("resize", read10);
+        setLeft(null);
+      };
+    }, [anchorRef, active3]);
+    return left;
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tuning-card.tsx
@@ -43727,10 +43825,17 @@ ${cue.text}`).join("\n\n")}
     const hostControls = useHostControls(osdRef, zapOn || guideOpen || awaitingPicture(state2) ? null : playerKey);
     const osdIdleVisible = hostControls ? hostControls.visible : osdVisible;
     const hostTopbar = useHostTopbarBottom(osdRef, zapOn || guideOpen || awaitingPicture(state2) ? null : playerKey);
+    const menuLeft = useHostMenuClearLeft(osdRef, !(onScreen && Player));
     const osdShownRef = useRef(true);
     osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== "playing";
     const endHandledFor = useRef(null);
     const durationNotedFor = useRef(null);
+    const noteFileDuration = useCallback((seq, ref, duration2) => {
+      if (durationNotedFor.current === seq || !Number.isFinite(duration2) || duration2 <= 0) return;
+      durationNotedFor.current = seq;
+      const next2 = noteDuration(readRuntimeFixes(), ref, duration2);
+      if (next2) writeRuntimeFixes(next2);
+    }, []);
     const commitNumber = useCallback((n) => {
       setDigits("");
       const target2 = channelByNumber(channelsRef.current, n);
@@ -43901,6 +44006,7 @@ ${cue.text}`).join("\n\n")}
         visible: osdIdleVisible || status !== "playing",
         lift: hostControls?.lift ?? null,
         topbarBottom: hostTopbar,
+        menuLeft,
         channel,
         meta: metaParts.join(" \xB7 "),
         title: described?.slot.item.title ?? null,
@@ -43951,13 +44057,23 @@ ${cue.text}`).join("\n\n")}
           onClose,
           onPlaybackEnded: () => dispatch({ type: "advance", seq, now: Date.now() }),
           onStartProgress: () => noteProgress(seq),
+          onDurationKnown: (duration2) => {
+            noteFileDuration(seq, slot.item.ref, duration2);
+            if (endHandledFor.current === seq) return;
+            const action = pastEndAction({ initialTime: onScreen.initialTime, duration: duration2, runtimeS: slot.item.runtimeMin * 60 });
+            if (!action) return;
+            endHandledFor.current = seq;
+            console.info(`[channels] start ${Math.round(onScreen.initialTime)} s efter filens slut (${Math.round(duration2)} s): ${action}`);
+            if (action === "ended") {
+              dispatch({ type: "advance", seq, now: Date.now() });
+              return;
+            }
+            resolver.forget(slot.item.ref);
+            dispatch({ type: "failed", seq, now: Date.now(), url: playable.url, pastEnd: true });
+          },
           onTimeUpdate: (position, duration2) => {
             noteProgress(seq);
-            if (durationNotedFor.current !== seq && Number.isFinite(duration2) && duration2 > 0) {
-              durationNotedFor.current = seq;
-              const next2 = noteDuration(readRuntimeFixes(), slot.item.ref, duration2);
-              if (next2) writeRuntimeFixes(next2);
-            }
+            noteFileDuration(seq, slot.item.ref, duration2);
             const cur = stateRef.current;
             if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: "progress", seq, position });
             if (endHandledFor.current === seq) return;
@@ -43969,7 +44085,7 @@ ${cue.text}`).join("\n\n")}
               return;
             }
             resolver.forget(slot.item.ref);
-            dispatch({ type: "failed", seq, now: Date.now(), url: playable.url });
+            dispatch({ type: "failed", seq, now: Date.now(), url: playable.url, pastEnd: pastEndAction({ initialTime: onScreen.initialTime, duration: duration2 }) != null });
           },
           onFirstPlay: () => {
             if (slot.item.play.type === "stream") rememberPlayedStream(playable.rememberToken);
@@ -44112,8 +44228,8 @@ ${cue.text}`).join("\n\n")}
                 // macOS-titelraden/trafikljusen, Android-inset och TV-inset ingår).
                 position: "absolute",
                 top: props.topbarBottom != null && props.topbarBottom > 0 ? `calc(${props.topbarBottom}px + 0.5rem)` : props.hostBar ? "calc(52px + 0.5rem)" : "calc(var(--page-top-line, 1rem) + 0.25rem)",
-                left: "1rem",
-                maxWidth: "min(26rem, calc(100vw - 6rem))",
+                left: props.menuLeft != null ? `${props.menuLeft}px` : "1rem",
+                maxWidth: props.menuLeft != null ? `min(26rem, calc(100vw - ${props.menuLeft}px - 5rem))` : "min(26rem, calc(100vw - 6rem))",
                 display: "flex",
                 alignItems: "center",
                 gap: "0.6rem",
@@ -45282,7 +45398,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.16",
+    version: "0.1.17",
     description: S.description,
     preinstalled: false,
     register(ctx) {

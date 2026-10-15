@@ -132,4 +132,44 @@ describe('spelarens tillstånd', () => {
     r = playerReducer(r, { type: 'reveal', seq: 0 })
     expect(awaitingPicture(r)).toBe(false)
   })
+
+  describe('filen kortare än platsen (liveläget efter filens slut)', () => {
+    it('en annan version provas en gång; ingen annan = Programmet är slut, aldrig Ingen signal', () => {
+      let s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000, url: 'u1', pastEnd: true })
+      expect(s.status).toBe('resolving')
+      expect(s.request.seq).toBe(1)
+      expect(triedFor(s, plan(1).slot)).toEqual(['u1'])
+      s = playerReducer(s, { type: 'planned', plan: plan(1) })
+      // Värden hade ingen annan version (exclude u1): slut, inte Ingen signal.
+      s = playerReducer(s, { type: 'failed', seq: 1, now: 51_000 })
+      expect(s.status).toBe('between')
+      expect(s.between?.until).toBe(100_000)
+      expect(s.noSignal).toBeNull()
+      expect(s.request.seq).toBe(1)
+    })
+
+    it('även den andra versionen för kort: slut, ingen tredje', () => {
+      let s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000, url: 'u1', pastEnd: true })
+      s = playerReducer(s, { type: 'planned', plan: plan(1) })
+      s = playerReducer(s, { type: 'resolved', seq: 1, playable: { url: 'u2' } })
+      s = playerReducer(s, { type: 'failed', seq: 1, now: 51_000, url: 'u2', pastEnd: true })
+      expect(s.status).toBe('between')
+      expect(s.request.seq).toBe(1)
+      expect(s.onScreen).toBeNull()
+    })
+
+    it('den andra versionen faller på annat sätt: också slut (bara EN extra version)', () => {
+      let s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000, url: 'u1', pastEnd: true })
+      s = playerReducer(s, { type: 'planned', plan: plan(1) })
+      s = playerReducer(s, { type: 'resolved', seq: 1, playable: { url: 'u2' } })
+      s = playerReducer(s, { type: 'failed', seq: 1, now: 51_000, url: 'u2' })
+      expect(s.status).toBe('between')
+    })
+
+    it('kanalbyte nollställer: nästa gång provas versionerna på nytt', () => {
+      let s = playerReducer(playing(), { type: 'failed', seq: 0, now: 50_000, url: 'u1', pastEnd: true })
+      s = playerReducer(s, { type: 'goto', channelId: 'c1', mode: 'live' })
+      expect(s.tried).toBeNull()
+    })
+  })
 })

@@ -415,6 +415,64 @@ describe('kanalspelaren: tablån längre än filen', () => {
   })
 })
 
+describe('kanalspelaren: filen mycket kortare än platsen (South Park S08E03 på en 100-minutersplats)', () => {
+  const setup = () => {
+    const ep = { ...library('sp'), runtimeMin: 100, runtimeKnown: false }
+    state.rundowns = { k1: [ep] }
+    vi.useFakeTimers({ toFake: ['Date'] })
+    let t = Date.now()
+    while (true) {
+      const slot = programmeAt([ep], channels[0]!.airWindow, t)
+      if (slot.kind === 'programme' && slot.minsIn >= 94 && slot.minsIn < 96) break
+      t += 30_000
+    }
+    vi.setSystemTime(t)
+  }
+
+  it('längden före första bilden: samma fil öppnas aldrig igen; ingen annan version = Programmet är slut', async () => {
+    setup()
+    state.resolve = vi.fn(async (item: PoolItem, exclude?: string[]) => (exclude && exclude.length > 0 ? null : { url: `http://${item.ref}` }))
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    expect(Number(state.props?.initialTime)).toBeGreaterThan(5600)
+    await act(async () => { state.props?.onDurationKnown(1331) })
+    await flush()
+    // Andra uppslaget förbi den provade adressen, inget tredje.
+    expect(state.resolve).toHaveBeenCalledTimes(2)
+    expect(state.resolve.mock.calls[1]![1]).toEqual(['http://sp'])
+    expect(screen.queryByTestId('host-player')).toBeNull()
+    expect(document.querySelector('[data-channels-nosignal]')).toBeNull()
+    expect(document.querySelector('[data-channels-between]')).toBeTruthy()
+    expect(state.fixes.sp).toBe(1331)
+  })
+
+  it('en annan version provas en gång; även den för kort = slut, ingen tredje', async () => {
+    setup()
+    state.resolve = vi.fn(async (_item: PoolItem, exclude?: string[]) => ({ url: exclude && exclude.length > 0 ? 'http://sp-2' : 'http://sp-1' }))
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    await act(async () => { state.props?.onDurationKnown(1331) })
+    await flush()
+    expect((await screen.findByTestId('first-play')).getAttribute('data-url')).toBe('http://sp-2')
+    await act(async () => { state.props?.onDurationKnown(1290) })
+    await flush()
+    expect(state.resolve).toHaveBeenCalledTimes(2)
+    expect(screen.queryByTestId('host-player')).toBeNull()
+    expect(document.querySelector('[data-channels-between]')).toBeTruthy()
+    expect(document.querySelector('[data-channels-nosignal]')).toBeNull()
+  })
+
+  it('längd som räcker (start före filens slut): spelar vidare', async () => {
+    setup()
+    render(<ChannelPlayer channels={channels} initialChannelId="k1" mode="live" onClose={() => {}} />)
+    await screen.findByTestId('first-play')
+    await act(async () => { state.props?.onDurationKnown(6100) })
+    await flush()
+    expect(state.resolve).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('host-player')).toBeTruthy()
+  })
+})
+
 describe('kanalspelaren: IPTV-VOD', () => {
   it('kanal utan VOD som källa slår upp biblioteket med allowCatalog: false; med VOD sant', async () => {
     state.rundowns = { k1: [library('l1')], k2: [library('l2')] }

@@ -125,3 +125,20 @@ export function neighbourPrefetch(
   }
   return out
 }
+
+/**
+ * Filens längd kom från värden (onDurationKnown, före första bilden). Ligger
+ * liveläget vid/efter filens slut finns inget att spela i den här filen:
+ * - filen mycket kortare än platsen (fel version eller fel längd i tablån) →
+ *   'other-version': EN annan version provas (värden får de provade adresserna),
+ * - annars är programmet helt enkelt slut → 'ended' ("Programmet är slut",
+ *   live igen vid gränsen).
+ * Före slutet: null (spela som vanligt). South Park S08E03 2026-10-15:
+ * 22-minutersfil på en 100-minutersplats, öppnad på 5723 s — två gånger.
+ */
+export function pastEndAction(input: { initialTime: number; duration: number; runtimeS?: number }): 'other-version' | 'ended' | null {
+  const { initialTime, duration, runtimeS } = input
+  if (!Number.isFinite(duration) || duration <= 0) return null
+  if (!(initialTime >= duration - PAST_END_SLACK_S)) return null
+  return runtimeS != null && runtimeS > 0 && duration < runtimeS * SHORT_FILE_RATIO ? 'other-version' : 'ended'
+}

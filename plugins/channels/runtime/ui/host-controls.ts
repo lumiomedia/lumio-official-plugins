@@ -156,3 +156,55 @@ export function useHostTopbarBottom(anchorRef: RefObject<HTMLElement | null>, se
   }, [anchorRef, session])
   return bottom
 }
+
+/** Appens menyknapp (rund ikonknapp/menypill, fast placerad uppe i ett hörn). */
+export const HOST_MENU_SELECTOR = '.mc-chip'
+/** Luft mellan menyknappen och kanalpillen (px). */
+export const MENU_CLEAR_GAP_PX = 8
+/** Menyknappar längre ner än så här under OSD:ns överkant krockar inte med pillen (px). */
+const MENU_TOP_BAND_PX = 160
+
+interface Box { left: number; right: number; top: number; bottom: number; width: number; height: number }
+
+/**
+ * Var kanalpillen ska börja (px från OSD:ns vänsterkant) för att inte ligga
+ * under appens menyknapp, eller null = ingen knapp i vägen (pillens vanliga
+ * 1rem). Utan appens spelare ligger kanalsidans skärmar (Ingen signal,
+ * Programmet är slut, vila) under appens toppkrom, och den runda menyknappen
+ * ritades ovanpå pillen (2026-10-15). Bara en knapp i vänstra halvan, uppe
+ * vid pillen, flyttar den — till höger om knappen. Skalan räknas bort.
+ */
+export function menuClearLeft(anchor: Box, menu: Box | null, scale = 1, defaultLeftPx = 16): number | null {
+  if (!menu || (menu.width <= 0 && menu.height <= 0)) return null
+  const k = scale > 0 ? scale : 1
+  if ((menu.left + menu.right) / 2 > anchor.left + anchor.width / 2) return null
+  if (menu.bottom <= anchor.top || (menu.top - anchor.top) / k > MENU_TOP_BAND_PX) return null
+  return Math.max(defaultLeftPx, Math.round((menu.right - anchor.left) / k) + MENU_CLEAR_GAP_PX)
+}
+
+/** Följer appens menyknapp medan `active` (ingen värdspelare monterad). */
+export function useHostMenuClearLeft(anchorRef: RefObject<HTMLElement | null>, active: boolean): number | null {
+  const [left, setLeft] = useState<number | null>(null)
+  useEffect(() => {
+    if (!active) { setLeft(null); return }
+    const read = () => {
+      const anchor = anchorRef.current
+      if (!anchor) return
+      const menu = document.querySelector<HTMLElement>(HOST_MENU_SELECTOR)
+      const a = anchor.getBoundingClientRect()
+      const scale = anchor.offsetWidth > 0 && a.width > 0 ? a.width / anchor.offsetWidth : 1
+      const next = menuClearLeft(a, menu ? menu.getBoundingClientRect() : null, scale)
+      setLeft((prev) => (prev === next ? prev : next))
+    }
+    read()
+    // Knappen kan flyttas (dras till ett annat hörn), monteras sent eller döljas.
+    const timer = window.setInterval(read, 500)
+    window.addEventListener('resize', read)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('resize', read)
+      setLeft(null)
+    }
+  }, [anchorRef, active])
+  return left
+}

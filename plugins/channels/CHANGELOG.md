@@ -1,3 +1,8 @@
+## 0.1.17
+
+- En kanal som hamnar efter filens slut (filen kortare än tablåns plats, t.ex. ett avsnitt på en filmplats) öppnar inte längre samma fil om och om igen. En annan version provas en gång; finns ingen visas "Programmet är slut · Härnäst" och kanalen går live vid nästa programgräns. Filens verkliga längd sparas och gäller från nästa tablåbygge (kräver appen med onDurationKnown).
+- Kanalpillen på skärmarna utan spelare (Ingen signal, Programmet är slut, vila) läggs till höger om appens menyknapp i stället för under den.
+
 ## 0.1.16
 
 - Heron hoppar inte längre vid kanalbyte: LIVE- och VILA-brickan har samma höjd och brickraden bryts aldrig.

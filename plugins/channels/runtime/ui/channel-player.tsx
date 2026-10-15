@@ -18,14 +18,14 @@ import type { PoolItem } from '../data/pool'
 import { programmeAt } from '../model/schedule'
 import { createLatestGate } from '../play/resolve'
 import { channelByNumber, createDigitBuffer, NOISE_MS, OSD_IDLE_MS } from '../play/zap-logic'
-import { allowsCatalog, endOfSourceAction, NEAR_BOUNDARY_MS, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
+import { allowsCatalog, endOfSourceAction, NEAR_BOUNDARY_MS, pastEndAction, neighbourPrefetch, NEIGHBOUR_PREFETCH_DELAY_MS, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, type PlayMode } from '../play/player-logic'
 import { awaitingPicture, initialPlayerState, playerReducer, replanOnNewRundown, triedFor, TRUSTED_FIRST_PLAY_MS, type Request } from '../play/player-state'
 import { readRuntimeFixes, readZapMemory, rememberPlayedStream, resolver, writeRuntimeFixes, writeZapMemory } from '../host'
 import { noteDuration } from '../data/runtime-fix'
 import { readCachedRundown, useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { GuideOverlay } from './guide-overlay'
-import { HIDE_HOST_CHROME_CSS, useHostControls, useHostTopbarBottom } from './host-controls'
+import { HIDE_HOST_CHROME_CSS, useHostControls, useHostMenuClearLeft, useHostTopbarBottom } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
 import { pickInitTarget, tvType } from './tv'
 import { TuningCard } from './tuning-card'
@@ -385,12 +385,21 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   const osdIdleVisible = hostControls ? hostControls.visible : osdVisible
   // Kanalpillen under värdens topprad (mätt; raden kan ligga lägre än sina 52 px).
   const hostTopbar = useHostTopbarBottom(osdRef, zapOn || guideOpen || awaitingPicture(state) ? null : playerKey)
+  // Utan appens spelare ligger skärmarna under appens toppkrom: pillen förbi menyknappen.
+  const menuLeft = useHostMenuClearLeft(osdRef, !(onScreen && Player))
   // Samma villkor som OSD:n renderas med.
   const osdShownRef = useRef(true)
   osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== 'playing'
   // En källa avgörs en gång per visning (onTimeUpdate tickar vidare i slutet).
   const endHandledFor = useRef<number | null>(null)
   const durationNotedFor = useRef<number | null>(null)
+  /** Filens verkliga längd: gäller posten från nästa poolbygge (en gång per visning). */
+  const noteFileDuration = useCallback((seq: number, ref: string, duration: number) => {
+    if (durationNotedFor.current === seq || !Number.isFinite(duration) || duration <= 0) return
+    durationNotedFor.current = seq
+    const next = noteDuration(readRuntimeFixes(), ref, duration)
+    if (next) writeRuntimeFixes(next)
+  }, [])
 
   // Sifferval: bufferten levererar efter 1,5 s eller tre siffror.
   const commitNumber = useCallback((n: number) => {
@@ -591,6 +600,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       visible={osdIdleVisible || status !== 'playing'}
       lift={hostControls?.lift ?? null}
       topbarBottom={hostTopbar}
+      menuLeft={menuLeft}
       channel={channel}
       meta={metaParts.join(' · ')}
       title={described?.slot.item.title ?? null}
@@ -654,14 +664,26 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
           // mpv säger aldrig onPlaybackEnded: den står pausad på sista bilden.
           // Värdens startvakt: tiden går (ljud) eller bild renderad — strömmen lever.
           onStartProgress={() => noteProgress(seq)}
+          // Filens längd före första bilden (nyare värdar): ligger liveläget
+          // efter filens slut öppnas den aldrig igen — en annan version en gång,
+          // annars "Programmet är slut" till gränsen.
+          onDurationKnown={(duration: number) => {
+            noteFileDuration(seq, slot.item.ref, duration)
+            if (endHandledFor.current === seq) return
+            const action = pastEndAction({ initialTime: onScreen.initialTime, duration, runtimeS: slot.item.runtimeMin * 60 })
+            if (!action) return
+            endHandledFor.current = seq
+            console.info(`[channels] start ${Math.round(onScreen.initialTime)} s efter filens slut (${Math.round(duration)} s): ${action}`)
+            if (action === 'ended') {
+              dispatch({ type: 'advance', seq, now: Date.now() })
+              return
+            }
+            resolver.forget(slot.item.ref)
+            dispatch({ type: 'failed', seq, now: Date.now(), url: playable.url, pastEnd: true })
+          }}
           onTimeUpdate={(position: number, duration: number) => {
             noteProgress(seq)
-            // Filens verkliga längd: gäller posten från nästa poolbygge (en gång per visning).
-            if (durationNotedFor.current !== seq && Number.isFinite(duration) && duration > 0) {
-              durationNotedFor.current = seq
-              const next = noteDuration(readRuntimeFixes(), slot.item.ref, duration)
-              if (next) writeRuntimeFixes(next)
-            }
+            noteFileDuration(seq, slot.item.ref, duration)
             const cur = stateRef.current
             if (cur.firstPlaySeq === seq && cur.framedSeq !== seq) dispatch({ type: 'progress', seq, position })
             if (endHandledFor.current === seq) return
@@ -673,8 +695,9 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
               return
             }
             // Filen tog slut strax efter start: den här versionen bar inte — nästa version.
+            // Startade den efter filens slut provas bara EN annan version.
             resolver.forget(slot.item.ref)
-            dispatch({ type: 'failed', seq, now: Date.now(), url: playable.url })
+            dispatch({ type: 'failed', seq, now: Date.now(), url: playable.url, pastEnd: pastEndAction({ initialTime: onScreen.initialTime, duration }) != null })
           }}
           onFirstPlay={() => {
             // Först nu, när bilden syns, blir strömvalet ihågkommet (bara strömsök).
@@ -842,6 +865,8 @@ interface OsdProps {
   lift: number | null
   /** Värdens topprads nederkant i px från OSD:ns överkant (mätt); null = okänd. */
   topbarBottom?: number | null
+  /** Utan värdspelare: pillens vänsterkant förbi appens menyknapp (px, mätt); null = 1rem. */
+  menuLeft?: number | null
   channel: ChannelDef
   meta: string
   title: string | null
@@ -886,8 +911,8 @@ function ChannelOsd(props: OsdProps) {
           top: props.topbarBottom != null && props.topbarBottom > 0
             ? `calc(${props.topbarBottom}px + 0.5rem)`
             : props.hostBar ? 'calc(52px + 0.5rem)' : 'calc(var(--page-top-line, 1rem) + 0.25rem)',
-          left: '1rem',
-          maxWidth: 'min(26rem, calc(100vw - 6rem))',
+          left: props.menuLeft != null ? `${props.menuLeft}px` : '1rem',
+          maxWidth: props.menuLeft != null ? `min(26rem, calc(100vw - ${props.menuLeft}px - 5rem))` : 'min(26rem, calc(100vw - 6rem))',
           display: 'flex', alignItems: 'center', gap: '0.6rem',
           padding: '0.35rem 0.9rem 0.35rem 0.35rem', borderRadius: RADIUS.pill,
         }}

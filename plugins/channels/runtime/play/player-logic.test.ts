@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { endOfSourceAction, neighbourPrefetch, startedPastShortFile, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, ZAP_RESOLVE_DELAY_MS } from './player-logic'
+import { endOfSourceAction, pastEndAction, neighbourPrefetch, startedPastShortFile, nextBoundaryAction, rememberZap, resolveDelayMs, startSeconds, stepChannel, ZAP_RESOLVE_DELAY_MS } from './player-logic'
 import type { PoolItem } from '../data/pool'
 import { createChannel, emptyDraft, type ChannelDef } from '../model/channel'
 
@@ -85,5 +85,19 @@ describe('källans slut (mpv ger inget onPlaybackEnded)', () => {
     // Start en bit före slutet men filen tog slut direkt: trasig.
     expect(endOfSourceAction({ position: 1354, duration: 1354, startedAt: 1320, runtimeS: 1500 })).toBe('failed')
     expect(startedPastShortFile(1359, 1354, 1500)).toBe(true)
+  })
+})
+
+describe('liveläget efter filens slut (längden före första bilden)', () => {
+  it('22-minutersfil på en 100-minutersplats, 95 min in: en annan version', () => {
+    expect(pastEndAction({ initialTime: 5722.8, duration: 1331, runtimeS: 6000 })).toBe('other-version')
+  })
+  it('filen nästan lika lång som platsen: programmet är slut', () => {
+    expect(pastEndAction({ initialTime: 1359, duration: 1354, runtimeS: 1380 })).toBe('ended')
+    expect(pastEndAction({ initialTime: 1340, duration: 1354, runtimeS: 1380 })).toBe('ended')
+  })
+  it('före slutet, eller okänd längd: spela', () => {
+    expect(pastEndAction({ initialTime: 600, duration: 1331, runtimeS: 6000 })).toBeNull()
+    expect(pastEndAction({ initialTime: 5722, duration: 0, runtimeS: 6000 })).toBeNull()
   })
 })

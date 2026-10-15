@@ -47,7 +47,11 @@ export interface PlayerState {
   pending: Plan | null
   rest: RestSlot | null
   /** Adresser som redan fallerat för programmet `key` (nästa version frågas förbi dem). */
-  tried: { key: string; urls: string[] } | null
+  /**
+   * `pastEnd`: en version tog slut före liveläget (filen kortare än tablåns
+   * plats). Då provas högst EN annan version; sedan "Programmet är slut".
+   */
+  tried: { key: string; urls: string[]; pastEnd?: boolean } | null
   /** Ingen version fungerade: programmet och när kanalen försöker igen (nästa programgräns). */
   noSignal: { slot: ProgrammeSlot<PoolItem>; retryAt: number } | null
   /**
@@ -73,7 +77,7 @@ export type Action =
    * nästa version provas på liveläget. Utan: uppslaget hittade ingen (fler)
    * version — "Ingen signal" till nästa programgräns.
    */
-  | { type: 'failed'; seq: number; now: number; url?: string }
+  | { type: 'failed'; seq: number; now: number; url?: string; pastEnd?: boolean }
   | { type: 'rest'; seq: number; rest: RestSlot }
   | { type: 'empty'; seq: number }
   | { type: 'advance'; seq: number; now: number }
@@ -147,6 +151,16 @@ export function playerReducer(s: PlayerState, a: Action): PlayerState {
       if (!plan) return s
       const key = slotKey(plan.slot)
       const urls = a.url ? [...triedFor(s, plan.slot), a.url] : triedFor(s, plan.slot)
+      const pastEndBefore = !!s.tried && s.tried.key === key && !!s.tried.pastEnd
+      // Filen kortare än platsen (liveläget efter filens slut): en annan
+      // version provas en gång. Ingen annan, eller även den bar inte: programmet
+      // är slut — aldrig "Ingen signal", och samma fil öppnas aldrig igen.
+      if (pastEndBefore || (a.pastEnd && !a.url)) {
+        return { ...s, status: 'between', onScreen: null, pending: null, tried: { key, urls, pastEnd: true }, noSignal: null, between: { slot: plan.slot, until: plan.slot.stop } }
+      }
+      if (a.pastEnd && a.url) {
+        return { ...s, tried: { key, urls, pastEnd: true }, pending: null, status: 'resolving', request: next(s, { mode: plan.mode }) }
+      }
       if (a.url && urls.length < MAX_VERSIONS) {
         // Samma program, nästa version, på liveläget (eller från början om det var valt).
         return { ...s, tried: { key, urls }, pending: null, status: 'resolving', request: next(s, { mode: plan.mode }) }
