@@ -20489,6 +20489,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -57383,7 +57384,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
       secondary.push({ key: "remove", label: h("remove"), onSelect: () => setConfirm(true), danger: true });
     }
     const status = needsLogin ? { text: h("xtreamNeedsLogin"), color: UI.danger } : !busy && list.lastImportError ? { text: h("listImportFailed", { error: list.lastImportError }), color: UI.danger } : list.truncated ? { text: h("listTruncated"), color: "#e2c489" } : list.needsReimport ? { text: h("listNeedsReimport"), color: UI.muted } : null;
-    return /* @__PURE__ */ jsxs(LtCard, { testId: `playlist-card-${list.id}`, style: { minWidth: 0 }, children: [
+    return /* @__PURE__ */ jsxs(LtCard, { testId: `playlist-card-${list.id}`, style: narrow ? { minWidth: 0, padding: "14px 12px" } : { minWidth: 0 }, children: [
       /* @__PURE__ */ jsxs(
         "button",
         {
