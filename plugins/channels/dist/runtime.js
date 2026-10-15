@@ -42204,6 +42204,7 @@ ${cue.text}`).join("\n\n")}
                 {
                   ref: scrollRef,
                   "data-channels-guide-scroll": "",
+                  "data-no-chrome-fade": "",
                   "data-guide-band": band ? String(bandAt) : void 0,
                   "data-scroll": band ? void 0 : "",
                   onScroll: onGuideScroll,
@@ -45270,7 +45271,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.13",
+    version: "0.1.14",
     description: S.description,
     preinstalled: false,
     register(ctx) {

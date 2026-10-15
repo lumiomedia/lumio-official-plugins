@@ -203,6 +203,9 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
             <div
               ref={scrollRef}
               data-channels-guide-scroll=""
+              // Tablåns rullning är sidans inre navigering — appens uttoning
+              // bakom toppmenyn ska inte tändas av den.
+              data-no-chrome-fade=""
               data-guide-band={band ? String(bandAt) : undefined}
               // Skrivbord/mobil: vanlig rullning (fokusmotorn rullar in i data-scroll).
               // TV: ingen rullning alls — bandet flyttar spåret.

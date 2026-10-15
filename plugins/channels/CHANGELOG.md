@@ -1,3 +1,7 @@
+## 0.1.14
+
+- Tablåns rullning tänder inte längre appens uttoning bakom toppmenyn (kräver appen med data-no-chrome-fade).
+
 ## 0.1.13
 
 - Appens toppmeny (snabbmenyn) syns nu även på Kanaler-sidan på skrivbordet; sidans innehåll börjar under menyn (kräver appen med keepsTvTopChrome på skrivbordet).

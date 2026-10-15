@@ -9,7 +9,7 @@ import { CHANNELS_PAGE_ID } from './ui/guide-layout'
 export const ChannelsPlugin: LumioPlugin = {
   id: 'com.lumio.channels',
   name: S.pluginName,
-  version: '0.1.13',
+  version: '0.1.14',
   description: S.description,
   preinstalled: false,
   register(ctx) {
