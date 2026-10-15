@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LtBtn, LtCard, LtCheck, LtConfirm, LtOverflowMenu, UI, fmtInt, hostOf, useLtNarrow } from './settings-ui'
+import { LtBtn, LtCard, LtCheck, LtChevron, LtConfirm, LtOverflowMenu, UI, fmtInt, hostOf, useLtNarrow } from './settings-ui'
 import { useHubText } from './hub-strings'
 import { EpgSourcesSection } from './epg-sources-section'
 import { useXtreamAccountMeta } from './xtream-login-section'
@@ -153,8 +153,7 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
             <span data-testid={`playlist-status-${list.id}`} style={{ display: 'block', margin: '2px 0 0', fontSize: 12.5, color: status.color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{status.text}</span>
           ) : null}
         </span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={UI.muted} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden
-          style={{ flex: 'none', marginTop: 2, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}><path d="m9 18 6-6-6-6" /></svg>
+        <LtChevron open={open} style={{ marginTop: 2 }} />
       </button>
       {open ? (
       <>

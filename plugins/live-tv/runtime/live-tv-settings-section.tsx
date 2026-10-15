@@ -245,8 +245,8 @@ export function LiveTvSettingsSection() {
  * Skrivbordets och telefonens sida (2026-10-15): varje block är en
  * HOPFÄLLBAR sektion med titel + en rad sammanfattning. På telefon är de ett
  * dragspel (en öppen i taget), på skrivbordet får flera vara öppna. Öppna
- * sektioner minns för sessionen. Utan sparat val öppnas Spellistor om det
- * inte finns någon lista än — det är där man börjar.
+ * sektioner minns för sessionen. Utan sparat val är Spellistor öppen och
+ * resten stängda.
  *
  * Ordningen: Spellistor (korten, M3U, Xtream) → Tablå → Beteende →
  * Bibliotek → Sport → Skärm. Tablå och Bibliotek visas bara när de har
@@ -260,7 +260,9 @@ function DesktopPage() {
   const tvSettings = useTvSettings()
   const narrow = useLtNarrow()
   const vod = useVodLibrarySources()
-  const accordion = useLtAccordion(narrow, getLiveTvLists().length === 0 ? ['playlists'] : [])
+  // Spellistor står öppen från början (Jerry 2026-10-15) — det är där man
+  // oftast ska. Sessionens eget val vinner så fort man fällt något.
+  const accordion = useLtAccordion(narrow, ['playlists'])
   const fetchLabel = s.fetchProgress.status === 'fetching' ? h('fetching') : h('fetchList')
 
   const totalChannels = s.lists.reduce((sum, list) => sum + (list.channelCount ?? 0), 0)

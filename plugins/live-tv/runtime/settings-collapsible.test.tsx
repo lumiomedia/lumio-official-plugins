@@ -67,23 +67,42 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 const header = (id: string) => within(screen.getByTestId(`lt-section-${id}`)).getAllByRole('button')[0]
 
 describe('sektionerna', () => {
-  it('rubrik + sammanfattning, stängda tills man trycker', () => {
+  it('rubrik + sammanfattning; Spellistor öppen från början, resten stängda', () => {
     setNarrow(false)
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [xtream])
     render(<LiveTvSettingsSection />)
-    expect(header('playlists')).toHaveAttribute('aria-expanded', 'false')
+    expect(header('playlists')).toHaveAttribute('aria-expanded', 'true')
     expect(header('playlists')).toHaveTextContent('Playlists')
     expect(header('playlists')).toHaveTextContent('1 list · 1,919 channels')
+    expect(header('guide')).toHaveAttribute('aria-expanded', 'false')
     expect(header('guide')).toHaveTextContent('1 source')
+    expect(header('behaviour')).toHaveAttribute('aria-expanded', 'false')
     expect(header('behaviour')).toHaveTextContent('Start view: Home')
-    expect(screen.queryByTestId('playlist-card-x1')).toBeNull()
-    expect(screen.queryByTestId('lt-start-view')).toBeNull()
-    fireEvent.click(header('playlists'))
-    expect(header('playlists')).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByTestId('playlist-card-x1')).toBeInTheDocument()
+    expect(screen.queryByTestId('lt-start-view')).toBeNull()
+    fireEvent.click(header('behaviour'))
+    expect(screen.getByTestId('lt-start-view')).toBeInTheDocument()
   })
 
-  it('utan spellistor står Spellistor öppen från början', () => {
+  it('öppen sektion: chevronen pekar uppåt och innehållet ligger i samma ruta som rubriken', () => {
+    setNarrow(false)
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [xtream])
+    render(<LiveTvSettingsSection />)
+    const open = screen.getByTestId('lt-section-playlists')
+    expect(open.querySelector('[data-lt-chevron]')).toHaveAttribute('data-lt-chevron', 'up')
+    expect(screen.getByTestId('lt-section-behaviour').querySelector('[data-lt-chevron]')).toHaveAttribute('data-lt-chevron', 'down')
+    // Kortet ligger INNE i sektionens ruta, inte under den.
+    const body = screen.getByTestId('lt-section-playlists-body')
+    expect(open.contains(body)).toBe(true)
+    expect(body.contains(screen.getByTestId('playlist-card-x1'))).toBe(true)
+    expect(open.style.background).not.toBe('')
+    // Spellistekortet: samma chevron.
+    expect(screen.getByTestId('playlist-card-toggle-x1').querySelector('[data-lt-chevron]')).toHaveAttribute('data-lt-chevron', 'up')
+    fireEvent.click(screen.getByTestId('playlist-card-toggle-x1'))
+    expect(screen.getByTestId('playlist-card-toggle-x1').querySelector('[data-lt-chevron]')).toHaveAttribute('data-lt-chevron', 'down')
+  })
+
+  it('utan spellistor står Spellistor också öppen', () => {
     setNarrow(false)
     render(<LiveTvSettingsSection />)
     expect(header('playlists')).toHaveAttribute('aria-expanded', 'true')
@@ -96,7 +115,6 @@ describe('sektionerna', () => {
     setNarrow(true)
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [m3u])
     render(<LiveTvSettingsSection />)
-    fireEvent.click(header('playlists'))
     expect(header('playlists')).toHaveAttribute('aria-expanded', 'true')
     fireEvent.click(header('behaviour'))
     expect(header('behaviour')).toHaveAttribute('aria-expanded', 'true')
@@ -109,7 +127,6 @@ describe('sektionerna', () => {
     setNarrow(false)
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [m3u])
     render(<LiveTvSettingsSection />)
-    fireEvent.click(header('playlists'))
     fireEvent.click(header('behaviour'))
     expect(header('playlists')).toHaveAttribute('aria-expanded', 'true')
     expect(header('behaviour')).toHaveAttribute('aria-expanded', 'true')
@@ -130,6 +147,17 @@ describe('sektionerna', () => {
     setNarrow(false)
     window.sessionStorage.setItem('lumio.liveTv.settingsOpen', '{inte json')
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [m3u])
+    render(<LiveTvSettingsSection />)
+    expect(header('playlists')).toHaveAttribute('aria-expanded', 'true')
+    expect(header('sport')).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('att fälla ihop Spellistor minns också — standardvalet tar inte tillbaka den', () => {
+    setNarrow(false)
+    writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [m3u])
+    render(<LiveTvSettingsSection />)
+    fireEvent.click(header('playlists'))
+    cleanup()
     render(<LiveTvSettingsSection />)
     expect(header('playlists')).toHaveAttribute('aria-expanded', 'false')
   })

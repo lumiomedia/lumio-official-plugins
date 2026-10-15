@@ -419,19 +419,25 @@ export function useLtAccordion(single: boolean, fallback: string[] = []): { isOp
   return { isOpen: (id: string) => visible.includes(id), toggle }
 }
 
-function Chevron({ open }: { open: boolean }) {
+/**
+ * Chevronen: nedåt när sektionen är stängd (det finns mer att fälla ut),
+ * uppåt när den är öppen. Exporterad så spellistekortet använder samma.
+ */
+export function LtChevron({ open, style }: { open: boolean; style?: CSSProperties }) {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={UI.muted} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden
-      style={{ flex: 'none', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
-      <path d="m9 18 6-6-6-6" />
+      data-lt-chevron={open ? 'up' : 'down'}
+      style={{ flex: 'none', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', ...style }}>
+      <path d="m6 9 6 6 6-6" />
     </svg>
   )
 }
 
 /**
- * Hopfällbar sektion: rubriken är ett kort (titel + en rad sammanfattning,
- * chevron till höger) och innehållet — kortstapeln — ritas under det när
- * sektionen är öppen. Ingen yttre box runt innehållet: korten är redan kort.
+ * Hopfällbar sektion: ETT kort — rubriken (titel + en rad sammanfattning,
+ * chevron till höger) och, när sektionen är öppen, innehållet under en
+ * avdelare i samma ruta. Korten i innehållet ligger kvar som egna kort
+ * inuti; en öppen sektion syns på chevronen (uppåt) och på att rutan växer.
  */
 export function LtCollapsible({ id, title, summary, open, onToggle, children, testId }: {
   id: string
@@ -444,7 +450,8 @@ export function LtCollapsible({ id, title, summary, open, onToggle, children, te
 }) {
   const bodyId = `lt-section-${id}`
   return (
-    <section data-testid={testId} data-lt-collapsible={id} style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+    <section data-testid={testId} data-lt-collapsible={id} data-open={open ? '1' : '0'}
+      style={{ display: 'flex', flexDirection: 'column', minWidth: 0, borderRadius: 10, background: UI.card, border: `1px solid ${open ? UI.line : 'transparent'}` }}>
       <button
         type="button"
         aria-expanded={open}
@@ -452,8 +459,8 @@ export function LtCollapsible({ id, title, summary, open, onToggle, children, te
         onClick={onToggle}
         style={{
           display: 'flex', alignItems: 'center', gap: 12, width: '100%', minWidth: 0, boxSizing: 'border-box',
-          borderRadius: 10, border: 0, background: open ? 'rgba(255,255,255,0.065)' : UI.card,
-          padding: '14px 18px', textAlign: 'left', fontFamily: 'inherit', color: UI.text, cursor: 'pointer',
+          borderRadius: 10, border: 0, background: 'transparent',
+          padding: '14px 16px', textAlign: 'left', fontFamily: 'inherit', color: UI.text, cursor: 'pointer',
         }}
       >
         <span style={{ minWidth: 0, flex: 1 }}>
@@ -462,10 +469,11 @@ export function LtCollapsible({ id, title, summary, open, onToggle, children, te
             <span style={{ display: 'block', marginTop: 3, fontSize: 12.5, color: UI.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{summary}</span>
           ) : null}
         </span>
-        <Chevron open={open} />
+        <LtChevron open={open} />
       </button>
       {open ? (
-        <div id={bodyId} style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+        <div id={bodyId} data-testid={testId ? `${testId}-body` : undefined}
+          style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0, borderTop: `1px solid ${UI.lineSoft}`, padding: '16px 12px 14px' }}>
           {children}
         </div>
       ) : null}
