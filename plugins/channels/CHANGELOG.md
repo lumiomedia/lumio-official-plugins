@@ -1,3 +1,7 @@
+## 0.1.13
+
+- Appens toppmeny (snabbmenyn) syns nu även på Kanaler-sidan på skrivbordet; sidans innehåll börjar under menyn (kräver appen med keepsTvTopChrome på skrivbordet).
+
 ## 0.1.12
 
 - Rättat: programblock kunde ligga ovanpå varandra i tablån (tablålåset mötte den räknade tablån utan klippning när tablån visade tiden före låset). Tablån är nu alltid sammanhängande.

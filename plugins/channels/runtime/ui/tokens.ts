@@ -73,7 +73,10 @@ export function belowMenuPill(isTv: boolean, isMobile: boolean): string {
   // sportsidan) mäter den dess höjd som `--tv-scene-chrome-inset`; annars
   // pillrets egen linje.
   if (isTv) return 'calc(var(--tv-scene-chrome-inset, calc(3.125rem + var(--tv-scene-top-inset, 0px))) + 2.125rem)'
-  return `calc(var(--page-top-line, 1rem) + ${isMobile ? 66 : 58}px)`
+  // Skrivbord: behåller värden toppmenyn (keepsTvTopChrome) mäter den kromets
+  // höjd som `--host-chrome-top`; utan den pillrets egen linje som förut.
+  if (isMobile) return 'calc(var(--page-top-line, 1rem) + 66px)'
+  return 'calc(var(--host-chrome-top, calc(var(--page-top-line, 1rem) + 38px)) + 20px)'
 }
 
 export const FONT = {

@@ -41826,7 +41826,8 @@ ${cue.text}`).join("\n\n")}
   }
   function belowMenuPill(isTv, isMobile) {
     if (isTv) return "calc(var(--tv-scene-chrome-inset, calc(3.125rem + var(--tv-scene-top-inset, 0px))) + 2.125rem)";
-    return `calc(var(--page-top-line, 1rem) + ${isMobile ? 66 : 58}px)`;
+    if (isMobile) return "calc(var(--page-top-line, 1rem) + 66px)";
+    return "calc(var(--host-chrome-top, calc(var(--page-top-line, 1rem) + 38px)) + 20px)";
   }
   var FONT3 = {
     ui: '"Avenir Next", system-ui, -apple-system, "Segoe UI", sans-serif',
@@ -45269,7 +45270,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.12",
+    version: "0.1.13",
     description: S.description,
     preinstalled: false,
     register(ctx) {
