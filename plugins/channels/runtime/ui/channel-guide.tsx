@@ -360,7 +360,7 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
             aria-hidden="true"
             style={{
               position: 'absolute', top: 0, bottom: 0, left: `${nowPct}%`, width: 2, marginLeft: -1, zIndex: 1,
-              background: C.accent, boxShadow: '0 0 10px rgba(244,132,95,0.6)', pointerEvents: 'none',
+              background: C.accent, boxShadow: `0 0 10px ${C.accentAlpha(0.6)}`, pointerEvents: 'none',
             }}
           />
         ) : null}
@@ -393,6 +393,7 @@ function Block({ slot, win, now, lit, isTv, t }: { slot: Slot<PoolItem>; win: Gu
         // under pekaren/fokus. Pågående program tydligt orange. Vila = dämpad, streckad.
         background: isRest ? C.glassDenseSoft : current ? (lit ? C.guideCurrentLit : C.guideCurrent) : lit ? C.guideBlockLit : C.guideBlock,
         border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current ? C.guideCurrentBorder : C.guideBlockBorder}`,
+        boxShadow: !isRest && current ? (lit ? C.guideCurrentTintLit : C.guideCurrentTint) : undefined,
         transition: 'background 150ms ease',
         color: isRest ? C.textMute : C.text,
       }}

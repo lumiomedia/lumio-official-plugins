@@ -255,7 +255,7 @@ function ZapListRow({ channel, active, title, isTv, onSelect }: { channel: Chann
       style={{
         display: 'flex', alignItems: 'center', gap: '0.7rem', width: '100%', textAlign: 'left', cursor: 'pointer',
         padding: '0.55rem 0.5rem', borderRadius: RADIUS.card, border: '1px solid transparent',
-        background: active ? 'rgba(244,132,95,.16)' : 'transparent', color: C.text, fontFamily: FONT.ui,
+        background: active ? C.accentAlpha(0.16) : 'transparent', color: C.text, fontFamily: FONT.ui,
       }}
     >
       <span style={{ fontFamily: FONT.mono, fontSize: isTv ? tvType('body') : '0.8rem', color: active ? C.accent : C.textDim, minWidth: '1.8rem' }}>{channel.number}</span>

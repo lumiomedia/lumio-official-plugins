@@ -1,3 +1,7 @@
+## 0.1.15
+
+- Kanalerna följer appens accentfärg (Utseende → Accent) i stället för en fast orange: pågående program, nu-linjen, markeringar, knappar och etiketter.
+
 ## 0.1.14
 
 - Tablåns rullning tänder inte längre appens uttoning bakom toppmenyn (kräver appen med data-no-chrome-fade).

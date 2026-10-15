@@ -380,7 +380,7 @@ describe('Kanaler-sidans utseende', () => {
     }
   })
 
-  it('tablåblocken: ljusgrå i vila, ljusare på raden under pekaren, pågående tydligt orange', () => {
+  it('tablåblocken: ljusgrå i vila, ljusare på raden under pekaren, pågående i appens accent', () => {
     state.channels = [channel(1, 'Första')]
     state.rundowns = { k1: [item('Terminator', 30), item('Heat', 30), item('Ronin', 30)] }
     const { container } = page({ channelId: 'k1' })
@@ -388,7 +388,9 @@ describe('Kanaler-sidans utseende', () => {
     const current = container.querySelector<HTMLElement>('[data-guide-block="current"]')!
     const bg = (el: HTMLElement) => el.style.background.replace(/\s/g, '')
     expect(bg(idle())).toContain('rgba(49,51,58,0.9)')
-    expect(bg(current)).toContain('rgba(109,52,29,0.96)')
+    expect(bg(current)).toContain('rgba(22,18,18,0.96)')
+    // Accenten kommer från appens --accent-600 (följer Utseende → Accent), inte en fast orange.
+    expect(current.style.boxShadow).toContain('var(--accent-600')
     fireEvent.mouseEnter(container.querySelector('[data-channel-row="k1"]')!)
     expect(bg(idle())).toContain('rgba(63,66,75,0.92)')
     fireEvent.mouseLeave(container.querySelector('[data-channel-row="k1"]')!)

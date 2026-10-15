@@ -385,7 +385,7 @@ export function ChannelStudio({ studio, channels, isTv, isMobile, t, onDone }: {
               style={{
                 display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px',
                 borderTop: i === 0 ? 'none' : `1px solid ${TOKENS.border}`,
-                background: row.isNow ? 'rgba(255,139,90,0.08)' : 'transparent',
+                background: row.isNow ? C.accentAlpha(0.08) : 'transparent',
               }}
             >
               <span style={{ fontFamily: FONT.mono, fontSize: fs(12), color: TOKENS.textDim, flexShrink: 0 }}>{formatClock(row.start)}</span>

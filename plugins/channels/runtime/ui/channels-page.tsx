@@ -279,7 +279,7 @@ export function ChannelsPage({ params }: BrowsePageProps) {
       role="status"
       style={{
         position: 'relative', zIndex: 1,
-        padding: isTv ? `${tvu(10)} ${tvu(100)}` : '10px 16px', background: 'rgba(244,132,95,0.14)', borderBottom: '1px solid rgba(244,132,95,0.35)',
+        padding: isTv ? `${tvu(10)} ${tvu(100)}` : '10px 16px', background: C.accentAlpha(0.14), borderBottom: `1px solid ${C.accentAlpha(0.35)}`,
         color: C.accentLight, fontFamily: FONT.ui, fontSize: fontSize(13, isTv), flexShrink: 0,
       }}
     >

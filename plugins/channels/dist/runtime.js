@@ -41782,12 +41782,11 @@ ${cue.text}`).join("\n\n")}
     // #94a3b8
     textMute: "hsl(215 16% 47%)",
     // #64748b
-    accent: "hsl(15 87% 66%)",
-    // #f4845f
-    accentLight: "hsl(33 89% 69%)",
-    // #f7b267
+    /** Appens accent (Utseende → Accent); Sunset = handoffens #f4845f. */
+    accent: "rgb(var(--accent-500, 244 132 95))",
+    accentLight: "rgb(var(--accent-400, 247 178 103))",
     /** Text på accentfärgad yta. */
-    onAccent: "hsl(15 60% 8%)",
+    onAccent: "hsl(0 0% 6%)",
     /** Pillren och knapparna: menypillrets glas (--mc-surface i appen). */
     pillBorder: "rgba(255,255,255,0.1)",
     pillBg: "rgba(235,235,240,0.14)",
@@ -41799,16 +41798,21 @@ ${cue.text}`).join("\n\n")}
     glassDense: "rgba(18,18,22,0.82)",
     glassDenseSoft: "rgba(18,18,22,0.6)",
     /** Pågående program: accentton på tät grund, så den sticker ut även över bild. */
-    glassCurrent: "hsl(15 45% 17% / 0.94)",
+    glassCurrent: "rgba(24,20,20,0.94)",
     /** Tablåns programblock i vila: ljusare grå (förr bara hovringsläget), läsbar över bilden. */
     guideBlock: "rgba(49,51,58,0.9)",
     /** Programblock på raden under muspekaren/fokus: ett steg ljusare. */
     guideBlockLit: "rgba(63,66,75,0.92)",
     guideBlockBorder: "rgba(255,255,255,0.13)",
     /** Pågående program mot de ljusare grannarna: mättare accent och tydlig kant. */
-    guideCurrent: "rgba(109,52,29,0.96)",
-    guideCurrentLit: "rgba(132,58,31,0.97)",
-    guideCurrentBorder: "rgba(244,132,95,0.75)",
+    /** Pågående program: tät mörk grund + accenttoning via guideCurrentTint (inset-skugga, inte gradient). */
+    guideCurrent: "rgba(22,18,18,0.96)",
+    guideCurrentLit: "rgba(30,24,24,0.97)",
+    guideCurrentTint: "inset 0 0 0 999px rgb(var(--accent-600, 231 111 81) / 0.42)",
+    guideCurrentTintLit: "inset 0 0 0 999px rgb(var(--accent-600, 231 111 81) / 0.5)",
+    guideCurrentBorder: "rgb(var(--accent-500, 244 132 95) / 0.75)",
+    /** Accent med alfa (glöd, markeringar). */
+    accentAlpha: (a) => `rgb(var(--accent-500, 244 132 95) / ${a})`,
     /** OSD och paneler över bild/video. */
     osdBg: "rgba(18,18,22,0.72)",
     /** Platt mörkning över en bakgrundsbild (ingen gradient). */
@@ -42343,7 +42347,7 @@ ${cue.text}`).join("\n\n")}
                   marginLeft: -1,
                   zIndex: 1,
                   background: C.accent,
-                  boxShadow: "0 0 10px rgba(244,132,95,0.6)",
+                  boxShadow: `0 0 10px ${C.accentAlpha(0.6)}`,
                   pointerEvents: "none"
                 }
               }
@@ -42387,6 +42391,7 @@ ${cue.text}`).join("\n\n")}
             // under pekaren/fokus. Pågående program tydligt orange. Vila = dämpad, streckad.
             background: isRest ? C.glassDenseSoft : current2 ? lit ? C.guideCurrentLit : C.guideCurrent : lit ? C.guideBlockLit : C.guideBlock,
             border: isRest ? `1px dashed ${C.glassBorder}` : `1px solid ${current2 ? C.guideCurrentBorder : C.guideBlockBorder}`,
+            boxShadow: !isRest && current2 ? lit ? C.guideCurrentTintLit : C.guideCurrentTint : void 0,
             transition: "background 150ms ease",
             color: isRest ? C.textMute : C.text
           },
@@ -43425,7 +43430,7 @@ ${cue.text}`).join("\n\n")}
           padding: "0.55rem 0.5rem",
           borderRadius: RADIUS.card,
           border: "1px solid transparent",
-          background: active3 ? "rgba(244,132,95,.16)" : "transparent",
+          background: active3 ? C.accentAlpha(0.16) : "transparent",
           color: C.text,
           fontFamily: FONT3.ui
         },
@@ -44675,7 +44680,7 @@ ${cue.text}`).join("\n\n")}
             gap: 14,
             padding: "10px 16px",
             borderTop: i === 0 ? "none" : `1px solid ${TOKENS.border}`,
-            background: row.isNow ? "rgba(255,139,90,0.08)" : "transparent"
+            background: row.isNow ? C.accentAlpha(0.08) : "transparent"
           },
           children: [
             /* @__PURE__ */ jsx("span", { style: { fontFamily: FONT3.mono, fontSize: fs(12), color: TOKENS.textDim, flexShrink: 0 }, children: formatClock2(row.start) }),
@@ -45072,8 +45077,8 @@ ${cue.text}`).join("\n\n")}
           position: "relative",
           zIndex: 1,
           padding: isTv ? `${tvu(10)} ${tvu(100)}` : "10px 16px",
-          background: "rgba(244,132,95,0.14)",
-          borderBottom: "1px solid rgba(244,132,95,0.35)",
+          background: C.accentAlpha(0.14),
+          borderBottom: `1px solid ${C.accentAlpha(0.35)}`,
           color: C.accentLight,
           fontFamily: FONT3.ui,
           fontSize: fontSize(13, isTv),
@@ -45271,7 +45276,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.14",
+    version: "0.1.15",
     description: S.description,
     preinstalled: false,
     register(ctx) {
