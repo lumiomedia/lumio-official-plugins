@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.2
+
+- Tidier settings: Playlists, Programme guide, Behaviour, Library, Sport and Display are collapsible sections with a one-line summary. On phones only one section is open at a time; on computers several can be open.
+- Each playlist is its own card showing host, type, channels, last update and status, with categories, EPG sources, logos and buttons when expanded. On phones, Server categories and Remove sit in a ⋯ menu, and the buttons no longer run off the screen. Requires Lumio 0.1.625.
+
 ## 0.16.1
 
 - Kick-off reminders no longer show twice when your settings sync between devices.
