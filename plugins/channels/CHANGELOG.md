@@ -1,3 +1,11 @@
+## 0.1.12
+
+- Rättat: programblock kunde ligga ovanpå varandra i tablån (tablålåset mötte den räknade tablån utan klippning när tablån visade tiden före låset). Tablån är nu alltid sammanhängande.
+- Kanalbrickorna använder bara bokstäver och siffror: "Action & thrills" → AT, "80s & 90s" → 80.
+- Heron byter inte höjd för en vilande kanal: återkomsttiden står i metaraden.
+- Kanalpillen i spelaren hamnar under spelarens egen titelrad (mätt), aldrig ovanpå den.
+- Tablån använder hela bredden; den markerade radens ram klipps aldrig i kanterna.
+
 ## 0.1.11
 
 - Tablåns tidsaxel står still; bara kanalraderna rör sig.

@@ -103,3 +103,56 @@ export function useHostControls(anchorRef: RefObject<HTMLElement | null>, sessio
   }, [anchorRef, session])
   return state
 }
+
+export const HOST_TOPBAR_SELECTOR = '.vp-topbar'
+
+/**
+ * Var värdens topprad (titel, chips, Stäng) slutar, i px från `anchor`s
+ * överkant (anchor = kanal-OSD:ns rot, som täcker spelaren). Mäts i stället
+ * för att gissa 52 px: raden kan ligga lägre (macOS-titelraden, insets) och
+ * då hamnade kanalpillen ovanpå titeln. Skalan räknas bort (TV-scenen).
+ */
+export function hostTopbarBottom(anchor: HTMLElement, bar: HTMLElement): number | null {
+  const a = anchor.getBoundingClientRect()
+  const b = bar.getBoundingClientRect()
+  if (b.width <= 0 && b.height <= 0) return null
+  const k = anchor.offsetWidth > 0 && a.width > 0 ? a.width / anchor.offsetWidth : 1
+  return Math.max(0, Math.round((b.bottom - a.top) / k))
+}
+
+/** Följer värdens topprad medan `session` gäller (null: ingen rad, eller omätt). */
+export function useHostTopbarBottom(anchorRef: RefObject<HTMLElement | null>, session: string | null): number | null {
+  const [bottom, setBottom] = useState<number | null>(null)
+  useEffect(() => {
+    if (!session) { setBottom(null); return }
+    let bar: HTMLElement | null = null
+    let resize: ResizeObserver | null = null
+    const read = () => {
+      const anchor = anchorRef.current
+      if (!anchor || !bar) return
+      const next = hostTopbarBottom(anchor, bar)
+      setBottom((prev) => (prev === next ? prev : next))
+    }
+    const attach = () => {
+      if (bar?.isConnected) { read(); return }
+      resize?.disconnect()
+      resize = null
+      bar = null
+      for (let node = anchorRef.current?.parentElement ?? null; node && !bar; node = node.parentElement) bar = node.querySelector<HTMLElement>(HOST_TOPBAR_SELECTOR)
+      if (!bar) return
+      read()
+      if (typeof ResizeObserver !== 'undefined') { resize = new ResizeObserver(read); resize.observe(bar) }
+    }
+    attach()
+    // Raden byter höjd (52 → 0) och läge (fönsterstorlek, helskärm): läs om med jämna mellanrum.
+    const timer = window.setInterval(attach, 500)
+    window.addEventListener('resize', read)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('resize', read)
+      resize?.disconnect()
+      setBottom(null)
+    }
+  }, [anchorRef, session])
+  return bottom
+}

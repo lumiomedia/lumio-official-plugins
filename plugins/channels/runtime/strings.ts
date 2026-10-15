@@ -53,7 +53,7 @@ export const S = {
   heroMovie: { en: 'Film', sv: 'Film' },
   heroEpisode: { en: 'Episode', sv: 'Avsnitt' },
   heroRestTitle: { en: 'The channel is resting', sv: 'Kanalen vilar' },
-  heroRestMeta: { en: 'Off air · in {dur}', sv: 'Utanför sändningstid · om {dur}' },
+  heroRestMeta: { en: 'Off air · back {time} · in {dur}', sv: 'Utanför sändningstid · åter {time} · om {dur}' },
   heroLoading: { en: 'Loading the schedule…', sv: 'Hämtar tablån…' },
   durHm: { en: '{h} h {m} min', sv: '{h} h {m} min' },
   durM: { en: '{m} min', sv: '{m} min' },

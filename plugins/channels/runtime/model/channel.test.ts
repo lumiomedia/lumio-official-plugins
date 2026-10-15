@@ -36,6 +36,13 @@ describe('kanalmodellen', () => {
   it('initialer', () => {
     expect(channelInitials('Kalles komfortserier')).toBe('KK')
     expect(channelInitials('noir')).toBe('N')
+    expect(channelInitials('Action & thrills')).toBe('AT')
+    expect(channelInitials('Sci-fi & fantasy')).toBe('SF')
+    expect(channelInitials('Family & animation')).toBe('FA')
+    expect(channelInitials('80s & 90s')).toBe('80')
+    expect(channelInitials('+ Ny – kanal!')).toBe('NK')
+    expect(channelInitials('Åskväder')).toBe('Å')
+    expect(channelInitials('&&')).toBe('')
   })
 })
 

@@ -148,7 +148,17 @@ export function hueTint(hue: number, alpha = 0.22): string {
   return `hsl(${h} 60% 55% / ${alpha})`
 }
 
+/**
+ * Badgens initialer: bara bokstäver och siffror — &, +, bindestreck och
+ * annan interpunktion skiljer ord men syns aldrig ("Action & thrills" → AT,
+ * "Sci-fi & fantasy" → SF). Börjar namnet med ett tal används talet
+ * ("80s & 90s" → 80).
+ */
 export function channelInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  return words.slice(0, 2).map((w) => w[0]!.toUpperCase()).join('')
+  const words = name.split(/[^\p{L}\p{N}]+/u).filter(Boolean)
+  const first = words[0]
+  if (!first) return ''
+  const digits = /^\p{N}+/u.exec(first)?.[0]
+  if (digits) return digits.slice(0, 2)
+  return words.slice(0, 2).map((w) => w[0]!.toLocaleUpperCase()).join('')
 }

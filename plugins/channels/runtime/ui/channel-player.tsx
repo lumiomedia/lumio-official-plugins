@@ -25,7 +25,7 @@ import { noteDuration } from '../data/runtime-fix'
 import { readCachedRundown, useChannelClock, useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { GuideOverlay } from './guide-overlay'
-import { HIDE_HOST_CHROME_CSS, useHostControls } from './host-controls'
+import { HIDE_HOST_CHROME_CSS, useHostControls, useHostTopbarBottom } from './host-controls'
 import { C, FONT, glass, RADIUS } from './tokens'
 import { pickInitTarget, tvType } from './tv'
 import { TuningCard } from './tuning-card'
@@ -383,6 +383,8 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
   // Bara medan kanal-OSD:n faktiskt är monterad (inte i zappläget, tablålagret eller under kortet).
   const hostControls = useHostControls(osdRef, zapOn || guideOpen || awaitingPicture(state) ? null : playerKey)
   const osdIdleVisible = hostControls ? hostControls.visible : osdVisible
+  // Kanalpillen under värdens topprad (mätt; raden kan ligga lägre än sina 52 px).
+  const hostTopbar = useHostTopbarBottom(osdRef, zapOn || guideOpen || awaitingPicture(state) ? null : playerKey)
   // Samma villkor som OSD:n renderas med.
   const osdShownRef = useRef(true)
   osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== 'playing'
@@ -588,6 +590,7 @@ export function ChannelPlayer({ channels, initialChannelId, mode: initialMode, s
       osdRef={osdRef}
       visible={osdIdleVisible || status !== 'playing'}
       lift={hostControls?.lift ?? null}
+      topbarBottom={hostTopbar}
       channel={channel}
       meta={metaParts.join(' · ')}
       title={described?.slot.item.title ?? null}
@@ -837,6 +840,8 @@ interface OsdProps {
   visible: boolean
   /** Värdens kontrollrads innehållshöjd i px: knappraden läggs precis ovanför seekraden. */
   lift: number | null
+  /** Värdens topprads nederkant i px från OSD:ns överkant (mätt); null = okänd. */
+  topbarBottom?: number | null
   channel: ChannelDef
   meta: string
   title: string | null
@@ -877,7 +882,11 @@ function ChannelOsd(props: OsdProps) {
           ...fade, ...glass(isTv, { fill: C.osdBg, blur: 12 }),
           // Under värdens 52 px-topprad, annars på appens sidlinje (--page-top-line:
           // macOS-titelraden/trafikljusen, Android-inset och TV-inset ingår).
-          position: 'absolute', top: props.hostBar ? 'calc(52px + 0.5rem)' : 'calc(var(--page-top-line, 1rem) + 0.25rem)', left: '1rem',
+          position: 'absolute',
+          top: props.topbarBottom != null && props.topbarBottom > 0
+            ? `calc(${props.topbarBottom}px + 0.5rem)`
+            : props.hostBar ? 'calc(52px + 0.5rem)' : 'calc(var(--page-top-line, 1rem) + 0.25rem)',
+          left: '1rem',
           maxWidth: 'min(26rem, calc(100vw - 6rem))',
           display: 'flex', alignItems: 'center', gap: '0.6rem',
           padding: '0.35rem 0.9rem 0.35rem 0.35rem', borderRadius: RADIUS.pill,

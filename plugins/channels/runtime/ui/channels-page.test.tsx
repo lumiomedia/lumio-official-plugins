@@ -313,12 +313,17 @@ describe('Kanaler-sidans utseende', () => {
     expect(container.querySelector('[data-hero-meta]')).toBeTruthy()
     expect(container.querySelector('[data-hero-status]')).toBeTruthy()
     expect(container.querySelector('[data-hero-next]')).toBeTruthy()
-    const lines = (root: HTMLElement) => [...root.querySelectorAll('[data-channels-hero-copy] > *')].map((el) => el.tagName).join(',')
+    // Hela herons struktur (alla element, inte bara raderna) är densamma i vila som live.
+    const lines = (root: HTMLElement) => [...root.querySelectorAll('[data-channels-hero] *')].filter((el) => !el.closest('[data-hero-backdrop]')).map((el) => el.tagName).join(',')
     const live = lines(container)
     cleanup()
     // Vilande kanal: samma rader (vilotexten i statusraden, ingen extra rad).
     state.channels = [{ ...channel(1, 'Natt'), airWindow: 'late' }]
-    expect(lines(page().container)).toBe(live)
+    const resting = page().container
+    expect(lines(resting)).toBe(live)
+    // Återkomsten står i metaraden (ingen egen rad som skjuter innehållet).
+    expect(resting.querySelector('[data-hero-meta]')!.textContent).toMatch(/åter \d\d:\d\d · om /)
+    expect(screen.queryByText(/^Sänder igen/)).toBeNull()
   })
 
   it('TV: fast fokusband — ▼/▲ flyttar fokus en rad och spåret glider, ingen inbyggd rullning; ▲ från första raden lämnas åt motorn', () => {

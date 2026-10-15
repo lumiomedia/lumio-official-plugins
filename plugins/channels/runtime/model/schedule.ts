@@ -184,25 +184,47 @@ export function programmeAt<T extends ScheduleItem>(rundown: T[], window: AirWin
   if (rundown.length === 0) return { kind: 'empty' }
   const attached = (rundown as unknown as Record<symbol, AttachedLock | undefined>)[LOCK]
   if (attached) {
+    /*
+      Tiden är uppdelad i tre fält som aldrig överlappar: FÖRE låset (den
+      räknade tablån, klippt så den slutar där låset börjar), I låset (de
+      låsta programmen; en försvunnen titel ersätts av den räknade tablån
+      klippt till sin låsta ruta) och EFTER horisonten (den räknade, klippt
+      så den börjar vid horisonten). Förr klipptes bara det sista: tablån
+      visar från föregående halvtimme, och med en ändrad pool sträckte sig
+      det räknade programmet före låset in över det första låsta — två block
+      ovanpå varandra i raden (0.1.10/0.1.11).
+    */
+    const slots = attached.lock.slots
+    const lockStart = slots.length > 0 ? slots[0]!.s : null
+    const horizon = lockHorizon(attached.lock)
     const hit = lockedSlotAt(attached.lock, t)
     if (hit) {
       if (hit.r === '') return { kind: 'rest', start: hit.s, stop: hit.e, nextAir: hit.e }
       const index = attached.index.get(hit.r)
-      // Titeln finns kvar i poolen: det låsta programmet. Annars (källan borta) den räknade tablån.
       if (index != null) {
         const item = rundown[index]!
         const runtime = Math.max(1, item.runtimeMin)
         const minsIn = hit.o + (t - hit.s) / MIN
         return { kind: 'programme', item, index, start: hit.s, stop: hit.e, minsIn, minsLeft: runtime - minsIn, pct: minsIn / runtime }
       }
+      // Titeln finns inte längre i poolen: den räknade tablån, inom den låsta rutan.
+      return clip(computedAt(rundown, window, t), hit.s, hit.e)
     }
-    // Efter horisonten: ett program som började före den klipps vid horisonten.
-    const horizon = lockHorizon(attached.lock)
     const free = computedAt(rundown, window, t)
-    if (horizon != null && t >= horizon && free.kind !== 'empty' && free.start < horizon) return { ...free, start: horizon }
+    if (lockStart != null && t < lockStart) return clip(free, -Infinity, lockStart)
+    if (horizon != null && t >= horizon) return clip(free, horizon, Infinity)
     return free
   }
   return computedAt(rundown, window, t)
+}
+
+/** En ruta klippt till [from, to); rutans slut på en vila följer med (nästa sändning). */
+function clip<T extends ScheduleItem>(slot: Slot<T> | { kind: 'empty' }, from: number, to: number): Slot<T> | { kind: 'empty' } {
+  if (slot.kind === 'empty') return slot
+  const start = Math.max(slot.start, from)
+  const stop = Math.min(slot.stop, to)
+  if (start === slot.start && stop === slot.stop) return slot
+  return slot.kind === 'rest' ? { ...slot, start, stop, nextAir: Math.min(slot.nextAir, stop) } : { ...slot, start, stop }
 }
 
 /** Den räknade (olåsta) tablån vid t. */

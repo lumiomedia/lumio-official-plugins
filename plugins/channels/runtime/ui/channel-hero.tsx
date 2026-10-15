@@ -193,7 +193,7 @@ export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, ca
     meta = parts.join(' · ')
   } else if (rest) {
     title = t('heroRestTitle')
-    meta = t('heroRestMeta', { dur: duration(rest.nextAir - now, t) })
+    meta = t('heroRestMeta', { time: formatClock(rest.nextAir), dur: duration(rest.nextAir - now, t) })
   } else {
     title = channel.name
     meta = loading ? t('heroLoading') : t('playerEmpty')
@@ -211,8 +211,8 @@ export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, ca
         position: 'relative', flexShrink: 0, minHeight, boxSizing: 'border-box',
         padding: isTv
           ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}`
-          // Samma vänsterkant som tablåns kanalnamn (sektionens 32 + etikettens 8; mobil 16).
-          : `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 12px 16px' : '32px 16px 40px'}`,
+          // Samma vänsterkant som tablåns kanalnamn (sektionens 12 + ringmarginalens 10 + etikettens 8; mobil 16).
+          : `${belowMenuPill(isTv, isMobile)} ${isMobile ? '16px 12px 16px' : '32px 16px 30px'}`,
         color: C.text, fontFamily: FONT.ui, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
       }}
     >
@@ -296,10 +296,12 @@ export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, ca
             ) : rest ? (
               // Vila: neutral bricka, inte LIVE.
               <span data-hero-badge="rest" style={{
-                display: 'inline-flex', alignItems: 'center', padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
+                display: 'inline-flex', alignItems: 'center', gap: dim(6, isTv), padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
                 ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }), color: C.textSoft, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em', lineHeight: 1.3,
               }}
               >
+                {/* Samma form som LIVE-brickan (prick + text): heron byter aldrig höjd. */}
+                <span style={{ width: dim(6, isTv), height: dim(6, isTv), borderRadius: 999, border: `1px solid ${C.textSoft}`, boxSizing: 'border-box' }} />
                 {t('heroOffAir')}
               </span>
             ) : null}
@@ -317,13 +319,10 @@ export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, ca
           {/* Fasta rader (aldrig villkorade): heron byter aldrig höjd, långa texter kortas. */}
           <p data-hero-meta="" style={{ ...oneLine, margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }}>{meta}</p>
           <div data-hero-status="" style={{ marginTop: dim(8, isTv), height: dim(20, isTv), display: 'flex', alignItems: 'center' }}>
-            {rest ? (
-              <p style={{ ...oneLine, margin: 0, fontSize: fs(13), lineHeight: 1.4, color: C.accentLight }}>{t('playerRest', { time: formatClock(rest.nextAir) })}</p>
-            ) : (
-              <div style={{ width: '100%', height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
-                <div style={{ width: `${pct * 100}%`, height: '100%', background: C.accent }} />
-              </div>
-            )}
+            {/* Samma element i vila (tomt spår): återkomsttiden står i metaraden, inget skjuter innehållet. */}
+            <div style={{ width: '100%', height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
+              <div style={{ width: `${rest ? 0 : pct * 100}%`, height: '100%', background: C.accent }} />
+            </div>
           </div>
           <p data-hero-next="" style={{ ...oneLine, margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(13), lineHeight: 1.4, color: C.textDim }}>
             {after

@@ -20,7 +20,7 @@ import { useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
 import { bandIndex, bandTransform, blockBox, formatClock, nowLinePct, slotScrollTop, type GuideWindow } from './guide-layout'
 import { C, FONT, RADIUS, fontSize } from './tokens'
-import { dim, dimS, TV_CONTENT_LEFT, TV_CONTENT_RIGHT, tvu } from './tv'
+import { dim, dimS, TV_CONTENT_LEFT, tvu } from './tv'
 import type { useText } from './use-text'
 
 type T = ReturnType<typeof useText>
@@ -125,8 +125,10 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
     const id = row?.getAttribute('data-channel-row') ?? null
     if (id && el.contains(row!)) onHover(id)
   }
+  // Ringmarginal i sidled (se padding nedan).
+  const ring = fill && !isMobile ? dimS(10, isTv) : '0px'
   const header = (
-    <div style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: dim(34, isTv, 42), borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+    <div data-guide-axis="" style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: dim(34, isTv, 42), borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, marginInline: ring }}>
       <span style={{ ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: '0.18em', color: C.textDim }}>
         {t('guideHeader')}
       </span>
@@ -173,7 +175,14 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
       onHold={onHold}
     />
   ))
-  const padding = compact ? 0 : isMobile ? '0' : isTv ? `0 ${tvu(TV_CONTENT_RIGHT)} 0 ${tvu(TV_CONTENT_LEFT - 8)}` : '0 32px'
+  /*
+    Full innehållsbredd. Raderna har en inre marginal (RING) i rullbehållaren
+    så den markerade radens ram och glöd aldrig klipps i vänster- eller
+    högerkanten (behållaren klipper i sidled); tidsaxeln får samma marginal så
+    kolumnerna står rakt. Kanalnamnet ligger kvar på appens innehållslinje
+    (TV 100 enheter) och herons vänsterkant (skrivbord 30 px).
+  */
+  const padding = compact ? 0 : isMobile ? '0' : isTv ? `0 ${tvu(14)} 0 ${tvu(TV_CONTENT_LEFT - 8 - 10)}` : '0 2px 0 12px'
   return (
     <section
       data-channels-guide=""
@@ -205,7 +214,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
                 flex: 1, minHeight: 0, overflowY: band ? 'hidden' : 'auto', overflowX: 'hidden', overscrollBehavior: 'contain',
                 // Raderna tonar ut upptill (herons nederkant) när de glider upp; luft
                 // ovanför bandplatsen så raden där står helt synlig.
-                paddingTop: fade, paddingBottom: band ? 0 : dim(24, isTv, 40),
+                paddingTop: fade, paddingBottom: band ? 0 : dim(24, isTv, 40), paddingInline: ring,
                 WebkitMaskImage: guideFadeMask(isTv), maskImage: guideFadeMask(isTv),
                 scrollbarWidth: 'none',
               }}

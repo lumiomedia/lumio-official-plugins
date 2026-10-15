@@ -27279,30 +27279,30 @@ ${effectiveName(url, id)}`;
     await nav.share({ files: [file] });
     return true;
   }
-  async function saveRenderedClip(clip2, name, ext) {
+  async function saveRenderedClip(clip3, name, ext) {
     if (isTauriEnv) {
       const out = await tauriInvoke("save_file", {
         suggestedName: name,
-        srcPath: clip2.path,
+        srcPath: clip3.path,
         filterName: ext.toUpperCase(),
         extensions: [ext]
       });
       return out ? "saved" : "cancelled";
     }
-    downloadUrl(`/api/clip/${clip2.id}/file`, name);
+    downloadUrl(`/api/clip/${clip3.id}/file`, name);
     return "saved";
   }
-  async function shareRenderedClip(clip2, name, anchor, ext) {
+  async function shareRenderedClip(clip3, name, anchor, ext) {
     if (isTauriEnv) {
       try {
-        await tauriInvoke("share_file", { path: clip2.path, ...anchorArgs(anchor) });
+        await tauriInvoke("share_file", { path: clip3.path, ...anchorArgs(anchor) });
         return "shared";
       } catch {
-        await saveRenderedClip(clip2, name, ext);
+        await saveRenderedClip(clip3, name, ext);
         return "saved";
       }
     }
-    const blob = await (await fetch(`/api/clip/${clip2.id}/file`)).blob();
+    const blob = await (await fetch(`/api/clip/${clip3.id}/file`)).blob();
     if (await webShareFile(new File([blob], name, { type: blob.type }))) return "shared";
     const url = URL.createObjectURL(blob);
     downloadUrl(url, name);
@@ -27320,8 +27320,8 @@ ${effectiveName(url, id)}`;
   function isAndroidVersionError(error) {
     return error instanceof Error && error.code === "android-version";
   }
-  async function prepareWebShareFile(clip2, name, mime, fetchImpl = (...args) => fetch(...args), routes = DEFAULT_CLIP_ROUTES) {
-    const blob = await (await fetchImpl(routes.file(clip2.id))).blob();
+  async function prepareWebShareFile(clip3, name, mime, fetchImpl = (...args) => fetch(...args), routes = DEFAULT_CLIP_ROUTES) {
+    const blob = await (await fetchImpl(routes.file(clip3.id))).blob();
     return new File([blob], name, { type: mime });
   }
   async function shareWebFile(file, nav = navigator) {
@@ -27344,8 +27344,8 @@ ${effectiveName(url, id)}`;
       return false;
     }
   }
-  function downloadClipFile(clip2, name) {
-    downloadUrl(`/api/clip/${clip2.id}/file`, name);
+  function downloadClipFile(clip3, name) {
+    downloadUrl(`/api/clip/${clip3.id}/file`, name);
   }
   async function toPng(source) {
     const w = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
@@ -32755,7 +32755,7 @@ ${cue.text}`).join("\n\n")}
       showMomentNotice((result.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result.seconds)));
     };
     const showClip = openSurface === "clip";
-    const [clip2, setClip] = useState(null);
+    const [clip3, setClip] = useState(null);
     const clipDispatch = useCallback((action) => setClip((s) => s ? clipReducer(s, action) : s), []);
     const clipAnchorRef = useRef(0);
     const clipRendererRef = useRef(null);
@@ -32817,12 +32817,12 @@ ${cue.text}`).join("\n\n")}
       clipRenderSeqRef.current += 1;
       clipWebFileRef.current = null;
       setClipShareState({ kind: "idle" });
-    }, [clip2?.inSec, clip2?.outSec, clip2?.format]);
+    }, [clip3?.inSec, clip3?.outSec, clip3?.format]);
     useEffect(() => () => {
       clipRendererRef.current?.cancel();
       if (isMpvEngineRef.current) void mpvCommand(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand(["set_property", "ab-loop-b", "no"]));
     }, []);
-    const clipDocked = showClip && Boolean(clip2) && portraitChrome;
+    const clipDocked = showClip && Boolean(clip3) && portraitChrome;
     clipDockedRef.current = clipDocked;
     useEffect(() => {
       if (useMpv) scheduleBoundsResync();
@@ -32833,7 +32833,7 @@ ${cue.text}`).join("\n\n")}
     const [clipTvStill, setClipTvStill] = useState(null);
     const clipKeyHoldRef = useRef(0);
     const clipKeyRepeatAtRef = useRef(0);
-    const showClipTv = showClip && Boolean(clip2) && isTv;
+    const showClipTv = showClip && Boolean(clip3) && isTv;
     useEffect(() => {
       if (!showClipTv) return;
       let alive = true;
@@ -32863,9 +32863,9 @@ ${cue.text}`).join("\n\n")}
       return () => document.removeEventListener("focusin", onFocus);
     }, [showClipTv]);
     useEffect(() => {
-      if (!showClipTv || !clip2 || clip2.scrubbing) return;
+      if (!showClipTv || !clip3 || clip3.scrubbing) return;
       let alive = true;
-      const key = `clip-tv-${Math.round(clip2.inSec)}`;
+      const key = `clip-tv-${Math.round(clip3.inSec)}`;
       const id = window.setTimeout(() => {
         void Promise.resolve(np({ cmd: "captureFrame", path: `/api/player-frame?key=${key}` })).then(async () => {
           for (let i = 0; i < 12 && alive; i++) {
@@ -32883,19 +32883,19 @@ ${cue.text}`).join("\n\n")}
         alive = false;
         window.clearTimeout(id);
       };
-    }, [showClipTv, clip2?.inSec, clip2?.scrubbing]);
+    }, [showClipTv, clip3?.inSec, clip3?.scrubbing]);
     const clipSendSource = showClipTv ? sendableSourceUrl(clipLinkBase, url, requestHeaders) : null;
     const clipTvSend = async (phoneId) => {
-      if (!clip2) return;
+      if (!clip3) return;
       const phone = clipPhones.find((ph) => ph.id === phoneId);
       const base = clipLinkBase;
       if (!base || !clipSendSource) {
         clipToast("clipFailed");
         return;
       }
-      const link = tmdbId ? buildMomentLink(base, { mediaType: mediaType === "tv" ? "tv" : "movie", tmdbId: String(tmdbId), season: season ?? void 0, episode: episode ?? void 0, seconds: clip2.inSec, endSeconds: clip2.outSec }) : base;
+      const link = tmdbId ? buildMomentLink(base, { mediaType: mediaType === "tv" ? "tv" : "movie", tmdbId: String(tmdbId), season: season ?? void 0, episode: episode ?? void 0, seconds: clip3.inSec, endSeconds: clip3.outSec }) : base;
       const offer = buildClipOffer({
-        state: clip2,
+        state: clip3,
         tvName: describeThisDevice(isTv, isAndroidTauriEnv),
         sourceUrl: clipSendSource,
         sourceHeight: droid.stats?.height ?? null,
@@ -32908,7 +32908,7 @@ ${cue.text}`).join("\n\n")}
         body: JSON.stringify({ phoneId, kind: "clip", body: offer })
       }).catch(() => null);
       if (res?.ok) {
-        showMomentNotice(tClip("clipSentTo").replace("{phone}", phone?.name ?? "").replace("{len}", String(Math.round(clip2.outSec - clip2.inSec))));
+        showMomentNotice(tClip("clipSentTo").replace("{phone}", phone?.name ?? "").replace("{len}", String(Math.round(clip3.outSec - clip3.inSec))));
       } else if (res?.status === 404) {
         clipToast("clipPhoneGone");
         void fetchPhones().then((r) => setClipPhones((r?.phones ?? []).filter((ph) => ph.live).map((ph) => ({ id: ph.id, name: ph.name }))));
@@ -32917,7 +32917,7 @@ ${cue.text}`).join("\n\n")}
       }
     };
     const onClipTvKeyDown = (event) => {
-      if (!clip2) return;
+      if (!clip3) return;
       const target2 = event.target;
       const station = clipQrOpen ? "qr" : target2.dataset.clipStation;
       if (!station) return;
@@ -32970,37 +32970,37 @@ ${cue.text}`).join("\n\n")}
       }
     };
     useEffect(() => {
-      if (!showClip && clip2) closeClip();
+      if (!showClip && clip3) closeClip();
     }, [showClip]);
     useEffect(() => {
-      if (!clip2) return;
-      if (clip2.format === "still" && !clip2.scrubbing) {
+      if (!clip3) return;
+      if (clip3.format === "still" && !clip3.scrubbing) {
         if (isMpvEngine) void mpvCommand2(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand2(["set_property", "ab-loop-b", "no"]));
-        seekToAbsolute(clip2.inSec);
+        seekToAbsolute(clip3.inSec);
         if (isPlaying) togglePlay();
         return;
       }
-      if (clip2.scrubbing) {
+      if (clip3.scrubbing) {
         if (isMpvEngine) void mpvCommand2(["set_property", "ab-loop-a", "no"]).then(() => mpvCommand2(["set_property", "ab-loop-b", "no"]));
-        seekToAbsolute(clip2.activeHandle === "out" ? clip2.outSec : clip2.inSec);
+        seekToAbsolute(clip3.activeHandle === "out" ? clip3.outSec : clip3.inSec);
         if (isPlaying) togglePlay();
         const id = window.setTimeout(() => clipDispatch({ type: "scrubEnd" }), 900);
         return () => window.clearTimeout(id);
       }
       if (isMpvEngine) {
-        void mpvCommand2(["set_property", "ab-loop-a", String(clip2.inSec)]).then(() => mpvCommand2(["set_property", "ab-loop-b", String(clip2.outSec)]));
+        void mpvCommand2(["set_property", "ab-loop-a", String(clip3.inSec)]).then(() => mpvCommand2(["set_property", "ab-loop-b", String(clip3.outSec)]));
       }
-      seekToAbsolute(clip2.inSec);
+      seekToAbsolute(clip3.inSec);
       if (!isPlaying) togglePlay();
-    }, [clip2?.inSec, clip2?.outSec, clip2?.scrubbing, clip2?.format]);
+    }, [clip3?.inSec, clip3?.outSec, clip3?.scrubbing, clip3?.format]);
     useEffect(() => {
-      if (!clip2 || isMpvEngine) return;
+      if (!clip3 || isMpvEngine) return;
       const back = shouldLoopBack(
-        { position: realTime, inSec: clip2.inSec, outSec: clip2.outSec, scrubbing: clip2.scrubbing, still: clip2.format === "still" },
+        { position: realTime, inSec: clip3.inSec, outSec: clip3.outSec, scrubbing: clip3.scrubbing, still: clip3.format === "still" },
         clipLoopGateRef.current
       );
-      if (back) seekToAbsolute(clip2.inSec);
-    }, [realTime, clip2, isMpvEngine, seekToAbsolute]);
+      if (back) seekToAbsolute(clip3.inSec);
+    }, [realTime, clip3, isMpvEngine, seekToAbsolute]);
     useEffect(() => {
       if (!showClip || !isMpvEngine) return;
       void Promise.resolve(mpvCommand2(["get_property", "video-params/gamma"])).then((g) => {
@@ -33008,7 +33008,7 @@ ${cue.text}`).join("\n\n")}
       });
     }, [showClip, isMpvEngine]);
     useEffect(() => {
-      if (!clip2 || clip2.scrubbing || !isMpvEngine) return;
+      if (!clip3 || clip3.scrubbing || !isMpvEngine) return;
       let cancelled = false;
       const id = window.setTimeout(() => {
         void captureFrameBlob("mpv", null).then((blob) => {
@@ -33025,13 +33025,13 @@ ${cue.text}`).join("\n\n")}
         cancelled = true;
         window.clearTimeout(id);
       };
-    }, [clip2?.inSec, clip2?.scrubbing]);
+    }, [clip3?.inSec, clip3?.scrubbing]);
     const tClip = (key) => t(key);
     const clipToast = (key) => showMomentNotice(tClip(key));
     const isClipCancel = (error) => error instanceof Error && error.message === "avbruten";
     const clipAudioPos = audioTracks.findIndex((track) => track.index === activeAudioTrack);
     const clipAudioIndex = clipAudioPos >= 0 ? clipAudioPos : void 0;
-    const clipRenderInput = () => clip2 && (clip2.format !== "still" || clipEngine !== "mpv") ? { url, headers: requestHeaders, inSec: clip2.inSec, outSec: clip2.outSec, format: clip2.format, hdr: clipHdrRef.current, audioIndex: clipAudioIndex } : null;
+    const clipRenderInput = () => clip3 && (clip3.format !== "still" || clipEngine !== "mpv") ? { url, headers: requestHeaders, inSec: clip3.inSec, outSec: clip3.outSec, format: clip3.format, hdr: clipHdrRef.current, audioIndex: clipAudioIndex } : null;
     const clipPreviewClip = (() => {
       const input = clipRenderInput();
       const done = input ? clipRendererRef.current?.peek(input) : null;
@@ -33052,8 +33052,8 @@ ${cue.text}`).join("\n\n")}
       }
     };
     const clipCopy = () => {
-      if (!clip2) return;
-      if (clip2.format === "still") {
+      if (!clip3) return;
+      if (clip3.format === "still") {
         copyStillToClipboard(captureStill(clipEngine, videoRef.current)).then(() => clipToast("clipImageCopied"), () => clipToast("clipFailed"));
         return;
       }
@@ -33066,13 +33066,13 @@ ${cue.text}`).join("\n\n")}
         tmdbId: String(tmdbId),
         season: season ?? void 0,
         episode: episode ?? void 0,
-        seconds: clip2.inSec,
-        endSeconds: clip2.outSec
+        seconds: clip3.inSec,
+        endSeconds: clip3.outSec
       });
       void writeTextToClipboard(link).then((ok) => clipToast(ok ? "clipLinkCopied" : "clipFailed"));
     };
     const clipCopyLink = () => {
-      if (!clip2) return;
+      if (!clip3) return;
       if (!tmdbId || !clipLinkBase) {
         clipToast("clipFailed");
         return;
@@ -33082,43 +33082,43 @@ ${cue.text}`).join("\n\n")}
         tmdbId: String(tmdbId),
         season: season ?? void 0,
         episode: episode ?? void 0,
-        seconds: clip2.inSec,
-        endSeconds: clip2.format === "still" ? void 0 : clip2.outSec
+        seconds: clip3.inSec,
+        endSeconds: clip3.format === "still" ? void 0 : clip3.outSec
       });
       void writeTextToClipboard(link).then((ok) => clipToast(ok ? "clipLinkCopied" : "clipFailed"));
     };
     const clipSaveFile = async () => {
-      if (!clip2) return;
+      if (!clip3) return;
       try {
         if (clipEngine !== "mpv") {
           const rendered2 = await renderClip();
-          const name = clipFileName(clip2.title, clipExt(clip2.format));
+          const name = clipFileName(clip3.title, clipExt(clip3.format));
           if (clipEngine === "droid") {
             try {
-              await saveToGalleryAndroid(rendered2.path, clipMime(clip2.format), name);
+              await saveToGalleryAndroid(rendered2.path, clipMime(clip3.format), name);
               clipToast("clipSavedPhotos");
             } catch (error) {
               if (!isAndroidVersionError(error)) throw error;
               clipToast("clipSaveNeedsAndroid10");
-              await shareFileAndroid(rendered2.path, clipMime(clip2.format), clip2.title, name);
+              await shareFileAndroid(rendered2.path, clipMime(clip3.format), clip3.title, name);
             }
           } else {
             downloadClipFile(rendered2, name);
           }
           return;
         }
-        if (clip2.format === "still") {
-          await saveStill(await captureStill(clipEngine, videoRef.current), clipFileName(clip2.title, "png"));
+        if (clip3.format === "still") {
+          await saveStill(await captureStill(clipEngine, videoRef.current), clipFileName(clip3.title, "png"));
           return;
         }
         const rendered = await renderClip();
-        if (await saveRenderedClip(rendered, clipFileName(clip2.title, clip2.format), clip2.format) === "saved") clipToast("clipSaved");
+        if (await saveRenderedClip(rendered, clipFileName(clip3.title, clip3.format), clip3.format) === "saved") clipToast("clipSaved");
       } catch (error) {
         if (!isClipCancel(error)) clipToast("clipFailed");
       }
     };
     const clipShare = async (anchor) => {
-      if (!clip2) return;
+      if (!clip3) return;
       try {
         if (clipEngine === "none") {
           const ready = clipWebFileRef.current;
@@ -33134,13 +33134,13 @@ ${cue.text}`).join("\n\n")}
             return;
           }
           const rendered = await renderClip();
-          const name = clipFileName(clip2.title, clipExt(clip2.format));
-          if (!canShareFiles(clipMime(clip2.format))) {
+          const name = clipFileName(clip3.title, clipExt(clip3.format));
+          if (!canShareFiles(clipMime(clip3.format))) {
             downloadClipFile(rendered, name);
             return;
           }
           const seq = clipRenderSeqRef.current;
-          const file = await prepareWebShareFile(rendered, name, clipMime(clip2.format));
+          const file = await prepareWebShareFile(rendered, name, clipMime(clip3.format));
           if (seq !== clipRenderSeqRef.current) return;
           clipWebFileRef.current = file;
           setClipShareState({ kind: "ready" });
@@ -33148,24 +33148,24 @@ ${cue.text}`).join("\n\n")}
         }
         if (clipEngine === "droid") {
           const rendered = await renderClip();
-          await shareFileAndroid(rendered.path, clipMime(clip2.format), clip2.title, clipFileName(clip2.title, clipExt(clip2.format)));
+          await shareFileAndroid(rendered.path, clipMime(clip3.format), clip3.title, clipFileName(clip3.title, clipExt(clip3.format)));
           return;
         }
-        if (clip2.format === "still") {
-          await shareStill(await captureStill(clipEngine, videoRef.current), clipFileName(clip2.title, "png"), anchor);
+        if (clip3.format === "still") {
+          await shareStill(await captureStill(clipEngine, videoRef.current), clipFileName(clip3.title, "png"), anchor);
           return;
         }
-        await shareRenderedClip(await renderClip(), clipFileName(clip2.title, clip2.format), anchor, clip2.format);
+        await shareRenderedClip(await renderClip(), clipFileName(clip3.title, clip3.format), anchor, clip3.format);
       } catch (error) {
         if (!isClipCancel(error)) clipToast("clipFailed");
       }
     };
     const clipSaveMoment = () => {
-      if (!clip2 || !momentKey) {
+      if (!clip3 || !momentKey) {
         showMomentNotice(t("plMomentUnavailable"));
         return;
       }
-      const result = addMoment(momentKey, clip2.inSec);
+      const result = addMoment(momentKey, clip3.inSec);
       showMomentNotice((result.kind === "added" ? t("plMomentSaved") : t("plMomentExists")).replace("{time}", fmt(result.seconds)));
     };
     const gearChevron = /* @__PURE__ */ jsx("svg", { "aria-hidden": true, className: "h-4 w-4 flex-none text-slate-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsx("path", { d: "m9 6 6 6-6 6" }) });
@@ -34522,7 +34522,7 @@ ${cue.text}`).join("\n\n")}
                   ] }),
                   /* @__PURE__ */ jsxs("div", { className: "flex flex-none items-center gap-2", children: [
                     /* @__PURE__ */ jsx(BingeModeChip, {}),
-                    showClip && clip2 && isTv ? /* @__PURE__ */ jsx("span", { className: "rounded-full border border-[rgb(var(--player-accent)/0.40)] bg-black/60 px-[11px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.12em] text-white", children: clip2.scrubbing ? tClip("clipFrame").replace("{time}", formatClipTime(clip2.activeHandle === "out" ? clip2.outSec : clip2.inSec)) : tClip("clipLoopChip").replace("{len}", String(Math.round(clip2.outSec - clip2.inSec))) }) : null,
+                    showClip && clip3 && isTv ? /* @__PURE__ */ jsx("span", { className: "rounded-full border border-[rgb(var(--player-accent)/0.40)] bg-black/60 px-[11px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.12em] text-white", children: clip3.scrubbing ? tClip("clipFrame").replace("{time}", formatClipTime(clip3.activeHandle === "out" ? clip3.outSec : clip3.inSec)) : tClip("clipLoopChip").replace("{len}", String(Math.round(clip3.outSec - clip3.inSec))) }) : null,
                     showClip ? null : /* @__PURE__ */ jsxs(Fragment2, { children: [
                       /* @__PURE__ */ jsxs(
                         "button",
@@ -35528,20 +35528,20 @@ ${cue.text}`).join("\n\n")}
                     ]
                   }
                 ),
-                clipDocked && clip2 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
+                clipDocked && clip3 ? /* @__PURE__ */ jsxs(Fragment2, { children: [
                   /* @__PURE__ */ jsx(
                     "div",
                     {
                       ref: clipDockRef,
                       className: "pointer-events-none fixed inset-x-0 z-[25]",
                       style: { top: `calc(56px + ${PHONE_TOP_INSET})`, aspectRatio: "16 / 9" },
-                      children: /* @__PURE__ */ jsx("span", { className: "absolute bottom-2 right-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: tClip("clipFrom").replace("{time}", formatClipTime(clip2.inSec)) })
+                      children: /* @__PURE__ */ jsx("span", { className: "absolute bottom-2 right-2 rounded-md bg-[rgba(13,14,22,0.8)] px-1.5 text-[11px] font-semibold tabular-nums text-white", children: tClip("clipFrom").replace("{time}", formatClipTime(clip3.inSec)) })
                     }
                   ),
                   /* @__PURE__ */ jsx(
                     ClipPortraitSheet,
                     {
-                      state: clip2,
+                      state: clip3,
                       dispatch: clipDispatch,
                       formats: ["mp4", "gif", "still"],
                       share: clipShareState,
@@ -35559,10 +35559,10 @@ ${cue.text}`).join("\n\n")}
                     }
                   )
                 ] }) : null,
-                showClip && clip2 && landscapeChrome ? /* @__PURE__ */ jsx(
+                showClip && clip3 && landscapeChrome ? /* @__PURE__ */ jsx(
                   ClipLandscapePanel,
                   {
-                    state: clip2,
+                    state: clip3,
                     dispatch: clipDispatch,
                     formats: ["mp4", "gif", "still"],
                     share: clipShareState,
@@ -35578,11 +35578,11 @@ ${cue.text}`).join("\n\n")}
                     }
                   }
                 ) : null,
-                showClip && clip2 && isTv ? /* @__PURE__ */ jsxs("div", { className: "contents", onKeyDown: onClipTvKeyDown, children: [
+                showClip && clip3 && isTv ? /* @__PURE__ */ jsxs("div", { className: "contents", onKeyDown: onClipTvKeyDown, children: [
                   /* @__PURE__ */ jsx(
                     ClipTvPanel,
                     {
-                      state: clip2,
+                      state: clip3,
                       dispatch: clipDispatch,
                       phones: clipSendSource ? clipPhones : [],
                       canShowQr: Boolean(tmdbId && clipLinkBase),
@@ -35602,20 +35602,20 @@ ${cue.text}`).join("\n\n")}
                   clipQrOpen ? /* @__PURE__ */ jsx(
                     ClipTvQrDialog,
                     {
-                      link: tmdbId && clipLinkBase ? buildMomentLink(clipLinkBase, { mediaType: mediaType === "tv" ? "tv" : "movie", tmdbId: String(tmdbId), season: season ?? void 0, episode: episode ?? void 0, seconds: clip2.inSec, endSeconds: clip2.outSec }) : clipLinkBase ?? "",
-                      inSec: clip2.inSec,
-                      outSec: clip2.outSec,
+                      link: tmdbId && clipLinkBase ? buildMomentLink(clipLinkBase, { mediaType: mediaType === "tv" ? "tv" : "movie", tmdbId: String(tmdbId), season: season ?? void 0, episode: episode ?? void 0, seconds: clip3.inSec, endSeconds: clip3.outSec }) : clipLinkBase ?? "",
+                      inSec: clip3.inSec,
+                      outSec: clip3.outSec,
                       t: tClip
                     }
                   ) : null
                 ] }) : null,
-                showClip && clip2 && !phoneChrome && !isTv ? /* @__PURE__ */ jsx(
+                showClip && clip3 && !phoneChrome && !isTv ? /* @__PURE__ */ jsx(
                   ClipPanel,
                   {
-                    state: clip2,
+                    state: clip3,
                     dispatch: clipDispatch,
                     formats: ffmpegOk ? ["mp4", "gif", "still"] : ["still"],
-                    canCopyLink: clip2.format === "still" || clipLinkBase !== null,
+                    canCopyLink: clip3.format === "still" || clipLinkBase !== null,
                     busy: clipBusy,
                     share: clipShareState,
                     previewSrc: clipPreview,
@@ -35665,11 +35665,11 @@ ${cue.text}`).join("\n\n")}
                         const timePillClass2 = "vp-time-pill flex-none rounded-lg bg-[rgba(13,14,22,0.66)] px-2.5 py-[5px] text-[13px] font-semibold tabular-nums text-slate-100";
                         const elapsedLabel = playerLayout.timeFormat === "remaining" ? `-${fmt(Math.max(0, totalDuration - seekTime))}` : fmt(seekTime);
                         const totalLabel = playerLayout.timeFormat === "elapsed-total" ? fmt(totalDuration) : null;
-                        if (showClip && clip2 && isTv) {
+                        if (showClip && clip3 && isTv) {
                           return /* @__PURE__ */ jsx("div", { onKeyDown: onClipTvKeyDown, children: /* @__PURE__ */ jsx(
                             ClipTrimmer,
                             {
-                              state: clip2,
+                              state: clip3,
                               dispatch: clipDispatch,
                               position: realTime,
                               heightClass: seekHeightClass,
@@ -35679,9 +35679,9 @@ ${cue.text}`).join("\n\n")}
                             }
                           ) });
                         }
-                        if (showClip && clip2) {
+                        if (showClip && clip3) {
                           return /* @__PURE__ */ jsxs(Fragment2, { children: [
-                            /* @__PURE__ */ jsx(ClipTrimmer, { state: clip2, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass }),
+                            /* @__PURE__ */ jsx(ClipTrimmer, { state: clip3, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass }),
                             /* @__PURE__ */ jsxs("div", { className: "mt-3.5 flex items-center justify-between gap-6", children: [
                               /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1", children: [
                                 desktopControls.playPause,
@@ -35708,11 +35708,11 @@ ${cue.text}`).join("\n\n")}
                         /* Liggande: spåret kant till kant, tiden till vänster och sju
                            brickor till höger — den sjunde är Mer, som bär det som inte fick
                            plats. Ingen sidoscroll: budgeten är just sex plus Mer. */
-                        showClip && clip2 ? (
+                        showClip && clip3 ? (
                           /* Klippytan (handoff 2b): trimmern i touchstorlek, och raden bär
                              bara play och klippknappen. */
                           /* @__PURE__ */ jsxs(Fragment2, { children: [
-                            /* @__PURE__ */ jsx(ClipTrimmer, { state: clip2, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass, size: "touch", t: tClip }),
+                            /* @__PURE__ */ jsx(ClipTrimmer, { state: clip3, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass, size: "touch", t: tClip }),
                             /* @__PURE__ */ jsxs("div", { className: "mt-2 flex items-center justify-between gap-5", children: [
                               /* @__PURE__ */ jsx("button", { type: "button", onClick: togglePlay, "aria-label": t("plPlayPause"), className: "p-1 text-white", children: isPlaying ? /* @__PURE__ */ jsx("svg", { className: "h-6 w-6", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" }) }) : /* @__PURE__ */ jsx("svg", { className: "h-6 w-6", viewBox: "0 0 24 24", fill: "currentColor", children: /* @__PURE__ */ jsx("path", { d: "M8 5v14l11-7z" }) }) }),
                               phoneControls.clip ? renderPhoneTile("clip", phoneControls.clip) : null
@@ -35742,10 +35742,10 @@ ${cue.text}`).join("\n\n")}
                             ] })
                           ] })
                         ] })
-                      ) : portraitChrome && showClip && clip2 ? (
+                      ) : portraitChrome && showClip && clip3 ? (
                         /* Klippet i stående läge (handoff 2c): trimmern direkt under den
                            dockade videon. Bottenarket ritas för sig (ClipPortraitSheet). */
-                        /* @__PURE__ */ jsx("div", { className: "fixed inset-x-0 px-[22px]", style: { top: `calc(56px + ${PHONE_TOP_INSET} + 56.25vw + 14px)` }, children: /* @__PURE__ */ jsx(ClipTrimmer, { state: clip2, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass, size: "touch", t: tClip }) })
+                        /* @__PURE__ */ jsx("div", { className: "fixed inset-x-0 px-[22px]", style: { top: `calc(56px + ${PHONE_TOP_INSET} + 56.25vw + 14px)` }, children: /* @__PURE__ */ jsx(ClipTrimmer, { state: clip3, dispatch: clipDispatch, position: realTime, heightClass: seekHeightClass, size: "touch", t: tClip }) })
                       ) : portraitChrome ? (
                         /* Stående: seekrad och ikonrad i sidmarginalen, sedan den rullande
                            pillerraden. `flex-none` på raden är NÖDVÄNDIGT — utan den blir
@@ -39947,7 +39947,7 @@ ${cue.text}`).join("\n\n")}
     heroMovie: { en: "Film", sv: "Film" },
     heroEpisode: { en: "Episode", sv: "Avsnitt" },
     heroRestTitle: { en: "The channel is resting", sv: "Kanalen vilar" },
-    heroRestMeta: { en: "Off air \xB7 in {dur}", sv: "Utanf\xF6r s\xE4ndningstid \xB7 om {dur}" },
+    heroRestMeta: { en: "Off air \xB7 back {time} \xB7 in {dur}", sv: "Utanf\xF6r s\xE4ndningstid \xB7 \xE5ter {time} \xB7 om {dur}" },
     heroLoading: { en: "Loading the schedule\u2026", sv: "H\xE4mtar tabl\xE5n\u2026" },
     durHm: { en: "{h} h {m} min", sv: "{h} h {m} min" },
     durM: { en: "{m} min", sv: "{m} min" },
@@ -40204,8 +40204,12 @@ ${cue.text}`).join("\n\n")}
     return `hsl(${h} 60% 55% / ${alpha})`;
   }
   function channelInitials(name) {
-    const words = name.trim().split(/\s+/).filter(Boolean);
-    return words.slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+    const words = name.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    const first = words[0];
+    if (!first) return "";
+    const digits = /^\p{N}+/u.exec(first)?.[0];
+    if (digits) return digits.slice(0, 2);
+    return words.slice(0, 2).map((w) => w[0].toLocaleUpperCase()).join("");
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/model/lock.ts
@@ -40387,6 +40391,9 @@ ${cue.text}`).join("\n\n")}
     if (rundown.length === 0) return { kind: "empty" };
     const attached = rundown[LOCK];
     if (attached) {
+      const slots = attached.lock.slots;
+      const lockStart = slots.length > 0 ? slots[0].s : null;
+      const horizon = lockHorizon(attached.lock);
       const hit = lockedSlotAt(attached.lock, t);
       if (hit) {
         if (hit.r === "") return { kind: "rest", start: hit.s, stop: hit.e, nextAir: hit.e };
@@ -40397,13 +40404,21 @@ ${cue.text}`).join("\n\n")}
           const minsIn = hit.o + (t - hit.s) / MIN2;
           return { kind: "programme", item, index, start: hit.s, stop: hit.e, minsIn, minsLeft: runtime2 - minsIn, pct: minsIn / runtime2 };
         }
+        return clip2(computedAt(rundown, window2, t), hit.s, hit.e);
       }
-      const horizon = lockHorizon(attached.lock);
       const free = computedAt(rundown, window2, t);
-      if (horizon != null && t >= horizon && free.kind !== "empty" && free.start < horizon) return { ...free, start: horizon };
+      if (lockStart != null && t < lockStart) return clip2(free, -Infinity, lockStart);
+      if (horizon != null && t >= horizon) return clip2(free, horizon, Infinity);
       return free;
     }
     return computedAt(rundown, window2, t);
+  }
+  function clip2(slot, from, to) {
+    if (slot.kind === "empty") return slot;
+    const start2 = Math.max(slot.start, from);
+    const stop = Math.min(slot.stop, to);
+    if (start2 === slot.start && stop === slot.stop) return slot;
+    return slot.kind === "rest" ? { ...slot, start: start2, stop, nextAir: Math.min(slot.nextAir, stop) } : { ...slot, start: start2, stop };
   }
   function computedAt(rundown, window2, t) {
     if (rundown.length === 0) return { kind: "empty" };
@@ -42115,7 +42130,8 @@ ${cue.text}`).join("\n\n")}
       const id = row?.getAttribute("data-channel-row") ?? null;
       if (id && el.contains(row)) onHover(id);
     };
-    const header = /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }, children: [
+    const ring = fill3 && !isMobile ? dimS(10, isTv) : "0px";
+    const header = /* @__PURE__ */ jsxs("div", { "data-guide-axis": "", style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0, marginInline: ring }, children: [
       /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textDim }, children: t("guideHeader") }),
       /* @__PURE__ */ jsx("div", { style: { position: "relative", height: "100%" }, children: win.ticks.map((tick2) => /* @__PURE__ */ jsx(
         "span",
@@ -42162,7 +42178,7 @@ ${cue.text}`).join("\n\n")}
       },
       channel.id
     ));
-    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(TV_CONTENT_RIGHT)} 0 ${tvu(TV_CONTENT_LEFT - 8)}` : "0 32px";
+    const padding = compact ? 0 : isMobile ? "0" : isTv ? `0 ${tvu(14)} 0 ${tvu(TV_CONTENT_LEFT - 8 - 10)}` : "0 2px 0 12px";
     return /* @__PURE__ */ jsx(
       "section",
       {
@@ -42206,6 +42222,7 @@ ${cue.text}`).join("\n\n")}
                     // ovanför bandplatsen så raden där står helt synlig.
                     paddingTop: fade,
                     paddingBottom: band ? 0 : dim(24, isTv, 40),
+                    paddingInline: ring,
                     WebkitMaskImage: guideFadeMask(isTv),
                     maskImage: guideFadeMask(isTv),
                     scrollbarWidth: "none"
@@ -42498,7 +42515,7 @@ ${cue.text}`).join("\n\n")}
       meta = parts.join(" \xB7 ");
     } else if (rest) {
       title = t("heroRestTitle");
-      meta = t("heroRestMeta", { dur: duration(rest.nextAir - now2, t) });
+      meta = t("heroRestMeta", { time: formatClock2(rest.nextAir), dur: duration(rest.nextAir - now2, t) });
     } else {
       title = channel.name;
       meta = loading2 ? t("heroLoading") : t("playerEmpty");
@@ -42516,7 +42533,7 @@ ${cue.text}`).join("\n\n")}
           flexShrink: 0,
           minHeight,
           boxSizing: "border-box",
-          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 12px 16px" : "32px 16px 40px"}`,
+          padding: isTv ? `${belowMenuPill(true, false)} ${tvu(TV_CONTENT_RIGHT)} ${tvu(18)} ${tvu(TV_CONTENT_LEFT)}` : `${belowMenuPill(isTv, isMobile)} ${isMobile ? "16px 12px 16px" : "32px 16px 30px"}`,
           color: C.text,
           fontFamily: FONT3.ui,
           display: "flex",
@@ -42618,13 +42635,14 @@ ${cue.text}`).join("\n\n")}
                   }
                 ) : rest ? (
                   // Vila: neutral bricka, inte LIVE.
-                  /* @__PURE__ */ jsx(
+                  /* @__PURE__ */ jsxs(
                     "span",
                     {
                       "data-hero-badge": "rest",
                       style: {
                         display: "inline-flex",
                         alignItems: "center",
+                        gap: dim(6, isTv),
                         padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`,
                         borderRadius: RADIUS.pill,
                         ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }),
@@ -42634,7 +42652,10 @@ ${cue.text}`).join("\n\n")}
                         letterSpacing: "0.16em",
                         lineHeight: 1.3
                       },
-                      children: t("heroOffAir")
+                      children: [
+                        /* @__PURE__ */ jsx("span", { style: { width: dim(6, isTv), height: dim(6, isTv), borderRadius: 999, border: `1px solid ${C.textSoft}`, boxSizing: "border-box" } }),
+                        t("heroOffAir")
+                      ]
                     }
                   )
                 ) : null,
@@ -42658,7 +42679,7 @@ ${cue.text}`).join("\n\n")}
                 }
               ),
               /* @__PURE__ */ jsx("p", { "data-hero-meta": "", style: { ...oneLine, margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }, children: meta }),
-              /* @__PURE__ */ jsx("div", { "data-hero-status": "", style: { marginTop: dim(8, isTv), height: dim(20, isTv), display: "flex", alignItems: "center" }, children: rest ? /* @__PURE__ */ jsx("p", { style: { ...oneLine, margin: 0, fontSize: fs(13), lineHeight: 1.4, color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { width: "100%", height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) }) }),
+              /* @__PURE__ */ jsx("div", { "data-hero-status": "", style: { marginTop: dim(8, isTv), height: dim(20, isTv), display: "flex", alignItems: "center" }, children: /* @__PURE__ */ jsx("div", { style: { width: "100%", height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${rest ? 0 : pct2 * 100}%`, height: "100%", background: C.accent } }) }) }),
               /* @__PURE__ */ jsx("p", { "data-hero-next": "", style: { ...oneLine, margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(13), lineHeight: 1.4, color: C.textDim }, children: after ? t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) : "\xA0" })
             ] }, channel.id),
             isTv ? null : /* @__PURE__ */ jsxs("div", { "data-hero-actions": "", style: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: isMobile ? 14 : 18 }, children: [
@@ -43065,6 +43086,57 @@ ${cue.text}`).join("\n\n")}
       };
     }, [anchorRef, session2]);
     return state2;
+  }
+  var HOST_TOPBAR_SELECTOR = ".vp-topbar";
+  function hostTopbarBottom(anchor, bar) {
+    const a = anchor.getBoundingClientRect();
+    const b = bar.getBoundingClientRect();
+    if (b.width <= 0 && b.height <= 0) return null;
+    const k = anchor.offsetWidth > 0 && a.width > 0 ? a.width / anchor.offsetWidth : 1;
+    return Math.max(0, Math.round((b.bottom - a.top) / k));
+  }
+  function useHostTopbarBottom(anchorRef, session2) {
+    const [bottom, setBottom] = useState(null);
+    useEffect(() => {
+      if (!session2) {
+        setBottom(null);
+        return;
+      }
+      let bar = null;
+      let resize = null;
+      const read10 = () => {
+        const anchor = anchorRef.current;
+        if (!anchor || !bar) return;
+        const next2 = hostTopbarBottom(anchor, bar);
+        setBottom((prev) => prev === next2 ? prev : next2);
+      };
+      const attach = () => {
+        if (bar?.isConnected) {
+          read10();
+          return;
+        }
+        resize?.disconnect();
+        resize = null;
+        bar = null;
+        for (let node = anchorRef.current?.parentElement ?? null; node && !bar; node = node.parentElement) bar = node.querySelector(HOST_TOPBAR_SELECTOR);
+        if (!bar) return;
+        read10();
+        if (typeof ResizeObserver !== "undefined") {
+          resize = new ResizeObserver(read10);
+          resize.observe(bar);
+        }
+      };
+      attach();
+      const timer3 = window.setInterval(attach, 500);
+      window.addEventListener("resize", read10);
+      return () => {
+        window.clearInterval(timer3);
+        window.removeEventListener("resize", read10);
+        resize?.disconnect();
+        setBottom(null);
+      };
+    }, [anchorRef, session2]);
+    return bottom;
   }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tuning-card.tsx
@@ -43641,6 +43713,7 @@ ${cue.text}`).join("\n\n")}
     const playerKey = onScreen && Player ? `${onScreen.seq}|${onScreen.playable.url}` : null;
     const hostControls = useHostControls(osdRef, zapOn || guideOpen || awaitingPicture(state2) ? null : playerKey);
     const osdIdleVisible = hostControls ? hostControls.visible : osdVisible;
+    const hostTopbar = useHostTopbarBottom(osdRef, zapOn || guideOpen || awaitingPicture(state2) ? null : playerKey);
     const osdShownRef = useRef(true);
     osdShownRef.current = (zapOn ? osdVisible : osdIdleVisible) || status !== "playing";
     const endHandledFor = useRef(null);
@@ -43814,6 +43887,7 @@ ${cue.text}`).join("\n\n")}
         osdRef,
         visible: osdIdleVisible || status !== "playing",
         lift: hostControls?.lift ?? null,
+        topbarBottom: hostTopbar,
         channel,
         meta: metaParts.join(" \xB7 "),
         title: described?.slot.item.title ?? null,
@@ -44024,7 +44098,7 @@ ${cue.text}`).join("\n\n")}
                 // Under värdens 52 px-topprad, annars på appens sidlinje (--page-top-line:
                 // macOS-titelraden/trafikljusen, Android-inset och TV-inset ingår).
                 position: "absolute",
-                top: props.hostBar ? "calc(52px + 0.5rem)" : "calc(var(--page-top-line, 1rem) + 0.25rem)",
+                top: props.topbarBottom != null && props.topbarBottom > 0 ? `calc(${props.topbarBottom}px + 0.5rem)` : props.hostBar ? "calc(52px + 0.5rem)" : "calc(var(--page-top-line, 1rem) + 0.25rem)",
                 left: "1rem",
                 maxWidth: "min(26rem, calc(100vw - 6rem))",
                 display: "flex",
@@ -45195,7 +45269,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.11",
+    version: "0.1.12",
     description: S.description,
     preinstalled: false,
     register(ctx) {
