@@ -42617,7 +42617,7 @@ ${cue.text}`).join("\n\n")}
           ),
           /* @__PURE__ */ jsxs("div", { style: { position: "relative" }, children: [
             /* @__PURE__ */ jsxs("div", { "data-channels-hero-copy": "", style: { animation: "chh-fade 300ms ease both" }, children: [
-              /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: dim(10, isTv), flexWrap: "wrap" }, children: [
+              /* @__PURE__ */ jsxs("div", { "data-hero-badge-row": "", style: { display: "flex", alignItems: "center", gap: dim(10, isTv), flexWrap: "nowrap", height: dim(24, isTv), minWidth: 0 }, children: [
                 programme ? /* @__PURE__ */ jsxs(
                   "span",
                   {
@@ -42633,7 +42633,11 @@ ${cue.text}`).join("\n\n")}
                       fontSize: fs(10.5),
                       fontWeight: 700,
                       letterSpacing: "0.16em",
-                      lineHeight: 1.3
+                      lineHeight: 1.3,
+                      // Samma kant som vilobrickans glas: annars är VILA 2 px högre och heron hoppar.
+                      border: "1px solid transparent",
+                      boxSizing: "border-box",
+                      flexShrink: 0
                     },
                     children: [
                       /* @__PURE__ */ jsx("span", { style: { width: dim(6, isTv), height: dim(6, isTv), borderRadius: 999, background: C.onAccent } }),
@@ -42657,7 +42661,9 @@ ${cue.text}`).join("\n\n")}
                         fontSize: fs(10.5),
                         fontWeight: 700,
                         letterSpacing: "0.16em",
-                        lineHeight: 1.3
+                        lineHeight: 1.3,
+                        boxSizing: "border-box",
+                        flexShrink: 0
                       },
                       children: [
                         /* @__PURE__ */ jsx("span", { style: { width: dim(6, isTv), height: dim(6, isTv), borderRadius: 999, border: `1px solid ${C.textSoft}`, boxSizing: "border-box" } }),
@@ -42666,7 +42672,7 @@ ${cue.text}`).join("\n\n")}
                     }
                   )
                 ) : null,
-                /* @__PURE__ */ jsx("span", { style: { fontSize: fs(11), letterSpacing: "0.22em", textTransform: "uppercase", color: C.textSoft }, children: t("zapChannelLine", { n: channel.number, name: channel.name }) })
+                /* @__PURE__ */ jsx("span", { style: { ...oneLine, minWidth: 0, fontSize: fs(11), letterSpacing: "0.22em", textTransform: "uppercase", color: C.textSoft }, children: t("zapChannelLine", { n: channel.number, name: channel.name }) })
               ] }),
               /* @__PURE__ */ jsx(
                 "h1",
@@ -45276,7 +45282,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.15",
+    version: "0.1.16",
     description: S.description,
     preinstalled: false,
     register(ctx) {

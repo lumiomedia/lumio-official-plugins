@@ -2,7 +2,7 @@
   "id": "com.lumio.channels",
   "slug": "channels",
   "name": { "en": "Channels", "sv": "Kanaler" },
-  "version": "0.1.15",
+  "version": "0.1.16",
   "minAppVersion": "0.1.625",
   "description": {
     "en": "Personal linear TV channels built from your library, watchlist and debrid cloud — a real schedule that runs with the clock.",

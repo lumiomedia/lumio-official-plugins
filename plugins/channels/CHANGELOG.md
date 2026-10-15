@@ -1,3 +1,7 @@
+## 0.1.16
+
+- Heron hoppar inte längre vid kanalbyte: LIVE- och VILA-brickan har samma höjd och brickraden bryts aldrig.
+
 ## 0.1.15
 
 - Kanalerna följer appens accentfärg (Utseende → Accent) i stället för en fast orange: pågående program, nu-linjen, markeringar, knappar och etiketter.

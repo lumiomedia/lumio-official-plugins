@@ -283,11 +283,14 @@ export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, ca
       <div style={{ position: 'relative' }}>
         {/* Eget attribut: appens TV-regel för [data-hero-copy] drog in texten. */}
         <div key={channel.id} data-channels-hero-copy="" style={{ animation: 'chh-fade 300ms ease both' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: dim(10, isTv), flexWrap: 'wrap' }}>
+          {/* Fast höjd, ingen radbrytning: brickraden får aldrig ändra herons höjd. */}
+          <div data-hero-badge-row="" style={{ display: 'flex', alignItems: 'center', gap: dim(10, isTv), flexWrap: 'nowrap', height: dim(24, isTv), minWidth: 0 }}>
             {programme ? (
               <span data-hero-badge="live" style={{
                 display: 'inline-flex', alignItems: 'center', gap: dim(6, isTv), padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
                 background: C.accent, color: C.onAccent, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em', lineHeight: 1.3,
+                // Samma kant som vilobrickans glas: annars är VILA 2 px högre och heron hoppar.
+                border: '1px solid transparent', boxSizing: 'border-box', flexShrink: 0,
               }}
               >
                 <span style={{ width: dim(6, isTv), height: dim(6, isTv), borderRadius: 999, background: C.onAccent }} />
@@ -298,6 +301,7 @@ export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, ca
               <span data-hero-badge="rest" style={{
                 display: 'inline-flex', alignItems: 'center', gap: dim(6, isTv), padding: `${dimS(3, isTv)} ${dimS(9, isTv)}`, borderRadius: RADIUS.pill,
                 ...glass(isTv, { fill: C.glassDenseSoft, blur: 0 }), color: C.textSoft, fontSize: fs(10.5), fontWeight: 700, letterSpacing: '0.16em', lineHeight: 1.3,
+                boxSizing: 'border-box', flexShrink: 0,
               }}
               >
                 {/* Samma form som LIVE-brickan (prick + text): heron byter aldrig höjd. */}
@@ -305,7 +309,7 @@ export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, ca
                 {t('heroOffAir')}
               </span>
             ) : null}
-            <span style={{ fontSize: fs(11), letterSpacing: '0.22em', textTransform: 'uppercase', color: C.textSoft }}>
+            <span style={{ ...oneLine, minWidth: 0, fontSize: fs(11), letterSpacing: '0.22em', textTransform: 'uppercase', color: C.textSoft }}>
               {t('zapChannelLine', { n: channel.number, name: channel.name })}
             </span>
           </div>
