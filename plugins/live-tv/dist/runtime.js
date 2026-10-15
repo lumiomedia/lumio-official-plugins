@@ -20489,7 +20489,6 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
-      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -53223,7 +53222,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     }, [single]);
     return { isOpen: (id) => visible.includes(id), toggle };
   }
-  function Chevron2({ open: open2 }) {
+  function LtChevron({ open: open2, style }) {
     return /* @__PURE__ */ jsx(
       "svg",
       {
@@ -53236,48 +53235,66 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
         strokeLinecap: "round",
         strokeLinejoin: "round",
         "aria-hidden": true,
-        style: { flex: "none", transform: open2 ? "rotate(90deg)" : "none", transition: "transform 0.15s" },
-        children: /* @__PURE__ */ jsx("path", { d: "m9 18 6-6-6-6" })
+        "data-lt-chevron": open2 ? "up" : "down",
+        style: { flex: "none", transform: open2 ? "rotate(180deg)" : "none", transition: "transform 0.15s", ...style },
+        children: /* @__PURE__ */ jsx("path", { d: "m6 9 6 6 6-6" })
       }
     );
   }
   function LtCollapsible({ id, title, summary, open: open2, onToggle, children, testId }) {
     const bodyId = `lt-section-${id}`;
-    return /* @__PURE__ */ jsxs("section", { "data-testid": testId, "data-lt-collapsible": id, style: { display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }, children: [
-      /* @__PURE__ */ jsxs(
-        "button",
-        {
-          type: "button",
-          "aria-expanded": open2,
-          "aria-controls": bodyId,
-          onClick: onToggle,
-          style: {
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            width: "100%",
-            minWidth: 0,
-            boxSizing: "border-box",
-            borderRadius: 10,
-            border: 0,
-            background: open2 ? "rgba(255,255,255,0.065)" : UI.card,
-            padding: "14px 18px",
-            textAlign: "left",
-            fontFamily: "inherit",
-            color: UI.text,
-            cursor: "pointer"
-          },
-          children: [
-            /* @__PURE__ */ jsxs("span", { style: { minWidth: 0, flex: 1 }, children: [
-              /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: 14.5, fontWeight: 500, lineHeight: 1.3 }, children: title }),
-              summary ? /* @__PURE__ */ jsx("span", { style: { display: "block", marginTop: 3, fontSize: 12.5, color: UI.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: summary }) : null
-            ] }),
-            /* @__PURE__ */ jsx(Chevron2, { open: open2 })
-          ]
-        }
-      ),
-      open2 ? /* @__PURE__ */ jsx("div", { id: bodyId, style: { display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }, children }) : null
-    ] });
+    return /* @__PURE__ */ jsxs(
+      "section",
+      {
+        "data-testid": testId,
+        "data-lt-collapsible": id,
+        "data-open": open2 ? "1" : "0",
+        style: { display: "flex", flexDirection: "column", minWidth: 0, borderRadius: 10, background: UI.card, border: `1px solid ${open2 ? UI.line : "transparent"}` },
+        children: [
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              type: "button",
+              "aria-expanded": open2,
+              "aria-controls": bodyId,
+              onClick: onToggle,
+              style: {
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                width: "100%",
+                minWidth: 0,
+                boxSizing: "border-box",
+                borderRadius: 10,
+                border: 0,
+                background: "transparent",
+                padding: "14px 16px",
+                textAlign: "left",
+                fontFamily: "inherit",
+                color: UI.text,
+                cursor: "pointer"
+              },
+              children: [
+                /* @__PURE__ */ jsxs("span", { style: { minWidth: 0, flex: 1 }, children: [
+                  /* @__PURE__ */ jsx("span", { style: { display: "block", fontSize: 14.5, fontWeight: 500, lineHeight: 1.3 }, children: title }),
+                  summary ? /* @__PURE__ */ jsx("span", { style: { display: "block", marginTop: 3, fontSize: 12.5, color: UI.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: summary }) : null
+                ] }),
+                /* @__PURE__ */ jsx(LtChevron, { open: open2 })
+              ]
+            }
+          ),
+          open2 ? /* @__PURE__ */ jsx(
+            "div",
+            {
+              id: bodyId,
+              "data-testid": testId ? `${testId}-body` : void 0,
+              style: { display: "flex", flexDirection: "column", gap: 20, minWidth: 0, borderTop: `1px solid ${UI.lineSoft}`, padding: "16px 12px 14px" },
+              children
+            }
+          ) : null
+        ]
+      }
+    );
   }
   function LtOverflowMenu({ label, items: items2, testId }) {
     const [open2, setOpen] = useState(false);
@@ -57381,22 +57398,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
               /* @__PURE__ */ jsx("span", { style: { display: "block", margin: "4px 0 0", fontSize: 12.5, color: UI.muted }, children: meta }),
               !open2 && status ? /* @__PURE__ */ jsx("span", { "data-testid": `playlist-status-${list.id}`, style: { display: "block", margin: "2px 0 0", fontSize: 12.5, color: status.color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: status.text }) : null
             ] }),
-            /* @__PURE__ */ jsx(
-              "svg",
-              {
-                width: "14",
-                height: "14",
-                viewBox: "0 0 24 24",
-                fill: "none",
-                stroke: UI.muted,
-                strokeWidth: "2.2",
-                strokeLinecap: "round",
-                strokeLinejoin: "round",
-                "aria-hidden": true,
-                style: { flex: "none", marginTop: 2, transform: open2 ? "rotate(90deg)" : "none", transition: "transform 0.15s" },
-                children: /* @__PURE__ */ jsx("path", { d: "m9 18 6-6-6-6" })
-              }
-            )
+            /* @__PURE__ */ jsx(LtChevron, { open: open2, style: { marginTop: 2 } })
           ]
         }
       ),
@@ -58419,7 +58421,7 @@ ${ON} [data-focus-row]:has([data-fcur="1"]) ${ROW_DECL}
     const tvSettings = useTvSettings();
     const narrow = useLtNarrow();
     const vod = useVodLibrarySources();
-    const accordion = useLtAccordion(narrow, getLiveTvLists().length === 0 ? ["playlists"] : []);
+    const accordion = useLtAccordion(narrow, ["playlists"]);
     const fetchLabel = s.fetchProgress.status === "fetching" ? h("fetching") : h("fetchList");
     const totalChannels = s.lists.reduce((sum, list) => sum + (list.channelCount ?? 0), 0);
     const playlistsSummary = s.lists.length === 0 ? h("summaryNoLists") : `${s.lists.length === 1 ? h("summaryListsOne") : h("summaryListsMany", { n: s.lists.length })} \xB7 ${h("channelsCount", { count: fmtInt(totalChannels, locale) })}`;
