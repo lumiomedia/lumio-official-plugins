@@ -20335,6 +20335,7 @@
   var COMPLETE_THRESHOLD;
   var init_barcode_model = __esm({
     "lib/barcode/barcode-model.ts"() {
+      "use strict";
       COMPLETE_THRESHOLD = 0.99;
     }
   });
@@ -39948,7 +39949,6 @@ ${cue.text}`).join("\n\n")}
     heroRestTitle: { en: "The channel is resting", sv: "Kanalen vilar" },
     heroRestMeta: { en: "Off air \xB7 in {dur}", sv: "Utanf\xF6r s\xE4ndningstid \xB7 om {dur}" },
     heroLoading: { en: "Loading the schedule\u2026", sv: "H\xE4mtar tabl\xE5n\u2026" },
-    heroPartial: { en: "More titles loading\u2026", sv: "Fler titler laddas\u2026" },
     durHm: { en: "{h} h {m} min", sv: "{h} h {m} min" },
     durM: { en: "{m} min", sv: "{m} min" },
     guideHeader: { en: "GUIDE", sv: "TABL\xC5" },
@@ -41665,6 +41665,16 @@ ${cue.text}`).join("\n\n")}
     const d = new Date(ms2);
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   }
+  function bandIndex(focusIndex, count) {
+    if (count <= 0) return 0;
+    return Math.min(count - 1, Math.max(0, Math.round(focusIndex)));
+  }
+  function bandTransform(index, rowH) {
+    return index === 0 ? "translateY(0px)" : `translateY(calc(${-index} * ${rowH}))`;
+  }
+  function slotScrollTop(index, rowH, maxScroll) {
+    return Math.max(0, Math.min(Math.max(0, maxScroll), index * rowH));
+  }
 
   // ../../../lumio-official-plugins/.worktrees/kanaler/plugins/channels/runtime/ui/tv.ts
   init_react_shim();
@@ -42068,11 +42078,43 @@ ${cue.text}`).join("\n\n")}
     const columns = `${dimS(labelW, isTv, compact ? 230 : 260)} minmax(${isMobile ? 544 : 0}px, 1fr)`;
     const nowPct = now2 >= win.from && now2 <= win.to ? nowLinePct(now2, win) : null;
     const scrollRef = useRef(null);
-    useEffect(() => {
-      if (!fill3 || !selectedId) return;
-      scrollRef.current?.querySelector(`[data-channel-row="${selectedId}"]`)?.scrollIntoView?.({ block: "nearest" });
-    }, [fill3]);
     const fade = isTv ? tvu(GUIDE_FADE.tv) : `${GUIDE_FADE.desktop}px`;
+    const selectedIndex = Math.max(0, channels.findIndex((c) => c.id === selectedId));
+    const band = fill3 && isTv;
+    const [focusIndex, setFocusIndex] = useState(selectedIndex);
+    const bandAt = bandIndex(focusIndex, channels.length);
+    const rowHCss = typeof rowH === "number" ? `${rowH}px` : rowH;
+    useEffect(() => {
+      const el = scrollRef.current;
+      if (!fill3 || band || !el) return;
+      el.scrollTop = slotScrollTop(selectedIndex, ROW_H, el.scrollHeight - el.clientHeight);
+    }, [fill3]);
+    const onNav = (index, dir) => {
+      const next2 = index + dir;
+      if (next2 < 0 || next2 >= channels.length) return false;
+      const target2 = scrollRef.current?.querySelector(`[data-channel-row="${channels[next2].id}"]`);
+      if (!target2) return false;
+      target2.focus({ preventScroll: true });
+      if (!band) {
+        const el = scrollRef.current;
+        el.scrollTo?.({ top: slotScrollTop(next2, ROW_H, el.scrollHeight - el.clientHeight), behavior: "smooth" });
+        onSelect(channels[next2].id);
+      }
+      return true;
+    };
+    const pointer = useRef(null);
+    const onGuideScroll = (event) => {
+      const el = event.currentTarget;
+      if (band) {
+        if (el.scrollTop !== 0) el.scrollTop = 0;
+        return;
+      }
+      const p = pointer.current;
+      if (!onHover || !p || typeof document.elementFromPoint !== "function") return;
+      const row = document.elementFromPoint(p.x, p.y)?.closest?.("[data-channel-row]");
+      const id = row?.getAttribute("data-channel-row") ?? null;
+      if (id && el.contains(row)) onHover(id);
+    };
     const header = /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: columns, alignItems: "end", height: dim(34, isTv, 42), borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }, children: [
       /* @__PURE__ */ jsx("span", { style: { ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: "0.18em", color: C.textDim }, children: t("guideHeader") }),
       /* @__PURE__ */ jsx("div", { style: { position: "relative", height: "100%" }, children: win.ticks.map((tick2) => /* @__PURE__ */ jsx(
@@ -42093,7 +42135,7 @@ ${cue.text}`).join("\n\n")}
         tick2
       )) })
     ] });
-    const rows = channels.map((channel) => /* @__PURE__ */ jsx(
+    const rows = channels.map((channel, i) => /* @__PURE__ */ jsx(
       GuideRow,
       {
         channel,
@@ -42105,7 +42147,9 @@ ${cue.text}`).join("\n\n")}
         rowH,
         clickPlays: !!compact,
         init: isTv && initId === channel.id,
-        scrollMargin: fill3 ? `calc(${fade} + ${dimS(8, isTv)})` : null,
+        station: !band || i >= bandAt,
+        onNav: fill3 && !isMobile ? (dir) => onNav(i, dir) : void 0,
+        onFocusRow: band ? () => setFocusIndex(i) : void 0,
         isTv,
         isMobile,
         t,
@@ -42143,22 +42187,37 @@ ${cue.text}`).join("\n\n")}
                 {
                   ref: scrollRef,
                   "data-channels-guide-scroll": "",
-                  "data-scroll": "",
+                  "data-guide-band": band ? String(bandAt) : void 0,
+                  "data-scroll": band ? void 0 : "",
+                  onScroll: onGuideScroll,
+                  onMouseMove: onHover ? (e) => {
+                    pointer.current = { x: e.clientX, y: e.clientY };
+                  } : void 0,
+                  onMouseLeave: onHover ? () => {
+                    pointer.current = null;
+                  } : void 0,
                   style: {
                     flex: 1,
                     minHeight: 0,
-                    overflowY: "auto",
+                    overflowY: band ? "hidden" : "auto",
                     overflowX: "hidden",
                     overscrollBehavior: "contain",
-                    // Raderna tonar ut upptill (herons nederkant) när de rullar upp; luft
-                    // ovanför första raden så den står helt synlig i vila.
+                    // Raderna tonar ut upptill (herons nederkant) när de glider upp; luft
+                    // ovanför bandplatsen så raden där står helt synlig.
                     paddingTop: fade,
-                    paddingBottom: dim(24, isTv, 40),
+                    paddingBottom: band ? 0 : dim(24, isTv, 40),
                     WebkitMaskImage: guideFadeMask(isTv),
                     maskImage: guideFadeMask(isTv),
                     scrollbarWidth: "none"
                   },
-                  children: rows
+                  children: band ? /* @__PURE__ */ jsx(
+                    "div",
+                    {
+                      "data-guide-track": "",
+                      style: { transform: bandTransform(bandAt, rowHCss), transition: "transform 200ms ease", willChange: "transform" },
+                      children: rows
+                    }
+                  ) : rows
                 }
               ) : rows
             ] })
@@ -42168,7 +42227,7 @@ ${cue.text}`).join("\n\n")}
     );
   }
   var stickyLabel = (isMobile) => isMobile ? { position: "sticky", left: 0, zIndex: 2, background: C.solid } : {};
-  var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, rowH, init, scrollMargin, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, onHover, onHold }) {
+  var GuideRow = memo(function GuideRow2({ channel, selected, win, now: now2, nowPct, columns, rowH, init, station, onNav, onFocusRow, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, onHover, onHold }) {
     const plays = isTv || clickPlays;
     const activate = () => plays || selected ? onPlay(channel.id) : onSelect(channel.id);
     const hold = isTv && onHold && typeof tvHoldHandlers === "function" ? tvHoldHandlers(() => onPlay(channel.id), (el) => onHold(channel.id, el)) : null;
@@ -42190,6 +42249,13 @@ ${cue.text}`).join("\n\n")}
         activate();
         return;
       }
+      if ((event.key === "ArrowDown" || event.key === "ArrowUp") && onNav && !event.altKey && !event.ctrlKey && !event.metaKey) {
+        if (onNav(event.key === "ArrowDown" ? 1 : -1)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
       if (!isTv) return;
       if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
         if (onShift(event.key === "ArrowRight" ? 1 : -1)) {
@@ -42202,17 +42268,17 @@ ${cue.text}`).join("\n\n")}
       "div",
       {
         role: "button",
-        tabIndex: 0,
-        "data-f": "",
+        tabIndex: station ? 0 : -1,
+        "data-f": station ? "" : void 0,
         "data-init": init ? "" : void 0,
         "data-channel-row": channel.id,
         "aria-pressed": selected,
         onClick: activate,
         onDoubleClick: plays ? void 0 : () => onPlay(channel.id),
-        onFocus: (e) => {
+        onFocus: () => {
           setFocus(true);
           if (isTv && !selected) onSelect(channel.id);
-          if (scrollMargin) e.currentTarget.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+          onFocusRow?.();
         },
         onBlur: () => setFocus(false),
         onMouseEnter: () => {
@@ -42234,8 +42300,6 @@ ${cue.text}`).join("\n\n")}
           boxSizing: "border-box",
           borderBottom: `1px solid ${selected ? "transparent" : "rgba(255,255,255,0.05)"}`,
           borderRadius: selected ? dim(RADIUS.card, isTv) : 0,
-          // Rullbehållaren: luft så raden inte stannar i uttoningen.
-          ...scrollMargin ? { scrollMarginTop: scrollMargin, scrollMarginBottom: dimS(16, isTv) } : {},
           background: selected ? C.glassDenseSoft : "transparent",
           boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : "none"
         },
@@ -42321,6 +42385,7 @@ ${cue.text}`).join("\n\n")}
   init_jsx_runtime_shim();
   var FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 };
   var HERO_CSS = "@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }";
+  var oneLine = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" };
   function useHostPlayerActive() {
     const read10 = () => typeof document !== "undefined" && document.documentElement.classList.contains("mpv-playing");
     const [active3, setActive3] = useState(read10);
@@ -42376,7 +42441,7 @@ ${cue.text}`).join("\n\n")}
     const m = total % 60;
     return h > 0 ? t("durHm", { h, m }) : t("durM", { m });
   }
-  function ChannelHero({ channel, rundown, loading: loading2, partial, now: now2, isTv, isMobile, canPlay, t, onPlay, images }) {
+  function ChannelHero({ channel, rundown, loading: loading2, now: now2, isTv, isMobile, canPlay, t, onPlay, images }) {
     const fs = (px) => fontSize(px, isTv);
     const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now2) : null;
     const programme = slot?.kind === "programme" ? slot : null;
@@ -42592,10 +42657,9 @@ ${cue.text}`).join("\n\n")}
                   children: title
                 }
               ),
-              /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }, children: meta }),
-              partial ? /* @__PURE__ */ jsx("p", { "data-channels-partial": "", role: "status", style: { margin: `${dimS(4, isTv)} 0 0`, fontSize: fs(12), color: C.textDim }, children: t("heroPartial") }) : null,
-              rest ? /* @__PURE__ */ jsx("p", { style: { margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(13), color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { marginTop: dim(10, isTv), height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) }),
-              after ? /* @__PURE__ */ jsx("p", { "data-hero-next": "", style: { margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(13), color: C.textDim }, children: t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) }) : null
+              /* @__PURE__ */ jsx("p", { "data-hero-meta": "", style: { ...oneLine, margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }, children: meta }),
+              /* @__PURE__ */ jsx("div", { "data-hero-status": "", style: { marginTop: dim(8, isTv), height: dim(20, isTv), display: "flex", alignItems: "center" }, children: rest ? /* @__PURE__ */ jsx("p", { style: { ...oneLine, margin: 0, fontSize: fs(13), lineHeight: 1.4, color: C.accentLight }, children: t("playerRest", { time: formatClock2(rest.nextAir) }) }) : /* @__PURE__ */ jsx("div", { style: { width: "100%", height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: "rgba(255,255,255,0.15)", overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { width: `${pct2 * 100}%`, height: "100%", background: C.accent } }) }) }),
+              /* @__PURE__ */ jsx("p", { "data-hero-next": "", style: { ...oneLine, margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(13), lineHeight: 1.4, color: C.textDim }, children: after ? t("heroNext", { time: formatClock2(after.start), title: after.item.kind === "episode" && after.item.seriesTitle ? after.item.seriesTitle : after.item.title }) : "\xA0" })
             ] }, channel.id),
             isTv ? null : /* @__PURE__ */ jsxs("div", { "data-hero-actions": "", style: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: isMobile ? 14 : 18 }, children: [
               /* @__PURE__ */ jsx(HeroButton, { primary: true, disabled: !canPlay, onClick: () => onPlay("live"), children: t("heroWatchLive") }),
@@ -44981,7 +45045,6 @@ ${cue.text}`).join("\n\n")}
                 channel: heroChannel,
                 rundown: heroData?.rundown ?? [],
                 loading: heroData?.loading ?? true,
-                partial: heroData?.partial ?? false,
                 now: now2,
                 isTv,
                 isMobile,
@@ -45132,7 +45195,7 @@ ${cue.text}`).join("\n\n")}
   var ChannelsPlugin = {
     id: "com.lumio.channels",
     name: S.pluginName,
-    version: "0.1.10",
+    version: "0.1.11",
     description: S.description,
     preinstalled: false,
     register(ctx) {

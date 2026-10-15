@@ -28,8 +28,6 @@ export interface ChannelHeroProps {
   channel: ChannelDef
   rundown: PoolItem[]
   loading: boolean
-  /** Tablån visas men fler källor/metadata är på väg. */
-  partial?: boolean
   now: number
   isTv: boolean
   isMobile: boolean
@@ -48,6 +46,8 @@ export interface ChannelHeroProps {
 /** Bakgrundsbilden sticker ut under heron så tablån ligger på den uttonade bilden (TV: 170 × 1,54 designpx). */
 const FADE_EXTRA = { desktop: 170, mobile: 110, tv: 262 } as const
 const HERO_CSS = '@keyframes chh-fade { from { opacity: 0 } to { opacity: 1 } }'
+/** En rad, kortad med ellips — herons rader får aldrig bryta och ändra höjden. */
+const oneLine = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' } as const
 
 /**
  * Bakgrundslagrets geometri. Lagret är `position: fixed` med vänster/höger 0:
@@ -135,7 +135,7 @@ function duration(ms: number, t: T): string {
   return h > 0 ? t('durHm', { h, m }) : t('durM', { m })
 }
 
-export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isMobile, canPlay, t, onPlay, images }: ChannelHeroProps) {
+export function ChannelHero({ channel, rundown, loading, now, isTv, isMobile, canPlay, t, onPlay, images }: ChannelHeroProps) {
   const fs = (px: number) => fontSize(px, isTv)
   const slot = rundown.length > 0 ? programmeAt(rundown, channel.airWindow, now) : null
   const programme = slot?.kind === 'programme' ? slot : null
@@ -314,22 +314,22 @@ export function ChannelHero({ channel, rundown, loading, partial, now, isTv, isM
           >
             {title}
           </h1>
-          <p style={{ margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }}>{meta}</p>
-          {partial ? (
-            <p data-channels-partial="" role="status" style={{ margin: `${dimS(4, isTv)} 0 0`, fontSize: fs(12), color: C.textDim }}>{t('heroPartial')}</p>
-          ) : null}
-          {rest ? (
-            <p style={{ margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(13), color: C.accentLight }}>{t('playerRest', { time: formatClock(rest.nextAir) })}</p>
-          ) : (
-            <div style={{ marginTop: dim(10, isTv), height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
-              <div style={{ width: `${pct * 100}%`, height: '100%', background: C.accent }} />
-            </div>
-          )}
-          {after ? (
-            <p data-hero-next="" style={{ margin: `${dimS(10, isTv)} 0 0`, fontSize: fs(13), color: C.textDim }}>
-              {t('heroNext', { time: formatClock(after.start), title: after.item.kind === 'episode' && after.item.seriesTitle ? after.item.seriesTitle : after.item.title })}
-            </p>
-          ) : null}
+          {/* Fasta rader (aldrig villkorade): heron byter aldrig höjd, långa texter kortas. */}
+          <p data-hero-meta="" style={{ ...oneLine, margin: `${dimS(8, isTv)} 0 0`, fontSize: fs(14), lineHeight: 1.4, color: C.textSoft }}>{meta}</p>
+          <div data-hero-status="" style={{ marginTop: dim(8, isTv), height: dim(20, isTv), display: 'flex', alignItems: 'center' }}>
+            {rest ? (
+              <p style={{ ...oneLine, margin: 0, fontSize: fs(13), lineHeight: 1.4, color: C.accentLight }}>{t('playerRest', { time: formatClock(rest.nextAir) })}</p>
+            ) : (
+              <div style={{ width: '100%', height: dim(3, isTv), maxWidth: dim(360, isTv), borderRadius: 2, background: 'rgba(255,255,255,0.15)', overflow: 'hidden' }}>
+                <div style={{ width: `${pct * 100}%`, height: '100%', background: C.accent }} />
+              </div>
+            )}
+          </div>
+          <p data-hero-next="" style={{ ...oneLine, margin: `${dimS(6, isTv)} 0 0`, fontSize: fs(13), lineHeight: 1.4, color: C.textDim }}>
+            {after
+              ? t('heroNext', { time: formatClock(after.start), title: after.item.kind === 'episode' && after.item.seriesTitle ? after.item.seriesTitle : after.item.title })
+              : '\u00a0'}
+          </p>
         </div>
         {/* TV: inga knappar — OK på en rad tittar, håll OK ger glasmenyn. */}
         {isTv ? null : (

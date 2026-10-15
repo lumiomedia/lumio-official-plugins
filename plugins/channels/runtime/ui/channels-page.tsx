@@ -327,7 +327,6 @@ export function ChannelsPage({ params }: BrowsePageProps) {
         channel={heroChannel}
         rundown={heroData?.rundown ?? []}
         loading={heroData?.loading ?? true}
-        partial={heroData?.partial ?? false}
         now={now}
         isTv={isTv}
         isMobile={isMobile}

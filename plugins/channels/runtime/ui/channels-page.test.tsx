@@ -306,10 +306,48 @@ describe('Kanaler-sidans utseende', () => {
     expect(container.innerHTML).not.toMatch(/gradient/i)
   })
 
-  it('visar en diskret rad medan fler källor laddas', () => {
+  it('heron har fasta rader: ingen "Fler titler laddas…", Sedan-raden finns alltid (heron byter aldrig höjd)', () => {
     state.partial = true
-    page()
-    expect(screen.getByText('Fler titler laddas…')).toBeTruthy()
+    const { container } = page()
+    expect(screen.queryByText('Fler titler laddas…')).toBeNull()
+    expect(container.querySelector('[data-hero-meta]')).toBeTruthy()
+    expect(container.querySelector('[data-hero-status]')).toBeTruthy()
+    expect(container.querySelector('[data-hero-next]')).toBeTruthy()
+    const lines = (root: HTMLElement) => [...root.querySelectorAll('[data-channels-hero-copy] > *')].map((el) => el.tagName).join(',')
+    const live = lines(container)
+    cleanup()
+    // Vilande kanal: samma rader (vilotexten i statusraden, ingen extra rad).
+    state.channels = [{ ...channel(1, 'Natt'), airWindow: 'late' }]
+    expect(lines(page().container)).toBe(live)
+  })
+
+  it('TV: fast fokusband — ▼/▲ flyttar fokus en rad och spåret glider, ingen inbyggd rullning; ▲ från första raden lämnas åt motorn', () => {
+    state.tv = true
+    state.channels = [channel(1, 'Första'), channel(2, 'Andra'), channel(3, 'Tredje')]
+    state.rundowns = { k1: [item('Terminator', 100_000)], k2: [item('Aliens', 100_000)], k3: [item('Heat', 100_000)] }
+    const { container } = page({ channelId: 'k1' })
+    const scroller = container.querySelector<HTMLElement>('[data-channels-guide-scroll]')!
+    expect(scroller.hasAttribute('data-scroll')).toBe(false)
+    expect(scroller.getAttribute('data-guide-band')).toBe('0')
+    const row = (id: string) => container.querySelector<HTMLElement>(`[data-channel-row="${id}"]`)!
+    const up = new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true })
+    row('k1').dispatchEvent(up)
+    expect(up.defaultPrevented).toBe(false)
+    fireEvent.keyDown(row('k1'), { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(row('k2'))
+    expect(scroller.getAttribute('data-guide-band')).toBe('1')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Aliens')
+    // Raden ovanför bandet är ingen station (syns bara i uttoningen).
+    expect(row('k1').hasAttribute('data-f')).toBe(false)
+    fireEvent.keyDown(row('k2'), { key: 'ArrowDown' })
+    expect(scroller.getAttribute('data-guide-band')).toBe('2')
+    // Sista raden: bandet står kvar, motorn får ▼.
+    const down = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    row('k3').dispatchEvent(down)
+    expect(down.defaultPrevented).toBe(false)
+    fireEvent.keyDown(row('k3'), { key: 'ArrowUp' })
+    expect(document.activeElement).toBe(row('k2'))
+    expect(scroller.getAttribute('data-guide-band')).toBe('1')
   })
 
   it('vilande kanal visar VILA, inte LIVE', () => {

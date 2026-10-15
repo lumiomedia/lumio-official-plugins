@@ -18,7 +18,7 @@ import { listing, type Slot } from '../model/schedule'
 import type { PoolItem } from '../data/pool'
 import { useChannelPool } from '../state/store'
 import { ChannelBadge } from './badge'
-import { blockBox, formatClock, nowLinePct, type GuideWindow } from './guide-layout'
+import { bandIndex, bandTransform, blockBox, formatClock, nowLinePct, slotScrollTop, type GuideWindow } from './guide-layout'
 import { C, FONT, RADIUS, fontSize } from './tokens'
 import { dim, dimS, TV_CONTENT_LEFT, TV_CONTENT_RIGHT, tvu } from './tv'
 import type { useText } from './use-text'
@@ -79,12 +79,52 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
   const columns = `${dimS(labelW, isTv, compact ? 230 : 260)} minmax(${isMobile ? 544 : 0}px, 1fr)`
   const nowPct = now >= win.from && now <= win.to ? nowLinePct(now, win) : null
   const scrollRef = useRef<HTMLDivElement | null>(null)
-  // Vald kanal i bild när tablån monteras (utan animation).
-  useEffect(() => {
-    if (!fill || !selectedId) return
-    scrollRef.current?.querySelector<HTMLElement>(`[data-channel-row="${selectedId}"]`)?.scrollIntoView?.({ block: 'nearest' })
-  }, [fill]) // eslint-disable-line react-hooks/exhaustive-deps
   const fade = isTv ? tvu(GUIDE_FADE.tv) : `${GUIDE_FADE.desktop}px`
+  const selectedIndex = Math.max(0, channels.findIndex((c) => c.id === selectedId))
+  // TV: FAST FOKUSBAND (guide-layout.ts). Raden med fokus står på första
+  // radplatsen; spåret glider med transform (200 ms), ingen inbyggd rullning.
+  const band = fill && isTv
+  const [focusIndex, setFocusIndex] = useState(selectedIndex)
+  const bandAt = bandIndex(focusIndex, channels.length)
+  const rowHCss = typeof rowH === 'number' ? `${rowH}px` : rowH
+  // Skrivbord/mobil: vald kanal på bandplatsen när tablån monteras (utan animation).
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!fill || band || !el) return
+    el.scrollTop = slotScrollTop(selectedIndex, ROW_H, el.scrollHeight - el.clientHeight)
+  }, [fill]) // eslint-disable-line react-hooks/exhaustive-deps
+  /**
+   * ▲▼ på en rad (TV och skrivbordets tangentbord): nästa rad tar fokus utan
+   * webbläsarens egen inrullning, och spåret (TV) eller rullningen
+   * (skrivbord, mjukt) ställer den på bandplatsen. Falskt = ingen rad åt det
+   * hållet: fokusmotorn får trycket (▲ från första raden → appens toppmeny).
+   */
+  const onNav = (index: number, dir: -1 | 1): boolean => {
+    const next = index + dir
+    if (next < 0 || next >= channels.length) return false
+    const target = scrollRef.current?.querySelector<HTMLElement>(`[data-channel-row="${channels[next]!.id}"]`)
+    if (!target) return false
+    target.focus({ preventScroll: true })
+    if (!band) {
+      const el = scrollRef.current!
+      el.scrollTo?.({ top: slotScrollTop(next, ROW_H, el.scrollHeight - el.clientHeight), behavior: 'smooth' })
+      onSelect(channels[next]!.id)
+    }
+    return true
+  }
+  // Skrivbord: hjul/styrplatta rullar raderna under en stillastående pekare —
+  // heron följer raden som hamnar under den.
+  const pointer = useRef<{ x: number; y: number } | null>(null)
+  const onGuideScroll = (event: { currentTarget: HTMLDivElement }) => {
+    const el = event.currentTarget
+    // TV: bandet styrs bara av transformen; en inrullning (fokus) nollas.
+    if (band) { if (el.scrollTop !== 0) el.scrollTop = 0; return }
+    const p = pointer.current
+    if (!onHover || !p || typeof document.elementFromPoint !== 'function') return
+    const row = document.elementFromPoint(p.x, p.y)?.closest?.('[data-channel-row]')
+    const id = row?.getAttribute('data-channel-row') ?? null
+    if (id && el.contains(row!)) onHover(id)
+  }
   const header = (
     <div style={{ display: 'grid', gridTemplateColumns: columns, alignItems: 'end', height: dim(34, isTv, 42), borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
       <span style={{ ...stickyLabel(isMobile), paddingLeft: isMobile ? 16 : dim(8, isTv), paddingBottom: dim(8, isTv), fontSize: fontSize(10.5, isTv), lineHeight: 1.2, letterSpacing: '0.18em', color: C.textDim }}>
@@ -105,7 +145,7 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
       </div>
     </div>
   )
-  const rows = channels.map((channel) => (
+  const rows = channels.map((channel, i) => (
     <GuideRow
       key={channel.id}
       channel={channel}
@@ -117,7 +157,11 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
       rowH={rowH}
       clickPlays={!!compact}
       init={isTv && initId === channel.id}
-      scrollMargin={fill ? `calc(${fade} + ${dimS(8, isTv)})` : null}
+      // TV-bandet: rader ovanför bandet är inga stationer (de syns bara i uttoningen);
+      // ▲ från bandraden går via onNav.
+      station={!band || i >= bandAt}
+      onNav={fill && !isMobile ? (dir) => onNav(i, dir) : undefined}
+      onFocusRow={band ? () => setFocusIndex(i) : undefined}
       isTv={isTv}
       isMobile={isMobile}
       t={t}
@@ -145,22 +189,35 @@ export function ChannelGuide({ channels, selectedId, window: win, now, isTv, isM
       >
         <div style={{ minWidth: isMobile ? 640 : undefined, ...(fill ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}) }}>
           {header}
+          {/* Tidsaxeln ovan står still; bara raderna nedan rör sig. */}
           {fill ? (
             <div
               ref={scrollRef}
               data-channels-guide-scroll=""
-              // Fokusmotorn rullar in raden med fokus i en data-scroll-behållare.
-              data-scroll=""
+              data-guide-band={band ? String(bandAt) : undefined}
+              // Skrivbord/mobil: vanlig rullning (fokusmotorn rullar in i data-scroll).
+              // TV: ingen rullning alls — bandet flyttar spåret.
+              data-scroll={band ? undefined : ''}
+              onScroll={onGuideScroll}
+              onMouseMove={onHover ? (e) => { pointer.current = { x: e.clientX, y: e.clientY } } : undefined}
+              onMouseLeave={onHover ? () => { pointer.current = null } : undefined}
               style={{
-                flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehavior: 'contain',
-                // Raderna tonar ut upptill (herons nederkant) när de rullar upp; luft
-                // ovanför första raden så den står helt synlig i vila.
-                paddingTop: fade, paddingBottom: dim(24, isTv, 40),
+                flex: 1, minHeight: 0, overflowY: band ? 'hidden' : 'auto', overflowX: 'hidden', overscrollBehavior: 'contain',
+                // Raderna tonar ut upptill (herons nederkant) när de glider upp; luft
+                // ovanför bandplatsen så raden där står helt synlig.
+                paddingTop: fade, paddingBottom: band ? 0 : dim(24, isTv, 40),
                 WebkitMaskImage: guideFadeMask(isTv), maskImage: guideFadeMask(isTv),
                 scrollbarWidth: 'none',
               }}
             >
-              {rows}
+              {band ? (
+                <div
+                  data-guide-track=""
+                  style={{ transform: bandTransform(bandAt, rowHCss), transition: 'transform 200ms ease', willChange: 'transform' }}
+                >
+                  {rows}
+                </div>
+              ) : rows}
             </div>
           ) : rows}
         </div>
@@ -183,8 +240,12 @@ interface RowProps {
   rowH: number | string
   /** TV: vyns startfokus. */
   init: boolean
-  /** Sidans rullbehållare: rullmarginal så raden inte stannar i uttoningen. */
-  scrollMargin: string | null
+  /** Raden är en fokusstation (TV-bandet: inte raderna ovanför bandet). */
+  station: boolean
+  /** ▲▼ på raden (sidans tablå); falskt = ingen rad åt det hållet. */
+  onNav?(dir: -1 | 1): boolean
+  /** TV-bandet: raden fick fokus. */
+  onFocusRow?(): void
   /** Klick/OK spelar kanalen (tablån i spelaren); annars väljer klick, och klick på vald rad spelar. */
   clickPlays: boolean
   isTv: boolean
@@ -198,7 +259,7 @@ interface RowProps {
   onHold?(id: string, element: HTMLElement): void
 }
 
-const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, rowH, init, scrollMargin, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, onHover, onHold }: RowProps) {
+const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, columns, rowH, init, station, onNav, onFocusRow, clickPlays, isTv, isMobile, t, onSelect, onPlay, onRundown, onShift, onHover, onHold }: RowProps) {
   const plays = isTv || clickPlays
   // Klick: spelar på TV och i spelarens tablå; annars väljer klicket, och klick på vald rad spelar.
   const activate = () => (plays || selected ? onPlay(channel.id) : onSelect(channel.id))
@@ -221,6 +282,13 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
       activate()
       return
     }
+    if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && onNav && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      if (onNav(event.key === 'ArrowDown' ? 1 : -1)) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+      return
+    }
     if (!isTv) return
     // ◀▶ rullar tidsaxeln. Går det inte (vänster vid nu) får fokusmotorn trycket.
     if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
@@ -234,18 +302,18 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
   return (
     <div
       role="button"
-      tabIndex={0}
-      data-f=""
+      tabIndex={station ? 0 : -1}
+      data-f={station ? '' : undefined}
       data-init={init ? '' : undefined}
       data-channel-row={channel.id}
       aria-pressed={selected}
       onClick={activate}
       onDoubleClick={plays ? undefined : () => onPlay(channel.id)}
       // TV: fokus följer ▲▼, vald kanal (och heron) följer fokus, och raden glider in i bild.
-      onFocus={(e) => {
+      onFocus={() => {
         setFocus(true)
         if (isTv && !selected) onSelect(channel.id)
-        if (scrollMargin) e.currentTarget.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+        onFocusRow?.()
       }}
       onBlur={() => setFocus(false)}
       onMouseEnter={() => { setHover(true); onHover?.(channel.id) }}
@@ -256,8 +324,6 @@ const GuideRow = memo(function GuideRow({ channel, selected, win, now, nowPct, c
         display: 'grid', gridTemplateColumns: columns, height: rowH, cursor: 'pointer', outline: 'none', boxSizing: 'border-box',
         borderBottom: `1px solid ${selected ? 'transparent' : 'rgba(255,255,255,0.05)'}`,
         borderRadius: selected ? dim(RADIUS.card, isTv) : 0,
-        // Rullbehållaren: luft så raden inte stannar i uttoningen.
-        ...(scrollMargin ? { scrollMarginTop: scrollMargin, scrollMarginBottom: dimS(16, isTv) } : {}),
         background: selected ? C.glassDenseSoft : 'transparent',
         boxShadow: selected ? `inset 0 0 0 1px ${C.glassBorder}` : 'none',
       }}

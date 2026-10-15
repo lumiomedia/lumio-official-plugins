@@ -1,3 +1,9 @@
+## 0.1.11
+
+- Tablåns tidsaxel står still; bara kanalraderna rör sig.
+- Fast fokusband på TV: raden med fokus står alltid överst under tidsaxeln och raderna glider mjukt under den med ▲▼. Skrivbordets piltangenter gör samma sak; mus och styrplatta rullar fritt och heron följer raden under pekaren.
+- Heron byter aldrig höjd: raden "Fler titler laddas…" är borta och alla rader har fast plats och kortas med ellips.
+
 ## 0.1.10
 
 - Tablålås: när en kanals tablå visats ligger de närmaste sex timmarna fast. Nya källor, rättade fillängder och ny metadata ändrar bara tiden efter det — det som står i tablån är det som sänds. Låset fylls på rullande och släpps när kanalens regler ändras.
