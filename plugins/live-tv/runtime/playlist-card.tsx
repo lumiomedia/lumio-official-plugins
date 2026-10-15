@@ -138,7 +138,7 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
           : null
 
   return (
-    <LtCard testId={`playlist-card-${list.id}`} style={{ minWidth: 0 }}>
+    <LtCard testId={`playlist-card-${list.id}`} style={narrow ? { minWidth: 0, padding: '14px 12px' } : { minWidth: 0 }}>
       <button
         type="button"
         aria-expanded={open}
