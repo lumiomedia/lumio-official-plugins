@@ -3,7 +3,7 @@
 import { LtBtn, LtCard, LtNote, LtSection, UI, fmtInt, useToast } from './settings-ui'
 import { useHubText } from './hub-strings'
 import { useTvText } from './tv/tv-strings'
-import { useVodLibrarySources } from './hooks/useVodLibrarySources'
+import { useVodLibrarySources, type VodLibraryController } from './hooks/useVodLibrarySources'
 import type { VodLibraryRow } from './vod-library-rows'
 
 /**
@@ -16,11 +16,16 @@ import type { VodLibraryRow } from './vod-library-rows'
  * Samma hook som TV-inställningarnas sektion, så de två ytorna inte kan visa
  * olika antal för samma källa.
  */
-export function VodLibraryCard() {
+export function VodLibraryCard({ bare = false }: { bare?: boolean } = {}) {
+  return <VodLibraryCardView controller={useVodLibrarySources()} bare={bare} />
+}
+
+/** Kortet med en kontroller utifrån — inställningssidan läser samma hook för sektionens sammanfattning. */
+export function VodLibraryCardView({ controller, bare = false }: { controller: VodLibraryController; bare?: boolean }) {
   const { h, locale } = useHubText()
   const { tt } = useTvText()
   const toast = useToast()
-  const { rows, progress, error, build, disabled } = useVodLibrarySources()
+  const { rows, progress, error, build, disabled } = controller
   if (rows.length === 0) return null
 
   const statusText = (row: VodLibraryRow) => {
@@ -36,7 +41,7 @@ export function VodLibraryCard() {
 
   return (
     <div>
-      <LtSection eyebrow={h('useAsLibrary')} hint={h('useAsLibraryHint')} />
+      {bare ? <LtSection hint={h('useAsLibraryHint')} /> : <LtSection eyebrow={h('useAsLibrary')} hint={h('useAsLibraryHint')} />}
       <LtCard gap={12} testId="vod-library-desktop">
         {rows.map((row) => (
           <div key={row.libraryId} data-testid={`vod-library-${row.vodSource}`} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>

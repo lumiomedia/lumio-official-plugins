@@ -45,9 +45,13 @@ function stubFetch(next: () => Record<string, unknown>): void {
   }) as typeof fetch)
 }
 
+/** Alla sektioner öppna: testerna nedan gäller INNEHÅLLET, inte dragspelet (det har egna tester). */
+const ALL_SECTIONS = ['playlists', 'guide', 'behaviour', 'library', 'sport', 'display']
+
 beforeEach(() => {
   __resetForTests()
   __setTvModeForTests(false)
+  window.sessionStorage.setItem('lumio.liveTv.settingsOpen', JSON.stringify(ALL_SECTIONS))
   calls.length = 0
   resetM3uFetchProgressForTests()
   stubFetch(() => ({ state: 'done', received: 0, total: 0, result: { total: 0, groups: [], urlTvg: null, truncated: false } }))
@@ -252,19 +256,21 @@ describe('LiveTvSettingsSection', () => {
 })
 
 describe('sidan enligt handoffen §3', () => {
-  it('blocken kommer i ordningen växlar → Playlists → M3U → Xtream login → Programme guide status', () => {
+  it('blocken kommer i ordningen Playlists (kort → M3U → Xtream) → Programme guide → Behaviour (växlarna)', () => {
     writePluginJson(LIVE_TV_PLUGIN_ID, 'lists', [list({ id: 'l1', name: 'panel.test', kind: 'm3u', source: 'http://panel.test/list.m3u', url: 'http://panel.test/list.m3u', urlTvg: 'http://panel.test/epg.xml', channelCount: 4 })])
     render(<LiveTvSettingsSection />)
     const order = [
-      screen.getByRole('switch', { name: 'Use as home page' }),
-      screen.getByRole('switch', { name: 'Hide the movie hero on the Live TV page' }),
-      screen.getByText('Playlists'),
+      screen.getByTestId('lt-section-playlists'),
       screen.getByTestId('playlist-card-l1'),
       screen.getByText('M3U Playlist URLs'),
       screen.getByRole('button', { name: 'Fetch list' }),
       screen.getByText('Xtream login', { selector: 'h3' }),
       screen.getByRole('button', { name: 'Log in & fetch' }),
-      screen.getByText('Programme guide status'),
+      screen.getByTestId('lt-section-guide'),
+      screen.getByTestId('epg-status-card'),
+      screen.getByTestId('lt-section-behaviour'),
+      screen.getByRole('switch', { name: 'Use as home page' }),
+      screen.getByRole('switch', { name: 'Hide the movie hero on the Live TV page' }),
     ]
     for (let i = 1; i < order.length; i++) {
       // eslint-disable-next-line no-bitwise

@@ -117,7 +117,7 @@ describe('PlaylistCard (handoff §3.1)', () => {
   })
   it('upptagen: meta och knapp säger Fetching…', () => {
     mount(m3u, { busy: true })
-    expect(screen.getByText('Fetching…', { selector: 'p' })).toBeInTheDocument()
+    expect(screen.getByText('Fetching…', { selector: 'span' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Fetching…' })).toBeDisabled()
   })
   it('EPG: AUTO-brickan på den härledda källan, Remove stänger av den', () => {

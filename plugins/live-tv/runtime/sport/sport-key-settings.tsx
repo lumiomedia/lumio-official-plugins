@@ -105,7 +105,7 @@ function Editor({ r, onClose, onRemove, pushLayer, children }: { r: KeyRow; onCl
 
 /* ------------------------------------------------------------------ skrivbord */
 
-export function SportKeySettingsDesktop() {
+export function SportKeySettingsDesktop({ bare = false }: { bare?: boolean } = {}) {
   const { tt } = useTvText()
   const s = useSportSettings()
   const quota = useQuotaText()
@@ -119,7 +119,7 @@ export function SportKeySettingsDesktop() {
   })
   return (
     <div data-testid="sport-key-settings" style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-      <LtSection eyebrow={tt('tabSport')} title={tt('sportSettingsTitle')} />
+      {bare ? null : <LtSection eyebrow={tt('tabSport')} title={tt('sportSettingsTitle')} />}
       {!hasAnyKey(s) && !editRow ? <KeyCard variant="settings" /> : null}
       <section data-testid="sport-keys-section" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <LtSection title={tt('sportKeysTitle')} hint={tt('sportKeysHint')} />

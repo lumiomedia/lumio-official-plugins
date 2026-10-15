@@ -232,6 +232,18 @@ const EN = {
   completeLogosHint: 'Fetches missing logos from iptv-org now',
   tvNoKeyboard: 'Text entry needs a newer Lumio',
   tvFetchHint: 'Fetches the addresses above',
+  // Hopfällbara sektioner på inställningssidan (2026-10-15)
+  moreActions: 'More actions',
+  sectionBehaviour: 'Behaviour',
+  sectionGuide: 'Programme guide',
+  sectionLibrary: 'Library',
+  sectionDisplay: 'Display',
+  summaryListsOne: '1 list',
+  summaryListsMany: '{n} lists',
+  summaryNoLists: 'No playlists yet',
+  summarySourcesOne: '1 source',
+  summarySourcesMany: '{n} sources',
+  summaryHomeOn: 'Home page',
 } as const
 
 const SV: Record<keyof typeof EN, string> = {
@@ -440,6 +452,17 @@ const SV: Record<keyof typeof EN, string> = {
   completeLogosHint: 'Hämtar saknade logotyper från iptv-org nu',
   tvNoKeyboard: 'Textinmatning kräver en nyare Lumio',
   tvFetchHint: 'Hämtar adresserna ovan',
+  moreActions: 'Fler åtgärder',
+  sectionBehaviour: 'Beteende',
+  sectionGuide: 'Tablå',
+  sectionLibrary: 'Bibliotek',
+  sectionDisplay: 'Skärm',
+  summaryListsOne: '1 lista',
+  summaryListsMany: '{n} listor',
+  summaryNoLists: 'Inga spellistor än',
+  summarySourcesOne: '1 källa',
+  summarySourcesMany: '{n} källor',
+  summaryHomeOn: 'Startsida',
 }
 
 export type HubStringKey = keyof typeof EN

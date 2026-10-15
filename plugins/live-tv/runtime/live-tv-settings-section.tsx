@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import {
   disableHomeOverridePlugin,
   getHomeOverridePluginId,
@@ -10,7 +10,7 @@ import {
   useLang,
   useTvMode,
 } from '@/lib/plugin-sdk'
-import { LtCard, LtChoiceRow, LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useToast } from './settings-ui'
+import { LtCard, LtChoiceRow, LtCollapsible, LtNote, LtRows, LtSection, LtTextRow, LtToggleRow, ToastHost, UI, fmtInt, hostOf, useLtAccordion, useLtNarrow, useToast } from './settings-ui'
 import { formatDisplayMetrics, isSceneNotApplied, isViewportMismatch, readDisplayMetrics } from './display-metrics'
 import {
   applyM3uUrls,
@@ -30,6 +30,7 @@ import {
   getLiveTvHideHero,
   setLiveTvHideHero,
   parseXtreamSource,
+  getAllLiveTvEpgUrls,
 } from './live-tv-data'
 import type { ImportStatus } from './index-client'
 import { recordListImportOutcome } from './list-import-flags'
@@ -45,7 +46,8 @@ import { SportKeySettingsDesktop } from './sport/sport-key-settings'
 import { SportBackdropSettingsDesktop } from './sport/sport-backdrop-settings'
 import { SportSpoilerSettingsDesktop } from './sport/sport-spoiler-settings'
 import { XtreamLoginSection, prefillXtreamLogin } from './xtream-login-section'
-import { VodLibraryCard } from './vod-library-card'
+import { VodLibraryCardView } from './vod-library-card'
+import { useVodLibrarySources } from './hooks/useVodLibrarySources'
 import { CategoriesDialog } from './category-curation-panel'
 import { PlaylistCard, playlistHost } from './playlist-card'
 import { TvSettingsPage } from './tv-settings-views'
@@ -239,143 +241,191 @@ export function LiveTvSettingsSection() {
   )
 }
 
+/**
+ * Skrivbordets och telefonens sida (2026-10-15): varje block är en
+ * HOPFÄLLBAR sektion med titel + en rad sammanfattning. På telefon är de ett
+ * dragspel (en öppen i taget), på skrivbordet får flera vara öppna. Öppna
+ * sektioner minns för sessionen. Utan sparat val öppnas Spellistor om det
+ * inte finns någon lista än — det är där man börjar.
+ *
+ * Ordningen: Spellistor (korten, M3U, Xtream) → Tablå → Beteende →
+ * Bibliotek → Sport → Skärm. Tablå och Bibliotek visas bara när de har
+ * något att visa, precis som korten gjorde förut.
+ */
 function DesktopPage() {
   const { t } = useLang()
   const { h, locale } = useHubText()
   const s = useLiveTvSettings()
   const { tt } = useTvText()
   const tvSettings = useTvSettings()
+  const narrow = useLtNarrow()
+  const vod = useVodLibrarySources()
+  const accordion = useLtAccordion(narrow, getLiveTvLists().length === 0 ? ['playlists'] : [])
   const fetchLabel = s.fetchProgress.status === 'fetching' ? h('fetching') : h('fetchList')
 
+  const totalChannels = s.lists.reduce((sum, list) => sum + (list.channelCount ?? 0), 0)
+  const playlistsSummary = s.lists.length === 0
+    ? h('summaryNoLists')
+    : `${s.lists.length === 1 ? h('summaryListsOne') : h('summaryListsMany', { n: s.lists.length })} · ${h('channelsCount', { count: fmtInt(totalChannels, locale) })}`
+  const epgCount = getAllLiveTvEpgUrls(s.lists).length
+  const sourcesText = (n: number) => (n === 1 ? h('summarySourcesOne') : h('summarySourcesMany', { n }))
+  const behaviourSummary = [
+    s.homeOverrideEnabled ? h('summaryHomeOn') : null,
+    `${tt('settingStartView')}: ${tt(startViewLabelKey(tvSettings.startView))}`,
+  ].filter(Boolean).join(' · ')
+  const metrics = readDisplayMetrics()
+
+  const section = (id: string, title: string, summary: string, children: ReactNode) => (
+    <LtCollapsible id={id} testId={`lt-section-${id}`} title={title} summary={summary} open={accordion.isOpen(id)} onToggle={() => accordion.toggle(id)}>
+      {children}
+    </LtCollapsible>
+  )
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, color: UI.text }}>
-      <LtRows>
-        <LtToggleRow first label={h('useAsHome')} desc={h('useAsHomeDesc')} checked={s.homeOverrideEnabled} onChange={s.toggleHomeOverride} error={s.homeOverrideError || null} />
-        <LtToggleRow first={false} label={h('hideHero')} desc={h('hideHeroDesc')} checked={s.hideHero} onChange={s.setHideHero} />
-        <LtChoiceRow
-          testId="lt-start-view"
-          label={tt('settingStartView')}
-          desc={tt('settingStartViewHint')}
-          options={START_VIEWS.map((key) => ({ key, label: tt(startViewLabelKey(key)) }))}
-          value={tvSettings.startView}
-          onChange={(startView) => setTvSettings({ startView })}
-        />
-        {/* Strömbytet när kanalen hackar (Jerry 2026-10-14). Sparas i samma lager som TV:ns och telefonens rader. */}
-        <LtToggleRow first={false} testId="lt-stream-fallback" label={tt('settingStreamFallback')} desc={tt('settingStreamFallbackHint')} checked={tvSettings.streamFallback} onChange={(streamFallback) => setTvSettings({ streamFallback })} />
-        <LtChoiceRow
-          testId="lt-stream-fallback-after"
-          label={tt('settingStreamFallbackAfter')}
-          desc={tt('settingStreamFallbackAfterHint')}
-          options={FALLBACK_AFTER_OPTIONS.map((s) => ({ key: String(s), label: s === 0 ? tt('never') : tt('seconds', { s }) }))}
-          value={String(tvSettings.streamFallbackAfterS)}
-          onChange={(key) => setTvSettings({ streamFallbackAfterS: Number(key) as FallbackAfterS })}
-        />
-        {/* Gruppordningen (2026-10-14). Samma lager som TV:ns och telefonens rader. */}
-        <LtChoiceRow
-          testId="lt-group-order"
-          label={tt('settingGroupOrder')}
-          desc={tt('settingGroupOrderHint')}
-          options={GROUP_ORDERS.map((mode) => ({ key: mode, label: tt(groupOrderLabelKey(mode)) }))}
-          value={tvSettings.groupOrder}
-          onChange={(key) => setTvSettings({ groupOrder: sanitizeGroupOrder(key) })}
-        />
-      </LtRows>
+    <div data-testid="lt-settings-desktop" style={{ display: 'flex', flexDirection: 'column', gap: 12, color: UI.text, minWidth: 0 }}>
+      {section('playlists', h('playlists'), playlistsSummary, (
+        <>
+          <div>
+            <LtSection hint={h('playlistsHint')} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {s.lists.length === 0 ? <LtNote>{h('noPlaylistsYet')}</LtNote> : null}
+              {s.lists.map((list) => (
+                <PlaylistCard
+                  key={list.id}
+                  list={list}
+                  busy={s.listProgress?.listId === list.id}
+                  defaultOpen={s.lists.length === 1}
+                  onCategories={() => s.setCurationList({ list, mode: 'settings' })}
+                  onUpdate={() => void s.refetchList(list)}
+                  onRemove={() => s.removeList(list)}
+                  onRelogin={() => s.relogin(list)}
+                />
+              ))}
+            </div>
+          </div>
 
-      <div>
-        <LtSection eyebrow={h('playlists')} title={h('yourPlaylists')} hint={h('playlistsHint')} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {s.lists.length === 0 ? <LtNote>{h('noPlaylistsYet')}</LtNote> : null}
-          {s.lists.map((list) => (
-            <PlaylistCard
-              key={list.id}
-              list={list}
-              busy={s.listProgress?.listId === list.id}
-              onCategories={() => s.setCurationList({ list, mode: 'settings' })}
-              onUpdate={() => void s.refetchList(list)}
-              onRemove={() => s.removeList(list)}
-              onRelogin={() => s.relogin(list)}
-            />
-          ))}
-        </div>
-      </div>
+          <div>
+            <LtSection eyebrow={h('kindM3u')} title={h('m3uTitle')} hint={h('m3uHint')} />
+            <LtRows>
+              <LtTextRow
+                first
+                label={h('playlistUrl')}
+                value={s.m3uText}
+                onChange={s.setM3uText}
+                placeholder={t('m3uUrlsPlaceholder')}
+                fieldWidth={260}
+                button={fetchLabel}
+                onButton={() => void s.fetchM3u()}
+                buttonDisabled={s.fetchProgress.status === 'fetching'}
+              />
+            </LtRows>
+            <M3uFetchProgressBlock />
+          </div>
 
-      <div>
-        <LtSection eyebrow={h('kindM3u')} title={h('m3uTitle')} hint={h('m3uHint')} />
+          <div>
+            <LtSection eyebrow={h('xtreamLogin')} title={h('xtreamLogin')} hint={h('xtreamHint')} />
+            <XtreamLoginSection onImported={(listId, existedBefore) => { if (!existedBefore) s.maybeOpenCurationAfterImport(listId) }} />
+          </div>
+        </>
+      ))}
+
+      {epgCount > 0 ? section('guide', h('sectionGuide'), sourcesText(epgCount), <EpgStatusCard bare />) : null}
+
+      {section('behaviour', h('sectionBehaviour'), behaviourSummary, (
         <LtRows>
-          <LtTextRow
-            first
-            label={h('playlistUrl')}
-            value={s.m3uText}
-            onChange={s.setM3uText}
-            placeholder={t('m3uUrlsPlaceholder')}
-            fieldWidth={260}
-            button={fetchLabel}
-            onButton={() => void s.fetchM3u()}
-            buttonDisabled={s.fetchProgress.status === 'fetching'}
+          <LtToggleRow first label={h('useAsHome')} desc={h('useAsHomeDesc')} checked={s.homeOverrideEnabled} onChange={s.toggleHomeOverride} error={s.homeOverrideError || null} />
+          <LtToggleRow first={false} label={h('hideHero')} desc={h('hideHeroDesc')} checked={s.hideHero} onChange={s.setHideHero} />
+          <LtChoiceRow
+            testId="lt-start-view"
+            label={tt('settingStartView')}
+            desc={tt('settingStartViewHint')}
+            options={START_VIEWS.map((key) => ({ key, label: tt(startViewLabelKey(key)) }))}
+            value={tvSettings.startView}
+            onChange={(startView) => setTvSettings({ startView })}
+          />
+          {/* Strömbytet när kanalen hackar (Jerry 2026-10-14). Sparas i samma lager som TV:ns och telefonens rader. */}
+          <LtToggleRow first={false} testId="lt-stream-fallback" label={tt('settingStreamFallback')} desc={tt('settingStreamFallbackHint')} checked={tvSettings.streamFallback} onChange={(streamFallback) => setTvSettings({ streamFallback })} />
+          <LtChoiceRow
+            testId="lt-stream-fallback-after"
+            label={tt('settingStreamFallbackAfter')}
+            desc={tt('settingStreamFallbackAfterHint')}
+            options={FALLBACK_AFTER_OPTIONS.map((s) => ({ key: String(s), label: s === 0 ? tt('never') : tt('seconds', { s }) }))}
+            value={String(tvSettings.streamFallbackAfterS)}
+            onChange={(key) => setTvSettings({ streamFallbackAfterS: Number(key) as FallbackAfterS })}
+          />
+          {/* Gruppordningen (2026-10-14). Samma lager som TV:ns och telefonens rader. */}
+          <LtChoiceRow
+            testId="lt-group-order"
+            label={tt('settingGroupOrder')}
+            desc={tt('settingGroupOrderHint')}
+            options={GROUP_ORDERS.map((mode) => ({ key: mode, label: tt(groupOrderLabelKey(mode)) }))}
+            value={tvSettings.groupOrder}
+            onChange={(key) => setTvSettings({ groupOrder: sanitizeGroupOrder(key) })}
           />
         </LtRows>
-        {/*
-          Hämtningen syns som EGET block, inte bara som knapptext: en stor
-          spellista tar tiotals sekunder, och blocket ligger kvar tills nästa
-          hämtning startar — det läser tillståndet ur modulen, så det är sant
-          även för den som kommer tillbaka efteråt.
-        */}
-        {s.fetchProgress.status !== 'idle' && (
-          <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
-            <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
-            {s.fetchProgress.status === 'fetching' && (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: UI.text }}>
-                  <span aria-hidden style={{ width: 12, height: 12, flex: 'none', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: 'rgba(255,255,255,0.9)', animation: 'lumio-livetv-spin 0.7s linear infinite' }} />
-                  <span>{h('m3uFetchProgress', { current: s.fetchProgress.current, total: s.fetchProgress.total })}</span>
-                  {/* Jobbets EGET förlopp: en adress kan vara 17 000 kanaler. */}
-                  {s.fetchProgress.jobProgress ? (
-                    <span style={{ color: UI.muted }}>
-                      {s.fetchProgress.jobProgress.total
-                        ? h('listImportProgress', { received: fmtInt(s.fetchProgress.jobProgress.received, locale), total: fmtInt(s.fetchProgress.jobProgress.total, locale) })
-                        : h('listImportProgressUnknown')}
-                    </span>
-                  ) : null}
-                </div>
-                <LtNote>{h('m3uFetchKeepOpen')}</LtNote>
-              </>
-            )}
-            {s.fetchProgress.results.map((result) => (
-              <div key={result.url} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 12.5, color: UI.muted, minWidth: 0 }}>
-                <span aria-hidden style={{ color: UI.green, flex: 'none' }}>✓</span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: UI.text }}>{hostOf(result.url)}</span>
-                <span style={{ flex: 'none' }}>{h('channelsCount', { count: fmtInt(result.channels, locale) })}</span>
-              </div>
-            ))}
-            {s.fetchProgress.status === 'error' && (
-              <div role="alert" style={{ fontSize: 12.5, color: UI.danger, lineHeight: 1.45 }}>
-                {h('m3uFetchFailedOn', { host: hostOf(s.fetchProgress.url ?? ''), error: s.fetchProgress.error ?? '' })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      ))}
 
-      <div>
-        <LtSection eyebrow={h('xtreamLogin')} title={h('xtreamLogin')} hint={h('xtreamHint')} />
-        <XtreamLoginSection onImported={(listId, existedBefore) => { if (!existedBefore) s.maybeOpenCurationAfterImport(listId) }} />
-      </div>
+      {vod.rows.length > 0 ? section('library', h('sectionLibrary'), sourcesText(vod.rows.length), <VodLibraryCardView controller={vod} bare />) : null}
 
-      <EpgStatusCard />
+      {section('sport', tt('tabSport'), tt('sportSettingsTitle'), (
+        <>
+          <SportKeySettingsDesktop bare />
+          <SportBackdropSettingsDesktop />
+          <SportSpoilerSettingsDesktop />
+        </>
+      ))}
 
-      <VodLibraryCard />
-
-      <DisplayMetricsCard />
-
-      <SportKeySettingsDesktop />
-
-      <SportBackdropSettingsDesktop />
-
-      <SportSpoilerSettingsDesktop />
+      {metrics ? section('display', h('sectionDisplay'), `${metrics.layoutWidth}×${metrics.layoutHeight}${isViewportMismatch(metrics) ? ' · !' : ''}`, <DisplayMetricsCard bare />) : null}
 
       {s.curationList ? (
         <CategoriesDialog list={s.curationList.list} mode={s.curationList.mode} onClose={() => s.setCurationList(null)} />
       ) : null}
+    </div>
+  )
+}
+
+/**
+ * Hämtningen syns som EGET block, inte bara som knapptext: en stor
+ * spellista tar tiotals sekunder, och blocket ligger kvar tills nästa
+ * hämtning startar — det läser tillståndet ur modulen, så det är sant
+ * även för den som kommer tillbaka efteråt.
+ */
+function M3uFetchProgressBlock() {
+  const { h, locale } = useHubText()
+  const fetchProgress = useSyncExternalStore(subscribeM3uFetch, getM3uFetchProgress, getM3uFetchProgress)
+  if (fetchProgress.status === 'idle') return null
+  return (
+    <div style={{ marginTop: 10, display: 'grid', gap: 6, minWidth: 0 }}>
+      <style>{'@keyframes lumio-livetv-spin{to{transform:rotate(360deg)}}'}</style>
+      {fetchProgress.status === 'fetching' && (
+        <>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, fontSize: 12.5, color: UI.text }}>
+            <span aria-hidden style={{ width: 12, height: 12, flex: 'none', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: 'rgba(255,255,255,0.9)', animation: 'lumio-livetv-spin 0.7s linear infinite' }} />
+            <span>{h('m3uFetchProgress', { current: fetchProgress.current, total: fetchProgress.total })}</span>
+            {/* Jobbets EGET förlopp: en adress kan vara 17 000 kanaler. */}
+            {fetchProgress.jobProgress ? (
+              <span style={{ color: UI.muted }}>
+                {fetchProgress.jobProgress.total
+                  ? h('listImportProgress', { received: fmtInt(fetchProgress.jobProgress.received, locale), total: fmtInt(fetchProgress.jobProgress.total, locale) })
+                  : h('listImportProgressUnknown')}
+              </span>
+            ) : null}
+          </div>
+          <LtNote>{h('m3uFetchKeepOpen')}</LtNote>
+        </>
+      )}
+      {fetchProgress.results.map((result) => (
+        <div key={result.url} style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 12.5, color: UI.muted, minWidth: 0 }}>
+          <span aria-hidden style={{ color: UI.green, flex: 'none' }}>✓</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: UI.text }}>{hostOf(result.url)}</span>
+          <span style={{ flex: 'none' }}>{h('channelsCount', { count: fmtInt(result.channels, locale) })}</span>
+        </div>
+      ))}
+      {fetchProgress.status === 'error' && (
+        <div role="alert" style={{ fontSize: 12.5, color: UI.danger, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
+          {h('m3uFetchFailedOn', { host: hostOf(fetchProgress.url ?? ''), error: fetchProgress.error ?? '' })}
+        </div>
+      )}
     </div>
   )
 }
@@ -393,7 +443,7 @@ function DesktopPage() {
  * Skiljer sig de två måtten ritas sidan mot en större yta än den som visas —
  * då är det den fällan, och kortet säger det rakt ut.
  */
-function DisplayMetricsCard() {
+function DisplayMetricsCard({ bare = false }: { bare?: boolean } = {}) {
   const [metrics, setMetrics] = useState(() => readDisplayMetrics())
   useEffect(() => {
     const sync = () => setMetrics(readDisplayMetrics())
@@ -405,7 +455,7 @@ function DisplayMetricsCard() {
   const mismatch = isViewportMismatch(metrics)
   return (
     <div>
-      <LtSection eyebrow="Display" />
+      {bare ? null : <LtSection eyebrow="Display" />}
       <LtCard gap={8} testId="display-metrics-card">
         <code
           style={{

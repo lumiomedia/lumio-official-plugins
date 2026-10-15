@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LtBtn, LtCard, LtCheck, LtConfirm, UI, fmtInt, hostOf } from './settings-ui'
+import { LtBtn, LtCard, LtCheck, LtConfirm, LtOverflowMenu, UI, fmtInt, hostOf, useLtNarrow } from './settings-ui'
 import { useHubText } from './hub-strings'
 import { EpgSourcesSection } from './epg-sources-section'
 import { useXtreamAccountMeta } from './xtream-login-section'
@@ -53,15 +53,23 @@ export function curationSummary(list: LiveTvList): { categories: number; hidden:
  * Kortet läser inget själv utom Xtream-kontot: `list` kommer från sidan, som
  * prenumererar på lagringen, så en ändring (EPG, logotyper) syns via ny prop.
  */
-export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onRelogin }: {
+export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onRelogin, defaultOpen = true }: {
   list: LiveTvList
   busy: boolean
   onCategories: () => void
   onUpdate: () => void
   onRemove: () => void
   onRelogin: () => void
+  /**
+   * Kortet är hopfällbart (Jerry 2026-10-15): rubriken — värd, typ, antal
+   * kanaler, hämtningstid och status — syns alltid; kategorier, EPG-källor,
+   * logotyper och knapparna först när kortet är öppet.
+   */
+  defaultOpen?: boolean
 }) {
   const { h, locale } = useHubText()
+  const narrow = useLtNarrow()
+  const [open, setOpen] = useState(defaultOpen)
   const [confirm, setConfirm] = useState(false)
   const [serverCats, setServerCats] = useState(false)
   // Komplettera-knappens eget tillstånd — en handling, skild från kryssrutan
@@ -107,29 +115,73 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
   const updateLabel = busy ? h('fetching') : kind === 'xtream' ? h('updateChannels') : h('listRefetch')
   const lineStyle = { margin: '2px 0 0', fontSize: 12.5, color: UI.muted } as const
 
+  /*
+   * Handlingarna. Raden radbryts (flex-wrap, krymper) och går aldrig utanför
+   * kortet; på telefon står bara de två primära kvar som knappar och resten
+   * ligger i ⋯-menyn — "Server categories · 2 of 140" + "Update channels" +
+   * Remove fick inte plats på 360 px (Jerrys skärmbild 2026-10-15).
+   */
+  const serverCatsLabel = login ? serverCategoriesLabel(login, categoryTotal, h) : null
+  const secondary: { key: string; label: string; onSelect: () => void; danger?: boolean }[] = []
+  if (narrow) {
+    if (serverCatsLabel) secondary.push({ key: 'server-categories', label: serverCatsLabel, onSelect: () => setServerCats(true) })
+    secondary.push({ key: 'remove', label: h('remove'), onSelect: () => setConfirm(true), danger: true })
+  }
+  const status = needsLogin
+    ? { text: h('xtreamNeedsLogin'), color: UI.danger }
+    : !busy && list.lastImportError
+      ? { text: h('listImportFailed', { error: list.lastImportError }), color: UI.danger }
+      : list.truncated
+        ? { text: h('listTruncated'), color: '#e2c489' }
+        : list.needsReimport
+          ? { text: h('listNeedsReimport'), color: UI.muted }
+          : null
+
   return (
-    <LtCard testId={`playlist-card-${list.id}`}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ minWidth: 0, flex: '1 1 12rem' }}>
-          <p style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13.5, fontWeight: 500, color: UI.text }}>{host}</p>
-          <p style={{ margin: '4px 0 0', fontSize: 12.5, color: UI.muted }}>{meta}</p>
+    <LtCard testId={`playlist-card-${list.id}`} style={{ minWidth: 0 }}>
+      <button
+        type="button"
+        aria-expanded={open}
+        data-testid={`playlist-card-toggle-${list.id}`}
+        onClick={() => setOpen((v) => !v)}
+        style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%', minWidth: 0, border: 0, padding: 0, background: 'transparent', textAlign: 'left', fontFamily: 'inherit', color: UI.text, cursor: 'pointer' }}
+      >
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span style={{ display: 'block', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13.5, fontWeight: 500, color: UI.text }}>{host}</span>
+          <span style={{ display: 'block', margin: '4px 0 0', fontSize: 12.5, color: UI.muted }}>{meta}</span>
+          {!open && status ? (
+            <span data-testid={`playlist-status-${list.id}`} style={{ display: 'block', margin: '2px 0 0', fontSize: 12.5, color: status.color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{status.text}</span>
+          ) : null}
+        </span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={UI.muted} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden
+          style={{ flex: 'none', marginTop: 2, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}><path d="m9 18 6-6-6-6" /></svg>
+      </button>
+      {open ? (
+      <>
+      {needsLogin || account || list.needsReimport || (!busy && list.lastImportError) || list.truncated ? (
+        <div style={{ minWidth: 0, marginTop: -8 }}>
           {needsLogin ? <p style={lineStyle}>{h('xtreamNeedsLogin')}</p> : null}
           {account ? <p style={{ ...lineStyle, color: account.failed ? UI.danger : UI.muted }}>{account.text}</p> : null}
           {list.needsReimport ? <p style={lineStyle}>{h('listNeedsReimport')}</p> : null}
-          {!busy && list.lastImportError ? <p role="alert" style={{ ...lineStyle, color: UI.danger }}>{h('listImportFailed', { error: list.lastImportError })}</p> : null}
+          {!busy && list.lastImportError ? <p role="alert" style={{ ...lineStyle, color: UI.danger, overflowWrap: 'anywhere' }}>{h('listImportFailed', { error: list.lastImportError })}</p> : null}
           {/* Kapad spellista: jobbet svarade `done`, så utan raden ser en HALV lista ut som en hel. */}
           {list.truncated ? <p role="alert" data-testid={`list-truncated-${list.id}`} style={{ ...lineStyle, color: '#e2c489' }}>{h('listTruncated')}</p> : null}
         </div>
-        <div style={{ display: 'flex', flex: 'none', flexWrap: 'wrap', gap: 8 }}>
-          {importable ? <LtBtn onClick={onCategories}>{h('categories')}</LtBtn> : null}
-          {login ? <LtBtn onClick={() => setServerCats(true)}>{serverCategoriesLabel(login, categoryTotal, h)}</LtBtn> : null}
-          {needsLogin ? (
-            <LtBtn variant="accent" onClick={onRelogin}>{h('xtreamRelogin')}</LtBtn>
-          ) : importable ? (
-            <LtBtn onClick={onUpdate} disabled={busy}>{updateLabel}</LtBtn>
-          ) : null}
-          <LtBtn variant="danger" onClick={() => setConfirm(true)}>{h('remove')}</LtBtn>
-        </div>
+      ) : null}
+      <div data-testid={`playlist-actions-${list.id}`} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, minWidth: 0, maxWidth: '100%' }}>
+        {importable ? <LtBtn onClick={onCategories}>{h('categories')}</LtBtn> : null}
+        {!narrow && serverCatsLabel ? <LtBtn onClick={() => setServerCats(true)}>{serverCatsLabel}</LtBtn> : null}
+        {needsLogin ? (
+          <LtBtn variant="accent" onClick={onRelogin}>{h('xtreamRelogin')}</LtBtn>
+        ) : importable ? (
+          <LtBtn onClick={onUpdate} disabled={busy}>{updateLabel}</LtBtn>
+        ) : null}
+        {!narrow ? <LtBtn variant="danger" onClick={() => setConfirm(true)}>{h('remove')}</LtBtn> : null}
+        {narrow ? (
+          <span style={{ marginLeft: 'auto' }}>
+            <LtOverflowMenu label={h('moreActions')} items={secondary} testId={`playlist-more-${list.id}`} />
+          </span>
+        ) : null}
       </div>
       {importable ? (
         <button
@@ -176,6 +228,8 @@ export function PlaylistCard({ list, busy, onCategories, onUpdate, onRemove, onR
               : h('completeLogosHint')}
         </span>
       </div>
+      </>
+      ) : null}
       {serverCats && login ? (
         <ServerCategoriesDialog login={login} host={host} onClose={() => setServerCats(false)} onApplied={onUpdate} />
       ) : null}

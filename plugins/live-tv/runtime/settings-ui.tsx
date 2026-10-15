@@ -145,6 +145,11 @@ export function LtBtn({ children, onClick, variant = 'default', size = 'sm', dis
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         whiteSpace: 'nowrap',
+        // Aldrig bredare än raden den står i: en lång etikett kortas i stället
+        // för att trycka ut kortet på en telefon.
+        maxWidth: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
         ...colors,
         ...style,
       }}
@@ -344,6 +349,174 @@ export function LtTextRow({ label, desc, value, onChange, placeholder, fieldWidt
         <LtInput title={label} value={value} onChange={onChange} placeholder={placeholder} secret={secret} onEnter={onEnter ?? onButton} style={{ width: fieldWidth, maxWidth: '100%', textAlign: 'right', padding: '7px 10px' }} />
         {button ? <LtBtn onClick={onButton} disabled={buttonDisabled} variant={buttonVariant} style={{ padding: '6px 11px' }}>{button}</LtBtn> : null}
       </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------ hopfällbart */
+
+/**
+ * Telefonbredd för inställningssidan. Under 640 px (samma gräns som dialogen)
+ * får bara EN sektion vara öppen åt gången, och spellistekortens
+ * sekundärhandlingar flyttar in i en ⋯-meny. Läses via `matchMedia` och
+ * följer fönstret.
+ */
+export const LT_NARROW_QUERY = '(max-width: 639px)'
+
+export function useLtNarrow(): boolean {
+  const read = () => {
+    try { return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(LT_NARROW_QUERY).matches } catch { return false }
+  }
+  const [narrow, setNarrow] = useState(read)
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    let mql: MediaQueryList
+    try { mql = window.matchMedia(LT_NARROW_QUERY) } catch { return }
+    const sync = () => setNarrow(mql.matches)
+    sync()
+    mql.addEventListener?.('change', sync)
+    window.addEventListener('resize', sync)
+    return () => { mql.removeEventListener?.('change', sync); window.removeEventListener('resize', sync) }
+  }, [])
+  return narrow
+}
+
+const OPEN_SECTIONS_KEY = 'lumio.liveTv.settingsOpen'
+
+function readOpenSections(): string[] | null {
+  try {
+    const raw = window.sessionStorage.getItem(OPEN_SECTIONS_KEY)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : null
+  } catch {
+    return null
+  }
+}
+
+function writeOpenSections(ids: string[]): void {
+  try { window.sessionStorage.setItem(OPEN_SECTIONS_KEY, JSON.stringify(ids)) } catch { /* privat läge/blockerad lagring: bara minnet gäller */ }
+}
+
+/**
+ * Vilka sektioner som är öppna. `single` (telefonen) = dragspel, en i taget;
+ * annars får flera vara öppna. Valet minns för sessionen (sessionStorage,
+ * try/catch) så att den som går ut ur inställningarna och tillbaka hamnar där
+ * den var. Listan hålls i öppningsordning — byter fönstret till telefonbredd
+ * gäller den senast öppnade.
+ */
+export function useLtAccordion(single: boolean, fallback: string[] = []): { isOpen: (id: string) => boolean; toggle: (id: string) => void } {
+  const [open, setOpen] = useState<string[]>(() => readOpenSections() ?? fallback)
+  const visible = single ? open.slice(-1) : open
+  const toggle = useCallback((id: string) => {
+    setOpen((prev) => {
+      const current = single ? prev.slice(-1) : prev
+      const next = current.includes(id) ? current.filter((v) => v !== id) : single ? [id] : [...current, id]
+      writeOpenSections(next)
+      return next
+    })
+  }, [single])
+  return { isOpen: (id: string) => visible.includes(id), toggle }
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={UI.muted} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden
+      style={{ flex: 'none', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  )
+}
+
+/**
+ * Hopfällbar sektion: rubriken är ett kort (titel + en rad sammanfattning,
+ * chevron till höger) och innehållet — kortstapeln — ritas under det när
+ * sektionen är öppen. Ingen yttre box runt innehållet: korten är redan kort.
+ */
+export function LtCollapsible({ id, title, summary, open, onToggle, children, testId }: {
+  id: string
+  title: string
+  summary?: ReactNode
+  open: boolean
+  onToggle: () => void
+  children: ReactNode
+  testId?: string
+}) {
+  const bodyId = `lt-section-${id}`
+  return (
+    <section data-testid={testId} data-lt-collapsible={id} style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={bodyId}
+        onClick={onToggle}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12, width: '100%', minWidth: 0, boxSizing: 'border-box',
+          borderRadius: 10, border: 0, background: open ? 'rgba(255,255,255,0.065)' : UI.card,
+          padding: '14px 18px', textAlign: 'left', fontFamily: 'inherit', color: UI.text, cursor: 'pointer',
+        }}
+      >
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span style={{ display: 'block', fontSize: 14.5, fontWeight: 500, lineHeight: 1.3 }}>{title}</span>
+          {summary ? (
+            <span style={{ display: 'block', marginTop: 3, fontSize: 12.5, color: UI.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{summary}</span>
+          ) : null}
+        </span>
+        <Chevron open={open} />
+      </button>
+      {open ? (
+        <div id={bodyId} style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
+          {children}
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+/**
+ * ⋯-menyn för sekundärhandlingar på smal skärm. Rutan förankras i knappens
+ * HÖGRA kant och växer åt vänster, så den aldrig går utanför rutan; stängs av
+ * ett val, ett klick utanför eller Escape.
+ */
+export function LtOverflowMenu({ label, items, testId }: {
+  label: string
+  items: { key: string; label: ReactNode; onSelect: () => void; danger?: boolean; disabled?: boolean }[]
+  testId?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (!open) return
+    const onDown = (event: Event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false)
+    }
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.stopPropagation(); setOpen(false) } }
+    document.addEventListener('pointerdown', onDown, true)
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      document.removeEventListener('pointerdown', onDown, true)
+      window.removeEventListener('keydown', onKey, true)
+    }
+  }, [open])
+  if (items.length === 0) return null
+  return (
+    <div ref={rootRef} style={{ position: 'relative', flex: 'none' }}>
+      <LtBtn testId={testId} title={label} onClick={() => setOpen((v) => !v)} style={{ padding: '6px 10px', letterSpacing: '0.12em' }}>
+        <span aria-hidden>⋯</span>
+        <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>{label}</span>
+      </LtBtn>
+      {open ? (
+        <div role="menu" data-testid={testId ? `${testId}-menu` : undefined}
+          style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 20, minWidth: 180, maxWidth: 'calc(100vw - 32px)', display: 'flex', flexDirection: 'column', padding: 6, borderRadius: 10, background: UI.dialog, border: `1px solid ${UI.lineDialog}`, boxShadow: '0 18px 40px rgba(0,0,0,0.55)' }}>
+          {items.map((item) => (
+            <button key={item.key} type="button" role="menuitem" disabled={item.disabled}
+              onClick={() => { setOpen(false); item.onSelect() }}
+              style={{ display: 'block', width: '100%', border: 0, borderRadius: 7, background: 'transparent', padding: '9px 11px', textAlign: 'left', fontFamily: 'inherit', fontSize: 13, color: item.danger ? UI.danger : UI.text, cursor: item.disabled ? 'default' : 'pointer', opacity: item.disabled ? 0.5 : 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

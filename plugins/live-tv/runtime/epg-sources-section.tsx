@@ -43,7 +43,7 @@ function SourceRow({ url, auto = false, dimmed = false, right }: { url: string; 
  * i grönt och raden "Guide fetched 12:37 · 66,111 programmes" + Refetch EPG.
  * Datadelen ligger i `hooks/useEpgStatus.ts`, delad med TV-inställningarna.
  */
-export function EpgStatusCard() {
+export function EpgStatusCard({ bare = false }: { bare?: boolean } = {}) {
   const { h, locale } = useHubText()
   const { status, urls, refreshing, refresh } = useEpgStatus()
   const toast = useToast()
@@ -59,7 +59,7 @@ export function EpgStatusCard() {
   }
   return (
     <div>
-      <LtSection eyebrow={h('epgStatusTitle')} hint={h('epgStatusAllLists')} />
+      {bare ? <LtSection hint={h('epgStatusAllLists')} /> : <LtSection eyebrow={h('epgStatusTitle')} hint={h('epgStatusAllLists')} />}
       <LtCard gap={12} testId="epg-status-card">
         {urls.map((url) => {
           const stat = status?.urls.find((item) => item.url === url)
